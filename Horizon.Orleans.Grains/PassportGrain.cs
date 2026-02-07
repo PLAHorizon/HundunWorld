@@ -104,12 +104,66 @@ namespace Horizon.Orleans.Grains
                 }
 
                 // 3. 验证密码
-                //string hashedPassword = HashPassword(loginDto.Password, passport.Id);
-                if (passport.Password != loginDto.Password)
+                // 解码客户端Base64编码的密码
+                string decodedPassword;
+                try
+                {
+                    decodedPassword = Encoding.UTF8.GetString(Convert.FromBase64String(loginDto.Password));
+                }
+                catch
+                {
+                    // 如果解码失败，尝试直接使用原密码
+                    decodedPassword = loginDto.Password;
+                }
+
+                bool isPasswordValid = false;
+                bool needsPasswordUpgrade = false;
+
+                // 首先尝试新的安全验证（如果有盐值）
+                if (!string.IsNullOrEmpty(passport.PasswordSalt))
+                {
+                    isPasswordValid = SecurePasswordHasher.VerifyPassword(
+                        decodedPassword,
+                        passport.Password,
+                        passport.PasswordSalt);
+                }
+                else
+                {
+                    // 向后兼容：使用旧的密码验证方法
+                    _logger.LogInformation("使用旧密码系统验证: {PassportId}", loginDto.PassportId);
+                    
+                    string oldEncryptedPassword = PassportHelper.SetPasportPassword(passport.Id, decodedPassword);
+                    isPasswordValid = (passport.Password == oldEncryptedPassword);
+                    needsPasswordUpgrade = isPasswordValid; // 标记需要升级
+                }
+
+                if (!isPasswordValid)
                 {
                     _logger.LogWarning("密码验证失败: {PassportId}", loginDto.PassportId);
                     await RecordFailedLoginAttempt(loginDto.PassportId);
                     return null;
+                }
+
+                // 如果使用旧密码登录成功，立即升级到新的安全系统
+                if (needsPasswordUpgrade)
+                {
+                    try
+                    {
+                        _logger.LogInformation("自动升级密码到安全哈希系统: {PassportId}", loginDto.PassportId);
+                        var (newHash, newSalt) = SecurePasswordHasher.HashPassword(decodedPassword);
+                        
+                        passport.Password = newHash;
+                        passport.PasswordSalt = newSalt;
+                        passport.UpdateTime = DateTime.UtcNow;
+                        
+                        await _dataContext.UpdateAsync(passport, passport.Id);
+                        _logger.LogInformation("密码升级成功: {PassportId}", loginDto.PassportId);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "密码升级失败: {PassportId}", loginDto.PassportId);
+                        // 继续登录流程，下次登录时再尝试升级
+                    }
                 }
 
                 // 4. 获取或创建用户信息
@@ -186,13 +240,71 @@ namespace Horizon.Orleans.Grains
 
         public async Task<bool> ChangePasswordAsync(ChangePasswordDto loginDto)
         {
-            var passport = await _dataContext.QueryFirstOrDefaultAsync(m => m.Id == loginDto.PassportId && m.Password == loginDto.OldPassword, true);
-            if (passport == null) return await Task.FromResult(false);
-            else
+            try
             {
-                passport.Password = loginDto.NewPassword;
+                _logger.LogInformation("开始修改密码: {PassportId}", loginDto.PassportId);
+
+                // 1. 获取通行证
+                var passport = await _dataContext.QueryFirstOrDefaultAsync(
+                    m => m.Id == loginDto.PassportId && m.IsValid, 
+                    isTracking: true);
+
+                if (passport == null)
+                {
+                    _logger.LogWarning("通行证不存在: {PassportId}", loginDto.PassportId);
+                    return false;
+                }
+
+                // 2. 解码密码
+                string decodedOldPassword;
+                string decodedNewPassword;
+                try
+                {
+                    decodedOldPassword = Encoding.UTF8.GetString(Convert.FromBase64String(loginDto.OldPassword));
+                    decodedNewPassword = Encoding.UTF8.GetString(Convert.FromBase64String(loginDto.NewPassword));
+                }
+                catch
+                {
+                    decodedOldPassword = loginDto.OldPassword;
+                    decodedNewPassword = loginDto.NewPassword;
+                }
+
+                // 3. 验证旧密码
+                bool isOldPasswordValid = SecurePasswordHasher.VerifyPassword(
+                    decodedOldPassword,
+                    passport.Password,
+                    passport.PasswordSalt ?? string.Empty);
+
+                if (!isOldPasswordValid)
+                {
+                    _logger.LogWarning("旧密码验证失败: {PassportId}", loginDto.PassportId);
+                    return false;
+                }
+
+                // 4. 验证新密码强度
+                if (!SecurePasswordHasher.IsPasswordStrong(decodedNewPassword))
+                {
+                    _logger.LogWarning("新密码强度不足: {PassportId}", loginDto.PassportId);
+                    return false;
+                }
+
+                // 5. 生成新密码的哈希和盐值
+                var (newHash, newSalt) = SecurePasswordHasher.HashPassword(decodedNewPassword);
+
+                // 6. 更新数据库
+                passport.Password = newHash;
+                passport.PasswordSalt = newSalt;
+                passport.UpdateTime = DateTime.UtcNow;
+
                 await _dataContext.UpdateAsync(passport, passport.Id);
-                return await Task.FromResult(true);
+
+                _logger.LogInformation("密码修改成功: {PassportId}", loginDto.PassportId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "修改密码过程中发生异常: {PassportId}", loginDto.PassportId);
+                return false;
             }
         }
         public async Task<PassportInfoDto> WxUserAuthenticationAsync(WxLoginDto loginDto)
@@ -237,11 +349,28 @@ namespace Horizon.Orleans.Grains
                 }
 
                 passportId = id.Id;
-                string password = Base64Decode(registerDto.Password);
+                
+                // 解码Base64编码的密码
+                string decodedPassword = Encoding.UTF8.GetString(Convert.FromBase64String(registerDto.Password));
+                
+                // 验证密码强度
+                if (!SecurePasswordHasher.IsPasswordStrong(decodedPassword))
+                {
+                    _logger.LogWarning("注册密码强度不足: {PassportId}", passportId);
+                    return null;
+                }
+                
+                // 生成安全的密码哈希和盐值
+                var (passwordHash, passwordSalt) = SecurePasswordHasher.HashPassword(decodedPassword);
+                
                 var passport = await _dataContext.AddAsync(new Passport
                 {
                     Id = passportId,
-                    Password = PassportHelper.SetPasportPassword(passportId, password),
+                    Password = passwordHash,
+                    PasswordSalt = passwordSalt,
+                    CreateTime = DateTime.UtcNow,
+                    UpdateTime = DateTime.UtcNow,
+                    IsValid = true
                 });
                 id.ApplyTime = DateTime.UtcNow;
                 id.IsValid = false;
@@ -265,7 +394,8 @@ namespace Horizon.Orleans.Grains
                 try
                 {
                     if (registerDto.GameContext != null)
-                        await _gameUserContext.AddAsync(new UserEntity
+                    {
+                        var gameUserEntity = new UserEntity
                         {
                             GameUserId = userNew.Id,
                             GameId = (int)registerDto.AppId,
@@ -275,19 +405,23 @@ namespace Horizon.Orleans.Grains
                             Status = 0,
                             CreateTime = DateTime.Now,
                             Email = registerDto.Email,
-                            PasswordHash = registerDto.Password,
-                            PasswordSalt = registerDto.Password,
+                            PasswordHash = passwordHash,  // 使用安全哈希
+                            PasswordSalt = passwordSalt,  // 使用生成的盐值
                             LastLoginTime = DateTime.Now,
                             Phone = registerDto.Phone,
                             LastLoginIp = registerDto.GameContext.Ip,
                             PlatformId = registerDto.GameContext.PlatformId,
                             DeviceId = registerDto.GameContext.PlatformId
+                        };
 
-                        });
+                        await _gameUserContext.AddAsync(gameUserEntity);
+                        _logger.LogInformation("游戏用户创建成功: {GameUserId}", userNew.Id);
+                    }
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-
+                    _logger.LogError(ex, "创建游戏用户失败: {UserId}", userNew.Id);
+                    // 不影响注册流程，继续执行
                 }
 
 
