@@ -21,20 +21,26 @@ namespace Horizon.Orleans.Silo.Services
         private readonly IConfiguration _configuration;
         private readonly IHostEnvironment _environment;
         private readonly string _logsDirectory;
+        private readonly ITaskStatusMonitor? _taskMonitor;
 
         public StartupReportService(
             ILogger<StartupReportService> logger,
             IConfiguration configuration,
-            IHostEnvironment environment)
+            IHostEnvironment environment,
+            ITaskStatusMonitor? taskMonitor = null)
         {
             _logger = logger;
             _configuration = configuration;
             _environment = environment;
             _logsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Logs");
+            _taskMonitor = taskMonitor;
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
+            _taskMonitor?.RegisterTask("StartupReport", "IHostedService");
+            _taskMonitor?.UpdateTaskStatus("StartupReport", TaskRunningStatus.Starting);
+            
             try
             {
                 // 确保日志目录存在
@@ -50,15 +56,19 @@ namespace Horizon.Orleans.Silo.Services
                 await SaveReport(report);
                 
                 _logger.LogInformation("✅ Silo启动报告已生成");
+                _taskMonitor?.UpdateTaskStatus("StartupReport", TaskRunningStatus.Completed);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "生成启动报告时发生错误");
+                _taskMonitor?.UpdateTaskStatus("StartupReport", TaskRunningStatus.Failed, ex.Message);
             }
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
+            _taskMonitor?.UpdateTaskStatus("StartupReport", TaskRunningStatus.Stopped);
+            _taskMonitor?.UnregisterTask("StartupReport");
             return Task.CompletedTask;
         }
 

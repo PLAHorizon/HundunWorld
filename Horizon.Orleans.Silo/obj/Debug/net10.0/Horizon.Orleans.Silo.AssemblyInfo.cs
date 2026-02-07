@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Horizon.Orleans.Silo")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ab8a54244ed516bb701d5f1eb1195dd2a94a873b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+795ce3c6736df860d9b07e8b61d2434c017226dd")]
 [assembly: System.Reflection.AssemblyProductAttribute("Horizon.Orleans.Silo")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Horizon.Orleans.Silo")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

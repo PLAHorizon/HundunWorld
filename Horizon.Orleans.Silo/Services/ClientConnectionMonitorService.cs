@@ -15,25 +15,33 @@ namespace Horizon.Orleans.Silo.Services
         private readonly IClientConnectionTracker _connectionTracker;
         private readonly ILogger<ClientConnectionMonitorService> _logger;
         private readonly ClientConnectionOptions _options;
+        private readonly ITaskStatusMonitor? _taskMonitor;
 
         public ClientConnectionMonitorService(
             IClientConnectionTracker connectionTracker,
             ILogger<ClientConnectionMonitorService> logger,
-            IOptions<ClientConnectionOptions> options)
+            IOptions<ClientConnectionOptions> options,
+            ITaskStatusMonitor? taskMonitor = null)
         {
             _connectionTracker = connectionTracker;
             _logger = logger;
             _options = options.Value;
+            _taskMonitor = taskMonitor;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            // 向任务监控器注册
+            _taskMonitor?.RegisterTask("ClientConnectionMonitor", "BackgroundService");
+            
             if (!_options.EnableDetailedLogging)
             {
                 _logger.LogInformation("客户端连接监控已禁用（生产环境）");
+                _taskMonitor?.UpdateTaskStatus("ClientConnectionMonitor", TaskRunningStatus.Stopped, "已禁用");
                 return;
             }
 
+            _taskMonitor?.UpdateTaskStatus("ClientConnectionMonitor", TaskRunningStatus.Running);
             _logger.LogInformation("客户端连接监控服务已启动，日志间隔: {Interval}", _options.LogInterval);
 
             while (!stoppingToken.IsCancellationRequested)
@@ -51,9 +59,12 @@ namespace Horizon.Orleans.Silo.Services
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "客户端连接监控服务发生错误");
+                    _taskMonitor?.UpdateTaskStatus("ClientConnectionMonitor", TaskRunningStatus.Failed, ex.Message);
                 }
             }
 
+            _taskMonitor?.UpdateTaskStatus("ClientConnectionMonitor", TaskRunningStatus.Stopped);
+            _taskMonitor?.UnregisterTask("ClientConnectionMonitor");
             _logger.LogInformation("客户端连接监控服务已停止");
         }
     }
