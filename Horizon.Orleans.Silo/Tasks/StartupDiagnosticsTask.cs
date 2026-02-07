@@ -57,16 +57,14 @@ namespace Horizon.Orleans.Silo.Tasks
                 
                 _logger.LogInformation($"启动诊断信息已保存: {diagnosticsFile}");
                 _taskMonitor?.UpdateTaskStatus("StartupDiagnostics", TaskRunningStatus.Completed);
+                _taskMonitor?.UnregisterTask("StartupDiagnostics");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "启动诊断任务失败");
                 _taskMonitor?.UpdateTaskStatus("StartupDiagnostics", TaskRunningStatus.Failed, ex.Message);
+                // Keep the task registered in failed state for monitoring purposes
                 throw;
-            }
-            finally
-            {
-                _taskMonitor?.UnregisterTask("StartupDiagnostics");
             }
         }
     }

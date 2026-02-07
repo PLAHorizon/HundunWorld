@@ -55,13 +55,14 @@ namespace Horizon.Orleans.Silo.Services
 
         public void RegisterTask(string taskName, string taskType)
         {
+            var now = DateTime.UtcNow;
             var taskInfo = new TaskStatusInfo
             {
                 TaskName = taskName,
                 TaskType = taskType,
                 Status = TaskRunningStatus.Starting,
-                RegisteredAt = DateTime.UtcNow,
-                LastUpdatedAt = DateTime.UtcNow
+                RegisteredAt = now,
+                LastUpdatedAt = now
             };
 
             _tasks.AddOrUpdate(taskName, taskInfo, (key, existing) => taskInfo);
