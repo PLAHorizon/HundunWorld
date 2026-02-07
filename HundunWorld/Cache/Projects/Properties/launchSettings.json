@@ -1,0 +1,11 @@
+﻿{
+  "profiles": {
+    "BuildScripts": {
+      "commandName": "Executable",
+      "workingDirectory": "C:/Works/hundun-world-flax/HundunWorld",
+      "executablePath": "C:/Program Files (x86)/Flax/Flax_1.11/Binaries/Editor/Win64/$(FlaxConfiguration)/FlaxEditor.exe",
+      "commandLineArgs": "-project \"C:/Works/hundun-world-flax/HundunWorld\"",
+      "nativeDebugging": false
+    }
+  }
+}

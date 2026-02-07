@@ -1,0 +1,405 @@
+using FlaxEngine;
+using Horizon.Game.Message.Enums;
+using Horizon.Game.Message.Network;
+using HundunWorld.Game.Network.Handlers;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+namespace HundunWorld.Game.Network.Sync
+{
+    /// <summary>
+    /// 技能同步处理器
+    /// 实现技能施放的网络同步，包括客户端预测和服务端验证
+    /// 设计参考: client-core-feature-development.md - 8.1.3 技能施放同步
+    /// </summary>
+    public class SkillSyncHandler : Script  // 继承自Script而不是BaseMessageHandler
+    {
+        #region 配置参数
+
+        /// <summary>
+        /// 是否启用客户端技能预测
+        /// </summary>
+        public bool EnableClientPrediction = true;
+
+        /// <summary>
+        /// 技能回滚超时时间(秒)
+        /// </summary>
+        public float SkillRollbackTimeout = 3.0f;
+
+        /// <summary>
+        /// 是否记录技能同步日志
+        /// </summary>
+        public bool EnableSkillSyncLogging = false;
+
+        #endregion
+
+        #region 事件定义
+
+        /// <summary>
+        /// 技能施放成功事件
+        /// </summary>
+        public event Action<SkillCastMessage> SkillCastSuccess;
+
+        /// <summary>
+        /// 技能施放失败事件
+        /// </summary>
+        public event Action<ulong, int, string> SkillCastFailed;
+
+        /// <summary>
+        /// 技能预测事件
+        /// </summary>
+        public event Action<PredictedSkillCast> SkillPredicted;
+
+        /// <summary>
+        /// 技能回滚事件
+        /// </summary>
+        public event Action<PredictedSkillCast> SkillRolledBack;
+
+        #endregion
+
+        #region 预测数据结构
+
+        /// <summary>
+        /// 预测的技能施放数据
+        /// </summary>
+        public class PredictedSkillCast
+        {
+            /// <summary>
+            /// 预测序列号
+            /// </summary>
+            public int SequenceNumber;
+
+            /// <summary>
+            /// 技能ID
+            /// </summary>
+            public int SkillId;
+
+            /// <summary>
+            /// 施法者ID
+            /// </summary>
+            public ulong CasterId;
+
+            /// <summary>
+            /// 目标ID列表
+            /// </summary>
+            public List<ulong> TargetIds = new();
+
+            /// <summary>
+            /// 施法位置
+            /// </summary>
+            public Vector3 CastPosition;
+
+            /// <summary>
+            /// 预测时间戳
+            /// </summary>
+            public float Timestamp;
+
+            /// <summary>
+            /// 是否已验证
+            /// </summary>
+            public bool IsVerified = false;
+
+            /// <summary>
+            /// 是否已回滚
+            /// </summary>
+            public bool IsRolledBack = false;
+        }
+
+        #endregion
+
+        #region 私有字段
+
+        // 预测队列，存储等待服务端验证的技能
+        private readonly Queue<PredictedSkillCast> _predictedSkills = new();
+
+        // 序列号计数器
+        private int _sequenceCounter = 0;
+
+        // 统计数据
+        private int _totalPredictions = 0;
+        private int _successfulPredictions = 0;
+        private int _rolledBackPredictions = 0;
+
+        #endregion
+
+        #region 技能预测
+
+        /// <summary>
+        /// 预测技能施放(客户端立即执行)
+        /// </summary>
+        public PredictedSkillCast PredictSkillCast(int skillId, ulong casterId, List<ulong> targetIds, Vector3 castPosition)
+        {
+            if (!EnableClientPrediction)
+            {
+                return null;
+            }
+
+            var prediction = new PredictedSkillCast
+            {
+                SequenceNumber = ++_sequenceCounter,
+                SkillId = skillId,
+                CasterId = casterId,
+                TargetIds = new List<ulong>(targetIds),
+                CastPosition = castPosition,
+                Timestamp = Time.GameTime
+            };
+
+            _predictedSkills.Enqueue(prediction);
+            _totalPredictions++;
+
+            if (EnableSkillSyncLogging)
+            {
+                Debug.Log($"[SkillSync] 预测技能施放 - Seq:{prediction.SequenceNumber}, Skill:{skillId}, Caster:{casterId}");
+            }
+
+            // 触发预测事件
+            SkillPredicted?.Invoke(prediction);
+
+            return prediction;
+        }
+
+        #endregion
+
+        #region 消息处理
+
+        /// <summary>
+        /// 处理技能施放响应
+        /// </summary>
+        private async Task HandleSkillCastResponse(HorizonMessagePacket message)
+        {
+            if (message.Body is not SkillCastMessage castMsg)
+            {
+                Debug.LogError("[SkillSyncHandler] 技能施放消息体类型不匹配");
+                return;
+            }
+
+            // 验证预测
+            if (EnableClientPrediction && _predictedSkills.Count > 0)
+            {
+                VerifyPrediction(castMsg);
+            }
+
+            // 触发成功事件
+            SkillCastSuccess?.Invoke(castMsg);
+
+            if (EnableSkillSyncLogging)
+            {
+                Debug.Log($"[SkillSync] 服务端确认技能施放 - Skill:{castMsg.SkillId}, Caster:{castMsg.CasterId}, Targets:{castMsg.TargetIds.Count}");
+            }
+
+            await Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// 处理技能冷却更新
+        /// </summary>
+        private async Task HandleSkillCooldownUpdate(HorizonMessagePacket message)
+        {
+            // TODO: 实现技能冷却同步逻辑
+            if (EnableSkillSyncLogging)
+            {
+                Debug.Log($"[SkillSync] 收到技能冷却更新");
+            }
+
+            await Task.CompletedTask;
+        }
+
+        #endregion
+
+        #region 预测验证
+
+        /// <summary>
+        /// 验证预测结果
+        /// </summary>
+        private void VerifyPrediction(SkillCastMessage serverCast)
+        {
+            // 查找匹配的预测
+            PredictedSkillCast matchedPrediction = null;
+
+            foreach (var prediction in _predictedSkills)
+            {
+                if (prediction.SkillId == serverCast.SkillId && 
+                    prediction.CasterId == serverCast.CasterId)
+                {
+                    matchedPrediction = prediction;
+                    break;
+                }
+            }
+
+            if (matchedPrediction != null)
+            {
+                matchedPrediction.IsVerified = true;
+                _successfulPredictions++;
+
+                if (EnableSkillSyncLogging)
+                {
+                    Debug.Log($"[SkillSync] 预测验证成功 - Seq:{matchedPrediction.SequenceNumber}, 成功率:{GetPredictionSuccessRate():F1}%");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 回滚失败的预测
+        /// </summary>
+        public void RollbackPrediction(PredictedSkillCast prediction, string reason = "服务端拒绝")
+        {
+            if (prediction.IsRolledBack)
+            {
+                return;
+            }
+
+            prediction.IsRolledBack = true;
+            _rolledBackPredictions++;
+
+            if (EnableSkillSyncLogging)
+            {
+                Debug.LogWarning($"[SkillSync] 技能回滚 - Seq:{prediction.SequenceNumber}, Skill:{prediction.SkillId}, 原因:{reason}");
+            }
+
+            // 触发回滚事件
+            SkillRolledBack?.Invoke(prediction);
+
+            // 触发失败事件
+            SkillCastFailed?.Invoke(prediction.CasterId, prediction.SkillId, reason);
+        }
+
+        #endregion
+
+        #region 更新与清理
+
+        /// <summary>
+        /// 更新技能同步状态(每帧调用)
+        /// </summary>
+        public override void OnUpdate()
+        {
+            // 清理过期的预测
+            float currentTime = Time.GameTime;
+
+            while (_predictedSkills.Count > 0)
+            {
+                var prediction = _predictedSkills.Peek();
+
+                // 已验证或已回滚，可以移除
+                if (prediction.IsVerified || prediction.IsRolledBack)
+                {
+                    _predictedSkills.Dequeue();
+                    continue;
+                }
+
+                // 超时未验证，执行回滚
+                if (currentTime - prediction.Timestamp > SkillRollbackTimeout)
+                {
+                    RollbackPrediction(prediction, "服务端响应超时");
+                    _predictedSkills.Dequeue();
+                    continue;
+                }
+
+                // 队首元素未超时，后面的也不会超时
+                break;
+            }
+        }
+
+        /// <summary>
+        /// 清理所有预测数据
+        /// </summary>
+        public void ClearPredictions()
+        {
+            _predictedSkills.Clear();
+            _sequenceCounter = 0;
+
+            if (EnableSkillSyncLogging)
+            {
+                Debug.Log("[SkillSync] 已清空所有预测数据");
+            }
+        }
+
+        #endregion
+
+        #region 统计与调试
+
+        /// <summary>
+        /// 获取预测成功率
+        /// </summary>
+        public float GetPredictionSuccessRate()
+        {
+            if (_totalPredictions == 0) return 100f;
+            return (_successfulPredictions / (float)_totalPredictions) * 100f;
+        }
+
+        /// <summary>
+        /// 获取预测回滚率
+        /// </summary>
+        public float GetPredictionRollbackRate()
+        {
+            if (_totalPredictions == 0) return 0f;
+            return (_rolledBackPredictions / (float)_totalPredictions) * 100f;
+        }
+
+        /// <summary>
+        /// 获取待验证预测数量
+        /// </summary>
+        public int GetPendingPredictionCount()
+        {
+            return _predictedSkills.Count;
+        }
+
+        /// <summary>
+        /// 获取统计信息
+        /// </summary>
+        public string GetStatistics()
+        {
+            return $"技能同步统计:\n" +
+                   $"  总预测次数: {_totalPredictions}\n" +
+                   $"  成功预测: {_successfulPredictions}\n" +
+                   $"  回滚次数: {_rolledBackPredictions}\n" +
+                   $"  成功率: {GetPredictionSuccessRate():F1}%\n" +
+                   $"  回滚率: {GetPredictionRollbackRate():F1}%\n" +
+                   $"  待验证: {GetPendingPredictionCount()}";
+        }
+
+        /// <summary>
+        /// 重置统计数据
+        /// </summary>
+        public void ResetStatistics()
+        {
+            _totalPredictions = 0;
+            _successfulPredictions = 0;
+            _rolledBackPredictions = 0;
+
+            if (EnableSkillSyncLogging)
+            {
+                Debug.Log("[SkillSync] 统计数据已重置");
+            }
+        }
+
+        #endregion
+
+        #region 调试可视化
+
+        /// <summary>
+        /// 绘制调试信息
+        /// </summary>
+        public override void OnDebugDraw()
+        {
+            if (!EnableSkillSyncLogging) return;
+
+            var text = GetStatistics();
+            DebugDraw.DrawText(text, new Vector2(10, 200), Color.Yellow, 12);
+
+            // 绘制待验证技能列表
+            float yOffset = 300f;
+            foreach (var prediction in _predictedSkills)
+            {
+                float age = Time.GameTime - prediction.Timestamp;
+                Color color = age > SkillRollbackTimeout * 0.8f ? Color.Red : Color.Green;
+
+                var info = $"Seq:{prediction.SequenceNumber} Skill:{prediction.SkillId} Age:{age:F1}s";
+                DebugDraw.DrawText(info, new Vector2(10, yOffset), color, 10);
+                yOffset += 15f;
+            }
+        }
+
+        #endregion
+    }
+}

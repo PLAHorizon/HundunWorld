@@ -1,0 +1,750 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Horizon.WebApi</name>
+    </assembly>
+    <members>
+        <member name="P:Horizon.WebApi.Configs.ApiGroupAttribute.Name">
+            <summary>
+            分组名
+            </summary>
+        </member>
+        <member name="T:Horizon.WebApi.Controllers.AccountController">
+            <summary>
+            通行证
+            </summary>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.AccountController.LoginAsync(IdentityModel.Client.IDiscoveryCache,System.Net.Http.IHttpClientFactory,Horizon.Share.Dtos.User.LoginDto)">
+            <summary>
+            登录
+            </summary>
+            <param name="discoverCache"></param>
+            <param name="httpClientFactory"></param>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.AccountController.GetRefreshTokenAsync(IdentityModel.Client.IDiscoveryCache,System.Net.Http.IHttpClientFactory,System.String)">
+            <summary>
+            通过refresh-token获取新的令牌
+            </summary>
+            <param name="discoverCache"></param>
+            <param name="httpClientFactory"></param>
+            <param name="refreshToken"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.AccountController.RegisterAsync(IdentityModel.Client.IDiscoveryCache,System.Net.Http.IHttpClientFactory,Horizon.Share.Dtos.User.RegisterDto)">
+            <summary>
+            注册
+            </summary>
+            <param name="discoverCache"></param>
+            <param name="httpClientFactory"></param>
+            <param name="registerDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.AccountController.SignOutAsync">
+            <summary>
+            退出登录
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.AccountController.ChangePasswordAsync(Horizon.Share.Dtos.User.ChangePasswordDto)">
+             <summary>
+             修改密码
+             </summary>
+            <param name="cdto"></param>
+             <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.AccountController.CreatingAsync(System.Int32)">
+            <summary>
+            生成通行证
+            </summary>
+            <param name="count"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.AccountController.CancelCreatingAsync">
+            <summary>
+            取消生成
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.AccountController.CancelPassportAsync">
+            <summary>
+            注销通行证
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="T:Horizon.WebApi.Controllers.v1.Articles.ArticleAuthorController">
+            <summary>
+            文章作者
+            </summary>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleAuthorController.CreateArticleAuthorAsync(Horizon.Share.Dtos.Articles.CreateAuthorDto)">
+            <summary>
+            新增文章作者
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleAuthorController.UpdateArticleAuthorAsync(Horizon.Share.Dtos.Articles.UpdateAuthorDto)">
+            <summary>
+            更新文章作者信息
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleAuthorController.PageArticleAuthorAsync(Horizon.Share.Dtos.Articles.AuthorQueryDto)">
+            <summary>
+            获取文章作者分页
+            </summary>
+            <param name="queryDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleAuthorController.AuthorInfoAsync(System.Guid)">
+            <summary>
+            作者信息
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleAuthorController.PAuthorInfoAsync(System.String)">
+            <summary>
+            通过通行证获取作者信息
+            </summary>
+            <param name="passport"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleAuthorController.DeleteArticleAuthorAsync(System.Collections.Generic.IList{System.Guid})">
+            <summary>
+            删除文章作者
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Horizon.WebApi.Controllers.v1.Articles.ArticleCategoryController">
+            <summary>
+            文章分类
+            </summary>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleCategoryController.CreateArticleCategoryAsync(Horizon.Share.Dtos.Articles.CreateArticleCategoryDto)">
+            <summary>
+            新增文章分类
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleCategoryController.UpdateArticleCategoryAsync(Horizon.Share.Dtos.Articles.UpdateArticleCategoryDto)">
+            <summary>
+            修改文章分类
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleCategoryController.PageArticleCategoryAsync(Horizon.Share.Dtos.Articles.ArticleCategoryQueryDto)">
+            <summary>
+            获取文章分类分页
+            </summary>
+            <param name="queryDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleCategoryController.DeleteArticleCategoryAsync(System.Collections.Generic.List{System.Int32})">
+            <summary>
+            删除文章分类
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Horizon.WebApi.Controllers.v1.Articles.ArticleChapterController">
+            <summary>
+            文章章节
+            </summary>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleChapterController.CreateArticleChaptersAsync(Horizon.Share.Dtos.Articles.CreateArticleChaptersDto)">
+            <summary>
+            新增文章章节
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleChapterController.UpdateArticleChaptersAsync(Horizon.Share.Dtos.Articles.UpdateArticleChaptersDto)">
+            <summary>
+            修改文章章节
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleChapterController.ArticleChapterSupportAsync(Horizon.Share.Dtos.PassportSupportDto)">
+            <summary>
+            点赞文章章节
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleChapterController.PageArticleChaptersAsync(System.Guid)">
+            <summary>
+            获取文章目录
+            </summary>
+            <param name="articleId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleChapterController.ArticleChapterInfoAsync(System.Guid)">
+            <summary>
+            获取文章章节
+            </summary>
+            <param name="chapterId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleChapterController.DeleteArticleCategoryAsync(System.Collections.Generic.IList{System.Guid})">
+            <summary>
+            删除文章章节
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Horizon.WebApi.Controllers.v1.Articles.ArticleCommentController">
+            <summary>
+            文章评论
+            </summary>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleCommentController.CreateArticleCommentAsync(Horizon.Share.Dtos.Articles.CreateArticleCommentDto)">
+            <summary>
+            新增文章评论
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleCommentController.PageArticleCommentAsync(Horizon.Share.Dtos.Articles.ArticleCommentQueryDto)">
+            <summary>
+            获取文章评论分页
+            </summary>
+            <param name="queryDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleCommentController.ArticleCommentSupportAsync(Horizon.Share.Dtos.PassportSupportDto)">
+            <summary>
+            点赞文章评论
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleCommentController.DeleteArticleCommentAsync(System.Collections.Generic.IList{System.Guid})">
+            <summary>
+            删除文章评论
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Horizon.WebApi.Controllers.v1.Articles.ArticleController">
+            <summary>
+            文章
+            </summary>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleController.CreateArticleCategoryAsync(Horizon.Share.Dtos.Articles.CreateArticleDto)">
+            <summary>
+            新增文章
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleController.UpdateArticleCategoryAsync(Horizon.Share.Dtos.Articles.UpdateArticleDto)">
+            <summary>
+            修改文章
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleController.PageArticleCategoryAsync(Horizon.Share.Dtos.Articles.ArticleQueryDto)">
+            <summary>
+            获取文章分类分页
+            </summary>
+            <param name="queryDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleController.ArticleInfoAsync(System.Guid)">
+            <summary>
+            文章概要信息
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleController.DeleteArticleCategoryAsync(System.Collections.Generic.IList{System.Guid})">
+            <summary>
+            删除文章
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Horizon.WebApi.Controllers.v1.Articles.ArticleDescriptionController">
+            <summary>
+            文章注释、赏析
+            </summary>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleDescriptionController.CreateArticleDescriptionAsync(Horizon.Share.Dtos.Articles.CreateArticleDescriptionDto)">
+            <summary>
+            新增文章注释、赏析
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleDescriptionController.PageArticleDescriptionAsync(Horizon.Share.Dtos.Articles.ArticleDescriptionQueryDto)">
+            <summary>
+            获取文章注释、赏析分页
+            </summary>
+            <param name="queryDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleDescriptionController.UpdateArticleDescriptionSupportAsync(Horizon.Share.Dtos.Articles.UpdateArticleDescriptionDto)">
+            <summary>
+            修改文章注释、赏析
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleDescriptionController.ArticleDescriptionSupportAsync(Horizon.Share.Dtos.PassportSupportDto)">
+            <summary>
+            点赞文章注释、赏析
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleDescriptionController.DeleteArticleDescriptionAsync(System.Collections.Generic.IList{System.Guid})">
+            <summary>
+            删除文章分类
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Horizon.WebApi.Controllers.v1.Articles.ArticleReadController">
+            <summary>
+            文章阅读进度
+            </summary>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleReadController.CreateArticleReadAsync(Horizon.Share.Dtos.Articles.CreateArticleReadDto)">
+            <summary>
+            新增阅读进度
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleReadController.UpdateArticleReadAsync(Horizon.Share.Dtos.Articles.UpdateArticleReadDto)">
+            <summary>
+            修改阅读进度
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleReadController.PageArticleReadAsync(Horizon.Share.Dtos.Articles.ArticleReadQueryDto)">
+            <summary>
+            获取阅读进度分页
+            </summary>
+            <param name="queryDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.ArticleReadController.DeleteArticleReadAsync(System.Collections.Generic.IList{System.Guid})">
+            <summary>
+            删除阅读进度
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Horizon.WebApi.Controllers.v1.Articles.UserController">
+            <summary>
+            用户
+            </summary>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.UserController.GetUserAsync">
+            <summary>
+            获取用户简要信息
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.UserController.PageArticleCategoryAsync(Horizon.Share.Dtos.User.UserQueryDto)">
+            <summary>
+            分页 获取用户列表
+            </summary>
+            <param name="queryDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.v1.Articles.UserController.ChangeUserInfoAsync(Horizon.Share.Dtos.User.ChangeUserInfo)">
+            <summary>
+            修改用户信息
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Horizon.WebApi.Controllers.Games.GameConfigController">
+            <summary>
+            游戏通用配置
+            </summary>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.Games.GameConfigController.GameServers(System.Int32)">
+            <summary>
+            获取指定游戏的服务器列表
+            </summary>
+            <param name="gameId"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.Games.GameConfigController.AddGameAsync(Horizon.Share.Dtos.Games.GameServersDto)">
+            <summary>
+            添加游戏
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.Games.GameConfigController.AddServerAsync(Horizon.Share.Dtos.Games.ServerDto)">
+            <summary>
+            添加游戏服
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="T:Horizon.WebApi.Controllers.Games.GameUserRoleController">
+            <summary>
+            游戏用户角色
+            </summary>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.Games.GameUserRoleController.GameRolesAsync(Horizon.Share.Dtos.User.GameRegisterDto)">
+            <summary>
+            获取游戏用户信息
+            </summary>
+            <param name="queryDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.Games.GameUserRoleController.GameRolesAsync(Horizon.Share.Dtos.Games.GameUserQeuryDto)">
+            <summary>
+            获取游戏用户信息
+            </summary>
+            <param name="queryDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.Games.GameUserRoleController.GameRolesAsync(Horizon.Share.Dtos.Games.GameRoleQueryDto)">
+            <summary>
+            获取游戏内的角色
+            </summary>
+            <param name="queryDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.Games.GameUserRoleController.GameUserRolesAsync(Horizon.Share.Dtos.Games.GameUserRoleQueryDto)">
+            <summary>
+            获取游戏用户的角色列表
+            </summary>
+            <param name="queryDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.Games.GameUserRoleController.GameUserRoleAsync(Horizon.Share.Dtos.Games.GameUserRoleQueryDto)">
+            <summary>
+            获取游戏用户的角色
+            </summary>
+            <param name="queryDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.Games.GameUserRoleController.SetGameUserRoleAsync(Horizon.Share.Dtos.Games.GameRoleWorldInfoDto)">
+            <summary>
+            设置游戏用户的角色存档信息
+            </summary>
+            <param name="queryDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.Games.GameUserRoleController.CreateGameUserRolesAsync(Horizon.Share.Dtos.Games.GameRoleDto)">
+            <summary>
+            游戏用户创建角色
+            </summary>
+            <param name="queryDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Controllers.Games.GameUserRoleController.GetRoleEquipmentInfoAsync(Horizon.Share.Dtos.Games.RoleEquipmentInfoQueryDto)">
+            <summary>
+            获取游戏角色指定穿戴的装备信息
+            </summary>
+            <param name="queryDto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.Identity.StartupExtenstion.AddIdentityServer(Microsoft.Extensions.DependencyInjection.IServiceCollection,Microsoft.Extensions.Configuration.IConfiguration,System.String,System.String)">
+            <summary>
+            Identity 认证授权配置
+            </summary>
+            <param name="service"></param>
+            <param name="configuration"></param>
+            <param name="authentication">认证配置字符</param>
+            <param name="authorization">授权配置字符</param>
+            <returns></returns>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportClaimTypes.UserName">
+            <summary>
+            Default: <see cref="F:System.Security.Claims.ClaimTypes.Name"/>
+            </summary>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportClaimTypes.Role">
+            <summary>
+            Default: <see cref="F:System.Security.Claims.ClaimTypes.Role"/>
+            </summary>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportClaimTypes.Email">
+            <summary>
+            Default: <see cref="F:System.Security.Claims.ClaimTypes.Email"/>
+            </summary>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportClaimTypes.EmailVerified">
+            <summary>
+            Default: "email_verified".
+            </summary>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportClaimTypes.PhoneNumber">
+            <summary>
+            Default: "phone_number".
+            </summary>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportClaimTypes.PhoneNumberVerified">
+            <summary>
+            Default: "phone_number_verified".
+            </summary>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportClaimTypes.TenantId">
+            <summary>
+            Default: "tenantid".
+            </summary>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportClaimTypes.EditionId">
+            <summary>
+            Default: "editionid".
+            </summary>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportClaimTypes.ClientId">
+            <summary>
+            Default: "client_id".
+            </summary>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportClaimTypes.PassportId">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="T:Horizon.WebApi.Identity.Users.PassportCurrentUser">
+            <summary>
+            认证通行证基本信息
+            </summary>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportCurrentUser.IsAuthenticated">
+            <summary>
+            是否认证
+            </summary>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportCurrentUser.PassportId">
+            <summary>
+            通行证号
+            </summary>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportCurrentUser.Name">
+            <summary>
+            姓名
+            </summary>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportCurrentUser.AppId">
+            <summary>
+            应用Id
+            </summary>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportCurrentUser.AppType">
+            <summary>
+            应用类型
+            </summary>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportCurrentUser.PassportType">
+            <summary>
+            当前通行证类型
+            </summary>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportCurrentUser.OrganizationId">
+            <summary>
+            组织结构id
+            </summary>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportCurrentUser.Avatar">
+            <summary>
+            头像
+            </summary>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportCurrentUser.Email">
+            <summary>
+            邮箱
+            </summary>
+        </member>
+        <member name="P:Horizon.WebApi.Identity.Users.PassportCurrentUser.Phone">
+            <summary>
+            手机
+            </summary>
+        </member>
+        <member name="T:Horizon.WebApi.OrleansControllerBase">
+            <summary>
+            提供Orleans 客户端访问能力的 Api基类 
+            </summary>
+        </member>
+        <member name="M:Horizon.WebApi.OrleansControllerBase.#ctor">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="M:Horizon.WebApi.OrleansControllerBase.#ctor(Microsoft.Extensions.Options.IOptions{Horizon.Core.Options.AdoNetOptions},Microsoft.Extensions.Options.IOptions{Orleans.Configuration.ClusterOptions},Microsoft.Extensions.Logging.ILogger{Horizon.WebApi.OrleansControllerBase})">
+            <summary>
+            初始化Orleans 客户端访问能力
+            </summary>
+            <param name="options"></param>
+            <param name="clusterOptions"></param>
+            <param name="logger"></param>
+        </member>
+        <member name="M:Horizon.WebApi.OrleansControllerBase.OrleansConnectClient">
+            <summary>
+            Oleans 客户端
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:Horizon.WebApi.OrleansControllerBase.DisposeAsync">
+            <summary>
+            释放客服端对象
+            </summary>
+        </member>
+        <member name="M:Horizon.WebApi.OrleansControllerBase.Finalize">
+            <summary>
+            析构函数
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.GeneratorContainerAttribute">
+            <summary>
+            源生成容器特性
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Core.BaseInjectAttribute.FromType">
+            <summary>
+            注册类型
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Core.BaseInjectAttribute.ToType">
+            <summary>
+            实例类型
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Core.BaseInjectAttribute.Key">
+            <summary>
+            注册额外键
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.AutoInjectForSingletonAttribute">
+            <summary>
+            自动注入为单例。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.AutoInjectForTransientAttribute">
+            <summary>
+            自动注入为瞬时。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.AddSingletonInjectAttribute">
+            <summary>
+            添加单例注入。
+            <para>
+            该标签仅添加在继承<see cref="T:TouchSocket.Core.ManualContainer"/>的容器上时有用。
+            </para>
+            </summary>
+        </member>
+        <member name="M:TouchSocket.Core.AddSingletonInjectAttribute.#ctor(System.Type,System.Type,System.String)">
+            <summary>
+            添加单例注入。
+            <para>
+            该标签仅添加在继承<see cref="T:TouchSocket.Core.ManualContainer"/>的容器上时有用。
+            </para>
+            </summary>
+            <param name="fromType">注册类型</param>
+            <param name="toType">实例类型</param>
+            <param name="key">注册额外键</param>
+        </member>
+        <member name="M:TouchSocket.Core.AddSingletonInjectAttribute.#ctor(System.Type)">
+            <summary>
+            添加单例注入。
+            <para>
+            该标签仅添加在继承<see cref="T:TouchSocket.Core.ManualContainer"/>的容器上时有用。
+            </para>
+            </summary>
+            <param name="type">注册类型与实例类型一致</param>
+        </member>
+        <member name="M:TouchSocket.Core.AddSingletonInjectAttribute.#ctor(System.Type,System.Type)">
+            <summary>
+            添加单例注入。
+            <para>
+            该标签仅添加在继承<see cref="T:TouchSocket.Core.ManualContainer"/>的容器上时有用。
+            </para>
+            </summary>
+            <param name="fromType">注册类型</param>
+            <param name="toType">实例类型</param>
+        </member>
+        <member name="T:TouchSocket.Core.AddTransientInjectAttribute">
+            <summary>
+            添加瞬态注入。
+            <para>
+            该标签仅添加在继承<see cref="T:TouchSocket.Core.ManualContainer"/>的容器上时有用。
+            </para>
+            </summary>
+        </member>
+        <member name="M:TouchSocket.Core.AddTransientInjectAttribute.#ctor(System.Type,System.Type,System.String)">
+            <summary>
+            添加瞬态注入。
+            <para>
+            该标签仅添加在继承<see cref="T:TouchSocket.Core.ManualContainer"/>的容器上时有用。
+            </para>
+            </summary>
+            <param name="fromType">注册类型</param>
+            <param name="toType">实例类型</param>
+            <param name="key">注册额外键</param>
+        </member>
+        <member name="M:TouchSocket.Core.AddTransientInjectAttribute.#ctor(System.Type)">
+            <summary>
+            添加瞬态注入。
+            <para>
+            该标签仅添加在继承<see cref="T:TouchSocket.Core.ManualContainer"/>的容器上时有用。
+            </para>
+            </summary>
+            <param name="type">注册类型与实例类型一致</param>
+        </member>
+        <member name="M:TouchSocket.Core.AddTransientInjectAttribute.#ctor(System.Type,System.Type)">
+            <summary>
+            添加瞬态注入。
+            <para>
+            该标签仅添加在继承<see cref="T:TouchSocket.Core.ManualContainer"/>的容器上时有用。
+            </para>
+            </summary>
+            <param name="fromType">注册类型</param>
+            <param name="toType">实例类型</param>
+        </member>
+        <member name="T:TouchSocket.Core.FastSerializableAttribute">
+            <summary>
+            标识源生成Fast序列化相关的实现。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.GeneratorPackageAttribute">
+            <summary>
+            标识源生成<see cref="T:TouchSocket.Core.IPackage"/>的实现。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.PackageMemberAttribute">
+            <summary>
+            标识源生成<see cref="T:TouchSocket.Core.IPackage"/>成员的特性。
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Core.PackageMemberAttribute.Behavior">
+            <summary>
+            生成行为。一般来说，对于非只读、非重写、且同时拥有get，set（可以私有）访问器的属性，会自动生成。
+            对于字段，均不会自动生成。所以可以使用该设置，来指示生成器的生成行为。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.GeneratorPluginAttribute">
+            <summary>
+            使用源生成插件的调用。
+            </summary>
+        </member>
+        <member name="M:TouchSocket.Core.GeneratorPluginAttribute.#ctor(System.Type)">
+            <summary>
+            使用源生成插件的调用。
+            </summary>
+            <param name="pluginType">插件名称，一般建议使用<see langword="typeof"/>解决。</param>
+        </member>
+    </members>
+</doc>

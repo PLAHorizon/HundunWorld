@@ -1,0 +1,156 @@
+{
+  "MouseSensitivity": 1.0,
+  "GamepadSensitivity": 1.0,
+  "DeadZoneThreshold": 0.1,
+  "MouseSmoothing": 0.1,
+  "InputBufferTime": 0.1,
+  "EnableGamepadSupport": true,
+  "KeyboardMappings": {
+    "MoveForward": {
+      "PrimaryKey": 87,
+      "SecondaryKey": 38,
+      "PrimaryMouseButton": 0,
+      "SecondaryMouseButton": 0
+    },
+    "MoveBackward": {
+      "PrimaryKey": 83,
+      "SecondaryKey": 40,
+      "PrimaryMouseButton": 0,
+      "SecondaryMouseButton": 0
+    },
+    "MoveLeft": {
+      "PrimaryKey": 65,
+      "SecondaryKey": 37,
+      "PrimaryMouseButton": 0,
+      "SecondaryMouseButton": 0
+    },
+    "MoveRight": {
+      "PrimaryKey": 68,
+      "SecondaryKey": 39,
+      "PrimaryMouseButton": 0,
+      "SecondaryMouseButton": 0
+    },
+    "Jump": {
+      "PrimaryKey": 32,
+      "SecondaryKey": 0,
+      "PrimaryMouseButton": 0,
+      "SecondaryMouseButton": 0
+    },
+    "Run": {
+      "PrimaryKey": 16,
+      "SecondaryKey": 0,
+      "PrimaryMouseButton": 0,
+      "SecondaryMouseButton": 0
+    },
+    "Sprint": {
+      "PrimaryKey": 16,
+      "SecondaryKey": 0,
+      "PrimaryMouseButton": 0,
+      "SecondaryMouseButton": 0
+    },
+    "Crouch": {
+      "PrimaryKey": 67,
+      "SecondaryKey": 0,
+      "PrimaryMouseButton": 0,
+      "SecondaryMouseButton": 0
+    },
+    "CameraControl": {
+      "PrimaryKey": 0,
+      "SecondaryKey": 0,
+      "PrimaryMouseButton": 3,
+      "SecondaryMouseButton": 0
+    },
+    "ToggleFollowRotation": {
+      "PrimaryKey": 18,
+      "SecondaryKey": 0,
+      "PrimaryMouseButton": 0,
+      "SecondaryMouseButton": 0
+    },
+    "SwitchCameraMode": {
+      "PrimaryKey": 86,
+      "SecondaryKey": 0,
+      "PrimaryMouseButton": 0,
+      "SecondaryMouseButton": 0
+    },
+    "GroundClick": {
+      "PrimaryKey": 0,
+      "SecondaryKey": 0,
+      "PrimaryMouseButton": 1,
+      "SecondaryMouseButton": 0
+    }
+  },
+  "GamepadMappings": {
+    "MoveHorizontal": {
+      "PrimaryButton": 0,
+      "SecondaryButton": 0,
+      "Axis": 1,
+      "Trigger": 0
+    },
+    "MoveVertical": {
+      "PrimaryButton": 0,
+      "SecondaryButton": 0,
+      "Axis": 2,
+      "Trigger": 0
+    },
+    "CameraHorizontal": {
+      "PrimaryButton": 0,
+      "SecondaryButton": 0,
+      "Axis": 3,
+      "Trigger": 0
+    },
+    "CameraVertical": {
+      "PrimaryButton": 0,
+      "SecondaryButton": 0,
+      "Axis": 4,
+      "Trigger": 0
+    },
+    "Jump": {
+      "PrimaryButton": 13,
+      "SecondaryButton": 0,
+      "Axis": 0,
+      "Trigger": 0
+    },
+    "Run": {
+      "PrimaryButton": 9,
+      "SecondaryButton": 0,
+      "Axis": 0,
+      "Trigger": 0
+    },
+    "Sprint": {
+      "PrimaryButton": 0,
+      "SecondaryButton": 0,
+      "Axis": 0,
+      "Trigger": 5
+    },
+    "Crouch": {
+      "PrimaryButton": 14,
+      "SecondaryButton": 0,
+      "Axis": 0,
+      "Trigger": 0
+    },
+    "CameraControl": {
+      "PrimaryButton": 10,
+      "SecondaryButton": 0,
+      "Axis": 0,
+      "Trigger": 0
+    },
+    "ToggleFollowRotation": {
+      "PrimaryButton": 8,
+      "SecondaryButton": 0,
+      "Axis": 0,
+      "Trigger": 0
+    },
+    "SwitchCameraMode": {
+      "PrimaryButton": 16,
+      "SecondaryButton": 0,
+      "Axis": 0,
+      "Trigger": 0
+    },
+    "GroundClick": {
+      "PrimaryButton": 15,
+      "SecondaryButton": 0,
+      "Axis": 0,
+      "Trigger": 0
+    }
+  }
+}

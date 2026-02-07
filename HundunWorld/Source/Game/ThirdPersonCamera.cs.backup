@@ -1,0 +1,1493 @@
+using FlaxEngine;
+using System;
+
+namespace HundunWorld.Game
+{
+    /// <summary>
+    /// 相机模式枚举
+    /// </summary>
+    public enum CameraMode
+    {
+        Normal,       // 标准模式
+        Combat,       // 战斗模式
+        Cinematic,    // 电影模式
+        FirstPerson,  // 第一人称模式
+        TopDown,      // 俯视模式
+        SideScroller  // 横版卷轴模式
+    }
+
+    /// <summary>
+    /// 相机边界类型枚举
+    /// </summary>
+    public enum CameraBoundsType
+    {
+        Sphere,    // 球形边界
+        Box,       // 盒形边界
+        Custom     // 自定义边界
+    }
+
+    /// <summary>
+    /// 场景区域类型枚举
+    /// </summary>
+    public enum SceneZoneType
+    {
+        Indoor,    // 室内区域
+        Outdoor,   // 室外区域
+        Restricted // 受限区域
+    }
+
+    /// <summary>
+    /// 第三人称相机控制器 - 简洁重构版
+    /// 核心功能：
+    /// 1. 相机在角色后方跟随移动
+    /// 2. 鼠标控制相机围绕角色旋转
+    /// 3. 滚轮控制距离缩放
+    /// </summary>
+    public class ThirdPersonCamera : Script
+    {
+        #region 常量定义
+        
+        // 检查间隔常量
+        private const float COLLISION_CHECK_INTERVAL = 0.02f;  // 碰撞检测间隔（秒）
+        private const float GROUND_CHECK_INTERVAL = 0.05f;     // 地面检测间隔（秒）
+        private const float BOUNDS_CHECK_INTERVAL = 0.1f;       // 边界检测间隔（秒）
+        private const float ALIGNMENT_CHECK_INTERVAL = 0.05f;   // 对齐检测间隔（秒）
+        private const float OCCLUSION_CHECK_INTERVAL = 0.1f;    // 遮挡检测间隔（秒）
+        private const float ENVIRONMENT_CHECK_INTERVAL = 0.2f;  // 环境检测间隔（秒）
+        
+        #endregion
+
+        #region 公共配置参数
+
+        [Header("动态FOV设置")]
+        [Tooltip("基础视野角度")]
+        public float BaseFOV = 60f;
+
+        [Tooltip("FOV变化速度")]
+        public float FOVTransitionSpeed = 5f;
+
+        [Tooltip("基于距离的FOV调整")]
+        public bool EnableDistanceBasedFOV = true;
+
+        [Tooltip("最小距离时的FOV")]
+        public float MinDistanceFOV = 70f;
+
+        [Tooltip("最大距离时的FOV")]
+        public float MaxDistanceFOV = 50f;
+
+        [Tooltip("基于速度的FOV调整")]
+        public bool EnableSpeedBasedFOV = true;
+
+        [Tooltip("速度FOV影响系数")]
+        public float SpeedFOVFactor = 0.5f;
+
+        [Tooltip("最大速度FOV增量")]
+        public float MaxSpeedFOVIncrease = 15f;
+
+        [Header("目标设置")]
+        [Tooltip("相机跟随的目标Actor")]
+        public Actor Target;
+
+        [Tooltip("相机聚焦点相对于目标的位置偏移")]
+        public Vector3 FocusOffset = new Vector3(0, 1.8f, 0);
+
+        [Header("距离控制")]
+        public float Distance = 15.0f;
+        public float MinDistance = 5.0f;
+        public float MaxDistance = 30.0f;
+
+        [Header("角度控制")]
+        public float Pitch = 30.0f;      // 俯仰角（向下30度）
+        public float MinPitch = -80.0f;
+        public float MaxPitch = 80.0f;
+        public float Yaw = 0.0f;         // 水平角度
+
+        [Header("控制灵敏度")]
+        public float RotationSpeed = 0.2f;
+        public float ZoomSpeed = 5.0f;
+
+        [Header("平滑参数（暂未实现）")]
+        public bool EnableSmoothFollow = false;
+        public float CameraSmoothing = 0.05f;
+        public float RotationSmoothing = 0.05f;
+
+        [Header("碰撞检测")]
+        [Tooltip("启用相机碰撞检测")]
+        public bool EnableCameraCollision = false;
+
+        [Tooltip("碰撞检测射线数量")]
+        [Range(3, 15)]
+        public int CollisionRayCount = 5;
+
+        [Tooltip("碰撞检测层")]
+        public LayersMask CollisionLayers = LayersMask.Default;
+
+        [Tooltip("碰撞球体半径")]
+        public float CollisionRadius = 0.3f;
+
+        [Tooltip("碰撞偏移量")]
+        public float CollisionOffset = 0.2f;
+
+        [Tooltip("碰撞平滑过渡速度")]
+        public float CollisionSmoothSpeed = 10f;
+
+        [Tooltip("碰撞检测最大距离")]
+        public float CollisionMaxDistance = 50f;
+
+        [Header("智能对齐与自动旋转")]
+        [Tooltip("启用智能对齐")]
+        public bool EnableSmartAlignment = true;
+
+        [Tooltip("启用自动旋转跟随")]
+        public bool EnableAutoRotation = true;
+
+        [Tooltip("自动旋转速度")]
+        public float AutoRotationSpeed = 3.0f;
+
+        [Tooltip("自动旋转触发角度（度）")]
+        public float AutoRotationTriggerAngle = 30.0f;
+
+        [Tooltip("自动旋转平滑时间")]
+        public float AutoRotationSmoothTime = 0.2f;
+
+        [Tooltip("目标移动方向检测阈值")]
+        public float MovementDirectionThreshold = 0.1f;
+
+        [Tooltip("相机对齐平滑速度")]
+        public float AlignmentSmoothSpeed = 5.0f;
+
+        [Header("地面穿透防护")]
+        [Tooltip("启用地面穿透防护")]
+        public bool EnableGroundPenetrationProtection = false;
+
+        [Tooltip("地面检测层")]
+        public LayersMask GroundLayers = LayersMask.Default;
+
+        [Tooltip("地面检测射线长度")]
+        public float GroundCheckDistance = 5.0f;
+
+        [Tooltip("地面最小高度（相机与地面的最小距离）")]
+        public float MinGroundHeight = 0.5f;
+
+        [Tooltip("地面高度调整平滑速度")]
+        public float GroundHeightAdjustSpeed = 10.0f;
+
+        [Tooltip("启用地面高度预测")]
+        public bool EnableGroundHeightPrediction = true;
+
+        [Tooltip("地面高度预测距离")]
+        public float GroundPredictionDistance = 2.0f;
+
+        #endregion
+
+        #region 相机边界限制与场景适配
+        [Header("相机边界限制与场景适配")]
+        [Tooltip("是否启用相机边界限制")]
+        public bool EnableCameraBounds = false;
+
+        [Tooltip("相机边界类型（球形/盒形/自定义）")]
+        public CameraBoundsType BoundsType = CameraBoundsType.Sphere;
+
+        [Tooltip("球形边界半径")]
+        public float SphereBoundsRadius = 50f;
+
+        [Tooltip("盒形边界大小")]
+        public Vector3 BoxBoundsSize = new Vector3(100f, 50f, 100f);
+
+        [Tooltip("盒形边界中心偏移")]
+        public Vector3 BoxBoundsCenter = Vector3.Zero;
+
+        [Tooltip("边界限制强度（0-1）")]
+        [Range(0f, 1f)]
+        public float BoundsLimitStrength = 0.8f;
+
+        [Tooltip("边界接近时开始限制的距离")]
+        public float BoundsApproachDistance = 5f;
+
+        [Tooltip("边界限制平滑度")]
+        public float BoundsSmoothing = 5f;
+
+        [Tooltip("是否启用场景适配")]
+        public bool EnableSceneAdaptation = false;
+
+        [Tooltip("场景适配区域标签")]
+        public string[] SceneAdaptationZones = { "Indoor", "Outdoor", "Restricted" };
+
+        [Tooltip("室内区域相机距离限制")]
+        public Vector2 IndoorDistanceRange = new Vector2(1f, 5f);
+
+        [Tooltip("室外区域相机距离限制")]
+        public Vector2 OutdoorDistanceRange = new Vector2(2f, 15f);
+
+        [Tooltip("受限区域相机距离限制")]
+        public Vector2 RestrictedDistanceRange = new Vector2(3f, 8f);
+
+        [Tooltip("区域切换过渡时间")]
+        public float ZoneTransitionTime = 1f;
+
+        [Tooltip("是否启用动态遮挡检测")]
+        public bool EnableDynamicOcclusion = false;
+
+        [Tooltip("遮挡检测层")]
+        public LayersMask OcclusionLayer = LayersMask.Default;
+
+        [Tooltip("遮挡检测频率")]
+        public float OcclusionCheckFrequency = 0.2f;
+
+        [Tooltip("遮挡时相机推进速度")]
+        public float OcclusionAdjustSpeed = 10f;
+
+        [Tooltip("遮挡时最小相机距离")]
+        public float MinOcclusionDistance = 0.5f;
+
+        [Tooltip("是否启用智能位置选择")]
+        public bool EnableSmartPositioning = false;
+
+        [Tooltip("智能位置采样点数量")]
+        public int SmartPositionSampleCount = 8;
+
+        [Tooltip("智能位置采样半径")]
+        public float SmartPositionSampleRadius = 2f;
+
+        [Tooltip("最佳位置评分权重（遮挡/视角/距离）")]
+        public Vector3 BestPositionWeights = new Vector3(0.5f, 0.3f, 0.2f);
+
+        [Tooltip("是否启用视角优化")]
+        public bool EnableViewOptimization = false;
+
+        [Tooltip("最佳视角垂直角度范围")]
+        public Vector2 OptimalViewAngleRange = new Vector2(15f, 45f);
+
+        [Tooltip("视角优化调整速度")]
+        public float ViewOptimizationSpeed = 3f;
+
+        [Tooltip("是否启用目标跟踪预测")]
+        public bool EnableTargetPrediction = false;
+
+        [Tooltip("目标预测时间")]
+        public float TargetPredictionTime = 0.2f;
+
+        [Tooltip("预测权重")]
+        public float PredictionWeight = 0.3f;
+
+        [Tooltip("是否启用环境感知")]
+        public bool EnableEnvironmentAwareness = false;
+
+        [Tooltip("环境感知检测距离")]
+        public float EnvironmentAwarenessDistance = 10f;
+
+        [Tooltip("环境感知层")]
+        public LayersMask EnvironmentAwarenessLayer = LayersMask.Default;
+
+        [Tooltip("环境适应调整强度")]
+        public float EnvironmentAdaptationStrength = 0.5f;
+
+        [Header("性能优化")]
+        [Tooltip("是否启用性能优化")]
+        public bool EnablePerformanceOptimization = true;
+
+        [Tooltip("是否启用跳帧")]
+        public bool EnableFrameSkipping = true;
+
+        [Tooltip("跳帧阈值（FPS低于此值时启用跳帧）")]
+        public float FrameSkipThreshold = 30f;
+
+        [Tooltip("是否启用LOD系统")]
+        public bool EnableRaycastLOD = true;
+
+        [Tooltip("远距离阈值")]
+        public float FarDistanceThreshold = 20f;
+
+        [Tooltip("远距离碰撞射线数量")]
+        public int FarDistanceCollisionRayCount = 3;
+
+        [Tooltip("是否启用位置缓存")]
+        public bool EnablePositionCaching = true;
+
+        [Tooltip("是否启用旋转缓存")]
+        public bool EnableRotationCaching = true;
+
+        [Tooltip("是否启用碰撞检测缓存")]
+        public bool EnableCollisionCaching = true;
+
+        #endregion
+
+        #region 私有字段
+        // 相机组件引用
+        private Camera _camera;
+        private InputManager _inputManager;
+        private float _lastDebugTime = 0f;
+
+        // 相机模式相关字段
+        private CameraMode CurrentMode = CameraMode.Normal;
+        private float DefaultDistance = 15.0f;
+        private float DefaultVerticalAngle = 30.0f;
+        private float DefaultHorizontalAngle = 0.0f;
+        private float VerticalAngle = 30.0f;
+        private float HorizontalAngle = 0.0f;
+        private float _shakeIntensity = 0.0f;
+        private float _shakeDuration = 0.0f;
+        private Vector3 _currentShakeOffset = Vector3.Zero;
+        private float _lastPositionUpdateTime = 0.0f;
+        private float _lastRotationUpdateTime = 0.0f;
+        private float _lastTargetPredictionTime = 0.0f;
+
+        // 相机抖动相关字段
+        private float _shakeTime = 0.0f;
+        private float _shakeNoiseOffset = 0.0f;
+        private Vector3 _shakeOffset = Vector3.Zero;
+        private Vector3 _shakeRotation = Vector3.Zero;
+        private float _shakeFOV = 0.0f;
+        private float _currentShakeIntensity = 0.0f;
+
+        // 手柄输入相关字段
+        private Vector2 _lastGamepadRightStick = Vector2.Zero;
+        private Vector2 _gamepadRightStickVelocity = Vector2.Zero;
+        private Vector2 _lastGamepadLeftStick = Vector2.Zero;
+        private Vector2 _gamepadLeftStickVelocity = Vector2.Zero;
+        private float _lastGamepadRightTrigger = 0.0f;
+        private float _lastGamepadLeftTrigger = 0.0f;
+        private bool _lastGamepadRightShoulder = false;
+        private bool _lastGamepadLeftShoulder = false;
+
+        // 碰撞检测相关字段
+        private float _currentCollisionDistance = 0.0f;
+        private float _targetCollisionDistance = 0.0f;
+        private bool _isColliding = false;
+        private float _lastCollisionCheckTime = 0.0f;
+        private Vector3[] _collisionRayDirections;
+        private float _lastCollisionCheckDistance = 0.0f;
+
+        // 性能优化相关字段
+        private int _currentLODLevel = 0;
+        private Vector3 _lastCameraPosition = Vector3.Zero;
+        private Quaternion _lastCameraRotation = Quaternion.Identity;
+        private float _lastUpdateTime = 0.0f;
+        private int _frameSkipCounter = 0;
+        private bool _isHighPerformanceMode = false;
+
+        // 智能对齐与自动旋转相关字段
+        private Vector3 _targetMovementDirection = Vector3.Forward;
+        private Vector3 _lastTargetPosition = Vector3.Zero;
+        private float _targetYaw = 0.0f;
+        private float _autoRotationVelocity = 0.0f;
+        private bool _isAutoRotating = false;
+        private float _lastAlignmentCheckTime = 0.0f;
+
+        // 地面穿透防护相关字段
+        private float _currentGroundHeight = float.MaxValue;
+        private float _targetGroundHeight = float.MaxValue;
+        private bool _isNearGround = false;
+        private float _lastGroundCheckTime = 0.0f;
+
+        // 相机边界限制相关字段
+        private Vector3 _boundsCenter = Vector3.Zero;
+        private float _currentBoundsLimitStrength = 0.0f;
+        private float _lastBoundsCheckTime = 0.0f;
+        private bool _isNearBounds = false;
+        private Vector3 _boundsConstrainedPosition = Vector3.Zero;
+
+        // 场景适配相关字段
+        private SceneZoneType _currentZoneType = SceneZoneType.Outdoor;
+        private SceneZoneType _targetZoneType = SceneZoneType.Outdoor;
+        private float _zoneTransitionStartTime = 0.0f;
+        private float _zoneTransitionDuration = 0.0f;
+        private bool _isTransitioningZones = false;
+        private Float2 _currentDistanceRange = new Float2(5.0f, 30.0f);
+        private Float2 _targetDistanceRange = new Float2(5.0f, 30.0f);
+        private float _lastOcclusionCheckTime = 0.0f;
+        private bool _isOccluded = false;
+        private float _occlusionDistance = 0.0f;
+        private Vector3 _bestCameraPosition = Vector3.Zero;
+        private float _bestPositionScore = 0.0f;
+        private Vector3 _targetPredictedPosition = Vector3.Zero;
+        private float _environmentAwarenessValue = 0.0f;
+        private float _lastEnvironmentCheckTime = 0.0f;
+        private float _lastPositionUpdateTime = 0.0f;
+        private float _lastRotationUpdateTime = 0.0f;
+        private float _targetSpeed = 0.0f;
+        private float _lastSpeedCheckTime = 0.0f;
+        private float _lastTargetPredictionTime = 0.0f;
+        private float _currentFOV = 60.0f;
+
+        // 边界检查：确保距离在合法范围内
+        if (Distance < MinDistance || Distance > MaxDistance)
+        {
+            // 将Distance限制在合法范围内，而不是重置为默认值
+            Distance = Mathf.Clamp(Distance, MinDistance, MaxDistance);
+        }
+        
+        _currentCollisionDistance = Distance;
+        _targetCollisionDistance = Distance;
+        _isColliding = false;
+        _lastCollisionCheckTime = Time.GameTime;
+
+        // 初始化智能对齐与自动旋转系统
+        _targetMovementDirection = Vector3.Forward;
+        _targetYaw = Yaw;
+        _autoRotationVelocity = 0f;
+        _isAutoRotating = false;
+        _lastAlignmentCheckTime = Time.GameTime;
+
+        // 初始化地面穿透防护系统
+        _currentGroundHeight = float.MaxValue;
+        _targetGroundHeight = float.MaxValue;
+        _isNearGround = false;
+        _lastGroundCheckTime = Time.GameTime;
+
+        // 初始化相机抖动系统
+        _currentShakeIntensity = 0f;
+        _shakeTime = 0f;
+        _shakeOffset = Vector3.Zero;
+        _shakeRotation = Vector3.Zero;
+        _shakeFOV = 0f;
+        _shakeNoiseOffset = 0f;
+
+        // 初始化手柄输入系统
+        _lastGamepadRightStick = Vector2.Zero;
+        _gamepadRightStickVelocity = Vector2.Zero;
+        _lastGamepadLeftStick = Vector2.Zero;
+        _gamepadLeftStickVelocity = Vector2.Zero;
+        _lastGamepadRightTrigger = 0f;
+        _lastGamepadLeftTrigger = 0f;
+        _lastGamepadRightShoulder = false;
+        _lastGamepadLeftShoulder = false;
+
+        // 初始化性能优化系统
+        _lastCameraPosition = Actor.Position;
+        _lastCameraRotation = Actor.Orientation;
+        _lastTargetPosition = Target != null ? Target.Position : Vector3.Zero;
+        _lastCollisionCheckDistance = Distance;
+        _lastUpdateTime = Time.GameTime;
+        _frameSkipCounter = 0;
+        _isHighPerformanceMode = Time.DrawFPS > FrameSkipThreshold;
+        _currentLODLevel = 0;
+
+        // 初始化相机边界限制系统
+        _boundsCenter = Target != null ? Target.Position + BoxBoundsCenter : Vector3.Zero;
+        _currentBoundsLimitStrength = 0f;
+        _lastBoundsCheckTime = Time.GameTime;
+        _isNearBounds = false;
+        _boundsConstrainedPosition = Vector3.Zero;
+
+        // 初始化场景适配系统
+        _currentZoneType = SceneZoneType.Outdoor;
+        _targetZoneType = SceneZoneType.Outdoor;
+        _zoneTransitionStartTime = 0f;
+        _zoneTransitionDuration = ZoneTransitionTime;
+        _isTransitioningZones = false;
+        _currentDistanceRange = OutdoorDistanceRange;
+        _targetDistanceRange = OutdoorDistanceRange;
+        _lastOcclusionCheckTime = Time.GameTime;
+        _isOccluded = false;
+        _occlusionDistance = Distance;
+        _bestCameraPosition = Vector3.Zero;
+        _bestPositionScore = 0f;
+        _targetPredictedPosition = Target != null ? Target.Position : Vector3.Zero;
+        _environmentAwarenessValue = 0f;
+        _lastEnvironmentCheckTime = Time.GameTime;
+
+        // 初始化碰撞检测射线方向数组
+        InitializeCollisionRays();
+        }
+
+        public override void OnUpdate()
+        {
+            if (Target == null || _camera == null) return;
+
+            // 1. 处理输入
+            HandleInput();
+
+            // 2. 计算聚焦点（角色头部位置）
+            Vector3 focusPoint = Target.Position + FocusOffset;
+
+            // 3. 执行碰撞检测
+            UpdateCameraCollision(focusPoint);
+
+            // 4. 根据Pitch和Yaw计算相机位置（直接使用Distance，不使用碰撞检测）
+            float effectiveDistance = Distance;
+            
+            // 确保距离在合法范围内（5.0f-30.0f）
+            effectiveDistance = Mathf.Clamp(effectiveDistance, MinDistance, MaxDistance);
+            
+            Vector3 cameraPosition = CalculateCameraPosition(focusPoint, Pitch, Yaw, effectiveDistance);
+
+            // 5. 更新相机位置
+            Actor.Position = cameraPosition;
+
+            // 6. 更新相机朝向
+            Actor.Orientation = Quaternion.LookRotation(Vector3.Normalize(focusPoint - Actor.Position), Vector3.Up);
+            
+            // 7. 更新动态FOV系统
+            if (EnableDynamicFOV)
+                UpdateDynamicFOV();
+                
+            // 8. 更新地面穿透防护系统
+            if (EnableGroundPenetrationProtection)
+                UpdateGroundPenetrationProtection();
+                
+            // 9. 更新相机边界限制系统
+            if (EnableCameraBounds)
+                UpdateCameraBounds();
+                
+            // 10. 更新场景适配系统
+            if (EnableSceneAdaptation)
+                UpdateSceneAdaptation();
+                
+            // 11. 更新性能优化系统
+            if (EnablePerformanceOptimization)
+                UpdatePerformanceOptimization();
+        }
+
+        // 7. 更新地面穿透防护系统
+        private void UpdateGroundPenetrationProtection()
+        {
+            if (!EnableGroundPenetrationProtection)
+                return;
+
+            // 定期进行地面检测
+            if (Time.GameTime - _lastGroundCheckTime < GROUND_CHECK_INTERVAL)
+                return;
+
+            _lastGroundCheckTime = Time.GameTime;
+
+            // 计算相机当前位置
+            Vector3 cameraPosition = Actor.Position;
+
+            // 向下发射射线检测地面
+            if (Physics.RayCast(cameraPosition, Vector3.Down, out RayCastHit groundHit, GroundCheckDistance, GroundLayers))
+            {
+                // 更新当前地面高度
+                _currentGroundHeight = groundHit.Point.Y;
+                _isNearGround = true;
+
+                // 计算目标地面高度（相机与地面的最小距离）
+                _targetGroundHeight = _currentGroundHeight + MinGroundHeight;
+
+                // 如果启用地面高度预测
+                if (EnableGroundHeightPrediction)
+                {
+                    // 预测前方的地面高度
+                    Vector3 forwardDirection = new Vector3(Mathf.Sin(Yaw * Mathf.DegreesToRadians), 0, -Mathf.Cos(Yaw * Mathf.DegreesToRadians));
+                    Vector3 predictionPosition = cameraPosition + forwardDirection * GroundPredictionDistance;
+
+                    if (Physics.RayCast(predictionPosition, Vector3.Down, out RayCastHit predictionHit, GroundCheckDistance, GroundLayers))
+                    {
+                        // 结合预测高度调整目标高度
+                        _targetGroundHeight = Mathf.Max(_targetGroundHeight, predictionHit.Point.Y + MinGroundHeight);
+                    }
+                }
+
+                // 如果相机位置低于目标高度，平滑调整
+                if (cameraPosition.Y < _targetGroundHeight)
+                {
+                    float newY = Mathf.Lerp(cameraPosition.Y, _targetGroundHeight, Time.DeltaTime * GroundHeightAdjustSpeed);
+                    Actor.Position = new Vector3(cameraPosition.X, newY, cameraPosition.Z);
+                }
+            }
+            else
+            {
+                _isNearGround = false;
+                _currentGroundHeight = float.MaxValue;
+                _targetGroundHeight = float.MaxValue;
+            }
+        }
+
+        /// <summary>
+        /// 检查相机是否会穿透地面
+        /// </summary>
+        private bool WillPenetrateGround(Vector3 position)
+        {
+            if (!EnableGroundPenetrationProtection)
+                return false;
+
+            // 检查指定位置是否会穿透地面
+            return Physics.RayCast(position, Vector3.Down, MinGroundHeight, GroundLayers);
+        }
+
+        /// <summary>
+        /// 获取安全的相机位置（避免地面穿透）
+        /// </summary>
+        private Vector3 GetSafeCameraPosition(Vector3 desiredPosition)
+        {
+            if (!EnableGroundPenetrationProtection)
+                return desiredPosition;
+
+            // 检查期望位置是否会穿透地面
+            if (WillPenetrateGround(desiredPosition))
+            {
+                // 向上调整位置直到安全
+                Vector3 safePosition = desiredPosition;
+                while (WillPenetrateGround(safePosition) && safePosition.Y < desiredPosition.Y + GroundCheckDistance)
+                {
+                    safePosition.Y += 0.1f;
+                }
+                return safePosition;
+            }
+
+            return desiredPosition;
+        }
+
+        [Header("相机抖动系统")]
+        [Tooltip("启用相机抖动")]
+        public bool EnableCameraShake = true;
+
+        [Tooltip("抖动强度")]
+        public float ShakeIntensity = 0.1f;
+
+        [Tooltip("抖动衰减速度")]
+        public float ShakeDecaySpeed = 2.0f;
+
+        [Tooltip("抖动频率")]
+        public float ShakeFrequency = 20.0f;
+
+        [Tooltip("抖动噪声缩放")]
+        public float ShakeNoiseScale = 0.1f;
+
+        [Tooltip("位置抖动权重")]
+        [Range(0, 1)]
+        public float PositionShakeWeight = 0.7f;
+
+        [Tooltip("旋转抖动权重")]
+        [Range(0, 1)]
+        public float RotationShakeWeight = 0.3f;
+
+        [Tooltip("FOV抖动权重")]
+        [Range(0, 1)]
+        public float FOVShakeWeight = 0.2f;
+
+        /// <summary>
+        /// 更新动态FOV系统
+        /// </summary>
+        private void UpdateDynamicFOV()
+        {
+            if (_camera == null)
+                return;
+
+            // 计算目标FOV
+            float targetFOV = BaseFOV;
+
+            // 基于距离的FOV调整
+            if (EnableDistanceBasedFOV)
+            {
+                float distanceRatio = Mathf.InverseLerp(MinDistance, MaxDistance, Distance);
+                float distanceFOV = Mathf.Lerp(MaxDistanceFOV, MinDistanceFOV, distanceRatio);
+                targetFOV = distanceFOV;
+            }
+
+            // 基于速度的FOV调整
+            if (EnableSpeedBasedFOV && Target != null)
+            {
+                // 定期检查目标速度
+                if (Time.GameTime - _lastSpeedCheckTime > SPEED_CHECK_INTERVAL)
+                {
+                    Vector3 currentPosition = Target.Position;
+                    float distance = Vector3.Distance(currentPosition, _lastTargetPosition);
+                    _targetSpeed = distance / (Time.GameTime - _lastSpeedCheckTime);
+                    _lastTargetPosition = currentPosition;
+                    _lastSpeedCheckTime = Time.GameTime;
+                }
+
+                // 根据速度调整FOV
+                float speedFOVIncrease = Mathf.Min(_targetSpeed * SpeedFOVFactor, MaxSpeedFOVIncrease);
+                targetFOV += speedFOVIncrease;
+            }
+
+            // 平滑过渡到目标FOV
+            _currentFOV = Mathf.Lerp(_currentFOV, targetFOV, Time.DeltaTime * FOVTransitionSpeed);
+            _camera.FieldOfView = _currentFOV;
+        }
+
+        /// <summary>
+        /// 更新相机边界限制系统
+        /// </summary>
+        private void UpdateCameraBounds()
+        {
+            if (!EnableCameraBounds || Target == null)
+                return;
+
+            // 定期进行边界检测
+            if (Time.GameTime - _lastBoundsCheckTime < BOUNDS_CHECK_INTERVAL)
+                return;
+
+            _lastBoundsCheckTime = Time.GameTime;
+
+            // 更新边界中心
+            _boundsCenter = Target.Position + BoxBoundsCenter;
+
+            // 获取当前相机位置
+            Vector3 cameraPosition = Actor.Position;
+            bool isOutOfBounds = false;
+            Vector3 constrainedPosition = cameraPosition;
+
+            // 根据边界类型进行限制
+            switch (BoundsType)
+            {
+                case CameraBoundsType.Sphere:
+                    // 球形边界检测
+                    float distanceFromCenter = Vector3.Distance(cameraPosition, _boundsCenter);
+                    if (distanceFromCenter > SphereBoundsRadius)
+                    {
+                        // 计算方向向量
+                        Vector3 direction = Vector3.Normalize(cameraPosition - _boundsCenter);
+                        
+                        // 计算约束位置
+                        constrainedPosition = _boundsCenter + direction * SphereBoundsRadius;
+                        isOutOfBounds = true;
+                    }
+                    break;
+
+                case CameraBoundsType.Box:
+                    // 盒形边界检测
+                    Vector3 localPosition = cameraPosition - _boundsCenter;
+                    Vector3 halfBoxSize = BoxBoundsSize * 0.5f;
+                    
+                    // 检查每个轴
+                    bool needsConstrain = false;
+                    if (Mathf.Abs(localPosition.X) > halfBoxSize.X)
+                    {
+                        localPosition.X = Mathf.Sign(localPosition.X) * halfBoxSize.X;
+                        needsConstrain = true;
+                    }
+                    if (Mathf.Abs(localPosition.Y) > halfBoxSize.Y)
+                    {
+                        localPosition.Y = Mathf.Sign(localPosition.Y) * halfBoxSize.Y;
+                        needsConstrain = true;
+                    }
+                    if (Mathf.Abs(localPosition.Z) > halfBoxSize.Z)
+                    {
+                        localPosition.Z = Mathf.Sign(localPosition.Z) * halfBoxSize.Z;
+                        needsConstrain = true;
+                    }
+                    
+                    if (needsConstrain)
+                    {
+                        constrainedPosition = _boundsCenter + localPosition;
+                        isOutOfBounds = true;
+                    }
+                    break;
+
+                case CameraBoundsType.Custom:
+                    // 自定义边界检测（这里可以实现更复杂的边界逻辑）
+                    // 暂时使用球形边界作为默认实现
+                    float customDistance = Vector3.Distance(cameraPosition, _boundsCenter);
+                    if (customDistance > SphereBoundsRadius)
+                    {
+                        Vector3 direction = Vector3.Normalize(cameraPosition - _boundsCenter);
+                        constrainedPosition = _boundsCenter + direction * SphereBoundsRadius;
+                        isOutOfBounds = true;
+                    }
+                    break;
+            }
+
+            // 更新边界状态
+            _isNearBounds = isOutOfBounds;
+            _boundsConstrainedPosition = constrainedPosition;
+
+            // 如果相机超出边界，平滑移回边界内
+            if (isOutOfBounds)
+            {
+                // 计算边界限制强度（接近边界时逐渐增强）
+                float distanceToBoundary = Vector3.Distance(cameraPosition, constrainedPosition);
+                float limitStrength = Mathf.Clamp(1.0f - (distanceToBoundary / BoundsApproachDistance), 0.0f, 1.0f);
+                limitStrength = Mathf.Pow(limitStrength, 2.0f); // 使用平方使过渡更平滑
+                limitStrength *= BoundsLimitStrength;
+
+                // 应用边界限制
+                if (limitStrength > 0.01f)
+                {
+                    Vector3 newPosition = Vector3.Lerp(cameraPosition, constrainedPosition, limitStrength * Time.DeltaTime * BoundsSmoothing);
+                    Actor.Position = newPosition;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 更新场景适配系统
+        /// </summary>
+        private void UpdateSceneAdaptation()
+        {
+            if (!EnableSceneAdaptation || Target == null)
+                return;
+
+            // 检测当前区域类型
+            DetectCurrentZoneType();
+
+            // 处理区域过渡
+            HandleZoneTransition();
+
+            // 更新动态遮挡检测
+            UpdateDynamicOcclusion();
+
+            // 更新智能位置选择
+            UpdateSmartPositioning();
+
+            // 更新视角优化
+            UpdateViewOptimization();
+
+            // 更新目标跟踪预测
+            UpdateTargetPrediction();
+
+            // 更新环境感知
+            UpdateEnvironmentAwareness();
+        }
+
+        /// <summary>
+        /// 检测当前区域类型
+        /// </summary>
+        private void DetectCurrentZoneType()
+        {
+            // 这里可以实现区域检测逻辑
+            // 暂时保持当前区域类型不变
+            _targetZoneType = _currentZoneType;
+        }
+
+        /// <summary>
+        /// 处理区域过渡
+        /// </summary>
+        private void HandleZoneTransition()
+        {
+            // 如果目标区域与当前区域相同，直接返回
+            if (_targetZoneType == _currentZoneType)
+                return;
+
+            // 开始区域过渡
+            if (!_isTransitioningZones)
+            {
+                _isTransitioningZones = true;
+                _zoneTransitionStartTime = Time.GameTime;
+                _zoneTransitionDuration = ZoneTransitionTime;
+
+                // 根据目标区域设置目标距离范围
+                switch (_targetZoneType)
+                {
+                    case SceneZoneType.Indoor:
+                        _targetDistanceRange = IndoorDistanceRange;
+                        break;
+                    case SceneZoneType.Outdoor:
+                        _targetDistanceRange = OutdoorDistanceRange;
+                        break;
+                    case SceneZoneType.Restricted:
+                        _targetDistanceRange = RestrictedDistanceRange;
+                        break;
+                }
+            }
+
+            // 更新过渡进度
+            float transitionProgress = (Time.GameTime - _zoneTransitionStartTime) / _zoneTransitionDuration;
+            transitionProgress = Mathf.Clamp(transitionProgress, 0.0f, 1.0f);
+
+            // 平滑过渡距离范围
+            _currentDistanceRange = Vector2.Lerp(_currentDistanceRange, _targetDistanceRange, transitionProgress);
+
+            // 更新相机距离限制
+            MinDistance = _currentDistanceRange.X;
+            MaxDistance = _currentDistanceRange.Y;
+            Distance = Mathf.Clamp(Distance, MinDistance, MaxDistance);
+
+            // 检查过渡是否完成
+            if (transitionProgress >= 1.0f)
+            {
+                _currentZoneType = _targetZoneType;
+                _isTransitioningZones = false;
+            }
+        }
+
+        /// <summary>
+        /// 更新动态遮挡检测
+        /// </summary>
+        private void UpdateDynamicOcclusion()
+        {
+            if (!EnableDynamicOcclusion || Target == null)
+                return;
+
+            // 定期进行遮挡检测
+            if (Time.GameTime - _lastOcclusionCheckTime < OcclusionCheckFrequency)
+                return;
+
+            _lastOcclusionCheckTime = Time.GameTime;
+
+            // 计算相机到目标的向量
+            Vector3 targetPosition = Target.Position + FocusOffset;
+            Vector3 cameraToTarget = targetPosition - Actor.Position;
+            float distance = cameraToTarget.Length;
+
+            // 检测遮挡
+            bool isOccluded = Physics.RayCast(Actor.Position, Vector3.Normalize(cameraToTarget), out RayCastHit hit, distance, OcclusionLayer);
+
+            // 更新遮挡状态
+            _isOccluded = isOccluded;
+
+            // 如果有遮挡，调整相机距离
+            if (isOccluded)
+            {
+                _occlusionDistance = Mathf.Max(hit.Distance - CollisionOffset, MinOcclusionDistance);
+                Distance = Mathf.Lerp(Distance, _occlusionDistance, Time.DeltaTime * OcclusionAdjustSpeed);
+            }
+        }
+
+        /// <summary>
+        /// 更新智能位置选择
+        /// </summary>
+        private void UpdateSmartPositioning()
+        {
+            if (!EnableSmartPositioning || Target == null)
+                return;
+
+            // 这里可以实现智能位置选择逻辑
+            // 暂时不实现具体逻辑
+        }
+
+        /// <summary>
+        /// 更新视角优化
+        /// </summary>
+        private void UpdateViewOptimization()
+        {
+            if (!EnableViewOptimization || Target == null)
+                return;
+
+            // 这里可以实现视角优化逻辑
+            // 暂时不实现具体逻辑
+        }
+
+        /// <summary>
+        /// 更新目标跟踪预测
+        /// </summary>
+        private void UpdateTargetPrediction()
+        {
+            if (!EnableTargetPrediction || Target == null)
+                return;
+
+            // 计算目标预测位置
+            Vector3 currentPosition = Target.Position;
+            Vector3 velocity = (currentPosition - _lastTargetPosition) / Time.DeltaTime;
+            _targetPredictedPosition = currentPosition + velocity * TargetPredictionTime;
+        }
+
+        /// <summary>
+        /// 更新环境感知
+        /// </summary>
+        private void UpdateEnvironmentAwareness()
+        {
+            if (!EnableEnvironmentAwareness || Target == null)
+                return;
+
+            // 定期进行环境检测
+            if (Time.GameTime - _lastEnvironmentCheckTime < ENVIRONMENT_CHECK_INTERVAL)
+                return;
+
+            _lastEnvironmentCheckTime = Time.GameTime;
+
+            // 这里可以实现环境感知逻辑
+            // 暂时不实现具体逻辑
+        }
+
+        /// <summary>
+        /// 重置相机到默认状态
+        /// </summary>
+        public void ResetCamera()
+        {
+            // 重置相机位置
+            Distance = DefaultDistance;
+            VerticalAngle = DefaultVerticalAngle;
+            HorizontalAngle = DefaultHorizontalAngle;
+
+            // 重置相机抖动
+            _shakeIntensity = 0.0f;
+            _shakeDuration = 0.0f;
+            _currentShakeOffset = Vector3.Zero;
+
+            // 重置FOV
+            _currentFOV = BaseFOV;
+            if (_camera != null)
+                _camera.FieldOfView = _currentFOV;
+
+            // 重置场景适配状态
+            _currentZoneType = SceneZoneType.Outdoor;
+            _targetZoneType = SceneZoneType.Outdoor;
+            _currentDistanceRange = OutdoorDistanceRange;
+            _isTransitioningZones = false;
+
+            // 重置边界状态
+            _isNearBounds = false;
+            _boundsConstrainedPosition = Vector3.Zero;
+
+            // 重置遮挡状态
+            _isOccluded = false;
+            _occlusionDistance = DefaultDistance;
+
+            // 重置性能优化状态
+            _lastPositionUpdateTime = 0.0f;
+            _lastRotationUpdateTime = 0.0f;
+            _lastTargetPosition = Vector3.Zero;
+            _targetSpeed = 0.0f;
+            _lastSpeedCheckTime = 0.0f;
+            _lastBoundsCheckTime = 0.0f;
+            _lastOcclusionCheckTime = 0.0f;
+            _lastEnvironmentCheckTime = 0.0f;
+            _lastTargetPredictionTime = 0.0f;
+            _targetPredictedPosition = Vector3.Zero;
+
+            // 立即更新相机位置
+            if (Target != null)
+            {
+                UpdateCameraPosition(Actor.Position);
+            }
+        }
+
+        /// <summary>
+        /// 切换相机模式
+        /// </summary>
+        /// <param name="mode">新的相机模式</param>
+        public void SwitchCameraMode(CameraMode mode)
+        {
+            if (CurrentMode == mode)
+                return;
+
+            CurrentMode = mode;
+
+            // 根据模式调整相机参数
+            switch (mode)
+            {
+                case CameraMode.Normal:
+                    // 标准模式
+                    MinDistance = 2.0f;
+                    MaxDistance = 8.0f;
+                    Distance = Mathf.Clamp(Distance, MinDistance, MaxDistance);
+                    break;
+
+                case CameraMode.Combat:
+                    // 战斗模式 - 更近的距离，更好的视角
+                    MinDistance = 1.5f;
+                    MaxDistance = 5.0f;
+                    Distance = Mathf.Clamp(Distance, MinDistance, MaxDistance);
+                    VerticalAngle = Mathf.Clamp(VerticalAngle, -10.0f, 30.0f);
+                    break;
+
+                case CameraMode.Cinematic:
+                    // 电影模式 - 更远的距离，更大的视角范围
+                    MinDistance = 3.0f;
+                    MaxDistance = 15.0f;
+                    Distance = Mathf.Clamp(Distance, MinDistance, MaxDistance);
+                    break;
+
+                case CameraMode.FirstPerson:
+                    // 第一人称模式
+                    MinDistance = 0.1f;
+                    MaxDistance = 0.5f;
+                    Distance = MinDistance;
+                    VerticalAngle = 0.0f;
+                    break;
+
+                case CameraMode.TopDown:
+                    // 俯视模式
+                    MinDistance = 5.0f;
+                    MaxDistance = 20.0f;
+                    Distance = Mathf.Clamp(Distance, MinDistance, MaxDistance);
+                    VerticalAngle = 90.0f;
+                    break;
+
+                case CameraMode.SideScroller:
+                    // 横版卷轴模式
+                    MinDistance = 5.0f;
+                    MaxDistance = 15.0f;
+                    Distance = Mathf.Clamp(Distance, MinDistance, MaxDistance);
+                    VerticalAngle = 0.0f;
+                    break;
+            }
+
+            // 更新相机位置
+            UpdateCameraPosition(Actor.Position);
+        }
+
+        /// <summary>
+        /// 触发相机抖动效果（PlayerController调用的方法）
+        /// </summary>
+        /// <param name="intensity">抖动强度</param>
+        /// <param name="duration">抖动持续时间</param>
+        public void TriggerShake(float intensity, float duration)
+        {
+            TriggerCameraShake(intensity, duration);
+        }
+
+        /// <summary>
+        /// 更新相机抖动系统
+        /// </summary>
+        private void UpdateCameraShake()
+        {
+            if (!EnableCameraShake)
+                return;
+
+            // 如果当前没有抖动，直接返回
+            if (_currentShakeIntensity <= 0f)
+                return;
+
+            // 更新抖动时间
+            _shakeTime += Time.DeltaTime;
+
+            // 计算噪声偏移
+            _shakeNoiseOffset += Time.DeltaTime * ShakeFrequency;
+
+            // 使用Sin函数生成平滑的抖动值
+            float noiseX = Mathf.Sin(_shakeNoiseOffset * 5.0f) * Mathf.Cos(_shakeNoiseOffset * 3.7f) * 2f - 1f;
+            float noiseY = Mathf.Sin(_shakeNoiseOffset * 4.3f) * Mathf.Cos(_shakeNoiseOffset * 6.1f) * 2f - 1f;
+            float noiseZ = Mathf.Sin(_shakeNoiseOffset * 5.7f) * Mathf.Cos(_shakeNoiseOffset * 4.9f) * 2f - 1f;
+
+            // 计算抖动偏移
+            Vector3 shakeOffset = new Vector3(noiseX, noiseY, noiseZ) * _currentShakeIntensity * ShakeNoiseScale;
+            _shakeOffset = Vector3.Lerp(_shakeOffset, shakeOffset, Time.DeltaTime * 10f);
+
+            // 计算抖动旋转
+            Vector3 shakeRotation = new Vector3(noiseY, noiseX, noiseZ) * _currentShakeIntensity * 0.5f;
+            _shakeRotation = Vector3.Lerp(_shakeRotation, shakeRotation, Time.DeltaTime * 10f);
+
+            // 计算FOV抖动
+            float shakeFOV = noiseX * _currentShakeIntensity * 2f;
+            _shakeFOV = Mathf.Lerp(_shakeFOV, shakeFOV, Time.DeltaTime * 10f);
+
+            // 衰减抖动强度
+            _currentShakeIntensity = Mathf.Max(0f, _currentShakeIntensity - ShakeDecaySpeed * Time.DeltaTime);
+
+            // 应用抖动效果
+            if (_currentShakeIntensity > 0f)
+            {
+                // 应用位置抖动
+                if (PositionShakeWeight > 0f)
+                {
+                    Actor.Position += _shakeOffset * PositionShakeWeight;
+                }
+
+                // 应用旋转抖动
+                if (RotationShakeWeight > 0f)
+                {
+                    Quaternion rotationShake = Quaternion.Euler(_shakeRotation * RotationShakeWeight);
+                    Actor.Orientation = Actor.Orientation * rotationShake;
+                }
+
+                // 应用FOV抖动
+                if (FOVShakeWeight > 0f && _camera != null)
+                {
+                    _camera.FieldOfView += _shakeFOV * FOVShakeWeight;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 更新相机位置
+        /// </summary>
+        /// <param name="position">新的相机位置</param>
+        private void UpdateCameraPosition(Vector3 position)
+        {
+            Actor.Position = position;
+        }
+
+        /// <summary>
+        /// 获取当前相机距离
+        /// </summary>
+        /// <returns>当前相机距离</returns>
+        public float GetCurrentDistance()
+        {
+            return EnableCameraCollision ? _currentCollisionDistance : Distance;
+        }
+
+        /// <summary>
+        /// 触发相机抖动
+        /// </summary>
+        /// <param name="intensity">抖动强度</param>
+        /// <param name="duration">抖动持续时间（秒）</param>
+        public void TriggerCameraShake(float intensity, float duration = 1.0f)
+        {
+            if (!EnableCameraShake)
+                return;
+
+            // 设置抖动强度
+            _currentShakeIntensity = Mathf.Max(_currentShakeIntensity, intensity);
+
+            // 重置抖动时间
+            _shakeTime = 0f;
+
+            // 如果指定了持续时间，计算衰减速度
+            if (duration > 0f)
+            {
+                ShakeDecaySpeed = intensity / duration;
+            }
+        }
+
+        /// <summary>
+        /// 切换相机模式
+        /// </summary>
+        public void SwitchCameraMode()
+        {
+            // 切换到下一个模式
+            CurrentMode = (CameraMode)(((int)CurrentMode + 1) % System.Enum.GetValues(typeof(CameraMode)).Length);
+            
+            // 应用模式设置
+            switch (CurrentMode)
+            {
+                case CameraMode.Normal:
+                    // 保持当前距离，不重置为默认值
+                    // Distance = DefaultDistance;
+                    VerticalAngle = DefaultVerticalAngle;
+                    HorizontalAngle = DefaultHorizontalAngle;
+                    break;
+                case CameraMode.Combat:
+                    Distance = DefaultDistance * 0.8f;
+                    VerticalAngle = DefaultVerticalAngle * 0.7f;
+                    break;
+                case CameraMode.Cinematic:
+                    Distance = DefaultDistance * 1.5f;
+                    VerticalAngle = DefaultVerticalAngle * 1.2f;
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 获取当前相机模式
+        /// </summary>
+        public CameraMode GetCurrentMode() => CurrentMode;
+
+        /// <summary>
+        /// 设置相机模式
+        /// </summary>
+        /// <param name="mode">要设置的相机模式</param>
+        public void SetCameraMode(CameraMode mode)
+        {
+            if (CurrentMode != mode)
+            {
+                CurrentMode = mode;
+                // 应用模式设置
+                switch (CurrentMode)
+                {
+                    case CameraMode.Normal:
+                        // 保持当前距离，不重置为默认值
+                        // Distance = DefaultDistance;
+                        VerticalAngle = DefaultVerticalAngle;
+                        HorizontalAngle = DefaultHorizontalAngle;
+                        break;
+                    case CameraMode.Combat:
+                        Distance = DefaultDistance * 0.8f;
+                        VerticalAngle = DefaultVerticalAngle * 0.7f;
+                        break;
+                    case CameraMode.Cinematic:
+                        Distance = DefaultDistance * 1.5f;
+                        VerticalAngle = DefaultVerticalAngle * 1.2f;
+                        break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 更新手柄输入系统
+        /// </summary>
+        private void UpdateGamepadInput()
+        {
+            if (!EnableGamepadInput)
+                return;
+
+            // 获取手柄右摇杆输入（相机旋转）
+            Vector2 rightStick = new Vector2(
+                Input.GetAxis(GamepadRightStickHorizontal),
+                Input.GetAxis(GamepadRightStickVertical)
+            );
+
+            // 应用死区
+            if (rightStick.Length < GamepadDeadZone)
+            {
+                rightStick = Vector2.Zero;
+            }
+            else
+            {
+                // 计算摇杆速度（用于平滑处理）
+                _gamepadRightStickVelocity = (rightStick - _lastGamepadRightStick) / Time.DeltaTime;
+                _lastGamepadRightStick = rightStick;
+
+                // 应用摇杆输入到相机旋转
+                if (Mathf.Abs(rightStick.X) > 0.001f || Mathf.Abs(rightStick.Y) > 0.001f)
+                {
+                    Yaw += rightStick.X * GamepadRotationSensitivity;
+                    Pitch -= rightStick.Y * GamepadRotationSensitivity;
+                    Pitch = Mathf.Clamp(Pitch, MinPitch, MaxPitch);
+
+                    // 规范化Yaw到0-360
+                    while (Yaw < 0) Yaw += 360;
+                    while (Yaw >= 360) Yaw -= 360;
+                }
+            }
+
+            // 获取手柄左摇杆输入（可选功能，如相机平移）
+            Vector2 leftStick = new Vector2(
+                Input.GetAxis(GamepadLeftStickHorizontal),
+                Input.GetAxis(GamepadLeftStickVertical)
+            );
+
+            // 应用死区
+            if (leftStick.Length < GamepadDeadZone)
+            {
+                leftStick = Vector2.Zero;
+            }
+            else
+            {
+                // 计算摇杆速度（用于平滑处理）
+                _gamepadLeftStickVelocity = (leftStick - _lastGamepadLeftStick) / Time.DeltaTime;
+                _lastGamepadLeftStick = leftStick;
+            }
+
+            // 获取手柄扳机输入（缩放）
+            float rightTrigger = Input.GetAxis(GamepadRightTrigger);
+            float leftTrigger = Input.GetAxis(GamepadLeftTrigger);
+
+            // 应用扳机输入到相机缩放
+            if (Mathf.Abs(rightTrigger - _lastGamepadRightTrigger) > 0.001f)
+            {
+                Distance -= rightTrigger * GamepadZoomSensitivity * Time.DeltaTime;
+                Distance = Mathf.Clamp(Distance, MinDistance, MaxDistance);
+                _lastGamepadRightTrigger = rightTrigger;
+            }
+
+            if (Mathf.Abs(leftTrigger - _lastGamepadLeftTrigger) > 0.001f)
+            {
+                Distance += leftTrigger * GamepadZoomSensitivity * Time.DeltaTime;
+                Distance = Mathf.Clamp(Distance, MinDistance, MaxDistance);
+                _lastGamepadLeftTrigger = leftTrigger;
+            }
+
+            // 获取手柄肩键输入（可选功能，如重置相机）
+            bool rightShoulder = Input.GetAction(GamepadRightShoulder);
+            bool leftShoulder = Input.GetAction(GamepadLeftShoulder);
+
+            // 检测右肩键按下（重置相机）
+            if (rightShoulder && !_lastGamepadRightShoulder)
+            {
+                ResetCamera();
+            }
+            _lastGamepadRightShoulder = rightShoulder;
+
+            // 检测左肩键按下（切换相机模式）
+            if (leftShoulder && !_lastGamepadLeftShoulder)
+            {
+                SwitchCameraMode();
+            }
+            _lastGamepadLeftShoulder = leftShoulder;
+        }
+
+        /// <summary>
+        /// 更新性能优化系统
+        /// </summary>
+        private void UpdatePerformanceOptimization()
+        {
+            if (!EnablePerformanceOptimization)
+                return;
+
+            // 检查是否需要跳帧
+            if (EnableFrameSkipping)
+            {
+                _frameSkipCounter++;
+                if (Time.DrawFPS > FrameSkipThreshold && _frameSkipCounter % 2 == 0)
+                {
+                    return; // 跳过这一帧
+                }
+            }
+
+            // 更新LOD级别
+            UpdateLODLevel();
+
+            // 更新缓存
+            UpdateCaches();
+        }
+
+        /// <summary>
+        /// 更新LOD级别
+        /// </summary>
+        private void UpdateLODLevel()
+        {
+            if (!EnableRaycastLOD)
+                return;
+
+            // 根据距离调整LOD级别
+            if (Distance > FarDistanceThreshold)
+            {
+                _currentLODLevel = 2; // 高距离，低质量
+            }
+            else if (Distance > FarDistanceThreshold * 0.6f)
+            {
+                _currentLODLevel = 1; // 中距离，中等质量
+            }
+            else
+            {
+                _currentLODLevel = 0; // 近距离，高质量
+            }
+        }
+
+        /// <summary>
+        /// 更新缓存
+        /// </summary>
+        private void UpdateCaches()
+        {
+            // 位置缓存
+            if (EnablePositionCaching)
+            {
+                Vector3 currentPosition = Actor.Position;
+                if (Vector3.Distance(_lastCameraPosition, currentPosition) > 0.01f)
+                {
+                    _lastCameraPosition = currentPosition;
+                }
+            }
+
+            // 旋转缓存
+            if (EnableRotationCaching)
+            {
+                Quaternion currentRotation = Actor.Orientation;
+                if (Quaternion.Dot(_lastCameraRotation, currentRotation) < 0.99f)
+                {
+                    _lastCameraRotation = currentRotation;
+                }
+            }
+
+            // 碰撞检测缓存
+            if (EnableCollisionCaching)
+            {
+                if (Mathf.Abs(_lastCollisionCheckDistance - Distance) > 0.1f)
+                {
+                    _lastCollisionCheckDistance = Distance;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 获取当前LOD级别
+        /// </summary>
+        public int GetCurrentLODLevel() => _currentLODLevel;
+
+        /// <summary>
+        /// 获取当前碰撞射线数量（基于LOD）
+        /// </summary>
+        public int GetCurrentCollisionRayCount()
+        {
+            if (!EnableRaycastLOD)
+                return CollisionRayCount;
+
+            return _currentLODLevel switch
+            {
+                0 => CollisionRayCount,           // 高质量
+                1 => Mathf.CeilToInt(CollisionRayCount * 0.7f), // 中等质量
+                2 => FarDistanceCollisionRayCount, // 低质量
+                _ => CollisionRayCount
+            };
+        }
+        
+        /// <summary>
+        /// 打印诊断信息
+        /// </summary>
+        private void PrintDiagnosticInfo()
+        {
+            Debug.Log("============ 相机诊断信息 ============");
+            Debug.Log($"Camera组件: {(_camera != null ? "✓ 已找到" : "✗ 未找到")}");
+            Debug.Log($"InputManager: {(_inputManager != null ? "✓ 已找到" : "✗ 未找到")}");
+            Debug.Log($"Target: {(Target != null ? "✓ 已设置" : "✗ 未设置")}");
+            Debug.Log($"当前距离: {Distance:F2}, Pitch: {Pitch:F2}, Yaw: {Yaw:F2}");
+            Debug.Log("=====================================");
+        }
+        
+        #endregion
+    }
+}

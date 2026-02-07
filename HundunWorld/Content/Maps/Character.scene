@@ -1,0 +1,698 @@
+{
+	"ID": "ec48ab0942e2c7c009af8f87c9b2d7cf",
+	"TypeName": "FlaxEngine.SceneAsset",
+	"EngineBuild": 6806,
+	"Data": [
+		{
+			"ID": "ec48ab0942e2c7c009af8f87c9b2d7cf",
+			"TypeName": "FlaxEngine.Scene",
+			"LightmapSettings": {
+				"IndirectLightingIntensity": 1.0,
+				"GlobalObjectsScale": 1.0,
+				"ChartsPadding": 3,
+				"AtlasSize": 1024,
+				"BounceCount": 1,
+				"CompressLightmaps": true,
+				"UseGeometryWithNoMaterials": true,
+				"Quality": 10
+			}
+		},
+		{
+			"ID": "b61f518a4252e7f606e5319e5a538589",
+			"TypeName": "FlaxEngine.DirectionalLight",
+			"ParentID": "ec48ab0942e2c7c009af8f87c9b2d7cf",
+			"Name": "Sun",
+			"Transform": {
+				"Translation": {
+					"X": 40.0,
+					"Y": 160.0,
+					"Z": 0.0
+				},
+				"Orientation": {
+					"X": 0.3826834559440613,
+					"Y": 0.0,
+					"Z": 0.0,
+					"W": 0.9238795042037964
+				}
+			}
+		},
+		{
+			"ID": "3a2b5f5645704c85eb5cfba60c633662",
+			"TypeName": "FlaxEngine.Sky",
+			"ParentID": "ec48ab0942e2c7c009af8f87c9b2d7cf",
+			"Name": "Sky",
+			"Transform": {
+				"Translation": {
+					"X": 40.0,
+					"Y": 150.0,
+					"Z": 0.0
+				}
+			},
+			"Sun": "b61f518a4252e7f606e5319e5a538589"
+		},
+		{
+			"ID": "15e6374e4c5c4d7d4828ffa72c0c50e5",
+			"TypeName": "FlaxEngine.SkyLight",
+			"ParentID": "ec48ab0942e2c7c009af8f87c9b2d7cf",
+			"Name": "SkyLight",
+			"Brightness": 2.5,
+			"CustomTexture": "c54410104ff39427bc11e5bc761d66b0"
+		},
+		{
+			"ID": "b627f45c4c50e04668c0f789ce541e04",
+			"TypeName": "FlaxEngine.StaticModel",
+			"ParentID": "ec48ab0942e2c7c009af8f87c9b2d7cf",
+			"Name": "Floor",
+			"Transform": {
+				"Scale": {
+					"X": 4.0,
+					"Y": 0.5,
+					"Z": 4.0
+				}
+			},
+			"Model": "b43f0f8f4aaba3f3156896a5a22ba493",
+			"Buffer": {
+				"Entries": [
+					{
+						"Material": "ca49c2d34dd182c739f4f19678ec019e",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					}
+				]
+			}
+		},
+		{
+			"ID": "c66d995a4bea6458b5fe248f6968c7b3",
+			"TypeName": "FlaxEngine.Camera",
+			"ParentID": "ec48ab0942e2c7c009af8f87c9b2d7cf",
+			"Name": "Camera",
+			"Transform": {
+				"Translation": {
+					"X": 0.0,
+					"Y": 150.0,
+					"Z": -300.0
+				}
+			}
+		},
+		{
+			"ID": "ce70652840ff6edc8ea3aab82d103604",
+			"TypeName": "HundunWorld.Game.ThirdPersonCamera",
+			"ParentID": "c66d995a4bea6458b5fe248f6968c7b3",
+			"V": {
+	"NormalStateConfig": {},
+	"CombatStateConfig": {},
+	"ClimbingStateConfig": {},
+	"SwimmingStateConfig": {},
+	"FlyingStateConfig": {},
+	"CutsceneStateConfig": {},
+	"OutdoorConfig": {},
+	"IndoorConfig": {},
+	"UnderwaterConfig": {},
+	"AerialConfig": {},
+	"CaveConfig": {},
+	"CorridorConfig": {}
+}
+		},
+		{
+			"ID": "f92187074382768c9ab1d291daf08f06",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "ec48ab0942e2c7c009af8f87c9b2d7cf",
+			"Name": "CharacterRoot ",
+			"Transform": {
+				"Translation": {
+					"X": 0.0,
+					"Y": 24.708473205566406,
+					"Z": 0.0
+				}
+			}
+		},
+		{
+			"ID": "c2079a774a5cc3a85c73bf87fb93c33f",
+			"TypeName": "HundunWorld.Game.Rendering.CharacterAppearanceEditor",
+			"ParentID": "f92187074382768c9ab1d291daf08f06",
+			"V": {}
+		},
+		{
+			"ID": "240211654a91063814d388b6ea2a8f30",
+			"TypeName": "HundunWorld.Game.Rendering.Materials.EyeMaterialController",
+			"ParentID": "f92187074382768c9ab1d291daf08f06",
+			"V": {}
+		},
+		{
+			"ID": "aab498ce4bef32aa9e2133927eb5d63a",
+			"TypeName": "HundunWorld.Game.Rendering.Materials.HairMaterialController",
+			"ParentID": "f92187074382768c9ab1d291daf08f06",
+			"V": {
+	"HairMaterialInstance": "56d25eac493c4e27b185e082ee35c688",
+	"DiffuseMap": "23e3274f459006a779b42a8618ce75a6",
+	"RootColor": {
+		"R": 0.009998289,
+		"G": 0.05,
+		"B": 0.014224735,
+		"A": 1.0
+	}
+}
+		},
+		{
+			"ID": "e87c0d0d48c1f2dea77d6e94e0558826",
+			"TypeName": "HundunWorld.Game.Rendering.Materials.SkinMaterialController",
+			"ParentID": "f92187074382768c9ab1d291daf08f06",
+			"V": {}
+		},
+		{
+			"ID": "7f19dc41491f8c280eb9c8ad5984a02b",
+			"TypeName": "HundunWorld.Game.Rendering.CharacterAppearancePreviewController",
+			"ParentID": "f92187074382768c9ab1d291daf08f06",
+			"V": {}
+		},
+		{
+			"ID": "7eafe8d74b75a6c836df20a10e6a4f19",
+			"TypeName": "HundunWorld.Game.PlayerController",
+			"ParentID": "f92187074382768c9ab1d291daf08f06",
+			"V": {
+	"MoveSpeed": 50.0
+}
+		},
+		{
+			"ID": "cf633e0c421c17b740801796befbfa8e",
+			"TypeName": "FlaxEngine.AnimatedModel",
+			"ParentID": "f92187074382768c9ab1d291daf08f06",
+			"Name": "Running",
+			"SkinnedModel": "c7c70820409088e4d96db396a43c410f",
+			"AnimationGraph": "e1910a59411538bbab6e22925e5223d4",
+			"ShadowsMode": 1,
+			"RootMotionTarget": "f92187074382768c9ab1d291daf08f06",
+			"Buffer": {
+				"Entries": [
+					{
+						"Material": "00000000000000000000000000000000",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					},
+					{
+						"Material": "00000000000000000000000000000000",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					},
+					{
+						"Material": "00000000000000000000000000000000",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					},
+					{
+						"Material": "00000000000000000000000000000000",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					},
+					{
+						"Material": "00000000000000000000000000000000",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					},
+					{
+						"Material": "00000000000000000000000000000000",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					},
+					{
+						"Material": "00000000000000000000000000000000",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					}
+				]
+			}
+		},
+		{
+			"ID": "48468d2c4b456d597355da9212ac20a5",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "ec48ab0942e2c7c009af8f87c9b2d7cf",
+			"Name": "LightingRoot"
+		},
+		{
+			"ID": "b4c6b31946a1adc0c03f8dafae3bb889",
+			"TypeName": "HundunWorld.Game.Rendering.Lighting.CharacterLightingSystem",
+			"ParentID": "48468d2c4b456d597355da9212ac20a5",
+			"V": {
+	"KeyLight": "852cd0ff4ea1ad02efc420b9f52c77d6",
+	"FillLight": "67942ac14a5745bcb8086081e75bc4b6",
+	"RimLight": "e2758ba34c9d1fd245d07f934d2ef518",
+	"EyeLight": "67942ac14a5745bcb8086081e75bc4b6",
+	"SkyLightSource": "15e6374e4c5c4d7d4828ffa72c0c50e5"
+}
+		},
+		{
+			"ID": "852cd0ff4ea1ad02efc420b9f52c77d6",
+			"TypeName": "FlaxEngine.DirectionalLight",
+			"ParentID": "48468d2c4b456d597355da9212ac20a5",
+			"Name": "KeyLight"
+		},
+		{
+			"ID": "67942ac14a5745bcb8086081e75bc4b6",
+			"TypeName": "FlaxEngine.PointLight",
+			"ParentID": "48468d2c4b456d597355da9212ac20a5",
+			"Name": "FillLight"
+		},
+		{
+			"ID": "e2758ba34c9d1fd245d07f934d2ef518",
+			"TypeName": "FlaxEngine.SpotLight",
+			"ParentID": "48468d2c4b456d597355da9212ac20a5",
+			"Name": "RimLight"
+		},
+		{
+			"ID": "c99b102c43c5cd0b82921abf42ad7cbc",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "ec48ab0942e2c7c009af8f87c9b2d7cf",
+			"Name": "PostFxVolume"
+		},
+		{
+			"ID": "9bb999364495ab7299c27fb09efb33df",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "ec48ab0942e2c7c009af8f87c9b2d7cf",
+			"Name": "MetaHuman"
+		},
+		{
+			"ID": "565587aa45cbd4f09c2736b34ab7a0dd",
+			"TypeName": "FlaxEngine.UICanvas",
+			"ParentID": "9bb999364495ab7299c27fb09efb33df",
+			"Name": "UICanvas",
+			"Transform": {
+				"Orientation": {
+					"X": 1.0,
+					"Y": 4.371138828673793e-8,
+					"Z": 4.371138828673793e-8,
+					"W": 1.910685465164705e-15
+				}
+			},
+			"V": {}
+		},
+		{
+			"ID": "7b6a9c574e49d2a35dd45e9536c0937b",
+			"TypeName": "FlaxEngine.UIControl",
+			"ParentID": "565587aa45cbd4f09c2736b34ab7a0dd",
+			"Name": "Canvas Scalar",
+			"Control": "FlaxEngine.GUI.CanvasScaler",
+			"Data": {
+	"ResolutionCurve": {
+		"Keyframes": [
+			{
+				"Time": 0.0,
+				"Value": 0.0
+			},
+			{
+				"Time": 480.0,
+				"Value": 0.444
+			},
+			{
+				"Time": 720.0,
+				"Value": 0.666
+			},
+			{
+				"Time": 1080.0,
+				"Value": 1.0
+			},
+			{
+				"Time": 8640.0,
+				"Value": 8.0
+			}
+		]
+	},
+	"DpiCurve": {
+		"Keyframes": [
+			{
+				"Time": 1.0,
+				"Value": 1.0
+			},
+			{
+				"Time": 96.0,
+				"Value": 1.0
+			},
+			{
+				"Time": 200.0,
+				"Value": 2.0
+			},
+			{
+				"Time": 400.0,
+				"Value": 4.0
+			}
+		]
+	},
+	"Scaling": 0,
+	"ScaleFactor": 1.0,
+	"PhysicalUnit": 3,
+	"PhysicalUnitSize": 1.0,
+	"ResolutionMode": 0,
+	"ResolutionMin": {
+		"X": 1.0,
+		"Y": 1.0
+	},
+	"ResolutionMax": {
+		"X": 7680.0,
+		"Y": 4320.0
+	},
+	"ClipChildren": true,
+	"CullChildren": true,
+	"AnchorMin": {
+		"X": 0.0,
+		"Y": 0.0
+	},
+	"AnchorMax": {
+		"X": 1.0,
+		"Y": 1.0
+	},
+	"Offsets": {
+		"Left": 0.0,
+		"Right": 0.0,
+		"Top": 0.0,
+		"Bottom": 0.0
+	},
+	"Scale": {
+		"X": 1.0,
+		"Y": 1.0
+	},
+	"Pivot": {
+		"X": 0.5,
+		"Y": 0.5
+	},
+	"Shear": {
+		"X": 0.0,
+		"Y": 0.0
+	},
+	"Rotation": 0.0,
+	"BackgroundColor": {
+		"R": 0.0,
+		"G": 0.0,
+		"B": 0.0,
+		"A": 0.0
+	},
+	"BackgroundBrush": null,
+	"Enabled": true,
+	"Visible": true,
+	"AutoFocus": false
+}
+		},
+		{
+			"ID": "4ceeaa4b4674cc14440194868fe313b9",
+			"TypeName": "FlaxEngine.UIControl",
+			"ParentID": "7b6a9c574e49d2a35dd45e9536c0937b",
+			"Name": "MetaHumanEditorUI",
+			"Control": "HundunWorld.UI.MetaHuman.MetaHumanEditorUI",
+			"Data": {
+	"AppearanceEditor": "c2079a774a5cc3a85c73bf87fb93c33f",
+	"PreviewController": "7f19dc41491f8c280eb9c8ad5984a02b",
+	"ClipChildren": true,
+	"CullChildren": true,
+	"AnchorMin": {
+		"X": 0.0,
+		"Y": 0.0
+	},
+	"AnchorMax": {
+		"X": 1.0,
+		"Y": 1.0
+	},
+	"Offsets": {
+		"Left": 0.0,
+		"Right": 0.0,
+		"Top": 0.0,
+		"Bottom": 0.0
+	},
+	"Scale": {
+		"X": 1.0,
+		"Y": 1.0
+	},
+	"Pivot": {
+		"X": 0.5,
+		"Y": 0.5
+	},
+	"Shear": {
+		"X": 0.0,
+		"Y": 0.0
+	},
+	"Rotation": 0.0,
+	"BackgroundColor": {
+		"R": 0.12,
+		"G": 0.12,
+		"B": 0.14,
+		"A": 1.0
+	},
+	"BackgroundBrush": null,
+	"Enabled": true,
+	"Visible": false,
+	"AutoFocus": false
+}
+		},
+		{
+			"ID": "b8d2fe944f6d10d2ab8242975b65c50a",
+			"TypeName": "FlaxEngine.UIControl",
+			"ParentID": "7b6a9c574e49d2a35dd45e9536c0937b",
+			"Name": "EyeEditorPanel",
+			"Transform": {
+				"Translation": {
+					"X": 810.0,
+					"Y": 210.0,
+					"Z": 0.0
+				}
+			},
+			"Control": "HundunWorld.UI.MetaHuman.EyeEditorPanel",
+			"Data": {
+	"ScrollBars": 0,
+	"ScrollBarsSize": 14.0,
+	"AlwaysShowScrollbars": false,
+	"ScrollMargin": {
+		"Left": 0.0,
+		"Right": 0.0,
+		"Top": 0.0,
+		"Bottom": 0.0
+	},
+	"ScrollbarTrackColor": {
+		"R": 0.32941177,
+		"G": 0.32941177,
+		"B": 0.36078432,
+		"A": 1.0
+	},
+	"ScrollbarThumbColor": {
+		"R": 0.24705882,
+		"G": 0.24705882,
+		"B": 0.27450982,
+		"A": 1.0
+	},
+	"ScrollbarThumbSelectedColor": {
+		"R": 0.0,
+		"G": 0.47843137,
+		"B": 0.8,
+		"A": 1.0
+	},
+	"ClipChildren": true,
+	"CullChildren": true,
+	"AnchorMin": {
+		"X": 0.5,
+		"Y": 0.5
+	},
+	"AnchorMax": {
+		"X": 0.5,
+		"Y": 0.5
+	},
+	"Offsets": {
+		"Left": -150.0,
+		"Right": 300.0,
+		"Top": -330.0,
+		"Bottom": 660.0
+	},
+	"Scale": {
+		"X": 1.0,
+		"Y": 1.0
+	},
+	"Pivot": {
+		"X": 0.5,
+		"Y": 0.5
+	},
+	"Shear": {
+		"X": 0.0,
+		"Y": 0.0
+	},
+	"Rotation": 0.0,
+	"BackgroundColor": {
+		"R": 0.14,
+		"G": 0.14,
+		"B": 0.16,
+		"A": 1.0
+	},
+	"BackgroundBrush": null,
+	"Enabled": true,
+	"Visible": false,
+	"AutoFocus": false
+}
+		},
+		{
+			"ID": "162a4abc4cce37277281ac8c75375daf",
+			"TypeName": "FlaxEngine.UIControl",
+			"ParentID": "7b6a9c574e49d2a35dd45e9536c0937b",
+			"Name": "HairEditorPanel",
+			"Transform": {
+				"Translation": {
+					"X": 50.0,
+					"Y": 210.0,
+					"Z": 0.0
+				}
+			},
+			"Control": "HundunWorld.UI.MetaHuman.HairEditorPanel",
+			"Data": {
+	"ScrollBars": 0,
+	"ScrollBarsSize": 14.0,
+	"AlwaysShowScrollbars": false,
+	"ScrollMargin": {
+		"Left": 0.0,
+		"Right": 0.0,
+		"Top": 0.0,
+		"Bottom": 0.0
+	},
+	"ScrollbarTrackColor": {
+		"R": 0.32941177,
+		"G": 0.32941177,
+		"B": 0.36078432,
+		"A": 1.0
+	},
+	"ScrollbarThumbColor": {
+		"R": 0.24705882,
+		"G": 0.24705882,
+		"B": 0.27450982,
+		"A": 1.0
+	},
+	"ScrollbarThumbSelectedColor": {
+		"R": 0.0,
+		"G": 0.47843137,
+		"B": 0.8,
+		"A": 1.0
+	},
+	"ClipChildren": true,
+	"CullChildren": true,
+	"AnchorMin": {
+		"X": 0.0,
+		"Y": 0.5
+	},
+	"AnchorMax": {
+		"X": 0.0,
+		"Y": 0.5
+	},
+	"Offsets": {
+		"Left": 50.0,
+		"Right": 300.0,
+		"Top": -330.0,
+		"Bottom": 660.0
+	},
+	"Scale": {
+		"X": 1.0,
+		"Y": 1.0
+	},
+	"Pivot": {
+		"X": 0.5,
+		"Y": 0.5
+	},
+	"Shear": {
+		"X": 0.0,
+		"Y": 0.0
+	},
+	"Rotation": 0.0,
+	"BackgroundColor": {
+		"R": 0.14,
+		"G": 0.14,
+		"B": 0.16,
+		"A": 1.0
+	},
+	"BackgroundBrush": null,
+	"Enabled": true,
+	"Visible": false,
+	"AutoFocus": false
+}
+		},
+		{
+			"ID": "d9cbb9e74aab156a53de028ff3ccf630",
+			"TypeName": "FlaxEngine.UIControl",
+			"ParentID": "7b6a9c574e49d2a35dd45e9536c0937b",
+			"Name": "SkinEditorPanel",
+			"Transform": {
+				"Translation": {
+					"X": 1570.0,
+					"Y": 210.0,
+					"Z": 0.0
+				}
+			},
+			"Control": "HundunWorld.UI.MetaHuman.SkinEditorPanel",
+			"Data": {
+	"ScrollBars": 0,
+	"ScrollBarsSize": 14.0,
+	"AlwaysShowScrollbars": false,
+	"ScrollMargin": {
+		"Left": 0.0,
+		"Right": 0.0,
+		"Top": 0.0,
+		"Bottom": 0.0
+	},
+	"ScrollbarTrackColor": {
+		"R": 0.32941177,
+		"G": 0.32941177,
+		"B": 0.36078432,
+		"A": 1.0
+	},
+	"ScrollbarThumbColor": {
+		"R": 0.24705882,
+		"G": 0.24705882,
+		"B": 0.27450982,
+		"A": 1.0
+	},
+	"ScrollbarThumbSelectedColor": {
+		"R": 0.0,
+		"G": 0.47843137,
+		"B": 0.8,
+		"A": 1.0
+	},
+	"ClipChildren": true,
+	"CullChildren": true,
+	"AnchorMin": {
+		"X": 1.0,
+		"Y": 0.5
+	},
+	"AnchorMax": {
+		"X": 1.0,
+		"Y": 0.5
+	},
+	"Offsets": {
+		"Left": -350.0,
+		"Right": 300.0,
+		"Top": -330.0,
+		"Bottom": 660.0
+	},
+	"Scale": {
+		"X": 1.0,
+		"Y": 1.0
+	},
+	"Pivot": {
+		"X": 0.5,
+		"Y": 0.5
+	},
+	"Shear": {
+		"X": 0.0,
+		"Y": 0.0
+	},
+	"Rotation": 0.0,
+	"BackgroundColor": {
+		"R": 0.14,
+		"G": 0.14,
+		"B": 0.16,
+		"A": 1.0
+	},
+	"BackgroundBrush": null,
+	"Enabled": true,
+	"Visible": false,
+	"AutoFocus": false
+}
+		}
+	]
+}

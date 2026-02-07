@@ -1,0 +1,27 @@
+{
+	"ID": "a1b2c3d4e5f6789012345678abcdef01",
+	"TypeName": "FlaxEditor.Content.Settings.GraphicsSettings",
+	"EngineBuild": 6806,
+	"Data": {
+		"UseVSync": false,
+		"AAQuality": 2,
+		"SSRQuality": 2,
+		"SSAOQuality": 2,
+		"VolumetricFogQuality": 2,
+		"ShadowsQuality": 2,
+		"ShadowMapsQuality": 2,
+		"AllowCSMBlending": true,
+		"EnableGlobalSDF": true,
+		"EnableGlobalSurfaceAtlas": true,
+		"GlobalSDFQuality": 1,
+		"GIQuality": 2,
+		"PostProcessAAFeatures": [
+			"TemporalAntialiasing",
+			"FastApproximateAntiAliasing"
+		],
+		"DefaultProbesBrightness": 1.0,
+		"ContactShadowsDistance": 5.0,
+		"ShadowsUpdateRate": 1,
+		"UpdateRateInBackground": 0.1
+	}
+}

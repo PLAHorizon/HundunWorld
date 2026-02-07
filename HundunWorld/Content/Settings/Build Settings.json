@@ -1,0 +1,58 @@
+{
+	"ID": "2364031e4e327637c1ad88b415fa756e",
+	"TypeName": "FlaxEditor.Content.Settings.BuildSettings",
+	"EngineBuild": 6806,
+	"Data": {
+	"OutputName": "${PROJECT_NAME}",
+	"MaxAssetsPerPackage": 4096,
+	"MaxPackageSizeMB": 1024,
+	"ContentKey": 0,
+	"ForDistribution": true,
+	"SkipPackaging": false,
+	"AdditionalAssets": [],
+	"AdditionalScenes": [
+		"af4fac0d423de60ce7d573af309910b5",
+		"dc72848f4b0f90ee2df186a728f14858",
+		"9fbc54f049c453bc738f6084e9b7cf18",
+		"ec48ab0942e2c7c009af8f87c9b2d7cf",
+		"006fd17d49d3d37e15ca689c2be555f2"
+	],
+	"AdditionalAssetFolders": null,
+	"ShadersNoOptimize": false,
+	"ShadersGenerateDebugData": false,
+	"SkipDefaultFonts": false,
+	"MaxMeshPositionError": 0.5,
+	"SkipDotnetPackaging": false,
+	"SkipUnusedDotnetLibsPackaging": true,
+	"Presets": [
+		{
+			"Name": "Development",
+			"Targets": [
+				{
+					"Name": "Windows 64bit",
+					"Output": "Output\\Win64",
+					"Platform": 2,
+					"Mode": 1,
+					"CustomDefines": [],
+					"PreBuildAction": "",
+					"PostBuildAction": null
+				}
+			]
+		},
+		{
+			"Name": "Release",
+			"Targets": [
+				{
+					"Name": "Windows 64bit",
+					"Output": "Output\\Win64",
+					"Platform": 2,
+					"Mode": 0,
+					"CustomDefines": null,
+					"PreBuildAction": null,
+					"PostBuildAction": null
+				}
+			]
+		}
+	]
+}
+}

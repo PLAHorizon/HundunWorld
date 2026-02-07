@@ -1,0 +1,13 @@
+{
+  "ConnectionStrings": {
+    "OrdinarySqlServer": "Data Source=.;Initial Catalog=OrdinaryWorld;User Id=sa;Password=tkhjkdh#%!)[}Akjdh8;Integrated Security=True;Pooling=False;Max Pool Size=200;MultipleActiveResultSets=True;TrustServerCertificate=True;",
+    "BasicSqlServer": "Data Source=.;Initial Catalog=Basic;User Id=sa;Password=tkhjkdh#%!)[}Akjdh8;Integrated Security=True;Pooling=False;Max Pool Size=200;MultipleActiveResultSets=True;Encrypt=True;TrustServerCertificate=True",
+    "GameSqlServer": "Data Source=.;Initial Catalog=Game;User Id=sa;Password=tkhjkdh#%!)[}Akjdh8;Integrated Security=True;Pooling=False;Max Pool Size=200;MultipleActiveResultSets=True;Encrypt=True;TrustServerCertificate=True",
+    "MySQL": "Data Source=.;Initial Catalog=HISBasic;User Id=sa;Password=123456;Integrated Security=True;Pooling=False;Max Pool Size=200;MultipleActiveResultSets=True",
+    "Oracle": "Data Source=.;Initial Catalog=HISBasic;User Id=sa;Password=123456;Integrated Security=True;Pooling=False;Max Pool Size=200;MultipleActiveResultSets=True",
+    "PostgreSqlBasic": "User Id=horizon;Password=tkhjkdh#%!)[}Akjdh8;Host=192.168.1.19;Port=6119;Database=Basic;Pooling=True;Encoding=UTF8;",
+    "PostgreSqlArticle": "User Id=horizon;Password=tkhjkdh#%!)[}Akjdh8;Host=192.168.1.19;Port=6119;Database=Article;Pooling=True;Encoding=UTF8;",
+    "PostgreSqlSupports": "User Id=horizon;Password=tkhjkdh#%!)[}Akjdh8;Host=192.168.1.19;Port=6119;Database=Supports;Pooling=True;Encoding=UTF8;",
+    "PostgreSqlXingguang": "User Id=horizon;Password=tkhjkdh#%!)[}Akjdh8;Host=192.168.1.19;Port=6119;Database=Xiangguang;Pooling=True;Encoding=UTF8;"
+  }
+}

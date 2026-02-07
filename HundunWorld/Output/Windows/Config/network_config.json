@@ -1,0 +1,21 @@
+{
+  "GatewayList": [
+    {
+      "IP": "192.168.1.78",
+      "Port": 7789,
+      "Region": "\u534E\u4E1C"
+    },
+    {
+      "IP": "192.168.2.78",
+      "Port": 7789,
+      "Region": "\u534E\u5357"
+    },
+    {
+      "IP": "192.168.3.78",
+      "Port": 7789,
+      "Region": "\u534E\u5317"
+    }
+  ],
+  "AutoConnect": true,
+  "ReconnectInterval": 5000
+}

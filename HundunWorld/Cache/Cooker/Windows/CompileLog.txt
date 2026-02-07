@@ -1,0 +1,132 @@
+[00:00:005] Flax.Build 1.0.0
+[00:00:006]   Arguments: -log -logfile=C:\Works/hundun-world-flax/HundunWorld/Cache/Cooker/Windows/CompileLog.txt -build -mutex -buildtargets=GameTarget -platform=Windows -arch=x64 -configuration=Development -aotMode=None -dotnet=10
+[00:00:006]   Workspace: C:\Works\hundun-world-flax\HundunWorld
+[00:00:006]   Engine: C:\Program Files (x86)\Flax\Flax_1.11
+[00:00:006]   .NET 10.0.2
+[00:00:008] Loading project file from "C:\Works\hundun-world-flax\HundunWorld\HundunWorld.flaxproj"...
+[00:00:036] Loading project file from "C:\Program Files (x86)\Flax\Flax_1.11\Flax.flaxproj"...
+[00:00:037] Loaded project Flax, version 1.11.6806
+[00:00:037] Loaded project HundunWorld, version 1.0
+[00:00:058] Engine build version: 1.11.6806
+[00:00:080] Building targets...
+[00:00:102] Found Android SDK at C:\Program Files (x86)\Android\android-sdk
+[00:00:103] Missing Linux Toolchain. Cannot build for Linux platform.
+[00:00:108] Found Windows SDK v10_0_22621_0 at C:\Program Files (x86)\Windows Kits\10\
+[00:00:108] Found Windows SDK v10_0_26100_0 at C:\Program Files (x86)\Windows Kits\10\
+[00:00:121] Unknown Visual Studio installation. Display name: SQL Server Management Studio 22
+[00:00:125] Found VisualStudio2026 at C:\Program Files\Microsoft Visual Studio\18\Enterprise
+[00:00:128] Found Windows toolset v142 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.29.30133
+[00:00:128] Found Windows toolset v143 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.38.33130
+[00:00:128] Found Windows toolset v144 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.44.35207
+[00:00:128] Found Windows toolset v145 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.50.35717
+[00:00:139] Building target GameTarget in Development for Windows x64
+[00:00:146] Using Windows Toolset v145 (C:\Program Files (x86)\Windows Kits\10\)
+[00:00:146] Using Windows SDK 10.0.26100.0 (C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.50.35717\bin\Hostx64\x64)
+[00:00:147] Building referenced target Flax
+[00:00:153] Missing VULKAN_SDK environment variable. Cannot build Vulkan.
+[00:00:153] Building for Windows without Vulkan rendering backend (Vulkan SDK is missing)
+[00:00:157] Parsing API bindings for Profiler (FlaxEngine)
+[00:00:251] Parsing API bindings for Platform (FlaxEngine)
+[00:00:345] Parsing API bindings for Core (FlaxEngine)
+[00:01:061] Parsing API bindings for Physics (FlaxEngine)
+[00:01:162] Parsing API bindings for TextureTool (FlaxEngine)
+[00:01:165] Parsing API bindings for ModelTool (FlaxEngine)
+[00:01:176] Parsing API bindings for Graphics (FlaxEngine)
+[00:01:408] Parsing API bindings for Utilities (FlaxEngine)
+[00:01:423] Parsing API bindings for Particles (FlaxEngine)
+[00:01:441] Parsing API bindings for Content (FlaxEngine)
+[00:01:507] Parsing API bindings for Renderer (FlaxEngine)
+[00:01:526] Found the following .NET SDK versions: 10.0.102, 9.0.309, 8.0.417
+[00:01:526] Found the following .NET runtime versions: 10.0.2, 9.0.12, 8.0.23
+[00:01:530] Using .NET SDK 10.0.102, runtime 10.0.2 (C:\Program Files\dotnet\)
+[00:01:532]   - Host Runtime for Windows x64
+[00:01:532]   - Host Runtime for Windows x86
+[00:01:532]   - Host Runtime for Windows ARM64
+[00:01:532]   - Host Runtime for Android ARM
+[00:01:532]   - Host Runtime for Android ARM64
+[00:01:532]   - Host Runtime for iOS ARM
+[00:01:532]   - Host Runtime for iOS ARM64
+[00:01:534] Parsing API bindings for Scripting (FlaxEngine)
+[00:01:558] Parsing API bindings for Serialization (FlaxEngine)
+[00:01:560] Parsing API bindings for Level (FlaxEngine)
+[00:01:693] Parsing API bindings for Navigation (FlaxEngine)
+[00:01:707] Parsing API bindings for AI (FlaxEngine)
+[00:01:720] Parsing API bindings for Visject (FlaxEngine)
+[00:01:740] Parsing API bindings for Animations (FlaxEngine)
+[00:01:800] Parsing API bindings for Audio (FlaxEngine)
+[00:01:807] Parsing API bindings for Video (FlaxEngine)
+[00:01:812] Parsing API bindings for Debug (FlaxEngine)
+[00:01:862] Parsing API bindings for Foliage (FlaxEngine)
+[00:01:889] Parsing API bindings for Render2D (FlaxEngine)
+[00:01:924] Parsing API bindings for Input (FlaxEngine)
+[00:01:949] Parsing API bindings for Networking (FlaxEngine)
+[00:01:975] Parsing API bindings for Streaming (FlaxEngine)
+[00:01:976] Parsing API bindings for Terrain (FlaxEngine)
+[00:01:989] Parsing API bindings for Threading (FlaxEngine)
+[00:01:992] Parsing API bindings for Localization (FlaxEngine)
+[00:02:000] Parsing API bindings for UI (FlaxEngine)
+[00:02:005] Parsing API bindings for Online (FlaxEngine)
+[00:02:008] Parsing API bindings for Engine (FlaxEngine)
+[00:02:018] Building module tracy
+[00:02:020] Building module Profiler
+[00:02:020] Building module Platform
+[00:02:020] Building module fmt
+[00:02:020] Building module Core
+[00:02:020] Building module PhysX
+[00:02:020] Building module NvCloth
+[00:02:020] Building module Physics
+[00:02:020] Building module lz4
+[00:02:020] Building module minimp3
+[00:02:020] Building module ogg
+[00:02:020] Building module vorbis
+[00:02:020] Building module AudioTool
+[00:02:020] Building module DirectXTex
+[00:02:020] Building module TextureTool
+[00:02:020] Building module ModelTool
+[00:02:020] Building module GraphicsDeviceNull
+[00:02:020] Building module nvapi
+[00:02:020] Building module AGS
+[00:02:020] Building module GraphicsDeviceDX11
+[00:02:020] Building module GraphicsDeviceDX12
+[00:02:020] Building module Graphics
+[00:02:020] Building module Utilities
+[00:02:020] Building module Particles
+[00:02:020] Building module Content
+[00:02:020] Building module Renderer
+[00:02:020] Building module nethost
+[00:02:020] Building module Scripting
+[00:02:020] Building module rapidjson
+[00:02:020] Building module Serialization
+[00:02:021] Building module Level
+[00:02:021] Building module recastnavigation
+[00:02:021] Building module Navigation
+[00:02:021] Building module AI
+[00:02:021] Building module Visject
+[00:02:021] Building module Animations
+[00:02:021] Building module Audio
+[00:02:021] Building module Video
+[00:02:021] Building module Debug
+[00:02:021] Building module Foliage
+[00:02:021] Building module freetype
+[00:02:021] Building module Render2D
+[00:02:021] Building module Input
+[00:02:021] Building module Networking
+[00:02:021] Building module Streaming
+[00:02:021] Building module Terrain
+[00:02:021] Building module Threading
+[00:02:021] Building module Localization
+[00:02:021] Building module UI
+[00:02:021] Building module Online
+[00:02:021] Building module Engine
+[00:02:023] Skipping build for target FlaxGame
+[00:02:036] Generating binary module bindings for Game
+[00:02:039] Skipped saving file to C:\Works\hundun-world-flax\HundunWorld\Source\Game.Gen.cs
+[00:02:039] Building module Game
+[00:02:042] Skipped saving file to C:\Works\hundun-world-flax\HundunWorld\Cache/Intermediate\GameTarget\Windows\x64\Development\Game.CSharp.response
+[00:02:051] Skipped saving file to C:\Works\hundun-world-flax\HundunWorld\Binaries\GameTarget\Windows\x64\Development\GameTarget.Build.json
+[00:02:062] Found 71 valid and 0 invalid actions in Task Graph cache
+[00:02:062] 
+[00:02:062] Total 24 tasks
+[00:02:062] Done!
+[00:02:064] Total time: 00:00:02.0779005
+[00:02:064] End.

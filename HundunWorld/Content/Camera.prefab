@@ -1,0 +1,24 @@
+{
+	"ID": "fe7be3d74f488eab81cc0d8efcf612e3",
+	"TypeName": "FlaxEngine.Prefab",
+	"EngineBuild": 6705,
+	"Data": [
+	{
+		"ID": "1be88e7942dc7225e4ff8396ae7c4c04",
+		"TypeName": "FlaxEngine.Camera",
+		"ParentID": "00000000000000000000000000000000",
+		"Name": "Camera",
+		"StaticFlags": 0
+	},
+	{
+		"ID": "4b198e7542edf87810d01291f8985823",
+		"TypeName": "HundunWorld.Game.ThirdPersonCamera",
+		"ParentID": "1be88e7942dc7225e4ff8396ae7c4c04",
+		"V": {
+			"Distance": 30.0,
+			"MaxDistance": 2000.0,
+			"CameraSmoothing": 1.0
+		}
+	}
+]
+}

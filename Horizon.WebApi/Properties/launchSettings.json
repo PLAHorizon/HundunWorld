@@ -1,0 +1,33 @@
+﻿{
+  "$schema": "http://json.schemastore.org/launchsettings.json",
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:59626",
+      "sslPort": 44376
+    }
+  },
+  "profiles": {
+    "IIS Express": {
+      "commandName": "IISExpress",
+      "launchBrowser": true,
+      "launchUrl": "",
+        "environmentVariables": {
+            "ASPNETCORE_ENVIRONMENT": "Production"
+        }
+    },
+    "Horizon.WebApi": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "",
+      //"applicationUrl": "https://api.ihuaxiax.com;http://api.ihuaxiax.com",
+      "applicationUrl": "https://localhost:44376",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development" //开发
+        //"ASPNETCORE_ENVIRONMENT": "Production" //发布
+        //"ASPNETCORE_ENVIRONMENT": "Staging"  //预发布
+      }
+    }
+  }
+}

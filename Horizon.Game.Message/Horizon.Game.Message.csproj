@@ -1,0 +1,76 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyVersion>1.0.0.1</AssemblyVersion>
+    <FileVersion>1.0.0.1</FileVersion>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
+    <!-- 强制复制所有运行时依赖到输出目录 -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <!-- 使用滚动前向(Roll Forward)策略,允许使用较新的运行时版本 -->
+    <RollForward>LatestMajor</RollForward>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="Network\UnifiedMessages.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MemoryPack.Core" Version="1.21.4" /> 
+    <PackageReference Include="MemoryPack.Generator" Version="1.21.4" PrivateAssets="all" />
+    <PackageReference Include="K4os.Compression.LZ4" Version="1.3.8" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.10" />
+    <!-- Microsoft.CodeAnalysis packages might not be strictly needed by the project itself after removing FlatSharp compiler and post-processor -->
+    <!-- but keep them if other parts of your build or analysis rely on them -->
+    <!-- <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.13.0" /> -->
+    <!-- <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.13.0" /> -->
+    <!-- <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.13.0" -->
+    <!-- <PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="4.13.0"> -->
+    <!--  <PrivateAssets>all</PrivateAssets> -->
+    <!--  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets> -->
+    <!-- </PackageReference> -->
+    <PackageReference Include="Microsoft.Orleans.Core" Version="9.2.1" /> 
+    <PackageReference Include="Microsoft.Orleans.Serialization" Version="9.2.1" />
+    <PackageReference Include="TouchSocket" Version="4.0.2" />
+    <PackageReference Include="TouchSocket.Core" Version="4.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Enums\" />
+  </ItemGroup>
+
+  <!-- Removed FlatSharpSchema ItemGroup -->
+  <!-- Removed Target Name="RunFlatSharpPostProcessor" -->
+
+  <!-- 编译后复制文件到 Flax 目录 -->
+  <!-- 编译后复制文件到 Flax 目录(仅复制客户端需要的依赖) -->
+  <Target Name="CopyToFlax" AfterTargets="Build">
+    <PropertyGroup>    
+      <FlaxToolsDir>C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools</FlaxToolsDir>
+    </PropertyGroup>
+    
+    <ItemGroup>
+      <!-- 主程序集 -->
+      <FilesToCopy Include="$(OutputPath)$(AssemblyName).dll" />
+      <FilesToCopy Include="$(OutputPath)$(AssemblyName).xml" />
+      <FilesToCopy Include="$(OutputPath)$(AssemblyName).pdb" Condition="Exists('$(OutputPath)$(AssemblyName).pdb')" />
+      
+      <!-- 仅复制客户端需要的 DLL: MemoryPack, LZ4, TouchSocket -->
+      <FilesToCopy Include="$(OutputPath)MemoryPack.Core.dll" />
+      <FilesToCopy Include="$(OutputPath)K4os.Compression.LZ4.dll" />
+      <FilesToCopy Include="$(OutputPath)TouchSocket.dll" />
+      <FilesToCopy Include="$(OutputPath)TouchSocket.Core.dll" />
+    </ItemGroup>
+    
+    <Message Text="正在复制 Horizon.Game.Message 及客户端依赖到 Flax 目录..." Importance="high" />
+    
+    <Copy SourceFiles="@(FilesToCopy)" DestinationFolder="$(FlaxToolsDir)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" Retries="3" RetryDelayMilliseconds="1000" ContinueOnError="WarnAndContinue">
+      <Output TaskParameter="CopiedFiles" ItemName="SuccessfullyCopiedFiles" />
+    </Copy>
+    
+    <Message Text="成功复制文件到 Flax 目录" Importance="high" />
+  </Target>
+
+</Project>

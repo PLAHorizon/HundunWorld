@@ -1,0 +1,13 @@
+{
+	"ID": "a42ea761478803724a5133a4e00e3fa9",
+	"TypeName": "FlaxEngine.LocalizedStringTable",
+	"EngineBuild": 6802,
+	"Data": {
+	"Locale": "zh-Hans-CN",
+	"FallbackTable": "a42ea761478803724a5133a4e00e3fa9",
+	"Entries": {
+		"PasswordLabel": "密码",
+		"PassportLabel": "登录"
+	}
+}
+}

@@ -1,0 +1,45 @@
+{
+	"ID": "61bcb8e143559cd0e6d1e6a2266d7be6",
+	"TypeName": "FlaxEngine.Prefab",
+	"EngineBuild": 6705,
+	"Data": [
+	{
+		"ID": "6fa89c8849d8f411fa7be79c37261e56",
+		"TypeName": "FlaxEngine.EmptyActor",
+		"ParentID": "00000000000000000000000000000000",
+		"Name": "Player"
+	},
+	{
+		"ID": "763c20824098e5f4c361f7a36763ec99",
+		"TypeName": "HundunWorld.Game.PlayerController",
+		"ParentID": "6fa89c8849d8f411fa7be79c37261e56",
+		"V": {
+			"Camera": "df6813bb4448f2373aa43fb99f4f726f"
+		}
+	},
+	{
+		"ID": "191d537a41b441e0d156719de44e7b1b",
+		"TypeName": "FlaxEngine.AnimatedModel",
+		"ParentID": "6fa89c8849d8f411fa7be79c37261e56",
+		"Name": "CharacterModel",
+		"SkinnedModel": "b43f0f8f4aaba3f3156896a5a22ba493",
+		"AnimationGraph": "61bcb8e143559cd0e6d1e6a2266d7be6",
+		"Buffer": {
+			"Entries": [
+				{
+					"Material": "00000000000000000000000000000000",
+					"ShadowsMode": 3,
+					"Visible": true,
+					"ReceiveDecals": true
+				}
+			]
+		}
+	},
+	{
+		"ID": "6820027d4a782e1f66f3f3bf71873e9c",
+		"TypeName": "FlaxEngine.CharacterController",
+		"ParentID": "6fa89c8849d8f411fa7be79c37261e56",
+		"Name": "CharacterController"
+	}
+]
+}

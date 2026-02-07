@@ -1,0 +1,464 @@
+{
+	"ID": "dc72848f4b0f90ee2df186a728f14858",
+	"TypeName": "FlaxEngine.SceneAsset",
+	"EngineBuild": 6806,
+	"Data": [
+		{
+			"ID": "dc72848f4b0f90ee2df186a728f14858",
+			"TypeName": "FlaxEngine.Scene",
+			"LightmapSettings": {
+				"IndirectLightingIntensity": 1.0,
+				"GlobalObjectsScale": 1.0,
+				"ChartsPadding": 3,
+				"AtlasSize": 1024,
+				"BounceCount": 1,
+				"CompressLightmaps": true,
+				"UseGeometryWithNoMaterials": true,
+				"Quality": 10
+			}
+		},
+		{
+			"ID": "26be1a6046e5a29ffa225ca7a9b80a39",
+			"TypeName": "FlaxEngine.UICanvas",
+			"ParentID": "dc72848f4b0f90ee2df186a728f14858",
+			"Name": "UICanvas",
+			"Transform": {
+				"Orientation": {
+					"X": 1.0,
+					"Y": 4.371138828673793e-8,
+					"Z": 4.371138828673793e-8,
+					"W": 1.910685465164705e-15
+				}
+			},
+			"V": {}
+		},
+		{
+			"ID": "1be54a824d3264ab6febbebde00223c0",
+			"TypeName": "FlaxEngine.UIControl",
+			"ParentID": "26be1a6046e5a29ffa225ca7a9b80a39",
+			"Name": "Canvas Scalar",
+			"Transform": {
+				"Translation": {
+					"X": -2.0,
+					"Y": -12.666748046875,
+					"Z": 0.0
+				}
+			},
+			"Control": "FlaxEngine.GUI.CanvasScaler",
+			"Data": {
+	"ResolutionCurve": {
+		"Keyframes": [
+			{
+				"Time": 0.0,
+				"Value": 0.0
+			},
+			{
+				"Time": 480.0,
+				"Value": 0.444
+			},
+			{
+				"Time": 720.0,
+				"Value": 0.666
+			},
+			{
+				"Time": 1080.0,
+				"Value": 1.0
+			},
+			{
+				"Time": 8640.0,
+				"Value": 8.0
+			}
+		]
+	},
+	"DpiCurve": {
+		"Keyframes": [
+			{
+				"Time": 1.0,
+				"Value": 1.0
+			},
+			{
+				"Time": 96.0,
+				"Value": 1.0
+			},
+			{
+				"Time": 200.0,
+				"Value": 2.0
+			},
+			{
+				"Time": 400.0,
+				"Value": 4.0
+			}
+		]
+	},
+	"Scaling": 0,
+	"ScaleFactor": 1.0,
+	"PhysicalUnit": 3,
+	"PhysicalUnitSize": 1.0,
+	"ResolutionMode": 0,
+	"ResolutionMin": {
+		"X": 1.0,
+		"Y": 1.0
+	},
+	"ResolutionMax": {
+		"X": 7680.0,
+		"Y": 4320.0
+	},
+	"ClipChildren": true,
+	"CullChildren": true,
+	"AnchorMin": {
+		"X": 0.0,
+		"Y": 0.0
+	},
+	"AnchorMax": {
+		"X": 1.0,
+		"Y": 1.0
+	},
+	"Offsets": {
+		"Left": -2.0,
+		"Right": 2.0,
+		"Top": -12.666748,
+		"Bottom": 12.666748
+	},
+	"Scale": {
+		"X": 1.0,
+		"Y": 1.0
+	},
+	"Pivot": {
+		"X": 0.5,
+		"Y": 0.5
+	},
+	"Shear": {
+		"X": 0.0,
+		"Y": 0.0
+	},
+	"Rotation": 0.0,
+	"BackgroundColor": {
+		"R": 0.0,
+		"G": 0.0,
+		"B": 0.0,
+		"A": 0.0
+	},
+	"BackgroundBrush": null,
+	"Enabled": true,
+	"Visible": true,
+	"AutoFocus": false
+}
+		},
+		{
+			"ID": "19aecf6d4452d474473a8b90f41bea68",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "1be54a824d3264ab6febbebde00223c0",
+			"Name": "Controller"
+		},
+		{
+			"ID": "0c5fd8564ebc368d6961d1a6992b799a",
+			"TypeName": "Game.AuthenticationController",
+			"ParentID": "19aecf6d4452d474473a8b90f41bea68",
+			"V": {}
+		},
+		{
+			"ID": "caba2685484e37d62a5d3d90ea6f9bda",
+			"TypeName": "FlaxEngine.UIControl",
+			"ParentID": "1be54a824d3264ab6febbebde00223c0",
+			"Name": "LoginPanel",
+			"Transform": {
+				"Translation": {
+					"X": 720.0,
+					"Y": 391.6687316894531,
+					"Z": 1.8189894035458565e-12
+				}
+			},
+			"Control": "HundunWorld.Game.UI.Authentication.LoginPanel",
+			"Data": {
+	"ScrollBars": 0,
+	"ScrollBarsSize": 14.0,
+	"AlwaysShowScrollbars": false,
+	"ScrollMargin": {
+		"Left": 0.0,
+		"Right": 0.0,
+		"Top": 0.0,
+		"Bottom": 0.0
+	},
+	"ScrollbarTrackColor": {
+		"R": 0.32941177,
+		"G": 0.32941177,
+		"B": 0.36078432,
+		"A": 1.0
+	},
+	"ScrollbarThumbColor": {
+		"R": 0.24705882,
+		"G": 0.24705882,
+		"B": 0.27450982,
+		"A": 1.0
+	},
+	"ScrollbarThumbSelectedColor": {
+		"R": 0.0,
+		"G": 0.47843137,
+		"B": 0.8,
+		"A": 1.0
+	},
+	"ClipChildren": true,
+	"CullChildren": true,
+	"AnchorMin": {
+		"X": 0.5,
+		"Y": 0.5
+	},
+	"AnchorMax": {
+		"X": 0.5,
+		"Y": 0.5
+	},
+	"Offsets": {
+		"Left": -240.0,
+		"Right": 480.0,
+		"Top": -148.33127,
+		"Bottom": 296.66254
+	},
+	"Scale": {
+		"X": 1.0,
+		"Y": 1.0
+	},
+	"Pivot": {
+		"X": 0.5,
+		"Y": 0.5
+	},
+	"Shear": {
+		"X": 0.0,
+		"Y": 0.0
+	},
+	"Rotation": 0.0,
+	"BackgroundColor": {
+		"R": 0.21568628,
+		"G": 0.25490198,
+		"B": 0.29411766,
+		"A": 0.9
+	},
+	"BackgroundBrush": null,
+	"Enabled": true,
+	"Visible": true,
+	"AutoFocus": true
+}
+		},
+		{
+			"ID": "d8af98ac4cace812f17515a234291e89",
+			"TypeName": "FlaxEngine.UIControl",
+			"ParentID": "1be54a824d3264ab6febbebde00223c0",
+			"Name": "RegisterPanel",
+			"Transform": {
+				"Translation": {
+					"X": 620.0,
+					"Y": 363.20001220703125,
+					"Z": -1.8189894035458565e-12
+				}
+			},
+			"Control": "HundunWorld.Game.UI.Authentication.RegisterPanel",
+			"Data": {
+	"ScrollBars": 0,
+	"ScrollBarsSize": 14.0,
+	"AlwaysShowScrollbars": false,
+	"ScrollMargin": {
+		"Left": 0.0,
+		"Right": 0.0,
+		"Top": 0.0,
+		"Bottom": 0.0
+	},
+	"ScrollbarTrackColor": {
+		"R": 0.32941177,
+		"G": 0.32941177,
+		"B": 0.36078432,
+		"A": 1.0
+	},
+	"ScrollbarThumbColor": {
+		"R": 0.24705882,
+		"G": 0.24705882,
+		"B": 0.27450982,
+		"A": 1.0
+	},
+	"ScrollbarThumbSelectedColor": {
+		"R": 0.0,
+		"G": 0.47843137,
+		"B": 0.8,
+		"A": 1.0
+	},
+	"ClipChildren": true,
+	"CullChildren": true,
+	"AnchorMin": {
+		"X": 0.5,
+		"Y": 0.5
+	},
+	"AnchorMax": {
+		"X": 0.5,
+		"Y": 0.5
+	},
+	"Offsets": {
+		"Left": -340.0,
+		"Right": 680.0,
+		"Top": -176.79999,
+		"Bottom": 353.59998
+	},
+	"Scale": {
+		"X": 1.0,
+		"Y": 1.0
+	},
+	"Pivot": {
+		"X": 0.5,
+		"Y": 0.5
+	},
+	"Shear": {
+		"X": 0.0,
+		"Y": 0.0
+	},
+	"Rotation": 0.0,
+	"BackgroundColor": {
+		"R": 0.21568628,
+		"G": 0.25490198,
+		"B": 0.29411766,
+		"A": 0.9
+	},
+	"BackgroundBrush": null,
+	"Enabled": true,
+	"Visible": false,
+	"AutoFocus": true
+}
+		},
+		{
+			"ID": "15e252344018ad5520c453a02184e425",
+			"TypeName": "FlaxEngine.SkyLight",
+			"ParentID": "dc72848f4b0f90ee2df186a728f14858",
+			"Name": "SkyLight"
+		},
+		{
+			"ID": "218eaf52464931c0b85d6abd6a1c0f60",
+			"TypeName": "FlaxEngine.Camera",
+			"ParentID": "dc72848f4b0f90ee2df186a728f14858",
+			"Name": "Camera",
+			"Transform": {
+				"Translation": {
+					"X": 0.0,
+					"Y": 90.0,
+					"Z": 0.0
+				}
+			},
+			"Tag": "Terrains"
+		},
+		{
+			"ID": "64b960854b6b5341da5361ab934fc221",
+			"TypeName": "FlaxEngine.Sky",
+			"ParentID": "dc72848f4b0f90ee2df186a728f14858",
+			"Name": "Sky"
+		},
+		{
+			"ID": "024310924d5b5de92787499ff5328f95",
+			"TypeName": "FlaxEngine.Terrain",
+			"ParentID": "dc72848f4b0f90ee2df186a728f14858",
+			"Name": "Terrain",
+			"Tag": "Terrains",
+			"PhysicalMaterials": [
+				"b9911a1246ff06f2389f0da6d23e2da0",
+				"b9911a1246ff06f2389f0da6d23e2da0",
+				"b9911a1246ff06f2389f0da6d23e2da0",
+				"b9911a1246ff06f2389f0da6d23e2da0",
+				"00000000000000000000000000000000",
+				"00000000000000000000000000000000",
+				"00000000000000000000000000000000",
+				"00000000000000000000000000000000"
+			],
+			"Material": "ef37747f47fd4a8dae7bde9e52d41dbf",
+			"LODCount": 6,
+			"ChunkSize": 127,
+			"Patches": [
+				{
+					"X": 0,
+					"Z": 0,
+					"Offset": 3391.11328125,
+					"Height": 1293.9453125,
+					"Heightmap": "62b7a7e3459b0b5bf92745a74e16460d",
+					"Splatmap0": "a424668540d0c53c6f7f9c83e07ffa47",
+					"Splatmap1": "7f862b4a4b0abebaeb1c7b88f424ad77",
+					"Heightfield": "d84316624711c6d689178eaa7d2b6e8c",
+					"Chunks": [
+						{
+							"Offset": 4038.0859375,
+							"Height": 1.0,
+							"Material": "ca49c2d34dd182c739f4f19678ec019e"
+						},
+						{
+							"Offset": 3862.3046875,
+							"Height": 646.97265625,
+							"Material": "00000000000000000000000000000000"
+						},
+						{
+							"Offset": 3862.3046875,
+							"Height": 646.97265625,
+							"Material": "00000000000000000000000000000000"
+						},
+						{
+							"Offset": 3862.3046875,
+							"Height": 490.72265625,
+							"Material": "00000000000000000000000000000000"
+						},
+						{
+							"Offset": 3862.3046875,
+							"Height": 175.78125,
+							"Material": "00000000000000000000000000000000"
+						},
+						{
+							"Offset": 3706.0546875,
+							"Height": 979.00390625,
+							"Material": "00000000000000000000000000000000"
+						},
+						{
+							"Offset": 3862.3046875,
+							"Height": 646.97265625,
+							"Material": "00000000000000000000000000000000"
+						},
+						{
+							"Offset": 3862.3046875,
+							"Height": 490.72265625,
+							"Material": "00000000000000000000000000000000"
+						},
+						{
+							"Offset": 3862.3046875,
+							"Height": 334.47265625,
+							"Material": "00000000000000000000000000000000"
+						},
+						{
+							"Offset": 3862.3046875,
+							"Height": 334.47265625,
+							"Material": "00000000000000000000000000000000"
+						},
+						{
+							"Offset": 3391.11328125,
+							"Height": 1118.1640625,
+							"Material": "00000000000000000000000000000000"
+						},
+						{
+							"Offset": 3706.0546875,
+							"Height": 803.22265625,
+							"Material": "00000000000000000000000000000000"
+						},
+						{
+							"Offset": 3862.3046875,
+							"Height": 175.78125,
+							"Material": "00000000000000000000000000000000"
+						},
+						{
+							"Offset": 3862.3046875,
+							"Height": 334.47265625,
+							"Material": "00000000000000000000000000000000"
+						},
+						{
+							"Offset": 3549.8046875,
+							"Height": 703.72119140625,
+							"Material": "00000000000000000000000000000000"
+						},
+						{
+							"Offset": 3862.3046875,
+							"Height": 549.31640625,
+							"Material": "00000000000000000000000000000000"
+						}
+					]
+				}
+			]
+		}
+	]
+}

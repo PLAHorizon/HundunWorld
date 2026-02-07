@@ -1,0 +1,94 @@
+{
+	"ID": "006fd17d49d3d37e15ca689c2be555f2",
+	"TypeName": "FlaxEngine.SceneAsset",
+	"EngineBuild": 6806,
+	"Data": [
+		{
+			"ID": "006fd17d49d3d37e15ca689c2be555f2",
+			"TypeName": "FlaxEngine.Scene",
+			"LightmapSettings": {
+				"IndirectLightingIntensity": 1.0,
+				"GlobalObjectsScale": 1.0,
+				"ChartsPadding": 3,
+				"AtlasSize": 1024,
+				"BounceCount": 1,
+				"CompressLightmaps": true,
+				"UseGeometryWithNoMaterials": true,
+				"Quality": 10
+			}
+		},
+		{
+			"ID": "d714273b42e3e3b33a013791f55643fd",
+			"TypeName": "FlaxEngine.DirectionalLight",
+			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
+			"Name": "Sun",
+			"Transform": {
+				"Translation": {
+					"X": 40.0,
+					"Y": 160.0,
+					"Z": 0.0
+				},
+				"Orientation": {
+					"X": 0.3826834559440613,
+					"Y": 0.0,
+					"Z": 0.0,
+					"W": 0.9238795042037964
+				}
+			}
+		},
+		{
+			"ID": "d5ff3e154560738eff5de4a08b26b0bc",
+			"TypeName": "FlaxEngine.Sky",
+			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
+			"Name": "Sky",
+			"Transform": {
+				"Translation": {
+					"X": 40.0,
+					"Y": 150.0,
+					"Z": 0.0
+				}
+			},
+			"Sun": "d714273b42e3e3b33a013791f55643fd"
+		},
+		{
+			"ID": "fc29e99b414db611c937919882522355",
+			"TypeName": "FlaxEngine.SkyLight",
+			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
+			"Name": "SkyLight",
+			"Brightness": 2.5,
+			"CustomTexture": "c54410104ff39427bc11e5bc761d66b0"
+		},
+		{
+			"ID": "08bfdad94587b20e3098daabb0c9022c",
+			"TypeName": "FlaxEngine.Camera",
+			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
+			"Name": "Camera",
+			"Transform": {
+				"Translation": {
+					"X": 0.0,
+					"Y": 150.0,
+					"Z": -300.0
+				}
+			}
+		},
+		{
+			"ID": "be528fb94a8a318f6f8b22b08b016659",
+			"TypeName": "HundunWorld.Game.ThirdPersonCamera",
+			"ParentID": "08bfdad94587b20e3098daabb0c9022c",
+			"V": {
+	"NormalStateConfig": {},
+	"CombatStateConfig": {},
+	"ClimbingStateConfig": {},
+	"SwimmingStateConfig": {},
+	"FlyingStateConfig": {},
+	"CutsceneStateConfig": {},
+	"OutdoorConfig": {},
+	"IndoorConfig": {},
+	"UnderwaterConfig": {},
+	"AerialConfig": {},
+	"CaveConfig": {},
+	"CorridorConfig": {}
+}
+		}
+	]
+}

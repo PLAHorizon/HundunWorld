@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- 生成 XML 文档文件 -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
+  </PropertyGroup>
+
+  <!-- 包引用 -->
+
+  <!-- 编译后复制文件到 Flax 目录 -->
+  <Target Name="CopyToFlax" AfterTargets="Build">
+    <PropertyGroup>
+      <FlaxToolsDir>D:\Program Files (x86)\Flax\Flax_1.10\Binaries\Tools</FlaxToolsDir>
+    </PropertyGroup>
+    
+    <ItemGroup>
+      <FilesToCopy Include="$(OutputPath)$(AssemblyName).dll" />
+      <FilesToCopy Include="$(OutputPath)$(AssemblyName).xml" />
+      <FilesToCopy Include="$(OutputPath)$(AssemblyName).pdb" Condition="Exists('$(OutputPath)$(AssemblyName).pdb')" />
+    </ItemGroup>
+    
+    <Message Text="正在复制 Horizon.Game.ECS 文件到 Flax 目录..." Importance="high" />
+    
+    <Copy SourceFiles="@(FilesToCopy)" DestinationFolder="$(FlaxToolsDir)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" Retries="3" RetryDelayMilliseconds="1000" ContinueOnError="false">
+      <Output TaskParameter="CopiedFiles" ItemName="SuccessfullyCopiedFiles" />
+    </Copy>
+    
+    <Message Text="成功复制文件: @(SuccessfullyCopiedFiles)" Importance="high" />
+  </Target>
+  <ItemGroup>
+    <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
+  </ItemGroup>
+
+</Project>

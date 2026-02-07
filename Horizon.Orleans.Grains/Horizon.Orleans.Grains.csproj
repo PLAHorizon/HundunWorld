@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="yqubukcb.2xa~" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Orleans.Runtime" Version="9.2.1" />
+	  <PackageReference Include="Microsoft.Orleans.Core" Version="9.2.1" />
+	  <PackageReference Include="Microsoft.Orleans.Core.Abstractions" Version="9.2.1" />
+	  <PackageReference Include="Microsoft.Orleans.Persistence.Redis" Version="9.2.1" />
+	  <PackageReference Include="Microsoft.Orleans.Sdk" Version="9.2.1" />
+	  <PackageReference Include="Microsoft.Orleans.Streaming" Version="9.2.1" />
+	  <PackageReference Include="Microsoft.Orleans.Streaming.EventHubs" Version="9.2.1" />
+    <PackageReference Include="MongoDB.Driver" Version="2.24.0" />
+	  <PackageReference Include="MemoryPack.Core" Version="1.21.4" />
+	  <PackageReference Include="MemoryPack.Generator" Version="1.21.4" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Horizon.Entities\Horizon.Entities.csproj" />
+    <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
+    <ProjectReference Include="..\Horizon.Mapper\Horizon.Mapper.csproj" />
+    <ProjectReference Include="..\Horizon.Model\Horizon.Model.csproj" />
+    <ProjectReference Include="..\Horizon.Orleans.Interface\Horizon.Orleans.Interface.csproj" />
+    <ProjectReference Include="..\Horizon.Share\Horizon.Share.csproj" />
+    <ProjectReference Include="..\Horizon.Strategy.Storage.Redis\Horizon.Strategy.Storage.Redis.csproj" />
+  </ItemGroup>
+
+</Project>
