@@ -320,10 +320,6 @@ namespace Horizon.Orleans.Grains
         public async Task<PassportInfoDto> RegisterAsync(RegisterDto registerDto)
         {
             if (registerDto == null) throw new ArgumentNullException(nameof(registerDto));
-            //if (string.IsNullOrWhiteSpace(registerDto.Email) &&
-            //    string.IsNullOrWhiteSpace(registerDto.Phone))
-            //    throw new ArgumentNullException($"{nameof(registerDto.Phone)}或{nameof(registerDto.Email)}");
-
             registerDto.Phone = string.IsNullOrWhiteSpace(registerDto.Phone) ? registerDto.ID : registerDto.Phone;
             registerDto.Email = string.IsNullOrWhiteSpace(registerDto.Email) ? registerDto.ID : registerDto.Email;
             string passportId = string.Empty;
@@ -535,7 +531,7 @@ namespace Horizon.Orleans.Grains
             }
             catch (Exception ex)
             {
-
+                _logger.LogError(ex, "注销账号失败: PassportId={PassportId}", passportId);
                 return false;
             }
             finally
@@ -560,7 +556,7 @@ namespace Horizon.Orleans.Grains
             }
             catch (Exception ex)
             {
-                // 记录日志
+                _logger.LogError(ex, "更新用户会话信息失败");
                 return await Task.FromResult(false);
             }
         }
