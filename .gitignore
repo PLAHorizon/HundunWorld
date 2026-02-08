@@ -16,6 +16,7 @@ bld/
 
 # Generated XML documentation files
 Horizon.*/[A-Z]*.xml
+**/C:/
 
 # Visual Studio cache/options
 .vs/
