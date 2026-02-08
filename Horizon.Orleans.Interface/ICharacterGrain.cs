@@ -11,6 +11,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 角色Grain接口 - 负责角色数据管理和游戏逻辑
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface ICharacterGrain : IGrainWithIntegerKey
     {
         /// <summary>

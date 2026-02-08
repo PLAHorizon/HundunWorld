@@ -10,6 +10,7 @@ namespace Horizon.Orleans.Interface
     /// 通行证 Grain 接口，负责用户账户的认证和管理。
     /// Grain ID 为用户唯一标识符 (Guid)。
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface IPassportGrain : IGrainWithGuidKey
     {
         /// <summary>

@@ -10,6 +10,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 消息路由器Grain接口
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface IMessageRouterGrain : IGrainWithIntegerKey
     {
         /// <summary>
@@ -36,6 +37,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 消息频道Grain接口
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface IMessageChannelGrain : IGrainWithStringKey
     {
         /// <summary>
@@ -67,6 +69,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 公会频道Grain接口
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface IGuildChannelGrain : IGrainWithGuidKey
     {
         /// <summary>
@@ -93,6 +96,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 队伍频道Grain接口
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface ITeamChannelGrain : IGrainWithGuidKey
     {
         /// <summary>
@@ -119,6 +123,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 系统频道Grain接口
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface ISystemChannelGrain : IGrainWithIntegerKey
     {
         /// <summary>
@@ -140,6 +145,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 社交系统监控Grain接口
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface ISocialSystemMonitorGrain : IGrainWithIntegerKey
     {
         /// <summary>

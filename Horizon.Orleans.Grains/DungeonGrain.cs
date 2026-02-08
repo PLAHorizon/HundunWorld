@@ -87,6 +87,13 @@ namespace Horizon.Orleans.Grains
         [MemoryPackOrder(9)]
         [Id(9)]
         public Dictionary<int, DungeonBossData> Bosses { get; set; } = new();
+
+        /// <summary>
+        /// 关联的队伍ID（组队副本使用）
+        /// </summary>
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public Guid? TeamId { get; set; }
     }
 
     /// <summary>
@@ -436,7 +443,8 @@ namespace Horizon.Orleans.Grains
                     StartTime = state.StartTime,
                     IsCreated = state.IsCreated,
                     Bosses = state.Bosses.Values.ToList(),
-                    DefeatedBossCount = state.Bosses.Values.Count(b => b.IsDefeated)
+                    DefeatedBossCount = state.Bosses.Values.Count(b => b.IsDefeated),
+                    TeamId = state.TeamId
                 };
 
                 return Task.FromResult(data);

@@ -9,6 +9,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 任务系统Grain接口 - 负责任务接取、进度更新、完成、放弃
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface IQuestGrain : IGrainWithGuidKey
     {
         /// <summary>
@@ -79,6 +80,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 副本系统Grain接口 - 负责副本创建、进入、通关、奖励发放
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface IDungeonGrain : IGrainWithGuidKey
     {
         /// <summary>
@@ -344,6 +346,13 @@ namespace Horizon.Orleans.Interface
         [MemoryPackOrder(10)]
         [Id(10)]
         public int DefeatedBossCount { get; set; }
+
+        /// <summary>
+        /// 关联的队伍ID（组队副本使用）
+        /// </summary>
+        [MemoryPackOrder(11)]
+        [Id(11)]
+        public Guid? TeamId { get; set; }
     }
 
     /// <summary>

@@ -10,6 +10,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 战斗Grain接口 - 负责处理战斗相关逻辑
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface ICombatGrain : IGrainWithGuidKey
     {
         /// <summary>

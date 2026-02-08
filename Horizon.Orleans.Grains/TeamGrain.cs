@@ -67,6 +67,20 @@ namespace Horizon.Orleans.Grains
         [MemoryPackOrder(6)]
         [Id(6)]
         public long CreateTime { get; set; }
+
+        /// <summary>
+        /// 状态版本号（每次状态变更时递增，用于队伍状态同步）
+        /// </summary>
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public long StateVersion { get; set; }
+
+        /// <summary>
+        /// 当前关联的副本实例ID（队伍正在进行的副本）
+        /// </summary>
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public Guid? CurrentDungeonId { get; set; }
     }
 
     /// <summary>
@@ -163,6 +177,7 @@ namespace Horizon.Orleans.Grains
                 };
                 state.Members[leaderId] = leaderMember;
 
+                state.StateVersion++;
                 await _teamState.WriteStateAsync();
 
                 _logger.LogInformation("创建队伍成功: TeamName={TeamName}, LeaderId={LeaderId}",
@@ -209,6 +224,7 @@ namespace Horizon.Orleans.Grains
                 };
                 state.Members[playerId] = newMember;
 
+                state.StateVersion++;
                 await _teamState.WriteStateAsync();
 
                 _logger.LogInformation("加入队伍: PlayerId={PlayerId}", playerId);
@@ -241,6 +257,7 @@ namespace Horizon.Orleans.Grains
                 }
 
                 state.Members.Remove(memberId);
+                state.StateVersion++;
                 await _teamState.WriteStateAsync();
 
                 _logger.LogInformation("离开队伍: MemberId={MemberId}", memberId);
@@ -286,6 +303,7 @@ namespace Horizon.Orleans.Grains
                 }
 
                 state.Members.Remove(targetId);
+                state.StateVersion++;
                 await _teamState.WriteStateAsync();
 
                 _logger.LogInformation("踢出队员: TargetId={TargetId}", targetId);
@@ -336,6 +354,7 @@ namespace Horizon.Orleans.Grains
                 newLeader.IsLeader = true;
                 state.LeaderId = newLeaderId;
 
+                state.StateVersion++;
                 await _teamState.WriteStateAsync();
 
                 _logger.LogInformation("转移队长: NewLeaderId={NewLeaderId}", newLeaderId);
@@ -422,6 +441,8 @@ namespace Horizon.Orleans.Grains
                 state.TeamName = "";
                 state.TeamGoal = "";
                 state.LeaderId = Guid.Empty;
+                state.CurrentDungeonId = null;
+                state.StateVersion++;
 
                 await _teamState.WriteStateAsync();
 
@@ -433,6 +454,114 @@ namespace Horizon.Orleans.Grains
                 _logger.LogError(ex, "解散队伍失败");
                 throw;
             }
+        }
+
+        public async Task<TeamDungeonResult> EnterDungeonAsTeamAsync(Guid leaderId, int dungeonTemplateId, string dungeonName, int difficulty, int timeLimitMinutes)
+        {
+            try
+            {
+                var state = _teamState.State;
+
+                if (!state.IsCreated)
+                {
+                    return new TeamDungeonResult
+                    {
+                        Success = false,
+                        Message = "队伍不存在"
+                    };
+                }
+
+                if (state.LeaderId != leaderId)
+                {
+                    return new TeamDungeonResult
+                    {
+                        Success = false,
+                        Message = "仅队长可发起组队副本"
+                    };
+                }
+
+                if (state.Members.Count < 1)
+                {
+                    return new TeamDungeonResult
+                    {
+                        Success = false,
+                        Message = "队伍成员不足"
+                    };
+                }
+
+                if (state.CurrentDungeonId.HasValue)
+                {
+                    return new TeamDungeonResult
+                    {
+                        Success = false,
+                        Message = "队伍已在副本中"
+                    };
+                }
+
+                // 创建副本实例
+                var dungeonId = Guid.NewGuid();
+                var dungeonGrain = GrainFactory.GetGrain<IDungeonGrain>(dungeonId);
+
+                var created = await dungeonGrain.CreateDungeonAsync(
+                    dungeonTemplateId, dungeonName, difficulty,
+                    state.Members.Count, timeLimitMinutes);
+
+                if (!created)
+                {
+                    return new TeamDungeonResult
+                    {
+                        Success = false,
+                        Message = "创建副本失败"
+                    };
+                }
+
+                // 将全队成员加入副本
+                var enteredMembers = new List<Guid>();
+                foreach (var member in state.Members.Keys)
+                {
+                    var entered = await dungeonGrain.EnterDungeonAsync(member);
+                    if (entered)
+                    {
+                        enteredMembers.Add(member);
+                    }
+                }
+
+                if (enteredMembers.Count == 0)
+                {
+                    return new TeamDungeonResult
+                    {
+                        Success = false,
+                        Message = "没有成员成功进入副本"
+                    };
+                }
+
+                state.CurrentDungeonId = dungeonId;
+                state.StateVersion++;
+                await _teamState.WriteStateAsync();
+
+                _logger.LogInformation("组队进入副本成功: DungeonId={DungeonId}, Members={MemberCount}, TemplateId={TemplateId}",
+                    dungeonId, enteredMembers.Count, dungeonTemplateId);
+
+                return new TeamDungeonResult
+                {
+                    Success = true,
+                    Message = "组队进入副本成功",
+                    DungeonInstanceId = dungeonId,
+                    EnteredMembers = enteredMembers,
+                    DungeonTemplateId = dungeonTemplateId,
+                    Difficulty = difficulty
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "组队进入副本失败: TemplateId={TemplateId}", dungeonTemplateId);
+                throw;
+            }
+        }
+
+        public Task<long> GetTeamStateVersionAsync()
+        {
+            return Task.FromResult(_teamState.State.StateVersion);
         }
 
         /// <summary>
