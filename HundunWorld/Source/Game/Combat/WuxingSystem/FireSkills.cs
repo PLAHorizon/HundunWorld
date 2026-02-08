@@ -656,6 +656,12 @@ namespace Game.Combat.WuxingSystem
             activeInvulnEffect = SkillEffectFactory.CreateInvulnerability(InvincibleDuration);
             activeInvulnEffect.Apply(Actor);
 
+            // 播放无敌特效
+            if (effectManager != null)
+            {
+                activeInvincibleEffectActor = effectManager.PlayCastEffect("FengHuangNiePan_Invincible", Actor);
+            }
+
             isInvincible = true;
             invincibleTimer = InvincibleDuration;
             isReviving = false;

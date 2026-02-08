@@ -165,6 +165,7 @@ namespace Game.Combat.WuxingSystem
         private int currentSpikeIndex = 0;
         private float spikeTimer = 0f;
         private bool isSpawningSpikes = false;
+        private readonly Random spikeRandom = new Random();
 
         public override void OnAwake()
         {
@@ -230,9 +231,8 @@ namespace Game.Combat.WuxingSystem
             Debug.Log($"第 {currentSpikeIndex + 1} 道地刺，造成 {damage:F1} 点伤害");
 
             // 在随机位置生成地刺并应用伤害
-            var random = new Random();
-            float angle = (float)(random.NextDouble() * Math.PI * 2);
-            float radius = (float)(random.NextDouble() * SpikeRadius);
+            float angle = (float)(spikeRandom.NextDouble() * Math.PI * 2);
+            float radius = (float)(spikeRandom.NextDouble() * SpikeRadius);
             Vector3 spikePos = Actor.Position + new Vector3(
                 (float)Math.Cos(angle) * radius, 0, (float)Math.Sin(angle) * radius);
 
@@ -731,6 +731,7 @@ namespace Game.Combat.WuxingSystem
         private Actor activeEarthPowerEffectActor;
         private SkillEffect activeDefenseBuff;
         private SkillEffect activeInvulnEffect;
+        private SkillEffect activeResistanceBuff;
 
         public override void OnAwake()
         {
@@ -765,10 +766,10 @@ namespace Game.Combat.WuxingSystem
                 AttributeBuffEffect.AttributeType.Defense, DefenseBonus, true, Duration);
             activeDefenseBuff.Apply(Actor);
 
-            // 应用伤害减免（通过防御属性间接实现）
-            var resBuff = SkillEffectFactory.CreateAttributeBuff(
+            // 应用伤害减免（通过抗性属性实现）
+            activeResistanceBuff = SkillEffectFactory.CreateAttributeBuff(
                 AttributeBuffEffect.AttributeType.Resistance, DamageReduction, true, Duration);
-            resBuff.Apply(Actor);
+            activeResistanceBuff.Apply(Actor);
 
             // 生成大地之力特效（金色护体光芒）
             var effectManager = SkillEffectManager.Instance;
@@ -813,6 +814,11 @@ namespace Game.Combat.WuxingSystem
                     {
                         activeDefenseBuff.Remove();
                         activeDefenseBuff = null;
+                    }
+                    if (activeResistanceBuff != null)
+                    {
+                        activeResistanceBuff.Remove();
+                        activeResistanceBuff = null;
                     }
 
                     // 清除特效
