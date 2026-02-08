@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -60,6 +61,31 @@ namespace Horizon.Orleans.Silo.Filters
                                 param.Name);
                         }
 
+                        // 检查集合参数大小（防止恶意超大集合导致内存压力）
+                        if (arg is ICollection collection && collection.Count > MaxCollectionSize)
+                        {
+                            _logger.LogWarning(
+                                "Grain集合参数过大: {GrainType}.{MethodName} 参数 {ParamName} 元素数量 {Count} 超过限制 {MaxCount}",
+                                grainType, methodName, param.Name, collection.Count, MaxCollectionSize);
+
+                            throw new ArgumentException(
+                                $"参数 {param.Name} 集合元素数量超过允许的最大值 {MaxCollectionSize}",
+                                param.Name);
+                        }
+
+                        // 检查数值参数是否为负数（ID、数量等不应为负）
+                        if (arg is int intArg && intArg < 0 && IsNonNegativeParameter(param.Name))
+                        {
+                            _logger.LogWarning(
+                                "Grain数值参数为负: {GrainType}.{MethodName} 参数 {ParamName} 值 {Value}",
+                                grainType, methodName, param.Name, intArg);
+
+                            throw new ArgumentOutOfRangeException(
+                                param.Name,
+                                intArg,
+                                $"参数 {param.Name} 不允许为负数");
+                        }
+
                         // 检查集合参数是否为null
                         if (arg == null && !param.HasDefaultValue && IsReferenceType(param.ParameterType))
                         {
@@ -81,6 +107,11 @@ namespace Horizon.Orleans.Silo.Filters
         private const int MaxStringArgumentLength = 10000;
 
         /// <summary>
+        /// 集合参数最大允许元素数量
+        /// </summary>
+        private const int MaxCollectionSize = 10000;
+
+        /// <summary>
         /// 判断参数类型是否为引用类型
         /// </summary>
         private static bool IsReferenceType(Type type) =>
@@ -94,5 +125,18 @@ namespace Horizon.Orleans.Silo.Filters
             methodName.Contains("Initialize", StringComparison.OrdinalIgnoreCase) ||
             methodName.Contains("Create", StringComparison.OrdinalIgnoreCase) ||
             methodName.Contains("Reset", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// 判断参数名称是否暗示非负数值（ID、数量、页码等）
+        /// </summary>
+        private static bool IsNonNegativeParameter(string? paramName) =>
+            paramName != null && (
+                paramName.EndsWith("Id", StringComparison.OrdinalIgnoreCase) ||
+                paramName.Equals("count", StringComparison.OrdinalIgnoreCase) ||
+                paramName.Equals("quantity", StringComparison.OrdinalIgnoreCase) ||
+                paramName.Equals("amount", StringComparison.OrdinalIgnoreCase) ||
+                paramName.Equals("page", StringComparison.OrdinalIgnoreCase) ||
+                paramName.Equals("pageSize", StringComparison.OrdinalIgnoreCase) ||
+                paramName.Equals("level", StringComparison.OrdinalIgnoreCase));
     }
 }

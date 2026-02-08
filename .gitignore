@@ -14,6 +14,9 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
+# Generated XML documentation files
+Horizon.*/[A-Z]*.xml
+
 # Visual Studio cache/options
 .vs/
 .vscode/

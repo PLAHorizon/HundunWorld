@@ -37,7 +37,7 @@
 | 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善）|
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
 | 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
-| 测试基础设施（Phase 1.2） | ✅ 90% | 836个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion/EventConsumerVersioning/PassportGrain） |
+| 测试基础设施（Phase 1.2） | ✅ 90% | 875个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion/EventConsumerVersioning/PassportGrain/CharacterGrainState） |
 | CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置（CI + CodeQL安全扫描 + 代码覆盖率） |
 | 监控可观测性（Phase 2） | ✅ 100% | OpenTelemetry指标、Grafana仪表板、Prometheus告警、JSON结构化日志、CorrelationId分布式追踪、Seq日志聚合、Alertmanager告警通知 |
 
@@ -109,7 +109,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 #### 测试项目
 
-**已存在**: `Horizon.Game.Gateway.Tests/`（20个测试文件，836个测试用例）
+**已存在**: `Horizon.Game.Gateway.Tests/`（21个测试文件，875个测试用例）
 
 | 测试文件 | 测试数量 | 覆盖内容 |
 |---------|---------|---------|
@@ -133,6 +133,7 @@ coverlet 6.0.4 — 代码覆盖率
 | TeamDungeonEventVersionTests.cs | 75 | 队伍状态同步、组队副本入口、事件类型扩展、Grain接口版本管理、完整工作流 |
 | EventConsumerVersioningTests.cs | 67 | 事件消费者状态模型、事件处理统计、事件流订阅、Grain版本管理滚动升级、CI/CD增强验证 |
 | PassportGrainTests.cs | 66 | 通行证DTO验证、会话信息、密码编解码、登录限流、密码升级兼容性、认证流程、角色状态序列化 |
+| CharacterGrainStateTests.cs | 39 | 角色DateTime属性类型验证、角色状态管理、生命周期模拟、事件流接口验证、消息模型测试 |
 
 #### 测试覆盖率现状
 
@@ -563,7 +564,7 @@ coverlet 6.0.4 — 代码覆盖率
 ```
 2026年2月中旬  ✅ Phase 0: 安全加固完成
                ✅ Phase 1.1: 代码缺陷修复完成
-               ✅ Phase 1.2: 测试基础设施建设完成（836个测试，20个测试文件）
+               ✅ Phase 1.2: 测试基础设施建设完成（875个测试，21个测试文件）
                ✅ Phase 1.3: CI/CD流程建立完成（含CodeQL安全扫描、代码覆盖率收集、Dependabot依赖扫描）
                ✅ Phase 3.1: 战斗系统增强（闪避/格挡/暴击/冷却/五行属性加成/五行协同/能量恢复/GCD/战斗日志/五行共鸣技能触发）
                ✅ Phase 3.2: 社交系统基础实现（SocialGrain/GuildGrain/TeamGrain）
@@ -586,6 +587,11 @@ coverlet 6.0.4 — 代码覆盖率
                ✅ 代码质量: CharacterGrain静态字段改为readonly实例字段
                ✅ 安全改进: Dependabot自动依赖漏洞扫描配置
                ✅ 测试覆盖: PassportGrain单元测试（66个测试用例，DTO验证/密码安全/登录限流/会话管理）
+               ✅ 代码修复: CharacterInfo时间属性从long改为DateTime（LastDamageTime/LastDeathTime/LastLoginTime）
+               ✅ 架构改进: IGameEventStream接口（IGameEventObserver/IGameEventStreamGrain/EventStreamStatus）
+               ✅ 安全增强: GrainCallValidationFilter集合大小验证和数值范围验证
+               ✅ 测试覆盖: CharacterGrain单元测试（39个测试用例）
+               ✅ 构建修复: NuGet依赖版本冲突修复
                📍 当前位置（2026-02-08）
                ↓
 2026年3月下旬  ┌─ Phase 4: 客户端功能完善
@@ -643,6 +649,8 @@ coverlet 6.0.4 — 代码覆盖率
    ✅ GrainCallValidationFilter统一参数验证
    ✅ 字符串长度限制（防止恶意超长输入）
    ✅ 空GUID检测（上下文感知，初始化/创建方法豁免）
+   ✅ 集合大小验证（防止恶意超大集合导致内存压力，MaxCollectionSize=10000）
+   ✅ 数值参数范围验证（ID/数量/页码等不允许为负数）
    □ 统一的DTO验证（FluentValidation）— 后续增强
    ```
 
@@ -715,7 +723,7 @@ coverlet 6.0.4 — 代码覆盖率
 ### ⏳ 建议后续修复
 
 1. ~~GameGrain — 添加错误处理和日志~~ ✅ 已修复（错误处理、null检查、结构化日志）
-2. CharacterGrain — DateTime.UtcNow.Ticks修复为DateTime类型（需同步修改CharacterInfo消息类型，涉及MemoryPack序列化兼容性）
+2. ~~CharacterGrain — DateTime.UtcNow.Ticks修复为DateTime类型~~ ✅ 已修复（CharacterInfo.LastDamageTime/LastDeathTime/LastLoginTime从long改为DateTime，同步更新CharacterGrain赋值和GameProfile映射）
 3. ~~PassportGrain — 添加更多单元测试覆盖~~ ✅ 已修复（66个测试用例，覆盖DTO验证、密码安全、登录限流、会话管理）
 4. ~~CharacterGrain — 字符串插值日志替换为结构化日志~~ ✅ 已修复（40+处替换）
 5. ~~CharacterGrain — static字段改为readonly实例字段~~ ✅ 已修复（与CombatGrain相同的修复）

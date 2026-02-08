@@ -813,6 +813,10 @@ else
 - [x] ~~PassportGrain单元测试~~（✅ 已完成 - 66个测试用例）
 - [x] ~~API文档生成（Swagger）~~（✅ 已完成 - 多API分组）
 - [x] ~~修复.sln中缺失的测试项目引用~~（✅ 已完成 - Horizon.Game.Gateway.Tests项目已建立）
+- [x] ~~CharacterInfo DateTime类型修复~~（✅ 已完成 - LastDamageTime/LastDeathTime/LastLoginTime从long改为DateTime）
+- [x] ~~IGameEventStream接口定义~~（✅ 已完成 - IGameEventObserver/IGameEventStreamGrain/EventStreamStatus/GameEventStreamGrain）
+- [x] ~~CharacterGrain单元测试~~（✅ 已完成 - 39个测试用例）
+- [x] ~~NuGet依赖版本冲突修复~~（✅ 已完成 - 构建错误清零）
 - [ ] 客户端战斗特效和动画完善
 
 ### 中优先级（建议3个月内处理）

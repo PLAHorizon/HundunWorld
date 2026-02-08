@@ -402,21 +402,21 @@ namespace Horizon.Game.Message.Network
         /// </summary>
         [MemoryPackOrder(12)]
         [Id(12)]
-        public long LastDamageTime { get; set; }
+        public DateTime LastDamageTime { get; set; }
 
         /// <summary>
         /// 最后死亡时间
         /// </summary>
         [MemoryPackOrder(13)]
         [Id(13)]
-        public long LastDeathTime { get; set; }
+        public DateTime LastDeathTime { get; set; }
 
         /// <summary>
         /// 最后登录时间
         /// </summary>
         [MemoryPackOrder(14)]
         [Id(14)]
-        public long LastLoginTime { get; set; }
+        public DateTime LastLoginTime { get; set; }
 
         [MemoryPackOrder(15)]
         [Id(15)]

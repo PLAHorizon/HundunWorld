@@ -3543,9 +3543,9 @@
             <b>bool</b> IsAlive<br/>
             <b>int</b> DeathCount<br/>
             <b>int</b> ResurrectionCount<br/>
-            <b>long</b> LastDamageTime<br/>
-            <b>long</b> LastDeathTime<br/>
-            <b>long</b> LastLoginTime<br/>
+            <b>System.DateTime</b> LastDamageTime<br/>
+            <b>System.DateTime</b> LastDeathTime<br/>
+            <b>System.DateTime</b> LastLoginTime<br/>
             <b>Horizon.Game.Message.Enums.MessageType</b> Type<br/>
             <b>Horizon.Game.Message.Enums.ServiceType</b> ServiceType<br/>
             <b>long</b> Experience<br/>
