@@ -32,6 +32,27 @@ namespace Horizon.Orleans.Grains
         [MemoryPackOrder(1)]
         [Id(1)]
         public Dictionary<int, DateTime> SkillCooldowns { get; set; } = new();
+
+        /// <summary>
+        /// 可用技能点
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int SkillPoints { get; set; } = 0;
+
+        /// <summary>
+        /// 已使用技能点总数
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int TotalSkillPointsUsed { get; set; } = 0;
+
+        /// <summary>
+        /// 技能前置依赖（技能ID -> 前置技能ID列表）
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public Dictionary<int, List<int>> SkillDependencies { get; set; } = new();
     }
 
     /// <summary>
@@ -59,6 +80,9 @@ namespace Horizon.Orleans.Grains
 
             if (_skillState.State.SkillCooldowns == null)
                 _skillState.State.SkillCooldowns = new Dictionary<int, DateTime>();
+
+            if (_skillState.State.SkillDependencies == null)
+                _skillState.State.SkillDependencies = new Dictionary<int, List<int>>();
 
             await base.OnActivateAsync(cancellationToken);
         }
@@ -138,21 +162,42 @@ namespace Horizon.Orleans.Grains
                     return false;
                 }
 
+                if (state.SkillPoints <= 0)
+                {
+                    _logger.LogWarning("技能点不足: SkillId={SkillId}, SkillPoints={SkillPoints}", skillId, state.SkillPoints);
+                    return false;
+                }
+
+                // Check prerequisites
+                if (state.SkillDependencies.TryGetValue(skillId, out var prereqs))
+                {
+                    foreach (var prereqId in prereqs)
+                    {
+                        if (!state.LearnedSkills.ContainsKey(prereqId))
+                        {
+                            _logger.LogWarning("前置技能未学习: SkillId={SkillId}, PrereqId={PrereqId}", skillId, prereqId);
+                            return false;
+                        }
+                    }
+                }
+
                 var newSkill = new SkillInfo
                 {
                     SkillId = skillId,
                     Level = 1,
                     MaxLevel = 10,
-                    Cooldown = 3000, // 默认3秒冷却
-                    CastTime = 500,  // 默认0.5秒施法
+                    Cooldown = 3000,
+                    CastTime = 500,
                     NeiLiCost = 10,
                     Range = 5.0f
                 };
 
                 state.LearnedSkills[skillId] = newSkill;
+                state.SkillPoints--;
+                state.TotalSkillPointsUsed++;
                 await _skillState.WriteStateAsync();
 
-                _logger.LogInformation("学习技能成功: SkillId={SkillId}", skillId);
+                _logger.LogInformation("学习技能成功: SkillId={SkillId}, RemainingPoints={SkillPoints}", skillId, state.SkillPoints);
                 return true;
             }
             catch (Exception ex)
@@ -255,6 +300,88 @@ namespace Horizon.Orleans.Grains
             catch (Exception ex)
             {
                 _logger.LogError(ex, "重置技能冷却失败: SkillId={SkillId}", skillId);
+                throw;
+            }
+        }
+
+        public async Task<bool> ResetAllSkillsAsync()
+        {
+            try
+            {
+                var state = _skillState.State;
+
+                // Refund 1 point per skill level
+                int refundedPoints = 0;
+                foreach (var skill in state.LearnedSkills.Values)
+                {
+                    refundedPoints += skill.Level;
+                }
+
+                state.LearnedSkills.Clear();
+                state.SkillCooldowns.Clear();
+                state.SkillPoints += refundedPoints;
+                state.TotalSkillPointsUsed -= refundedPoints;
+                if (state.TotalSkillPointsUsed < 0)
+                    state.TotalSkillPointsUsed = 0;
+
+                await _skillState.WriteStateAsync();
+                _logger.LogInformation("重置所有技能成功: RefundedPoints={RefundedPoints}", refundedPoints);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "重置所有技能失败");
+                throw;
+            }
+        }
+
+        public async Task<bool> SetSkillDependencyAsync(int skillId, List<int> prerequisites)
+        {
+            try
+            {
+                _skillState.State.SkillDependencies[skillId] = prerequisites ?? new List<int>();
+                await _skillState.WriteStateAsync();
+                _logger.LogInformation("设置技能依赖: SkillId={SkillId}, Prerequisites={Prerequisites}", skillId, string.Join(",", prerequisites ?? new List<int>()));
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "设置技能依赖失败: SkillId={SkillId}", skillId);
+                throw;
+            }
+        }
+
+        public Task<int> GetSkillPointsAsync()
+        {
+            try
+            {
+                return Task.FromResult(_skillState.State.SkillPoints);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "获取技能点失败");
+                throw;
+            }
+        }
+
+        public async Task<bool> AddSkillPointsAsync(int points)
+        {
+            try
+            {
+                if (points <= 0)
+                {
+                    _logger.LogWarning("添加技能点数无效: {Points}", points);
+                    return false;
+                }
+
+                _skillState.State.SkillPoints += points;
+                await _skillState.WriteStateAsync();
+                _logger.LogInformation("添加技能点成功: Points={Points}, Total={Total}", points, _skillState.State.SkillPoints);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "添加技能点失败: Points={Points}", points);
                 throw;
             }
         }

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Horizon.Game.Message;
 using System.Collections.Generic;
 using Horizon.Game.Message.Network;
+using MemoryPack;
 
 namespace Horizon.Orleans.Interface
 {
@@ -62,6 +63,21 @@ namespace Horizon.Orleans.Interface
         /// <param name="slots">扩展槽位数</param>
         /// <returns>是否成功</returns>
         Task<bool> ExpandInventoryAsync(int slots);
+
+        /// <summary>
+        /// 装备物品到指定槽位
+        /// </summary>
+        Task<bool> EquipItemAsync(long itemId, int slot);
+
+        /// <summary>
+        /// 从指定槽位卸下装备
+        /// </summary>
+        Task<bool> UnequipItemAsync(int slot);
+
+        /// <summary>
+        /// 获取所有已装备物品
+        /// </summary>
+        Task<Dictionary<int, long>> GetEquippedItemsAsync();
     }
 
     /// <summary>
@@ -109,6 +125,26 @@ namespace Horizon.Orleans.Interface
         /// <param name="skillId">技能ID</param>
         /// <returns>是否成功</returns>
         Task<bool> ResetSkillCooldownAsync(int skillId);
+
+        /// <summary>
+        /// 重置所有已学习技能并返还技能点
+        /// </summary>
+        Task<bool> ResetAllSkillsAsync();
+
+        /// <summary>
+        /// 设置技能前置依赖
+        /// </summary>
+        Task<bool> SetSkillDependencyAsync(int skillId, List<int> prerequisites);
+
+        /// <summary>
+        /// 获取可用技能点
+        /// </summary>
+        Task<int> GetSkillPointsAsync();
+
+        /// <summary>
+        /// 添加技能点
+        /// </summary>
+        Task<bool> AddSkillPointsAsync(int points);
     }
 
     /// <summary>
@@ -117,11 +153,9 @@ namespace Horizon.Orleans.Interface
     public interface ICraftingGrain : IGrainWithGuidKey
     {
         /// <summary>
-        /// 材料合成
+        /// 执行合成
         /// </summary>
-        /// <param name="request">材料合成请求</param>
-        /// <returns>材料合成响应</returns>
-     //   Task<MaterialSynthesisResponse> SynthesizeAsync(MaterialSynthesisRequest request);
+        Task<CraftingResult> CraftItemAsync(int recipeId);
 
         /// <summary>
         /// 获取合成配方列表
@@ -142,6 +176,61 @@ namespace Horizon.Orleans.Interface
         /// <param name="recipeId">配方ID</param>
         /// <returns>是否材料足够</returns>
         Task<bool> CheckMaterialsAsync(int recipeId);
+
+        /// <summary>
+        /// 获取合成历史记录
+        /// </summary>
+        Task<List<CraftingHistoryEntry>> GetCraftingHistoryAsync();
+    }
+
+    /// <summary>
+    /// 合成结果
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class CraftingResult
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public bool Success { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int RecipeId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string Message { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long OutputItemId { get; set; }
+    }
+
+    /// <summary>
+    /// 合成历史记录
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class CraftingHistoryEntry
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int RecipeId { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public bool Success { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public DateTime Timestamp { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long OutputItemId { get; set; }
     }
 
    
