@@ -227,11 +227,12 @@ namespace Horizon.Orleans.Grains
                     return false;
                 }
 
-                mail.Status = (int)MailStatus.Claimed;
                 if (mail.Status == (int)MailStatus.Unread)
                 {
                     state.UnreadCount = Math.Max(0, state.UnreadCount - 1);
                 }
+
+                mail.Status = (int)MailStatus.Claimed;
 
                 await _mailBoxState.WriteStateAsync();
 
