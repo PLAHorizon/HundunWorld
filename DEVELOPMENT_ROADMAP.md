@@ -1,9 +1,9 @@
 # 混沌世界项目 - 后续开发路线图
 
 **文档日期**: 2026年2月8日  
-**最后更新**: 2026年2月8日（队伍状态同步、组队副本、Grain版本管理、事件扩展后更新）  
+**最后更新**: 2026年2月8日（事件消费者、滚动升级、CI/CD增强后更新）  
 **基于**: 完整源代码审查  
-**文档版本**: v2.2
+**文档版本**: v2.3
 
 ---
 
@@ -37,8 +37,8 @@
 | 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善） |
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
 | 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
-| 测试基础设施（Phase 1.2） | ✅ 90% | 703个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion） |
-| CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置 |
+| 测试基础设施（Phase 1.2） | ✅ 90% | 770个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion/EventConsumerVersioning） |
+| CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置（CI + CodeQL安全扫描 + 代码覆盖率） |
 | 监控可观测性（Phase 2） | ✅ 100% | OpenTelemetry指标、Grafana仪表板、Prometheus告警、JSON结构化日志、CorrelationId分布式追踪、Seq日志聚合、Alertmanager告警通知 |
 
 ### 缺失模块
@@ -109,7 +109,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 #### 测试项目
 
-**已存在**: `Horizon.Game.Gateway.Tests/`（18个测试文件，703个测试用例）
+**已存在**: `Horizon.Game.Gateway.Tests/`（19个测试文件，770个测试用例）
 
 | 测试文件 | 测试数量 | 覆盖内容 |
 |---------|---------|---------|
@@ -131,6 +131,7 @@ coverlet 6.0.4 — 代码覆盖率
 | SeqAlertingValidationTests.cs | 46 | Seq日志配置、CLEF格式、事件队列、异常过滤器、参数验证、告警路由 |
 | GameEventStreamTests.cs | 48 | 游戏事件类型、事件流命名空间、事件数据模型、序列化属性、发布器接口 |
 | TeamDungeonEventVersionTests.cs | 75 | 队伍状态同步、组队副本入口、事件类型扩展、Grain接口版本管理、完整工作流 |
+| EventConsumerVersioningTests.cs | 67 | 事件消费者状态模型、事件处理统计、事件流订阅、Grain版本管理滚动升级、CI/CD增强验证 |
 
 #### 测试覆盖率现状
 
@@ -146,13 +147,13 @@ coverlet 6.0.4 — 代码覆盖率
 ### 1.3 CI/CD流程 ✅
 
 ```yaml
-# 已配置的 GitHub Actions 工作流 (.github/workflows/ci.yml)
+# 已配置的 GitHub Actions 工作流 (.github/workflows/ci.yml, codeql.yml)
 工作流内容:
   ✅ dotnet restore → dotnet build → dotnet test
   ✅ 测试结果报告上传（trx格式）
   ✅ PR和Push触发自动运行
-  □ 代码覆盖率报告（coverlet + Codecov）— 后续增强
-  □ CodeQL安全扫描 — 后续增强
+  ✅ 代码覆盖率报告（coverlet XPlat Code Coverage）
+  ✅ CodeQL安全扫描（csharp, security-extended查询，每周定时扫描）
   □ 依赖项漏洞检查（Dependabot）— 后续增强
 ```
 
@@ -561,8 +562,8 @@ coverlet 6.0.4 — 代码覆盖率
 ```
 2026年2月中旬  ✅ Phase 0: 安全加固完成
                ✅ Phase 1.1: 代码缺陷修复完成
-               ✅ Phase 1.2: 测试基础设施建设完成（703个测试）
-               ✅ Phase 1.3: CI/CD流程建立完成
+               ✅ Phase 1.2: 测试基础设施建设完成（770个测试）
+               ✅ Phase 1.3: CI/CD流程建立完成（含CodeQL安全扫描、代码覆盖率收集）
                ✅ Phase 3.1: 战斗系统增强（闪避/格挡/暴击/冷却/五行属性加成/五行协同/能量恢复/GCD/战斗日志/五行共鸣技能触发）
                ✅ Phase 3.2: 社交系统基础实现（SocialGrain/GuildGrain/TeamGrain）
                ✅ Phase 3.3: 游戏系统Grain实现（背包/装备/技能树/合成品质/五行炼制系统）
@@ -574,8 +575,8 @@ coverlet 6.0.4 — 代码覆盖率
                ✅ Phase 2.3: Prometheus告警规则增强（数据库性能/战斗系统告警）
                ✅ 架构改进: 统一异常处理（GrainExceptionFilter）
                ✅ 架构改进: 请求参数验证（GrainCallValidationFilter）
-               ✅ 架构改进: 事件驱动架构基础（Orleans Stream + GameEventPublisher）
-               ✅ 架构改进: Grain接口版本管理（全部25个接口添加版本标记）
+               ✅ 架构改进: 事件驱动架构完成（Orleans Stream + GameEventPublisher + GameEventConsumerGrain）
+               ✅ 架构改进: Grain接口版本管理（全部26个接口添加版本标记 + 滚动升级配置）
                ✅ 架构改进: 队伍状态同步（StateVersion版本递增机制）
                ✅ 架构改进: 组队副本入口（EnterDungeonAsTeamAsync）
                ✅ 架构改进: 事件类型扩展（22个事件类型，新增4个社交事件）
@@ -636,22 +637,23 @@ coverlet 6.0.4 — 代码覆盖率
 
 ### 中期改进（Phase 3-4）
 
-4. **事件驱动架构** ⚠️ 部分完成
+4. **事件驱动架构** ✅ 已完成
    ```
    ✅ 使用Orleans Stream进行事件发布（Memory Stream Provider + GameEventPublisher）
    ✅ 游戏事件类型定义（GameEventType：角色/战斗/社交/系统事件，共22个事件类型）
    ✅ 事件流命名空间定义（GameStreamNamespaces）
    ✅ 社交事件扩展（TeamMemberJoined/Left/Disbanded/DungeonEntered）
-   □ 解耦战斗结果通知与UI更新
-   □ 异步处理非关键路径（日志、统计）
+   ✅ 事件消费者Grain（GameEventConsumerGrain：异步事件处理、统计、监控）
+   ✅ 解耦战斗结果通知与UI更新（通过Stream异步处理非关键路径）
+   ✅ 异步处理非关键路径（日志、统计通过EventConsumer异步处理）
    ```
 
 5. **Grain接口版本管理** ✅ 已完成
    ```
    ✅ 为全部25个Grain接口添加版本标记（[global::Orleans.CodeGeneration.Version()]）
    ✅ ITeamGrain升级至Version(2)（新增组队副本入口和状态版本查询）
-   □ 实现滚动升级支持（需集群配置GrainVersioningOptions）
-   □ 保持接口向后兼容
+   ✅ 实现滚动升级支持（GrainVersioningOptions：BackwardCompatible + AllCompatibleVersions）
+   ✅ 保持接口向后兼容（向后兼容性策略已配置）
    ```
 
 ### 长期改进（Phase 5+）

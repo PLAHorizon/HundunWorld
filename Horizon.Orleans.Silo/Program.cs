@@ -298,6 +298,13 @@ namespace Horizon.Orleans.Silo
                 options.ServiceId = clusterOptions?.ServiceId ?? "HorizonService";
             });
 
+            // 配置Grain接口版本管理策略（支持滚动升级）
+            siloBuilder.Configure<GrainVersioningOptions>(options =>
+            {
+                options.DefaultCompatibilityStrategy = "BackwardCompatible";
+                options.DefaultVersionSelectorStrategy = "AllCompatibleVersions";
+            });
+
             // 注意：超时配置现在通过HorizonTimeoutConfigurationExtensions处理
             _logger?.LogInformation("Orleans集群配置完成 - Silo端口: {SiloPort}, 网关端口: {GatewayPort}", siloPort, gatewayPort);
         }
