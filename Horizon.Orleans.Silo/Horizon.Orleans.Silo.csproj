@@ -11,8 +11,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-	  <PackageReference Include="Caching.CSRedis" Version="3.8.800" />
-	  <PackageReference Include="CSRedisCore" Version="3.8.806" />
+	  <PackageReference Include="Caching.CSRedis" Version="3.8.807" />
+	  <PackageReference Include="CSRedisCore" Version="3.8.807" />
 	  <PackageReference Include="Dapper" Version="2.1.66" />
 	  <PackageReference Include="Microsoft.DependencyValidation.Analyzers" Version="0.11.0" />
 	  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
