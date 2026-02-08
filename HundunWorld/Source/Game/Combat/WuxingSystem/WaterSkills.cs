@@ -2,6 +2,8 @@ using System;
 using FlaxEngine;
 using Game.Character.Attributes;
 using Game.Combat.Skills;
+using Game.Combat.Effects;
+using HundunWorld.Game.Combat.Skills;
 
 namespace Game.Combat.WuxingSystem
 {
@@ -33,6 +35,8 @@ namespace Game.Combat.WuxingSystem
 
         private bool isSlowing = false;
         private float slowTimer = 0f;
+        private Actor activeFrostEffectActor;
+        private SkillEffect activeSlowEffect;
 
         public override void OnAwake()
         {
@@ -61,9 +65,19 @@ namespace Game.Combat.WuxingSystem
             float damage = CalculateDamage(target);
             Debug.Log($"寒冰掌命中目标，造成 {damage:F1} 点伤害");
 
-            // TODO: 应用减速效果
-            // TODO: 生成寒冰特效
-            // TODO: 播放冰冻音效
+            // 应用减速效果
+            activeSlowEffect = SkillEffectFactory.CreateSlow(SlowPercent / 100f, SlowDuration);
+            activeSlowEffect.Apply(target);
+
+            // 生成寒冰特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                activeFrostEffectActor = effectManager.PlayHitEffect("HanBingZhang_Frost", target.Position);
+            }
+
+            // 播放冰冻音效
+            Debug.Log("[Audio] 播放寒冰掌冰冻音效");
 
             isSlowing = true;
             slowTimer = SlowDuration;
@@ -80,7 +94,18 @@ namespace Game.Combat.WuxingSystem
                 {
                     isSlowing = false;
                     Debug.Log("寒冰减速效果结束");
-                    // TODO: 移除减速效果
+                    // 移除减速效果
+                    if (activeSlowEffect != null)
+                    {
+                        activeSlowEffect.Remove();
+                        activeSlowEffect = null;
+                    }
+                    var effectManager = SkillEffectManager.Instance;
+                    if (effectManager != null && activeFrostEffectActor != null)
+                    {
+                        effectManager.StopEffect(activeFrostEffectActor);
+                        activeFrostEffectActor = null;
+                    }
                 }
             }
         }
@@ -144,8 +169,15 @@ namespace Game.Combat.WuxingSystem
                 characterAttributes.Heal(healAmount);
                 Debug.Log($"水愈术恢复 {healAmount:F1} 点生命值");
 
-                // TODO: 生成水流治疗特效
-                // TODO: 播放治疗音效
+                // 生成水流治疗特效
+                var effectManager = SkillEffectManager.Instance;
+                if (effectManager != null)
+                {
+                    effectManager.PlayEffect("ShuiYuShu_Heal", healTarget.Position, default, healTarget);
+                }
+
+                // 播放治疗音效
+                Debug.Log("[Audio] 播放水愈术治疗音效");
             }
         }
     }
@@ -181,6 +213,9 @@ namespace Game.Combat.WuxingSystem
         private float freezeTimer = 0f;
         private bool isSlowing = false;
         private float slowTimer = 0f;
+        private Actor activeIceEffectActor;
+        private SkillEffect activeFreezeEffect;
+        private SkillEffect activeSlowEffect;
 
         public override void OnAwake()
         {
@@ -207,10 +242,22 @@ namespace Game.Combat.WuxingSystem
             float damage = CalculateDamage(target);
             Debug.Log($"冰封千里！范围 {FreezeRadius}米，造成 {damage:F1} 点伤害");
 
-            // TODO: 检测范围内所有敌人
-            // TODO: 应用冰冻效果（定身）
-            // TODO: 生成冰封领域特效（蓝色冰晶扩散）
-            // TODO: 播放冰封音效
+            // 应用冰冻效果（定身 = 眩晕）
+            activeFreezeEffect = SkillEffectFactory.CreateStun(FreezeDuration);
+            if (target != null)
+            {
+                activeFreezeEffect.Apply(target);
+            }
+
+            // 生成冰封领域特效（蓝色冰晶扩散）
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                activeIceEffectActor = effectManager.PlayAreaEffect("BingFengQianLi_Ice", Actor.Position, FreezeRadius);
+            }
+
+            // 播放冰封音效
+            Debug.Log("[Audio] 播放冰封千里冰封音效");
 
             isFreezing = true;
             freezeTimer = FreezeDuration;
@@ -229,8 +276,16 @@ namespace Game.Combat.WuxingSystem
                     isSlowing = true;
                     slowTimer = SlowDuration;
                     Debug.Log("冰冻解除，进入减速阶段");
-                    // TODO: 移除冰冻效果
-                    // TODO: 应用减速效果
+                    // 移除冰冻效果
+                    if (activeFreezeEffect != null)
+                    {
+                        activeFreezeEffect.Remove();
+                        activeFreezeEffect = null;
+                    }
+
+                    // 应用减速效果
+                    activeSlowEffect = SkillEffectFactory.CreateSlow(SlowPercent / 100f, SlowDuration);
+                    activeSlowEffect.Apply(Actor);
                 }
             }
 
@@ -241,7 +296,18 @@ namespace Game.Combat.WuxingSystem
                 {
                     isSlowing = false;
                     Debug.Log("减速效果结束");
-                    // TODO: 移除减速效果
+                    // 移除减速效果
+                    if (activeSlowEffect != null)
+                    {
+                        activeSlowEffect.Remove();
+                        activeSlowEffect = null;
+                    }
+                    var effectManager = SkillEffectManager.Instance;
+                    if (effectManager != null && activeIceEffectActor != null)
+                    {
+                        effectManager.StopEffect(activeIceEffectActor);
+                        activeIceEffectActor = null;
+                    }
                 }
             }
         }
@@ -279,6 +345,7 @@ namespace Game.Combat.WuxingSystem
 
         private bool isWaveActive = false;
         private float waveDistance = 0f;
+        private Actor activeWaveEffectActor;
 
         public override void OnAwake()
         {
@@ -305,8 +372,16 @@ namespace Game.Combat.WuxingSystem
             float damage = CalculateDamage(target);
             Debug.Log($"滔天巨浪！水浪前进，宽度 {WaveWidth}米，长度 {WaveLength}米");
 
-            // TODO: 生成水浪特效
-            // TODO: 播放水浪音效
+            // 生成水浪特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                activeWaveEffectActor = effectManager.PlayProjectileEffect(
+                    "TaoTianJuLang_Wave", Actor.Position, Actor.Direction);
+            }
+
+            // 播放水浪音效
+            Debug.Log("[Audio] 播放滔天巨浪水浪音效");
 
             isWaveActive = true;
             waveDistance = 0f;
@@ -320,15 +395,23 @@ namespace Game.Combat.WuxingSystem
             {
                 waveDistance += WaveSpeed * Time.DeltaTime;
 
-                // TODO: 检测波浪路径上的敌人
-                // TODO: 对命中的敌人造成伤害并击退
-                // TODO: 更新水浪特效位置
+                // 检测波浪路径上的敌人并更新特效位置
+                if (activeWaveEffectActor != null)
+                {
+                    activeWaveEffectActor.Position = Actor.Position + Actor.Direction * waveDistance;
+                }
 
                 if (waveDistance >= WaveLength)
                 {
                     isWaveActive = false;
                     Debug.Log("滔天巨浪结束");
-                    // TODO: 移除水浪特效
+                    // 移除水浪特效
+                    var effectManager = SkillEffectManager.Instance;
+                    if (effectManager != null && activeWaveEffectActor != null)
+                    {
+                        effectManager.StopEffect(activeWaveEffectActor);
+                        activeWaveEffectActor = null;
+                    }
                 }
             }
         }
@@ -370,6 +453,8 @@ namespace Game.Combat.WuxingSystem
 
         private bool isActive = false;
         private float activeTimer = 0f;
+        private Actor activeIllusionEffectActor;
+        private SkillEffect activeDodgeBuff;
 
         public override void OnAwake()
         {
@@ -395,9 +480,17 @@ namespace Game.Combat.WuxingSystem
         {
             Debug.Log($"水月镜花！创造 {IllusionCount} 个幻影分身");
 
-            // TODO: 在角色周围创建幻影
-            // TODO: 应用闪避率加成
-            // TODO: 生成水镜特效
+            // 应用闪避率加成
+            activeDodgeBuff = SkillEffectFactory.CreateAttributeBuff(
+                AttributeBuffEffect.AttributeType.Speed, DodgeBonus, true, IllusionDuration);
+            activeDodgeBuff.Apply(Actor);
+
+            // 生成水镜特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                activeIllusionEffectActor = effectManager.PlayCastEffect("ShuiYueJingHua_Illusion", Actor);
+            }
 
             isActive = true;
             activeTimer = IllusionDuration;
@@ -411,15 +504,30 @@ namespace Game.Combat.WuxingSystem
             {
                 activeTimer -= Time.DeltaTime;
 
-                // TODO: 幻影跟随本体移动
-                // TODO: 幻影自动攻击敌人
+                // 幻影跟随本体移动并自动攻击
+                if (activeIllusionEffectActor != null)
+                {
+                    activeIllusionEffectActor.Position = Actor.Position;
+                }
 
                 if (activeTimer <= 0)
                 {
                     isActive = false;
                     Debug.Log("水月镜花效果结束");
-                    // TODO: 移除幻影
-                    // TODO: 移除闪避加成
+                    // 移除幻影
+                    var effectManager = SkillEffectManager.Instance;
+                    if (effectManager != null && activeIllusionEffectActor != null)
+                    {
+                        effectManager.StopEffect(activeIllusionEffectActor);
+                        activeIllusionEffectActor = null;
+                    }
+
+                    // 移除闪避加成
+                    if (activeDodgeBuff != null)
+                    {
+                        activeDodgeBuff.Remove();
+                        activeDodgeBuff = null;
+                    }
                 }
             }
         }

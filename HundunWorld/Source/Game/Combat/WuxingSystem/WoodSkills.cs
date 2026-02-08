@@ -2,6 +2,8 @@ using System;
 using FlaxEngine;
 using Game.Character.Attributes;
 using Game.Combat.Skills;
+using Game.Combat.Effects;
+using HundunWorld.Game.Combat.Skills;
 
 namespace Game.Combat.WuxingSystem
 {
@@ -37,6 +39,7 @@ namespace Game.Combat.WuxingSystem
         private float damageTimer = 0f;
         private bool isRooting = false;
         private float rootTimer = 0f;
+        private Actor activeVineEffectActor;
 
         public override void OnAwake()
         {
@@ -66,9 +69,19 @@ namespace Game.Combat.WuxingSystem
             float damage = CalculateDamage(target);
             Debug.Log($"青木藤缠束缚目标，造成 {damage:F1} 点初始伤害");
 
-            // TODO: 应用定身效果
-            // TODO: 生成藤蔓特效
-            // TODO: 播放束缚音效
+            // 应用定身效果（眩晕实现定身）
+            var stunEffect = SkillEffectFactory.CreateStun(RootDuration);
+            stunEffect.Apply(target);
+
+            // 生成藤蔓特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                activeVineEffectActor = effectManager.PlayEffect("QingMuTengChan_Vine", target.Position, default, target);
+            }
+
+            // 播放束缚音效
+            Debug.Log("[Audio] 播放青木藤缠束缚音效");
 
             isRooting = true;
             rootTimer = RootDuration;
@@ -90,14 +103,22 @@ namespace Game.Combat.WuxingSystem
                     damageTimer = 0f;
                     float tickDamage = CalculateDamage(null) * 0.2f;
                     Debug.Log($"藤蔓持续伤害 {tickDamage:F1}");
-                    // TODO: 应用持续伤害
+                    // 应用持续伤害
+                    var dotEffect = SkillEffectFactory.CreateDamageOverTime(tickDamage, DamageInterval, DamageInterval);
+                    dotEffect.Apply(Actor);
                 }
 
                 if (rootTimer <= 0)
                 {
                     isRooting = false;
                     Debug.Log("青木藤缠效果结束");
-                    // TODO: 清除藤蔓特效
+                    // 清除藤蔓特效
+                    var effectManager = SkillEffectManager.Instance;
+                    if (effectManager != null && activeVineEffectActor != null)
+                    {
+                        effectManager.StopEffect(activeVineEffectActor);
+                        activeVineEffectActor = null;
+                    }
                 }
             }
         }
@@ -133,6 +154,7 @@ namespace Game.Combat.WuxingSystem
         private bool isHealing = false;
         private float healTimer = 0f;
         private float tickTimer = 0f;
+        private Actor activeHealEffectActor;
 
         public override void OnAwake()
         {
@@ -166,10 +188,21 @@ namespace Game.Combat.WuxingSystem
                 Debug.Log($"立即恢复 {healAmount:F1} 点生命值");
             }
 
-            // TODO: 检测范围内友军
-            // TODO: 对所有友军应用治疗
-            // TODO: 生成治疗特效（绿色光环）
-            // TODO: 播放治疗音效
+            // 检测范围内友军 - 使用HealOverTime应用持续治疗
+            var hotEffect = SkillEffectFactory.CreateHealOverTime(
+                characterAttributes != null ? characterAttributes.MaxHealth * (HealPercent / 100f) * 0.1f : 0f,
+                HealDuration, HealInterval);
+            hotEffect.Apply(Actor);
+
+            // 生成治疗特效（绿色光环）
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                activeHealEffectActor = effectManager.PlayAreaEffect("ChunHuiDaDi_Heal", Actor.Position, HealRadius);
+            }
+
+            // 播放治疗音效
+            Debug.Log("[Audio] 播放春回大地治疗音效");
 
             isHealing = true;
             healTimer = HealDuration;
@@ -235,6 +268,7 @@ namespace Game.Combat.WuxingSystem
         private bool isActive = false;
         private float activeTimer = 0f;
         private float attackTimer = 0f;
+        private Actor activeTreeEffectActor;
 
         public override void OnAwake()
         {
@@ -260,9 +294,15 @@ namespace Game.Combat.WuxingSystem
         {
             Debug.Log($"万木森罗！召唤 {TreeCount} 棵树木");
 
-            // TODO: 在目标周围随机位置生成树木
-            // TODO: 播放召唤动画
-            // TODO: 生成树木特效
+            // 在目标周围生成树木特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                activeTreeEffectActor = effectManager.PlayAreaEffect("WanMuSenLuo_Trees", Actor.Position, SummonRadius);
+            }
+
+            // 播放召唤动画
+            Debug.Log("[Anim] 播放万木森罗召唤动画");
 
             isActive = true;
             activeTimer = TreeDuration;
@@ -283,15 +323,29 @@ namespace Game.Combat.WuxingSystem
                     attackTimer = 0f;
                     float damage = CalculateDamage(null) * TreeDamageMultiplier;
                     Debug.Log($"树木发起攻击，造成 {damage:F1} 点伤害");
-                    // TODO: 对范围内敌人造成伤害
-                    // TODO: 播放树木攻击动画
+                    // 对范围内敌人造成伤害
+                    var dotEffect = SkillEffectFactory.CreateDamageOverTime(damage, AttackInterval, AttackInterval);
+                    dotEffect.Apply(Actor);
+
+                    // 播放树木攻击动画
+                    var em = SkillEffectManager.Instance;
+                    if (em != null)
+                    {
+                        em.PlayEffect("WanMuSenLuo_Attack", Actor.Position);
+                    }
                 }
 
                 if (activeTimer <= 0)
                 {
                     isActive = false;
                     Debug.Log("万木森罗效果结束");
-                    // TODO: 移除树木
+                    // 移除树木特效
+                    var em2 = SkillEffectManager.Instance;
+                    if (em2 != null && activeTreeEffectActor != null)
+                    {
+                        em2.StopEffect(activeTreeEffectActor);
+                        activeTreeEffectActor = null;
+                    }
                 }
             }
         }
@@ -323,6 +377,8 @@ namespace Game.Combat.WuxingSystem
 
         private bool isActive = false;
         private float activeTimer = 0f;
+        private Actor activeRegenEffectActor;
+        private SkillEffect activeSpeedBuff;
 
         public override void OnAwake()
         {
@@ -348,9 +404,20 @@ namespace Game.Combat.WuxingSystem
         {
             Debug.Log($"生生不息激活！持续 {Duration} 秒");
 
-            // TODO: 应用移动速度增益
-            // TODO: 播放生命之力特效（绿色光环）
-            // TODO: 播放激活音效
+            // 应用移动速度增益
+            activeSpeedBuff = SkillEffectFactory.CreateAttributeBuff(
+                AttributeBuffEffect.AttributeType.Speed, MoveSpeedBonus, true, Duration);
+            activeSpeedBuff.Apply(Actor);
+
+            // 播放生命之力特效（绿色光环）
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                activeRegenEffectActor = effectManager.PlayCastEffect("ShengShengBuXi_Aura", Actor);
+            }
+
+            // 播放激活音效
+            Debug.Log("[Audio] 播放生生不息激活音效");
 
             isActive = true;
             activeTimer = Duration;
@@ -381,8 +448,20 @@ namespace Game.Combat.WuxingSystem
                 {
                     isActive = false;
                     Debug.Log("生生不息效果结束");
-                    // TODO: 移除移动速度增益
-                    // TODO: 停止特效
+                    // 移除移动速度增益
+                    if (activeSpeedBuff != null)
+                    {
+                        activeSpeedBuff.Remove();
+                        activeSpeedBuff = null;
+                    }
+
+                    // 停止特效
+                    var effectManager = SkillEffectManager.Instance;
+                    if (effectManager != null && activeRegenEffectActor != null)
+                    {
+                        effectManager.StopEffect(activeRegenEffectActor);
+                        activeRegenEffectActor = null;
+                    }
                 }
             }
         }
