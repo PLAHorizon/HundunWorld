@@ -74,23 +74,23 @@ namespace Horizon.Orleans.Grains
 
         public override async Task OnActivateAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation($"CharacterGrain {CharacterId} activating.");
+            _logger.LogInformation("CharacterGrain {CharacterId} activating.", CharacterId);
             // If the state is new, it means this is the first activation or state was cleared.
             // We try to load from the database as a fallback.
             if (_characterState.State.CharacterInfo == null)
             {
-                _logger.LogInformation($"No state found for {CharacterId}, attempting to load from DB.");
+                _logger.LogInformation("No state found for {CharacterId}, attempting to load from DB.", CharacterId);
                 var characterEntity = await _gameCharacterContext.QueryFirstOrDefaultAsync(c => c.Id == CharacterId);
                 if (characterEntity != null)
                 {
                     _characterState.State.CharacterInfo = _mapper.Map<CharacterInfo>(characterEntity);
                     _characterState.State.IsOnline = false; // Default to offline
                     await _characterState.WriteStateAsync();
-                    _logger.LogInformation($"Successfully loaded character {characterEntity.CharacterName} from DB.");
+                    _logger.LogInformation("Successfully loaded character {CharacterName} from DB.", characterEntity.CharacterName);
                 }
                 else
                 {
-                    _logger.LogWarning($"Character {CharacterId} not found in DB during activation.");
+                    _logger.LogWarning("Character {CharacterId} not found in DB during activation.", CharacterId);
                 }
             }
             await base.OnActivateAsync(cancellationToken);
@@ -230,7 +230,7 @@ namespace Horizon.Orleans.Grains
             // The grain key is the characterId (as a Guid). This parameter seems redundant but we'll comply.
             if (_characterState.State.CharacterInfo == null)
             {
-                _logger.LogWarning($"Character info requested for {gameQueryDto.CharacterId}, but state is empty.");
+                _logger.LogWarning("Character info requested for {CharacterId}, but state is empty.", gameQueryDto.CharacterId);
                 return Task.FromResult<CharacterInfo>(null);
             }
             return Task.FromResult(_characterState.State.CharacterInfo);
@@ -335,7 +335,7 @@ namespace Horizon.Orleans.Grains
             // Persist final state on logout
             await _characterState.WriteStateAsync();
 
-            _logger.LogInformation($"Character '{_characterState.State.CharacterInfo.CharacterName}' ({CharacterId}) is now offline.");
+            _logger.LogInformation("Character '{CharacterName}' ({CharacterId}) is now offline.", _characterState.State.CharacterInfo.CharacterName, CharacterId);
 
             // Deactivate the grain to conserve resources
             DeactivateOnIdle();
@@ -350,28 +350,28 @@ namespace Horizon.Orleans.Grains
 
         public Task<bool> UpdateAttributesAsync(Dictionary<string, object> attributes)
         {
-            _logger.LogInformation($"Updating attributes for {CharacterId}.");
+            _logger.LogInformation("Updating attributes for {CharacterId}.", CharacterId);
             // Placeholder: Implement actual attribute update logic
             return Task.FromResult(true);
         }
 
         public Task<List<EquipmentInfoMessage>> GetEquipmentsAsync()
         {
-            _logger.LogInformation($"Getting equipment for {CharacterId}.");
+            _logger.LogInformation("Getting equipment for {CharacterId}.", CharacterId);
             // Placeholder: Implement logic to retrieve equipment from DB or state
             return Task.FromResult(new List<EquipmentInfoMessage>());
         }
 
         public Task<bool> EquipItemAsync(long itemId, int slot)
         {
-            _logger.LogInformation($"Equipping item {itemId} in slot {slot} for {CharacterId}.");
+            _logger.LogInformation("Equipping item {ItemId} in slot {Slot} for {CharacterId}.", itemId, slot, CharacterId);
             // Placeholder: Implement item equipping logic
             return Task.FromResult(true);
         }
 
         public Task<bool> UnequipItemAsync(int slot)
         {
-            _logger.LogInformation($"Unequipping item from slot {slot} for {CharacterId}.");
+            _logger.LogInformation("Unequipping item from slot {Slot} for {CharacterId}.", slot, CharacterId);
             // Placeholder: Implement item unequipping logic
             return Task.FromResult(true);
         }
@@ -421,7 +421,7 @@ namespace Horizon.Orleans.Grains
 
         public Task<DamageMessage> AttackAsync(AttackMessage request)
         {
-            _logger.LogInformation($"Character {request.AttackerId} attacking target {request.TargetId}.");
+            _logger.LogInformation("Character {AttackerId} attacking target {TargetId}.", request.AttackerId, request.TargetId);
             // Placeholder: Implement actual attack logic
             var response = new DamageMessage
             {
@@ -438,42 +438,42 @@ namespace Horizon.Orleans.Grains
 
         public Task<SkillCastMessage> CastSkillAsync(SkillCastMessage request)
         {
-            _logger.LogInformation($"Character {request.CasterId} casting skill {request.SkillId}.");
+            _logger.LogInformation("Character {CasterId} casting skill {SkillId}.", request.CasterId, request.SkillId);
             // Placeholder: Implement actual skill casting logic
             return Task.FromResult(request);
         }
 
         public Task<QingGongMessage> UseQingGongAsync(QingGongMessage request)
         {
-            _logger.LogInformation($"Character {request.CharacterId} using qinggong skill {request.QingGongSkillId}.");
+            _logger.LogInformation("Character {CharacterId} using qinggong skill {SkillId}.", request.CharacterId, request.QingGongSkillId);
             // Placeholder: Implement actual qinggong logic
             return Task.FromResult(request);
         }
 
         public Task<NeiGongMessage> UseNeiGongAsync(NeiGongMessage request)
         {
-            _logger.LogInformation($"Character {request.CharacterId} using neigong skill {request.NeiGongSkillId}.");
+            _logger.LogInformation("Character {CharacterId} using neigong skill {SkillId}.", request.CharacterId, request.NeiGongSkillId);
             // Placeholder: Implement actual neigong logic
             return Task.FromResult(request);
         }
 
         public Task<ComboAttackMessage> ComboAttackAsync(ComboAttackMessage request)
         {
-            _logger.LogInformation($"Character {request.AttackerId} performing combo attack.");
+            _logger.LogInformation("Character {AttackerId} performing combo attack.", request.AttackerId);
             // Placeholder: Implement actual combo attack logic
             return Task.FromResult(request);
         }
 
         public Task<DefenseMessage> DefendAsync(DefenseMessage request)
         {
-            _logger.LogInformation($"Character {request.DefenderId} defending against {request.AttackerId}.");
+            _logger.LogInformation("Character {DefenderId} defending against {AttackerId}.", request.DefenderId, request.AttackerId);
             // Placeholder: Implement actual defense logic
             return Task.FromResult(request);
         }
 
         public Task<JoinSectResponse> JoinSectAsync(JoinSectRequest request)
         {
-            _logger.LogInformation($"Character {request.CharacterId} joining sect {request.SectId}.");
+            _logger.LogInformation("Character {CharacterId} joining sect {SectId}.", request.CharacterId, request.SectId);
             // Placeholder: Implement actual sect joining logic
             var response = new JoinSectResponse
             {
@@ -487,21 +487,21 @@ namespace Horizon.Orleans.Grains
 
         public Task<ReputationUpdateMessage> UpdateReputationAsync(ReputationUpdateMessage request)
         {
-            _logger.LogInformation($"Updating reputation for character {request.CharacterId}.");
+            _logger.LogInformation("Updating reputation for character {CharacterId}.", request.CharacterId);
             // Placeholder: Implement actual reputation update logic
             return Task.FromResult(request);
         }
 
         public Task<ChivalryPointUpdateMessage> UpdateChivalryPointAsync(ChivalryPointUpdateMessage request)
         {
-            _logger.LogInformation($"Updating chivalry point for character {request.CharacterId}.");
+            _logger.LogInformation("Updating chivalry point for character {CharacterId}.", request.CharacterId);
             // Placeholder: Implement actual chivalry point update logic
             return Task.FromResult(request);
         }
 
         public Task<DuelResponse> HandleDuelAsync(DuelRequest request)
         {
-            _logger.LogInformation($"Character {request.ChallengerId} challenging {request.OpponentId} to a duel.");
+            _logger.LogInformation("Character {ChallengerId} challenging {OpponentId} to a duel.", request.ChallengerId, request.OpponentId);
             // Placeholder: Implement actual duel handling logic
             var response = new DuelResponse
             {
@@ -514,7 +514,7 @@ namespace Horizon.Orleans.Grains
 
         public Task<SwornBrotherResponse> HandleSwornBrotherAsync(SwornBrotherRequest request)
         {
-            _logger.LogInformation($"Character {request.InitiatorId} proposing sworn brotherhood.");
+            _logger.LogInformation("Character {InitiatorId} proposing sworn brotherhood.", request.InitiatorId);
             // Placeholder: Implement actual sworn brother handling logic
             var response = new SwornBrotherResponse
             {
@@ -527,7 +527,7 @@ namespace Horizon.Orleans.Grains
 
         public Task<MasterApprenticeResponse> HandleMasterApprenticeAsync(MasterApprenticeRequest request)
         {
-            _logger.LogInformation($"Master-apprentice relationship request between {request.MasterId} and {request.ApprenticeId}.");
+            _logger.LogInformation("Master-apprentice relationship request between {MasterId} and {ApprenticeId}.", request.MasterId, request.ApprenticeId);
             // Placeholder: Implement actual master-apprentice handling logic
             var response = new MasterApprenticeResponse
             {
@@ -541,21 +541,21 @@ namespace Horizon.Orleans.Grains
 
         public Task<InventoryUpdateMessage> UpdateInventoryAsync(InventoryUpdateMessage request)
         {
-            _logger.LogInformation($"Updating inventory for character {request.CharacterId}.");
+            _logger.LogInformation("Updating inventory for character {CharacterId}.", request.CharacterId);
             // Placeholder: Implement actual inventory update logic
             return Task.FromResult(request);
         }
 
         public Task<WeaponSwitchMessage> SwitchWeaponAsync(WeaponSwitchMessage request)
         {
-            _logger.LogInformation($"Character {request.CharacterId} switching weapon from slot {request.CurrentWeaponSlot} to {request.TargetWeaponSlot}.");
+            _logger.LogInformation("Character {CharacterId} switching weapon from slot {CurrentSlot} to {TargetSlot}.", request.CharacterId, request.CurrentWeaponSlot, request.TargetWeaponSlot);
             // Placeholder: Implement actual weapon switching logic
             return Task.FromResult(request);
         }
 
         public Task<UseItemResponse> UseItemAsync(UseItemRequest request)
         {
-            _logger.LogInformation($"Character {request.CharacterId} using item {request.ItemId}.");
+            _logger.LogInformation("Character {CharacterId} using item {ItemId}.", request.CharacterId, request.ItemId);
             // Placeholder: Implement actual item usage logic
             var response = new UseItemResponse
             {
@@ -569,7 +569,7 @@ namespace Horizon.Orleans.Grains
 
         public Task<EquipmentEnhanceResponse> EnhanceEquipmentAsync(EquipmentEnhanceRequest request)
         {
-            _logger.LogInformation($"Enhancing equipment {request.EquipmentId} for character {request.CharacterId}.");
+            _logger.LogInformation("Enhancing equipment {EquipmentId} for character {CharacterId}.", request.EquipmentId, request.CharacterId);
             // Placeholder: Implement actual equipment enhancement logic
             var response = new EquipmentEnhanceResponse
             {
@@ -584,7 +584,7 @@ namespace Horizon.Orleans.Grains
 
         public Task<EquipmentRefineResponse> RefineEquipmentAsync(EquipmentRefineRequest request)
         {
-            _logger.LogInformation($"Refining equipment {request.EquipmentId} for character {request.CharacterId}.");
+            _logger.LogInformation("Refining equipment {EquipmentId} for character {CharacterId}.", request.EquipmentId, request.CharacterId);
             // Placeholder: Implement actual equipment refinement logic
             var response = new EquipmentRefineResponse
             {
@@ -600,7 +600,7 @@ namespace Horizon.Orleans.Grains
 
         public Task<CraftingResponse> CraftItemAsync(CraftingRequest request)
         {
-            _logger.LogInformation($"Crafting item with recipe {request.RecipeId} for character {request.CharacterId}.");
+            _logger.LogInformation("Crafting item with recipe {RecipeId} for character {CharacterId}.", request.RecipeId, request.CharacterId);
             // Placeholder: Implement actual crafting logic
             var response = new CraftingResponse
             {
@@ -615,7 +615,7 @@ namespace Horizon.Orleans.Grains
 
         public Task<AttributeInheritanceResponse> InheritAttributesAsync(AttributeInheritanceRequest request)
         {
-            _logger.LogInformation($"Inheriting attributes from equipment {request.SourceEquipmentId} to {request.TargetEquipmentId}.");
+            _logger.LogInformation("Inheriting attributes from equipment {SourceEquipmentId} to {TargetEquipmentId}.", request.SourceEquipmentId, request.TargetEquipmentId);
             // Placeholder: Implement actual attribute inheritance logic
             var response = new AttributeInheritanceResponse
             {
@@ -630,7 +630,7 @@ namespace Horizon.Orleans.Grains
 
         public Task<WuXingCraftingResponse> WuXingCraftAsync(WuXingCraftingRequest request)
         {
-            _logger.LogInformation($"Performing WuXing crafting for character {request.CharacterId}.");
+            _logger.LogInformation("Performing WuXing crafting for character {CharacterId}.", request.CharacterId);
             // Placeholder: Implement actual WuXing crafting logic
             var response = new WuXingCraftingResponse
             {
@@ -645,7 +645,7 @@ namespace Horizon.Orleans.Grains
 
         public Task<LearnSkillResponse> LearnSkillAsync(LearnSkillRequest request)
         {
-            _logger.LogInformation($"Character {request.CharacterId} learning skill {request.SkillId}.");
+            _logger.LogInformation("Character {CharacterId} learning skill {SkillId}.", request.CharacterId, request.SkillId);
             // Placeholder: Implement actual skill learning logic
             var response = new LearnSkillResponse
             {
@@ -660,7 +660,7 @@ namespace Horizon.Orleans.Grains
 
         public Task<SkillCooldownQueryResponse> QuerySkillCooldownAsync(SkillCooldownQueryRequest request)
         {
-            _logger.LogInformation($"Querying skill cooldowns for character {request.CharacterId}.");
+            _logger.LogInformation("Querying skill cooldowns for character {CharacterId}.", request.CharacterId);
             // Placeholder: Implement actual skill cooldown query logic
             var response = new SkillCooldownQueryResponse
             {
@@ -672,7 +672,7 @@ namespace Horizon.Orleans.Grains
 
         public Task<SkillProficiencyQueryResponse> QuerySkillProficiencyAsync(SkillProficiencyQueryRequest request)
         {
-            _logger.LogInformation($"Querying skill proficiencies for character {request.CharacterId}.");
+            _logger.LogInformation("Querying skill proficiencies for character {CharacterId}.", request.CharacterId);
             // Placeholder: Implement actual skill proficiency query logic
             var response = new SkillProficiencyQueryResponse
             {
@@ -684,7 +684,7 @@ namespace Horizon.Orleans.Grains
 
         public Task<UpgradeSkillResponse> UpgradeSkillAsync(UpgradeSkillRequest request)
         {
-            _logger.LogInformation($"Upgrading skill {request.SkillId} for character {request.CharacterId}.");
+            _logger.LogInformation("Upgrading skill {SkillId} for character {CharacterId}.", request.SkillId, request.CharacterId);
             // Placeholder: Implement actual skill upgrade logic
             var response = new UpgradeSkillResponse
             {
@@ -700,14 +700,14 @@ namespace Horizon.Orleans.Grains
 
         public Task<ChatMessage> SendChatAsync(ChatMessage request)
         {
-            _logger.LogInformation($"Character {request.SenderId} sending chat message: {request.Content}");
+            _logger.LogInformation("Character {SenderId} sending chat message.", request.SenderId);
             // Placeholder: Implement actual chat message handling logic
             return Task.FromResult(request);
         }
 
         public Task<AddFriendResponse> AddFriendAsync(AddFriendRequest request)
         {
-            _logger.LogInformation($"Character {request.RequesterId} requesting to add {request.TargetId} as friend.");
+            _logger.LogInformation("Character {RequesterId} requesting to add {TargetId} as friend.", request.RequesterId, request.TargetId);
             // Placeholder: Implement actual friend adding logic
             var response = new AddFriendResponse
             {
@@ -720,7 +720,7 @@ namespace Horizon.Orleans.Grains
 
         public Task<CreateTeamResponse> CreateTeamAsync(CreateTeamRequest request)
         {
-            _logger.LogInformation($"Character {request.LeaderId} creating team {request.TeamName}.");
+            _logger.LogInformation("Character {LeaderId} creating team {TeamName}.", request.LeaderId, request.TeamName);
             // Placeholder: Implement actual team creation logic
             var response = new CreateTeamResponse
             {
@@ -733,7 +733,7 @@ namespace Horizon.Orleans.Grains
 
         public Task<JoinTeamResponse> JoinTeamAsync(JoinTeamRequest request)
         {
-            _logger.LogInformation($"Character {request.RequesterId} requesting to join team {request.TeamId}.");
+            _logger.LogInformation("Character {RequesterId} requesting to join team {TeamId}.", request.RequesterId, request.TeamId);
             // Placeholder: Implement actual team joining logic
             var response = new JoinTeamResponse
             {
@@ -746,7 +746,7 @@ namespace Horizon.Orleans.Grains
 
         public Task<CreateGuildResponse> CreateGuildAsync(CreateGuildRequest request)
         {
-            _logger.LogInformation($"Character {request.CreatorId} creating guild {request.GuildName}.");
+            _logger.LogInformation("Character {CreatorId} creating guild {GuildName}.", request.CreatorId, request.GuildName);
             // Placeholder: Implement actual guild creation logic
             var response = new CreateGuildResponse
             {
@@ -759,7 +759,7 @@ namespace Horizon.Orleans.Grains
 
         public Task<JoinGuildResponse> JoinGuildAsync(JoinGuildRequest request)
         {
-            _logger.LogInformation($"Character {request.RequesterId} requesting to join guild {request.GuildId}.");
+            _logger.LogInformation("Character {RequesterId} requesting to join guild {GuildId}.", request.RequesterId, request.GuildId);
             // Placeholder: Implement actual guild joining logic
             var response = new JoinGuildResponse
             {
@@ -772,14 +772,14 @@ namespace Horizon.Orleans.Grains
 
         public Task<QuestUpdateMessage> UpdateQuestAsync(QuestUpdateMessage request)
         {
-            _logger.LogInformation($"Updating quest {request.QuestId} for character {request.CharacterId}.");
+            _logger.LogInformation("Updating quest {QuestId} for character {CharacterId}.", request.QuestId, request.CharacterId);
             // Placeholder: Implement actual quest update logic
             return Task.FromResult(request);
         }
 
         public Task<AcceptQuestResponse> AcceptQuestAsync(AcceptQuestRequest request)
         {
-            _logger.LogInformation($"Character {request.CharacterId} accepting quest {request.QuestId}.");
+            _logger.LogInformation("Character {CharacterId} accepting quest {QuestId}.", request.CharacterId, request.QuestId);
             // Placeholder: Implement actual quest acceptance logic
             var response = new AcceptQuestResponse
             {
@@ -792,7 +792,7 @@ namespace Horizon.Orleans.Grains
 
         public Task<CompleteQuestResponse> CompleteQuestAsync(CompleteQuestRequest request)
         {
-            _logger.LogInformation($"Character {request.CharacterId} completing quest {request.QuestId}.");
+            _logger.LogInformation("Character {CharacterId} completing quest {QuestId}.", request.CharacterId, request.QuestId);
             // Placeholder: Implement actual quest completion logic
             var response = new CompleteQuestResponse
             {
@@ -808,11 +808,11 @@ namespace Horizon.Orleans.Grains
         {
             if (_characterState.State.CharacterInfo == null)
             {
-                _logger.LogWarning($"尝试对未加载的角色造成伤害: {CharacterId}");
+                _logger.LogWarning("尝试对未加载的角色造成伤害: {CharacterId}", CharacterId);
                 return request;
             }
 
-            _logger.LogInformation($"角色 {_characterState.State.CharacterInfo.CharacterName} 受到伤害: {request.Damage}");
+            _logger.LogInformation("角色 {CharacterName} 受到伤害: {Damage}", _characterState.State.CharacterInfo.CharacterName, request.Damage);
 
             // 更新角色血量
             _characterState.State.CharacterInfo.CurrentHealth = Math.Max(0, 
@@ -853,7 +853,7 @@ namespace Horizon.Orleans.Grains
                 ElementType = request.ElementType
             };
 
-            _logger.LogInformation($"角色 {_characterState.State.CharacterInfo.CharacterName} 剩余血量: {_characterState.State.CharacterInfo.CurrentHealth}");
+            _logger.LogInformation("角色 {CharacterName} 剩余血量: {CurrentHealth}", _characterState.State.CharacterInfo.CharacterName, _characterState.State.CharacterInfo.CurrentHealth);
 
             return response;
         }
@@ -862,11 +862,11 @@ namespace Horizon.Orleans.Grains
         {
             if (_characterState.State.CharacterInfo == null)
             {
-                _logger.LogWarning($"尝试处理未加载角色的死亡: {CharacterId}");
+                _logger.LogWarning("尝试处理未加载角色的死亡: {CharacterId}", CharacterId);
                 return request;
             }
 
-            _logger.LogInformation($"角色 {_characterState.State.CharacterInfo.CharacterName} 死亡");
+            _logger.LogInformation("角色 {CharacterName} 死亡", _characterState.State.CharacterInfo.CharacterName);
 
             // 更新角色状态
             _characterState.State.CharacterInfo.IsAlive = false;
@@ -877,7 +877,7 @@ namespace Horizon.Orleans.Grains
             // 保存状态
             await _characterState.WriteStateAsync();
 
-            _logger.LogInformation($"角色 {_characterState.State.CharacterInfo.CharacterName} 已标记为死亡");
+            _logger.LogInformation("角色 {CharacterName} 已标记为死亡", _characterState.State.CharacterInfo.CharacterName);
 
             return request;
         }
@@ -886,11 +886,11 @@ namespace Horizon.Orleans.Grains
         {
             if (_characterState.State.CharacterInfo == null)
             {
-                _logger.LogWarning($"尝试复活未加载的角色: {CharacterId}");
+                _logger.LogWarning("尝试复活未加载的角色: {CharacterId}", CharacterId);
                 return request;
             }
 
-            _logger.LogInformation($"角色 {_characterState.State.CharacterInfo.CharacterName} 复活");
+            _logger.LogInformation("角色 {CharacterName} 复活", _characterState.State.CharacterInfo.CharacterName);
 
             // 根据复活类型恢复血量
             float restoreRatio = request.ResurrectType == 1 ? 1.0f : 0.5f; // 1=完全复活，其他=半血复活
@@ -919,7 +919,7 @@ namespace Horizon.Orleans.Grains
                 MaxHealth = _characterState.State.CharacterInfo.MaxHealth
             };
 
-            _logger.LogInformation($"角色 {_characterState.State.CharacterInfo.CharacterName} 已复活，血量恢复至: {_characterState.State.CharacterInfo.CurrentHealth}");
+            _logger.LogInformation("角色 {CharacterName} 已复活，血量恢复至: {CurrentHealth}", _characterState.State.CharacterInfo.CharacterName, _characterState.State.CharacterInfo.CurrentHealth);
 
             return response;
         }
