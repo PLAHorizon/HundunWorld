@@ -1,9 +1,9 @@
 # 混沌世界项目 - 后续开发路线图
 
 **文档日期**: 2026年2月8日  
-**最后更新**: 2026年2月8日（Phase 3.3增强/3.5 AreaGrain+ActivityGrain实现后更新）  
+**最后更新**: 2026年2月8日（Phase 3.1五行深化/3.3五行炼制/战斗日志实现后更新）  
 **基于**: 完整源代码审查  
-**文档版本**: v1.5
+**文档版本**: v1.6
 
 ---
 
@@ -29,15 +29,15 @@
 | ECS框架 | ✅ 85% | Arch.Core引擎、14个系统组件 |
 | UI框架 | ✅ 80% | 状态管理、响应式布局、性能监控 |
 | 网络通信 | ✅ 75% | TCP客户端、消息处理器、协议适配 |
-| 战斗系统 | ⚠️ 75% | 五行相克、伤害计算、效果系统、Energy分离、闪避格挡、技能冷却 |
+| 战斗系统 | ⚠️ 85% | 五行相克、伤害计算、效果系统、Energy分离、闪避格挡、技能冷却、五行属性加成、五行协同、能量恢复、GCD、战斗日志 |
 | 社交系统 | ⚠️ 75% | SocialGrain好友管理、GuildGrain公会管理、TeamGrain组队系统、消息频道系统 |
-| 游戏系统 | ⚠️ 80% | 背包/装备/技能/合成系统基础实现、技能树依赖验证、合成品质系统 |
+| 游戏系统 | ⚠️ 85% | 背包/装备/技能/合成系统基础实现、技能树依赖验证、合成品质系统、五行炼制系统 |
 | 区域管理 | ⚠️ 60% | AreaGrain场景实例管理、跨服传送、副本入口 |
 | 活动系统 | ⚠️ 60% | ActivityGrain活动调度、奖励发放、参与记录 |
 | 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善） |
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
 | 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
-| 测试基础设施（Phase 1.2） | ✅ 90% | 272个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity） |
+| 测试基础设施（Phase 1.2） | ✅ 90% | 337个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy） |
 | CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置 |
 
 ### 缺失模块
@@ -48,7 +48,7 @@
 | 任务/副本系统 | 🔴 仅接口定义 | P2 |
 | 社交系统（好友/公会/组队） | 🟡 基础实现完成 | P2 |
 | 消息频道系统 | 🟡 基础实现完成 | P2 |
-| 游戏系统（背包/技能/合成） | 🟡 增强实现完成 | P2 |
+| 游戏系统（背包/技能/合成/炼丹） | 🟡 增强实现完成 | P2 |
 | 服务器状态管理 | 🟡 基础实现完成 | P2 |
 | 区域管理系统 | 🟡 基础实现完成 | P2 |
 | 活动系统 | 🟡 基础实现完成 | P2 |
@@ -108,7 +108,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 #### 测试项目
 
-**已存在**: `Horizon.Game.Gateway.Tests/`（9个测试文件，272个测试用例）
+**已存在**: `Horizon.Game.Gateway.Tests/`（10个测试文件，337个测试用例）
 
 | 测试文件 | 测试数量 | 覆盖内容 |
 |---------|---------|---------|
@@ -121,6 +121,7 @@ coverlet 6.0.4 — 代码覆盖率
 | TeamSystemStateTests.cs | 12 | 队伍状态、成员管理、队长转移、解散 |
 | GameServerStateTests.cs | 15 | 服务器状态、在线人数、维护管理、负载监控 |
 | AreaActivityStateTests.cs | 48 | 区域状态、场景实例、传送、活动管理、参与记录、循环依赖检测、合成品质 |
+| WuxingAlchemyCombatLogTests.cs | 65 | 五行属性加成、五行协同、能量恢复、GCD、战斗日志、炼丹系统 |
 
 #### 测试覆盖率现状
 
@@ -213,7 +214,7 @@ coverlet 6.0.4 — 代码覆盖率
 ```
 ✅ 添加Energy/Mana属性到CombatInfo
   - 技能消耗从Energy扣除（而非Health）
-  □ 自然回复机制（每秒回复比例）
+  ✅ 自然回复机制（CalculateEnergyRecovery能量恢复计算）
   
 ✅ 暴击系统完善
   - 角色暴击率属性（CritRate）
@@ -229,28 +230,30 @@ coverlet 6.0.4 — 代码覆盖率
   - 服务端冷却时间验证（IsSkillReady）
   - 技能冷却进度查询（GetRemainingCooldown）
   - CombatInfo.SkillCooldowns冷却记录
-  □ 全局冷却时间(GCD)控制
+  ✅ 全局冷却时间(GCD)控制（IsGlobalCooldownReady）
 
-□ 战斗日志系统
-  - 记录战斗流水
-  - 伤害统计聚合
-  - 战斗回放数据
+✅ 战斗日志系统
+  - 记录战斗流水（CombatLogEntry/CombatLogType）
+  - 攻击日志自动记录
+  - 日志查询接口（GetCombatLogAsync）
+  □ 伤害统计聚合
+  □ 战斗回放数据
 ```
 
 #### 五行系统深化
 
 ```
-□ 五行属性影响扩展
+✅ 五行属性影响扩展（GetWuxingAttributeBonus）
   - 金：暴击率增加、物理伤害加成
   - 木：生命恢复、持续治疗效果
   - 水：闪避增加、冰冻控制效果
   - 火：燃烧DOT、范围伤害加成
   - 土：防御增加、护盾效果
 
-□ 五行连携系统
-  - 相生关系加成（金生水、水生木...）
-  - 组队五行匹配加成
-  - 五行共鸣技能触发
+✅ 五行连携系统（GetWuxingSynergyMultiplier）
+  - 相生关系加成（金生水、水生木、木生火、火生土、土生金）
+  □ 组队五行匹配加成
+  □ 五行共鸣技能触发
 ```
 
 ### 3.2 社交系统 Grain 实现（2周）
@@ -301,7 +304,7 @@ coverlet 6.0.4 — 代码覆盖率
   - 配方学习
   - 材料检查
   ✅ 材料合成配方执行（CraftItemAsync）
-  □ 五行炼制系统
+  ✅ 五行炼制系统（WuxingAlchemyGrain：炼丹配方/熟练度/五行协同品质）
   ✅ 制作概率和品质（CalculateCraftingQuality，5级品质系统）
   ✅ 制作历史记录（含品质追踪）
 ```
@@ -528,20 +531,20 @@ coverlet 6.0.4 — 代码覆盖率
 ```
 2026年2月中旬  ✅ Phase 0: 安全加固完成
                ✅ Phase 1.1: 代码缺陷修复完成
-               ✅ Phase 1.2: 测试基础设施建设完成（272个测试）
+               ✅ Phase 1.2: 测试基础设施建设完成（337个测试）
                ✅ Phase 1.3: CI/CD流程建立完成
-               ✅ Phase 3.1: 战斗系统增强（闪避/格挡/暴击/冷却）
+               ✅ Phase 3.1: 战斗系统增强（闪避/格挡/暴击/冷却/五行属性加成/五行协同/能量恢复/GCD/战斗日志）
                ✅ Phase 3.2: 社交系统基础实现（SocialGrain/GuildGrain/TeamGrain）
-               ✅ Phase 3.3: 游戏系统Grain实现（背包/装备/技能树/合成品质）
+               ✅ Phase 3.3: 游戏系统Grain实现（背包/装备/技能树/合成品质/五行炼制系统）
                ✅ Phase 3.4: 消息频道系统实现（频道/路由/广播）
                ✅ Phase 3.5: GameServerGrain/AreaGrain/ActivityGrain实现
                📍 当前位置（2026-02-08）
                ↓
 2026年3月下旬  ┌─ Phase 2: 监控可观测性
                │
-2026年4-5月    ├─ Phase 3: 服务端核心功能完善
-               │    ├─ 3.1 战斗系统完善（五行深化、战斗日志）
-               │    └─ 3.3 五行炼制系统
+2026年4-5月    ├─ Phase 3: 服务端核心功能完善（剩余项）
+               │    ├─ 3.1 战斗系统完善（伤害统计聚合、战斗回放、组队五行匹配）
+               │    └─ 3.4 消息系统增强（速率限制、敏感词过滤）
                │
 2026年5-6月    ├─ Phase 4: 客户端功能完善
                │    ├─ 4.1 战斗特效与动画

@@ -84,5 +84,12 @@ namespace Horizon.Orleans.Interface
         /// <param name="elementType">元素类型</param>
         /// <returns>最终伤害</returns>
         Task<float> CalculateWuxingDamageAsync(ulong attackerId, ulong defenderId, float baseDamage, int elementType);
+
+        /// <summary>
+        /// 获取战斗日志
+        /// </summary>
+        /// <param name="count">获取条目数量，默认50</param>
+        /// <returns>战斗日志列表</returns>
+        Task<List<CombatLogEntry>> GetCombatLogAsync(int count = 50);
     }
 }

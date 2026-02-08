@@ -13,6 +13,7 @@ using Orleans;
 using Orleans.Runtime;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using MemoryPack;
 
@@ -33,6 +34,10 @@ namespace Horizon.Orleans.Grains
         [MemoryPackOrder(1)]
         [Id(1)]
         public Dictionary<ulong, EffectInfo> ActiveEffects { get; set; } = new Dictionary<ulong, EffectInfo>();
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public List<CombatLogEntry> CombatLog { get; set; } = new List<CombatLogEntry>();
     }
 
     /// <summary>
@@ -202,6 +207,9 @@ namespace Horizon.Orleans.Grains
             if (_combatState.State.ActiveEffects == null)
                 _combatState.State.ActiveEffects = new Dictionary<ulong, EffectInfo>();
 
+            if (_combatState.State.CombatLog == null)
+                _combatState.State.CombatLog = new List<CombatLogEntry>();
+
             await base.OnActivateAsync(cancellationToken);
         }
 
@@ -262,6 +270,21 @@ namespace Horizon.Orleans.Grains
                     IsBlocked = isBlocked,
                     ElementType = request.ElementType
                 };
+
+                // 记录战斗日志
+                AddCombatLogEntry(new CombatLogEntry
+                {
+                    Timestamp = DateTime.UtcNow,
+                    AttackerId = request.AttackerId,
+                    DefenderId = request.TargetId,
+                    DamageDealt = damage,
+                    SkillId = 0,
+                    ElementType = request.ElementType,
+                    IsCritical = isCritical,
+                    IsDodged = false,
+                    IsBlocked = isBlocked,
+                    LogType = CombatLogType.Attack
+                });
 
                 // 保存状态
                 await _combatState.WriteStateAsync();
@@ -596,6 +619,22 @@ namespace Horizon.Orleans.Grains
             }
         }
 
+        public Task<List<CombatLogEntry>> GetCombatLogAsync(int count = 50)
+        {
+            try
+            {
+                var log = _combatState.State.CombatLog;
+                int skip = Math.Max(0, log.Count - count);
+                var result = log.Skip(skip).Take(count).ToList();
+                return Task.FromResult(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "获取战斗日志失败");
+                throw;
+            }
+        }
+
         #region Private Helper Methods
 
         /// <summary>
@@ -679,6 +718,20 @@ namespace Horizon.Orleans.Grains
             }
 
             return damage;
+        }
+
+        /// <summary>
+        /// 记录战斗日志
+        /// </summary>
+        private void AddCombatLogEntry(CombatLogEntry entry)
+        {
+            _combatState.State.CombatLog.Add(entry);
+
+            // Limit log to last 200 entries
+            if (_combatState.State.CombatLog.Count > 200)
+            {
+                _combatState.State.CombatLog.RemoveRange(0, _combatState.State.CombatLog.Count - 200);
+            }
         }
 
         #endregion

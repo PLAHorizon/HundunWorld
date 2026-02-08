@@ -247,5 +247,223 @@ namespace Horizon.Orleans.Interface
         public int Quality { get; set; }
     }
 
+    /// <summary>
+    /// 五行炼丹系统Grain接口
+    /// </summary>
+    public interface IWuxingAlchemyGrain : IGrainWithGuidKey
+    {
+        /// <summary>
+        /// 学习炼丹配方
+        /// </summary>
+        /// <param name="recipeId">配方ID</param>
+        /// <returns>是否成功学习</returns>
+        Task<bool> LearnAlchemyRecipeAsync(int recipeId);
+
+        /// <summary>
+        /// 执行炼丹
+        /// </summary>
+        /// <param name="recipeId">配方ID</param>
+        /// <param name="primaryElement">主要五行元素</param>
+        /// <param name="secondaryElement">辅助五行元素</param>
+        /// <returns>炼丹结果</returns>
+        Task<AlchemyResult> PerformAlchemyAsync(int recipeId, int primaryElement, int secondaryElement);
+
+        /// <summary>
+        /// 获取炼丹配方列表
+        /// </summary>
+        /// <returns>配方列表</returns>
+        Task<List<AlchemyRecipe>> GetAlchemyRecipesAsync();
+
+        /// <summary>
+        /// 获取炼丹历史记录
+        /// </summary>
+        /// <returns>历史记录列表</returns>
+        Task<List<AlchemyHistoryEntry>> GetAlchemyHistoryAsync();
+
+        /// <summary>
+        /// 获取炼丹熟练度
+        /// </summary>
+        /// <returns>熟练度</returns>
+        Task<float> GetAlchemyProficiencyAsync();
+    }
+
+    /// <summary>
+    /// 炼丹配方
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class AlchemyRecipe
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int RecipeId { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string Name { get; set; } = "";
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int RequiredPrimaryElement { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int RequiredSecondaryElement { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public long OutputItemId { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public float BaseProficiencyGain { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public float MinProficiency { get; set; }
+    }
+
+    /// <summary>
+    /// 炼丹结果
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class AlchemyResult
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public bool Success { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int RecipeId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string Message { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long OutputItemId { get; set; }
+
+        /// <summary>
+        /// 品质 (0=普通, 1=精良, 2=稀有, 3=史诗, 4=传说)
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int Quality { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public float ProficiencyGain { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public float ElementalHarmony { get; set; }
+    }
+
+    /// <summary>
+    /// 炼丹历史记录
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class AlchemyHistoryEntry
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int RecipeId { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public bool Success { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public DateTime Timestamp { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long OutputItemId { get; set; }
+
+        /// <summary>
+        /// 品质 (0=普通, 1=精良, 2=稀有, 3=史诗, 4=传说)
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int Quality { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public int PrimaryElement { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public int SecondaryElement { get; set; }
+    }
+
+    /// <summary>
+    /// 战斗日志类型
+    /// </summary>
+    public enum CombatLogType
+    {
+        Attack,
+        SkillCast,
+        Death,
+        Resurrect,
+        EffectApplied
+    }
+
+    /// <summary>
+    /// 战斗日志条目
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class CombatLogEntry
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public DateTime Timestamp { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public ulong AttackerId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public ulong DefenderId { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public float DamageDealt { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int SkillId { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public int ElementType { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public bool IsCritical { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public bool IsDodged { get; set; }
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public bool IsBlocked { get; set; }
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public CombatLogType LogType { get; set; }
+    }
+
    
 }
