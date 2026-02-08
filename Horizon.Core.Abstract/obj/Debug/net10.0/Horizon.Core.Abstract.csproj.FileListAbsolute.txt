@@ -1,0 +1,13 @@
+/home/runner/work/HundunWorld/HundunWorld/Horizon.Core.Abstract/bin/Debug/net10.0/Horizon.Core.Abstract.deps.json
+/home/runner/work/HundunWorld/HundunWorld/Horizon.Core.Abstract/bin/Debug/net10.0/Horizon.Core.Abstract.dll
+/home/runner/work/HundunWorld/HundunWorld/Horizon.Core.Abstract/bin/Debug/net10.0/Horizon.Core.Abstract.pdb
+/home/runner/work/HundunWorld/HundunWorld/Horizon.Core.Abstract/obj/Debug/net10.0/Horizon.Core.Abstract.csproj.AssemblyReference.cache
+/home/runner/work/HundunWorld/HundunWorld/Horizon.Core.Abstract/obj/Debug/net10.0/Horizon.Core.Abstract.GeneratedMSBuildEditorConfig.editorconfig
+/home/runner/work/HundunWorld/HundunWorld/Horizon.Core.Abstract/obj/Debug/net10.0/Horizon.Core.Abstract.AssemblyInfoInputs.cache
+/home/runner/work/HundunWorld/HundunWorld/Horizon.Core.Abstract/obj/Debug/net10.0/Horizon.Core.Abstract.AssemblyInfo.cs
+/home/runner/work/HundunWorld/HundunWorld/Horizon.Core.Abstract/obj/Debug/net10.0/Horizon.Core.Abstract.csproj.CoreCompileInputs.cache
+/home/runner/work/HundunWorld/HundunWorld/Horizon.Core.Abstract/obj/Debug/net10.0/Horizon.Core.Abstract.sourcelink.json
+/home/runner/work/HundunWorld/HundunWorld/Horizon.Core.Abstract/obj/Debug/net10.0/Horizon.Core.Abstract.dll
+/home/runner/work/HundunWorld/HundunWorld/Horizon.Core.Abstract/obj/Debug/net10.0/refint/Horizon.Core.Abstract.dll
+/home/runner/work/HundunWorld/HundunWorld/Horizon.Core.Abstract/obj/Debug/net10.0/Horizon.Core.Abstract.pdb
+/home/runner/work/HundunWorld/HundunWorld/Horizon.Core.Abstract/obj/Debug/net10.0/ref/Horizon.Core.Abstract.dll

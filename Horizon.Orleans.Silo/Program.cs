@@ -194,6 +194,10 @@ namespace Horizon.Orleans.Silo
                             services.AddSingleton<HorizonGatewayDiagnostic>();
                         }
 
+                        // 注册任务状态监控服务（必须在其他服务之前注册）
+                        services.AddSingleton<ITaskStatusMonitor, TaskStatusMonitor>();
+                        services.AddHostedService<TaskStatusReporterService>();
+
                         // 注册客户端连接跟踪服务
                         services.AddSingleton<IClientConnectionTracker, ClientConnectionTracker>();
                         services.AddHostedService<ClientConnectionMonitorService>();
@@ -349,6 +353,10 @@ namespace Horizon.Orleans.Silo
                     options.Port = healthCheckPort;
                     options.PathString = "/health";
                 });
+                
+                // 注册启动任务
+                services.AddSingleton<StartupDiagnosticsTask>();
+                services.AddSingleton<ClientConnectionStartupTask>();
                 
                 // 注册生命周期日志记录器
                 services.AddSingleton<SiloLifecycleLogger>();
