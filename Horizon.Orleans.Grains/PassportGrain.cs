@@ -52,9 +52,9 @@ namespace Horizon.Orleans.Grains
         private readonly IDataContext<BasicEntityContext, PassportFlag, int> _creating;
         private readonly IDataContext<GameEntityContext, UserEntity, long> _gameUserContext;
         private readonly ILogger<PassportGrain> _logger;
+        private readonly SessionManager _sessionManager;
 
-        // 会话管理相关
-        private readonly Dictionary<string, SessionInfo> _activeSessions = new();
+        // 登录尝试限制相关
         private readonly Dictionary<string, DateTime> _loginAttempts = new();
         private const int MaxLoginAttempts = 5;
         private const int LoginAttemptsWindowMinutes = 15;
@@ -76,6 +76,7 @@ namespace Horizon.Orleans.Grains
             _creating = creating;
             _gameUserContext = gameUserContext;
             _logger = logger;
+            _sessionManager = new SessionManager(logger);
         }
 
         public async Task<PassportInfoDto> AuthenticationAsync(LoginDto loginDto)
@@ -222,20 +223,38 @@ namespace Horizon.Orleans.Grains
 
         public async Task<bool> SignOutAsync(LoginDto loginDto)
         {
-            var passport = await _dataContext.QueryFirstOrDefaultAsync(m => m.Id == loginDto.PassportId);
-            if (passport == null) return await Task.FromResult(false);
-            var user = await _userdataContext.QueryFirstOrDefaultAsync(m => m.PassportId == passport.Id &&
-                                                                            m.AppId == loginDto.AppId &&
-                                                                            m.AppType == loginDto.AppType &&
-                                                                            m.PassportType == loginDto.PassportType &&
-                                                                            m.IsValid);
-            if (user != null)
+            try
             {
-                user.Status = UserStatsEnum.SignOut;
-                await _userdataContext.UpdateAsync(user, user.Id);
-                return await Task.FromResult(true);
+                var passport = await _dataContext.QueryFirstOrDefaultAsync(m => m.Id == loginDto.PassportId);
+                if (passport == null)
+                {
+                    return false;
+                }
+
+                var user = await _userdataContext.QueryFirstOrDefaultAsync(m => m.PassportId == passport.Id &&
+                                                                                m.AppId == loginDto.AppId &&
+                                                                                m.AppType == loginDto.AppType &&
+                                                                                m.PassportType == loginDto.PassportType &&
+                                                                                m.IsValid);
+                if (user != null)
+                {
+                    user.Status = UserStatsEnum.SignOut;
+                    await _userdataContext.UpdateAsync(user, user.Id);
+
+                    // 终止用户的所有活跃会话
+                    await _sessionManager.TerminateUserSessionsAsync(loginDto.PassportId);
+
+                    _logger.LogInformation("用户登出成功: PassportId={PassportId}", loginDto.PassportId);
+                    return true;
+                }
+
+                return false;
             }
-            return await Task.FromResult(false);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "用户登出失败: PassportId={PassportId}", loginDto.PassportId);
+                return false;
+            }
         }
 
         public async Task<bool> ChangePasswordAsync(ChangePasswordDto loginDto)
@@ -550,14 +569,28 @@ namespace Horizon.Orleans.Grains
         {
             try
             {
-                // 处理会话信息更新逻辑
-                // 这里可以添加具体的实现
-                return await Task.FromResult(true);
+                if (sessionInfo == null || string.IsNullOrEmpty(sessionInfo.SessionId))
+                {
+                    return false;
+                }
+
+                // 获取现有会话
+                var existingSession = await _sessionManager.GetSessionAsync(sessionInfo.SessionId);
+                if (existingSession == null)
+                {
+                    _logger.LogWarning("会话不存在: SessionId={SessionId}", sessionInfo.SessionId);
+                    return false;
+                }
+
+                // 更新会话信息
+                existingSession.LastActiveTime = DateTime.UtcNow;
+                
+                return await _sessionManager.UpdateSessionAsync(existingSession);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "更新用户会话信息失败");
-                return await Task.FromResult(false);
+                _logger.LogError(ex, "更新用户会话信息失败: SessionId={SessionId}", sessionInfo?.SessionId);
+                return false;
             }
         }
 
@@ -742,26 +775,19 @@ namespace Horizon.Orleans.Grains
         /// </summary>
         private async Task<string> CreateUserSession(User user, LoginDto loginDto)
         {
-            var sessionId = Guid.NewGuid().ToString("N");
             var sessionInfo = new SessionInfo
             {
-                SessionId = sessionId,
                 UserId = user.Id,
                 PassportId = user.PassportId,
                 AppId = loginDto.AppId,
                 AppType = loginDto.AppType,
-                CreateTime = DateTime.UtcNow,
-                LastActiveTime = DateTime.UtcNow,
-                IsActive = true
+                ClientIP = loginDto.GameContext?.Ip,
+                PlatformId = loginDto.GameContext?.PlatformId,
+                DeviceId = loginDto.GameContext?.DeviceId
             };
 
-            // 存储会话信息到缓存（序列化为JSON）
-            var sessionKey = $"session_{sessionId}";
-            var sessionJson = JsonConvert.SerializeObject(sessionInfo);
-            await Cache.InsertAsync(sessionKey, sessionJson, (int)TimeSpan.FromHours(24).TotalSeconds); // 24小时有效期 (86400秒)
-
-            // 记录活跃会话
-            _activeSessions[sessionId] = sessionInfo;
+            // 使用SessionManager创建持久化会话
+            string sessionId = await _sessionManager.CreateSessionAsync(sessionInfo);
 
             _logger.LogInformation("创建用户会话: SessionId={SessionId}, UserId={UserId}",
                 sessionId, user.Id);
