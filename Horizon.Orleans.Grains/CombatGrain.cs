@@ -7,6 +7,8 @@ using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 using Horizon.Model.GameModel;
 using Horizon.Orleans.Interface;
+using CombatState = Horizon.Game.Message.Network.CombatState;
+using EffectType = Horizon.Game.Message.Network.EffectType;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Orleans;

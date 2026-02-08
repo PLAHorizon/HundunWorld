@@ -301,43 +301,4 @@ namespace Horizon.Orleans.Interface
         Task<long> GetTeamStateVersionAsync();
     }
 
-    /// <summary>
-    /// 组队副本入口结果
-    /// </summary>
-    [MemoryPackable(SerializeLayout.Explicit)]
-    [GenerateSerializer]
-    [Serializable]
-    public partial class TeamDungeonResult
-    {
-        /// <summary>是否成功</summary>
-        [MemoryPackOrder(0)]
-        [Id(0)]
-        public bool Success { get; set; }
-
-        /// <summary>结果消息</summary>
-        [MemoryPackOrder(1)]
-        [Id(1)]
-        public string Message { get; set; } = "";
-
-        /// <summary>副本实例ID（用于后续操作）</summary>
-        [MemoryPackOrder(2)]
-        [Id(2)]
-        public Guid DungeonInstanceId { get; set; }
-
-        /// <summary>进入副本的成员ID列表</summary>
-        [MemoryPackOrder(3)]
-        [Id(3)]
-        public List<Guid> EnteredMembers { get; set; } = new();
-
-        /// <summary>副本模板ID</summary>
-        [MemoryPackOrder(4)]
-        [Id(4)]
-        public int DungeonTemplateId { get; set; }
-
-        /// <summary>难度</summary>
-        [MemoryPackOrder(5)]
-        [Id(5)]
-        public int Difficulty { get; set; }
-    }
-
 

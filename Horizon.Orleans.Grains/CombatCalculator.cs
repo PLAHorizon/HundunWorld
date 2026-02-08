@@ -1,4 +1,5 @@
 using Horizon.Orleans.Interface;
+using Horizon.Game.Message.Network;
 
 namespace Horizon.Orleans.Grains
 {

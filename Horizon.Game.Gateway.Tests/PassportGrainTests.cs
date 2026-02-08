@@ -1,6 +1,7 @@
 using Horizon.Core;
 using Horizon.Core.Abstract;
 using Horizon.Core.Abstract.Enums;
+using Horizon.Game.Message.Network;
 using Horizon.Orleans.Grains;
 using Horizon.Share.Dtos.User;
 using Microsoft.Extensions.Logging;

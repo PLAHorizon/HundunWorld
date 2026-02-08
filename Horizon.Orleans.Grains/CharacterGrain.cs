@@ -8,6 +8,7 @@ using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 using Horizon.Model.GameModel;
 using Horizon.Orleans.Interface;
+using CharacterState = Horizon.Game.Message.Network.CharacterState;
 using Horizon.Share.Dtos.Games;
 using MemoryPack;
 using Microsoft.EntityFrameworkCore;

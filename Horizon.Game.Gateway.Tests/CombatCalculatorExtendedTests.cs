@@ -1,4 +1,5 @@
 using Horizon.Orleans.Grains;
+using Horizon.Game.Message.Network;
 
 namespace Horizon.Game.Gateway.Tests
 {

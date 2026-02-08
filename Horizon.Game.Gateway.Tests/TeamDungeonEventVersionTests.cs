@@ -1,7 +1,6 @@
 using Horizon.Orleans.Interface;
 using Horizon.Orleans.Grains;
 using Horizon.Game.Message.Network;
-using GameEventType = Horizon.Orleans.Interface.GameEventType;
 
 namespace Horizon.Game.Gateway.Tests
 {
