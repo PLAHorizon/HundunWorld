@@ -111,9 +111,10 @@ namespace Horizon.Orleans.Grains
                 {
                     decodedPassword = Encoding.UTF8.GetString(Convert.FromBase64String(loginDto.Password));
                 }
-                catch
+                catch (FormatException)
                 {
                     // 如果解码失败，尝试直接使用原密码
+                    _logger.LogDebug("密码Base64解码失败，使用原始密码: {PassportId}", loginDto.PassportId);
                     decodedPassword = loginDto.Password;
                 }
 
@@ -282,8 +283,9 @@ namespace Horizon.Orleans.Grains
                     decodedOldPassword = Encoding.UTF8.GetString(Convert.FromBase64String(loginDto.OldPassword));
                     decodedNewPassword = Encoding.UTF8.GetString(Convert.FromBase64String(loginDto.NewPassword));
                 }
-                catch
+                catch (FormatException)
                 {
+                    _logger.LogDebug("密码Base64解码失败，使用原始密码: {PassportId}", loginDto.PassportId);
                     decodedOldPassword = loginDto.OldPassword;
                     decodedNewPassword = loginDto.NewPassword;
                 }
@@ -468,7 +470,7 @@ namespace Horizon.Orleans.Grains
             }
             catch (FormatException)
             {
-                Console.WriteLine("Base64Decode: 输入不是有效的 Base64 字符串");
+                _logger.LogDebug("Base64Decode: 输入不是有效的 Base64 字符串");
                 return string.Empty;
             }
         }
@@ -543,6 +545,11 @@ namespace Horizon.Orleans.Grains
             try
             {
                 var passport = await _dataContext.QueryFirstOrDefaultAsync(m => m.IsValid && m.Id == passportId, isTracking: true);
+                if (passport == null)
+                {
+                    _logger.LogWarning("注销失败，通行证不存在: PassportId={PassportId}", passportId);
+                    return false;
+                }
                 passport.IsValid = false;
                 var users = await _userdataContext.QueryAsync(m => m.IsValid && m.PassportId == passportId, isTracking: true);
                 foreach (var item in users)
