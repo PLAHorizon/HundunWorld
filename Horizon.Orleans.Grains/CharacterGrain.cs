@@ -48,8 +48,8 @@ namespace Horizon.Orleans.Grains
         private readonly ILogger<CharacterGrain> _logger;
         private readonly IPersistentState<CharacterState> _characterState;
 
-        private static IDataContext<GameEntityContext, UserEntity, long> _gameUserContext;
-        private static IDataContext<GameEntityContext, CharacterEntity, long> _gameCharacterContext;
+        private readonly IDataContext<GameEntityContext, UserEntity, long> _gameUserContext;
+        private readonly IDataContext<GameEntityContext, CharacterEntity, long> _gameCharacterContext;
         private readonly IMapper _mapper;
 
         private long CharacterId { get; set; } = 0;
