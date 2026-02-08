@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Horizon.Orleans.Silo.Monitoring;
 
 namespace Horizon.Orleans.Silo
 {
@@ -18,6 +19,12 @@ namespace Horizon.Orleans.Silo
         {
             // 前置处理：记录方法开始时间 
             var stopwatch = Stopwatch.StartNew();
+            var grainType = context.Grain.GetType().Name;
+            var methodName = context.ImplementationMethod.Name;
+
+            using var activity = HorizonMetrics.StartGrainActivity(grainType, methodName);
+            HorizonMetrics.GrainCallsTotal.Add(1, new KeyValuePair<string, object?>("grain_type", grainType));
+
             try
             {
 
@@ -36,13 +43,17 @@ namespace Horizon.Orleans.Silo
                     }
                 }
             }
+            catch (Exception)
+            {
+                HorizonMetrics.GrainCallErrorsTotal.Add(1, new KeyValuePair<string, object?>("grain_type", grainType));
+                throw;
+            }
             finally
             {
                 // 后置处理：记录方法执行时间 
                 stopwatch.Stop();
                 var executionTime = stopwatch.ElapsedMilliseconds;
-                var grainType = context.Grain.GetType().FullName;
-                var methodName = context.ImplementationMethod.Name;
+                HorizonMetrics.GrainCallDuration.Record(executionTime, new KeyValuePair<string, object?>("grain_type", grainType));
                 Console.ForegroundColor = ConsoleColor.Green;
                 System.Console.WriteLine($"Grain {grainType}.{methodName} executed in {executionTime} ms.");
                 Console.ForegroundColor = ConsoleColor.White;
