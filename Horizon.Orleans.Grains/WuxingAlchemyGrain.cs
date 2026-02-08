@@ -1,3 +1,4 @@
+using Horizon.Game.Message.Network;
 using Horizon.Orleans.Interface;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -10,36 +11,6 @@ using System.Threading.Tasks;
 
 namespace Horizon.Orleans.Grains
 {
-    /// <summary>
-    /// 炼丹系统状态
-    /// </summary>
-    [MemoryPackable(SerializeLayout.Explicit)]
-    [GenerateSerializer]
-    [Serializable]
-    public partial class AlchemyState
-    {
-        /// <summary>
-        /// 已学习配方（配方ID -> 配方信息）
-        /// </summary>
-        [MemoryPackOrder(0)]
-        [Id(0)]
-        public Dictionary<int, AlchemyRecipe> LearnedRecipes { get; set; } = new();
-
-        /// <summary>
-        /// 炼丹熟练度
-        /// </summary>
-        [MemoryPackOrder(1)]
-        [Id(1)]
-        public float Proficiency { get; set; }
-
-        /// <summary>
-        /// 炼丹历史记录
-        /// </summary>
-        [MemoryPackOrder(2)]
-        [Id(2)]
-        public List<AlchemyHistoryEntry> AlchemyHistory { get; set; } = new();
-    }
-
     /// <summary>
     /// 五行炼丹系统Grain实现
     /// </summary>

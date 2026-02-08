@@ -1,3 +1,4 @@
+using Horizon.Game.Message.Network;
 using Horizon.Orleans.Interface;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -10,92 +11,6 @@ using System.Threading.Tasks;
 
 namespace Horizon.Orleans.Grains
 {
-    /// <summary>
-    /// 交易系统状态
-    /// </summary>
-    [MemoryPackable(SerializeLayout.Explicit)]
-    [GenerateSerializer]
-    [Serializable]
-    public partial class TradeState
-    {
-        /// <summary>
-        /// 卖方ID
-        /// </summary>
-        [MemoryPackOrder(0)]
-        [Id(0)]
-        public Guid SellerId { get; set; }
-
-        /// <summary>
-        /// 买方ID
-        /// </summary>
-        [MemoryPackOrder(1)]
-        [Id(1)]
-        public Guid BuyerId { get; set; }
-
-        /// <summary>
-        /// 卖方物品列表
-        /// </summary>
-        [MemoryPackOrder(2)]
-        [Id(2)]
-        public List<TradeItem> SellerItems { get; set; } = new();
-
-        /// <summary>
-        /// 买方物品列表
-        /// </summary>
-        [MemoryPackOrder(3)]
-        [Id(3)]
-        public List<TradeItem> BuyerItems { get; set; } = new();
-
-        /// <summary>
-        /// 卖方出价货币
-        /// </summary>
-        [MemoryPackOrder(4)]
-        [Id(4)]
-        public long SellerCurrency { get; set; }
-
-        /// <summary>
-        /// 买方出价货币
-        /// </summary>
-        [MemoryPackOrder(5)]
-        [Id(5)]
-        public long BuyerCurrency { get; set; }
-
-        /// <summary>
-        /// 卖方是否确认
-        /// </summary>
-        [MemoryPackOrder(6)]
-        [Id(6)]
-        public bool SellerConfirmed { get; set; }
-
-        /// <summary>
-        /// 买方是否确认
-        /// </summary>
-        [MemoryPackOrder(7)]
-        [Id(7)]
-        public bool BuyerConfirmed { get; set; }
-
-        /// <summary>
-        /// 交易状态
-        /// </summary>
-        [MemoryPackOrder(8)]
-        [Id(8)]
-        public int Status { get; set; } = (int)TradeStatus.Created;
-
-        /// <summary>
-        /// 创建时间
-        /// </summary>
-        [MemoryPackOrder(9)]
-        [Id(9)]
-        public DateTime CreatedTime { get; set; }
-
-        /// <summary>
-        /// 是否已创建
-        /// </summary>
-        [MemoryPackOrder(10)]
-        [Id(10)]
-        public bool IsCreated { get; set; }
-    }
-
     /// <summary>
     /// 交易系统Grain实现 - 负责面对面交易管理
     /// </summary>

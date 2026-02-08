@@ -12,29 +12,6 @@ using System.Threading.Tasks;
 namespace Horizon.Orleans.Grains
 {
     /// <summary>
-    /// 合成系统状态
-    /// </summary>
-    [MemoryPackable(SerializeLayout.Explicit)]
-    [GenerateSerializer]
-    [Serializable]
-    public partial class CraftingState
-    {
-        /// <summary>
-        /// 已学习配方（配方ID -> 配方信息）
-        /// </summary>
-        [MemoryPackOrder(0)]
-        [Id(0)]
-        public Dictionary<int, CraftingRecipe> LearnedRecipes { get; set; } = new();
-
-        /// <summary>
-        /// 合成历史记录
-        /// </summary>
-        [MemoryPackOrder(1)]
-        [Id(1)]
-        public List<CraftingHistoryEntry> CraftingHistory { get; set; } = new();
-    }
-
-    /// <summary>
     /// 材料合成系统Grain实现
     /// </summary>
     public class CraftingGrain : Grain, ICraftingGrain

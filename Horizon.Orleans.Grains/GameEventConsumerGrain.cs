@@ -1,4 +1,5 @@
 using Horizon.Core.Abstract;
+using Horizon.Game.Message.Network;
 using Horizon.Orleans.Interface;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -8,25 +9,6 @@ using MemoryPack;
 
 namespace Horizon.Orleans.Grains
 {
-    /// <summary>
-    /// 事件消费者Grain状态
-    /// </summary>
-    [MemoryPackable(SerializeLayout.Explicit)]
-    [GenerateSerializer]
-    [Serializable]
-    public partial class EventConsumerState
-    {
-        /// <summary>已处理事件统计</summary>
-        [MemoryPackOrder(0)]
-        [Id(0)]
-        public EventProcessingStats Stats { get; set; } = new();
-
-        /// <summary>最近处理的事件摘要（最多保留100条）</summary>
-        [MemoryPackOrder(1)]
-        [Id(1)]
-        public List<ProcessedEventSummary> RecentEvents { get; set; } = new();
-    }
-
     /// <summary>
     /// 游戏事件消费者Grain — 订阅Orleans Stream异步处理游戏事件
     /// 解耦战斗结果通知、日志统计等非关键路径的异步处理
