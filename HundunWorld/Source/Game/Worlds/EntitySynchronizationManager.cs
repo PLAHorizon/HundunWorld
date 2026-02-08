@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using FlaxEngine;
 using Arch.Core;
+using HundunWorld.Game.ECS;
 using HundunWorld.Game.ECS.Components;
 using HundunWorld.Game.Network;
 
@@ -19,6 +20,7 @@ namespace HundunWorld.Game.Worlds
         private readonly World _world;
         private readonly Dictionary<ulong, EntitySyncInfo> _syncEntities;
         private readonly Dictionary<EntityType, EntitySyncConfig> _syncConfigs;
+        private NetworkEntityRegistry _entityRegistry;
         
         // 同步时间间隔（毫秒）
         private const float POSITION_SYNC_INTERVAL = 100f; // 位置同步间隔
@@ -74,6 +76,14 @@ namespace HundunWorld.Game.Worlds
             _syncConfigs = new Dictionary<EntityType, EntitySyncConfig>();
             
             InitializeSyncConfigs();
+        }
+
+        /// <summary>
+        /// 设置网络实体注册表引用
+        /// </summary>
+        public void SetEntityRegistry(NetworkEntityRegistry registry)
+        {
+            _entityRegistry = registry ?? throw new ArgumentNullException(nameof(registry));
         }
         
         /// <summary>
@@ -152,6 +162,10 @@ namespace HundunWorld.Game.Worlds
                 }
                 
                 _syncEntities[entityId] = syncInfo;
+
+                // 同步注册到网络实体注册表
+                _entityRegistry?.Register(entityId, entity);
+
                 Debug.Log($"[EntitySync] 实体已注册同步: ID={entityId}, Type={entityType}");
             }
         }
@@ -164,6 +178,10 @@ namespace HundunWorld.Game.Worlds
             if (_syncEntities.ContainsKey(entityId))
             {
                 _syncEntities.Remove(entityId);
+
+                // 同步从网络实体注册表注销
+                _entityRegistry?.Unregister(entityId);
+
                 Debug.Log($"[EntitySync] 实体已取消同步: ID={entityId}");
             }
         }
