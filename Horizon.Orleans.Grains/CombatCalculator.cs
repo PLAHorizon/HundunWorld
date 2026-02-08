@@ -94,5 +94,62 @@ namespace Horizon.Orleans.Grains
             float restoreRatio = resurrectType == 1 ? 1.0f : 0.5f;
             return maxHealth * restoreRatio;
         }
+
+        /// <summary>
+        /// 判断是否闪避
+        /// </summary>
+        /// <param name="dodgeRate">闪避率 (0-1)</param>
+        /// <returns>是否闪避成功</returns>
+        public static bool RollDodge(float dodgeRate)
+        {
+            if (dodgeRate <= 0f) return false;
+            if (dodgeRate >= 1f) return true;
+            return Random.Shared.NextDouble() < dodgeRate;
+        }
+
+        /// <summary>
+        /// 计算格挡减伤
+        /// 格挡成功时减免固定比例伤害
+        /// </summary>
+        /// <param name="damage">原始伤害</param>
+        /// <param name="blockRate">格挡率 (0-1)</param>
+        /// <param name="blockReduction">格挡减伤比例，默认50%</param>
+        /// <returns>格挡后的伤害和是否格挡成功</returns>
+        public static (float damage, bool isBlocked) ApplyBlock(float damage, float blockRate, float blockReduction = 0.5f)
+        {
+            if (blockRate <= 0f) return (damage, false);
+            bool blocked = blockRate >= 1f || Random.Shared.NextDouble() < blockRate;
+            if (blocked)
+            {
+                return (damage * (1f - blockReduction), true);
+            }
+            return (damage, false);
+        }
+
+        /// <summary>
+        /// 检查技能冷却是否已结束
+        /// </summary>
+        /// <param name="lastCastTime">上次施放时间</param>
+        /// <param name="cooldownMs">冷却时间（毫秒）</param>
+        /// <returns>是否可以施放</returns>
+        public static bool IsSkillReady(DateTime lastCastTime, long cooldownMs)
+        {
+            if (cooldownMs <= 0) return true;
+            return (DateTime.UtcNow - lastCastTime).TotalMilliseconds >= cooldownMs;
+        }
+
+        /// <summary>
+        /// 获取技能剩余冷却时间（秒）
+        /// </summary>
+        /// <param name="lastCastTime">上次施放时间</param>
+        /// <param name="cooldownMs">冷却时间（毫秒）</param>
+        /// <returns>剩余冷却时间（秒），0表示已就绪</returns>
+        public static float GetRemainingCooldown(DateTime lastCastTime, long cooldownMs)
+        {
+            if (cooldownMs <= 0) return 0f;
+            var elapsed = (DateTime.UtcNow - lastCastTime).TotalMilliseconds;
+            var remaining = cooldownMs - elapsed;
+            return remaining > 0 ? (float)(remaining / 1000.0) : 0f;
+        }
     }
 }

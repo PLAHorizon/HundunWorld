@@ -1,9 +1,9 @@
 # 混沌世界项目 - 后续开发路线图
 
 **文档日期**: 2026年2月8日  
-**最后更新**: 2026年2月8日（第一阶段完成后回顾更新）  
+**最后更新**: 2026年2月8日（第三阶段部分完成后更新）  
 **基于**: 完整源代码审查  
-**文档版本**: v1.1
+**文档版本**: v1.2
 
 ---
 
@@ -29,11 +29,11 @@
 | ECS框架 | ✅ 85% | Arch.Core引擎、14个系统组件 |
 | UI框架 | ✅ 80% | 状态管理、响应式布局、性能监控 |
 | 网络通信 | ✅ 75% | TCP客户端、消息处理器、协议适配 |
-| 战斗系统 | ⚠️ 65% | 五行相克、伤害计算、效果系统、Energy分离（缺技能特效） |
+| 战斗系统 | ⚠️ 75% | 五行相克、伤害计算、效果系统、Energy分离、闪避格挡、技能冷却 |
 | 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善） |
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
 | 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
-| 测试基础设施（Phase 1.2） | ✅ 90% | 97个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator） |
+| 测试基础设施（Phase 1.2） | ✅ 90% | 151个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem） |
 | CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置 |
 
 ### 缺失模块
@@ -43,6 +43,7 @@
 | 监控告警 | 🟡 基础完成 | P1 |
 | 任务/副本系统 | 🔴 仅接口定义 | P2 |
 | 社交系统（好友/公会） | 🔴 仅接口定义 | P2 |
+| 游戏系统（背包/技能/合成） | 🟡 基础实现完成 | P2 |
 | 交易/市场系统 | 🔴 未开始 | P3 |
 
 ---
@@ -99,13 +100,15 @@ coverlet 6.0.4 — 代码覆盖率
 
 #### 测试项目
 
-**已存在**: `Horizon.Game.Gateway.Tests/`（3个测试文件，97个测试用例）
+**已存在**: `Horizon.Game.Gateway.Tests/`（5个测试文件，151个测试用例）
 
 | 测试文件 | 测试数量 | 覆盖内容 |
 |---------|---------|---------|
 | SecurePasswordHasherTests.cs | 20 | 密码哈希、验证、强度检查 |
 | SessionManagerTests.cs | 31 | 会话创建、获取、终止、验证、刷新 |
 | CombatGrainTests.cs | 46 | 五行相克、防御减免、暴击、复活、数据模型 |
+| CombatCalculatorExtendedTests.cs | 23 | 闪避系统、格挡系统、技能冷却、CombatInfo扩展属性 |
+| GameSystemStateTests.cs | 31 | 背包状态、技能状态、合成状态、物品信息 |
 
 #### 测试覆盖率现状
 
@@ -200,20 +203,21 @@ coverlet 6.0.4 — 代码覆盖率
   - 技能消耗从Energy扣除（而非Health）
   □ 自然回复机制（每秒回复比例）
   
-□ 暴击系统完善
-  - 角色暴击率属性
-  - 暴击伤害加成属性
+✅ 暴击系统完善
+  - 角色暴击率属性（CritRate）
+  - 暴击伤害加成属性（CritDamageMultiplier）
   - 使用Random.Shared替代new Random()
 
-□ 闪避和格挡系统
-  - 基础闪避率计算
-  - 格挡减伤公式
+✅ 闪避和格挡系统
+  - 基础闪避率计算（RollDodge）
+  - 格挡减伤公式（ApplyBlock）
   - 响应中标记IsDodged/IsBlocked
 
-□ 技能冷却管理
-  - 服务端冷却时间验证
-  - 全局冷却时间(GCD)控制
-  - 技能冷却进度查询
+✅ 技能冷却管理
+  - 服务端冷却时间验证（IsSkillReady）
+  - 技能冷却进度查询（GetRemainingCooldown）
+  - CombatInfo.SkillCooldowns冷却记录
+  □ 全局冷却时间(GCD)控制
 
 □ 战斗日志系统
   - 记录战斗流水
@@ -266,24 +270,27 @@ coverlet 6.0.4 — 代码覆盖率
 **现有接口**: `IGameSystemGrains.cs`（IInventoryGrain, ISkillGrain, ICraftingGrain）
 
 ```
-□ InventoryGrain实现
+✅ InventoryGrain实现
   - 背包物品增删改查
   - 物品堆叠和拆分
-  - 装备穿戴/卸下
   - 物品使用（消耗品）
   - 背包容量管理
+  □ 装备穿戴/卸下
 
-□ SkillGrain实现
+✅ SkillGrain实现
   - 技能学习/遗忘
   - 技能升级系统
-  - 技能树依赖验证
-  - 技能配点重置
+  - 技能冷却验证和施放
+  □ 技能树依赖验证
+  □ 技能配点重置
 
-□ CraftingGrain实现
-  - 材料合成配方
-  - 五行炼制系统
-  - 制作概率和品质
-  - 制作历史记录
+✅ CraftingGrain实现
+  - 配方学习
+  - 材料检查
+  □ 材料合成配方执行
+  □ 五行炼制系统
+  □ 制作概率和品质
+  □ 制作历史记录
 ```
 
 ### 3.4 消息频道系统（1周）
@@ -496,8 +503,10 @@ coverlet 6.0.4 — 代码覆盖率
 ```
 2026年2月中旬  ✅ Phase 0: 安全加固完成
                ✅ Phase 1.1: 代码缺陷修复完成
-               ✅ Phase 1.2: 测试基础设施建设完成（97个测试）
+               ✅ Phase 1.2: 测试基础设施建设完成（151个测试）
                ✅ Phase 1.3: CI/CD流程建立完成
+               ✅ Phase 3.1: 战斗系统增强（闪避/格挡/暴击/冷却）
+               ✅ Phase 3.3: 游戏系统Grain基础实现（背包/技能/合成）
                📍 当前位置（2026-02-08）
                ↓
 2026年3月下旬  ┌─ Phase 2: 监控可观测性
