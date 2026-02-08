@@ -160,14 +160,19 @@ namespace Horizon.Orleans.Grains
             }
         }
 
-        public Task<ActivityInfo> GetActivityInfoAsync()
+        public async Task<ActivityInfo> GetActivityInfoAsync()
         {
             try
             {
                 var state = _activityState.State;
 
-                // Auto-update status
+                // Auto-update status and persist if changed
+                int oldStatus = state.Status;
                 UpdateActivityStatus(state);
+                if (state.Status != oldStatus)
+                {
+                    await _activityState.WriteStateAsync();
+                }
 
                 var info = new ActivityInfo
                 {
@@ -182,7 +187,7 @@ namespace Horizon.Orleans.Grains
                     IsCreated = state.IsCreated
                 };
 
-                return Task.FromResult(info);
+                return info;
             }
             catch (Exception ex)
             {
@@ -368,13 +373,18 @@ namespace Horizon.Orleans.Grains
             }
         }
 
-        public Task<bool> IsActiveAsync()
+        public async Task<bool> IsActiveAsync()
         {
             try
             {
                 var state = _activityState.State;
+                int oldStatus = state.Status;
                 UpdateActivityStatus(state);
-                return Task.FromResult(state.Status == (int)ActivityStatus.Active);
+                if (state.Status != oldStatus)
+                {
+                    await _activityState.WriteStateAsync();
+                }
+                return state.Status == (int)ActivityStatus.Active;
             }
             catch (Exception ex)
             {

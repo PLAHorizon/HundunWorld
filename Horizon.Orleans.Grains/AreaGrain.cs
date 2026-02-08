@@ -304,7 +304,7 @@ namespace Horizon.Orleans.Grains
             }
         }
 
-        public Task<TeleportResult> RequestTeleportAsync(Guid playerId, int targetAreaId, long targetInstanceId)
+        public async Task<TeleportResult> RequestTeleportAsync(Guid playerId, int targetAreaId, long targetInstanceId)
         {
             try
             {
@@ -314,13 +314,13 @@ namespace Horizon.Orleans.Grains
 
                 if (!playerFound)
                 {
-                    return Task.FromResult(new TeleportResult
+                    return new TeleportResult
                     {
                         Success = false,
                         Message = "玩家不在当前区域",
                         TargetAreaId = targetAreaId,
                         TargetInstanceId = targetInstanceId
-                    });
+                    };
                 }
 
                 // Remove player from current instances
@@ -332,16 +332,18 @@ namespace Horizon.Orleans.Grains
                     }
                 }
 
+                await _areaState.WriteStateAsync();
+
                 _logger.LogInformation("传送请求: PlayerId={PlayerId}, TargetArea={TargetAreaId}, TargetInstance={TargetInstanceId}",
                     playerId, targetAreaId, targetInstanceId);
 
-                return Task.FromResult(new TeleportResult
+                return new TeleportResult
                 {
                     Success = true,
                     Message = "传送请求已提交",
                     TargetAreaId = targetAreaId,
                     TargetInstanceId = targetInstanceId
-                });
+                };
             }
             catch (Exception ex)
             {

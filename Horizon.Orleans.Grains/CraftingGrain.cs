@@ -183,7 +183,7 @@ namespace Horizon.Orleans.Grains
                 {
                     Success = success,
                     RecipeId = recipeId,
-                    Message = success ? $"合成成功（品质：{quality}）" : "合成失败",
+                    Message = success ? $"合成成功（品质：{GetQualityName(quality)}）" : "合成失败",
                     OutputItemId = outputItemId,
                     Quality = success ? quality : 0
                 };
@@ -206,6 +206,21 @@ namespace Horizon.Orleans.Grains
                 _logger.LogError(ex, "获取合成历史失败");
                 throw;
             }
+        }
+
+        /// <summary>
+        /// 品质名称映射
+        /// </summary>
+        private static readonly string[] QualityNames = { "普通", "精良", "稀有", "史诗", "传说" };
+
+        /// <summary>
+        /// 获取品质名称
+        /// </summary>
+        public static string GetQualityName(int quality)
+        {
+            if (quality >= 0 && quality < QualityNames.Length)
+                return QualityNames[quality];
+            return QualityNames[0];
         }
 
         /// <summary>

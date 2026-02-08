@@ -380,26 +380,23 @@ namespace Horizon.Orleans.Grains
         public static bool HasCircularDependency(int startSkill, Dictionary<int, List<int>> dependencies)
         {
             var visited = new HashSet<int>();
-            var stack = new Stack<int>();
-            stack.Push(startSkill);
+            return HasCircularDependencyDfs(startSkill, startSkill, dependencies, visited);
+        }
 
-            while (stack.Count > 0)
+        private static bool HasCircularDependencyDfs(int current, int startSkill, Dictionary<int, List<int>> dependencies, HashSet<int> visited)
+        {
+            if (!dependencies.TryGetValue(current, out var prereqs))
+                return false;
+
+            foreach (var prereq in prereqs)
             {
-                var current = stack.Pop();
-
-                if (!visited.Add(current) && current == startSkill && visited.Count > 1)
+                if (prereq == startSkill)
                     return true;
 
-                if (dependencies.TryGetValue(current, out var prereqs))
+                if (visited.Add(prereq))
                 {
-                    foreach (var prereq in prereqs)
-                    {
-                        if (prereq == startSkill)
-                            return true;
-
-                        if (!visited.Contains(prereq))
-                            stack.Push(prereq);
-                    }
+                    if (HasCircularDependencyDfs(prereq, startSkill, dependencies, visited))
+                        return true;
                 }
             }
 
