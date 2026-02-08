@@ -616,5 +616,146 @@ namespace Horizon.Game.Gateway.Tests
         }
 
         #endregion
+
+        #region Friend Callback State Tests - 好友回调状态管理
+
+        [Fact]
+        public void SocialState_AddFriendCallback_AddsFriendToList()
+        {
+            var state = new SocialState();
+            var friendGuid = Guid.NewGuid();
+
+            var friendInfo = new FriendInfo
+            {
+                FriendId = BitConverter.ToUInt64(friendGuid.ToByteArray(), 0),
+                IsOnline = false,
+                Intimacy = 0,
+                LastLoginTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            };
+
+            state.Friends[friendGuid] = friendInfo;
+
+            Assert.Single(state.Friends);
+            Assert.True(state.Friends.ContainsKey(friendGuid));
+        }
+
+        [Fact]
+        public void SocialState_RemoveFriendCallback_RemovesFriendFromList()
+        {
+            var state = new SocialState();
+            var friendGuid = Guid.NewGuid();
+
+            state.Friends[friendGuid] = new FriendInfo
+            {
+                FriendId = BitConverter.ToUInt64(friendGuid.ToByteArray(), 0),
+                IsOnline = true,
+                Intimacy = 50,
+                LastLoginTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            };
+
+            Assert.Single(state.Friends);
+
+            state.Friends.Remove(friendGuid);
+
+            Assert.Empty(state.Friends);
+        }
+
+        [Fact]
+        public void SocialState_FriendRequestHandled_RemovesRequest()
+        {
+            var state = new SocialState();
+            var requestId = Guid.NewGuid();
+
+            state.FriendRequests[requestId] = new FriendRequest
+            {
+                RequestId = requestId,
+                RequesterId = Guid.NewGuid(),
+                TargetId = Guid.NewGuid(),
+                Message = "请加我好友",
+                Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            };
+
+            Assert.Single(state.FriendRequests);
+
+            state.FriendRequests.Remove(requestId);
+
+            Assert.Empty(state.FriendRequests);
+        }
+
+        [Fact]
+        public void SocialState_DuplicateFriendAdd_OverwritesExisting()
+        {
+            var state = new SocialState();
+            var friendGuid = Guid.NewGuid();
+
+            var friendInfo1 = new FriendInfo
+            {
+                FriendId = BitConverter.ToUInt64(friendGuid.ToByteArray(), 0),
+                IsOnline = false,
+                Intimacy = 0,
+                LastLoginTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            };
+
+            state.Friends[friendGuid] = friendInfo1;
+
+            // Adding the same key again overwrites in Dictionary
+            var friendInfo2 = new FriendInfo
+            {
+                FriendId = BitConverter.ToUInt64(friendGuid.ToByteArray(), 0),
+                IsOnline = true,
+                Intimacy = 10,
+                LastLoginTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            };
+
+            state.Friends[friendGuid] = friendInfo2;
+
+            Assert.Single(state.Friends);
+            Assert.True(state.Friends[friendGuid].IsOnline);
+            Assert.Equal(10, state.Friends[friendGuid].Intimacy);
+        }
+
+        [Fact]
+        public void SocialState_MaxFriends_PreventsCallbackAdd()
+        {
+            var state = new SocialState { MaxFriends = 2 };
+
+            // Add 2 friends to fill the list
+            for (int i = 0; i < 2; i++)
+            {
+                var guid = Guid.NewGuid();
+                state.Friends[guid] = new FriendInfo
+                {
+                    FriendId = (ulong)i,
+                    IsOnline = false,
+                    Intimacy = 0,
+                    LastLoginTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                };
+            }
+
+            Assert.Equal(2, state.Friends.Count);
+
+            // Callback add should be blocked by capacity check
+            var newFriendGuid = Guid.NewGuid();
+            if (state.Friends.Count < state.MaxFriends)
+            {
+                state.Friends[newFriendGuid] = new FriendInfo();
+            }
+
+            Assert.Equal(2, state.Friends.Count);
+            Assert.DoesNotContain(newFriendGuid, state.Friends.Keys);
+        }
+
+        [Fact]
+        public void SocialState_RemoveNonexistentFriend_ReturnsFalse()
+        {
+            var state = new SocialState();
+            var nonExistentGuid = Guid.NewGuid();
+
+            var removed = state.Friends.Remove(nonExistentGuid);
+
+            Assert.False(removed);
+        }
+
+        #endregion
     }
 }

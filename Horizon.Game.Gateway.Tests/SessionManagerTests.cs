@@ -10,6 +10,7 @@ namespace Horizon.Game.Gateway.Tests
     /// SessionManager 单元测试
     /// 测试会话创建、获取、终止、验证和清理功能
     /// </summary>
+    [Collection("CacheTests")]
     public class SessionManagerTests : IDisposable
     {
         private readonly SessionManager _sessionManager;

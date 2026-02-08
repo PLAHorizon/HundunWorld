@@ -330,7 +330,165 @@ namespace Horizon.Orleans.Grains
         }
         public async Task<PassportInfoDto> WxUserAuthenticationAsync(WxLoginDto loginDto)
         {
-            throw new NotImplementedException();
+            try
+            {
+                if (loginDto == null)
+                {
+                    _logger.LogWarning("微信登录参数为空");
+                    return null;
+                }
+
+                if (string.IsNullOrEmpty(loginDto.Code))
+                {
+                    _logger.LogWarning("微信登录Code为空");
+                    return null;
+                }
+
+                _logger.LogInformation("开始微信用户认证, WxAppId: {WxAppId}", loginDto.WxAppId);
+
+                // 1. 登录频率检查（使用微信Code作为标识）
+                var rateLimitKey = $"wx_{loginDto.WxAppId}_{loginDto.Code}";
+                if (!await CheckLoginAttempts(rateLimitKey))
+                {
+                    _logger.LogWarning("微信登录尝试过于频繁, WxAppId: {WxAppId}", loginDto.WxAppId);
+                    return null;
+                }
+
+                // 2. 查找已绑定的通行证（通过手机号或邮箱匹配）
+                Passport passport = null;
+                if (!string.IsNullOrEmpty(loginDto.PassportId))
+                {
+                    passport = await _dataContext.QueryFirstOrDefaultAsync(
+                        m => m.Id == loginDto.PassportId && m.IsValid);
+                }
+
+                if (passport == null && !string.IsNullOrEmpty(loginDto.Phone))
+                {
+                    // 通过手机号查找用户，再找到对应的通行证
+                    var user = await _userdataContext.QueryFirstOrDefaultAsync(
+                        m => m.Phone == loginDto.Phone && m.IsValid);
+                    if (user != null)
+                    {
+                        passport = await _dataContext.QueryFirstOrDefaultAsync(
+                            m => m.Id == user.PassportId && m.IsValid);
+                    }
+                }
+
+                // 3. 如果没有找到通行证，自动创建新账号
+                if (passport == null)
+                {
+                    _logger.LogInformation("微信用户无绑定账号，自动创建新通行证, WxAppId: {WxAppId}", loginDto.WxAppId);
+
+                    // 获取可用的通行证ID
+                    var passportIds = await _contextPassportIds.QueryFirstOrDefaultAsync(m => m.IsValid, isTracking: true);
+                    if (passportIds == null)
+                    {
+                        await CreatePassportIdAsync(10);
+                        passportIds = await _contextPassportIds.QueryFirstOrDefaultAsync(m => m.IsValid, isTracking: true);
+                    }
+
+                    if (passportIds == null)
+                    {
+                        _logger.LogError("无法生成通行证ID");
+                        return null;
+                    }
+
+                    // 生成随机密码并创建通行证（使用完整GUID确保足够熵值）
+                    var randomPassword = Guid.NewGuid().ToString("N");
+                    var (passwordHash, passwordSalt) = SecurePasswordHasher.HashPassword(randomPassword);
+
+                    passport = await _dataContext.AddAsync(new Passport
+                    {
+                        Id = passportIds.Id,
+                        Password = passwordHash,
+                        PasswordSalt = passwordSalt,
+                        CreateTime = DateTime.UtcNow,
+                        UpdateTime = DateTime.UtcNow,
+                        IsValid = true
+                    });
+
+                    passportIds.ApplyTime = DateTime.UtcNow;
+                    passportIds.IsValid = false;
+                    await _contextPassportIds.DbCurrent.SaveChangesAsync();
+
+                    _logger.LogInformation("微信用户自动创建通行证成功: PassportId={PassportId}", passport.Id);
+                }
+
+                // 4. 获取或创建用户信息
+                var wxLoginDto = new LoginDto
+                {
+                    PassportId = passport.Id,
+                    AppId = loginDto.AppId,
+                    AppType = loginDto.AppType,
+                    Phone = loginDto.Phone,
+                    Email = loginDto.Email,
+                    GameContext = loginDto.GameContext
+                };
+
+                var user2 = await GetOrCreateUser(passport, wxLoginDto);
+                if (user2 == null)
+                {
+                    // 为微信用户创建新用户记录
+                    user2 = await _userdataContext.AddAsync(new User
+                    {
+                        AppId = loginDto.AppId,
+                        AppType = loginDto.AppType,
+                        PassportId = passport.Id,
+                        Phone = loginDto.Phone ?? "",
+                        Email = loginDto.Email ?? "",
+                        Name = loginDto.PassportId ?? "",
+                        PassportType = PassportType.Normal,
+                        NickName = loginDto.PassportId ?? $"WxUser_{(passport.Id.Length >= 8 ? passport.Id[..8] : passport.Id)}",
+                        Status = UserStatsEnum.Normal
+                    });
+
+                    _logger.LogInformation("为微信用户创建用户记录: UserId={UserId}", user2.Id);
+                }
+
+                // 5. 更新用户登录信息
+                await UpdateUserLoginInfo(user2);
+
+                // 6. 为游戏类型应用创建游戏用户记录
+                var gameUser = await HandleGameUserCreation(user2, wxLoginDto);
+
+                // 7. 创建会话
+                var sessionToken = await CreateUserSession(user2, wxLoginDto);
+
+                // 8. 构建返回结果
+                var result = new PassportInfoDto
+                {
+                    AppId = loginDto.AppId,
+                    AppType = loginDto.AppType,
+                    Avatar = user2?.Avatar,
+                    Name = user2?.Name,
+                    PassportType = user2?.PassportType ?? PassportType.Normal,
+                    OrganizationId = user2?.OrganizationId ?? 0,
+                    PassportId = passport.Id,
+                    Phone = user2?.Phone,
+                    Email = user2?.Email,
+                    SessionToken = sessionToken,
+                    UserId = (gameUser?.Id ?? 0),
+                    UserName = user2?.NickName
+                };
+
+                if (gameUser != null)
+                {
+                    result.UserId = gameUser.Id;
+                }
+
+                _logger.LogInformation("微信用户认证成功: PassportId={PassportId}, UserId={UserId}",
+                    passport.Id, result.UserId);
+
+                // 清除失败的登录尝试记录
+                await ClearFailedLoginAttempts(rateLimitKey);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "微信用户认证过程中发生异常, WxAppId: {WxAppId}", loginDto?.WxAppId);
+                return null;
+            }
         }
 
         /// <summary>
