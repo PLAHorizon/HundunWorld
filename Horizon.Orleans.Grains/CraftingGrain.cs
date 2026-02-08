@@ -151,6 +151,7 @@ namespace Horizon.Orleans.Grains
                 }
 
                 bool success = Random.Shared.NextDouble() <= recipe.SuccessRate;
+                // Generate a unique output item ID using recipe and history count
                 long outputItemId = success ? recipeId * 1000L + state.CraftingHistory.Count : 0;
 
                 var entry = new CraftingHistoryEntry

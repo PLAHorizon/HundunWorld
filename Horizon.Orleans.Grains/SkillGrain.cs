@@ -322,7 +322,10 @@ namespace Horizon.Orleans.Grains
                 state.SkillPoints += refundedPoints;
                 state.TotalSkillPointsUsed -= refundedPoints;
                 if (state.TotalSkillPointsUsed < 0)
+                {
+                    _logger.LogWarning("技能点统计异常: TotalSkillPointsUsed={TotalSkillPointsUsed}", state.TotalSkillPointsUsed);
                     state.TotalSkillPointsUsed = 0;
+                }
 
                 await _skillState.WriteStateAsync();
                 _logger.LogInformation("重置所有技能成功: RefundedPoints={RefundedPoints}", refundedPoints);

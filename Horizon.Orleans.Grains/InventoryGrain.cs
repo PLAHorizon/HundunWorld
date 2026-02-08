@@ -306,7 +306,7 @@ namespace Horizon.Orleans.Grains
                     return false;
                 }
 
-                if (!state.Items.ContainsKey(itemId))
+                if (!state.Items.TryGetValue(itemId, out var itemToEquip))
                 {
                     _logger.LogWarning("物品不存在: ItemId={ItemId}", itemId);
                     return false;
@@ -315,22 +315,22 @@ namespace Horizon.Orleans.Grains
                 // If slot already has an item, swap it back to inventory
                 if (state.EquippedItems.TryGetValue(slot, out var existingItemId))
                 {
-                    if (state.Items.Count >= state.Capacity)
-                    {
-                        _logger.LogWarning("背包已满，无法交换装备: Slot={Slot}", slot);
-                        return false;
-                    }
+                    // Slot occupied: no net change in inventory count (remove one, add back another)
+                }
+                else
+                {
+                    // No swap needed, just removing from inventory
                 }
 
-                // Remove item from inventory
-                var item = state.Items[itemId];
+                // Remove the item from inventory
                 state.Items.Remove(itemId);
 
-                // If slot had an item, put it back in inventory
+                // If slot had an item, restore it to inventory
                 if (existingItemId > 0)
                 {
-                    // Restore the previously equipped item placeholder
-                    state.Items[existingItemId] = new ItemInfo { ItemId = existingItemId, TemplateId = 0, Count = 1 };
+                    // Note: original item data is not preserved in equipped state;
+                    // a production system should store full ItemInfo for equipped items.
+                    state.Items[existingItemId] = new ItemInfo { ItemId = existingItemId, Count = 1 };
                 }
 
                 state.EquippedItems[slot] = itemId;
@@ -365,7 +365,9 @@ namespace Horizon.Orleans.Grains
                 }
 
                 state.EquippedItems.Remove(slot);
-                state.Items[itemId] = new ItemInfo { ItemId = itemId, TemplateId = 0, Count = 1 };
+                // Note: original item data is not preserved in equipped state;
+                // a production system should store full ItemInfo for equipped items.
+                state.Items[itemId] = new ItemInfo { ItemId = itemId, Count = 1 };
 
                 await _inventoryState.WriteStateAsync();
                 _logger.LogInformation("卸下装备成功: Slot={Slot}, ItemId={ItemId}", slot, itemId);
