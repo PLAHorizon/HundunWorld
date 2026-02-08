@@ -249,7 +249,7 @@ namespace HundunWorld.Game.UI.GameMain
             {
                 if (a.IsOnline && !b.IsOnline) return -1;
                 if (!a.IsOnline && b.IsOnline) return 1;
-                return string.Compare(a.Name, b.Name, StringComparison.Ordinal);
+                return string.Compare(a.Name, b.Name, StringComparison.CurrentCulture);
             });
 
             float yOffset = 5f;

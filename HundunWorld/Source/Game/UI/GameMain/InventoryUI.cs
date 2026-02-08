@@ -720,14 +720,21 @@ namespace HundunWorld.Game.UI.GameMain
         /// </summary>
         private void SortInventory()
         {
-            // 分离非空和空槽位
-            var filledSlots = _inventorySlots.FindAll(s => s.Material != null);
-            var emptySlots = _inventorySlots.FindAll(s => s.Material == null);
+            // 分离非空和空槽位（单次遍历）
+            var filledSlots = new List<InventorySlot>();
+            var emptySlots = new List<InventorySlot>();
+            foreach (var slot in _inventorySlots)
+            {
+                if (slot.Material != null)
+                    filledSlots.Add(slot);
+                else
+                    emptySlots.Add(slot);
+            }
 
             // 按材料名称排序
             filledSlots.Sort((a, b) =>
             {
-                int nameCompare = string.Compare(a.Material.MaterialName, b.Material.MaterialName, StringComparison.Ordinal);
+                int nameCompare = string.Compare(a.Material.MaterialName, b.Material.MaterialName, StringComparison.CurrentCulture);
                 if (nameCompare != 0) return nameCompare;
                 return b.Count.CompareTo(a.Count);
             });

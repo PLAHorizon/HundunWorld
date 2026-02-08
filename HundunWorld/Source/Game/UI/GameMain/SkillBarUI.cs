@@ -422,14 +422,19 @@ namespace HundunWorld.Game.UI.GameMain
         {
             if (slot?.SlotPanel == null) return;
 
-            // 闪烁效果：短暂高亮槽位边框
+            // 闪烁效果：短暂高亮槽位边框，然后恢复原色
             var originalColor = slot.SlotPanel.BackgroundColor;
             var highlightColor = new Color(1.0f, 0.9f, 0.3f, 0.9f);
             slot.SlotPanel.BackgroundColor = highlightColor;
 
-            // 使用延迟恢复（通过标记状态，在UpdateSkillSlots中还原）
-            slot.CooldownProgress = 0f;
-            slot.IsReady = false;
+            // 延迟恢复原色（通过InvokeOnUpdate在下一帧恢复）
+            FlaxEngine.Scripting.InvokeOnUpdate(() =>
+            {
+                if (slot.SlotPanel != null)
+                {
+                    slot.SlotPanel.BackgroundColor = originalColor;
+                }
+            });
 
             Debug.Log($"[SkillBarUI] 播放技能使用动画: {slot.BoundSkill?.Data?.SkillName}");
         }
