@@ -37,7 +37,7 @@
 | 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善） |
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
 | 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
-| 测试基础设施（Phase 1.2） | ✅ 90% | 337个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy） |
+| 测试基础设施（Phase 1.2） | ✅ 90% | 382个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit） |
 | CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置 |
 
 ### 缺失模块
@@ -108,7 +108,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 #### 测试项目
 
-**已存在**: `Horizon.Game.Gateway.Tests/`（10个测试文件，337个测试用例）
+**已存在**: `Horizon.Game.Gateway.Tests/`（12个测试文件，382个测试用例）
 
 | 测试文件 | 测试数量 | 覆盖内容 |
 |---------|---------|---------|
@@ -236,8 +236,8 @@ coverlet 6.0.4 — 代码覆盖率
   - 记录战斗流水（CombatLogEntry/CombatLogType）
   - 攻击日志自动记录
   - 日志查询接口（GetCombatLogAsync）
-  □ 伤害统计聚合
-  □ 战斗回放数据
+  ✅ 伤害统计聚合
+  ✅ 战斗回放数据
 ```
 
 #### 五行系统深化
@@ -252,7 +252,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 ✅ 五行连携系统（GetWuxingSynergyMultiplier）
   - 相生关系加成（金生水、水生木、木生火、火生土、土生金）
-  □ 组队五行匹配加成
+  ✅ 组队五行匹配加成
   □ 五行共鸣技能触发
 ```
 
@@ -336,8 +336,8 @@ coverlet 6.0.4 — 代码覆盖率
   - 批量消息路由
   - 路由统计
 
-□ 消息速率限制
-□ 敏感词过滤
+✅ 消息速率限制
+✅ 敏感词过滤
 □ 首杀/活动通知
 ```
 
@@ -531,7 +531,7 @@ coverlet 6.0.4 — 代码覆盖率
 ```
 2026年2月中旬  ✅ Phase 0: 安全加固完成
                ✅ Phase 1.1: 代码缺陷修复完成
-               ✅ Phase 1.2: 测试基础设施建设完成（337个测试）
+               ✅ Phase 1.2: 测试基础设施建设完成（382个测试）
                ✅ Phase 1.3: CI/CD流程建立完成
                ✅ Phase 3.1: 战斗系统增强（闪避/格挡/暴击/冷却/五行属性加成/五行协同/能量恢复/GCD/战斗日志）
                ✅ Phase 3.2: 社交系统基础实现（SocialGrain/GuildGrain/TeamGrain）
@@ -543,8 +543,8 @@ coverlet 6.0.4 — 代码覆盖率
 2026年3月下旬  ┌─ Phase 2: 监控可观测性
                │
 2026年4-5月    ├─ Phase 3: 服务端核心功能完善（剩余项）
-               │    ├─ 3.1 战斗系统完善（伤害统计聚合、战斗回放、组队五行匹配）
-               │    └─ 3.4 消息系统增强（速率限制、敏感词过滤）
+               │    ├─ ✅ 3.1 战斗系统完善（伤害统计聚合、战斗回放、组队五行匹配）
+               │    └─ ✅ 3.4 消息系统增强（速率限制、敏感词过滤）
                │
 2026年5-6月    ├─ Phase 4: 客户端功能完善
                │    ├─ 4.1 战斗特效与动画

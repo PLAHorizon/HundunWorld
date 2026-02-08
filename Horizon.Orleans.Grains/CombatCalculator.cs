@@ -1,3 +1,5 @@
+using Horizon.Orleans.Interface;
+
 namespace Horizon.Orleans.Grains
 {
     /// <summary>
@@ -258,5 +260,220 @@ namespace Horizon.Orleans.Grains
             if (gcdMs <= 0) return true;
             return (DateTime.UtcNow - lastActionTime).TotalMilliseconds >= gcdMs;
         }
+
+        /// <summary>
+        /// 聚合伤害统计
+        /// </summary>
+        public static DamageAggregateStats AggregateDamageStats(List<CombatLogEntry> combatLog, ulong playerId)
+        {
+            var stats = new DamageAggregateStats { PlayerId = playerId };
+            if (combatLog == null || combatLog.Count == 0)
+                return stats;
+
+            DateTime? firstAttackTime = null;
+            DateTime? lastAttackTime = null;
+
+            foreach (var entry in combatLog)
+            {
+                if (entry.AttackerId == playerId)
+                {
+                    if (entry.LogType == CombatLogType.Attack || entry.LogType == CombatLogType.SkillCast)
+                    {
+                        stats.TotalAttacks++;
+
+                        if (!firstAttackTime.HasValue)
+                            firstAttackTime = entry.Timestamp;
+                        lastAttackTime = entry.Timestamp;
+
+                        if (!entry.IsDodged && entry.IsBlocked)
+                        {
+                            stats.TotalHits++;
+                            stats.BlockedAttacks++;
+                            stats.TotalDamageDealt += entry.DamageDealt;
+                            if (entry.DamageDealt > stats.MaxSingleDamage)
+                                stats.MaxSingleDamage = entry.DamageDealt;
+                        }
+                        else if (!entry.IsDodged)
+                        {
+                            stats.TotalHits++;
+                            stats.TotalDamageDealt += entry.DamageDealt;
+                            if (entry.IsCritical)
+                                stats.CriticalHits++;
+                            if (entry.DamageDealt > stats.MaxSingleDamage)
+                                stats.MaxSingleDamage = entry.DamageDealt;
+                        }
+                    }
+                    else if (entry.LogType == CombatLogType.Death)
+                    {
+                        stats.KillCount++;
+                    }
+                }
+
+                if (entry.DefenderId == playerId)
+                {
+                    if (entry.LogType == CombatLogType.Attack || entry.LogType == CombatLogType.SkillCast)
+                    {
+                        if (entry.IsDodged)
+                        {
+                            stats.DodgedAttacks++;
+                        }
+                        else
+                        {
+                            stats.TotalDamageReceived += entry.DamageDealt;
+                        }
+                    }
+                    else if (entry.LogType == CombatLogType.Death)
+                    {
+                        stats.DeathCount++;
+                    }
+                }
+            }
+
+            if (stats.TotalHits > 0)
+                stats.AverageDamagePerHit = stats.TotalDamageDealt / stats.TotalHits;
+
+            if (firstAttackTime.HasValue && lastAttackTime.HasValue)
+            {
+                var duration = (float)(lastAttackTime.Value - firstAttackTime.Value).TotalSeconds;
+                stats.DPS = duration > 0 ? stats.TotalDamageDealt / duration : stats.TotalDamageDealt;
+            }
+
+            return stats;
+        }
+
+        /// <summary>
+        /// 构建战斗回放数据
+        /// </summary>
+        public static CombatReplayData BuildReplayData(List<CombatLogEntry> combatLog)
+        {
+            var replay = new CombatReplayData();
+            if (combatLog == null || combatLog.Count == 0)
+                return replay;
+
+            replay.ReplayId = Guid.NewGuid().ToString("N");
+            replay.StartTime = combatLog[0].Timestamp;
+            replay.EndTime = combatLog[^1].Timestamp;
+            replay.TotalDuration = (float)(replay.EndTime - replay.StartTime).TotalSeconds;
+
+            var participants = new HashSet<ulong>();
+
+            for (int i = 0; i < combatLog.Count; i++)
+            {
+                var entry = combatLog[i];
+                participants.Add(entry.AttackerId);
+                participants.Add(entry.DefenderId);
+
+                replay.Frames.Add(new CombatReplayFrame
+                {
+                    FrameIndex = i,
+                    Timestamp = entry.Timestamp,
+                    ActionType = entry.LogType,
+                    ActorId = entry.AttackerId,
+                    TargetId = entry.DefenderId,
+                    SkillId = entry.SkillId,
+                    DamageDealt = entry.DamageDealt,
+                    ElementType = entry.ElementType,
+                    IsCritical = entry.IsCritical,
+                    IsDodged = entry.IsDodged,
+                    IsBlocked = entry.IsBlocked
+                });
+            }
+
+            replay.Participants = participants.ToList();
+            return replay;
+        }
+
+        /// <summary>
+        /// 计算组队五行匹配加成
+        /// 规则:
+        /// - 相生对越多,加成越高
+        /// - 五行齐全额外20%加成
+        /// - 基础计算: 每对相生关系 +5% 加成
+        /// </summary>
+        public static float CalculateTeamWuxingSynergy(List<int> teamElements)
+        {
+            if (teamElements == null || teamElements.Count == 0)
+                return 0f;
+
+            var uniqueElements = new HashSet<int>(teamElements.Where(e => e >= 1 && e <= 5));
+            if (uniqueElements.Count == 0)
+                return 0f;
+
+            // 相生关系 (ordered pairs)
+            var synergyPairs = new (int, int)[]
+            {
+                (1, 3), // 金生水
+                (3, 2), // 水生木
+                (2, 4), // 木生火
+                (4, 5), // 火生土
+                (5, 1), // 土生金
+            };
+
+            int synergyCount = 0;
+            foreach (var (a, b) in synergyPairs)
+            {
+                if (uniqueElements.Contains(a) && uniqueElements.Contains(b))
+                    synergyCount++;
+            }
+
+            float bonus = synergyCount * 0.05f;
+
+            // 五行齐全额外20%加成
+            if (uniqueElements.Count == 5)
+                bonus += 0.20f;
+
+            return bonus;
+        }
+    }
+
+    /// <summary>
+    /// 伤害统计聚合
+    /// </summary>
+    public class DamageAggregateStats
+    {
+        public ulong PlayerId { get; set; }
+        public float TotalDamageDealt { get; set; }
+        public float TotalDamageReceived { get; set; }
+        public int TotalAttacks { get; set; }
+        public int TotalHits { get; set; }
+        public int CriticalHits { get; set; }
+        public int DodgedAttacks { get; set; }
+        public int BlockedAttacks { get; set; }
+        public int KillCount { get; set; }
+        public int DeathCount { get; set; }
+        public float MaxSingleDamage { get; set; }
+        public float AverageDamagePerHit { get; set; }
+        public float DPS { get; set; }
+    }
+
+    /// <summary>
+    /// 战斗回放帧
+    /// </summary>
+    public class CombatReplayFrame
+    {
+        public int FrameIndex { get; set; }
+        public DateTime Timestamp { get; set; }
+        public CombatLogType ActionType { get; set; }
+        public ulong ActorId { get; set; }
+        public ulong TargetId { get; set; }
+        public int SkillId { get; set; }
+        public float DamageDealt { get; set; }
+        public int ElementType { get; set; }
+        public bool IsCritical { get; set; }
+        public bool IsDodged { get; set; }
+        public bool IsBlocked { get; set; }
+    }
+
+    /// <summary>
+    /// 战斗回放数据
+    /// </summary>
+    public class CombatReplayData
+    {
+        public string ReplayId { get; set; } = "";
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public List<ulong> Participants { get; set; } = new();
+        public List<CombatReplayFrame> Frames { get; set; } = new();
+        public float TotalDuration { get; set; }
     }
 }
