@@ -1,0 +1,19 @@
+{{ define "hundunworld.title" -}}
+[HundunWorld] {{ .GroupLabels.alertname }} ({{ .Status | toUpper }})
+{{- end }}
+
+{{ define "hundunworld.text" -}}
+{{ if eq .Status "firing" }}🔥 告警触发{{ else }}✅ 告警恢复{{ end }}
+
+{{ range .Alerts }}
+━━━━━━━━━━━━━━━━━━━━
+📋 告警名称: {{ .Labels.alertname }}
+🏷️ 严重程度: {{ .Labels.severity }}
+🖥️ 实例: {{ .Labels.instance }}
+📝 摘要: {{ .Annotations.summary }}
+📖 详情: {{ .Annotations.description }}
+⏰ 触发时间: {{ .StartsAt.Format "2006-01-02 15:04:05 MST" }}
+{{ if .EndsAt }}🕐 恢复时间: {{ .EndsAt.Format "2006-01-02 15:04:05 MST" }}{{ end }}
+━━━━━━━━━━━━━━━━━━━━
+{{ end }}
+{{- end }}

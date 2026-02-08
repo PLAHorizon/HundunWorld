@@ -35,6 +35,7 @@ using ClientConnectionOptions = Horizon.Orleans.Silo.Services.ClientConnectionOp
 using Horizon.Orleans.Silo.Tasks;
 using Horizon.Game.Message.Network;
 using Horizon.Orleans.Silo.Monitoring;
+using Horizon.Core.Monitoring;
 
 namespace Horizon.Orleans.Silo
 {
@@ -222,7 +223,7 @@ namespace Horizon.Orleans.Silo
                         var prometheusPort = context.Configuration.GetValue<int>("Monitoring:PrometheusPort", 9464);
                         services.AddHorizonOpenTelemetry(prometheusPort: prometheusPort);
                     })
-                    .ConfigureLogging(logging =>
+                    .ConfigureLogging((context, logging) =>
                     {
                         logging.AddConsole();
                         logging.AddJsonConsole(options =>
@@ -236,6 +237,9 @@ namespace Horizon.Orleans.Silo
                             };
                         });
                         logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Information);
+
+                        // 开发环境启用Seq日志聚合（Phase 2.2）
+                        logging.AddSeqIfEnabled(context.Configuration, "HundunWorld.Silo");
                     });
 
                 var siloHost = builder.Build();
@@ -382,6 +386,12 @@ namespace Horizon.Orleans.Silo
             
             // 添加CorrelationId过滤器（分布式追踪）
             siloBuilder.AddIncomingGrainCallFilter<CorrelationIdFilter>();
+            
+            // 添加统一异常处理过滤器（架构改进）
+            siloBuilder.AddIncomingGrainCallFilter<GrainExceptionFilter>();
+            
+            // 添加请求参数验证过滤器（架构改进）
+            siloBuilder.AddIncomingGrainCallFilter<GrainCallValidationFilter>();
             
             // 添加客户端连接跟踪过滤器
             siloBuilder.AddIncomingGrainCallFilter<ClientConnectionTrackingFilter>();

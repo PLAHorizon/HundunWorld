@@ -6,6 +6,7 @@ using Horizon.Game.Gateway.Configuration;
 using Horizon.Game.Gateway.Network;
 using Horizon.Game.Gateway.Services;
 using Horizon.Game.Gateway.Monitoring;
+using Horizon.Core.Monitoring;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -107,6 +108,8 @@ namespace Horizon.Game.Gateway
                     });
                     logging.AddConfiguration(context.Configuration.GetSection("Logging"));
 
+                    // 开发环境启用Seq日志聚合（Phase 2.2）
+                    logging.AddSeqIfEnabled(context.Configuration, "HundunWorld.Gateway");
                 })
                 .ConfigureServices((context, services) =>
                 {
