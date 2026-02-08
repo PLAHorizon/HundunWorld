@@ -24,10 +24,16 @@ namespace Horizon.Model
         }
 
         /// <summary>
-        /// 登录密码
+        /// 登录密码（哈希值）
         /// </summary>
-        [Comment("登录密码")]
+        [Comment("登录密码哈希值")]
         public string Password { get; set; }
+
+        /// <summary>
+        /// 密码盐值
+        /// </summary>
+        [Comment("密码盐值")]
+        public string PasswordSalt { get; set; }
 
         public virtual ICollection<MemberLabe> MemberLabes { get; set; }
     }
