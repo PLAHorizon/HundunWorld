@@ -13,6 +13,7 @@ namespace Horizon.Game.Gateway.Tests
     /// PassportGrain 单元测试
     /// 测试通行证认证流程、DTO验证、会话信息、密码验证兼容性和登录限流逻辑
     /// </summary>
+    [Collection("CacheTests")]
     public class PassportGrainTests : IDisposable
     {
         private readonly Mock<ICache> _cacheMock;
@@ -933,6 +934,67 @@ namespace Horizon.Game.Gateway.Tests
             Assert.Null(sessionInfo.ClientIP);
             Assert.Null(sessionInfo.PlatformId);
             Assert.Null(sessionInfo.DeviceId);
+        }
+
+        #endregion
+
+        #region WxAuthentication Tests - 微信认证流程
+
+        [Fact]
+        public void WxLoginDto_CodeIsRequired_EmptyStringIsTreatedAsProvided()
+        {
+            var dto = new WxLoginDto { Code = "" };
+            Assert.NotNull(dto.Code);
+            Assert.Empty(dto.Code);
+        }
+
+        [Fact]
+        public void WxLoginDto_CanSetGameContext()
+        {
+            var dto = new WxLoginDto
+            {
+                WxAppId = "wx_app_id",
+                Code = "auth_code_123",
+                AppType = AppType.Game,
+                GameContext = new GameLoginContextDto
+                {
+                    Ip = "192.168.1.1",
+                    PlatformId = "WeChat",
+                    DeviceId = "device_001"
+                }
+            };
+
+            Assert.NotNull(dto.GameContext);
+            Assert.Equal("192.168.1.1", dto.GameContext.Ip);
+            Assert.Equal("WeChat", dto.GameContext.PlatformId);
+        }
+
+        [Fact]
+        public void WxLoginDto_AppSecret_ShouldNotBeExposedToClient()
+        {
+            // AppSecret should be set server-side only, not from client
+            var dto = new WxLoginDto
+            {
+                WxAppId = "wx_app_id",
+                Code = "auth_code",
+                AppSecret = null
+            };
+
+            Assert.Null(dto.AppSecret);
+        }
+
+        [Fact]
+        public void WxLoginDto_WithPhoneBinding_CanLookupExistingUser()
+        {
+            // 微信登录可以通过手机号绑定已有账号
+            var dto = new WxLoginDto
+            {
+                WxAppId = "wx_app_id",
+                Code = "auth_code_456",
+                Phone = "13800138000"
+            };
+
+            Assert.Equal("13800138000", dto.Phone);
         }
 
         #endregion

@@ -384,23 +384,63 @@ namespace Horizon.Orleans.Grains
             }
         }
 
-        public Task OnFriendAddedAsync(long friendId)
+        public async Task OnFriendAddedAsync(long friendId)
         {
             _logger.LogInformation("好友被添加回调: FriendId={FriendId}", friendId);
-            return Task.CompletedTask;
+
+            // 将对方添加到自己的好友列表（双向好友关系同步）
+            var friendGuid = new Guid(BitConverter.GetBytes(friendId).Concat(new byte[8]).ToArray());
+            var state = _socialState.State;
+
+            if (!state.Friends.ContainsKey(friendGuid))
+            {
+                if (state.Friends.Count < state.MaxFriends)
+                {
+                    state.Friends[friendGuid] = new FriendInfo
+                    {
+                        FriendId = (ulong)friendId,
+                        IsOnline = false,
+                        Intimacy = 0,
+                        LastLoginTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                    };
+
+                    await _socialState.WriteStateAsync();
+                    _logger.LogInformation("双向好友关系同步完成: FriendId={FriendId}", friendId);
+                }
+                else
+                {
+                    _logger.LogWarning("好友列表已满，无法同步好友关系: FriendId={FriendId}", friendId);
+                }
+            }
         }
 
-        public Task OnFriendRemovedAsync(long friendId)
+        public async Task OnFriendRemovedAsync(long friendId)
         {
             _logger.LogInformation("好友被移除回调: FriendId={FriendId}", friendId);
-            return Task.CompletedTask;
+
+            // 从自己的好友列表中移除对方（双向好友关系同步）
+            var friendGuid = new Guid(BitConverter.GetBytes(friendId).Concat(new byte[8]).ToArray());
+            var state = _socialState.State;
+
+            if (state.Friends.Remove(friendGuid))
+            {
+                await _socialState.WriteStateAsync();
+                _logger.LogInformation("双向好友移除同步完成: FriendId={FriendId}", friendId);
+            }
         }
 
-        public Task OnFriendRequestHandledAsync(Guid requestId, bool accepted)
+        public async Task OnFriendRequestHandledAsync(Guid requestId, bool accepted)
         {
             _logger.LogInformation("好友申请被处理回调: RequestId={RequestId}, Accepted={Accepted}",
                 requestId, accepted);
-            return Task.CompletedTask;
+
+            // 清理自己发出的对应好友申请记录
+            var state = _socialState.State;
+            if (state.FriendRequests.Remove(requestId))
+            {
+                await _socialState.WriteStateAsync();
+                _logger.LogInformation("好友申请记录已清理: RequestId={RequestId}", requestId);
+            }
         }
 
         /// <summary>
