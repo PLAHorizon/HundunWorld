@@ -1,6 +1,21 @@
 namespace Horizon.Orleans.Grains
 {
     /// <summary>
+    /// 五行属性加成结构
+    /// </summary>
+    public class WuxingAttributeBonus
+    {
+        public float CritRateBonus { get; set; }
+        public float PhysicalDamageBonus { get; set; }
+        public float HealthRegenRate { get; set; }
+        public float DodgeRateBonus { get; set; }
+        public float DefenseBonus { get; set; }
+        public float ShieldAmount { get; set; }
+        public float BurnDamagePerTick { get; set; }
+        public float FreezeChance { get; set; }
+    }
+
+    /// <summary>
     /// 战斗计算器 - 提供纯计算逻辑，不依赖Orleans基础设施
     /// </summary>
     public static class CombatCalculator
@@ -150,6 +165,97 @@ namespace Horizon.Orleans.Grains
             var elapsed = (DateTime.UtcNow - lastCastTime).TotalMilliseconds;
             var remaining = cooldownMs - elapsed;
             return remaining > 0 ? (float)(remaining / 1000.0) : 0f;
+        }
+
+        /// <summary>
+        /// 获取五行属性加成
+        /// 1=金, 2=木, 3=水, 4=火, 5=土
+        /// </summary>
+        /// <param name="element">五行元素类型</param>
+        /// <param name="basePower">基础力量</param>
+        /// <returns>五行属性加成</returns>
+        public static WuxingAttributeBonus GetWuxingAttributeBonus(int element, float basePower)
+        {
+            var bonus = new WuxingAttributeBonus();
+
+            switch (element)
+            {
+                case 1: // 金
+                    bonus.CritRateBonus = basePower * 0.05f;
+                    bonus.PhysicalDamageBonus = basePower * 0.15f;
+                    break;
+                case 2: // 木
+                    bonus.HealthRegenRate = basePower * 0.02f;
+                    break;
+                case 3: // 水
+                    bonus.DodgeRateBonus = basePower * 0.04f;
+                    bonus.FreezeChance = basePower * 0.03f;
+                    break;
+                case 4: // 火
+                    bonus.BurnDamagePerTick = basePower * 0.10f;
+                    break;
+                case 5: // 土
+                    bonus.DefenseBonus = basePower * 0.12f;
+                    bonus.ShieldAmount = basePower * 0.08f;
+                    break;
+            }
+
+            return bonus;
+        }
+
+        /// <summary>
+        /// 获取五行相生协同乘数
+        /// 相生关系：金生水、水生木、木生火、火生土、土生金
+        /// </summary>
+        /// <param name="element1">第一个元素</param>
+        /// <param name="element2">第二个元素</param>
+        /// <returns>协同乘数</returns>
+        public static float GetWuxingSynergyMultiplier(int element1, int element2)
+        {
+            if (element1 == element2 && element1 > 0)
+                return 1.10f;
+
+            // 相生关系：金生水、水生木、木生火、火生土、土生金
+            if ((element1 == 1 && element2 == 3) || // 金生水
+                (element1 == 3 && element2 == 2) || // 水生木
+                (element1 == 2 && element2 == 4) || // 木生火
+                (element1 == 4 && element2 == 5) || // 火生土
+                (element1 == 5 && element2 == 1) || // 土生金
+                (element2 == 1 && element1 == 3) || // 水 <- 金
+                (element2 == 3 && element1 == 2) || // 木 <- 水 (reverse)
+                (element2 == 2 && element1 == 4) || // 火 <- 木
+                (element2 == 4 && element1 == 5) || // 土 <- 火
+                (element2 == 5 && element1 == 1))   // 金 <- 土
+            {
+                return 1.15f;
+            }
+
+            return 1.0f;
+        }
+
+        /// <summary>
+        /// 计算能量恢复
+        /// </summary>
+        /// <param name="maxEnergy">最大能量</param>
+        /// <param name="currentEnergy">当前能量</param>
+        /// <param name="regenRate">恢复速率，默认2%</param>
+        /// <returns>恢复后的能量值</returns>
+        public static float CalculateEnergyRecovery(float maxEnergy, float currentEnergy, float regenRate = 0.02f)
+        {
+            float recovery = maxEnergy * regenRate;
+            return Math.Min(currentEnergy + recovery, maxEnergy);
+        }
+
+        /// <summary>
+        /// 检查全局冷却是否就绪
+        /// </summary>
+        /// <param name="lastActionTime">上次动作时间</param>
+        /// <param name="gcdMs">全局冷却时间（毫秒），默认1000</param>
+        /// <returns>是否已就绪</returns>
+        public static bool IsGlobalCooldownReady(DateTime lastActionTime, long gcdMs = 1000)
+        {
+            if (gcdMs <= 0) return true;
+            return (DateTime.UtcNow - lastActionTime).TotalMilliseconds >= gcdMs;
         }
     }
 }
