@@ -1,9 +1,9 @@
 # 混沌世界项目 - 后续开发路线图
 
 **文档日期**: 2026年2月8日  
-**最后更新**: 2026年2月8日（交易/市场系统测试/五行共鸣技能/首杀活动通知实现后更新）  
+**最后更新**: 2026年2月8日（任务/副本系统实现后更新）  
 **基于**: 完整源代码审查  
-**文档版本**: v1.7
+**文档版本**: v1.8
 
 ---
 
@@ -37,7 +37,7 @@
 | 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善） |
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
 | 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
-| 测试基础设施（Phase 1.2） | ✅ 90% | 452个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket） |
+| 测试基础设施（Phase 1.2） | ✅ 90% | 514个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon） |
 | CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置 |
 
 ### 缺失模块
@@ -45,7 +45,7 @@
 | 模块 | 状态 | 优先级 |
 |------|------|--------|
 | 监控告警 | 🟡 基础完成 | P1 |
-| 任务/副本系统 | 🔴 仅接口定义 | P2 |
+| 任务/副本系统 | 🟡 基础实现完成 | P2 |
 | 社交系统（好友/公会/组队） | 🟡 基础实现完成 | P2 |
 | 消息频道系统 | 🟡 基础实现完成 | P2 |
 | 游戏系统（背包/技能/合成/炼丹） | 🟡 增强实现完成 | P2 |
@@ -108,7 +108,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 #### 测试项目
 
-**已存在**: `Horizon.Game.Gateway.Tests/`（13个测试文件，452个测试用例）
+**已存在**: `Horizon.Game.Gateway.Tests/`（14个测试文件，514个测试用例）
 
 | 测试文件 | 测试数量 | 覆盖内容 |
 |---------|---------|---------|
@@ -125,6 +125,7 @@ coverlet 6.0.4 — 代码覆盖率
 | DamageAggregationReplayTests.cs | 45 | 伤害统计聚合、战斗回放、组队五行匹配 |
 | MessageFilterRateLimitTests.cs | 20 | 消息速率限制、敏感词过滤 |
 | TradeMarketStateTests.cs | 70 | 交易状态、市场状态、五行共鸣技能、首杀活动通知 |
+| QuestDungeonStateTests.cs | 62 | 任务状态、任务目标进度、副本状态、Boss管理、超时检测、完整工作流 |
 
 #### 测试覆盖率现状
 
@@ -369,6 +370,27 @@ coverlet 6.0.4 — 代码覆盖率
   - 自动活动状态更新
 ```
 
+### 3.6 任务/副本系统（1周）
+
+**现有接口**: `IQuestDungeonGrains.cs`（IQuestGrain, IDungeonGrain）
+
+```
+✅ QuestGrain实现（任务系统）
+  - 任务接取/放弃
+  - 任务目标添加与进度更新
+  - 任务完成（目标验证+奖励发放）
+  - 进行中/已完成任务查询
+  - 最大同时接受任务数限制（默认20）
+
+✅ DungeonGrain实现（副本系统）
+  - 副本创建（模板/难度/人数/时间限制）
+  - 玩家进入/离开副本
+  - Boss添加与击败记录
+  - 副本通关（全Boss击败验证+通关时间）
+  - 副本超时检测
+  - 四级难度系统（普通/困难/英雄/地狱）
+```
+
 ---
 
 ## 🟢 第四阶段：客户端功能完善（建议4-6周）
@@ -534,13 +556,14 @@ coverlet 6.0.4 — 代码覆盖率
 ```
 2026年2月中旬  ✅ Phase 0: 安全加固完成
                ✅ Phase 1.1: 代码缺陷修复完成
-               ✅ Phase 1.2: 测试基础设施建设完成（382个测试）
+               ✅ Phase 1.2: 测试基础设施建设完成（514个测试）
                ✅ Phase 1.3: CI/CD流程建立完成
                ✅ Phase 3.1: 战斗系统增强（闪避/格挡/暴击/冷却/五行属性加成/五行协同/能量恢复/GCD/战斗日志/五行共鸣技能触发）
                ✅ Phase 3.2: 社交系统基础实现（SocialGrain/GuildGrain/TeamGrain）
                ✅ Phase 3.3: 游戏系统Grain实现（背包/装备/技能树/合成品质/五行炼制系统）
                ✅ Phase 3.4: 消息频道系统实现（频道/路由/广播/首杀活动通知）
                ✅ Phase 3.5: GameServerGrain/AreaGrain/ActivityGrain实现
+               ✅ Phase 3.6: 任务/副本系统实现（QuestGrain/DungeonGrain）
                📍 当前位置（2026-02-08）
                ↓
 2026年3月下旬  ┌─ Phase 2: 监控可观测性
@@ -548,7 +571,8 @@ coverlet 6.0.4 — 代码覆盖率
 2026年4-5月    ├─ Phase 3: 服务端核心功能完善（剩余项）
                │    ├─ ✅ 3.1 战斗系统完善（伤害统计聚合、战斗回放、组队五行匹配、五行共鸣技能触发）
                │    ├─ ✅ 3.4 消息系统增强（速率限制、敏感词过滤、首杀/活动通知）
-               │    └─ ✅ 3.6 交易/市场系统（TradeGrain/MarketGrain）
+               │    ├─ ✅ 3.6 交易/市场系统（TradeGrain/MarketGrain）
+               │    └─ ✅ 3.7 任务/副本系统（QuestGrain/DungeonGrain）
                │
 2026年5-6月    ├─ Phase 4: 客户端功能完善
                │    ├─ 4.1 战斗特效与动画
