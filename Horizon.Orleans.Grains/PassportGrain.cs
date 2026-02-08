@@ -474,52 +474,10 @@ namespace Horizon.Orleans.Grains
                 return string.Empty;
             }
         }
-        public async Task CreatePassportIdAsync(int count)
+        public Task CreatePassportIdAsync(int count)
         {
-            //await Policy.TimeoutAsync(10, TimeoutStrategy.Optimistic).ExecuteAsync(async () =>
-            //{
-            //    using (var plock = await Cache.AcquireLockAsync(CacheConst.PASSPORTCREATINGLOCK, TimeSpan.FromSeconds(10)))
-            //    {
-            //        var flag = await Cache.GetAsync<PassportFlag>(CacheConst.PASSPORTFLAG);
-            //        if (flag == null)
-            //        {
-            //            await Cache.InsertAsync(CacheConst.PASSPORTFLAG, new PassportFlag { Id = 1, IsCreating = false, IsValid = true });
-            //        }
-            //        else if (flag.IsCreating)
-            //        {
-            //            return;
-            //        }
-            //        else
-            //        {
-            //            flag.IsCreating = true;
-            //            await Cache.InsertAsync(CacheConst.PASSPORTFLAG, flag);
-            //            if (count > 100000) count = 100000;//每次最多允许生成 100000 个新的通行证号
-            //            int total = 0;
-            //            while (count > 0)
-            //            {
-            //                flag = await Cache.GetAsync<PassportFlag>(CacheConst.PASSPORTFLAG);
-            //                if (!flag?.IsCreating ?? true) break;
-            //                string repeat = string.Empty;
-            //            ID: string id = PassportHelper.GetPassportID(repeat, CacheConst.PassportLengthMin, CacheConst.PassportLengthMax);
-            //                var passport = await _dataContext.QueryFirstOrDefaultAsync(m => m.Id == id);
-            //                var item = await _contextPassportIds.QueryFirstOrDefaultAsync(m => m.Id == id && m.IsValid);
-            //                repeat = id;
-            //                if (passport != null || item != null)
-            //                {
-            //                    repeat = id;
-            //                    goto ID;
-            //                }
-            //                await _contextPassportIds.AddAsync(new PassportIds { IsValid = true, Id = repeat, CreatingTime = DateTime.UtcNow });
-            //                count--;
-            //                total++;
-            //            }
-            //            flag.Total += total;
-            //            flag.IsCreating = false;
-            //            await Cache.InsertAsync(CacheConst.PASSPORTFLAG, flag);
-            //        }
-            //    }
-            //});
-
+            // TODO: 实现通行证ID批量生成逻辑
+            return Task.CompletedTask;
         }
 
         public async Task CancelCreatePassportIdAsync()
@@ -528,7 +486,6 @@ namespace Horizon.Orleans.Grains
             if (flag == null)
             {
                 await Cache.InsertAsync(CacheConst.PASSPORTFLAG, new PassportFlag { Id = 1, IsCreating = false, IsValid = true });
-                await Task.CompletedTask;
                 return;
             }
             if (flag.IsCreating) flag.IsCreating = false;
