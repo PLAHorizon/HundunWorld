@@ -7668,6 +7668,32 @@
         <member name="P:Horizon.Game.Message.Network.AchievementState.UnlockedCount">
             <summary>已解锁成就数</summary>
         </member>
+        <member name="T:Horizon.Game.Message.Network.SocialSystemMonitorState">
+            <summary>
+            社交系统监控状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>long</b> TotalMessagesRouted<br/>
+            <b>int</b> TotalChannels<br/>
+            <b>int</b> ActiveUsers<br/>
+            <b>long</b> LastResetTime<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SocialSystemMonitorState.TotalMessagesRouted">
+            <summary>总消息路由数</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SocialSystemMonitorState.TotalChannels">
+            <summary>总频道数</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SocialSystemMonitorState.ActiveUsers">
+            <summary>总活跃用户数</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SocialSystemMonitorState.LastResetTime">
+            <summary>统计重置时间</summary>
+        </member>
         <member name="T:Horizon.Game.Message.Network.HorizonMessagePacket">
             <summary>
             游戏消息包装类

@@ -563,5 +563,58 @@ namespace Horizon.Game.Gateway.Tests
         }
 
         #endregion
+
+        #region SocialSystemMonitorState Tests - 社交系统监控状态
+
+        [Fact]
+        public void SocialSystemMonitorState_DefaultValues_AreCorrect()
+        {
+            var state = new SocialSystemMonitorState();
+            Assert.Equal(0, state.TotalMessagesRouted);
+            Assert.Equal(0, state.TotalChannels);
+            Assert.Equal(0, state.ActiveUsers);
+            Assert.Equal(0, state.LastResetTime);
+        }
+
+        [Fact]
+        public void SocialSystemMonitorState_SetValues_WorksCorrectly()
+        {
+            var state = new SocialSystemMonitorState
+            {
+                TotalMessagesRouted = 5000,
+                TotalChannels = 10,
+                ActiveUsers = 200,
+                LastResetTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            };
+            Assert.Equal(5000, state.TotalMessagesRouted);
+            Assert.Equal(10, state.TotalChannels);
+            Assert.Equal(200, state.ActiveUsers);
+            Assert.True(state.LastResetTime > 0);
+        }
+
+        [Fact]
+        public void SocialSystemMonitorState_ResetSimulation_ClearsStats()
+        {
+            var state = new SocialSystemMonitorState
+            {
+                TotalMessagesRouted = 1000,
+                TotalChannels = 5,
+                ActiveUsers = 100,
+                LastResetTime = 0
+            };
+
+            // Simulate reset
+            state.TotalMessagesRouted = 0;
+            state.TotalChannels = 0;
+            state.ActiveUsers = 0;
+            state.LastResetTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+            Assert.Equal(0, state.TotalMessagesRouted);
+            Assert.Equal(0, state.TotalChannels);
+            Assert.Equal(0, state.ActiveUsers);
+            Assert.True(state.LastResetTime > 0);
+        }
+
+        #endregion
     }
 }

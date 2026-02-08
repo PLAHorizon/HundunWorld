@@ -1337,4 +1337,37 @@ namespace Horizon.Game.Message.Network
     }
 
     #endregion
+
+    #region 社交系统监控状态
+
+    /// <summary>
+    /// 社交系统监控状态
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class SocialSystemMonitorState
+    {
+        /// <summary>总消息路由数</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long TotalMessagesRouted { get; set; }
+
+        /// <summary>总频道数</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int TotalChannels { get; set; }
+
+        /// <summary>总活跃用户数</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int ActiveUsers { get; set; }
+
+        /// <summary>统计重置时间</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long LastResetTime { get; set; }
+    }
+
+    #endregion
 }
