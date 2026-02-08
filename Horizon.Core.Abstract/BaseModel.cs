@@ -70,19 +70,30 @@ namespace Horizon.Core.Abstract
         [Column(TypeName = "datetimeoffset(7)", Order = 58), TableDescription(TypeName = "datetimeoffset(7)", Name = "ModifyTime", Order = "58", Description = "修改时间")]
         public DateTime? ModifyTime { get; set; }
 
+        /// <summary>
+        /// 刷新通行证令牌
+        /// </summary>
         public string Refresh()
         {
-            throw new NotImplementedException();
+            ModifyTime = DateTime.Now;
+            return Passport;
         }
 
+        /// <summary>
+        /// 撤销通行证
+        /// </summary>
         public void Revoke()
         {
-            throw new NotImplementedException();
+            IsValid = false;
+            ModifyTime = DateTime.Now;
         }
 
+        /// <summary>
+        /// 验证通行证是否有效
+        /// </summary>
         public bool Validate()
         {
-            throw new NotImplementedException();
+            return IsValid && !string.IsNullOrWhiteSpace(Passport);
         }
     }
     /// <summary>

@@ -170,14 +170,99 @@ namespace Horizon.Entities
             }
         }
 
-        public Task<bool> DisableAsync([NotNull] T entity, [NotNull] K id)
+        /// <summary>
+        /// 禁用数据（软删除/标记无效）
+        /// </summary>
+        public async Task<bool> DisableAsync([NotNull] T entity, [NotNull] K id)
         {
-            throw new NotImplementedException();
+            // 检查对象是否已释放
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            // 获取写操作信号量
+            await _writeSemaphore.WaitAsync();
+            try
+            {
+                DbContextHealthCheck();
+                var model = await DbCurrent.Set<T>().FindAsync(id);
+                if (model == null) return false;
+
+                model.IsValid = false;
+                if (model is ISoftDeleted softDeleted)
+                {
+                    softDeleted.IsDeleted = true;
+                }
+
+                DbCurrent.Entry(model).Property(x => x.Id).IsModified = false;
+                DbCurrent.Entry(model).State = EntityState.Modified;
+
+                try
+                {
+                    return (await DbCurrent.SaveChangesAsync()) > 0;
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    Log.Error(Log.CommRepository, $"禁用操作并发冲突: {ex.Message}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(Log.CommRepository, ex.Message);
+                return false;
+            }
+            finally
+            {
+                _writeSemaphore.Release();
+            }
         }
 
-        public Task<bool> DisableRangeAsync([NotNull] IList<T> entities)
+        /// <summary>
+        /// 批量禁用数据（软删除/标记无效）
+        /// </summary>
+        public async Task<bool> DisableRangeAsync([NotNull] IList<T> entities)
         {
-            throw new NotImplementedException();
+            // 检查对象是否已释放
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            // 获取写操作信号量
+            await _writeSemaphore.WaitAsync();
+            try
+            {
+                DbContextHealthCheck();
+                foreach (var entity in entities)
+                {
+                    var model = await DbCurrent.Set<T>().FindAsync(entity.Id);
+                    if (model == null) continue;
+
+                    model.IsValid = false;
+                    if (model is ISoftDeleted softDeleted)
+                    {
+                        softDeleted.IsDeleted = true;
+                    }
+
+                    DbCurrent.Entry(model).Property(x => x.Id).IsModified = false;
+                    DbCurrent.Entry(model).State = EntityState.Modified;
+                }
+
+                try
+                {
+                    return (await DbCurrent.SaveChangesAsync()) > 0;
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    Log.Error(Log.CommRepository, $"批量禁用操作并发冲突: {ex.Message}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(Log.CommRepository, ex.Message);
+                return false;
+            }
+            finally
+            {
+                _writeSemaphore.Release();
+            }
         }
 
         public async Task<IQueryable<T>> QueryAsync([NotNull] Expression<Func<T, bool>> condition, bool isTracking = false)
@@ -290,14 +375,103 @@ namespace Horizon.Entities
             }
         }
 
-        public Task<bool> RemoveAsync([NotNull] T entity, [NotNull] K id)
+        /// <summary>
+        /// 物理删除单条数据
+        /// </summary>
+        public async Task<bool> RemoveAsync([NotNull] T entity, [NotNull] K id)
         {
-            throw new NotImplementedException();
+            // 检查对象是否已释放
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            // 获取写操作信号量
+            await _writeSemaphore.WaitAsync();
+            try
+            {
+                DbContextHealthCheck();
+                var model = await DbCurrent.Set<T>().FindAsync(id);
+                if (model == null) return false;
+
+                DbCurrent.Remove(model);
+
+                try
+                {
+                    return (await DbCurrent.SaveChangesAsync()) > 0;
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    Log.Error(Log.CommRepository, $"删除操作并发冲突: {ex.Message}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(Log.CommRepository, ex.Message);
+                return false;
+            }
+            finally
+            {
+                _writeSemaphore.Release();
+            }
         }
 
-        public Task<bool> RemoveRangeAsync([NotNull] IList<T> entities)
+        /// <summary>
+        /// 批量物理删除数据
+        /// </summary>
+        public async Task<bool> RemoveRangeAsync([NotNull] IList<T> entities)
         {
-            throw new NotImplementedException();
+            // 检查对象是否已释放
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            // 获取事务信号量
+            await _transactionSemaphore.WaitAsync();
+            try
+            {
+                DbContextHealthCheck();
+                using var scope = DbCurrent.Database.GetDbConnection().BeginTransaction();
+                try
+                {
+                    foreach (var entity in entities)
+                    {
+                        var model = await DbCurrent.Set<T>().FindAsync(entity.Id);
+                        if (model != null)
+                        {
+                            DbCurrent.Remove(model);
+                        }
+                    }
+
+                    try
+                    {
+                        await DbCurrent.SaveChangesAsync();
+                        scope.Commit();
+                        return true;
+                    }
+                    catch (DbUpdateConcurrencyException ex)
+                    {
+                        scope.Rollback();
+                        Log.Error(Log.CommRepository, $"批量删除操作并发冲突: {ex.Message}");
+                        return false;
+                    }
+                }
+                catch (Exception)
+                {
+                    scope.Rollback();
+                    throw;
+                }
+                finally
+                {
+                    try
+                    {
+                        var conn = DbCurrent.Database.GetDbConnection();
+                        if (conn.State != ConnectionState.Closed)
+                            DbCurrent.Database.CloseConnection();
+                    }
+                    catch { }
+                }
+            }
+            finally
+            {
+                _transactionSemaphore.Release();
+            }
         }
 
 
