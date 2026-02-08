@@ -726,4 +726,143 @@ namespace Horizon.Game.Message.Network
     }
 
     #endregion
+
+    #region 实体同步消息
+
+    /// <summary>
+    /// 网络实体类型（服务端与客户端共享）
+    /// </summary>
+    public enum NetworkEntityType
+    {
+        Unknown = 0,
+        LocalPlayer = 1,
+        RemotePlayer = 2,
+        Npc = 3,
+        Monster = 4,
+        Projectile = 5,
+        Item = 6
+    }
+
+    /// <summary>
+    /// 实体生成消息
+    /// 当实体进入玩家视野时由服务端发送
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class EntitySpawnMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 实体的网络ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong EntityId { get; set; }
+
+        /// <summary>
+        /// 实体类型
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public NetworkEntityType EntityType { get; set; }
+
+        /// <summary>
+        /// 实体名称
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string EntityName { get; set; } = "";
+
+        /// <summary>
+        /// 等级
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int Level { get; set; }
+
+        /// <summary>
+        /// 生成位置
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public Position SpawnPosition { get; set; } = new();
+
+        /// <summary>
+        /// 当前生命值
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public float CurrentHealth { get; set; }
+
+        /// <summary>
+        /// 最大生命值
+        /// </summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public float MaxHealth { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public MessageType Type { get; set; } = MessageType.EntitySpawn;
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 实体销毁消息
+    /// 当实体离开玩家视野或被销毁时由服务端发送
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class EntityDespawnMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 实体的网络ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong EntityId { get; set; }
+
+        /// <summary>
+        /// 销毁原因
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public DespawnReason Reason { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public MessageType Type { get; set; } = MessageType.EntityDespawn;
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 实体销毁原因
+    /// </summary>
+    public enum DespawnReason
+    {
+        /// <summary>
+        /// 离开视野
+        /// </summary>
+        OutOfRange = 0,
+
+        /// <summary>
+        /// 死亡
+        /// </summary>
+        Death = 1,
+
+        /// <summary>
+        /// 传送
+        /// </summary>
+        Teleport = 2,
+
+        /// <summary>
+        /// 登出
+        /// </summary>
+        Logout = 3
+    }
+
+    #endregion
 }

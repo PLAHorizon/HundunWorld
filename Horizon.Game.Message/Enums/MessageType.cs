@@ -553,7 +553,19 @@ namespace Horizon.Game.Message.Enums
         GameEvent = 1327,
         GuildInfo = 1329,
         GuildSkillInfo = 1330,
-        WuXingSystem = 1331
+        WuXingSystem = 1331,
+
+        /// <summary>
+        /// 实体生成
+        /// </summary>
+        [Description("实体生成")]
+        EntitySpawn = 1332,
+
+        /// <summary>
+        /// 实体销毁
+        /// </summary>
+        [Description("实体销毁")]
+        EntityDespawn = 1333
         #endregion
     }
 }

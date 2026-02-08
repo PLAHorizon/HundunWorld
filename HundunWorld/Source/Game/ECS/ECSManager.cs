@@ -1,5 +1,6 @@
 using Arch.Core;
 using Arch.Core.Utils;
+using HundunWorld.Game.ECS.Components;
 using System;
 using System.Collections.Generic;
 
@@ -13,12 +14,24 @@ namespace HundunWorld.Game.ECS
         private Arch.Core.World _world;
         private List<BaseSystem> _systems;
         private bool _isRunning;
+        private NetworkEntityRegistry _entityRegistry;
+
+        /// <summary>
+        /// 网络实体注册表，提供网络ID与ECS实体的双向映射
+        /// </summary>
+        public NetworkEntityRegistry EntityRegistry => _entityRegistry;
+
+        /// <summary>
+        /// 获取ECS世界实例
+        /// </summary>
+        public Arch.Core.World World => _world;
 
         public ECSManager()
         {
             // 创建ECS世界
             _world = World.Create();
             _systems = new List<BaseSystem>();
+            _entityRegistry = new NetworkEntityRegistry();
         }
 
         /// <summary>
@@ -53,11 +66,26 @@ namespace HundunWorld.Game.ECS
         }
 
         /// <summary>
+        /// 创建带网络ID的实体
+        /// </summary>
+        /// <param name="networkId">网络实体ID</param>
+        /// <param name="entityType">网络实体类型</param>
+        /// <returns>实体引用</returns>
+        public Entity CreateNetworkEntity(ulong networkId, NetworkEntityType entityType = NetworkEntityType.Unknown)
+        {
+            var entity = _world.Create();
+            _world.Add(entity, new NetworkEntityIdComponent(networkId, entityType));
+            _entityRegistry.Register(networkId, entity);
+            return entity;
+        }
+
+        /// <summary>
         /// 删除实体
         /// </summary>
         /// <param name="entity">实体引用</param>
         public void DestroyEntity(Entity entity)
         {
+            _entityRegistry.UnregisterByEntity(entity);
             _world.Destroy(entity);
         }
 
@@ -121,6 +149,9 @@ namespace HundunWorld.Game.ECS
                 system.Dispose();
             }
             _systems.Clear();
+
+            // 清除实体注册表
+            _entityRegistry.Clear();
 
             // 销毁世界
             World.Destroy(_world);

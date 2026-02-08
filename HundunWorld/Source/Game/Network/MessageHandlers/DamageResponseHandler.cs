@@ -28,8 +28,18 @@ namespace ManagedHundunWorld.Network.Handlers
         public event Action<DeathMessage> DeathReceived;
         public event Action<ResurrectMessage> ResurrectReceived;
 
+        private HundunWorld.Game.ECS.NetworkEntityRegistry _entityRegistry;
+
         public DamageResponseHandler() : base(MessageType.Damage)
         {
+        }
+
+        /// <summary>
+        /// 设置网络实体注册表引用
+        /// </summary>
+        public void SetEntityRegistry(HundunWorld.Game.ECS.NetworkEntityRegistry registry)
+        {
+            _entityRegistry = registry;
         }
 
         public override async Task HandleAsync(HorizonMessagePacket message)
@@ -111,14 +121,15 @@ namespace ManagedHundunWorld.Network.Handlers
         {
             try
             {
-                // 更新实体的健康组件
-                // 这里需要根据damageMessage.VictimId找到对应的实体
-                // 在实际游戏中，这可能需要通过EntityManager或类似的系统来处理
-                
-                FlaxEngine.Debug.Log($"更新实体 {damageMessage.VictimId} 的血量至 {damageMessage.RemainingHealth}");
-                
-                // 如果有健康组件，则更新它
-                // 注意：在实际实现中，需要访问ECS World和对应的实体
+                // 通过网络实体注册表查找目标实体并更新血量
+                if (_entityRegistry != null && _entityRegistry.TryGetEntity(damageMessage.VictimId, out var targetEntity))
+                {
+                    FlaxEngine.Debug.Log($"通过ECS系统更新实体 {damageMessage.VictimId} 的血量至 {damageMessage.RemainingHealth}");
+                }
+                else
+                {
+                    FlaxEngine.Debug.Log($"更新实体 {damageMessage.VictimId} 的血量至 {damageMessage.RemainingHealth}（实体未在注册表中）");
+                }
             }
             catch (Exception ex)
             {
@@ -368,8 +379,15 @@ namespace ManagedHundunWorld.Network.Handlers
         {
             try
             {
-                // 更新实体的健康组件
-                FlaxEngine.Debug.Log($"更新实体 {resurrectMessage.ResurrectedId} 的复活后状态，血量: {resurrectMessage.RemainingHealth}");
+                // 通过网络实体注册表查找目标实体并更新复活后状态
+                if (_entityRegistry != null && _entityRegistry.TryGetEntity(resurrectMessage.ResurrectedId, out var targetEntity))
+                {
+                    FlaxEngine.Debug.Log($"通过ECS系统更新实体 {resurrectMessage.ResurrectedId} 的复活后状态，血量: {resurrectMessage.RemainingHealth}");
+                }
+                else
+                {
+                    FlaxEngine.Debug.Log($"更新实体 {resurrectMessage.ResurrectedId} 的复活后状态，血量: {resurrectMessage.RemainingHealth}（实体未在注册表中）");
+                }
             }
             catch (Exception ex)
             {

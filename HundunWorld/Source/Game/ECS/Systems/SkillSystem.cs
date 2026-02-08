@@ -17,11 +17,20 @@ namespace HundunWorld.Game.ECS.Systems
         private QueryDescription _castingQuery;
         private Dictionary<int, SkillData> _skillDatabase;
         private Random _random; // 添加随机数生成器
+        private NetworkEntityRegistry _entityRegistry;
 
         public SkillSystem()
         {
             _skillDatabase = new Dictionary<int, SkillData>();
             _random = new Random(); // 初始化随机数生成器
+        }
+
+        /// <summary>
+        /// 设置网络实体注册表引用
+        /// </summary>
+        public void SetEntityRegistry(NetworkEntityRegistry registry)
+        {
+            _entityRegistry = registry ?? throw new ArgumentNullException(nameof(registry));
         }
 
         public override void Initialize(World world)
@@ -252,11 +261,15 @@ namespace HundunWorld.Game.ECS.Systems
             // 判断是否暴击
             bool isCritical = _random.NextSingle() < 0.2f; // 20%暴击率
 
-            // 注意：这里我们假设targetId是有效的实体ID
-            // 在实际应用中，可能需要通过世界管理器或其他机制来获取实体
-            // 由于Arch ECS没有直接通过ID获取实体的方法，我们在这里记录一个TODO
-            // TODO: 实现通过targetId获取实体的机制，可能需要使用WorldManager或其他实体引用管理机制
-            Debug.LogWarning("注意：需要实现通过targetId获取实体的机制");
+            // 通过网络实体注册表查找目标实体
+            if (_entityRegistry != null && _entityRegistry.TryGetEntity(targetId, out var targetEntity))
+            {
+                if (world.IsAlive(targetEntity))
+                {
+                    CombatSystem.ApplyDamage(world, targetEntity, damage,
+                        Horizon.Game.Message.Enums.DamageType.Magic, caster, targetPosition, isCritical);
+                }
+            }
         }
 
         /// <summary>
@@ -264,9 +277,15 @@ namespace HundunWorld.Game.ECS.Systems
         /// </summary>
         private void ExecuteControlSkill(World world, Entity caster, SkillData skillData, ulong targetId)
         {
-            // 注意：这里我们假设targetId是有效的实体ID
-            // 在实际应用中，可能需要通过世界管理器或其他机制来获取实体
-            Debug.LogWarning("注意：需要实现通过targetId获取实体的机制");
+            // 通过网络实体注册表查找目标实体
+            if (_entityRegistry != null && _entityRegistry.TryGetEntity(targetId, out var targetEntity))
+            {
+                if (world.IsAlive(targetEntity))
+                {
+                    // 应用控制效果
+                    EffectSystem.ApplyEffect(world, targetEntity, skillData.SkillId, EffectType.Control, 3.0f, 1.0f);
+                }
+            }
         }
 
         /// <summary>
@@ -287,9 +306,15 @@ namespace HundunWorld.Game.ECS.Systems
         /// </summary>
         private void ExecuteSupportSkill(World world, Entity caster, SkillData skillData, ulong targetId)
         {
-            // 注意：这里我们假设targetId是有效的实体ID
-            // 在实际应用中，可能需要通过世界管理器或其他机制来获取实体
-            Debug.LogWarning("注意：需要实现通过targetId获取实体的机制");
+            // 通过网络实体注册表查找目标实体
+            if (_entityRegistry != null && _entityRegistry.TryGetEntity(targetId, out var targetEntity))
+            {
+                if (world.IsAlive(targetEntity))
+                {
+                    // 应用治疗效果
+                    EffectSystem.ApplyEffect(world, targetEntity, skillData.SkillId, EffectType.HoT, 5.0f, skillData.DamageMultiplier * 10f);
+                }
+            }
         }
 
         /// <summary>
@@ -300,9 +325,15 @@ namespace HundunWorld.Game.ECS.Systems
             // 终结技通常有更强大的效果
             float damage = CalculateSkillDamage(world, caster, skillData) * 2.0f;
             
-            // 注意：这里我们假设targetId是有效的实体ID
-            // 在实际应用中，可能需要通过世界管理器或其他机制来获取实体
-            Debug.LogWarning("注意：需要实现通过targetId获取实体的机制");
+            // 通过网络实体注册表查找目标实体
+            if (_entityRegistry != null && _entityRegistry.TryGetEntity(targetId, out var targetEntity))
+            {
+                if (world.IsAlive(targetEntity))
+                {
+                    CombatSystem.ApplyDamage(world, targetEntity, damage,
+                        Horizon.Game.Message.Enums.DamageType.Magic, caster, targetPosition, true);
+                }
+            }
         }
 
         /// <summary>
