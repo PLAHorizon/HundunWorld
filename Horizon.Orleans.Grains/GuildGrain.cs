@@ -431,7 +431,7 @@ namespace Horizon.Orleans.Grains
                 var info = new GuildInfo
                 {
                     GuildName = state.GuildName,
-                    LeaderId = (ulong)state.LeaderId.GetHashCode(),
+                    LeaderId = GuidToUInt64(state.LeaderId),
                     Level = state.Level,
                     MemberCount = state.Members.Count,
                     MaxMembers = state.MaxMembers,
@@ -456,7 +456,7 @@ namespace Horizon.Orleans.Grains
 
                 var members = state.Members.Values.Select(m => new GuildMember
                 {
-                    CharacterId = (ulong)m.MemberId.GetHashCode(),
+                    CharacterId = GuidToUInt64(m.MemberId),
                     GuildPosition = GetPositionName(m.Position),
                     Contribution = m.Contribution
                 }).ToList();
@@ -531,5 +531,13 @@ namespace Horizon.Orleans.Grains
             4 => "成员",
             _ => "成员"
         };
+
+        /// <summary>
+        /// 将Guid确定性转换为ulong（使用前8个字节）
+        /// </summary>
+        private static ulong GuidToUInt64(Guid guid)
+        {
+            return BitConverter.ToUInt64(guid.ToByteArray(), 0);
+        }
     }
 }

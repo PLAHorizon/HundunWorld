@@ -81,10 +81,14 @@ namespace Horizon.Orleans.Grains
 
         [MemoryPackOrder(2)]
         [Id(2)]
-        public string Message { get; set; } = "";
+        public Guid TargetId { get; set; }
 
         [MemoryPackOrder(3)]
         [Id(3)]
+        public string Message { get; set; } = "";
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
         public long Timestamp { get; set; }
     }
 
@@ -287,7 +291,7 @@ namespace Horizon.Orleans.Grains
 
                 var friendInfo = new FriendInfo
                 {
-                    FriendId = (ulong)friendId.GetHashCode(),
+                    FriendId = GuidToUInt64(friendId),
                     IsOnline = false,
                     Intimacy = 0,
                     LastLoginTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
@@ -355,17 +359,18 @@ namespace Horizon.Orleans.Grains
                     return false;
                 }
 
-                // 检查是否已有待处理的申请
-                if (state.FriendRequests.Values.Any(r => r.RequesterId == targetId))
+                // 检查是否已有发给该玩家的申请
+                if (state.FriendRequests.Values.Any(r => r.RequesterId == this.GetPrimaryKey() && r.TargetId == targetId))
                 {
-                    _logger.LogWarning("已存在来自该玩家的好友申请: TargetId={TargetId}", targetId);
+                    _logger.LogWarning("已存在发给该玩家的好友申请: TargetId={TargetId}", targetId);
                     return false;
                 }
 
                 var request = new FriendRequest
                 {
                     RequestId = Guid.NewGuid(),
-                    RequesterId = targetId,
+                    RequesterId = this.GetPrimaryKey(),
+                    TargetId = targetId,
                     Message = message ?? "",
                     Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
                 };
@@ -408,15 +413,15 @@ namespace Horizon.Orleans.Grains
 
                     var friendInfo = new FriendInfo
                     {
-                        FriendId = (ulong)request.RequesterId.GetHashCode(),
+                        FriendId = GuidToUInt64(request.TargetId),
                         IsOnline = false,
                         Intimacy = 0,
                         LastLoginTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
                     };
 
-                    state.Friends[request.RequesterId] = friendInfo;
+                    state.Friends[request.TargetId] = friendInfo;
                     _logger.LogInformation("接受好友申请: RequestId={RequestId}, FriendId={FriendId}",
-                        requestId, request.RequesterId);
+                        requestId, request.TargetId);
                 }
                 else
                 {
@@ -450,6 +455,14 @@ namespace Horizon.Orleans.Grains
             _logger.LogInformation("好友申请被处理回调: RequestId={RequestId}, Accepted={Accepted}",
                 requestId, accepted);
             return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// 将Guid确定性转换为ulong（使用前8个字节）
+        /// </summary>
+        private static ulong GuidToUInt64(Guid guid)
+        {
+            return BitConverter.ToUInt64(guid.ToByteArray(), 0);
         }
     }
 }

@@ -164,6 +164,7 @@ namespace Horizon.Game.Gateway.Tests
             var request = new FriendRequest();
             Assert.Equal(Guid.Empty, request.RequestId);
             Assert.Equal(Guid.Empty, request.RequesterId);
+            Assert.Equal(Guid.Empty, request.TargetId);
             Assert.Equal("", request.Message);
             Assert.Equal(0, request.Timestamp);
         }
@@ -173,18 +174,21 @@ namespace Horizon.Game.Gateway.Tests
         {
             var requestId = Guid.NewGuid();
             var requesterId = Guid.NewGuid();
+            var targetId = Guid.NewGuid();
             var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
             var request = new FriendRequest
             {
                 RequestId = requestId,
                 RequesterId = requesterId,
+                TargetId = targetId,
                 Message = "请加好友",
                 Timestamp = timestamp
             };
 
             Assert.Equal(requestId, request.RequestId);
             Assert.Equal(requesterId, request.RequesterId);
+            Assert.Equal(targetId, request.TargetId);
             Assert.Equal("请加好友", request.Message);
             Assert.Equal(timestamp, request.Timestamp);
         }
