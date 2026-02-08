@@ -1238,4 +1238,103 @@ namespace Horizon.Game.Message.Network
     }
 
     #endregion
+
+    #region 排行榜状态
+
+    /// <summary>
+    /// 排行榜Grain状态
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class RankingState
+    {
+        /// <summary>排行榜类型</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int RankingType { get; set; }
+
+        /// <summary>排行榜名称</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string RankingName { get; set; } = "";
+
+        /// <summary>排行榜条目（玩家ID -> 条目）</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public Dictionary<Guid, RankingEntry> Entries { get; set; } = new();
+
+        /// <summary>最大排名数</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int MaxEntries { get; set; } = 100;
+
+        /// <summary>最后更新时间</summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public DateTime LastUpdateTime { get; set; }
+    }
+
+    #endregion
+
+    #region 邮箱状态
+
+    /// <summary>
+    /// 邮箱Grain状态
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class MailBoxState
+    {
+        /// <summary>邮件列表（邮件ID -> 邮件数据）</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public Dictionary<long, MailData> Mails { get; set; } = new();
+
+        /// <summary>下一个邮件ID</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long NextMailId { get; set; } = 1;
+
+        /// <summary>最大邮件数</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int MaxMails { get; set; } = 100;
+
+        /// <summary>未读邮件数</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int UnreadCount { get; set; }
+    }
+
+    #endregion
+
+    #region 成就状态
+
+    /// <summary>
+    /// 成就Grain状态
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class AchievementState
+    {
+        /// <summary>已解锁成就（成就ID -> 成就数据）</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public Dictionary<int, AchievementData> Achievements { get; set; } = new();
+
+        /// <summary>总成就点数</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int TotalPoints { get; set; }
+
+        /// <summary>已解锁成就数</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int UnlockedCount { get; set; }
+    }
+
+    #endregion
 }

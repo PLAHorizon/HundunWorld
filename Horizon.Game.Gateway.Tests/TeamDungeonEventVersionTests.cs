@@ -481,10 +481,10 @@ namespace Horizon.Game.Gateway.Tests
         #region Event-Driven Architecture Integration Tests - 事件驱动架构
 
         [Fact]
-        public void GameEventType_TotalEventCount_Is22()
+        public void GameEventType_TotalEventCount_Is28()
         {
             var count = Enum.GetValues<GameEventType>().Length;
-            Assert.Equal(22, count);
+            Assert.Equal(28, count);
         }
 
         [Fact]

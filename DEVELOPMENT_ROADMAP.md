@@ -11,7 +11,7 @@
 
 本文档基于对混沌世界（HundunWorld）全部源代码的深入审查，提供详细的后续开发路线图。项目由三大部分组成：
 
-1. **Orleans服务端** — 分布式Actor模型后端（26个Grain实现, 26个Grain接口, Silo, Gateway）
+1. **Orleans服务端** — 分布式Actor模型后端（29个Grain实现, 29个Grain接口, Silo, Gateway）
 2. **Flax引擎客户端** — 含ECS架构的游戏客户端（231个C#源文件）
 3. **共享基础设施** — 数据模型、消息协议、缓存、数据库（Model, Share, Core, Entities, Game.Message）
 
@@ -37,7 +37,7 @@
 | 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善）|
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
 | 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
-| 测试基础设施（Phase 1.2） | ✅ 90% | 875个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion/EventConsumerVersioning/PassportGrain/CharacterGrainState） |
+| 测试基础设施（Phase 1.2） | ✅ 90% | 940个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion/EventConsumerVersioning/PassportGrain/CharacterGrainState/RankingSystem/MailSystem/AchievementSystem） |
 | CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置（CI + CodeQL安全扫描 + 代码覆盖率） |
 | 监控可观测性（Phase 2） | ✅ 100% | OpenTelemetry指标、Grafana仪表板、Prometheus告警、JSON结构化日志、CorrelationId分布式追踪、Seq日志聚合、Alertmanager告警通知 |
 
@@ -109,7 +109,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 #### 测试项目
 
-**已存在**: `Horizon.Game.Gateway.Tests/`（21个测试文件，875个测试用例）
+**已存在**: `Horizon.Game.Gateway.Tests/`（24个测试文件，940个测试用例）
 
 | 测试文件 | 测试数量 | 覆盖内容 |
 |---------|---------|---------|
@@ -134,6 +134,9 @@ coverlet 6.0.4 — 代码覆盖率
 | EventConsumerVersioningTests.cs | 67 | 事件消费者状态模型、事件处理统计、事件流订阅、Grain版本管理滚动升级、CI/CD增强验证 |
 | PassportGrainTests.cs | 66 | 通行证DTO验证、会话信息、密码编解码、登录限流、密码升级兼容性、认证流程、角色状态序列化 |
 | CharacterGrainStateTests.cs | 39 | 角色DateTime属性类型验证、角色状态管理、生命周期模拟、事件流接口验证、消息模型测试 |
+| RankingSystemTests.cs | 21 | 排行榜状态、排名条目、排名排序、Top N截取、排行榜类型枚举 |
+| MailSystemTests.cs | 24 | 邮箱状态、邮件数据模型、邮件收发、附件领取、过期清理、容量限制 |
+| AchievementSystemTests.cs | 20 | 成就状态、成就数据模型、进度更新、自动解锁、分类筛选、成就点数统计 |
 
 #### 测试覆盖率现状
 
@@ -399,6 +402,36 @@ coverlet 6.0.4 — 代码覆盖率
   - 四级难度系统（普通/困难/英雄/地狱）
 ```
 
+### 3.7 排行榜/邮件/成就系统（1周）
+
+**新增接口**: `IRankingGrain.cs`, `IMailBoxGrain.cs`, `IAchievementGrain.cs`
+
+```
+✅ RankingGrain实现（排行榜系统）
+  - 排行榜初始化（类型/名称/最大条目数）
+  - 玩家分数更新与排名重算
+  - 排行榜Top N查询
+  - 玩家排名/条目查询
+  - 排行榜重置/玩家移除
+  - 五种排行榜类型（战力/等级/财富/成就/PVP）
+
+✅ MailBoxGrain实现（邮件系统）
+  - 邮件发送（标题/内容/类型/附件/货币）
+  - 邮件阅读/标记已读
+  - 附件领取
+  - 邮件删除（附件未领取保护）
+  - 过期邮件清理（30天过期）
+  - 邮箱容量限制（默认100封）
+  - 四种邮件类型（系统/玩家/公会/活动奖励）
+
+✅ AchievementGrain实现（成就系统）
+  - 成就注册（ID/名称/描述/分类/点数/目标进度/奖励）
+  - 成就进度更新与自动解锁
+  - 成就列表查询（全部/已解锁/按分类）
+  - 成就点数统计
+  - 五种成就分类（战斗/社交/探索/收集/成长）
+```
+
 ---
 
 ## 🟢 第四阶段：客户端功能完善（建议4-6周）
@@ -564,7 +597,7 @@ coverlet 6.0.4 — 代码覆盖率
 ```
 2026年2月中旬  ✅ Phase 0: 安全加固完成
                ✅ Phase 1.1: 代码缺陷修复完成
-               ✅ Phase 1.2: 测试基础设施建设完成（875个测试，21个测试文件）
+               ✅ Phase 1.2: 测试基础设施建设完成（940个测试，24个测试文件）
                ✅ Phase 1.3: CI/CD流程建立完成（含CodeQL安全扫描、代码覆盖率收集、Dependabot依赖扫描）
                ✅ Phase 3.1: 战斗系统增强（闪避/格挡/暴击/冷却/五行属性加成/五行协同/能量恢复/GCD/战斗日志/五行共鸣技能触发）
                ✅ Phase 3.2: 社交系统基础实现（SocialGrain/GuildGrain/TeamGrain）
@@ -581,7 +614,7 @@ coverlet 6.0.4 — 代码覆盖率
                ✅ 架构改进: Grain接口版本管理（全部26个接口添加版本标记 + 滚动升级配置）
                ✅ 架构改进: 队伍状态同步（StateVersion版本递增机制）
                ✅ 架构改进: 组队副本入口（EnterDungeonAsTeamAsync）
-               ✅ 架构改进: 事件类型扩展（22个事件类型，新增4个社交事件）
+               ✅ 架构改进: 事件类型扩展（28个事件类型，含排行榜/邮件/成就事件）
                ✅ 代码质量: GameGrain错误处理和结构化日志
                ✅ 代码质量: CharacterGrain字符串插值日志替换为结构化日志
                ✅ 代码质量: CharacterGrain静态字段改为readonly实例字段
@@ -659,7 +692,7 @@ coverlet 6.0.4 — 代码覆盖率
 4. **事件驱动架构** ✅ 已完成
    ```
    ✅ 使用Orleans Stream进行事件发布（Memory Stream Provider + GameEventPublisher）
-   ✅ 游戏事件类型定义（GameEventType：角色/战斗/社交/系统事件，共22个事件类型）
+   ✅ 游戏事件类型定义（GameEventType：角色/战斗/社交/系统/排行榜/邮件/成就事件，共28个事件类型）
    ✅ 事件流命名空间定义（GameStreamNamespaces）
    ✅ 社交事件扩展（TeamMemberJoined/Left/Disbanded/DungeonEntered）
    ✅ 事件消费者Grain（GameEventConsumerGrain：异步事件处理、统计、监控）

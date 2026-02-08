@@ -583,10 +583,10 @@ namespace Horizon.Game.Gateway.Tests
         }
 
         [Fact]
-        public void GameEventType_TotalCount_Is22()
+        public void GameEventType_TotalCount_Is28()
         {
             var allValues = Enum.GetValues<GameEventType>();
-            Assert.Equal(22, allValues.Length);
+            Assert.Equal(28, allValues.Length);
         }
 
         #endregion

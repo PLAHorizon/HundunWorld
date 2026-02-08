@@ -1033,4 +1033,265 @@ namespace Horizon.Game.Message.Network
     }
 
     #endregion
+
+    #region 排行榜数据模型
+
+    /// <summary>
+    /// 排行榜条目
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class RankingEntry
+    {
+        /// <summary>排名</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int Rank { get; set; }
+
+        /// <summary>玩家ID</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public Guid PlayerId { get; set; }
+
+        /// <summary>玩家名称</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string PlayerName { get; set; } = "";
+
+        /// <summary>分数</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long Score { get; set; }
+
+        /// <summary>更新时间</summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public DateTime UpdateTime { get; set; }
+    }
+
+    /// <summary>
+    /// 排行榜信息
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class RankingInfo
+    {
+        /// <summary>排行榜类型</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int RankingType { get; set; }
+
+        /// <summary>排行榜名称</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string RankingName { get; set; } = "";
+
+        /// <summary>排行榜条目列表</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public List<RankingEntry> Entries { get; set; } = new();
+
+        /// <summary>最大排名数</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int MaxEntries { get; set; } = 100;
+
+        /// <summary>最后更新时间</summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public DateTime LastUpdateTime { get; set; }
+    }
+
+    #endregion
+
+    #region 邮件数据模型
+
+    /// <summary>
+    /// 邮件数据
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class MailData
+    {
+        /// <summary>邮件ID</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long MailId { get; set; }
+
+        /// <summary>发件人ID</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public Guid SenderId { get; set; }
+
+        /// <summary>发件人名称</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string SenderName { get; set; } = "";
+
+        /// <summary>邮件标题</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string Title { get; set; } = "";
+
+        /// <summary>邮件内容</summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public string Content { get; set; } = "";
+
+        /// <summary>邮件类型</summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public int MailType { get; set; }
+
+        /// <summary>邮件状态</summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public int Status { get; set; } = (int)Network.MailStatus.Unread;
+
+        /// <summary>附件物品列表（模板ID -> 数量）</summary>
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public Dictionary<int, int> Attachments { get; set; } = new();
+
+        /// <summary>附件货币</summary>
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public long AttachedCurrency { get; set; }
+
+        /// <summary>发送时间</summary>
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public DateTime SendTime { get; set; }
+
+        /// <summary>过期时间</summary>
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public DateTime ExpireTime { get; set; }
+    }
+
+    /// <summary>
+    /// 发送邮件结果
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class SendMailResult
+    {
+        /// <summary>是否成功</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public bool Success { get; set; }
+
+        /// <summary>消息</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string Message { get; set; } = "";
+
+        /// <summary>邮件ID</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public long MailId { get; set; }
+    }
+
+    #endregion
+
+    #region 成就数据模型
+
+    /// <summary>
+    /// 成就定义
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class AchievementData
+    {
+        /// <summary>成就ID</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int AchievementId { get; set; }
+
+        /// <summary>成就名称</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string Name { get; set; } = "";
+
+        /// <summary>成就描述</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string Description { get; set; } = "";
+
+        /// <summary>成就分类</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int Category { get; set; }
+
+        /// <summary>成就点数</summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int Points { get; set; }
+
+        /// <summary>是否已解锁</summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public bool IsUnlocked { get; set; }
+
+        /// <summary>当前进度</summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public int CurrentProgress { get; set; }
+
+        /// <summary>目标进度</summary>
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public int TargetProgress { get; set; }
+
+        /// <summary>解锁时间</summary>
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public DateTime? UnlockTime { get; set; }
+
+        /// <summary>奖励（物品模板ID -> 数量）</summary>
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public Dictionary<string, int> Rewards { get; set; } = new();
+    }
+
+    /// <summary>
+    /// 成就解锁结果
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class AchievementUnlockResult
+    {
+        /// <summary>是否成功</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public bool Success { get; set; }
+
+        /// <summary>消息</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string Message { get; set; } = "";
+
+        /// <summary>成就ID</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int AchievementId { get; set; }
+
+        /// <summary>获得的成就点数</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int PointsEarned { get; set; }
+
+        /// <summary>奖励</summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public Dictionary<string, int> Rewards { get; set; } = new();
+    }
+
+    #endregion
 }

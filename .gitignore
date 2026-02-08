@@ -85,3 +85,7 @@ Screenshots/
 *.temp
 *.swp
 *~
+
+# Build artifacts from Flax
+**/Binaries/Tools/
+**/C:/
