@@ -1,9 +1,9 @@
 # 混沌世界项目 - 后续开发路线图
 
 **文档日期**: 2026年2月8日  
-**最后更新**: 2026年2月8日（事件消费者、滚动升级、CI/CD增强后更新）  
+**最后更新**: 2026年2月8日（CharacterGrain静态字段修复、Dependabot配置、PassportGrain单元测试后更新）  
 **基于**: 完整源代码审查  
-**文档版本**: v2.3
+**文档版本**: v2.4
 
 ---
 
@@ -37,7 +37,7 @@
 | 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善） |
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
 | 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
-| 测试基础设施（Phase 1.2） | ✅ 90% | 770个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion/EventConsumerVersioning） |
+| 测试基础设施（Phase 1.2） | ✅ 90% | 836个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion/EventConsumerVersioning/PassportGrain） |
 | CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置（CI + CodeQL安全扫描 + 代码覆盖率） |
 | 监控可观测性（Phase 2） | ✅ 100% | OpenTelemetry指标、Grafana仪表板、Prometheus告警、JSON结构化日志、CorrelationId分布式追踪、Seq日志聚合、Alertmanager告警通知 |
 
@@ -109,7 +109,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 #### 测试项目
 
-**已存在**: `Horizon.Game.Gateway.Tests/`（19个测试文件，770个测试用例）
+**已存在**: `Horizon.Game.Gateway.Tests/`（20个测试文件，836个测试用例）
 
 | 测试文件 | 测试数量 | 覆盖内容 |
 |---------|---------|---------|
@@ -132,6 +132,7 @@ coverlet 6.0.4 — 代码覆盖率
 | GameEventStreamTests.cs | 48 | 游戏事件类型、事件流命名空间、事件数据模型、序列化属性、发布器接口 |
 | TeamDungeonEventVersionTests.cs | 75 | 队伍状态同步、组队副本入口、事件类型扩展、Grain接口版本管理、完整工作流 |
 | EventConsumerVersioningTests.cs | 67 | 事件消费者状态模型、事件处理统计、事件流订阅、Grain版本管理滚动升级、CI/CD增强验证 |
+| PassportGrainTests.cs | 66 | 通行证DTO验证、会话信息、密码编解码、登录限流、密码升级兼容性、认证流程、角色状态序列化 |
 
 #### 测试覆盖率现状
 
@@ -141,7 +142,7 @@ coverlet 6.0.4 — 代码覆盖率
 | SessionManager | ~80% | 90% |
 | CombatCalculator | ~95% | 98% |
 | CombatInfo/CombatState | ~90% | 95% |
-| PassportGrain | 0% | 85% |
+| PassportGrain | ~40% | 85% |
 | CharacterGrain | 0% | 75% |
 
 ### 1.3 CI/CD流程 ✅
@@ -154,7 +155,7 @@ coverlet 6.0.4 — 代码覆盖率
   ✅ PR和Push触发自动运行
   ✅ 代码覆盖率报告（coverlet XPlat Code Coverage）
   ✅ CodeQL安全扫描（csharp, security-extended查询，每周定时扫描）
-  □ 依赖项漏洞检查（Dependabot）— 后续增强
+  ✅ 依赖项漏洞检查（Dependabot自动检测NuGet包和GitHub Actions安全漏洞）
 ```
 
 ---
@@ -562,8 +563,8 @@ coverlet 6.0.4 — 代码覆盖率
 ```
 2026年2月中旬  ✅ Phase 0: 安全加固完成
                ✅ Phase 1.1: 代码缺陷修复完成
-               ✅ Phase 1.2: 测试基础设施建设完成（770个测试）
-               ✅ Phase 1.3: CI/CD流程建立完成（含CodeQL安全扫描、代码覆盖率收集）
+               ✅ Phase 1.2: 测试基础设施建设完成（836个测试，20个测试文件）
+               ✅ Phase 1.3: CI/CD流程建立完成（含CodeQL安全扫描、代码覆盖率收集、Dependabot依赖扫描）
                ✅ Phase 3.1: 战斗系统增强（闪避/格挡/暴击/冷却/五行属性加成/五行协同/能量恢复/GCD/战斗日志/五行共鸣技能触发）
                ✅ Phase 3.2: 社交系统基础实现（SocialGrain/GuildGrain/TeamGrain）
                ✅ Phase 3.3: 游戏系统Grain实现（背包/装备/技能树/合成品质/五行炼制系统）
@@ -582,6 +583,9 @@ coverlet 6.0.4 — 代码覆盖率
                ✅ 架构改进: 事件类型扩展（22个事件类型，新增4个社交事件）
                ✅ 代码质量: GameGrain错误处理和结构化日志
                ✅ 代码质量: CharacterGrain字符串插值日志替换为结构化日志
+               ✅ 代码质量: CharacterGrain静态字段改为readonly实例字段
+               ✅ 安全改进: Dependabot自动依赖漏洞扫描配置
+               ✅ 测试覆盖: PassportGrain单元测试（66个测试用例，DTO验证/密码安全/登录限流/会话管理）
                📍 当前位置（2026-02-08）
                ↓
 2026年3月下旬  ┌─ Phase 4: 客户端功能完善
@@ -605,6 +609,13 @@ coverlet 6.0.4 — 代码覆盖率
    ```csharp
    // 已修复：改为readonly实例字段
    private readonly IDataContext<GameEntityContext, CharacterEntity, long> _characterContext;
+   ```
+
+1b. **~~移除CharacterGrain中的static字段~~** ✅ 已完成
+   ```csharp
+   // 已修复：改为readonly实例字段（与CombatGrain相同的修复）
+   private readonly IDataContext<GameEntityContext, UserEntity, long> _gameUserContext;
+   private readonly IDataContext<GameEntityContext, CharacterEntity, long> _gameCharacterContext;
    ```
 
 2. **提取CombatCalculator** ✅ 已完成
@@ -672,7 +683,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 ```
 □ 定期安全审计（每季度）
-□ GitHub Dependabot自动依赖更新
+✅ GitHub Dependabot自动依赖更新（NuGet包+GitHub Actions，每周扫描）
 □ CodeQL静态分析集成到CI
 □ 敏感数据加密存储（Azure Key Vault / AWS Secrets Manager）
 □ API速率限制（反DDoS）
@@ -705,8 +716,9 @@ coverlet 6.0.4 — 代码覆盖率
 
 1. ~~GameGrain — 添加错误处理和日志~~ ✅ 已修复（错误处理、null检查、结构化日志）
 2. CharacterGrain — DateTime.UtcNow.Ticks修复为DateTime类型（需同步修改CharacterInfo消息类型，涉及MemoryPack序列化兼容性）
-3. PassportGrain — 添加更多单元测试覆盖（Orleans TestKit集成）
+3. ~~PassportGrain — 添加更多单元测试覆盖~~ ✅ 已修复（66个测试用例，覆盖DTO验证、密码安全、登录限流、会话管理）
 4. ~~CharacterGrain — 字符串插值日志替换为结构化日志~~ ✅ 已修复（40+处替换）
+5. ~~CharacterGrain — static字段改为readonly实例字段~~ ✅ 已修复（与CombatGrain相同的修复）
 
 ---
 
