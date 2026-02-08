@@ -36,6 +36,7 @@ using Horizon.Orleans.Silo.Tasks;
 using Horizon.Game.Message.Network;
 using Horizon.Orleans.Silo.Monitoring;
 using Horizon.Core.Monitoring;
+using Horizon.Orleans.Grains;
 
 namespace Horizon.Orleans.Silo
 {
@@ -302,6 +303,9 @@ namespace Horizon.Orleans.Silo
         }
         private static void ConfigureOrleansStorage(ISiloBuilder siloBuilder, DbInfo? sql)
         {
+            // 配置Orleans Memory Stream Provider（事件驱动架构）
+            siloBuilder.AddMemoryStreams(OrleansConst.CommonMessageStreamProvider);
+
             if (sql != null)
             {
                 // Configure reminders
@@ -439,6 +443,9 @@ namespace Horizon.Orleans.Silo
 
             // Configure Redis
             services.AddRedisServiceProvider();
+
+            // Configure event publisher (Orleans Stream事件驱动架构)
+            services.AddSingleton<IGameEventPublisher, GameEventPublisher>();
 
             // Configure options
             services.ConfigureOptions();
