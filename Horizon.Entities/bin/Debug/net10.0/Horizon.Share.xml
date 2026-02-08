@@ -2077,6 +2077,31 @@
             通行证类型
             </summary>
         </member>
+        <member name="P:Horizon.Share.Dtos.User.LoginDto.GameContext">
+            <summary>
+            游戏上下文信息
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.User.GameLoginContextDto">
+            <summary>
+            登录时的游戏上下文信息
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.GameLoginContextDto.Ip">
+            <summary>
+            客户端IP
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.GameLoginContextDto.PlatformId">
+            <summary>
+            平台Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.GameLoginContextDto.DeviceId">
+            <summary>
+            设备Id
+            </summary>
+        </member>
         <member name="T:Horizon.Share.Dtos.User.LoginResultDto">
             <summary>
             登录授权返回Dto

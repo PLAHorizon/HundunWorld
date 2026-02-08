@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Horizon.Strategy.Storage.Redis")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c301969d26c858b763d70faddfbb9ee88c79d4bc")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d7244fe9c0d16214e24474ee7be811eec35619d6")]
 [assembly: System.Reflection.AssemblyProductAttribute("Horizon.Strategy.Storage.Redis")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Horizon.Strategy.Storage.Redis")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
