@@ -1,9 +1,9 @@
 # 混沌世界项目 - 后续开发路线图
 
 **文档日期**: 2026年2月8日  
-**最后更新**: 2026年2月8日（事件驱动架构、代码质量改进后更新）  
+**最后更新**: 2026年2月8日（队伍状态同步、组队副本、Grain版本管理、事件扩展后更新）  
 **基于**: 完整源代码审查  
-**文档版本**: v2.1
+**文档版本**: v2.2
 
 ---
 
@@ -30,14 +30,14 @@
 | UI框架 | ✅ 80% | 状态管理、响应式布局、性能监控 |
 | 网络通信 | ✅ 75% | TCP客户端、消息处理器、协议适配 |
 | 战斗系统 | ⚠️ 90% | 五行相克、伤害计算、效果系统、Energy分离、闪避格挡、技能冷却、五行属性加成、五行协同、能量恢复、GCD、战斗日志、五行共鸣技能触发 |
-| 社交系统 | ⚠️ 75% | SocialGrain好友管理、GuildGrain公会管理、TeamGrain组队系统、消息频道系统 |
+| 社交系统 | ⚠️ 85% | SocialGrain好友管理、GuildGrain公会管理、TeamGrain组队系统（含状态同步、组队副本入口）、消息频道系统 |
 | 游戏系统 | ⚠️ 85% | 背包/装备/技能/合成系统基础实现、技能树依赖验证、合成品质系统、五行炼制系统 |
 | 区域管理 | ⚠️ 60% | AreaGrain场景实例管理、跨服传送、副本入口 |
 | 活动系统 | ⚠️ 60% | ActivityGrain活动调度、奖励发放、参与记录 |
 | 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善） |
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
 | 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
-| 测试基础设施（Phase 1.2） | ✅ 90% | 628个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream） |
+| 测试基础设施（Phase 1.2） | ✅ 90% | 703个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion） |
 | CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置 |
 | 监控可观测性（Phase 2） | ✅ 100% | OpenTelemetry指标、Grafana仪表板、Prometheus告警、JSON结构化日志、CorrelationId分布式追踪、Seq日志聚合、Alertmanager告警通知 |
 
@@ -47,7 +47,7 @@
 |------|------|--------|
 | 监控告警 | ✅ 已完成 | P1 |
 | 任务/副本系统 | 🟡 基础实现完成 | P2 |
-| 社交系统（好友/公会/组队） | 🟡 基础实现完成 | P2 |
+| 社交系统（好友/公会/组队） | 🟡 基础实现完成（含状态同步、组队副本入口） | P2 |
 | 消息频道系统 | 🟡 基础实现完成 | P2 |
 | 游戏系统（背包/技能/合成/炼丹） | 🟡 增强实现完成 | P2 |
 | 服务器状态管理 | 🟡 基础实现完成 | P2 |
@@ -109,7 +109,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 #### 测试项目
 
-**已存在**: `Horizon.Game.Gateway.Tests/`（17个测试文件，628个测试用例）
+**已存在**: `Horizon.Game.Gateway.Tests/`（18个测试文件，703个测试用例）
 
 | 测试文件 | 测试数量 | 覆盖内容 |
 |---------|---------|---------|
@@ -130,6 +130,7 @@ coverlet 6.0.4 — 代码覆盖率
 | CorrelationIdMonitoringTests.cs | 20 | CorrelationId生成、格式验证、RequestContext集成、并发安全 |
 | SeqAlertingValidationTests.cs | 46 | Seq日志配置、CLEF格式、事件队列、异常过滤器、参数验证、告警路由 |
 | GameEventStreamTests.cs | 48 | 游戏事件类型、事件流命名空间、事件数据模型、序列化属性、发布器接口 |
+| TeamDungeonEventVersionTests.cs | 75 | 队伍状态同步、组队副本入口、事件类型扩展、Grain接口版本管理、完整工作流 |
 
 #### 测试覆盖率现状
 
@@ -285,8 +286,8 @@ coverlet 6.0.4 — 代码覆盖率
   - 组队创建/加入/退出
   - 队长转移/踢出成员/解散队伍
   - 队伍信息查询
-  □ 队伍状态同步
-  □ 组队副本入口
+  ✅ 队伍状态同步（StateVersion版本号递增机制）
+  ✅ 组队副本入口（EnterDungeonAsTeamAsync全队进入副本）
 ```
 
 ### 3.3 游戏系统 Grain 完善（2周）
@@ -560,7 +561,7 @@ coverlet 6.0.4 — 代码覆盖率
 ```
 2026年2月中旬  ✅ Phase 0: 安全加固完成
                ✅ Phase 1.1: 代码缺陷修复完成
-               ✅ Phase 1.2: 测试基础设施建设完成（628个测试）
+               ✅ Phase 1.2: 测试基础设施建设完成（703个测试）
                ✅ Phase 1.3: CI/CD流程建立完成
                ✅ Phase 3.1: 战斗系统增强（闪避/格挡/暴击/冷却/五行属性加成/五行协同/能量恢复/GCD/战斗日志/五行共鸣技能触发）
                ✅ Phase 3.2: 社交系统基础实现（SocialGrain/GuildGrain/TeamGrain）
@@ -574,6 +575,10 @@ coverlet 6.0.4 — 代码覆盖率
                ✅ 架构改进: 统一异常处理（GrainExceptionFilter）
                ✅ 架构改进: 请求参数验证（GrainCallValidationFilter）
                ✅ 架构改进: 事件驱动架构基础（Orleans Stream + GameEventPublisher）
+               ✅ 架构改进: Grain接口版本管理（全部25个接口添加版本标记）
+               ✅ 架构改进: 队伍状态同步（StateVersion版本递增机制）
+               ✅ 架构改进: 组队副本入口（EnterDungeonAsTeamAsync）
+               ✅ 架构改进: 事件类型扩展（22个事件类型，新增4个社交事件）
                ✅ 代码质量: GameGrain错误处理和结构化日志
                ✅ 代码质量: CharacterGrain字符串插值日志替换为结构化日志
                📍 当前位置（2026-02-08）
@@ -634,16 +639,18 @@ coverlet 6.0.4 — 代码覆盖率
 4. **事件驱动架构** ⚠️ 部分完成
    ```
    ✅ 使用Orleans Stream进行事件发布（Memory Stream Provider + GameEventPublisher）
-   ✅ 游戏事件类型定义（GameEventType：角色/战斗/社交/系统事件）
+   ✅ 游戏事件类型定义（GameEventType：角色/战斗/社交/系统事件，共22个事件类型）
    ✅ 事件流命名空间定义（GameStreamNamespaces）
+   ✅ 社交事件扩展（TeamMemberJoined/Left/Disbanded/DungeonEntered）
    □ 解耦战斗结果通知与UI更新
    □ 异步处理非关键路径（日志、统计）
    ```
 
-5. **Grain接口版本管理**
+5. **Grain接口版本管理** ✅ 已完成
    ```
-   □ 为Grain接口添加版本标记
-   □ 实现滚动升级支持
+   ✅ 为全部25个Grain接口添加版本标记（[global::Orleans.CodeGeneration.Version()]）
+   ✅ ITeamGrain升级至Version(2)（新增组队副本入口和状态版本查询）
+   □ 实现滚动升级支持（需集群配置GrainVersioningOptions）
    □ 保持接口向后兼容
    ```
 
