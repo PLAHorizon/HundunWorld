@@ -86,6 +86,29 @@ namespace Horizon.Orleans.Grains
         [MemoryPackOrder(10)]
         [Id(10)]
         public float MaxEnergy { get; set; }
+
+        [MemoryPackOrder(11)]
+        [Id(11)]
+        public float DodgeRate { get; set; }
+
+        [MemoryPackOrder(12)]
+        [Id(12)]
+        public float BlockRate { get; set; }
+
+        [MemoryPackOrder(13)]
+        [Id(13)]
+        public float CritRate { get; set; } = 0.1f;
+
+        [MemoryPackOrder(14)]
+        [Id(14)]
+        public float CritDamageMultiplier { get; set; } = 1.5f;
+
+        /// <summary>
+        /// 技能冷却记录（技能ID -> 上次施放时间）
+        /// </summary>
+        [MemoryPackOrder(15)]
+        [Id(15)]
+        public Dictionary<int, DateTime> SkillCooldowns { get; set; } = new();
     }
 
     /// <summary>
@@ -192,12 +215,33 @@ namespace Horizon.Orleans.Grains
                 var attackerInfo = await GetOrCreateCombatInfo(request.AttackerId);
                 var targetInfo = await GetOrCreateCombatInfo(request.TargetId);
 
+                // 闪避判定
+                if (CombatCalculator.RollDodge(targetInfo.DodgeRate))
+                {
+                    _logger.LogInformation("攻击被闪避: {AttackerId} -> {TargetId}", request.AttackerId, request.TargetId);
+                    return new DamageMessage
+                    {
+                        AttackerId = request.AttackerId,
+                        VictimId = request.TargetId,
+                        Damage = 0,
+                        RemainingHealth = (int)targetInfo.Health,
+                        IsCritical = false,
+                        IsDodged = true,
+                        IsBlocked = false,
+                        ElementType = request.ElementType
+                    };
+                }
+
                 // 计算伤害
                 float damage = await CalculateDamage(attackerInfo, targetInfo, request.Damage, request.ElementType);
 
-                // 判断是否暴击
-                bool isCritical = request.IsCritical || Random.Shared.NextDouble() < 0.1; // 10%基础暴击率
-                damage = CombatCalculator.ApplyCriticalDamage(damage, isCritical);
+                // 格挡判定
+                var (blockedDamage, isBlocked) = CombatCalculator.ApplyBlock(damage, targetInfo.BlockRate);
+                damage = blockedDamage;
+
+                // 判断是否暴击（使用角色暴击率属性）
+                bool isCritical = Random.Shared.NextDouble() < attackerInfo.CritRate;
+                damage = CombatCalculator.ApplyCriticalDamage(damage, isCritical, attackerInfo.CritDamageMultiplier);
 
                 // 更新目标血量
                 targetInfo.Health = CombatCalculator.ClampHealth(targetInfo.Health, damage);
@@ -215,7 +259,7 @@ namespace Horizon.Orleans.Grains
                     RemainingHealth = (int)targetInfo.Health,
                     IsCritical = isCritical,
                     IsDodged = false,
-                    IsBlocked = false,
+                    IsBlocked = isBlocked,
                     ElementType = request.ElementType
                 };
 
@@ -576,6 +620,10 @@ namespace Horizon.Orleans.Grains
                         WuxingElement = characterEntity.WuxingElement,
                         Energy = 100,
                         MaxEnergy = 100,
+                        DodgeRate = 0.05f,
+                        BlockRate = 0.1f,
+                        CritRate = 0.1f,
+                        CritDamageMultiplier = 1.5f,
                         IsInCombat = false,
                         LastActionTime = DateTime.UtcNow
                     };
@@ -595,6 +643,10 @@ namespace Horizon.Orleans.Grains
                         WuxingElement = 0,
                         Energy = 100,
                         MaxEnergy = 100,
+                        DodgeRate = 0.05f,
+                        BlockRate = 0.1f,
+                        CritRate = 0.1f,
+                        CritDamageMultiplier = 1.5f,
                         IsInCombat = false,
                         LastActionTime = DateTime.UtcNow
                     };
