@@ -700,6 +700,7 @@ namespace Horizon.Orleans.Grains
 
         public Task<ChatMessage> SendChatAsync(ChatMessage request)
         {
+            // 安全考虑：不在日志中记录聊天内容，避免敏感信息泄露
             _logger.LogInformation("Character {SenderId} sending chat message.", request.SenderId);
             // Placeholder: Implement actual chat message handling logic
             return Task.FromResult(request);

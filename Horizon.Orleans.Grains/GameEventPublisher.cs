@@ -55,6 +55,7 @@ namespace Horizon.Orleans.Grains
             }
             catch (Exception ex)
             {
+                // 事件发布失败不应阻断主业务流程（非关键路径），仅记录错误日志
                 _logger.LogError(ex, "发布游戏事件失败: {EventType}, Namespace={Namespace}, CharacterId={CharacterId}",
                     gameEvent.EventType, streamNamespace, gameEvent.CharacterId);
             }

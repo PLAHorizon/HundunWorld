@@ -1,9 +1,9 @@
 # 混沌世界项目 - 后续开发路线图
 
 **文档日期**: 2026年2月8日  
-**最后更新**: 2026年2月8日（Phase 2完成、架构改进后更新）  
+**最后更新**: 2026年2月8日（事件驱动架构、代码质量改进后更新）  
 **基于**: 完整源代码审查  
-**文档版本**: v2.0
+**文档版本**: v2.1
 
 ---
 
@@ -37,7 +37,7 @@
 | 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善） |
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
 | 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
-| 测试基础设施（Phase 1.2） | ✅ 90% | 580个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation） |
+| 测试基础设施（Phase 1.2） | ✅ 90% | 628个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream） |
 | CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置 |
 | 监控可观测性（Phase 2） | ✅ 100% | OpenTelemetry指标、Grafana仪表板、Prometheus告警、JSON结构化日志、CorrelationId分布式追踪、Seq日志聚合、Alertmanager告警通知 |
 
@@ -109,7 +109,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 #### 测试项目
 
-**已存在**: `Horizon.Game.Gateway.Tests/`（16个测试文件，580个测试用例）
+**已存在**: `Horizon.Game.Gateway.Tests/`（17个测试文件，628个测试用例）
 
 | 测试文件 | 测试数量 | 覆盖内容 |
 |---------|---------|---------|
@@ -129,6 +129,7 @@ coverlet 6.0.4 — 代码覆盖率
 | QuestDungeonStateTests.cs | 62 | 任务状态、任务目标进度、副本状态、Boss管理、超时检测、完整工作流 |
 | CorrelationIdMonitoringTests.cs | 20 | CorrelationId生成、格式验证、RequestContext集成、并发安全 |
 | SeqAlertingValidationTests.cs | 46 | Seq日志配置、CLEF格式、事件队列、异常过滤器、参数验证、告警路由 |
+| GameEventStreamTests.cs | 48 | 游戏事件类型、事件流命名空间、事件数据模型、序列化属性、发布器接口 |
 
 #### 测试覆盖率现状
 
@@ -559,7 +560,7 @@ coverlet 6.0.4 — 代码覆盖率
 ```
 2026年2月中旬  ✅ Phase 0: 安全加固完成
                ✅ Phase 1.1: 代码缺陷修复完成
-               ✅ Phase 1.2: 测试基础设施建设完成（580个测试）
+               ✅ Phase 1.2: 测试基础设施建设完成（628个测试）
                ✅ Phase 1.3: CI/CD流程建立完成
                ✅ Phase 3.1: 战斗系统增强（闪避/格挡/暴击/冷却/五行属性加成/五行协同/能量恢复/GCD/战斗日志/五行共鸣技能触发）
                ✅ Phase 3.2: 社交系统基础实现（SocialGrain/GuildGrain/TeamGrain）
@@ -572,6 +573,9 @@ coverlet 6.0.4 — 代码覆盖率
                ✅ Phase 2.3: Prometheus告警规则增强（数据库性能/战斗系统告警）
                ✅ 架构改进: 统一异常处理（GrainExceptionFilter）
                ✅ 架构改进: 请求参数验证（GrainCallValidationFilter）
+               ✅ 架构改进: 事件驱动架构基础（Orleans Stream + GameEventPublisher）
+               ✅ 代码质量: GameGrain错误处理和结构化日志
+               ✅ 代码质量: CharacterGrain字符串插值日志替换为结构化日志
                📍 当前位置（2026-02-08）
                ↓
 2026年3月下旬  ┌─ Phase 4: 客户端功能完善
@@ -627,9 +631,11 @@ coverlet 6.0.4 — 代码覆盖率
 
 ### 中期改进（Phase 3-4）
 
-4. **事件驱动架构**
+4. **事件驱动架构** ⚠️ 部分完成
    ```
-   □ 使用Orleans Stream进行事件发布
+   ✅ 使用Orleans Stream进行事件发布（Memory Stream Provider + GameEventPublisher）
+   ✅ 游戏事件类型定义（GameEventType：角色/战斗/社交/系统事件）
+   ✅ 事件流命名空间定义（GameStreamNamespaces）
    □ 解耦战斗结果通知与UI更新
    □ 异步处理非关键路径（日志、统计）
    ```
@@ -688,9 +694,10 @@ coverlet 6.0.4 — 代码覆盖率
 
 ### ⏳ 建议后续修复
 
-1. GameGrain — 添加错误处理和日志
-2. CharacterGrain — DateTime.UtcNow.Ticks修复为DateTime类型
+1. ~~GameGrain — 添加错误处理和日志~~ ✅ 已修复（错误处理、null检查、结构化日志）
+2. CharacterGrain — DateTime.UtcNow.Ticks修复为DateTime类型（需同步修改CharacterInfo消息类型，涉及MemoryPack序列化兼容性）
 3. PassportGrain — 添加更多单元测试覆盖（Orleans TestKit集成）
+4. ~~CharacterGrain — 字符串插值日志替换为结构化日志~~ ✅ 已修复（40+处替换）
 
 ---
 
