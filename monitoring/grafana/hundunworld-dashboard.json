@@ -378,6 +378,302 @@
         { "expr": "histogram_quantile(0.95, sum(rate(hundunworld_gateway_network_latency_ms_bucket[5m])) by (le))", "legendFormat": "P95" },
         { "expr": "histogram_quantile(0.99, sum(rate(hundunworld_gateway_network_latency_ms_bucket[5m])) by (le))", "legendFormat": "P99" }
       ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 66 },
+      "id": 106,
+      "title": "🏰 Silo性能详情",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 10 } } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 67 },
+      "id": 60,
+      "title": "Grain激活计数（按类型）",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "sum by (grain_type) (hundunworld_silo_grain_calls_total)", "legendFormat": "{{ grain_type }}" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2, "fillOpacity": 10 } } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 67 },
+      "id": 61,
+      "title": "Grain调用平均耗时（按类型）",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "sum by (grain_type) (rate(hundunworld_silo_grain_call_duration_ms_sum[5m])) / sum by (grain_type) (rate(hundunworld_silo_grain_call_duration_ms_count[5m]))", "legendFormat": "{{ grain_type }}" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 10 } } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 75 },
+      "id": 62,
+      "title": "会话生命周期",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "hundunworld_silo_sessions_active", "legendFormat": "活跃会话" },
+        { "expr": "rate(hundunworld_silo_sessions_created_total[5m])", "legendFormat": "创建速率/s" },
+        { "expr": "rate(hundunworld_silo_sessions_terminated_total[5m])", "legendFormat": "销毁速率/s" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "ops", "custom": { "lineWidth": 2, "fillOpacity": 10 } } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 75 },
+      "id": 63,
+      "title": "数据库性能",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "rate(hundunworld_silo_db_queries_total[5m])", "legendFormat": "查询速率/s" },
+        { "expr": "histogram_quantile(0.95, sum(rate(hundunworld_silo_db_query_duration_ms_bucket[5m])) by (le))", "legendFormat": "P95查询耗时(ms)" }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 83 },
+      "id": 107,
+      "title": "🔗 网关连接池",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 3000 },
+              { "color": "orange", "value": 7000 },
+              { "color": "red", "value": 10000 }
+            ]
+          },
+          "custom": { "lineWidth": 2, "fillOpacity": 15 }
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 84 },
+      "id": 70,
+      "title": "连接池使用率",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "hundunworld_gateway_connections_active", "legendFormat": "活跃连接 {{ instance }}" },
+        { "expr": "10000", "legendFormat": "最大连接数" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "ops", "custom": { "lineWidth": 2, "fillOpacity": 10 } } },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 84 },
+      "id": 71,
+      "title": "连接生命周期速率",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "rate(hundunworld_gateway_connections_established_total[5m])", "legendFormat": "新建/s" },
+        { "expr": "rate(hundunworld_gateway_connections_closed_total[5m])", "legendFormat": "关闭/s" },
+        { "expr": "rate(hundunworld_gateway_connections_errors_total[5m])", "legendFormat": "错误/s" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "ops", "custom": { "lineWidth": 2, "fillOpacity": 10 } } },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 84 },
+      "id": 72,
+      "title": "Orleans Grain调用（网关侧）",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "rate(hundunworld_gateway_orleans_calls_total[5m])", "legendFormat": "调用速率/s" },
+        { "expr": "rate(hundunworld_gateway_orleans_call_errors_total[5m])", "legendFormat": "错误速率/s" }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 92 },
+      "id": 108,
+      "title": "🔐 认证流程详情",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.1 },
+              { "color": "red", "value": 0.3 }
+            ]
+          },
+          "custom": { "lineWidth": 2, "fillOpacity": 10 }
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 93 },
+      "id": 80,
+      "title": "认证失败率",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "rate(hundunworld_silo_auth_login_failures_total[5m]) / rate(hundunworld_silo_auth_login_attempts_total[5m])", "legendFormat": "登录失败率" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2, "fillOpacity": 10 } } },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 93 },
+      "id": 81,
+      "title": "认证操作累计",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "increase(hundunworld_silo_auth_login_attempts_total[1h])", "legendFormat": "登录尝试" },
+        { "expr": "increase(hundunworld_silo_auth_login_success_total[1h])", "legendFormat": "登录成功" },
+        { "expr": "increase(hundunworld_silo_auth_registrations_total[1h])", "legendFormat": "新注册" },
+        { "expr": "increase(hundunworld_silo_auth_password_changes_total[1h])", "legendFormat": "密码变更" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 10 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 93 },
+      "id": 82,
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "每分钟登录失败次数",
+      "type": "stat",
+      "targets": [
+        { "expr": "rate(hundunworld_silo_auth_login_failures_total[1m]) * 60", "legendFormat": "失败次数/分钟" }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 101 },
+      "id": 109,
+      "title": "⚔️ 战斗系统性能",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "ops", "custom": { "lineWidth": 2, "fillOpacity": 10 } } },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 102 },
+      "id": 90,
+      "title": "战斗操作速率",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "rate(hundunworld_silo_combat_attacks_total[5m])", "legendFormat": "攻击/s" },
+        { "expr": "rate(hundunworld_silo_combat_skill_casts_total[5m])", "legendFormat": "技能施放/s" },
+        { "expr": "rate(hundunworld_silo_combat_deaths_total[5m])", "legendFormat": "死亡/s" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2, "fillOpacity": 10 } } },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 102 },
+      "id": 91,
+      "title": "战斗处理延迟分位数",
+      "type": "timeseries",
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum(rate(hundunworld_silo_combat_processing_duration_ms_bucket[5m])) by (le))", "legendFormat": "P50" },
+        { "expr": "histogram_quantile(0.95, sum(rate(hundunworld_silo_combat_processing_duration_ms_bucket[5m])) by (le))", "legendFormat": "P95" },
+        { "expr": "histogram_quantile(0.99, sum(rate(hundunworld_silo_combat_processing_duration_ms_bucket[5m])) by (le))", "legendFormat": "P99" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 110 },
+      "id": 92,
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "总攻击次数",
+      "type": "stat",
+      "targets": [
+        { "expr": "sum(hundunworld_silo_combat_attacks_total)", "legendFormat": "攻击" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "steps": [
+              { "color": "blue", "value": null }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 110 },
+      "id": 93,
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "总技能施放",
+      "type": "stat",
+      "targets": [
+        { "expr": "sum(hundunworld_silo_combat_skill_casts_total)", "legendFormat": "技能" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": null }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 110 },
+      "id": 94,
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "总死亡次数",
+      "type": "stat",
+      "targets": [
+        { "expr": "sum(hundunworld_silo_combat_deaths_total)", "legendFormat": "死亡" }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 200 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 110 },
+      "id": 95,
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "title": "平均战斗处理耗时",
+      "type": "stat",
+      "targets": [
+        { "expr": "rate(hundunworld_silo_combat_processing_duration_ms_sum[5m]) / rate(hundunworld_silo_combat_processing_duration_ms_count[5m])", "legendFormat": "平均耗时" }
+      ]
     }
   ],
   "schemaVersion": 39,

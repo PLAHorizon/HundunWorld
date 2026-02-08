@@ -95,6 +95,16 @@ namespace Horizon.Game.Gateway
                     // 日志配置
                     logging.ClearProviders();
                     logging.AddConsole();
+                    logging.AddJsonConsole(options =>
+                    {
+                        options.IncludeScopes = true;
+                        options.TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffZ";
+                        options.UseUtcTimestamp = true;
+                        options.JsonWriterOptions = new System.Text.Json.JsonWriterOptions
+                        {
+                            Indented = false
+                        };
+                    });
                     logging.AddConfiguration(context.Configuration.GetSection("Logging"));
 
                 })
@@ -109,6 +119,9 @@ namespace Horizon.Game.Gateway
                     // 注册安全和认证服务
                     services.AddSingleton<AuthenticationValidator>();
                     services.AddSingleton<SecurityManager>();
+                    
+                    // 注册CorrelationId管理器（分布式追踪）
+                    services.AddSingleton<Monitoring.CorrelationIdManager>();
                     
                     // 注册专门的消息处理器
                     services.AddScoped<AuthenticationHandler>();

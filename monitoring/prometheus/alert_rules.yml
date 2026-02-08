@@ -154,3 +154,45 @@ groups:
         annotations:
           summary: "无运行中的任务"
           description: "Silo实例 {{ $labels.instance }} 没有运行中的后台任务。"
+
+  # ========== 数据库性能告警 ==========
+  - name: hundunworld_database
+    rules:
+      - alert: DbQueryLatencyHigh
+        expr: histogram_quantile(0.95, rate(hundunworld_silo_db_query_duration_ms_bucket[5m])) > 500
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "数据库查询延迟过高"
+          description: "P95数据库查询延迟超过500ms: {{ $value }}ms"
+
+      - alert: DbQueryLatencyCritical
+        expr: histogram_quantile(0.99, rate(hundunworld_silo_db_query_duration_ms_bucket[5m])) > 2000
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "数据库查询延迟严重过高"
+          description: "P99数据库查询延迟超过2秒: {{ $value }}ms"
+
+  # ========== 战斗系统告警 ==========
+  - name: hundunworld_combat
+    rules:
+      - alert: CombatProcessingLatencyHigh
+        expr: histogram_quantile(0.95, rate(hundunworld_silo_combat_processing_duration_ms_bucket[5m])) > 200
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "战斗处理延迟过高"
+          description: "P95战斗处理延迟超过200ms: {{ $value }}ms。可能影响玩家体验。"
+
+      - alert: HighDeathRate
+        expr: rate(hundunworld_silo_combat_deaths_total[5m]) > 20
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "角色死亡率异常偏高"
+          description: "每秒死亡数超过20: {{ $value }}。可能存在平衡性问题或异常情况。"
