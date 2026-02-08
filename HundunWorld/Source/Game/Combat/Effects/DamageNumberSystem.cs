@@ -10,6 +10,10 @@ namespace Game.Combat.Effects
     /// </summary>
     public class DamageNumberSystem : Script
     {
+        // 单例实例
+        private static DamageNumberSystem _instance;
+        public static DamageNumberSystem Instance => _instance;
+
         // 字体资源
         private FontAsset _font;
         
@@ -24,6 +28,7 @@ namespace Game.Combat.Effects
         /// </summary>
         public override void OnStart()
         {
+            _instance = this;
             Initialize();
         }
 
@@ -175,25 +180,21 @@ namespace Game.Combat.Effects
                 // 将3D位置转换为屏幕坐标
                 var camera = Camera.MainCamera;
                 if (camera == null) return;
-                
-                // 使用视口投影方法
-                var viewport = camera.Viewport;
-                // 简化处理：使用固定屏幕坐标
-                var screenPos = new Vector3(500, 300, 1); // 屏幕中心附近
-                
-                if (screenPos.Z <= 0) // 在摄像机后面，不显示
+
+                // 使用摄像机视口将世界坐标投影到屏幕坐标
+                camera.ProjectPoint(position, out var screenPos);
+
+                // 在摄像机后面的不显示
+                if (screenPos.Z <= 0)
                     return;
 
                 // 设置绘制颜色（包含透明度）
                 var drawColor = damageNumber.Color;
                 drawColor.A *= alpha;
 
-                // 设置字体大小（暴击数字更大）
-                var fontSize = damageNumber.IsCritical ? 24 : 18;
-
-                // 简化处理：跳过文本绘制，避免API兼容性问题
-                // TODO: 后续完善正确的GUI文本绘制实现
-                Debug.Log($"显示伤害数字: {damageNumber.Text} at {screenPos}");
+                // 使用DebugDraw在3D空间中绘制文字（始终面向摄像机）
+                var fontSize = damageNumber.IsCritical ? 16 : 12;
+                DebugDraw.DrawText(damageNumber.Text, position, drawColor, fontSize, 0);
             }
             catch (Exception ex)
             {

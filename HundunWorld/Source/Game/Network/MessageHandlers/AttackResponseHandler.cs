@@ -123,10 +123,7 @@ namespace ManagedHundunWorld.Network.Handlers
             try
             {
                 // 通知伤害数字系统显示伤害值
-                // 这可以通过事件总线或单例来实现
-                // TODO: 修复Scene.FindScript调用问题
-                // var damageNumberSystem = FlaxScene.FindScript<Game.Combat.Effects.DamageNumberSystem>();
-                var damageNumberSystem = null as Game.Combat.Effects.DamageNumberSystem; // 临时解决方案
+                var damageNumberSystem = Game.Combat.Effects.DamageNumberSystem.Instance;
                 if (damageNumberSystem != null)
                 {
                     damageNumberSystem.ShowDamageNumber(damageMessage.Damage, 
@@ -148,9 +145,7 @@ namespace ManagedHundunWorld.Network.Handlers
             try
             {
                 // 通知特效系统播放受击特效
-                // TODO: 修复Scene.FindScript调用问题
-                // var effectManager = FlaxScene.FindScript<Game.Combat.Effects.SkillEffectManager>();
-                var effectManager = null as Game.Combat.Effects.SkillEffectManager; // 临时解决方案
+                var effectManager = Game.Combat.Effects.SkillEffectManager.Instance;
                 if (effectManager != null)
                 {
                     // 将Position转换为Vector3
@@ -176,9 +171,7 @@ namespace ManagedHundunWorld.Network.Handlers
             try
             {
                 // 通知特效系统播放攻击特效
-                // TODO: 修复Scene.FindScript调用问题
-                // var effectManager = FlaxScene.FindScript<Game.Combat.Effects.SkillEffectManager>();
-                var effectManager = null as Game.Combat.Effects.SkillEffectManager; // 临时解决方案
+                var effectManager = Game.Combat.Effects.SkillEffectManager.Instance;
                 if (effectManager != null)
                 {
                     // 使用现有字段替代缺失的字段

@@ -80,5 +80,15 @@ namespace HundunWorld.Game.Character
         /// 取消订阅属性变化事件
         /// </summary>
         void UnsubscribeAttributeChanged(ulong characterId, Action<string, float, float> callback);
+
+        /// <summary>
+        /// 获取角色当前能量值
+        /// </summary>
+        float GetCurrentEnergy(ulong characterId);
+
+        /// <summary>
+        /// 消耗角色能量
+        /// </summary>
+        void ConsumeEnergy(ulong characterId, float amount);
     }
 }
