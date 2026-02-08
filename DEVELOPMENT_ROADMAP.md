@@ -37,7 +37,7 @@
 | 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善）|
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
 | 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
-| 测试基础设施（Phase 1.2） | ✅ 90% | 940个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion/EventConsumerVersioning/PassportGrain/CharacterGrainState/RankingSystem/MailSystem/AchievementSystem） |
+| 测试基础设施（Phase 1.2） | ✅ 90% | 943个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion/EventConsumerVersioning/PassportGrain/CharacterGrainState/RankingSystem/MailSystem/AchievementSystem） |
 | CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置（CI + CodeQL安全扫描 + 代码覆盖率） |
 | 监控可观测性（Phase 2） | ✅ 100% | OpenTelemetry指标、Grafana仪表板、Prometheus告警、JSON结构化日志、CorrelationId分布式追踪、Seq日志聚合、Alertmanager告警通知 |
 
@@ -109,7 +109,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 #### 测试项目
 
-**已存在**: `Horizon.Game.Gateway.Tests/`（24个测试文件，940个测试用例）
+**已存在**: `Horizon.Game.Gateway.Tests/`（24个测试文件，943个测试用例）
 
 | 测试文件 | 测试数量 | 覆盖内容 |
 |---------|---------|---------|
@@ -597,7 +597,7 @@ coverlet 6.0.4 — 代码覆盖率
 ```
 2026年2月中旬  ✅ Phase 0: 安全加固完成
                ✅ Phase 1.1: 代码缺陷修复完成
-               ✅ Phase 1.2: 测试基础设施建设完成（940个测试，24个测试文件）
+               ✅ Phase 1.2: 测试基础设施建设完成（943个测试，24个测试文件）
                ✅ Phase 1.3: CI/CD流程建立完成（含CodeQL安全扫描、代码覆盖率收集、Dependabot依赖扫描）
                ✅ Phase 3.1: 战斗系统增强（闪避/格挡/暴击/冷却/五行属性加成/五行协同/能量恢复/GCD/战斗日志/五行共鸣技能触发）
                ✅ Phase 3.2: 社交系统基础实现（SocialGrain/GuildGrain/TeamGrain）
@@ -625,6 +625,10 @@ coverlet 6.0.4 — 代码覆盖率
                ✅ 安全增强: GrainCallValidationFilter集合大小验证和数值范围验证
                ✅ 测试覆盖: CharacterGrain单元测试（39个测试用例）
                ✅ 构建修复: NuGet依赖版本冲突修复
+               ✅ 功能完善: SocialSystemMonitorGrain实现（社交系统监控、统计重置）
+               ✅ 功能完善: PassportGrain.CreatePassportIdAsync批量通行证ID生成逻辑实现
+               ✅ 功能完善: TeamGrain在线状态查询（通过CharacterGrain.IsOnlineAsync获取真实在线状态）
+               ✅ 测试覆盖: SocialSystemMonitorState单元测试（3个测试用例）
                📍 当前位置（2026-02-08）
                ↓
 2026年3月下旬  ┌─ Phase 4: 客户端功能完善

@@ -678,4 +678,55 @@ namespace Horizon.Orleans.Grains
     }
 
     #endregion
+
+    #region SocialSystemMonitorGrain
+
+    /// <summary>
+    /// 社交系统监控Grain实现 - 系统统计与健康检查
+    /// </summary>
+    public class SocialSystemMonitorGrain : Grain, ISocialSystemMonitorGrain
+    {
+        private readonly ILogger<SocialSystemMonitorGrain> _logger;
+        private readonly IPersistentState<SocialSystemMonitorState> _monitorState;
+
+        public SocialSystemMonitorGrain(
+            ILogger<SocialSystemMonitorGrain> logger,
+            [PersistentState("socialSystemMonitor", "GameStore")] IPersistentState<SocialSystemMonitorState> monitorState)
+        {
+            _logger = logger;
+            _monitorState = monitorState;
+        }
+
+        public override async Task OnActivateAsync(CancellationToken cancellationToken)
+        {
+            _logger.LogInformation("SocialSystemMonitorGrain {GrainKey} activating.", this.GetPrimaryKeyLong());
+            await base.OnActivateAsync(cancellationToken);
+        }
+
+        public async Task<bool> ResetStatsAsync()
+        {
+            try
+            {
+                _logger.LogInformation("重置社交系统统计");
+
+                var state = _monitorState.State;
+                state.TotalMessagesRouted = 0;
+                state.TotalChannels = 0;
+                state.ActiveUsers = 0;
+                state.LastResetTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                await _monitorState.WriteStateAsync();
+
+                _logger.LogInformation("社交系统统计已重置: ResetTime={ResetTime}", state.LastResetTime);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "重置社交系统统计失败");
+                throw;
+            }
+        }
+    }
+
+    #endregion
 }

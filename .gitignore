@@ -16,6 +16,8 @@ bld/
 
 # Generated XML documentation files
 Horizon.*/[A-Z]*.xml
+# Windows build tools may create paths with drive letters
+**/C:/
 
 # Visual Studio cache/options
 .vs/

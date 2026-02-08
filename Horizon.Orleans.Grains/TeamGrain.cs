@@ -274,11 +274,13 @@ namespace Horizon.Orleans.Grains
             }
         }
 
-        public Task<TeamInfo> GetTeamInfoAsync()
+        public async Task<TeamInfo> GetTeamInfoAsync()
         {
             try
             {
                 var state = _teamState.State;
+
+                var members = await GetMemberInfoListAsync(state);
 
                 var info = new TeamInfo
                 {
@@ -286,15 +288,10 @@ namespace Horizon.Orleans.Grains
                     LeaderId = GuidToUInt64(state.LeaderId),
                     TeamName = state.TeamName,
                     TeamGoal = state.TeamGoal,
-                    Members = state.Members.Values.Select(m => new TeamMemberInfo
-                    {
-                        CharacterId = GuidToUInt64(m.MemberId),
-                        IsLeader = m.IsLeader,
-                        IsOnline = true // TODO: 后续通过查询玩家Grain获取真实在线状态
-                    }).ToList()
+                    Members = members
                 };
 
-                return Task.FromResult(info);
+                return info;
             }
             catch (Exception ex)
             {
@@ -303,26 +300,45 @@ namespace Horizon.Orleans.Grains
             }
         }
 
-        public Task<List<TeamMemberInfo>> GetMembersAsync()
+        public async Task<List<TeamMemberInfo>> GetMembersAsync()
         {
             try
             {
                 var state = _teamState.State;
-
-                var members = state.Members.Values.Select(m => new TeamMemberInfo
-                {
-                    CharacterId = GuidToUInt64(m.MemberId),
-                    IsLeader = m.IsLeader,
-                    IsOnline = true // TODO: 后续通过查询玩家Grain获取真实在线状态
-                }).ToList();
-
-                return Task.FromResult(members);
+                return await GetMemberInfoListAsync(state);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "获取队伍成员列表失败");
                 throw;
             }
+        }
+
+        private async Task<List<TeamMemberInfo>> GetMemberInfoListAsync(TeamState state)
+        {
+            var members = new List<TeamMemberInfo>();
+            foreach (var m in state.Members.Values)
+            {
+                var characterId = (long)GuidToUInt64(m.MemberId);
+                bool isOnline = false;
+                try
+                {
+                    var characterGrain = GrainFactory.GetGrain<ICharacterGrain>(characterId);
+                    isOnline = await characterGrain.IsOnlineAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "查询成员在线状态失败: MemberId={MemberId}", m.MemberId);
+                }
+
+                members.Add(new TeamMemberInfo
+                {
+                    CharacterId = GuidToUInt64(m.MemberId),
+                    IsLeader = m.IsLeader,
+                    IsOnline = isOnline
+                });
+            }
+            return members;
         }
 
         public async Task<bool> DisbandTeamAsync(Guid leaderId)

@@ -474,10 +474,29 @@ namespace Horizon.Orleans.Grains
                 return string.Empty;
             }
         }
-        public Task CreatePassportIdAsync(int count)
+        public async Task CreatePassportIdAsync(int count)
         {
-            // TODO: 实现通行证ID批量生成逻辑
-            return Task.CompletedTask;
+            if (count <= 0)
+            {
+                _logger.LogWarning("批量生成通行证ID数量无效: Count={Count}", count);
+                return;
+            }
+
+            _logger.LogInformation("开始批量生成通行证ID: Count={Count}", count);
+
+            var passportIds = new List<PassportIds>(count);
+            for (int i = 0; i < count; i++)
+            {
+                passportIds.Add(new PassportIds
+                {
+                    Id = Guid.NewGuid().ToString("N"),
+                    CreatingTime = DateTime.UtcNow,
+                    IsValid = true
+                });
+            }
+
+            await _contextPassportIds.AddRangeAsync(passportIds);
+            _logger.LogInformation("批量生成通行证ID完成: Count={Count}", count);
         }
 
         public async Task CancelCreatePassportIdAsync()
