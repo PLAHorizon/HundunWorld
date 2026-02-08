@@ -1,10 +1,10 @@
 using Orleans;
 using System;
 using System.Threading.Tasks;
-
-using Horizon.Game.Message.Enums;
 using System.Collections.Generic;
 using System.Numerics;
+
+using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 using MemoryPack;
 

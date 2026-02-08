@@ -480,12 +480,12 @@ namespace Horizon.Orleans.Grains
                     };
                 }
 
-                if (state.Members.Count < 1)
+                if (state.Members.Count < 2)
                 {
                     return new TeamDungeonResult
                     {
                         Success = false,
-                        Message = "队伍成员不足"
+                        Message = "组队副本至少需要2名队员"
                     };
                 }
 

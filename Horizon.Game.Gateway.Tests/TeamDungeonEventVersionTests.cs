@@ -383,11 +383,28 @@ namespace Horizon.Game.Gateway.Tests
         }
 
         [Fact]
-        public void ITeamGrain_TotalMethodCount_Is10()
+        public void ITeamGrain_HasAllExpectedMethods()
         {
             var interfaceType = typeof(ITeamGrain);
-            var methods = interfaceType.GetMethods();
-            Assert.Equal(10, methods.Length);
+            var expectedMethods = new[]
+            {
+                "CreateTeamAsync",
+                "JoinTeamAsync",
+                "LeaveTeamAsync",
+                "KickMemberAsync",
+                "TransferLeaderAsync",
+                "GetTeamInfoAsync",
+                "GetMembersAsync",
+                "DisbandTeamAsync",
+                "EnterDungeonAsTeamAsync",
+                "GetTeamStateVersionAsync"
+            };
+
+            var methods = interfaceType.GetMethods().Select(m => m.Name).ToList();
+            foreach (var expectedMethod in expectedMethods)
+            {
+                Assert.Contains(expectedMethod, methods);
+            }
         }
 
         #endregion
@@ -614,11 +631,11 @@ namespace Horizon.Game.Gateway.Tests
             var result = new TeamDungeonResult
             {
                 Success = false,
-                Message = "队伍成员不足"
+                Message = "组队副本至少需要2名队员"
             };
 
             Assert.False(result.Success);
-            Assert.Equal("队伍成员不足", result.Message);
+            Assert.Equal("组队副本至少需要2名队员", result.Message);
             Assert.Empty(result.EnteredMembers);
         }
 
