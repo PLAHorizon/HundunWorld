@@ -1,3 +1,4 @@
+using Horizon.Game.Message.Network;
 using Horizon.Orleans.Interface;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -10,92 +11,6 @@ using System.Threading.Tasks;
 
 namespace Horizon.Orleans.Grains
 {
-    /// <summary>
-    /// 副本系统状态
-    /// </summary>
-    [MemoryPackable(SerializeLayout.Explicit)]
-    [GenerateSerializer]
-    [Serializable]
-    public partial class DungeonState
-    {
-        /// <summary>
-        /// 副本模板ID
-        /// </summary>
-        [MemoryPackOrder(0)]
-        [Id(0)]
-        public int DungeonTemplateId { get; set; }
-
-        /// <summary>
-        /// 副本名称
-        /// </summary>
-        [MemoryPackOrder(1)]
-        [Id(1)]
-        public string DungeonName { get; set; } = "";
-
-        /// <summary>
-        /// 难度 (0=普通, 1=困难, 2=英雄, 3=地狱)
-        /// </summary>
-        [MemoryPackOrder(2)]
-        [Id(2)]
-        public int Difficulty { get; set; }
-
-        /// <summary>
-        /// 最大玩家数
-        /// </summary>
-        [MemoryPackOrder(3)]
-        [Id(3)]
-        public int MaxPlayers { get; set; } = 5;
-
-        /// <summary>
-        /// 副本状态
-        /// </summary>
-        [MemoryPackOrder(4)]
-        [Id(4)]
-        public int Status { get; set; } = (int)DungeonStatus.Waiting;
-
-        /// <summary>
-        /// 时间限制（分钟）
-        /// </summary>
-        [MemoryPackOrder(5)]
-        [Id(5)]
-        public int TimeLimitMinutes { get; set; } = 30;
-
-        /// <summary>
-        /// 副本开始时间
-        /// </summary>
-        [MemoryPackOrder(6)]
-        [Id(6)]
-        public DateTime? StartTime { get; set; }
-
-        /// <summary>
-        /// 是否已创建
-        /// </summary>
-        [MemoryPackOrder(7)]
-        [Id(7)]
-        public bool IsCreated { get; set; }
-
-        /// <summary>
-        /// 当前玩家列表
-        /// </summary>
-        [MemoryPackOrder(8)]
-        [Id(8)]
-        public HashSet<Guid> Players { get; set; } = new();
-
-        /// <summary>
-        /// Boss列表 (BossId -> BossData)
-        /// </summary>
-        [MemoryPackOrder(9)]
-        [Id(9)]
-        public Dictionary<int, DungeonBossData> Bosses { get; set; } = new();
-
-        /// <summary>
-        /// 关联的队伍ID（组队副本使用）
-        /// </summary>
-        [MemoryPackOrder(10)]
-        [Id(10)]
-        public Guid? TeamId { get; set; }
-    }
-
     /// <summary>
     /// 副本系统Grain实现 - 负责副本创建、进入、通关、奖励发放
     /// </summary>

@@ -13,31 +13,6 @@ using System.Threading.Tasks;
 namespace Horizon.Orleans.Grains
 {
     /// <summary>
-    /// 背包状态
-    /// </summary>
-    [MemoryPackable(SerializeLayout.Explicit)]
-    [GenerateSerializer]
-    [Serializable]
-    public partial class InventoryState
-    {
-        [MemoryPackOrder(0)]
-        [Id(0)]
-        public Dictionary<long, ItemInfo> Items { get; set; } = new();
-
-        [MemoryPackOrder(1)]
-        [Id(1)]
-        public int Capacity { get; set; } = 50;
-
-        [MemoryPackOrder(2)]
-        [Id(2)]
-        public long NextItemId { get; set; } = 1;
-
-        [MemoryPackOrder(3)]
-        [Id(3)]
-        public Dictionary<int, long> EquippedItems { get; set; } = new();
-    }
-
-    /// <summary>
     /// 物品系统Grain实现 - 负责物品管理、背包操作
     /// </summary>
     public class InventoryGrain : Grain, IInventoryGrain

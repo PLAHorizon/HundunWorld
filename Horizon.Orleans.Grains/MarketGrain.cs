@@ -1,3 +1,4 @@
+using Horizon.Game.Message.Network;
 using Horizon.Orleans.Interface;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -10,43 +11,6 @@ using System.Threading.Tasks;
 
 namespace Horizon.Orleans.Grains
 {
-    /// <summary>
-    /// 市场系统状态
-    /// </summary>
-    [MemoryPackable(SerializeLayout.Explicit)]
-    [GenerateSerializer]
-    [Serializable]
-    public partial class MarketState
-    {
-        /// <summary>
-        /// 商品列表（ListingId -> 商品信息）
-        /// </summary>
-        [MemoryPackOrder(0)]
-        [Id(0)]
-        public Dictionary<long, MarketListing> Listings { get; set; } = new();
-
-        /// <summary>
-        /// 下一个商品ID
-        /// </summary>
-        [MemoryPackOrder(1)]
-        [Id(1)]
-        public long NextListingId { get; set; } = 1;
-
-        /// <summary>
-        /// 总交易次数
-        /// </summary>
-        [MemoryPackOrder(2)]
-        [Id(2)]
-        public long TotalTransactions { get; set; }
-
-        /// <summary>
-        /// 总交易额
-        /// </summary>
-        [MemoryPackOrder(3)]
-        [Id(3)]
-        public long TotalVolume { get; set; }
-    }
-
     /// <summary>
     /// 市场系统Grain实现 - 负责拍卖行/摆摊管理
     /// </summary>
