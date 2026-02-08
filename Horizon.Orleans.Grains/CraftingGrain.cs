@@ -150,7 +150,10 @@ namespace Horizon.Orleans.Grains
                     };
                 }
 
+                // Determine quality based on success rate and randomness
+                int quality = CalculateCraftingQuality(recipe.SuccessRate);
                 bool success = Random.Shared.NextDouble() <= recipe.SuccessRate;
+
                 // Generate a unique output item ID using recipe and history count
                 long outputItemId = success ? recipeId * 1000L + state.CraftingHistory.Count : 0;
 
@@ -159,7 +162,8 @@ namespace Horizon.Orleans.Grains
                     RecipeId = recipeId,
                     Success = success,
                     Timestamp = DateTime.UtcNow,
-                    OutputItemId = outputItemId
+                    OutputItemId = outputItemId,
+                    Quality = success ? quality : 0
                 };
 
                 state.CraftingHistory.Add(entry);
@@ -172,14 +176,16 @@ namespace Horizon.Orleans.Grains
 
                 await _craftingState.WriteStateAsync();
 
-                _logger.LogInformation("合成完成: RecipeId={RecipeId}, Success={Success}", recipeId, success);
+                _logger.LogInformation("合成完成: RecipeId={RecipeId}, Success={Success}, Quality={Quality}",
+                    recipeId, success, quality);
 
                 return new CraftingResult
                 {
                     Success = success,
                     RecipeId = recipeId,
-                    Message = success ? "合成成功" : "合成失败",
-                    OutputItemId = outputItemId
+                    Message = success ? $"合成成功（品质：{GetQualityName(quality)}）" : "合成失败",
+                    OutputItemId = outputItemId,
+                    Quality = success ? quality : 0
                 };
             }
             catch (Exception ex)
@@ -200,6 +206,43 @@ namespace Horizon.Orleans.Grains
                 _logger.LogError(ex, "获取合成历史失败");
                 throw;
             }
+        }
+
+        /// <summary>
+        /// 品质名称映射
+        /// </summary>
+        private static readonly string[] QualityNames = { "普通", "精良", "稀有", "史诗", "传说" };
+
+        /// <summary>
+        /// 获取品质名称
+        /// </summary>
+        public static string GetQualityName(int quality)
+        {
+            if (quality >= 0 && quality < QualityNames.Length)
+                return QualityNames[quality];
+            return QualityNames[0];
+        }
+
+        /// <summary>
+        /// 计算制作品质 (0-4: 普通、精良、稀有、史诗、传说)
+        /// 成功率越高的配方，产出高品质物品的概率越低（需要更难的配方才能出好东西）
+        /// </summary>
+        public static int CalculateCraftingQuality(float successRate)
+        {
+            double roll = Random.Shared.NextDouble();
+            // Higher-difficulty recipes (lower success rate) have better quality chances
+            float difficultyBonus = Math.Max(0, 1.0f - successRate);
+
+            if (roll < 0.01 + difficultyBonus * 0.04)       // 1-5% 传说
+                return 4;
+            if (roll < 0.05 + difficultyBonus * 0.10)       // 5-15% 史诗
+                return 3;
+            if (roll < 0.15 + difficultyBonus * 0.15)       // 15-30% 稀有
+                return 2;
+            if (roll < 0.35 + difficultyBonus * 0.15)       // 35-50% 精良
+                return 1;
+
+            return 0; // 普通
         }
     }
 }

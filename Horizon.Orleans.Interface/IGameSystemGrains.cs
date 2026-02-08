@@ -206,6 +206,13 @@ namespace Horizon.Orleans.Interface
         [MemoryPackOrder(3)]
         [Id(3)]
         public long OutputItemId { get; set; }
+
+        /// <summary>
+        /// 品质 (0=普通, 1=精良, 2=稀有, 3=史诗, 4=传说)
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int Quality { get; set; }
     }
 
     /// <summary>
@@ -231,6 +238,13 @@ namespace Horizon.Orleans.Interface
         [MemoryPackOrder(3)]
         [Id(3)]
         public long OutputItemId { get; set; }
+
+        /// <summary>
+        /// 品质 (0=普通, 1=精良, 2=稀有, 3=史诗, 4=传说)
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int Quality { get; set; }
     }
 
    
