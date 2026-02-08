@@ -122,12 +122,8 @@ namespace Horizon.Core
         {
             if (!string.IsNullOrWhiteSpace(key))
             {
-                lock (cacheLocker)
-                {
-                    _cache.RemoveAsync(key);
-                }
+                await _cache.RemoveAsync(key);
             }
-            await Task.CompletedTask;
         }
 
         /// <summary>

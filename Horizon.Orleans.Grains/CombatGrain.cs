@@ -78,6 +78,14 @@ namespace Horizon.Orleans.Grains
         [MemoryPackOrder(8)]
         [Id(8)]
         public int WuxingElement { get; set; } // 0=无, 1=金, 2=木, 3=水, 4=火, 5=土
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public float Energy { get; set; }
+
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public float MaxEnergy { get; set; }
     }
 
     /// <summary>
@@ -237,7 +245,7 @@ namespace Horizon.Orleans.Grains
                 var casterInfo = await GetOrCreateCombatInfo(request.CasterId);
 
                 // 检查技能消耗
-                if (casterInfo.Health < request.EnergyCost)
+                if (casterInfo.Energy < request.EnergyCost)
                 {
                     _logger.LogWarning("技能施放失败: {CasterId} 能量不足", request.CasterId);
                     return new SkillCastMessage
@@ -250,7 +258,7 @@ namespace Horizon.Orleans.Grains
                 }
 
                 // 消耗能量
-                casterInfo.Health -= request.EnergyCost;
+                casterInfo.Energy -= request.EnergyCost;
 
                 // 根据技能类型执行不同逻辑
                 var response = new SkillCastMessage
@@ -489,7 +497,7 @@ namespace Horizon.Orleans.Grains
             {
                 _logger.LogInformation("应用效果: {EffectId} 到 {TargetId}", request.EffectId, request.TargetId);
 
-                var effectId = Guid.NewGuid().ToByteArray()[0]; // 简化的唯一ID生成
+                var effectId = BitConverter.ToUInt64(Guid.NewGuid().ToByteArray(), 0);
                 var effectInfo = new EffectInfo
                 {
                     EffectId = request.EffectId,
@@ -600,6 +608,8 @@ namespace Horizon.Orleans.Grains
                         AttackPower = characterEntity.AttackPower,
                         Defense = characterEntity.Defense,
                         WuxingElement = characterEntity.WuxingElement,
+                        Energy = 100,
+                        MaxEnergy = 100,
                         IsInCombat = false,
                         LastActionTime = DateTime.UtcNow
                     };
@@ -617,6 +627,8 @@ namespace Horizon.Orleans.Grains
                         AttackPower = 50,
                         Defense = 20,
                         WuxingElement = 0,
+                        Energy = 100,
+                        MaxEnergy = 100,
                         IsInCombat = false,
                         LastActionTime = DateTime.UtcNow
                     };
