@@ -225,6 +225,16 @@ namespace Horizon.Orleans.Silo
                     .ConfigureLogging(logging =>
                     {
                         logging.AddConsole();
+                        logging.AddJsonConsole(options =>
+                        {
+                            options.IncludeScopes = true;
+                            options.TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffZ";
+                            options.UseUtcTimestamp = true;
+                            options.JsonWriterOptions = new System.Text.Json.JsonWriterOptions
+                            {
+                                Indented = false
+                            };
+                        });
                         logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Information);
                     });
 
@@ -369,6 +379,9 @@ namespace Horizon.Orleans.Silo
 
             // Configure retries
             siloBuilder.AddIncomingGrainCallFilter<RetryFilter>();
+            
+            // 添加CorrelationId过滤器（分布式追踪）
+            siloBuilder.AddIncomingGrainCallFilter<CorrelationIdFilter>();
             
             // 添加客户端连接跟踪过滤器
             siloBuilder.AddIncomingGrainCallFilter<ClientConnectionTrackingFilter>();

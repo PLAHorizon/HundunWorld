@@ -1,9 +1,9 @@
 # 混沌世界项目 - 后续开发路线图
 
 **文档日期**: 2026年2月8日  
-**最后更新**: 2026年2月8日（任务/副本系统实现后更新）  
+**最后更新**: 2026年2月8日（Phase 2监控可观测性增强后更新）  
 **基于**: 完整源代码审查  
-**文档版本**: v1.8
+**文档版本**: v1.9
 
 ---
 
@@ -37,14 +37,15 @@
 | 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善） |
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
 | 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
-| 测试基础设施（Phase 1.2） | ✅ 90% | 514个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon） |
+| 测试基础设施（Phase 1.2） | ✅ 90% | 534个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring） |
 | CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置 |
+| 监控可观测性（Phase 2） | ✅ 90% | OpenTelemetry指标、Grafana仪表板、Prometheus告警、JSON结构化日志、CorrelationId分布式追踪 |
 
 ### 缺失模块
 
 | 模块 | 状态 | 优先级 |
 |------|------|--------|
-| 监控告警 | 🟡 基础完成 | P1 |
+| 监控告警 | 🟡 大部分完成 | P1 |
 | 任务/副本系统 | 🟡 基础实现完成 | P2 |
 | 社交系统（好友/公会/组队） | 🟡 基础实现完成 | P2 |
 | 消息频道系统 | 🟡 基础实现完成 | P2 |
@@ -108,7 +109,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 #### 测试项目
 
-**已存在**: `Horizon.Game.Gateway.Tests/`（14个测试文件，514个测试用例）
+**已存在**: `Horizon.Game.Gateway.Tests/`（15个测试文件，534个测试用例）
 
 | 测试文件 | 测试数量 | 覆盖内容 |
 |---------|---------|---------|
@@ -126,6 +127,7 @@ coverlet 6.0.4 — 代码覆盖率
 | MessageFilterRateLimitTests.cs | 20 | 消息速率限制、敏感词过滤 |
 | TradeMarketStateTests.cs | 70 | 交易状态、市场状态、五行共鸣技能、首杀活动通知 |
 | QuestDungeonStateTests.cs | 62 | 任务状态、任务目标进度、副本状态、Boss管理、超时检测、完整工作流 |
+| CorrelationIdMonitoringTests.cs | 20 | CorrelationId生成、格式验证、RequestContext集成、并发安全 |
 
 #### 测试覆盖率现状
 
@@ -190,8 +192,8 @@ coverlet 6.0.4 — 代码覆盖率
 ```
 ✅ 替换Console.WriteLine为ILogger调用
 ✅ 替换字符串插值日志为结构化日志模板
-□ 统一日志格式（JSON结构化输出）
-□ 添加全局关联ID（CorrelationId）
+✅ 统一日志格式（JSON结构化输出）
+✅ 添加全局关联ID（CorrelationId）
 □ 集成Seq社区版（开发环境日志聚合）
 ```
 
@@ -200,10 +202,10 @@ coverlet 6.0.4 — 代码覆盖率
 **现有**: `monitoring/grafana/hundunworld-dashboard.json`
 
 ```
-□ 完善Silo性能面板
-□ 添加Gateway连接池面板
-□ 添加认证流程面板
-□ 添加战斗系统性能面板
+✅ 完善Silo性能面板
+✅ 添加Gateway连接池面板
+✅ 添加认证流程面板
+✅ 添加战斗系统性能面板
 □ 配置告警通知渠道（邮件/webhook）
 ```
 
@@ -556,7 +558,7 @@ coverlet 6.0.4 — 代码覆盖率
 ```
 2026年2月中旬  ✅ Phase 0: 安全加固完成
                ✅ Phase 1.1: 代码缺陷修复完成
-               ✅ Phase 1.2: 测试基础设施建设完成（514个测试）
+               ✅ Phase 1.2: 测试基础设施建设完成（534个测试）
                ✅ Phase 1.3: CI/CD流程建立完成
                ✅ Phase 3.1: 战斗系统增强（闪避/格挡/暴击/冷却/五行属性加成/五行协同/能量恢复/GCD/战斗日志/五行共鸣技能触发）
                ✅ Phase 3.2: 社交系统基础实现（SocialGrain/GuildGrain/TeamGrain）
@@ -564,6 +566,9 @@ coverlet 6.0.4 — 代码覆盖率
                ✅ Phase 3.4: 消息频道系统实现（频道/路由/广播/首杀活动通知）
                ✅ Phase 3.5: GameServerGrain/AreaGrain/ActivityGrain实现
                ✅ Phase 3.6: 任务/副本系统实现（QuestGrain/DungeonGrain）
+               ✅ Phase 2.2: 结构化日志改进（JSON格式输出/CorrelationId分布式追踪）
+               ✅ Phase 2.3: Grafana仪表板完善（Silo性能/Gateway连接池/认证流程/战斗系统面板）
+               ✅ Phase 2.3: Prometheus告警规则增强（数据库性能/战斗系统告警）
                📍 当前位置（2026-02-08）
                ↓
 2026年3月下旬  ┌─ Phase 2: 监控可观测性
