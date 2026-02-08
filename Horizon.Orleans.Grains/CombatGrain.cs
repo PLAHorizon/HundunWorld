@@ -145,7 +145,7 @@ namespace Horizon.Orleans.Grains
         private readonly ILogger<CombatGrain> _logger;
         private readonly IPersistentState<CombatState> _combatState;
 
-        private static IDataContext<GameEntityContext, CharacterEntity, long> _characterContext;
+        private readonly IDataContext<GameEntityContext, CharacterEntity, long> _characterContext;
         private readonly IMapper _mapper;
 
         public CombatGrain(
@@ -162,7 +162,7 @@ namespace Horizon.Orleans.Grains
 
         public override async Task OnActivateAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation($"CombatGrain {this.GetPrimaryKey()} activating.");
+            _logger.LogInformation("CombatGrain {GrainKey} activating.", this.GetPrimaryKey());
 
             // 初始化状态
             if (_combatState.State.CombatParticipants == null)
@@ -178,7 +178,7 @@ namespace Horizon.Orleans.Grains
         {
             try
             {
-                _logger.LogInformation($"处理攻击请求: {request.AttackerId} 攻击 {request.TargetId}");
+                _logger.LogInformation("处理攻击请求: {AttackerId} 攻击 {TargetId}", request.AttackerId, request.TargetId);
 
                 // 获取攻击者和目标信息
                 var attackerInfo = await GetOrCreateCombatInfo(request.AttackerId);
@@ -188,7 +188,7 @@ namespace Horizon.Orleans.Grains
                 float damage = await CalculateDamage(attackerInfo, targetInfo, request.Damage, request.ElementType);
 
                 // 判断是否暴击
-                bool isCritical = request.IsCritical || new Random().NextDouble() < 0.1; // 10%基础暴击率
+                bool isCritical = request.IsCritical || Random.Shared.NextDouble() < 0.1; // 10%基础暴击率
                 if (isCritical)
                 {
                     damage *= 1.5f; // 暴击伤害1.5倍
@@ -217,13 +217,13 @@ namespace Horizon.Orleans.Grains
                 // 保存状态
                 await _combatState.WriteStateAsync();
 
-                _logger.LogInformation($"攻击处理完成: 造成伤害 {damage}, 目标剩余血量 {targetInfo.Health}");
+                _logger.LogInformation("攻击处理完成: 造成伤害 {Damage}, 目标剩余血量 {RemainingHealth}", damage, targetInfo.Health);
 
                 return response;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"处理攻击请求时发生异常: {request.AttackerId} -> {request.TargetId}");
+                _logger.LogError(ex, "处理攻击请求时发生异常: {AttackerId} -> {TargetId}", request.AttackerId, request.TargetId);
                 throw;
             }
         }
@@ -232,14 +232,14 @@ namespace Horizon.Orleans.Grains
         {
             try
             {
-                _logger.LogInformation($"处理技能施放请求: {request.CasterId} 施放技能 {request.SkillId}");
+                _logger.LogInformation("处理技能施放请求: {CasterId} 施放技能 {SkillId}", request.CasterId, request.SkillId);
 
                 var casterInfo = await GetOrCreateCombatInfo(request.CasterId);
 
                 // 检查技能消耗
                 if (casterInfo.Health < request.EnergyCost)
                 {
-                    _logger.LogWarning($"技能施放失败: {request.CasterId} 能量不足");
+                    _logger.LogWarning("技能施放失败: {CasterId} 能量不足", request.CasterId);
                     return new SkillCastMessage
                     {
                         CasterId = request.CasterId,
@@ -270,13 +270,13 @@ namespace Horizon.Orleans.Grains
                 // 保存状态
                 await _combatState.WriteStateAsync();
 
-                _logger.LogInformation($"技能施放处理完成: {request.CasterId} -> {request.SkillId}");
+                _logger.LogInformation("技能施放处理完成: {CasterId} -> {SkillId}", request.CasterId, request.SkillId);
 
                 return response;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"处理技能施放请求时发生异常: {request.CasterId} -> {request.SkillId}");
+                _logger.LogError(ex, "处理技能施放请求时发生异常: {CasterId} -> {SkillId}", request.CasterId, request.SkillId);
                 throw;
             }
         }
@@ -285,7 +285,7 @@ namespace Horizon.Orleans.Grains
         {
             try
             {
-                _logger.LogInformation($"处理受伤请求: {request.VictimId} 受到伤害 {request.Damage}");
+                _logger.LogInformation("处理受伤请求: {VictimId} 受到伤害 {Damage}", request.VictimId, request.Damage);
 
                 var victimInfo = await GetOrCreateCombatInfo(request.VictimId);
 
@@ -324,13 +324,13 @@ namespace Horizon.Orleans.Grains
                 // 保存状态
                 await _combatState.WriteStateAsync();
 
-                _logger.LogInformation($"受伤处理完成: {request.VictimId} 剩余血量 {victimInfo.Health}");
+                _logger.LogInformation("受伤处理完成: {VictimId} 剩余血量 {RemainingHealth}", request.VictimId, victimInfo.Health);
 
                 return response;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"处理受伤请求时发生异常: {request.VictimId}");
+                _logger.LogError(ex, "处理受伤请求时发生异常: {VictimId}", request.VictimId);
                 throw;
             }
         }
@@ -339,7 +339,7 @@ namespace Horizon.Orleans.Grains
         {
             try
             {
-                _logger.LogInformation($"处理死亡请求: {request.DeceasedId} 被 {request.KillerId} 杀死");
+                _logger.LogInformation("处理死亡请求: {DeceasedId} 被 {KillerId} 杀死", request.DeceasedId, request.KillerId);
 
                 var deceasedInfo = await GetOrCreateCombatInfo(request.DeceasedId);
 
@@ -361,13 +361,13 @@ namespace Horizon.Orleans.Grains
                 // 保存状态
                 await _combatState.WriteStateAsync();
 
-                _logger.LogInformation($"死亡处理完成: {request.DeceasedId}");
+                _logger.LogInformation("死亡处理完成: {DeceasedId}", request.DeceasedId);
 
                 return response;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"处理死亡请求时发生异常: {request.DeceasedId}");
+                _logger.LogError(ex, "处理死亡请求时发生异常: {DeceasedId}", request.DeceasedId);
                 throw;
             }
         }
@@ -376,7 +376,7 @@ namespace Horizon.Orleans.Grains
         {
             try
             {
-                _logger.LogInformation($"处理复活请求: {request.ResurrectedId}");
+                _logger.LogInformation("处理复活请求: {ResurrectedId}", request.ResurrectedId);
 
                 var resurrectedInfo = await GetOrCreateCombatInfo(request.ResurrectedId);
 
@@ -397,13 +397,13 @@ namespace Horizon.Orleans.Grains
                 // 保存状态
                 await _combatState.WriteStateAsync();
 
-                _logger.LogInformation($"复活处理完成: {request.ResurrectedId} 恢复血量至 {resurrectedInfo.Health}");
+                _logger.LogInformation("复活处理完成: {ResurrectedId} 恢复血量至 {Health}", request.ResurrectedId, resurrectedInfo.Health);
 
                 return response;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"处理复活请求时发生异常: {request.ResurrectedId}");
+                _logger.LogError(ex, "处理复活请求时发生异常: {ResurrectedId}", request.ResurrectedId);
                 throw;
             }
         }
@@ -419,13 +419,13 @@ namespace Horizon.Orleans.Grains
 
                 await _combatState.WriteStateAsync();
 
-                _logger.LogInformation($"角色 {characterId} 进入战斗状态");
+                _logger.LogInformation("角色 {CharacterId} 进入战斗状态", characterId);
 
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"角色 {characterId} 进入战斗状态时发生异常");
+                _logger.LogError(ex, "角色 {CharacterId} 进入战斗状态时发生异常", characterId);
                 return false;
             }
         }
@@ -441,7 +441,7 @@ namespace Horizon.Orleans.Grains
 
                     await _combatState.WriteStateAsync();
 
-                    _logger.LogInformation($"角色 {characterId} 退出战斗状态");
+                    _logger.LogInformation("角色 {CharacterId} 退出战斗状态", characterId);
 
                     return true;
                 }
@@ -450,7 +450,7 @@ namespace Horizon.Orleans.Grains
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"角色 {characterId} 退出战斗状态时发生异常");
+                _logger.LogError(ex, "角色 {CharacterId} 退出战斗状态时发生异常", characterId);
                 return false;
             }
         }
@@ -478,7 +478,7 @@ namespace Horizon.Orleans.Grains
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"检查角色 {characterId} 战斗状态时发生异常");
+                _logger.LogError(ex, "检查角色 {CharacterId} 战斗状态时发生异常", characterId);
                 return false;
             }
         }
@@ -487,7 +487,7 @@ namespace Horizon.Orleans.Grains
         {
             try
             {
-                _logger.LogInformation($"应用效果: {request.EffectId} 到 {request.TargetId}");
+                _logger.LogInformation("应用效果: {EffectId} 到 {TargetId}", request.EffectId, request.TargetId);
 
                 var effectId = Guid.NewGuid().ToByteArray()[0]; // 简化的唯一ID生成
                 var effectInfo = new EffectInfo
@@ -509,7 +509,7 @@ namespace Horizon.Orleans.Grains
                 // 保存状态
                 await _combatState.WriteStateAsync();
 
-                _logger.LogInformation($"效果应用完成: {request.EffectId} -> {request.TargetId}");
+                _logger.LogInformation("效果应用完成: {EffectId} -> {TargetId}", request.EffectId, request.TargetId);
 
                 return new EffectMessage
                 {
@@ -526,7 +526,7 @@ namespace Horizon.Orleans.Grains
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"应用效果时发生异常: {request.EffectId} -> {request.TargetId}");
+                _logger.LogError(ex, "应用效果时发生异常: {EffectId} -> {TargetId}", request.EffectId, request.TargetId);
                 throw;
             }
         }
@@ -573,7 +573,7 @@ namespace Horizon.Orleans.Grains
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"计算五行伤害时发生异常: {attackerId} -> {defenderId}");
+                _logger.LogError(ex, "计算五行伤害时发生异常: {AttackerId} -> {DefenderId}", attackerId, defenderId);
                 return baseDamage; // 返回基础伤害作为备用
             }
         }
