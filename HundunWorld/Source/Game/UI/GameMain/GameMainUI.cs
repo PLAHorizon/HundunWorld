@@ -47,6 +47,7 @@ namespace HundunWorld.Game.UI.GameMain
         private RoundedPanel _minimapPanel;
         private Image _minimapImage;
         private Panel _minimapPlayerDot;
+        private Label _minimapCoordinatesLabel;
         
         // 聊天窗口组件
         private RoundedPanel _chatPanel;
@@ -304,29 +305,70 @@ namespace HundunWorld.Game.UI.GameMain
         {
             _minimapPanel = new RoundedPanel
             {
-                Bounds = new Rectangle(FlaxEngine.Screen.Size.X - 220, 20, 200, 200),  // 修正为FlaxEngine.Screen
+                Bounds = new Rectangle(FlaxEngine.Screen.Size.X - 220, 20, 200, 230),  // 修正为FlaxEngine.Screen
                 BackgroundColor = new Color(0.1f, 0.1f, 0.15f, 0.8f),
                 CornerRadius = 10f
                 // 移除BorderColor属性
             };
             
+            // 小地图标题
+            var minimapTitle = new Label
+            {
+                Text = "小地图",
+                TextColor = new Color(0.8f, 0.8f, 0.8f),
+                Bounds = new Rectangle(5, 2, 190, 18),
+                HorizontalAlignment = TextAlignment.Center
+            };
+            _minimapPanel.AddChild(minimapTitle);
+            
             // 小地图图像（占位符）
             _minimapImage = new Image
             {
-                Bounds = new Rectangle(5, 5, 190, 190),
-                BackgroundColor = new Color(0.2f, 0.4f, 0.2f)
+                Bounds = new Rectangle(5, 20, 190, 175),
+                BackgroundColor = new Color(0.15f, 0.35f, 0.15f)
                 // 移除BorderColor属性
             };
             _minimapPanel.AddChild(_minimapImage);
-            
-            // 玩家位置标记
+
+            // 方向标记
+            string[] directions = { "N", "S", "W", "E" };
+            Rectangle[] dirBounds =
+            {
+                new Rectangle(90, 20, 20, 16),      // 北
+                new Rectangle(90, 179, 20, 16),     // 南
+                new Rectangle(7, 100, 20, 16),       // 西
+                new Rectangle(173, 100, 20, 16)      // 东
+            };
+            for (int i = 0; i < directions.Length; i++)
+            {
+                var dirLabel = new Label
+                {
+                    Text = directions[i],
+                    TextColor = new Color(1.0f, 1.0f, 0.6f, 0.7f),
+                    Bounds = dirBounds[i],
+                    HorizontalAlignment = TextAlignment.Center
+                };
+                _minimapPanel.AddChild(dirLabel);
+            }
+
+            // 玩家位置标记（中心红点）
             _minimapPlayerDot = new Panel
             {
-                Bounds = new Rectangle(95, 95, 10, 10),
+                Bounds = new Rectangle(95, 103, 10, 10),
                 BackgroundColor = Color.Red
                 // 移除BorderColor属性
             };
             _minimapPanel.AddChild(_minimapPlayerDot);
+
+            // 坐标显示
+            _minimapCoordinatesLabel = new Label
+            {
+                Text = "(0, 0, 0)",
+                TextColor = new Color(0.7f, 0.7f, 0.7f),
+                Bounds = new Rectangle(5, 200, 190, 25),
+                HorizontalAlignment = TextAlignment.Center
+            };
+            _minimapPanel.AddChild(_minimapCoordinatesLabel);
             
             _mainContainer.AddChild(_minimapPanel);
         }
@@ -487,6 +529,12 @@ namespace HundunWorld.Game.UI.GameMain
             }
             
             _coordinatesLabel.Text = $"X:{_playerPosition.X:F0} Y:{_playerPosition.Y:F0} Z:{_playerPosition.Z:F0}";
+            
+            // 更新小地图坐标
+            if (_minimapCoordinatesLabel != null)
+            {
+                _minimapCoordinatesLabel.Text = $"({_playerPosition.X:F0}, {_playerPosition.Y:F0}, {_playerPosition.Z:F0})";
+            }
             
             _healthBar.Value = _maxHealth > 0 ? _currentHealth / _maxHealth : 0;
             _manaBar.Value = _maxMana > 0 ? _currentMana / _maxMana : 0;
@@ -654,22 +702,295 @@ namespace HundunWorld.Game.UI.GameMain
             };
             panel.AddChild(closeButton);
             
-            // 内容区域提示
-            var contentLabel = new Label
-            {
-                Text = $"{title}面板内容区域",
-                TextColor = new Color(0.7f, 0.7f, 0.7f),
-                Bounds = new Rectangle(10, 50, width - 20, height - 60),
-                HorizontalAlignment = TextAlignment.Center,
-                VerticalAlignment = TextAlignment.Center
-            };
-            panel.AddChild(contentLabel);
+            // 根据面板类型填充内容
+            PopulatePanelContent(panel, panelName, width, height);
             
             _mainContainer.AddChild(panel);
             _panels[panelName] = panel;
             _activePanelName = panelName;
         }
         
+        /// <summary>
+        /// 根据面板类型填充内容
+        /// </summary>
+        private void PopulatePanelContent(RoundedPanel panel, string panelName, float width, float height)
+        {
+            float contentY = 50;
+            float contentWidth = width - 20;
+            float contentHeight = height - 60;
+
+            switch (panelName)
+            {
+                case "Character":
+                    PopulateCharacterPanel(panel, contentY, contentWidth, contentHeight);
+                    break;
+                case "Settings":
+                    PopulateSettingsPanel(panel, contentY, contentWidth, contentHeight);
+                    break;
+                default:
+                    // 其他面板使用默认占位内容
+                    var contentLabel = new Label
+                    {
+                        Text = $"{panelName}面板内容区域",
+                        TextColor = new Color(0.7f, 0.7f, 0.7f),
+                        Bounds = new Rectangle(10, contentY, contentWidth, contentHeight),
+                        HorizontalAlignment = TextAlignment.Center,
+                        VerticalAlignment = TextAlignment.Center
+                    };
+                    panel.AddChild(contentLabel);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 填充角色面板内容 - 显示角色属性、装备和五行属性
+        /// </summary>
+        private void PopulateCharacterPanel(RoundedPanel panel, float startY, float width, float height)
+        {
+            float y = startY;
+            float leftColumnWidth = width * 0.5f;
+            float rightColumnWidth = width * 0.5f;
+
+            // === 左侧：基础属性 ===
+            var attrTitle = new Label
+            {
+                Text = "── 基础属性 ──",
+                TextColor = new Color(1.0f, 0.84f, 0.0f),
+                Bounds = new Rectangle(10, y, leftColumnWidth - 10, 25),
+                HorizontalAlignment = TextAlignment.Center
+            };
+            panel.AddChild(attrTitle);
+            y += 30;
+
+            // 属性行
+            string[] attrNames = { "力量", "敏捷", "智力", "体质", "攻击力", "防御力" };
+            int[] attrValues = _currentCharacter != null
+                ? new[] { 100, 80, 90, 85, 350, 200 }
+                : new[] { 0, 0, 0, 0, 0, 0 };
+
+            for (int i = 0; i < attrNames.Length; i++)
+            {
+                var attrLabel = new Label
+                {
+                    Text = $"{attrNames[i]}：{attrValues[i]}",
+                    TextColor = Color.White,
+                    Bounds = new Rectangle(15, y, leftColumnWidth - 20, 22),
+                    HorizontalAlignment = TextAlignment.Near
+                };
+                panel.AddChild(attrLabel);
+                y += 24;
+            }
+
+            // 战力评分
+            y += 5;
+            int combatPower = 0;
+            for (int i = 0; i < attrValues.Length; i++) combatPower += attrValues[i];
+            var powerLabel = new Label
+            {
+                Text = $"战力评分：{combatPower}",
+                TextColor = new Color(1.0f, 0.5f, 0.0f),
+                Bounds = new Rectangle(15, y, leftColumnWidth - 20, 25),
+                HorizontalAlignment = TextAlignment.Near
+            };
+            panel.AddChild(powerLabel);
+
+            // === 右侧：五行属性雷达 ===
+            float rightX = leftColumnWidth + 10;
+            float radarY = startY;
+
+            var wuxingTitle = new Label
+            {
+                Text = "── 五行属性 ──",
+                TextColor = new Color(1.0f, 0.84f, 0.0f),
+                Bounds = new Rectangle(rightX, radarY, rightColumnWidth - 20, 25),
+                HorizontalAlignment = TextAlignment.Center
+            };
+            panel.AddChild(wuxingTitle);
+            radarY += 30;
+
+            // 五行属性值（使用不同颜色）
+            string[] elementNames = { "金", "木", "水", "火", "土" };
+            Color[] elementColors =
+            {
+                new Color(1.0f, 0.84f, 0.0f),  // 金 - 金色
+                new Color(0.13f, 0.8f, 0.13f),  // 木 - 绿色
+                new Color(0.2f, 0.6f, 1.0f),    // 水 - 蓝色
+                new Color(1.0f, 0.3f, 0.1f),    // 火 - 红色
+                new Color(0.65f, 0.5f, 0.2f)    // 土 - 棕色
+            };
+            int[] elementValues = { 75, 60, 85, 45, 70 };
+
+            for (int i = 0; i < elementNames.Length; i++)
+            {
+                // 属性名和值
+                var elemLabel = new Label
+                {
+                    Text = $"{elementNames[i]}：{elementValues[i]}",
+                    TextColor = elementColors[i],
+                    Bounds = new Rectangle(rightX, radarY, 80, 22),
+                    HorizontalAlignment = TextAlignment.Near
+                };
+                panel.AddChild(elemLabel);
+
+                // 属性条
+                float barWidth = (rightColumnWidth - 110) * (elementValues[i] / 100f);
+                var elemBar = new Panel
+                {
+                    Bounds = new Rectangle(rightX + 80, radarY + 3, barWidth, 16),
+                    BackgroundColor = elementColors[i] * 0.7f
+                };
+                panel.AddChild(elemBar);
+
+                radarY += 26;
+            }
+
+            // === 下部：装备槽 ===
+            float equipY = Math.Max(y + 30, radarY + 15);
+            var equipTitle = new Label
+            {
+                Text = "── 装备 ──",
+                TextColor = new Color(1.0f, 0.84f, 0.0f),
+                Bounds = new Rectangle(10, equipY, width, 25),
+                HorizontalAlignment = TextAlignment.Center
+            };
+            panel.AddChild(equipTitle);
+            equipY += 30;
+
+            string[] equipSlots = { "武器", "头盔", "衣服", "护手", "鞋子", "饰品" };
+            float slotSize = 55;
+            float totalWidth = equipSlots.Length * (slotSize + 5) - 5;
+            float slotStartX = (width - totalWidth) / 2;
+
+            for (int i = 0; i < equipSlots.Length; i++)
+            {
+                float slotX = slotStartX + i * (slotSize + 5);
+
+                var slotPanel = new Panel
+                {
+                    Bounds = new Rectangle(slotX, equipY, slotSize, slotSize),
+                    BackgroundColor = new Color(0.2f, 0.2f, 0.25f, 0.9f)
+                };
+                panel.AddChild(slotPanel);
+
+                var slotLabel = new Label
+                {
+                    Text = equipSlots[i],
+                    TextColor = new Color(0.6f, 0.6f, 0.6f),
+                    Bounds = new Rectangle(0, 15, slotSize, 25),
+                    HorizontalAlignment = TextAlignment.Center
+                };
+                slotPanel.AddChild(slotLabel);
+            }
+        }
+
+        /// <summary>
+        /// 填充设置面板内容 - 音效、画质、操作设置
+        /// </summary>
+        private void PopulateSettingsPanel(RoundedPanel panel, float startY, float width, float height)
+        {
+            float y = startY;
+
+            // === 音频设置 ===
+            var audioTitle = new Label
+            {
+                Text = "── 音频设置 ──",
+                TextColor = new Color(1.0f, 0.84f, 0.0f),
+                Bounds = new Rectangle(10, y, width, 25),
+                HorizontalAlignment = TextAlignment.Center
+            };
+            panel.AddChild(audioTitle);
+            y += 30;
+
+            // 主音量
+            AddSettingsSliderRow(panel, "主音量", 80, ref y, width);
+            // 音效音量
+            AddSettingsSliderRow(panel, "音效", 70, ref y, width);
+            // 音乐音量
+            AddSettingsSliderRow(panel, "音乐", 60, ref y, width);
+
+            y += 10;
+
+            // === 画质设置 ===
+            var graphicsTitle = new Label
+            {
+                Text = "── 画质设置 ──",
+                TextColor = new Color(1.0f, 0.84f, 0.0f),
+                Bounds = new Rectangle(10, y, width, 25),
+                HorizontalAlignment = TextAlignment.Center
+            };
+            panel.AddChild(graphicsTitle);
+            y += 30;
+
+            // 画质等级
+            AddSettingsSliderRow(panel, "画质", 75, ref y, width);
+            // 视距
+            AddSettingsSliderRow(panel, "视距", 60, ref y, width);
+            // 特效密度
+            AddSettingsSliderRow(panel, "特效", 80, ref y, width);
+
+            y += 10;
+
+            // === 操作设置 ===
+            var controlTitle = new Label
+            {
+                Text = "── 操作设置 ──",
+                TextColor = new Color(1.0f, 0.84f, 0.0f),
+                Bounds = new Rectangle(10, y, width, 25),
+                HorizontalAlignment = TextAlignment.Center
+            };
+            panel.AddChild(controlTitle);
+            y += 30;
+
+            // 鼠标灵敏度
+            AddSettingsSliderRow(panel, "灵敏度", 50, ref y, width);
+        }
+
+        /// <summary>
+        /// 添加设置面板滑条行
+        /// </summary>
+        private void AddSettingsSliderRow(RoundedPanel panel, string label, int defaultValue, ref float y, float width)
+        {
+            var nameLabel = new Label
+            {
+                Text = label,
+                TextColor = Color.White,
+                Bounds = new Rectangle(15, y, 70, 22),
+                HorizontalAlignment = TextAlignment.Near
+            };
+            panel.AddChild(nameLabel);
+
+            float barMaxWidth = width - 150;
+            float barWidth = barMaxWidth * (defaultValue / 100f);
+
+            // 滑条背景
+            var barBg = new Panel
+            {
+                Bounds = new Rectangle(90, y + 3, barMaxWidth, 16),
+                BackgroundColor = new Color(0.15f, 0.15f, 0.2f, 0.8f)
+            };
+            panel.AddChild(barBg);
+
+            // 滑条填充
+            var barFill = new Panel
+            {
+                Bounds = new Rectangle(90, y + 3, barWidth, 16),
+                BackgroundColor = new Color(0.3f, 0.7f, 1.0f, 0.8f)
+            };
+            panel.AddChild(barFill);
+
+            // 数值标签
+            var valueLabel = new Label
+            {
+                Text = $"{defaultValue}%",
+                TextColor = Color.White,
+                Bounds = new Rectangle(width - 55, y, 50, 22),
+                HorizontalAlignment = TextAlignment.Far
+            };
+            panel.AddChild(valueLabel);
+
+            y += 26;
+        }
+
         /// <summary>
         /// 登出按钮点击事件
         /// </summary>
