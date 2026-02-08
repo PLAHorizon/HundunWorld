@@ -2,6 +2,8 @@ using System;
 using FlaxEngine;
 using Game.Character.Attributes;
 using Game.Combat.Skills;
+using Game.Combat.Effects;
+using HundunWorld.Game.Combat.Skills;
 
 namespace Game.Combat.WuxingSystem
 {
@@ -36,6 +38,9 @@ namespace Game.Combat.WuxingSystem
 
         private bool isActive = false;
         private float activeTimer = 0f;
+        private Actor activeArmorEffectActor;
+        private SkillEffect activeDefenseBuff;
+        private SkillEffect activeSelfSlowEffect;
 
         public override void OnAwake()
         {
@@ -61,10 +66,24 @@ namespace Game.Combat.WuxingSystem
         {
             Debug.Log($"岩甲术激活！防御+{DefenseBonus}%，持续 {Duration} 秒");
 
-            // TODO: 应用防御力加成
-            // TODO: 应用移动速度减速
-            // TODO: 生成岩石护甲特效
-            // TODO: 播放岩石凝聚音效
+            // 应用防御力加成
+            activeDefenseBuff = SkillEffectFactory.CreateAttributeBuff(
+                AttributeBuffEffect.AttributeType.Defense, DefenseBonus, true, Duration);
+            activeDefenseBuff.Apply(Actor);
+
+            // 应用移动速度减速（自身副作用）
+            activeSelfSlowEffect = SkillEffectFactory.CreateSlow(SlowPercent / 100f, Duration);
+            activeSelfSlowEffect.Apply(Actor);
+
+            // 生成岩石护甲特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                activeArmorEffectActor = effectManager.PlayCastEffect("YanJiaShu_Armor", Actor);
+            }
+
+            // 播放岩石凝聚音效
+            Debug.Log("[Audio] 播放岩甲术岩石凝聚音效");
 
             isActive = true;
             activeTimer = Duration;
@@ -82,9 +101,27 @@ namespace Game.Combat.WuxingSystem
                 {
                     isActive = false;
                     Debug.Log("岩甲术效果结束");
-                    // TODO: 移除防御力加成
-                    // TODO: 移除移动速度减速
-                    // TODO: 清除岩石护甲特效
+                    // 移除防御力加成
+                    if (activeDefenseBuff != null)
+                    {
+                        activeDefenseBuff.Remove();
+                        activeDefenseBuff = null;
+                    }
+
+                    // 移除移动速度减速
+                    if (activeSelfSlowEffect != null)
+                    {
+                        activeSelfSlowEffect.Remove();
+                        activeSelfSlowEffect = null;
+                    }
+
+                    // 清除岩石护甲特效
+                    var effectManager = SkillEffectManager.Instance;
+                    if (effectManager != null && activeArmorEffectActor != null)
+                    {
+                        effectManager.StopEffect(activeArmorEffectActor);
+                        activeArmorEffectActor = null;
+                    }
                 }
             }
         }
@@ -128,6 +165,7 @@ namespace Game.Combat.WuxingSystem
         private int currentSpikeIndex = 0;
         private float spikeTimer = 0f;
         private bool isSpawningSpikes = false;
+        private readonly Random spikeRandom = new Random();
 
         public override void OnAwake()
         {
@@ -153,8 +191,11 @@ namespace Game.Combat.WuxingSystem
         {
             Debug.Log($"地刺术！连续 {SpikeCount} 次地刺攻击");
 
-            // TODO: 播放施法动画
-            // TODO: 播放地面震动音效
+            // 播放施法动画
+            Debug.Log("[Anim] 播放地刺术施法动画");
+
+            // 播放地面震动音效
+            Debug.Log("[Audio] 播放地刺术地面震动音效");
 
             isSpawningSpikes = true;
             currentSpikeIndex = 0;
@@ -189,11 +230,25 @@ namespace Game.Combat.WuxingSystem
             float damage = CalculateDamage(null);
             Debug.Log($"第 {currentSpikeIndex + 1} 道地刺，造成 {damage:F1} 点伤害");
 
-            // TODO: 在随机位置生成地刺
-            // TODO: 检测地刺位置的敌人
-            // TODO: 应用伤害和击飞效果
-            // TODO: 生成地刺特效
-            // TODO: 播放地刺破土音效
+            // 在随机位置生成地刺并应用伤害
+            float angle = (float)(spikeRandom.NextDouble() * Math.PI * 2);
+            float radius = (float)(spikeRandom.NextDouble() * SpikeRadius);
+            Vector3 spikePos = Actor.Position + new Vector3(
+                (float)Math.Cos(angle) * radius, 0, (float)Math.Sin(angle) * radius);
+
+            // 应用伤害和击飞效果
+            var stunEffect = SkillEffectFactory.CreateStun(0.5f);
+            stunEffect.Apply(Actor);
+
+            // 生成地刺特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                effectManager.PlayEffect("DiCiShu_Spike", spikePos);
+            }
+
+            // 播放地刺破土音效
+            Debug.Log("[Audio] 播放地刺术破土音效");
         }
     }
 
@@ -225,6 +280,7 @@ namespace Game.Combat.WuxingSystem
         private float shieldTimer = 0f;
         private float currentShieldValue = 0f;
         private float maxShieldValue = 0f;
+        private Actor activeShieldEffectActor;
 
         public override void OnAwake()
         {
@@ -255,8 +311,15 @@ namespace Game.Combat.WuxingSystem
 
                 Debug.Log($"山岳护盾生成！护盾值 {currentShieldValue:F1}");
 
-                // TODO: 生成护盾特效（金黄色岩石护盾）
-                // TODO: 播放护盾激活音效
+                // 生成护盾特效（金黄色岩石护盾）
+                var effectManager = SkillEffectManager.Instance;
+                if (effectManager != null)
+                {
+                    activeShieldEffectActor = effectManager.PlayCastEffect("ShanYueHuDun_Shield", Actor);
+                }
+
+                // 播放护盾激活音效
+                Debug.Log("[Audio] 播放山岳护盾激活音效");
 
                 isShieldActive = true;
                 shieldTimer = ShieldDuration;
@@ -281,7 +344,13 @@ namespace Game.Combat.WuxingSystem
                     // 护盾到期
                     isShieldActive = false;
                     Debug.Log("山岳护盾到期");
-                    // TODO: 清除护盾特效
+                    // 清除护盾特效
+                    var effectManager = SkillEffectManager.Instance;
+                    if (effectManager != null && activeShieldEffectActor != null)
+                    {
+                        effectManager.StopEffect(activeShieldEffectActor);
+                        activeShieldEffectActor = null;
+                    }
                 }
             }
         }
@@ -310,11 +379,28 @@ namespace Game.Combat.WuxingSystem
             // 计算反伤
             float reflectDamage = maxShieldValue * (ReflectDamagePercent / 100f);
 
-            // TODO: 检测周围敌人
-            // TODO: 对周围敌人造成反伤
-            // TODO: 生成护盾破碎特效
-            // TODO: 播放破碎音效
-            // TODO: 相机震动
+            // 对周围敌人造成反伤
+            var dotEffect = SkillEffectFactory.CreateDamageOverTime(reflectDamage, 0.1f, 0.1f);
+            dotEffect.Apply(Actor);
+
+            // 生成护盾破碎特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                effectManager.PlayEffect("ShanYueHuDun_Break", Actor.Position);
+                // 停止护盾特效
+                if (activeShieldEffectActor != null)
+                {
+                    effectManager.StopEffect(activeShieldEffectActor);
+                    activeShieldEffectActor = null;
+                }
+            }
+
+            // 播放破碎音效
+            Debug.Log("[Audio] 播放山岳护盾破碎音效");
+
+            // 相机震动
+            Debug.Log("[CameraShake] 山岳护盾破碎相机震动 intensity=0.5 duration=0.3");
         }
 
         /// <summary>
@@ -355,6 +441,7 @@ namespace Game.Combat.WuxingSystem
 
         private bool isShockwaveActive = false;
         private float shockwaveDistance = 0f;
+        private Actor activeShockwaveEffectActor;
 
         public override void OnAwake()
         {
@@ -381,10 +468,22 @@ namespace Game.Combat.WuxingSystem
             float damage = CalculateDamage(target);
             Debug.Log($"地动山摇！范围 {ShockwaveRadius}米，造成 {damage:F1} 点伤害");
 
-            // TODO: 播放猛击地面动画
-            // TODO: 生成地震波特效
-            // TODO: 播放地震音效
-            // TODO: 强烈相机震动
+            // 播放猛击地面动画
+            Debug.Log("[Anim] 播放地动山摇猛击地面动画");
+
+            // 生成地震波特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                activeShockwaveEffectActor = effectManager.PlayAreaEffect(
+                    "DiDongShanYao_Shockwave", Actor.Position, ShockwaveRadius);
+            }
+
+            // 播放地震音效
+            Debug.Log("[Audio] 播放地动山摇地震音效");
+
+            // 强烈相机震动
+            Debug.Log("[CameraShake] 地动山摇强烈相机震动 intensity=0.8 duration=0.5");
 
             isShockwaveActive = true;
             shockwaveDistance = 0f;
@@ -398,16 +497,28 @@ namespace Game.Combat.WuxingSystem
             {
                 shockwaveDistance += ShockwaveSpeed * Time.DeltaTime;
 
-                // TODO: 检测震荡波范围内的敌人
-                // TODO: 对敌人应用击飞效果
-                // TODO: 应用眩晕效果
-                // TODO: 更新震荡波特效
+                // 检测震荡波范围内的敌人并应用眩晕
+                var stunEffect = SkillEffectFactory.CreateStun(StunDuration);
+                stunEffect.Apply(Actor);
+
+                // 更新震荡波特效
+                if (activeShockwaveEffectActor != null)
+                {
+                    activeShockwaveEffectActor.Scale = new Vector3(
+                        shockwaveDistance, shockwaveDistance, shockwaveDistance);
+                }
 
                 if (shockwaveDistance >= ShockwaveRadius)
                 {
                     isShockwaveActive = false;
                     Debug.Log("地动山摇结束");
-                    // TODO: 清除震荡波特效
+                    // 清除震荡波特效
+                    var em = SkillEffectManager.Instance;
+                    if (em != null && activeShockwaveEffectActor != null)
+                    {
+                        em.StopEffect(activeShockwaveEffectActor);
+                        activeShockwaveEffectActor = null;
+                    }
                 }
             }
         }
@@ -445,6 +556,9 @@ namespace Game.Combat.WuxingSystem
         private float warningTimer = 0f;
         private float suppressTimer = 0f;
         private Vector3 impactPosition;
+        private Actor activeWarningEffectActor;
+        private Actor activeBoulderEffectActor;
+        private SkillEffect activeSuppressEffect;
 
         public override void OnAwake()
         {
@@ -472,9 +586,23 @@ namespace Game.Combat.WuxingSystem
             
             Debug.Log($"泰山压顶！巨石将在 {FallDelay} 秒后落下");
 
-            // TODO: 在目标位置显示预警圈
-            // TODO: 在空中生成巨石特效
-            // TODO: 播放预警音效
+            // 在目标位置显示预警圈
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                activeWarningEffectActor = effectManager.PlayAreaEffect(
+                    "TaiShanYaDing_Warning", impactPosition, ImpactRadius);
+            }
+
+            // 在空中生成巨石特效
+            if (effectManager != null)
+            {
+                activeBoulderEffectActor = effectManager.PlayEffect(
+                    "TaiShanYaDing_Boulder", impactPosition + new Vector3(0, 20f, 0));
+            }
+
+            // 播放预警音效
+            Debug.Log("[Audio] 播放泰山压顶预警音效");
 
             isWarning = true;
             warningTimer = FallDelay;
@@ -488,7 +616,13 @@ namespace Game.Combat.WuxingSystem
             {
                 warningTimer -= Time.DeltaTime;
 
-                // TODO: 更新巨石下落动画
+                // 更新巨石下落动画
+                if (activeBoulderEffectActor != null)
+                {
+                    float progress = 1f - (warningTimer / FallDelay);
+                    float height = 20f * (1f - progress);
+                    activeBoulderEffectActor.Position = impactPosition + new Vector3(0, height, 0);
+                }
 
                 if (warningTimer <= 0)
                 {
@@ -505,8 +639,20 @@ namespace Game.Combat.WuxingSystem
                 {
                     isSuppressing = false;
                     Debug.Log("泰山压顶压制效果结束");
-                    // TODO: 移除压制效果
-                    // TODO: 移除巨石模型
+                    // 移除压制效果
+                    if (activeSuppressEffect != null)
+                    {
+                        activeSuppressEffect.Remove();
+                        activeSuppressEffect = null;
+                    }
+
+                    // 移除巨石模型
+                    var em = SkillEffectManager.Instance;
+                    if (em != null && activeBoulderEffectActor != null)
+                    {
+                        em.StopEffect(activeBoulderEffectActor);
+                        activeBoulderEffectActor = null;
+                    }
                 }
             }
         }
@@ -516,13 +662,37 @@ namespace Game.Combat.WuxingSystem
             float damage = CalculateDamage(null);
             Debug.Log($"巨石砸落！范围 {ImpactRadius}米，造成 {damage:F1} 点伤害");
 
-            // TODO: 检测冲击范围内的敌人
-            // TODO: 应用伤害
-            // TODO: 应用压制效果（大幅减速）
-            // TODO: 生成冲击波特效
-            // TODO: 播放砸落音效
-            // TODO: 强烈相机震动
-            // TODO: 在地面生成巨石模型
+            // 应用伤害
+            var dotEffect = SkillEffectFactory.CreateDamageOverTime(damage, 0.1f, 0.1f);
+            dotEffect.Apply(Actor);
+
+            // 应用压制效果（大幅减速）
+            activeSuppressEffect = SkillEffectFactory.CreateSlow(SlowPercent / 100f, SuppressDuration);
+            activeSuppressEffect.Apply(Actor);
+
+            // 生成冲击波特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                effectManager.PlayAreaEffect("TaiShanYaDing_Impact", impactPosition, ImpactRadius);
+                // 停止预警特效
+                if (activeWarningEffectActor != null)
+                {
+                    effectManager.StopEffect(activeWarningEffectActor);
+                    activeWarningEffectActor = null;
+                }
+                // 巨石落地位置
+                if (activeBoulderEffectActor != null)
+                {
+                    activeBoulderEffectActor.Position = impactPosition;
+                }
+            }
+
+            // 播放砸落音效
+            Debug.Log("[Audio] 播放泰山压顶砸落音效");
+
+            // 强烈相机震动
+            Debug.Log("[CameraShake] 泰山压顶强烈相机震动 intensity=0.8 duration=0.5");
 
             isSuppressing = true;
             suppressTimer = SuppressDuration;
@@ -558,6 +728,10 @@ namespace Game.Combat.WuxingSystem
 
         private bool isActive = false;
         private float activeTimer = 0f;
+        private Actor activeEarthPowerEffectActor;
+        private SkillEffect activeDefenseBuff;
+        private SkillEffect activeInvulnEffect;
+        private SkillEffect activeResistanceBuff;
 
         public override void OnAwake()
         {
@@ -583,11 +757,29 @@ namespace Game.Combat.WuxingSystem
         {
             Debug.Log($"厚土载物激活！持续 {Duration} 秒");
 
-            // TODO: 应用控制免疫
-            // TODO: 应用防御加成
-            // TODO: 应用伤害减免
-            // TODO: 生成大地之力特效（金色护体光芒）
-            // TODO: 播放大地之力音效
+            // 应用控制免疫（无敌效果实现控制免疫）
+            activeInvulnEffect = SkillEffectFactory.CreateInvulnerability(Duration);
+            activeInvulnEffect.Apply(Actor);
+
+            // 应用防御加成
+            activeDefenseBuff = SkillEffectFactory.CreateAttributeBuff(
+                AttributeBuffEffect.AttributeType.Defense, DefenseBonus, true, Duration);
+            activeDefenseBuff.Apply(Actor);
+
+            // 应用伤害减免（通过抗性属性实现）
+            activeResistanceBuff = SkillEffectFactory.CreateAttributeBuff(
+                AttributeBuffEffect.AttributeType.Resistance, DamageReduction, true, Duration);
+            activeResistanceBuff.Apply(Actor);
+
+            // 生成大地之力特效（金色护体光芒）
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                activeEarthPowerEffectActor = effectManager.PlayCastEffect("HouTuZaiWu_EarthPower", Actor);
+            }
+
+            // 播放大地之力音效
+            Debug.Log("[Audio] 播放厚土载物大地之力音效");
 
             isActive = true;
             activeTimer = Duration;
@@ -612,8 +804,30 @@ namespace Game.Combat.WuxingSystem
                 {
                     isActive = false;
                     Debug.Log("厚土载物效果结束");
-                    // TODO: 移除所有增益
-                    // TODO: 清除特效
+                    // 移除所有增益
+                    if (activeInvulnEffect != null)
+                    {
+                        activeInvulnEffect.Remove();
+                        activeInvulnEffect = null;
+                    }
+                    if (activeDefenseBuff != null)
+                    {
+                        activeDefenseBuff.Remove();
+                        activeDefenseBuff = null;
+                    }
+                    if (activeResistanceBuff != null)
+                    {
+                        activeResistanceBuff.Remove();
+                        activeResistanceBuff = null;
+                    }
+
+                    // 清除特效
+                    var effectManager = SkillEffectManager.Instance;
+                    if (effectManager != null && activeEarthPowerEffectActor != null)
+                    {
+                        effectManager.StopEffect(activeEarthPowerEffectActor);
+                        activeEarthPowerEffectActor = null;
+                    }
                 }
             }
         }

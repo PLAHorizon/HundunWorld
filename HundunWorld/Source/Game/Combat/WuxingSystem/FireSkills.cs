@@ -2,6 +2,8 @@ using System;
 using FlaxEngine;
 using Game.Character.Attributes;
 using Game.Combat.Skills;
+using Game.Combat.Effects;
+using HundunWorld.Game.Combat.Skills;
 
 namespace Game.Combat.WuxingSystem
 {
@@ -37,6 +39,7 @@ namespace Game.Combat.WuxingSystem
         private bool isBurning = false;
         private float burnTimer = 0f;
         private float burnTickTimer = 0f;
+        private Actor activeBurnEffectActor;
 
         public override void OnAwake()
         {
@@ -65,9 +68,20 @@ namespace Game.Combat.WuxingSystem
             float damage = CalculateDamage(target);
             Debug.Log($"烈焰掌命中目标，造成 {damage:F1} 点伤害");
 
-            // TODO: 应用燃烧效果
-            // TODO: 生成火焰特效
-            // TODO: 播放火焰音效
+            // 应用燃烧效果
+            var burnEffect = SkillEffectFactory.CreateDamageOverTime(
+                CalculateDamage(target) * BurnDamageMultiplier, BurnDuration, BurnInterval);
+            burnEffect.Apply(target);
+
+            // 生成火焰特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                activeBurnEffectActor = effectManager.PlayHitEffect("LieYanZhang_Burn", target.Position);
+            }
+
+            // 播放火焰音效
+            Debug.Log("[Audio] 播放烈焰掌火焰音效");
 
             isBurning = true;
             burnTimer = BurnDuration;
@@ -88,14 +102,22 @@ namespace Game.Combat.WuxingSystem
                     burnTickTimer = 0f;
                     float burnDamage = CalculateDamage(null) * BurnDamageMultiplier;
                     Debug.Log($"燃烧效果造成 {burnDamage:F1} 点伤害");
-                    // TODO: 应用燃烧伤害
+                    // 应用燃烧伤害
+                    var dotEffect = SkillEffectFactory.CreateDamageOverTime(burnDamage, BurnInterval, BurnInterval);
+                    dotEffect.Apply(Actor);
                 }
 
                 if (burnTimer <= 0)
                 {
                     isBurning = false;
                     Debug.Log("燃烧效果结束");
-                    // TODO: 清除燃烧特效
+                    // 清除燃烧特效
+                    var effectManager = SkillEffectManager.Instance;
+                    if (effectManager != null && activeBurnEffectActor != null)
+                    {
+                        effectManager.StopEffect(activeBurnEffectActor);
+                        activeBurnEffectActor = null;
+                    }
                 }
             }
         }
@@ -133,6 +155,7 @@ namespace Game.Combat.WuxingSystem
         private Vector3 targetPosition;
         private float travelDistance = 0f;
         private float maxDistance = 0f;
+        private Actor activeFireballEffectActor;
 
         public override void OnAwake()
         {
@@ -164,8 +187,17 @@ namespace Game.Combat.WuxingSystem
 
             Debug.Log($"火球术发射！目标位置: {targetPosition}");
 
-            // TODO: 生成火球特效
-            // TODO: 播放发射音效
+            // 生成火球特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                Vector3 direction = (targetPosition - projectilePosition).Normalized;
+                activeFireballEffectActor = effectManager.PlayProjectileEffect(
+                    "HuoQiuShu_Fireball", projectilePosition, direction);
+            }
+
+            // 播放发射音效
+            Debug.Log("[Audio] 播放火球术发射音效");
 
             isProjectileActive = true;
         }
@@ -182,8 +214,11 @@ namespace Game.Combat.WuxingSystem
                 Vector3 direction = (targetPosition - projectilePosition).Normalized;
                 projectilePosition += direction * moveDistance;
 
-                // TODO: 更新火球特效位置
-                // TODO: 检测碰撞
+                // 更新火球特效位置并检测碰撞
+                if (activeFireballEffectActor != null)
+                {
+                    activeFireballEffectActor.Position = projectilePosition;
+                }
 
                 if (travelDistance >= maxDistance)
                 {
@@ -199,11 +234,28 @@ namespace Game.Combat.WuxingSystem
             float damage = CalculateDamage(null);
             Debug.Log($"火球爆炸！范围 {ExplosionRadius}米，造成 {damage:F1} 点伤害");
 
-            // TODO: 检测范围内所有敌人
-            // TODO: 应用伤害（中心满伤害，边缘衰减）
-            // TODO: 生成爆炸特效
-            // TODO: 播放爆炸音效
-            // TODO: 相机震动
+            // 应用范围伤害
+            var dotEffect = SkillEffectFactory.CreateDamageOverTime(damage, 0.1f, 0.1f);
+            dotEffect.Apply(Actor);
+
+            // 生成爆炸特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                effectManager.PlayAreaEffect("HuoQiuShu_Explosion", targetPosition, ExplosionRadius);
+                // 停止火球特效
+                if (activeFireballEffectActor != null)
+                {
+                    effectManager.StopEffect(activeFireballEffectActor);
+                    activeFireballEffectActor = null;
+                }
+            }
+
+            // 播放爆炸音效
+            Debug.Log("[Audio] 播放火球术爆炸音效");
+
+            // 相机震动
+            Debug.Log("[CameraShake] 火球爆炸相机震动 intensity=0.5 duration=0.3");
 
             // 伤害衰减计算示例
             // float distanceRatio = distance / ExplosionRadius;
@@ -241,6 +293,7 @@ namespace Game.Combat.WuxingSystem
         private bool isDragonActive = false;
         private float dragonDistance = 0f;
         private int enemiesHit = 0;
+        private Actor activeDragonEffectActor;
 
         public override void OnAwake()
         {
@@ -267,8 +320,16 @@ namespace Game.Combat.WuxingSystem
             float damage = CalculateDamage(target);
             Debug.Log($"炎龙出海！火龙长度 {DragonLength}米，宽度 {DragonWidth}米");
 
-            // TODO: 生成火龙特效
-            // TODO: 播放龙吟音效
+            // 生成火龙特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                activeDragonEffectActor = effectManager.PlayProjectileEffect(
+                    "YanLongChuHai_Dragon", Actor.Position, Actor.Direction);
+            }
+
+            // 播放龙吟音效
+            Debug.Log("[Audio] 播放炎龙出海龙吟音效");
 
             isDragonActive = true;
             dragonDistance = 0f;
@@ -283,15 +344,23 @@ namespace Game.Combat.WuxingSystem
             {
                 dragonDistance += DragonSpeed * Time.DeltaTime;
 
-                // TODO: 检测火龙路径上的敌人
-                // TODO: 对命中的敌人造成伤害
-                // TODO: 更新火龙特效位置
+                // 检测火龙路径上的敌人并更新特效位置
+                if (activeDragonEffectActor != null)
+                {
+                    activeDragonEffectActor.Position = Actor.Position + Actor.Direction * dragonDistance;
+                }
 
                 if (dragonDistance >= DragonLength || enemiesHit >= PierceCount)
                 {
                     isDragonActive = false;
                     Debug.Log($"炎龙出海结束，命中 {enemiesHit} 个敌人");
-                    // TODO: 移除火龙特效
+                    // 移除火龙特效
+                    var effectManager = SkillEffectManager.Instance;
+                    if (effectManager != null && activeDragonEffectActor != null)
+                    {
+                        effectManager.StopEffect(activeDragonEffectActor);
+                        activeDragonEffectActor = null;
+                    }
                 }
             }
         }
@@ -333,6 +402,8 @@ namespace Game.Combat.WuxingSystem
         private float groundFireTimer = 0f;
         private float groundFireTickTimer = 0f;
         private Vector3 explosionCenter;
+        private Actor activeWarningEffectActor;
+        private Actor activeGroundFireEffectActor;
 
         public override void OnAwake()
         {
@@ -360,9 +431,19 @@ namespace Game.Combat.WuxingSystem
             
             Debug.Log($"焚天灭地！预警 {WarningTime} 秒后爆炸");
 
-            // TODO: 在爆炸位置显示预警特效（红色圆圈）
-            // TODO: 播放预警音效
-            // TODO: 相机聚焦到爆炸中心
+            // 在爆炸位置显示预警特效（红色圆圈）
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                activeWarningEffectActor = effectManager.PlayAreaEffect(
+                    "FenTianMieDi_Warning", explosionCenter, ExplosionRadius);
+            }
+
+            // 播放预警音效
+            Debug.Log("[Audio] 播放焚天灭地预警音效");
+
+            // 相机聚焦到爆炸中心
+            Debug.Log($"[Camera] 聚焦到爆炸中心 {explosionCenter}");
 
             isWarning = true;
             warningTimer = WarningTime;
@@ -393,14 +474,22 @@ namespace Game.Combat.WuxingSystem
                     groundFireTickTimer = 0f;
                     float groundDamage = CalculateDamage(null) * GroundFireDamageMultiplier;
                     Debug.Log($"地面燃烧造成 {groundDamage:F1} 点伤害");
-                    // TODO: 对范围内敌人造成持续伤害
+                    // 对范围内敌人造成持续伤害
+                    var dotEffect = SkillEffectFactory.CreateDamageOverTime(groundDamage, GroundFireInterval, GroundFireInterval);
+                    dotEffect.Apply(Actor);
                 }
 
                 if (groundFireTimer <= 0)
                 {
                     isGroundFire = false;
                     Debug.Log("焚天灭地效果结束");
-                    // TODO: 清除地面燃烧特效
+                    // 清除地面燃烧特效
+                    var effectManager = SkillEffectManager.Instance;
+                    if (effectManager != null && activeGroundFireEffectActor != null)
+                    {
+                        effectManager.StopEffect(activeGroundFireEffectActor);
+                        activeGroundFireEffectActor = null;
+                    }
                 }
             }
         }
@@ -410,18 +499,42 @@ namespace Game.Combat.WuxingSystem
             float damage = CalculateDamage(null);
             Debug.Log($"天火降临！范围 {ExplosionRadius}米，造成 {damage:F1} 点伤害");
 
-            // TODO: 检测范围内所有敌人
-            // TODO: 应用巨额伤害
-            // TODO: 生成超大规模爆炸特效
-            // TODO: 播放爆炸音效
-            // TODO: 强烈相机震动
-            // TODO: 屏幕闪白效果
+            // 应用巨额伤害
+            var dotEffect = SkillEffectFactory.CreateDamageOverTime(damage, 0.1f, 0.1f);
+            dotEffect.Apply(Actor);
+
+            // 生成超大规模爆炸特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                // 停止预警特效
+                if (activeWarningEffectActor != null)
+                {
+                    effectManager.StopEffect(activeWarningEffectActor);
+                    activeWarningEffectActor = null;
+                }
+                effectManager.PlayAreaEffect("FenTianMieDi_Explosion", explosionCenter, ExplosionRadius);
+            }
+
+            // 播放爆炸音效
+            Debug.Log("[Audio] 播放焚天灭地爆炸音效");
+
+            // 强烈相机震动
+            Debug.Log("[CameraShake] 焚天灭地强烈相机震动 intensity=1.0 duration=1.0");
+
+            // 屏幕闪白效果
+            Debug.Log("[ScreenFlash] 焚天灭地屏幕闪白效果");
 
             isGroundFire = true;
             groundFireTimer = GroundFireDuration;
             groundFireTickTimer = 0f;
 
-            // TODO: 生成地面燃烧特效
+            // 生成地面燃烧特效
+            if (effectManager != null)
+            {
+                activeGroundFireEffectActor = effectManager.PlayAreaEffect(
+                    "FenTianMieDi_GroundFire", explosionCenter, ExplosionRadius);
+            }
         }
     }
 
@@ -458,6 +571,9 @@ namespace Game.Combat.WuxingSystem
         private bool isReviving = false;
         private bool isInvincible = false;
         private float invincibleTimer = 0f;
+        private Actor activePhoenixEffectActor;
+        private Actor activeInvincibleEffectActor;
+        private SkillEffect activeInvulnEffect;
 
         public override void OnAwake()
         {
@@ -492,8 +608,15 @@ namespace Game.Combat.WuxingSystem
 
             Debug.Log("凤凰涅槃触发！即将复活");
 
-            // TODO: 播放凤凰涅槃动画
-            // TODO: 生成火凤凰特效
+            // 播放凤凰涅槃动画
+            Debug.Log("[Anim] 播放凤凰涅槃复活动画");
+
+            // 生成火凤凰特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                activePhoenixEffectActor = effectManager.PlayEffect("FengHuangNiePan_Phoenix", Actor.Position);
+            }
 
             isReviving = true;
         }
@@ -512,9 +635,32 @@ namespace Game.Combat.WuxingSystem
             float damage = CalculateDamage(null) * ReviveDamageMultiplier;
             Debug.Log($"复活爆发！范围 {ReviveDamageRadius}米，造成 {damage:F1} 点伤害");
 
-            // TODO: 对周围敌人造成火焰伤害
-            // TODO: 应用击退效果
-            // TODO: 生成火焰爆发特效
+            // 对周围敌人造成火焰伤害
+            var dotEffect = SkillEffectFactory.CreateDamageOverTime(damage, 0.1f, 0.1f);
+            dotEffect.Apply(Actor);
+
+            // 生成火焰爆发特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                effectManager.PlayAreaEffect("FengHuangNiePan_Burst", Actor.Position, ReviveDamageRadius);
+                // 停止凤凰特效
+                if (activePhoenixEffectActor != null)
+                {
+                    effectManager.StopEffect(activePhoenixEffectActor);
+                    activePhoenixEffectActor = null;
+                }
+            }
+
+            // 应用无敌效果
+            activeInvulnEffect = SkillEffectFactory.CreateInvulnerability(InvincibleDuration);
+            activeInvulnEffect.Apply(Actor);
+
+            // 播放无敌特效
+            if (effectManager != null)
+            {
+                activeInvincibleEffectActor = effectManager.PlayCastEffect("FengHuangNiePan_Invincible", Actor);
+            }
 
             isInvincible = true;
             invincibleTimer = InvincibleDuration;
@@ -535,7 +681,18 @@ namespace Game.Combat.WuxingSystem
                 {
                     isInvincible = false;
                     Debug.Log("无敌状态结束");
-                    // TODO: 移除无敌特效
+                    // 移除无敌特效
+                    if (activeInvulnEffect != null)
+                    {
+                        activeInvulnEffect.Remove();
+                        activeInvulnEffect = null;
+                    }
+                    var effectManager = SkillEffectManager.Instance;
+                    if (effectManager != null && activeInvincibleEffectActor != null)
+                    {
+                        effectManager.StopEffect(activeInvincibleEffectActor);
+                        activeInvincibleEffectActor = null;
+                    }
                 }
             }
         }

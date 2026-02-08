@@ -565,7 +565,25 @@ namespace Horizon.Game.Message.Enums
         /// 实体销毁
         /// </summary>
         [Description("实体销毁")]
-        EntityDespawn = 1333
+        EntityDespawn = 1333,
+
+        /// <summary>
+        /// Buff/效果同步
+        /// </summary>
+        [Description("效果同步")]
+        EffectSync = 1334,
+
+        /// <summary>
+        /// AOI视野更新
+        /// </summary>
+        [Description("AOI更新")]
+        AoiUpdate = 1335,
+
+        /// <summary>
+        /// 移动速度验证
+        /// </summary>
+        [Description("移动速度验证")]
+        MovementSpeedValidation = 1336
         #endregion
     }
 }

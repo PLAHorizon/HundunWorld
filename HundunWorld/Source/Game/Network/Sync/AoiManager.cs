@@ -108,6 +108,19 @@ namespace HundunWorld.Game.Network.Sync
         [Tooltip("是否显示调试可视化")]
         public bool ShowDebugVisualization = false;
 
+        [Header("移动速度验证")]
+        [Tooltip("是否启用移动速度验证（防外挂）")]
+        public bool EnableSpeedValidation = true;
+
+        [Tooltip("基础最大移动速度（米/秒）")]
+        public float BaseMaxSpeed = 15f;
+
+        [Tooltip("速度容差比例（允许超过最大速度的比例，防止网络波动误判）")]
+        public float SpeedTolerance = 1.3f;
+
+        [Tooltip("连续违规次数阈值")]
+        public int ViolationThreshold = 5;
+
         #endregion
 
         #region 私有字段
@@ -142,6 +155,10 @@ namespace HundunWorld.Game.Network.Sync
         private int _enterEventCount = 0;
         private int _exitEventCount = 0;
 
+        // 速度验证
+        private float _lastSpeedCheckTime;
+        private readonly Dictionary<ulong, SpeedValidationData> _speedValidation = new();
+
         #endregion
 
         #region 事件定义
@@ -160,6 +177,26 @@ namespace HundunWorld.Game.Network.Sync
         /// AOI更新事件
         /// </summary>
         public event Action<int, int> AoiUpdated;  // (进入数量, 离开数量)
+
+        /// <summary>
+        /// 移动速度违规事件
+        /// </summary>
+        public event Action<ulong, float, float, int> SpeedViolationDetected;  // (entityId, measuredSpeed, maxAllowed, violationCount)
+
+        #endregion
+
+        #region 速度验证数据
+
+        /// <summary>
+        /// 速度验证跟踪数据
+        /// </summary>
+        public class SpeedValidationData
+        {
+            public Vector3 LastPosition;
+            public float LastCheckTime;
+            public int ViolationCount;
+            public float MaxRecordedSpeed;
+        }
 
         #endregion
 
@@ -717,6 +754,107 @@ namespace HundunWorld.Game.Network.Sync
                     DebugDraw.DrawLine(corner4, corner1, gridColor, 0.5f);
                 }
             }
+        }
+
+        #endregion
+
+        #region 移动速度验证
+
+        /// <summary>
+        /// 验证实体移动速度，检测异常移动（防外挂）
+        /// </summary>
+        /// <param name="entityId">实体ID</param>
+        /// <param name="currentPosition">当前位置</param>
+        /// <param name="speedMultiplier">速度加成系数（来自buff等）</param>
+        /// <returns>是否通过验证</returns>
+        public bool ValidateMovementSpeed(ulong entityId, Vector3 currentPosition, float speedMultiplier = 1.0f)
+        {
+            if (!EnableSpeedValidation) return true;
+
+            float currentTime = Time.GameTime;
+
+            if (!_speedValidation.TryGetValue(entityId, out var data))
+            {
+                // 首次记录
+                data = new SpeedValidationData
+                {
+                    LastPosition = currentPosition,
+                    LastCheckTime = currentTime,
+                    ViolationCount = 0,
+                    MaxRecordedSpeed = 0f
+                };
+                _speedValidation[entityId] = data;
+                return true;
+            }
+
+            float deltaTime = currentTime - data.LastCheckTime;
+            if (deltaTime <= 0.01f)
+            {
+                // 时间间隔太小，跳过
+                return true;
+            }
+
+            float distance = Vector3.Distance(currentPosition, data.LastPosition);
+            float measuredSpeed = distance / deltaTime;
+            float maxAllowedSpeed = BaseMaxSpeed * speedMultiplier * SpeedTolerance;
+
+            // 更新记录
+            data.LastPosition = currentPosition;
+            data.LastCheckTime = currentTime;
+
+            if (measuredSpeed > data.MaxRecordedSpeed)
+            {
+                data.MaxRecordedSpeed = measuredSpeed;
+            }
+
+            if (measuredSpeed > maxAllowedSpeed)
+            {
+                data.ViolationCount++;
+
+                if (EnableLogging)
+                {
+                    Debug.LogWarning($"[AOI] 速度违规: 实体 {entityId}, 测量速度 {measuredSpeed:F1}m/s, 最大允许 {maxAllowedSpeed:F1}m/s, 违规次数 {data.ViolationCount}");
+                }
+
+                if (data.ViolationCount >= ViolationThreshold)
+                {
+                    SpeedViolationDetected?.Invoke(entityId, measuredSpeed, maxAllowedSpeed, data.ViolationCount);
+                }
+
+                return false;
+            }
+
+            // 通过验证后逐步减少违规计数
+            if (data.ViolationCount > 0)
+            {
+                data.ViolationCount = Math.Max(0, data.ViolationCount - 1);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 获取实体的速度验证数据
+        /// </summary>
+        public SpeedValidationData GetSpeedValidation(ulong entityId)
+        {
+            return _speedValidation.TryGetValue(entityId, out var data) ? data : null;
+        }
+
+        /// <summary>
+        /// 重置实体的速度验证数据（如传送后）
+        /// </summary>
+        public void ResetSpeedValidation(ulong entityId)
+        {
+            _speedValidation.Remove(entityId);
+        }
+
+        /// <summary>
+        /// 清除所有速度验证数据
+        /// </summary>
+        public void ClearAllSpeedValidation()
+        {
+            _speedValidation.Clear();
         }
 
         #endregion

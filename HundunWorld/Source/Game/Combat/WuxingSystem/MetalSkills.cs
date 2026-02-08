@@ -1,6 +1,8 @@
 using FlaxEngine;
 using Game.Character.Attributes;
 using Game.Combat.Skills;
+using Game.Combat.Effects;
+using HundunWorld.Game.Combat.Skills;
 
 namespace Game.Combat.WuxingSystem
 {
@@ -17,6 +19,8 @@ namespace Game.Combat.WuxingSystem
         [Tooltip("破甲效果数值（降低防御百分比）")]
         public float ArmorBreakPercent = 15f;
 
+        private Actor activeHitEffectActor;
+
         protected override void ExecuteSkill(Actor target)
         {
             if (target == null) return;
@@ -26,9 +30,20 @@ namespace Game.Combat.WuxingSystem
             
             Debug.Log($"金刚掌命中目标，造成 {damage:F1} 点伤害");
 
-            // TODO: 应用破甲效果
-            // TODO: 播放打击特效
-            // TODO: 播放音效
+            // 应用破甲效果
+            var armorBreak = SkillEffectFactory.CreateAttributeBuff(
+                AttributeBuffEffect.AttributeType.Defense, -ArmorBreakPercent, true, ArmorBreakDuration);
+            armorBreak.Apply(target);
+
+            // 播放打击特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                activeHitEffectActor = effectManager.PlayHitEffect("JinGangZhang_Hit", target.Position);
+            }
+
+            // 播放音效
+            Debug.Log("[Audio] 播放金刚掌打击音效");
         }
     }
 
@@ -50,6 +65,7 @@ namespace Game.Combat.WuxingSystem
 
         private int currentComboHit = 0;
         private float comboTimer = 0f;
+        private Actor activeComboEffectActor;
 
         protected override void ExecuteSkill(Actor target)
         {
@@ -84,8 +100,16 @@ namespace Game.Combat.WuxingSystem
             float damage = CalculateDamage(null) * ComboHitMultiplier;
             Debug.Log($"金蛇剑法 第{currentComboHit}击，伤害: {damage:F1}");
 
-            // TODO: 播放连击动画
-            // TODO: 生成剑气特效
+            // 播放连击动画
+            Debug.Log($"[Anim] 播放金蛇剑法第{currentComboHit}击动画");
+
+            // 生成剑气特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                activeComboEffectActor = effectManager.PlayEffect(
+                    "JinSheSwordArt_Hit", Actor.Position + Actor.Direction * 2f);
+            }
         }
     }
 
@@ -104,6 +128,8 @@ namespace Game.Combat.WuxingSystem
 
         private float activeTimer = 0f;
         private bool isActive = false;
+        private Actor activeShieldEffectActor;
+        private SkillEffect activeDefenseBuff;
 
         protected override void ExecuteSkill(Actor target)
         {
@@ -112,8 +138,17 @@ namespace Game.Combat.WuxingSystem
             
             Debug.Log($"金钟罩激活，{Duration}秒内减少{DamageReduction}%伤害");
 
-            // TODO: 播放金钟罩特效
-            // TODO: 应用Buff效果
+            // 播放金钟罩特效
+            var effectManager = SkillEffectManager.Instance;
+            if (effectManager != null)
+            {
+                activeShieldEffectActor = effectManager.PlayCastEffect("JinZhongZhao_Shield", Actor);
+            }
+
+            // 应用Buff效果
+            activeDefenseBuff = SkillEffectFactory.CreateAttributeBuff(
+                AttributeBuffEffect.AttributeType.Defense, DamageReduction, true, Duration);
+            activeDefenseBuff.Apply(Actor);
         }
 
         public override void OnUpdate()
@@ -128,7 +163,19 @@ namespace Game.Combat.WuxingSystem
                 {
                     isActive = false;
                     Debug.Log("金钟罩效果结束");
-                    // TODO: 移除Buff效果
+                    // 移除Buff效果
+                    if (activeDefenseBuff != null)
+                    {
+                        activeDefenseBuff.Remove();
+                        activeDefenseBuff = null;
+                    }
+                    // 停止护盾特效
+                    var effectManager = SkillEffectManager.Instance;
+                    if (effectManager != null && activeShieldEffectActor != null)
+                    {
+                        effectManager.StopEffect(activeShieldEffectActor);
+                        activeShieldEffectActor = null;
+                    }
                 }
             }
         }
