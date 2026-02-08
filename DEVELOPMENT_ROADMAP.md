@@ -1,9 +1,9 @@
 # 混沌世界项目 - 后续开发路线图
 
 **文档日期**: 2026年2月8日  
-**最后更新**: 2026年2月8日（Phase 3.1五行深化/3.3五行炼制/战斗日志实现后更新）  
+**最后更新**: 2026年2月8日（交易/市场系统测试/五行共鸣技能/首杀活动通知实现后更新）  
 **基于**: 完整源代码审查  
-**文档版本**: v1.6
+**文档版本**: v1.7
 
 ---
 
@@ -29,7 +29,7 @@
 | ECS框架 | ✅ 85% | Arch.Core引擎、14个系统组件 |
 | UI框架 | ✅ 80% | 状态管理、响应式布局、性能监控 |
 | 网络通信 | ✅ 75% | TCP客户端、消息处理器、协议适配 |
-| 战斗系统 | ⚠️ 85% | 五行相克、伤害计算、效果系统、Energy分离、闪避格挡、技能冷却、五行属性加成、五行协同、能量恢复、GCD、战斗日志 |
+| 战斗系统 | ⚠️ 90% | 五行相克、伤害计算、效果系统、Energy分离、闪避格挡、技能冷却、五行属性加成、五行协同、能量恢复、GCD、战斗日志、五行共鸣技能触发 |
 | 社交系统 | ⚠️ 75% | SocialGrain好友管理、GuildGrain公会管理、TeamGrain组队系统、消息频道系统 |
 | 游戏系统 | ⚠️ 85% | 背包/装备/技能/合成系统基础实现、技能树依赖验证、合成品质系统、五行炼制系统 |
 | 区域管理 | ⚠️ 60% | AreaGrain场景实例管理、跨服传送、副本入口 |
@@ -37,7 +37,7 @@
 | 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善） |
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
 | 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
-| 测试基础设施（Phase 1.2） | ✅ 90% | 382个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit） |
+| 测试基础设施（Phase 1.2） | ✅ 90% | 452个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket） |
 | CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置 |
 
 ### 缺失模块
@@ -52,7 +52,7 @@
 | 服务器状态管理 | 🟡 基础实现完成 | P2 |
 | 区域管理系统 | 🟡 基础实现完成 | P2 |
 | 活动系统 | 🟡 基础实现完成 | P2 |
-| 交易/市场系统 | 🔴 未开始 | P3 |
+| 交易/市场系统 | 🟡 基础实现完成 | P2 |
 
 ---
 
@@ -108,7 +108,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 #### 测试项目
 
-**已存在**: `Horizon.Game.Gateway.Tests/`（12个测试文件，382个测试用例）
+**已存在**: `Horizon.Game.Gateway.Tests/`（13个测试文件，452个测试用例）
 
 | 测试文件 | 测试数量 | 覆盖内容 |
 |---------|---------|---------|
@@ -122,6 +122,9 @@ coverlet 6.0.4 — 代码覆盖率
 | GameServerStateTests.cs | 15 | 服务器状态、在线人数、维护管理、负载监控 |
 | AreaActivityStateTests.cs | 48 | 区域状态、场景实例、传送、活动管理、参与记录、循环依赖检测、合成品质 |
 | WuxingAlchemyCombatLogTests.cs | 65 | 五行属性加成、五行协同、能量恢复、GCD、战斗日志、炼丹系统 |
+| DamageAggregationReplayTests.cs | 45 | 伤害统计聚合、战斗回放、组队五行匹配 |
+| MessageFilterRateLimitTests.cs | 20 | 消息速率限制、敏感词过滤 |
+| TradeMarketStateTests.cs | 70 | 交易状态、市场状态、五行共鸣技能、首杀活动通知 |
 
 #### 测试覆盖率现状
 
@@ -253,7 +256,7 @@ coverlet 6.0.4 — 代码覆盖率
 ✅ 五行连携系统（GetWuxingSynergyMultiplier）
   - 相生关系加成（金生水、水生木、木生火、火生土、土生金）
   ✅ 组队五行匹配加成
-  □ 五行共鸣技能触发
+  ✅ 五行共鸣技能触发（CalculateWuxingResonance三级共鸣系统）
 ```
 
 ### 3.2 社交系统 Grain 实现（2周）
@@ -338,7 +341,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 ✅ 消息速率限制
 ✅ 敏感词过滤
-□ 首杀/活动通知
+✅ 首杀/活动通知（NotificationHelper通知构建器）
 ```
 
 ### 3.5 GameGrain完善（1周）
@@ -533,18 +536,19 @@ coverlet 6.0.4 — 代码覆盖率
                ✅ Phase 1.1: 代码缺陷修复完成
                ✅ Phase 1.2: 测试基础设施建设完成（382个测试）
                ✅ Phase 1.3: CI/CD流程建立完成
-               ✅ Phase 3.1: 战斗系统增强（闪避/格挡/暴击/冷却/五行属性加成/五行协同/能量恢复/GCD/战斗日志）
+               ✅ Phase 3.1: 战斗系统增强（闪避/格挡/暴击/冷却/五行属性加成/五行协同/能量恢复/GCD/战斗日志/五行共鸣技能触发）
                ✅ Phase 3.2: 社交系统基础实现（SocialGrain/GuildGrain/TeamGrain）
                ✅ Phase 3.3: 游戏系统Grain实现（背包/装备/技能树/合成品质/五行炼制系统）
-               ✅ Phase 3.4: 消息频道系统实现（频道/路由/广播）
+               ✅ Phase 3.4: 消息频道系统实现（频道/路由/广播/首杀活动通知）
                ✅ Phase 3.5: GameServerGrain/AreaGrain/ActivityGrain实现
                📍 当前位置（2026-02-08）
                ↓
 2026年3月下旬  ┌─ Phase 2: 监控可观测性
                │
 2026年4-5月    ├─ Phase 3: 服务端核心功能完善（剩余项）
-               │    ├─ ✅ 3.1 战斗系统完善（伤害统计聚合、战斗回放、组队五行匹配）
-               │    └─ ✅ 3.4 消息系统增强（速率限制、敏感词过滤）
+               │    ├─ ✅ 3.1 战斗系统完善（伤害统计聚合、战斗回放、组队五行匹配、五行共鸣技能触发）
+               │    ├─ ✅ 3.4 消息系统增强（速率限制、敏感词过滤、首杀/活动通知）
+               │    └─ ✅ 3.6 交易/市场系统（TradeGrain/MarketGrain）
                │
 2026年5-6月    ├─ Phase 4: 客户端功能完善
                │    ├─ 4.1 战斗特效与动画

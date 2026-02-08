@@ -424,6 +424,97 @@ namespace Horizon.Orleans.Grains
 
             return bonus;
         }
+
+        /// <summary>
+        /// 五行共鸣技能触发
+        /// 当组队成员五行元素满足特定条件时，触发共鸣技能
+        /// 规则:
+        /// - 至少2个不同五行元素
+        /// - 相生对(金生水(1→3)、水生木(3→2)、木生火(2→4)、火生土(4→5)、土生金(5→1))越多，共鸣等级越高
+        /// - 等级1(基础共鸣): 2+种元素, 1-2对相生 → 10%伤害/5%防御
+        /// - 等级2(高级共鸣): 3+种元素, 3-4对相生 → 20%伤害/10%防御
+        /// - 等级3(混沌共鸣): 5种元素齐全(5对相生) → 35%伤害/20%防御
+        /// </summary>
+        public static WuxingResonanceResult CalculateWuxingResonance(List<int> teamElements)
+        {
+            var result = new WuxingResonanceResult
+            {
+                ResonanceLevel = 0,
+                Description = "无共鸣",
+                DamageBonus = 0f,
+                DefenseBonus = 0f
+            };
+
+            if (teamElements == null || teamElements.Count == 0)
+                return result;
+
+            var uniqueElements = new HashSet<int>(teamElements.Where(e => e >= 1 && e <= 5));
+            if (uniqueElements.Count < 2)
+                return result;
+
+            result.ResonanceElements = uniqueElements.ToList();
+
+            // Count synergy pairs
+            var synergyPairs = new (int, int)[]
+            {
+                (1, 3), // 金生水
+                (3, 2), // 水生木
+                (2, 4), // 木生火
+                (4, 5), // 火生土
+                (5, 1), // 土生金
+            };
+
+            int synergyCount = 0;
+            foreach (var (a, b) in synergyPairs)
+            {
+                if (uniqueElements.Contains(a) && uniqueElements.Contains(b))
+                    synergyCount++;
+            }
+
+            if (uniqueElements.Count == 5)
+            {
+                // Level 3: 混沌共鸣 - all 5 elements present
+                result.ResonanceLevel = 3;
+                result.Description = "混沌共鸣";
+                result.DamageBonus = 0.35f;
+                result.DefenseBonus = 0.20f;
+            }
+            else if (uniqueElements.Count >= 3 && synergyCount >= 3)
+            {
+                // Level 2: 高级共鸣
+                result.ResonanceLevel = 2;
+                result.Description = "高级共鸣";
+                result.DamageBonus = 0.20f;
+                result.DefenseBonus = 0.10f;
+            }
+            else
+            {
+                // Level 1: 基础共鸣 - at least 2 unique elements
+                result.ResonanceLevel = 1;
+                result.Description = "基础共鸣";
+                result.DamageBonus = 0.10f;
+                result.DefenseBonus = 0.05f;
+            }
+
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// 五行共鸣结果
+    /// </summary>
+    public class WuxingResonanceResult
+    {
+        /// <summary>共鸣等级 (0=无, 1=基础, 2=高级, 3=混沌)</summary>
+        public int ResonanceLevel { get; set; }
+        /// <summary>共鸣效果描述</summary>
+        public string Description { get; set; } = "";
+        /// <summary>额外伤害加成百分比 (0.0-1.0)</summary>
+        public float DamageBonus { get; set; }
+        /// <summary>额外防御加成百分比 (0.0-1.0)</summary>
+        public float DefenseBonus { get; set; }
+        /// <summary>触发共鸣的元素列表</summary>
+        public List<int> ResonanceElements { get; set; } = new();
     }
 
     /// <summary>
