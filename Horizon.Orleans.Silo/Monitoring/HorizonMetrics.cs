@@ -110,6 +110,29 @@ namespace Horizon.Orleans.Silo.Monitoring
             unit: "ms",
             description: "数据库查询耗时");
 
+        // ========== 战斗系统指标 ==========
+
+        /// <summary>攻击处理总数</summary>
+        public static readonly Counter<long> CombatAttacksTotal = Meter.CreateCounter<long>(
+            "hundunworld.silo.combat.attacks.total",
+            description: "攻击处理总数");
+
+        /// <summary>技能施放总数</summary>
+        public static readonly Counter<long> CombatSkillCastsTotal = Meter.CreateCounter<long>(
+            "hundunworld.silo.combat.skill_casts.total",
+            description: "技能施放总数");
+
+        /// <summary>角色死亡总数</summary>
+        public static readonly Counter<long> CombatDeathsTotal = Meter.CreateCounter<long>(
+            "hundunworld.silo.combat.deaths.total",
+            description: "角色死亡总数");
+
+        /// <summary>战斗处理耗时（毫秒）</summary>
+        public static readonly Histogram<double> CombatProcessingDuration = Meter.CreateHistogram<double>(
+            "hundunworld.silo.combat.processing_duration.ms",
+            unit: "ms",
+            description: "战斗处理耗时");
+
         // ========== 分布式追踪辅助方法 ==========
 
         /// <summary>
