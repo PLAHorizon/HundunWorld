@@ -34,6 +34,7 @@ using Horizon.Orleans.Silo.Filters;
 using ClientConnectionOptions = Horizon.Orleans.Silo.Services.ClientConnectionOptions;
 using Horizon.Orleans.Silo.Tasks;
 using Horizon.Game.Message.Network;
+using Horizon.Orleans.Silo.Monitoring;
 
 namespace Horizon.Orleans.Silo
 {
@@ -216,6 +217,10 @@ namespace Horizon.Orleans.Silo
                         
                         // 注册启动报告服务
                         services.AddHostedService<StartupReportService>();
+
+                        // 注册OpenTelemetry监控（APM + Prometheus指标导出）
+                        var prometheusPort = context.Configuration.GetValue<int>("Monitoring:PrometheusPort", 9464);
+                        services.AddHorizonOpenTelemetry(prometheusPort: prometheusPort);
                     })
                     .ConfigureLogging(logging =>
                     {

@@ -1,0 +1,156 @@
+# 混沌世界(HundunWorld) Prometheus告警规则
+# 参考: https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/
+
+groups:
+  # ========== 服务可用性告警 ==========
+  - name: hundunworld_availability
+    rules:
+      - alert: SiloInstanceDown
+        expr: up{job="hundunworld-silo"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Orleans Silo实例宕机"
+          description: "Silo实例 {{ $labels.instance }} 已停止响应超过1分钟。"
+
+      - alert: GatewayInstanceDown
+        expr: up{job="hundunworld-gateway"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "游戏网关实例宕机"
+          description: "网关实例 {{ $labels.instance }} 已停止响应超过1分钟。"
+
+  # ========== Grain性能告警 ==========
+  - name: hundunworld_grain_performance
+    rules:
+      - alert: GrainCallLatencyHigh
+        expr: histogram_quantile(0.95, rate(hundunworld_silo_grain_call_duration_ms_bucket[5m])) > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Grain调用延迟过高"
+          description: "P95 Grain调用延迟超过1秒: {{ $value }}ms"
+
+      - alert: GrainCallErrorRateHigh
+        expr: rate(hundunworld_silo_grain_call_errors_total[5m]) / rate(hundunworld_silo_grain_calls_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Grain调用错误率过高"
+          description: "Grain调用错误率超过5%: {{ $value | humanizePercentage }}"
+
+      - alert: GrainCallErrorRateCritical
+        expr: rate(hundunworld_silo_grain_call_errors_total[5m]) / rate(hundunworld_silo_grain_calls_total[5m]) > 0.15
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Grain调用错误率严重过高"
+          description: "Grain调用错误率超过15%: {{ $value | humanizePercentage }}"
+
+  # ========== 认证安全告警 ==========
+  - name: hundunworld_authentication
+    rules:
+      - alert: LoginFailureRateHigh
+        expr: rate(hundunworld_silo_auth_login_failures_total[5m]) / rate(hundunworld_silo_auth_login_attempts_total[5m]) > 0.3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "登录失败率过高"
+          description: "登录失败率超过30%: {{ $value | humanizePercentage }}, 可能存在暴力破解攻击。"
+
+      - alert: LoginFailureSpike
+        expr: rate(hundunworld_silo_auth_login_failures_total[1m]) > 10
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "登录失败次数激增"
+          description: "每分钟登录失败次数超过10次: {{ $value }}次/分钟。可能存在暴力破解攻击。"
+
+  # ========== 网关连接告警 ==========
+  - name: hundunworld_gateway_connections
+    rules:
+      - alert: GatewayConnectionsHigh
+        expr: hundunworld_gateway_connections_active > 5000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "网关连接数过高"
+          description: "网关 {{ $labels.instance }} 活跃连接数: {{ $value }}, 超过5000阈值。"
+
+      - alert: GatewayConnectionErrorRateHigh
+        expr: rate(hundunworld_gateway_connections_errors_total[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "网关连接错误率过高"
+          description: "网关 {{ $labels.instance }} 连接错误率: {{ $value }}次/秒"
+
+      - alert: MessageProcessingLatencyHigh
+        expr: histogram_quantile(0.95, rate(hundunworld_gateway_messages_processing_duration_ms_bucket[5m])) > 500
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "消息处理延迟过高"
+          description: "P95消息处理延迟超过500ms: {{ $value }}ms"
+
+  # ========== .NET运行时告警 ==========
+  - name: hundunworld_runtime
+    rules:
+      - alert: HighMemoryUsage
+        expr: process_runtime_dotnet_gc_heap_size_bytes > 1073741824
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "内存使用过高"
+          description: "实例 {{ $labels.instance }} GC堆大小超过1GB: {{ $value | humanize1024 }}B"
+
+      - alert: HighGCPressure
+        expr: rate(process_runtime_dotnet_gc_collections_count_total[5m]) > 10
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "GC压力过大"
+          description: "实例 {{ $labels.instance }} 每分钟GC次数超过10次: {{ $value }}次/秒"
+
+      - alert: ThreadPoolStarvation
+        expr: process_runtime_dotnet_thread_pool_queue_length > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "线程池排队过长"
+          description: "实例 {{ $labels.instance }} 线程池排队长度: {{ $value }}"
+
+  # ========== 任务监控告警 ==========
+  - name: hundunworld_tasks
+    rules:
+      - alert: TaskFailure
+        expr: increase(hundunworld_silo_tasks_failed_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "后台任务失败"
+          description: "检测到后台任务失败。失败次数: {{ $value }}"
+
+      - alert: NoRunningTasks
+        expr: hundunworld_silo_tasks_running == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "无运行中的任务"
+          description: "Silo实例 {{ $labels.instance }} 没有运行中的后台任务。"
