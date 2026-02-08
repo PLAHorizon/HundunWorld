@@ -26,7 +26,7 @@
 | 安全加固（Phase 0） | ✅ 100% | PBKDF2哈希、环境变量、.gitignore |
 | 会话管理 | ✅ 100% | Redis持久化、24小时TTL、分布式支持 |
 | 认证系统 | ✅ 90% | PassportGrain登录/注册/改密/注销 |
-| ECS框架 | ✅ 85% | Arch.Core引擎、14个系统组件 |
+| ECS框架 | ✅ 90% | Arch.Core引擎、15个系统组件、NetworkEntityRegistry实体注册表 |
 | UI框架 | ✅ 80% | 状态管理、响应式布局、性能监控 |
 | 网络通信 | ✅ 75% | TCP客户端、消息处理器、协议适配 |
 | 战斗系统 | ⚠️ 90% | 五行相克、伤害计算、效果系统、Energy分离、闪避格挡、技能冷却、五行属性加成、五行协同、能量恢复、GCD、战斗日志、五行共鸣技能触发 |
@@ -37,7 +37,7 @@
 | 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善）|
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
 | 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
-| 测试基础设施（Phase 1.2） | ✅ 90% | 985个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion/EventConsumerVersioning/PassportGrain/CharacterGrainState/RankingSystem/MailSystem/AchievementSystem） |
+| 测试基础设施（Phase 1.2） | ✅ 90% | 1133个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion/EventConsumerVersioning/PassportGrain/CharacterGrainState/RankingSystem/MailSystem/AchievementSystem/EcsEntityManagement） |
 | CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置（CI + CodeQL安全扫描 + 代码覆盖率） |
 | 监控可观测性（Phase 2） | ✅ 100% | OpenTelemetry指标、Grafana仪表板、Prometheus告警、JSON结构化日志、CorrelationId分布式追踪、Seq日志聚合、Alertmanager告警通知 |
 
@@ -109,7 +109,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 #### 测试项目
 
-**已存在**: `Horizon.Game.Gateway.Tests/`（24个测试文件，985个测试用例）
+**已存在**: `Horizon.Game.Gateway.Tests/`（28个测试文件，1133个测试用例）
 
 | 测试文件 | 测试数量 | 覆盖内容 |
 |---------|---------|---------|
@@ -137,6 +137,7 @@ coverlet 6.0.4 — 代码覆盖率
 | RankingSystemTests.cs | 21 | 排行榜状态、排名条目、排名排序、Top N截取、排行榜类型枚举 |
 | MailSystemTests.cs | 24 | 邮箱状态、邮件数据模型、邮件收发、附件领取、过期清理、容量限制 |
 | AchievementSystemTests.cs | 20 | 成就状态、成就数据模型、进度更新、自动解锁、分类筛选、成就点数统计 |
+| EcsEntityManagementTests.cs | 43 | 网络实体类型、实体生成/销毁消息、消息类型验证、实体ID一致性、工作流测试 |
 
 #### 测试覆盖率现状
 
@@ -466,7 +467,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 ### 4.2 网络同步完善（1周）
 
-**已完成**: 移动同步输入集成、技能冷却同步
+**已完成**: 移动同步输入集成、技能冷却同步、ECS实体注册与网络ID映射
 
 ```
 ■ 移动同步（已完成基础）
@@ -482,6 +483,16 @@ coverlet 6.0.4 — 代码覆盖率
   ✅ 批量冷却同步（SkillCooldownQueryResponse）
   ✅ 技能施放确认（已有预测验证框架）
   □ 技能打断同步
+
+■ ECS实体注册与网络同步（已完成）
+  ✅ NetworkEntityRegistry双向映射（网络ID↔ECS Entity）
+  ✅ NetworkEntityIdComponent实体组件
+  ✅ ECSManager集成（CreateNetworkEntity/DestroyEntity自动注册）
+  ✅ EntitySynchronizationManager集成（注册/注销同步至注册表）
+  ✅ SkillSystem实体查找（通过注册表解析targetId）
+  ✅ AttackResponseHandler/DamageResponseHandler实体查找
+  ✅ EntitySpawnMessage/EntityDespawnMessage网络消息DTO
+  ✅ 43个ECS实体管理单元测试
 
 □ AOI系统完善
   - AoiManager优化

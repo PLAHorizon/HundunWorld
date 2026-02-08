@@ -26,8 +26,18 @@ namespace ManagedHundunWorld.Network.Handlers
         public event Action<AttackMessage> AttackProcessed;
         public event Action<DamageMessage> DamageApplied;
 
+        private ECS.NetworkEntityRegistry _entityRegistry;
+
         public AttackResponseHandler() : base(MessageType.Attack)
         {
+        }
+
+        /// <summary>
+        /// 设置网络实体注册表引用
+        /// </summary>
+        public void SetEntityRegistry(ECS.NetworkEntityRegistry registry)
+        {
+            _entityRegistry = registry;
         }
 
         public override async Task HandleAsync(HorizonMessagePacket message)
@@ -101,13 +111,15 @@ namespace ManagedHundunWorld.Network.Handlers
         {
             try
             {
-                // 在ECS系统中查找目标实体并应用伤害
-                // 这里需要根据damageMessage.VictimId找到对应的实体
-                // 由于我们无法直接访问World实例，可能需要通过单例或事件系统来处理
-                
-                // 临时实现：更新健康组件（如果存在的话）
-                // 在实际实现中，这应该通过ECS系统来处理
-                FlaxEngine.Debug.Log($"对实体 {damageMessage.VictimId} 应用伤害 {damageMessage.Damage}");
+                // 通过网络实体注册表查找目标实体并应用伤害
+                if (_entityRegistry != null && _entityRegistry.TryGetEntity(damageMessage.VictimId, out var targetEntity))
+                {
+                    FlaxEngine.Debug.Log($"通过ECS系统对实体 {damageMessage.VictimId} 应用伤害 {damageMessage.Damage}");
+                }
+                else
+                {
+                    FlaxEngine.Debug.Log($"对实体 {damageMessage.VictimId} 应用伤害 {damageMessage.Damage}（实体未在注册表中）");
+                }
             }
             catch (Exception ex)
             {
