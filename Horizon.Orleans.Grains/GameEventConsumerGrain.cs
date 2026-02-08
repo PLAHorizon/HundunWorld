@@ -39,6 +39,8 @@ namespace Horizon.Orleans.Grains
         private StreamSubscriptionHandle<GameEvent>? _subscription;
 
         private const int MaxRecentEvents = 100;
+        private const int StatePersistBatchSize = 10;
+        private int _pendingWriteCount;
 
         public GameEventConsumerGrain(
             ILogger<GameEventConsumerGrain> logger,
@@ -109,8 +111,8 @@ namespace Horizon.Orleans.Grains
                 _logger.LogDebug("收到游戏事件: {EventType}, EventId={EventId}, CharacterId={CharacterId}",
                     gameEvent.EventType, gameEvent.EventId, gameEvent.CharacterId);
 
-                // 根据事件类型执行不同的异步处理逻辑
-                await ProcessEventAsync(gameEvent);
+                // 根据事件类型执行不同的处理逻辑
+                ProcessEvent(gameEvent);
 
                 // 更新统计
                 UpdateStats(gameEvent, success: true);
@@ -125,13 +127,19 @@ namespace Horizon.Orleans.Grains
                 UpdateStats(gameEvent, success: false);
             }
 
-            await _consumerState.WriteStateAsync();
+            // 批量持久化：每处理StatePersistBatchSize个事件写入一次状态，减少I/O
+            _pendingWriteCount++;
+            if (_pendingWriteCount >= StatePersistBatchSize)
+            {
+                await _consumerState.WriteStateAsync();
+                _pendingWriteCount = 0;
+            }
         }
 
         /// <summary>
-        /// 处理不同类型的事件 — 非关键路径异步处理
+        /// 处理不同类型的事件 — 非关键路径异步处理（日志、统计）
         /// </summary>
-        private Task ProcessEventAsync(GameEvent gameEvent)
+        private void ProcessEvent(GameEvent gameEvent)
         {
             switch (gameEvent.EventType)
             {
@@ -182,8 +190,6 @@ namespace Horizon.Orleans.Grains
                         gameEvent.EventType, gameEvent.EventId);
                     break;
             }
-
-            return Task.CompletedTask;
         }
 
         /// <summary>
@@ -253,6 +259,13 @@ namespace Horizon.Orleans.Grains
 
         public override async Task OnDeactivateAsync(DeactivationReason reason, CancellationToken cancellationToken)
         {
+            // 持久化未写入的挂起状态
+            if (_pendingWriteCount > 0)
+            {
+                await _consumerState.WriteStateAsync();
+                _pendingWriteCount = 0;
+            }
+
             if (_subscription != null)
             {
                 await _subscription.UnsubscribeAsync();
