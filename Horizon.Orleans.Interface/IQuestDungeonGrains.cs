@@ -63,7 +63,7 @@ namespace Horizon.Orleans.Interface
         /// </summary>
         /// <param name="questId">任务ID</param>
         /// <returns>任务详情</returns>
-        Task<QuestData> GetQuestAsync(int questId);
+        Task<QuestData?> GetQuestAsync(int questId);
 
         /// <summary>
         /// 添加任务目标

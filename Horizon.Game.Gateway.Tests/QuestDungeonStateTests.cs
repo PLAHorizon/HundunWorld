@@ -1043,11 +1043,14 @@ namespace Horizon.Game.Gateway.Tests
         [Fact]
         public void Dungeon_ClearTime_CalculatedCorrectly()
         {
-            var startTime = DateTime.UtcNow.AddMinutes(-15);
+            var elapsedMinutes = 15;
+            var startTime = DateTime.UtcNow.AddMinutes(-elapsedMinutes);
             var clearTimeSeconds = (DateTime.UtcNow - startTime).TotalSeconds;
 
-            Assert.True(clearTimeSeconds >= 14 * 60); // At least 14 minutes (accounting for test execution time)
-            Assert.True(clearTimeSeconds <= 16 * 60); // At most 16 minutes
+            // Clear time should be approximately 15 minutes (900 seconds)
+            // Use a generous tolerance to avoid flakiness in CI
+            Assert.True(clearTimeSeconds >= 899);
+            Assert.True(clearTimeSeconds <= 901);
         }
 
         #endregion

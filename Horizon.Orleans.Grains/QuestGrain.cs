@@ -357,7 +357,7 @@ namespace Horizon.Orleans.Grains
             }
         }
 
-        public Task<QuestData> GetQuestAsync(int questId)
+        public Task<QuestData?> GetQuestAsync(int questId)
         {
             try
             {
@@ -371,7 +371,7 @@ namespace Horizon.Orleans.Grains
                     return Task.FromResult(completedQuest);
                 }
 
-                return Task.FromResult<QuestData>(null!);
+                return Task.FromResult<QuestData?>(null);
             }
             catch (Exception ex)
             {
