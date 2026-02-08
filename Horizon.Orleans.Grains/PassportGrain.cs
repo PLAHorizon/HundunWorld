@@ -484,18 +484,18 @@ namespace Horizon.Orleans.Grains
 
             _logger.LogInformation("开始批量生成通行证ID: Count={Count}", count);
 
+            var passportIds = new List<PassportIds>(count);
             for (int i = 0; i < count; i++)
             {
-                var passportId = Guid.NewGuid().ToString("N");
-                await _contextPassportIds.AddAsync(new PassportIds
+                passportIds.Add(new PassportIds
                 {
-                    Id = passportId,
+                    Id = Guid.NewGuid().ToString("N"),
                     CreatingTime = DateTime.UtcNow,
                     IsValid = true
                 });
             }
 
-            await _contextPassportIds.DbCurrent.SaveChangesAsync();
+            await _contextPassportIds.AddRangeAsync(passportIds);
             _logger.LogInformation("批量生成通行证ID完成: Count={Count}", count);
         }
 
