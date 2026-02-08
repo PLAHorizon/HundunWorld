@@ -142,6 +142,8 @@ namespace Horizon.Orleans.Grains
     /// </summary>
     public class MessageChannelGrain : Grain, IMessageChannelGrain
     {
+        private const int MaxMessageContentLength = 2000;
+
         private readonly ILogger<MessageChannelGrain> _logger;
         private readonly IPersistentState<MessageChannelState> _channelState;
 
@@ -176,6 +178,12 @@ namespace Horizon.Orleans.Grains
                 if (string.IsNullOrEmpty(message.Content))
                 {
                     _logger.LogWarning("消息内容为空");
+                    return false;
+                }
+
+                if (message.Content.Length > MaxMessageContentLength)
+                {
+                    _logger.LogWarning("消息内容过长: Length={Length}", message.Content.Length);
                     return false;
                 }
 
@@ -280,6 +288,8 @@ namespace Horizon.Orleans.Grains
     /// </summary>
     public class GuildChannelGrain : Grain, IGuildChannelGrain
     {
+        private const int MaxMessageContentLength = 2000;
+
         private readonly ILogger<GuildChannelGrain> _logger;
         private readonly IPersistentState<GroupChannelState> _channelState;
 
@@ -314,6 +324,12 @@ namespace Horizon.Orleans.Grains
                 if (string.IsNullOrEmpty(message.Content))
                 {
                     _logger.LogWarning("消息内容为空");
+                    return false;
+                }
+
+                if (message.Content.Length > MaxMessageContentLength)
+                {
+                    _logger.LogWarning("消息内容过长: Length={Length}", message.Content.Length);
                     return false;
                 }
 
@@ -414,6 +430,8 @@ namespace Horizon.Orleans.Grains
     /// </summary>
     public class TeamChannelGrain : Grain, ITeamChannelGrain
     {
+        private const int MaxMessageContentLength = 2000;
+
         private readonly ILogger<TeamChannelGrain> _logger;
         private readonly IPersistentState<GroupChannelState> _channelState;
 
@@ -448,6 +466,12 @@ namespace Horizon.Orleans.Grains
                 if (string.IsNullOrEmpty(message.Content))
                 {
                     _logger.LogWarning("消息内容为空");
+                    return false;
+                }
+
+                if (message.Content.Length > MaxMessageContentLength)
+                {
+                    _logger.LogWarning("消息内容过长: Length={Length}", message.Content.Length);
                     return false;
                 }
 
@@ -548,6 +572,8 @@ namespace Horizon.Orleans.Grains
     /// </summary>
     public class SystemChannelGrain : Grain, ISystemChannelGrain
     {
+        private const int MaxMessageContentLength = 2000;
+
         private readonly ILogger<SystemChannelGrain> _logger;
         private readonly IPersistentState<SystemChannelState> _channelState;
 
@@ -581,6 +607,12 @@ namespace Horizon.Orleans.Grains
                 if (string.IsNullOrEmpty(message.Content))
                 {
                     _logger.LogWarning("系统消息内容为空");
+                    return false;
+                }
+
+                if (message.Content.Length > MaxMessageContentLength)
+                {
+                    _logger.LogWarning("系统消息内容过长: Length={Length}", message.Content.Length);
                     return false;
                 }
 

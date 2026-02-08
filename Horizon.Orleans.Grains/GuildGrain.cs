@@ -148,6 +148,9 @@ namespace Horizon.Orleans.Grains
     /// </summary>
     public class GuildGrain : Grain, IGuildGrain
     {
+        private const int MaxGuildNameLength = 32;
+        private const int MaxApplicationMessageLength = 200;
+
         private readonly ILogger<GuildGrain> _logger;
         private readonly IPersistentState<GuildState> _guildState;
 
@@ -193,7 +196,13 @@ namespace Horizon.Orleans.Grains
                     return false;
                 }
 
-                state.GuildName = guildName;
+                if (guildName.Length > MaxGuildNameLength)
+                {
+                    _logger.LogWarning("公会名称过长: Length={Length}", guildName.Length);
+                    return false;
+                }
+
+                state.GuildName = guildName.Trim();
                 state.LeaderId = creatorId;
                 state.IsCreated = true;
                 state.Level = 1;
@@ -254,11 +263,17 @@ namespace Horizon.Orleans.Grains
                     return false;
                 }
 
+                var applicationMessage = message ?? "";
+                if (applicationMessage.Length > MaxApplicationMessageLength)
+                {
+                    applicationMessage = applicationMessage[..MaxApplicationMessageLength];
+                }
+
                 var application = new GuildApplication
                 {
                     ApplicationId = Guid.NewGuid(),
                     PlayerId = playerId,
-                    Message = message ?? "",
+                    Message = applicationMessage,
                     Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
                 };
 

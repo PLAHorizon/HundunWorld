@@ -97,6 +97,11 @@ namespace Horizon.Orleans.Grains
     /// </summary>
     public class SocialGrain : Grain, ISocialGrain
     {
+        private const int MaxChatMessageLength = 2000;
+        private const int MaxFriendRequestMessageLength = 200;
+        private const int MaxBatchChannels = 20;
+        private const int MaxBatchCountPerChannel = 100;
+
         private readonly ILogger<SocialGrain> _logger;
         private readonly IPersistentState<SocialState> _socialState;
 
@@ -140,6 +145,12 @@ namespace Horizon.Orleans.Grains
                     return false;
                 }
 
+                if (message.Content.Length > MaxChatMessageLength)
+                {
+                    _logger.LogWarning("聊天消息内容过长: Length={Length}", message.Content.Length);
+                    return false;
+                }
+
                 if (string.IsNullOrEmpty(message.MessageId))
                 {
                     message.MessageId = Guid.NewGuid().ToString();
@@ -180,6 +191,9 @@ namespace Horizon.Orleans.Grains
         {
             try
             {
+                if (count <= 0) count = 50;
+                if (count > MaxBatchCountPerChannel) count = MaxBatchCountPerChannel;
+
                 if (!_socialState.State.ChatHistory.TryGetValue(channelType, out var history))
                 {
                     return Task.FromResult(new List<ChatMessage>());
@@ -236,9 +250,15 @@ namespace Horizon.Orleans.Grains
         {
             try
             {
+                if (countPerChannel <= 0) countPerChannel = 20;
+                if (countPerChannel > MaxBatchCountPerChannel) countPerChannel = MaxBatchCountPerChannel;
+
                 var result = new Dictionary<ChatChannel, List<ChatMessage>>();
 
-                foreach (var channel in channels)
+                // 限制批量查询的频道数量
+                var channelsToQuery = channels.Take(MaxBatchChannels);
+
+                foreach (var channel in channelsToQuery)
                 {
                     var channelKey = (int)channel;
                     if (_socialState.State.ChatHistory.TryGetValue(channelKey, out var history))
@@ -366,12 +386,18 @@ namespace Horizon.Orleans.Grains
                     return false;
                 }
 
+                var requestMessage = message ?? "";
+                if (requestMessage.Length > MaxFriendRequestMessageLength)
+                {
+                    requestMessage = requestMessage[..MaxFriendRequestMessageLength];
+                }
+
                 var request = new FriendRequest
                 {
                     RequestId = Guid.NewGuid(),
                     RequesterId = this.GetPrimaryKey(),
                     TargetId = targetId,
-                    Message = message ?? "",
+                    Message = requestMessage,
                     Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
                 };
 
