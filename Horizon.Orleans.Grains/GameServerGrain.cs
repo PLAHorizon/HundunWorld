@@ -40,7 +40,7 @@ namespace Horizon.Orleans.Grains
         public int Status { get; set; } = (int)ServerStatus.Normal;
 
         /// <summary>
-        /// 在线人数
+        /// 在线人数（已弃用，使用OnlinePlayers.Count代替）
         /// </summary>
         [MemoryPackOrder(3)]
         [Id(3)]
@@ -160,11 +160,12 @@ namespace Horizon.Orleans.Grains
                     return false;
                 }
 
-                _serverState.State.OnlineCount = onlineCount;
+                // OnlineCount kept in sync with OnlinePlayers.Count as authoritative source
+                _serverState.State.OnlineCount = _serverState.State.OnlinePlayers.Count;
                 _serverState.State.LastUpdateTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 await _serverState.WriteStateAsync();
 
-                _logger.LogDebug("更新在线人数: OnlineCount={OnlineCount}", onlineCount);
+                _logger.LogDebug("同步在线人数: OnlineCount={OnlineCount}", _serverState.State.OnlinePlayers.Count);
                 return true;
             }
             catch (Exception ex)

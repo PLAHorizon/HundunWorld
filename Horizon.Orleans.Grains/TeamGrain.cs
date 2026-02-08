@@ -364,7 +364,7 @@ namespace Horizon.Orleans.Grains
                     {
                         CharacterId = GuidToUInt64(m.MemberId),
                         IsLeader = m.IsLeader,
-                        IsOnline = true
+                        IsOnline = true // TODO: 后续通过查询玩家Grain获取真实在线状态
                     }).ToList()
                 };
 
@@ -387,7 +387,7 @@ namespace Horizon.Orleans.Grains
                 {
                     CharacterId = GuidToUInt64(m.MemberId),
                     IsLeader = m.IsLeader,
-                    IsOnline = true
+                    IsOnline = true // TODO: 后续通过查询玩家Grain获取真实在线状态
                 }).ToList();
 
                 return Task.FromResult(members);
