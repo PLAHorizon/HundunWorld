@@ -233,5 +233,50 @@ namespace Horizon.Orleans.Interface
         Task<bool> BroadcastInRangeAsync(Vector3 center, float range, object message);
     }
 
-  
+    /// <summary>
+    /// 组队系统Grain接口 - 负责队伍创建、加入、退出、队长转移
+    /// </summary>
+    public interface ITeamGrain : IGrainWithGuidKey
+    {
+        /// <summary>
+        /// 创建队伍
+        /// </summary>
+        Task<bool> CreateTeamAsync(Guid leaderId, string teamName, string teamGoal);
+
+        /// <summary>
+        /// 加入队伍
+        /// </summary>
+        Task<bool> JoinTeamAsync(Guid playerId);
+
+        /// <summary>
+        /// 离开队伍
+        /// </summary>
+        Task<bool> LeaveTeamAsync(Guid memberId);
+
+        /// <summary>
+        /// 踢出队员
+        /// </summary>
+        Task<bool> KickMemberAsync(Guid operatorId, Guid targetId);
+
+        /// <summary>
+        /// 转移队长
+        /// </summary>
+        Task<bool> TransferLeaderAsync(Guid currentLeaderId, Guid newLeaderId);
+
+        /// <summary>
+        /// 获取队伍信息
+        /// </summary>
+        Task<TeamInfo> GetTeamInfoAsync();
+
+        /// <summary>
+        /// 获取队伍成员列表
+        /// </summary>
+        Task<List<TeamMemberInfo>> GetMembersAsync();
+
+        /// <summary>
+        /// 解散队伍
+        /// </summary>
+        Task<bool> DisbandTeamAsync(Guid leaderId);
+    }
+
 
