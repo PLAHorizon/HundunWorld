@@ -111,7 +111,11 @@ namespace Horizon.Game.Message.Enums
         Poison = 5,       // 毒素伤害
         Holy = 6,         // 神圣伤害
         Dark = 7,         // 暗黑伤害
-        True = 8          // 真实伤害（无视防御）
+        True = 8,         // 真实伤害（无视防御）
+        Magical = 9,      // 法术伤害
+        Healing = 10,     // 治疗
+        Shadow = 11,      // 暗影伤害
+        Nature = 12       // 自然伤害
     }
 
     /// <summary>

@@ -419,6 +419,30 @@ namespace Horizon.Game.Message.Enums
         /// 防御/格挡 技能
         /// </summary>
         Toggle,
+        /// <summary>
+        /// 主动攻击技能
+        /// </summary>
+        ActiveAttack,
+        /// <summary>
+        /// 被动强化技能
+        /// </summary>
+        PassiveEnhancement,
+        /// <summary>
+        /// 控制技能
+        /// </summary>
+        Control,
+        /// <summary>
+        /// 位移技能
+        /// </summary>
+        Dash,
+        /// <summary>
+        /// 辅助技能
+        /// </summary>
+        Support,
+        /// <summary>
+        /// 终结技
+        /// </summary>
+        Ultimate,
     }
 
     /// <summary>

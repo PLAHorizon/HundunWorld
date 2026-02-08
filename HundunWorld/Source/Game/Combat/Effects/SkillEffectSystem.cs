@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using HundunWorld.Game.ECS.Components;
 using HundunWorld.Game.Character;
+using Horizon.Game.Message.Network;
 
 namespace HundunWorld.Game.Combat.Effects
 {
@@ -448,18 +449,6 @@ namespace HundunWorld.Game.Combat.Effects
         public int MaxStacks { get; set; }
         public bool IsPercent { get; set; }
         public float TickInterval { get; set; } // 周期性效果的时间间隔（秒）
-    }
-
-    /// <summary>
-    /// 效果类型
-    /// </summary>
-    public enum EffectType
-    {
-        Buff,       // 增益效果
-        Debuff,     // 减益效果
-        Control,    // 控制效果
-        DoT,        // 持续伤害
-        HoT         // 持续治疗
     }
 
     /// <summary>

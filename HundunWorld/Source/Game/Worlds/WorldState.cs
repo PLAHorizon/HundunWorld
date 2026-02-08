@@ -2,19 +2,10 @@ using Arch.Core;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using Horizon.Game.Message.Enums;
 
 namespace HundunWorld.Game.Worlds
 {
-    /// <summary>
-    /// 世界事件类型枚举
-    /// </summary>
-    public enum WorldEventType
-    {
-        EntityAdded,
-        EntityRemoved,
-        EntityUpdated
-    }
-
     /// <summary>
     /// 世界状态类，表示游戏世界的整体状态
     /// </summary>

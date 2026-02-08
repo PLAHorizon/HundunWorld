@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using FlaxEngine;
+using Horizon.Game.Message.Enums;
 
 namespace Game.Combat.Effects
 {
@@ -214,17 +215,6 @@ namespace Game.Combat.Effects
             public float Duration { get; set; }
             public bool IsCritical { get; set; }
             public float Scale { get; set; }
-        }
-
-        /// <summary>
-        /// 伤害类型枚举
-        /// </summary>
-        public enum DamageType
-        {
-            Physical,    // 物理伤害
-            Magical,     // 法术伤害
-            True,        // 真实伤害
-            Healing      // 治疗
         }
     }
 }

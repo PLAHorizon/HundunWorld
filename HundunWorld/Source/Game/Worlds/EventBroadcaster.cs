@@ -1,4 +1,5 @@
 using Horizon.Game.Message.Network;
+using Horizon.Game.Message.Enums;
 using HundunWorld.Game.Network;
 using System;
 using System.Collections.Generic;

@@ -9,7 +9,15 @@ namespace Horizon.Game.Message.Network
         Debuff,
         DamageOverTime,
         HealOverTime,
-        Control
+        Control,
+        /// <summary>
+        /// 持续伤害（简写）
+        /// </summary>
+        DoT,
+        /// <summary>
+        /// 持续治疗（简写）
+        /// </summary>
+        HoT
     }
 
     /// <summary>

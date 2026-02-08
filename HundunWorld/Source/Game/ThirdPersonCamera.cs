@@ -2,6 +2,7 @@ using FlaxEngine;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Horizon.Game.Message.Network;
 
 namespace HundunWorld.Game
 {
@@ -207,27 +208,6 @@ namespace HundunWorld.Game
         
         /// <summary>未知/默认</summary>
         Unknown
-    }
-    
-    /// <summary>
-    /// 天气类型枚举
-    /// </summary>
-    public enum WeatherType
-    {
-        /// <summary>晴天</summary>
-        Clear,
-        
-        /// <summary>雨天</summary>
-        Rain,
-        
-        /// <summary>雾天</summary>
-        Fog,
-        
-        /// <summary>雪天</summary>
-        Snow,
-        
-        /// <summary>沙尘暴</summary>
-        Sandstorm
     }
     
     /// <summary>
