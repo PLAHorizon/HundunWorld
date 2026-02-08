@@ -30,6 +30,8 @@ namespace HundunWorld.Game.ECS.Components
 
     /// <summary>
     /// 网络实体类型
+    /// Note: 此枚举在共享消息库 (Horizon.Game.Message.Network.NetworkEntityType) 中也有定义，
+    /// 因为Flax客户端使用独立的构建系统，无法直接引用共享库。两处定义需保持同步。
     /// </summary>
     public enum NetworkEntityType
     {

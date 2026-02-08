@@ -730,7 +730,9 @@ namespace Horizon.Game.Message.Network
     #region 实体同步消息
 
     /// <summary>
-    /// 网络实体类型（服务端与客户端共享）
+    /// 网络实体类型
+    /// Note: 此枚举在Flax客户端 (HundunWorld.Game.ECS.Components.NetworkEntityType) 中也有定义，
+    /// 因为客户端使用独立的构建系统，无法直接引用此共享库。两处定义需保持同步。
     /// </summary>
     public enum NetworkEntityType
     {
