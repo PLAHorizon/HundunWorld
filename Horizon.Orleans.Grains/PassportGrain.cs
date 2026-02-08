@@ -393,8 +393,8 @@ namespace Horizon.Orleans.Grains
                         return null;
                     }
 
-                    // 生成随机密码并创建通行证
-                    var randomPassword = Guid.NewGuid().ToString("N")[..16];
+                    // 生成随机密码并创建通行证（使用完整GUID确保足够熵值）
+                    var randomPassword = Guid.NewGuid().ToString("N");
                     var (passwordHash, passwordSalt) = SecurePasswordHasher.HashPassword(randomPassword);
 
                     passport = await _dataContext.AddAsync(new Passport
@@ -438,7 +438,7 @@ namespace Horizon.Orleans.Grains
                         Email = loginDto.Email ?? "",
                         Name = loginDto.PassportId ?? "",
                         PassportType = PassportType.Normal,
-                        NickName = loginDto.PassportId ?? $"WxUser_{passport.Id[..8]}",
+                        NickName = loginDto.PassportId ?? $"WxUser_{(passport.Id.Length >= 8 ? passport.Id[..8] : passport.Id)}",
                         Status = UserStatsEnum.Normal
                     });
 

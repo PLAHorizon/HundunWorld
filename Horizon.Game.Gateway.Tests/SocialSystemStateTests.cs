@@ -683,7 +683,7 @@ namespace Horizon.Game.Gateway.Tests
         }
 
         [Fact]
-        public void SocialState_DuplicateFriendAdd_DoesNotDuplicate()
+        public void SocialState_DuplicateFriendAdd_OverwritesExisting()
         {
             var state = new SocialState();
             var friendGuid = Guid.NewGuid();
@@ -696,19 +696,22 @@ namespace Horizon.Game.Gateway.Tests
                 LastLoginTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
             };
 
-            // ContainsKey check should prevent duplicate
-            if (!state.Friends.ContainsKey(friendGuid))
-            {
-                state.Friends[friendGuid] = friendInfo1;
-            }
+            state.Friends[friendGuid] = friendInfo1;
 
-            // Try to add again - should not add
-            if (!state.Friends.ContainsKey(friendGuid))
+            // Adding the same key again overwrites in Dictionary
+            var friendInfo2 = new FriendInfo
             {
-                state.Friends[friendGuid] = friendInfo1;
-            }
+                FriendId = BitConverter.ToUInt64(friendGuid.ToByteArray(), 0),
+                IsOnline = true,
+                Intimacy = 10,
+                LastLoginTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+            };
+
+            state.Friends[friendGuid] = friendInfo2;
 
             Assert.Single(state.Friends);
+            Assert.True(state.Friends[friendGuid].IsOnline);
+            Assert.Equal(10, state.Friends[friendGuid].Intimacy);
         }
 
         [Fact]

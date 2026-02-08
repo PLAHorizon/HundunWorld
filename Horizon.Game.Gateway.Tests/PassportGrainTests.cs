@@ -941,7 +941,7 @@ namespace Horizon.Game.Gateway.Tests
         #region WxAuthentication Tests - 微信认证流程
 
         [Fact]
-        public void WxLoginDto_CodeIsRequired_EmptyStringIsTreatedAsProvided()
+        public void WxLoginDto_CodeCanBeEmptyString()
         {
             var dto = new WxLoginDto { Code = "" };
             Assert.NotNull(dto.Code);
