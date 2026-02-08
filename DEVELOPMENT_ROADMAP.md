@@ -434,7 +434,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 ---
 
-## 🟢 第四阶段：客户端功能完善（建议4-6周）
+## 🟡 第四阶段：客户端功能完善（建议4-6周）
 
 ### 4.1 战斗特效与动画（2周）
 
@@ -454,27 +454,34 @@ coverlet 6.0.4 — 代码覆盖率
   - 受击/死亡动画
   - 技能蓄力动画
 
-□ 战斗反馈系统
-  - 伤害数字弹出（DamageNumberSystem已有框架）
-  - 暴击特效
-  - 屏幕震动（CameraShakeSystem已有框架）
-  - 击杀特写
+■ 战斗反馈系统（已完成基础）
+  ✅ 伤害数字弹出（DamageNumberSystem单例+3D渲染）
+  ✅ 特效管理器单例模式（SkillEffectManager.Instance）
+  ✅ 伤害数字系统单例模式（DamageNumberSystem.Instance）
+  ✅ 网络消息处理器修复（使用单例替代Scene.FindScript）
+  □ 暴击特效
+  □ 屏幕震动（CameraShakeSystem已有框架）
+  □ 击杀特写
 ```
 
 ### 4.2 网络同步完善（1周）
 
-**现有TODO**: `TODO: 使用网络系统发送移动数据`
+**已完成**: 移动同步输入集成、技能冷却同步
 
 ```
-□ 移动同步
-  - 客户端预测+服务端验证
-  - 位置插值和外推
-  - 移动速度校验（防外挂）
+■ 移动同步（已完成基础）
+  ✅ 客户端输入集成（GetMovementInput使用Flax Input API）
+  ✅ 网络消息发送（SendMovementUpdate使用MoveRequest）
+  ✅ 客户端预测+服务端验证（已有完整框架）
+  ✅ 位置插值和外推（已有完整框架）
+  □ 移动速度校验（防外挂）
 
-□ 技能同步
-  - SkillSyncHandler完善
-  - 技能施放确认
-  - 技能打断同步
+■ 技能同步（已完成基础）
+  ✅ SkillSyncHandler冷却同步实现
+  ✅ 冷却计时器管理（自动倒计时+过期清理）
+  ✅ 批量冷却同步（SkillCooldownQueryResponse）
+  ✅ 技能施放确认（已有预测验证框架）
+  □ 技能打断同步
 
 □ AOI系统完善
   - AoiManager优化
@@ -484,9 +491,15 @@ coverlet 6.0.4 — 代码覆盖率
 
 ### 4.3 UI系统完善（2周）
 
-**现有**: 60+文件的完整UI框架
+**已完成**: 面板切换系统
 
 ```
+■ 面板管理系统（已完成）
+  ✅ 面板切换逻辑（TogglePanel开关切换）
+  ✅ 面板互斥管理（同时只显示一个面板）
+  ✅ 面板创建框架（标题栏+关闭按钮+内容区域）
+  ✅ 五个面板入口（背包/角色/技能/任务/设置）
+
 □ 背包UI完善
   - 物品拖拽（InventoryUI已有框架）
   - 物品筛选和排序
@@ -524,6 +537,21 @@ coverlet 6.0.4 — 代码覆盖率
   - 小地图渲染
   - 传送点管理
   - 任务标记显示
+```
+
+### 4.5 战斗系统集成（已完成基础）
+
+```
+■ 能量系统集成
+  ✅ ICharacterAttributeManager扩展（GetCurrentEnergy/ConsumeEnergy）
+  ✅ CharacterAttributeManager能量管理实现
+  ✅ CombatSystemManager资源消耗集成
+  ✅ 资源检查与冷却验证
+
+■ 战斗逻辑完善
+  ✅ 死亡事件系统（EntityDied事件）
+  ✅ 五行连招追踪（GetPreviousSkill + 技能缓存）
+  ✅ 技能注册系统（RegisterSkill缓存）
 ```
 
 ---
