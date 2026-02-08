@@ -37,7 +37,7 @@
 | 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善）|
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
 | 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
-| 测试基础设施（Phase 1.2） | ✅ 90% | 1133个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion/EventConsumerVersioning/PassportGrain/CharacterGrainState/RankingSystem/MailSystem/AchievementSystem/EcsEntityManagement） |
+| 测试基础设施（Phase 1.2） | ✅ 90% | 1185个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion/EventConsumerVersioning/PassportGrain/CharacterGrainState/RankingSystem/MailSystem/AchievementSystem/EcsEntityManagement/ClientFeature） |
 | CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置（CI + CodeQL安全扫描 + 代码覆盖率） |
 | 监控可观测性（Phase 2） | ✅ 100% | OpenTelemetry指标、Grafana仪表板、Prometheus告警、JSON结构化日志、CorrelationId分布式追踪、Seq日志聚合、Alertmanager告警通知 |
 
@@ -109,7 +109,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 #### 测试项目
 
-**已存在**: `Horizon.Game.Gateway.Tests/`（28个测试文件，1133个测试用例）
+**已存在**: `Horizon.Game.Gateway.Tests/`（29个测试文件，1185个测试用例）
 
 | 测试文件 | 测试数量 | 覆盖内容 |
 |---------|---------|---------|
@@ -138,6 +138,7 @@ coverlet 6.0.4 — 代码覆盖率
 | MailSystemTests.cs | 24 | 邮箱状态、邮件数据模型、邮件收发、附件领取、过期清理、容量限制 |
 | AchievementSystemTests.cs | 20 | 成就状态、成就数据模型、进度更新、自动解锁、分类筛选、成就点数统计 |
 | EcsEntityManagementTests.cs | 43 | 网络实体类型、实体生成/销毁消息、消息类型验证、实体ID一致性、工作流测试 |
+| ClientFeatureTests.cs | 52 | 效果同步消息、AOI更新消息、移动速度验证消息、消息类型枚举验证 |
 
 #### 测试覆盖率现状
 
@@ -439,15 +440,18 @@ coverlet 6.0.4 — 代码覆盖率
 
 ### 4.1 战斗特效与动画（2周）
 
-**现有**: 基础框架已搭建，大量TODO待完成
+**现有**: 基础框架已搭建，五行技能效果已集成
 
 ```
-□ 五行技能特效
-  - 金系：剑气/金光粒子效果
-  - 木系：藤蔓/生命光环效果
-  - 水系：水流/冰晶效果
-  - 火系：火焰/爆炸效果
-  - 土系：岩石/护盾效果
+■ 五行技能特效（效果集成已完成）
+  ✅ 金系：破甲Debuff、金钟罩防御Buff、连击特效集成
+  ✅ 木系：藤蔓定身、持续伤害DoT、范围治疗HoT、速度Buff集成
+  ✅ 水系：寒冰减速、冰冻控制链、水浪击退、幻影闪避Buff集成
+  ✅ 火系：燃烧DoT、火球弹道爆炸、火龙穿透、焚天灭地终结技、凤凰涅槃复活无敌集成
+  ✅ 土系：岩甲防御Buff、地刺攻击、护盾吸收反伤、地震眩晕、巨石压制、厚土无敌集成
+  ✅ SkillEffectFactory调用（CreateDamageOverTime/CreateHealOverTime/CreateSlow/CreateStun/CreateInvulnerability/CreateAttributeBuff）
+  ✅ SkillEffectManager.Instance视觉特效播放与清理
+  ✅ CombatFeedbackSystem.Instance相机震动集成
 
 □ 技能动画完善
   - SkillAnimationController动画绑定
@@ -467,7 +471,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 ### 4.2 网络同步完善（1周）
 
-**已完成**: 移动同步输入集成、技能冷却同步、ECS实体注册与网络ID映射
+**已完成**: 移动同步输入集成、技能冷却同步、ECS实体注册与网络ID映射、AOI速度验证
 
 ```
 ■ 移动同步（已完成基础）
@@ -475,7 +479,7 @@ coverlet 6.0.4 — 代码覆盖率
   ✅ 网络消息发送（SendMovementUpdate使用MoveRequest）
   ✅ 客户端预测+服务端验证（已有完整框架）
   ✅ 位置插值和外推（已有完整框架）
-  □ 移动速度校验（防外挂）
+  ✅ 移动速度校验（AoiManager.ValidateMovementSpeed防外挂，违规追踪+容差+阈值事件）
 
 ■ 技能同步（已完成基础）
   ✅ SkillSyncHandler冷却同步实现
@@ -494,15 +498,22 @@ coverlet 6.0.4 — 代码覆盖率
   ✅ EntitySpawnMessage/EntityDespawnMessage网络消息DTO
   ✅ 43个ECS实体管理单元测试
 
-□ AOI系统完善
-  - AoiManager优化
-  - 视野范围管理
-  - 实体进出视野通知
+■ 效果/AOI/速度验证消息（已完成）
+  ✅ EffectSyncMessage（Buff/Debuff同步，叠加/刷新/移除操作）
+  ✅ AoiUpdateMessage/AoiEntityInfo（批量视野更新，进入/离开实体列表）
+  ✅ MovementSpeedValidationMessage（速度校验结果，违规计数，位置校正）
+  ✅ 52个客户端功能消息单元测试
+
+■ AOI系统完善
+  ✅ AoiManager速度验证（ValidateMovementSpeed，SpeedValidationData追踪）
+  ✅ 速度违规事件（SpeedViolationDetected，超阈值触发）
+  ✅ 速度验证重置（传送后清理，ResetSpeedValidation）
+  □ 视野范围动态调整
 ```
 
 ### 4.3 UI系统完善（2周）
 
-**已完成**: 面板切换系统
+**已完成**: 面板切换系统、角色面板、设置面板
 
 ```
 ■ 面板管理系统（已完成）
@@ -510,6 +521,18 @@ coverlet 6.0.4 — 代码覆盖率
   ✅ 面板互斥管理（同时只显示一个面板）
   ✅ 面板创建框架（标题栏+关闭按钮+内容区域）
   ✅ 五个面板入口（背包/角色/技能/任务/设置）
+  ✅ 面板内容按类型分派（PopulatePanelContent）
+
+■ 角色面板（已完成基础）
+  ✅ 基础属性展示（力量/敏捷/智力/体质/攻击力/防御力）
+  ✅ 战力评分计算与显示
+  ✅ 五行属性可视化（金/木/水/火/土属性条，五行专属颜色）
+  ✅ 装备槽位展示（武器/头盔/衣服/护手/鞋子/饰品）
+
+■ 设置面板（已完成基础）
+  ✅ 音频设置（主音量/音效/音乐滑条）
+  ✅ 画质设置（画质/视距/特效密度滑条）
+  ✅ 操作设置（鼠标灵敏度滑条）
 
 □ 背包UI完善
   - 物品拖拽（InventoryUI已有框架）
@@ -522,12 +545,6 @@ coverlet 6.0.4 — 代码覆盖率
   - 技能拖拽绑定
   - 冷却动画
   - 快捷键自定义
-
-□ 角色面板
-  - 属性详情展示
-  - 装备面板
-  - 五行属性雷达图
-  - 战力评分
 
 □ 社交UI
   - 好友列表面板
@@ -544,10 +561,13 @@ coverlet 6.0.4 — 代码覆盖率
   - LOD级别切换
   - 异步资源加载
 
-□ 世界地图系统
-  - 小地图渲染
-  - 传送点管理
-  - 任务标记显示
+■ 小地图系统（已完成基础）
+  ✅ 小地图面板（标题+地图区域+坐标显示）
+  ✅ 方向标记（N/S/W/E四个方位指示）
+  ✅ 玩家位置标记（中心红点）
+  ✅ 实时坐标更新（与HUD同步）
+  □ 传送点管理
+  □ 任务标记显示
 ```
 
 ### 4.5 战斗系统集成（已完成基础）
@@ -672,6 +692,13 @@ coverlet 6.0.4 — 代码覆盖率
                ✅ 功能完善: SocialGrain好友回调方法增强（双向好友同步、申请记录清理）
                ✅ 测试修复: PassportGrainTests/SessionManagerTests测试隔离修复（[Collection]修复Cache.Current竞争条件）
                ✅ 测试覆盖: 微信登录DTO和社交回调状态管理测试（10个新测试用例，总计985个）
+                ✅ Phase 4.1: 五行技能效果集成（金/木/水/火/土全部23个技能TODO替换为实际效果调用）
+                ✅ Phase 4.2: 网络同步消息扩展（EffectSyncMessage/AoiUpdateMessage/MovementSpeedValidationMessage）
+                ✅ Phase 4.2: AOI移动速度验证（ValidateMovementSpeed防外挂，违规追踪+容差+阈值事件）
+                ✅ Phase 4.3: 角色面板实现（基础属性/战力评分/五行属性可视化/装备槽位）
+                ✅ Phase 4.3: 设置面板实现（音频/画质/操作设置滑条）
+                ✅ Phase 4.4: 小地图增强（方向标记/坐标显示/实时更新）
+                ✅ 测试覆盖: 客户端功能消息测试（52个新测试用例，总计1185个）
                📍 当前位置（2026-02-08）
                ↓
 2026年3月下旬  ┌─ Phase 4: 客户端功能完善
