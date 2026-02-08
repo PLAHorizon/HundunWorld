@@ -1,5 +1,6 @@
 using FlaxEngine;
 using Game.Character.Attributes;
+using Horizon.Game.Message.Network;
 
 namespace HundunWorld.Game.ECS.Components
 {
@@ -191,17 +192,5 @@ namespace HundunWorld.Game.ECS.Components
             Intensity = intensity;
             Stacks = stacks;
         }
-    }
-
-    /// <summary>
-    /// 效果类型
-    /// </summary>
-    public enum EffectType
-    {
-        Buff,       // 增益
-        Debuff,     // 减益
-        Control,    // 控制效果
-        DoT,        // 持续伤害
-        HoT         // 持续治疗
     }
 }

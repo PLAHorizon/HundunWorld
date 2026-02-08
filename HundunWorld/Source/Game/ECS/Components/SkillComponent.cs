@@ -1,5 +1,6 @@
 using FlaxEngine;
 using Game.Character.Attributes;
+using Horizon.Game.Message.Enums;
 
 namespace HundunWorld.Game.ECS.Components
 {
@@ -95,19 +96,6 @@ namespace HundunWorld.Game.ECS.Components
             if (Cooldown <= 0) return 1.0f;
             return 1.0f - (CurrentCooldown / Cooldown);
         }
-    }
-
-    /// <summary>
-    /// 技能类型
-    /// </summary>
-    public enum SkillType
-    {
-        ActiveAttack,           // 主动攻击技能
-        PassiveEnhancement,     // 被动强化技能
-        Control,                // 控制技能
-        Dash,                   // 位移技能
-        Support,                // 辅助技能
-        Ultimate                // 终结技
     }
 
     /// <summary>

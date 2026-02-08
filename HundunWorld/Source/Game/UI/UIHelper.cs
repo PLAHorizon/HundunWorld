@@ -51,12 +51,12 @@ namespace HundunWorld.Game.UI
                 Text = text,
                 BackgroundColor = backgroundColor ?? PrimaryColor,
                 TextColor = textColor ?? ChineseClassicalTheme.TextColor,
-                Size = ChineseClassicalTheme.GoldenRatioLayout.CalculateButtonSize(HundunWorld.Game.UI.StyleSystem.ButtonType.Primary),
+                Size = ChineseClassicalTheme.GoldenRatioLayout.CalculateButtonSize(ButtonType.Primary),
                 Font = DefaultFont
             };
 
             // 应用中式样式
-            ChineseClassicalTheme.ApplyVisualHierarchy(button, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Primary);
+            ChineseClassicalTheme.ApplyVisualHierarchy(button, VisualHierarchy.Primary);
             return button;
         }
 
@@ -75,7 +75,7 @@ namespace HundunWorld.Game.UI
             };
 
             // 应用中式样式
-            ChineseClassicalTheme.ApplyVisualHierarchy(button, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Primary);
+            ChineseClassicalTheme.ApplyVisualHierarchy(button, VisualHierarchy.Primary);
             return button;
         }
 
@@ -85,7 +85,7 @@ namespace HundunWorld.Game.UI
         public static Button CreatePrimaryButton(string text)
         {
             var button = CreateButton(text, ChineseClassicalTheme.SecondaryColor, Color.Black);
-            ChineseClassicalTheme.ApplyVisualHierarchy(button, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Primary);
+            ChineseClassicalTheme.ApplyVisualHierarchy(button, VisualHierarchy.Primary);
             return button;
         }
 
@@ -95,7 +95,7 @@ namespace HundunWorld.Game.UI
         public static Button CreateSecondaryButton(string text)
         {
             var button = CreateButton(text, ChineseClassicalTheme.PrimaryColor, ChineseClassicalTheme.TextColor);
-            ChineseClassicalTheme.ApplyVisualHierarchy(button, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Secondary);
+            ChineseClassicalTheme.ApplyVisualHierarchy(button, VisualHierarchy.Secondary);
             return button;
         }
 
@@ -105,7 +105,7 @@ namespace HundunWorld.Game.UI
         public static Button CreateDangerButton(string text)
         {
             var button = CreateButton(text, ChineseClassicalTheme.AccentColor, ChineseClassicalTheme.TextColor);
-            ChineseClassicalTheme.ApplyVisualHierarchy(button, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Primary);
+            ChineseClassicalTheme.ApplyVisualHierarchy(button, VisualHierarchy.Primary);
             return button;
         }
 
@@ -138,7 +138,7 @@ namespace HundunWorld.Game.UI
             };
 
             // 应用中式边框装饰
-            ChineseClassicalTheme.ApplyChineseBorder(panel, HundunWorld.Game.UI.StyleSystem.ChineseBorderStyle.Elegant);
+            ChineseClassicalTheme.ApplyChineseBorder(panel, ChineseBorderStyle.Elegant);
             return panel;
         }
 
@@ -154,7 +154,7 @@ namespace HundunWorld.Game.UI
             };
 
             // 应用中式边框装饰
-            ChineseClassicalTheme.ApplyChineseBorder(panel, HundunWorld.Game.UI.StyleSystem.ChineseBorderStyle.Elegant);
+            ChineseClassicalTheme.ApplyChineseBorder(panel, ChineseBorderStyle.Elegant);
             return panel;
         }
 
@@ -173,7 +173,7 @@ namespace HundunWorld.Game.UI
                 Font = DefaultFont
             };
 
-            ChineseClassicalTheme.ApplyVisualHierarchy(textBox, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Tertiary);
+            ChineseClassicalTheme.ApplyVisualHierarchy(textBox, VisualHierarchy.Tertiary);
             return textBox;
         }
 
@@ -190,7 +190,7 @@ namespace HundunWorld.Game.UI
                 HorizontalAlignment = TextAlignment.Center
             };
 
-            ChineseClassicalTheme.ApplyVisualHierarchy(label, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Primary);
+            ChineseClassicalTheme.ApplyVisualHierarchy(label, VisualHierarchy.Primary);
             return label;
         }
 
@@ -260,7 +260,7 @@ namespace HundunWorld.Game.UI
                 Font = DefaultFont
             };
 
-            ChineseClassicalTheme.ApplyVisualHierarchy(label, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Auxiliary);
+            ChineseClassicalTheme.ApplyVisualHierarchy(label, VisualHierarchy.Auxiliary);
             return label;
         }
 
@@ -316,7 +316,7 @@ namespace HundunWorld.Game.UI
         public static void ApplyDialogStyle(Panel panel)
         {
             panel.BackgroundColor = ChineseClassicalTheme.PanelColor;
-            ChineseClassicalTheme.ApplyChineseBorder(panel, HundunWorld.Game.UI.StyleSystem.ChineseBorderStyle.Elegant);
+            ChineseClassicalTheme.ApplyChineseBorder(panel, ChineseBorderStyle.Elegant);
         }
 
         /// <summary>

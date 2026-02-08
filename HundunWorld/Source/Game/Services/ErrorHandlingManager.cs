@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FlaxEngine;
+using Horizon.Game.Message.Enums;
 
 namespace HundunWorld.Game.Services
 {
@@ -134,20 +135,5 @@ namespace HundunWorld.Game.Services
         public UIErrorType Type { get; set; }
         public Exception Exception { get; set; }
         public DateTime Timestamp { get; set; }
-    }
-
-    /// <summary>
-    /// UI错误类型枚举
-    /// </summary>
-    public enum UIErrorType
-    {
-        General,        // 一般错误
-        Network,        // 网络错误
-        Authentication, // 认证错误
-        Character,      // 角色相关错误
-        Combat,         // 战斗相关错误
-        UI,            // UI相关错误
-        Resource,       // 资源相关错误
-        System          // 系统错误
     }
 }

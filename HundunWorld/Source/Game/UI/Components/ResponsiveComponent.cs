@@ -38,12 +38,12 @@ namespace HundunWorld.Game.UI.Components
         /// <summary>
         /// 视觉层次等级
         /// </summary>
-        protected HundunWorld.Game.UI.StyleSystem.VisualHierarchy HierarchyLevel { get; set; } = HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Secondary;
+        protected VisualHierarchy HierarchyLevel { get; set; } = VisualHierarchy.Secondary;
 
         /// <summary>
         /// 中式边框样式
         /// </summary>
-        protected HundunWorld.Game.UI.StyleSystem.ChineseBorderStyle BorderStyle { get; set; } = HundunWorld.Game.UI.StyleSystem.ChineseBorderStyle.Elegant;
+        protected ChineseBorderStyle BorderStyle { get; set; } = ChineseBorderStyle.Elegant;
 
         /// <summary>
         /// 是否自动居中
@@ -185,21 +185,21 @@ namespace HundunWorld.Game.UI.Components
                 case Button button:
                     if (button.BackgroundColor == Color.Transparent || button.BackgroundColor == Color.Gray)
                     {
-                        ChineseClassicalTheme.ApplyVisualHierarchy(button, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Secondary);
+                        ChineseClassicalTheme.ApplyVisualHierarchy(button, VisualHierarchy.Secondary);
                     }
                     break;
 
                 case TextBox textBox:
                     textBox.BackgroundColor = ChineseClassicalTheme.InputColor;
                     textBox.TextColor = ChineseClassicalTheme.TextColor;
-                    ChineseClassicalTheme.ApplyVisualHierarchy(textBox, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Tertiary);
+                    ChineseClassicalTheme.ApplyVisualHierarchy(textBox, VisualHierarchy.Tertiary);
                     break;
 
                 case Label label:
                     if (label.TextColor == Color.White || label.TextColor == Color.Gray)
                     {
                         label.TextColor = ChineseClassicalTheme.TextColor;
-                        ChineseClassicalTheme.ApplyVisualHierarchy(label, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Auxiliary);
+                        ChineseClassicalTheme.ApplyVisualHierarchy(label, VisualHierarchy.Auxiliary);
                     }
                     break;
 
@@ -211,7 +211,7 @@ namespace HundunWorld.Game.UI.Components
                     else
                     {
                         panel.BackgroundColor = ChineseClassicalTheme.PanelColor;
-                        ChineseClassicalTheme.ApplyChineseBorder(panel, HundunWorld.Game.UI.StyleSystem.ChineseBorderStyle.Elegant);
+                        ChineseClassicalTheme.ApplyChineseBorder(panel, ChineseBorderStyle.Elegant);
                     }
                     break;
             }
@@ -290,7 +290,7 @@ namespace HundunWorld.Game.UI.Components
         /// 设置视觉层次
         /// </summary>
         /// <param name="hierarchy">层次等级</param>
-        public void SetVisualHierarchy(HundunWorld.Game.UI.StyleSystem.VisualHierarchy hierarchy)
+        public void SetVisualHierarchy(VisualHierarchy hierarchy)
         {
             HierarchyLevel = hierarchy;
             ChineseClassicalTheme.ApplyVisualHierarchy(this, hierarchy);
@@ -300,7 +300,7 @@ namespace HundunWorld.Game.UI.Components
         /// 设置边框样式
         /// </summary>
         /// <param name="borderStyle">边框样式</param>
-        public void SetBorderStyle(HundunWorld.Game.UI.StyleSystem.ChineseBorderStyle borderStyle)
+        public void SetBorderStyle(ChineseBorderStyle borderStyle)
         {
             BorderStyle = borderStyle;
             ChineseClassicalTheme.ApplyChineseBorder(this, borderStyle);
@@ -382,7 +382,7 @@ namespace HundunWorld.Game.UI.Components
         /// <param name="autoCenter">是否自动居中</param>
         /// <param name="hierarchy">视觉层次</param>
         /// <returns>响应式面板实例</returns>
-        public static ResponsivePanel Create(Float2 size, bool autoCenter = false, HundunWorld.Game.UI.StyleSystem.VisualHierarchy hierarchy = HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Secondary)
+        public static ResponsivePanel Create(Float2 size, bool autoCenter = false, VisualHierarchy hierarchy = VisualHierarchy.Secondary)
         {
             var panel = new ResponsivePanel
             {

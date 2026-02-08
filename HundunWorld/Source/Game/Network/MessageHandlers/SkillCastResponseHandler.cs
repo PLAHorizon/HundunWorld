@@ -378,16 +378,4 @@ namespace ManagedHundunWorld.Network.Handlers
             return $"/Game/Audio/Skills/Skill_{skillId}_Cast";
         }
     }
-
-    /// <summary>
-    /// 效果类型枚举（与服务器端保持一致）
-    /// </summary>
-    public enum EffectType
-    {
-        Buff = 0,
-        Debuff = 1,
-        DamageOverTime = 2,
-        HealOverTime = 3,
-        Control = 4
-    }
 }

@@ -157,7 +157,7 @@ namespace HundunWorld.Game.UI.Components
             _titleLabel.Location = new Float2(0, 15);
             _titleLabel.Size = new Float2(_dialogPanel.Width, 40);
             _titleLabel.HorizontalAlignment = TextAlignment.Center;
-            ChineseClassicalTheme.ApplyVisualHierarchy(_titleLabel, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Primary);
+            ChineseClassicalTheme.ApplyVisualHierarchy(_titleLabel, VisualHierarchy.Primary);
             _dialogPanel.AddChild(_titleLabel);
 
             // 图标区域 - 使用动态居中计算
@@ -177,7 +177,7 @@ namespace HundunWorld.Game.UI.Components
             _messageLabel.Size = new Float2(_dialogPanel.Width - 80, 60);
             _messageLabel.HorizontalAlignment = TextAlignment.Center;
             _messageLabel.VerticalAlignment = TextAlignment.Center;
-            ChineseClassicalTheme.ApplyVisualHierarchy(_messageLabel, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Auxiliary);
+            ChineseClassicalTheme.ApplyVisualHierarchy(_messageLabel, VisualHierarchy.Auxiliary);
             _dialogPanel.AddChild(_messageLabel);
 
             // 条目列表区域
@@ -557,25 +557,25 @@ namespace HundunWorld.Game.UI.Components
             if (_titleLabel != null)
             {
                 _titleLabel.TextColor = ChineseClassicalTheme.SecondaryColor; // 古典金
-                ChineseClassicalTheme.ApplyVisualHierarchy(_titleLabel, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Primary);
+                ChineseClassicalTheme.ApplyVisualHierarchy(_titleLabel, VisualHierarchy.Primary);
             }
             
             // 应用消息标签样式
             if (_messageLabel != null)
             {
                 _messageLabel.TextColor = ChineseClassicalTheme.TextColor; // 清雅白
-                ChineseClassicalTheme.ApplyVisualHierarchy(_messageLabel, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Auxiliary);
+                ChineseClassicalTheme.ApplyVisualHierarchy(_messageLabel, VisualHierarchy.Auxiliary);
             }
             
             // 应用按钮样式
             if (_confirmButton != null)
             {
-                ChineseClassicalTheme.ApplyVisualHierarchy(_confirmButton, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Primary);
+                ChineseClassicalTheme.ApplyVisualHierarchy(_confirmButton, VisualHierarchy.Primary);
             }
             
             if (_cancelButton != null)
             {
-                ChineseClassicalTheme.ApplyVisualHierarchy(_cancelButton, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Secondary);
+                ChineseClassicalTheme.ApplyVisualHierarchy(_cancelButton, VisualHierarchy.Secondary);
             }
             
             FlaxEngine.Debug.Log("中国古典主题已应用到ConfirmDialog");

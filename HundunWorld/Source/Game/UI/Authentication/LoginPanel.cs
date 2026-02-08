@@ -68,7 +68,7 @@ namespace HundunWorld.Game.UI.Authentication
             _isInitialized = true;
 
             // 应用中式边框装饰
-            ChineseClassicalTheme.ApplyChineseBorder(this, HundunWorld.Game.UI.StyleSystem.ChineseBorderStyle.Elegant);
+            ChineseClassicalTheme.ApplyChineseBorder(this, ChineseBorderStyle.Elegant);
 
             // 加载护照信息
             _passortInfo = await DatabaseManager.GetPassport();
@@ -81,7 +81,7 @@ namespace HundunWorld.Game.UI.Authentication
             loginTitle.Pivot = Float2.Zero;
             loginTitle.Location = new Float2(Size.X/2f - loginTitle.Size.X/2f, -20); ;
             
-            ChineseClassicalTheme.ApplyVisualHierarchy(loginTitle, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Primary);
+            ChineseClassicalTheme.ApplyVisualHierarchy(loginTitle, VisualHierarchy.Primary);
             AddChild(loginTitle);
 
             var currentY = 90f; // 调整起始垂直位置
@@ -94,7 +94,7 @@ namespace HundunWorld.Game.UI.Authentication
             usernameLabel.Location = new Float2(leftMargin-10, currentY);
             usernameLabel.Size = new Float2(20, 30);
             usernameLabel.TextColor = ChineseClassicalTheme.TextColor;
-            ChineseClassicalTheme.ApplyVisualHierarchy(usernameLabel, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Auxiliary);
+            ChineseClassicalTheme.ApplyVisualHierarchy(usernameLabel, VisualHierarchy.Auxiliary);
             AddChild(usernameLabel);
 
             // currentY += 10 + 8; // 标签高度 + 小间距
@@ -104,7 +104,7 @@ namespace HundunWorld.Game.UI.Authentication
             UsernameInput.BackgroundColor = ChineseClassicalTheme.InputColor;
             UsernameInput.TextColor = ChineseClassicalTheme.TextColor;
             UsernameInput.Text = _passortInfo?.PassportId;
-            ChineseClassicalTheme.ApplyVisualHierarchy(UsernameInput, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Tertiary);
+            ChineseClassicalTheme.ApplyVisualHierarchy(UsernameInput, VisualHierarchy.Tertiary);
             AddChild(UsernameInput);
 
             currentY += inputSize.Y + spacing;
@@ -114,7 +114,7 @@ namespace HundunWorld.Game.UI.Authentication
             passwordLabel.Location = new Float2(leftMargin-10, currentY);
             passwordLabel.Size = new Float2(20, 30);
             passwordLabel.TextColor = ChineseClassicalTheme.TextColor;
-            ChineseClassicalTheme.ApplyVisualHierarchy(passwordLabel, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Auxiliary);
+            ChineseClassicalTheme.ApplyVisualHierarchy(passwordLabel, VisualHierarchy.Auxiliary);
             AddChild(passwordLabel);
 
             // currentY += 10 + 8;
@@ -124,7 +124,7 @@ namespace HundunWorld.Game.UI.Authentication
             PasswordInput.BackgroundColor = ChineseClassicalTheme.InputColor;
             PasswordInput.TextColor = ChineseClassicalTheme.TextColor;
             PasswordInput.Text = _passortInfo?.RememberPassword ?? false ? _passortInfo.Password : "";
-            ChineseClassicalTheme.ApplyVisualHierarchy(PasswordInput, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Tertiary);
+            ChineseClassicalTheme.ApplyVisualHierarchy(PasswordInput, VisualHierarchy.Tertiary);
             AddChild(PasswordInput);
 
             currentY += inputSize.Y + spacing - 8;
@@ -150,7 +150,7 @@ namespace HundunWorld.Game.UI.Authentication
             rememberLabel.Location = new Float2(inputSize.X * 0.25f - 40, 2);
             rememberLabel.Size = new Float2(100, 25);
             rememberLabel.TextColor = ChineseClassicalTheme.TextColor;
-            ChineseClassicalTheme.ApplyVisualHierarchy(rememberLabel, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Auxiliary);
+            ChineseClassicalTheme.ApplyVisualHierarchy(rememberLabel, VisualHierarchy.Auxiliary);
 
             rememberContainer.AddChild(RememberPasswordCheckBox);
             rememberContainer.AddChild(rememberLabel);
@@ -159,7 +159,7 @@ namespace HundunWorld.Game.UI.Authentication
             currentY += 10 + spacing;
 
             // 按钮区域 - 使用黄金比例尺寴并居中显示
-            var primaryButtonSize = ChineseClassicalTheme.GoldenRatioLayout.CalculateButtonSize(HundunWorld.Game.UI.StyleSystem.ButtonType.Primary);
+            var primaryButtonSize = ChineseClassicalTheme.GoldenRatioLayout.CalculateButtonSize(ButtonType.Primary);
             var buttonX = (Size.X - primaryButtonSize.X) / 2f;
 
             LoginButton = UIHelper.CreatePrimaryButton("登录");
@@ -170,13 +170,13 @@ namespace HundunWorld.Game.UI.Authentication
             LoginButton.BorderColorHighlighted = ChineseClassicalTheme.InputBackgroundColor;
             LoginButton.TextColor = Color.Black;
             LoginButton.ButtonClicked += OnLoginButtonClicked;
-            ChineseClassicalTheme.ApplyVisualHierarchy(LoginButton, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Primary);
+            ChineseClassicalTheme.ApplyVisualHierarchy(LoginButton, VisualHierarchy.Primary);
             AddChild(LoginButton);
 
             //  currentY += primaryButtonSize.Y + spacing;
 
             // 切换到注册按钮 - 使用次要按钮样式
-            var secondaryButtonSize = ChineseClassicalTheme.GoldenRatioLayout.CalculateButtonSize(HundunWorld.Game.UI.StyleSystem.ButtonType.Secondary);
+            var secondaryButtonSize = ChineseClassicalTheme.GoldenRatioLayout.CalculateButtonSize(ButtonType.Secondary);
             var secondaryButtonX = (Size.X - 120) / 2f; // 稍宽一些以适应文本
 
             SwitchToRegisterButton = UIHelper.CreateSecondaryButton("没有账户？注册");
@@ -185,8 +185,8 @@ namespace HundunWorld.Game.UI.Authentication
             SwitchToRegisterButton.BackgroundColor = ChineseClassicalTheme.BackgroundColor; // 墨青色
             SwitchToRegisterButton.TextColor = ChineseClassicalTheme.TextColor;
             SwitchToRegisterButton.ButtonClicked += OnSwitchToRegisterClicked;
-            ChineseClassicalTheme.ApplyVisualHierarchy(SwitchToRegisterButton, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Secondary);
-            ChineseClassicalTheme.ApplyChineseBorder(SwitchToRegisterButton, HundunWorld.Game.UI.StyleSystem.ChineseBorderStyle.Traditional);
+            ChineseClassicalTheme.ApplyVisualHierarchy(SwitchToRegisterButton, VisualHierarchy.Secondary);
+            ChineseClassicalTheme.ApplyChineseBorder(SwitchToRegisterButton, ChineseBorderStyle.Traditional);
             AddChild(SwitchToRegisterButton);
 
             currentY += secondaryButtonSize.Y + spacing;
@@ -197,7 +197,7 @@ namespace HundunWorld.Game.UI.Authentication
             StatusLabel.Size = new Float2(inputSize.X, 30);
             StatusLabel.HorizontalAlignment = TextAlignment.Center;
             StatusLabel.TextColor = ChineseClassicalTheme.SecondaryColor;
-            ChineseClassicalTheme.ApplyVisualHierarchy(StatusLabel, HundunWorld.Game.UI.StyleSystem.VisualHierarchy.Auxiliary);
+            ChineseClassicalTheme.ApplyVisualHierarchy(StatusLabel, VisualHierarchy.Auxiliary);
             AddChild(StatusLabel);
 
             // 确保布局完成后重新定位

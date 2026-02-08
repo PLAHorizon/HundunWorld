@@ -1,33 +1,10 @@
 using FlaxEngine;
 using Game.Character.Attributes;
 using System;
+using Horizon.Game.Message.Enums;
 
 namespace Game.Combat.Skills
 {
-    /// <summary>
-    /// 技能类型
-    /// </summary>
-    public enum SkillType
-    {
-        /// <summary>主动攻击技能</summary>
-        ActiveAttack,
-        
-        /// <summary>被动强化技能</summary>
-        PassiveEnhancement,
-        
-        /// <summary>控制技能</summary>
-        Control,
-        
-        /// <summary>位移技能</summary>
-        Dash,
-        
-        /// <summary>辅助技能</summary>
-        Support,
-        
-        /// <summary>终结技</summary>
-        Ultimate
-    }
-
     /// <summary>
     /// 技能数据（ScriptableObject）
     /// </summary>

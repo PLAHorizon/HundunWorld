@@ -99,6 +99,26 @@ namespace Horizon.Game.Message.Enums
         Unknown,
         Component,
         Transition,
+        /// <summary>
+        /// 一般错误
+        /// </summary>
+        General,
+        /// <summary>
+        /// 角色相关错误
+        /// </summary>
+        Character,
+        /// <summary>
+        /// 战斗相关错误
+        /// </summary>
+        Combat,
+        /// <summary>
+        /// UI相关错误
+        /// </summary>
+        UI,
+        /// <summary>
+        /// 资源相关错误
+        /// </summary>
+        Resource,
     }
 
     /// <summary>
@@ -295,7 +315,12 @@ namespace Horizon.Game.Message.Enums
         /// <summary>
         /// 超大间距
         /// </summary>
-        ExtraLarge
+        ExtraLarge,
+
+        /// <summary>
+        /// 巨大间距
+        /// </summary>
+        Big
     }
 
     /// <summary>
@@ -648,7 +673,17 @@ namespace Horizon.Game.Message.Enums
         /// <summary>
         /// 超高清
         /// </summary>
-        UltraHD
+        UltraHD,
+
+        /// <summary>
+        /// 标准分辨率
+        /// </summary>
+        Standard,
+
+        /// <summary>
+        /// 超高分辨率
+        /// </summary>
+        UltraHigh
     }
 
     /// <summary>
@@ -682,7 +717,23 @@ namespace Horizon.Game.Message.Enums
         DataLoading,
         EnterAnimation,
         Completed,
-        Failed
+        Failed,
+        /// <summary>
+        /// 无过渡
+        /// </summary>
+        None,
+        /// <summary>
+        /// 淡出中
+        /// </summary>
+        FadingOut,
+        /// <summary>
+        /// 加载中
+        /// </summary>
+        Loading,
+        /// <summary>
+        /// 淡入中
+        /// </summary>
+        FadingIn
     }
 
     /// <summary>
@@ -821,6 +872,21 @@ namespace Horizon.Game.Message.Enums
         /// <summary>
         /// 节日事件
         /// </summary>
-        FestivalEvent
+        FestivalEvent,
+
+        /// <summary>
+        /// 实体添加
+        /// </summary>
+        EntityAdded,
+
+        /// <summary>
+        /// 实体移除
+        /// </summary>
+        EntityRemoved,
+
+        /// <summary>
+        /// 实体更新
+        /// </summary>
+        EntityUpdated
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Horizon.Game.Message.Enums;
 
 namespace HundunWorld.Game.UI
 {
@@ -52,14 +53,6 @@ namespace HundunWorld.Game.UI
         private bool _isFading;
         private Action _onFadeComplete;
         private TransitionPhase _phase = TransitionPhase.None;
-
-        public enum TransitionPhase
-        {
-            None,
-            FadingOut,
-            Loading,
-            FadingIn
-        }
 
         public bool IsBusy => _phase != TransitionPhase.None;
 

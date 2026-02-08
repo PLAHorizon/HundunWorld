@@ -260,7 +260,27 @@ namespace Horizon.Game.Message.Network
         /// <summary>
         /// 彩虹
         /// </summary>
-        Rainbow = 6
+        Rainbow = 6,
+
+        /// <summary>
+        /// 晴天（客户端别名）
+        /// </summary>
+        Clear = 7,
+
+        /// <summary>
+        /// 雨天（客户端别名）
+        /// </summary>
+        Rain = 8,
+
+        /// <summary>
+        /// 雾天（客户端别名）
+        /// </summary>
+        Fog = 9,
+
+        /// <summary>
+        /// 雪天（客户端别名）
+        /// </summary>
+        Snow = 10
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 using FlaxEngine;
 using System;
+using Horizon.Game.Message.Enums;
 
 namespace HundunWorld.Game.UI.Layout
 {
@@ -169,16 +170,5 @@ namespace HundunWorld.Game.UI.Layout
             
             return CalculateCenterPosition(panelSize);
         }
-    }
-    
-    /// <summary>
-    /// 分辨率类型枚举
-    /// </summary>
-    public enum ResolutionType
-    {
-        Low,
-        Standard,
-        High,
-        UltraHigh
     }
 }

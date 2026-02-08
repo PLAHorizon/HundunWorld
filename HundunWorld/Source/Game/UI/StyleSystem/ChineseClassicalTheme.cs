@@ -289,51 +289,5 @@ namespace HundunWorld.Game.UI.StyleSystem
         #endregion
     }
     
-    #region 枚举定义
-    
-    /// <summary>
-    /// 按钮类型枚举
-    /// </summary>
-    public enum ButtonType
-    {
-        Primary,
-        Secondary,
-        Small,
-        Large
-    }
-    
-    /// <summary>
-    /// 间距类型枚举
-    /// </summary>
-    public enum SpacingType
-    {
-        Small,
-        Medium,
-        Large,
-        ExtraLarge,
-        Big
-    }
-    
-    /// <summary>
-    /// 视觉层次枚举
-    /// </summary>
-    public enum VisualHierarchy
-    {
-        Primary,
-        Secondary,
-        Tertiary,
-        Auxiliary
-    }
-    
-    /// <summary>
-    /// 中式边框样式枚举
-    /// </summary>
-    public enum ChineseBorderStyle
-    {
-        Elegant,
-        Traditional,
-        Ornate
-    }
-    
     #endregion
 }
