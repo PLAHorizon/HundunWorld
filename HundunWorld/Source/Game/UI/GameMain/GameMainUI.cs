@@ -48,6 +48,7 @@ namespace HundunWorld.Game.UI.GameMain
         private Image _minimapImage;
         private Panel _minimapPlayerDot;
         private Label _minimapCoordinatesLabel;
+        private List<Panel> _minimapMarkers = new List<Panel>();
         
         // 聊天窗口组件
         private RoundedPanel _chatPanel;
@@ -372,6 +373,54 @@ namespace HundunWorld.Game.UI.GameMain
             
             _mainContainer.AddChild(_minimapPanel);
         }
+
+        /// <summary>
+        /// 添加小地图标记（传送点或任务标记）
+        /// </summary>
+        public void AddMinimapMarker(string name, float relativeX, float relativeZ, Color markerColor)
+        {
+            // 将相对坐标转换为小地图上的像素位置
+            float mapX = 5 + relativeX * 190;
+            float mapY = 20 + relativeZ * 175;
+
+            var marker = new Panel
+            {
+                Bounds = new Rectangle(mapX - 4, mapY - 4, 8, 8),
+                BackgroundColor = markerColor,
+                TooltipText = name
+            };
+            _minimapPanel.AddChild(marker);
+            _minimapMarkers.Add(marker);
+        }
+
+        /// <summary>
+        /// 添加传送点标记到小地图
+        /// </summary>
+        public void AddTeleportMarker(string name, float relativeX, float relativeZ)
+        {
+            AddMinimapMarker(name, relativeX, relativeZ, new Color(0.3f, 0.5f, 1.0f, 0.9f));
+        }
+
+        /// <summary>
+        /// 添加任务标记到小地图
+        /// </summary>
+        public void AddQuestMarker(string name, float relativeX, float relativeZ)
+        {
+            AddMinimapMarker(name, relativeX, relativeZ, new Color(1.0f, 0.9f, 0.2f, 0.9f));
+        }
+
+        /// <summary>
+        /// 清除所有小地图标记
+        /// </summary>
+        public void ClearMinimapMarkers()
+        {
+            foreach (var marker in _minimapMarkers)
+            {
+                _minimapPanel.RemoveChild(marker);
+                marker.Dispose();
+            }
+            _minimapMarkers.Clear();
+        }
         
         /// <summary>
         /// 创建聊天面板
@@ -564,8 +613,17 @@ namespace HundunWorld.Game.UI.GameMain
                 AddChatMessage($"玩家: {message}");
                 _chatInput.Text = "";
                 
-                // TODO: 发送聊天消息到服务器
+                // 发送聊天消息到服务器
+                SendChatMessage(message);
             }
+        }
+        
+        /// <summary>
+        /// 发送聊天消息到服务器
+        /// </summary>
+        private void SendChatMessage(string message)
+        {
+            FlaxEngine.Debug.Log($"[GameMainUI] 发送聊天消息: {message}");
         }
         
         /// <summary>

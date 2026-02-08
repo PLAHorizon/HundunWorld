@@ -420,8 +420,18 @@ namespace HundunWorld.Game.UI.GameMain
         /// </summary>
         private void PlaySkillUseAnimation(SkillSlot slot)
         {
-            // TODO: 实现技能使用动画
-            // 例如：槽位闪烁、缩放效果等
+            if (slot?.SlotPanel == null) return;
+
+            // 闪烁效果：短暂高亮槽位边框
+            var originalColor = slot.SlotPanel.BackgroundColor;
+            var highlightColor = new Color(1.0f, 0.9f, 0.3f, 0.9f);
+            slot.SlotPanel.BackgroundColor = highlightColor;
+
+            // 使用延迟恢复（通过标记状态，在UpdateSkillSlots中还原）
+            slot.CooldownProgress = 0f;
+            slot.IsReady = false;
+
+            Debug.Log($"[SkillBarUI] 播放技能使用动画: {slot.BoundSkill?.Data?.SkillName}");
         }
 
         /// <summary>
