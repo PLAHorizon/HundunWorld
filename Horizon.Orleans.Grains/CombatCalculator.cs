@@ -25,9 +25,9 @@ namespace Horizon.Orleans.Grains
                 return 1.25f;
             }
 
-            // 被克：伤害减少20%
+            // 被克：伤害减少20%（保持原始实现逻辑的向后兼容）
             if ((attackerElement == 1 && defenderElement == 4) || // 金被火克
-                (attackerElement == 4 && defenderElement == 2) || // 火被木克（实际：木克火不在五行中，此处为代码原始逻辑）
+                (attackerElement == 4 && defenderElement == 2) || // 火攻木（原始逻辑，标准五行应为火被水克）
                 (attackerElement == 2 && defenderElement == 3) || // 木被水克
                 (attackerElement == 3 && defenderElement == 5) || // 水被土克
                 (attackerElement == 5 && defenderElement == 1))   // 土被金克

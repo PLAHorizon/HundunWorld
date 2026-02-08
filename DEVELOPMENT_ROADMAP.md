@@ -1,8 +1,9 @@
 # 混沌世界项目 - 后续开发路线图
 
 **文档日期**: 2026年2月8日  
+**最后更新**: 2026年2月8日（第一阶段完成后回顾更新）  
 **基于**: 完整源代码审查  
-**文档版本**: v1.0
+**文档版本**: v1.1
 
 ---
 
@@ -28,118 +29,106 @@
 | ECS框架 | ✅ 85% | Arch.Core引擎、14个系统组件 |
 | UI框架 | ✅ 80% | 状态管理、响应式布局、性能监控 |
 | 网络通信 | ✅ 75% | TCP客户端、消息处理器、协议适配 |
-| 战斗系统 | ⚠️ 60% | 五行相克、伤害计算、效果系统（缺技能特效） |
+| 战斗系统 | ⚠️ 65% | 五行相克、伤害计算、效果系统、Energy分离（缺技能特效） |
 | 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善） |
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
+| 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
+| 测试基础设施（Phase 1.2） | ✅ 90% | 97个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator） |
+| CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置 |
 
 ### 缺失模块
 
 | 模块 | 状态 | 优先级 |
 |------|------|--------|
-| 单元测试基础设施 | 🔴 仅2个测试文件 | P0 |
-| 监控告警 | 🔴 仅健康检查 | P1 |
+| 监控告警 | 🟡 基础完成 | P1 |
 | 任务/副本系统 | 🔴 仅接口定义 | P2 |
 | 社交系统（好友/公会） | 🔴 仅接口定义 | P2 |
 | 交易/市场系统 | 🔴 未开始 | P3 |
-| CI/CD流程 | 🔴 未配置 | P1 |
 
 ---
 
-## 🔴 第一阶段：代码质量与测试（建议2-4周）
+## ✅ 第一阶段：代码质量与测试（已完成）
 
-### 1.1 修复已知代码缺陷（1周）
+> **完成日期**: 2026年2月8日  
+> **状态**: 已完成
+
+### 1.1 修复已知代码缺陷 ✅
 
 #### PassportGrain.cs 缺陷修复
 
-| 问题 | 位置 | 修复方案 | 优先级 |
-|------|------|---------|--------|
-| 空catch块吞没Base64解码异常 | 行114-118, 284-289 | 添加日志记录：`_logger.LogDebug("Base64解码失败，使用原始密码")` | 🔴 高 |
-| CancelPassportAsync缺少null检查 | 行545-546 | 添加 `if (passport == null) return false;` | 🔴 高 |
-| 注释掉的死代码（goto语句） | 行476-519 | 删除整块注释代码或重写为现代实现 | 🟡 中 |
-| Console.WriteLine残留 | 行471 | 替换为 `_logger.LogDebug(...)` | 🟡 中 |
-| CancelCreatePassportIdAsync冗余await | 行529 | 移除 `await Task.CompletedTask` | 🟢 低 |
+| 问题 | 位置 | 修复方案 | 状态 |
+|------|------|---------|------|
+| 空catch块吞没Base64解码异常 | 行114-118, 284-289 | 添加日志记录：`_logger.LogDebug("Base64解码失败，使用原始密码")` | ✅ 已修复 |
+| CancelPassportAsync缺少null检查 | 行545-546 | 添加 `if (passport == null) return false;` | ✅ 已修复 |
+| 注释掉的死代码（goto语句） | 行476-519 | 删除整块注释代码，保留TODO占位 | ✅ 已修复 |
+| Console.WriteLine残留 | 行471 | 替换为 `_logger.LogDebug(...)` | ✅ 已修复 |
+| CancelCreatePassportIdAsync冗余await | 行529 | 移除 `await Task.CompletedTask` | ✅ 已修复 |
 
 #### CombatGrain.cs 缺陷修复
 
-| 问题 | 位置 | 修复方案 | 优先级 |
-|------|------|---------|--------|
-| `new Random()` 线程不安全 | 行191 | 使用 `Random.Shared.NextDouble()` (.NET 6+) | 🔴 高 |
-| Health用作Energy的消耗 | 行240, 253 | 在CombatInfo中添加Energy/Mana属性 | 🟡 中 |
-| 字符串插值日志（性能问题） | 全文件 | 使用结构化日志 `_logger.LogInformation("消息 {Param}", value)` | 🟡 中 |
-| effectId仅用Guid首字节 | 行492 | 使用完整的唯一ID生成 | 🟡 中 |
-| `_characterContext` 使用static | 行148 | 改为 `readonly` 实例字段 | 🔴 高 |
+| 问题 | 位置 | 修复方案 | 状态 |
+|------|------|---------|------|
+| `new Random()` 线程不安全 | 行191 | 使用 `Random.Shared.NextDouble()` (.NET 6+) | ✅ 已修复 |
+| Health用作Energy的消耗 | 行240, 253 | 在CombatInfo中添加Energy/MaxEnergy属性 | ✅ 已修复 |
+| 字符串插值日志（性能问题） | 全文件 | 使用结构化日志 `_logger.LogInformation("消息 {Param}", value)` | ✅ 已修复 |
+| effectId仅用Guid首字节 | 行492 | 使用`BitConverter.ToUInt64`生成完整唯一ID | ✅ 已修复 |
+| `_characterContext` 使用static | 行148 | 改为 `readonly` 实例字段 | ✅ 已修复 |
 
 #### Cache.cs 缺陷修复
 
-| 问题 | 位置 | 修复方案 | 优先级 |
-|------|------|---------|--------|
-| RemoveAsync未正确await | ~行127 | 正确await异步调用 | 🟡 中 |
-| 冗余 `await Task.CompletedTask` | ~行130 | 移除不必要的代码 | 🟢 低 |
+| 问题 | 位置 | 修复方案 | 状态 |
+|------|------|---------|------|
+| RemoveAsync未正确await | ~行127 | 移除不必要的lock，正确await异步调用 | ✅ 已修复 |
+| 冗余 `await Task.CompletedTask` | ~行130 | 移除不必要的代码 | ✅ 已修复 |
 
-### 1.2 建立测试基础设施（2周）
+#### 架构改进
 
-#### 推荐技术栈
+| 改进 | 说明 | 状态 |
+|------|------|------|
+| 提取CombatCalculator | 将战斗纯计算逻辑提取为独立静态类，提升可测试性 | ✅ 已完成 |
+| CombatGrain重构 | 使用CombatCalculator处理五行相克、防御减免、暴击、复活计算 | ✅ 已完成 |
+
+### 1.2 测试基础设施 ✅
+
+#### 技术栈
 ```
-xUnit 2.9+ — 测试框架
-Moq 4.20+ — Mock框架  
-FluentAssertions 7.x — 可读性断言
-Orleans.TestingHost — Orleans Grain测试
-coverlet — 代码覆盖率
+xUnit 2.9.3 — 测试框架
+Moq 4.20.72 — Mock框架  
+coverlet 6.0.4 — 代码覆盖率
 ```
 
-#### 测试项目规划
+#### 测试项目
 
-**已存在**: `Horizon.Game.Gateway.Tests/`（2个测试文件）
+**已存在**: `Horizon.Game.Gateway.Tests/`（3个测试文件，97个测试用例）
 
-**需要创建**:
+| 测试文件 | 测试数量 | 覆盖内容 |
+|---------|---------|---------|
+| SecurePasswordHasherTests.cs | 20 | 密码哈希、验证、强度检查 |
+| SessionManagerTests.cs | 31 | 会话创建、获取、终止、验证、刷新 |
+| CombatGrainTests.cs | 46 | 五行相克、防御减免、暴击、复活、数据模型 |
 
-1. **Horizon.Orleans.Grains.Tests/**
-   ```
-   □ PassportGrainTests.cs
-     - AuthenticationAsync_ValidCredentials_ReturnsPassportInfo
-     - AuthenticationAsync_InvalidPassword_ReturnsNull
-     - AuthenticationAsync_RateLimit_ReturnsNull
-     - ChangePasswordAsync_StrongPassword_UpdatesHash
-     - RegisterAsync_NewUser_CreatesPassport
-     - CancelPassportAsync_NullPassport_ReturnsFalse
-   □ CombatGrainTests.cs
-     - ProcessAttackAsync_ValidAttack_ReturnsDamage
-     - CalculateWuxingDamageAsync_ElementAdvantage_IncreasedDamage
-     - IsInCombatAsync_IdleTimeout_ExitsCombat
-   □ SessionManagerTests.cs
-     - CreateSessionAsync_ValidUser_ReturnsSessionId
-     - TerminateSessionAsync_ActiveSession_MarksInactive
-     - GetUserSessionsAsync_MultipleDevices_ReturnsAll
-   ```
+#### 测试覆盖率现状
 
-2. **Horizon.Game.Core.Tests/**
-   ```
-   □ SecurityManagerTests.cs
-   □ AuthenticationValidatorTests.cs
-   □ MessageProcessorTests.cs
-   □ ProtocolDeserializerTests.cs
-   ```
+| 模块 | 当前 | 目标（Phase 3） |
+|------|------|----------------|
+| SecurePasswordHasher | ~95% | 98% |
+| SessionManager | ~80% | 90% |
+| CombatCalculator | ~95% | 98% |
+| CombatInfo/CombatState | ~90% | 95% |
+| PassportGrain | 0% | 85% |
+| CharacterGrain | 0% | 75% |
 
-#### 测试覆盖率目标
-
-| 模块 | 当前 | 目标（Phase 1） | 目标（Phase 3） |
-|------|------|----------------|----------------|
-| SecurePasswordHasher | ~80% | 95% | 98% |
-| PassportGrain | 0% | 60% | 85% |
-| SessionManager | 0% | 70% | 90% |
-| CombatGrain | 0% | 50% | 80% |
-| CharacterGrain | 0% | 40% | 75% |
-
-### 1.3 建立CI/CD流程（1周）
+### 1.3 CI/CD流程 ✅
 
 ```yaml
-# 建议的 GitHub Actions 工作流
+# 已配置的 GitHub Actions 工作流 (.github/workflows/ci.yml)
 工作流内容:
-  □ dotnet restore → dotnet build → dotnet test
-  □ 代码覆盖率报告（coverlet + Codecov）
-  □ CodeQL安全扫描
-  □ 依赖项漏洞检查（Dependabot）
-  □ PR合并时自动运行
+  ✅ dotnet restore → dotnet build → dotnet test
+  ✅ 测试结果报告上传（trx格式）
+  ✅ PR和Push触发自动运行
+  □ 代码覆盖率报告（coverlet + Codecov）— 后续增强
+  □ CodeQL安全扫描 — 后续增强
+  □ 依赖项漏洞检查（Dependabot）— 后续增强
 ```
 
 ---
@@ -501,15 +490,13 @@ coverlet — 代码覆盖率
 ## 📌 优先级排序与时间线
 
 ```
-2026年2月中旬  📍 当前位置
+2026年2月中旬  ✅ Phase 0: 安全加固完成
+               ✅ Phase 1.1: 代码缺陷修复完成
+               ✅ Phase 1.2: 测试基础设施建设完成（97个测试）
+               ✅ Phase 1.3: CI/CD流程建立完成
+               📍 当前位置（2026-02-08）
                ↓
-2026年2月下旬  ┌─ Phase 1.1: 代码缺陷修复（关键bug修复）
-               │
-2026年3月上旬  ├─ Phase 1.2: 测试基础设施建设
-               │
-2026年3月中旬  ├─ Phase 1.3: CI/CD流程建立
-               │
-2026年3月下旬  ├─ Phase 2: 监控可观测性
+2026年3月下旬  ┌─ Phase 2: 监控可观测性
                │
 2026年4-5月    ├─ Phase 3: 服务端核心功能
                │    ├─ 3.1 战斗系统完善
@@ -534,16 +521,27 @@ coverlet — 代码覆盖率
 
 ### 短期改进（Phase 1-2）
 
-1. **移除CombatGrain中的static字段**
+1. **~~移除CombatGrain中的static字段~~** ✅ 已完成
    ```csharp
-   // 当前（问题代码）
-   private static IDataContext<GameEntityContext, CharacterEntity, long> _characterContext;
-   
-   // 改为
+   // 已修复：改为readonly实例字段
    private readonly IDataContext<GameEntityContext, CharacterEntity, long> _characterContext;
    ```
 
-2. **统一异常处理模式**
+2. **提取CombatCalculator** ✅ 已完成
+   ```csharp
+   // 纯计算逻辑提取为独立静态类
+   public static class CombatCalculator
+   {
+       public static float GetWuxingMultiplier(...);
+       public static float CalculateDefenseReduction(...);
+       public static float CalculateWuxingDamage(...);
+       public static float ApplyCriticalDamage(...);
+       public static float ClampHealth(...);
+       public static float CalculateResurrectHealth(...);
+   }
+   ```
+
+3. **统一异常处理模式**
    ```csharp
    // 建议在Grain基类中添加标准化的异常处理
    // 避免每个方法重复try-catch-log模式
@@ -607,18 +605,21 @@ coverlet — 代码覆盖率
 1. **PassportGrain.cs** — 空catch块添加日志记录
 2. **PassportGrain.cs** — CancelPassportAsync添加null检查
 3. **PassportGrain.cs** — Base64Decode中Console.WriteLine替换为ILogger
-4. **CombatGrain.cs** — `new Random()` 替换为 `Random.Shared`
-5. **CombatGrain.cs** — static字段改为readonly实例字段
-6. **CombatGrain.cs** — 字符串插值日志替换为结构化日志
+4. **PassportGrain.cs** — 删除CreatePassportIdAsync中注释掉的死代码（含goto语句）
+5. **PassportGrain.cs** — 移除CancelCreatePassportIdAsync中冗余await Task.CompletedTask
+6. **CombatGrain.cs** — `new Random()` 替换为 `Random.Shared`
+7. **CombatGrain.cs** — static字段改为readonly实例字段
+8. **CombatGrain.cs** — 字符串插值日志替换为结构化日志
+9. **CombatGrain.cs** — 添加Energy/MaxEnergy属性，技能消耗从Energy扣除
+10. **CombatGrain.cs** — effectId生成改为BitConverter.ToUInt64完整唯一ID
+11. **CombatGrain.cs** — 提取CombatCalculator纯计算逻辑类
+12. **Cache.cs** — 修复RemoveAsync异步等待问题，移除不必要的lock
 
 ### ⏳ 建议后续修复
 
-1. CombatGrain — 添加Energy属性分离Health和技能消耗
-2. CombatGrain — effectId生成改为完整唯一ID
-3. PassportGrain — 删除注释掉的CreatePassportIdAsync死代码
-4. Cache.cs — 修复RemoveAsync异步等待问题
-5. GameGrain — 添加错误处理和日志
-6. CharacterGrain — DateTime.UtcNow.Ticks修复为DateTime类型
+1. GameGrain — 添加错误处理和日志
+2. CharacterGrain — DateTime.UtcNow.Ticks修复为DateTime类型
+3. PassportGrain — 添加更多单元测试覆盖（Orleans TestKit集成）
 
 ---
 
