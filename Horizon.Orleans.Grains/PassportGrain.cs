@@ -342,7 +342,9 @@ namespace Horizon.Orleans.Grains
             registerDto.Phone = string.IsNullOrWhiteSpace(registerDto.Phone) ? registerDto.ID : registerDto.Phone;
             registerDto.Email = string.IsNullOrWhiteSpace(registerDto.Email) ? registerDto.ID : registerDto.Email;
             string passportId = string.Empty;
-
+            string passwordHash = string.Empty;
+            string passwordSalt = string.Empty;
+            bool needCreateUser = true;
 
             using (var plock = await Cache.AcquireLockAsync(CacheConst.PASSPORTREGISTERLOCK, TimeSpan.FromSeconds(3)))
             {
@@ -358,91 +360,93 @@ namespace Horizon.Orleans.Grains
                 {
                     passportId = users.First().PassportId;
                     var user = users.FirstOrDefault(m => m.AppId == registerDto.AppId && m.AppType == registerDto.AppType && m.PassportType == registerDto.PassportType);
-                    if (user == null)
-                        goto NEWUSER;
-                    goto RESULT;
-                }
-
-                passportId = id.Id;
-                
-                // 解码Base64编码的密码
-                string decodedPassword = Encoding.UTF8.GetString(Convert.FromBase64String(registerDto.Password));
-                
-                // 验证密码强度
-                if (!SecurePasswordHasher.IsPasswordStrong(decodedPassword))
-                {
-                    _logger.LogWarning("注册密码强度不足: {PassportId}", passportId);
-                    return null;
-                }
-                
-                // 生成安全的密码哈希和盐值
-                var (passwordHash, passwordSalt) = SecurePasswordHasher.HashPassword(decodedPassword);
-                
-                var passport = await _dataContext.AddAsync(new Passport
-                {
-                    Id = passportId,
-                    Password = passwordHash,
-                    PasswordSalt = passwordSalt,
-                    CreateTime = DateTime.UtcNow,
-                    UpdateTime = DateTime.UtcNow,
-                    IsValid = true
-                });
-                id.ApplyTime = DateTime.UtcNow;
-                id.IsValid = false;
-                await _contextPassportIds.DbCurrent.SaveChangesAsync();
-
-            NEWUSER:
-                var userNew = await _userdataContext.AddAsync(new User
-                {
-                    AppId = registerDto.AppId,
-                    AppType = registerDto.AppType,
-                    PassportId = passportId,
-                    Phone = registerDto.Phone,
-                    Email = registerDto.Email,
-                    IdCard = registerDto.ID,
-                    Name = registerDto.RealName,
-                    PassportType = PassportType.Normal,
-                    NickName = registerDto.NickName,
-                    Status = UserStatsEnum.Normal
-                });
-
-                try
-                {
-                    if (registerDto.GameContext != null)
+                    if (user != null)
                     {
-                        var gameUserEntity = new UserEntity
-                        {
-                            GameUserId = userNew.Id,
-                            GameId = (int)registerDto.AppId,
-                            ServerId = 0,
-                            AreaId = 0,
-                            AccountName = registerDto.NickName,
-                            Status = 0,
-                            CreateTime = DateTime.Now,
-                            Email = registerDto.Email,
-                            PasswordHash = passwordHash,  // 使用安全哈希
-                            PasswordSalt = passwordSalt,  // 使用生成的盐值
-                            LastLoginTime = DateTime.Now,
-                            Phone = registerDto.Phone,
-                            LastLoginIp = registerDto.GameContext.Ip,
-                            PlatformId = registerDto.GameContext.PlatformId,
-                            DeviceId = registerDto.GameContext.PlatformId
-                        };
-
-                        await _gameUserContext.AddAsync(gameUserEntity);
-                        _logger.LogInformation("游戏用户创建成功: {GameUserId}", userNew.Id);
+                        needCreateUser = false;
                     }
                 }
-                catch (Exception ex)
+                else
                 {
-                    _logger.LogError(ex, "创建游戏用户失败: {UserId}", userNew.Id);
-                    // 不影响注册流程，继续执行
+                    passportId = id.Id;
+                    
+                    // 解码Base64编码的密码
+                    string decodedPassword = Encoding.UTF8.GetString(Convert.FromBase64String(registerDto.Password));
+                    
+                    // 验证密码强度
+                    if (!SecurePasswordHasher.IsPasswordStrong(decodedPassword))
+                    {
+                        _logger.LogWarning("注册密码强度不足: {PassportId}", passportId);
+                        return null;
+                    }
+                    
+                    // 生成安全的密码哈希和盐值
+                    (passwordHash, passwordSalt) = SecurePasswordHasher.HashPassword(decodedPassword);
+                    
+                    var passport = await _dataContext.AddAsync(new Passport
+                    {
+                        Id = passportId,
+                        Password = passwordHash,
+                        PasswordSalt = passwordSalt,
+                        CreateTime = DateTime.UtcNow,
+                        UpdateTime = DateTime.UtcNow,
+                        IsValid = true
+                    });
+                    id.ApplyTime = DateTime.UtcNow;
+                    id.IsValid = false;
+                    await _contextPassportIds.DbCurrent.SaveChangesAsync();
                 }
 
+                if (needCreateUser)
+                {
+                    var userNew = await _userdataContext.AddAsync(new User
+                    {
+                        AppId = registerDto.AppId,
+                        AppType = registerDto.AppType,
+                        PassportId = passportId,
+                        Phone = registerDto.Phone,
+                        Email = registerDto.Email,
+                        IdCard = registerDto.ID,
+                        Name = registerDto.RealName,
+                        PassportType = PassportType.Normal,
+                        NickName = registerDto.NickName,
+                        Status = UserStatsEnum.Normal
+                    });
 
+                    try
+                    {
+                        if (registerDto.GameContext != null)
+                        {
+                            var gameUserEntity = new UserEntity
+                            {
+                                GameUserId = userNew.Id,
+                                GameId = (int)registerDto.AppId,
+                                ServerId = 0,
+                                AreaId = 0,
+                                AccountName = registerDto.NickName,
+                                Status = 0,
+                                CreateTime = DateTime.Now,
+                                Email = registerDto.Email,
+                                PasswordHash = passwordHash,
+                                PasswordSalt = passwordSalt,
+                                LastLoginTime = DateTime.Now,
+                                Phone = registerDto.Phone,
+                                LastLoginIp = registerDto.GameContext.Ip,
+                                PlatformId = registerDto.GameContext.PlatformId,
+                                DeviceId = registerDto.GameContext.PlatformId
+                            };
 
-            RESULT:
-                return await Task.FromResult(new PassportInfoDto
+                            await _gameUserContext.AddAsync(gameUserEntity);
+                            _logger.LogInformation("游戏用户创建成功: {GameUserId}", userNew.Id);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "创建游戏用户失败: {UserId}", userNew.Id);
+                        // 不影响注册流程，继续执行
+                    }
+                }
+
+                return new PassportInfoDto
                 {
                     AppId = registerDto.AppId,
                     AppType = registerDto.AppType,
@@ -450,7 +454,7 @@ namespace Horizon.Orleans.Grains
                     PassportId = passportId,
                     Phone = registerDto.Phone,
                     Email = registerDto.Email,
-                });
+                };
             }
         }
 
@@ -647,7 +651,7 @@ namespace Horizon.Orleans.Grains
             var attempts = await Cache.GetAsync<int?>(key) ?? 0;
             attempts++;
 
-            await Cache.InsertAsync(key, attempts, TimeSpan.FromMinutes(LoginAttemptsWindowMinutes).Milliseconds);
+            await Cache.InsertAsync(key, attempts, LoginAttemptsWindowMinutes);
         }
 
         /// <summary>

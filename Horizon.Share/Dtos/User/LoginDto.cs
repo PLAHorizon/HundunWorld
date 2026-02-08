@@ -48,6 +48,31 @@ namespace Horizon.Share.Dtos.User
         /// </summary>
         [Id(7)] public PassportType PassportType { get; set; }
 
+        /// <summary>
+        /// 游戏上下文信息
+        /// </summary>
+        [Id(8)] public GameLoginContextDto? GameContext { get; set; }
+    }
+
+    /// <summary>
+    /// 登录时的游戏上下文信息
+    /// </summary>
+    [Serializable]
+    [GenerateSerializer]
+    public class GameLoginContextDto
+    {
+        /// <summary>
+        /// 客户端IP
+        /// </summary>
+        [Id(0)] public string? Ip { get; set; }
+        /// <summary>
+        /// 平台Id
+        /// </summary>
+        [Id(1)] public string? PlatformId { get; set; }
+        /// <summary>
+        /// 设备Id
+        /// </summary>
+        [Id(2)] public string? DeviceId { get; set; }
     }
 
 }

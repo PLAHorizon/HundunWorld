@@ -35,6 +35,18 @@ namespace Horizon.Model
         [Comment("密码盐值")]
         public string PasswordSalt { get; set; }
 
+        /// <summary>
+        /// 创建时间
+        /// </summary>
+        [Comment("创建时间")]
+        public DateTime CreateTime { get; set; }
+
+        /// <summary>
+        /// 更新时间
+        /// </summary>
+        [Comment("更新时间")]
+        public DateTime UpdateTime { get; set; }
+
         public virtual ICollection<MemberLabe> MemberLabes { get; set; }
     }
 }
