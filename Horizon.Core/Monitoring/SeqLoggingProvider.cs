@@ -41,6 +41,11 @@ namespace Horizon.Core.Monitoring
         /// 每批最大事件数
         /// </summary>
         public int MaxBatchSize { get; set; } = 100;
+
+        /// <summary>
+        /// 事件队列最大容量（防止内存溢出）
+        /// </summary>
+        public int MaxQueueSize { get; set; } = 10000;
     }
 
     /// <summary>
@@ -61,9 +66,19 @@ namespace Horizon.Core.Monitoring
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _serviceName = serviceName;
+
+            // 验证URL方案（仅允许http/https，防止SSRF）
+            var uri = new Uri(options.ServerUrl.TrimEnd('/') + "/");
+            if (uri.Scheme != "http" && uri.Scheme != "https")
+            {
+                throw new ArgumentException(
+                    $"Seq ServerUrl必须使用http或https方案，不允许: {uri.Scheme}",
+                    nameof(options));
+            }
+
             _httpClient = new HttpClient
             {
-                BaseAddress = new Uri(options.ServerUrl.TrimEnd('/') + "/"),
+                BaseAddress = uri,
                 Timeout = TimeSpan.FromSeconds(5)
             };
 
@@ -81,7 +96,7 @@ namespace Horizon.Core.Monitoring
 
         public ILogger CreateLogger(string categoryName)
         {
-            return _loggers.GetOrAdd(categoryName, name => new SeqLogger(name, _eventQueue, _serviceName));
+            return _loggers.GetOrAdd(categoryName, name => new SeqLogger(name, _eventQueue, _serviceName, _options.MaxQueueSize));
         }
 
         private async Task FlushAsync()
@@ -130,12 +145,14 @@ namespace Horizon.Core.Monitoring
         private readonly string _categoryName;
         private readonly ConcurrentQueue<string> _eventQueue;
         private readonly string _serviceName;
+        private readonly int _maxQueueSize;
 
-        public SeqLogger(string categoryName, ConcurrentQueue<string> eventQueue, string serviceName)
+        public SeqLogger(string categoryName, ConcurrentQueue<string> eventQueue, string serviceName, int maxQueueSize = 10000)
         {
             _categoryName = categoryName;
             _eventQueue = eventQueue;
             _serviceName = serviceName;
+            _maxQueueSize = maxQueueSize;
         }
 
         public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
@@ -145,6 +162,9 @@ namespace Horizon.Core.Monitoring
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
             if (!IsEnabled(logLevel)) return;
+
+            // 防止队列无限增长导致内存溢出
+            if (_eventQueue.Count >= _maxQueueSize) return;
 
             var clefEvent = new Dictionary<string, object?>
             {
