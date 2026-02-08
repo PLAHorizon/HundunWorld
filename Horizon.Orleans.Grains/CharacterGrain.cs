@@ -246,7 +246,7 @@ namespace Horizon.Orleans.Grains
 
                 // 3. 更新角色状态
                 _characterState.State.IsOnline = true;
-                _characterState.State.CharacterInfo.LastLoginTime = DateTime.UtcNow.Ticks;
+                _characterState.State.CharacterInfo.LastLoginTime = DateTime.UtcNow;
                 
                 // 4. 在数据库中更新最后登录时间
                 await UpdateCharacterLastLoginTime(_characterState.State.CharacterInfo.CharacterId);
@@ -818,7 +818,7 @@ namespace Horizon.Orleans.Grains
             }
 
             // 更新最后受伤时间
-            _characterState.State.CharacterInfo.LastDamageTime = DateTime.UtcNow.Ticks;
+            _characterState.State.CharacterInfo.LastDamageTime = DateTime.UtcNow;
 
             // 保存状态
             await _characterState.WriteStateAsync();
@@ -856,7 +856,7 @@ namespace Horizon.Orleans.Grains
             _characterState.State.CharacterInfo.IsAlive = false;
             _characterState.State.CharacterInfo.CurrentHealth = 0;
             _characterState.State.CharacterInfo.DeathCount++;
-            _characterState.State.CharacterInfo.LastDeathTime = DateTime.UtcNow.Ticks;
+            _characterState.State.CharacterInfo.LastDeathTime = DateTime.UtcNow;
 
             // 保存状态
             await _characterState.WriteStateAsync();

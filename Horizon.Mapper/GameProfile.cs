@@ -52,7 +52,7 @@ namespace Horizon.Mapper
                     Clothing = 0 // 默认值
                 }))
                 .ForMember(dest => dest.Profession, opt => opt.MapFrom(src => (Profession)src.Profession))
-                .ForMember(dest => dest.LastLoginTime, opt => opt.MapFrom(src => src.LastLoginTime.Value.Ticks));
+                .ForMember(dest => dest.LastLoginTime, opt => opt.MapFrom(src => src.LastLoginTime.HasValue ? src.LastLoginTime.Value : DateTime.MinValue));
 
             // 服务器相关映射
             CreateMap<ServerEntity, ServerInfo>()
@@ -63,7 +63,7 @@ namespace Horizon.Mapper
                 .ForMember(dest => dest.CharacterId, opt => opt.MapFrom(src => (ulong)src.Id))
                 .ForMember(dest => dest.CharacterName, opt => opt.MapFrom(src => src.AccountName))
                 .ForMember(dest => dest.Level, opt => opt.MapFrom(src => 1)) // 默认等级
-                .ForMember(dest => dest.LastLoginTime, opt => opt.MapFrom(src => src.LastLoginTime.Value.Ticks));
+                .ForMember(dest => dest.LastLoginTime, opt => opt.MapFrom(src => src.LastLoginTime.HasValue ? src.LastLoginTime.Value : DateTime.MinValue));
 
             // 游戏查询相关映射
             CreateMap<GameQueryDto, CharacterEntity>()
