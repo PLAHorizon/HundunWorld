@@ -222,7 +222,7 @@ namespace Horizon.Orleans.Grains
                 (element1 == 4 && element2 == 5) || // 火生土
                 (element1 == 5 && element2 == 1) || // 土生金
                 (element2 == 1 && element1 == 3) || // 水 <- 金
-                (element2 == 3 && element1 == 2) || // 木 <- 水 (reverse)
+                (element2 == 3 && element1 == 2) || // 木 <- 水
                 (element2 == 2 && element1 == 4) || // 火 <- 木
                 (element2 == 4 && element1 == 5) || // 土 <- 火
                 (element2 == 5 && element1 == 1))   // 金 <- 土
