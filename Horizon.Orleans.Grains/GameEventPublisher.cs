@@ -1,5 +1,6 @@
 using Horizon.Core.Abstract;
 using Horizon.Orleans.Interface;
+using Horizon.Game.Message.Network;
 using Microsoft.Extensions.Logging;
 using Orleans.Streams;
 
