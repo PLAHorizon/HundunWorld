@@ -5,6 +5,7 @@ using Horizon.Game.Core.Security;
 using Horizon.Game.Gateway.Configuration;
 using Horizon.Game.Gateway.Network;
 using Horizon.Game.Gateway.Services;
+using Horizon.Game.Gateway.Monitoring;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -142,6 +143,10 @@ namespace Horizon.Game.Gateway
                     services.AddHealthChecks()
                         .AddCheck<GatewayHealthCheck>("gateway")
                         .AddCheck<NetworkHealthCheck>("network");
+
+                    // OpenTelemetry监控（APM + Prometheus指标导出）
+                    var prometheusPort = context.Configuration.GetValue<int>("Monitoring:PrometheusPort", 9465);
+                    services.AddGatewayOpenTelemetry(prometheusPort: prometheusPort);
                 })
                 .UseOrleansClient((context, client) =>
                 {

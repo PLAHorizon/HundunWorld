@@ -440,7 +440,20 @@ else
 
 **预估工时**: 2-4周
 
-#### 4. 性能优化（优先级：低）
+#### 4. 运维和监控（100%完成） ✅
+
+**已完成**:
+- [x] OpenTelemetry APM集成（Silo + 网关）
+- [x] Prometheus指标导出端点
+- [x] 自定义业务指标（Grain、认证、会话、连接、消息）
+- [x] .NET运行时指标自动采集
+- [x] Grafana仪表板配置
+- [x] Prometheus告警规则配置
+- [x] 分布式追踪支持
+- [x] 监控部署指南文档
+
+**完成度**: 100%  
+**技术方案**: OpenTelemetry 1.15.0 + Prometheus HTTP Listener + Grafana
 
 **计划**:
 - Orleans Grain性能分析
@@ -459,7 +472,7 @@ else
 
 ### Phase 1: 完善基础设施（2-3周）
 
-#### Week 1: 会话管理和测试
+#### Week 1: 会话管理和测试 ✅ 已完成
 ```
 ✅ 实现Redis会话持久化（已完成 - SessionManager.cs，Redis-based，24小时TTL）
 ✅ 添加会话过期和刷新机制（已完成 - 支持会话刷新、终止、清理过期会话）
