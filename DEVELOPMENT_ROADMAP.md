@@ -1,9 +1,9 @@
 # 混沌世界项目 - 后续开发路线图
 
 **文档日期**: 2026年2月8日  
-**最后更新**: 2026年2月8日（Phase 3.2/3.4社交与消息系统实现后更新）  
+**最后更新**: 2026年2月8日（Phase 3.2 TeamGrain/3.5 GameServerGrain实现后更新）  
 **基于**: 完整源代码审查  
-**文档版本**: v1.3
+**文档版本**: v1.4
 
 ---
 
@@ -30,11 +30,11 @@
 | UI框架 | ✅ 80% | 状态管理、响应式布局、性能监控 |
 | 网络通信 | ✅ 75% | TCP客户端、消息处理器、协议适配 |
 | 战斗系统 | ⚠️ 75% | 五行相克、伤害计算、效果系统、Energy分离、闪避格挡、技能冷却 |
-| 社交系统 | ⚠️ 65% | SocialGrain好友管理、GuildGrain公会管理、消息频道系统 |
+| 社交系统 | ⚠️ 75% | SocialGrain好友管理、GuildGrain公会管理、TeamGrain组队系统、消息频道系统 |
 | 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善） |
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
 | 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
-| 测试基础设施（Phase 1.2） | ✅ 90% | 197个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem） |
+| 测试基础设施（Phase 1.2） | ✅ 90% | 224个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer） |
 | CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置 |
 
 ### 缺失模块
@@ -43,9 +43,10 @@
 |------|------|--------|
 | 监控告警 | 🟡 基础完成 | P1 |
 | 任务/副本系统 | 🔴 仅接口定义 | P2 |
-| 社交系统（好友/公会） | 🟡 基础实现完成 | P2 |
+| 社交系统（好友/公会/组队） | 🟡 基础实现完成 | P2 |
 | 消息频道系统 | 🟡 基础实现完成 | P2 |
 | 游戏系统（背包/技能/合成） | 🟡 基础实现完成 | P2 |
+| 服务器状态管理 | 🟡 基础实现完成 | P2 |
 | 交易/市场系统 | 🔴 未开始 | P3 |
 
 ---
@@ -102,7 +103,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 #### 测试项目
 
-**已存在**: `Horizon.Game.Gateway.Tests/`（6个测试文件，197个测试用例）
+**已存在**: `Horizon.Game.Gateway.Tests/`（8个测试文件，224个测试用例）
 
 | 测试文件 | 测试数量 | 覆盖内容 |
 |---------|---------|---------|
@@ -112,6 +113,8 @@ coverlet 6.0.4 — 代码覆盖率
 | CombatCalculatorExtendedTests.cs | 23 | 闪避系统、格挡系统、技能冷却、CombatInfo扩展属性 |
 | GameSystemStateTests.cs | 31 | 背包状态、技能状态、合成状态、物品信息 |
 | SocialSystemStateTests.cs | 46 | 社交状态、公会状态、频道状态、路由器状态 |
+| TeamSystemStateTests.cs | 12 | 队伍状态、成员管理、队长转移、解散 |
+| GameServerStateTests.cs | 15 | 服务器状态、在线人数、维护管理、负载监控 |
 
 #### 测试覆盖率现状
 
@@ -261,11 +264,12 @@ coverlet 6.0.4 — 代码覆盖率
   - 职位系统（帮主、副帮主、长老、精英、成员）
   - 公会资源管理
 
-□ TeamGrain实现
+✅ TeamGrain实现
   - 组队创建/加入/退出
-  - 队长转移
-  - 队伍状态同步
-  - 组队副本入口
+  - 队长转移/踢出成员/解散队伍
+  - 队伍信息查询
+  □ 队伍状态同步
+  □ 组队副本入口
 ```
 
 ### 3.3 游戏系统 Grain 完善（2周）
@@ -330,13 +334,14 @@ coverlet 6.0.4 — 代码覆盖率
 
 ### 3.5 GameGrain完善（1周）
 
-**现有**: 仅有`GetServerListAsync`方法（43行代码）
+**现有**: GameGrain`GetServerListAsync`方法 + GameServerGrain服务器状态管理
 
 ```
-□ 服务器状态管理
-  - 服务器负载监控
-  - 在线人数统计
-  - 服务器维护状态
+✅ 服务器状态管理（GameServerGrain）
+  - 服务器负载监控（CPU/内存/延迟）
+  - 在线人数统计（玩家上下线跟踪）
+  - 服务器维护状态（设置/退出维护）
+  - 服务器初始化和自动状态检测
 
 □ 区域管理
   - 场景实例创建/销毁
@@ -514,21 +519,21 @@ coverlet 6.0.4 — 代码覆盖率
 ```
 2026年2月中旬  ✅ Phase 0: 安全加固完成
                ✅ Phase 1.1: 代码缺陷修复完成
-               ✅ Phase 1.2: 测试基础设施建设完成（197个测试）
+               ✅ Phase 1.2: 测试基础设施建设完成（224个测试）
                ✅ Phase 1.3: CI/CD流程建立完成
                ✅ Phase 3.1: 战斗系统增强（闪避/格挡/暴击/冷却）
-               ✅ Phase 3.2: 社交系统基础实现（SocialGrain/GuildGrain）
+               ✅ Phase 3.2: 社交系统基础实现（SocialGrain/GuildGrain/TeamGrain）
                ✅ Phase 3.3: 游戏系统Grain基础实现（背包/技能/合成）
                ✅ Phase 3.4: 消息频道系统实现（频道/路由/广播）
+               ✅ Phase 3.5: GameServerGrain服务器状态管理
                📍 当前位置（2026-02-08）
                ↓
 2026年3月下旬  ┌─ Phase 2: 监控可观测性
                │
 2026年4-5月    ├─ Phase 3: 服务端核心功能完善
                │    ├─ 3.1 战斗系统完善（五行深化、战斗日志）
-               │    ├─ 3.2 社交系统完善（TeamGrain）
                │    ├─ 3.3 游戏系统完善（装备、技能树、合成执行）
-               │    └─ 3.5 GameGrain完善
+               │    └─ 3.5 GameGrain完善（区域管理、活动系统）
                │
 2026年5-6月    ├─ Phase 4: 客户端功能完善
                │    ├─ 4.1 战斗特效与动画
