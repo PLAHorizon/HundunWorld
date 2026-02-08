@@ -8,6 +8,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 游戏服务器状态管理Grain接口 - 负责服务器状态、在线人数、维护管理
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface IGameServerGrain : IGrainWithIntegerKey
     {
         /// <summary>

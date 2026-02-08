@@ -11,6 +11,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 物品系统Grain接口 - 负责物品管理、背包操作
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface IInventoryGrain : IGrainWithGuidKey
     {
         /// <summary>
@@ -83,6 +84,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 技能系统Grain接口 - 负责技能学习、释放、冷却管理
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface ISkillGrain : IGrainWithGuidKey
     {
         /// <summary>
@@ -150,6 +152,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 材料合成系统Grain接口
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface ICraftingGrain : IGrainWithGuidKey
     {
         /// <summary>
@@ -250,6 +253,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 五行炼丹系统Grain接口
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface IWuxingAlchemyGrain : IGrainWithGuidKey
     {
         /// <summary>

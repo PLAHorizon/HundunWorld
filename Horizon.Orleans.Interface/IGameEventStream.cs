@@ -44,6 +44,10 @@ namespace Horizon.Orleans.Interface
         GuildMemberJoined = 301,
         TeamCreated = 302,
         FriendAdded = 303,
+        TeamMemberJoined = 304,
+        TeamMemberLeft = 305,
+        TeamDisbanded = 306,
+        TeamDungeonEntered = 307,
 
         // 系统事件
         ServerStatusChanged = 400,

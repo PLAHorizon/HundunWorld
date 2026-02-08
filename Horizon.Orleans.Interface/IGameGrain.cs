@@ -4,6 +4,7 @@ using Horizon.Share.Dtos.Games;
 
 namespace Horizon.Orleans.Interface
 {
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface IGameGrain:IGrainWithGuidKey
     {
         /// <summary>

@@ -1,17 +1,19 @@
 using Orleans;
 using System;
 using System.Threading.Tasks;
-
-using Horizon.Game.Message.Enums;
 using System.Collections.Generic;
 using System.Numerics;
+
+using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
+using MemoryPack;
 
 namespace Horizon.Orleans.Interface
 {
     /// <summary>
     /// 社交系统Grain接口 - 负责好友、聊天、公会管理
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface ISocialGrain : IGrainWithGuidKey
     {
         /// <summary>
@@ -118,6 +120,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 公会系统Grain接口
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface IGuildGrain : IGrainWithGuidKey
     {
         /// <summary>
@@ -185,6 +188,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 地图管理Grain接口 - 负责地图实例、传送、区域管理
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface IMapGrain : IGrainWithIntegerKey
     {
         /// <summary>
@@ -236,6 +240,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 组队系统Grain接口 - 负责队伍创建、加入、退出、队长转移
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(2)]
     public interface ITeamGrain : IGrainWithGuidKey
     {
         /// <summary>
@@ -277,6 +282,62 @@ namespace Horizon.Orleans.Interface
         /// 解散队伍
         /// </summary>
         Task<bool> DisbandTeamAsync(Guid leaderId);
+
+        /// <summary>
+        /// 组队进入副本 — 队长发起，全队成员进入同一副本实例
+        /// </summary>
+        /// <param name="leaderId">队长ID（仅队长可发起）</param>
+        /// <param name="dungeonTemplateId">副本模板ID</param>
+        /// <param name="dungeonName">副本名称</param>
+        /// <param name="difficulty">难度 (0=普通, 1=困难, 2=英雄, 3=地狱)</param>
+        /// <param name="timeLimitMinutes">时间限制（分钟）</param>
+        /// <returns>组队副本入口结果</returns>
+        Task<TeamDungeonResult> EnterDungeonAsTeamAsync(Guid leaderId, int dungeonTemplateId, string dungeonName, int difficulty, int timeLimitMinutes);
+
+        /// <summary>
+        /// 获取队伍状态版本号（用于状态同步，版本号随每次状态变更递增）
+        /// </summary>
+        /// <returns>当前状态版本号</returns>
+        Task<long> GetTeamStateVersionAsync();
+    }
+
+    /// <summary>
+    /// 组队副本入口结果
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class TeamDungeonResult
+    {
+        /// <summary>是否成功</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public bool Success { get; set; }
+
+        /// <summary>结果消息</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string Message { get; set; } = "";
+
+        /// <summary>副本实例ID（用于后续操作）</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public Guid DungeonInstanceId { get; set; }
+
+        /// <summary>进入副本的成员ID列表</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public List<Guid> EnteredMembers { get; set; } = new();
+
+        /// <summary>副本模板ID</summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int DungeonTemplateId { get; set; }
+
+        /// <summary>难度</summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public int Difficulty { get; set; }
     }
 
 

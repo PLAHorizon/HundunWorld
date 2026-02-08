@@ -9,6 +9,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 区域/场景管理Grain接口 - 负责场景实例创建/销毁、跨服传送、副本入口
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface IAreaGrain : IGrainWithIntegerKey
     {
         /// <summary>
@@ -60,6 +61,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 活动系统Grain接口 - 负责定时活动调度、奖励发放、参与记录
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface IActivityGrain : IGrainWithIntegerKey
     {
         /// <summary>

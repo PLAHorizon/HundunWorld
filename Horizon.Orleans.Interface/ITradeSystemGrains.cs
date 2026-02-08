@@ -9,6 +9,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 交易系统Grain接口 - 负责面对面交易管理
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface ITradeGrain : IGrainWithGuidKey
     {
         /// <summary>
@@ -55,6 +56,7 @@ namespace Horizon.Orleans.Interface
     /// <summary>
     /// 市场系统Grain接口 - 负责拍卖行/摆摊管理
     /// </summary>
+    [global::Orleans.CodeGeneration.Version(1)]
     public interface IMarketGrain : IGrainWithIntegerKey
     {
         /// <summary>
