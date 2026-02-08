@@ -204,6 +204,19 @@ namespace Horizon.Orleans.Grains
         }
 
         /// <summary>
+        /// 五行相生关系对集合（无序）
+        /// 金生水(1,3)、水生木(3,2)、木生火(2,4)、火生土(4,5)、土生金(5,1)
+        /// </summary>
+        private static readonly HashSet<(int, int)> WuxingSynergyPairs = new()
+        {
+            (1, 3), (3, 1), // 金生水
+            (3, 2), (2, 3), // 水生木
+            (2, 4), (4, 2), // 木生火
+            (4, 5), (5, 4), // 火生土
+            (5, 1), (1, 5), // 土生金
+        };
+
+        /// <summary>
         /// 获取五行相生协同乘数
         /// 相生关系：金生水、水生木、木生火、火生土、土生金
         /// </summary>
@@ -215,20 +228,8 @@ namespace Horizon.Orleans.Grains
             if (element1 == element2 && element1 > 0)
                 return 1.10f;
 
-            // 相生关系：金生水、水生木、木生火、火生土、土生金
-            if ((element1 == 1 && element2 == 3) || // 金生水
-                (element1 == 3 && element2 == 2) || // 水生木
-                (element1 == 2 && element2 == 4) || // 木生火
-                (element1 == 4 && element2 == 5) || // 火生土
-                (element1 == 5 && element2 == 1) || // 土生金
-                (element2 == 1 && element1 == 3) || // 水 <- 金
-                (element2 == 3 && element1 == 2) || // 木 <- 水
-                (element2 == 2 && element1 == 4) || // 火 <- 木
-                (element2 == 4 && element1 == 5) || // 土 <- 火
-                (element2 == 5 && element1 == 1))   // 金 <- 土
-            {
+            if (WuxingSynergyPairs.Contains((element1, element2)))
                 return 1.15f;
-            }
 
             return 1.0f;
         }
