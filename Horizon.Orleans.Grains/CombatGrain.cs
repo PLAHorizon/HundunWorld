@@ -197,13 +197,10 @@ namespace Horizon.Orleans.Grains
 
                 // 判断是否暴击
                 bool isCritical = request.IsCritical || Random.Shared.NextDouble() < 0.1; // 10%基础暴击率
-                if (isCritical)
-                {
-                    damage *= 1.5f; // 暴击伤害1.5倍
-                }
+                damage = CombatCalculator.ApplyCriticalDamage(damage, isCritical);
 
                 // 更新目标血量
-                targetInfo.Health = Math.Max(0, targetInfo.Health - damage);
+                targetInfo.Health = CombatCalculator.ClampHealth(targetInfo.Health, damage);
 
                 // 进入战斗状态
                 await EnterCombatAsync(request.AttackerId);
@@ -298,7 +295,7 @@ namespace Horizon.Orleans.Grains
                 var victimInfo = await GetOrCreateCombatInfo(request.VictimId);
 
                 // 更新血量
-                victimInfo.Health = Math.Max(0, victimInfo.Health - request.Damage);
+                victimInfo.Health = CombatCalculator.ClampHealth(victimInfo.Health, request.Damage);
 
                 // 进入战斗状态
                 await EnterCombatAsync(request.VictimId);
@@ -389,8 +386,7 @@ namespace Horizon.Orleans.Grains
                 var resurrectedInfo = await GetOrCreateCombatInfo(request.ResurrectedId);
 
                 // 恢复血量（根据复活类型决定恢复比例）
-                float restoreRatio = request.ResurrectType == 1 ? 1.0f : 0.5f; // 1=完全复活，其他=半血复活
-                resurrectedInfo.Health = resurrectedInfo.MaxHealth * restoreRatio;
+                resurrectedInfo.Health = CombatCalculator.CalculateResurrectHealth(resurrectedInfo.MaxHealth, request.ResurrectType);
 
                 // 创建响应
                 var response = new ResurrectMessage
@@ -546,38 +542,8 @@ namespace Horizon.Orleans.Grains
                 var attackerInfo = await GetOrCreateCombatInfo(attackerId);
                 var defenderInfo = await GetOrCreateCombatInfo(defenderId);
 
-                // 五行相克计算
-                float multiplier = 1.0f;
-
-                // 简化五行相克逻辑：金克木、木克土、土克水、水克火、火克金
-                // 1=金, 2=木, 3=水, 4=火, 5=土
-                if (attackerInfo.WuxingElement != 0 && defenderInfo.WuxingElement != 0)
-                {
-                    if ((attackerInfo.WuxingElement == 1 && defenderInfo.WuxingElement == 2) || // 金克木
-                        (attackerInfo.WuxingElement == 2 && defenderInfo.WuxingElement == 5) || // 木克土
-                        (attackerInfo.WuxingElement == 5 && defenderInfo.WuxingElement == 3) || // 土克水
-                        (attackerInfo.WuxingElement == 3 && defenderInfo.WuxingElement == 4) || // 水克火
-                        (attackerInfo.WuxingElement == 4 && defenderInfo.WuxingElement == 1))   // 火克金
-                    {
-                        multiplier = 1.25f; // 相克伤害增加25%
-                    }
-                    else if ((attackerInfo.WuxingElement == 1 && defenderInfo.WuxingElement == 4) || // 金被火克
-                             (attackerInfo.WuxingElement == 4 && defenderInfo.WuxingElement == 2) || // 火被木克
-                             (attackerInfo.WuxingElement == 2 && defenderInfo.WuxingElement == 3) || // 木被水克
-                             (attackerInfo.WuxingElement == 3 && defenderInfo.WuxingElement == 5) || // 水被土克
-                             (attackerInfo.WuxingElement == 5 && defenderInfo.WuxingElement == 1))   // 土被金克
-                    {
-                        multiplier = 0.8f; // 被克伤害减少20%
-                    }
-                }
-
-                float finalDamage = baseDamage * multiplier;
-
-                // 应用防御减免
-                float defenseReduction = defenderInfo.Defense / (defenderInfo.Defense + 100);
-                finalDamage *= (1 - defenseReduction);
-
-                return finalDamage;
+                return CombatCalculator.CalculateWuxingDamage(
+                    baseDamage, attackerInfo.WuxingElement, defenderInfo.WuxingElement, defenderInfo.Defense);
             }
             catch (Exception ex)
             {
@@ -646,7 +612,7 @@ namespace Horizon.Orleans.Grains
         private async Task<float> CalculateDamage(CombatInfo attacker, CombatInfo defender, float baseDamage, int elementType)
         {
             // 基础伤害计算
-            float damage = attacker.AttackPower * 0.5f + baseDamage;
+            float damage = CombatCalculator.CalculateBaseDamage(attacker.AttackPower, baseDamage);
 
             // 五行伤害计算
             if (elementType > 0)
@@ -656,7 +622,7 @@ namespace Horizon.Orleans.Grains
             else
             {
                 // 普通物理伤害计算
-                float defenseReduction = defender.Defense / (defender.Defense + 100);
+                float defenseReduction = CombatCalculator.CalculateDefenseReduction(defender.Defense);
                 damage *= (1 - defenseReduction);
             }
 
