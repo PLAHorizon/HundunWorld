@@ -6116,6 +6116,222 @@
         <member name="P:Horizon.Game.Message.Network.GameEvent.Metadata">
             <summary>附加数据（JSON格式的扩展信息）</summary>
         </member>
+        <member name="T:Horizon.Game.Message.Network.RankingEntry">
+            <summary>
+            排行榜条目
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>int</b> Rank<br/>
+            <b>System.Guid</b> PlayerId<br/>
+            <b>string</b> PlayerName<br/>
+            <b>long</b> Score<br/>
+            <b>System.DateTime</b> UpdateTime<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.RankingEntry.Rank">
+            <summary>排名</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.RankingEntry.PlayerId">
+            <summary>玩家ID</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.RankingEntry.PlayerName">
+            <summary>玩家名称</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.RankingEntry.Score">
+            <summary>分数</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.RankingEntry.UpdateTime">
+            <summary>更新时间</summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.RankingInfo">
+            <summary>
+            排行榜信息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>int</b> RankingType<br/>
+            <b>string</b> RankingName<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.Game.Message.Network.RankingEntry&gt;</b> Entries<br/>
+            <b>int</b> MaxEntries<br/>
+            <b>System.DateTime</b> LastUpdateTime<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.RankingInfo.RankingType">
+            <summary>排行榜类型</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.RankingInfo.RankingName">
+            <summary>排行榜名称</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.RankingInfo.Entries">
+            <summary>排行榜条目列表</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.RankingInfo.MaxEntries">
+            <summary>最大排名数</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.RankingInfo.LastUpdateTime">
+            <summary>最后更新时间</summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.MailData">
+            <summary>
+            邮件数据
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>long</b> MailId<br/>
+            <b>System.Guid</b> SenderId<br/>
+            <b>string</b> SenderName<br/>
+            <b>string</b> Title<br/>
+            <b>string</b> Content<br/>
+            <b>int</b> MailType<br/>
+            <b>int</b> Status<br/>
+            <b>System.Collections.Generic.Dictionary&lt;int, int&gt;</b> Attachments<br/>
+            <b>long</b> AttachedCurrency<br/>
+            <b>System.DateTime</b> SendTime<br/>
+            <b>System.DateTime</b> ExpireTime<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MailData.MailId">
+            <summary>邮件ID</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MailData.SenderId">
+            <summary>发件人ID</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MailData.SenderName">
+            <summary>发件人名称</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MailData.Title">
+            <summary>邮件标题</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MailData.Content">
+            <summary>邮件内容</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MailData.MailType">
+            <summary>邮件类型</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MailData.Status">
+            <summary>邮件状态</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MailData.Attachments">
+            <summary>附件物品列表（模板ID -> 数量）</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MailData.AttachedCurrency">
+            <summary>附件货币</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MailData.SendTime">
+            <summary>发送时间</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MailData.ExpireTime">
+            <summary>过期时间</summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.SendMailResult">
+            <summary>
+            发送邮件结果
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>bool</b> Success<br/>
+            <b>string</b> Message<br/>
+            <b>long</b> MailId<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SendMailResult.Success">
+            <summary>是否成功</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SendMailResult.Message">
+            <summary>消息</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SendMailResult.MailId">
+            <summary>邮件ID</summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.AchievementData">
+            <summary>
+            成就定义
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>int</b> AchievementId<br/>
+            <b>string</b> Name<br/>
+            <b>string</b> Description<br/>
+            <b>int</b> Category<br/>
+            <b>int</b> Points<br/>
+            <b>bool</b> IsUnlocked<br/>
+            <b>int</b> CurrentProgress<br/>
+            <b>int</b> TargetProgress<br/>
+            <b>System.DateTime?</b> UnlockTime<br/>
+            <b>System.Collections.Generic.Dictionary&lt;string, int&gt;</b> Rewards<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AchievementData.AchievementId">
+            <summary>成就ID</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AchievementData.Name">
+            <summary>成就名称</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AchievementData.Description">
+            <summary>成就描述</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AchievementData.Category">
+            <summary>成就分类</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AchievementData.Points">
+            <summary>成就点数</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AchievementData.IsUnlocked">
+            <summary>是否已解锁</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AchievementData.CurrentProgress">
+            <summary>当前进度</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AchievementData.TargetProgress">
+            <summary>目标进度</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AchievementData.UnlockTime">
+            <summary>解锁时间</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AchievementData.Rewards">
+            <summary>奖励（物品模板ID -> 数量）</summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.AchievementUnlockResult">
+            <summary>
+            成就解锁结果
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>bool</b> Success<br/>
+            <b>string</b> Message<br/>
+            <b>int</b> AchievementId<br/>
+            <b>int</b> PointsEarned<br/>
+            <b>System.Collections.Generic.Dictionary&lt;string, int&gt;</b> Rewards<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AchievementUnlockResult.Success">
+            <summary>是否成功</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AchievementUnlockResult.Message">
+            <summary>消息</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AchievementUnlockResult.AchievementId">
+            <summary>成就ID</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AchievementUnlockResult.PointsEarned">
+            <summary>获得的成就点数</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AchievementUnlockResult.Rewards">
+            <summary>奖励</summary>
+        </member>
         <member name="T:Horizon.Game.Message.Network.EffectType">
             <summary>
             效果类型
@@ -6301,6 +6517,116 @@
         <member name="T:Horizon.Game.Message.Network.GameEventType">
             <summary>
             游戏事件类型枚举
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.RankingType">
+            <summary>
+            排行榜类型枚举
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.RankingType.CombatPower">
+            <summary>
+            战力排行
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.RankingType.Level">
+            <summary>
+            等级排行
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.RankingType.Wealth">
+            <summary>
+            财富排行
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.RankingType.AchievementPoints">
+            <summary>
+            成就点数排行
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.RankingType.PvpScore">
+            <summary>
+            PVP积分排行
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.MailStatus">
+            <summary>
+            邮件状态枚举
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.MailStatus.Unread">
+            <summary>
+            未读
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.MailStatus.Read">
+            <summary>
+            已读
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.MailStatus.Claimed">
+            <summary>
+            已领取附件
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.MailStatus.Deleted">
+            <summary>
+            已删除
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.MailType">
+            <summary>
+            邮件类型枚举
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.MailType.System">
+            <summary>
+            系统邮件
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.MailType.Player">
+            <summary>
+            玩家邮件
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.MailType.Guild">
+            <summary>
+            公会邮件
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.MailType.ActivityReward">
+            <summary>
+            活动奖励邮件
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.AchievementCategory">
+            <summary>
+            成就类型枚举
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.AchievementCategory.Combat">
+            <summary>
+            战斗成就
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.AchievementCategory.Social">
+            <summary>
+            社交成就
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.AchievementCategory.Exploration">
+            <summary>
+            探索成就
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.AchievementCategory.Collection">
+            <summary>
+            收集成就
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.AchievementCategory.Growth">
+            <summary>
+            成长成就
             </summary>
         </member>
         <member name="T:Horizon.Game.Message.Network.IGameEventPublisher">
@@ -7263,6 +7589,84 @@
         </member>
         <member name="P:Horizon.Game.Message.Network.EventConsumerState.RecentEvents">
             <summary>最近处理的事件摘要（最多保留100条）</summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.RankingState">
+            <summary>
+            排行榜Grain状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>int</b> RankingType<br/>
+            <b>string</b> RankingName<br/>
+            <b>System.Collections.Generic.Dictionary&lt;System.Guid, Horizon.Game.Message.Network.RankingEntry&gt;</b> Entries<br/>
+            <b>int</b> MaxEntries<br/>
+            <b>System.DateTime</b> LastUpdateTime<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.RankingState.RankingType">
+            <summary>排行榜类型</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.RankingState.RankingName">
+            <summary>排行榜名称</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.RankingState.Entries">
+            <summary>排行榜条目（玩家ID -> 条目）</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.RankingState.MaxEntries">
+            <summary>最大排名数</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.RankingState.LastUpdateTime">
+            <summary>最后更新时间</summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.MailBoxState">
+            <summary>
+            邮箱Grain状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Collections.Generic.Dictionary&lt;long, Horizon.Game.Message.Network.MailData&gt;</b> Mails<br/>
+            <b>long</b> NextMailId<br/>
+            <b>int</b> MaxMails<br/>
+            <b>int</b> UnreadCount<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MailBoxState.Mails">
+            <summary>邮件列表（邮件ID -> 邮件数据）</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MailBoxState.NextMailId">
+            <summary>下一个邮件ID</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MailBoxState.MaxMails">
+            <summary>最大邮件数</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MailBoxState.UnreadCount">
+            <summary>未读邮件数</summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.AchievementState">
+            <summary>
+            成就Grain状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Collections.Generic.Dictionary&lt;int, Horizon.Game.Message.Network.AchievementData&gt;</b> Achievements<br/>
+            <b>int</b> TotalPoints<br/>
+            <b>int</b> UnlockedCount<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AchievementState.Achievements">
+            <summary>已解锁成就（成就ID -> 成就数据）</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AchievementState.TotalPoints">
+            <summary>总成就点数</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AchievementState.UnlockedCount">
+            <summary>已解锁成就数</summary>
         </member>
         <member name="T:Horizon.Game.Message.Network.HorizonMessagePacket">
             <summary>

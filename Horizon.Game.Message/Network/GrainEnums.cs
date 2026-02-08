@@ -236,7 +236,133 @@ namespace Horizon.Game.Message.Network
         ActivityStarted = 401,
         ActivityEnded = 402,
         DungeonCompleted = 403,
-        QuestCompleted = 404
+        QuestCompleted = 404,
+
+        // 排行榜事件
+        RankingUpdated = 500,
+        RankingReset = 501,
+
+        // 邮件事件
+        MailSent = 600,
+        MailReceived = 601,
+
+        // 成就事件
+        AchievementUnlocked = 700,
+        AchievementProgressUpdated = 701
+    }
+
+    /// <summary>
+    /// 排行榜类型枚举
+    /// </summary>
+    public enum RankingType
+    {
+        /// <summary>
+        /// 战力排行
+        /// </summary>
+        CombatPower = 0,
+
+        /// <summary>
+        /// 等级排行
+        /// </summary>
+        Level = 1,
+
+        /// <summary>
+        /// 财富排行
+        /// </summary>
+        Wealth = 2,
+
+        /// <summary>
+        /// 成就点数排行
+        /// </summary>
+        AchievementPoints = 3,
+
+        /// <summary>
+        /// PVP积分排行
+        /// </summary>
+        PvpScore = 4
+    }
+
+    /// <summary>
+    /// 邮件状态枚举
+    /// </summary>
+    public enum MailStatus
+    {
+        /// <summary>
+        /// 未读
+        /// </summary>
+        Unread = 0,
+
+        /// <summary>
+        /// 已读
+        /// </summary>
+        Read = 1,
+
+        /// <summary>
+        /// 已领取附件
+        /// </summary>
+        Claimed = 2,
+
+        /// <summary>
+        /// 已删除
+        /// </summary>
+        Deleted = 3
+    }
+
+    /// <summary>
+    /// 邮件类型枚举
+    /// </summary>
+    public enum MailType
+    {
+        /// <summary>
+        /// 系统邮件
+        /// </summary>
+        System = 0,
+
+        /// <summary>
+        /// 玩家邮件
+        /// </summary>
+        Player = 1,
+
+        /// <summary>
+        /// 公会邮件
+        /// </summary>
+        Guild = 2,
+
+        /// <summary>
+        /// 活动奖励邮件
+        /// </summary>
+        ActivityReward = 3
+    }
+
+    /// <summary>
+    /// 成就类型枚举
+    /// </summary>
+    public enum AchievementCategory
+    {
+        /// <summary>
+        /// 战斗成就
+        /// </summary>
+        Combat = 0,
+
+        /// <summary>
+        /// 社交成就
+        /// </summary>
+        Social = 1,
+
+        /// <summary>
+        /// 探索成就
+        /// </summary>
+        Exploration = 2,
+
+        /// <summary>
+        /// 收集成就
+        /// </summary>
+        Collection = 3,
+
+        /// <summary>
+        /// 成长成就
+        /// </summary>
+        Growth = 4
     }
 
     /// <summary>
