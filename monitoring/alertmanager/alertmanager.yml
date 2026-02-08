@@ -1,0 +1,136 @@
+# 混沌世界(HundunWorld) Alertmanager配置
+# 告警通知渠道配置：邮件、Webhook
+# 文档: https://prometheus.io/docs/alerting/latest/configuration/
+
+global:
+  # 邮件发送配置（SMTP）
+  smtp_smarthost: '${SMTP_HOST}:${SMTP_PORT}'
+  smtp_from: '${SMTP_FROM}'
+  smtp_auth_username: '${SMTP_USERNAME}'
+  smtp_auth_password: '${SMTP_PASSWORD}'
+  smtp_require_tls: true
+
+  # 默认解决超时
+  resolve_timeout: 5m
+
+# 通知模板
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# 路由配置
+route:
+  # 默认接收器
+  receiver: 'default-webhook'
+  
+  # 分组配置
+  group_by: ['alertname', 'severity', 'service']
+  group_wait: 30s        # 首次告警等待时间
+  group_interval: 5m     # 同组告警间隔
+  repeat_interval: 4h    # 重复告警间隔
+
+  # 子路由规则
+  routes:
+    # 严重告警 → 邮件 + Webhook
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 10s
+      repeat_interval: 1h
+
+    # 服务宕机告警 → 邮件 + Webhook
+    - match_re:
+        alertname: '(SiloInstanceDown|GatewayInstanceDown)'
+      receiver: 'critical-alerts'
+      group_wait: 0s
+      repeat_interval: 30m
+
+    # 安全告警 → 邮件 + Webhook
+    - match_re:
+        alertname: '(LoginFailureSpike|LoginFailureRateHigh)'
+      receiver: 'security-alerts'
+      group_wait: 10s
+      repeat_interval: 1h
+
+    # 性能告警 → Webhook
+    - match:
+        severity: warning
+      receiver: 'performance-webhook'
+      group_wait: 1m
+      repeat_interval: 4h
+
+# 接收器配置
+receivers:
+  # 默认Webhook接收器
+  - name: 'default-webhook'
+    webhook_configs:
+      - url: '${ALERT_WEBHOOK_URL}'
+        send_resolved: true
+        http_config:
+          basic_auth:
+            username: '${WEBHOOK_AUTH_USERNAME}'
+            password: '${WEBHOOK_AUTH_PASSWORD}'
+
+  # 严重告警接收器（邮件 + Webhook）
+  - name: 'critical-alerts'
+    email_configs:
+      - to: '${ALERT_EMAIL_TO}'
+        subject: '[HundunWorld 严重告警] {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          告警名称: {{ .Labels.alertname }}
+          严重程度: {{ .Labels.severity }}
+          服务: {{ .Labels.service }}
+          实例: {{ .Labels.instance }}
+          摘要: {{ .Annotations.summary }}
+          详情: {{ .Annotations.description }}
+          触发时间: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          ---
+          {{ end }}
+        send_resolved: true
+    webhook_configs:
+      - url: '${ALERT_WEBHOOK_URL}'
+        send_resolved: true
+        http_config:
+          basic_auth:
+            username: '${WEBHOOK_AUTH_USERNAME}'
+            password: '${WEBHOOK_AUTH_PASSWORD}'
+
+  # 安全告警接收器（邮件 + Webhook）
+  - name: 'security-alerts'
+    email_configs:
+      - to: '${SECURITY_ALERT_EMAIL_TO}'
+        subject: '[HundunWorld 安全告警] {{ .GroupLabels.alertname }}'
+        body: |
+          ⚠️ 安全事件告警 ⚠️
+          {{ range .Alerts }}
+          告警名称: {{ .Labels.alertname }}
+          严重程度: {{ .Labels.severity }}
+          实例: {{ .Labels.instance }}
+          摘要: {{ .Annotations.summary }}
+          详情: {{ .Annotations.description }}
+          触发时间: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+          ---
+          {{ end }}
+        send_resolved: true
+    webhook_configs:
+      - url: '${SECURITY_WEBHOOK_URL}'
+        send_resolved: true
+
+  # 性能告警Webhook接收器
+  - name: 'performance-webhook'
+    webhook_configs:
+      - url: '${ALERT_WEBHOOK_URL}'
+        send_resolved: true
+        http_config:
+          basic_auth:
+            username: '${WEBHOOK_AUTH_USERNAME}'
+            password: '${WEBHOOK_AUTH_PASSWORD}'
+
+# 抑制规则（防止重复告警）
+inhibit_rules:
+  # 如果已有critical告警，抑制同名warning告警
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']

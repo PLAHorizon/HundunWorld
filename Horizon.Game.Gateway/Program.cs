@@ -107,6 +107,8 @@ namespace Horizon.Game.Gateway
                     });
                     logging.AddConfiguration(context.Configuration.GetSection("Logging"));
 
+                    // 开发环境启用Seq日志聚合（Phase 2.2）
+                    logging.AddSeqIfEnabled(context.Configuration, "HundunWorld.Gateway");
                 })
                 .ConfigureServices((context, services) =>
                 {
