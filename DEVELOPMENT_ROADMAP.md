@@ -1,9 +1,9 @@
 # 混沌世界项目 - 后续开发路线图
 
 **文档日期**: 2026年2月8日  
-**最后更新**: 2026年2月8日（CharacterGrain静态字段修复、Dependabot配置、PassportGrain单元测试后更新）  
+**最后更新**: 2026年2月8日（基于完整源代码重新审查，更新项目统计数据和架构描述）  
 **基于**: 完整源代码审查  
-**文档版本**: v2.4
+**文档版本**: v2.5
 
 ---
 
@@ -11,9 +11,9 @@
 
 本文档基于对混沌世界（HundunWorld）全部源代码的深入审查，提供详细的后续开发路线图。项目由三大部分组成：
 
-1. **Orleans服务端** — 分布式Actor模型后端（Grains, Silo, Gateway）
-2. **Flax引擎客户端** — 含ECS架构的游戏客户端（200+文件）
-3. **共享基础设施** — 数据模型、消息协议、缓存、数据库（Model, Share, Core, Entities）
+1. **Orleans服务端** — 分布式Actor模型后端（26个Grain实现, 26个Grain接口, Silo, Gateway）
+2. **Flax引擎客户端** — 含ECS架构的游戏客户端（231个C#源文件）
+3. **共享基础设施** — 数据模型、消息协议、缓存、数据库（Model, Share, Core, Entities, Game.Message）
 
 ---
 
@@ -34,7 +34,7 @@
 | 游戏系统 | ⚠️ 85% | 背包/装备/技能/合成系统基础实现、技能树依赖验证、合成品质系统、五行炼制系统 |
 | 区域管理 | ⚠️ 60% | AreaGrain场景实例管理、跨服传送、副本入口 |
 | 活动系统 | ⚠️ 60% | ActivityGrain活动调度、奖励发放、参与记录 |
-| 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善） |
+| 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善）|
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
 | 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
 | 测试基础设施（Phase 1.2） | ✅ 90% | 836个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion/EventConsumerVersioning/PassportGrain） |
@@ -113,18 +113,18 @@ coverlet 6.0.4 — 代码覆盖率
 
 | 测试文件 | 测试数量 | 覆盖内容 |
 |---------|---------|---------|
-| SecurePasswordHasherTests.cs | 20 | 密码哈希、验证、强度检查 |
-| SessionManagerTests.cs | 31 | 会话创建、获取、终止、验证、刷新 |
+| SecurePasswordHasherTests.cs | 23 | 密码哈希、验证、强度检查 |
+| SessionManagerTests.cs | 28 | 会话创建、获取、终止、验证、刷新 |
 | CombatGrainTests.cs | 46 | 五行相克、防御减免、暴击、复活、数据模型 |
-| CombatCalculatorExtendedTests.cs | 23 | 闪避系统、格挡系统、技能冷却、CombatInfo扩展属性 |
-| GameSystemStateTests.cs | 31 | 背包状态、技能状态、合成状态、物品信息 |
+| CombatCalculatorExtendedTests.cs | 26 | 闪避系统、格挡系统、技能冷却、CombatInfo扩展属性 |
+| GameSystemStateTests.cs | 28 | 背包状态、技能状态、合成状态、物品信息 |
 | SocialSystemStateTests.cs | 46 | 社交状态、公会状态、频道状态、路由器状态 |
 | TeamSystemStateTests.cs | 12 | 队伍状态、成员管理、队长转移、解散 |
 | GameServerStateTests.cs | 15 | 服务器状态、在线人数、维护管理、负载监控 |
 | AreaActivityStateTests.cs | 48 | 区域状态、场景实例、传送、活动管理、参与记录、循环依赖检测、合成品质 |
 | WuxingAlchemyCombatLogTests.cs | 65 | 五行属性加成、五行协同、能量恢复、GCD、战斗日志、炼丹系统 |
-| DamageAggregationReplayTests.cs | 45 | 伤害统计聚合、战斗回放、组队五行匹配 |
-| MessageFilterRateLimitTests.cs | 20 | 消息速率限制、敏感词过滤 |
+| DamageAggregationReplayTests.cs | 24 | 伤害统计聚合、战斗回放、组队五行匹配 |
+| MessageFilterRateLimitTests.cs | 21 | 消息速率限制、敏感词过滤 |
 | TradeMarketStateTests.cs | 70 | 交易状态、市场状态、五行共鸣技能、首杀活动通知 |
 | QuestDungeonStateTests.cs | 62 | 任务状态、任务目标进度、副本状态、Boss管理、超时检测、完整工作流 |
 | CorrelationIdMonitoringTests.cs | 20 | CorrelationId生成、格式验证、RequestContext集成、并发安全 |
@@ -661,7 +661,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 5. **Grain接口版本管理** ✅ 已完成
    ```
-   ✅ 为全部25个Grain接口添加版本标记（[global::Orleans.CodeGeneration.Version()]）
+   ✅ 为全部26个Grain接口添加版本标记（[global::Orleans.CodeGeneration.Version()]）
    ✅ ITeamGrain升级至Version(2)（新增组队副本入口和状态版本查询）
    ✅ 实现滚动升级支持（GrainVersioningOptions：BackwardCompatible + AllCompatibleVersions）
    ✅ 保持接口向后兼容（向后兼容性策略已配置）
