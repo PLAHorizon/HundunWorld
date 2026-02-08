@@ -849,9 +849,7 @@ namespace Horizon.Game.Gateway.Tests
         [Fact]
         public void WuxingResonance_ThreeElements_WithThreeSynergies_ReturnsLevel2()
         {
-            // 金(1), 水(3), 木(2) -> synergy pairs: (1,3), (3,2) = 2 pairs; need 3+ unique + 3+ synergy
-            // Actually need 3 synergy pairs: use 木(2), 火(4), 土(5) -> (2,4), (4,5) = 2 pairs
-            // Let's use 4 elements: 金(1), 水(3), 木(2), 火(4) -> (1,3), (3,2), (2,4) = 3 pairs
+            // 4 elements: 金(1), 水(3), 木(2), 火(4) create 3 synergy pairs: (1,3), (3,2), (2,4) which triggers level 2 resonance
             var result = CombatCalculator.CalculateWuxingResonance(new List<int> { 1, 3, 2, 4 });
 
             Assert.Equal(2, result.ResonanceLevel);
