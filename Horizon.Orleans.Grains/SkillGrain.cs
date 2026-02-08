@@ -342,9 +342,29 @@ namespace Horizon.Orleans.Grains
         {
             try
             {
-                _skillState.State.SkillDependencies[skillId] = prerequisites ?? new List<int>();
+                var prereqs = prerequisites ?? new List<int>();
+
+                // Validate: no self-dependency
+                if (prereqs.Contains(skillId))
+                {
+                    _logger.LogWarning("技能不能依赖自身: SkillId={SkillId}", skillId);
+                    return false;
+                }
+
+                // Validate: no circular dependencies
+                var tempDeps = new Dictionary<int, List<int>>(_skillState.State.SkillDependencies);
+                tempDeps[skillId] = prereqs;
+
+                if (HasCircularDependency(skillId, tempDeps))
+                {
+                    _logger.LogWarning("检测到循环依赖: SkillId={SkillId}, Prerequisites={Prerequisites}",
+                        skillId, string.Join(",", prereqs));
+                    return false;
+                }
+
+                _skillState.State.SkillDependencies[skillId] = prereqs;
                 await _skillState.WriteStateAsync();
-                _logger.LogInformation("设置技能依赖: SkillId={SkillId}, Prerequisites={Prerequisites}", skillId, string.Join(",", prerequisites ?? new List<int>()));
+                _logger.LogInformation("设置技能依赖: SkillId={SkillId}, Prerequisites={Prerequisites}", skillId, string.Join(",", prereqs));
                 return true;
             }
             catch (Exception ex)
@@ -352,6 +372,38 @@ namespace Horizon.Orleans.Grains
                 _logger.LogError(ex, "设置技能依赖失败: SkillId={SkillId}", skillId);
                 throw;
             }
+        }
+
+        /// <summary>
+        /// 检测技能依赖图中是否存在从startSkill出发的循环依赖
+        /// </summary>
+        public static bool HasCircularDependency(int startSkill, Dictionary<int, List<int>> dependencies)
+        {
+            var visited = new HashSet<int>();
+            var stack = new Stack<int>();
+            stack.Push(startSkill);
+
+            while (stack.Count > 0)
+            {
+                var current = stack.Pop();
+
+                if (!visited.Add(current) && current == startSkill && visited.Count > 1)
+                    return true;
+
+                if (dependencies.TryGetValue(current, out var prereqs))
+                {
+                    foreach (var prereq in prereqs)
+                    {
+                        if (prereq == startSkill)
+                            return true;
+
+                        if (!visited.Contains(prereq))
+                            stack.Push(prereq);
+                    }
+                }
+            }
+
+            return false;
         }
 
         public Task<int> GetSkillPointsAsync()
