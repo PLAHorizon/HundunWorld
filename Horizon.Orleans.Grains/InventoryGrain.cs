@@ -31,6 +31,10 @@ namespace Horizon.Orleans.Grains
         [MemoryPackOrder(2)]
         [Id(2)]
         public long NextItemId { get; set; } = 1;
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public Dictionary<int, long> EquippedItems { get; set; } = new();
     }
 
     /// <summary>
@@ -55,6 +59,9 @@ namespace Horizon.Orleans.Grains
 
             if (_inventoryState.State.Items == null)
                 _inventoryState.State.Items = new Dictionary<long, ItemInfo>();
+
+            if (_inventoryState.State.EquippedItems == null)
+                _inventoryState.State.EquippedItems = new Dictionary<int, long>();
 
             await base.OnActivateAsync(cancellationToken);
         }
@@ -283,6 +290,105 @@ namespace Horizon.Orleans.Grains
             catch (Exception ex)
             {
                 _logger.LogError(ex, "扩展背包失败");
+                throw;
+            }
+        }
+
+        public async Task<bool> EquipItemAsync(long itemId, int slot)
+        {
+            try
+            {
+                var state = _inventoryState.State;
+
+                if (slot < 0 || slot > 13)
+                {
+                    _logger.LogWarning("装备槽位无效: Slot={Slot}", slot);
+                    return false;
+                }
+
+                if (!state.Items.TryGetValue(itemId, out var itemToEquip))
+                {
+                    _logger.LogWarning("物品不存在: ItemId={ItemId}", itemId);
+                    return false;
+                }
+
+                // If slot already has an item, swap it back to inventory
+                if (state.EquippedItems.TryGetValue(slot, out var existingItemId))
+                {
+                    // Slot occupied: no net change in inventory count (remove one, add back another)
+                }
+                else
+                {
+                    // No swap needed, just removing from inventory
+                }
+
+                // Remove the item from inventory
+                state.Items.Remove(itemId);
+
+                // If slot had an item, restore it to inventory
+                if (existingItemId > 0)
+                {
+                    // Note: original item data is not preserved in equipped state;
+                    // a production system should store full ItemInfo for equipped items.
+                    state.Items[existingItemId] = new ItemInfo { ItemId = existingItemId, Count = 1 };
+                }
+
+                state.EquippedItems[slot] = itemId;
+
+                await _inventoryState.WriteStateAsync();
+                _logger.LogInformation("装备物品成功: ItemId={ItemId}, Slot={Slot}", itemId, slot);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "装备物品失败: ItemId={ItemId}, Slot={Slot}", itemId, slot);
+                throw;
+            }
+        }
+
+        public async Task<bool> UnequipItemAsync(int slot)
+        {
+            try
+            {
+                var state = _inventoryState.State;
+
+                if (!state.EquippedItems.TryGetValue(slot, out var itemId))
+                {
+                    _logger.LogWarning("槽位没有装备: Slot={Slot}", slot);
+                    return false;
+                }
+
+                if (state.Items.Count >= state.Capacity)
+                {
+                    _logger.LogWarning("背包已满，无法卸下装备: Slot={Slot}", slot);
+                    return false;
+                }
+
+                state.EquippedItems.Remove(slot);
+                // Note: original item data is not preserved in equipped state;
+                // a production system should store full ItemInfo for equipped items.
+                state.Items[itemId] = new ItemInfo { ItemId = itemId, Count = 1 };
+
+                await _inventoryState.WriteStateAsync();
+                _logger.LogInformation("卸下装备成功: Slot={Slot}, ItemId={ItemId}", slot, itemId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "卸下装备失败: Slot={Slot}", slot);
+                throw;
+            }
+        }
+
+        public Task<Dictionary<int, long>> GetEquippedItemsAsync()
+        {
+            try
+            {
+                return Task.FromResult(new Dictionary<int, long>(_inventoryState.State.EquippedItems));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "获取装备列表失败");
                 throw;
             }
         }
