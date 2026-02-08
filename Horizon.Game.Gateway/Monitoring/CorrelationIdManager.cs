@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
@@ -48,18 +49,14 @@ namespace Horizon.Game.Gateway.Monitoring
         }
 
         /// <summary>
-        /// 创建包含CorrelationId的日志作用域
+        /// 创建包含CorrelationId的日志作用域（低分配实现）
         /// </summary>
         /// <param name="correlationId">关联ID</param>
         /// <param name="source">请求来源</param>
         /// <returns>日志作用域</returns>
         public IDisposable? CreateLogScope(string correlationId, string source = "Gateway")
         {
-            return _logger.BeginScope(new Dictionary<string, object>
-            {
-                ["CorrelationId"] = correlationId,
-                ["Source"] = source
-            });
+            return _logger.BeginScope(new CorrelationLogScope(correlationId, source));
         }
 
         /// <summary>
@@ -71,6 +68,41 @@ namespace Horizon.Game.Gateway.Monitoring
             var timestamp = DateTime.UtcNow.ToString("yyyyMMdd");
             var guid = Guid.NewGuid().ToString("N")[..8];
             return $"gw-{timestamp}-{guid}";
+        }
+
+        /// <summary>
+        /// 低分配的日志作用域实现
+        /// </summary>
+        private readonly struct CorrelationLogScope : IReadOnlyList<KeyValuePair<string, object>>
+        {
+            private readonly string _correlationId;
+            private readonly string _source;
+
+            public CorrelationLogScope(string correlationId, string source)
+            {
+                _correlationId = correlationId;
+                _source = source;
+            }
+
+            public int Count => 2;
+
+            public KeyValuePair<string, object> this[int index] => index switch
+            {
+                0 => new KeyValuePair<string, object>("CorrelationId", _correlationId),
+                1 => new KeyValuePair<string, object>("Source", _source),
+                _ => throw new IndexOutOfRangeException(nameof(index))
+            };
+
+            public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+            {
+                for (int i = 0; i < Count; i++)
+                    yield return this[i];
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            public override string ToString() =>
+                $"CorrelationId={_correlationId}, Source={_source}";
         }
     }
 }

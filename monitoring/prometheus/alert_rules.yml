@@ -189,10 +189,10 @@ groups:
           description: "P95战斗处理延迟超过200ms: {{ $value }}ms。可能影响玩家体验。"
 
       - alert: HighDeathRate
-        expr: rate(hundunworld_silo_combat_deaths_total[5m]) > 100
+        expr: rate(hundunworld_silo_combat_deaths_total[5m]) > 20
         for: 5m
         labels:
           severity: warning
         annotations:
           summary: "角色死亡率异常偏高"
-          description: "每秒死亡数超过100: {{ $value }}。可能存在平衡性问题或异常情况。"
+          description: "每秒死亡数超过20: {{ $value }}。可能存在平衡性问题或异常情况。"

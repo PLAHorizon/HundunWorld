@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -50,14 +52,8 @@ namespace Horizon.Orleans.Silo.Filters
             var causationId = $"{grainType}.{methodName}";
             RequestContext.Set(CausationIdKey, causationId);
 
-            // 使用结构化日志附带CorrelationId
-            using (_logger.BeginScope(new Dictionary<string, object>
-            {
-                ["CorrelationId"] = correlationId,
-                ["CausationId"] = causationId,
-                ["GrainType"] = grainType,
-                ["MethodName"] = methodName
-            }))
+            // 使用结构化日志附带CorrelationId（低分配方式）
+            using (_logger.BeginScope(new CorrelationLogScope(correlationId, causationId, grainType, methodName)))
             {
                 if (isNew)
                 {
@@ -94,6 +90,47 @@ namespace Horizon.Orleans.Silo.Filters
         public static void SetCorrelationId(string correlationId)
         {
             RequestContext.Set(CorrelationIdKey, correlationId);
+        }
+
+        /// <summary>
+        /// 低分配的日志作用域实现，避免每次Grain调用创建Dictionary
+        /// </summary>
+        private readonly struct CorrelationLogScope : IReadOnlyList<KeyValuePair<string, object>>
+        {
+            private readonly string _correlationId;
+            private readonly string _causationId;
+            private readonly string _grainType;
+            private readonly string _methodName;
+
+            public CorrelationLogScope(string correlationId, string causationId, string grainType, string methodName)
+            {
+                _correlationId = correlationId;
+                _causationId = causationId;
+                _grainType = grainType;
+                _methodName = methodName;
+            }
+
+            public int Count => 4;
+
+            public KeyValuePair<string, object> this[int index] => index switch
+            {
+                0 => new KeyValuePair<string, object>("CorrelationId", _correlationId),
+                1 => new KeyValuePair<string, object>("CausationId", _causationId),
+                2 => new KeyValuePair<string, object>("GrainType", _grainType),
+                3 => new KeyValuePair<string, object>("MethodName", _methodName),
+                _ => throw new IndexOutOfRangeException(nameof(index))
+            };
+
+            public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
+            {
+                for (int i = 0; i < Count; i++)
+                    yield return this[i];
+            }
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+            public override string ToString() =>
+                $"CorrelationId={_correlationId}, CausationId={_causationId}, GrainType={_grainType}, MethodName={_methodName}";
         }
     }
 }
