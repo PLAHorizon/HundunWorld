@@ -1,3 +1,4 @@
+using Horizon.Game.Message.Network;
 using Horizon.Orleans.Interface;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -10,71 +11,6 @@ using System.Threading.Tasks;
 
 namespace Horizon.Orleans.Grains
 {
-    /// <summary>
-    /// 活动系统状态
-    /// </summary>
-    [MemoryPackable(SerializeLayout.Explicit)]
-    [GenerateSerializer]
-    [Serializable]
-    public partial class ActivityState
-    {
-        /// <summary>
-        /// 活动名称
-        /// </summary>
-        [MemoryPackOrder(0)]
-        [Id(0)]
-        public string Name { get; set; } = "";
-
-        /// <summary>
-        /// 活动描述
-        /// </summary>
-        [MemoryPackOrder(1)]
-        [Id(1)]
-        public string Description { get; set; } = "";
-
-        /// <summary>
-        /// 活动开始时间
-        /// </summary>
-        [MemoryPackOrder(2)]
-        [Id(2)]
-        public DateTime StartTime { get; set; }
-
-        /// <summary>
-        /// 活动结束时间
-        /// </summary>
-        [MemoryPackOrder(3)]
-        [Id(3)]
-        public DateTime EndTime { get; set; }
-
-        /// <summary>
-        /// 最大参与人数
-        /// </summary>
-        [MemoryPackOrder(4)]
-        [Id(4)]
-        public int MaxParticipants { get; set; }
-
-        /// <summary>
-        /// 活动状态
-        /// </summary>
-        [MemoryPackOrder(5)]
-        [Id(5)]
-        public int Status { get; set; } = (int)ActivityStatus.NotStarted;
-
-        /// <summary>
-        /// 是否已创建
-        /// </summary>
-        [MemoryPackOrder(6)]
-        [Id(6)]
-        public bool IsCreated { get; set; }
-
-        /// <summary>
-        /// 参与者列表（玩家ID -> 参与记录）
-        /// </summary>
-        [MemoryPackOrder(7)]
-        [Id(7)]
-        public Dictionary<Guid, ActivityParticipation> Participants { get; set; } = new();
-    }
-
     /// <summary>
     /// 活动系统Grain实现 - 负责定时活动调度、奖励发放、参与记录
     /// </summary>

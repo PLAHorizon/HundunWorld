@@ -1,3 +1,4 @@
+using Horizon.Game.Message.Network;
 using Horizon.Orleans.Interface;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -10,57 +11,6 @@ using System.Threading.Tasks;
 
 namespace Horizon.Orleans.Grains
 {
-    /// <summary>
-    /// 区域管理状态
-    /// </summary>
-    [MemoryPackable(SerializeLayout.Explicit)]
-    [GenerateSerializer]
-    [Serializable]
-    public partial class AreaState
-    {
-        /// <summary>
-        /// 区域名称
-        /// </summary>
-        [MemoryPackOrder(0)]
-        [Id(0)]
-        public string AreaName { get; set; } = "";
-
-        /// <summary>
-        /// 区域类型（如：野外、副本、城镇）
-        /// </summary>
-        [MemoryPackOrder(1)]
-        [Id(1)]
-        public string AreaType { get; set; } = "";
-
-        /// <summary>
-        /// 区域最大玩家数
-        /// </summary>
-        [MemoryPackOrder(2)]
-        [Id(2)]
-        public int MaxPlayers { get; set; } = 100;
-
-        /// <summary>
-        /// 是否已初始化
-        /// </summary>
-        [MemoryPackOrder(3)]
-        [Id(3)]
-        public bool IsInitialized { get; set; }
-
-        /// <summary>
-        /// 场景实例列表
-        /// </summary>
-        [MemoryPackOrder(4)]
-        [Id(4)]
-        public Dictionary<long, SceneInstanceInfo> Instances { get; set; } = new();
-
-        /// <summary>
-        /// 下一个实例ID
-        /// </summary>
-        [MemoryPackOrder(5)]
-        [Id(5)]
-        public long NextInstanceId { get; set; } = 1;
-    }
-
     /// <summary>
     /// 区域管理Grain实现 - 负责场景实例创建/销毁、跨服传送、副本入口
     /// </summary>

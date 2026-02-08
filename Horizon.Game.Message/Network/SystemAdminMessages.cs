@@ -385,7 +385,7 @@ namespace Horizon.Game.Message.Network
         /// </summary>
         [MemoryPackOrder(1)]
         [Id(1)]
-        public GameEventType EventType { get; set; }
+        public ClientGameEventType EventType { get; set; }
 
         /// <summary>
         /// 事件名称
@@ -447,7 +447,7 @@ namespace Horizon.Game.Message.Network
     /// <summary>
     /// 游戏事件类型
     /// </summary>
-    public enum GameEventType : byte
+    public enum ClientGameEventType : byte
     {
         /// <summary>
         /// 玩家登录

@@ -23,24 +23,6 @@ using TouchSocket.Core;
 namespace Horizon.Orleans.Grains
 {
     /// <summary>
-    /// Represents the state of a character.
-    /// </summary>
-    [MemoryPackable(SerializeLayout.Explicit)]
-    [GenerateSerializer]
-    [Serializable]
-    public partial class CharacterState
-    {
-        [MemoryPackOrder(0)]
-        [Id(0)]
-        public CharacterInfo CharacterInfo { get; set; }
-        
-        [MemoryPackOrder(1)]
-        [Id(1)]
-        public bool IsOnline { get; set; }
-    }
-    
-
-    /// <summary>
     /// Character Grain to manage all character-related logic and data.
     /// </summary>
     public class CharacterGrain : Grain<CharacterState>, ICharacterGrain

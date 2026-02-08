@@ -12,50 +12,6 @@ using System.Threading.Tasks;
 namespace Horizon.Orleans.Grains
 {
     /// <summary>
-    /// 技能状态
-    /// </summary>
-    [MemoryPackable(SerializeLayout.Explicit)]
-    [GenerateSerializer]
-    [Serializable]
-    public partial class SkillState
-    {
-        /// <summary>
-        /// 已学习技能列表（技能ID -> 技能信息）
-        /// </summary>
-        [MemoryPackOrder(0)]
-        [Id(0)]
-        public Dictionary<int, SkillInfo> LearnedSkills { get; set; } = new();
-
-        /// <summary>
-        /// 技能冷却记录（技能ID -> 上次施放时间）
-        /// </summary>
-        [MemoryPackOrder(1)]
-        [Id(1)]
-        public Dictionary<int, DateTime> SkillCooldowns { get; set; } = new();
-
-        /// <summary>
-        /// 可用技能点
-        /// </summary>
-        [MemoryPackOrder(2)]
-        [Id(2)]
-        public int SkillPoints { get; set; } = 0;
-
-        /// <summary>
-        /// 已使用技能点总数
-        /// </summary>
-        [MemoryPackOrder(3)]
-        [Id(3)]
-        public int TotalSkillPointsUsed { get; set; } = 0;
-
-        /// <summary>
-        /// 技能前置依赖（技能ID -> 前置技能ID列表）
-        /// </summary>
-        [MemoryPackOrder(4)]
-        [Id(4)]
-        public Dictionary<int, List<int>> SkillDependencies { get; set; } = new();
-    }
-
-    /// <summary>
     /// 技能系统Grain实现 - 负责技能学习、释放、冷却管理
     /// </summary>
     public class SkillGrain : Grain, ISkillGrain

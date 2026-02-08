@@ -1,3 +1,4 @@
+using Horizon.Game.Message.Network;
 using Horizon.Orleans.Interface;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -10,36 +11,6 @@ using System.Threading.Tasks;
 
 namespace Horizon.Orleans.Grains
 {
-    /// <summary>
-    /// 任务系统状态
-    /// </summary>
-    [MemoryPackable(SerializeLayout.Explicit)]
-    [GenerateSerializer]
-    [Serializable]
-    public partial class QuestState
-    {
-        /// <summary>
-        /// 进行中的任务 (QuestId -> QuestData)
-        /// </summary>
-        [MemoryPackOrder(0)]
-        [Id(0)]
-        public Dictionary<int, QuestData> ActiveQuests { get; set; } = new();
-
-        /// <summary>
-        /// 已完成的任务 (QuestId -> QuestData)
-        /// </summary>
-        [MemoryPackOrder(1)]
-        [Id(1)]
-        public Dictionary<int, QuestData> CompletedQuests { get; set; } = new();
-
-        /// <summary>
-        /// 最大同时接受任务数
-        /// </summary>
-        [MemoryPackOrder(2)]
-        [Id(2)]
-        public int MaxActiveQuests { get; set; } = 20;
-    }
-
     /// <summary>
     /// 任务系统Grain实现 - 负责任务接取、进度更新、完成、放弃
     /// </summary>

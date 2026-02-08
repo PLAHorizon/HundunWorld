@@ -5549,6 +5549,1721 @@
             可见性状态
             </summary>
         </member>
+        <member name="T:Horizon.Game.Message.Network.SceneInstanceInfo">
+            <summary>
+            场景实例信息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>long</b> InstanceId<br/>
+            <b>string</b> SceneName<br/>
+            <b>int</b> MaxPlayers<br/>
+            <b>int</b> CurrentPlayers<br/>
+            <b>System.Collections.Generic.HashSet&lt;System.Guid&gt;</b> Players<br/>
+            <b>System.DateTime</b> CreatedTime<br/>
+            <b>bool</b> IsActive<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.TeleportResult">
+            <summary>
+            传送结果
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>bool</b> Success<br/>
+            <b>string</b> Message<br/>
+            <b>int</b> TargetAreaId<br/>
+            <b>long</b> TargetInstanceId<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.AreaInfo">
+            <summary>
+            区域信息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>int</b> AreaId<br/>
+            <b>string</b> AreaName<br/>
+            <b>string</b> AreaType<br/>
+            <b>int</b> MaxPlayers<br/>
+            <b>int</b> TotalPlayers<br/>
+            <b>int</b> InstanceCount<br/>
+            <b>bool</b> IsInitialized<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.ActivityInfo">
+            <summary>
+            活动信息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>int</b> ActivityId<br/>
+            <b>string</b> Name<br/>
+            <b>string</b> Description<br/>
+            <b>System.DateTime</b> StartTime<br/>
+            <b>System.DateTime</b> EndTime<br/>
+            <b>int</b> MaxParticipants<br/>
+            <b>int</b> CurrentParticipants<br/>
+            <b>int</b> Status<br/>
+            <b>bool</b> IsCreated<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.ActivityParticipation">
+            <summary>
+            活动参与记录
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Guid</b> PlayerId<br/>
+            <b>System.DateTime</b> JoinTime<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.Game.Message.Network.RewardRecord&gt;</b> Rewards<br/>
+            <b>bool</b> IsActive<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.RewardRecord">
+            <summary>
+            奖励记录
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>int</b> RewardTemplateId<br/>
+            <b>int</b> Quantity<br/>
+            <b>System.DateTime</b> DistributedTime<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.TradeInfo">
+            <summary>
+            交易信息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Guid</b> TradeId<br/>
+            <b>System.Guid</b> SellerId<br/>
+            <b>System.Guid</b> BuyerId<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.Game.Message.Network.TradeItem&gt;</b> SellerItems<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.Game.Message.Network.TradeItem&gt;</b> BuyerItems<br/>
+            <b>long</b> SellerCurrency<br/>
+            <b>long</b> BuyerCurrency<br/>
+            <b>bool</b> SellerConfirmed<br/>
+            <b>bool</b> BuyerConfirmed<br/>
+            <b>int</b> Status<br/>
+            <b>System.DateTime</b> CreatedTime<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.TradeItem">
+            <summary>
+            交易物品
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>long</b> ItemId<br/>
+            <b>int</b> Quantity<br/>
+            <b>string</b> ItemName<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.TradeResult">
+            <summary>
+            交易结果
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>bool</b> Success<br/>
+            <b>string</b> Message<br/>
+            <b>System.Guid</b> TradeId<br/>
+            <b>long</b> TotalAmount<br/>
+            <b>long</b> Tax<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.MarketListing">
+            <summary>
+            市场商品信息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>long</b> ListingId<br/>
+            <b>System.Guid</b> SellerId<br/>
+            <b>string</b> SellerName<br/>
+            <b>long</b> ItemId<br/>
+            <b>string</b> ItemName<br/>
+            <b>int</b> Quantity<br/>
+            <b>long</b> Price<br/>
+            <b>int</b> CurrencyType<br/>
+            <b>System.DateTime</b> ListTime<br/>
+            <b>int</b> Status<br/>
+            <b>int</b> Category<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.MarketStats">
+            <summary>
+            市场统计信息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>int</b> TotalListings<br/>
+            <b>long</b> TotalTransactions<br/>
+            <b>long</b> TotalVolume<br/>
+            <b>int</b> ActiveListings<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.CraftingResult">
+            <summary>
+            合成结果
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>bool</b> Success<br/>
+            <b>int</b> RecipeId<br/>
+            <b>string</b> Message<br/>
+            <b>long</b> OutputItemId<br/>
+            <b>int</b> Quality<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.CraftingResult.Quality">
+            <summary>
+            品质 (0=普通, 1=精良, 2=稀有, 3=史诗, 4=传说)
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.CraftingHistoryEntry">
+            <summary>
+            合成历史记录
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>int</b> RecipeId<br/>
+            <b>bool</b> Success<br/>
+            <b>System.DateTime</b> Timestamp<br/>
+            <b>long</b> OutputItemId<br/>
+            <b>int</b> Quality<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.CraftingHistoryEntry.Quality">
+            <summary>
+            品质 (0=普通, 1=精良, 2=稀有, 3=史诗, 4=传说)
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.AlchemyRecipe">
+            <summary>
+            炼丹配方
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>int</b> RecipeId<br/>
+            <b>string</b> Name<br/>
+            <b>int</b> RequiredPrimaryElement<br/>
+            <b>int</b> RequiredSecondaryElement<br/>
+            <b>long</b> OutputItemId<br/>
+            <b>float</b> BaseProficiencyGain<br/>
+            <b>float</b> MinProficiency<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.AlchemyResult">
+            <summary>
+            炼丹结果
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>bool</b> Success<br/>
+            <b>int</b> RecipeId<br/>
+            <b>string</b> Message<br/>
+            <b>long</b> OutputItemId<br/>
+            <b>int</b> Quality<br/>
+            <b>float</b> ProficiencyGain<br/>
+            <b>float</b> ElementalHarmony<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AlchemyResult.Quality">
+            <summary>
+            品质 (0=普通, 1=精良, 2=稀有, 3=史诗, 4=传说)
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.AlchemyHistoryEntry">
+            <summary>
+            炼丹历史记录
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>int</b> RecipeId<br/>
+            <b>bool</b> Success<br/>
+            <b>System.DateTime</b> Timestamp<br/>
+            <b>long</b> OutputItemId<br/>
+            <b>int</b> Quality<br/>
+            <b>int</b> PrimaryElement<br/>
+            <b>int</b> SecondaryElement<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AlchemyHistoryEntry.Quality">
+            <summary>
+            品质 (0=普通, 1=精良, 2=稀有, 3=史诗, 4=传说)
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.CombatLogEntry">
+            <summary>
+            战斗日志条目
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.DateTime</b> Timestamp<br/>
+            <b>ulong</b> AttackerId<br/>
+            <b>ulong</b> DefenderId<br/>
+            <b>float</b> DamageDealt<br/>
+            <b>int</b> SkillId<br/>
+            <b>int</b> ElementType<br/>
+            <b>bool</b> IsCritical<br/>
+            <b>bool</b> IsDodged<br/>
+            <b>bool</b> IsBlocked<br/>
+            <b>Horizon.Game.Message.Network.CombatLogType</b> LogType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.QuestData">
+            <summary>
+            任务数据
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>int</b> QuestId<br/>
+            <b>string</b> QuestName<br/>
+            <b>string</b> Description<br/>
+            <b>int</b> QuestType<br/>
+            <b>int</b> Level<br/>
+            <b>int</b> Status<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.Game.Message.Network.QuestObjectiveData&gt;</b> Objectives<br/>
+            <b>System.Collections.Generic.Dictionary&lt;string, int&gt;</b> Rewards<br/>
+            <b>System.DateTime</b> AcceptTime<br/>
+            <b>System.DateTime?</b> CompleteTime<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.QuestData.QuestType">
+            <summary>
+            任务类型 (0=主线, 1=支线, 2=日常, 3=周常)
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.QuestData.Status">
+            <summary>
+            任务状态 (0=进行中, 1=可提交, 2=已完成, 3=已放弃)
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.QuestObjectiveData">
+            <summary>
+            任务目标数据
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> ObjectiveType<br/>
+            <b>string</b> Description<br/>
+            <b>int</b> RequiredCount<br/>
+            <b>int</b> CurrentCount<br/>
+            <b>bool</b> IsCompleted<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.QuestCompleteResult">
+            <summary>
+            任务完成结果
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>bool</b> Success<br/>
+            <b>string</b> Message<br/>
+            <b>int</b> QuestId<br/>
+            <b>System.Collections.Generic.Dictionary&lt;string, int&gt;</b> Rewards<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.DungeonData">
+            <summary>
+            副本数据
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>int</b> DungeonTemplateId<br/>
+            <b>string</b> DungeonName<br/>
+            <b>int</b> Difficulty<br/>
+            <b>int</b> MaxPlayers<br/>
+            <b>int</b> CurrentPlayers<br/>
+            <b>int</b> Status<br/>
+            <b>int</b> TimeLimitMinutes<br/>
+            <b>System.DateTime?</b> StartTime<br/>
+            <b>bool</b> IsCreated<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.Game.Message.Network.DungeonBossData&gt;</b> Bosses<br/>
+            <b>int</b> DefeatedBossCount<br/>
+            <b>System.Guid?</b> TeamId<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.DungeonData.Difficulty">
+            <summary>
+            难度 (0=普通, 1=困难, 2=英雄, 3=地狱)
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.DungeonData.Status">
+            <summary>
+            副本状态 (0=等待中, 1=进行中, 2=已完成, 3=失败)
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.DungeonData.TeamId">
+            <summary>
+            关联的队伍ID（组队副本使用）
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.DungeonBossData">
+            <summary>
+            副本Boss数据
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>int</b> BossId<br/>
+            <b>string</b> BossName<br/>
+            <b>bool</b> IsDefeated<br/>
+            <b>System.DateTime?</b> DefeatTime<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.DungeonCompleteResult">
+            <summary>
+            副本完成结果
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>bool</b> Success<br/>
+            <b>string</b> Message<br/>
+            <b>int</b> DungeonTemplateId<br/>
+            <b>int</b> Difficulty<br/>
+            <b>int</b> TotalBosses<br/>
+            <b>int</b> DefeatedBosses<br/>
+            <b>double</b> ClearTimeSeconds<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.DungeonCompleteResult.ClearTimeSeconds">
+            <summary>
+            通关时间（秒）
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.TeamDungeonResult">
+            <summary>
+            组队副本入口结果
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>bool</b> Success<br/>
+            <b>string</b> Message<br/>
+            <b>System.Guid</b> DungeonInstanceId<br/>
+            <b>System.Collections.Generic.List&lt;System.Guid&gt;</b> EnteredMembers<br/>
+            <b>int</b> DungeonTemplateId<br/>
+            <b>int</b> Difficulty<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TeamDungeonResult.Success">
+            <summary>是否成功</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TeamDungeonResult.Message">
+            <summary>结果消息</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TeamDungeonResult.DungeonInstanceId">
+            <summary>副本实例ID（用于后续操作）</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TeamDungeonResult.EnteredMembers">
+            <summary>进入副本的成员ID列表</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TeamDungeonResult.DungeonTemplateId">
+            <summary>副本模板ID</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TeamDungeonResult.Difficulty">
+            <summary>难度</summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.EventProcessingStats">
+            <summary>
+            事件处理统计信息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>long</b> TotalEventsProcessed<br/>
+            <b>System.Collections.Generic.Dictionary&lt;int, long&gt;</b> EventTypeCounters<br/>
+            <b>long</b> FailedEvents<br/>
+            <b>long</b> LastProcessedTimestamp<br/>
+            <b>string</b> Namespace<br/>
+            <b>long</b> StatsStartTimestamp<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.EventProcessingStats.TotalEventsProcessed">
+            <summary>总处理事件数</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.EventProcessingStats.EventTypeCounters">
+            <summary>各事件类型处理计数</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.EventProcessingStats.FailedEvents">
+            <summary>处理失败计数</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.EventProcessingStats.LastProcessedTimestamp">
+            <summary>最后处理事件时间（UTC Ticks）</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.EventProcessingStats.Namespace">
+            <summary>订阅的命名空间</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.EventProcessingStats.StatsStartTimestamp">
+            <summary>统计起始时间（UTC Ticks）</summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.ProcessedEventSummary">
+            <summary>
+            已处理事件摘要
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> EventId<br/>
+            <b>Horizon.Game.Message.Network.GameEventType</b> EventType<br/>
+            <b>ulong</b> CharacterId<br/>
+            <b>long</b> ProcessedTimestamp<br/>
+            <b>bool</b> Success<br/>
+            <b>string</b> Description<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.ProcessedEventSummary.EventId">
+            <summary>事件ID</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.ProcessedEventSummary.EventType">
+            <summary>事件类型</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.ProcessedEventSummary.CharacterId">
+            <summary>触发角色ID</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.ProcessedEventSummary.ProcessedTimestamp">
+            <summary>处理时间（UTC Ticks）</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.ProcessedEventSummary.Success">
+            <summary>是否处理成功</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.ProcessedEventSummary.Description">
+            <summary>事件描述</summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.GameEvent">
+            <summary>
+            游戏事件基类 — 通过Orleans Stream发布的事件消息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> EventId<br/>
+            <b>Horizon.Game.Message.Network.GameEventType</b> EventType<br/>
+            <b>long</b> Timestamp<br/>
+            <b>ulong</b> CharacterId<br/>
+            <b>string</b> Description<br/>
+            <b>System.Collections.Generic.Dictionary&lt;string, string&gt;</b> Metadata<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GameEvent.EventId">
+            <summary>事件唯一ID</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GameEvent.EventType">
+            <summary>事件类型</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GameEvent.Timestamp">
+            <summary>事件发生时间（UTC Ticks）</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GameEvent.CharacterId">
+            <summary>触发事件的角色ID（0表示系统事件）</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GameEvent.Description">
+            <summary>事件描述</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GameEvent.Metadata">
+            <summary>附加数据（JSON格式的扩展信息）</summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.EffectType">
+            <summary>
+            效果类型
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.CombatLogType">
+            <summary>
+            战斗日志类型
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.ActivityStatus">
+            <summary>
+            活动状态枚举
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.ActivityStatus.NotStarted">
+            <summary>
+            未开始
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.ActivityStatus.Active">
+            <summary>
+            进行中
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.ActivityStatus.Ended">
+            <summary>
+            已结束
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.ActivityStatus.Cancelled">
+            <summary>
+            已取消
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.TradeStatus">
+            <summary>
+            交易状态枚举
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.TradeStatus.Created">
+            <summary>
+            已创建
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.TradeStatus.BothConfirmed">
+            <summary>
+            双方确认
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.TradeStatus.Completed">
+            <summary>
+            已完成
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.TradeStatus.Cancelled">
+            <summary>
+            已取消
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.TradeStatus.Failed">
+            <summary>
+            失败
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.MarketListingStatus">
+            <summary>
+            市场商品状态枚举
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.MarketListingStatus.Active">
+            <summary>
+            上架中
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.MarketListingStatus.Sold">
+            <summary>
+            已售出
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.MarketListingStatus.Delisted">
+            <summary>
+            已下架
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.MarketListingStatus.Expired">
+            <summary>
+            已过期
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.QuestProgressStatus">
+            <summary>
+            任务状态枚举
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.QuestProgressStatus.InProgress">
+            <summary>
+            进行中
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.QuestProgressStatus.ReadyToSubmit">
+            <summary>
+            可提交（所有目标已完成）
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.QuestProgressStatus.Completed">
+            <summary>
+            已完成
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.QuestProgressStatus.Abandoned">
+            <summary>
+            已放弃
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.DungeonStatus">
+            <summary>
+            副本状态枚举
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.DungeonStatus.Waiting">
+            <summary>
+            等待中
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.DungeonStatus.InProgress">
+            <summary>
+            进行中
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.DungeonStatus.Completed">
+            <summary>
+            已完成
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.DungeonStatus.Failed">
+            <summary>
+            失败
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.DungeonDifficulty">
+            <summary>
+            副本难度枚举
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.DungeonDifficulty.Normal">
+            <summary>
+            普通
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.DungeonDifficulty.Hard">
+            <summary>
+            困难
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.DungeonDifficulty.Heroic">
+            <summary>
+            英雄
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.DungeonDifficulty.Hell">
+            <summary>
+            地狱
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.GameStreamNamespaces">
+            <summary>
+            游戏事件流命名空间常量
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.GameStreamNamespaces.CharacterEvents">
+            <summary>角色事件（登录、登出、升级等）</summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.GameStreamNamespaces.CombatEvents">
+            <summary>战斗事件（攻击、死亡、复活等）</summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.GameStreamNamespaces.SocialEvents">
+            <summary>社交事件（好友、公会、组队等）</summary>
+        </member>
+        <member name="F:Horizon.Game.Message.Network.GameStreamNamespaces.SystemEvents">
+            <summary>系统事件（服务器状态、活动等）</summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.GameEventType">
+            <summary>
+            游戏事件类型枚举
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.IGameEventPublisher">
+            <summary>
+            游戏事件发布器接口 — 用于向Orleans Stream发布游戏事件
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.Message.Network.IGameEventPublisher.PublishCharacterEventAsync(Horizon.Game.Message.Network.GameEvent)">
+            <summary>发布角色事件</summary>
+        </member>
+        <member name="M:Horizon.Game.Message.Network.IGameEventPublisher.PublishCombatEventAsync(Horizon.Game.Message.Network.GameEvent)">
+            <summary>发布战斗事件</summary>
+        </member>
+        <member name="M:Horizon.Game.Message.Network.IGameEventPublisher.PublishSocialEventAsync(Horizon.Game.Message.Network.GameEvent)">
+            <summary>发布社交事件</summary>
+        </member>
+        <member name="M:Horizon.Game.Message.Network.IGameEventPublisher.PublishSystemEventAsync(Horizon.Game.Message.Network.GameEvent)">
+            <summary>发布系统事件</summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.CombatState">
+            <summary>
+            战斗状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Collections.Generic.Dictionary&lt;ulong, Horizon.Game.Message.Network.CombatInfo&gt;</b> CombatParticipants<br/>
+            <b>System.Collections.Generic.Dictionary&lt;ulong, Horizon.Game.Message.Network.EffectInfo&gt;</b> ActiveEffects<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.Game.Message.Network.CombatLogEntry&gt;</b> CombatLog<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.CombatInfo">
+            <summary>
+            战斗信息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> CharacterId<br/>
+            <b>bool</b> IsInCombat<br/>
+            <b>ulong</b> TargetId<br/>
+            <b>System.DateTime</b> LastActionTime<br/>
+            <b>float</b> Health<br/>
+            <b>float</b> MaxHealth<br/>
+            <b>float</b> AttackPower<br/>
+            <b>float</b> Defense<br/>
+            <b>int</b> WuxingElement<br/>
+            <b>float</b> Energy<br/>
+            <b>float</b> MaxEnergy<br/>
+            <b>float</b> DodgeRate<br/>
+            <b>float</b> BlockRate<br/>
+            <b>float</b> CritRate<br/>
+            <b>float</b> CritDamageMultiplier<br/>
+            <b>System.Collections.Generic.Dictionary&lt;int, System.DateTime&gt;</b> SkillCooldowns<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.CombatInfo.SkillCooldowns">
+            <summary>
+            技能冷却记录（技能ID -> 上次施放时间）
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.EffectInfo">
+            <summary>
+            效果信息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>int</b> EffectId<br/>
+            <b>string</b> EffectName<br/>
+            <b>ulong</b> TargetId<br/>
+            <b>ulong</b> SourceId<br/>
+            <b>float</b> Duration<br/>
+            <b>float</b> RemainingDuration<br/>
+            <b>float</b> Intensity<br/>
+            <b>int</b> StackCount<br/>
+            <b>Horizon.Game.Message.Network.EffectType</b> Type<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.CharacterState">
+            <summary>
+            Represents the state of a character.
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>Horizon.Game.Message.Network.CharacterInfo</b> CharacterInfo<br/>
+            <b>bool</b> IsOnline<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.InventoryState">
+            <summary>
+            背包状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Collections.Generic.Dictionary&lt;long, Horizon.Game.Message.Network.ItemInfo&gt;</b> Items<br/>
+            <b>int</b> Capacity<br/>
+            <b>long</b> NextItemId<br/>
+            <b>System.Collections.Generic.Dictionary&lt;int, long&gt;</b> EquippedItems<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.SkillState">
+            <summary>
+            技能状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Collections.Generic.Dictionary&lt;int, Horizon.Game.Message.Network.SkillInfo&gt;</b> LearnedSkills<br/>
+            <b>System.Collections.Generic.Dictionary&lt;int, System.DateTime&gt;</b> SkillCooldowns<br/>
+            <b>int</b> SkillPoints<br/>
+            <b>int</b> TotalSkillPointsUsed<br/>
+            <b>System.Collections.Generic.Dictionary&lt;int, System.Collections.Generic.List&lt;int&gt;&gt;</b> SkillDependencies<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SkillState.LearnedSkills">
+            <summary>
+            已学习技能列表（技能ID -> 技能信息）
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SkillState.SkillCooldowns">
+            <summary>
+            技能冷却记录（技能ID -> 上次施放时间）
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SkillState.SkillPoints">
+            <summary>
+            可用技能点
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SkillState.TotalSkillPointsUsed">
+            <summary>
+            已使用技能点总数
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SkillState.SkillDependencies">
+            <summary>
+            技能前置依赖（技能ID -> 前置技能ID列表）
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.CraftingState">
+            <summary>
+            合成系统状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Collections.Generic.Dictionary&lt;int, Horizon.Game.Message.Network.CraftingRecipe&gt;</b> LearnedRecipes<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.Game.Message.Network.CraftingHistoryEntry&gt;</b> CraftingHistory<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.CraftingState.LearnedRecipes">
+            <summary>
+            已学习配方（配方ID -> 配方信息）
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.CraftingState.CraftingHistory">
+            <summary>
+            合成历史记录
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.AlchemyState">
+            <summary>
+            炼丹系统状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Collections.Generic.Dictionary&lt;int, Horizon.Game.Message.Network.AlchemyRecipe&gt;</b> LearnedRecipes<br/>
+            <b>float</b> Proficiency<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.Game.Message.Network.AlchemyHistoryEntry&gt;</b> AlchemyHistory<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AlchemyState.LearnedRecipes">
+            <summary>
+            已学习配方（配方ID -> 配方信息）
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AlchemyState.Proficiency">
+            <summary>
+            炼丹熟练度
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AlchemyState.AlchemyHistory">
+            <summary>
+            炼丹历史记录
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.SocialState">
+            <summary>
+            社交系统状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Collections.Generic.Dictionary&lt;System.Guid, Horizon.Game.Message.Network.FriendInfo&gt;</b> Friends<br/>
+            <b>System.Collections.Generic.Dictionary&lt;System.Guid, Horizon.Game.Message.Network.FriendRequest&gt;</b> FriendRequests<br/>
+            <b>System.Collections.Generic.Dictionary&lt;int, System.Collections.Generic.List&lt;Horizon.Game.Message.Network.ChatMessage&gt;&gt;</b> ChatHistory<br/>
+            <b>System.Collections.Generic.HashSet&lt;System.Guid&gt;</b> BlockedPlayers<br/>
+            <b>int</b> MaxFriends<br/>
+            <b>int</b> MaxChatHistoryPerChannel<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SocialState.Friends">
+            <summary>
+            好友列表（好友ID -> 好友信息）
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SocialState.FriendRequests">
+            <summary>
+            好友申请列表（申请ID -> 申请信息）
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SocialState.ChatHistory">
+            <summary>
+            聊天历史（频道类型 -> 消息列表）
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SocialState.BlockedPlayers">
+            <summary>
+            黑名单
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SocialState.MaxFriends">
+            <summary>
+            最大好友数量
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SocialState.MaxChatHistoryPerChannel">
+            <summary>
+            每个频道最大缓存消息数量
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.FriendRequest">
+            <summary>
+            好友申请信息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Guid</b> RequestId<br/>
+            <b>System.Guid</b> RequesterId<br/>
+            <b>System.Guid</b> TargetId<br/>
+            <b>string</b> Message<br/>
+            <b>long</b> Timestamp<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.GuildState">
+            <summary>
+            公会状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> GuildName<br/>
+            <b>System.Guid</b> LeaderId<br/>
+            <b>bool</b> IsCreated<br/>
+            <b>int</b> Level<br/>
+            <b>int</b> MaxMembers<br/>
+            <b>string</b> Declaration<br/>
+            <b>System.Collections.Generic.Dictionary&lt;System.Guid, Horizon.Game.Message.Network.GuildMemberState&gt;</b> Members<br/>
+            <b>System.Collections.Generic.Dictionary&lt;System.Guid, Horizon.Game.Message.Network.GuildApplication&gt;</b> Applications<br/>
+            <b>System.Collections.Generic.Dictionary&lt;string, int&gt;</b> Resources<br/>
+            <b>long</b> CreateTime<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GuildState.GuildName">
+            <summary>
+            公会名称
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GuildState.LeaderId">
+            <summary>
+            创建者/帮主ID
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GuildState.IsCreated">
+            <summary>
+            公会是否已创建
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GuildState.Level">
+            <summary>
+            公会等级
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GuildState.MaxMembers">
+            <summary>
+            最大成员数
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GuildState.Declaration">
+            <summary>
+            公会宣言
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GuildState.Members">
+            <summary>
+            成员列表（成员ID -> 成员信息）
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GuildState.Applications">
+            <summary>
+            入会申请列表（申请ID -> 申请信息）
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GuildState.Resources">
+            <summary>
+            公会资源
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GuildState.CreateTime">
+            <summary>
+            创建时间
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.GuildMemberState">
+            <summary>
+            公会成员状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Guid</b> MemberId<br/>
+            <b>int</b> Position<br/>
+            <b>int</b> Contribution<br/>
+            <b>long</b> JoinTime<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GuildMemberState.Position">
+            <summary>
+            职位: 0=帮主, 1=副帮主, 2=长老, 3=精英, 4=普通成员
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.GuildApplication">
+            <summary>
+            公会入会申请
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Guid</b> ApplicationId<br/>
+            <b>System.Guid</b> PlayerId<br/>
+            <b>string</b> Message<br/>
+            <b>long</b> Timestamp<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.TeamState">
+            <summary>
+            队伍状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> TeamName<br/>
+            <b>System.Guid</b> LeaderId<br/>
+            <b>bool</b> IsCreated<br/>
+            <b>string</b> TeamGoal<br/>
+            <b>int</b> MaxMembers<br/>
+            <b>System.Collections.Generic.Dictionary&lt;System.Guid, Horizon.Game.Message.Network.TeamMemberState&gt;</b> Members<br/>
+            <b>long</b> CreateTime<br/>
+            <b>long</b> StateVersion<br/>
+            <b>System.Guid?</b> CurrentDungeonId<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TeamState.TeamName">
+            <summary>
+            队伍名称
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TeamState.LeaderId">
+            <summary>
+            队长ID
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TeamState.IsCreated">
+            <summary>
+            队伍是否已创建
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TeamState.TeamGoal">
+            <summary>
+            队伍目标描述
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TeamState.MaxMembers">
+            <summary>
+            最大成员数
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TeamState.Members">
+            <summary>
+            成员列表（成员ID -> 成员信息）
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TeamState.CreateTime">
+            <summary>
+            创建时间
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TeamState.StateVersion">
+            <summary>
+            状态版本号（每次状态变更时递增，用于队伍状态同步）
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TeamState.CurrentDungeonId">
+            <summary>
+            当前关联的副本实例ID（队伍正在进行的副本）
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.TeamMemberState">
+            <summary>
+            队伍成员状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Guid</b> MemberId<br/>
+            <b>bool</b> IsLeader<br/>
+            <b>long</b> JoinTime<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.TradeState">
+            <summary>
+            交易系统状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Guid</b> SellerId<br/>
+            <b>System.Guid</b> BuyerId<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.Game.Message.Network.TradeItem&gt;</b> SellerItems<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.Game.Message.Network.TradeItem&gt;</b> BuyerItems<br/>
+            <b>long</b> SellerCurrency<br/>
+            <b>long</b> BuyerCurrency<br/>
+            <b>bool</b> SellerConfirmed<br/>
+            <b>bool</b> BuyerConfirmed<br/>
+            <b>int</b> Status<br/>
+            <b>System.DateTime</b> CreatedTime<br/>
+            <b>bool</b> IsCreated<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TradeState.SellerId">
+            <summary>
+            卖方ID
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TradeState.BuyerId">
+            <summary>
+            买方ID
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TradeState.SellerItems">
+            <summary>
+            卖方物品列表
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TradeState.BuyerItems">
+            <summary>
+            买方物品列表
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TradeState.SellerCurrency">
+            <summary>
+            卖方出价货币
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TradeState.BuyerCurrency">
+            <summary>
+            买方出价货币
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TradeState.SellerConfirmed">
+            <summary>
+            卖方是否确认
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TradeState.BuyerConfirmed">
+            <summary>
+            买方是否确认
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TradeState.Status">
+            <summary>
+            交易状态
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TradeState.CreatedTime">
+            <summary>
+            创建时间
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.TradeState.IsCreated">
+            <summary>
+            是否已创建
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.MarketState">
+            <summary>
+            市场系统状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Collections.Generic.Dictionary&lt;long, Horizon.Game.Message.Network.MarketListing&gt;</b> Listings<br/>
+            <b>long</b> NextListingId<br/>
+            <b>long</b> TotalTransactions<br/>
+            <b>long</b> TotalVolume<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MarketState.Listings">
+            <summary>
+            商品列表（ListingId -> 商品信息）
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MarketState.NextListingId">
+            <summary>
+            下一个商品ID
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MarketState.TotalTransactions">
+            <summary>
+            总交易次数
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MarketState.TotalVolume">
+            <summary>
+            总交易额
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.QuestState">
+            <summary>
+            任务系统状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Collections.Generic.Dictionary&lt;int, Horizon.Game.Message.Network.QuestData&gt;</b> ActiveQuests<br/>
+            <b>System.Collections.Generic.Dictionary&lt;int, Horizon.Game.Message.Network.QuestData&gt;</b> CompletedQuests<br/>
+            <b>int</b> MaxActiveQuests<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.QuestState.ActiveQuests">
+            <summary>
+            进行中的任务 (QuestId -> QuestData)
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.QuestState.CompletedQuests">
+            <summary>
+            已完成的任务 (QuestId -> QuestData)
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.QuestState.MaxActiveQuests">
+            <summary>
+            最大同时接受任务数
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.DungeonState">
+            <summary>
+            副本系统状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>int</b> DungeonTemplateId<br/>
+            <b>string</b> DungeonName<br/>
+            <b>int</b> Difficulty<br/>
+            <b>int</b> MaxPlayers<br/>
+            <b>int</b> Status<br/>
+            <b>int</b> TimeLimitMinutes<br/>
+            <b>System.DateTime?</b> StartTime<br/>
+            <b>bool</b> IsCreated<br/>
+            <b>System.Collections.Generic.HashSet&lt;System.Guid&gt;</b> Players<br/>
+            <b>System.Collections.Generic.Dictionary&lt;int, Horizon.Game.Message.Network.DungeonBossData&gt;</b> Bosses<br/>
+            <b>System.Guid?</b> TeamId<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.DungeonState.DungeonTemplateId">
+            <summary>
+            副本模板ID
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.DungeonState.DungeonName">
+            <summary>
+            副本名称
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.DungeonState.Difficulty">
+            <summary>
+            难度 (0=普通, 1=困难, 2=英雄, 3=地狱)
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.DungeonState.MaxPlayers">
+            <summary>
+            最大玩家数
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.DungeonState.Status">
+            <summary>
+            副本状态
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.DungeonState.TimeLimitMinutes">
+            <summary>
+            时间限制（分钟）
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.DungeonState.StartTime">
+            <summary>
+            副本开始时间
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.DungeonState.IsCreated">
+            <summary>
+            是否已创建
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.DungeonState.Players">
+            <summary>
+            当前玩家列表
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.DungeonState.Bosses">
+            <summary>
+            Boss列表 (BossId -> BossData)
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.DungeonState.TeamId">
+            <summary>
+            关联的队伍ID（组队副本使用）
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.AreaState">
+            <summary>
+            区域管理状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> AreaName<br/>
+            <b>string</b> AreaType<br/>
+            <b>int</b> MaxPlayers<br/>
+            <b>bool</b> IsInitialized<br/>
+            <b>System.Collections.Generic.Dictionary&lt;long, Horizon.Game.Message.Network.SceneInstanceInfo&gt;</b> Instances<br/>
+            <b>long</b> NextInstanceId<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AreaState.AreaName">
+            <summary>
+            区域名称
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AreaState.AreaType">
+            <summary>
+            区域类型（如：野外、副本、城镇）
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AreaState.MaxPlayers">
+            <summary>
+            区域最大玩家数
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AreaState.IsInitialized">
+            <summary>
+            是否已初始化
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AreaState.Instances">
+            <summary>
+            场景实例列表
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.AreaState.NextInstanceId">
+            <summary>
+            下一个实例ID
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.ActivityState">
+            <summary>
+            活动系统状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> Name<br/>
+            <b>string</b> Description<br/>
+            <b>System.DateTime</b> StartTime<br/>
+            <b>System.DateTime</b> EndTime<br/>
+            <b>int</b> MaxParticipants<br/>
+            <b>int</b> Status<br/>
+            <b>bool</b> IsCreated<br/>
+            <b>System.Collections.Generic.Dictionary&lt;System.Guid, Horizon.Game.Message.Network.ActivityParticipation&gt;</b> Participants<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.ActivityState.Name">
+            <summary>
+            活动名称
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.ActivityState.Description">
+            <summary>
+            活动描述
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.ActivityState.StartTime">
+            <summary>
+            活动开始时间
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.ActivityState.EndTime">
+            <summary>
+            活动结束时间
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.ActivityState.MaxParticipants">
+            <summary>
+            最大参与人数
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.ActivityState.Status">
+            <summary>
+            活动状态
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.ActivityState.IsCreated">
+            <summary>
+            是否已创建
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.ActivityState.Participants">
+            <summary>
+            参与者列表（玩家ID -> 参与记录）
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.GameServerState">
+            <summary>
+            游戏服务器状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> ServerName<br/>
+            <b>bool</b> IsInitialized<br/>
+            <b>int</b> Status<br/>
+            <b>int</b> OnlineCount<br/>
+            <b>int</b> MaxOnlineCount<br/>
+            <b>float</b> CpuUsage<br/>
+            <b>float</b> MemoryUsage<br/>
+            <b>long</b> NetworkLatency<br/>
+            <b>string</b> MaintenanceReason<br/>
+            <b>long</b> LastUpdateTime<br/>
+            <b>System.Collections.Generic.HashSet&lt;System.Guid&gt;</b> OnlinePlayers<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GameServerState.ServerName">
+            <summary>
+            服务器名称
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GameServerState.IsInitialized">
+            <summary>
+            服务器是否已初始化
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GameServerState.Status">
+            <summary>
+            服务器状态
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GameServerState.OnlineCount">
+            <summary>
+            在线人数（已弃用，使用OnlinePlayers.Count代替）
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GameServerState.MaxOnlineCount">
+            <summary>
+            最大在线人数
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GameServerState.CpuUsage">
+            <summary>
+            CPU使用率
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GameServerState.MemoryUsage">
+            <summary>
+            内存使用率
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GameServerState.NetworkLatency">
+            <summary>
+            网络延迟(ms)
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GameServerState.MaintenanceReason">
+            <summary>
+            维护原因
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GameServerState.LastUpdateTime">
+            <summary>
+            最后更新时间
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GameServerState.OnlinePlayers">
+            <summary>
+            在线玩家ID集合
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.MessageChannelState">
+            <summary>
+            消息频道状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Collections.Generic.HashSet&lt;long&gt;</b> Subscribers<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.Game.Message.Network.ChatMessage&gt;</b> RecentMessages<br/>
+            <b>int</b> MaxCachedMessages<br/>
+            <b>long</b> TotalMessageCount<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MessageChannelState.Subscribers">
+            <summary>
+            订阅者列表
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MessageChannelState.RecentMessages">
+            <summary>
+            最近消息缓存
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MessageChannelState.MaxCachedMessages">
+            <summary>
+            最大缓存消息数
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MessageChannelState.TotalMessageCount">
+            <summary>
+            消息总数
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.GroupChannelState">
+            <summary>
+            群组频道状态（公会/队伍共用）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Collections.Generic.HashSet&lt;long&gt;</b> Members<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.Game.Message.Network.ChatMessage&gt;</b> RecentMessages<br/>
+            <b>int</b> MaxCachedMessages<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GroupChannelState.Members">
+            <summary>
+            成员列表
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GroupChannelState.RecentMessages">
+            <summary>
+            最近消息缓存
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.GroupChannelState.MaxCachedMessages">
+            <summary>
+            最大缓存消息数
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.SystemChannelState">
+            <summary>
+            系统频道状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Collections.Generic.HashSet&lt;long&gt;</b> Subscribers<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.Game.Message.Network.ChatMessage&gt;</b> SystemMessages<br/>
+            <b>int</b> MaxCachedMessages<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SystemChannelState.Subscribers">
+            <summary>
+            订阅者列表
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SystemChannelState.SystemMessages">
+            <summary>
+            系统消息缓存
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.SystemChannelState.MaxCachedMessages">
+            <summary>
+            最大缓存消息数
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.MessageRouterState">
+            <summary>
+            消息路由器状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>long</b> TotalRoutedMessages<br/>
+            <b>long</b> FailedRoutedMessages<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MessageRouterState.TotalRoutedMessages">
+            <summary>
+            已路由消息总数
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.MessageRouterState.FailedRoutedMessages">
+            <summary>
+            路由失败消息总数
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.Message.Network.EventConsumerState">
+            <summary>
+            事件消费者Grain状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>Horizon.Game.Message.Network.EventProcessingStats</b> Stats<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.Game.Message.Network.ProcessedEventSummary&gt;</b> RecentEvents<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.EventConsumerState.Stats">
+            <summary>已处理事件统计</summary>
+        </member>
+        <member name="P:Horizon.Game.Message.Network.EventConsumerState.RecentEvents">
+            <summary>最近处理的事件摘要（最多保留100条）</summary>
+        </member>
         <member name="T:Horizon.Game.Message.Network.HorizonMessagePacket">
             <summary>
             游戏消息包装类
@@ -9602,7 +11317,7 @@
             MemoryPack GenerateType: Object<br/>
             <code>
             <b>string</b> EventId<br/>
-            <b>Horizon.Game.Message.Network.GameEventType</b> EventType<br/>
+            <b>Horizon.Game.Message.Network.ClientGameEventType</b> EventType<br/>
             <b>string</b> EventName<br/>
             <b>string</b> EventDescription<br/>
             <b>System.Collections.Generic.Dictionary&lt;string, object&gt;</b> Parameters<br/>
@@ -9660,107 +11375,107 @@
             事件状态
             </summary>
         </member>
-        <member name="T:Horizon.Game.Message.Network.GameEventType">
+        <member name="T:Horizon.Game.Message.Network.ClientGameEventType">
             <summary>
             游戏事件类型
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.PlayerLogin">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.PlayerLogin">
             <summary>
             玩家登录
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.PlayerLogout">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.PlayerLogout">
             <summary>
             玩家登出
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.PlayerDeath">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.PlayerDeath">
             <summary>
             玩家死亡
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.PlayerLevelUp">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.PlayerLevelUp">
             <summary>
             玩家升级
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.AchievementUnlocked">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.AchievementUnlocked">
             <summary>
             玩家获得成就
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.JoinedSect">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.JoinedSect">
             <summary>
             玩家加入门派
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.CreatedGuild">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.CreatedGuild">
             <summary>
             玩家创建帮派
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.PlayerMarried">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.PlayerMarried">
             <summary>
             玩家结婚
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.TitleAcquired">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.TitleAcquired">
             <summary>
             玩家获得称号
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.RareItemAcquired">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.RareItemAcquired">
             <summary>
             玩家获得稀有物品
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.NpcKilled">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.NpcKilled">
             <summary>
             NPC死亡
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.WorldBossKilled">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.WorldBossKilled">
             <summary>
             世界BOSS击杀
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.DungeonCompleted">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.DungeonCompleted">
             <summary>
             副本完成
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.PvpVictory">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.PvpVictory">
             <summary>
             PVP胜利
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.TradeCompleted">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.TradeCompleted">
             <summary>
             交易完成
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.SkillLearned">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.SkillLearned">
             <summary>
             技能学习
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.SkillUpgraded">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.SkillUpgraded">
             <summary>
             技能升级
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.EquipmentEnhanced">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.EquipmentEnhanced">
             <summary>
             装备强化成功
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.EquipmentCrafted">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.EquipmentCrafted">
             <summary>
             装备合成
             </summary>
         </member>
-        <member name="F:Horizon.Game.Message.Network.GameEventType.QuestCompleted">
+        <member name="F:Horizon.Game.Message.Network.ClientGameEventType.QuestCompleted">
             <summary>
             任务完成
             </summary>
