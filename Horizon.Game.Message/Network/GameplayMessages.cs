@@ -867,4 +867,280 @@ namespace Horizon.Game.Message.Network
     }
 
     #endregion
+
+    #region Buff/效果同步消息
+
+    /// <summary>
+    /// 效果同步操作类型
+    /// </summary>
+    public enum EffectSyncAction
+    {
+        /// <summary>
+        /// 施加效果
+        /// </summary>
+        Apply = 0,
+
+        /// <summary>
+        /// 移除效果
+        /// </summary>
+        Remove = 1,
+
+        /// <summary>
+        /// 刷新效果
+        /// </summary>
+        Refresh = 2,
+
+        /// <summary>
+        /// 叠加效果
+        /// </summary>
+        Stack = 3
+    }
+
+    /// <summary>
+    /// 效果同步消息
+    /// 同步Buff/Debuff/控制效果状态
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class EffectSyncMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 目标实体ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong TargetId { get; set; }
+
+        /// <summary>
+        /// 来源实体ID
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public ulong SourceId { get; set; }
+
+        /// <summary>
+        /// 效果模板ID
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int EffectId { get; set; }
+
+        /// <summary>
+        /// 效果名称
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string EffectName { get; set; } = "";
+
+        /// <summary>
+        /// 同步操作类型
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public EffectSyncAction Action { get; set; }
+
+        /// <summary>
+        /// 剩余持续时间（秒）
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public float RemainingDuration { get; set; }
+
+        /// <summary>
+        /// 当前叠加层数
+        /// </summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public int Stacks { get; set; }
+
+        /// <summary>
+        /// 效果数值
+        /// </summary>
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public float Value { get; set; }
+
+        /// <summary>
+        /// 是否为百分比数值
+        /// </summary>
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public bool IsPercentage { get; set; }
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public MessageType Type { get; set; } = MessageType.EffectSync;
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Combat;
+    }
+
+    #endregion
+
+    #region AOI视野更新消息
+
+    /// <summary>
+    /// AOI更新消息
+    /// 批量通知客户端视野范围内的实体变化
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class AoiUpdateMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 玩家ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong PlayerId { get; set; }
+
+        /// <summary>
+        /// 进入视野的实体列表
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public List<AoiEntityInfo> EnteredEntities { get; set; } = new();
+
+        /// <summary>
+        /// 离开视野的实体ID列表
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public List<ulong> ExitedEntityIds { get; set; } = new();
+
+        /// <summary>
+        /// 视野范围半径
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public float ViewRange { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public MessageType Type { get; set; } = MessageType.AoiUpdate;
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// AOI实体信息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class AoiEntityInfo
+    {
+        /// <summary>
+        /// 实体ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong EntityId { get; set; }
+
+        /// <summary>
+        /// 实体类型
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public NetworkEntityType EntityType { get; set; }
+
+        /// <summary>
+        /// 实体名称
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string Name { get; set; } = "";
+
+        /// <summary>
+        /// 位置
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public Position Position { get; set; } = new();
+
+        /// <summary>
+        /// 等级
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int Level { get; set; }
+
+        /// <summary>
+        /// 当前生命值
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public float CurrentHealth { get; set; }
+
+        /// <summary>
+        /// 最大生命值
+        /// </summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public float MaxHealth { get; set; }
+    }
+
+    #endregion
+
+    #region 移动速度验证消息
+
+    /// <summary>
+    /// 移动速度验证消息
+    /// 服务端对客户端移动速度的反外挂校验结果
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class MovementSpeedValidationMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 被验证的角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 是否通过验证
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public bool IsValid { get; set; }
+
+        /// <summary>
+        /// 实际测量速度
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public float MeasuredSpeed { get; set; }
+
+        /// <summary>
+        /// 服务端允许的最大速度
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public float MaxAllowedSpeed { get; set; }
+
+        /// <summary>
+        /// 校正后的位置（如果验证失败）
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public Position CorrectedPosition { get; set; } = new();
+
+        /// <summary>
+        /// 违规计数
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public int ViolationCount { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public MessageType Type { get; set; } = MessageType.MovementSpeedValidation;
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    #endregion
 }
