@@ -134,9 +134,7 @@ namespace ManagedHundunWorld.Network.Handlers
             try
             {
                 // 通知伤害数字系统显示伤害值
-                // TODO: 修复Scene.FindScript调用问题
-                // var damageNumberSystem = FlaxScene.FindScript<Game.Combat.Effects.DamageNumberSystem>();
-                var damageNumberSystem = null as Game.Combat.Effects.DamageNumberSystem; // 临时解决方案
+                var damageNumberSystem = Game.Combat.Effects.DamageNumberSystem.Instance;
                 if (damageNumberSystem != null)
                 {
                     damageNumberSystem.ShowDamageNumber(
@@ -161,9 +159,7 @@ namespace ManagedHundunWorld.Network.Handlers
             try
             {
                 // 通知特效系统播放受击特效
-                // TODO: 修复Scene.FindScript调用问题
-                // var effectManager = FlaxScene.FindScript<Game.Combat.Effects.SkillEffectManager>();
-                var effectManager = null as Game.Combat.Effects.SkillEffectManager; // 临时解决方案
+                var effectManager = Game.Combat.Effects.SkillEffectManager.Instance;
                 if (effectManager != null)
                 {
                     // 将Position转换为Vector3
@@ -261,9 +257,7 @@ namespace ManagedHundunWorld.Network.Handlers
             try
             {
                 // 通知特效系统播放死亡特效
-                // TODO: 修复Scene.FindScript调用问题
-                // var effectManager = FlaxScene.FindScript<Game.Combat.Effects.SkillEffectManager>();
-                var effectManager = null as Game.Combat.Effects.SkillEffectManager; // 临时解决方案
+                var effectManager = Game.Combat.Effects.SkillEffectManager.Instance;
                 if (effectManager != null)
                 {
                     effectManager.PlayDeathEffect(new Vector3(deathPosition.X, deathPosition.Y, deathPosition.Z));
@@ -336,9 +330,7 @@ namespace ManagedHundunWorld.Network.Handlers
             try
             {
                 // 通知特效系统播放复活特效
-                // TODO: 修复Scene.FindScript调用问题
-                // var effectManager = FlaxScene.FindScript<Game.Combat.Effects.SkillEffectManager>();
-                var effectManager = null as Game.Combat.Effects.SkillEffectManager; // 临时解决方案
+                var effectManager = Game.Combat.Effects.SkillEffectManager.Instance;
                 if (effectManager != null)
                 {
                     effectManager.PlayResurrectEffect(new Vector3(resurrectPosition.X, resurrectPosition.Y, resurrectPosition.Z));

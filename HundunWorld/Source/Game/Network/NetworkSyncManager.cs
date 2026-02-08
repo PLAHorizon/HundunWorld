@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using FlaxEngine;
+using Horizon.Game.Message.Network;
 
 namespace Game.Network
 {
@@ -257,16 +258,19 @@ namespace Game.Network
         /// </summary>
         private void SendMovementUpdate()
         {
-            // TODO: 使用网络系统发送移动数据
-            // NetworkMessage msg = new MovementMessage
-            // {
-            //     Position = currentPosition,
-            //     Rotation = currentRotation,
-            //     Velocity = currentVelocity,
-            //     Timestamp = Time.GameTime,
-            //     SequenceNumber = predictedFrameCount
-            // };
-            // NetworkManager.Send(msg);
+            var networkManager = HundunWorld.Game.HundunWorldGame.Instance?.NetworkManager;
+            if (networkManager != null)
+            {
+                var moveRequest = new MoveRequest
+                {
+                    TargetX = currentPosition.X,
+                    TargetY = currentPosition.Y,
+                    TargetZ = currentPosition.Z,
+                    Speed = currentVelocity.Length,
+                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                };
+                _ = networkManager.SendMessageAsync(moveRequest);
+            }
 
             if (ShowDebug)
             {
@@ -424,11 +428,10 @@ namespace Game.Network
         {
             Vector3 input = Vector3.Zero;
 
-            // TODO: 从InputManager获取输入
-            // if (Input.GetKey(KeyCode.W)) input.Z += 1;
-            // if (Input.GetKey(KeyCode.S)) input.Z -= 1;
-            // if (Input.GetKey(KeyCode.A)) input.X -= 1;
-            // if (Input.GetKey(KeyCode.D)) input.X += 1;
+            if (Input.GetKey(KeyboardKeys.W)) input.Z += 1;
+            if (Input.GetKey(KeyboardKeys.S)) input.Z -= 1;
+            if (Input.GetKey(KeyboardKeys.A)) input.X -= 1;
+            if (Input.GetKey(KeyboardKeys.D)) input.X += 1;
 
             if (input.Length > 0)
                 input = Vector3.Normalize(input);

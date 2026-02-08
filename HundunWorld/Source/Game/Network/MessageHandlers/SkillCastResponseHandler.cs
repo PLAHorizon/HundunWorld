@@ -104,9 +104,7 @@ namespace ManagedHundunWorld.Network.Handlers
         {
             try
             {
-                // TODO: 修复Scene.FindScript调用问题
-                // var effectManager = Level.FindActor<Actor>()?.GetScript<Game.Combat.Effects.SkillEffectManager>();
-                var effectManager = null as Game.Combat.Effects.SkillEffectManager; // 临时解决方案
+                var effectManager = Game.Combat.Effects.SkillEffectManager.Instance;
                 if (effectManager != null)
                 {
                     var startPos = new Vector3(

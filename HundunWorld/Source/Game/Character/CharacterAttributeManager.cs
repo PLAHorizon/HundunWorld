@@ -179,6 +179,27 @@ namespace HundunWorld.Game.Character
             }
         }
 
+        public float GetCurrentEnergy(ulong characterId)
+        {
+            if (!_characterAttributes.ContainsKey(characterId))
+                return 0;
+
+            return _characterAttributes[characterId].CurrentEnergy;
+        }
+
+        public void ConsumeEnergy(ulong characterId, float amount)
+        {
+            if (!_characterAttributes.ContainsKey(characterId))
+                return;
+
+            var data = _characterAttributes[characterId];
+            var oldEnergy = data.CurrentEnergy;
+            data.CurrentEnergy = Math.Max(0, data.CurrentEnergy - amount);
+            
+            TriggerAttributeChangeEvent(characterId, "Energy", oldEnergy, data.CurrentEnergy);
+            Debug.Log($"[CharacterAttributeManager] 角色 {characterId} 消耗能量: {amount:F1} (剩余: {data.CurrentEnergy:F1})");
+        }
+
         /// <summary>
         /// 初始化角色属性
         /// </summary>
@@ -205,6 +226,7 @@ namespace HundunWorld.Game.Character
             {
                 BaseStats = baseStats,
                 CurrentHealth = baseStats.MaxHealth,
+                CurrentEnergy = 1000,
                 AttributeModifiers = new List<AttributeModifier>()
             };
 
@@ -333,6 +355,7 @@ namespace HundunWorld.Game.Character
     {
         public CharacterStats BaseStats { get; set; }
         public float CurrentHealth { get; set; }
+        public float CurrentEnergy { get; set; }
         public List<AttributeModifier> AttributeModifiers { get; set; }
     }
 

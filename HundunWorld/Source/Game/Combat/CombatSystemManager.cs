@@ -23,6 +23,7 @@ namespace HundunWorld.Game.Combat
         private readonly IControlStateManager _controlManager;
         private readonly Dictionary<ulong, CombatState> _combatStates;
         private readonly List<PendingAction> _pendingActions;
+        private readonly Dictionary<int, SkillInfo> _skillCache;
 
         private CombatSystemManager()
         {
@@ -32,6 +33,15 @@ namespace HundunWorld.Game.Combat
             _controlManager = ControlStateManager.Instance;
             _combatStates = new Dictionary<ulong, CombatState>();
             _pendingActions = new List<PendingAction>();
+            _skillCache = new Dictionary<int, SkillInfo>();
+        }
+
+        /// <summary>
+        /// 注册技能信息到缓存
+        /// </summary>
+        public void RegisterSkill(SkillInfo skill)
+        {
+            _skillCache[skill.Id] = skill;
         }
 
         /// <summary>
@@ -142,8 +152,7 @@ namespace HundunWorld.Game.Combat
             var stats = GetCharacterStats(entityId);
             
             // 检查能量/法力值
-            // TODO: 实际的能量系统集成
-            float currentEnergy = 100; // 假设值
+            float currentEnergy = _attributeManager.GetCurrentEnergy(entityId);
             if (currentEnergy < skill.EnergyCost)
             {
                 return false;
@@ -231,7 +240,7 @@ namespace HundunWorld.Game.Combat
         /// </summary>
         private void ConsumeResources(ulong entityId, SkillInfo skill)
         {
-            // TODO: 与实际的能量系统集成
+            _attributeManager.ConsumeEnergy(entityId, skill.EnergyCost);
             Debug.Log($"[CombatSystemManager] 消耗资源: {skill.EnergyCost} (实体: {entityId})");
         }
 
@@ -377,7 +386,10 @@ namespace HundunWorld.Game.Combat
         private SkillInfo GetPreviousSkill(ulong entityId)
         {
             var state = GetCombatState(entityId);
-            // TODO: 从技能系统获取实际的技能信息
+            if (state.PreviousSkillId > 0 && _skillCache.TryGetValue(state.PreviousSkillId, out var skill))
+            {
+                return skill;
+            }
             return null;
         }
 
@@ -407,6 +419,11 @@ namespace HundunWorld.Game.Combat
         }
 
         /// <summary>
+        /// 实体死亡事件
+        /// </summary>
+        public event Action<ulong, ulong> EntityDied;
+
+        /// <summary>
         /// 处理实体死亡
         /// </summary>
         private void HandleEntityDeath(ulong entityId, ulong killerId)
@@ -422,7 +439,8 @@ namespace HundunWorld.Game.Combat
                 _combatStates.Remove(entityId);
             }
 
-            // TODO: 触发死亡事件、掉落物品、经验分配等
+            // 触发死亡事件通知外部系统（掉落、经验、UI等）
+            EntityDied?.Invoke(entityId, killerId);
         }
 
         /// <summary>

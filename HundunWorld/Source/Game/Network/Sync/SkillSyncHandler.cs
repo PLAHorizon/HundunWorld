@@ -106,6 +106,11 @@ namespace HundunWorld.Game.Network.Sync
             public bool IsRolledBack = false;
         }
 
+        /// <summary>
+        /// 技能冷却同步事件
+        /// </summary>
+        public event Action<int, float> SkillCooldownUpdated;
+
         #endregion
 
         #region 私有字段
@@ -120,6 +125,9 @@ namespace HundunWorld.Game.Network.Sync
         private int _totalPredictions = 0;
         private int _successfulPredictions = 0;
         private int _rolledBackPredictions = 0;
+
+        // 技能冷却状态（技能ID -> 剩余冷却时间秒）
+        private readonly Dictionary<int, float> _skillCooldowns = new();
 
         #endregion
 
@@ -196,13 +204,53 @@ namespace HundunWorld.Game.Network.Sync
         /// </summary>
         private async Task HandleSkillCooldownUpdate(HorizonMessagePacket message)
         {
-            // TODO: 实现技能冷却同步逻辑
-            if (EnableSkillSyncLogging)
+            if (message.Body is SkillCooldownUpdateMessage cooldownMsg)
             {
-                Debug.Log($"[SkillSync] 收到技能冷却更新");
+                // 将服务端冷却时间（毫秒）转换为秒
+                float cooldownSeconds = cooldownMsg.CooldownTime / 1000f;
+                _skillCooldowns[cooldownMsg.SkillId] = cooldownSeconds;
+
+                // 通知订阅者冷却更新
+                SkillCooldownUpdated?.Invoke(cooldownMsg.SkillId, cooldownSeconds);
+
+                if (EnableSkillSyncLogging)
+                {
+                    Debug.Log($"[SkillSync] 技能冷却同步 - Skill:{cooldownMsg.SkillId}, CD:{cooldownSeconds:F1}s");
+                }
+            }
+            else if (message.Body is SkillCooldownQueryResponse cooldownResponse)
+            {
+                // 批量同步所有技能冷却
+                foreach (var kvp in cooldownResponse.SkillCooldowns)
+                {
+                    float cooldownSeconds = kvp.Value / 1000f;
+                    _skillCooldowns[kvp.Key] = cooldownSeconds;
+                    SkillCooldownUpdated?.Invoke(kvp.Key, cooldownSeconds);
+                }
+
+                if (EnableSkillSyncLogging)
+                {
+                    Debug.Log($"[SkillSync] 批量冷却同步完成，共{cooldownResponse.SkillCooldowns.Count}个技能");
+                }
             }
 
             await Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// 检查技能是否在冷却中
+        /// </summary>
+        public bool IsSkillOnCooldown(int skillId)
+        {
+            return _skillCooldowns.TryGetValue(skillId, out var cd) && cd > 0;
+        }
+
+        /// <summary>
+        /// 获取技能剩余冷却时间
+        /// </summary>
+        public float GetSkillCooldown(int skillId)
+        {
+            return _skillCooldowns.TryGetValue(skillId, out var cd) ? cd : 0f;
         }
 
         #endregion
@@ -273,6 +321,23 @@ namespace HundunWorld.Game.Network.Sync
         /// </summary>
         public override void OnUpdate()
         {
+            float deltaTime = Time.DeltaTime;
+
+            // 更新技能冷却计时器
+            var expiredCooldowns = new List<int>();
+            foreach (var kvp in _skillCooldowns)
+            {
+                _skillCooldowns[kvp.Key] = kvp.Value - deltaTime;
+                if (_skillCooldowns[kvp.Key] <= 0)
+                {
+                    expiredCooldowns.Add(kvp.Key);
+                }
+            }
+            foreach (var skillId in expiredCooldowns)
+            {
+                _skillCooldowns.Remove(skillId);
+            }
+
             // 清理过期的预测
             float currentTime = Time.GameTime;
 

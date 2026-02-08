@@ -75,6 +75,10 @@ namespace HundunWorld.Game.UI.GameMain
         private int _currentExp = 0;
         private int _expToNextLevel = 1000;
         
+        // 面板管理
+        private readonly Dictionary<string, RoundedPanel> _panels = new Dictionary<string, RoundedPanel>();
+        private string _activePanelName;
+        
         public override void OnStart()
         {
             InitializeManagers();
@@ -551,7 +555,7 @@ namespace HundunWorld.Game.UI.GameMain
         private void OnInventoryClicked(Button sender)
         {
             FlaxEngine.Debug.Log("打开背包界面");
-            // TODO: 实现背包界面
+            TogglePanel("Inventory", "背包", 500, 450);
         }
         
         /// <summary>
@@ -560,7 +564,7 @@ namespace HundunWorld.Game.UI.GameMain
         private void OnCharacterClicked(Button sender)
         {
             FlaxEngine.Debug.Log("打开角色界面");
-            // TODO: 实现角色界面
+            TogglePanel("Character", "角色", 400, 500);
         }
         
         /// <summary>
@@ -569,7 +573,7 @@ namespace HundunWorld.Game.UI.GameMain
         private void OnSkillClicked(Button sender)
         {
             FlaxEngine.Debug.Log("打开技能界面");
-            // TODO: 实现技能界面
+            TogglePanel("Skill", "技能", 450, 400);
         }
         
         /// <summary>
@@ -578,7 +582,7 @@ namespace HundunWorld.Game.UI.GameMain
         private void OnQuestClicked(Button sender)
         {
             FlaxEngine.Debug.Log("打开任务界面");
-            // TODO: 实现任务界面
+            TogglePanel("Quest", "任务", 400, 500);
         }
         
         /// <summary>
@@ -587,7 +591,83 @@ namespace HundunWorld.Game.UI.GameMain
         private void OnSettingsClicked(Button sender)
         {
             FlaxEngine.Debug.Log("打开设置界面");
-            // TODO: 实现设置界面
+            TogglePanel("Settings", "设置", 400, 350);
+        }
+        
+        /// <summary>
+        /// 切换面板显示/隐藏
+        /// </summary>
+        private void TogglePanel(string panelName, string title, float width, float height)
+        {
+            // 如果面板已打开，则关闭
+            if (_activePanelName == panelName && _panels.TryGetValue(panelName, out var existingPanel))
+            {
+                existingPanel.Visible = false;
+                _mainContainer.RemoveChild(existingPanel);
+                _panels.Remove(panelName);
+                _activePanelName = null;
+                return;
+            }
+            
+            // 关闭当前活动面板
+            if (_activePanelName != null && _panels.TryGetValue(_activePanelName, out var activePanel))
+            {
+                activePanel.Visible = false;
+                _mainContainer.RemoveChild(activePanel);
+                _panels.Remove(_activePanelName);
+            }
+            
+            // 创建新面板
+            var panel = new RoundedPanel
+            {
+                Bounds = new Rectangle(
+                    (_mainContainer.Width - width) / 2,
+                    (_mainContainer.Height - height) / 2,
+                    width, height),
+                BackgroundColor = new Color(0.1f, 0.1f, 0.15f, 0.95f)
+            };
+            
+            // 标题栏
+            var titleLabel = new Label
+            {
+                Text = title,
+                TextColor = Color.White,
+                Bounds = new Rectangle(10, 10, width - 60, 30),
+                HorizontalAlignment = TextAlignment.Center
+            };
+            panel.AddChild(titleLabel);
+            
+            // 关闭按钮
+            var closeButton = new Button
+            {
+                Text = "✕",
+                Bounds = new Rectangle(width - 40, 5, 30, 30),
+                BackgroundColor = new Color(0.8f, 0.2f, 0.2f, 0.8f)
+            };
+            closeButton.Clicked += () =>
+            {
+                panel.Visible = false;
+                _mainContainer.RemoveChild(panel);
+                _panels.Remove(panelName);
+                if (_activePanelName == panelName)
+                    _activePanelName = null;
+            };
+            panel.AddChild(closeButton);
+            
+            // 内容区域提示
+            var contentLabel = new Label
+            {
+                Text = $"{title}面板内容区域",
+                TextColor = new Color(0.7f, 0.7f, 0.7f),
+                Bounds = new Rectangle(10, 50, width - 20, height - 60),
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center
+            };
+            panel.AddChild(contentLabel);
+            
+            _mainContainer.AddChild(panel);
+            _panels[panelName] = panel;
+            _activePanelName = panelName;
         }
         
         /// <summary>
