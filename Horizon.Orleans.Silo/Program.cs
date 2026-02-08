@@ -35,6 +35,7 @@ using ClientConnectionOptions = Horizon.Orleans.Silo.Services.ClientConnectionOp
 using Horizon.Orleans.Silo.Tasks;
 using Horizon.Game.Message.Network;
 using Horizon.Orleans.Silo.Monitoring;
+using Horizon.Core.Monitoring;
 
 namespace Horizon.Orleans.Silo
 {

@@ -6,6 +6,7 @@ using Horizon.Game.Gateway.Configuration;
 using Horizon.Game.Gateway.Network;
 using Horizon.Game.Gateway.Services;
 using Horizon.Game.Gateway.Monitoring;
+using Horizon.Core.Monitoring;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
