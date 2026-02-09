@@ -119,6 +119,26 @@ namespace HundunWorld.Game.Combat.Effects
         [Tooltip("显示调试信息")]
         public bool ShowDebug = false;
 
+        [Header("击杀特写")]
+        [Tooltip("是否启用击杀特写")]
+        public bool EnableKillCam = true;
+
+        [Tooltip("击杀特写持续时间")]
+        public float KillCamDuration = 2.0f;
+
+        [Tooltip("击杀特写缩放倍率")]
+        public float KillCamZoomFactor = 1.5f;
+
+        [Header("暴击爆发效果")]
+        [Tooltip("是否启用暴击爆发效果")]
+        public bool EnableCriticalBurst = true;
+
+        [Tooltip("暴击爆发光线数量")]
+        public int CriticalBurstRayCount = 8;
+
+        [Tooltip("暴击爆发半径")]
+        public float CriticalBurstRadius = 3.0f;
+
         // 当前顿帧状态
         private bool isInHitStop = false;
         private float hitStopTimer = 0;
@@ -129,6 +149,13 @@ namespace HundunWorld.Game.Combat.Effects
         private bool isInSlowMotion = false;
         private float slowMotionTimer = 0;
         private float slowMotionDuration = 0;
+
+        // 击杀特写状态
+        private bool isInKillCam = false;
+        private float killCamTimer = 0;
+        private Vector3 killCamFocusPosition;
+        private Vector3 killCamOriginalCameraPos;
+        private Quaternion killCamOriginalCameraRot;
 
         /// <summary>
         /// 初始化
@@ -160,10 +187,11 @@ namespace HundunWorld.Game.Combat.Effects
         {
             UpdateHitStop();
             UpdateSlowMotion();
+            UpdateKillCam();
 
             if (ShowDebug)
             {
-                string status = isInHitStop ? "HitStop" : (isInSlowMotion ? "SlowMotion" : "Normal");
+                string status = isInKillCam ? "KillCam" : (isInHitStop ? "HitStop" : (isInSlowMotion ? "SlowMotion" : "Normal"));
                 DebugDraw.DrawText($"Combat Feedback: {status}, TimeScale: {Time.TimeScale:F2}", 
                     new Vector3(100, 300, 0), Color.Red);
             }
@@ -302,6 +330,9 @@ namespace HundunWorld.Game.Combat.Effects
             {
                 PlayScreenFlash(CriticalFlashColor, 0.2f);
             }
+
+            // 暴击爆发特效 - 放射状光线和粒子扩散
+            PlayCriticalBurstEffect(hitPosition, damage);
 
             if (ShowDebug)
             {
@@ -499,6 +530,12 @@ namespace HundunWorld.Game.Combat.Effects
             if (EffectManager != null)
             {
                 EffectManager.PlayEffect("DeathEffect_Dissolve", hitPosition);
+            }
+
+            // 击杀特写效果
+            if (EnableKillCam)
+            {
+                StartKillCam(hitPosition, target);
             }
 
             if (ShowDebug)
@@ -744,6 +781,151 @@ namespace HundunWorld.Game.Combat.Effects
                 _ => 0.0f
             };
         }
+
+        #region 暴击爆发效果
+
+        /// <summary>
+        /// 播放暴击爆发特效 - 放射状光线和粒子扩散
+        /// </summary>
+        private void PlayCriticalBurstEffect(Vector3 hitPosition, float damage)
+        {
+            if (!EnableCriticalBurst) return;
+
+            // 播放放射状光线特效
+            if (EffectManager != null)
+            {
+                EffectManager.PlayHitEffect("CriticalBurst_Rays", hitPosition);
+            }
+
+            // 根据伤害值绘制放射状调试线（正式版本替换为粒子特效）
+            float burstScale = Mathf.Clamp(damage / 500f, 0.5f, 2.0f);
+            float scaledRadius = CriticalBurstRadius * burstScale;
+
+            for (int i = 0; i < CriticalBurstRayCount; i++)
+            {
+                float angle = (i * 360f / CriticalBurstRayCount) * Mathf.DegreesToRadians;
+                Vector3 direction = new Vector3(Mathf.Cos(angle), 0.5f, Mathf.Sin(angle));
+                Vector3 endPoint = hitPosition + direction * scaledRadius;
+
+                DebugDraw.DrawLine(hitPosition, endPoint, new Color(1.0f, 0.8f, 0.2f, 0.8f), 0.3f);
+            }
+
+            // 绘制冲击波圆环
+            DebugDraw.DrawCircle(hitPosition, Vector3.Up, scaledRadius, new Color(1.0f, 0.6f, 0.1f, 0.6f), 0.4f);
+
+            if (ShowDebug)
+            {
+                Debug.Log($"Critical burst effect at {hitPosition}, damage={damage}, scale={burstScale:F2}");
+            }
+        }
+
+        #endregion
+
+        #region 击杀特写效果
+
+        /// <summary>
+        /// 开始击杀特写
+        /// </summary>
+        private void StartKillCam(Vector3 focusPosition, Actor target)
+        {
+            if (!EnableKillCam) return;
+
+            var camera = Camera.MainCamera;
+            if (camera == null) return;
+
+            isInKillCam = true;
+            killCamTimer = 0;
+            killCamFocusPosition = focusPosition;
+            killCamOriginalCameraPos = camera.Position;
+            killCamOriginalCameraRot = camera.Orientation;
+
+            // 减速时间
+            if (EnableTimeScale)
+            {
+                StartSlowMotion(0.2f, KillCamDuration);
+            }
+
+            // 播放击杀特效
+            if (EffectManager != null)
+            {
+                EffectManager.PlayEffect("KillCam_Focus", focusPosition);
+            }
+
+            if (ShowDebug)
+            {
+                Debug.Log($"Kill cam started at {focusPosition}, duration={KillCamDuration}s");
+            }
+        }
+
+        /// <summary>
+        /// 更新击杀特写
+        /// </summary>
+        private void UpdateKillCam()
+        {
+            if (!isInKillCam) return;
+
+            killCamTimer += Time.UnscaledDeltaTime;
+
+            var camera = Camera.MainCamera;
+            if (camera != null)
+            {
+                float progress = Mathf.Clamp(killCamTimer / KillCamDuration, 0, 1);
+
+                // 平滑缩放靠近目标
+                float zoomProgress = progress < 0.5f
+                    ? 2 * progress * progress                          // 缓入
+                    : 1 - 2 * (1 - progress) * (1 - progress);        // 缓出
+
+                // 相机朝焦点方向推进
+                Vector3 directionToTarget = (killCamFocusPosition - killCamOriginalCameraPos);
+                if (directionToTarget.Length > 0.01f)
+                {
+                    directionToTarget = Vector3.Normalize(directionToTarget);
+                }
+
+                float zoomDistance = zoomProgress < 0.5f
+                    ? zoomProgress * 2 * (KillCamZoomFactor * 2)       // 推进
+                    : (1 - (zoomProgress - 0.5f) * 2) * (KillCamZoomFactor * 2);  // 拉回
+
+                camera.Position = killCamOriginalCameraPos + directionToTarget * zoomDistance;
+
+                // 相机始终看向焦点
+                Vector3 lookDirection = killCamFocusPosition - camera.Position;
+                if (lookDirection.Length > 0.01f)
+                {
+                    camera.Orientation = Quaternion.LookRotation(Vector3.Normalize(lookDirection), Vector3.Up);
+                }
+            }
+
+            if (killCamTimer >= KillCamDuration)
+            {
+                EndKillCam();
+            }
+        }
+
+        /// <summary>
+        /// 结束击杀特写
+        /// </summary>
+        private void EndKillCam()
+        {
+            isInKillCam = false;
+            killCamTimer = 0;
+
+            // 恢复相机位置
+            var camera = Camera.MainCamera;
+            if (camera != null)
+            {
+                camera.Position = killCamOriginalCameraPos;
+                camera.Orientation = killCamOriginalCameraRot;
+            }
+
+            if (ShowDebug)
+            {
+                Debug.Log("Kill cam ended");
+            }
+        }
+
+        #endregion
 
         /// <summary>
         /// 清理

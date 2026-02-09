@@ -817,7 +817,7 @@ else
 - [x] ~~IGameEventStream接口定义~~（✅ 已完成 - IGameEventObserver/IGameEventStreamGrain/EventStreamStatus/GameEventStreamGrain）
 - [x] ~~CharacterGrain单元测试~~（✅ 已完成 - 39个测试用例）
 - [x] ~~NuGet依赖版本冲突修复~~（✅ 已完成 - 构建错误清零）
-- [ ] 客户端战斗特效和动画完善
+- [x] 客户端战斗特效和动画完善（✅ 暴击爆发效果/击杀特写/屏幕震动集成）
 
 ### 中优先级（建议3个月内处理）
 

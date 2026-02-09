@@ -65,6 +65,8 @@ namespace HundunWorld.Game.UI.GameMain
         private Button _skillButton;
         private Button _questButton;
         private Button _settingsButton;
+        private Button _guildButton;
+        private Button _teamButton;
         private Button _logoutButton;
         
         // 状态信息
@@ -476,10 +478,9 @@ namespace HundunWorld.Game.UI.GameMain
         {
             _menuButtonsPanel = new RoundedPanel
             {
-                Bounds = new Rectangle(FlaxEngine.Screen.Size.X - 120, FlaxEngine.Screen.Size.Y - 300, 100, 280),  // 修正为FlaxEngine.Screen
+                Bounds = new Rectangle(FlaxEngine.Screen.Size.X - 120, FlaxEngine.Screen.Size.Y - 390, 100, 370),
                 BackgroundColor = new Color(0.1f, 0.1f, 0.15f, 0.8f),
                 CornerRadius = 10f
-                // 移除BorderColor属性
             };
             
             // 背包按钮
@@ -526,11 +527,33 @@ namespace HundunWorld.Game.UI.GameMain
             _questButton.ButtonClicked += OnQuestClicked;
             _menuButtonsPanel.AddChild(_questButton);
             
+            // 公会按钮
+            _guildButton = new Button
+            {
+                Text = "公会",
+                Bounds = new Rectangle(10, 190, 80, 35),
+                BackgroundColor = new Color(0.5f, 0.4f, 0.2f),
+                TextColor = Color.White
+            };
+            _guildButton.ButtonClicked += OnGuildClicked;
+            _menuButtonsPanel.AddChild(_guildButton);
+
+            // 组队按钮
+            _teamButton = new Button
+            {
+                Text = "组队",
+                Bounds = new Rectangle(10, 235, 80, 35),
+                BackgroundColor = new Color(0.2f, 0.5f, 0.5f),
+                TextColor = Color.White
+            };
+            _teamButton.ButtonClicked += OnTeamClicked;
+            _menuButtonsPanel.AddChild(_teamButton);
+
             // 设置按钮
             _settingsButton = new Button
             {
                 Text = "设置",
-                Bounds = new Rectangle(10, 190, 80, 35),
+                Bounds = new Rectangle(10, 280, 80, 35),
                 BackgroundColor = new Color(0.3f, 0.6f, 0.6f),
                 TextColor = Color.White
             };
@@ -541,7 +564,7 @@ namespace HundunWorld.Game.UI.GameMain
             _logoutButton = new Button
             {
                 Text = "登出",
-                Bounds = new Rectangle(10, 235, 80, 35),
+                Bounds = new Rectangle(10, 325, 80, 35),
                 BackgroundColor = new Color(0.6f, 0.3f, 0.3f),
                 TextColor = Color.White
             };
@@ -701,6 +724,24 @@ namespace HundunWorld.Game.UI.GameMain
         }
         
         /// <summary>
+        /// 公会按钮点击事件
+        /// </summary>
+        private void OnGuildClicked(Button sender)
+        {
+            FlaxEngine.Debug.Log("打开公会管理界面");
+            TogglePanel("Guild", "公会管理", 550, 550);
+        }
+
+        /// <summary>
+        /// 组队按钮点击事件
+        /// </summary>
+        private void OnTeamClicked(Button sender)
+        {
+            FlaxEngine.Debug.Log("打开组队界面");
+            TogglePanel("Team", "组队邀请", 450, 500);
+        }
+        
+        /// <summary>
         /// 切换面板显示/隐藏
         /// </summary>
         private void TogglePanel(string panelName, string title, float width, float height)
@@ -784,6 +825,18 @@ namespace HundunWorld.Game.UI.GameMain
                     break;
                 case "Settings":
                     PopulateSettingsPanel(panel, contentY, contentWidth, contentHeight);
+                    break;
+                case "EquipCompare":
+                    var equipUI = new EquipmentComparisonUI();
+                    equipUI.PopulatePanel(panel, contentY, contentWidth, contentHeight);
+                    break;
+                case "Guild":
+                    var guildUI = new GuildManagementUI();
+                    guildUI.PopulatePanel(panel, contentY, contentWidth, contentHeight);
+                    break;
+                case "Team":
+                    var teamUI = new TeamInviteUI();
+                    teamUI.PopulatePanel(panel, contentY, contentWidth, contentHeight);
                     break;
                 default:
                     // 其他面板使用默认占位内容
