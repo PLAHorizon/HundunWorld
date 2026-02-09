@@ -775,7 +775,40 @@ namespace Horizon.Game.Message.Enums
         /// 角色属性刷新
         /// </summary>
         [Description("角色属性刷新")]
-        CharacterAttributeRefresh = 1367
+        CharacterAttributeRefresh = 1367,
+        #endregion
+
+        #region Phase 9 - 聊天与好友系统客户端集成消息
+
+        /// <summary>
+        /// 聊天通知（服务器推送聊天消息到客户端）
+        /// </summary>
+        [Description("聊天通知")]
+        ChatNotify = 1368,
+
+        /// <summary>
+        /// 好友状态更新（上线/下线通知）
+        /// </summary>
+        [Description("好友状态更新")]
+        FriendStatusUpdate = 1369,
+
+        /// <summary>
+        /// 好友请求通知
+        /// </summary>
+        [Description("好友请求通知")]
+        FriendRequestNotify = 1370,
+
+        /// <summary>
+        /// 加入聊天频道
+        /// </summary>
+        [Description("加入聊天频道")]
+        ChatChannelJoin = 1371,
+
+        /// <summary>
+        /// 离开聊天频道
+        /// </summary>
+        [Description("离开聊天频道")]
+        ChatChannelLeave = 1372
         #endregion
     }
 }
