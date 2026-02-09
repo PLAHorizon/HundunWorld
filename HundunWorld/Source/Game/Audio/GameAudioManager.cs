@@ -92,7 +92,8 @@ namespace HundunWorld.Game.Audio
         private float CalculateFinalVolume(GameAudioCategory category, float baseVolume)
         {
             var categoryVol = GetCategoryVolume(category);
-            return _masterVolume * _sfxVolume * categoryVol * baseVolume;
+            var clampedVolume = Mathf.Clamp(baseVolume, 0f, 1f);
+            return _masterVolume * _sfxVolume * categoryVol * clampedVolume;
         }
 
         #endregion
