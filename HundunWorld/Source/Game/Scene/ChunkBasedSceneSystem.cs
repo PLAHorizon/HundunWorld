@@ -70,6 +70,11 @@ namespace HundunWorld.Game.Scene
         // 缓存的统计信息
         private string _cachedStatistics = "";
 
+        // 待处理的传送请求
+        private Vector3? _pendingTeleportPosition;
+        private float _teleportWaitTimer;
+        private const float TeleportWaitTimeout = 5.0f;
+
         #endregion
 
         #region 事件定义
@@ -148,6 +153,9 @@ namespace HundunWorld.Game.Scene
         public override void OnUpdate()
         {
             if (!EnableChunkSystem) return;
+
+            // 处理待处理的传送
+            ProcessPendingTeleport();
 
             // 更新场景区域
             UpdateSceneRegion();

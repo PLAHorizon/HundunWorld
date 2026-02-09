@@ -2,6 +2,8 @@ using FlaxEngine;
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using System.IO;
+using System.Text.Json;
 
 namespace HundunWorld.Game
 {
@@ -579,14 +581,96 @@ namespace HundunWorld.Game
         {
             try
             {
-                // TODO: 实现从 JSON 文件加载输入配置
-                // 这里可以扩展为从文件系统读取用户自定义配置
-                Debug.Log("加载输入配置: " + ConfigFilePath);
+                var fullPath = Path.Combine(Globals.ProjectFolder, ConfigFilePath);
+                if (!File.Exists(fullPath))
+                {
+                    Debug.Log($"输入配置文件不存在，使用默认配置: {fullPath}");
+                    return;
+                }
+
+                var json = File.ReadAllText(fullPath);
+                var configEntries = JsonSerializer.Deserialize<List<InputConfigEntry>>(json);
+                if (configEntries == null) return;
+
+                foreach (var entry in configEntries)
+                {
+                    if (string.IsNullOrEmpty(entry.ActionName)) continue;
+
+                    if (_inputBindings.TryGetValue(entry.ActionName, out var binding))
+                    {
+                        // 更新已有绑定
+                        if (entry.Keys != null)
+                        {
+                            binding.Keys.Clear();
+                            foreach (var keyName in entry.Keys)
+                            {
+                                if (Enum.TryParse<KeyboardKeys>(keyName, out var key))
+                                {
+                                    binding.Keys.Add(key);
+                                }
+                            }
+                        }
+
+                        binding.Enabled = entry.Enabled;
+                        binding.DeadZone = entry.DeadZone;
+                    }
+                }
+
+                Debug.Log($"已加载输入配置: {fullPath}");
             }
             catch (Exception ex)
             {
                 Debug.LogError("加载输入配置失败: " + ex.Message);
             }
+        }
+
+        /// <summary>
+        /// 保存配置文件
+        /// </summary>
+        public void SaveConfiguration()
+        {
+            try
+            {
+                var fullPath = Path.Combine(Globals.ProjectFolder, ConfigFilePath);
+                var directory = Path.GetDirectoryName(fullPath);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                var configEntries = new List<InputConfigEntry>();
+                foreach (var kvp in _inputBindings)
+                {
+                    configEntries.Add(new InputConfigEntry
+                    {
+                        ActionName = kvp.Key,
+                        Keys = kvp.Value.Keys.Select(k => k.ToString()).ToList(),
+                        Enabled = kvp.Value.Enabled,
+                        DeadZone = kvp.Value.DeadZone
+                    });
+                }
+
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                var json = JsonSerializer.Serialize(configEntries, options);
+                File.WriteAllText(fullPath, json);
+
+                Debug.Log($"已保存输入配置: {fullPath}");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError("保存输入配置失败: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// 输入配置序列化条目
+        /// </summary>
+        private class InputConfigEntry
+        {
+            public string ActionName { get; set; } = "";
+            public List<string> Keys { get; set; } = new();
+            public bool Enabled { get; set; } = true;
+            public float DeadZone { get; set; } = 0.1f;
         }
     }
 }
