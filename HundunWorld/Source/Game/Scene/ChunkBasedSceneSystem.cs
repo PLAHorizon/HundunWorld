@@ -315,7 +315,11 @@ namespace HundunWorld.Game.Scene
             }
             else
             {
-                // 目标分块尚未加载，排队等待
+                // 目标分块尚未加载，排队等待（新请求会覆盖旧请求）
+                if (_pendingTeleportPosition != null)
+                {
+                    Debug.Log($"[ChunkSceneSystem] 覆盖待处理的传送请求");
+                }
                 _pendingTeleportPosition = targetPosition;
                 _teleportWaitTimer = 0f;
                 Debug.Log($"[ChunkSceneSystem] 等待分块加载后传送到: {targetPosition}");

@@ -677,8 +677,9 @@ namespace HundunWorld.Game.UI.GameMain
             if (slotA < 0 || slotA >= HOTBAR_SLOT_COUNT) return;
             if (slotB < 0 || slotB >= HOTBAR_SLOT_COUNT) return;
 
-            _hotbarBindings.TryGetValue(slotA, out int skillA);
-            _hotbarBindings.TryGetValue(slotB, out int skillB);
+            // 未绑定的槽位默认技能ID为0（空槽位）
+            int skillA = _hotbarBindings.TryGetValue(slotA, out int a) ? a : 0;
+            int skillB = _hotbarBindings.TryGetValue(slotB, out int b) ? b : 0;
 
             AssignSkillToHotbar(slotA, skillB);
             AssignSkillToHotbar(slotB, skillA);
