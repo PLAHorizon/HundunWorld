@@ -2049,30 +2049,29 @@ namespace Horizon.Game.Message.Network
 
     #endregion
 
-    #region 快捷栏操作消息
+    #region 背包拖拽消息
 
     /// <summary>
-    /// 快捷栏操作类型
+    /// 拖拽操作类型
     /// </summary>
-    public enum HotbarActionType
+    public enum DragDropOperation
     {
-        /// <summary>使用快捷栏槽位</summary>
-        Use = 0,
-        /// <summary>分配技能到槽位</summary>
-        Assign = 1,
-        /// <summary>清空槽位</summary>
-        Clear = 2,
         /// <summary>交换两个槽位</summary>
-        Swap = 3
+        Swap = 0,
+        /// <summary>移动到空槽位</summary>
+        Move = 1,
+        /// <summary>拆分物品</summary>
+        Split = 2,
+        /// <summary>合并相同物品</summary>
+        Merge = 3
     }
 
     /// <summary>
-    /// 快捷栏操作消息
-    /// 用于客户端通知服务器快捷栏的使用和配置操作
+    /// 背包物品拖拽消息 - 通知服务端物品拖拽操作
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
-    public partial class HotbarActionMessage : MessageUnion, INetworkMessage
+    public partial class InventoryDragDropMessage : MessageUnion, INetworkMessage
     {
         /// <summary>
         /// 角色ID
@@ -2082,36 +2081,36 @@ namespace Horizon.Game.Message.Network
         public ulong CharacterId { get; set; }
 
         /// <summary>
-        /// 操作类型
+        /// 源槽位索引
         /// </summary>
         [MemoryPackOrder(1)]
         [Id(1)]
-        public HotbarActionType ActionType { get; set; } = HotbarActionType.Use;
+        public int SourceSlotIndex { get; set; }
 
         /// <summary>
-        /// 槽位索引（0-9）
+        /// 目标槽位索引
         /// </summary>
         [MemoryPackOrder(2)]
         [Id(2)]
-        public int SlotIndex { get; set; }
+        public int TargetSlotIndex { get; set; }
 
         /// <summary>
-        /// 技能ID（用于Assign操作）
+        /// 拖拽操作类型
         /// </summary>
         [MemoryPackOrder(3)]
         [Id(3)]
-        public int SkillId { get; set; }
+        public DragDropOperation Operation { get; set; } = DragDropOperation.Swap;
 
         /// <summary>
-        /// 目标槽位索引（用于Swap操作）
+        /// 拆分数量（仅在Split操作时使用）
         /// </summary>
         [MemoryPackOrder(4)]
         [Id(4)]
-        public int TargetSlotIndex { get; set; }
+        public int SplitCount { get; set; }
 
         [MemoryPackOrder(5)]
         [Id(5)]
-        public MessageType Type { get; set; } = MessageType.HotbarAction;
+        public MessageType Type { get; set; } = MessageType.InventoryDragDrop;
         [MemoryPackOrder(6)]
         [Id(6)]
         public ServiceType ServiceType { get; set; } = ServiceType.Game;
@@ -2122,8 +2121,7 @@ namespace Horizon.Game.Message.Network
     #region 输入配置同步消息
 
     /// <summary>
-    /// 输入配置同步消息
-    /// 用于客户端与服务器之间同步输入配置
+    /// 输入配置同步消息 - 同步客户端输入配置到服务端
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
@@ -2137,32 +2135,68 @@ namespace Horizon.Game.Message.Network
         public ulong CharacterId { get; set; }
 
         /// <summary>
-        /// 配置数据（JSON格式）
+        /// 技能槽位绑定列表
         /// </summary>
         [MemoryPackOrder(1)]
         [Id(1)]
-        public string ConfigData { get; set; } = "";
+        public List<SkillSlotBinding> SkillBindings { get; set; } = new List<SkillSlotBinding>();
 
         /// <summary>
-        /// 是否为上传操作（true=上传到服务器, false=从服务器下载）
+        /// 鼠标灵敏度
         /// </summary>
         [MemoryPackOrder(2)]
         [Id(2)]
-        public bool IsUpload { get; set; }
+        public float MouseSensitivity { get; set; } = 1.0f;
 
         /// <summary>
-        /// 配置版本号
+        /// 是否启用自动攻击
         /// </summary>
         [MemoryPackOrder(3)]
         [Id(3)]
-        public int ConfigVersion { get; set; }
+        public bool AutoAttackEnabled { get; set; }
 
+        /// <summary>
+        /// 相机距离
+        /// </summary>
         [MemoryPackOrder(4)]
         [Id(4)]
-        public MessageType Type { get; set; } = MessageType.InputConfigSync;
+        public float CameraDistance { get; set; } = 10.0f;
+
         [MemoryPackOrder(5)]
         [Id(5)]
+        public MessageType Type { get; set; } = MessageType.InputConfigSync;
+        [MemoryPackOrder(6)]
+        [Id(6)]
         public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 技能槽位绑定数据
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class SkillSlotBinding
+    {
+        /// <summary>
+        /// 槽位索引
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int SlotIndex { get; set; }
+
+        /// <summary>
+        /// 技能ID
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int SkillId { get; set; }
+
+        /// <summary>
+        /// 绑定的按键名
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string KeyName { get; set; } = "";
     }
 
     #endregion

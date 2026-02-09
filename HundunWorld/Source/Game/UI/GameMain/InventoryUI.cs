@@ -68,6 +68,11 @@ namespace HundunWorld.Game.UI.GameMain
         private string _currentFilter = "全部";
         private int _selectedSlotIndex = -1;
 
+        // 拖拽状态
+        private bool _isDragging = false;
+        private int _dragSourceSlotIndex = -1;
+        private Panel _dragGhost;
+
         #endregion
 
         #region 槽位UI类
@@ -87,19 +92,56 @@ namespace HundunWorld.Game.UI.GameMain
         }
 
         /// <summary>
-        /// 自定义槽位面板，用于处理鼠标点击事件
+        /// 自定义槽位面板，用于处理鼠标点击和拖拽事件
         /// </summary>
         private class SlotPanel : Panel
         {
             public Action<int> SlotClicked;
             public Action<int> SlotDoubleClicked;
+            public Action<int> SlotDragStarted;
+            public Action<int> SlotDragEnded;
             public int SlotIndex;
+            private bool _mouseDown;
+            private Float2 _mouseDownPos;
+            private const float DragThreshold = 5.0f;
+
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left)
+                {
+                    _mouseDown = true;
+                    _mouseDownPos = location;
+                }
+                return base.OnMouseDown(location, button);
+            }
+
+            public override void OnMouseMove(Float2 location)
+            {
+                if (_mouseDown)
+                {
+                    float dist = Float2.Distance(location, _mouseDownPos);
+                    if (dist > DragThreshold)
+                    {
+                        _mouseDown = false;
+                        SlotDragStarted?.Invoke(SlotIndex);
+                    }
+                }
+                base.OnMouseMove(location);
+            }
 
             public override bool OnMouseUp(Float2 location, MouseButton button)
             {
                 if (button == MouseButton.Left)
                 {
-                    SlotClicked?.Invoke(SlotIndex);
+                    if (_mouseDown)
+                    {
+                        _mouseDown = false;
+                        SlotClicked?.Invoke(SlotIndex);
+                    }
+                    else
+                    {
+                        SlotDragEnded?.Invoke(SlotIndex);
+                    }
                 }
                 
                 return base.OnMouseUp(location, button);
@@ -332,6 +374,14 @@ namespace HundunWorld.Game.UI.GameMain
             
             slotPanel.SlotDoubleClicked = (slotIndex) => {
                 OnSlotDoubleClick(slotIndex);
+            };
+
+            slotPanel.SlotDragStarted = (slotIndex) => {
+                OnSlotDragStart(slotIndex);
+            };
+
+            slotPanel.SlotDragEnded = (slotIndex) => {
+                OnSlotDragEnd(slotIndex);
             };
             
             slotUI.SlotPanel = slotPanel;
@@ -600,7 +650,17 @@ namespace HundunWorld.Game.UI.GameMain
                 // 品质边框颜色
                 slotUI.QualityBorder.BackgroundColor = slotData.Material.GetQualityColor();
 
-                // TODO: 加载实际图标纹理
+                // 加载物品图标纹理
+                var iconPath = slotData.Material.IconPath;
+                if (!string.IsNullOrEmpty(iconPath))
+                {
+                    var texture = Content.Load<Texture>(iconPath);
+                    if (texture != null)
+                    {
+                        slotUI.IconImage.Brush = new TextureBrush(texture);
+                        slotUI.IconImage.Color = Color.White;
+                    }
+                }
             }
             else
             {
@@ -755,6 +815,223 @@ namespace HundunWorld.Game.UI.GameMain
 
             UpdateAllSlots();
             Debug.Log("[InventoryUI] 背包物品已排序");
+        }
+
+        #endregion
+
+        #region 拖拽操作
+
+        /// <summary>
+        /// 开始拖拽物品
+        /// </summary>
+        private void OnSlotDragStart(int slotIndex)
+        {
+            if (slotIndex < 0 || slotIndex >= _inventorySlots.Count) return;
+
+            var slot = _inventorySlots[slotIndex];
+            if (slot.Material == null || slot.IsLocked) return;
+
+            _isDragging = true;
+            _dragSourceSlotIndex = slotIndex;
+
+            // 创建拖拽幽灵图标并添加到背包窗口
+            _dragGhost = new Panel
+            {
+                Size = new Float2(SlotSize, SlotSize),
+                BackgroundColor = new Color(0.3f, 0.3f, 0.4f, 0.7f)
+            };
+
+            var ghostIcon = new Image
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = new Margin(4, 4, 4, 4),
+                Color = _slotUIs[slotIndex].IconImage.Color,
+                Brush = _slotUIs[slotIndex].IconImage.Brush,
+                KeepAspectRatio = true
+            };
+            _dragGhost.AddChild(ghostIcon);
+
+            // 将幽灵图标添加到背包窗口上层
+            _inventoryWindow.AddChild(_dragGhost);
+
+            // 初始位置设为源槽位位置
+            var sourceUI = _slotUIs[slotIndex];
+            _dragGhost.Location = sourceUI.SlotPanel.Location;
+
+            // 高亮源槽位
+            _slotUIs[slotIndex].SelectedOverlay.Visible = true;
+
+            Debug.Log($"[InventoryUI] 开始拖拽: 槽位 {slotIndex}, 物品 {slot.Material.MaterialName}");
+        }
+
+        /// <summary>
+        /// 拖拽结束（释放到目标槽位）
+        /// </summary>
+        private void OnSlotDragEnd(int targetSlotIndex)
+        {
+            if (!_isDragging || _dragSourceSlotIndex < 0) return;
+            if (targetSlotIndex < 0 || targetSlotIndex >= _inventorySlots.Count) return;
+            if (_dragSourceSlotIndex == targetSlotIndex)
+            {
+                CancelDrag();
+                return;
+            }
+
+            var sourceSlot = _inventorySlots[_dragSourceSlotIndex];
+            var targetSlot = _inventorySlots[targetSlotIndex];
+
+            if (targetSlot.IsLocked)
+            {
+                Debug.LogWarning("[InventoryUI] 目标槽位已锁定，无法放置");
+                CancelDrag();
+                return;
+            }
+
+            // 判断操作类型：如果目标有相同物品则合并，否则交换
+            if (targetSlot.Material != null &&
+                sourceSlot.Material != null &&
+                targetSlot.Material.MaterialName == sourceSlot.Material.MaterialName)
+            {
+                // 合并相同物品
+                targetSlot.Count += sourceSlot.Count;
+                sourceSlot.Material = null;
+                sourceSlot.Count = 0;
+                Debug.Log($"[InventoryUI] 物品合并: 槽位 {_dragSourceSlotIndex} → {targetSlotIndex}");
+            }
+            else
+            {
+                // 交换两个槽位
+                SwapSlots(_dragSourceSlotIndex, targetSlotIndex);
+                Debug.Log($"[InventoryUI] 物品交换: 槽位 {_dragSourceSlotIndex} ↔ {targetSlotIndex}");
+            }
+
+            // 更新显示
+            UpdateSlot(_dragSourceSlotIndex);
+            UpdateSlot(targetSlotIndex);
+            CancelDrag();
+        }
+
+        /// <summary>
+        /// 交换两个槽位的物品
+        /// </summary>
+        private void SwapSlots(int sourceIndex, int targetIndex)
+        {
+            var tempMaterial = _inventorySlots[sourceIndex].Material;
+            var tempCount = _inventorySlots[sourceIndex].Count;
+
+            _inventorySlots[sourceIndex].Material = _inventorySlots[targetIndex].Material;
+            _inventorySlots[sourceIndex].Count = _inventorySlots[targetIndex].Count;
+
+            _inventorySlots[targetIndex].Material = tempMaterial;
+            _inventorySlots[targetIndex].Count = tempCount;
+        }
+
+        /// <summary>
+        /// 取消拖拽操作
+        /// </summary>
+        private void CancelDrag()
+        {
+            if (_dragSourceSlotIndex >= 0 && _dragSourceSlotIndex < _slotUIs.Count)
+            {
+                _slotUIs[_dragSourceSlotIndex].SelectedOverlay.Visible = false;
+            }
+
+            if (_dragGhost != null)
+            {
+                if (_dragGhost.Parent != null)
+                {
+                    _dragGhost.Parent.RemoveChild(_dragGhost);
+                }
+                _dragGhost.Dispose();
+                _dragGhost = null;
+            }
+
+            _isDragging = false;
+            _dragSourceSlotIndex = -1;
+        }
+
+        #endregion
+
+        #region 批量操作
+
+        /// <summary>
+        /// 批量出售物品（出售所有选中类型的物品）
+        /// </summary>
+        public int BatchSellByFilter(string filterType)
+        {
+            int soldCount = 0;
+            for (int i = 0; i < _inventorySlots.Count; i++)
+            {
+                var slot = _inventorySlots[i];
+                if (slot.Material == null || slot.IsLocked) continue;
+
+                bool matchesFilter = filterType == "全部" ||
+                    (filterType == "材料" && slot.Material != null);
+
+                if (matchesFilter)
+                {
+                    soldCount += slot.Count;
+                    slot.Material = null;
+                    slot.Count = 0;
+                    UpdateSlot(i);
+                }
+            }
+
+            if (soldCount > 0)
+            {
+                UpdateCapacityLabel();
+                Debug.Log($"[InventoryUI] 批量出售完成: 售出 {soldCount} 件物品");
+            }
+
+            return soldCount;
+        }
+
+        /// <summary>
+        /// 批量整理背包（合并同类物品 + 排序）
+        /// </summary>
+        public void BatchOrganize()
+        {
+            // 先合并同类物品
+            MergeSameItems();
+            // 再排序
+            SortInventory();
+            Debug.Log("[InventoryUI] 背包批量整理完成");
+        }
+
+        /// <summary>
+        /// 合并相同物品
+        /// </summary>
+        private void MergeSameItems()
+        {
+            var materialGroups = new Dictionary<string, List<int>>();
+
+            // 按材料名分组
+            for (int i = 0; i < _inventorySlots.Count; i++)
+            {
+                var slot = _inventorySlots[i];
+                if (slot.Material == null) continue;
+
+                if (!materialGroups.ContainsKey(slot.Material.MaterialName))
+                {
+                    materialGroups[slot.Material.MaterialName] = new List<int>();
+                }
+                materialGroups[slot.Material.MaterialName].Add(i);
+            }
+
+            // 合并同类物品
+            foreach (var group in materialGroups)
+            {
+                if (group.Value.Count <= 1) continue;
+
+                int primaryIndex = group.Value[0];
+                for (int i = 1; i < group.Value.Count; i++)
+                {
+                    int secondaryIndex = group.Value[i];
+                    _inventorySlots[primaryIndex].Count += _inventorySlots[secondaryIndex].Count;
+                    _inventorySlots[secondaryIndex].Material = null;
+                    _inventorySlots[secondaryIndex].Count = 0;
+                }
+            }
         }
 
         #endregion

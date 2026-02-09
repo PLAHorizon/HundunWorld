@@ -263,8 +263,24 @@ namespace HundunWorld.Game.UI.GameMain
 
             if (skill != null && skill.Data != null)
             {
-                // 更新技能图标（TODO：加载实际图标纹理）
-                slot.IconImage.Color = GetElementColor(skill.Data.Element);
+                // 加载技能图标纹理
+                if (!string.IsNullOrEmpty(skill.Data.IconPath))
+                {
+                    var texture = Content.Load<Texture>(skill.Data.IconPath);
+                    if (texture != null)
+                    {
+                        slot.IconImage.Brush = new TextureBrush(texture);
+                        slot.IconImage.Color = Color.White;
+                    }
+                    else
+                    {
+                        slot.IconImage.Color = GetElementColor(skill.Data.Element);
+                    }
+                }
+                else
+                {
+                    slot.IconImage.Color = GetElementColor(skill.Data.Element);
+                }
                 
                 // 更新能量消耗显示
                 slot.EnergyCostLabel.Text = skill.Data.EnergyCost.ToString("F0");
@@ -408,7 +424,7 @@ namespace HundunWorld.Game.UI.GameMain
             {
                 Debug.Log($"[SkillBarUI] 技能释放成功: {slot.BoundSkill.Data.SkillName}");
                 
-                // 播放技能使用动画（TODO）
+                // 播放技能使用动画反馈
                 PlaySkillUseAnimation(slot);
             }
 
@@ -624,6 +640,81 @@ namespace HundunWorld.Game.UI.GameMain
                     : Color.Yellow;                   // 默认快捷键用黄色
             }
         }
+
+        #endregion
+
+        #region 技能拖拽绑定
+
+        // 拖拽状态
+        private bool _isDraggingSkill = false;
+        private int _dragSourceSlot = -1;
+
+        /// <summary>
+        /// 技能拖拽事件 - 技能从一个槽位拖到另一个槽位
+        /// </summary>
+        public event Action<int, int> OnSkillSlotSwapped;  // (sourceSlot, targetSlot)
+
+        /// <summary>
+        /// 开始拖拽技能槽位
+        /// </summary>
+        public void StartSkillDrag(int slotIndex)
+        {
+            if (slotIndex < 0 || slotIndex >= _skillSlots.Count) return;
+
+            var slot = _skillSlots[slotIndex];
+            if (slot.BoundSkill == null) return;
+
+            _isDraggingSkill = true;
+            _dragSourceSlot = slotIndex;
+
+            // 高亮源槽位
+            slot.SlotPanel.BackgroundColor = new Color(0.4f, 0.4f, 0.1f, 0.9f);
+
+            Debug.Log($"[SkillBarUI] 开始拖拽技能: 槽位{slotIndex}, {slot.BoundSkill.Data?.SkillName}");
+        }
+
+        /// <summary>
+        /// 完成技能拖拽（释放到目标槽位）
+        /// </summary>
+        public void CompleteSkillDrag(int targetSlotIndex)
+        {
+            if (!_isDraggingSkill || _dragSourceSlot < 0) return;
+            if (targetSlotIndex < 0 || targetSlotIndex >= _skillSlots.Count) return;
+
+            if (_dragSourceSlot != targetSlotIndex)
+            {
+                // 交换两个槽位的技能
+                var sourceSkill = _skillSlots[_dragSourceSlot].BoundSkill;
+                var targetSkill = _skillSlots[targetSlotIndex].BoundSkill;
+
+                BindSkillToSlot(_dragSourceSlot, targetSkill);
+                BindSkillToSlot(targetSlotIndex, sourceSkill);
+
+                OnSkillSlotSwapped?.Invoke(_dragSourceSlot, targetSlotIndex);
+                Debug.Log($"[SkillBarUI] 技能交换: 槽位{_dragSourceSlot} ↔ {targetSlotIndex}");
+            }
+
+            CancelSkillDrag();
+        }
+
+        /// <summary>
+        /// 取消技能拖拽
+        /// </summary>
+        public void CancelSkillDrag()
+        {
+            if (_dragSourceSlot >= 0 && _dragSourceSlot < _skillSlots.Count)
+            {
+                _skillSlots[_dragSourceSlot].SlotPanel.BackgroundColor = new Color(0.15f, 0.15f, 0.2f, 0.9f);
+            }
+
+            _isDraggingSkill = false;
+            _dragSourceSlot = -1;
+        }
+
+        /// <summary>
+        /// 是否正在拖拽技能
+        /// </summary>
+        public bool IsDraggingSkill() => _isDraggingSkill;
 
         #endregion
 

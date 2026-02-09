@@ -565,9 +565,12 @@ namespace HundunWorld.Game.Scene
         #region 统计信息
 
         /// <summary>
-        /// 当前已加载的分块数量
+        /// 获取当前加载的分块数量
         /// </summary>
-        public int LoadedChunkCount => _loadedChunks.Count;
+        public int GetLoadedChunkCount()
+        {
+            return _loadedChunks.Count;
+        }
 
         /// <summary>
         /// 获取统计信息
@@ -658,8 +661,9 @@ namespace HundunWorld.Game.Scene
                 // 绘制LOD信息
                 if (chunk.LoadState == ChunkLoadState.Loaded)
                 {
-                    // TODO: 在分块中心绘制LOD层级文本
-                    // DebugDraw.DrawText(...);
+                    // 绘制LOD层级文本标记
+                    Vector3 textPos = new Vector3(chunk.WorldPosition.X, 5, chunk.WorldPosition.Y);
+                    DebugDraw.DrawText(chunk.CurrentLod.ToString(), textPos, Color.Yellow);
                 }
             }
 
@@ -918,17 +922,16 @@ namespace HundunWorld.Game.Scene
         {
             try
             {
-                // TODO: 实际加载分块资源
-                // 这里应该从ContentManager加载对应的Prefab或场景资源
+                // 加载分块资源
+                // 从ContentManager加载对应的Prefab或场景资源
 
-                // 示例：创建分块根节点
+                // 创建分块根节点
                 chunk.ChunkRoot = new EmptyActor();
                 chunk.ChunkRoot.Name = $"Chunk_{chunk.ChunkX}_{chunk.ChunkZ}";
                 chunk.ChunkRoot.Position = new Vector3(chunk.WorldPosition.X, 0, chunk.WorldPosition.Y);
                 chunk.ChunkRoot.Parent = Scene;
 
-                // TODO: 加载分块中的所有Actor
-                // 示例代码（实际应该从资源文件加载）
+                // 加载分块中的所有Actor
                 LoadChunkActors(chunk);
 
                 // 标记为已加载
@@ -982,10 +985,23 @@ namespace HundunWorld.Game.Scene
         /// </summary>
         private void LoadChunkActors(SceneChunk chunk)
         {
-            // TODO: 实际项目中应该从资源文件或数据库加载
-            // 这里只是演示如何使用对象池
+            // 从配置加载分块内容
+            // 实际项目中从资源文件或数据库加载，这里使用资源路径尝试加载
+            if (!string.IsNullOrEmpty(chunk.ChunkAssetPath))
+            {
+                var prefab = Content.Load<Prefab>(chunk.ChunkAssetPath);
+                if (prefab != null)
+                {
+                    var instance = PrefabManager.SpawnPrefab(prefab, chunk.ChunkRoot);
+                    if (instance != null)
+                    {
+                        chunk.LoadedActors.Add(instance);
+                        return;
+                    }
+                }
+            }
 
-            // 示例：在分块中创建一些测试对象
+            // 回退：使用对象池创建占位Actor
             for (int i = 0; i < 5; i++)
             {
                 Actor actor;
@@ -1132,7 +1148,7 @@ namespace HundunWorld.Game.Scene
         /// </summary>
         private void ApplyLodLevel(SceneChunk chunk, LodLevel lod)
         {
-            // TODO: 实际应用LOD
+            // 应用LOD层级变换
             // 1. 切换模型LOD
             // 2. 调整渲染质量
             // 3. 禁用/启用某些组件
@@ -1141,7 +1157,7 @@ namespace HundunWorld.Game.Scene
             {
                 if (actor == null) continue;
 
-                // 示例：根据LOD调整可见性
+                // 根据LOD调整可见性和模型
                 switch (lod)
                 {
                     case LodLevel.None:
@@ -1149,15 +1165,30 @@ namespace HundunWorld.Game.Scene
                         break;
                     case LodLevel.Lod2:
                         actor.IsActive = true;
-                        // TODO: 切换到LOD2模型
+                        // 切换到LOD2低精度模型
+                        var model2 = actor.GetScript<StaticModel>();
+                        if (model2 != null)
+                        {
+                            model2.ForcedLOD = 2;
+                        }
                         break;
                     case LodLevel.Lod1:
                         actor.IsActive = true;
-                        // TODO: 切换到LOD1模型
+                        // 切换到LOD1中精度模型
+                        var model1 = actor.GetScript<StaticModel>();
+                        if (model1 != null)
+                        {
+                            model1.ForcedLOD = 1;
+                        }
                         break;
                     case LodLevel.Lod0:
                         actor.IsActive = true;
-                        // TODO: 切换到LOD0高模
+                        // 切换到LOD0高精度模型
+                        var model0 = actor.GetScript<StaticModel>();
+                        if (model0 != null)
+                        {
+                            model0.ForcedLOD = 0;
+                        }
                         break;
                 }
             }

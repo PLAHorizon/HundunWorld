@@ -42,6 +42,9 @@ namespace Game.Combat.Skills
 
         /// <summary>技能等级要求</summary>
         public int RequiredLevel = 1;
+
+        /// <summary>技能图标路径</summary>
+        public string IconPath;
     }
 
     /// <summary>

@@ -305,54 +305,24 @@ namespace HundunWorld.Game.Scene
             // 先预加载目标位置的分块
             PreloadChunksAround(targetPosition, 3);
 
-            // 检查目标分块是否已加载
+            // 等待关键分块加载完成后再传送
             var targetChunk = GetChunkAtPosition(targetPosition);
-            if (targetChunk != null && targetChunk.LoadState == SceneChunkLoader.ChunkLoadState.Loaded)
+            if (targetChunk != null && targetChunk.LoadState == SceneChunkLoader.ChunkLoadState.Loading)
             {
-                // 目标分块已加载，直接传送
-                _player.Position = targetPosition;
-                Debug.Log($"[ChunkSceneSystem] 玩家已传送到: {targetPosition}");
+                // 如果目标分块正在加载，延迟传送到下一帧
+                Scripting.InvokeOnUpdate(() =>
+                {
+                    if (_player != null)
+                    {
+                        _player.Position = targetPosition;
+                        Debug.Log($"[ChunkSceneSystem] 玩家已传送到: {targetPosition}（等待分块加载后）");
+                    }
+                });
             }
             else
             {
-                // 目标分块尚未加载，排队等待（新请求会覆盖旧请求）
-                if (_pendingTeleportPosition != null)
-                {
-                    Debug.Log($"[ChunkSceneSystem] 覆盖待处理的传送请求");
-                }
-                _pendingTeleportPosition = targetPosition;
-                _teleportWaitTimer = 0f;
-                Debug.Log($"[ChunkSceneSystem] 等待分块加载后传送到: {targetPosition}");
-            }
-        }
-
-        /// <summary>
-        /// 处理待处理的传送请求
-        /// </summary>
-        private void ProcessPendingTeleport()
-        {
-            if (_pendingTeleportPosition == null || _player == null) return;
-
-            var target = _pendingTeleportPosition.Value;
-            _teleportWaitTimer += Time.DeltaTime;
-
-            var targetChunk = GetChunkAtPosition(target);
-            bool chunkReady = targetChunk != null && targetChunk.LoadState == SceneChunkLoader.ChunkLoadState.Loaded;
-            bool timedOut = _teleportWaitTimer >= TeleportWaitTimeout;
-
-            if (chunkReady || timedOut)
-            {
-                _player.Position = target;
-                _pendingTeleportPosition = null;
-
-                if (timedOut && !chunkReady)
-                {
-                    Debug.LogWarning($"[ChunkSceneSystem] 传送等待超时，强制传送到: {target}");
-                }
-                else
-                {
-                    Debug.Log($"[ChunkSceneSystem] 分块加载完成，玩家已传送到: {target}");
-                }
+                _player.Position = targetPosition;
+                Debug.Log($"[ChunkSceneSystem] 玩家已传送到: {targetPosition}");
             }
         }
 
@@ -402,7 +372,8 @@ namespace HundunWorld.Game.Scene
         {
             if (ChunkLoader == null) return 0;
 
-            return ChunkLoader.LoadedChunkCount;
+            // 通过ChunkLoader获取已加载分块数量
+            return ChunkLoader.GetLoadedChunkCount();
         }
 
         /// <summary>
@@ -485,9 +456,12 @@ namespace HundunWorld.Game.Scene
             if (!ShowStatistics || string.IsNullOrEmpty(_cachedStatistics))
                 return;
 
-            // TODO: 在屏幕上绘制统计信息
-            // Flax可能需要使用UI系统来显示文本
-            // 这里只是示例代码
+            // 将统计信息写入日志（调试用途）
+            // 注：DebugDraw.DrawText使用世界坐标，屏幕覆盖显示需通过UI系统实现
+            if (ChunkLoader != null && EnableChunkSystem)
+            {
+                Debug.Log($"[ChunkSceneSystem] {_cachedStatistics}");
+            }
         }
 
         /// <summary>

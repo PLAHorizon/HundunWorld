@@ -664,10 +664,10 @@ namespace Horizon.Game.Message.Enums
         BuffDisplay = 1349,
 
         /// <summary>
-        /// 快捷栏操作
+        /// 背包物品拖拽操作
         /// </summary>
-        [Description("快捷栏操作")]
-        HotbarAction = 1350,
+        [Description("背包拖拽")]
+        InventoryDragDrop = 1350,
 
         /// <summary>
         /// 输入配置同步
