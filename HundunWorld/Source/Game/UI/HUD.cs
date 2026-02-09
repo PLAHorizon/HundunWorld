@@ -65,6 +65,11 @@ namespace Game.UI
                 {
                     ShowNotificationImmediate(entry);
                 }
+                else if (!_initialized)
+                {
+                    FlaxEngine.Debug.LogWarning("[HUD] 通知系统尚未初始化，消息已加入队列等待显示");
+                    _pendingQueue.Enqueue(entry);
+                }
                 else
                 {
                     _pendingQueue.Enqueue(entry);
@@ -87,7 +92,6 @@ namespace Game.UI
             try
             {
                 var currentTime = Time.GameTime;
-                var toRemove = new List<NotificationEntry>();
 
                 for (int i = _activeNotifications.Count - 1; i >= 0; i--)
                 {
@@ -118,15 +122,11 @@ namespace Game.UI
                             if (entry.Panel != null)
                                 entry.Panel.Opacity = 1f - fadeOutProgress;
                             if (fadeOutProgress >= 1f)
-                                toRemove.Add(entry);
+                            {
+                                RemoveNotificationAt(i);
+                            }
                             break;
                     }
-                }
-
-                // 移除过期的通知
-                foreach (var entry in toRemove)
-                {
-                    RemoveNotification(entry);
                 }
 
                 // 显示队列中等待的通知
@@ -178,6 +178,20 @@ namespace Game.UI
             _activeNotifications.Add(entry);
         }
 
+        private static void RemoveNotificationAt(int index)
+        {
+            var entry = _activeNotifications[index];
+            if (entry.Panel != null && _notificationContainer != null)
+            {
+                _notificationContainer.RemoveChild(entry.Panel);
+                entry.Panel.Dispose();
+            }
+            _activeNotifications.RemoveAt(index);
+
+            // 重新排列剩余通知位置
+            RearrangeNotifications();
+        }
+
         private static void RemoveNotification(NotificationEntry entry)
         {
             if (entry.Panel != null && _notificationContainer != null)
@@ -187,7 +201,11 @@ namespace Game.UI
             }
             _activeNotifications.Remove(entry);
 
-            // 重新排列剩余通知位置
+            RearrangeNotifications();
+        }
+
+        private static void RearrangeNotifications()
+        {
             for (int i = 0; i < _activeNotifications.Count; i++)
             {
                 var notification = _activeNotifications[i];

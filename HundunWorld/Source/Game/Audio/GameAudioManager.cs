@@ -25,6 +25,7 @@ namespace HundunWorld.Game.Audio
         private readonly Dictionary<GameAudioCategory, float> _categoryVolumes;
         private readonly List<ActiveSound> _activeSounds;
         private const int MaxConcurrentSounds = 32;
+        private const float MinAudibleVolume = 0.001f;
 
         public GameAudioManager()
         {
@@ -112,7 +113,7 @@ namespace HundunWorld.Game.Audio
             try
             {
                 var finalVolume = CalculateFinalVolume(category, volume);
-                if (finalVolume <= 0.001f)
+                if (finalVolume <= MinAudibleVolume)
                     return;
 
                 // 清理过期的音效记录
@@ -166,7 +167,7 @@ namespace HundunWorld.Game.Audio
             try
             {
                 var finalVolume = CalculateFinalVolume(category, volume);
-                if (finalVolume <= 0.001f)
+                if (finalVolume <= MinAudibleVolume)
                     return;
 
                 CleanupFinishedSounds();
