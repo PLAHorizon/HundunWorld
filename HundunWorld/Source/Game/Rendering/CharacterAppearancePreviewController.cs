@@ -495,8 +495,8 @@ namespace HundunWorld.Game.Rendering
         /// 截取预览图
         /// </summary>
         /// <param name="filePath">保存路径</param>
-        /// <param name="width">宽度</param>
-        /// <param name="height">高度</param>
+        /// <param name="width">宽度（预留参数，当前使用视口原始分辨率）</param>
+        /// <param name="height">高度（预留参数，当前使用视口原始分辨率）</param>
         public void CapturePreviewImage(string filePath, int width = 512, int height = 512)
         {
             try

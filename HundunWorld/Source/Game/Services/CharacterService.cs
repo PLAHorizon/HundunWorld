@@ -166,10 +166,11 @@ namespace HundunWorld.Game.Services
                 }
 
                 Debug.Log($"[CharacterService] 创建角色请求已发送: {characterName}");
-                // 响应将通过 CreateCharacterHandler 异步回调处理
+                // 请求已发送到服务器，实际创建结果将通过 CreateCharacterHandler 异步回调处理
+                // 此处返回表示请求发送成功，非最终创建结果
                 return new CreateCharacterResponse
                 {
-                    IsSuccess = true,
+                    IsSuccess = false,
                     Message = "请求已发送，等待服务器响应"
                 };
             }
@@ -186,6 +187,9 @@ namespace HundunWorld.Game.Services
 
         /// <summary>
         /// 异步获取角色列表
+        /// 注意：此方法发送请求后立即返回当前缓存数据。
+        /// 服务器响应将通过 CharacterListHandler 异步回调处理并更新缓存，
+        /// 调用方应监听 UIStateManager.UpdateCharacterList 事件获取最新数据。
         /// </summary>
         public async Task<List<CharacterInfo>> GetCharacterListAsync()
         {

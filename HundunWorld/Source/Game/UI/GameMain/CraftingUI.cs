@@ -75,7 +75,8 @@ namespace HundunWorld.Game.UI.GameMain
             get
             {
                 var selectedCharacter = CharacterService.Instance.SelectedCharacter;
-                return selectedCharacter != null ? (int)selectedCharacter.Gold : 0;
+                if (selectedCharacter == null) return 0;
+                return selectedCharacter.Gold > int.MaxValue ? int.MaxValue : (int)selectedCharacter.Gold;
             }
         }
 
@@ -852,7 +853,7 @@ namespace HundunWorld.Game.UI.GameMain
 
                 // 消耗金币
                 var selectedCharacter = CharacterService.Instance.SelectedCharacter;
-                if (selectedCharacter != null)
+                if (selectedCharacter != null && selectedCharacter.Gold >= _selectedRecipe.CurrencyCost)
                 {
                     selectedCharacter.Gold -= _selectedRecipe.CurrencyCost;
                 }
