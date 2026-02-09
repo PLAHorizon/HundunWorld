@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.4" />
     <ProjectReference Include="..\Horizon.Entities\Horizon.Entities.csproj" />
     <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
     <ProjectReference Include="..\Horizon.Mapper\Horizon.Mapper.csproj" />
