@@ -2866,4 +2866,1033 @@ namespace Horizon.Game.Message.Network
     }
 
     #endregion
+
+    #region Phase 10 - 交易、邮件、任务、副本、成就、排行榜客户端集成消息
+
+    /// <summary>
+    /// 交易请求消息（发起面对面交易）
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class TradeRequestMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 发起者角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong InitiatorId { get; set; }
+
+        /// <summary>
+        /// 目标角色ID
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public ulong TargetId { get; set; }
+
+        /// <summary>
+        /// 目标角色名称
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string TargetName { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public MessageType Type { get; set; } = MessageType.TradeRequest;
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Trade;
+    }
+
+    /// <summary>
+    /// 交易响应消息（接受/拒绝交易）
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class TradeResponseMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 交易ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public string TradeId { get; set; } = "";
+
+        /// <summary>
+        /// 是否接受
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public bool Accepted { get; set; }
+
+        /// <summary>
+        /// 响应消息
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string Message { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public MessageType Type { get; set; } = MessageType.TradeResponse;
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Trade;
+    }
+
+    /// <summary>
+    /// 交易更新通知消息（交易状态变更）
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class TradeUpdateNotifyMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 交易ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public string TradeId { get; set; } = "";
+
+        /// <summary>
+        /// 交易状态 (0=进行中, 1=已确认, 2=已完成, 3=已取消)
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int Status { get; set; }
+
+        /// <summary>
+        /// 对方角色名称
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string PartnerName { get; set; } = "";
+
+        /// <summary>
+        /// 交易货币金额
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long CurrencyAmount { get; set; }
+
+        /// <summary>
+        /// 时间戳
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public long Timestamp { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public MessageType Type { get; set; } = MessageType.TradeUpdateNotify;
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Trade;
+    }
+
+    /// <summary>
+    /// 市场上架请求消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class MarketListRequestMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 卖家角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong SellerId { get; set; }
+
+        /// <summary>
+        /// 物品ID
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long ItemId { get; set; }
+
+        /// <summary>
+        /// 物品数量
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int Quantity { get; set; }
+
+        /// <summary>
+        /// 单价
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long Price { get; set; }
+
+        /// <summary>
+        /// 货币类型
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int CurrencyType { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public MessageType Type { get; set; } = MessageType.MarketListRequest;
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Trade;
+    }
+
+    /// <summary>
+    /// 市场搜索请求消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class MarketSearchRequestMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 搜索关键词
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public string Keyword { get; set; } = "";
+
+        /// <summary>
+        /// 物品分类
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int Category { get; set; }
+
+        /// <summary>
+        /// 排序方式 (0=价格升序, 1=价格降序, 2=最新)
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int SortBy { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public MessageType Type { get; set; } = MessageType.MarketSearchRequest;
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Trade;
+    }
+
+    /// <summary>
+    /// 市场搜索响应消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class MarketSearchResponseMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 搜索结果列表
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public List<MarketListingInfo> Listings { get; set; } = new();
+
+        /// <summary>
+        /// 总结果数
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int TotalCount { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public MessageType Type { get; set; } = MessageType.MarketSearchResponse;
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Trade;
+    }
+
+    /// <summary>
+    /// 市场商品信息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class MarketListingInfo
+    {
+        /// <summary>
+        /// 商品列表ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long ListingId { get; set; }
+
+        /// <summary>
+        /// 物品ID
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long ItemId { get; set; }
+
+        /// <summary>
+        /// 物品名称
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string ItemName { get; set; } = "";
+
+        /// <summary>
+        /// 数量
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int Quantity { get; set; }
+
+        /// <summary>
+        /// 单价
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public long Price { get; set; }
+
+        /// <summary>
+        /// 卖家名称
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public string SellerName { get; set; } = "";
+    }
+
+    /// <summary>
+    /// 邮件列表请求消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class MailListRequestMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 是否只获取未读邮件
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public bool UnreadOnly { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public MessageType Type { get; set; } = MessageType.MailListRequest;
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public ServiceType ServiceType { get; set; } = ServiceType.System;
+    }
+
+    /// <summary>
+    /// 邮件列表响应消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class MailListResponseMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 邮件列表
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public List<MailInfo> Mails { get; set; } = new();
+
+        /// <summary>
+        /// 未读数量
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int UnreadCount { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public MessageType Type { get; set; } = MessageType.MailListResponse;
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public ServiceType ServiceType { get; set; } = ServiceType.System;
+    }
+
+    /// <summary>
+    /// 邮件信息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class MailInfo
+    {
+        /// <summary>
+        /// 邮件ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long MailId { get; set; }
+
+        /// <summary>
+        /// 发件人名称
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string SenderName { get; set; } = "";
+
+        /// <summary>
+        /// 邮件标题
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string Title { get; set; } = "";
+
+        /// <summary>
+        /// 邮件内容
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string Content { get; set; } = "";
+
+        /// <summary>
+        /// 邮件类型
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int MailType { get; set; }
+
+        /// <summary>
+        /// 是否已读
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public bool IsRead { get; set; }
+
+        /// <summary>
+        /// 是否有附件
+        /// </summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public bool HasAttachment { get; set; }
+
+        /// <summary>
+        /// 附件是否已领取
+        /// </summary>
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public bool AttachmentClaimed { get; set; }
+
+        /// <summary>
+        /// 发送时间戳
+        /// </summary>
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public long Timestamp { get; set; }
+    }
+
+    /// <summary>
+    /// 邮件操作消息（阅读/领取附件/删除）
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class MailOperationMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 邮件ID
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long MailId { get; set; }
+
+        /// <summary>
+        /// 操作类型 (0=阅读, 1=领取附件, 2=删除)
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int OperationType { get; set; }
+
+        /// <summary>
+        /// 操作是否成功
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public bool Success { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public MessageType Type { get; set; } = MessageType.MailOperation;
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public ServiceType ServiceType { get; set; } = ServiceType.System;
+    }
+
+    /// <summary>
+    /// 新邮件通知消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class MailNotifyMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 邮件ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long MailId { get; set; }
+
+        /// <summary>
+        /// 发件人名称
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string SenderName { get; set; } = "";
+
+        /// <summary>
+        /// 邮件标题
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string Title { get; set; } = "";
+
+        /// <summary>
+        /// 是否有附件
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public bool HasAttachment { get; set; }
+
+        /// <summary>
+        /// 未读邮件总数
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int UnreadCount { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public MessageType Type { get; set; } = MessageType.MailNotify;
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public ServiceType ServiceType { get; set; } = ServiceType.System;
+    }
+
+    /// <summary>
+    /// 任务列表请求消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class QuestListRequestMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 是否只获取进行中的任务
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public bool ActiveOnly { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public MessageType Type { get; set; } = MessageType.QuestListRequest;
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Quest;
+    }
+
+    /// <summary>
+    /// 任务列表响应消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class QuestListResponseMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 任务列表
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public List<QuestSummary> Quests { get; set; } = new();
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public MessageType Type { get; set; } = MessageType.QuestListResponse;
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Quest;
+    }
+
+    /// <summary>
+    /// 任务摘要信息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class QuestSummary
+    {
+        /// <summary>
+        /// 任务ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int QuestId { get; set; }
+
+        /// <summary>
+        /// 任务名称
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string QuestName { get; set; } = "";
+
+        /// <summary>
+        /// 任务类型 (0=主线, 1=支线, 2=日常, 3=周常)
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int QuestType { get; set; }
+
+        /// <summary>
+        /// 任务状态 (0=进行中, 1=可完成, 2=已完成)
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int Status { get; set; }
+
+        /// <summary>
+        /// 当前进度
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int CurrentProgress { get; set; }
+
+        /// <summary>
+        /// 目标进度
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public int TargetProgress { get; set; }
+    }
+
+    /// <summary>
+    /// 任务进度更新通知消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class QuestProgressNotifyMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 任务ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int QuestId { get; set; }
+
+        /// <summary>
+        /// 任务名称
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string QuestName { get; set; } = "";
+
+        /// <summary>
+        /// 目标索引
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int ObjectiveIndex { get; set; }
+
+        /// <summary>
+        /// 当前进度
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int CurrentProgress { get; set; }
+
+        /// <summary>
+        /// 目标进度
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int TargetProgress { get; set; }
+
+        /// <summary>
+        /// 是否已完成
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public bool IsCompleted { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public MessageType Type { get; set; } = MessageType.QuestProgressNotify;
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Quest;
+    }
+
+    /// <summary>
+    /// 副本进入请求消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class DungeonEnterRequestMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 副本模板ID
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int DungeonTemplateId { get; set; }
+
+        /// <summary>
+        /// 难度 (0=普通, 1=困难, 2=英雄, 3=地狱)
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int Difficulty { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public MessageType Type { get; set; } = MessageType.DungeonEnterRequest;
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 副本状态通知消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class DungeonStatusNotifyMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 副本实例ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public string DungeonInstanceId { get; set; } = "";
+
+        /// <summary>
+        /// 副本名称
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string DungeonName { get; set; } = "";
+
+        /// <summary>
+        /// 副本状态 (0=准备中, 1=进行中, 2=Boss战, 3=已完成, 4=已超时)
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int Status { get; set; }
+
+        /// <summary>
+        /// 当前玩家数
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int CurrentPlayers { get; set; }
+
+        /// <summary>
+        /// 最大玩家数
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int MaxPlayers { get; set; }
+
+        /// <summary>
+        /// 剩余时间（秒）
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public int RemainingSeconds { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public MessageType Type { get; set; } = MessageType.DungeonStatusNotify;
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 成就解锁通知消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class AchievementUnlockNotifyMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 成就ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int AchievementId { get; set; }
+
+        /// <summary>
+        /// 成就名称
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string AchievementName { get; set; } = "";
+
+        /// <summary>
+        /// 成就描述
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string Description { get; set; } = "";
+
+        /// <summary>
+        /// 成就点数
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int Points { get; set; }
+
+        /// <summary>
+        /// 成就分类
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int Category { get; set; }
+
+        /// <summary>
+        /// 解锁时间戳
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public long UnlockTimestamp { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public MessageType Type { get; set; } = MessageType.AchievementUnlockNotify;
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 成就列表响应消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class AchievementListResponseMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 成就列表
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public List<AchievementSummary> Achievements { get; set; } = new();
+
+        /// <summary>
+        /// 总成就点数
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int TotalPoints { get; set; }
+
+        /// <summary>
+        /// 已解锁数量
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int UnlockedCount { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public MessageType Type { get; set; } = MessageType.AchievementListResponse;
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 成就摘要信息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class AchievementSummary
+    {
+        /// <summary>
+        /// 成就ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int AchievementId { get; set; }
+
+        /// <summary>
+        /// 成就名称
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string Name { get; set; } = "";
+
+        /// <summary>
+        /// 成就分类
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int Category { get; set; }
+
+        /// <summary>
+        /// 成就点数
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int Points { get; set; }
+
+        /// <summary>
+        /// 当前进度
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int CurrentProgress { get; set; }
+
+        /// <summary>
+        /// 目标进度
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public int TargetProgress { get; set; }
+
+        /// <summary>
+        /// 是否已解锁
+        /// </summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public bool IsUnlocked { get; set; }
+    }
+
+    /// <summary>
+    /// 排行榜查询请求消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class RankingQueryRequestMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 排行榜类型 (0=战力, 1=等级, 2=财富, 3=成就, 4=PVP)
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int RankingType { get; set; }
+
+        /// <summary>
+        /// 查询数量
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int Count { get; set; }
+
+        /// <summary>
+        /// 查询者角色ID
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public ulong CharacterId { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public MessageType Type { get; set; } = MessageType.RankingQueryRequest;
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 排行榜查询响应消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class RankingQueryResponseMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 排行榜类型
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int RankingType { get; set; }
+
+        /// <summary>
+        /// 排行榜名称
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string RankingName { get; set; } = "";
+
+        /// <summary>
+        /// 排行榜条目
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public List<RankingEntryInfo> Entries { get; set; } = new();
+
+        /// <summary>
+        /// 查询者自身排名（-1表示未上榜）
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int MyRank { get; set; } = -1;
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public MessageType Type { get; set; } = MessageType.RankingQueryResponse;
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 排行榜条目信息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class RankingEntryInfo
+    {
+        /// <summary>
+        /// 排名
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int Rank { get; set; }
+
+        /// <summary>
+        /// 玩家名称
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string PlayerName { get; set; } = "";
+
+        /// <summary>
+        /// 分数
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public long Score { get; set; }
+
+        /// <summary>
+        /// 玩家等级
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int Level { get; set; }
+    }
+
+    #endregion
 }
