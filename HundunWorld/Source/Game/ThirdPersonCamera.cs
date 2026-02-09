@@ -2557,21 +2557,11 @@ namespace HundunWorld.Game
         /// </summary>
         private CameraState DetectCameraState()
         {
-            // 根据 PlayerController 的角色状态检测相机状态
-            if (_playerController != null)
+            // 攀爬状态检测：直接检查攀爬控制器
+            var climbingController = Target.GetScript<ClimbingSystem.ClimbingController>();
+            if (climbingController != null && climbingController.IsClimbing())
             {
-                var characterState = _playerController.CurrentState;
-                
-                // 攀爬状态检测
-                if (characterState == Horizon.Game.Message.Enums.CharacterState.Crouching)
-                {
-                    // 蹲伏可能是攀爬准备，检查是否有攀爬控制器
-                    var climbingController = Target.GetScript<ClimbingSystem.ClimbingController>();
-                    if (climbingController != null && climbingController.IsClimbing())
-                    {
-                        return CameraState.Climbing;
-                    }
-                }
+                return CameraState.Climbing;
             }
             
             // 速度检测
@@ -2945,6 +2935,9 @@ namespace HundunWorld.Game
             return hitCount > 0 ? totalDistance / hitCount : maxDetectionDistance;
         }
         
+        private const float DirectionalLightWeight = 0.5f;
+        private const float PointLightMaxRange = 50f;
+        
         /// <summary>
         /// 检测光照级别
         /// </summary>
@@ -2965,16 +2958,16 @@ namespace HundunWorld.Game
                         if (light is DirectionalLight dirLight)
                         {
                             // 方向光影响全场景
-                            totalIntensity += dirLight.Color.A * 0.5f;
+                            totalIntensity += dirLight.Color.A * DirectionalLightWeight;
                             nearbyLights++;
                         }
                         else
                         {
                             // 点光源/聚光灯：根据距离衰减
                             float dist = Vector3.Distance(targetPos, light.Position);
-                            if (dist < 50f)
+                            if (dist < PointLightMaxRange)
                             {
-                                float attenuation = Mathf.Clamp01(1f - dist / 50f);
+                                float attenuation = Mathf.Clamp01(1f - dist / PointLightMaxRange);
                                 totalIntensity += attenuation;
                                 nearbyLights++;
                             }

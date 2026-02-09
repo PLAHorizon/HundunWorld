@@ -120,24 +120,38 @@ namespace HundunWorld.Game.ECS.Components
             if (Items == null)
                 return false;
 
+            // 先检查总数是否足够
+            if (GetItemCount(templateId) < count)
+                return false;
+
+            int remaining = count;
+            var slotsToRemove = new List<int>();
+
             foreach (var kvp in Items)
             {
-                if (kvp.Value.TemplateId == templateId && kvp.Value.Count >= count)
+                if (kvp.Value.TemplateId != templateId || remaining <= 0)
+                    continue;
+
+                var item = kvp.Value;
+                if (item.Count <= remaining)
                 {
-                    var item = kvp.Value;
-                    item.Count -= count;
-                    if (item.Count <= 0)
-                    {
-                        Items.Remove(kvp.Key);
-                    }
-                    else
-                    {
-                        Items[kvp.Key] = item;
-                    }
-                    return true;
+                    remaining -= item.Count;
+                    slotsToRemove.Add(kvp.Key);
+                }
+                else
+                {
+                    item.Count -= remaining;
+                    Items[kvp.Key] = item;
+                    remaining = 0;
                 }
             }
-            return false;
+
+            foreach (var slot in slotsToRemove)
+            {
+                Items.Remove(slot);
+            }
+
+            return remaining == 0;
         }
 
         /// <summary>
