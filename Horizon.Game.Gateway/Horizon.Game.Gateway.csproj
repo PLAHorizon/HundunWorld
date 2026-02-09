@@ -15,7 +15,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="System.Text.Json" Version="9.0.10" />
+    <PackageReference Include="System.Text.Json" Version="10.0.2" />
     
     <!-- OpenTelemetry监控 -->
     <PackageReference Include="OpenTelemetry" Version="1.15.0" />
@@ -38,31 +38,31 @@
     <PackageReference Include="AspNetCore.HealthChecks.System" Version="9.0.0" />
     
     <!-- 监控和指标 -->
-    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="9.0.10" />
+    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="10.0.2" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.Abstractions" Version="10.0.2" />
     
     <!-- Orleans相关 -->
-    <PackageReference Include="Microsoft.Orleans.Client" Version="9.2.1" />
-    <PackageReference Include="Microsoft.Orleans.Clustering.AdoNet" Version="9.2.1" />
-    <PackageReference Include="Microsoft.Orleans.Core.Abstractions" Version="9.2.1" />
-    <PackageReference Include="Microsoft.Orleans.Serialization.Abstractions" Version="9.2.1" />
-    <PackageReference Include="Microsoft.Orleans.Serialization.NewtonsoftJson" Version="9.2.1" />
-    <PackageReference Include="Microsoft.Orleans.CodeGenerator" Version="9.2.1">
+    <PackageReference Include="Microsoft.Orleans.Client" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Orleans.Clustering.AdoNet" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Orleans.Core.Abstractions" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Orleans.Serialization.Abstractions" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Orleans.Serialization.NewtonsoftJson" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Orleans.CodeGenerator" Version="10.0.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.Orleans.Core" Version="9.2.1" />
-    <PackageReference Include="Microsoft.Orleans.Sdk" Version="9.2.1" />
+    <PackageReference Include="Microsoft.Orleans.Core" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Orleans.Sdk" Version="10.0.1" />
     
     <!-- 网络通信 -->
-    <PackageReference Include="TouchSocket" Version="4.0.2" />
-    <PackageReference Include="TouchSocket.Core" Version="4.0.2" />
+    <PackageReference Include="TouchSocket" Version="4.1.1" />
+    <PackageReference Include="TouchSocket.Core" Version="4.1.1" />
     
     <!-- 并发集合 -->
-    <PackageReference Include="System.Threading.Channels" Version="9.0.10" />
+    <PackageReference Include="System.Threading.Channels" Version="10.0.2" />
     
     <!-- 性能监控 -->
-    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="9.0.10" />
+    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.2" />
   </ItemGroup>
 
   <ItemGroup>

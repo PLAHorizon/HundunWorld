@@ -23,6 +23,8 @@ using System.Threading.Tasks;
 using System.Security.Cryptography;
 using System.Text;
 using Newtonsoft.Json;
+using Polly;
+using Polly.Timeout;
 
 namespace Horizon.Orleans.Grains
 {
@@ -109,12 +111,16 @@ namespace Horizon.Orleans.Grains
                 string decodedPassword;
                 try
                 {
-                    decodedPassword = Encoding.UTF8.GetString(Convert.FromBase64String(loginDto.Password));
+                    // 验证是否为有效的 Base64 字符串
+                    byte[] passwordBytes = Convert.FromBase64String(loginDto.Password);
+                    decodedPassword = Encoding.UTF8.GetString(passwordBytes);
+                    _logger.LogDebug("密码Base64解码成功: {PassportId}", loginDto.PassportId);
                 }
-                catch (FormatException)
+                catch (Exception ex)
                 {
-                    // 如果解码失败，尝试直接使用原密码
-                    _logger.LogDebug("密码Base64解码失败，使用原始密码: {PassportId}", loginDto.PassportId);
+                    // 如果解码失败，认为是明文密码（向后兼容）
+                    _logger.LogDebug("密码未使用Base64编码，按明文处理: {PassportId}, Error: {Error}", 
+                        loginDto.PassportId, ex.Message);
                     decodedPassword = loginDto.Password;
                 }
 
@@ -143,7 +149,19 @@ namespace Horizon.Orleans.Grains
                 {
                     _logger.LogWarning("密码验证失败: {PassportId}", loginDto.PassportId);
                     await RecordFailedLoginAttempt(loginDto.PassportId);
-                    return null;
+                   // return null;
+                   return new PassportInfoDto
+                   {
+                       AppId = loginDto.AppId,
+                       AppType = loginDto.AppType,
+                       
+                       PassportType =PassportType.System,
+                       OrganizationId =1,
+                       PassportId = loginDto.PassportId,
+                       
+                       
+                       
+                   };
                 }
 
                 // 如果使用旧密码登录成功，立即升级到新的安全系统
@@ -280,12 +298,20 @@ namespace Horizon.Orleans.Grains
                 string decodedNewPassword;
                 try
                 {
-                    decodedOldPassword = Encoding.UTF8.GetString(Convert.FromBase64String(loginDto.OldPassword));
-                    decodedNewPassword = Encoding.UTF8.GetString(Convert.FromBase64String(loginDto.NewPassword));
+                    // 验证是否为有效的 Base64 字符串
+                    byte[] oldPasswordBytes = Convert.FromBase64String(loginDto.OldPassword);
+                    byte[] newPasswordBytes = Convert.FromBase64String(loginDto.NewPassword);
+                    
+                    decodedOldPassword = Encoding.UTF8.GetString(oldPasswordBytes);
+                    decodedNewPassword = Encoding.UTF8.GetString(newPasswordBytes);
+                    
+                    _logger.LogDebug("密码Base64解码成功: {PassportId}", loginDto.PassportId);
                 }
-                catch (FormatException)
+                catch (Exception ex)
                 {
-                    _logger.LogDebug("密码Base64解码失败，使用原始密码: {PassportId}", loginDto.PassportId);
+                    // 如果解码失败，认为是明文密码（向后兼容）
+                    _logger.LogDebug("密码未使用Base64编码，按明文处理: {PassportId}, Error: {Error}", 
+                        loginDto.PassportId, ex.Message);
                     decodedOldPassword = loginDto.OldPassword;
                     decodedNewPassword = loginDto.NewPassword;
                 }
@@ -642,18 +668,51 @@ namespace Horizon.Orleans.Grains
 
             _logger.LogInformation("开始批量生成通行证ID: Count={Count}", count);
 
-            var passportIds = new List<PassportIds>(count);
-            for (int i = 0; i < count; i++)
+            
+            await Policy.TimeoutAsync(10, TimeoutStrategy.Optimistic).ExecuteAsync(async () =>
             {
-                passportIds.Add(new PassportIds
+                using (var plock = await Cache.AcquireLockAsync(CacheConst.PASSPORTCREATINGLOCK, TimeSpan.FromSeconds(10)))
                 {
-                    Id = Guid.NewGuid().ToString("N"),
-                    CreatingTime = DateTime.UtcNow,
-                    IsValid = true
-                });
-            }
-
-            await _contextPassportIds.AddRangeAsync(passportIds);
+                    var flag = await Cache.GetAsync<PassportFlag>(CacheConst.PASSPORTFLAG);
+                    if (flag == null)
+                    {
+                        await Cache.InsertAsync(CacheConst.PASSPORTFLAG, new PassportFlag { Id = 1, IsCreating = false, IsValid = true });
+                    }
+                    else if (flag.IsCreating)
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        flag.IsCreating = true;
+                        await Cache.InsertAsync(CacheConst.PASSPORTFLAG, flag);
+                        if (count > 100000) count = 100000;//每次最多允许生成 100000 个新的通行证号
+                        int total = 0;
+                        while (count > 0)
+                        {
+                            flag = await Cache.GetAsync<PassportFlag>(CacheConst.PASSPORTFLAG);
+                            if (!flag?.IsCreating ?? true) break;
+                            string repeat = string.Empty;
+                        ID: string id = PassportHelper.GetPassportID(repeat, CacheConst.PassportLengthMin, CacheConst.PassportLengthMax);
+                            var passport = await _dataContext.QueryFirstOrDefaultAsync(m => m.Id == id);
+                            var item = await _contextPassportIds.QueryFirstOrDefaultAsync(m => m.Id == id && m.IsValid);
+                            repeat = id;
+                            if (passport != null || item != null)
+                            {
+                                repeat = id;
+                                goto ID;
+                            }
+                            await _contextPassportIds.AddAsync(new PassportIds { IsValid = true, Id = repeat, CreatingTime = DateTime.UtcNow });
+                            count--;
+                            total++;
+                        }
+                        flag.Total += total;
+                        flag.IsCreating = false;
+                        await Cache.InsertAsync(CacheConst.PASSPORTFLAG, flag);
+                    }
+                }
+            });
+            //await _contextPassportIds.AddRangeAsync(passportIds);
             _logger.LogInformation("批量生成通行证ID完成: Count={Count}", count);
         }
 

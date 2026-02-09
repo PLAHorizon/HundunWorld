@@ -87,6 +87,25 @@ namespace Horizon.Entities
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // 配置自引用外键，避免循环级联删除
+            modelBuilder.Entity<OrganizationCategory>()
+                .HasOne(x => x.Parent)
+                .WithMany()
+                .HasForeignKey(x => x.ParentId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Organization>()
+                .HasOne(x => x.Parent)
+                .WithMany()
+                .HasForeignKey(x => x.ParentId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Region>()
+                .HasOne(x => x.Parent)
+                .WithMany()
+                .HasForeignKey(x => x.ParentId)
+                .OnDelete(DeleteBehavior.NoAction);
         }
 
 
@@ -106,13 +125,15 @@ namespace Horizon.Entities
         }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            //var config = new ConfigurationBuilder()
-            //    .SetBasePath(Directory.GetCurrentDirectory())
-            //    .AddJsonFile("repository.json")
-            //    .Build();
+            //if (!optionsBuilder.IsConfigured)
+            //{
+            //    var config = new ConfigurationBuilder()
+            //        .SetBasePath(Directory.GetCurrentDirectory())
+            //        .AddJsonFile("repository.json")
+            //        .Build();
 
-
-            //optionsBuilder.UseSqlServer(config.GetConnectionString("BasicSqlServer"));
+            //    optionsBuilder.UseSqlServer(config.GetConnectionString("BasicSqlServer"));
+            //}
             base.OnConfiguring(optionsBuilder);
         }
         public BasicEntityContext CreateDbContext(string[] args)
@@ -160,6 +181,25 @@ namespace Horizon.Entities
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // 配置自引用外键，避免循环级联删除
+            modelBuilder.Entity<OrganizationCategory>()
+                .HasOne(x => x.Parent)
+                .WithMany()
+                .HasForeignKey(x => x.ParentId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Organization>()
+                .HasOne(x => x.Parent)
+                .WithMany()
+                .HasForeignKey(x => x.ParentId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<Region>()
+                .HasOne(x => x.Parent)
+                .WithMany()
+                .HasForeignKey(x => x.ParentId)
+                .OnDelete(DeleteBehavior.NoAction);
         }
 
 

@@ -4,16 +4,19 @@ using Horizon.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
 namespace Horizon.Entities.Migrations.BasicEntity
 {
-    [DbContext(typeof(BasicEntityContext))]
-    partial class BasicEntityContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(BasicEntityContextDes))]
+    [Migration("20260209133953_MidfyPassport")]
+    partial class MidfyPassport
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

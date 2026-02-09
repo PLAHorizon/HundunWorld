@@ -29,7 +29,6 @@ namespace HundunWorld.Game.Network
         private readonly CancellationTokenSource _gatewayCheckCts;
         private readonly object _connectionLock = new object();
         private readonly object _sendLock = new object();
-        private readonly HorizonMessageAdapter _messageAdapter;
         private readonly MessageProcessor _messageProcessor;
         private ConnectionStatus _connectionStatus = ConnectionStatus.Disconnected;
         private GatewayInfo _currentGateway;
@@ -65,7 +64,6 @@ namespace HundunWorld.Game.Network
             _gatewayCheckCts = new CancellationTokenSource();
             _heartbeatManager = new HeartbeatManager(this); // 初始化心跳包管理器
             _connectionCts = new CancellationTokenSource();
-            _messageAdapter = new HorizonMessageAdapter();
             _messageProcessor = new MessageProcessor();
             // 订阅网络状态变化事件
             _networkStateMonitor.NetworkStatusChanged += OnNetworkStatusChanged;
@@ -161,10 +159,10 @@ namespace HundunWorld.Game.Network
             {
                 EnhancedLogging.LogInfo($"[ConnectAsync] 开始连接到 {ip}:{port}");
 
-                // 配置客户端
+                // 配置客户端 - 每次连接时创建新的适配器实例
                 var config = new TouchSocketConfig()
                     .SetRemoteIPHost($"{ip}:{port}")
-                    .SetTcpDataHandlingAdapter(() => _messageAdapter) // 使用消息适配器
+                    .SetTcpDataHandlingAdapter(() => new HorizonMessageAdapter()) // 每次创建新的适配器实例
                     .ConfigurePlugins(plugin => plugin.UseReconnection<ITcpClient>());
                 // simplified: no complex plugin configuration
 
@@ -333,7 +331,10 @@ namespace HundunWorld.Game.Network
 
                         var dataArray = e.Memory.ToArray();
                         EnhancedLogging.LogInfo($"[OnDataReceived] 准备解包原始数据，数据长度: {dataArray.Length}");
-                        messagePacket = _messageAdapter.UnpackMessage(dataArray);
+                        
+                        // 创建临时适配器实例进行解包
+                        var tempAdapter = new HorizonMessageAdapter();
+                        messagePacket = tempAdapter.UnpackMessage(dataArray);
                     }
 
                     if (messagePacket != null)

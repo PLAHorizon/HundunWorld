@@ -21,7 +21,7 @@
     <PackageReference Include="MemoryPack.Core" Version="1.21.4" /> 
     <PackageReference Include="MemoryPack.Generator" Version="1.21.4" PrivateAssets="all" />
     <PackageReference Include="K4os.Compression.LZ4" Version="1.3.8" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.2" />
     <!-- Microsoft.CodeAnalysis packages might not be strictly needed by the project itself after removing FlatSharp compiler and post-processor -->
     <!-- but keep them if other parts of your build or analysis rely on them -->
     <!-- <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.13.0" /> -->
@@ -31,10 +31,10 @@
     <!--  <PrivateAssets>all</PrivateAssets> -->
     <!--  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets> -->
     <!-- </PackageReference> -->
-    <PackageReference Include="Microsoft.Orleans.Core" Version="9.2.1" /> 
-    <PackageReference Include="Microsoft.Orleans.Serialization" Version="9.2.1" />
-    <PackageReference Include="TouchSocket" Version="4.0.2" />
-    <PackageReference Include="TouchSocket.Core" Version="4.0.2" />
+    <PackageReference Include="Microsoft.Orleans.Core" Version="10.0.1" /> 
+    <PackageReference Include="Microsoft.Orleans.Serialization" Version="10.0.1" />
+    <PackageReference Include="TouchSocket" Version="4.1.1" />
+    <PackageReference Include="TouchSocket.Core" Version="4.1.1" />
   </ItemGroup>
 
   <ItemGroup>

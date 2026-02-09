@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Horizon.Core.Abstract;
 using StackExchange.Redis;
 using System.Linq;
+using Newtonsoft.Json;
 
 namespace Horizon.Strategy.Storage.Redis
 {
@@ -26,6 +27,40 @@ namespace Horizon.Strategy.Storage.Redis
             {
                 throw new InvalidOperationException($"Failed to initialize Redis connection with connection string: {connectionString}", ex);
             }
+        }
+
+        private RedisValue SerializeValue<T>(T value)
+        {
+            if (value == null)
+                return RedisValue.Null;
+
+            var type = typeof(T);
+            
+            // 基础类型直接使用 RedisValue.Unbox
+            if (type.IsPrimitive || type == typeof(string) || type == typeof(byte[]))
+            {
+                return RedisValue.Unbox(value);
+            }
+
+            // 复杂对象使用 JSON 序列化
+            return JsonConvert.SerializeObject(value);
+        }
+
+        private T DeserializeValue<T>(RedisValue value)
+        {
+            if (!value.HasValue)
+                return default;
+
+            var type = typeof(T);
+
+            // 基础类型直接使用 Box
+            if (type.IsPrimitive || type == typeof(string) || type == typeof(byte[]))
+            {
+                return (T)value.Box();
+            }
+
+            // 复杂对象使用 JSON 反序列化
+            return JsonConvert.DeserializeObject<T>(value.ToString());
         }
 
         public async Task<IDisposable> AcquireLockAsync(string key)
@@ -83,17 +118,19 @@ namespace Horizon.Strategy.Storage.Redis
         public async Task<bool> SetAsync(string key, object value, TimeSpan? expiry = null)
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
-            return await database.StringSetAsync(key, RedisValue.Unbox(value), expiry);
+            var expiration = expiry.HasValue ? (Expiration?)expiry.Value : null;
+            return await database.StringSetAsync(key, RedisValue.Unbox(value), expiration.Value);
         }
 
         public async Task<bool> SetAllAsync(IDictionary<string, object> keyValues, TimeSpan? expiry = null)
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
             var batch = database.CreateBatch();
+            var expiration = expiry.HasValue ? (Expiration?)expiry.Value : null;
 
             foreach (var kv in keyValues)
             {
-                batch.StringSetAsync(kv.Key, RedisValue.Unbox(kv.Value), expiry);
+                batch.StringSetAsync(kv.Key, RedisValue.Unbox(kv.Value), expiration.Value);
             }
 
             batch.Execute();
@@ -106,7 +143,7 @@ namespace Horizon.Strategy.Storage.Redis
             {
                 var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
                 var value = await database.StringGetAsync(key);
-                return value.HasValue ? (T)value.Box() : default;
+                return DeserializeValue<T>(value);
             }
             catch(Exception ex)
             {
@@ -128,7 +165,7 @@ namespace Horizon.Strategy.Storage.Redis
             {
                 if (values[i].HasValue)
                 {
-                    result.Add(keys.ElementAt(i), (T)values[i].Box());
+                    result.Add(keys.ElementAt(i), DeserializeValue<T>(values[i]));
                 }
             }
             return result;
@@ -192,7 +229,7 @@ namespace Horizon.Strategy.Storage.Redis
         public async Task<bool> InsertAsync<T>(string key, T data)
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
-            return await database.StringSetAsync(key, RedisValue.Unbox(data));
+            return await database.StringSetAsync(key, SerializeValue(data));
         }
 
         public async Task<bool> InsertAsync(string key, object data, int cacheTime)
@@ -204,7 +241,7 @@ namespace Horizon.Strategy.Storage.Redis
         public async Task<bool> InsertAsync<T>(string key, T data, int cacheTime)
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
-            return await database.StringSetAsync(key, RedisValue.Unbox(data), TimeSpan.FromSeconds(cacheTime));
+            return await database.StringSetAsync(key, SerializeValue(data), TimeSpan.FromSeconds(cacheTime));
         }
 
         public async Task<bool> InsertAsync(string key, object data, DateTime cacheTime)
@@ -216,7 +253,7 @@ namespace Horizon.Strategy.Storage.Redis
         public async Task<bool> InsertAsync<T>(string key, T data, DateTime cacheTime)
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
-            return await database.StringSetAsync(key, RedisValue.Unbox(data), cacheTime - DateTime.Now);
+            return await database.StringSetAsync(key, SerializeValue(data), cacheTime - DateTime.Now);
         }
 
         public async Task RegisterSubscribeAsync<T>(string key, RegisterSubscribeEvent dosub)
@@ -251,21 +288,21 @@ namespace Horizon.Strategy.Storage.Redis
         public async Task EnqueueItemOnListAsync<T>(string key, T value)
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
-            await database.ListRightPushAsync(key, RedisValue.Unbox(value));
+            await database.ListRightPushAsync(key, SerializeValue(value));
         }
 
         public async Task<T> DequeueItemFromListAsync<T>(string key)
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
             var value = await database.ListLeftPopAsync(key);
-            return value.HasValue ? (T)value.Box() : default;
+            return DeserializeValue<T>(value);
         }
 
         public async Task<List<T>> GetAllItemsFromListAsync<T>(string key)
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
             var values = await database.ListRangeAsync(key);
-            return values.Select(v => (T)v.Box()).ToList();
+            return values.Select(v => DeserializeValue<T>(v)).ToList();
         }
 
         public async Task EnqueueItemOnListAsync(string key, string value)
@@ -345,44 +382,44 @@ namespace Horizon.Strategy.Storage.Redis
         public async Task SetItemInListAsync<T>(string listId, int listIndex, T value)
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
-            await database.ListSetByIndexAsync(listId, listIndex, RedisValue.Unbox(value));
+            await database.ListSetByIndexAsync(listId, listIndex, SerializeValue(value));
         }
 
         public async Task<T> GetItemFromListAsync<T>(string listId, int listIndex)
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
             var value = await database.ListGetByIndexAsync(listId, listIndex);
-            return value.HasValue ? (T)value.Box() : default;
+            return DeserializeValue<T>(value);
         }
 
         public async Task AddItemToListAsync<T>(string listId, T value)
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
-            await database.ListRightPushAsync(listId, RedisValue.Unbox(value));
+            await database.ListRightPushAsync(listId, SerializeValue(value));
         }
 
         public async Task RemoveItemFromListAsync<T>(string listId, T value)
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
-            await database.ListRemoveAsync(listId, RedisValue.Unbox(value));
+            await database.ListRemoveAsync(listId, SerializeValue(value));
         }
 
         public async Task AddItemToSetAsync<T>(string setId, T item)
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
-            await database.SetAddAsync(setId, RedisValue.Unbox(item));
+            await database.SetAddAsync(setId, SerializeValue(item));
         }
 
         public async Task AddRangeToListAsync<T>(string listId, List<T> values)
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
-            await database.ListRightPushAsync(listId, values.Select(v => RedisValue.Unbox(v)).ToArray());
+            await database.ListRightPushAsync(listId, values.Select(v => SerializeValue(v)).ToArray());
         }
 
         public async Task AddRangeToSetAsync<T>(string listId, List<T> items)
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
-            await database.SetAddAsync(listId, items.Select(i => RedisValue.Unbox(i)).ToArray());
+            await database.SetAddAsync(listId, items.Select(i => SerializeValue(i)).ToArray());
         }
 
         public async Task<HashSet<string>> GetAllItemsFromSetAsync(string setId)
@@ -396,7 +433,7 @@ namespace Horizon.Strategy.Storage.Redis
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
             var values = await database.SetMembersAsync(setId);
-            return new HashSet<T>(values.Select(v => (T)v.Box()));
+            return new HashSet<T>(values.Select(v => DeserializeValue<T>(v)));
         }
 
         public async Task RemoveItemFromSetAsync(string setId, string item)
@@ -408,7 +445,7 @@ namespace Horizon.Strategy.Storage.Redis
         public async Task RemoveItemFromSetAsync<T>(string setId, T item)
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
-            await database.SetRemoveAsync(setId, RedisValue.Unbox(item));
+            await database.SetRemoveAsync(setId, SerializeValue(item));
         }
 
         public async Task<bool> ExpireEntryInAsync(string key, TimeSpan expireIn)
@@ -453,10 +490,11 @@ namespace Horizon.Strategy.Storage.Redis
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
             var batch = database.CreateBatch();
+            var exp = expiration.HasValue ? (Expiration?)expiration.Value : null;
 
             foreach (var kv in keyValuePairs)
             {
-                batch.StringSetAsync(kv.Key, RedisValue.Unbox(kv.Value), expiration);
+                await batch.StringSetAsync(kv.Key, RedisValue.Unbox(kv.Value), exp.Value);
             }
 
             batch.Execute();

@@ -10,8 +10,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Horizon.Entities.Migrations.BasicEntity
 {
-    [DbContext(typeof(BasicEntityContext))]
-    partial class BasicEntityContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(BasicEntityContextDes))]
+    partial class BasicEntityContextDesModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {

@@ -30,7 +30,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Horizon.Strategy.Storage.Re
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Horizon.Game.Gateway.Tests", "Horizon.Game.Gateway.Tests\Horizon.Game.Gateway.Tests.csproj", "{5078BE09-228C-F50E-1818-41075C24C136}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Game", "HundunWorld\Source\Game.csproj", "{1BEE45CF-C1BF-02A0-F26C-2B9792D6FBA6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Horizon.WebApi", "Horizon.WebApi\Horizon.WebApi.csproj", "{AD307E23-A5EE-3357-1E3C-0E6CCF552C7C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -210,18 +210,18 @@ Global
 		{5078BE09-228C-F50E-1818-41075C24C136}.Release|x64.Build.0 = Release|Any CPU
 		{5078BE09-228C-F50E-1818-41075C24C136}.Release|x86.ActiveCfg = Release|Any CPU
 		{5078BE09-228C-F50E-1818-41075C24C136}.Release|x86.Build.0 = Release|Any CPU
-		{1BEE45CF-C1BF-02A0-F26C-2B9792D6FBA6}.Debug|Any CPU.ActiveCfg = Editor.Windows.Debug|x64
-		{1BEE45CF-C1BF-02A0-F26C-2B9792D6FBA6}.Debug|Any CPU.Build.0 = Editor.Windows.Debug|x64
-		{1BEE45CF-C1BF-02A0-F26C-2B9792D6FBA6}.Debug|x64.ActiveCfg = Editor.Windows.Debug|x64
-		{1BEE45CF-C1BF-02A0-F26C-2B9792D6FBA6}.Debug|x64.Build.0 = Editor.Windows.Debug|x64
-		{1BEE45CF-C1BF-02A0-F26C-2B9792D6FBA6}.Debug|x86.ActiveCfg = Editor.Windows.Debug|Win32
-		{1BEE45CF-C1BF-02A0-F26C-2B9792D6FBA6}.Debug|x86.Build.0 = Editor.Windows.Debug|Win32
-		{1BEE45CF-C1BF-02A0-F26C-2B9792D6FBA6}.Release|Any CPU.ActiveCfg = Editor.Windows.Debug|x64
-		{1BEE45CF-C1BF-02A0-F26C-2B9792D6FBA6}.Release|Any CPU.Build.0 = Editor.Windows.Debug|x64
-		{1BEE45CF-C1BF-02A0-F26C-2B9792D6FBA6}.Release|x64.ActiveCfg = Editor.Windows.Debug|x64
-		{1BEE45CF-C1BF-02A0-F26C-2B9792D6FBA6}.Release|x64.Build.0 = Editor.Windows.Debug|x64
-		{1BEE45CF-C1BF-02A0-F26C-2B9792D6FBA6}.Release|x86.ActiveCfg = Editor.Windows.Debug|Win32
-		{1BEE45CF-C1BF-02A0-F26C-2B9792D6FBA6}.Release|x86.Build.0 = Editor.Windows.Debug|Win32
+		{AD307E23-A5EE-3357-1E3C-0E6CCF552C7C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD307E23-A5EE-3357-1E3C-0E6CCF552C7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD307E23-A5EE-3357-1E3C-0E6CCF552C7C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AD307E23-A5EE-3357-1E3C-0E6CCF552C7C}.Debug|x64.Build.0 = Debug|Any CPU
+		{AD307E23-A5EE-3357-1E3C-0E6CCF552C7C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AD307E23-A5EE-3357-1E3C-0E6CCF552C7C}.Debug|x86.Build.0 = Debug|Any CPU
+		{AD307E23-A5EE-3357-1E3C-0E6CCF552C7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD307E23-A5EE-3357-1E3C-0E6CCF552C7C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD307E23-A5EE-3357-1E3C-0E6CCF552C7C}.Release|x64.ActiveCfg = Release|Any CPU
+		{AD307E23-A5EE-3357-1E3C-0E6CCF552C7C}.Release|x64.Build.0 = Release|Any CPU
+		{AD307E23-A5EE-3357-1E3C-0E6CCF552C7C}.Release|x86.ActiveCfg = Release|Any CPU
+		{AD307E23-A5EE-3357-1E3C-0E6CCF552C7C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
