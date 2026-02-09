@@ -499,8 +499,21 @@ namespace HundunWorld.Game.Rendering
         /// <param name="height">高度</param>
         public void CapturePreviewImage(string filePath, int width = 512, int height = 512)
         {
-            // TODO: 实现截图功能
-            Debug.Log($"[PreviewController] 截图功能尚未实现: {filePath}");
+            try
+            {
+                var directory = System.IO.Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(directory) && !System.IO.Directory.Exists(directory))
+                {
+                    System.IO.Directory.CreateDirectory(directory);
+                }
+
+                Screenshot.Capture(filePath);
+                Debug.Log($"[PreviewController] 预览截图已保存: {filePath}");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[PreviewController] 截图失败: {ex.Message}");
+            }
         }
 
         #endregion

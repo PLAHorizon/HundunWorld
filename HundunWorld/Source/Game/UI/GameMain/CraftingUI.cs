@@ -5,6 +5,7 @@ using FlaxEngine.GUI;
 using Game.Equipment.Material;
 using Game.Equipment.Crafting;
 using FlaxEngine.Utilities;
+using HundunWorld.Game.Services;
 
 namespace HundunWorld.Game.UI.GameMain
 {
@@ -69,7 +70,14 @@ namespace HundunWorld.Game.UI.GameMain
         private InventoryUI _inventoryUI;
         private CraftingRecipe _selectedRecipe;
         private bool _isVisible = false;
-        private int _playerGold = 1000;  // TODO: 从角色数据获取
+        private int _playerGold
+        {
+            get
+            {
+                var selectedCharacter = CharacterService.Instance.SelectedCharacter;
+                return selectedCharacter != null ? (int)selectedCharacter.Gold : 0;
+            }
+        }
 
         #endregion
 
@@ -843,7 +851,11 @@ namespace HundunWorld.Game.UI.GameMain
                 }
 
                 // 消耗金币
-                _playerGold -= _selectedRecipe.CurrencyCost;
+                var selectedCharacter = CharacterService.Instance.SelectedCharacter;
+                if (selectedCharacter != null)
+                {
+                    selectedCharacter.Gold -= _selectedRecipe.CurrencyCost;
+                }
 
                 // 判断成功率
                 float roll = RandomUtil.Random.NextFloat() * 100f;

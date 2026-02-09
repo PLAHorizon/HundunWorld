@@ -37,7 +37,7 @@
 | 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善）|
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
 | 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
-| 测试基础设施（Phase 1.2） | ✅ 90% | 1455个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion/EventConsumerVersioning/PassportGrain/CharacterGrainState/RankingSystem/MailSystem/AchievementSystem/EcsEntityManagement/ClientFeature/ClientFeaturePhase2/ClientFeaturePhase3/ClientFeaturePhase4/ClientFeaturePhase5/ClientFeaturePhase6） |
+| 测试基础设施（Phase 1.2） | ✅ 90% | 1535个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion/EventConsumerVersioning/PassportGrain/CharacterGrainState/RankingSystem/MailSystem/AchievementSystem/EcsEntityManagement/ClientFeature/ClientFeaturePhase2/ClientFeaturePhase3/ClientFeaturePhase4/ClientFeaturePhase5/ClientFeaturePhase6/ClientFeaturePhase7/ClientFeaturePhase8） |
 | CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置（CI + CodeQL安全扫描 + 代码覆盖率） |
 | 监控可观测性（Phase 2） | ✅ 100% | OpenTelemetry指标、Grafana仪表板、Prometheus告警、JSON结构化日志、CorrelationId分布式追踪、Seq日志聚合、Alertmanager告警通知 |
 
@@ -109,7 +109,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 #### 测试项目
 
-**已存在**: `Horizon.Game.Gateway.Tests/`（35个测试文件，1455个测试用例）
+**已存在**: `Horizon.Game.Gateway.Tests/`（36个测试文件，1535个测试用例）
 
 | 测试文件 | 测试数量 | 覆盖内容 |
 |---------|---------|---------|
@@ -141,6 +141,8 @@ coverlet 6.0.4 — 代码覆盖率
 | ClientFeatureTests.cs | 52 | 效果同步消息、AOI更新消息、移动速度验证消息、消息类型枚举验证 |
 | ClientFeaturePhase5Tests.cs | 36 | 背包拖拽消息、输入配置同步消息、DragDropOperation枚举、SkillSlotBinding、跨阶段连续性验证 |
 | ClientFeaturePhase6Tests.cs | 81 | 动画状态同步消息、性能报告消息、断线重连消息、LOD配置消息、粒子预算消息、消息压缩配置消息、枚举验证、跨阶段连续性验证 |
+| ClientFeaturePhase7Tests.cs | 33 | 背包排序/拆分/丢弃/锁定/扩容消息、物品信息DTO、枚举验证、跨阶段连续性验证 |
+| ClientFeaturePhase8Tests.cs | 47 | 角色状态同步、合成金币同步、技能目标验证、截图通知、角色属性刷新消息、跨阶段连续性验证 |
 
 #### 测试覆盖率现状
 
@@ -730,6 +732,15 @@ coverlet 6.0.4 — 代码覆盖率
                 ✅ Phase 5.2: 网络优化（ReconnectionManager - 断线重连/指数退避/心跳检测）
                 ✅ 消息协议: 6个新消息类型（AnimationSync/PerformanceReport/Reconnection/LODConfig/ParticleBudget/MessageCompressionConfig，1352-1357）
                 ✅ 测试覆盖: Phase6消息测试（81个新测试用例，总计1455个）
+                ✅ Phase 7: 背包管理消息（InventorySort/ItemSplit/ItemDiscard/ItemLock/InventoryExpand，1358-1362）
+                ✅ Phase 7: 背包ECS系统（InventoryComponent/InventorySystem）、相机状态检测、合成系统集成
+                ✅ 测试覆盖: Phase7消息测试（33个新测试用例，总计1488个）
+                ✅ Phase 8: CharacterService网络集成（CreateCharacter/GetCharacterList/DeleteCharacter/SelectCharacter → NetworkManager）
+                ✅ Phase 8: CraftingUI金币连接CharacterService（替换硬编码值）
+                ✅ Phase 8: SkillBase施法目标存储（castTarget字段，OnUpdate传入正确目标）
+                ✅ Phase 8: CharacterAppearancePreviewController截图实现（Screenshot.Capture）
+                ✅ 消息协议: 5个新消息类型（CharacterStateSync/CraftingGoldSync/SkillTargetValidation/ScreenshotNotify/CharacterAttributeRefresh，1363-1367）
+                ✅ 测试覆盖: Phase8消息测试（47个新测试用例，总计1535个）
                📍 当前位置（2026-02-09）
                ↓
 2026年3月下旬  ┌─ Phase 4: 客户端功能完善（剩余项）
