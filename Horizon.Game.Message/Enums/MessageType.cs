@@ -619,7 +619,37 @@ namespace Horizon.Game.Message.Enums
         /// 聊天消息发送
         /// </summary>
         [Description("聊天消息发送")]
-        ChatSend = 1342
+        ChatSend = 1342,
+
+        /// <summary>
+        /// 装备对比
+        /// </summary>
+        [Description("装备对比")]
+        EquipmentComparison = 1343,
+
+        /// <summary>
+        /// 公会管理操作
+        /// </summary>
+        [Description("公会管理操作")]
+        GuildManagement = 1344,
+
+        /// <summary>
+        /// 组队邀请
+        /// </summary>
+        [Description("组队邀请")]
+        TeamInvite = 1345,
+
+        /// <summary>
+        /// 击杀特写
+        /// </summary>
+        [Description("击杀特写")]
+        KillCam = 1346,
+
+        /// <summary>
+        /// 快捷键配置
+        /// </summary>
+        [Description("快捷键配置")]
+        HotkeyConfig = 1347
         #endregion
     }
 }

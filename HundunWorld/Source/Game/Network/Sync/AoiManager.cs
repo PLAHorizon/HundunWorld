@@ -121,6 +121,25 @@ namespace HundunWorld.Game.Network.Sync
         [Tooltip("连续违规次数阈值")]
         public int ViolationThreshold = 5;
 
+        [Header("动态视野调整")]
+        [Tooltip("是否启用动态视野调整")]
+        public bool EnableDynamicViewRange = true;
+
+        [Tooltip("最小视野范围（米）")]
+        public float MinViewRadius = 50f;
+
+        [Tooltip("最大视野范围（米）")]
+        public float MaxViewRadius = 200f;
+
+        [Tooltip("高密度实体阈值（超过此数量时缩小视野）")]
+        public int HighDensityThreshold = 80;
+
+        [Tooltip("低密度实体阈值（低于此数量时扩大视野）")]
+        public int LowDensityThreshold = 20;
+
+        [Tooltip("视野调整速度（米/秒）")]
+        public float ViewRangeAdjustSpeed = 10f;
+
         #endregion
 
         #region 私有字段
@@ -182,6 +201,11 @@ namespace HundunWorld.Game.Network.Sync
         /// 移动速度违规事件
         /// </summary>
         public event Action<ulong, float, float, int> SpeedViolationDetected;  // (entityId, measuredSpeed, maxAllowed, violationCount)
+
+        /// <summary>
+        /// 视野范围变化事件
+        /// </summary>
+        public event Action<float, float> ViewRangeChanged;  // (oldRadius, newRadius)
 
         #endregion
 
@@ -455,6 +479,12 @@ namespace HundunWorld.Game.Network.Sync
 
             // 触发更新事件
             AoiUpdated?.Invoke(_enterQueue.Count, _exitQueue.Count);
+
+            // 动态调整视野范围
+            if (EnableDynamicViewRange)
+            {
+                AdjustViewRange();
+            }
 
             if (EnableLogging && (_enterQueue.Count > 0 || _exitQueue.Count > 0))
             {
@@ -755,6 +785,73 @@ namespace HundunWorld.Game.Network.Sync
                 }
             }
         }
+
+        #endregion
+
+        #region 动态视野调整
+
+        /// <summary>
+        /// 根据周围实体密度动态调整视野范围
+        /// 密度高时缩小视野以减少渲染和同步压力，密度低时扩大视野
+        /// </summary>
+        private void AdjustViewRange()
+        {
+            float targetRadius = ViewRadius;
+
+            if (_visibleEntityCount >= HighDensityThreshold)
+            {
+                // 高密度：缩小视野
+                targetRadius = MinViewRadius;
+            }
+            else if (_visibleEntityCount <= LowDensityThreshold)
+            {
+                // 低密度：扩大视野
+                targetRadius = MaxViewRadius;
+            }
+            else
+            {
+                // 中等密度：线性插值
+                float t = (float)(_visibleEntityCount - LowDensityThreshold) / 
+                          (HighDensityThreshold - LowDensityThreshold);
+                targetRadius = Mathf.Lerp(MaxViewRadius, MinViewRadius, t);
+            }
+
+            // 平滑过渡
+            float oldRadius = ViewRadius;
+            ViewRadius = Mathf.Lerp(ViewRadius, targetRadius, Time.DeltaTime * ViewRangeAdjustSpeed / ViewRadius);
+            BufferRadius = ViewRadius * 1.2f;
+
+            // 如果变化超过阈值，触发事件
+            if (Mathf.Abs(ViewRadius - oldRadius) > 0.5f)
+            {
+                ViewRangeChanged?.Invoke(oldRadius, ViewRadius);
+
+                if (EnableLogging)
+                {
+                    Debug.Log($"[AOI] 视野范围调整: {oldRadius:F0}m → {ViewRadius:F0}m (可见实体: {_visibleEntityCount})");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 手动设置视野范围
+        /// </summary>
+        public void SetViewRadius(float radius)
+        {
+            float oldRadius = ViewRadius;
+            ViewRadius = Mathf.Clamp(radius, MinViewRadius, MaxViewRadius);
+            BufferRadius = ViewRadius * 1.2f;
+
+            if (Mathf.Abs(ViewRadius - oldRadius) > 0.1f)
+            {
+                ViewRangeChanged?.Invoke(oldRadius, ViewRadius);
+            }
+        }
+
+        /// <summary>
+        /// 获取当前视野范围
+        /// </summary>
+        public float GetCurrentViewRadius() => ViewRadius;
 
         #endregion
 

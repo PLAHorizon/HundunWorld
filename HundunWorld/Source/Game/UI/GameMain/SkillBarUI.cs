@@ -460,6 +460,173 @@ namespace HundunWorld.Game.UI.GameMain
 
         #endregion
 
+        #region 快捷键自定义
+
+        // 自定义快捷键映射: 槽位索引 -> 按键名称
+        private readonly Dictionary<int, string> _customHotkeys = new();
+
+        // 是否处于快捷键绑定模式
+        private bool _isBindingHotkey = false;
+        private int _bindingSlotIndex = -1;
+
+        /// <summary>
+        /// 快捷键变更事件
+        /// </summary>
+        public event Action<int, string> OnHotkeyChanged;  // (slotIndex, keyName)
+
+        /// <summary>
+        /// 设置自定义快捷键
+        /// </summary>
+        public void SetCustomHotkey(int slotIndex, string keyName)
+        {
+            if (slotIndex < 0 || slotIndex >= _skillSlots.Count) return;
+
+            // 检查是否有其他槽位使用了相同按键，如果有则交换
+            foreach (var kvp in _customHotkeys)
+            {
+                if (kvp.Value == keyName && kvp.Key != slotIndex)
+                {
+                    string oldKey = _customHotkeys.ContainsKey(slotIndex) ? _customHotkeys[slotIndex] : GetHotkeyText(slotIndex);
+                    _customHotkeys[kvp.Key] = oldKey;
+                    UpdateHotkeyLabel(kvp.Key, oldKey);
+                    break;
+                }
+            }
+
+            _customHotkeys[slotIndex] = keyName;
+            UpdateHotkeyLabel(slotIndex, keyName);
+
+            OnHotkeyChanged?.Invoke(slotIndex, keyName);
+            Debug.Log($"[SkillBarUI] 快捷键绑定: 槽位{slotIndex} → {keyName}");
+        }
+
+        /// <summary>
+        /// 获取指定槽位的快捷键
+        /// </summary>
+        public string GetHotkey(int slotIndex)
+        {
+            if (_customHotkeys.TryGetValue(slotIndex, out var keyName))
+                return keyName;
+            return GetHotkeyText(slotIndex);
+        }
+
+        /// <summary>
+        /// 获取所有快捷键绑定
+        /// </summary>
+        public Dictionary<int, string> GetAllHotkeyBindings()
+        {
+            var bindings = new Dictionary<int, string>();
+            for (int i = 0; i < _skillSlots.Count; i++)
+            {
+                bindings[i] = GetHotkey(i);
+            }
+            return bindings;
+        }
+
+        /// <summary>
+        /// 批量设置快捷键绑定
+        /// </summary>
+        public void SetHotkeyBindings(Dictionary<int, string> bindings)
+        {
+            foreach (var kvp in bindings)
+            {
+                if (kvp.Key >= 0 && kvp.Key < _skillSlots.Count)
+                {
+                    _customHotkeys[kvp.Key] = kvp.Value;
+                    UpdateHotkeyLabel(kvp.Key, kvp.Value);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 重置所有快捷键为默认
+        /// </summary>
+        public void ResetHotkeys()
+        {
+            _customHotkeys.Clear();
+            for (int i = 0; i < _skillSlots.Count; i++)
+            {
+                UpdateHotkeyLabel(i, GetHotkeyText(i));
+            }
+            Debug.Log("[SkillBarUI] 快捷键已重置为默认");
+        }
+
+        /// <summary>
+        /// 进入快捷键绑定模式
+        /// </summary>
+        public void StartHotkeyBinding(int slotIndex)
+        {
+            if (slotIndex < 0 || slotIndex >= _skillSlots.Count) return;
+
+            _isBindingHotkey = true;
+            _bindingSlotIndex = slotIndex;
+
+            // 高亮显示正在绑定的槽位
+            _skillSlots[slotIndex].SlotPanel.BackgroundColor = new Color(0.3f, 0.3f, 0.0f, 0.9f);
+            _skillSlots[slotIndex].HotkeyLabel.Text = "?";
+            _skillSlots[slotIndex].HotkeyLabel.TextColor = Color.White;
+
+            Debug.Log($"[SkillBarUI] 等待按键绑定: 槽位{slotIndex}");
+        }
+
+        /// <summary>
+        /// 取消快捷键绑定模式
+        /// </summary>
+        public void CancelHotkeyBinding()
+        {
+            if (!_isBindingHotkey) return;
+
+            _isBindingHotkey = false;
+            // 恢复槽位外观
+            if (_bindingSlotIndex >= 0 && _bindingSlotIndex < _skillSlots.Count)
+            {
+                _skillSlots[_bindingSlotIndex].SlotPanel.BackgroundColor = new Color(0.15f, 0.15f, 0.2f, 0.9f);
+                UpdateHotkeyLabel(_bindingSlotIndex, GetHotkey(_bindingSlotIndex));
+            }
+            _bindingSlotIndex = -1;
+        }
+
+        /// <summary>
+        /// 完成快捷键绑定
+        /// </summary>
+        public void CompleteHotkeyBinding(string keyName)
+        {
+            if (!_isBindingHotkey || _bindingSlotIndex < 0) return;
+
+            int slotIndex = _bindingSlotIndex;
+            _isBindingHotkey = false;
+            _bindingSlotIndex = -1;
+
+            // 恢复槽位外观
+            _skillSlots[slotIndex].SlotPanel.BackgroundColor = new Color(0.15f, 0.15f, 0.2f, 0.9f);
+
+            // 设置新快捷键
+            SetCustomHotkey(slotIndex, keyName);
+        }
+
+        /// <summary>
+        /// 是否处于快捷键绑定模式
+        /// </summary>
+        public bool IsBindingHotkey() => _isBindingHotkey;
+
+        /// <summary>
+        /// 更新快捷键标签显示
+        /// </summary>
+        private void UpdateHotkeyLabel(int slotIndex, string keyName)
+        {
+            if (slotIndex < 0 || slotIndex >= _skillSlots.Count) return;
+            var slot = _skillSlots[slotIndex];
+            if (slot.HotkeyLabel != null)
+            {
+                slot.HotkeyLabel.Text = keyName;
+                slot.HotkeyLabel.TextColor = _customHotkeys.ContainsKey(slotIndex)
+                    ? new Color(0.5f, 1.0f, 0.5f)  // 自定义快捷键用绿色
+                    : Color.Yellow;                   // 默认快捷键用黄色
+            }
+        }
+
+        #endregion
+
         #region 清理
 
         /// <summary>

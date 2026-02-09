@@ -1450,4 +1450,416 @@ namespace Horizon.Game.Message.Network
     }
 
     #endregion
+
+    #region 装备对比消息
+
+    /// <summary>
+    /// 装备对比请求消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class EquipmentComparisonMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 当前装备ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CurrentEquipmentId { get; set; }
+
+        /// <summary>
+        /// 对比装备ID
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public ulong CompareEquipmentId { get; set; }
+
+        /// <summary>
+        /// 装备槽位（0=武器,1=头盔,2=衣服,3=护手,4=鞋子,5=饰品）
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int SlotIndex { get; set; }
+
+        /// <summary>
+        /// 当前装备属性列表
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public List<EquipmentStatInfo> CurrentStats { get; set; } = new();
+
+        /// <summary>
+        /// 对比装备属性列表
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public List<EquipmentStatInfo> CompareStats { get; set; } = new();
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public MessageType Type { get; set; } = MessageType.EquipmentComparison;
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 装备属性信息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class EquipmentStatInfo
+    {
+        /// <summary>
+        /// 属性名称
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public string StatName { get; set; } = "";
+
+        /// <summary>
+        /// 属性值
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public float StatValue { get; set; }
+
+        /// <summary>
+        /// 差异值（正数表示提升，负数表示下降）
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public float DiffValue { get; set; }
+    }
+
+    #endregion
+
+    #region 公会管理消息
+
+    /// <summary>
+    /// 公会管理操作类型
+    /// </summary>
+    public enum GuildManagementAction
+    {
+        /// <summary>申请加入</summary>
+        Apply = 0,
+        /// <summary>审批申请</summary>
+        Approve = 1,
+        /// <summary>拒绝申请</summary>
+        Reject = 2,
+        /// <summary>踢出成员</summary>
+        Kick = 3,
+        /// <summary>提升职位</summary>
+        Promote = 4,
+        /// <summary>降低职位</summary>
+        Demote = 5,
+        /// <summary>转让帮主</summary>
+        TransferLeader = 6,
+        /// <summary>修改公告</summary>
+        UpdateAnnouncement = 7,
+        /// <summary>解散公会</summary>
+        Disband = 8
+    }
+
+    /// <summary>
+    /// 公会管理操作消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class GuildManagementMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 操作类型
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public GuildManagementAction Action { get; set; }
+
+        /// <summary>
+        /// 公会ID
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public ulong GuildId { get; set; }
+
+        /// <summary>
+        /// 操作者角色ID
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public ulong OperatorId { get; set; }
+
+        /// <summary>
+        /// 目标角色ID（踢出/提升/降低/转让时使用）
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public ulong TargetId { get; set; }
+
+        /// <summary>
+        /// 附加文本（公告/申请理由等）
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public string ExtraText { get; set; } = "";
+
+        /// <summary>
+        /// 操作是否成功
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public bool Success { get; set; }
+
+        /// <summary>
+        /// 结果消息
+        /// </summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public string ResultMessage { get; set; } = "";
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public MessageType Type { get; set; } = MessageType.GuildManagement;
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Social;
+    }
+
+    #endregion
+
+    #region 组队邀请消息
+
+    /// <summary>
+    /// 组队邀请操作类型
+    /// </summary>
+    public enum TeamInviteAction
+    {
+        /// <summary>发送邀请</summary>
+        Invite = 0,
+        /// <summary>接受邀请</summary>
+        Accept = 1,
+        /// <summary>拒绝邀请</summary>
+        Decline = 2,
+        /// <summary>取消邀请</summary>
+        Cancel = 3,
+        /// <summary>申请加入</summary>
+        Apply = 4
+    }
+
+    /// <summary>
+    /// 组队邀请消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class TeamInviteMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 邀请操作类型
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public TeamInviteAction Action { get; set; }
+
+        /// <summary>
+        /// 邀请者角色ID
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public ulong InviterId { get; set; }
+
+        /// <summary>
+        /// 邀请者角色名
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string InviterName { get; set; } = "";
+
+        /// <summary>
+        /// 被邀请者角色ID
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public ulong InviteeId { get; set; }
+
+        /// <summary>
+        /// 被邀请者角色名
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public string InviteeName { get; set; } = "";
+
+        /// <summary>
+        /// 队伍ID
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public ulong TeamId { get; set; }
+
+        /// <summary>
+        /// 邀请者等级
+        /// </summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public int InviterLevel { get; set; }
+
+        /// <summary>
+        /// 操作是否成功
+        /// </summary>
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public bool Success { get; set; }
+
+        /// <summary>
+        /// 结果消息
+        /// </summary>
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public string ResultMessage { get; set; } = "";
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public MessageType Type { get; set; } = MessageType.TeamInvite;
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Social;
+    }
+
+    #endregion
+
+    #region 击杀特写消息
+
+    /// <summary>
+    /// 击杀特写消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class KillCamMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 击杀者角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong KillerId { get; set; }
+
+        /// <summary>
+        /// 击杀者角色名
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string KillerName { get; set; } = "";
+
+        /// <summary>
+        /// 被击杀者角色ID
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public ulong VictimId { get; set; }
+
+        /// <summary>
+        /// 被击杀者角色名
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string VictimName { get; set; } = "";
+
+        /// <summary>
+        /// 终结技能名称
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public string FinishingSkillName { get; set; } = "";
+
+        /// <summary>
+        /// 总伤害值
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public float TotalDamage { get; set; }
+
+        /// <summary>
+        /// 是否为暴击击杀
+        /// </summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public bool IsCriticalKill { get; set; }
+
+        /// <summary>
+        /// 连杀数
+        /// </summary>
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public int KillStreak { get; set; }
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public MessageType Type { get; set; } = MessageType.KillCam;
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    #endregion
+
+    #region 快捷键配置消息
+
+    /// <summary>
+    /// 快捷键配置消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class HotkeyConfigMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 快捷键绑定列表
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public List<HotkeyBinding> Bindings { get; set; } = new();
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public MessageType Type { get; set; } = MessageType.HotkeyConfig;
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 快捷键绑定信息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class HotkeyBinding
+    {
+        /// <summary>
+        /// 技能栏槽位索引（0-9）
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int SlotIndex { get; set; }
+
+        /// <summary>
+        /// 绑定的按键名称
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string KeyName { get; set; } = "";
+
+        /// <summary>
+        /// 绑定的技能ID
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int SkillId { get; set; }
+    }
+
+    #endregion
 }
