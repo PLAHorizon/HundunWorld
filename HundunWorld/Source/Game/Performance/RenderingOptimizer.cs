@@ -78,10 +78,8 @@ namespace HundunWorld.Game.Performance
         #endregion
 
         // 统计数据
-        private int _currentActiveParticles;
         private int _currentActiveEmitters;
         private int _culledObjectCount;
-        private int _batchedDrawCallCount;
         private float _lastCullingCheckTime;
 
         // 被管理的粒子发射器
@@ -103,10 +101,8 @@ namespace HundunWorld.Game.Performance
         /// </summary>
         public struct RenderingStats
         {
-            public int ActiveParticles;
             public int ActiveEmitters;
             public int CulledObjects;
-            public int BatchedDrawCalls;
             public int CurrentLODLevel;
         }
 
@@ -230,8 +226,8 @@ namespace HundunWorld.Game.Performance
             if (camera == null)
                 return true;
 
-            float distance = Vector3.Distance(camera.Position, position);
-            return distance <= MaxViewDistance;
+            float distanceSq = Vector3.DistanceSquared(camera.Position, position);
+            return distanceSq <= MaxViewDistance * MaxViewDistance;
         }
 
         #endregion
@@ -357,10 +353,8 @@ namespace HundunWorld.Game.Performance
         {
             return new RenderingStats
             {
-                ActiveParticles = _currentActiveParticles,
                 ActiveEmitters = _currentActiveEmitters,
                 CulledObjects = _culledObjectCount,
-                BatchedDrawCalls = _batchedDrawCallCount,
                 CurrentLODLevel = ForcedLODLevel >= 0 ? ForcedLODLevel : -1
             };
         }
