@@ -2200,4 +2200,451 @@ namespace Horizon.Game.Message.Network
     }
 
     #endregion
+
+    #region 动画状态同步消息
+
+    /// <summary>
+    /// 动画状态类型
+    /// </summary>
+    public enum AnimationStateType
+    {
+        /// <summary>待机</summary>
+        Idle = 0,
+        /// <summary>移动</summary>
+        Moving = 1,
+        /// <summary>攻击前摇</summary>
+        AttackStartup = 2,
+        /// <summary>攻击激活</summary>
+        AttackActive = 3,
+        /// <summary>攻击后摇</summary>
+        AttackRecovery = 4,
+        /// <summary>施法前摇</summary>
+        CastStartup = 5,
+        /// <summary>施法激活</summary>
+        CastActive = 6,
+        /// <summary>施法后摇</summary>
+        CastRecovery = 7,
+        /// <summary>受击</summary>
+        Hit = 8,
+        /// <summary>死亡</summary>
+        Death = 9,
+        /// <summary>蓄力</summary>
+        Charging = 10,
+        /// <summary>引导</summary>
+        Channeling = 11
+    }
+
+    /// <summary>
+    /// 动画状态同步消息
+    /// 同步角色动画状态到其他客户端
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class AnimationSyncMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 动画状态
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public AnimationStateType AnimationState { get; set; }
+
+        /// <summary>
+        /// 动画名称
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string AnimationName { get; set; } = "";
+
+        /// <summary>
+        /// 动画播放速度
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public float PlaybackSpeed { get; set; } = 1.0f;
+
+        /// <summary>
+        /// 动画进度（0-1）
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public float Progress { get; set; }
+
+        /// <summary>
+        /// 关联技能ID（如果有）
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public int SkillId { get; set; }
+
+        /// <summary>
+        /// 时间戳
+        /// </summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public long Timestamp { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public MessageType Type { get; set; } = MessageType.AnimationSync;
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    #endregion
+
+    #region 性能报告消息
+
+    /// <summary>
+    /// 性能报告消息
+    /// 客户端向服务端上报性能数据
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class PerformanceReportMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 当前帧率
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public float CurrentFPS { get; set; }
+
+        /// <summary>
+        /// 平均帧率
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public float AverageFPS { get; set; }
+
+        /// <summary>
+        /// 网络延迟（毫秒）
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int NetworkLatencyMs { get; set; }
+
+        /// <summary>
+        /// 内存使用量（MB）
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public float MemoryUsageMB { get; set; }
+
+        /// <summary>
+        /// 当前优化等级
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public int OptimizationLevel { get; set; }
+
+        /// <summary>
+        /// 时间戳
+        /// </summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public long Timestamp { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public MessageType Type { get; set; } = MessageType.PerformanceReport;
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    #endregion
+
+    #region 断线重连消息
+
+    /// <summary>
+    /// 重连状态
+    /// </summary>
+    public enum ReconnectionState
+    {
+        /// <summary>正在重连</summary>
+        Reconnecting = 0,
+        /// <summary>重连成功</summary>
+        Reconnected = 1,
+        /// <summary>重连失败</summary>
+        Failed = 2,
+        /// <summary>请求重新认证</summary>
+        RequireReauth = 3
+    }
+
+    /// <summary>
+    /// 断线重连消息
+    /// 管理客户端断线重连流程
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class ReconnectionMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 会话令牌
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string SessionToken { get; set; } = "";
+
+        /// <summary>
+        /// 重连状态
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public ReconnectionState State { get; set; }
+
+        /// <summary>
+        /// 重连尝试次数
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int AttemptCount { get; set; }
+
+        /// <summary>
+        /// 断线时间戳
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public long DisconnectTimestamp { get; set; }
+
+        /// <summary>
+        /// 最后确认的序列号（用于断点续传）
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public long LastAcknowledgedSequence { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public MessageType Type { get; set; } = MessageType.Reconnection;
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    #endregion
+
+    #region LOD配置消息
+
+    /// <summary>
+    /// LOD配置消息
+    /// 服务端下发或客户端请求LOD配置
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class LODConfigMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// LOD等级数量
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int LODLevelCount { get; set; } = 4;
+
+        /// <summary>
+        /// LOD切换距离列表
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public List<float> LODDistances { get; set; } = new List<float>();
+
+        /// <summary>
+        /// 是否启用遮挡剔除
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public bool EnableOcclusionCulling { get; set; } = true;
+
+        /// <summary>
+        /// 最大可见距离
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public float MaxViewDistance { get; set; } = 500.0f;
+
+        /// <summary>
+        /// 是否启用材质合批
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public bool EnableMaterialBatching { get; set; } = true;
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public MessageType Type { get; set; } = MessageType.LODConfig;
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    #endregion
+
+    #region 粒子预算消息
+
+    /// <summary>
+    /// 粒子预算消息
+    /// 控制客户端粒子系统的性能预算
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class ParticleBudgetMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 最大同时粒子数
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int MaxParticleCount { get; set; } = 10000;
+
+        /// <summary>
+        /// 最大同时粒子发射器数
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int MaxEmitterCount { get; set; } = 50;
+
+        /// <summary>
+        /// 粒子质量等级（0-3）
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int QualityLevel { get; set; } = 2;
+
+        /// <summary>
+        /// 是否启用GPU粒子
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public bool EnableGPUParticles { get; set; } = true;
+
+        /// <summary>
+        /// 粒子可见距离
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public float ParticleViewDistance { get; set; } = 200.0f;
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public MessageType Type { get; set; } = MessageType.ParticleBudget;
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    #endregion
+
+    #region 消息压缩配置消息
+
+    /// <summary>
+    /// 压缩算法类型
+    /// </summary>
+    public enum CompressionAlgorithm
+    {
+        /// <summary>不压缩</summary>
+        None = 0,
+        /// <summary>GZip压缩</summary>
+        GZip = 1,
+        /// <summary>Deflate压缩</summary>
+        Deflate = 2,
+        /// <summary>LZ4压缩</summary>
+        LZ4 = 3
+    }
+
+    /// <summary>
+    /// 消息压缩配置消息
+    /// 配置网络消息的压缩策略
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class MessageCompressionConfigMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 是否启用压缩
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public bool EnableCompression { get; set; } = true;
+
+        /// <summary>
+        /// 压缩算法
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public CompressionAlgorithm Algorithm { get; set; } = CompressionAlgorithm.GZip;
+
+        /// <summary>
+        /// 最小压缩大小（字节，小于此大小不压缩）
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int MinCompressionSize { get; set; } = 256;
+
+        /// <summary>
+        /// 批处理大小阈值
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int BatchSizeThreshold { get; set; } = 10;
+
+        /// <summary>
+        /// 批处理时间阈值（毫秒）
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public int BatchTimeThresholdMs { get; set; } = 50;
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public MessageType Type { get; set; } = MessageType.MessageCompressionConfig;
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    #endregion
 }
