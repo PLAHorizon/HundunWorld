@@ -83,6 +83,9 @@ namespace HundunWorld.Game.UI.GameMain
         private readonly Dictionary<string, RoundedPanel> _panels = new Dictionary<string, RoundedPanel>();
         private string _activePanelName;
         
+        // 快捷栏绑定数据 (slotIndex -> skillId)
+        private readonly Dictionary<int, int> _hotbarBindings = new Dictionary<int, int>();
+        
         public override void OnStart()
         {
             InitializeManagers();
@@ -620,9 +623,65 @@ namespace HundunWorld.Game.UI.GameMain
         {
             if (sender.Tag is int slotIndex)
             {
-                FlaxEngine.Debug.Log($"快捷栏槽位 {slotIndex + 1} 被点击");
-                // TODO: 实现快捷栏功能
+                if (_hotbarBindings.TryGetValue(slotIndex, out int skillId) && skillId > 0)
+                {
+                    FlaxEngine.Debug.Log($"快捷栏槽位 {slotIndex + 1} 被点击，使用技能 {skillId}");
+                    UseHotbarSkill(slotIndex, skillId);
+                }
+                else
+                {
+                    FlaxEngine.Debug.Log($"快捷栏槽位 {slotIndex + 1} 未绑定技能");
+                }
             }
+        }
+
+        /// <summary>
+        /// 使用快捷栏技能
+        /// </summary>
+        private void UseHotbarSkill(int slotIndex, int skillId)
+        {
+            FlaxEngine.Debug.Log($"[GameMainUI] 使用快捷栏技能: 槽位={slotIndex}, 技能ID={skillId}");
+        }
+
+        /// <summary>
+        /// 分配技能到快捷栏槽位
+        /// </summary>
+        public void AssignSkillToHotbar(int slotIndex, int skillId)
+        {
+            if (slotIndex < 0 || slotIndex >= HOTBAR_SLOT_COUNT) return;
+
+            _hotbarBindings[slotIndex] = skillId;
+
+            // 更新槽位显示文本
+            if (_hotbarSlots != null && slotIndex < _hotbarSlots.Count)
+            {
+                _hotbarSlots[slotIndex].Text = skillId > 0 ? $"S{skillId}" : $"{slotIndex + 1}";
+            }
+
+            FlaxEngine.Debug.Log($"[GameMainUI] 技能 {skillId} 已绑定到快捷栏槽位 {slotIndex + 1}");
+        }
+
+        /// <summary>
+        /// 清空快捷栏槽位
+        /// </summary>
+        public void ClearHotbarSlot(int slotIndex)
+        {
+            AssignSkillToHotbar(slotIndex, 0);
+        }
+
+        /// <summary>
+        /// 交换两个快捷栏槽位
+        /// </summary>
+        public void SwapHotbarSlots(int slotA, int slotB)
+        {
+            if (slotA < 0 || slotA >= HOTBAR_SLOT_COUNT) return;
+            if (slotB < 0 || slotB >= HOTBAR_SLOT_COUNT) return;
+
+            _hotbarBindings.TryGetValue(slotA, out int skillA);
+            _hotbarBindings.TryGetValue(slotB, out int skillB);
+
+            AssignSkillToHotbar(slotA, skillB);
+            AssignSkillToHotbar(slotB, skillA);
         }
         
         /// <summary>

@@ -2048,4 +2048,122 @@ namespace Horizon.Game.Message.Network
     }
 
     #endregion
+
+    #region 快捷栏操作消息
+
+    /// <summary>
+    /// 快捷栏操作类型
+    /// </summary>
+    public enum HotbarActionType
+    {
+        /// <summary>使用快捷栏槽位</summary>
+        Use = 0,
+        /// <summary>分配技能到槽位</summary>
+        Assign = 1,
+        /// <summary>清空槽位</summary>
+        Clear = 2,
+        /// <summary>交换两个槽位</summary>
+        Swap = 3
+    }
+
+    /// <summary>
+    /// 快捷栏操作消息
+    /// 用于客户端通知服务器快捷栏的使用和配置操作
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class HotbarActionMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 操作类型
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public HotbarActionType ActionType { get; set; } = HotbarActionType.Use;
+
+        /// <summary>
+        /// 槽位索引（0-9）
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int SlotIndex { get; set; }
+
+        /// <summary>
+        /// 技能ID（用于Assign操作）
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int SkillId { get; set; }
+
+        /// <summary>
+        /// 目标槽位索引（用于Swap操作）
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int TargetSlotIndex { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public MessageType Type { get; set; } = MessageType.HotbarAction;
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    #endregion
+
+    #region 输入配置同步消息
+
+    /// <summary>
+    /// 输入配置同步消息
+    /// 用于客户端与服务器之间同步输入配置
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class InputConfigSyncMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 配置数据（JSON格式）
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string ConfigData { get; set; } = "";
+
+        /// <summary>
+        /// 是否为上传操作（true=上传到服务器, false=从服务器下载）
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public bool IsUpload { get; set; }
+
+        /// <summary>
+        /// 配置版本号
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int ConfigVersion { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public MessageType Type { get; set; } = MessageType.InputConfigSync;
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    #endregion
 }

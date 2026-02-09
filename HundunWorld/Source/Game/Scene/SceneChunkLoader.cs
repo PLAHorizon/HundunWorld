@@ -565,6 +565,11 @@ namespace HundunWorld.Game.Scene
         #region 统计信息
 
         /// <summary>
+        /// 当前已加载的分块数量
+        /// </summary>
+        public int LoadedChunkCount => _loadedChunks.Count;
+
+        /// <summary>
         /// 获取统计信息
         /// </summary>
         public string GetStatistics()
