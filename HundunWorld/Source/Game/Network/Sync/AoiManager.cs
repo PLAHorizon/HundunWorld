@@ -818,7 +818,11 @@ namespace HundunWorld.Game.Network.Sync
 
             // 平滑过渡
             float oldRadius = ViewRadius;
-            ViewRadius = Mathf.Lerp(ViewRadius, targetRadius, Time.DeltaTime * ViewRangeAdjustSpeed / ViewRadius);
+            float lerpFactor = ViewRadius > 0.01f 
+                ? Time.DeltaTime * ViewRangeAdjustSpeed / ViewRadius 
+                : 1.0f;
+            ViewRadius = Mathf.Lerp(ViewRadius, targetRadius, Mathf.Clamp(lerpFactor, 0f, 1f));
+            ViewRadius = Mathf.Max(ViewRadius, MinViewRadius); // 确保不低于最小值
             BufferRadius = ViewRadius * 1.2f;
 
             // 如果变化超过阈值，触发事件
