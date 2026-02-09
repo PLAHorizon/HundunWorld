@@ -1120,4 +1120,324 @@ namespace Horizon.Game.Message.Network
     }
 
     #endregion
+
+    #region 背包管理消息（Phase 7）
+
+    /// <summary>
+    /// 背包排序请求
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class InventorySortRequest : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 排序方式（0=按类型，1=按品质，2=按名称，3=按数量）
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int SortMode { get; set; }
+
+        /// <summary>
+        /// 排序方向（0=升序，1=降序）
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int SortDirection { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public MessageType Type { get; set; } = MessageType.InventorySort;
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 物品拆分请求
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class ItemSplitRequest : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 原始槽位索引
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int SourceSlot { get; set; }
+
+        /// <summary>
+        /// 拆分数量
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int SplitCount { get; set; }
+
+        /// <summary>
+        /// 目标槽位索引（-1表示自动分配）
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int TargetSlot { get; set; } = -1;
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public MessageType Type { get; set; } = MessageType.ItemSplit;
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 物品拆分响应
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class ItemSplitResponse : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 是否成功
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public bool Success { get; set; }
+
+        /// <summary>
+        /// 消息
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string Message { get; set; } = "";
+
+        /// <summary>
+        /// 原始槽位剩余数量
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int SourceRemainingCount { get; set; }
+
+        /// <summary>
+        /// 新槽位物品数量
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int NewSlotCount { get; set; }
+
+        /// <summary>
+        /// 新槽位索引
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int NewSlotIndex { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public MessageType Type { get; set; } = MessageType.ItemSplit;
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 物品丢弃请求
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class ItemDiscardRequest : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 槽位索引
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int SlotIndex { get; set; }
+
+        /// <summary>
+        /// 丢弃数量（-1表示全部丢弃）
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int DiscardCount { get; set; } = -1;
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public MessageType Type { get; set; } = MessageType.ItemDiscard;
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 物品丢弃响应
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class ItemDiscardResponse : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 是否成功
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public bool Success { get; set; }
+
+        /// <summary>
+        /// 消息
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string Message { get; set; } = "";
+
+        /// <summary>
+        /// 丢弃的物品信息
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public ItemInfo DiscardedItem { get; set; } = new();
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public MessageType Type { get; set; } = MessageType.ItemDiscard;
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 物品锁定请求
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class ItemLockRequest : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 槽位索引
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int SlotIndex { get; set; }
+
+        /// <summary>
+        /// 锁定状态（true=锁定，false=解锁）
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public bool IsLocked { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public MessageType Type { get; set; } = MessageType.ItemLock;
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 背包扩容请求
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class InventoryExpandRequest : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 扩容数量
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int ExpandCount { get; set; }
+
+        /// <summary>
+        /// 扩容方式（0=金币，1=道具，2=充值）
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int ExpandMethod { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public MessageType Type { get; set; } = MessageType.InventoryExpand;
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 背包扩容响应
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class InventoryExpandResponse : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 是否成功
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public bool Success { get; set; }
+
+        /// <summary>
+        /// 消息
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string Message { get; set; } = "";
+
+        /// <summary>
+        /// 新的背包容量
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int NewCapacity { get; set; }
+
+        /// <summary>
+        /// 消耗的金币
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long ConsumedGold { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public MessageType Type { get; set; } = MessageType.InventoryExpand;
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    #endregion
 }

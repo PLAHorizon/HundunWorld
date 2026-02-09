@@ -709,7 +709,40 @@ namespace Horizon.Game.Message.Enums
         /// 消息压缩配置
         /// </summary>
         [Description("消息压缩配置")]
-        MessageCompressionConfig = 1357
+        MessageCompressionConfig = 1357,
+        #endregion
+
+        #region Phase 7 - 背包管理消息
+
+        /// <summary>
+        /// 背包排序
+        /// </summary>
+        [Description("背包排序")]
+        InventorySort = 1358,
+
+        /// <summary>
+        /// 物品拆分
+        /// </summary>
+        [Description("物品拆分")]
+        ItemSplit = 1359,
+
+        /// <summary>
+        /// 物品丢弃
+        /// </summary>
+        [Description("物品丢弃")]
+        ItemDiscard = 1360,
+
+        /// <summary>
+        /// 物品锁定
+        /// </summary>
+        [Description("物品锁定")]
+        ItemLock = 1361,
+
+        /// <summary>
+        /// 背包扩容
+        /// </summary>
+        [Description("背包扩容")]
+        InventoryExpand = 1362
         #endregion
     }
 }

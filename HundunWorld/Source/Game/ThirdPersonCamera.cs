@@ -819,6 +819,9 @@ namespace HundunWorld.Game
         private float _stateTargetPitch;     // 状态目标俯仰角
         private float _stateTargetFOV;       // 状态目标FOV
         
+        // 角色控制器引用（用于状态检测）
+        private PlayerController _playerController;
+        
         // 环境感知相关
         private EnvironmentType _previousEnvironment; // 上一个环境
         private Dictionary<EnvironmentType, EnvironmentConfig> _environmentConfigs; // 环境配置字典
@@ -1889,27 +1892,26 @@ namespace HundunWorld.Game
             
             if (EnableStateFOV)
             {
-                // TODO: 需要从 PlayerController 获取角色当前状态
-                // 这里提供一个示例实现，实际需要集成 PlayerController
-                
-                // 示例：根据相机状态设置偏移
+                // 根据 PlayerController 状态和相机状态设置FOV偏移
                 switch (CurrentState)
                 {
                     case CameraState.Combat:
                         stateFOVOffset = CombatFOVOffset; // -5°
-                        //Debug.Log($"[FOV调整] 战斗状态 - 偏移:{stateFOVOffset:F1}°");
                         break;
                     case CameraState.Flying:
                         stateFOVOffset = FlyingFOVOffset; // +10°
-                        //Debug.Log($"[FOV调整] 飞行状态 - 偏移:{stateFOVOffset:F1}°");
                         break;
                     default:
-                        // 检查是否在冲刺（根据速度判断）
-                        float currentSpeed = _targetVelocity.Length;
-                        if (currentSpeed > MaxSpeed * 0.8f) // 超过80%最大速度认为是冲刺
+                        // 检查是否在冲刺（通过PlayerController或速度判断）
+                        bool isSprinting = _playerController != null && _playerController.IsSprinting();
+                        if (!isSprinting)
+                        {
+                            float currentSpeed = _targetVelocity.Length;
+                            isSprinting = currentSpeed > MaxSpeed * 0.8f;
+                        }
+                        if (isSprinting)
                         {
                             stateFOVOffset = SprintFOVOffset; // +10°
-                            //Debug.Log($"[FOV调整] 冲刺状态 - 偏移:{stateFOVOffset:F1}°");
                         }
                         break;
                 }
@@ -2535,14 +2537,13 @@ namespace HundunWorld.Game
         {
             if (Target == null) return;
             
-            // TODO: 根据角色状态自动检测应该切换到哪个相机状态
-            // 这里需要与角色控制器集成,检测:
-            // - 是否在战斗中 (PlayerController.IsInCombat)
-            // - 是否在攀爬 (PlayerController.IsClimbing)
-            // - 是否在游泳 (PlayerController.IsSwimming)
-            // - 是否在飞行 (PlayerController.IsFlying)
+            // 获取 PlayerController 引用（如果尚未获取）
+            if (_playerController == null)
+            {
+                _playerController = Target.GetScript<PlayerController>();
+            }
             
-            // 示例:简单的自动检测逻辑
+            // 根据角色状态自动检测应该切换到哪个相机状态
             CameraState detectedState = DetectCameraState();
             
             if (detectedState != CurrentState)
@@ -2556,20 +2557,27 @@ namespace HundunWorld.Game
         /// </summary>
         private CameraState DetectCameraState()
         {
-            // TODO: 实现真实的检测逻辑
-            // 这里需要查询PlayerController的状态
+            // 攀爬状态检测：直接检查攀爬控制器
+            var climbingController = Target.GetScript<ClimbingSystem.ClimbingController>();
+            if (climbingController != null && climbingController.IsClimbing())
+            {
+                return CameraState.Climbing;
+            }
             
-            // 示例:简单的速度检测(仅作演示)
+            // 速度检测
             float speed = _targetVelocity.Length;
             
-            // 高速移动可能是飞行
+            // 高速移动且在高处可能是飞行
             if (speed > 30f && Target.Position.Y > 10f)
             {
                 return CameraState.Flying;
             }
             
-            // 低速度且在水面附近可能是游泳
-            // TODO: 需要检测是否在水中
+            // 水下环境检测
+            if (CurrentEnvironment == EnvironmentType.Underwater)
+            {
+                return CameraState.Swimming;
+            }
             
             // 默认返回Normal状态
             return CameraState.Normal;
@@ -2927,16 +2935,54 @@ namespace HundunWorld.Game
             return hitCount > 0 ? totalDistance / hitCount : maxDetectionDistance;
         }
         
+        private const float DirectionalLightWeight = 0.5f;
+        private const float PointLightMaxRange = 50f;
+        
         /// <summary>
         /// 检测光照级别
         /// </summary>
         private void DetectLightLevel()
         {
-            // TODO: 实现真实的光照检测
-            // 需要获取场景中的光源信息
-            // 或者采样目标位置的环境光照
+            // 尝试采样场景中的光源来估算光照级别
+            if (Target != null)
+            {
+                var lights = Level.FindActors<Light>();
+                if (lights != null && lights.Length > 0)
+                {
+                    float totalIntensity = 0f;
+                    int nearbyLights = 0;
+                    var targetPos = Target.Position;
+                    
+                    foreach (var light in lights)
+                    {
+                        if (light is DirectionalLight dirLight)
+                        {
+                            // 方向光影响全场景
+                            totalIntensity += dirLight.Color.A * DirectionalLightWeight;
+                            nearbyLights++;
+                        }
+                        else
+                        {
+                            // 点光源/聚光灯：根据距离衰减
+                            float dist = Vector3.Distance(targetPos, light.Position);
+                            if (dist < PointLightMaxRange)
+                            {
+                                float attenuation = Mathf.Clamp01(1f - dist / PointLightMaxRange);
+                                totalIntensity += attenuation;
+                                nearbyLights++;
+                            }
+                        }
+                    }
+                    
+                    if (nearbyLights > 0)
+                    {
+                        _currentLightLevel = Mathf.Clamp01(totalIntensity / nearbyLights);
+                        return;
+                    }
+                }
+            }
             
-            // 示例:根据环境类型设置默认亮度
+            // 回退：根据环境类型设置默认亮度
             switch (CurrentEnvironment)
             {
                 case EnvironmentType.Outdoor:
