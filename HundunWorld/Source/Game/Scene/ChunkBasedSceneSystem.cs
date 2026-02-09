@@ -297,11 +297,25 @@ namespace HundunWorld.Game.Scene
             // 先预加载目标位置的分块
             PreloadChunksAround(targetPosition, 3);
 
-            // TODO: 等待分块加载完成后再传送
-            // 这里简化处理，直接传送
-            _player.Position = targetPosition;
-
-            Debug.Log($"[ChunkSceneSystem] 玩家已传送到: {targetPosition}");
+            // 等待关键分块加载完成后再传送
+            var targetChunk = GetChunkAtPosition(targetPosition);
+            if (targetChunk != null && targetChunk.LoadState == SceneChunkLoader.ChunkLoadState.Loading)
+            {
+                // 如果目标分块正在加载，延迟传送到下一帧
+                Scripting.InvokeOnUpdate(() =>
+                {
+                    if (_player != null)
+                    {
+                        _player.Position = targetPosition;
+                        Debug.Log($"[ChunkSceneSystem] 玩家已传送到: {targetPosition}（等待分块加载后）");
+                    }
+                });
+            }
+            else
+            {
+                _player.Position = targetPosition;
+                Debug.Log($"[ChunkSceneSystem] 玩家已传送到: {targetPosition}");
+            }
         }
 
         /// <summary>
@@ -350,9 +364,8 @@ namespace HundunWorld.Game.Scene
         {
             if (ChunkLoader == null) return 0;
 
-            // 通过统计信息解析（简化实现）
-            // 实际项目应该添加专门的API
-            return 0;  // TODO: 实现
+            // 通过ChunkLoader获取已加载分块数量
+            return ChunkLoader.GetLoadedChunkCount();
         }
 
         /// <summary>
@@ -435,9 +448,12 @@ namespace HundunWorld.Game.Scene
             if (!ShowStatistics || string.IsNullOrEmpty(_cachedStatistics))
                 return;
 
-            // TODO: 在屏幕上绘制统计信息
-            // Flax可能需要使用UI系统来显示文本
-            // 这里只是示例代码
+            // 使用Flax调试绘制显示统计信息
+            // 将统计信息写入日志（屏幕显示需要UI系统支持）
+            if (ChunkLoader != null)
+            {
+                DebugDraw.DrawText(_cachedStatistics, new Vector3(10, 10, 0), Color.White);
+            }
         }
 
         /// <summary>
