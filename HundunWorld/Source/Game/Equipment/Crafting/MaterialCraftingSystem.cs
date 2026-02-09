@@ -86,10 +86,62 @@ namespace Game.Equipment.Crafting
                 currencyCost: 50
             );
 
-            // TODO: 添加更多合成配方
             // 中级→高级（5:1）
+            AddTierUpgradeRecipe(
+                recipeId: 1003,
+                recipeName: "锻造精钢",
+                inputMaterialId: 20001, // 精铁
+                inputCount: 5,
+                outputMaterialId: 30001, // 精钢
+                currencyCost: 200
+            );
+
+            AddTierUpgradeRecipe(
+                recipeId: 1004,
+                recipeName: "凝练灵木精华",
+                inputMaterialId: 20002, // 紫檀木
+                inputCount: 5,
+                outputMaterialId: 30002, // 灵木
+                currencyCost: 200
+            );
+
             // 高级→仙级（3:1）
+            AddTierUpgradeRecipe(
+                recipeId: 1005,
+                recipeName: "炼制仙铁",
+                inputMaterialId: 30001, // 精钢
+                inputCount: 3,
+                outputMaterialId: 40001, // 仙铁
+                currencyCost: 500
+            );
+
+            AddTierUpgradeRecipe(
+                recipeId: 1006,
+                recipeName: "升华仙木",
+                inputMaterialId: 30002, // 灵木
+                inputCount: 3,
+                outputMaterialId: 40002, // 仙木
+                currencyCost: 500
+            );
+
             // 仙级→神级（3:1）
+            AddTierUpgradeRecipe(
+                recipeId: 1007,
+                recipeName: "铸炼神铁",
+                inputMaterialId: 40001, // 仙铁
+                inputCount: 3,
+                outputMaterialId: 50001, // 神铁
+                currencyCost: 1000
+            );
+
+            AddTierUpgradeRecipe(
+                recipeId: 1008,
+                recipeName: "蕴化神木",
+                inputMaterialId: 40002, // 仙木
+                inputCount: 3,
+                outputMaterialId: 50002, // 神木
+                currencyCost: 1000
+            );
 
             Debug.Log($"材料合成系统初始化完成，加载了 {recipeDatabase.Count} 个配方");
         }

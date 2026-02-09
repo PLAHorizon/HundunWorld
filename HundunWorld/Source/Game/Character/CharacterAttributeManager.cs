@@ -17,11 +17,21 @@ namespace HundunWorld.Game.Character
         // 角色属性数据存储
         private readonly Dictionary<ulong, CharacterAttributeData> _characterAttributes;
         private readonly Dictionary<ulong, List<Action<string, float, float>>> _attributeChangeCallbacks;
+        private readonly Dictionary<ulong, Vector3> _characterPositions;
 
         private CharacterAttributeManager()
         {
             _characterAttributes = new Dictionary<ulong, CharacterAttributeData>();
             _attributeChangeCallbacks = new Dictionary<ulong, List<Action<string, float, float>>>();
+            _characterPositions = new Dictionary<ulong, Vector3>();
+        }
+
+        /// <summary>
+        /// 检查角色是否已注册
+        /// </summary>
+        public bool HasCharacter(ulong characterId)
+        {
+            return _characterAttributes.ContainsKey(characterId);
         }
 
         public CharacterStats GetBaseStats(ulong characterId)
@@ -143,14 +153,16 @@ namespace HundunWorld.Game.Character
 
         public Vector3 GetPosition(ulong characterId)
         {
-            // TODO: 与实际的位置系统集成
+            if (_characterPositions.TryGetValue(characterId, out var position))
+            {
+                return position;
+            }
             return Vector3.Zero;
         }
 
         public void SetPosition(ulong characterId, Vector3 position)
         {
-            // TODO: 与实际的位置系统集成
-            Debug.Log($"[CharacterAttributeManager] 设置角色 {characterId} 位置: {position}");
+            _characterPositions[characterId] = position;
         }
 
         public bool IsInRange(ulong characterId1, ulong characterId2, float range)

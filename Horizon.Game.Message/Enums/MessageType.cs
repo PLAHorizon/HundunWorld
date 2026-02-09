@@ -661,7 +661,19 @@ namespace Horizon.Game.Message.Enums
         /// Buff/Debuff状态显示
         /// </summary>
         [Description("Buff显示")]
-        BuffDisplay = 1349
+        BuffDisplay = 1349,
+
+        /// <summary>
+        /// 快捷栏操作
+        /// </summary>
+        [Description("快捷栏操作")]
+        HotbarAction = 1350,
+
+        /// <summary>
+        /// 输入配置同步
+        /// </summary>
+        [Description("输入配置同步")]
+        InputConfigSync = 1351
         #endregion
     }
 }

@@ -217,8 +217,8 @@ namespace HundunWorld.Game.Combat
         /// </summary>
         private bool IsEntityValid(ulong entityId)
         {
-            // TODO: 实现实际的实体有效性检查逻辑
-            return true;
+            // 检查实体是否已在属性管理器中注册
+            return _attributeManager.HasCharacter(entityId);
         }
 
         /// <summary>

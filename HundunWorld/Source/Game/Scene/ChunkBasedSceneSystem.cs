@@ -70,6 +70,11 @@ namespace HundunWorld.Game.Scene
         // 缓存的统计信息
         private string _cachedStatistics = "";
 
+        // 待处理的传送请求
+        private Vector3? _pendingTeleportPosition;
+        private float _teleportWaitTimer;
+        private const float TeleportWaitTimeout = 5.0f;
+
         #endregion
 
         #region 事件定义
@@ -148,6 +153,9 @@ namespace HundunWorld.Game.Scene
         public override void OnUpdate()
         {
             if (!EnableChunkSystem) return;
+
+            // 处理待处理的传送
+            ProcessPendingTeleport();
 
             // 更新场景区域
             UpdateSceneRegion();
@@ -297,11 +305,55 @@ namespace HundunWorld.Game.Scene
             // 先预加载目标位置的分块
             PreloadChunksAround(targetPosition, 3);
 
-            // TODO: 等待分块加载完成后再传送
-            // 这里简化处理，直接传送
-            _player.Position = targetPosition;
+            // 检查目标分块是否已加载
+            var targetChunk = GetChunkAtPosition(targetPosition);
+            if (targetChunk != null && targetChunk.LoadState == SceneChunkLoader.ChunkLoadState.Loaded)
+            {
+                // 目标分块已加载，直接传送
+                _player.Position = targetPosition;
+                Debug.Log($"[ChunkSceneSystem] 玩家已传送到: {targetPosition}");
+            }
+            else
+            {
+                // 目标分块尚未加载，排队等待（新请求会覆盖旧请求）
+                if (_pendingTeleportPosition != null)
+                {
+                    Debug.Log($"[ChunkSceneSystem] 覆盖待处理的传送请求");
+                }
+                _pendingTeleportPosition = targetPosition;
+                _teleportWaitTimer = 0f;
+                Debug.Log($"[ChunkSceneSystem] 等待分块加载后传送到: {targetPosition}");
+            }
+        }
 
-            Debug.Log($"[ChunkSceneSystem] 玩家已传送到: {targetPosition}");
+        /// <summary>
+        /// 处理待处理的传送请求
+        /// </summary>
+        private void ProcessPendingTeleport()
+        {
+            if (_pendingTeleportPosition == null || _player == null) return;
+
+            var target = _pendingTeleportPosition.Value;
+            _teleportWaitTimer += Time.DeltaTime;
+
+            var targetChunk = GetChunkAtPosition(target);
+            bool chunkReady = targetChunk != null && targetChunk.LoadState == SceneChunkLoader.ChunkLoadState.Loaded;
+            bool timedOut = _teleportWaitTimer >= TeleportWaitTimeout;
+
+            if (chunkReady || timedOut)
+            {
+                _player.Position = target;
+                _pendingTeleportPosition = null;
+
+                if (timedOut && !chunkReady)
+                {
+                    Debug.LogWarning($"[ChunkSceneSystem] 传送等待超时，强制传送到: {target}");
+                }
+                else
+                {
+                    Debug.Log($"[ChunkSceneSystem] 分块加载完成，玩家已传送到: {target}");
+                }
+            }
         }
 
         /// <summary>
@@ -350,9 +402,7 @@ namespace HundunWorld.Game.Scene
         {
             if (ChunkLoader == null) return 0;
 
-            // 通过统计信息解析（简化实现）
-            // 实际项目应该添加专门的API
-            return 0;  // TODO: 实现
+            return ChunkLoader.LoadedChunkCount;
         }
 
         /// <summary>
