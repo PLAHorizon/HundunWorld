@@ -27,6 +27,16 @@ namespace ManagedHundunWorld.Network.Handlers
         public event Action<SkillCastMessage> SkillCastProcessed;
         public event Action<EffectMessage> EffectApplied;
 
+        private HundunWorld.Game.ECS.NetworkEntityRegistry _entityRegistry;
+
+        /// <summary>
+        /// 设置实体注册表引用
+        /// </summary>
+        public void SetEntityRegistry(HundunWorld.Game.ECS.NetworkEntityRegistry registry)
+        {
+            _entityRegistry = registry;
+        }
+
         public SkillCastResponseHandler() : base(MessageType.SkillCast)
         {
         }
@@ -142,14 +152,8 @@ namespace ManagedHundunWorld.Network.Handlers
         {
             try
             {
-                // 根据技能ID获取对应的音效
-                var soundPath = GetSkillSoundPath(skillCastMessage.SkillId);
-                if (!string.IsNullOrEmpty(soundPath))
-                {
-                    // TODO: 实现正确的音频播放系统
-                    // AudioListener.Play(soundPath);
-                    FlaxEngine.Debug.Log($"[TODO] 播放技能音效: {soundPath}");
-                }
+                var audioManager = HundunWorld.Game.Audio.GameAudioManager.Instance;
+                audioManager.PlaySkillSound(skillCastMessage.SkillId);
             }
             catch (Exception ex)
             {
@@ -326,9 +330,8 @@ namespace ManagedHundunWorld.Network.Handlers
                 var effectManager = Game.Combat.Effects.SkillEffectManager.Instance;
                 if (effectManager != null)
                 {
-                    // 由于EffectMessage没有TargetPosition字段，使用默认位置或从TargetId获取位置
-                    // TODO: 从实体系统获取目标实体的世界位置
-                    var targetPos = Vector3.Zero; // 临时使用原点
+                    // 通过实体注册表查找目标实体的世界位置
+                    var targetPos = GetEntityPosition(effectMessage.TargetId);
                     
                     effectManager.PlayEffectVisual(
                         targetPos,
@@ -341,6 +344,34 @@ namespace ManagedHundunWorld.Network.Handlers
             {
                 FlaxEngine.Debug.LogError($"播放效果视觉特效时发生异常: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// 通过网络实体ID获取实体的世界位置
+        /// </summary>
+        private Vector3 GetEntityPosition(ulong entityId)
+        {
+            if (_entityRegistry == null || entityId == 0)
+                return Vector3.Zero;
+
+            try
+            {
+                if (_entityRegistry.TryGetEntity(entityId, out var entity))
+                {
+                    var world = HundunWorld.Game.HundunWorldGame.Instance?.ECSManager?.World;
+                    if (world != null && world.Has<PositionComponent>(entity))
+                    {
+                        var posComp = world.Get<PositionComponent>(entity);
+                        return posComp.Position;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"获取实体位置失败 (ID:{entityId}): {ex.Message}");
+            }
+
+            return Vector3.Zero;
         }
 
         /// <summary>

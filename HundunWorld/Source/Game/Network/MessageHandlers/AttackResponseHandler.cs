@@ -207,15 +207,8 @@ namespace ManagedHundunWorld.Network.Handlers
         {
             try
             {
-                // 播放攻击音效
-                // 可能需要根据技能ID选择不同的音效
-                var soundPath = GetAttackSoundPath(attackMessage.SkillId);
-                if (!string.IsNullOrEmpty(soundPath))
-                {
-                    // TODO: 实现正确的音频播放系统
-                    // AudioListener.Play(soundPath);
-                    FlaxEngine.Debug.Log($"[TODO] 播放攻击音效: {soundPath}");
-                }
+                var audioManager = HundunWorld.Game.Audio.GameAudioManager.Instance;
+                audioManager.PlayAttackSound(attackMessage.SkillId);
             }
             catch (Exception ex)
             {

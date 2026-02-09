@@ -25,6 +25,9 @@ namespace HundunWorld.Game.UI
         // 当前活动的UI
         private Script _currentActiveUI;
 
+        // 活跃的效果图标
+        private readonly Dictionary<(ulong TargetId, int EffectId), EffectIconEntry> _activeEffectIcons = new();
+
         public override void OnStart()
         {
             InitializeInstance();
@@ -280,13 +283,86 @@ namespace HundunWorld.Game.UI
             try
             {
                 FlaxEngine.Debug.Log($"显示效果图标: 目标{targetId}, 效果{effectId}({effectName}), 持续时间{duration}秒");
-                // TODO: 实现具体的UI效果图标显示逻辑
-                // 这里可以调用相应的UI组件来显示增益/减益图标
+
+                var key = (targetId, effectId);
+                if (_activeEffectIcons.ContainsKey(key))
+                {
+                    // 刷新已有效果的持续时间
+                    var existing = _activeEffectIcons[key];
+                    existing.RemainingDuration = duration;
+                    existing.EffectName = effectName;
+                }
+                else
+                {
+                    // 添加新效果图标记录
+                    _activeEffectIcons[key] = new EffectIconEntry
+                    {
+                        TargetId = targetId,
+                        EffectId = effectId,
+                        EffectName = effectName,
+                        RemainingDuration = duration,
+                        TotalDuration = duration
+                    };
+                    FlaxEngine.Debug.Log($"新增效果图标: {effectName} (ID:{effectId}), 持续{duration}秒");
+                }
             }
             catch (Exception ex)
             {
                 FlaxEngine.Debug.LogError($"显示效果图标时出错: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// 移除效果图标
+        /// </summary>
+        public void RemoveEffectIcon(ulong targetId, int effectId)
+        {
+            var key = (targetId, effectId);
+            if (_activeEffectIcons.Remove(key))
+            {
+                FlaxEngine.Debug.Log($"移除效果图标: 目标{targetId}, 效果{effectId}");
+            }
+        }
+
+        /// <summary>
+        /// 处理Buff显示消息
+        /// </summary>
+        public void HandleBuffDisplayMessage(Horizon.Game.Message.Network.BuffDisplayMessage message)
+        {
+            if (message == null) return;
+
+            try
+            {
+                switch (message.Operation)
+                {
+                    case Horizon.Game.Message.Network.BuffOperation.Add:
+                    case Horizon.Game.Message.Network.BuffOperation.Refresh:
+                    case Horizon.Game.Message.Network.BuffOperation.Stack:
+                        ShowEffectIcon(message.TargetId, message.EffectId, message.EffectName, message.Duration);
+                        break;
+                    case Horizon.Game.Message.Network.BuffOperation.Remove:
+                        RemoveEffectIcon(message.TargetId, message.EffectId);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"处理Buff显示消息时出错: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 获取目标实体上的活跃效果数量
+        /// </summary>
+        public int GetActiveEffectCount(ulong targetId)
+        {
+            int count = 0;
+            foreach (var entry in _activeEffectIcons.Values)
+            {
+                if (entry.TargetId == targetId)
+                    count++;
+            }
+            return count;
         }
 
         public override void OnDestroy()
@@ -308,5 +384,17 @@ namespace HundunWorld.Game.UI
                 _instance = null;
             }
         }
+    }
+
+    /// <summary>
+    /// 效果图标条目
+    /// </summary>
+    public class EffectIconEntry
+    {
+        public ulong TargetId { get; set; }
+        public int EffectId { get; set; }
+        public string EffectName { get; set; } = "";
+        public float RemainingDuration { get; set; }
+        public float TotalDuration { get; set; }
     }
 }

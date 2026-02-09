@@ -507,21 +507,50 @@ namespace HundunWorld.Game.UI.GameMain
         }
 
         /// <summary>
-        /// 显示伤害数字（可选功能，未实现）
+        /// 显示伤害数字
         /// </summary>
         public void ShowDamageNumber(float damage, Vector3 worldPosition)
         {
-            // TODO: 实现浮动伤害数字显示
-            Debug.Log($"[AttributeBarsUI] 显示伤害: {damage} 在位置 {worldPosition}");
+            try
+            {
+                var damageSystem = Game.Combat.Effects.DamageNumberSystem.Instance;
+                if (damageSystem != null)
+                {
+                    damageSystem.ShowDamageNumber(damage, worldPosition);
+                }
+                else
+                {
+                    Debug.Log($"[AttributeBarsUI] 显示伤害: {damage} 在位置 {worldPosition}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[AttributeBarsUI] 显示伤害数字失败: {ex.Message}");
+            }
         }
 
         /// <summary>
-        /// 显示治疗数字（可选功能，未实现）
+        /// 显示治疗数字
         /// </summary>
         public void ShowHealNumber(float heal, Vector3 worldPosition)
         {
-            // TODO: 实现浮动治疗数字显示
-            Debug.Log($"[AttributeBarsUI] 显示治疗: {heal} 在位置 {worldPosition}");
+            try
+            {
+                var damageSystem = Game.Combat.Effects.DamageNumberSystem.Instance;
+                if (damageSystem != null)
+                {
+                    var healText = $"+{(int)heal}";
+                    damageSystem.ShowText(healText, worldPosition, Color.Green, 1.5f);
+                }
+                else
+                {
+                    Debug.Log($"[AttributeBarsUI] 显示治疗: {heal} 在位置 {worldPosition}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[AttributeBarsUI] 显示治疗数字失败: {ex.Message}");
+            }
         }
 
         #endregion

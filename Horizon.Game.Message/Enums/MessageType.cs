@@ -649,7 +649,19 @@ namespace Horizon.Game.Message.Enums
         /// 快捷键配置
         /// </summary>
         [Description("快捷键配置")]
-        HotkeyConfig = 1347
+        HotkeyConfig = 1347,
+
+        /// <summary>
+        /// 音频播放
+        /// </summary>
+        [Description("音频播放")]
+        AudioPlayback = 1348,
+
+        /// <summary>
+        /// Buff/Debuff状态显示
+        /// </summary>
+        [Description("Buff显示")]
+        BuffDisplay = 1349
         #endregion
     }
 }
