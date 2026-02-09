@@ -1143,4 +1143,437 @@ namespace Horizon.Game.Message.Network
     }
 
     #endregion
+
+    #region 技能打断消息
+
+    /// <summary>
+    /// 技能打断原因
+    /// </summary>
+    public enum SkillInterruptReason
+    {
+        /// <summary>眩晕</summary>
+        Stunned = 0,
+        /// <summary>沉默</summary>
+        Silenced = 1,
+        /// <summary>击退</summary>
+        KnockedBack = 2,
+        /// <summary>死亡</summary>
+        Death = 3,
+        /// <summary>手动取消</summary>
+        ManualCancel = 4,
+        /// <summary>距离超出</summary>
+        OutOfRange = 5
+    }
+
+    /// <summary>
+    /// 技能打断消息
+    /// 当角色技能施放被中断时由服务端发送
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class SkillInterruptMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 被打断的角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 被打断的技能ID
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int SkillId { get; set; }
+
+        /// <summary>
+        /// 打断来源ID（施加打断的角色或效果）
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public ulong InterruptSourceId { get; set; }
+
+        /// <summary>
+        /// 打断原因
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public SkillInterruptReason Reason { get; set; }
+
+        /// <summary>
+        /// 技能冷却是否重置
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public bool ResetCooldown { get; set; }
+
+        /// <summary>
+        /// 打断发生时间戳
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public long Timestamp { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public MessageType Type { get; set; } = MessageType.SkillInterrupt;
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Combat;
+    }
+
+    #endregion
+
+    #region 好友系统消息（扩展）
+
+    /// <summary>
+    /// 好友操作类型
+    /// </summary>
+    public enum FriendOperationType
+    {
+        /// <summary>添加好友</summary>
+        Add = 0,
+        /// <summary>删除好友</summary>
+        Remove = 1,
+        /// <summary>接受好友请求</summary>
+        Accept = 2,
+        /// <summary>拒绝好友请求</summary>
+        Reject = 3,
+        /// <summary>屏蔽好友</summary>
+        Block = 4,
+        /// <summary>取消屏蔽</summary>
+        Unblock = 5
+    }
+
+    /// <summary>
+    /// 好友在线状态
+    /// </summary>
+    public enum FriendOnlineStatus
+    {
+        Offline = 0,
+        Online = 1,
+        Away = 2,
+        Busy = 3
+    }
+
+    /// <summary>
+    /// 好友列表消息
+    /// 服务端发送的完整好友列表信息（使用新MessageType区分于FriendListUpdateMessage）
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class FriendListMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 好友列表
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public List<FriendInfo> Friends { get; set; } = new();
+
+        /// <summary>
+        /// 待处理的好友请求列表
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public List<FriendInfo> PendingRequests { get; set; } = new();
+
+        /// <summary>
+        /// 好友数量上限
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int MaxFriendCount { get; set; } = 100;
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public MessageType Type { get; set; } = MessageType.FriendList;
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Social;
+    }
+
+    /// <summary>
+    /// 好友操作消息
+    /// 客户端发起的好友操作请求和服务端响应
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class FriendOperationMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 操作类型
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public FriendOperationType Operation { get; set; }
+
+        /// <summary>
+        /// 目标角色ID
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public ulong TargetCharacterId { get; set; }
+
+        /// <summary>
+        /// 目标角色名称（添加好友时使用）
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string TargetName { get; set; } = "";
+
+        /// <summary>
+        /// 操作是否成功（响应消息使用）
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public bool Success { get; set; }
+
+        /// <summary>
+        /// 操作结果消息
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public string ResultMessage { get; set; } = "";
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public MessageType Type { get; set; } = MessageType.FriendOperation;
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Social;
+    }
+
+    #endregion
+
+    #region 小地图消息
+
+    /// <summary>
+    /// 地图标记类型
+    /// </summary>
+    public enum MapMarkerType
+    {
+        /// <summary>传送点</summary>
+        TeleportPoint = 0,
+        /// <summary>任务NPC</summary>
+        QuestNpc = 1,
+        /// <summary>任务目标</summary>
+        QuestObjective = 2,
+        /// <summary>队友</summary>
+        TeamMember = 3,
+        /// <summary>Boss</summary>
+        Boss = 4,
+        /// <summary>商人</summary>
+        Merchant = 5,
+        /// <summary>自定义标记</summary>
+        Custom = 6
+    }
+
+    /// <summary>
+    /// 地图标记信息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class MapMarkerInfo
+    {
+        /// <summary>
+        /// 标记ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int MarkerId { get; set; }
+
+        /// <summary>
+        /// 标记类型
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public MapMarkerType MarkerType { get; set; }
+
+        /// <summary>
+        /// 标记名称
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string Name { get; set; } = "";
+
+        /// <summary>
+        /// X坐标
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public float X { get; set; }
+
+        /// <summary>
+        /// Y坐标（高度）
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public float Y { get; set; }
+
+        /// <summary>
+        /// Z坐标
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public float Z { get; set; }
+
+        /// <summary>
+        /// 是否可交互
+        /// </summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public bool IsInteractable { get; set; }
+    }
+
+    /// <summary>
+    /// 传送点消息
+    /// 当前区域可用传送点信息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class TeleportPointMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 传送点列表
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public List<MapMarkerInfo> TeleportPoints { get; set; } = new();
+
+        /// <summary>
+        /// 当前区域名称
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string AreaName { get; set; } = "";
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public MessageType Type { get; set; } = MessageType.TeleportPoint;
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    /// <summary>
+    /// 小地图标记消息
+    /// 服务端发送的小地图标记更新
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class MinimapMarkerMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 标记列表
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public List<MapMarkerInfo> Markers { get; set; } = new();
+
+        /// <summary>
+        /// 是否全量更新（false表示增量更新）
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public bool IsFullUpdate { get; set; }
+
+        /// <summary>
+        /// 需要移除的标记ID列表（增量更新时使用）
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public List<int> RemovedMarkerIds { get; set; } = new();
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public MessageType Type { get; set; } = MessageType.MinimapMarker;
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    #endregion
+
+    #region 聊天发送消息
+
+    /// <summary>
+    /// 聊天频道类型
+    /// </summary>
+    public enum ChatChannelType
+    {
+        /// <summary>世界频道</summary>
+        World = 0,
+        /// <summary>区域频道</summary>
+        Area = 1,
+        /// <summary>组队频道</summary>
+        Team = 2,
+        /// <summary>公会频道</summary>
+        Guild = 3,
+        /// <summary>私聊</summary>
+        Whisper = 4,
+        /// <summary>系统频道</summary>
+        System = 5
+    }
+
+    /// <summary>
+    /// 聊天消息发送
+    /// 客户端发送的聊天消息请求
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class ChatSendMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 发送者角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong SenderId { get; set; }
+
+        /// <summary>
+        /// 发送者名称
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string SenderName { get; set; } = "";
+
+        /// <summary>
+        /// 频道类型
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public ChatChannelType Channel { get; set; }
+
+        /// <summary>
+        /// 消息内容
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string Content { get; set; } = "";
+
+        /// <summary>
+        /// 目标角色ID（私聊时使用）
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public ulong TargetId { get; set; }
+
+        /// <summary>
+        /// 发送时间戳
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public long Timestamp { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public MessageType Type { get; set; } = MessageType.ChatSend;
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Social;
+    }
+
+    #endregion
 }

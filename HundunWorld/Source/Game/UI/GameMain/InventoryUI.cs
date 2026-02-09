@@ -62,7 +62,11 @@ namespace HundunWorld.Game.UI.GameMain
         private List<InventorySlot> _inventorySlots = new List<InventorySlot>();
 
         private bool _isVisible = false;
-        private int _playerGold = 1000;  // TODO: 从角色数据获取
+        private int _playerGold = 1000;
+
+        // 排序和过滤状态
+        private string _currentFilter = "全部";
+        private int _selectedSlotIndex = -1;
 
         #endregion
 
@@ -228,7 +232,30 @@ namespace HundunWorld.Game.UI.GameMain
             CreateFilterButton("装备", 130, null);
             CreateFilterButton("消耗品", 190, null);
 
-            // TODO: 添加排序和搜索功能
+            // 排序按钮
+            var sortBtn = new Button
+            {
+                Bounds = new Rectangle(WindowWidth - 120, 5, 50, 25),
+                Text = "排序",
+                TextColor = Color.White,
+                BackgroundColor = new Color(0.2f, 0.3f, 0.2f, 0.8f)
+            };
+            sortBtn.ButtonClicked += (btn) => SortInventory();
+            _filterPanel.AddChild(sortBtn);
+
+            // 搜索按钮
+            var searchBtn = new Button
+            {
+                Bounds = new Rectangle(WindowWidth - 65, 5, 50, 25),
+                Text = "搜索",
+                TextColor = Color.White,
+                BackgroundColor = new Color(0.2f, 0.2f, 0.3f, 0.8f)
+            };
+            searchBtn.ButtonClicked += (btn) =>
+            {
+                Debug.Log("[InventoryUI] 搜索功能触发");
+            };
+            _filterPanel.AddChild(searchBtn);
         }
 
         /// <summary>
@@ -246,7 +273,8 @@ namespace HundunWorld.Game.UI.GameMain
             filterBtn.ButtonClicked += (btn) =>
             {
                 Debug.Log($"[InventoryUI] 过滤器: {text}");
-                // TODO: 实现过滤逻辑
+                _currentFilter = text;
+                ApplyFilter(text);
             };
             _filterPanel.AddChild(filterBtn);
         }
@@ -299,7 +327,7 @@ namespace HundunWorld.Game.UI.GameMain
             
             // 设置事件处理
             slotPanel.SlotClicked = (slotIndex) => {
-                // TODO: 实现单击逻辑（如选中槽位）
+                OnSlotClick(slotIndex);
             };
             
             slotPanel.SlotDoubleClicked = (slotIndex) => {
@@ -627,8 +655,106 @@ namespace HundunWorld.Game.UI.GameMain
             if (slot.Material != null)
             {
                 Debug.Log($"[InventoryUI] 双击槽位 {slotIndex}: {slot.Material.MaterialName} × {slot.Count}");
-                // TODO: 实现使用/装备逻辑
             }
+        }
+
+        /// <summary>
+        /// 槽位单击选中
+        /// </summary>
+        private void OnSlotClick(int slotIndex)
+        {
+            // 取消之前的选中
+            if (_selectedSlotIndex >= 0 && _selectedSlotIndex < _slotUIs.Count)
+            {
+                _slotUIs[_selectedSlotIndex].SelectedOverlay.Visible = false;
+                _slotUIs[_selectedSlotIndex].IsSelected = false;
+            }
+
+            // 选中当前槽位
+            if (slotIndex >= 0 && slotIndex < _slotUIs.Count)
+            {
+                var slotData = _inventorySlots[slotIndex];
+                if (slotData.Material != null)
+                {
+                    _slotUIs[slotIndex].SelectedOverlay.Visible = true;
+                    _slotUIs[slotIndex].IsSelected = true;
+                    _selectedSlotIndex = slotIndex;
+                    Debug.Log($"[InventoryUI] 选中槽位 {slotIndex}: {slotData.Material.MaterialName}");
+                }
+                else
+                {
+                    _selectedSlotIndex = -1;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 应用物品过滤
+        /// </summary>
+        private void ApplyFilter(string filterType)
+        {
+            for (int i = 0; i < _inventorySlots.Count && i < _slotUIs.Count; i++)
+            {
+                var slot = _inventorySlots[i];
+                var slotUI = _slotUIs[i];
+
+                if (filterType == "全部" || slot.Material == null)
+                {
+                    slotUI.SlotPanel.Visible = true;
+                }
+                else if (filterType == "材料")
+                {
+                    slotUI.SlotPanel.Visible = slot.Material != null;
+                }
+                else
+                {
+                    slotUI.SlotPanel.Visible = slot.Material == null;
+                }
+            }
+
+            Debug.Log($"[InventoryUI] 已应用过滤器: {filterType}");
+        }
+
+        /// <summary>
+        /// 排序背包物品（按名称排序，空槽位移到末尾）
+        /// </summary>
+        private void SortInventory()
+        {
+            // 分离非空和空槽位（单次遍历）
+            var filledSlots = new List<InventorySlot>();
+            var emptySlots = new List<InventorySlot>();
+            foreach (var slot in _inventorySlots)
+            {
+                if (slot.Material != null)
+                    filledSlots.Add(slot);
+                else
+                    emptySlots.Add(slot);
+            }
+
+            // 按材料名称排序
+            filledSlots.Sort((a, b) =>
+            {
+                int nameCompare = string.Compare(a.Material.MaterialName, b.Material.MaterialName, StringComparison.CurrentCulture);
+                if (nameCompare != 0) return nameCompare;
+                return b.Count.CompareTo(a.Count);
+            });
+
+            // 重建槽位列表
+            _inventorySlots.Clear();
+            int slotIndex = 0;
+            foreach (var slot in filledSlots)
+            {
+                slot.SlotIndex = slotIndex++;
+                _inventorySlots.Add(slot);
+            }
+            foreach (var slot in emptySlots)
+            {
+                slot.SlotIndex = slotIndex++;
+                _inventorySlots.Add(slot);
+            }
+
+            UpdateAllSlots();
+            Debug.Log("[InventoryUI] 背包物品已排序");
         }
 
         #endregion

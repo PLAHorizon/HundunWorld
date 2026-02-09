@@ -583,7 +583,43 @@ namespace Horizon.Game.Message.Enums
         /// 移动速度验证
         /// </summary>
         [Description("移动速度验证")]
-        MovementSpeedValidation = 1336
+        MovementSpeedValidation = 1336,
+
+        /// <summary>
+        /// 技能打断
+        /// </summary>
+        [Description("技能打断")]
+        SkillInterrupt = 1337,
+
+        /// <summary>
+        /// 好友列表
+        /// </summary>
+        [Description("好友列表")]
+        FriendList = 1338,
+
+        /// <summary>
+        /// 好友操作
+        /// </summary>
+        [Description("好友操作")]
+        FriendOperation = 1339,
+
+        /// <summary>
+        /// 传送点信息
+        /// </summary>
+        [Description("传送点信息")]
+        TeleportPoint = 1340,
+
+        /// <summary>
+        /// 小地图标记
+        /// </summary>
+        [Description("小地图标记")]
+        MinimapMarker = 1341,
+
+        /// <summary>
+        /// 聊天消息发送
+        /// </summary>
+        [Description("聊天消息发送")]
+        ChatSend = 1342
         #endregion
     }
 }
