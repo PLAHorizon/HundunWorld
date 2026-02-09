@@ -742,7 +742,40 @@ namespace Horizon.Game.Message.Enums
         /// 背包扩容
         /// </summary>
         [Description("背包扩容")]
-        InventoryExpand = 1362
+        InventoryExpand = 1362,
+        #endregion
+
+        #region Phase 8 - 角色管理与合成网络集成消息
+
+        /// <summary>
+        /// 角色状态同步
+        /// </summary>
+        [Description("角色状态同步")]
+        CharacterStateSync = 1363,
+
+        /// <summary>
+        /// 合成金币同步
+        /// </summary>
+        [Description("合成金币同步")]
+        CraftingGoldSync = 1364,
+
+        /// <summary>
+        /// 技能目标验证
+        /// </summary>
+        [Description("技能目标验证")]
+        SkillTargetValidation = 1365,
+
+        /// <summary>
+        /// 截图通知
+        /// </summary>
+        [Description("截图通知")]
+        ScreenshotNotify = 1366,
+
+        /// <summary>
+        /// 角色属性刷新
+        /// </summary>
+        [Description("角色属性刷新")]
+        CharacterAttributeRefresh = 1367
         #endregion
     }
 }

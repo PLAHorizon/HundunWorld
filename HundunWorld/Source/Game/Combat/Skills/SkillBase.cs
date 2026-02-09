@@ -72,6 +72,9 @@ namespace Game.Combat.Skills
         /// <summary>施法进度</summary>
         protected float castProgress = 0f;
 
+        /// <summary>当前施法目标</summary>
+        protected Actor castTarget;
+
         /// <summary>角色属性引用</summary>
         protected CharacterAttributesComponent characterAttributes;
 
@@ -114,6 +117,7 @@ namespace Game.Combat.Skills
         {
             isCasting = true;
             castProgress = 0f;
+            castTarget = target;
             
             Debug.Log($"开始施放技能：{Data.SkillName} ({Data.Element})");
             
@@ -130,6 +134,7 @@ namespace Game.Combat.Skills
         protected virtual void CompleteCast(Actor target)
         {
             isCasting = false;
+            castTarget = null;
             currentCooldown = Data.Cooldown;
             
             // 执行技能效果
@@ -291,7 +296,7 @@ namespace Game.Combat.Skills
                 
                 if (castProgress >= Data.CastTime)
                 {
-                    CompleteCast(null); // TODO: 传入正确的目标
+                    CompleteCast(castTarget);
                 }
             }
         }

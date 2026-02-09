@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using FlaxEngine;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
+using HundunWorld.Game.Network;
 
 namespace HundunWorld.Game.Services
 {
@@ -134,29 +135,43 @@ namespace HundunWorld.Game.Services
         {
             try
             {
-                // 这里应该调用网络管理器发送创建角色请求
-                // 暂时返回成功模拟
-                await Task.Delay(1000);
-                Debug.Log($"角色创建成功: {characterName}");
-                
-                // 创建模拟的响应对象
-                var newCharacter = new CharacterInfo
+                var networkManager = HundunWorldGame.Instance?.NetworkManager;
+                if (networkManager == null || !networkManager.CanSendMessage())
                 {
-                    CharacterId = (ulong)new Random().Next(1000, 9999),
+                    Debug.LogWarning("[CharacterService] 网络未连接，无法创建角色");
+                    return new CreateCharacterResponse
+                    {
+                        IsSuccess = false,
+                        Message = "网络未连接"
+                    };
+                }
+
+                var request = new CreateCharacterRequest
+                {
                     CharacterName = characterName,
                     Profession = profession,
                     Gender = gender,
-                    Level = 1,
-                    Experience = 0,
-                    Gold = 0,
-                    CreatedTime = DateTime.Now
+                    Appearance = appearance
                 };
-                
+
+                bool sent = await networkManager.SendAsync(request);
+                if (!sent)
+                {
+                    Debug.LogWarning("[CharacterService] 创建角色请求发送失败");
+                    return new CreateCharacterResponse
+                    {
+                        IsSuccess = false,
+                        Message = "请求发送失败"
+                    };
+                }
+
+                Debug.Log($"[CharacterService] 创建角色请求已发送: {characterName}");
+                // 请求已发送到服务器，实际创建结果将通过 CreateCharacterHandler 异步回调处理
+                // 此处返回表示请求发送成功，非最终创建结果
                 return new CreateCharacterResponse
                 {
-                    IsSuccess = true,
-                    Message = "角色创建成功",
-                    Character = newCharacter
+                    IsSuccess = false,
+                    Message = "请求已发送，等待服务器响应"
                 };
             }
             catch (Exception ex)
@@ -172,56 +187,38 @@ namespace HundunWorld.Game.Services
 
         /// <summary>
         /// 异步获取角色列表
+        /// 注意：此方法发送请求后立即返回当前缓存数据。
+        /// 服务器响应将通过 CharacterListHandler 异步回调处理并更新缓存，
+        /// 调用方应监听 UIStateManager.UpdateCharacterList 事件获取最新数据。
         /// </summary>
         public async Task<List<CharacterInfo>> GetCharacterListAsync()
         {
             try
             {
-                // 这里应该调用网络管理器发送获取角色列表请求
-                // 暂时返回模拟数据
-                await Task.Delay(500);
-                
-                // 如果缓存中有数据，返回缓存数据
+                // 如果缓存中有数据，先返回缓存
                 if (_characterCache.Count > 0)
                 {
                     return GetCachedCharacters();
                 }
-                
-                // 模拟一些默认角色数据
-                var mockCharacters = new List<CharacterInfo>
+
+                var networkManager = HundunWorldGame.Instance?.NetworkManager;
+                if (networkManager == null || !networkManager.CanSendMessage())
                 {
-                    new CharacterInfo
-                    {
-                        CharacterId = 1001,
-                        CharacterName = "剑仙",
-                        Profession = Profession.Shaolin,
-                        Gender = 0,
-                        Level = 10,
-                        Experience = 5000,
-                        Gold = 1000,
-                        CreatedTime = DateTime.Now.AddDays(-30)
-                    },
-                    new CharacterInfo
-                    {
-                        CharacterId = 1002,
-                        CharacterName = "法师",
-                        Profession = Profession.Wudang,
-                        Gender = 1,
-                        Level = 8,
-                        Experience = 3200,
-                        Gold = 800,
-                        CreatedTime = DateTime.Now.AddDays(-20)
-                    }
-                };
-                
-                // 缓存模拟数据
-                foreach (var character in mockCharacters)
-                {
-                    _characterCache[character.CharacterId] = character;
+                    Debug.LogWarning("[CharacterService] 网络未连接，返回本地缓存");
+                    return GetCachedCharacters();
                 }
-                
-                Debug.Log($"获取到 {mockCharacters.Count} 个角色");
-                return mockCharacters;
+
+                var request = new CharacterListRequest();
+                bool sent = await networkManager.SendAsync(request);
+                if (!sent)
+                {
+                    Debug.LogWarning("[CharacterService] 角色列表请求发送失败");
+                    return GetCachedCharacters();
+                }
+
+                Debug.Log("[CharacterService] 角色列表请求已发送，等待服务器响应");
+                // 响应将通过 CharacterListHandler 异步回调处理，更新缓存
+                return GetCachedCharacters();
             }
             catch (Exception ex)
             {
@@ -237,21 +234,27 @@ namespace HundunWorld.Game.Services
         {
             try
             {
-                // 这里应该调用网络管理器发送删除角色请求
-                // 暂时返回成功模拟
-                await Task.Delay(500);
-                
-                // 从缓存中移除
-                if (_characterCache.ContainsKey(characterId))
+                var networkManager = HundunWorldGame.Instance?.NetworkManager;
+                if (networkManager == null || !networkManager.CanSendMessage())
                 {
-                    _characterCache.Remove(characterId);
-                    if (_selectedCharacter?.CharacterId == characterId)
-                    {
-                        _selectedCharacter = null;
-                    }
+                    Debug.LogWarning("[CharacterService] 网络未连接，无法删除角色");
+                    return false;
                 }
-                
-                Debug.Log($"角色删除成功: {characterId}");
+
+                var request = new DeleteCharacterRequest
+                {
+                    CharacterId = characterId
+                };
+
+                bool sent = await networkManager.SendAsync(request);
+                if (!sent)
+                {
+                    Debug.LogWarning("[CharacterService] 删除角色请求发送失败");
+                    return false;
+                }
+
+                Debug.Log($"[CharacterService] 删除角色请求已发送: {characterId}");
+                // 响应将通过 DeleteCharacterResponseHandler 异步回调处理
                 return true;
             }
             catch (Exception ex)
@@ -268,20 +271,36 @@ namespace HundunWorld.Game.Services
         {
             try
             {
-                // 这里应该调用网络管理器发送选择角色请求
-                // 暂时返回成功模拟
-                await Task.Delay(300);
-                
                 var character = GetCharacterFromCache(characterId);
-                if (character != null)
+                if (character == null)
                 {
-                    _selectedCharacter = character;
-                    Debug.Log($"角色选择成功: {character.CharacterName}");
-                    return true;
+                    Debug.LogWarning($"[CharacterService] 未找到角色: {characterId}");
+                    return false;
                 }
-                
-                Debug.LogWarning($"未找到角色: {characterId}");
-                return false;
+
+                var networkManager = HundunWorldGame.Instance?.NetworkManager;
+                if (networkManager == null || !networkManager.CanSendMessage())
+                {
+                    Debug.LogWarning("[CharacterService] 网络未连接，无法选择角色");
+                    return false;
+                }
+
+                var request = new EnterGameRequest
+                {
+                    CharacterId = characterId
+                };
+
+                bool sent = await networkManager.SendAsync(request);
+                if (!sent)
+                {
+                    Debug.LogWarning("[CharacterService] 选择角色请求发送失败");
+                    return false;
+                }
+
+                _selectedCharacter = character;
+                Debug.Log($"[CharacterService] 选择角色请求已发送: {character.CharacterName}");
+                // 响应将通过 EnterGameHandler 异步回调处理
+                return true;
             }
             catch (Exception ex)
             {
