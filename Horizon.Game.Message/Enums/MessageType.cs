@@ -673,7 +673,43 @@ namespace Horizon.Game.Message.Enums
         /// 输入配置同步
         /// </summary>
         [Description("输入配置同步")]
-        InputConfigSync = 1351
+        InputConfigSync = 1351,
+
+        /// <summary>
+        /// 动画状态同步
+        /// </summary>
+        [Description("动画状态同步")]
+        AnimationSync = 1352,
+
+        /// <summary>
+        /// 性能报告
+        /// </summary>
+        [Description("性能报告")]
+        PerformanceReport = 1353,
+
+        /// <summary>
+        /// 断线重连
+        /// </summary>
+        [Description("断线重连")]
+        Reconnection = 1354,
+
+        /// <summary>
+        /// LOD配置
+        /// </summary>
+        [Description("LOD配置")]
+        LODConfig = 1355,
+
+        /// <summary>
+        /// 粒子预算
+        /// </summary>
+        [Description("粒子预算")]
+        ParticleBudget = 1356,
+
+        /// <summary>
+        /// 消息压缩配置
+        /// </summary>
+        [Description("消息压缩配置")]
+        MessageCompressionConfig = 1357
         #endregion
     }
 }
