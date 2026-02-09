@@ -2647,4 +2647,223 @@ namespace Horizon.Game.Message.Network
     }
 
     #endregion
+
+    #region Phase 9 - 聊天与好友系统客户端集成消息
+
+    /// <summary>
+    /// 聊天通知消息（服务器推送聊天消息到客户端）
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class ChatNotifyMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 发送者角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong SenderId { get; set; }
+
+        /// <summary>
+        /// 发送者名称
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string SenderName { get; set; } = "";
+
+        /// <summary>
+        /// 聊天频道
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public ChatChannel Channel { get; set; }
+
+        /// <summary>
+        /// 消息内容
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string Content { get; set; } = "";
+
+        /// <summary>
+        /// 发送时间戳
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public long Timestamp { get; set; }
+
+        /// <summary>
+        /// 消息唯一ID
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public string ChatMessageId { get; set; } = "";
+
+        /// <summary>
+        /// 是否为系统消息
+        /// </summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public bool IsSystemMessage { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public MessageType Type { get; set; } = MessageType.ChatNotify;
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Chat;
+    }
+
+    /// <summary>
+    /// 好友状态更新消息（上线/下线通知）
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class FriendStatusUpdateMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 好友角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong FriendId { get; set; }
+
+        /// <summary>
+        /// 好友名称
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string FriendName { get; set; } = "";
+
+        /// <summary>
+        /// 是否在线
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public bool IsOnline { get; set; }
+
+        /// <summary>
+        /// 状态变更时间戳
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long Timestamp { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public MessageType Type { get; set; } = MessageType.FriendStatusUpdate;
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Social;
+    }
+
+    /// <summary>
+    /// 好友请求通知消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class FriendRequestNotifyMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 请求者角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong RequesterId { get; set; }
+
+        /// <summary>
+        /// 请求者名称
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string RequesterName { get; set; } = "";
+
+        /// <summary>
+        /// 请求者等级
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int RequesterLevel { get; set; }
+
+        /// <summary>
+        /// 验证消息
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string VerificationMessage { get; set; } = "";
+
+        /// <summary>
+        /// 请求时间戳
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public long Timestamp { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public MessageType Type { get; set; } = MessageType.FriendRequestNotify;
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Social;
+    }
+
+    /// <summary>
+    /// 加入聊天频道请求
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class ChatChannelJoinRequest : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 要加入的频道
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public ChatChannel Channel { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public MessageType Type { get; set; } = MessageType.ChatChannelJoin;
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Chat;
+    }
+
+    /// <summary>
+    /// 离开聊天频道请求
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class ChatChannelLeaveRequest : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 角色ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong CharacterId { get; set; }
+
+        /// <summary>
+        /// 要离开的频道
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public ChatChannel Channel { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public MessageType Type { get; set; } = MessageType.ChatChannelLeave;
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Chat;
+    }
+
+    #endregion
 }
