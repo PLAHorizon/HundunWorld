@@ -808,7 +808,124 @@ namespace Horizon.Game.Message.Enums
         /// 离开聊天频道
         /// </summary>
         [Description("离开聊天频道")]
-        ChatChannelLeave = 1372
+        ChatChannelLeave = 1372,
+        #endregion
+
+        #region Phase 10 - 交易、邮件、任务、副本、成就、排行榜客户端集成消息
+
+        /// <summary>
+        /// 交易请求（发起面对面交易）
+        /// </summary>
+        [Description("交易请求")]
+        TradeRequest = 1373,
+
+        /// <summary>
+        /// 交易响应（接受/拒绝交易）
+        /// </summary>
+        [Description("交易响应")]
+        TradeResponse = 1374,
+
+        /// <summary>
+        /// 交易更新通知（交易状态变更）
+        /// </summary>
+        [Description("交易更新通知")]
+        TradeUpdateNotify = 1375,
+
+        /// <summary>
+        /// 市场上架请求
+        /// </summary>
+        [Description("市场上架请求")]
+        MarketListRequest = 1376,
+
+        /// <summary>
+        /// 市场搜索请求
+        /// </summary>
+        [Description("市场搜索请求")]
+        MarketSearchRequest = 1377,
+
+        /// <summary>
+        /// 市场搜索响应
+        /// </summary>
+        [Description("市场搜索响应")]
+        MarketSearchResponse = 1378,
+
+        /// <summary>
+        /// 邮件列表请求
+        /// </summary>
+        [Description("邮件列表请求")]
+        MailListRequest = 1379,
+
+        /// <summary>
+        /// 邮件列表响应
+        /// </summary>
+        [Description("邮件列表响应")]
+        MailListResponse = 1380,
+
+        /// <summary>
+        /// 邮件操作（阅读/领取附件/删除）
+        /// </summary>
+        [Description("邮件操作")]
+        MailOperation = 1381,
+
+        /// <summary>
+        /// 新邮件通知
+        /// </summary>
+        [Description("新邮件通知")]
+        MailNotify = 1382,
+
+        /// <summary>
+        /// 任务列表请求
+        /// </summary>
+        [Description("任务列表请求")]
+        QuestListRequest = 1383,
+
+        /// <summary>
+        /// 任务列表响应
+        /// </summary>
+        [Description("任务列表响应")]
+        QuestListResponse = 1384,
+
+        /// <summary>
+        /// 任务进度更新通知
+        /// </summary>
+        [Description("任务进度更新通知")]
+        QuestProgressNotify = 1385,
+
+        /// <summary>
+        /// 副本进入请求
+        /// </summary>
+        [Description("副本进入请求")]
+        DungeonEnterRequest = 1386,
+
+        /// <summary>
+        /// 副本状态通知
+        /// </summary>
+        [Description("副本状态通知")]
+        DungeonStatusNotify = 1387,
+
+        /// <summary>
+        /// 成就解锁通知
+        /// </summary>
+        [Description("成就解锁通知")]
+        AchievementUnlockNotify = 1388,
+
+        /// <summary>
+        /// 成就列表响应
+        /// </summary>
+        [Description("成就列表响应")]
+        AchievementListResponse = 1389,
+
+        /// <summary>
+        /// 排行榜查询请求
+        /// </summary>
+        [Description("排行榜查询请求")]
+        RankingQueryRequest = 1390,
+
+        /// <summary>
+        /// 排行榜查询响应
+        /// </summary>
+        [Description("排行榜查询响应")]
+        RankingQueryResponse = 1391
         #endregion
     }
 }
