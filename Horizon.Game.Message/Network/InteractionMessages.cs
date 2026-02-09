@@ -1862,4 +1862,190 @@ namespace Horizon.Game.Message.Network
     }
 
     #endregion
+
+    #region 音频播放消息
+
+    /// <summary>
+    /// 游戏音频类别
+    /// </summary>
+    public enum GameAudioCategory
+    {
+        /// <summary>技能音效</summary>
+        Skill = 0,
+        /// <summary>攻击音效</summary>
+        Attack = 1,
+        /// <summary>受击音效</summary>
+        Hit = 2,
+        /// <summary>死亡音效</summary>
+        Death = 3,
+        /// <summary>复活音效</summary>
+        Resurrect = 4,
+        /// <summary>环境音效</summary>
+        Environment = 5,
+        /// <summary>UI音效</summary>
+        UI = 6
+    }
+
+    /// <summary>
+    /// 音频播放消息 - 服务端通知客户端播放指定音效
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class AudioPlaybackMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 音效资源路径
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public string SoundPath { get; set; } = "";
+
+        /// <summary>
+        /// 音效类别
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public GameAudioCategory Category { get; set; }
+
+        /// <summary>
+        /// 音量（0.0-1.0）
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public float Volume { get; set; } = 1.0f;
+
+        /// <summary>
+        /// 播放位置X
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public float PositionX { get; set; }
+
+        /// <summary>
+        /// 播放位置Y
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public float PositionY { get; set; }
+
+        /// <summary>
+        /// 播放位置Z
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public float PositionZ { get; set; }
+
+        /// <summary>
+        /// 是否3D空间音效
+        /// </summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public bool Is3D { get; set; }
+
+        /// <summary>
+        /// 关联的技能ID（可选）
+        /// </summary>
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public int SkillId { get; set; }
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public MessageType Type { get; set; } = MessageType.AudioPlayback;
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    #endregion
+
+    #region Buff/Debuff显示消息
+
+    /// <summary>
+    /// Buff/Debuff操作类型
+    /// </summary>
+    public enum BuffOperation
+    {
+        /// <summary>添加Buff</summary>
+        Add = 0,
+        /// <summary>刷新Buff持续时间</summary>
+        Refresh = 1,
+        /// <summary>移除Buff</summary>
+        Remove = 2,
+        /// <summary>叠加Buff层数</summary>
+        Stack = 3
+    }
+
+    /// <summary>
+    /// Buff/Debuff显示消息 - 通知客户端更新Buff/Debuff图标
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class BuffDisplayMessage : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 目标实体ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public ulong TargetId { get; set; }
+
+        /// <summary>
+        /// 效果ID
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int EffectId { get; set; }
+
+        /// <summary>
+        /// 效果名称
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string EffectName { get; set; } = "";
+
+        /// <summary>
+        /// 效果图标路径
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string IconPath { get; set; } = "";
+
+        /// <summary>
+        /// 剩余持续时间（秒）
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public float Duration { get; set; }
+
+        /// <summary>
+        /// 叠加层数
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public int StackCount { get; set; } = 1;
+
+        /// <summary>
+        /// 是否为增益效果（true=Buff, false=Debuff）
+        /// </summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public bool IsBuff { get; set; } = true;
+
+        /// <summary>
+        /// 操作类型
+        /// </summary>
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public BuffOperation Operation { get; set; } = BuffOperation.Add;
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public MessageType Type { get; set; } = MessageType.BuffDisplay;
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    #endregion
 }

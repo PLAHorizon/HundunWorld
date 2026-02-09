@@ -287,11 +287,8 @@ namespace ManagedHundunWorld.Network.Handlers
         {
             try
             {
-                // 播放死亡音效
-                var soundPath = "/Game/Audio/Effects/Death_Sound";
-                // TODO: 实现正确的音频播放系统
-                // AudioListener.Play(soundPath);
-                FlaxEngine.Debug.Log($"[TODO] 播放死亡音效: {soundPath}");
+                var audioManager = HundunWorld.Game.Audio.GameAudioManager.Instance;
+                audioManager.PlayDeathSound();
             }
             catch (Exception ex)
             {
@@ -360,11 +357,8 @@ namespace ManagedHundunWorld.Network.Handlers
         {
             try
             {
-                // 播放复活音效
-                var soundPath = "/Game/Audio/Effects/Resurrect_Sound";
-                // TODO: 实现正确的音频播放系统
-                // AudioListener.Play(soundPath);
-                FlaxEngine.Debug.Log($"[TODO] 播放复活音效: {soundPath}");
+                var audioManager = HundunWorld.Game.Audio.GameAudioManager.Instance;
+                audioManager.PlayResurrectSound();
             }
             catch (Exception ex)
             {
