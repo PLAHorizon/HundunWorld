@@ -27,7 +27,7 @@ namespace Horizon.Model.GameModel
         /// 角色ID
         /// </summary>
         [Column("character_id")]
-        public long CharacterId { get; set; }
+        public ulong CharacterId { get; set; }
         
         /// <summary>
         /// 货币类型 0-铜币 1-银两 2-金锭 3-元宝 等

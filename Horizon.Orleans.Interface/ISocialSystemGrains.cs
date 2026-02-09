@@ -197,14 +197,14 @@ namespace Horizon.Orleans.Interface
         /// <param name="characterId">角色ID</param>
         /// <param name="position">进入位置</param>
         /// <returns>是否成功进入</returns>
-        Task<bool> EnterMapAsync(Guid characterId, Vector3 position);
+        Task<bool> EnterMapAsync(ulong characterId, Vector3 position);
 
         /// <summary>
         /// 角色离开地图
         /// </summary>
         /// <param name="characterId">角色ID</param>
         /// <returns>是否成功离开</returns>
-        Task<bool> LeaveMapAsync(Guid characterId);
+        Task<bool> LeaveMapAsync(ulong characterId);
 
         /// <summary>
         /// 更新角色位置
@@ -212,7 +212,7 @@ namespace Horizon.Orleans.Interface
         /// <param name="characterId">角色ID</param>
         /// <param name="position">新位置</param>
         /// <returns>是否更新成功</returns>
-        Task<bool> UpdatePositionAsync(Guid characterId, Vector3 position);
+        Task<bool> UpdatePositionAsync(ulong characterId, Vector3 position);
 
         /// <summary>
         /// 获取地图内所有玩家

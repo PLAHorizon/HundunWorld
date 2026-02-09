@@ -35,7 +35,7 @@ namespace Horizon.Orleans.Grains
         private readonly IDataContext<GameEntityContext, CharacterEntity, long> _gameCharacterContext;
         private readonly IMapper _mapper;
 
-        private long CharacterId { get; set; } = 0;
+        private ulong CharacterId { get; set; } = 0;
 
         
 
@@ -63,7 +63,7 @@ namespace Horizon.Orleans.Grains
             if (_characterState.State.CharacterInfo == null)
             {
                 _logger.LogInformation("No state found for {CharacterId}, attempting to load from DB.", CharacterId);
-                var characterEntity = await _gameCharacterContext.QueryFirstOrDefaultAsync(c => c.Id == CharacterId);
+                var characterEntity = await _gameCharacterContext.QueryFirstOrDefaultAsync(c => c.Id == (long)CharacterId);
                 if (characterEntity != null)
                 {
                     _characterState.State.CharacterInfo = _mapper.Map<CharacterInfo>(characterEntity);
@@ -183,7 +183,7 @@ namespace Horizon.Orleans.Grains
                 _characterState.State.IsOnline = false;
                 await _characterState.WriteStateAsync();
                 
-                CharacterId = characterEntity.Id;
+                CharacterId = (ulong)characterEntity.Id;
 
                 _logger.LogInformation("角色创建成功: {CharacterName} (ID: {CharacterId}), UserId: {UserId}", 
                     cleanedName, CharacterId, request.UserId);

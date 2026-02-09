@@ -152,7 +152,7 @@ namespace Horizon.Game.Core.Handlers
 
                 // 获取新的角色Grain ID（可以使用雪花算法或其他方式生成唯一ID）
                 var characterId = GenerateNewCharacterId();
-                var characterGrain = _clusterClient.GetGrain<ICharacterGrain>(characterId);
+                var characterGrain = _clusterClient.GetGrain<ICharacterGrain>((long)characterId);
 
                 // 设置请求的其他参数
                 createRequest.GameId = (int)message.Header.GameId;
@@ -322,13 +322,13 @@ namespace Horizon.Game.Core.Handlers
         /// <summary>
         /// 生成新的角色ID
         /// </summary>
-        private long GenerateNewCharacterId()
+        private ulong GenerateNewCharacterId()
         {
             // 这里可以使用雪花算法或其他分布式ID生成策略
             // 暂时使用时间戳 + 随机数的简单方法
             var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             var random = new Random().Next(1000, 9999);
-            return timestamp * 10000 + random;
+            return (ulong)(timestamp * 10000 + random);
         }
 
         /// <summary>

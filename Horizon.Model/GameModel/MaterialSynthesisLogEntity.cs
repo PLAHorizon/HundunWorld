@@ -24,7 +24,7 @@ namespace Horizon.Model.GameModel
         /// 角色ID
         /// </summary>
         [Column("character_id")]
-        public long CharacterId { get; set; }
+        public ulong CharacterId { get; set; }
         
         /// <summary>
         /// 配方ID

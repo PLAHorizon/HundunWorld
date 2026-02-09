@@ -30,7 +30,7 @@ namespace Horizon.Share.Dtos.Games
         /// <summary>
         /// 角色Id
         /// </summary>
-        [Id(5)] public long CharacterId { get; set; }
+        [Id(5)] public ulong CharacterId { get; set; }
 
     }
 }

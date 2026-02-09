@@ -27,14 +27,14 @@ namespace Horizon.Model.GameModel
         /// </summary>
         [Column("character_id", TypeName = "bigint", Order = 2), TableDescription(TypeName = "bigint", Name = "character_id", Order = "2", Description = "角色ID")]
         [Comment("角色ID")]
-        public long CharacterId { get; set; }
+        public ulong CharacterId { get; set; }
         
         /// <summary>
         /// 屏蔽角色ID
         /// </summary>
         [Column("blocked_character_id", TypeName = "bigint", Order = 3), TableDescription(TypeName = "bigint", Name = "blocked_character_id", Order = "3", Description = "屏蔽角色ID")]
         [Comment("被屏蔽的角色ID")]
-        public long BlockedCharacterId { get; set; }
+        public ulong BlockedCharacterId { get; set; }
         
         /// <summary>
         /// 屏蔽角色名

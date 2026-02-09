@@ -27,7 +27,7 @@ namespace Horizon.Model.GameModel
         /// </summary>
         [Column("character_id", TypeName = "bigint", Order = 2), TableDescription(TypeName = "bigint", Name = "character_id", Order = "2", Description = "角色ID")]
         [Comment("角色ID")]
-        public long CharacterId { get; set; }
+        public ulong CharacterId { get; set; }
 
         /// <summary>
         /// 背包类型 0-主背包 1-材料背包 2-任务背包 3-时装背包
