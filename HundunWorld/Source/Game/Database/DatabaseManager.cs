@@ -464,7 +464,7 @@ namespace Horizon.Game.Core.Database
         /// </summary>
         public static bool RecordSystemStatistic(string statType, long value)
         {
-            return LiteDataContext.RecordStatistic("system", statType, value);
+            return LiteDataContext.RecordStatistic(0, statType, value);
         }
 
 

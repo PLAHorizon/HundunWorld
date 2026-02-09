@@ -862,32 +862,6 @@ namespace Horizon.Game.Core.Database
             }
         }
 
-
-        /// <summary>
-        /// 记录游戏统计数据
-        /// </summary>
-        public static bool RecordStatistic(string characterId, string statType, long value)
-        {
-            if (!EnsureInitialized() || string.IsNullOrEmpty(statType)) return false;
-
-            try
-            {
-                var collection = _gameDatabase.GetCollection<GameStatistics>();
-                var stat = new GameStatistics
-                {
-                    CharacterId = 0,
-                    StatType = statType,
-                    Value = value
-                };
-                collection.Insert(stat);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[LiteDataContext] 记录统计数据失败: {ex.Message}");
-                return false;
-            }
-        }
         /// <summary>
         /// 获取统计数据
         /// </summary>

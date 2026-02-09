@@ -694,7 +694,7 @@ namespace Horizon.Game.Gateway.Tests
             Assert.Equal(0, dto.AreaId);
             Assert.Equal(0, dto.ServerId);
             Assert.Equal(0, dto.GameUserId);
-            Assert.Equal(0, dto.CharacterId);
+            Assert.Equal(0UL, dto.CharacterId);
         }
 
         [Fact]
@@ -713,7 +713,7 @@ namespace Horizon.Game.Gateway.Tests
             Assert.Equal(2, dto.AreaId);
             Assert.Equal(3, dto.ServerId);
             Assert.Equal(100, dto.GameUserId);
-            Assert.Equal(200, dto.CharacterId);
+            Assert.Equal(200UL, dto.CharacterId);
         }
 
         #endregion
