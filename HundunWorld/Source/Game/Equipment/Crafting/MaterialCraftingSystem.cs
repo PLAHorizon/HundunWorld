@@ -2,6 +2,7 @@ using FlaxEngine;
 using FlaxEngine.Utilities;
 using Game.Character.Attributes;
 using Game.Equipment.Material;
+using HundunWorld.Game.ECS.Components;
 using System.Collections.Generic;
 
 namespace Game.Equipment.Crafting
@@ -171,10 +172,10 @@ namespace Game.Equipment.Crafting
         /// 尝试合成材料
         /// </summary>
         /// <param name="recipeId">配方ID</param>
-        /// <param name="playerInventory">玩家背包（TODO：实现背包系统）</param>
+        /// <param name="playerInventory">玩家背包</param>
         /// <param name="playerCurrency">玩家货币</param>
         /// <returns>是否合成成功</returns>
-        public bool TryCraftMaterial(int recipeId, object playerInventory, ref int playerCurrency)
+        public bool TryCraftMaterial(int recipeId, ref InventoryComponent playerInventory, ref int playerCurrency)
         {
             if (!recipeDatabase.ContainsKey(recipeId))
             {
@@ -191,7 +192,23 @@ namespace Game.Equipment.Crafting
                 return false;
             }
 
-            // TODO: 检查材料是否足够（需要实现背包系统）
+            // 检查材料是否足够
+            for (int i = 0; i < recipe.RequiredMaterialIds.Count; i++)
+            {
+                int materialId = recipe.RequiredMaterialIds[i];
+                int requiredCount = recipe.RequiredMaterialCounts[i];
+                if (!playerInventory.HasItem(materialId, requiredCount))
+                {
+                    Debug.LogWarning($"材料不足：需要材料ID {materialId} × {requiredCount}，当前仅有 {playerInventory.GetItemCount(materialId)}");
+                    return false;
+                }
+            }
+
+            // 扣除材料
+            for (int i = 0; i < recipe.RequiredMaterialIds.Count; i++)
+            {
+                playerInventory.TryRemoveItem(recipe.RequiredMaterialIds[i], recipe.RequiredMaterialCounts[i]);
+            }
 
             // 执行合成
             playerCurrency -= recipe.CurrencyCost;
@@ -200,9 +217,16 @@ namespace Game.Equipment.Crafting
             float roll = RandomUtil.Random.NextFloat() * 100f;
             if (roll <= recipe.SuccessRate)
             {
-                // 合成成功
+                // 合成成功，添加产出物品到背包
+                var outputItem = new InventoryItem(
+                    itemId: (ulong)recipe.OutputMaterialId,
+                    templateId: recipe.OutputMaterialId,
+                    itemName: recipe.RecipeName + "产物",
+                    itemType: 1, // 材料类型
+                    count: recipe.OutputCount
+                );
+                playerInventory.TryAddItem(outputItem);
                 Debug.Log($"合成成功：{recipe.RecipeName}，获得材料ID {recipe.OutputMaterialId} × {recipe.OutputCount}");
-                // TODO: 添加材料到背包
                 return true;
             }
             else
@@ -232,13 +256,13 @@ namespace Game.Equipment.Crafting
         /// <summary>
         /// 快速合成（批量合成）
         /// </summary>
-        public int QuickCraft(int recipeId, int craftCount, object playerInventory, ref int playerCurrency)
+        public int QuickCraft(int recipeId, int craftCount, ref InventoryComponent playerInventory, ref int playerCurrency)
         {
             int successCount = 0;
 
             for (int i = 0; i < craftCount; i++)
             {
-                if (TryCraftMaterial(recipeId, playerInventory, ref playerCurrency))
+                if (TryCraftMaterial(recipeId, ref playerInventory, ref playerCurrency))
                 {
                     successCount++;
                 }
