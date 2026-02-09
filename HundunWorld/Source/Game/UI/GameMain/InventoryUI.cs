@@ -834,7 +834,7 @@ namespace HundunWorld.Game.UI.GameMain
             _isDragging = true;
             _dragSourceSlotIndex = slotIndex;
 
-            // 创建拖拽幽灵图标
+            // 创建拖拽幽灵图标并添加到背包窗口
             _dragGhost = new Panel
             {
                 Size = new Float2(SlotSize, SlotSize),
@@ -850,6 +850,13 @@ namespace HundunWorld.Game.UI.GameMain
                 KeepAspectRatio = true
             };
             _dragGhost.AddChild(ghostIcon);
+
+            // 将幽灵图标添加到背包窗口上层
+            _inventoryWindow.AddChild(_dragGhost);
+
+            // 初始位置设为源槽位位置
+            var sourceUI = _slotUIs[slotIndex];
+            _dragGhost.Location = sourceUI.SlotPanel.Location;
 
             // 高亮源槽位
             _slotUIs[slotIndex].SelectedOverlay.Visible = true;
@@ -931,6 +938,10 @@ namespace HundunWorld.Game.UI.GameMain
 
             if (_dragGhost != null)
             {
+                if (_dragGhost.Parent != null)
+                {
+                    _dragGhost.Parent.RemoveChild(_dragGhost);
+                }
                 _dragGhost.Dispose();
                 _dragGhost = null;
             }

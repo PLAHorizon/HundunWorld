@@ -448,11 +448,11 @@ namespace HundunWorld.Game.Scene
             if (!ShowStatistics || string.IsNullOrEmpty(_cachedStatistics))
                 return;
 
-            // 使用Flax调试绘制显示统计信息
-            // 将统计信息写入日志（屏幕显示需要UI系统支持）
-            if (ChunkLoader != null)
+            // 将统计信息写入日志（调试用途）
+            // 注：DebugDraw.DrawText使用世界坐标，屏幕覆盖显示需通过UI系统实现
+            if (ChunkLoader != null && EnableChunkSystem)
             {
-                DebugDraw.DrawText(_cachedStatistics, new Vector3(10, 10, 0), Color.White);
+                Debug.Log($"[ChunkSceneSystem] {_cachedStatistics}");
             }
         }
 

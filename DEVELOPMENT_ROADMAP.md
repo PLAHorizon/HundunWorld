@@ -27,7 +27,7 @@
 | 会话管理 | ✅ 100% | Redis持久化、24小时TTL、分布式支持 |
 | 认证系统 | ✅ 90% | PassportGrain登录/注册/改密/注销 |
 | ECS框架 | ✅ 90% | Arch.Core引擎、15个系统组件、NetworkEntityRegistry实体注册表 |
-| UI框架 | ✅ 85% | 状态管理、响应式布局、性能监控、装备对比、公会管理、组队邀请面板 |
+| UI框架 | ✅ 95% | 状态管理、响应式布局、性能监控、装备对比、公会管理、组队邀请面板、物品拖拽、技能图标加载、批量操作 |
 | 网络通信 | ✅ 75% | TCP客户端、消息处理器、协议适配 |
 | 战斗系统 | ✅ 95% | 五行相克、伤害计算、效果系统、Energy分离、闪避格挡、技能冷却、五行属性加成、五行协同、能量恢复、GCD、战斗日志、五行共鸣技能触发、暴击爆发特效、击杀特写 |
 | 社交系统 | ✅ 90% | SocialGrain好友管理、GuildGrain公会管理、TeamGrain组队系统（含状态同步、组队副本入口）、消息频道系统、公会管理面板、组队邀请面板 |
@@ -37,7 +37,7 @@
 | 角色渲染 | ⚠️ 55% | MetaHuman集成、材质编辑（缺动画完善）|
 | 文档 | ✅ 95% | README、安全指南、迁移指南、监控指南 |
 | 代码质量（Phase 1.1） | ✅ 100% | Cache修复、死代码清理、CombatCalculator提取 |
-| 测试基础设施（Phase 1.2） | ✅ 90% | 1289个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion/EventConsumerVersioning/PassportGrain/CharacterGrainState/RankingSystem/MailSystem/AchievementSystem/EcsEntityManagement/ClientFeature/ClientFeaturePhase2/ClientFeaturePhase3） |
+| 测试基础设施（Phase 1.2） | ✅ 90% | 1374个单元测试（SecurePasswordHasher/SessionManager/CombatCalculator/GameSystem/SocialSystem/TeamSystem/GameServer/AreaActivity/WuxingAlchemy/DamageAggregationReplay/MessageFilterRateLimit/TradeMarket/QuestDungeon/CorrelationIdMonitoring/SeqAlertingValidation/GameEventStream/TeamDungeonEventVersion/EventConsumerVersioning/PassportGrain/CharacterGrainState/RankingSystem/MailSystem/AchievementSystem/EcsEntityManagement/ClientFeature/ClientFeaturePhase2/ClientFeaturePhase3/ClientFeaturePhase4/ClientFeaturePhase5） |
 | CI/CD（Phase 1.3） | ✅ 100% | GitHub Actions工作流配置（CI + CodeQL安全扫描 + 代码覆盖率） |
 | 监控可观测性（Phase 2） | ✅ 100% | OpenTelemetry指标、Grafana仪表板、Prometheus告警、JSON结构化日志、CorrelationId分布式追踪、Seq日志聚合、Alertmanager告警通知 |
 
@@ -109,7 +109,7 @@ coverlet 6.0.4 — 代码覆盖率
 
 #### 测试项目
 
-**已存在**: `Horizon.Game.Gateway.Tests/`（30个测试文件，1247个测试用例）
+**已存在**: `Horizon.Game.Gateway.Tests/`（34个测试文件，1374个测试用例）
 
 | 测试文件 | 测试数量 | 覆盖内容 |
 |---------|---------|---------|
@@ -139,6 +139,7 @@ coverlet 6.0.4 — 代码覆盖率
 | AchievementSystemTests.cs | 20 | 成就状态、成就数据模型、进度更新、自动解锁、分类筛选、成就点数统计 |
 | EcsEntityManagementTests.cs | 43 | 网络实体类型、实体生成/销毁消息、消息类型验证、实体ID一致性、工作流测试 |
 | ClientFeatureTests.cs | 52 | 效果同步消息、AOI更新消息、移动速度验证消息、消息类型枚举验证 |
+| ClientFeaturePhase5Tests.cs | 36 | 背包拖拽消息、输入配置同步消息、DragDropOperation枚举、SkillSlotBinding、跨阶段连续性验证 |
 
 #### 测试覆盖率现状
 
@@ -534,18 +535,19 @@ coverlet 6.0.4 — 代码覆盖率
   ✅ 画质设置（画质/视距/特效密度滑条）
   ✅ 操作设置（鼠标灵敏度滑条）
 
-■ 背包UI完善（部分完成）
+■ 背包UI完善（已完成）
   ✅ 物品排序功能（按名称排序，空槽位移到末尾）
   ✅ 物品过滤功能（全部/材料/装备/消耗品类别过滤）
   ✅ 槽位选中功能（单击选中+视觉高亮遮罩）
-  □ 物品拖拽（InventoryUI已有框架）
+  ✅ 物品拖拽（SlotPanel拖拽事件、交换/合并逻辑、拖拽幽灵图标）
   ✅ 装备对比面板（EquipmentComparisonUI - 属性对比/差异箭头/品质颜色/替换操作）
-  □ 批量操作
+  ✅ 批量操作（BatchSellByFilter批量出售、BatchOrganize整理、MergeSameItems合并同类物品）
+  ✅ 物品图标纹理加载（Content.Load<Texture>从MaterialData.IconPath加载）
 
-■ 技能栏完善（部分完成）
+■ 技能栏完善（已完成）
   ✅ 技能使用动画反馈（槽位高亮闪烁效果）
-  □ 技能图标加载（SkillBarUI已有框架）
-  □ 技能拖拽绑定
+  ✅ 技能图标加载（Content.Load<Texture>从SkillData.IconPath加载，回退到五行元素颜色）
+  ✅ 技能拖拽绑定（StartSkillDrag/CompleteSkillDrag技能槽位交换、OnSkillSlotSwapped事件）
   ✅ 快捷键自定义（SkillBarUI - 自定义按键绑定/绑定模式/按键冲突交换/重置默认）
 
 ■ 社交UI（部分完成）
@@ -560,10 +562,11 @@ coverlet 6.0.4 — 代码覆盖率
 ### 4.4 场景优化（1周）
 
 ```
-□ ChunkBasedSceneSystem完善
-  - 分块加载/卸载逻辑
-  - LOD级别切换
-  - 异步资源加载
+■ ChunkBasedSceneSystem完善（已完成）
+  ✅ 分块加载/卸载逻辑（传送等待分块加载、GetLoadedChunkCount API）
+  ✅ LOD级别切换（ForcedLOD模型切换、LOD调试文本绘制）
+  ✅ 异步资源加载（Prefab资源加载、对象池回退）
+  ✅ 调试统计信息渲染（DebugDraw.DrawText统计显示）
 
 ■ 小地图系统（已完成基础）
   ✅ 小地图面板（标题+地图区域+坐标显示）
@@ -713,12 +716,18 @@ coverlet 6.0.4 — 代码覆盖率
                 ✅ Phase 4.3: 快捷键自定义系统（按键绑定/冲突交换/绑定模式/重置默认）
                 ✅ 消息协议: 5个新消息类型（EquipmentComparison/GuildManagement/TeamInvite/KillCam/HotkeyConfig，1343-1347）
                 ✅ 测试覆盖: Phase3消息测试（42个新测试用例，总计1289个）
+                ✅ Phase 4.3: 物品拖拽（SlotPanel拖拽事件/交换合并逻辑/拖拽幽灵图标）
+                ✅ Phase 4.3: 技能图标加载（Content.Load<Texture>从SkillData.IconPath加载）
+                ✅ Phase 4.3: 技能拖拽绑定（StartSkillDrag/CompleteSkillDrag槽位交换）
+                ✅ Phase 4.3: 批量操作（BatchSellByFilter/BatchOrganize/MergeSameItems）
+                ✅ Phase 4.3: 物品图标纹理加载（MaterialData.IconPath）
+                ✅ Phase 4.4: 场景分块加载优化（传送等待加载/LOD模型切换/Prefab资源加载/调试统计渲染）
+                ✅ 消息协议: 2个新消息类型（InventoryDragDrop/InputConfigSync，1350-1351）
+                ✅ 测试覆盖: Phase5消息测试（36个新测试用例，总计1374个）
                📍 当前位置（2026-02-09）
                ↓
 2026年3月下旬  ┌─ Phase 4: 客户端功能完善（剩余项）
-               │    ├─ 4.1 技能动画状态机
-               │    ├─ 4.3 物品拖拽/技能图标加载/技能拖拽绑定
-               │    └─ 4.4 场景分块加载优化
+               │    └─ 4.1 技能动画状态机
                │
 2026年5-6月    ├─ Phase 5: 性能与稳定性
                │
