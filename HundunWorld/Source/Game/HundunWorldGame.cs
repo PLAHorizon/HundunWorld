@@ -95,7 +95,7 @@ namespace HundunWorld.Game
                 if (gatewayList != null && gatewayList.Count > 0)
                 {
                     Debug.Log("开始尝试建立初始网络连接...");
-                    _ = Task.Run(async () =>
+                    Task.Run(async () =>
                     {
                         try
                         {
@@ -113,8 +113,9 @@ namespace HundunWorld.Game
                         catch (Exception ex)
                         {
                             Debug.LogWarning($"建立初始网络连接时发生错误: {ex.Message}");
+                            EnhancedDiagnostics.LogException(ex, "建立初始网络连接");
                         }
-                    });
+                    }).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)

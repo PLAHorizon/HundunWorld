@@ -679,6 +679,11 @@ namespace HundunWorld.Game.Network
         #region Connection Wait Helper
 
         /// <summary>
+        /// 连接轮询间隔（毫秒）
+        /// </summary>
+        private const int ConnectionPollIntervalMs = 100;
+
+        /// <summary>
         /// 等待连接建立（带超时）
         /// </summary>
         /// <param name="timeoutMs">超时时间（毫秒）</param>
@@ -691,7 +696,9 @@ namespace HundunWorld.Game.Network
             }
 
             var startTime = DateTime.UtcNow;
-            while ((DateTime.UtcNow - startTime).TotalMilliseconds < timeoutMs)
+            var endTime = startTime.AddMilliseconds(timeoutMs);
+            
+            while (DateTime.UtcNow < endTime)
             {
                 if (_connectionStatus == ConnectionStatus.Connected)
                 {
@@ -699,7 +706,7 @@ namespace HundunWorld.Game.Network
                     return true;
                 }
 
-                await Task.Delay(100);
+                await Task.Delay(ConnectionPollIntervalMs);
             }
 
             EnhancedLogging.LogWarning($"[WaitForConnectionAsync] 等待连接超时 ({timeoutMs}ms)");
