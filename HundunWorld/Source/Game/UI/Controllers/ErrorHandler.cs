@@ -171,7 +171,7 @@ namespace HundunWorld.Game.UI.Controllers
         /// <param name="errorType">閿欒绫诲瀷</param>
         /// <param name="message">閿欒娑堟伅</param>
         /// <param name="exception">寮傚父瀵硅薄</param>
-        /// <param name="context">閿欒涓婁笅鏂?/param>
+        /// <param name="context">Error context</param>
         /// <returns>閿欒淇℃伅</returns>
         public UIErrorInfo HandleError(UIErrorType errorType, string message, Exception exception = null, string context = "")
         {
@@ -196,7 +196,7 @@ namespace HundunWorld.Game.UI.Controllers
         /// <summary>
         /// 澶勭悊鍦烘櫙鍒囨崲閿欒
         /// </summary>
-        /// <param name="transition">鍒囨崲鐘舵€?/param>
+        /// <param name="transition">Transition state</param>
         /// <param name="exception">寮傚父瀵硅薄</param>
         /// <returns>閿欒淇℃伅</returns>
         public UIErrorInfo HandleSwitchError(TransitionState transition, Exception exception)
@@ -222,7 +222,7 @@ namespace HundunWorld.Game.UI.Controllers
         /// 澶勭悊楠岃瘉閿欒
         /// </summary>
         /// <param name="message">楠岃瘉娑堟伅</param>
-        /// <param name="field">瀛楁鍚?/param>
+        /// <param name="field">Field name</param>
         /// <returns>閿欒淇℃伅</returns>
         public UIErrorInfo HandleValidationError(string message, string field = "")
         {

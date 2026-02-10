@@ -1,280 +1,233 @@
-[00:00:004] Flax.Build 1.0.0
-[00:00:005]   Arguments: -log -mutex -workspace=C:\Works\hundun-world-flax\HundunWorld -arch=x64 -configuration=Debug -platform=Windows -buildTargets=GameEditorTarget -rebuild
-[00:00:005]   Workspace: C:\Works\hundun-world-flax\HundunWorld
-[00:00:005]   Engine: C:\Program Files (x86)\Flax\Flax_1.11
-[00:00:005]   .NET 10.0.2
-[00:00:008] Loading project file from "C:\Works\hundun-world-flax\HundunWorld\HundunWorld.flaxproj"...
-[00:00:036] Loading project file from "C:\Program Files (x86)\Flax\Flax_1.11\Flax.flaxproj"...
-[00:00:037] Loaded project Flax, version 1.11.6806
-[00:00:037] Loaded project HundunWorld, version 1.0
-[00:00:057] Engine build version: 1.11.6806
-[00:00:076] Cleaning build workspace...
-[00:00:077] Removing: C:\Works\hundun-world-flax\HundunWorld\Cache/Intermediate\TaskGraph.cache
-[00:00:084] Found Android SDK at C:\Program Files (x86)\Android\android-sdk
-[00:00:085] Missing Linux Toolchain. Cannot build for Linux platform.
-[00:00:088] Found Windows SDK v10_0_22621_0 at C:\Program Files (x86)\Windows Kits\10\
-[00:00:088] Found Windows SDK v10_0_26100_0 at C:\Program Files (x86)\Windows Kits\10\
-[00:00:098] Unknown Visual Studio installation. Display name: SQL Server Management Studio 22
-[00:00:101] Found VisualStudio2026 at C:\Program Files\Microsoft Visual Studio\18\Enterprise
-[00:00:103] Found Windows toolset v142 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.29.30133
-[00:00:103] Found Windows toolset v143 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.38.33130
-[00:00:103] Found Windows toolset v144 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.44.35207
-[00:00:103] Found Windows toolset v145 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.50.35717
-[00:00:126] Removing: C:\Works\hundun-world-flax\HundunWorld\Cache/Intermediate\GameEditorTarget\Windows\x64\Debug
-[00:00:149] Removing: C:\Works\hundun-world-flax\HundunWorld\Binaries\GameEditorTarget\Windows\x64\Debug
-[00:00:157] Building targets...
-[00:00:164] Building target GameEditorTarget in Debug for Windows x64
-[00:00:167] Using Windows Toolset v145 (C:\Program Files (x86)\Windows Kits\10\)
-[00:00:167] Using Windows SDK 10.0.26100.0 (C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.50.35717\bin\Hostx64\x64)
-[00:00:169] Building referenced target Flax
-[00:00:176] Missing VULKAN_SDK environment variable. Cannot build Vulkan.
-[00:00:176] Building for Windows without Vulkan rendering backend (Vulkan SDK is missing)
-[00:00:179] Parsing API bindings for Profiler (FlaxEngine)
-[00:00:264] Parsing API bindings for Platform (FlaxEngine)
-[00:00:349] Parsing API bindings for Core (FlaxEngine)
-[00:01:018] Parsing API bindings for Debug (FlaxEngine)
-[00:01:063] Parsing API bindings for Physics (FlaxEngine)
-[00:01:211] Parsing API bindings for TextureTool (FlaxEngine)
-[00:01:214] Parsing API bindings for ModelTool (FlaxEngine)
-[00:01:228] Found the following .NET SDK versions: 10.0.102, 9.0.309, 8.0.417
-[00:01:229] Found the following .NET runtime versions: 10.0.2, 9.0.12, 8.0.23
-[00:01:232] Using .NET SDK 10.0.102, runtime 10.0.2 (C:\Program Files\dotnet\)
-[00:01:233]   - Host Runtime for Windows x64
-[00:01:233]   - Host Runtime for Windows x86
-[00:01:233]   - Host Runtime for Windows ARM64
-[00:01:233]   - Host Runtime for Android ARM
-[00:01:233]   - Host Runtime for Android ARM64
-[00:01:233]   - Host Runtime for iOS ARM
-[00:01:233]   - Host Runtime for iOS ARM64
-[00:01:234] Parsing API bindings for ShaderCompilerD3D (FlaxEngine)
-[00:01:234] Parsing API bindings for ShaderCompilerDX (FlaxEngine)
-[00:01:235] Parsing API bindings for Graphics (FlaxEngine)
-[00:01:485] Parsing API bindings for Utilities (FlaxEngine)
-[00:01:495] Parsing API bindings for Particles (FlaxEngine)
-[00:01:507] Parsing API bindings for Visject (FlaxEngine)
-[00:01:514] Parsing API bindings for ContentImporters (FlaxEngine)
-[00:01:514] Parsing API bindings for ContentExporters (FlaxEngine)
-[00:01:515] Parsing API bindings for Content (FlaxEngine)
-[00:01:584] Parsing API bindings for Renderer (FlaxEngine)
-[00:01:596] Parsing API bindings for Scripting (FlaxEngine)
-[00:01:617] Parsing API bindings for Serialization (FlaxEngine)
-[00:01:619] Parsing API bindings for CSG (FlaxEngine)
-[00:01:619] Parsing API bindings for Level (FlaxEngine)
-[00:01:721] Parsing API bindings for Navigation (FlaxEngine)
-[00:01:732] Parsing API bindings for AI (FlaxEngine)
-[00:01:745] Parsing API bindings for Animations (FlaxEngine)
-[00:01:840] Parsing API bindings for Audio (FlaxEngine)
-[00:01:846] Parsing API bindings for Video (FlaxEngine)
-[00:01:848] Parsing API bindings for Foliage (FlaxEngine)
-[00:01:857] Parsing API bindings for Render2D (FlaxEngine)
-[00:01:882] Parsing API bindings for Input (FlaxEngine)
-[00:01:907] Parsing API bindings for Networking (FlaxEngine)
-[00:01:945] Parsing API bindings for Streaming (FlaxEngine)
-[00:01:952] Parsing API bindings for Terrain (FlaxEngine)
-[00:01:988] Parsing API bindings for Threading (FlaxEngine)
-[00:01:990] Parsing API bindings for Localization (FlaxEngine)
-[00:01:995] Parsing API bindings for UI (FlaxEngine)
-[00:02:000] Parsing API bindings for Online (FlaxEngine)
-[00:02:006] Parsing API bindings for Engine (FlaxEngine)
-[00:02:014] Using Dotnet runtime versions range 10-11 for Game Cooker
-[00:02:015] Parsing API bindings for Editor (FlaxEngine)
-[00:02:021] Building module tracy
-[00:02:022] Building module Profiler
-[00:02:022] Building module Platform
-[00:02:022] Building module fmt
-[00:02:022] Building module Core
-[00:02:023] Building module Debug
-[00:02:023] Building module Main
-[00:02:023] Building module PhysX
-[00:02:023] Building module NvCloth
-[00:02:023] Building module Physics
-[00:02:023] Building module lz4
-[00:02:023] Building module minimp3
-[00:02:023] Building module ogg
-[00:02:023] Building module vorbis
-[00:02:023] Building module AudioTool
-[00:02:023] Building module DirectXTex
-[00:02:023] Building module tinyexr
-[00:02:023] Building module astc
-[00:02:023] Building module TextureTool
-[00:02:023] Building module assimp
-[00:02:023] Building module OpenFBX
-[00:02:023] Building module DirectXMesh
-[00:02:023] Building module UVAtlas
-[00:02:023] Building module meshoptimizer
-[00:02:023] Building module MikkTSpace
-[00:02:023] Building module ModelTool
-[00:02:023] Building module GraphicsDeviceNull
-[00:02:023] Building module nvapi
-[00:02:023] Building module AGS
-[00:02:023] Building module GraphicsDeviceDX11
-[00:02:023] Building module GraphicsDeviceDX12
-[00:02:023] Building module ShaderCompilerD3D
-[00:02:023] Building module ShaderCompilerDX
-[00:02:023] Building module glslang
-[00:02:023] Building module spirv-tools
-[00:02:023] Building module ShaderCompilerVulkan
-[00:02:023] Building module ShadersCompilation
-[00:02:023] Building module Graphics
-[00:02:023] Building module Utilities
-[00:02:023] Building module Particles
-[00:02:023] Building module Visject
-[00:02:023] Building module MaterialGenerator
-[00:02:023] Building module ContentImporters
-[00:02:023] Building module ContentExporters
-[00:02:023] Building module Content
-[00:02:023] Building module Renderer
-[00:02:023] Building module nethost
-[00:02:024] Building module Scripting
-[00:02:024] Building module rapidjson
-[00:02:024] Building module Serialization
-[00:02:024] Building module CSG
-[00:02:024] Building module Level
-[00:02:024] Building module recastnavigation
-[00:02:024] Building module Navigation
-[00:02:024] Building module AI
-[00:02:024] Building module Animations
-[00:02:024] Building module Audio
-[00:02:024] Building module Video
-[00:02:024] Building module Foliage
-[00:02:024] Building module freetype
-[00:02:024] Building module Render2D
-[00:02:024] Building module Input
-[00:02:024] Building module Networking
-[00:02:024] Building module Streaming
-[00:02:024] Building module Terrain
-[00:02:024] Building module Threading
-[00:02:024] Building module Localization
-[00:02:024] Building module UI
-[00:02:024] Building module Online
-[00:02:024] Building module Engine
-[00:02:024] Building module pugixml
-[00:02:024] Building module curl
-[00:02:024] Building module ShadowsOfMordor
-[00:02:024] Building module Editor
-[00:02:026] Skipping build for target FlaxEditor
-[00:02:077] Missing module CineblendEditor (or invalid name specified)
-[00:02:078] Generating binary module bindings for Game
-[00:02:081] Skipped saving file to C:\Works\hundun-world-flax\HundunWorld\Source\Game.Gen.cs
-[00:02:081] Building module Game
-[00:02:085] Saved file to C:\Works\hundun-world-flax\HundunWorld\Cache/Intermediate\GameEditorTarget\Windows\x64\Debug\Game.CSharp.response
-[00:02:095] Saved file to C:\Works\hundun-world-flax\HundunWorld\Binaries\GameEditorTarget\Windows\x64\Debug\GameEditorTarget.Build.json
-[00:02:097] Missing Task Graph cache file
-[00:02:097] 
-[00:02:097] Total 24 tasks
-[00:02:098] Executing 24 tasks using 16 threads
-[00:02:099] Compiling C:\Works\hundun-world-flax\HundunWorld\Binaries\GameEditorTarget\Windows\x64\Debug\Game.CSharp.dll
-[00:02:133] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\CommunityToolkit.HighPerformance.dll
-[00:02:135] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Arch.LowLevel.xml
-[00:02:141] 复制了 1 个文件
-[00:02:141] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\CommunityToolkit.HighPerformance.pdb
-[00:02:141] 复制了 1 个文件
-[00:02:146] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\LiteDB.dll
-[00:02:146] 复制了 1 个文件
-[00:02:151] 复制了 1 个文件
-[00:02:151] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Arch.LowLevel.dll
-[00:02:156] 复制了 1 个文件
-[00:02:161] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Horizon.Game.Message.pdb
-[00:02:162] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Horizon.Game.Message.dll
-[00:02:166] 复制了 1 个文件
-[00:02:168] 复制了 1 个文件
-[00:02:179] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Schedulers.dll
-[00:02:179] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Collections.Pooled.xml
-[00:02:185] 复制了 1 个文件
-[00:02:185] 复制了 1 个文件
-[00:02:185] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Collections.Pooled.dll
-[00:02:187] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Schedulers.xml
-[00:02:193] 复制了 1 个文件
-[00:02:193] 复制了 1 个文件
-[00:02:198] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\LiteDB.xml
-[00:02:203] 复制了 1 个文件
-[00:02:203] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Horizon.Game.Message.xml
-[00:02:209] 复制了 1 个文件
-[00:02:212] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\CommunityToolkit.HighPerformance.xml
-[00:02:212] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\K4os.Compression.LZ4.dll
-[00:02:217] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\MemoryPack.Core.dll
-[00:02:217] 复制了 1 个文件
-[00:02:218] 复制了 1 个文件
-[00:02:221] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\TouchSocket.Core.dll
-[00:02:221] 复制了 1 个文件
-[00:02:226] 复制了 1 个文件
-[00:02:227] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\TouchSocket.dll
-[00:02:229] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Arch.dll
-[00:02:230] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Arch.xml
-[00:02:231] C:\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll
-[00:02:231] 复制了 1 个文件
-[00:02:231] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Orleans.Serialization.Abstractions.dll
-[00:02:233] 复制了 1 个文件
-[00:02:234] 复制了 1 个文件
-[00:02:234] 复制了 1 个文件
-[00:02:234] 复制了 1 个文件
-[00:02:236] C:\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.xml
-[00:02:240] 复制了 1 个文件
-[00:05:145] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\Controllers\UISwitchController.cs(362,1,362,1): warning CS1570: XML comment has badly formed XML -- 'Expected an end tag for element 'returns'.'
-[00:05:146] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\Controllers\ErrorHandler.cs(176,1,176,1): warning CS1570: XML comment has badly formed XML -- 'Expected an end tag for element 'param'.'
-[00:05:146] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\Controllers\UISwitchController.cs(373,1,373,1): warning CS1570: XML comment has badly formed XML -- 'Expected an end tag for element 'param'.'
-[00:05:146] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\Controllers\ErrorHandler.cs(202,1,202,1): warning CS1570: XML comment has badly formed XML -- 'Expected an end tag for element 'param'.'
-[00:05:146] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\Controllers\ErrorHandler.cs(227,1,227,1): warning CS1570: XML comment has badly formed XML -- 'Expected an end tag for element 'param'.'
-[00:05:146] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\Controllers\ErrorHandler.cs(2,7,2,13): warning CS0105: The using directive for 'System' appeared previously in this namespace
-[00:05:146] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\Controllers\UISwitchController.cs(2,7,2,13): warning CS0105: The using directive for 'System' appeared previously in this namespace
-[00:05:146] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\Performance\MemoryOptimizationManager.cs(2,7,2,13): warning CS0105: The using directive for 'System' appeared previously in this namespace
-[00:05:146] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\Performance\UIPerformanceMonitor.cs(2,7,2,13): warning CS0105: The using directive for 'System' appeared previously in this namespace
-[00:05:146] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\States\StateSnapshot.cs(2,7,2,13): warning CS0105: The using directive for 'System' appeared previously in this namespace
-[00:05:146] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\States\TransitionState.cs(2,7,2,13): warning CS0105: The using directive for 'System' appeared previously in this namespace
-[00:05:146] warning CS1701: Assuming assembly reference 'System.Runtime, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' used by 'Arch' matches identity 'System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' of 'System.Runtime', you may need to supply runtime policy
-[00:05:146] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Database\LiteDataContext.cs(361,30,361,31): warning CS0168: The variable 'e' is declared but never used
-[00:05:146] warning CS1701: Assuming assembly reference 'System.Runtime, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' used by 'Newtonsoft.Json' matches identity 'System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' of 'System.Runtime', you may need to supply runtime policy
-[00:05:146] warning CS1701: Assuming assembly reference 'System.Runtime, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' used by 'MemoryPack.Core' matches identity 'System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' of 'System.Runtime', you may need to supply runtime policy
-[00:05:146] warning CS1701: Assuming assembly reference 'System.Runtime, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' used by 'K4os.Compression.LZ4' matches identity 'System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' of 'System.Runtime', you may need to supply runtime policy
-[00:05:146] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\Character\CharacterCreationPanel.cs(159,19,159,26): warning CS0219: The variable 'spacing' is assigned but its value is never used
-[00:05:146] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\Controllers\SceneController.cs(387,58,387,79): warning CS0618: 'CharacterManagementUI' is obsolete: 'CharacterManagementUI has been deprecated. Use CharacterSelectionUI and CharacterCreationUI instead.'
-[00:05:146] C:\Works\hundun-world-flax\HundunWorld\Source\Game\ThirdPersonCamera.cs(2492,37,2492,39): warning CS0168: The variable 'ex' is declared but never used
-[00:05:146] C:\Works\hundun-world-flax\HundunWorld\Source\Game\ThirdPersonCamera.cs(2512,37,2512,39): warning CS0168: The variable 'ex' is declared but never used
-[00:05:146] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\UISceneManager.cs(16,32,16,45): warning CS0649: Field 'UISceneManager._stateManager' is never assigned to, and will always have its default value null
-[00:05:182] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\Performance\MemoryOptimizationManager.cs(34,49,34,66): warning CS0649: Field 'MemoryOptimizationManager._memoryCheckTimer' is never assigned to, and will always have its default value null
-[00:05:182] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\Performance\MemoryOptimizationManager.cs(33,49,33,62): warning CS0649: Field 'MemoryOptimizationManager._cleanupTimer' is never assigned to, and will always have its default value null
-[00:05:182] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\MetaHuman\HairEditorPanel.cs(36,30,36,56): warning CS0169: The field 'HairEditorPanel._anisotropyDirectionSlider' is never used
-[00:05:182] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\MetaHuman\PresetManagerPanel.cs(27,33,27,48): warning CS0169: The field 'PresetManagerPanel._quickPresetBar' is never used
-[00:05:182] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\GameMain\InventoryUI.cs(82,25,82,35): warning CS0649: Field 'InventoryUI.SlotUI.IsSelected' is never assigned to, and will always have its default value false
-[00:05:182] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Services\CharacterPersistenceService.cs(19,24,19,40): warning CS0169: The field 'CharacterPersistenceService._databaseManager' is never used
-[00:05:182] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\MetaHuman\PresetManagerPanel.cs(22,24,22,37): warning CS0169: The field 'PresetManagerPanel._deleteButton' is never used
-[00:05:182] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\MetaHuman\HairEditorPanel.cs(70,37,70,65): warning CS0067: The event 'HairEditorPanel.OnAnisotropyDirectionChanged' is never used
-[00:05:182] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Rendering\CharacterAppearancePreviewController.cs(160,23,160,40): warning CS0649: Field 'CharacterAppearancePreviewController._previewCharacter' is never assigned to, and will always have its default value null
-[00:05:182] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Worlds\EntitySynchronizationManager.cs(28,23,28,41): warning CS0414: The field 'EntitySynchronizationManager._lastStateSyncTime' is assigned but its value is never used
-[00:05:182] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Worlds\EntitySynchronizationManager.cs(27,23,27,44): warning CS0414: The field 'EntitySynchronizationManager._lastPositionSyncTime' is assigned but its value is never used
-[00:05:182] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Combat\WuxingSystem\FireSkills.cs(458,22,458,32): warning CS0414: The field 'FengHuangNiePan.isReviving' is assigned but its value is never used
-[00:05:182] C:\Works\hundun-world-flax\HundunWorld\Source\Game\HundunWorldGamePlugin.cs(16,22,16,36): warning CS0414: The field 'HundunWorldGamePlugin._isGameStarted' is assigned but its value is never used
-[00:05:182] C:\Works\hundun-world-flax\HundunWorld\Source\Game\ThirdPersonCamera.cs(816,22,816,34): warning CS0414: The field 'ThirdPersonCamera._isPhotoMode' is assigned but its value is never used
-[00:05:182] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Network\NetworkManager.cs(36,31,36,45): warning CS0414: The field 'NetworkManager._isInitialized' is assigned but its value is never used
-[00:05:182] C:\Works\hundun-world-flax\HundunWorld\Source\Game\ThirdPersonCamera.cs(794,22,794,39): warning CS0414: The field 'ThirdPersonCamera._isGroundDetected' is assigned but its value is never used
-[00:05:182] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Network\Adapters\HorizonMessageAdapter.cs(39,26,39,32): warning CS1572: XML comment has a param tag for 'buffer', but there is no parameter by that name
-[00:05:182] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Network\Adapters\HorizonMessageAdapter.cs(41,56,41,62): warning CS1573: Parameter 'target' has no matching param tag in the XML comment for 'HorizonMessageAdapter.ParseBody(byte[], int, int)' (but other parameters do)
-[00:05:183] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Network\Adapters\HorizonMessageAdapter.cs(41,68,41,74): warning CS1573: Parameter 'offset' has no matching param tag in the XML comment for 'HorizonMessageAdapter.ParseBody(byte[], int, int)' (but other parameters do)
-[00:05:183] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Network\Adapters\HorizonMessageAdapter.cs(41,80,41,86): warning CS1573: Parameter 'length' has no matching param tag in the XML comment for 'HorizonMessageAdapter.ParseBody(byte[], int, int)' (but other parameters do)
-[00:05:183] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Network\NetworkManager.cs(427,26,427,36): warning CS1572: XML comment has a param tag for 'assemblies', but there is no parameter by that name
-[00:05:183] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\Layout\ResponsiveLayoutCalculator.cs(88,26,88,36): warning CS1572: XML comment has a param tag for 'targetSize', but there is no parameter by that name
-[00:05:183] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Combat\WuxingSystem\EarthSkills.cs(8,5,8,6): warning CS1587: XML comment is not placed on a valid language element
-[00:05:183] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Combat\WuxingSystem\FireSkills.cs(8,5,8,6): warning CS1587: XML comment is not placed on a valid language element
-[00:05:183] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Combat\WuxingSystem\WaterSkills.cs(8,5,8,6): warning CS1587: XML comment is not placed on a valid language element
-[00:05:183] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Combat\WuxingSystem\WoodSkills.cs(8,5,8,6): warning CS1587: XML comment is not placed on a valid language element
-[00:05:183] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\Controllers\UISwitchController.cs(240,103,240,117): warning CS1573: Parameter 'transitionType' has no matching param tag in the XML comment for 'UISwitchController.RequestSceneSwitchAsync(SceneType, TransitionType, Dictionary<string, object>, bool)' (but other parameters do)
-[00:05:183] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Database\LiteDataContext.cs(245,65,245,81): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Where_<T>(LiteDatabaseKind, Func<T, bool>)' (but other parameters do)
-[00:05:183] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Database\LiteDataContext.cs(255,57,255,73): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Add<T>(LiteDatabaseKind, T)' (but other parameters do)
-[00:05:183] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Database\LiteDataContext.cs(267,56,267,72): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.AddRange<T>(LiteDatabaseKind, IEnumerable<T>, bool)' (but other parameters do)
-[00:05:183] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Database\LiteDataContext.cs(290,55,290,71): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Remove<T>(LiteDatabaseKind, BsonValue)' (but other parameters do)
-[00:05:183] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Database\LiteDataContext.cs(298,26,298,32): warning CS1572: XML comment has a param tag for 'models', but there is no parameter by that name
-[00:05:184] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Database\LiteDataContext.cs(301,58,301,74): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Removes<T, K>(LiteDatabaseKind, IEnumerable<BsonValue>, bool)' (but other parameters do)
-[00:05:184] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Database\LiteDataContext.cs(301,99,301,102): warning CS1573: Parameter 'ids' has no matching param tag in the XML comment for 'LiteDataContext.Removes<T, K>(LiteDatabaseKind, IEnumerable<BsonValue>, bool)' (but other parameters do)
-[00:05:184] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Database\LiteDataContext.cs(301,38,301,39): warning CS1712: Type parameter 'K' has no matching typeparam tag in the XML comment on 'LiteDataContext.Removes<T, K>(LiteDatabaseKind, IEnumerable<BsonValue>, bool)' (but other type parameters do)
-[00:05:184] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Database\LiteDataContext.cs(323,58,323,74): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Upsert<T, K>(LiteDatabaseKind, K, T)' (but other parameters do)
-[00:05:184] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Database\LiteDataContext.cs(323,38,323,39): warning CS1712: Type parameter 'K' has no matching typeparam tag in the XML comment on 'LiteDataContext.Upsert<T, K>(LiteDatabaseKind, K, T)' (but other type parameters do)
-[00:05:184] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Database\LiteDataContext.cs(334,55,334,71): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Update<T>(LiteDatabaseKind, T)' (but other parameters do)
-[00:05:184] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Database\LiteDataContext.cs(345,58,345,74): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Updates<T, K>(LiteDatabaseKind, IEnumerable<T>, bool)' (but other parameters do)
-[00:05:184] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Database\LiteDataContext.cs(345,38,345,39): warning CS1712: Type parameter 'K' has no matching typeparam tag in the XML comment on 'LiteDataContext.Updates<T, K>(LiteDatabaseKind, IEnumerable<T>, bool)' (but other type parameters do)
-[00:05:184] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Database\LiteDataContext.cs(382,59,382,75): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.DeletedMany<T>(LiteDatabaseKind, Expression<Func<T, bool>>)' (but other parameters do)
-[00:05:184] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Database\LiteDataContext.cs(410,57,410,73): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Where<T>(LiteDatabaseKind, Expression<Func<T, bool>>)' (but other parameters do)
-[00:05:184] C:\Works\hundun-world-flax\HundunWorld\Source\Game\Database\LiteDataContext.cs(421,60,421,76): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.FirstOrDefault<T>(LiteDatabaseKind, Expression<Func<T, bool>>)' (but other parameters do)
-[00:05:184] C:\Works\hundun-world-flax\HundunWorld\Source\Game\UI\Enums\SceneType.cs(5,5,5,6): warning CS1587: XML comment is not placed on a valid language element
-[00:05:190] Done!
-[00:05:202] Total time: 00:00:05.2134976
-[00:05:202] End.
+[00:00:005] Flax.Build 1.0.0
+[00:00:006]   Arguments: -log -mutex -workspace=C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld -arch=x64 -configuration=Debug -platform=Windows -buildTargets=GameEditorTarget -rebuild
+[00:00:006]   Workspace: C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld
+[00:00:006]   Engine: C:\Program Files (x86)\Flax\Flax_1.11
+[00:00:006]   .NET 10.0.2
+[00:00:008] Loading project file from "C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\HundunWorld.flaxproj"...
+[00:00:056] Loading project file from "C:\Program Files (x86)\Flax\Flax_1.11\Flax.flaxproj"...
+[00:00:057] Loaded project Flax, version 1.11.6806
+[00:00:058] Loaded project HundunWorld, version 1.0
+[00:00:094] Engine build version: 1.11.6806
+[00:00:128] Cleaning build workspace...
+[00:00:130] Removing: C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Cache/Intermediate\TaskGraph.cache
+[00:00:149] Found Android SDK at C:\Program Files (x86)\Android\android-sdk
+[00:00:150] Missing Linux Toolchain. Cannot build for Linux platform.
+[00:00:158] Found Windows SDK v10_0_22621_0 at C:\Program Files (x86)\Windows Kits\10\
+[00:00:158] Found Windows SDK v10_0_26100_0 at C:\Program Files (x86)\Windows Kits\10\
+[00:00:174] Unknown Visual Studio installation. Display name: SQL Server Management Studio 22
+[00:00:178] Found VisualStudio2026 at C:\Program Files\Microsoft Visual Studio\18\Enterprise
+[00:00:184] Found Windows toolset v142 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.29.30133
+[00:00:184] Found Windows toolset v143 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.38.33130
+[00:00:184] Found Windows toolset v144 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.44.35207
+[00:00:184] Found Windows toolset v145 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.50.35717
+[00:00:226] Removing: C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Cache/Intermediate\GameEditorTarget\Windows\x64\Debug
+[00:00:256] Removing: C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Binaries\GameEditorTarget\Windows\x64\Debug
+[00:00:264] Building targets...
+[00:00:272] Building target GameEditorTarget in Debug for Windows x64
+[00:00:277] Using Windows Toolset v145 (C:\Program Files (x86)\Windows Kits\10\)
+[00:00:277] Using Windows SDK 10.0.26100.0 (C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.50.35717\bin\Hostx64\x64)
+[00:00:280] Building referenced target Flax
+[00:00:297] Missing VULKAN_SDK environment variable. Cannot build Vulkan.
+[00:00:297] Building for Windows without Vulkan rendering backend (Vulkan SDK is missing)
+[00:00:304] Parsing API bindings for Profiler (FlaxEngine)
+[00:00:446] Parsing API bindings for Platform (FlaxEngine)
+[00:00:595] Parsing API bindings for Core (FlaxEngine)
+[00:01:335] Parsing API bindings for Debug (FlaxEngine)
+[00:01:399] Parsing API bindings for Physics (FlaxEngine)
+[00:01:546] Parsing API bindings for TextureTool (FlaxEngine)
+[00:01:551] Parsing API bindings for ModelTool (FlaxEngine)
+[00:01:574] Found the following .NET SDK versions: 10.0.102, 9.0.309, 8.0.417
+[00:01:574] Found the following .NET runtime versions: 10.0.2, 9.0.12, 8.0.23
+[00:01:580] Using .NET SDK 10.0.102, runtime 10.0.2 (C:\Program Files\dotnet\)
+[00:01:583]   - Host Runtime for Windows x64
+[00:01:583]   - Host Runtime for Windows x86
+[00:01:583]   - Host Runtime for Windows ARM64
+[00:01:583]   - Host Runtime for Android ARM
+[00:01:583]   - Host Runtime for Android ARM64
+[00:01:583]   - Host Runtime for iOS ARM
+[00:01:583]   - Host Runtime for iOS ARM64
+[00:01:585] Parsing API bindings for ShaderCompilerD3D (FlaxEngine)
+[00:01:585] Parsing API bindings for ShaderCompilerDX (FlaxEngine)
+[00:01:587] Parsing API bindings for Graphics (FlaxEngine)
+[00:01:921] Parsing API bindings for Utilities (FlaxEngine)
+[00:01:931] Parsing API bindings for Particles (FlaxEngine)
+[00:01:948] Parsing API bindings for Visject (FlaxEngine)
+[00:01:955] Parsing API bindings for ContentImporters (FlaxEngine)
+[00:01:956] Parsing API bindings for ContentExporters (FlaxEngine)
+[00:01:956] Parsing API bindings for Content (FlaxEngine)
+[00:02:040] Parsing API bindings for Renderer (FlaxEngine)
+[00:02:057] Parsing API bindings for Scripting (FlaxEngine)
+[00:02:082] Parsing API bindings for Serialization (FlaxEngine)
+[00:02:085] Parsing API bindings for CSG (FlaxEngine)
+[00:02:086] Parsing API bindings for Level (FlaxEngine)
+[00:02:222] Parsing API bindings for Navigation (FlaxEngine)
+[00:02:237] Parsing API bindings for AI (FlaxEngine)
+[00:02:253] Parsing API bindings for Animations (FlaxEngine)
+[00:02:368] Parsing API bindings for Audio (FlaxEngine)
+[00:02:376] Parsing API bindings for Video (FlaxEngine)
+[00:02:380] Parsing API bindings for Foliage (FlaxEngine)
+[00:02:390] Parsing API bindings for Render2D (FlaxEngine)
+[00:02:421] Parsing API bindings for Input (FlaxEngine)
+[00:02:452] Parsing API bindings for Networking (FlaxEngine)
+[00:02:488] Parsing API bindings for Streaming (FlaxEngine)
+[00:02:491] Parsing API bindings for Terrain (FlaxEngine)
+[00:02:515] Parsing API bindings for Threading (FlaxEngine)
+[00:02:520] Parsing API bindings for Localization (FlaxEngine)
+[00:02:528] Parsing API bindings for UI (FlaxEngine)
+[00:02:534] Parsing API bindings for Online (FlaxEngine)
+[00:02:541] Parsing API bindings for Engine (FlaxEngine)
+[00:02:550] Using Dotnet runtime versions range 10-11 for Game Cooker
+[00:02:551] Parsing API bindings for Editor (FlaxEngine)
+[00:02:558] Building module tracy
+[00:02:560] Building module Profiler
+[00:02:560] Building module Platform
+[00:02:560] Building module fmt
+[00:02:560] Building module Core
+[00:02:560] Building module Debug
+[00:02:560] Building module Main
+[00:02:560] Building module PhysX
+[00:02:560] Building module NvCloth
+[00:02:560] Building module Physics
+[00:02:560] Building module lz4
+[00:02:560] Building module minimp3
+[00:02:560] Building module ogg
+[00:02:560] Building module vorbis
+[00:02:560] Building module AudioTool
+[00:02:560] Building module DirectXTex
+[00:02:560] Building module tinyexr
+[00:02:560] Building module astc
+[00:02:560] Building module TextureTool
+[00:02:560] Building module assimp
+[00:02:560] Building module OpenFBX
+[00:02:560] Building module DirectXMesh
+[00:02:560] Building module UVAtlas
+[00:02:560] Building module meshoptimizer
+[00:02:560] Building module MikkTSpace
+[00:02:560] Building module ModelTool
+[00:02:560] Building module GraphicsDeviceNull
+[00:02:560] Building module nvapi
+[00:02:560] Building module AGS
+[00:02:560] Building module GraphicsDeviceDX11
+[00:02:560] Building module GraphicsDeviceDX12
+[00:02:560] Building module ShaderCompilerD3D
+[00:02:560] Building module ShaderCompilerDX
+[00:02:560] Building module glslang
+[00:02:560] Building module spirv-tools
+[00:02:560] Building module ShaderCompilerVulkan
+[00:02:560] Building module ShadersCompilation
+[00:02:560] Building module Graphics
+[00:02:561] Building module Utilities
+[00:02:561] Building module Particles
+[00:02:561] Building module Visject
+[00:02:561] Building module MaterialGenerator
+[00:02:561] Building module ContentImporters
+[00:02:561] Building module ContentExporters
+[00:02:561] Building module Content
+[00:02:561] Building module Renderer
+[00:02:561] Building module nethost
+[00:02:561] Building module Scripting
+[00:02:561] Building module rapidjson
+[00:02:561] Building module Serialization
+[00:02:561] Building module CSG
+[00:02:561] Building module Level
+[00:02:561] Building module recastnavigation
+[00:02:561] Building module Navigation
+[00:02:561] Building module AI
+[00:02:561] Building module Animations
+[00:02:561] Building module Audio
+[00:02:561] Building module Video
+[00:02:561] Building module Foliage
+[00:02:561] Building module freetype
+[00:02:561] Building module Render2D
+[00:02:561] Building module Input
+[00:02:561] Building module Networking
+[00:02:561] Building module Streaming
+[00:02:561] Building module Terrain
+[00:02:561] Building module Threading
+[00:02:561] Building module Localization
+[00:02:562] Building module UI
+[00:02:562] Building module Online
+[00:02:562] Building module Engine
+[00:02:562] Building module pugixml
+[00:02:562] Building module curl
+[00:02:562] Building module ShadowsOfMordor
+[00:02:562] Building module Editor
+[00:02:564] Skipping build for target FlaxEditor
+[00:02:610] Missing module CineblendEditor (or invalid name specified)
+[00:02:611] Generating binary module bindings for Game
+[00:02:613] Skipped saving file to C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Source\Game.Gen.cs
+[00:02:613] Building module Game
+[00:02:618] Saved file to C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Cache/Intermediate\GameEditorTarget\Windows\x64\Debug\Game.CSharp.response
+[00:02:628] Saved file to C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Binaries\GameEditorTarget\Windows\x64\Debug\GameEditorTarget.Build.json
+[00:02:630] Missing Task Graph cache file
+[00:02:630] 
+[00:02:630] Total 24 tasks
+[00:02:631] Executing 24 tasks using 16 threads
+[00:02:632] Compiling C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Binaries\GameEditorTarget\Windows\x64\Debug\Game.CSharp.dll
+[00:02:666] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Arch.LowLevel.dll
+[00:02:670] 复制了 1 个文件
+[00:02:672] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Schedulers.xml
+[00:02:673] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Collections.Pooled.dll
+[00:02:678] 复制了 1 个文件
+[00:02:689] 复制了 1 个文件
+[00:02:689] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\LiteDB.dll
+[00:02:689] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\CommunityToolkit.HighPerformance.dll
+[00:02:689] 复制了 1 个文件
+[00:02:694] 复制了 1 个文件
+[00:02:702] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Horizon.Game.Message.dll
+[00:02:704] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Arch.LowLevel.xml
+[00:02:718] 复制了 1 个文件
+[00:02:718] 复制了 1 个文件
+[00:02:721] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Schedulers.dll
+[00:02:732] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\K4os.Compression.LZ4.dll
+[00:02:733] 复制了 1 个文件
+[00:02:733] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\CommunityToolkit.HighPerformance.xml
+[00:02:733] 复制了 1 个文件
+[00:02:733] 复制了 1 个文件
+[00:02:735] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Horizon.Game.Message.xml
+[00:02:750] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Collections.Pooled.xml
+[00:02:750] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\CommunityToolkit.HighPerformance.pdb
+[00:02:750] 复制了 1 个文件
+[00:02:757] 复制了 1 个文件
+[00:02:757] 复制了 1 个文件
+[00:02:757] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\LiteDB.xml
+[00:02:761] 复制了 1 个文件
+[00:02:772] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\MemoryPack.Core.dll
+[00:02:775] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\TouchSocket.dll
+[00:02:780] 复制了 1 个文件
+[00:02:781] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Horizon.Game.Message.pdb
+[00:02:783] 复制了 1 个文件
+[00:02:791] 复制了 1 个文件
+[00:02:792] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Arch.xml
+[00:02:793] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\TouchSocket.Core.dll
+[00:02:797] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Arch.dll
+[00:02:797] C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Orleans.Serialization.Abstractions.dll
+[00:02:798] 复制了 1 个文件
+[00:02:799] 复制了 1 个文件
+[00:02:802] 复制了 1 个文件
+[00:02:803] 复制了 1 个文件
+[00:02:808] C:\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll
+[00:02:813] 复制了 1 个文件
+[00:02:815] C:\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.xml
+[00:02:819] 复制了 1 个文件
+[00:03:506] C:\Works\Github鍒囨崲Gitee\github\HundunWorld\HundunWorld\Source\Game\UI\Controllers\ErrorHandler.cs(2,7,2,13): warning CS0105: The using directive for 'System' appeared previously in this namespace
+[00:03:507] C:\Works\Github鍒囨崲Gitee\github\HundunWorld\HundunWorld\Source\Game\UI\Controllers\UISwitchController.cs(2,7,2,13): warning CS0105: The using directive for 'System' appeared previously in this namespace
+[00:03:507] C:\Works\Github鍒囨崲Gitee\github\HundunWorld\HundunWorld\Source\Game\UI\Performance\MemoryOptimizationManager.cs(2,7,2,13): warning CS0105: The using directive for 'System' appeared previously in this namespace
+[00:03:507] C:\Works\Github鍒囨崲Gitee\github\HundunWorld\HundunWorld\Source\Game\UI\Performance\UIPerformanceMonitor.cs(2,7,2,13): warning CS0105: The using directive for 'System' appeared previously in this namespace
+[00:03:507] C:\Works\Github鍒囨崲Gitee\github\HundunWorld\HundunWorld\Source\Game\UI\States\StateSnapshot.cs(2,7,2,13): warning CS0105: The using directive for 'System' appeared previously in this namespace
+[00:03:507] C:\Works\Github鍒囨崲Gitee\github\HundunWorld\HundunWorld\Source\Game\UI\States\TransitionState.cs(2,7,2,13): warning CS0105: The using directive for 'System' appeared previously in this namespace
+[00:03:507] C:\Works\Github鍒囨崲Gitee\github\HundunWorld\HundunWorld\Source\Game\Network\MessageHandlers\AttackResponseHandler.cs(38,39,38,42): error CS0246: The type or namespace name 'ECS' could not be found (are you missing a using directive or an assembly reference?)
+[00:03:507] C:\Works\Github鍒囨崲Gitee\github\HundunWorld\HundunWorld\Source\Game\Network\MessageHandlers\AttackResponseHandler.cs(29,17,29,20): error CS0246: The type or namespace name 'ECS' could not be found (are you missing a using directive or an assembly reference?)
+[00:03:507] C:\Works\Github鍒囨崲Gitee\github\HundunWorld\HundunWorld\Source\Game\Combat\DamageCalculator.cs(381,48,381,57): error CS0234: The type or namespace name 'SkillType' does not exist in the namespace 'HundunWorld.Game.ECS.Components' (are you missing an assembly reference?)
+[00:03:507] C:\Works\Github鍒囨崲Gitee\github\HundunWorld\HundunWorld\Source\Game\Combat\Skills\EnhancedSkillSystem.cs(88,70,88,79): error CS0246: The type or namespace name 'SkillType' could not be found (are you missing a using directive or an assembly reference?)
+[00:03:507] warning CS1701: Assuming assembly reference 'System.Runtime, Version=8.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' used by 'Arch' matches identity 'System.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a' of 'System.Runtime', you may need to supply runtime policy
+[00:03:507] C:\Works\Github鍒囨崲Gitee\github\HundunWorld\HundunWorld\Source\Game\ECS\Systems\CombatSystem.cs(268,82,268,92): error CS0246: The type or namespace name 'EffectType' could not be found (are you missing a using directive or an assembly reference?)
+[00:03:507] C:\Works\Github鍒囨崲Gitee\github\HundunWorld\HundunWorld\Source\Game\ECS\Systems\SkillSystem.cs(395,20,395,29): error CS0246: The type or namespace name 'SkillType' could not be found (are you missing a using directive or an assembly reference?)
+[00:03:507] C:\Works\Github鍒囨崲Gitee\github\HundunWorld\HundunWorld\Source\Game\Worlds\EventBroadcaster.cs(32,31,32,45): error CS0104: 'WorldEventType' is an ambiguous reference between 'Horizon.Game.Message.Enums.WorldEventType' and 'Horizon.Game.Message.Network.WorldEventType'
+[00:03:507] C:\Works\Github鍒囨崲Gitee\github\HundunWorld\HundunWorld\Source\Game\Worlds\EventBroadcaster.cs(50,33,50,47): error CS0104: 'WorldEventType' is an ambiguous reference between 'Horizon.Game.Message.Enums.WorldEventType' and 'Horizon.Game.Message.Network.WorldEventType'
+[00:03:507] C:\Works\Github鍒囨崲Gitee\github\HundunWorld\HundunWorld\Source\Game\Worlds\EventBroadcaster.cs(16,37,16,51): error CS0104: 'WorldEventType' is an ambiguous reference between 'Horizon.Game.Message.Enums.WorldEventType' and 'Horizon.Game.Message.Network.WorldEventType'
+[00:03:512] Task C:\Program Files\dotnet\dotnet.exe exec "C:\Program Files\dotnet\sdk\10.0.102\Roslyn\bincore\csc.dll" /noconfig /shared @"C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Cache/Intermediate\GameEditorTarget\Windows\x64\Debug\Game.CSharp.response" failed with exit code 1
+[00:03:512] 
+[00:03:513] 1 task failed
+[00:03:519] Total time: 00:00:03.5318709
+[00:03:519] End.

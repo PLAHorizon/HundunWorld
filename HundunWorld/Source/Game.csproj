@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Configurations>Editor.Windows.Debug;Editor.Windows.Development;Editor.Windows.Release;Game.Windows.Debug;Game.Windows.Development;Game.Windows.Release</Configurations>
@@ -43,7 +43,7 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' ">
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
     </Reference>
   </ItemGroup>
 
@@ -65,7 +65,7 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|x64' ">
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
     </Reference>
   </ItemGroup>
 
@@ -87,7 +87,7 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|x64' ">
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
     </Reference>
   </ItemGroup>
 
@@ -109,7 +109,7 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
     </Reference>
   </ItemGroup>
 
@@ -131,7 +131,7 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
     </Reference>
   </ItemGroup>
 
@@ -153,55 +153,56 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
     </Reference>
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="Orleans.Serialization.Abstractions">
-      <HintPath>..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Orleans.Serialization.Abstractions.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Orleans.Serialization.Abstractions.dll</HintPath>
     </Reference>
     <Reference Include="Arch">
-      <HintPath>..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Arch.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Arch.dll</HintPath>
     </Reference>
     <Reference Include="TouchSocket">
-      <HintPath>..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\TouchSocket.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\TouchSocket.dll</HintPath>
     </Reference>
     <Reference Include="TouchSocket.Core">
-      <HintPath>..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\TouchSocket.Core.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\TouchSocket.Core.dll</HintPath>
     </Reference>
     <Reference Include="MemoryPack.Core">
-      <HintPath>..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\MemoryPack.Core.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\MemoryPack.Core.dll</HintPath>
     </Reference>
     <Reference Include="Horizon.Game.Message">
-      <HintPath>..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Horizon.Game.Message.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Horizon.Game.Message.dll</HintPath>
     </Reference>
     <Reference Include="K4os.Compression.LZ4">
-      <HintPath>..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\K4os.Compression.LZ4.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\K4os.Compression.LZ4.dll</HintPath>
     </Reference>
     <Reference Include="Collections.Pooled">
-      <HintPath>..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Collections.Pooled.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Collections.Pooled.dll</HintPath>
     </Reference>
     <Reference Include="Schedulers">
-      <HintPath>..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Schedulers.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Schedulers.dll</HintPath>
     </Reference>
     <Reference Include="Arch.LowLevel">
-      <HintPath>..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Arch.LowLevel.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Arch.LowLevel.dll</HintPath>
     </Reference>
     <Reference Include="CommunityToolkit.HighPerformance">
-      <HintPath>..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\CommunityToolkit.HighPerformance.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\CommunityToolkit.HighPerformance.dll</HintPath>
     </Reference>
     <Reference Include="LiteDB">
-      <HintPath>..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\LiteDB.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\LiteDB.dll</HintPath>
     </Reference>
     <Reference Include="FlaxEngine.CSharp">
-      <HintPath>..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
     </Reference>
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="Game.Gen.cs" />
     <Compile Include="Game\AdvancedInputManager.cs" />
+    <Compile Include="Game\Audio\GameAudioManager.cs" />
     <Compile Include="Game\CameraCollisionDebugger.cs" />
     <Compile Include="Game\CameraShakeSystem.cs" />
     <Compile Include="Game\Character\Attributes\CharacterAttributesComponent.cs" />
@@ -217,7 +218,6 @@
     <Compile Include="Game\ClimbingSystem\ClimbingEnums.cs" />
     <Compile Include="Game\ClimbingSystem\ClimbingTestScene.cs" />
     <Compile Include="Game\ClimbingSystem\EnhancedClimbingController.cs" />
-    <Compile Include="Game\Combat\CombatDamageType.cs" />
     <Compile Include="Game\Combat\CombatSystemCoordinator.cs" />
     <Compile Include="Game\Combat\CombatSystemManager.cs" />
     <Compile Include="Game\Combat\DamageCalculator.cs" />
@@ -230,6 +230,7 @@
     <Compile Include="Game\Combat\PendingAction.cs" />
     <Compile Include="Game\Combat\Skills\EnhancedSkillSystem.cs" />
     <Compile Include="Game\Combat\Skills\SkillAnimationController.cs" />
+    <Compile Include="Game\Combat\Skills\SkillAnimationStateMachine.cs" />
     <Compile Include="Game\Combat\Skills\SkillBase.cs" />
     <Compile Include="Game\Combat\Skills\SkillEffects.cs" />
     <Compile Include="Game\Combat\WuxingSystem\EarthSkills.cs" />
@@ -249,8 +250,10 @@
     <Compile Include="Game\ECS\Components\CombatComponent.cs" />
     <Compile Include="Game\ECS\Components\HealthComponent.cs" />
     <Compile Include="Game\ECS\Components\InputComponent.cs" />
+    <Compile Include="Game\ECS\Components\InventoryComponent.cs" />
     <Compile Include="Game\ECS\Components\ItemComponent.cs" />
     <Compile Include="Game\ECS\Components\MonsterComponent.cs" />
+    <Compile Include="Game\ECS\Components\NetworkEntityIdComponent.cs" />
     <Compile Include="Game\ECS\Components\NpcComponent.cs" />
     <Compile Include="Game\ECS\Components\PlayerComponent.cs" />
     <Compile Include="Game\ECS\Components\PositionComponent.cs" />
@@ -258,12 +261,14 @@
     <Compile Include="Game\ECS\Components\SkillComponent.cs" />
     <Compile Include="Game\ECS\Components\VelocityComponent.cs" />
     <Compile Include="Game\ECS\ECSManager.cs" />
+    <Compile Include="Game\ECS\NetworkEntityRegistry.cs" />
     <Compile Include="Game\ECS\Systems\AnimationSystem.cs" />
     <Compile Include="Game\ECS\Systems\CameraSystem.cs" />
     <Compile Include="Game\ECS\Systems\CharacterControllerSystem.cs" />
     <Compile Include="Game\ECS\Systems\CombatSystem.cs" />
     <Compile Include="Game\ECS\Systems\HealthSystem.cs" />
     <Compile Include="Game\ECS\Systems\InputSystem.cs" />
+    <Compile Include="Game\ECS\Systems\InventorySystem.cs" />
     <Compile Include="Game\ECS\Systems\MovementSystem.cs" />
     <Compile Include="Game\ECS\Systems\RenderingSystem.cs" />
     <Compile Include="Game\ECS\Systems\SkillSystem.cs" />
@@ -279,6 +284,7 @@
     <Compile Include="Game\InputConfigurationManager.cs" />
     <Compile Include="Game\InputManager.cs" />
     <Compile Include="Game\Modules\BaseModule.cs" />
+    <Compile Include="Game\Modules\ChatModule.cs" />
     <Compile Include="Game\Modules\IGameModule.cs" />
     <Compile Include="Game\Modules\ModuleManager.cs" />
     <Compile Include="Game\Modules\ResourceManagerHelper.cs" />
@@ -293,22 +299,31 @@
     <Compile Include="Game\Network\Handlers\EnhancedMessageProcessor.cs" />
     <Compile Include="Game\Network\HeartbeatManager.cs" />
     <Compile Include="Game\Network\INetworkStateMonitor.cs" />
+    <Compile Include="Game\Network\MessageHandlers\AchievementMessageHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\AttackResponseHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\BaseMessageHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\CharacterListHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\CharacterManagementMessageHandler.cs" />
+    <Compile Include="Game\Network\MessageHandlers\ChatMessageHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\CombatMessageHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\CreateCharacterHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\CreateCharacterResponseHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\DamageResponseHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\DeleteCharacterHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\DeleteCharacterResponseHandler.cs" />
+    <Compile Include="Game\Network\MessageHandlers\DungeonMessageHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\EnterGameHandler.cs" />
+    <Compile Include="Game\Network\MessageHandlers\FriendMessageHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\HeartbeatResponseHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\LoginResponseHandler.cs" />
+    <Compile Include="Game\Network\MessageHandlers\MailMessageHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\MessageProcessor.cs" />
+    <Compile Include="Game\Network\MessageHandlers\QuestMessageHandler.cs" />
+    <Compile Include="Game\Network\MessageHandlers\RankingMessageHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\RegisterResponseHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\SkillCastResponseHandler.cs" />
+    <Compile Include="Game\Network\MessageHandlers\SkillInterruptHandler.cs" />
+    <Compile Include="Game\Network\MessageHandlers\TradeMessageHandler.cs" />
     <Compile Include="Game\Network\NetworkAvailabilityChecker.cs" />
     <Compile Include="Game\Network\NetworkConfig.cs" />
     <Compile Include="Game\Network\NetworkConnectionHelper.cs" />
@@ -317,6 +332,7 @@
     <Compile Include="Game\Network\NetworkSyncManager.cs" />
     <Compile Include="Game\Network\ReconnectConfig.cs" />
     <Compile Include="Game\Network\ReconnectContext.cs" />
+    <Compile Include="Game\Network\ReconnectionManager.cs" />
     <Compile Include="Game\Network\Security\MessageSecurityManager.cs" />
     <Compile Include="Game\Network\Sync\AoiManager.cs" />
     <Compile Include="Game\Network\Sync\NetworkSyncIntegration.cs" />
@@ -326,6 +342,7 @@
     <Compile Include="Game\Performance\MemoryOptimizer.cs" />
     <Compile Include="Game\Performance\NetworkOptimizer.cs" />
     <Compile Include="Game\Performance\PerformanceMonitor.cs" />
+    <Compile Include="Game\Performance\RenderingOptimizer.cs" />
     <Compile Include="Game\Performance\ResourceManager.cs" />
     <Compile Include="Game\Performance\SystemOptimizer.cs" />
     <Compile Include="Game\PerformanceMonitor.cs" />
@@ -363,11 +380,11 @@
     <Compile Include="Game\UI\Components\CharacterAnimator.cs" />
     <Compile Include="Game\UI\Components\ConfirmDialog.cs" />
     <Compile Include="Game\UI\Components\ConfirmDialogTest.cs" />
-    <Compile Include="Game\UI\Components\RoundedPanel.cs" />
-    <Compile Include="Game\UI\Components\RoundedProgressBar.cs" />
     <Compile Include="Game\UI\Components\CustomTextDrawing.cs" />
     <Compile Include="Game\UI\Components\LoadingIndicator.cs" />
     <Compile Include="Game\UI\Components\ResponsiveComponent.cs" />
+    <Compile Include="Game\UI\Components\RoundedPanel.cs" />
+    <Compile Include="Game\UI\Components\RoundedProgressBar.cs" />
     <Compile Include="Game\UI\Components\ToastMessage.cs" />
     <Compile Include="Game\UI\Components\ToastNotification.cs" />
     <Compile Include="Game\UI\Components\ValidatedTextBox.cs" />
@@ -394,9 +411,13 @@
     <Compile Include="Game\UI\Events\UIEvents.cs" />
     <Compile Include="Game\UI\GameMain\AttributeBarsUI.cs" />
     <Compile Include="Game\UI\GameMain\CraftingUI.cs" />
+    <Compile Include="Game\UI\GameMain\EquipmentComparisonUI.cs" />
+    <Compile Include="Game\UI\GameMain\FriendListUI.cs" />
     <Compile Include="Game\UI\GameMain\GameMainUI.cs" />
+    <Compile Include="Game\UI\GameMain\GuildManagementUI.cs" />
     <Compile Include="Game\UI\GameMain\InventoryUI.cs" />
     <Compile Include="Game\UI\GameMain\SkillBarUI.cs" />
+    <Compile Include="Game\UI\GameMain\TeamInviteUI.cs" />
     <Compile Include="Game\UI\GameSceneManager.cs" />
     <Compile Include="Game\UI\Guidance\GuidanceStep.cs" />
     <Compile Include="Game\UI\Guidance\UserGuidanceManager.cs" />
@@ -432,29 +453,22 @@
     <Compile Include="Game\Worlds\WorldState.cs" />
     <Compile Include="Game\Worlds\WorldStateManager.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' ">
-    <Compile Visible="false" Include="C:\Works\hundun-world-flax\HundunWorld\Cache\Intermediate\GameEditorTarget\Windows\x64\Debug\Game\Game.Bindings.Gen.cs" />
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' " >
+    <Compile Visible="false" Include="C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Cache\Intermediate\GameEditorTarget\Windows\x64\Debug\Game\Game.Bindings.Gen.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|x64' ">
-    <Compile Visible="false" Include="C:\Works\hundun-world-flax\HundunWorld\Cache\Intermediate\GameEditorTarget\Windows\x64\Development\Game\Game.Bindings.Gen.cs" />
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|x64' " >
+    <Compile Visible="false" Include="C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Cache\Intermediate\GameEditorTarget\Windows\x64\Development\Game\Game.Bindings.Gen.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|x64' ">
-    <Compile Visible="false" Include="C:\Works\hundun-world-flax\HundunWorld\Cache\Intermediate\GameEditorTarget\Windows\x64\Release\Game\Game.Bindings.Gen.cs" />
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|x64' " >
+    <Compile Visible="false" Include="C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Cache\Intermediate\GameEditorTarget\Windows\x64\Release\Game\Game.Bindings.Gen.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
-    <Compile Visible="false" Include="C:\Works\hundun-world-flax\HundunWorld\Cache\Intermediate\GameTarget\Windows\x64\Debug\Game\Game.Bindings.Gen.cs" />
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' " >
+    <Compile Visible="false" Include="C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Cache\Intermediate\GameTarget\Windows\x64\Debug\Game\Game.Bindings.Gen.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
-    <Compile Visible="false" Include="C:\Works\hundun-world-flax\HundunWorld\Cache\Intermediate\GameTarget\Windows\x64\Development\Game\Game.Bindings.Gen.cs" />
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' " >
+    <Compile Visible="false" Include="C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Cache\Intermediate\GameTarget\Windows\x64\Development\Game\Game.Bindings.Gen.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
-    <Compile Visible="false" Include="C:\Works\hundun-world-flax\HundunWorld\Cache\Intermediate\GameTarget\Windows\x64\Release\Game\Game.Bindings.Gen.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Game\Rendering\CharacterAppearanceEditor_README.md" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Game\Common\" />
-    <Folder Include="Game\Storage\" />
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' " >
+    <Compile Visible="false" Include="C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Cache\Intermediate\GameTarget\Windows\x64\Release\Game\Game.Bindings.Gen.cs" />
   </ItemGroup>
 </Project>

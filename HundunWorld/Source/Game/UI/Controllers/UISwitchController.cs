@@ -358,7 +358,7 @@ namespace Game.UI.Controllers
         /// <summary>
         /// 鑾峰彇褰撳墠鍒囨崲鐘舵€?
         /// </summary>
-        /// <returns>褰撳墠鍒囨崲鐘舵€?/returns>
+        /// <returns>Current transition state</returns>
         public TransitionState GetCurrentSwitchStatus()
         {
             return _stateManager.GetCurrentTransition();
@@ -368,7 +368,7 @@ namespace Game.UI.Controllers
         /// 妫€鏌ユ槸鍚﹀彲浠ュ垏鎹㈠埌鎸囧畾鍦烘櫙
         /// </summary>
         /// <param name="targetScene">鐩爣鍦烘櫙</param>
-        /// <param name="ignoreCurrentTransition">鏄惁蹇界暐褰撳墠鍒囨崲鐘舵€?/param>
+        /// <param name="ignoreCurrentTransition">Whether to ignore current transition state</param>
         /// <returns>鏄惁鍙互鍒囨崲</returns>
         public bool CanSwitchToScene(SceneType targetScene, bool ignoreCurrentTransition = false)
         {

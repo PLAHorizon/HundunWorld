@@ -2,7 +2,7 @@
 	<MainWindow>
 		<Bounds X="0" Y="0" Width="3072" Height="1860" IsMaximized="True" IsMinimized="False" />
 	</MainWindow>
-	<MasterPanel SelectedTab="1">
+	<MasterPanel SelectedTab="0">
 		<Window Typename="::FlaxEditor.Windows.EditGameWindow">
 			<Data GridEnabled="True" ShowFpsCounter="False" ShowNavigation="False" NearPlane="8" FarPlane="20000" FieldOfView="60" MovementSpeed="1" OrthographicScale="1" UseOrthographicProjection="False" ViewFlags="391118847" />
 		</Window>
@@ -17,7 +17,7 @@
 				<Window Typename="::FlaxEditor.Windows.ToolboxWindow" />
 			</Panel>
 		</Panel>
-		<Panel DockState="9" SplitterValue="0.36620528" SelectedTab="0">
+		<Panel DockState="9" SplitterValue="0.37" SelectedTab="2">
 			<Window Typename="::FlaxEditor.Windows.ContentWindow">
 				<Data Split="0.2" Scale="1" ShowFileExtensions="False" ShowEngineFiles="True" ShowPluginsFiles="True" ShowAllFiles="True" ShowGeneratedFiles="False" ViewType="Tiles" />
 			</Window>
@@ -26,9 +26,6 @@
 			</Window>
 			<Window Typename="::FlaxEditor.Windows.OutputLogWindow">
 				<Data LogTypeShowMask="15" />
-			</Window>
-			<Window Typename="3a91a0fa-3103-4538-9b46-442b37af9a54">
-				<Data TimelineSplitter="0.4" Panel1Splitter="0.8" TimeShowMode="Frames" ShowPreviewValues="False" />
 			</Window>
 		</Panel>
 		<Panel DockState="8" SplitterValue="0.25" SelectedTab="0">
