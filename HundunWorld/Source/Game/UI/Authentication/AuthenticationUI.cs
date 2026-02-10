@@ -31,6 +31,7 @@ namespace HundunWorld.Game.UI.Authentication
         private UIAnimationManager _animationManager;
         private ErrorHandlingManager _errorManager;
         private UserGuidanceManager _guidanceManager;
+        private NetworkManager _networkManager;
 
         // UI组件
         private ContainerControl _mainContainer;
@@ -41,6 +42,7 @@ namespace HundunWorld.Game.UI.Authentication
         // 状态
         private bool _isProcessing = false;
         private bool _isFirstLogin = true;
+        private bool _isNetworkConnected = false;
 
         public ContainerControl MainContainer { get => _mainContainer; set => _mainContainer = value; }
         public override void OnStart()
@@ -69,6 +71,7 @@ namespace HundunWorld.Game.UI.Authentication
             _animationManager = UIAnimationManager.Instance;
             _errorManager = ErrorHandlingManager.Instance;
             _guidanceManager = UserGuidanceManager.Instance;
+            _networkManager = HundunWorldGame.Instance.NetworkManager;
         }
 
         /// <summary>
@@ -85,6 +88,15 @@ namespace HundunWorld.Game.UI.Authentication
             _authManager.LoginResponseReceived += OnLoginResponseReceived;
             _authManager.RegisterResponseReceived += OnRegisterResponseReceived;
 
+            // 订阅网络连接状态变化事件
+            if (_networkManager != null)
+            {
+                _networkManager.ConnectionStatusChanged += OnNetworkConnectionStatusChanged;
+                FlaxEngine.Debug.Log($"[AuthenticationUI] 订阅 NetworkManager.ConnectionStatusChanged 事件");
+                
+                // 检查当前连接状态
+                CheckAndUpdateButtonStates();
+            }
         }
 
         /// <summary>
@@ -154,6 +166,53 @@ namespace HundunWorld.Game.UI.Authentication
         {
             var guidance = UserGuidanceManager.CreateLoginGuidance();
             _guidanceManager.StartGuidance(guidance);
+        }
+
+        /// <summary>
+        /// 网络连接状态变化处理
+        /// </summary>
+        private void OnNetworkConnectionStatusChanged(ConnectionStatus status)
+        {
+            FlaxEngine.Debug.Log($"[AuthenticationUI] 网络连接状态变化: {status}");
+            _isNetworkConnected = (status == ConnectionStatus.Connected);
+            
+            // 更新按钮状态
+            UpdateButtonStates();
+        }
+
+        /// <summary>
+        /// 检查并更新按钮状态
+        /// </summary>
+        private void CheckAndUpdateButtonStates()
+        {
+            if (_networkManager != null)
+            {
+                var status = _networkManager.GetConnectionStatus();
+                _isNetworkConnected = (status == ConnectionStatus.Connected);
+                FlaxEngine.Debug.Log($"[AuthenticationUI] 当前网络连接状态: {status}, 按钮状态: {(_isNetworkConnected ? "启用" : "禁用")}");
+                UpdateButtonStates();
+            }
+        }
+
+        /// <summary>
+        /// 更新按钮状态
+        /// </summary>
+        private void UpdateButtonStates()
+        {
+            if (_isNetworkConnected)
+            {
+                // 网络已连接，启用按钮
+                _loginPanel?.EnableButtons();
+                _registerPanel?.EnableButtons();
+                FlaxEngine.Debug.Log($"[AuthenticationUI] 按钮已启用");
+            }
+            else
+            {
+                // 网络未连接，禁用按钮
+                _loginPanel?.DisableButtons();
+                _registerPanel?.DisableButtons();
+                FlaxEngine.Debug.Log($"[AuthenticationUI] 按钮已禁用");
+            }
         }
 
         /// <summary>
@@ -538,6 +597,9 @@ namespace HundunWorld.Game.UI.Authentication
             _mainContainer.Visible = true;
             _mainContainer.Enabled = true;
 
+            // 4. 检查并更新按钮状态
+            CheckAndUpdateButtonStates();
+
             FlaxEngine.Debug.Log("[ShowLoginPanelInternal] 登录面板已重置并居中");
 
             if (_animationManager != null)
@@ -618,6 +680,9 @@ namespace HundunWorld.Game.UI.Authentication
 
             _mainContainer.Visible = true;
             _mainContainer.Enabled = true;
+
+            // 检查并更新按钮状态
+            CheckAndUpdateButtonStates();
 
             FlaxEngine.Debug.Log("[ShowRegisterPanel] 注册面板已重置并居中");
 
@@ -761,6 +826,17 @@ namespace HundunWorld.Game.UI.Authentication
                 _stateManager.SceneChanged -= OnSceneChanged;
                 _stateManager.LoadingStateChanged -= OnLoadingStateChanged;
                 _stateManager.ErrorOccurred -= OnErrorOccurred;
+            }
+
+            if (_authManager != null)
+            {
+                _authManager.LoginResponseReceived -= OnLoginResponseReceived;
+                _authManager.RegisterResponseReceived -= OnRegisterResponseReceived;
+            }
+
+            if (_networkManager != null)
+            {
+                _networkManager.ConnectionStatusChanged -= OnNetworkConnectionStatusChanged;
             }
 
             // 清理资源

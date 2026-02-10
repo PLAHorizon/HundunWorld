@@ -212,6 +212,7 @@ namespace HundunWorld.Game.UI.Authentication
             SendVerificationCodeButton.Location = new Float2(codeInputWidth + 5, 0);
             SendVerificationCodeButton.Size = new Float2(inputWidth - codeInputWidth - 5, inputHeight);
             SendVerificationCodeButton.ButtonClicked += OnSendVerificationCodeClicked;
+            SendVerificationCodeButton.Enabled = false; // 初始化时禁用，等待网络连接
             verificationContainer.AddChild(SendVerificationCodeButton);
             
             AddChild(verificationContainer);
@@ -228,6 +229,7 @@ namespace HundunWorld.Game.UI.Authentication
             RegisterButton.BackgroundColorHighlighted = ChineseClassicalTheme.SuccessColor;
             RegisterButton.BorderColorHighlighted = ChineseClassicalTheme.InputBackgroundColor;
             RegisterButton.ButtonClicked += OnRegisterButtonClicked;
+            RegisterButton.Enabled = false; // 初始化时禁用，等待网络连接
             AddChild(RegisterButton);
 
             currentY += 50;
@@ -237,6 +239,7 @@ namespace HundunWorld.Game.UI.Authentication
             SwitchToLoginButton.Location = new Float2(buttonX, currentY);
             SwitchToLoginButton.Size = new Float2(buttonWidth, 35);
             SwitchToLoginButton.ButtonClicked += OnSwitchToLoginClicked;
+            SwitchToLoginButton.Enabled = false; // 初始化时禁用，等待网络连接
             AddChild(SwitchToLoginButton);
 
             currentY += 45;
@@ -343,6 +346,46 @@ namespace HundunWorld.Game.UI.Authentication
         public void UpdateVerificationCodeCountdown(int seconds)
         {
             SendVerificationCodeButton.Text = $"{seconds}秒后重发";
+        }
+
+        /// <summary>
+        /// 启用按钮（网络连接建立后调用）
+        /// </summary>
+        public void EnableButtons()
+        {
+            if (RegisterButton != null)
+            {
+                RegisterButton.Enabled = true;
+            }
+            if (SwitchToLoginButton != null)
+            {
+                SwitchToLoginButton.Enabled = true;
+            }
+            if (SendVerificationCodeButton != null)
+            {
+                SendVerificationCodeButton.Enabled = true;
+            }
+            SetStatus("已连接服务器，请输入注册信息", Color.Green);
+        }
+
+        /// <summary>
+        /// 禁用按钮（网络断开时调用）
+        /// </summary>
+        public void DisableButtons()
+        {
+            if (RegisterButton != null)
+            {
+                RegisterButton.Enabled = false;
+            }
+            if (SwitchToLoginButton != null)
+            {
+                SwitchToLoginButton.Enabled = false;
+            }
+            if (SendVerificationCodeButton != null)
+            {
+                SendVerificationCodeButton.Enabled = false;
+            }
+            SetStatus("正在连接服务器...", Color.Yellow);
         }
         
         /// <summary>
