@@ -5,6 +5,7 @@ using HundunWorld.Game.ECS.Components;
 using HundunWorld.Game.Combat.Effects;
 using HundunWorld.Game.Character;
 using Game.Character.Attributes;
+using Horizon.Game.Message.Enums;
 
 namespace HundunWorld.Game.Combat
 {

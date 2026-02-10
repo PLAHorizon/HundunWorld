@@ -4,6 +4,7 @@ using Game.Character.Attributes;
 using Game.Combat.Skills;
 using Game.Combat.Effects;
 using HundunWorld.Game.Combat.Skills;
+using Horizon.Game.Message.Enums;
 
 namespace Game.Combat.WuxingSystem
 {
