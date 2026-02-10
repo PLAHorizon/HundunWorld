@@ -676,6 +676,38 @@ namespace HundunWorld.Game.Network
 
         #endregion
 
+        #region Connection Wait Helper
+
+        /// <summary>
+        /// 等待连接建立（带超时）
+        /// </summary>
+        /// <param name="timeoutMs">超时时间（毫秒）</param>
+        /// <returns>是否在超时前连接成功</returns>
+        public async Task<bool> WaitForConnectionAsync(int timeoutMs = 10000)
+        {
+            if (_connectionStatus == ConnectionStatus.Connected)
+            {
+                return true;
+            }
+
+            var startTime = DateTime.UtcNow;
+            while ((DateTime.UtcNow - startTime).TotalMilliseconds < timeoutMs)
+            {
+                if (_connectionStatus == ConnectionStatus.Connected)
+                {
+                    EnhancedLogging.LogInfo("[WaitForConnectionAsync] 连接已建立");
+                    return true;
+                }
+
+                await Task.Delay(100);
+            }
+
+            EnhancedLogging.LogWarning($"[WaitForConnectionAsync] 等待连接超时 ({timeoutMs}ms)");
+            return false;
+        }
+
+        #endregion
+
         #region Reconnection Event Handlers
 
         /// <summary>
