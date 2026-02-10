@@ -378,7 +378,7 @@ namespace HundunWorld.Game.Combat
     {
         public int Id { get; set; }
         public string Name { get; set; }
-        public HundunWorld.Game.ECS.Components.SkillType Type { get; set; }
+        public SkillType Type { get; set; }
         public Horizon.Game.Message.Enums.DamageType DamageType { get; set; }
         public WuxingElement Element { get; set; }
         public float DamageMultiplier { get; set; }

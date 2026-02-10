@@ -1,6 +1,6 @@
 using Horizon.Game.Message.Network;
-using Horizon.Game.Message.Enums;
 using HundunWorld.Game.Network;
+using WorldEventType = Horizon.Game.Message.Enums.WorldEventType;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
