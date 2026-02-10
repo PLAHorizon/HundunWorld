@@ -173,6 +173,41 @@ namespace HundunWorld.Game.Scene
         }
 
         /// <summary>
+        /// 处理待处理的传送请求
+        /// </summary>
+        private void ProcessPendingTeleport()
+        {
+            if (!_pendingTeleportPosition.HasValue) return;
+
+            _teleportWaitTimer += Time.DeltaTime;
+
+            // 检查目标分块是否已加载
+            var targetChunk = GetChunkAtPosition(_pendingTeleportPosition.Value);
+            if (targetChunk != null && targetChunk.LoadState == SceneChunkLoader.ChunkLoadState.Loaded)
+            {
+                // 分块已加载，执行传送
+                if (_player != null)
+                {
+                    _player.Position = _pendingTeleportPosition.Value;
+                    Debug.Log($"[ChunkSceneSystem] 待处理传送完成: {_pendingTeleportPosition.Value}");
+                }
+                _pendingTeleportPosition = null;
+                _teleportWaitTimer = 0f;
+            }
+            else if (_teleportWaitTimer >= TeleportWaitTimeout)
+            {
+                // 超时，强制传送
+                if (_player != null)
+                {
+                    _player.Position = _pendingTeleportPosition.Value;
+                    Debug.LogWarning($"[ChunkSceneSystem] 待处理传送超时，强制传送到: {_pendingTeleportPosition.Value}");
+                }
+                _pendingTeleportPosition = null;
+                _teleportWaitTimer = 0f;
+            }
+        }
+
+        /// <summary>
         /// 更新场景区域
         /// </summary>
         private void UpdateSceneRegion()

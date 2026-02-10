@@ -130,17 +130,19 @@ namespace HundunWorld.Game.Audio
                 var audioClip = Content.Load<AudioClip>(soundPath);
                 if (audioClip != null)
                 {
-                    var source = AudioSource.PlayOneShot(audioClip, finalVolume);
-                    if (source != null)
+                    var sourceActor = new AudioSource();
+                    sourceActor.Clip = audioClip;
+                    sourceActor.Volume = finalVolume;
+                    sourceActor.IsLooping = false;
+                    Level.SpawnActor(sourceActor);
+                    sourceActor.Play();
+                    _activeSounds.Add(new ActiveSound
                     {
-                        _activeSounds.Add(new ActiveSound
-                        {
-                            SoundPath = soundPath,
-                            Category = category,
-                            StartTime = Time.GameTime,
-                            Source = source
-                        });
-                    }
+                        SoundPath = soundPath,
+                        Category = category,
+                        StartTime = Time.GameTime,
+                        Source = sourceActor
+                    });
                 }
                 else
                 {
@@ -182,17 +184,20 @@ namespace HundunWorld.Game.Audio
                 var audioClip = Content.Load<AudioClip>(soundPath);
                 if (audioClip != null)
                 {
-                    var source = AudioSource.PlayOneShot(audioClip, finalVolume, position);
-                    if (source != null)
+                    var sourceActor = new AudioSource();
+                    sourceActor.Clip = audioClip;
+                    sourceActor.Volume = finalVolume;
+                    sourceActor.IsLooping = false;
+                    sourceActor.Position = position;
+                    Level.SpawnActor(sourceActor);
+                    sourceActor.Play();
+                    _activeSounds.Add(new ActiveSound
                     {
-                        _activeSounds.Add(new ActiveSound
-                        {
-                            SoundPath = soundPath,
-                            Category = category,
-                            StartTime = Time.GameTime,
-                            Source = source
-                        });
-                    }
+                        SoundPath = soundPath,
+                        Category = category,
+                        StartTime = Time.GameTime,
+                        Source = sourceActor
+                    });
                 }
                 else
                 {

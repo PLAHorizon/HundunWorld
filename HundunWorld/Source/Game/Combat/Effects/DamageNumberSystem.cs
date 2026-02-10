@@ -183,10 +183,10 @@ namespace Game.Combat.Effects
                 if (camera == null) return;
 
                 // 使用摄像机视口将世界坐标投影到屏幕坐标
-                camera.ProjectPoint(position, out var screenPos);
+                var isVisible = camera.ProjectPoint(position, out var screenPos);
 
                 // 在摄像机后面的不显示
-                if (screenPos.Z <= 0)
+                if (!isVisible)
                     return;
 
                 // 设置绘制颜色（包含透明度）

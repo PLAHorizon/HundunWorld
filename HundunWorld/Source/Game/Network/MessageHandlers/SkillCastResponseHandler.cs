@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Game.UI; // 添加HUD类的命名空间引用
+using EffectType = Horizon.Game.Message.Network.EffectType;
 
 // 为Scene添加别名以避免命名冲突
 using FlaxScene = FlaxEngine.Scene;

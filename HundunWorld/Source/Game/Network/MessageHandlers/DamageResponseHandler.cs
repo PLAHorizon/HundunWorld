@@ -145,7 +145,7 @@ namespace ManagedHundunWorld.Network.Handlers
             try
             {
                 // 通知伤害数字系统显示伤害值
-                var damageNumberSystem = Game.Combat.Effects.DamageNumberSystem.Instance;
+                var damageNumberSystem = global::Game.Combat.Effects.DamageNumberSystem.Instance;
                 if (damageNumberSystem != null)
                 {
                     damageNumberSystem.ShowDamageNumber(

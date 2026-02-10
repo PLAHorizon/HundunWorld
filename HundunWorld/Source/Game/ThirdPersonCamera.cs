@@ -2946,7 +2946,7 @@ namespace HundunWorld.Game
             // 尝试采样场景中的光源来估算光照级别
             if (Target != null)
             {
-                var lights = Level.FindActors<Light>();
+                var lights = Level.GetActors<Light>();
                 if (lights != null && lights.Length > 0)
                 {
                     float totalIntensity = 0f;
@@ -2967,7 +2967,7 @@ namespace HundunWorld.Game
                             float dist = Vector3.Distance(targetPos, light.Position);
                             if (dist < PointLightMaxRange)
                             {
-                                float attenuation = Mathf.Clamp01(1f - dist / PointLightMaxRange);
+                                float attenuation = Mathf.Saturate(1f - dist / PointLightMaxRange);
                                 totalIntensity += attenuation;
                                 nearbyLights++;
                             }
@@ -2976,7 +2976,7 @@ namespace HundunWorld.Game
                     
                     if (nearbyLights > 0)
                     {
-                        _currentLightLevel = Mathf.Clamp01(totalIntensity / nearbyLights);
+                        _currentLightLevel = Mathf.Saturate(totalIntensity / nearbyLights);
                         return;
                     }
                 }
