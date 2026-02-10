@@ -698,12 +698,18 @@ namespace HundunWorld.Game.Network
             var startTime = DateTime.UtcNow;
             var endTime = startTime.AddMilliseconds(timeoutMs);
             
-            while (DateTime.UtcNow < endTime)
+            while (true)
             {
                 if (_connectionStatus == ConnectionStatus.Connected)
                 {
                     EnhancedLogging.LogInfo("[WaitForConnectionAsync] 连接已建立");
                     return true;
+                }
+
+                var currentTime = DateTime.UtcNow;
+                if (currentTime >= endTime)
+                {
+                    break;
                 }
 
                 await Task.Delay(ConnectionPollIntervalMs);
