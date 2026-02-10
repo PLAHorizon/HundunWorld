@@ -43,7 +43,7 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' ">
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
     </Reference>
   </ItemGroup>
 
@@ -65,7 +65,7 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|x64' ">
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
     </Reference>
   </ItemGroup>
 
@@ -87,7 +87,7 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|x64' ">
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
     </Reference>
   </ItemGroup>
 
@@ -109,7 +109,7 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
     </Reference>
   </ItemGroup>
 
@@ -131,7 +131,7 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
     </Reference>
   </ItemGroup>
 
@@ -153,49 +153,49 @@
   </PropertyGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
     <Reference Include="Newtonsoft.Json">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
     </Reference>
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="Orleans.Serialization.Abstractions">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Orleans.Serialization.Abstractions.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Orleans.Serialization.Abstractions.dll</HintPath>
     </Reference>
     <Reference Include="Arch">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Arch.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Arch.dll</HintPath>
     </Reference>
     <Reference Include="TouchSocket">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\TouchSocket.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\TouchSocket.dll</HintPath>
     </Reference>
     <Reference Include="TouchSocket.Core">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\TouchSocket.Core.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\TouchSocket.Core.dll</HintPath>
     </Reference>
     <Reference Include="MemoryPack.Core">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\MemoryPack.Core.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\MemoryPack.Core.dll</HintPath>
     </Reference>
     <Reference Include="Horizon.Game.Message">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Horizon.Game.Message.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Horizon.Game.Message.dll</HintPath>
     </Reference>
     <Reference Include="K4os.Compression.LZ4">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\K4os.Compression.LZ4.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\K4os.Compression.LZ4.dll</HintPath>
     </Reference>
     <Reference Include="Collections.Pooled">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Collections.Pooled.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Collections.Pooled.dll</HintPath>
     </Reference>
     <Reference Include="Schedulers">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Schedulers.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Schedulers.dll</HintPath>
     </Reference>
     <Reference Include="Arch.LowLevel">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Arch.LowLevel.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\Arch.LowLevel.dll</HintPath>
     </Reference>
     <Reference Include="CommunityToolkit.HighPerformance">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\CommunityToolkit.HighPerformance.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\CommunityToolkit.HighPerformance.dll</HintPath>
     </Reference>
     <Reference Include="LiteDB">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\LiteDB.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools\LiteDB.dll</HintPath>
     </Reference>
     <Reference Include="FlaxEngine.CSharp">
-      <HintPath>..\..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.11\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
     </Reference>
   </ItemGroup>
 
@@ -454,21 +454,21 @@
     <Compile Include="Game\Worlds\WorldStateManager.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' " >
-    <Compile Visible="false" Include="C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Cache\Intermediate\GameEditorTarget\Windows\x64\Debug\Game\Game.Bindings.Gen.cs" />
+    <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Cache\Intermediate\GameEditorTarget\Windows\x64\Debug\Game\Game.Bindings.Gen.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|x64' " >
-    <Compile Visible="false" Include="C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Cache\Intermediate\GameEditorTarget\Windows\x64\Development\Game\Game.Bindings.Gen.cs" />
+    <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Cache\Intermediate\GameEditorTarget\Windows\x64\Development\Game\Game.Bindings.Gen.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|x64' " >
-    <Compile Visible="false" Include="C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Cache\Intermediate\GameEditorTarget\Windows\x64\Release\Game\Game.Bindings.Gen.cs" />
+    <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Cache\Intermediate\GameEditorTarget\Windows\x64\Release\Game\Game.Bindings.Gen.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' " >
-    <Compile Visible="false" Include="C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Cache\Intermediate\GameTarget\Windows\x64\Debug\Game\Game.Bindings.Gen.cs" />
+    <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Cache\Intermediate\GameTarget\Windows\x64\Debug\Game\Game.Bindings.Gen.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' " >
-    <Compile Visible="false" Include="C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Cache\Intermediate\GameTarget\Windows\x64\Development\Game\Game.Bindings.Gen.cs" />
+    <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Cache\Intermediate\GameTarget\Windows\x64\Development\Game\Game.Bindings.Gen.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' " >
-    <Compile Visible="false" Include="C:\Works\Github切换Gitee\github\HundunWorld\HundunWorld\Cache\Intermediate\GameTarget\Windows\x64\Release\Game\Game.Bindings.Gen.cs" />
+    <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Cache\Intermediate\GameTarget\Windows\x64\Release\Game\Game.Bindings.Gen.cs" />
   </ItemGroup>
 </Project>

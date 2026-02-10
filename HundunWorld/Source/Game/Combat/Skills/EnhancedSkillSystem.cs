@@ -3,7 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Game.Combat.Skills; // 添加技能相关的命名空间引用
-using Game.Character.Attributes; // 添加角色属性组件命名空间
+using Game.Character.Attributes;
+using Horizon.Game.Message.Enums; // 添加角色属性组件命名空间
 
 namespace HundunWorld.Game.Combat.Skills
 {

@@ -91,3 +91,7 @@ Screenshots/
 # Build artifacts from Flax
 **/Binaries/Tools/
 **/C:/
+Binaries
+Cache
+/HundunWorld/Cache
+/HundunWorld/Binaries

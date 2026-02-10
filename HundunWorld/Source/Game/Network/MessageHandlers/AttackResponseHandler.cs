@@ -7,9 +7,7 @@ using HundunWorld.Game.Network.Handlers;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-
-// 为Scene添加别名以避免命名冲突
-using FlaxScene = FlaxEngine.Scene;
+using HundunWorld.Game.ECS;
 
 namespace ManagedHundunWorld.Network.Handlers
 {
@@ -26,7 +24,7 @@ namespace ManagedHundunWorld.Network.Handlers
         public event Action<AttackMessage> AttackProcessed;
         public event Action<DamageMessage> DamageApplied;
 
-        private ECS.NetworkEntityRegistry _entityRegistry;
+        private HundunWorld.Game.ECS.NetworkEntityRegistry _entityRegistry;
 
         public AttackResponseHandler() : base(MessageType.Attack)
         {
@@ -35,7 +33,7 @@ namespace ManagedHundunWorld.Network.Handlers
         /// <summary>
         /// 设置网络实体注册表引用
         /// </summary>
-        public void SetEntityRegistry(ECS.NetworkEntityRegistry registry)
+        public void SetEntityRegistry(HundunWorld.Game.ECS.NetworkEntityRegistry registry)
         {
             _entityRegistry = registry;
         }
