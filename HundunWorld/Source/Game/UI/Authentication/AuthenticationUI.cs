@@ -142,7 +142,7 @@ namespace HundunWorld.Game.UI.Authentication
         /// </summary>
         private void OnErrorOccurred(string errorMessage)
         {
-            if (_stateManager.CurrentScene == SceneType.Start)
+            if (_stateManager.CurrentScene == SceneType.Start || _stateManager.CurrentScene == SceneType.Login)
                 _loginPanel.SetStatus(errorMessage,Color.DarkRed);
             new ToastManager().ShowError(errorMessage);
         }

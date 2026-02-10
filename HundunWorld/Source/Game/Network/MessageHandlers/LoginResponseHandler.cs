@@ -159,12 +159,13 @@ namespace ManagedHundunWorld.Network.Handlers
                     FlaxEngine.Debug.LogWarning($"登录失败: {loginResponse.Message}");
                     
                     Scripting.InvokeOnUpdate(() => {
+                        // 调用AuthenticationManager处理登录失败响应，触发LoginResponseReceived事件以更新UI
+                        AuthenticationManager.Instance.HandleLoginResponse(loginResponse);
+                        
                         var stateManager = UIStateManager.Instance;
                         if (stateManager != null)
                         {
                             stateManager.SetError(loginResponse.Message);
-
-                            FlaxEngine.Debug.Log("已调用HandleLoginSuccess，将自动切换到角色选择界面");
                         }
                         var confirmDialog = UIHelper.CreateConfirmDialog("登录", loginResponse.Message, () => { }, false);
                     });
