@@ -2,7 +2,6 @@ using Arch.Core;
 using Arch.Core.Utils;
 using FlaxEngine;
 using HundunWorld.Game.ECS.Components;
-using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 using Game.Character.Attributes;
 using EffectType = Horizon.Game.Message.Network.EffectType;

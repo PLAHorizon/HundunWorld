@@ -513,7 +513,7 @@ namespace HundunWorld.Game.UI.GameMain
         {
             try
             {
-                var damageSystem = Game.Combat.Effects.DamageNumberSystem.Instance;
+                var damageSystem = global::Game.Combat.Effects.DamageNumberSystem.Instance;
                 if (damageSystem != null)
                 {
                     damageSystem.ShowDamageNumber(damage, worldPosition);
@@ -536,7 +536,7 @@ namespace HundunWorld.Game.UI.GameMain
         {
             try
             {
-                var damageSystem = Game.Combat.Effects.DamageNumberSystem.Instance;
+                var damageSystem = global::Game.Combat.Effects.DamageNumberSystem.Instance;
                 if (damageSystem != null)
                 {
                     var healText = $"+{(int)heal}";

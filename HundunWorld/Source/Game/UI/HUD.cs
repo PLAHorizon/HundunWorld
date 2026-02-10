@@ -103,7 +103,7 @@ namespace Game.UI
                         case NotificationState.FadingIn:
                             var fadeInProgress = Mathf.Clamp(elapsed / FadeInDuration, 0f, 1f);
                             if (entry.Panel != null)
-                                entry.Panel.Opacity = fadeInProgress;
+                                SetNotificationOpacity(entry, fadeInProgress);
                             if (fadeInProgress >= 1f)
                                 entry.State = NotificationState.Visible;
                             break;
@@ -120,7 +120,7 @@ namespace Game.UI
                             var fadeOutElapsed = currentTime - entry.FadeOutStartTime;
                             var fadeOutProgress = Mathf.Clamp(fadeOutElapsed / FadeOutDuration, 0f, 1f);
                             if (entry.Panel != null)
-                                entry.Panel.Opacity = 1f - fadeOutProgress;
+                                SetNotificationOpacity(entry, 1f - fadeOutProgress);
                             if (fadeOutProgress >= 1f)
                             {
                                 RemoveNotificationAt(i);
@@ -153,8 +153,7 @@ namespace Game.UI
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Offsets = new Margin(0, 400, yOffset, NotificationHeight),
-                BackgroundColor = new Color(0, 0, 0, 0.75f),
-                Opacity = 0f
+                BackgroundColor = new Color(0, 0, 0, 0f),
             };
 
             var label = new Label
@@ -275,6 +274,23 @@ namespace Game.UI
             FadingIn,
             Visible,
             FadingOut
+        }
+
+        /// <summary>
+        /// 设置通知的透明度（通过调整背景色和文字色的Alpha实现）
+        /// </summary>
+        private static void SetNotificationOpacity(NotificationEntry entry, float opacity)
+        {
+            if (entry.Panel != null)
+            {
+                var bg = entry.Panel.BackgroundColor;
+                entry.Panel.BackgroundColor = new Color(bg.R, bg.G, bg.B, 0.75f * opacity);
+            }
+            if (entry.Label != null)
+            {
+                var tc = entry.DisplayColor;
+                entry.Label.TextColor = new Color(tc.R, tc.G, tc.B, opacity);
+            }
         }
 
         /// <summary>

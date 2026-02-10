@@ -1,9 +1,25 @@
 using FlaxEngine;
 using Game.Character.Attributes;
-using Horizon.Game.Message.Enums;
 
 namespace HundunWorld.Game.ECS.Components
 {
+    /// <summary>
+    /// 技能类型枚举（本地定义，避免对外部DLL的依赖）
+    /// </summary>
+    public enum SkillType
+    {
+        Active,
+        Passive,
+        Special,
+        Toggle,
+        ActiveAttack,
+        PassiveEnhancement,
+        Control,
+        Dash,
+        Support,
+        Ultimate,
+    }
+
     /// <summary>
     /// 技能组件，存储实体的技能信息
     /// </summary>

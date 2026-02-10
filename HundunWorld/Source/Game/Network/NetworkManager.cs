@@ -30,6 +30,7 @@ namespace HundunWorld.Game.Network
         private readonly object _connectionLock = new object();
         private readonly object _sendLock = new object();
         private readonly MessageProcessor _messageProcessor;
+        private readonly HorizonMessageAdapter _messageAdapter;
         private ConnectionStatus _connectionStatus = ConnectionStatus.Disconnected;
         private GatewayInfo _currentGateway;
         private volatile bool _isInitialized = false;
@@ -65,6 +66,7 @@ namespace HundunWorld.Game.Network
             _heartbeatManager = new HeartbeatManager(this); // 初始化心跳包管理器
             _connectionCts = new CancellationTokenSource();
             _messageProcessor = new MessageProcessor();
+            _messageAdapter = new HorizonMessageAdapter();
             // 订阅网络状态变化事件
             _networkStateMonitor.NetworkStatusChanged += OnNetworkStatusChanged;
 

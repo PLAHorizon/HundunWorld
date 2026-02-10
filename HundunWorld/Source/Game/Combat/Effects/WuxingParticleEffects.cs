@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using FlaxEngine;
 using FlaxEngine.Utilities;
+using Game.Character.Attributes;
 
 namespace Game.Combat.Effects
 {
@@ -350,18 +351,5 @@ namespace Game.Combat.Effects
         {
             Cleanup();
         }
-    }
-
-    /// <summary>
-    /// 五行元素枚举（复制自Character.Attributes.WuxingElement以避免依赖）
-    /// </summary>
-    public enum WuxingElement
-    {
-        None = 0,
-        Metal = 1,  // 金 - 锋锐、坚硬、破甲
-        Wood = 2,   // 木 - 生长、韧性、持续恢复
-        Water = 3,  // 水 - 流动、柔和、减速
-        Fire = 4,   // 火 - 炽热、爆裂、范围伤害
-        Earth = 5   // 土 - 厚重、防御、反伤
     }
 }
