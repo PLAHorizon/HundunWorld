@@ -25,6 +25,7 @@ namespace HundunWorld.Game.Network
         private readonly NetworkStateMonitor _networkStateMonitor;
         private GatewaySelector _gatewaySelector;
         private readonly HeartbeatManager _heartbeatManager;
+        private readonly ReconnectionManager _reconnectionManager;
         private readonly CancellationTokenSource _connectionCts;
         private readonly CancellationTokenSource _gatewayCheckCts;
         private readonly object _connectionLock = new object();
@@ -67,6 +68,22 @@ namespace HundunWorld.Game.Network
             _connectionCts = new CancellationTokenSource();
             _messageProcessor = new MessageProcessor();
             _messageAdapter = new HorizonMessageAdapter();
+            
+            // 初始化重连管理器，提供连接函数
+            _reconnectionManager = new ReconnectionManager(async () =>
+            {
+                if (_currentGateway != null)
+                {
+                    return await ConnectAsync(_currentGateway.IP, _currentGateway.Port);
+                }
+                return false;
+            });
+            
+            // 订阅重连管理器事件
+            _reconnectionManager.OnReconnected += OnReconnectionSucceeded;
+            _reconnectionManager.OnReconnectFailed += OnReconnectionFailed;
+            _reconnectionManager.OnStateChanged += OnReconnectionStateChanged;
+            
             // 订阅网络状态变化事件
             _networkStateMonitor.NetworkStatusChanged += OnNetworkStatusChanged;
 
@@ -245,6 +262,9 @@ namespace HundunWorld.Game.Network
             EnhancedDiagnostics.LogNetworkOperation("连接", $"{_currentGateway?.IP}:{_currentGateway?.Port}", true, "连接成功");
 
             UpdateConnectionStatus(ConnectionStatus.Connected);
+            
+            // 通知重连管理器连接成功
+            _reconnectionManager?.MarkConnected();
 
             // 开始发送心跳包
             if (_heartbeatManager != null)
@@ -283,15 +303,11 @@ namespace HundunWorld.Game.Network
                 _heartbeatManager.StopHeartbeat();
             }
 
-            // 如果不是主动断开，尝试重连
-            if (!_connectionCts.Token.IsCancellationRequested)
+            // 如果不是主动断开，使用重连管理器进行重连
+            if (!_connectionCts.Token.IsCancellationRequested && !_isDisposing)
             {
-                EnhancedLogging.LogInfo("[OnClientDisconnected] 检测到非主动断开，开始自动重连");
-                RunBackground(async () =>
-                {
-                    await Task.Delay(2000); // 等待2秒后重连
-                    await CheckAndReconnectAsync();
-                });
+                EnhancedLogging.LogInfo("[OnClientDisconnected] 检测到非主动断开，触发重连管理器");
+                _reconnectionManager?.HandleDisconnect();
             }
         }
 
@@ -497,6 +513,9 @@ namespace HundunWorld.Game.Network
         private async Task<bool> HandleHeartbeatMessageAsync(ITcpClient sender, HeartbeatMessage message)
         {
             EnhancedLogging.LogInfo("[HandleHeartbeatMessageAsync] 收到心跳消息");
+            
+            // 更新重连管理器的心跳时间
+            _reconnectionManager?.UpdateHeartbeat();
 
             // 回复心跳确认
             var heartbeatAck = new HeartbeatMessage
@@ -657,6 +676,97 @@ namespace HundunWorld.Game.Network
 
         #endregion
 
+        #region Connection Wait Helper
+
+        /// <summary>
+        /// 连接轮询间隔（毫秒）
+        /// </summary>
+        private const int ConnectionPollIntervalMs = 100;
+
+        /// <summary>
+        /// 等待连接建立（带超时）
+        /// </summary>
+        /// <param name="timeoutMs">超时时间（毫秒）</param>
+        /// <returns>是否在超时前连接成功</returns>
+        public async Task<bool> WaitForConnectionAsync(int timeoutMs = 10000)
+        {
+            if (_connectionStatus == ConnectionStatus.Connected)
+            {
+                return true;
+            }
+
+            var startTime = DateTime.UtcNow;
+            var endTime = startTime.AddMilliseconds(timeoutMs);
+            
+            while (true)
+            {
+                if (_connectionStatus == ConnectionStatus.Connected)
+                {
+                    EnhancedLogging.LogInfo("[WaitForConnectionAsync] 连接已建立");
+                    return true;
+                }
+
+                var currentTime = DateTime.UtcNow;
+                if (currentTime >= endTime)
+                {
+                    break;
+                }
+
+                await Task.Delay(ConnectionPollIntervalMs);
+            }
+
+            EnhancedLogging.LogWarning($"[WaitForConnectionAsync] 等待连接超时 ({timeoutMs}ms)");
+            return false;
+        }
+
+        #endregion
+
+        #region Reconnection Event Handlers
+
+        /// <summary>
+        /// 重连成功事件处理
+        /// </summary>
+        private void OnReconnectionSucceeded()
+        {
+            EnhancedLogging.LogInfo("[OnReconnectionSucceeded] 重连成功");
+            EnhancedDiagnostics.LogDiagnostic("重连成功");
+        }
+
+        /// <summary>
+        /// 重连失败事件处理
+        /// </summary>
+        private void OnReconnectionFailed()
+        {
+            EnhancedLogging.LogError("[OnReconnectionFailed] 重连失败，已达到最大重试次数");
+            EnhancedDiagnostics.LogDiagnostic("重连失败");
+            ConnectionError?.Invoke("无法连接到服务器，请检查网络连接或稍后重试");
+        }
+
+        /// <summary>
+        /// 重连状态变化事件处理
+        /// </summary>
+        private void OnReconnectionStateChanged(ReconnectionManager.ReconnectState state)
+        {
+            EnhancedLogging.LogInfo($"[OnReconnectionStateChanged] 重连状态变化: {state}");
+            
+            // 根据重连状态更新连接状态
+            switch (state)
+            {
+                case ReconnectionManager.ReconnectState.Reconnecting:
+                    UpdateConnectionStatus(ConnectionStatus.Connecting);
+                    break;
+                case ReconnectionManager.ReconnectState.Connected:
+                    // 连接状态已在OnClientConnected中更新
+                    break;
+                case ReconnectionManager.ReconnectState.Disconnected:
+                case ReconnectionManager.ReconnectState.Failed:
+                    UpdateConnectionStatus(ConnectionStatus.Disconnected);
+                    break;
+            }
+        }
+
+        #endregion
+
         #region IDisposable Implementation
 
         /// <summary>
@@ -672,6 +782,10 @@ namespace HundunWorld.Game.Network
             {
                 // 停止心跳包发送
                 _heartbeatManager?.StopHeartbeat();
+                
+                // 停止重连管理器
+                _reconnectionManager?.CancelReconnect();
+                _reconnectionManager?.Dispose();
 
                 // 取消网关状态检查
                 if (_gatewayCheckCts != null && !_gatewayCheckCts.Token.IsCancellationRequested)

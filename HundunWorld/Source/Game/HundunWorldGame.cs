@@ -90,6 +90,33 @@ namespace HundunWorld.Game
                 _networkManager.ConnectionError += OnConnectionError;
 
                 Debug.Log("网络管理器初始化完成");
+                
+                // 在后台尝试建立初始连接
+                if (gatewayList != null && gatewayList.Count > 0)
+                {
+                    Debug.Log("开始尝试建立初始网络连接...");
+                    Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var gateway = gatewayList[0];
+                            var connected = await _networkManager.ConnectAsync(gateway.IP, gateway.Port);
+                            if (connected)
+                            {
+                                Debug.Log("初始网络连接建立成功");
+                            }
+                            else
+                            {
+                                Debug.LogWarning("初始网络连接建立失败，将在登录时重试");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.LogWarning($"建立初始网络连接时发生错误: {ex.Message}");
+                            EnhancedDiagnostics.LogException(ex, "建立初始网络连接");
+                        }
+                    }).ConfigureAwait(false);
+                }
             }
             catch (Exception ex)
             {

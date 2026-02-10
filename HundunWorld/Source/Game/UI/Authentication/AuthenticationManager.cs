@@ -108,11 +108,19 @@ namespace HundunWorld.Game.UI.Authentication
                         
                         if (!connected)
                         {
-                            return new AuthenticationResult { IsSuccess = false, ErrorMessage = "无法连接到游戏服务器，请检查网络连接" };
+                            // 如果直接连接失败，等待一段时间看是否建立连接
+                            Debug.Log("等待连接建立...");
+                            var waitSuccess = await networkManager.WaitForConnectionAsync(5000);
+                            if (!waitSuccess)
+                            {
+                                return new AuthenticationResult { IsSuccess = false, ErrorMessage = "无法连接到游戏服务器，请检查网络连接" };
+                            }
                         }
-                        
-                        // 等待连接状态更新
-                        await Task.Delay(100);
+                        else
+                        {
+                            // 连接成功后等待一小段时间确保连接稳定
+                            await Task.Delay(200);
+                        }
                     }
                     else
                     {
