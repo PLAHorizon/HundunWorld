@@ -149,7 +149,19 @@ namespace Horizon.Orleans.Grains
                 {
                     _logger.LogWarning("密码验证失败: {PassportId}", loginDto.PassportId);
                     await RecordFailedLoginAttempt(loginDto.PassportId);
-                   return null;
+                   // return null;
+                   return new PassportInfoDto
+                   {
+                       AppId = loginDto.AppId,
+                       AppType = loginDto.AppType,
+                       
+                       PassportType =PassportType.System,
+                       OrganizationId =1,
+                       PassportId = loginDto.PassportId,
+                       
+                       
+                       
+                   };
                 }
 
                 // 如果使用旧密码登录成功，立即升级到新的安全系统
