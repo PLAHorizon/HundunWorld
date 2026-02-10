@@ -182,12 +182,24 @@ namespace Game.Combat.Effects
                 var camera = Camera.MainCamera;
                 if (camera == null) return;
 
-                // 使用摄像机视口将世界坐标投影到屏幕坐标
-                var isVisible = camera.ProjectPoint(position, out var screenPos);
+                // 检查点是否在摄像机前方
+                var cameraTransform = camera.Transform;
+                var toCameraDir = position - cameraTransform.Translation;
+                var cameraForward = cameraTransform.Forward;
+                
+                // 计算点积，如果小于0表示在摄像机后面
+                float dotProduct = Vector3.Dot(toCameraDir, cameraForward);
+                if (dotProduct < 0)
+                    return; // 在摄像机后面，不显示
 
-                // 在摄像机后面的不显示
-                if (!isVisible)
-                    return;
+                // 使用摄像机视口将世界坐标投影到屏幕坐标
+                camera.ProjectPoint(position, out var screenPos);
+
+                // 检查屏幕坐标是否在视野范围内
+                var viewport = camera.Viewport;
+                if (screenPos.X < 0 || screenPos.X > viewport.Width ||
+                    screenPos.Y < 0 || screenPos.Y > viewport.Height)
+                    return; // 在屏幕外，不显示
 
                 // 设置绘制颜色（包含透明度）
                 var drawColor = damageNumber.Color;

@@ -7,6 +7,7 @@ using Game.Character.Attributes;
 using EffectType = Horizon.Game.Message.Network.EffectType;
 using System;
 using System.Collections.Generic;
+using Horizon.Game.Message.Enums;
 
 namespace HundunWorld.Game.ECS.Systems
 {
