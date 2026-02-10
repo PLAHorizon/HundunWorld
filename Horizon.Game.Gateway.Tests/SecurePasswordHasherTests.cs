@@ -1,4 +1,5 @@
 using Horizon.Core;
+using System.Text;
 
 namespace Horizon.Game.Gateway.Tests
 {
@@ -245,6 +246,85 @@ namespace Horizon.Game.Gateway.Tests
         public void IsPasswordStrong_ExactlyEightChars_WithComplexity_ReturnsTrue()
         {
             Assert.True(SecurePasswordHasher.IsPasswordStrong("Test12!a"));
+        }
+
+        #endregion
+
+        #region Password Encoding Tests - Base64 Compatibility
+
+        [Fact]
+        public void HashPassword_WithBase64EncodedInput_WorksCorrectly()
+        {
+            // Arrange
+            string plainPassword = "TestPassword123!";
+            string base64Password = Convert.ToBase64String(Encoding.UTF8.GetBytes(plainPassword));
+            
+            // Decode back to plaintext (simulating what the system does)
+            string decodedPassword = Encoding.UTF8.GetString(Convert.FromBase64String(base64Password));
+
+            // Act - Hash the decoded password
+            var (hash, salt) = SecurePasswordHasher.HashPassword(decodedPassword);
+
+            // Assert - Verify with the original plaintext password
+            bool isValid = SecurePasswordHasher.VerifyPassword(plainPassword, hash, salt);
+            Assert.True(isValid);
+        }
+
+        [Fact]
+        public void VerifyPassword_WithBase64InputAndOutput_WorksCorrectly()
+        {
+            // Arrange - Simulate registration flow
+            string plainPassword = "MySecure123!";
+            string base64Password = Convert.ToBase64String(Encoding.UTF8.GetBytes(plainPassword));
+            string decodedPassword = Encoding.UTF8.GetString(Convert.FromBase64String(base64Password));
+            
+            var (hash, salt) = SecurePasswordHasher.HashPassword(decodedPassword);
+
+            // Act - Simulate login flow
+            string loginBase64Password = Convert.ToBase64String(Encoding.UTF8.GetBytes(plainPassword));
+            string loginDecodedPassword = Encoding.UTF8.GetString(Convert.FromBase64String(loginBase64Password));
+            bool isValid = SecurePasswordHasher.VerifyPassword(loginDecodedPassword, hash, salt);
+
+            // Assert
+            Assert.True(isValid);
+        }
+
+        [Fact]
+        public void HashPassword_ConsistentResultsWithBase64Workflow()
+        {
+            // Arrange
+            string password = "ComplexPass1!";
+            
+            // Simulate encoding/decoding workflow
+            string encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(password));
+            string decoded = Encoding.UTF8.GetString(Convert.FromBase64String(encoded));
+
+            // Act
+            var (hash1, salt1) = SecurePasswordHasher.HashPassword(password);
+            var (hash2, salt2) = SecurePasswordHasher.HashPassword(decoded);
+
+            // Assert - Both should be able to verify the same password
+            Assert.True(SecurePasswordHasher.VerifyPassword(password, hash1, salt1));
+            Assert.True(SecurePasswordHasher.VerifyPassword(decoded, hash2, salt2));
+            Assert.True(SecurePasswordHasher.VerifyPassword(password, hash2, salt2));
+            Assert.True(SecurePasswordHasher.VerifyPassword(decoded, hash1, salt1));
+        }
+
+        [Fact]
+        public void VerifyPassword_WithChineseCharacters_WorksCorrectly()
+        {
+            // Arrange
+            string password = "中文密码Test123!";
+            string base64Password = Convert.ToBase64String(Encoding.UTF8.GetBytes(password));
+            string decodedPassword = Encoding.UTF8.GetString(Convert.FromBase64String(base64Password));
+            
+            var (hash, salt) = SecurePasswordHasher.HashPassword(decodedPassword);
+
+            // Act
+            bool isValid = SecurePasswordHasher.VerifyPassword(password, hash, salt);
+
+            // Assert
+            Assert.True(isValid);
         }
 
         #endregion
