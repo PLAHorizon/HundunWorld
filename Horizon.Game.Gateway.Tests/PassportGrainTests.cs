@@ -681,6 +681,31 @@ namespace Horizon.Game.Gateway.Tests
             Assert.Equal(rawPassword, decodedPassword);
         }
 
+        [Fact]
+        public void AuthenticationFlow_PasswordShouldNotBePreEncrypted()
+        {
+            // 验证密码不应该在发送给PassportGrain之前被预加密
+            // 之前的Bug：AccountHandler先用PassportHelper.SetPasportPassword加密密码，
+            // 然后PassportGrain又尝试Base64解码并再次验证，导致密码解析错误
+            var rawPassword = "TestPassword123!";
+            var base64Password = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(rawPassword));
+
+            // 正确行为：LoginDto.Password 应该保持客户端传入的Base64编码密码
+            var loginDto = new LoginDto
+            {
+                PassportId = "TestUser",
+                Password = base64Password, // 保持原始Base64编码
+            };
+
+            // PassportGrain内部解码后应得到原始密码
+            var decodedPassword = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(loginDto.Password));
+            Assert.Equal(rawPassword, decodedPassword);
+
+            // 用解码后的明文密码验证安全哈希
+            var (hash, salt) = SecurePasswordHasher.HashPassword(rawPassword);
+            Assert.True(SecurePasswordHasher.VerifyPassword(decodedPassword, hash, salt));
+        }
+
         #endregion
 
         #region GameQueryDto Tests - 游戏查询

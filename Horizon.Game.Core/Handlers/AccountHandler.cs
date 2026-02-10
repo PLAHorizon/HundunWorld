@@ -121,12 +121,12 @@ namespace Horizon.Game.Core.Handlers
                 var passportId = Guid.NewGuid(); // 实际应用中应该从数据库获取
                 var passportGrain = _clusterClient.GetGrain<IPassportGrain>(passportId);
 
-                var pas = Base64Decode(loginRequest.Password);
                 // 创建登录DTO
+                // 密码保持客户端传入的原始值（Base64编码），由PassportGrain统一处理解码和验证
                 var loginDto = new LoginDto
                 {
                     PassportId = loginRequest.AccountName,
-                    Password = PassportHelper.SetPasportPassword(loginRequest.AccountName, pas),
+                    Password = loginRequest.Password,
                     AppId = request.Header.GameId,
                     PassportType = PassportType.Normal,
                     AppType = AppType.Game // 假设是游戏应用
