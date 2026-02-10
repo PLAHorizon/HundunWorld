@@ -107,14 +107,15 @@ namespace Horizon.Core
         /// <returns>哈希值字节数组</returns>
         private static byte[] HashPasswordWithSalt(string password, byte[] salt)
         {
-            using (var pbkdf2 = new Rfc2898DeriveBytes(
-                password,
+            // 使用现代的静态方法 Pbkdf2 (推荐用于 .NET 6+)
+            // 这比使用 Rfc2898DeriveBytes 构造函数更高效，且不需要 IDisposable
+            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+            return Rfc2898DeriveBytes.Pbkdf2(
+                passwordBytes,
                 salt,
                 Iterations,
-                HashAlgorithmName.SHA512))
-            {
-                return pbkdf2.GetBytes(HashSize);
-            }
+                HashAlgorithmName.SHA512,
+                HashSize);
         }
 
         /// <summary>
