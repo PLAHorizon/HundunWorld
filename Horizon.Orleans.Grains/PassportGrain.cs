@@ -556,7 +556,21 @@ namespace Horizon.Orleans.Grains
                     passportId = id.Id;
                     
                     // 解码Base64编码的密码
-                    string decodedPassword = Encoding.UTF8.GetString(Convert.FromBase64String(registerDto.Password));
+                    string decodedPassword;
+                    try
+                    {
+                        // 验证是否为有效的 Base64 字符串
+                        byte[] passwordBytes = Convert.FromBase64String(registerDto.Password);
+                        decodedPassword = Encoding.UTF8.GetString(passwordBytes);
+                        _logger.LogDebug("注册密码Base64解码成功: {PassportId}", passportId);
+                    }
+                    catch (Exception ex)
+                    {
+                        // 如果解码失败，认为是明文密码（向后兼容）
+                        _logger.LogDebug("注册密码未使用Base64编码，按明文处理: {PassportId}, Error: {Error}", 
+                            passportId, ex.Message);
+                        decodedPassword = registerDto.Password;
+                    }
                     
                     // 验证密码强度
                     if (!SecurePasswordHasher.IsPasswordStrong(decodedPassword))
