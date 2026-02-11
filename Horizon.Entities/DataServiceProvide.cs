@@ -376,6 +376,32 @@ namespace Horizon.Entities
         }
 
         /// <summary>
+        /// 获取满足条件的记录数量（在数据库端执行COUNT）
+        /// </summary>
+        public async Task<int> CountAsync([NotNull] Expression<Func<T, bool>> condition)
+        {
+            // 检查对象是否已释放
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            // 获取查询信号量
+            await _qurySemaphore.WaitAsync();
+            try
+            {
+                DbContextHealthCheck();
+                return await DbCurrent.Set<T>().AsQueryable().AsNoTracking()
+                                      .CountAsync(condition);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message, ex);
+            }
+            finally
+            {
+                _qurySemaphore.Release();
+            }
+        }
+
+        /// <summary>
         /// 物理删除单条数据
         /// </summary>
         public async Task<bool> RemoveAsync([NotNull] T entity, [NotNull] K id)

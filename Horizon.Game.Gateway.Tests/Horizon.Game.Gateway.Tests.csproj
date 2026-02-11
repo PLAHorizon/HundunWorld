@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Horizon.Core\Horizon.Core.csproj" />
     <ProjectReference Include="..\Horizon.Core.Abstract\Horizon.Core.Abstract.csproj" />
+    <ProjectReference Include="..\Horizon.Entities\Horizon.Entities.csproj" />
     <ProjectReference Include="..\Horizon.Orleans.Grains\Horizon.Orleans.Grains.csproj" />
   </ItemGroup>
 
