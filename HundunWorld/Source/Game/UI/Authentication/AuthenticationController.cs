@@ -34,6 +34,7 @@ public class AuthenticationController : Script
     private LoginPanel _loginPanel { get; set; }
     private RegisterPanel _registerPanel { get; set; }
     private bool _isProcessing = false;
+    private bool _isSubscribed = false;
     public override void OnStart()
     {
 
@@ -64,6 +65,9 @@ public class AuthenticationController : Script
     /// </summary>
     private void SubscribeEvents()
     {
+        if (_isSubscribed) return;
+        _isSubscribed = true;
+
         // 订阅认证管理器的响应事件
         FlaxEngine.Debug.Log($"[AuthenticationUI] 订阅 AuthenticationManager.LoginResponseReceived 事件");
         _authManager.LoginResponseReceived += OnLoginResponseReceived;
@@ -85,7 +89,41 @@ public class AuthenticationController : Script
     /// <inheritdoc/>
     public override void OnDisable()
     {
-        // Here you can add code that needs to be called when script is disabled (eg. unregister from events)
+        UnsubscribeEvents();
+    }
+
+    /// <inheritdoc/>
+    public override void OnDestroy()
+    {
+        UnsubscribeEvents();
+    }
+
+    /// <summary>
+    /// 取消订阅事件
+    /// </summary>
+    private void UnsubscribeEvents()
+    {
+        if (!_isSubscribed) return;
+        _isSubscribed = false;
+
+        if (_authManager != null)
+        {
+            _authManager.LoginResponseReceived -= OnLoginResponseReceived;
+            _authManager.RegisterResponseReceived -= OnRegisterResponseReceived;
+        }
+
+        if (_loginPanel != null)
+        {
+            _loginPanel.LoginButtonClicked -= OnLoginButtonClicked;
+            _loginPanel.SwitchToRegisterClicked -= OnSwitchToRegisterClicked;
+        }
+
+        if (_registerPanel != null)
+        {
+            _registerPanel.RegisterButtonClicked -= OnRegisterButtonClicked;
+            _registerPanel.SendVerificationCodeClicked -= OnSendVerificationCodeClicked;
+            _registerPanel.SwitchToLoginClicked -= OnSwitchToLoginClicked;
+        }
     }
 
     /// <inheritdoc/>
