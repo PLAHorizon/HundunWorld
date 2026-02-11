@@ -500,6 +500,48 @@ namespace Horizon.Strategy.Storage.Redis
             batch.Execute();
         }
 
+        /// <summary>
+        /// 缓存读写模式（Cache-Aside Pattern）
+        /// 先从缓存读取，如果缓存未命中则从数据源获取并写入缓存
+        /// 支持空值缓存以防止缓存穿透
+        /// </summary>
+        public async Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> factory, TimeSpan? expiration = null, bool cacheNullValue = true, TimeSpan? nullValueExpiration = null)
+        {
+            var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
+
+            // 尝试从缓存获取
+            var cachedValue = await database.StringGetAsync(key);
+            if (cachedValue.HasValue)
+            {
+                var strValue = cachedValue.ToString();
+                // 检查是否为空值标记
+                if (strValue == "__NULL__")
+                {
+                    return default;
+                }
+                return JsonConvert.DeserializeObject<T>(strValue);
+            }
+
+            // 缓存未命中，从数据源获取
+            var result = await factory();
+
+            // 设置缓存
+            if (result != null)
+            {
+                var serialized = JsonConvert.SerializeObject(result);
+                var exp = expiration ?? TimeSpan.FromMinutes(TimeOut > 0 ? TimeOut : 30);
+                await database.StringSetAsync(key, serialized, exp);
+            }
+            else if (cacheNullValue)
+            {
+                // 缓存空值，使用较短的过期时间防止缓存穿透
+                var nullExp = nullValueExpiration ?? TimeSpan.FromMinutes(5);
+                await database.StringSetAsync(key, "__NULL__", nullExp);
+            }
+
+            return result;
+        }
+
 
 
         private class RedisLock : IDisposable

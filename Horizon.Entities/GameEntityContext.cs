@@ -18,7 +18,7 @@ namespace Horizon.Entities
     public class GameEntityContextDes : DbContext, IDesignTimeDbContextFactory<GameEntityContextDes>
     {
         DbContextOptions ContextOptions { get; }
-        private static readonly ILoggerFactory _loggerFactory    = LoggerFactory.Create(builder => { builder.AddConsole(); });
+        private static readonly ILoggerFactory _loggerFactory = LoggerFactory.Create(builder => { builder.AddConsole(); });
         #region 设计
         public GameEntityContextDes()
         {
@@ -102,6 +102,7 @@ namespace Horizon.Entities
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            GameEntityIndexConfiguration.ConfigureIndexes(modelBuilder);
         }
 
 
@@ -182,55 +183,67 @@ namespace Horizon.Entities
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-            // 角色表索引 - 按用户和游戏查询角色
-            modelBuilder.Entity<CharacterEntity>()
-                .HasIndex(c => new { c.UserId, c.GameId })
-                .HasDatabaseName("IX_Character_UserId_GameId");
-
-            // 角色表索引 - 按最后登录时间排序
-            modelBuilder.Entity<CharacterEntity>()
-                .HasIndex(c => c.LastLoginTime)
-                .HasDatabaseName("IX_Character_LastLoginTime");
-
-            // 交易日志索引 - 按卖家查询
-            modelBuilder.Entity<TradeLogEntity>()
-                .HasIndex(t => t.SellerId)
-                .HasDatabaseName("IX_TradeLog_SellerId");
-
-            // 交易日志索引 - 按买家查询
-            modelBuilder.Entity<TradeLogEntity>()
-                .HasIndex(t => t.BuyerId)
-                .HasDatabaseName("IX_TradeLog_BuyerId");
-
-            // 交易日志索引 - 按交易时间排序
-            modelBuilder.Entity<TradeLogEntity>()
-                .HasIndex(t => t.TradeTime)
-                .HasDatabaseName("IX_TradeLog_TradeTime");
-
-            // 背包索引 - 按角色查询背包
-            modelBuilder.Entity<BagEntity>()
-                .HasIndex(b => b.CharacterId)
-                .HasDatabaseName("IX_Bag_CharacterId");
-
-            // 聊天消息索引 - 按发送时间排序
-            modelBuilder.Entity<ChatMessageEntity>()
-                .HasIndex(m => m.SendTime)
-                .HasDatabaseName("IX_ChatMessage_SendTime");
-
-            // 聊天消息索引 - 按频道和发送时间查询
-            modelBuilder.Entity<ChatMessageEntity>()
-                .HasIndex(m => new { m.Channel, m.SendTime })
-                .HasDatabaseName("IX_ChatMessage_Channel_SendTime");
-
-            // 公会索引 - 按会长查询
-            modelBuilder.Entity<GuildEntity>()
-                .HasIndex(g => g.LeaderId)
-                .HasDatabaseName("IX_Guild_LeaderId");
+            GameEntityIndexConfiguration.ConfigureIndexes(modelBuilder);
         }
 
 
     }
 
+    /// <summary>
+    /// 数据库索引配置（共享方法）
+    /// </summary>
+    internal static class GameEntityIndexConfiguration
+    {
+        /// <summary>
+        /// 配置数据库索引以优化查询性能
+        /// </summary>
+        public static void ConfigureIndexes(ModelBuilder modelBuilder)
+        {
+            // Characters表索引
+            modelBuilder.Entity<CharacterEntity>(entity =>
+            {
+                entity.HasIndex(e => e.UserId).HasDatabaseName("IX_Character_UserId");
+                entity.HasIndex(e => new { e.UserId, e.GameId }).HasDatabaseName("IX_Character_UserId_GameId");
+                entity.HasIndex(e => e.LastLoginTime).HasDatabaseName("IX_Character_LastLoginTime");
+                entity.HasIndex(e => e.CharacterName).HasDatabaseName("IX_Character_CharacterName");
+            });
+
+            // TradeLogs表索引
+            modelBuilder.Entity<TradeLogEntity>(entity =>
+            {
+                entity.HasIndex(e => e.SellerId).HasDatabaseName("IX_TradeLog_SellerId");
+                entity.HasIndex(e => e.BuyerId).HasDatabaseName("IX_TradeLog_BuyerId");
+                entity.HasIndex(e => e.TradeTime).HasDatabaseName("IX_TradeLog_TradeTime");
+            });
+
+            // Bags表索引
+            modelBuilder.Entity<BagEntity>(entity =>
+            {
+                entity.HasIndex(e => e.CharacterId).HasDatabaseName("IX_Bag_CharacterId");
+            });
+
+            // ChatMessages表索引
+            modelBuilder.Entity<ChatMessageEntity>(entity =>
+            {
+                entity.HasIndex(e => e.SendTime).HasDatabaseName("IX_ChatMessage_SendTime");
+                entity.HasIndex(e => new { e.Channel, e.SendTime }).HasDatabaseName("IX_ChatMessage_Channel_SendTime");
+                entity.HasIndex(e => e.SenderId).HasDatabaseName("IX_ChatMessage_SenderId");
+            });
+
+            // Guilds表索引
+            modelBuilder.Entity<GuildEntity>(entity =>
+            {
+                entity.HasIndex(e => e.LeaderId).HasDatabaseName("IX_Guild_LeaderId");
+                entity.HasIndex(e => e.GuildName).HasDatabaseName("IX_Guild_GuildName");
+            });
+
+            // Users表索引
+            modelBuilder.Entity<UserEntity>(entity =>
+            {
+                entity.HasIndex(e => e.AccountName).IsUnique().HasDatabaseName("IX_User_AccountName");
+                entity.HasIndex(e => e.LastLoginTime).HasDatabaseName("IX_User_LastLoginTime");
+            });
+        }
+    }
 
 }

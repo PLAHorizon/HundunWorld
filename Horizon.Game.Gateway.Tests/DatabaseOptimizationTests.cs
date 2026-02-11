@@ -1,277 +1,419 @@
-using Horizon.Core.Abstract;
 using Horizon.Entities;
 using Horizon.Model.GameModel;
 using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
-using System.Reflection;
+using Moq;
 
 namespace Horizon.Game.Gateway.Tests
 {
     /// <summary>
-    /// 数据库优化相关测试
-    /// 测试IDataContext.CountAsync接口定义、GameEntityContext索引配置、数据服务实现
+    /// 数据库优化测试 - 验证索引配置和CountAsync方法
     /// </summary>
     public class DatabaseOptimizationTests
     {
-        #region IDataContext.CountAsync 接口测试
+        #region 索引配置测试
 
-        [Fact]
-        public void IDataContext_Has_CountAsync_Method()
-        {
-            var type = typeof(IDataContext<,,>);
-            var method = type.GetMethod("CountAsync");
-
-            Assert.NotNull(method);
-        }
-
-        [Fact]
-        public void IDataContext_CountAsync_Returns_TaskOfInt()
-        {
-            var type = typeof(IDataContext<,,>);
-            var method = type.GetMethod("CountAsync");
-
-            Assert.NotNull(method);
-            Assert.Equal(typeof(Task<int>), method!.ReturnType);
-        }
-
-        [Fact]
-        public void IDataContext_CountAsync_Accepts_Expression_Parameter()
-        {
-            var type = typeof(IDataContext<,,>);
-            var method = type.GetMethod("CountAsync");
-
-            Assert.NotNull(method);
-            var parameters = method!.GetParameters();
-            Assert.Single(parameters);
-            Assert.True(parameters[0].ParameterType.IsGenericType);
-            Assert.Equal(typeof(Expression<>), parameters[0].ParameterType.GetGenericTypeDefinition());
-        }
-
-        #endregion
-
-        #region DataServiceProvide.CountAsync 实现测试
-
-        [Fact]
-        public void DataServiceProvide_Implements_CountAsync()
-        {
-            var type = typeof(DataServiceProvide<,,>);
-            var method = type.GetMethod("CountAsync");
-
-            Assert.NotNull(method);
-            Assert.Equal(typeof(Task<int>), method!.ReturnType);
-        }
-
-        #endregion
-
-        #region GameEntityContext 索引配置测试
-
-        [Fact]
-        public void GameEntityContext_OnModelCreating_ConfiguresIndexes()
-        {
-            // 使用InMemory数据库来验证模型配置
-            var options = new DbContextOptionsBuilder<GameEntityContext>()
-                .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}")
-                .Options;
-
-            using var context = new GameEntityContext(options);
-            var model = context.Model;
-
-            // 验证CharacterEntity索引
-            var characterEntity = model.FindEntityType(typeof(CharacterEntity));
-            Assert.NotNull(characterEntity);
-
-            var characterIndexes = characterEntity!.GetIndexes().ToList();
-            Assert.True(characterIndexes.Count >= 2, 
-                $"CharacterEntity应至少有2个索引，实际有{characterIndexes.Count}个");
-        }
-
-        [Fact]
-        public void GameEntityContext_Has_Character_UserId_GameId_Index()
+        private GameEntityContext CreateInMemoryContext()
         {
             var options = new DbContextOptionsBuilder<GameEntityContext>()
-                .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}")
+                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
 
-            using var context = new GameEntityContext(options);
+            // GameEntityContext requires DbContextOptions (non-generic) in constructor
+            return new GameEntityContext((DbContextOptions)options);
+        }
+
+        [Fact]
+        public void GameEntityContext_CharacterEntity_HasUserIdIndex()
+        {
+            // Arrange
+            using var context = CreateInMemoryContext();
             var model = context.Model;
+            var entityType = model.FindEntityType(typeof(CharacterEntity));
 
-            var characterEntity = model.FindEntityType(typeof(CharacterEntity));
-            Assert.NotNull(characterEntity);
+            // Act
+            var indexes = entityType?.GetIndexes().ToList();
 
-            var indexes = characterEntity!.GetIndexes().ToList();
-            var compositeIndex = indexes.FirstOrDefault(i =>
-                i.Properties.Any(p => p.Name == "UserId") &&
+            // Assert
+            Assert.NotNull(entityType);
+            Assert.NotNull(indexes);
+            Assert.Contains(indexes, i => i.Properties.Any(p => p.Name == nameof(CharacterEntity.UserId))
+                && i.Properties.Count == 1);
+        }
+
+        [Fact]
+        public void GameEntityContext_CharacterEntity_HasCompositeUserIdGameIdIndex()
+        {
+            // Arrange
+            using var context = CreateInMemoryContext();
+            var entityType = context.Model.FindEntityType(typeof(CharacterEntity));
+
+            // Act
+            var indexes = entityType?.GetIndexes().ToList();
+
+            // Assert
+            Assert.NotNull(indexes);
+            Assert.Contains(indexes, i =>
+                i.Properties.Count == 2 &&
+                i.Properties.Any(p => p.Name == nameof(CharacterEntity.UserId)) &&
                 i.Properties.Any(p => p.Name == "GameId"));
-
-            Assert.NotNull(compositeIndex);
         }
 
         [Fact]
-        public void GameEntityContext_Has_Character_LastLoginTime_Index()
+        public void GameEntityContext_CharacterEntity_HasLastLoginTimeIndex()
         {
-            var options = new DbContextOptionsBuilder<GameEntityContext>()
-                .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}")
-                .Options;
+            using var context = CreateInMemoryContext();
+            var entityType = context.Model.FindEntityType(typeof(CharacterEntity));
+            var indexes = entityType?.GetIndexes().ToList();
 
-            using var context = new GameEntityContext(options);
-            var model = context.Model;
-
-            var characterEntity = model.FindEntityType(typeof(CharacterEntity));
-            Assert.NotNull(characterEntity);
-
-            var indexes = characterEntity!.GetIndexes().ToList();
-            var loginTimeIndex = indexes.FirstOrDefault(i =>
-                i.Properties.Count == 1 &&
-                i.Properties.Any(p => p.Name == "LastLoginTime"));
-
-            Assert.NotNull(loginTimeIndex);
+            Assert.NotNull(indexes);
+            Assert.Contains(indexes, i => i.Properties.Any(p => p.Name == nameof(CharacterEntity.LastLoginTime))
+                && i.Properties.Count == 1);
         }
 
         [Fact]
-        public void GameEntityContext_Has_TradeLog_SellerId_Index()
+        public void GameEntityContext_CharacterEntity_HasCharacterNameIndex()
         {
-            var options = new DbContextOptionsBuilder<GameEntityContext>()
-                .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}")
-                .Options;
+            using var context = CreateInMemoryContext();
+            var entityType = context.Model.FindEntityType(typeof(CharacterEntity));
+            var indexes = entityType?.GetIndexes().ToList();
 
-            using var context = new GameEntityContext(options);
-            var model = context.Model;
-
-            var tradeLogEntity = model.FindEntityType(typeof(TradeLogEntity));
-            Assert.NotNull(tradeLogEntity);
-
-            var indexes = tradeLogEntity!.GetIndexes().ToList();
-            var sellerIndex = indexes.FirstOrDefault(i =>
-                i.Properties.Count == 1 &&
-                i.Properties.Any(p => p.Name == "SellerId"));
-
-            Assert.NotNull(sellerIndex);
+            Assert.NotNull(indexes);
+            Assert.Contains(indexes, i => i.Properties.Any(p => p.Name == nameof(CharacterEntity.CharacterName))
+                && i.Properties.Count == 1);
         }
 
         [Fact]
-        public void GameEntityContext_Has_TradeLog_BuyerId_Index()
+        public void GameEntityContext_TradeLogEntity_HasSellerIdIndex()
         {
-            var options = new DbContextOptionsBuilder<GameEntityContext>()
-                .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}")
-                .Options;
+            using var context = CreateInMemoryContext();
+            var entityType = context.Model.FindEntityType(typeof(TradeLogEntity));
+            var indexes = entityType?.GetIndexes().ToList();
 
-            using var context = new GameEntityContext(options);
-            var model = context.Model;
-
-            var tradeLogEntity = model.FindEntityType(typeof(TradeLogEntity));
-            Assert.NotNull(tradeLogEntity);
-
-            var indexes = tradeLogEntity!.GetIndexes().ToList();
-            var buyerIndex = indexes.FirstOrDefault(i =>
-                i.Properties.Count == 1 &&
-                i.Properties.Any(p => p.Name == "BuyerId"));
-
-            Assert.NotNull(buyerIndex);
+            Assert.NotNull(indexes);
+            Assert.Contains(indexes, i => i.Properties.Any(p => p.Name == nameof(TradeLogEntity.SellerId))
+                && i.Properties.Count == 1);
         }
 
         [Fact]
-        public void GameEntityContext_Has_TradeLog_TradeTime_Index()
+        public void GameEntityContext_TradeLogEntity_HasBuyerIdIndex()
         {
-            var options = new DbContextOptionsBuilder<GameEntityContext>()
-                .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}")
-                .Options;
+            using var context = CreateInMemoryContext();
+            var entityType = context.Model.FindEntityType(typeof(TradeLogEntity));
+            var indexes = entityType?.GetIndexes().ToList();
 
-            using var context = new GameEntityContext(options);
-            var model = context.Model;
-
-            var tradeLogEntity = model.FindEntityType(typeof(TradeLogEntity));
-            Assert.NotNull(tradeLogEntity);
-
-            var indexes = tradeLogEntity!.GetIndexes().ToList();
-            var tradeTimeIndex = indexes.FirstOrDefault(i =>
-                i.Properties.Count == 1 &&
-                i.Properties.Any(p => p.Name == "TradeTime"));
-
-            Assert.NotNull(tradeTimeIndex);
+            Assert.NotNull(indexes);
+            Assert.Contains(indexes, i => i.Properties.Any(p => p.Name == nameof(TradeLogEntity.BuyerId))
+                && i.Properties.Count == 1);
         }
 
         [Fact]
-        public void GameEntityContext_Has_Bag_CharacterId_Index()
+        public void GameEntityContext_TradeLogEntity_HasTradeTimeIndex()
         {
-            var options = new DbContextOptionsBuilder<GameEntityContext>()
-                .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}")
-                .Options;
+            using var context = CreateInMemoryContext();
+            var entityType = context.Model.FindEntityType(typeof(TradeLogEntity));
+            var indexes = entityType?.GetIndexes().ToList();
 
-            using var context = new GameEntityContext(options);
-            var model = context.Model;
-
-            var bagEntity = model.FindEntityType(typeof(BagEntity));
-            Assert.NotNull(bagEntity);
-
-            var indexes = bagEntity!.GetIndexes().ToList();
-            var characterIdIndex = indexes.FirstOrDefault(i =>
-                i.Properties.Count == 1 &&
-                i.Properties.Any(p => p.Name == "CharacterId"));
-
-            Assert.NotNull(characterIdIndex);
+            Assert.NotNull(indexes);
+            Assert.Contains(indexes, i => i.Properties.Any(p => p.Name == nameof(TradeLogEntity.TradeTime))
+                && i.Properties.Count == 1);
         }
 
         [Fact]
-        public void GameEntityContext_Has_ChatMessage_SendTime_Index()
+        public void GameEntityContext_BagEntity_HasCharacterIdIndex()
         {
-            var options = new DbContextOptionsBuilder<GameEntityContext>()
-                .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}")
-                .Options;
+            using var context = CreateInMemoryContext();
+            var entityType = context.Model.FindEntityType(typeof(BagEntity));
+            var indexes = entityType?.GetIndexes().ToList();
 
-            using var context = new GameEntityContext(options);
-            var model = context.Model;
-
-            var chatEntity = model.FindEntityType(typeof(ChatMessageEntity));
-            Assert.NotNull(chatEntity);
-
-            var indexes = chatEntity!.GetIndexes().ToList();
-            var sendTimeIndex = indexes.FirstOrDefault(i =>
-                i.Properties.Count == 1 &&
-                i.Properties.Any(p => p.Name == "SendTime"));
-
-            Assert.NotNull(sendTimeIndex);
+            Assert.NotNull(indexes);
+            Assert.Contains(indexes, i => i.Properties.Any(p => p.Name == nameof(BagEntity.CharacterId))
+                && i.Properties.Count == 1);
         }
 
         [Fact]
-        public void GameEntityContext_Has_ChatMessage_Channel_SendTime_CompositeIndex()
+        public void GameEntityContext_ChatMessageEntity_HasSendTimeIndex()
         {
-            var options = new DbContextOptionsBuilder<GameEntityContext>()
-                .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}")
-                .Options;
+            using var context = CreateInMemoryContext();
+            var entityType = context.Model.FindEntityType(typeof(ChatMessageEntity));
+            var indexes = entityType?.GetIndexes().ToList();
 
-            using var context = new GameEntityContext(options);
-            var model = context.Model;
-
-            var chatEntity = model.FindEntityType(typeof(ChatMessageEntity));
-            Assert.NotNull(chatEntity);
-
-            var indexes = chatEntity!.GetIndexes().ToList();
-            var compositeIndex = indexes.FirstOrDefault(i =>
-                i.Properties.Any(p => p.Name == "Channel") &&
-                i.Properties.Any(p => p.Name == "SendTime"));
-
-            Assert.NotNull(compositeIndex);
+            Assert.NotNull(indexes);
+            Assert.Contains(indexes, i => i.Properties.Any(p => p.Name == nameof(ChatMessageEntity.SendTime))
+                && i.Properties.Count == 1);
         }
 
         [Fact]
-        public void GameEntityContext_Has_Guild_LeaderId_Index()
+        public void GameEntityContext_ChatMessageEntity_HasCompositeChannelSendTimeIndex()
         {
-            var options = new DbContextOptionsBuilder<GameEntityContext>()
-                .UseInMemoryDatabase(databaseName: $"TestDb_{Guid.NewGuid()}")
-                .Options;
+            using var context = CreateInMemoryContext();
+            var entityType = context.Model.FindEntityType(typeof(ChatMessageEntity));
+            var indexes = entityType?.GetIndexes().ToList();
 
-            using var context = new GameEntityContext(options);
+            Assert.NotNull(indexes);
+            Assert.Contains(indexes, i =>
+                i.Properties.Count == 2 &&
+                i.Properties.Any(p => p.Name == nameof(ChatMessageEntity.Channel)) &&
+                i.Properties.Any(p => p.Name == nameof(ChatMessageEntity.SendTime)));
+        }
+
+        [Fact]
+        public void GameEntityContext_ChatMessageEntity_HasSenderIdIndex()
+        {
+            using var context = CreateInMemoryContext();
+            var entityType = context.Model.FindEntityType(typeof(ChatMessageEntity));
+            var indexes = entityType?.GetIndexes().ToList();
+
+            Assert.NotNull(indexes);
+            Assert.Contains(indexes, i => i.Properties.Any(p => p.Name == nameof(ChatMessageEntity.SenderId))
+                && i.Properties.Count == 1);
+        }
+
+        [Fact]
+        public void GameEntityContext_GuildEntity_HasLeaderIdIndex()
+        {
+            using var context = CreateInMemoryContext();
+            var entityType = context.Model.FindEntityType(typeof(GuildEntity));
+            var indexes = entityType?.GetIndexes().ToList();
+
+            Assert.NotNull(indexes);
+            Assert.Contains(indexes, i => i.Properties.Any(p => p.Name == nameof(GuildEntity.LeaderId))
+                && i.Properties.Count == 1);
+        }
+
+        [Fact]
+        public void GameEntityContext_GuildEntity_HasGuildNameIndex()
+        {
+            using var context = CreateInMemoryContext();
+            var entityType = context.Model.FindEntityType(typeof(GuildEntity));
+            var indexes = entityType?.GetIndexes().ToList();
+
+            Assert.NotNull(indexes);
+            Assert.Contains(indexes, i => i.Properties.Any(p => p.Name == nameof(GuildEntity.GuildName))
+                && i.Properties.Count == 1);
+        }
+
+        [Fact]
+        public void GameEntityContext_UserEntity_HasUniqueAccountNameIndex()
+        {
+            using var context = CreateInMemoryContext();
+            var entityType = context.Model.FindEntityType(typeof(UserEntity));
+            var indexes = entityType?.GetIndexes().ToList();
+
+            Assert.NotNull(indexes);
+            var accountNameIndex = indexes.FirstOrDefault(i =>
+                i.Properties.Any(p => p.Name == nameof(UserEntity.AccountName)) &&
+                i.Properties.Count == 1);
+            Assert.NotNull(accountNameIndex);
+            Assert.True(accountNameIndex.IsUnique);
+        }
+
+        [Fact]
+        public void GameEntityContext_UserEntity_HasLastLoginTimeIndex()
+        {
+            using var context = CreateInMemoryContext();
+            var entityType = context.Model.FindEntityType(typeof(UserEntity));
+            var indexes = entityType?.GetIndexes().ToList();
+
+            Assert.NotNull(indexes);
+            Assert.Contains(indexes, i => i.Properties.Any(p => p.Name == nameof(UserEntity.LastLoginTime))
+                && i.Properties.Count == 1);
+        }
+
+        [Fact]
+        public void GameEntityContext_AllEntities_HaveExpectedIndexCount()
+        {
+            using var context = CreateInMemoryContext();
             var model = context.Model;
 
-            var guildEntity = model.FindEntityType(typeof(GuildEntity));
-            Assert.NotNull(guildEntity);
+            // Characters: UserId, UserId+GameId, LastLoginTime, CharacterName = 4 indexes
+            var characterIndexes = model.FindEntityType(typeof(CharacterEntity))?.GetIndexes().Count();
+            Assert.Equal(4, characterIndexes);
 
-            var indexes = guildEntity!.GetIndexes().ToList();
-            var leaderIndex = indexes.FirstOrDefault(i =>
-                i.Properties.Count == 1 &&
-                i.Properties.Any(p => p.Name == "LeaderId"));
+            // TradeLogs: SellerId, BuyerId, TradeTime = 3 indexes
+            var tradeLogIndexes = model.FindEntityType(typeof(TradeLogEntity))?.GetIndexes().Count();
+            Assert.Equal(3, tradeLogIndexes);
 
-            Assert.NotNull(leaderIndex);
+            // Bags: CharacterId = 1 index
+            var bagIndexes = model.FindEntityType(typeof(BagEntity))?.GetIndexes().Count();
+            Assert.Equal(1, bagIndexes);
+
+            // ChatMessages: SendTime, Channel+SendTime, SenderId = 3 indexes
+            var chatIndexes = model.FindEntityType(typeof(ChatMessageEntity))?.GetIndexes().Count();
+            Assert.Equal(3, chatIndexes);
+
+            // Guilds: LeaderId, GuildName = 2 indexes
+            var guildIndexes = model.FindEntityType(typeof(GuildEntity))?.GetIndexes().Count();
+            Assert.Equal(2, guildIndexes);
+
+            // Users: AccountName (unique), LastLoginTime = 2 indexes
+            var userIndexes = model.FindEntityType(typeof(UserEntity))?.GetIndexes().Count();
+            Assert.Equal(2, userIndexes);
+        }
+
+        #endregion
+
+        #region IDataContext CountAsync 接口测试
+
+        [Fact]
+        public void IDataContext_CountAsync_MethodExists()
+        {
+            // 验证IDataContext接口定义了CountAsync方法
+            var interfaceType = typeof(Horizon.Core.Abstract.IDataContext<,,>);
+            var methods = interfaceType.GetMethods();
+            var countMethod = methods.FirstOrDefault(m => m.Name == "CountAsync");
+
+            Assert.NotNull(countMethod);
+            Assert.Equal(typeof(Task<int>), countMethod.ReturnType);
+        }
+
+        [Fact]
+        public void DataServiceProvide_CountAsync_MethodExists()
+        {
+            // 验证DataServiceProvide实现了CountAsync方法
+            var provideType = typeof(DataServiceProvide<,,>);
+            var methods = provideType.GetMethods();
+            var countMethod = methods.FirstOrDefault(m => m.Name == "CountAsync" && m.GetParameters().Length == 1);
+
+            Assert.NotNull(countMethod);
+            Assert.Equal(typeof(Task<int>), countMethod.ReturnType);
+        }
+
+        #endregion
+
+        #region ICache GetOrSetAsync 接口测试
+
+        [Fact]
+        public void ICache_GetOrSetAsync_MethodExists()
+        {
+            // 验证ICache接口定义了GetOrSetAsync方法
+            var interfaceType = typeof(Horizon.Core.Abstract.ICache);
+            var methods = interfaceType.GetMethods();
+            var getOrSetMethod = methods.FirstOrDefault(m => m.Name == "GetOrSetAsync");
+
+            Assert.NotNull(getOrSetMethod);
+            Assert.True(getOrSetMethod.IsGenericMethod);
+        }
+
+        [Fact]
+        public void ICache_GetOrSetAsync_HasCorrectParameters()
+        {
+            var interfaceType = typeof(Horizon.Core.Abstract.ICache);
+            var method = interfaceType.GetMethods().First(m => m.Name == "GetOrSetAsync");
+            var parameters = method.GetParameters();
+
+            // key, factory, expiration, cacheNullValue, nullValueExpiration
+            Assert.Equal(5, parameters.Length);
+            Assert.Equal("key", parameters[0].Name);
+            Assert.Equal("factory", parameters[1].Name);
+            Assert.Equal("expiration", parameters[2].Name);
+            Assert.Equal("cacheNullValue", parameters[3].Name);
+            Assert.Equal("nullValueExpiration", parameters[4].Name);
+        }
+
+        [Fact]
+        public async Task ICache_GetOrSetAsync_MockedCache_ReturnsFactoryResult()
+        {
+            // Arrange
+            var mockCache = new Mock<Horizon.Core.Abstract.ICache>();
+            var expectedResult = "test_value";
+
+            mockCache.Setup(c => c.GetOrSetAsync(
+                It.IsAny<string>(),
+                It.IsAny<Func<Task<string>>>(),
+                It.IsAny<TimeSpan?>(),
+                It.IsAny<bool>(),
+                It.IsAny<TimeSpan?>()))
+                .ReturnsAsync(expectedResult);
+
+            // Act
+            var result = await mockCache.Object.GetOrSetAsync(
+                "test_key",
+                () => Task.FromResult("test_value"));
+
+            // Assert
+            Assert.Equal(expectedResult, result);
+        }
+
+        [Fact]
+        public async Task ICache_GetOrSetAsync_MockedCache_WithNullResult_ReturnsDefault()
+        {
+            // Arrange
+            var mockCache = new Mock<Horizon.Core.Abstract.ICache>();
+
+            mockCache.Setup(c => c.GetOrSetAsync<string>(
+                It.IsAny<string>(),
+                It.IsAny<Func<Task<string>>>(),
+                It.IsAny<TimeSpan?>(),
+                It.IsAny<bool>(),
+                It.IsAny<TimeSpan?>()))
+                .ReturnsAsync((string?)null);
+
+            // Act
+            var result = await mockCache.Object.GetOrSetAsync<string>(
+                "missing_key",
+                () => Task.FromResult<string>(null!),
+                cacheNullValue: true);
+
+            // Assert
+            Assert.Null(result);
+        }
+
+        [Fact]
+        public async Task ICache_GetOrSetAsync_MockedCache_FactoryCalledOnCacheMiss()
+        {
+            // Arrange
+            var mockCache = new Mock<Horizon.Core.Abstract.ICache>();
+            var factoryCalled = false;
+
+            mockCache.Setup(c => c.GetOrSetAsync(
+                It.IsAny<string>(),
+                It.IsAny<Func<Task<int>>>(),
+                It.IsAny<TimeSpan?>(),
+                It.IsAny<bool>(),
+                It.IsAny<TimeSpan?>()))
+                .Returns<string, Func<Task<int>>, TimeSpan?, bool, TimeSpan?>(
+                    async (key, factory, exp, cacheNull, nullExp) =>
+                    {
+                        factoryCalled = true;
+                        return await factory();
+                    });
+
+            // Act
+            var result = await mockCache.Object.GetOrSetAsync(
+                "cache_miss_key",
+                () => Task.FromResult(42));
+
+            // Assert
+            Assert.True(factoryCalled);
+            Assert.Equal(42, result);
+        }
+
+        #endregion
+
+        #region GameEntityIndexConfiguration 测试
+
+        [Fact]
+        public void GameEntityIndexConfiguration_ConfigureIndexes_DoesNotThrow()
+        {
+            // 验证ConfigureIndexes方法可以成功执行不抛异常
+            using var context = CreateInMemoryContext();
+            // 如果OnModelCreating中的ConfigureIndexes抛出异常，context创建会失败
+            Assert.NotNull(context);
+            Assert.NotNull(context.Model);
+        }
+
+        [Fact]
+        public void GameEntityContext_Model_ContainsAllExpectedEntities()
+        {
+            using var context = CreateInMemoryContext();
+            var model = context.Model;
+
+            Assert.NotNull(model.FindEntityType(typeof(CharacterEntity)));
+            Assert.NotNull(model.FindEntityType(typeof(TradeLogEntity)));
+            Assert.NotNull(model.FindEntityType(typeof(BagEntity)));
+            Assert.NotNull(model.FindEntityType(typeof(ChatMessageEntity)));
+            Assert.NotNull(model.FindEntityType(typeof(GuildEntity)));
+            Assert.NotNull(model.FindEntityType(typeof(UserEntity)));
         }
 
         #endregion

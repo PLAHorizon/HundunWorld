@@ -317,6 +317,20 @@ namespace Horizon.Core.Abstract
         Task<double> GetCacheHitRate();
         Task<Dictionary<string, string>> GetMultipleAsync(IEnumerable<string> keys);
         Task SetMultipleAsync(Dictionary<string, object> keyValuePairs, TimeSpan? expiration = null);
+
+        /// <summary>
+        /// 缓存读写模式（Cache-Aside Pattern）
+        /// 先从缓存读取，如果缓存未命中则从数据源获取并写入缓存
+        /// 支持空值缓存以防止缓存穿透
+        /// </summary>
+        /// <typeparam name="T">缓存数据类型</typeparam>
+        /// <param name="key">缓存键</param>
+        /// <param name="factory">数据源获取方法</param>
+        /// <param name="expiration">缓存过期时间</param>
+        /// <param name="cacheNullValue">是否缓存空值（防止缓存穿透）</param>
+        /// <param name="nullValueExpiration">空值缓存过期时间（默认较短）</param>
+        /// <returns>缓存的数据或从数据源获取的数据</returns>
+        Task<T> GetOrSetAsync<T>(string key, Func<Task<T>> factory, TimeSpan? expiration = null, bool cacheNullValue = true, TimeSpan? nullValueExpiration = null);
     }
 }
 
