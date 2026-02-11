@@ -689,23 +689,43 @@ namespace HundunWorld.Game.Network
         #region Status Management
 
         /// <summary>
+        /// 上一次通知给订阅者的连接状态，用于避免重复通知
+        /// </summary>
+        private ConnectionStatus _lastNotifiedStatus = ConnectionStatus.Disconnected;
+
+        /// <summary>
         /// 更新连接状态
         /// </summary>
         private void UpdateConnectionStatus(ConnectionStatus status)
         {
             var oldStatus = _connectionStatus;
+            if (oldStatus == status)
+            {
+                EnhancedLogging.LogInfo($"[UpdateConnectionStatus] 状态未变化，跳过: {status}");
+                return;
+            }
+
             _connectionStatus = status;
 
             EnhancedLogging.LogInfo($"[UpdateConnectionStatus] 连接状态从 {oldStatus} 更新为 {status}");
             EnhancedDiagnostics.LogDiagnostic($"连接状态从 {oldStatus} 更新为 {status}");
 
             // 将事件通知调度到主线程，确保UI更新在主线程执行
-            // 这样可以避免在UI订阅事件之前连接就完成导致的竞态条件
+            // 使用 _connectionStatus 而非闭包捕获的 status，确保订阅者收到的是最新状态
+            // 同时通过 _lastNotifiedStatus 避免向订阅者重复通知相同状态
             FlaxEngine.Scripting.InvokeOnUpdate(() =>
             {
                 try
                 {
-                    ConnectionStatusChanged?.Invoke(status);
+                    var currentStatus = _connectionStatus;
+                    if (currentStatus == _lastNotifiedStatus)
+                    {
+                        EnhancedLogging.LogInfo($"[UpdateConnectionStatus] 通知状态未变化，跳过通知: {currentStatus}");
+                        return;
+                    }
+                    _lastNotifiedStatus = currentStatus;
+                    EnhancedLogging.LogInfo($"[UpdateConnectionStatus] 通知订阅者连接状态: {currentStatus}");
+                    ConnectionStatusChanged?.Invoke(currentStatus);
                 }
                 catch (Exception ex)
                 {
@@ -814,17 +834,21 @@ namespace HundunWorld.Game.Network
             EnhancedLogging.LogInfo($"[OnReconnectionStateChanged] 重连状态变化: {state}");
             
             // 根据重连状态更新连接状态
+            // 注意：Connected 和 Disconnected 状态已在 OnClientConnected/OnClientDisconnected 中更新，
+            // 此处仅处理 Reconnecting 和 Failed 状态，避免重复触发导致UI状态混乱
             switch (state)
             {
                 case ReconnectionManager.ReconnectState.Reconnecting:
-                    UpdateConnectionStatus(ConnectionStatus.Connecting);
+                    UpdateConnectionStatus(ConnectionStatus.Reconnecting);
                     break;
                 case ReconnectionManager.ReconnectState.Connected:
                     // 连接状态已在OnClientConnected中更新
                     break;
                 case ReconnectionManager.ReconnectState.Disconnected:
+                    // 断开状态已在OnClientDisconnected中更新，避免重复触发
+                    break;
                 case ReconnectionManager.ReconnectState.Failed:
-                    UpdateConnectionStatus(ConnectionStatus.Disconnected);
+                    UpdateConnectionStatus(ConnectionStatus.Failed);
                     break;
             }
         }
