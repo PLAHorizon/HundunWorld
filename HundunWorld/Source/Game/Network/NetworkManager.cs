@@ -26,8 +26,8 @@ namespace HundunWorld.Game.Network
         private GatewaySelector _gatewaySelector;
         private readonly HeartbeatManager _heartbeatManager;
         private readonly ReconnectionManager _reconnectionManager;
-        private readonly CancellationTokenSource _connectionCts;
-        private readonly CancellationTokenSource _gatewayCheckCts;
+        private CancellationTokenSource _connectionCts;
+        private CancellationTokenSource _gatewayCheckCts;
         private readonly object _connectionLock = new object();
         private readonly object _sendLock = new object();
         private readonly MessageProcessor _messageProcessor;
@@ -152,12 +152,6 @@ namespace HundunWorld.Game.Network
         /// </summary>
         public async Task<bool> ConnectAsync(string ip, int port, List<GatewayInfo> gatewayList = null)
         {
-            if (_isDisposing)
-            {
-                EnhancedLogging.LogWarning("网络管理器正在释放，无法连接");
-                return false;
-            }
-
             if (string.IsNullOrEmpty(ip) || port <= 0)
             {
                 ConnectionError?.Invoke("IP地址或端口无效");
@@ -177,6 +171,26 @@ namespace HundunWorld.Game.Network
             try
             {
                 EnhancedLogging.LogInfo($"[ConnectAsync] 开始连接到 {ip}:{port}");
+
+                // 检查客户端是否已释放或未初始化，如果是则重新初始化
+                if (_client == null || _client.DisposedValue)
+                {
+                    EnhancedLogging.LogInfo("[ConnectAsync] 检测到客户端已释放，正在重新初始化");
+                    // 重置释放标志，允许重新初始化
+                    _isDisposing = false;
+                    await InitializeClient(gatewayList ?? _gatewayList);
+                }
+
+                // 如果仍在释放过程中，则无法连接
+                if (_isDisposing)
+                {
+                    EnhancedLogging.LogWarning("网络管理器正在释放，无法连接");
+                    return false;
+                }
+
+                // 检查并重新创建CancellationTokenSource（如果已被释放）
+                _connectionCts = EnsureCancellationTokenSource(_connectionCts, "连接取消令牌");
+                _gatewayCheckCts = EnsureCancellationTokenSource(_gatewayCheckCts, "网关检查取消令牌");
 
                 // 配置客户端 - 每次连接时创建新的适配器实例
                 var config = new TouchSocketConfig()
@@ -216,6 +230,51 @@ namespace HundunWorld.Game.Network
                 EnhancedDiagnostics.LogNetworkOperation("连接", $"{ip}:{port}", false, ex.Message);
                 return false;
             }
+        }
+
+        /// <summary>
+        /// 确保CancellationTokenSource有效，如果已释放则重新创建
+        /// </summary>
+        private CancellationTokenSource EnsureCancellationTokenSource(CancellationTokenSource cts, string tokenName)
+        {
+            bool needNew = false;
+            
+            if (cts == null)
+            {
+                needNew = true;
+            }
+            else
+            {
+                try
+                {
+                    needNew = cts.IsCancellationRequested;
+                }
+                catch (ObjectDisposedException)
+                {
+                    needNew = true;
+                }
+            }
+
+            if (needNew)
+            {
+                EnhancedLogging.LogInfo($"[EnsureCancellationTokenSource] 重新创建{tokenName}");
+                // 如果旧的CancellationTokenSource存在但未释放，则先释放它
+                if (cts != null)
+                {
+                    try
+                    {
+                        cts.Dispose();
+                    }
+                    catch (ObjectDisposedException ex)
+                    {
+                        // 对象已经被释放，忽略此异常
+                        EnhancedLogging.LogWarning($"[EnsureCancellationTokenSource] {tokenName}已被释放: {ex.Message}");
+                    }
+                }
+                return new CancellationTokenSource();
+            }
+
+            return cts;
         }
 
         /// <summary>
