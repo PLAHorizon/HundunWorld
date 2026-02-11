@@ -323,6 +323,10 @@ namespace HundunWorld.Game.Worlds
         public void Dispose()
         {
             StopSynchronization();
+            
+            // 确保即使同步已停止，EntitySynchronizationManager 也被释放
+            _entitySyncManager?.Dispose();
+            
             _worldProperties.Clear();
             
             Debug.Log("[WorldState] 世界状态管理器已清理");

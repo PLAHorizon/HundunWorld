@@ -23,6 +23,15 @@ namespace HundunWorld.Game.Services
 
         public static CharacterPersistenceService Instance => _instance ??= new CharacterPersistenceService();
 
+        /// <summary>
+        /// 仅在已创建实例时释放资源，避免在Dispose期间创建新实例
+        /// </summary>
+        public static void DisposeIfCreated()
+        {
+            _instance?.Dispose();
+            _instance = null;
+        }
+
         private CharacterPersistenceService()
         {
             // DatabaseManager是静态类，不需要实例化

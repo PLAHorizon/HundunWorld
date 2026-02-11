@@ -358,6 +358,8 @@ namespace HundunWorld.Game.Worlds
         public void Dispose()
         {
             _syncEntities.Clear();
+            _syncConfigs.Clear();
+            _entityRegistry = null;
             Debug.Log("[EntitySync] 实体同步管理器已清理");
         }
     }

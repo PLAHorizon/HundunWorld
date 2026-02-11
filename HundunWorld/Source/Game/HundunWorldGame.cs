@@ -3,6 +3,7 @@ using Game.Performance;
 using HundunWorld.Game.ECS;
 using HundunWorld.Game.Modules;
 using HundunWorld.Game.Network;
+using HundunWorld.Game.Services;
 using HundunWorld.Game.Worlds;
 using System;
 using System.Threading.Tasks;
@@ -340,6 +341,16 @@ namespace HundunWorld.Game
                 _ecsManager?.Dispose();
                 _networkManager?.Dispose();
                 _worldDataManager?.Dispose();
+
+                // 释放单例服务资源（仅在已创建的情况下）
+                try
+                {
+                    CharacterPersistenceService.DisposeIfCreated();
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"释放角色持久化服务时发生错误: {ex.Message}");
+                }
 
                 // 销毁Arch ECS世界
                 if (_archWorld != null)

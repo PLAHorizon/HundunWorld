@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FlaxEngine;
+using Game.UI.Character;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 using HundunWorld.Game.UI.Authentication;
@@ -179,6 +180,7 @@ namespace HundunWorld.Game.UI
         {
             // 重置认证管理器单例，防止编辑器Play/Stop之间事件订阅残留
             AuthenticationManager.ResetInstance();
+            CharacterManager.ResetInstance();
             
             // 简化清理过程
             FlaxEngine.Debug.Log("UI状态管理器资源已清理");

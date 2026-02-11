@@ -167,6 +167,8 @@ namespace HundunWorld.Game.UI.Controllers
         /// </summary>
         private void CleanupController()
         {
+            _eventBus?.UnsubscribeAll("SceneController");
+
             // 清理所有场景组件
             foreach (var componentInfo in _sceneComponents.Values)
             {

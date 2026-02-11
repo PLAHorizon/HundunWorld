@@ -23,6 +23,22 @@ namespace Game.UI.Character
         private static CharacterManager _instance;
         public static CharacterManager Instance => _instance ??= new CharacterManager();
 
+        /// <summary>
+        /// 重置单例实例，取消所有事件订阅以防止跨Play/Stop周期的事件处理器积累
+        /// </summary>
+        public static void ResetInstance()
+        {
+            if (_instance != null)
+            {
+                UIEventBus.Instance?.UnsubscribeAll("CharacterManager");
+                _instance.CharacterListUpdated = null;
+                _instance.CharacterSelected = null;
+                _instance.CharacterCreated = null;
+                _instance.CharacterDeleted = null;
+                _instance = null;
+            }
+        }
+
         // 核心管理器
         private UIStateManager _stateManager;
         private UIEventBus _eventBus;
