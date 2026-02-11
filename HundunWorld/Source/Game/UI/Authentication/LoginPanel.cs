@@ -204,6 +204,9 @@ namespace HundunWorld.Game.UI.Authentication
 
             // 确保布局完成后重新定位
             InitializeLayout();
+            
+            // 检查当前网络连接状态并更新按钮
+            CheckAndUpdateButtonState();
         }
 
         /// <summary>
@@ -308,6 +311,27 @@ namespace HundunWorld.Game.UI.Authentication
                 SwitchToRegisterButton.Enabled = false;
             }
             SetStatus("正在连接服务器...", Color.Yellow);
+        }
+
+        /// <summary>
+        /// 检查并更新按钮状态（在按钮创建后调用）
+        /// </summary>
+        private void CheckAndUpdateButtonState()
+        {
+            var networkManager = HundunWorldGame.Instance?.NetworkManager;
+            if (networkManager != null)
+            {
+                var status = networkManager.GetConnectionStatus();
+                FlaxEngine.Debug.Log($"[LoginPanel] 检查网络状态: {status}");
+                if (status == Horizon.Game.Message.Enums.ConnectionStatus.Connected)
+                {
+                    EnableButtons();
+                }
+                else
+                {
+                    DisableButtons();
+                }
+            }
         }
 
         /// <summary>
