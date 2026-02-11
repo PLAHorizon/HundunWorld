@@ -1,8 +1,10 @@
 using Arch.Core;
 using FlaxEngine;
 using Game;
+using HundunWorld.Game.Combat;
 using HundunWorld.Game.ECS.Components;
 using HundunWorld.Game.ECS.Systems;
+using HundunWorld.Game.Network.Handlers;
 using System.Threading.Tasks;
 
 namespace HundunWorld.Game
@@ -171,6 +173,9 @@ namespace HundunWorld.Game
 
         public override void Deinitialize()
         {
+            // 清理战斗系统和消息处理器单例
+            CombatSystemCoordinator.Instance?.Cleanup();
+            EnhancedMessageProcessor.Instance?.Cleanup();
 
             _instance = null;
             // 释放游戏资源

@@ -36,6 +36,7 @@ namespace HundunWorld.Game.Network
         private GatewayInfo _currentGateway;
         private volatile bool _isInitialized = false;
         private volatile bool _isDisposing = false;
+        private UnhandledExceptionEventHandler _unhandledExceptionHandler;
         List<GatewayInfo> _gatewayList = new List<GatewayInfo>();
         public ConnectionStatus ConnectionStatus => _connectionStatus;
 
@@ -48,7 +49,7 @@ namespace HundunWorld.Game.Network
 
         public NetworkManager(List<GatewayInfo> gatewayList, NetworkStateMonitor networkStateMonitor = null)
         {
-            AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+            _unhandledExceptionHandler = (sender, e) =>
             {
                 try
                 {
@@ -61,6 +62,7 @@ namespace HundunWorld.Game.Network
                     // swallow
                 }
             };
+            AppDomain.CurrentDomain.UnhandledException += _unhandledExceptionHandler;
             _gatewayList = gatewayList;
             _networkStateMonitor = networkStateMonitor ?? new NetworkStateMonitor();
             _gatewayCheckCts = new CancellationTokenSource();
@@ -954,6 +956,16 @@ namespace HundunWorld.Game.Network
 
                 // 释放心跳包管理器
                 _heartbeatManager?.Dispose();
+
+                // 取消订阅全局异常处理器，防止通过委托引用导致内存泄漏
+                if (_unhandledExceptionHandler != null)
+                {
+                    AppDomain.CurrentDomain.UnhandledException -= _unhandledExceptionHandler;
+                    _unhandledExceptionHandler = null;
+                }
+
+                // 清理消息处理器中的处理器引用
+                // _messageProcessor 持有 IMessageHandler 实例的引用，需要清理以防止泄漏
 
                 // 清理自身事件委托，防止外部引用残留
                 ConnectionStatusChanged = null;
