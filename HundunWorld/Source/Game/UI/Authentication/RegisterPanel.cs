@@ -413,6 +413,33 @@ namespace HundunWorld.Game.UI.Authentication
         }
         
         /// <summary>
+        /// 释放资源 - 取消按钮事件订阅，清理自定义事件委托
+        /// </summary>
+        public override void Dispose()
+        {
+            // 取消按钮事件订阅，防止重复触发和内存泄漏
+            if (SendVerificationCodeButton != null)
+            {
+                SendVerificationCodeButton.ButtonClicked -= OnSendVerificationCodeClicked;
+            }
+            if (RegisterButton != null)
+            {
+                RegisterButton.ButtonClicked -= OnRegisterButtonClicked;
+            }
+            if (SwitchToLoginButton != null)
+            {
+                SwitchToLoginButton.ButtonClicked -= OnSwitchToLoginClicked;
+            }
+
+            // 清理自定义事件委托，断开外部订阅者的引用
+            RegisterButtonClicked = null;
+            SwitchToLoginClicked = null;
+            SendVerificationCodeClicked = null;
+
+            base.Dispose();
+        }
+
+        /// <summary>
         /// 创建注册面板实例
         /// </summary>
         public static RegisterPanel Create()
