@@ -84,7 +84,7 @@ namespace Horizon.Core
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                System.Diagnostics.Trace.TraceError(ex.Message);
             }
         }
         private static void PingCallback(IAsyncResult ar) // 扫描完成后的回调方法

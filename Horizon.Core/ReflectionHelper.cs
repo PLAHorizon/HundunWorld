@@ -24,14 +24,14 @@ namespace Horizon.Core
             {
                 // 记录无法加载的类型信息
                 var failedTypes = ex.Types.Where(t => t == null).Count();
-                Console.WriteLine($"[警告] 无法加载 {failedTypes} 个类型");
+                System.Diagnostics.Trace.TraceWarning($"无法加载 {failedTypes} 个类型");
                 
                 // 记录具体的加载异常
                 if (ex.LoaderExceptions != null)
                 {
                     foreach (var loaderException in ex.LoaderExceptions)
                     {
-                        Console.WriteLine($"[错误] 类型加载失败: {loaderException?.Message}");
+                        System.Diagnostics.Trace.TraceWarning($"类型加载失败: {loaderException?.Message}");
                     }
                 }
                 
@@ -40,7 +40,7 @@ namespace Horizon.Core
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[错误] 获取类型时发生未知异常: {ex.Message}");
+                System.Diagnostics.Trace.TraceError($"获取类型时发生未知异常: {ex.Message}");
                 return new Type[0];
             }
         }
@@ -59,7 +59,7 @@ namespace Horizon.Core
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[错误] 加载程序集失败 '{assemblyPath}': {ex.Message}");
+                System.Diagnostics.Trace.TraceError($"加载程序集失败 '{assemblyPath}': {ex.Message}");
                 return new Type[0];
             }
         }
@@ -78,7 +78,7 @@ namespace Horizon.Core
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[错误] 加载程序集失败 '{assemblyName.FullName}': {ex.Message}");
+                System.Diagnostics.Trace.TraceError($"加载程序集失败 '{assemblyName.FullName}': {ex.Message}");
                 return new Type[0];
             }
         }
@@ -111,7 +111,7 @@ namespace Horizon.Core
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[错误] 创建类型实例失败 '{type.FullName}': {ex.Message}");
+                System.Diagnostics.Trace.TraceError($"创建类型实例失败 '{type.FullName}': {ex.Message}");
                 return null;
             }
         }

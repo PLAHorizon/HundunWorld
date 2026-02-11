@@ -79,7 +79,6 @@ namespace Horizon.Game.Core
             Compute(ref rollingCrc, data.AsSpan(0, 5));
             Compute(ref rollingCrc, data.AsSpan(5));
             uint crc2 = rollingCrc ^ 0xFFFFFFFFu;
-            Console.WriteLine($"分段CRC32: 0x{crc2:X8}");
             return crc2;
         }
         /// <summary>
