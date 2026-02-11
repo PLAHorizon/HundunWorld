@@ -124,10 +124,8 @@ namespace HundunWorld.Game.Worlds
 
         internal void Dispose()
         {
-            _worldManager.Dispose();
-            _networkManager.Dispose();
-            _world.Dispose();
-            World.Destroy(_world);
+            // PlayerPositionUpdater does not own _networkManager, _worldManager, or _world,
+            // so it must not dispose them. Cleanup is handled by HundunWorldGame.
         }
     }
 }

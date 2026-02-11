@@ -222,11 +222,13 @@ namespace HundunWorld.Game.Network
         /// </summary>
         public void Check()
         {
-            if (_cancellationTokenSource != null)
-                _cancellationTokenSource.Cancel();
-            _cancellationTokenSource.Dispose();
-            _cancellationTokenSource = null;
+            var oldCts = _cancellationTokenSource;
             _cancellationTokenSource = new CancellationTokenSource();
+            if (oldCts != null)
+            {
+                oldCts.Cancel();
+                oldCts.Dispose();
+            }
         }
 
         /// <summary>
@@ -318,9 +320,16 @@ namespace HundunWorld.Game.Network
         /// </summary>
         public void Dispose()
         {
+            if (_disposed) return;
             _disposed = true;
+
             _cancellationTokenSource?.Cancel();
             _cancellationTokenSource?.Dispose();
+            _cancellationTokenSource = null;
+
+            // 清理事件委托，防止外部引用残留
+            NetworkStatusChanged = null;
+
             EnhancedDiagnostics.LogDiagnostic("网络状态监控器已释放");
         }
 

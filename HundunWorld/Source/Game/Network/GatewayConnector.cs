@@ -15,6 +15,7 @@ namespace HundunWorld.Game.Network
         private readonly NetworkManager _networkManager;
         private string _gatewayIp;
         private int _gatewayPort;
+        private bool _disposed;
 
         /// <summary>
         /// 连接状态变化事件
@@ -115,12 +116,20 @@ namespace HundunWorld.Game.Network
         /// </summary>
         public void Dispose()
         {
+            if (_disposed) return;
+            _disposed = true;
+
             // 取消订阅事件
-            _networkManager.ConnectionStatusChanged -= OnConnectionStatusChanged;
-            _networkManager.ConnectionError -= OnConnectionError;
-            //_networkManager.MessageReceived -= OnMessageReceived;
-            
-            _networkManager.Dispose();
+            if (_networkManager != null)
+            {
+                _networkManager.ConnectionStatusChanged -= OnConnectionStatusChanged;
+                _networkManager.ConnectionError -= OnConnectionError;
+            }
+
+            // 清理自身事件委托，防止外部引用残留
+            ConnectionStatusChanged = null;
+            MessageReceived = null;
+            ConnectionError = null;
         }
     }
 }
