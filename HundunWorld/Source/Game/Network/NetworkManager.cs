@@ -26,8 +26,8 @@ namespace HundunWorld.Game.Network
         private GatewaySelector _gatewaySelector;
         private readonly HeartbeatManager _heartbeatManager;
         private readonly ReconnectionManager _reconnectionManager;
-        private readonly CancellationTokenSource _connectionCts;
-        private readonly CancellationTokenSource _gatewayCheckCts;
+        private CancellationTokenSource _connectionCts;
+        private CancellationTokenSource _gatewayCheckCts;
         private readonly object _connectionLock = new object();
         private readonly object _sendLock = new object();
         private readonly MessageProcessor _messageProcessor;
@@ -152,16 +152,24 @@ namespace HundunWorld.Game.Network
         /// </summary>
         public async Task<bool> ConnectAsync(string ip, int port, List<GatewayInfo> gatewayList = null)
         {
-            if (_isDisposing)
-            {
-                EnhancedLogging.LogWarning("网络管理器正在释放，无法连接");
-                return false;
-            }
-
             if (string.IsNullOrEmpty(ip) || port <= 0)
             {
                 ConnectionError?.Invoke("IP地址或端口无效");
                 EnhancedLogging.LogWarning($"[ConnectAsync] IP地址或端口无效: {ip}:{port}");
+                return false;
+            }
+
+            // 如果检测到客户端已释放，尝试重新初始化
+            if (_client == null || _client.DisposedValue)
+            {
+                EnhancedLogging.LogInfo("[ConnectAsync] 检测到客户端已释放，准备重新初始化");
+                // 重置释放标志，允许重新初始化
+                _isDisposing = false;
+            }
+
+            if (_isDisposing)
+            {
+                EnhancedLogging.LogWarning("网络管理器正在释放，无法连接");
                 return false;
             }
 
@@ -177,6 +185,48 @@ namespace HundunWorld.Game.Network
             try
             {
                 EnhancedLogging.LogInfo($"[ConnectAsync] 开始连接到 {ip}:{port}");
+
+                // 检查客户端是否已释放或未初始化，如果是则重新初始化
+                if (_client == null || _client.DisposedValue)
+                {
+                    EnhancedLogging.LogInfo("[ConnectAsync] 正在重新初始化客户端");
+                    await InitializeClient(gatewayList ?? _gatewayList);
+                }
+
+                // 检查并重新创建CancellationTokenSource（如果已被释放）
+                bool needNewConnectionCts = false;
+                try
+                {
+                    needNewConnectionCts = _connectionCts == null || _connectionCts.IsCancellationRequested;
+                }
+                catch (ObjectDisposedException)
+                {
+                    needNewConnectionCts = true;
+                }
+
+                if (needNewConnectionCts)
+                {
+                    EnhancedLogging.LogInfo("[ConnectAsync] 重新创建连接取消令牌");
+                    try { _connectionCts?.Dispose(); } catch { }
+                    _connectionCts = new CancellationTokenSource();
+                }
+
+                bool needNewGatewayCts = false;
+                try
+                {
+                    needNewGatewayCts = _gatewayCheckCts == null || _gatewayCheckCts.IsCancellationRequested;
+                }
+                catch (ObjectDisposedException)
+                {
+                    needNewGatewayCts = true;
+                }
+
+                if (needNewGatewayCts)
+                {
+                    EnhancedLogging.LogInfo("[ConnectAsync] 重新创建网关检查取消令牌");
+                    try { _gatewayCheckCts?.Dispose(); } catch { }
+                    _gatewayCheckCts = new CancellationTokenSource();
+                }
 
                 // 配置客户端 - 每次连接时创建新的适配器实例
                 var config = new TouchSocketConfig()
