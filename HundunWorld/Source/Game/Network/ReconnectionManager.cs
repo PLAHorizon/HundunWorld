@@ -16,6 +16,7 @@ namespace HundunWorld.Game.Network
         /// </summary>
         public enum ReconnectState
         {
+            Unkonw,
             Connected,      // 已连接
             Disconnected,   // 断开
             Reconnecting,   // 重连中
@@ -61,7 +62,7 @@ namespace HundunWorld.Game.Network
         /// <summary>
         /// 当前重连状态
         /// </summary>
-        public ReconnectState CurrentState { get; private set; } = ReconnectState.Connected;
+        public ReconnectState CurrentState { get; internal set; } 
 
         /// <summary>
         /// 当前重连尝试次数
@@ -164,7 +165,7 @@ namespace HundunWorld.Game.Network
         /// </summary>
         private void CheckHeartbeat(object state)
         {
-            if (CurrentState != ReconnectState.Connected)
+            if (CurrentState == ReconnectState.Connected)
                 return;
 
             var elapsed = (DateTime.UtcNow - LastHeartbeatTime).TotalMilliseconds;

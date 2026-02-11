@@ -33,7 +33,8 @@ namespace HundunWorld.Game.Network
             {
                 try
                 {
-                    await Task.Delay(1000); // 等待初始化完成
+                    // 在编辑器中减少等待时间，加快初始化速度
+                    await Task.Delay(100); // 从x1000ms减少到80ms
                     var status = await CheckNetworkStatusAsync();
                     UpdateNetworkStatus(status);
                     EnhancedLogging.LogInfo("网络状态监控器初始化完成");
@@ -119,40 +120,35 @@ namespace HundunWorld.Game.Network
                     return false;
                 }
 
-                // 尝试连接几个公共服务器
+                // 尝试连接几个公共服务器，但只测试最快的一个
                 string[] testHosts = { "8.8.8.8", "114.114.114.114", "223.5.5.5" };
-                int[] testPorts = { 53, 80, 443 }; // DNS, HTTP, HTTPS端口
+                int testPort = 53; // DNS端口
 
+                // 使用Task.WhenAny找到第一个成功的连接，避免不必要的并发连接
+                var tasks = new System.Collections.Generic.List<Task<bool>>();
                 foreach (string host in testHosts)
                 {
-                    foreach (int port in testPorts)
+                    // 检查取消令牌
+                    if (_cancellationTokenSource.Token.IsCancellationRequested)
                     {
-                        try
-                        {
-                            // 检查取消令牌
-                            if (_cancellationTokenSource.Token.IsCancellationRequested)
-                            {
-                                EnhancedDiagnostics.LogDiagnostic("网络连通性检查被取消");
-                                return false;
-                            }
+                        break;
+                    }
+                    
+                    tasks.Add(CheckPortReachabilityAsync(host, testPort));
+                }
 
-                            if (await CheckPortReachabilityAsync(host, port))
-                            {
-                                EnhancedDiagnostics.LogNetworkOperation("网络连通性检查", $"{host}:{port}", true);
-                                _cancellationTokenSource.Cancel();
-                                return true;
-                            }
-                            else
-                            {
-                                EnhancedDiagnostics.LogNetworkOperation("网络连通性检查", $"{host}:{port}", false, "端口不可达");
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            EnhancedDiagnostics.LogException(ex, $"网络连通性检查 {host}:{port}");
-                            // 继续尝试下一个组合
-                            continue;
-                        }
+                // 等待任何一个成功
+                while (tasks.Count > 0)
+                {
+                    var completedTask = await Task.WhenAny(tasks);
+                    tasks.Remove(completedTask);
+                    
+                    if (await completedTask)
+                    {
+                        EnhancedDiagnostics.LogNetworkOperation("网络连通性检查", "找到可用连接", true);
+                        // 取消其他任务
+                        _cancellationTokenSource.Cancel();
+                        return true;
                     }
                 }
 
@@ -184,8 +180,8 @@ namespace HundunWorld.Game.Network
                     return false;
                 }
 
-                // 使用网络连接助手类来处理连接
-                return await NetworkConnectionHelper.ConnectWithExceptionHandlingAsync(host, port, 3000);
+                // 使用网络连接助手类来处理连接，在编辑器中减少超时时间
+                return await NetworkConnectionHelper.ConnectWithExceptionHandlingAsync(host, port, 1000); // 从3000ms减少到1000ms
             }
             catch (Exception ex)
             {

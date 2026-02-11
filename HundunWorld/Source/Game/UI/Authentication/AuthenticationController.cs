@@ -225,11 +225,11 @@ public class AuthenticationController : Script
             if (result.IsSuccess)
             {
                 FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 注册成功，更新Passport信息");
-                
+
                 // 确保Passport对象存在
                 if (AuthenticationManager.Instance.Passport == null)
                     AuthenticationManager.Instance.Passport = new Horizon.Game.Core.Database.LiteDataContext.PassportInfo();
-                
+
                 // 保存注册信息到Passport
                 string username = _registerPanel.UsernameInput.Text;
                 string password = _registerPanel.PasswordInput.Text;
@@ -238,9 +238,9 @@ public class AuthenticationController : Script
                 AuthenticationManager.Instance.Passport.RememberPassword = true;
 
                 _registerPanel.SetStatus("注册成功！正在前往登录界面...", Color.Green);
-                
+
                 // 注册成功后切换到登录界面，并自动填充账号信息,实际工作由消息接收回调函数来执行
-               
+
             }
             else
             {
@@ -321,8 +321,8 @@ public class AuthenticationController : Script
         // 使用保存的Passport信息自动填充
         string username = AuthenticationManager.Instance?.Passport?.PassportId ?? "";
         string password = AuthenticationManager.Instance?.Passport?.Password ?? "";
-        
-        PerformSwitchToLogin(username, password);
+
+        PerformSwitchToLogin(username, password, false);
     }
 
     /// <summary>
@@ -330,7 +330,7 @@ public class AuthenticationController : Script
     /// </summary>
     /// <param name="username">要自动填充的用户名</param>
     /// <param name="password">要自动填充的密码</param>
-    private void PerformSwitchToLogin(string username, string password)
+    private void PerformSwitchToLogin(string username, string password, bool isRegisted = true)
     {
         FlaxEngine.Debug.Log($"[PerformSwitchToLogin] 开始切换到登录界面，用户名: {username}");
 
@@ -340,15 +340,15 @@ public class AuthenticationController : Script
             _animationManager.SlideOut(_registerPanel, new Float2(300, 0), 0.5f, EasingType.EaseOut, () =>
             {
                 _registerPanel.Visible = false;
-                
+
                 // 更新状态管理器
                 if (_stateManager != null)
                 {
                     _stateManager.TransitionToScene(SceneType.Login);
                 }
-                
+
                 // 显示登录面板并填充账号信息
-                ShowLoginPanelWithCredentials(username, password);
+                ShowLoginPanelWithCredentials(username, password, isRegisted);
             });
         }
         else
@@ -359,7 +359,7 @@ public class AuthenticationController : Script
             {
                 _stateManager.TransitionToScene(SceneType.Login);
             }
-            ShowLoginPanelWithCredentials(username, password);
+            ShowLoginPanelWithCredentials(username, password, isRegisted);
         }
     }
 
@@ -368,50 +368,51 @@ public class AuthenticationController : Script
     /// </summary>
     /// <param name="username">用户名</param>
     /// <param name="password">密码</param>
-    private void ShowLoginPanelWithCredentials(string username, string password)
+    private void ShowLoginPanelWithCredentials(string username, string password, bool isRegisted = true)
     {
         string maskedPassword = new string('*', Mathf.Min(password.Length, 8));
         FlaxEngine.Debug.Log($"[ShowLoginPanelWithCredentials] 填充登录信息: 用户名={username}, 密码={maskedPassword}");
-        
+
         // 停止动画并彻底重置物理状态
         _animationManager?.StopAnimations(_loginPanel);
-        
+
         // 确保登录面板可见
         _loginPanel.Visible = true;
         _loginPanel.Enabled = true;
-        
-        // 自动填充用户名和密码
-        if (!string.IsNullOrEmpty(username))
-        {
-            _loginPanel.UsernameInput.Text = username;
-            FlaxEngine.Debug.Log($"[ShowLoginPanelWithCredentials] 已填充用户名: {username}");
+        if (isRegisted)
+        { // 自动填充用户名和密码
+            if (!string.IsNullOrEmpty(username))
+            {
+                _loginPanel.UsernameInput.Text = username;
+                FlaxEngine.Debug.Log($"[ShowLoginPanelWithCredentials] 已填充用户名: {username}");
+            }
+
+            if (!string.IsNullOrEmpty(password))
+            {
+                _loginPanel.PasswordInput.Text = password;
+                FlaxEngine.Debug.Log($"[ShowLoginPanelWithCredentials] 已填充密码");
+            }
         }
-        
-        if (!string.IsNullOrEmpty(password))
-        {
-            _loginPanel.PasswordInput.Text = password;
-            FlaxEngine.Debug.Log($"[ShowLoginPanelWithCredentials] 已填充密码");
-        }
-        
+
         // 如果有记住密码选项，勾选它
         if (_loginPanel.RememberPasswordCheckBox != null)
         {
             _loginPanel.RememberPasswordCheckBox.Checked = true;
         }
-        
+
         // 播放滑入动画
         _animationManager?.SlideIn(_loginPanel, new Float2(300, 0), 0.4f, EasingType.EaseOut, null);
-        
-        // 更新状态提示
-        if (!string.IsNullOrEmpty(username))
-        {
-            _loginPanel.SetStatus($"请登录账户: {username}", Color.Yellow);
-        }
-        else
-        {
-            _loginPanel.SetStatus("请输入账户信息", Color.Yellow);
-        }
-        
+
+        //// 更新状态提示
+        //if (!string.IsNullOrEmpty(username))
+        //{
+        //    _loginPanel.SetStatus($"请登录账户: {username}", Color.Yellow);
+        //}
+        //else
+        //{
+        //    _loginPanel.SetStatus("请输入账户信息", Color.Yellow);
+        //}
+
         FlaxEngine.Debug.Log("[ShowLoginPanelWithCredentials] 登录面板已显示并填充账号信息");
     }
 
@@ -464,13 +465,13 @@ public class AuthenticationController : Script
             if (response.IsSuccess)
             {
                 FlaxEngine.Debug.Log($"[OnRegisterResponseReceived] 注册成功，PassportId: {response.PassportId}");
-                
+
                 // 使用注册响应中返回的PassportId
                 string passportId = response.PassportId ?? "";
-                
+
                 // 获取之前保存的密码
-                string password = AuthenticationManager.Instance?.Passport?.Password ?? "";
-                
+                string password =  _registerPanel.PasswordInput.Text;
+
                 // 更新Passport信息
                 if (AuthenticationManager.Instance?.Passport == null)
                 {
@@ -479,7 +480,7 @@ public class AuthenticationController : Script
                 AuthenticationManager.Instance.Passport.PassportId = passportId;
                 AuthenticationManager.Instance.Passport.Password = password;
                 AuthenticationManager.Instance.Passport.RememberPassword = true;
-                
+
                 // 执行切换到登录界面并自动填充
                 PerformSwitchToLogin(passportId, password);
             }

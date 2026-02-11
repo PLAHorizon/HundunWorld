@@ -67,15 +67,13 @@ namespace HundunWorld.Game.Network
             }
             catch (OperationCanceledException)
             {
-                // 操作被取消，这是正常的
-                Debug.Log($"[TCP连接] 连接到 {host}:{port} 时操作被取消，这是正常的");
+                // 操作被取消，这是正常的，不需要记录为Warning
                 EnhancedDiagnostics.LogNetworkOperation("TCP连接", $"{host}:{port}", false, "操作被取消");
                 return false;
             }
             catch (ObjectDisposedException)
             {
-                // 对象已被释放，这是正常的
-                Debug.Log($"[TCP连接] 连接到 {host}:{port} 时对象已被释放，这是正常的");
+                // 对象已被释放，这是正常的，不需要记录为Warning
                 EnhancedDiagnostics.LogNetworkOperation("TCP连接", $"{host}:{port}", false, "对象已被释放");
                 return false;
             }
@@ -86,13 +84,12 @@ namespace HundunWorld.Game.Network
                 //专门处理Socket异常，特别是I / O操作中止的情况
                 if (ex.HResult == 995) // WSA_OPERATION_ABORTED - 由于线程退出或应用程序请求，已中止 I/O 操作
                 {
-                    Debug.Log($"[TCP连接] 连接到 {host}:{port} 时I/O操作被中止，这在取消操作时是正常的: {ex.Message}");
+                    // I/O操作被中止是正常的取消操作，不需要记录为Warning
                     EnhancedDiagnostics.LogNetworkOperation("TCP连接", $"{host}:{port}", false, $"I/O操作被中止 (错误码: {ex.HResult})");
                     return false;
                 }
                 else if (ex.HResult == 10060) // WSAETIMEDOUT - 连接超时
                 {
-                    Debug.Log($"[TCP连接] 连接到 {host}:{port} 时超时: {ex.Message}");
                     EnhancedDiagnostics.LogNetworkOperation("TCP连接", $"{host}:{port}", false, $"连接超时 (错误码: {ex.HResult})");
                     return false;
                 }
@@ -179,15 +176,13 @@ namespace HundunWorld.Game.Network
             }
             catch (OperationCanceledException)
             {
-                // 操作被取消，这是正常的
-                Debug.Log($"[延迟测量] 测量 {host}:{port} 延迟时操作被取消，这是正常的");
+                // 操作被取消，这是正常的，不需要记录为Warning
                 EnhancedDiagnostics.LogNetworkOperation("延迟测量", $"{host}:{port}", false, "操作被取消");
                 return long.MaxValue;
             }
             catch (ObjectDisposedException)
             {
-                // 对象已被释放，这是正常的
-                Debug.Log($"[延迟测量] 测量 {host}:{port} 延迟时对象已被释放，这是正常的");
+                // 对象已被释放，这是正常的，不需要记录为Warning
                 EnhancedDiagnostics.LogNetworkOperation("延迟测量", $"{host}:{port}", false, "对象已被释放");
                 return long.MaxValue;
             }
@@ -198,13 +193,12 @@ namespace HundunWorld.Game.Network
                 // 专门处理Socket异常，特别是I/O操作中止的情况
                 if (ex.HResult == 995) // WSA_OPERATION_ABORTED - 由于线程退出或应用程序请求，已中止 I/O 操作
                 {
-                    Debug.Log($"[延迟测量] 测量 {host}:{port} 延迟时I/O操作被中止，这在取消操作时是正常的: {ex.Message}");
+                    // I/O操作被中止是正常的取消操作，不需要记录为Warning
                     EnhancedDiagnostics.LogNetworkOperation("延迟测量", $"{host}:{port}", false, $"I/O操作被中止 (错误码: {ex.HResult})");
                     return long.MaxValue;
                 }
                 else if (ex.HResult == 10060) // WSAETIMEDOUT - 连接超时
                 {
-                    Debug.Log($"[延迟测量] 测量 {host}:{port} 延迟时超时: {ex.Message}");
                     EnhancedDiagnostics.LogNetworkOperation("延迟测量", $"{host}:{port}", false, $"连接超时 (错误码: {ex.HResult})");
                     return long.MaxValue;
                 }

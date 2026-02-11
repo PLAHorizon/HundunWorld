@@ -1,5 +1,6 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Horizon.Game.Message.Enums;
 using HundunWorld.Game.UI.Components;
 using HundunWorld.Game.UI.Layout;
 using HundunWorld.Game.UI.StyleSystem;
@@ -38,6 +39,39 @@ namespace HundunWorld.Game.UI.Authentication
             InitializeLayout();
             
             InitializeUI();
+            HundunWorldGame.Instance.NetworkManager.ConnectionStatusChanged += OnConnectionStatusChanged;
+        }
+        private void OnConnectionStatusChanged(ConnectionStatus obj)
+        {
+
+            switch (obj)
+            {
+                case ConnectionStatus.Disconnected:
+                    SetStatus("连接已断开", color: Color.Yellow);
+                    DisableButtons();
+                    break;
+                case ConnectionStatus.Connecting:
+                    SetStatus("正在连接中....", color: Color.Yellow);
+                    DisableButtons();
+                    break;
+                case ConnectionStatus.Connected:
+                    SetStatus($"{(!string.IsNullOrWhiteSpace(PasswordInput.Text) && !string.IsNullOrWhiteSpace(UsernameInput.Text) ? "" : "请入账号密码登录")}", color: Color.Green);
+                    EnableButtons();
+                    break;
+                case ConnectionStatus.Reconnecting:
+                    SetStatus("正在重连....", color: Color.Yellow);
+                    DisableButtons();
+                    break;
+                case ConnectionStatus.Failed:
+                case ConnectionStatus.Error:
+                    SetStatus("网络连接失败，请检查网络", color: Color.DarkRed);
+                    DisableButtons();
+                    break;
+                case ConnectionStatus.Unknown:
+                case ConnectionStatus.GatewaySwitching:
+                default:
+                    break;
+            }
         }
 
         /// <summary>
@@ -212,7 +246,7 @@ namespace HundunWorld.Game.UI.Authentication
             SendVerificationCodeButton.Location = new Float2(codeInputWidth + 5, 0);
             SendVerificationCodeButton.Size = new Float2(inputWidth - codeInputWidth - 5, inputHeight);
             SendVerificationCodeButton.ButtonClicked += OnSendVerificationCodeClicked;
-            SendVerificationCodeButton.Enabled = false; // 初始化时禁用，等待网络连接
+            // 不在这里设置禁用，由AuthenticationUI统一管理
             verificationContainer.AddChild(SendVerificationCodeButton);
             
             AddChild(verificationContainer);
@@ -229,7 +263,7 @@ namespace HundunWorld.Game.UI.Authentication
             RegisterButton.BackgroundColorHighlighted = ChineseClassicalTheme.SuccessColor;
             RegisterButton.BorderColorHighlighted = ChineseClassicalTheme.InputBackgroundColor;
             RegisterButton.ButtonClicked += OnRegisterButtonClicked;
-            RegisterButton.Enabled = false; // 初始化时禁用，等待网络连接
+            // 不在这里设置禁用，由AuthenticationUI统一管理
             AddChild(RegisterButton);
 
             currentY += 50;
@@ -239,7 +273,7 @@ namespace HundunWorld.Game.UI.Authentication
             SwitchToLoginButton.Location = new Float2(buttonX, currentY);
             SwitchToLoginButton.Size = new Float2(buttonWidth, 35);
             SwitchToLoginButton.ButtonClicked += OnSwitchToLoginClicked;
-            SwitchToLoginButton.Enabled = false; // 初始化时禁用，等待网络连接
+            // 不在这里设置禁用，由AuthenticationUI统一管理
             AddChild(SwitchToLoginButton);
 
             currentY += 45;
@@ -411,32 +445,18 @@ namespace HundunWorld.Game.UI.Authentication
                 }
             }
         }
-        
+
         /// <summary>
         /// 释放资源 - 取消按钮事件订阅，清理自定义事件委托
         /// </summary>
-        public override void Dispose()
+        public override void OnDestroy()
         {
-            // 取消按钮事件订阅，防止重复触发和内存泄漏
-            if (SendVerificationCodeButton != null)
-            {
-                SendVerificationCodeButton.ButtonClicked -= OnSendVerificationCodeClicked;
-            }
-            if (RegisterButton != null)
-            {
-                RegisterButton.ButtonClicked -= OnRegisterButtonClicked;
-            }
-            if (SwitchToLoginButton != null)
-            {
-                SwitchToLoginButton.ButtonClicked -= OnSwitchToLoginClicked;
-            }
-
             // 清理自定义事件委托，断开外部订阅者的引用
             RegisterButtonClicked = null;
             SwitchToLoginClicked = null;
             SendVerificationCodeClicked = null;
 
-            base.Dispose();
+            
         }
 
         /// <summary>

@@ -38,8 +38,41 @@ namespace HundunWorld.Game.UI.Authentication
 
             // 异步加载数据并填充UI
             InitializeUIAsync();
+          HundunWorldGame.Instance.NetworkManager.ConnectionStatusChanged += OnConnectionStatusChanged;
         }
+        private void OnConnectionStatusChanged(ConnectionStatus obj)
+        {
 
+            switch (obj)
+            {
+                case ConnectionStatus.Disconnected:
+                    SetStatus("连接已断开", color: Color.Yellow);
+                    DisableButtons();
+                    break;
+                case ConnectionStatus.Connecting:
+                    SetStatus("正在连接中....", color: Color.Yellow);
+                    DisableButtons();
+                    break;
+                case ConnectionStatus.Connected:
+                    SetStatus($"{(!string.IsNullOrWhiteSpace(PasswordInput.Text) && !string.IsNullOrWhiteSpace(UsernameInput.Text) ? "" : "请入账号密码登录")}", color: Color.Green);
+                    EnableButtons();
+                    break;
+                case ConnectionStatus.Reconnecting:
+                    SetStatus("正在重连....", color: Color.Yellow);
+                    DisableButtons();
+                    break;
+                case ConnectionStatus.Failed:
+                case ConnectionStatus.Error:
+                    SetStatus("网络连接失败，请检查网络", color: Color.DarkRed);
+                    DisableButtons();
+                    break;
+                case ConnectionStatus.Unknown:
+                case ConnectionStatus.GatewaySwitching:
+                default:
+                    break;
+            }
+
+        }
         /// <summary>
         /// 同步初始化布局 - 确保在任何分辨率下居中显示
         /// </summary>
@@ -170,7 +203,7 @@ namespace HundunWorld.Game.UI.Authentication
             LoginButton.BorderColorHighlighted = ChineseClassicalTheme.InputBackgroundColor;
             LoginButton.TextColor = Color.Black;
             LoginButton.ButtonClicked += OnLoginButtonClicked;
-            LoginButton.Enabled = false; // 初始化时禁用，等待网络连接
+            // 不在这里设置禁用，由AuthenticationUI统一管理
             ChineseClassicalTheme.ApplyVisualHierarchy(LoginButton, VisualHierarchy.Primary);
             AddChild(LoginButton);
 
@@ -186,7 +219,7 @@ namespace HundunWorld.Game.UI.Authentication
             SwitchToRegisterButton.BackgroundColor = ChineseClassicalTheme.BackgroundColor; // 墨青色
             SwitchToRegisterButton.TextColor = ChineseClassicalTheme.TextColor;
             SwitchToRegisterButton.ButtonClicked += OnSwitchToRegisterClicked;
-            SwitchToRegisterButton.Enabled = false; // 初始化时禁用，等待网络连接
+            // 不在这里设置禁用，由AuthenticationUI统一管理
             ChineseClassicalTheme.ApplyVisualHierarchy(SwitchToRegisterButton, VisualHierarchy.Secondary);
             ChineseClassicalTheme.ApplyChineseBorder(SwitchToRegisterButton, ChineseBorderStyle.Traditional);
             AddChild(SwitchToRegisterButton);
@@ -286,14 +319,32 @@ namespace HundunWorld.Game.UI.Authentication
         /// </summary>
         public void EnableButtons()
         {
+            FlaxEngine.Debug.Log($"[LoginPanel.EnableButtons] 开始执行, LoginButton={(LoginButton != null ? "not null" : "null")}, SwitchToRegisterButton={(SwitchToRegisterButton != null ? "not null" : "null")}");
+            
             if (LoginButton != null)
             {
+                FlaxEngine.Debug.Log($"[LoginPanel.EnableButtons] LoginButton当前状态: Enabled={LoginButton.Enabled}, Visible={LoginButton.Visible}");
                 LoginButton.Enabled = true;
+                LoginButton.Visible = true; // 强制可见
+                FlaxEngine.Debug.Log($"[LoginPanel.EnableButtons] LoginButton设置后状态: Enabled={LoginButton.Enabled}, Visible={LoginButton.Visible}");
             }
+            else
+            {
+                FlaxEngine.Debug.LogWarning("[LoginPanel.EnableButtons] LoginButton为null，无法启用");
+            }
+            
             if (SwitchToRegisterButton != null)
             {
+                FlaxEngine.Debug.Log($"[LoginPanel.EnableButtons] SwitchToRegisterButton当前状态: Enabled={SwitchToRegisterButton.Enabled}, Visible={SwitchToRegisterButton.Visible}");
                 SwitchToRegisterButton.Enabled = true;
+                SwitchToRegisterButton.Visible = true; // 强制可见
+                FlaxEngine.Debug.Log($"[LoginPanel.EnableButtons] SwitchToRegisterButton设置后状态: Enabled={SwitchToRegisterButton.Enabled}, Visible={SwitchToRegisterButton.Visible}");
             }
+            else
+            {
+                FlaxEngine.Debug.LogWarning("[LoginPanel.EnableButtons] SwitchToRegisterButton为null，无法启用");
+            }
+            
             SetStatus("已连接服务器，请输入账户信息", Color.Green);
         }
 
@@ -302,14 +353,30 @@ namespace HundunWorld.Game.UI.Authentication
         /// </summary>
         public void DisableButtons()
         {
+            FlaxEngine.Debug.Log($"[LoginPanel.DisableButtons] 开始执行, LoginButton={(LoginButton != null ? "not null" : "null")}, SwitchToRegisterButton={(SwitchToRegisterButton != null ? "not null" : "null")}");
+            
             if (LoginButton != null)
             {
+                FlaxEngine.Debug.Log($"[LoginPanel.DisableButtons] LoginButton当前状态: Enabled={LoginButton.Enabled}");
                 LoginButton.Enabled = false;
+                FlaxEngine.Debug.Log($"[LoginPanel.DisableButtons] LoginButton设置后状态: Enabled={LoginButton.Enabled}");
             }
+            else
+            {
+                FlaxEngine.Debug.LogWarning("[LoginPanel.DisableButtons] LoginButton为null，无法禁用");
+            }
+            
             if (SwitchToRegisterButton != null)
             {
+                FlaxEngine.Debug.Log($"[LoginPanel.DisableButtons] SwitchToRegisterButton当前状态: Enabled={SwitchToRegisterButton.Enabled}");
                 SwitchToRegisterButton.Enabled = false;
+                FlaxEngine.Debug.Log($"[LoginPanel.DisableButtons] SwitchToRegisterButton设置后状态: Enabled={SwitchToRegisterButton.Enabled}");
             }
+            else
+            {
+                FlaxEngine.Debug.LogWarning("[LoginPanel.DisableButtons] SwitchToRegisterButton为null，无法禁用");
+            }
+            
             SetStatus("正在连接服务器...", Color.Yellow);
         }
 
@@ -337,23 +404,14 @@ namespace HundunWorld.Game.UI.Authentication
         /// <summary>
         /// 释放资源 - 取消按钮事件订阅，清理自定义事件委托
         /// </summary>
-        public override void Dispose()
+        public override void OnDestroy()
         {
-            // 取消按钮事件订阅，防止重复触发和内存泄漏
-            if (LoginButton != null)
-            {
-                LoginButton.ButtonClicked -= OnLoginButtonClicked;
-            }
-            if (SwitchToRegisterButton != null)
-            {
-                SwitchToRegisterButton.ButtonClicked -= OnSwitchToRegisterClicked;
-            }
-
+            
             // 清理自定义事件委托，断开外部订阅者的引用
             LoginButtonClicked = null;
             SwitchToRegisterClicked = null;
 
-            base.Dispose();
+            
         }
 
         /// <summary>

@@ -70,7 +70,7 @@ namespace HundunWorld.Game.Network
             _connectionCts = new CancellationTokenSource();
             _messageProcessor = new MessageProcessor();
             _messageAdapter = new HorizonMessageAdapter();
-            
+
             // 初始化重连管理器，提供连接函数
             _reconnectionManager = new ReconnectionManager(async () =>
             {
@@ -80,12 +80,12 @@ namespace HundunWorld.Game.Network
                 }
                 return false;
             });
-            
+
             // 订阅重连管理器事件
             _reconnectionManager.OnReconnected += OnReconnectionSucceeded;
             _reconnectionManager.OnReconnectFailed += OnReconnectionFailed;
             _reconnectionManager.OnStateChanged += OnReconnectionStateChanged;
-            
+            _reconnectionManager.StartHeartbeat();
             // 订阅网络状态变化事件
             _networkStateMonitor.NetworkStatusChanged += OnNetworkStatusChanged;
 
@@ -102,6 +102,9 @@ namespace HundunWorld.Game.Network
                     await InitializeClient(_gatewayList); // 空列表，将在连接时设置
                     AddAllMessageHandlers();
                     _connectionStatus = ConnectionStatus.Disconnected;
+
+                    // 初始化完成后立即触发一次状态通知，确保UI能正确初始化按钮状态
+                    UpdateConnectionStatus(ConnectionStatus.Disconnected);
 
                     EnhancedLogging.LogInfo("网络管理器初始化完成");
                     EnhancedDiagnostics.LogDiagnostic("网络管理器初始化完成");
@@ -212,7 +215,12 @@ namespace HundunWorld.Game.Network
                 EnhancedLogging.LogInfo("[ConnectAsync] 客户端设置完成，开始连接");
                 await _client.ConnectAsync(_connectionCts.Token);
                 EnhancedLogging.LogInfo("[ConnectAsync] 连接完成");
-
+                Scripting.InvokeOnUpdate(() =>
+                {
+                    if (_client.Online)
+                        UpdateConnectionStatus(ConnectionStatus.Connected);
+                });
+                _reconnectionManager.CurrentState = _client.Online? ReconnectionManager.ReconnectState.Connected:ReconnectionManager.ReconnectState.Failed;
                 return true;
             }
             catch (OperationCanceledException)
@@ -240,7 +248,7 @@ namespace HundunWorld.Game.Network
         private CancellationTokenSource EnsureCancellationTokenSource(CancellationTokenSource cts, string tokenName)
         {
             bool needNew = false;
-            
+
             if (cts == null)
             {
                 needNew = true;
@@ -321,9 +329,9 @@ namespace HundunWorld.Game.Network
         {
             EnhancedLogging.LogInfo("[OnClientConnected] 客户端连接成功");
             EnhancedDiagnostics.LogNetworkOperation("连接", $"{_currentGateway?.IP}:{_currentGateway?.Port}", true, "连接成功");
+            Scripting.InvokeOnUpdate(() =>
+           UpdateConnectionStatus(ConnectionStatus.Connected));
 
-            UpdateConnectionStatus(ConnectionStatus.Connected);
-            
             // 通知重连管理器连接成功
             _reconnectionManager?.MarkConnected();
 
@@ -410,7 +418,7 @@ namespace HundunWorld.Game.Network
 
                         var dataArray = e.Memory.ToArray();
                         EnhancedLogging.LogInfo($"[OnDataReceived] 准备解包原始数据，数据长度: {dataArray.Length}");
-                        
+
                         // 创建临时适配器实例进行解包
                         var tempAdapter = new HorizonMessageAdapter();
                         messagePacket = tempAdapter.UnpackMessage(dataArray);
@@ -574,7 +582,7 @@ namespace HundunWorld.Game.Network
         private async Task<bool> HandleHeartbeatMessageAsync(ITcpClient sender, HeartbeatMessage message)
         {
             EnhancedLogging.LogInfo("[HandleHeartbeatMessageAsync] 收到心跳消息");
-            
+
             // 更新重连管理器的心跳时间
             _reconnectionManager?.UpdateHeartbeat();
 
@@ -693,7 +701,7 @@ namespace HundunWorld.Game.Network
         /// <summary>
         /// 上一次通知给订阅者的连接状态，用于避免重复通知
         /// </summary>
-        private ConnectionStatus _lastNotifiedStatus = ConnectionStatus.Disconnected;
+        private ConnectionStatus _lastNotifiedStatus = ConnectionStatus.Unknown;
 
         /// <summary>
         /// 更新连接状态
@@ -783,7 +791,7 @@ namespace HundunWorld.Game.Network
 
             var startTime = DateTime.UtcNow;
             var endTime = startTime.AddMilliseconds(timeoutMs);
-            
+
             while (true)
             {
                 if (_connectionStatus == ConnectionStatus.Connected)
@@ -816,6 +824,7 @@ namespace HundunWorld.Game.Network
         {
             EnhancedLogging.LogInfo("[OnReconnectionSucceeded] 重连成功");
             EnhancedDiagnostics.LogDiagnostic("重连成功");
+            OnReconnectionStateChanged(ReconnectionManager.ReconnectState.Connected);
         }
 
         /// <summary>
@@ -834,23 +843,31 @@ namespace HundunWorld.Game.Network
         private void OnReconnectionStateChanged(ReconnectionManager.ReconnectState state)
         {
             EnhancedLogging.LogInfo($"[OnReconnectionStateChanged] 重连状态变化: {state}");
-            
+
             // 根据重连状态更新连接状态
             // 注意：Connected 和 Disconnected 状态已在 OnClientConnected/OnClientDisconnected 中更新，
             // 此处仅处理 Reconnecting 和 Failed 状态，避免重复触发导致UI状态混乱
             switch (state)
             {
                 case ReconnectionManager.ReconnectState.Reconnecting:
-                    UpdateConnectionStatus(ConnectionStatus.Reconnecting);
+                    Scripting.InvokeOnUpdate(() => UpdateConnectionStatus(ConnectionStatus.Reconnecting));
                     break;
                 case ReconnectionManager.ReconnectState.Connected:
-                    // 连接状态已在OnClientConnected中更新
+                    Scripting.InvokeOnUpdate(() =>
+                    {
+                        if (_client.Online)
+                            UpdateConnectionStatus(ConnectionStatus.Connected);
+                    });
                     break;
                 case ReconnectionManager.ReconnectState.Disconnected:
-                    // 断开状态已在OnClientDisconnected中更新，避免重复触发
+                    Scripting.InvokeOnUpdate(() =>
+                    {
+                        
+                            UpdateConnectionStatus(ConnectionStatus.Disconnected);
+                    });
                     break;
                 case ReconnectionManager.ReconnectState.Failed:
-                    UpdateConnectionStatus(ConnectionStatus.Failed);
+                    Scripting.InvokeOnUpdate(() => UpdateConnectionStatus(ConnectionStatus.Failed));
                     break;
             }
         }
@@ -872,7 +889,7 @@ namespace HundunWorld.Game.Network
             {
                 // 停止心跳包发送
                 _heartbeatManager?.StopHeartbeat();
-                
+
                 // 取消订阅重连管理器事件，然后停止并释放
                 if (_reconnectionManager != null)
                 {

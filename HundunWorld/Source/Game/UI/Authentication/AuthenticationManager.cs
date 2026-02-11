@@ -319,26 +319,7 @@ namespace HundunWorld.Game.UI.Authentication
 
                 var success = await networkManager.SendMessageAsync(messagePacket);
                 
-                if (success)
-                {
-                    Debug.Log($"[AuthenticationManager] 注册请求已发送: {username}");
-                    
-                    // 设置超时等待注册响应
-                    var timeoutTask = Task.Delay(15000); // 15秒超时
-                    var responseReceived = false;
-                    
-                    // 等待注册响应
-                    while (!responseReceived && !timeoutTask.IsCompleted)
-                    {
-                        await Task.Delay(100);
-                        // 这里可以通过事件或其他机制检查是否收到响应
-                    }
-                    
-                    if (timeoutTask.IsCompleted)
-                    {
-                        return new AuthenticationResult { IsSuccess = false, ErrorMessage = "注册响应超时，请稍后重试" };
-                    }
-                }
+               
 
                 if (success)
                 {
