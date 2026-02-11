@@ -540,6 +540,16 @@ namespace HundunWorld.Game.UI.Core
             }
         }
 
+        /// <summary>
+        /// 释放资源，取消所有事件订阅
+        /// </summary>
+        public void Dispose()
+        {
+            _eventBus?.UnsubscribeAll("StateSnapshotManager");
+            _snapshots.Clear();
+            _snapshotOrder.Clear();
+        }
+
         #endregion
     }
 }

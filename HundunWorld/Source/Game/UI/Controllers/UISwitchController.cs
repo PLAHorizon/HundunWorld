@@ -202,6 +202,7 @@ namespace Game.UI.Controllers
         /// </summary>
         private void CleanupController()
         {
+            _eventBus?.UnsubscribeAll("UISwitchController");
             _switchQueue.Clear();
             FlaxEngine.Debug.Log("UI鍒囨崲鎺у埗鍣ㄨ祫婧愬凡娓呯悊");
         }

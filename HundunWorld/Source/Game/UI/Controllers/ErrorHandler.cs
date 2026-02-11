@@ -156,6 +156,8 @@ namespace HundunWorld.Game.UI.Controllers
         /// 娓呯悊閿欒澶勭悊鍣?        /// </summary>
         private void CleanupErrorHandler()
         {
+            _eventBus?.UnsubscribeAll("ErrorHandler");
+            _snapshotManager?.Dispose();
             _errorHistory.Clear();
             _recoveryHandlers.Clear();
             FlaxEngine.Debug.Log("閿欒澶勭悊鍣ㄨ祫婧愬凡娓呯悊");
