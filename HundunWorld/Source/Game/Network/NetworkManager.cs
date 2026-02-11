@@ -238,26 +238,38 @@ namespace HundunWorld.Game.Network
         private CancellationTokenSource EnsureCancellationTokenSource(CancellationTokenSource cts, string tokenName)
         {
             bool needNew = false;
-            try
-            {
-                needNew = cts == null || cts.IsCancellationRequested;
-            }
-            catch (ObjectDisposedException)
+            
+            if (cts == null)
             {
                 needNew = true;
+            }
+            else
+            {
+                try
+                {
+                    needNew = cts.IsCancellationRequested;
+                }
+                catch (ObjectDisposedException)
+                {
+                    needNew = true;
+                }
             }
 
             if (needNew)
             {
                 EnhancedLogging.LogInfo($"[EnsureCancellationTokenSource] 重新创建{tokenName}");
-                try
+                // 如果旧的CancellationTokenSource存在但未释放，则先释放它
+                if (cts != null)
                 {
-                    cts?.Dispose();
-                }
-                catch (ObjectDisposedException ex)
-                {
-                    // 对象已经被释放，忽略此异常
-                    EnhancedLogging.LogWarning($"[EnsureCancellationTokenSource] {tokenName}已被释放: {ex.Message}");
+                    try
+                    {
+                        cts.Dispose();
+                    }
+                    catch (ObjectDisposedException ex)
+                    {
+                        // 对象已经被释放，忽略此异常
+                        EnhancedLogging.LogWarning($"[EnsureCancellationTokenSource] {tokenName}已被释放: {ex.Message}");
+                    }
                 }
                 return new CancellationTokenSource();
             }
