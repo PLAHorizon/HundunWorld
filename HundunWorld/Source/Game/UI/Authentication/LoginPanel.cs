@@ -170,6 +170,7 @@ namespace HundunWorld.Game.UI.Authentication
             LoginButton.BorderColorHighlighted = ChineseClassicalTheme.InputBackgroundColor;
             LoginButton.TextColor = Color.Black;
             LoginButton.ButtonClicked += OnLoginButtonClicked;
+            LoginButton.Enabled = false; // 初始化时禁用，等待网络连接
             ChineseClassicalTheme.ApplyVisualHierarchy(LoginButton, VisualHierarchy.Primary);
             AddChild(LoginButton);
 
@@ -185,6 +186,7 @@ namespace HundunWorld.Game.UI.Authentication
             SwitchToRegisterButton.BackgroundColor = ChineseClassicalTheme.BackgroundColor; // 墨青色
             SwitchToRegisterButton.TextColor = ChineseClassicalTheme.TextColor;
             SwitchToRegisterButton.ButtonClicked += OnSwitchToRegisterClicked;
+            SwitchToRegisterButton.Enabled = false; // 初始化时禁用，等待网络连接
             ChineseClassicalTheme.ApplyVisualHierarchy(SwitchToRegisterButton, VisualHierarchy.Secondary);
             ChineseClassicalTheme.ApplyChineseBorder(SwitchToRegisterButton, ChineseBorderStyle.Traditional);
             AddChild(SwitchToRegisterButton);
@@ -274,6 +276,38 @@ namespace HundunWorld.Game.UI.Authentication
             PasswordInput.Text = string.Empty;
             RememberPasswordCheckBox.Checked = false;
             SetStatus("请输入账户信息", Color.Yellow);
+        }
+
+        /// <summary>
+        /// 启用按钮（网络连接建立后调用）
+        /// </summary>
+        public void EnableButtons()
+        {
+            if (LoginButton != null)
+            {
+                LoginButton.Enabled = true;
+            }
+            if (SwitchToRegisterButton != null)
+            {
+                SwitchToRegisterButton.Enabled = true;
+            }
+            SetStatus("已连接服务器，请输入账户信息", Color.Green);
+        }
+
+        /// <summary>
+        /// 禁用按钮（网络断开时调用）
+        /// </summary>
+        public void DisableButtons()
+        {
+            if (LoginButton != null)
+            {
+                LoginButton.Enabled = false;
+            }
+            if (SwitchToRegisterButton != null)
+            {
+                SwitchToRegisterButton.Enabled = false;
+            }
+            SetStatus("正在连接服务器...", Color.Yellow);
         }
 
         /// <summary>
