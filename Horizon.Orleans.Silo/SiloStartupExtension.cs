@@ -187,13 +187,13 @@ namespace Horizon.Orleans.Silo
                 catch (ReflectionTypeLoadException ex)
                 {
                     // 处理ReflectionTypeLoadException异常
-                    Console.WriteLine($"[警告] 无法加载程序集 '{assemblyName}' 中的所有类型:");
+                    System.Diagnostics.Trace.TraceWarning($"无法加载程序集 '{assemblyName}' 中的所有类型");
                     
                     if (ex.LoaderExceptions != null)
                     {
                         foreach (var loaderException in ex.LoaderExceptions)
                         {
-                            Console.WriteLine($"  - {loaderException?.Message}");
+                            System.Diagnostics.Trace.TraceWarning($"  - {loaderException?.Message}");
                         }
                     }
                     
@@ -209,7 +209,7 @@ namespace Horizon.Orleans.Silo
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"[错误] 加载程序集 '{assemblyName}' 时发生异常: {ex.Message}");
+                    System.Diagnostics.Trace.TraceError($"加载程序集 '{assemblyName}' 时发生异常: {ex.Message}");
                 }
             }
             return result;

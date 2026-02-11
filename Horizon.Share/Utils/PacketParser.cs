@@ -53,9 +53,9 @@ namespace THorizon.Share.Utils
                     TryParsing(ref right, ref outBytes);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine("PacketParser Error", ex.Message, ex);
+                // 错误已被捕获，跳过解析
             }
         }
     }

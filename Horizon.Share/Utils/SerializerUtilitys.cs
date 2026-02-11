@@ -33,9 +33,8 @@ namespace Horizon.Share.Utils
 
                 return JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(bytes), _serializerSettings);
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Console.WriteLine(e);
                 return default(T);
             }
         }

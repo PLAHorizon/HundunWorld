@@ -138,10 +138,10 @@ namespace Horizon.Orleans.Silo.Services
             
             _logger.LogInformation($"📄 启动报告已保存至: {filePath}");
             
-            // 同时输出到控制台（可选）
+            // 同时输出到日志（开发环境）
             if (_environment.IsDevelopment())
             {
-                Console.WriteLine(report);
+                _logger.LogDebug(report);
             }
         }
 

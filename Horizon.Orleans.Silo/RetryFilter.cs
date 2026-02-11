@@ -54,9 +54,6 @@ namespace Horizon.Orleans.Silo
                 stopwatch.Stop();
                 var executionTime = stopwatch.ElapsedMilliseconds;
                 HorizonMetrics.GrainCallDuration.Record(executionTime, new KeyValuePair<string, object?>("grain_type", grainType));
-                Console.ForegroundColor = ConsoleColor.Green;
-                System.Console.WriteLine($"Grain {grainType}.{methodName} executed in {executionTime} ms.");
-                Console.ForegroundColor = ConsoleColor.White;
             }
 
         }

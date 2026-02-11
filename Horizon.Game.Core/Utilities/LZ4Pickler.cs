@@ -45,7 +45,7 @@ namespace Horizon.Game.Core.Utilities
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] LZ4压缩失败: {ex.Message}");
+                System.Diagnostics.Trace.TraceError($"LZ4压缩失败: {ex.Message}");
                 return input;
             }
         }
@@ -89,7 +89,7 @@ namespace Horizon.Game.Core.Utilities
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] LZ4解压缩失败: {ex.Message}");
+                System.Diagnostics.Trace.TraceError($"LZ4解压缩失败: {ex.Message}");
                 return null;
             }
         }
