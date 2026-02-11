@@ -742,8 +742,6 @@ namespace Horizon.Entities
             }
         }
 
-        
-
         public void Dispose()
         {
             // 双重检查锁定模式

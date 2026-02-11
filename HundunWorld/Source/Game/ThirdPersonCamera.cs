@@ -829,6 +829,7 @@ namespace HundunWorld.Game
         private float _currentLightLevel;     // 当前光照级别(0-1)
         private float _environmentMaxDistance; // 环境限制的最大距离
         private float _environmentMinDistance; // 环境限制的最小距离
+        private float _environmentElasticCoefficient = 1.0f; // 环境弹性系数
         private float _weatherVisibilityFactor; // 天气影响的可见度系数
         
         // 异步检测相关
@@ -1032,6 +1033,9 @@ namespace HundunWorld.Game
                 {
                     currentElasticity = 0.75f; // 快速移动
                 }
+                
+                // 应用环境弹性系数调整
+                currentElasticity = Mathf.Clamp(currentElasticity * _environmentElasticCoefficient, 0.1f, 1.0f);
                 
                 focusPoint = Vector3.Lerp(
                     currentFocusPoint,
@@ -3045,9 +3049,9 @@ namespace HundunWorld.Game
             }
             
             // 应用弹性系数调整
-            // TODO: 可以添加一个临时弹性系数字段
+            _environmentElasticCoefficient = config.ElasticityMultiplier;
             
-            //Debug.Log($"[环境配置] 应用配置 - 距离限制:[{_environmentMinDistance:F1}-{_environmentMaxDistance:F1}], FOV倍数:{config.FOVMultiplier:F2}");
+            //Debug.Log($"[环境配置] 应用配置 - 距离限制:[{_environmentMinDistance:F1}-{_environmentMaxDistance:F1}], FOV倍数:{config.FOVMultiplier:F2}, 弹性系数:{_environmentElasticCoefficient:F2}");
         }
         
         /// <summary>

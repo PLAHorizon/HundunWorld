@@ -174,6 +174,20 @@ public static class HorizonTimeoutConfigurationExtensions
             
             // 设置失活超时
             options.DeactivationTimeout = TimeSpan.FromSeconds(30);
+
+            // 配置Grain类型特定的回收年龄
+            // 战斗Grain: 短生命周期，战斗结束后快速回收释放资源
+            var combatGrainName = typeof(Horizon.Orleans.Grains.CombatGrain).FullName;
+            if (combatGrainName != null)
+                options.ClassSpecificCollectionAge[combatGrainName] = TimeSpan.FromMinutes(2);
+            // 认证Grain: 中短生命周期，可快速重新激活
+            var passportGrainName = typeof(Horizon.Orleans.Grains.PassportGrain).FullName;
+            if (passportGrainName != null)
+                options.ClassSpecificCollectionAge[passportGrainName] = TimeSpan.FromMinutes(5);
+            // 角色Grain: 中等生命周期，玩家在线期间保持活跃
+            var characterGrainName = typeof(Horizon.Orleans.Grains.CharacterGrain).FullName;
+            if (characterGrainName != null)
+                options.ClassSpecificCollectionAge[characterGrainName] = TimeSpan.FromMinutes(10);
         });
         
         // 配置线程池优化 - 基于当前系统核心数
