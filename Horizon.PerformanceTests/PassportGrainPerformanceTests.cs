@@ -3,6 +3,7 @@ using NBomber.Contracts;
 using Microsoft.Extensions.Logging;
 using Orleans.TestingHost;
 using Horizon.Orleans.Interface;
+using Horizon.Share.Dtos.User;
 using Xunit;
 
 namespace Horizon.PerformanceTests;
@@ -42,15 +43,14 @@ public class PassportGrainPerformanceTests : IDisposable
         
         var scenario = Scenario.Create("passport_login_test", async context =>
         {
-            var passportId = $"test_user_{Random.Shared.Next(1, 1000)}";
-            var grain = _cluster!.GrainFactory.GetGrain<IPassportGrain>(passportId);
+            var grainId = Guid.NewGuid();
+            var grain = _cluster!.GrainFactory.GetGrain<IPassportGrain>(grainId);
             
             // 模拟登录操作
-            var result = await grain.AuthenticationAsync(new Horizon.Model.Dto.LoginDto
+            var result = await grain.AuthenticationAsync(new LoginDto
             {
-                Account = passportId,
-                Password = "TestPassword123!",
-                LoginType = 1
+                PassportId = grainId.ToString(),
+                Password = "TestPassword123!"
             });
             
             return result != null ? Response.Ok() : Response.Fail();
@@ -80,13 +80,12 @@ public class PassportGrainPerformanceTests : IDisposable
         
         var scenario = Scenario.Create("passport_register_test", async context =>
         {
-            var passportId = $"new_user_{Guid.NewGuid():N}";
-            var grain = _cluster!.GrainFactory.GetGrain<IPassportGrain>(passportId);
+            var grainId = Guid.NewGuid();
+            var grain = _cluster!.GrainFactory.GetGrain<IPassportGrain>(grainId);
             
             // 模拟注册操作
-            var result = await grain.RegisterAsync(new Horizon.Model.Dto.RegisterDto
+            var result = await grain.RegisterAsync(new RegisterDto
             {
-                Account = passportId,
                 Password = "NewPassword123!",
                 Phone = $"1{Random.Shared.Next(300000000, 399999999)}"
             });
