@@ -49,7 +49,7 @@ namespace Horizon.Game.Gateway.Monitoring
                     // 导出到Prometheus HTTP Listener端点
                     metrics.AddPrometheusHttpListener(options =>
                     {
-                        options.UriPrefixes = new[] { $"http://*:{prometheusPort}/" };
+                        options.UriPrefixes = new[] { $"http://localhost:{prometheusPort}/" };
                     });
                 })
                 .WithTracing(tracing =>
