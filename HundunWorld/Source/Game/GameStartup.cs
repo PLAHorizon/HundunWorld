@@ -32,7 +32,7 @@ namespace HundunWorld.Game
             
             if (LoginScene != null)
             {
-                  Level.LoadSceneAsync(LoginScene);
+                loaded= Level.LoadSceneAsync(LoginScene);
             }
             else
             {
