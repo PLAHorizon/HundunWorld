@@ -95,8 +95,15 @@ namespace HundunWorld.Game.UI.Authentication
                 _networkManager.ConnectionStatusChanged += OnNetworkConnectionStatusChanged;
                 FlaxEngine.Debug.Log($"[AuthenticationUI] 订阅 NetworkManager.ConnectionStatusChanged 事件");
                 
-                // 检查当前连接状态
+                // 立即检查当前连接状态
                 CheckAndUpdateButtonStates();
+                
+                // 在下一帧再次检查，以防在订阅之前连接状态已经变化
+                // 这样可以确保即使存在竞态条件，按钮状态也能正确同步
+                FlaxEngine.Scripting.InvokeOnUpdate(() =>
+                {
+                    CheckAndUpdateButtonStates();
+                });
             }
         }
 

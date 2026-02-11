@@ -640,15 +640,20 @@ namespace HundunWorld.Game.Network
             EnhancedLogging.LogInfo($"[UpdateConnectionStatus] 连接状态从 {oldStatus} 更新为 {status}");
             EnhancedDiagnostics.LogDiagnostic($"连接状态从 {oldStatus} 更新为 {status}");
 
-            try
+            // 将事件通知调度到主线程，确保UI更新在主线程执行
+            // 这样可以避免在UI订阅事件之前连接就完成导致的竞态条件
+            FlaxEngine.Scripting.InvokeOnUpdate(() =>
             {
-                ConnectionStatusChanged?.Invoke(status);
-            }
-            catch (Exception ex)
-            {
-                EnhancedLogging.LogError($"[UpdateConnectionStatus] 触发连接状态变化事件时发生错误: {ex.Message}");
-                EnhancedDiagnostics.LogException(ex, "触发连接状态变化事件");
-            }
+                try
+                {
+                    ConnectionStatusChanged?.Invoke(status);
+                }
+                catch (Exception ex)
+                {
+                    EnhancedLogging.LogError($"[UpdateConnectionStatus] 触发连接状态变化事件时发生错误: {ex.Message}");
+                    EnhancedDiagnostics.LogException(ex, "触发连接状态变化事件");
+                }
+            });
         }
 
         #endregion
