@@ -41,9 +41,6 @@ namespace Horizon.Game.Gateway
         {
             try
             {
-                Console.WriteLine("=== 混沌世界游戏网关启动 ===");
-                Console.WriteLine($"启动时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-
                 // 创建并启动主机
                 var host = CreateHostBuilder(args).Build();
 
@@ -173,14 +170,6 @@ namespace Horizon.Game.Gateway
                     var settings = new OrleansOptions();
                     context.Configuration.GetSection("Orleans").Bind(settings);
 
-                    // 调试：输出配置信息
-                    Console.WriteLine($"[DEBUG] 配置加载结果:");
-                    Console.WriteLine($"  - OrleansSiloHost: {networkSettings?.OrleansSiloHost ?? "NULL"}");
-                    Console.WriteLine($"  - SqlServer ConnectionString: {networkSettings?.SqlServer?.ConnectionString?[..50] ?? "NULL"}...");
-                    Console.WriteLine($"  - SqlServer Invariant: {networkSettings?.SqlServer?.Invariant ?? "NULL"}");
-                    Console.WriteLine($"  - ClusterId: {settings?.ClusterId ?? "NULL"}");
-                    Console.WriteLine($"  - ServiceId: {settings?.ServiceId ?? "NULL"}");
-
                     if (networkSettings?.SqlServer?.ConnectionString == null)
                     {
                         throw new InvalidOperationException("Orleans 集群数据库配置加载失败：SqlServer ConnectionString 为空");
@@ -255,13 +244,6 @@ public static class ServiceCollectionExtensions
                 // 注册为具体类型
                 services.AddScoped(handlerType);
 
-            }
-
-            // 输出调试信息
-            Console.WriteLine($"[DEBUG] 自动注册了 {handlerTypes.Count} 个消息处理器:");
-            foreach (var handlerType in handlerTypes)
-            {
-                Console.WriteLine($"  - {handlerType.Name}");
             }
         }
     
