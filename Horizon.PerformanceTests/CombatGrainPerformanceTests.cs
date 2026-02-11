@@ -3,6 +3,7 @@ using NBomber.Contracts;
 using Microsoft.Extensions.Logging;
 using Orleans.TestingHost;
 using Horizon.Orleans.Interface;
+using Horizon.Game.Message.Network;
 using Xunit;
 
 namespace Horizon.PerformanceTests;
@@ -39,17 +40,16 @@ public class CombatGrainPerformanceTests : IDisposable
         
         var scenario = Scenario.Create("combat_attack_test", async context =>
         {
-            var attackerId = $"attacker_{Random.Shared.Next(1, 100)}";
-            var targetId = $"target_{Random.Shared.Next(1, 100)}";
-            var grain = _cluster!.GrainFactory.GetGrain<ICombatGrain>(attackerId);
+            var grainId = Guid.NewGuid();
+            var grain = _cluster!.GrainFactory.GetGrain<ICombatGrain>(grainId);
             
             // 模拟攻击操作
-            var result = await grain.AttackAsync(new Horizon.Game.Message.Network.AttackRequest
+            var result = await grain.ProcessAttackAsync(new AttackMessage
             {
-                AttackerId = attackerId,
-                TargetId = targetId,
+                AttackerId = (ulong)Random.Shared.Next(1, 100),
+                TargetId = (ulong)Random.Shared.Next(1, 100),
                 SkillId = 1001,
-                Damage = 100.0f
+                Damage = 100
             });
             
             return result != null ? Response.Ok() : Response.Fail();
@@ -79,17 +79,16 @@ public class CombatGrainPerformanceTests : IDisposable
         
         var scenario = Scenario.Create("combat_skill_cast_test", async context =>
         {
-            var casterId = $"caster_{Random.Shared.Next(1, 100)}";
-            var targetId = $"target_{Random.Shared.Next(1, 100)}";
-            var grain = _cluster!.GrainFactory.GetGrain<ICombatGrain>(casterId);
+            var grainId = Guid.NewGuid();
+            var grain = _cluster!.GrainFactory.GetGrain<ICombatGrain>(grainId);
             
             // 模拟技能释放
-            var result = await grain.CastSkillAsync(new Horizon.Game.Message.Network.SkillCastRequest
+            var result = await grain.ProcessSkillCastAsync(new SkillCastMessage
             {
-                CasterId = casterId,
-                TargetId = targetId,
+                CasterId = (ulong)Random.Shared.Next(1, 100),
                 SkillId = Random.Shared.Next(1001, 1010),
-                Position = new Horizon.Game.Message.Network.Vector3Message { X = 0, Y = 0, Z = 0 }
+                TargetIds = new List<ulong> { (ulong)Random.Shared.Next(1, 100) },
+                CastPosition = new Position { X = 0, Y = 0, Z = 0 }
             });
             
             return result != null ? Response.Ok() : Response.Fail();

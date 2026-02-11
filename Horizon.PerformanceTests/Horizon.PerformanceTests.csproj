@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NBomber" Version="6.0.4" />
+    <PackageReference Include="NBomber" Version="6.1.0" />
     <PackageReference Include="NBomber.Http" Version="6.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
@@ -29,6 +29,7 @@
     <ProjectReference Include="..\Horizon.Orleans.Interface\Horizon.Orleans.Interface.csproj" />
     <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
     <ProjectReference Include="..\Horizon.Core\Horizon.Core.csproj" />
+    <ProjectReference Include="..\Horizon.Share\Horizon.Share.csproj" />
   </ItemGroup>
 
 </Project>
