@@ -727,7 +727,7 @@ namespace Horizon.Entities
             try
             {
                 DbContextHealthCheck();
-                return await DbCurrent.Set<T>().AsNoTracking().CountAsync(condition);
+                return await DbCurrent.Set<T>().AsQueryable().AsNoTracking().CountAsync(condition);
             }
             finally
             {
