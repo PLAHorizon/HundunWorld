@@ -829,7 +829,7 @@ namespace HundunWorld.Game
         private float _currentLightLevel;     // 当前光照级别(0-1)
         private float _environmentMaxDistance; // 环境限制的最大距离
         private float _environmentMinDistance; // 环境限制的最小距离
-        private float _environmentElasticCoefficient = 1.0f; // 环境弹性系数（临时调整值）
+        private float _environmentElasticCoefficient = 1.0f; // 环境弹性系数
         private float _weatherVisibilityFactor; // 天气影响的可见度系数
         
         // 异步检测相关
