@@ -182,6 +182,51 @@ namespace Horizon.Entities
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // 角色表索引 - 按用户和游戏查询角色
+            modelBuilder.Entity<CharacterEntity>()
+                .HasIndex(c => new { c.UserId, c.GameId })
+                .HasDatabaseName("IX_Character_UserId_GameId");
+
+            // 角色表索引 - 按最后登录时间排序
+            modelBuilder.Entity<CharacterEntity>()
+                .HasIndex(c => c.LastLoginTime)
+                .HasDatabaseName("IX_Character_LastLoginTime");
+
+            // 交易日志索引 - 按卖家查询
+            modelBuilder.Entity<TradeLogEntity>()
+                .HasIndex(t => t.SellerId)
+                .HasDatabaseName("IX_TradeLog_SellerId");
+
+            // 交易日志索引 - 按买家查询
+            modelBuilder.Entity<TradeLogEntity>()
+                .HasIndex(t => t.BuyerId)
+                .HasDatabaseName("IX_TradeLog_BuyerId");
+
+            // 交易日志索引 - 按交易时间排序
+            modelBuilder.Entity<TradeLogEntity>()
+                .HasIndex(t => t.TradeTime)
+                .HasDatabaseName("IX_TradeLog_TradeTime");
+
+            // 背包索引 - 按角色查询背包
+            modelBuilder.Entity<BagEntity>()
+                .HasIndex(b => b.CharacterId)
+                .HasDatabaseName("IX_Bag_CharacterId");
+
+            // 聊天消息索引 - 按发送时间排序
+            modelBuilder.Entity<ChatMessageEntity>()
+                .HasIndex(m => m.SendTime)
+                .HasDatabaseName("IX_ChatMessage_SendTime");
+
+            // 聊天消息索引 - 按频道和发送时间查询
+            modelBuilder.Entity<ChatMessageEntity>()
+                .HasIndex(m => new { m.Channel, m.SendTime })
+                .HasDatabaseName("IX_ChatMessage_Channel_SendTime");
+
+            // 公会索引 - 按会长查询
+            modelBuilder.Entity<GuildEntity>()
+                .HasIndex(g => g.LeaderId)
+                .HasDatabaseName("IX_Guild_LeaderId");
         }
 
 
