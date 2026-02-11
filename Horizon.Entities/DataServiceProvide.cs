@@ -742,25 +742,6 @@ namespace Horizon.Entities
             }
         }
 
-        /// <summary>
-        /// 获取满足条件的记录数量（使用数据库级别的COUNT操作）
-        /// </summary>
-        public async Task<int> CountAsync([NotNull] Expression<Func<T, bool>> condition)
-        {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-
-            await _qurySemaphore.WaitAsync();
-            try
-            {
-                DbContextHealthCheck();
-                return await DbCurrent.Set<T>().AsQueryable().AsNoTracking().CountAsync(condition);
-            }
-            finally
-            {
-                _qurySemaphore.Release();
-            }
-        }
-
         public void Dispose()
         {
             // 双重检查锁定模式
