@@ -19,6 +19,7 @@ namespace HundunWorld.Game
     public class HundunWorldGame
     {
         private bool _isRunning = false;
+        private bool _disposed = false;
         private readonly ECSManager _ecsManager;
         private readonly ModuleManager _moduleManager;
         private readonly WorldManager _worldManager;
@@ -208,9 +209,6 @@ namespace HundunWorld.Game
             // 停止ECS系统
             _ecsManager.Stop();
 
-            // 断开网关连接
-            _networkManager?.Dispose();
-
             await Task.CompletedTask;
 
             Debug.Log("游戏停止完成");
@@ -318,11 +316,21 @@ namespace HundunWorld.Game
         /// </summary>
         public void Dispose()
         {
+            if (_disposed) return;
+            _disposed = true;
+
             Debug.Log("HundunWorldGame 开始释放资源");
             try
             {
                 // 停止游戏
                 _ = StopAsync();
+
+                // 先取消订阅网络事件，防止释放过程中触发回调
+                if (_networkManager != null)
+                {
+                    _networkManager.ConnectionStatusChanged -= OnConnectionStatusChanged;
+                    _networkManager.ConnectionError -= OnConnectionError;
+                }
 
                 // 释放各个系统组件
                 _eventBroadcaster?.Dispose();

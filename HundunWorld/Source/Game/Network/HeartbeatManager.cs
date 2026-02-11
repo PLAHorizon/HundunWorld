@@ -34,6 +34,7 @@ namespace HundunWorld.Game.Network
             }
             
             _isRunning = true;
+            _heartbeatCts?.Dispose();
             _heartbeatCts = new CancellationTokenSource();
             
             _ = Task.Run(async () =>
@@ -135,6 +136,8 @@ namespace HundunWorld.Game.Network
             
             _isRunning = false;
             _heartbeatCts?.Cancel();
+            _heartbeatCts?.Dispose();
+            _heartbeatCts = null;
             Debug.Log("[心跳管理器] 请求停止心跳包发送");
             EnhancedDiagnostics.LogDiagnostic("请求停止心跳包发送");
         }

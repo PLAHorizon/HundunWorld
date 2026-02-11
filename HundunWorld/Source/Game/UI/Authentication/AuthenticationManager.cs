@@ -30,6 +30,9 @@ namespace HundunWorld.Game.UI.Authentication
         {
             if (_instance != null)
             {
+                // 先取消UIEventBus订阅，防止事件处理器累积
+                _instance._eventBus?.UnsubscribeAll("AuthenticationManager");
+
                 _instance.LoginResponseReceived = null;
                 _instance.RegisterResponseReceived = null;
                 _instance.AuthenticationStateChanged = null;

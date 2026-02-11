@@ -871,9 +871,15 @@ namespace HundunWorld.Game.Network
                 // 停止心跳包发送
                 _heartbeatManager?.StopHeartbeat();
                 
-                // 停止重连管理器
-                _reconnectionManager?.CancelReconnect();
-                _reconnectionManager?.Dispose();
+                // 取消订阅重连管理器事件，然后停止并释放
+                if (_reconnectionManager != null)
+                {
+                    _reconnectionManager.OnReconnected -= OnReconnectionSucceeded;
+                    _reconnectionManager.OnReconnectFailed -= OnReconnectionFailed;
+                    _reconnectionManager.OnStateChanged -= OnReconnectionStateChanged;
+                    _reconnectionManager.CancelReconnect();
+                    _reconnectionManager.Dispose();
+                }
 
                 // 取消网关状态检查
                 if (_gatewayCheckCts != null && !_gatewayCheckCts.Token.IsCancellationRequested)
@@ -948,6 +954,10 @@ namespace HundunWorld.Game.Network
 
                 // 释放心跳包管理器
                 _heartbeatManager?.Dispose();
+
+                // 清理自身事件委托，防止外部引用残留
+                ConnectionStatusChanged = null;
+                ConnectionError = null;
 
                 EnhancedDiagnostics.LogDiagnostic("网络管理器资源已释放");
             }

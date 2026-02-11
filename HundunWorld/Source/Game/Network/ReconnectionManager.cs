@@ -199,9 +199,16 @@ namespace HundunWorld.Game.Network
             if (CurrentState == ReconnectState.Reconnecting)
                 return;
 
-            _reconnectCts?.Cancel();
+            var oldCts = _reconnectCts;
             _reconnectCts = new CancellationTokenSource();
             var token = _reconnectCts.Token;
+
+            // Dispose old CTS after creating new one to avoid gap
+            if (oldCts != null)
+            {
+                oldCts.Cancel();
+                oldCts.Dispose();
+            }
 
             ChangeState(ReconnectState.Reconnecting);
             CurrentAttemptCount = 0;
@@ -333,6 +340,14 @@ namespace HundunWorld.Game.Network
                     StopHeartbeat();
                     _reconnectCts?.Cancel();
                     _reconnectCts?.Dispose();
+                    _reconnectCts = null;
+
+                    // 清理事件委托，防止外部引用残留
+                    OnDisconnected = null;
+                    OnReconnectAttempt = null;
+                    OnReconnected = null;
+                    OnReconnectFailed = null;
+                    OnStateChanged = null;
                 }
                 _disposed = true;
             }
