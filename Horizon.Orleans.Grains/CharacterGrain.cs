@@ -917,9 +917,8 @@ namespace Horizon.Orleans.Grains
         {
             try
             {
-                var charactersQuery = await _gameCharacterContext.QueryAsync(
+                var count = await _gameCharacterContext.CountAsync(
                     c => c.UserId == userId && c.GameId == gameId && c.IsValid && !c.IsDeleted);
-                var count = charactersQuery.Count();
                 return count;
             }
             catch (Exception ex)

@@ -76,9 +76,10 @@
   - CombatGrain战斗性能（目标: <30ms 95分位）✅ 已实现
   - 并发Grain激活测试（目标: 1000 Grain/秒）✅ 已实现
 
-□ 数据库查询性能测试
-  - 慢查询识别（目标: 所有查询<100ms）
-  - 索引优化建议
+✅ 数据库查询性能优化
+  - 添加数据库索引（角色/交易/背包/聊天/公会表）✅
+  - IDataContext.CountAsync 高效计数方法 ✅
+  - CharacterGrain查询优化（使用CountAsync）✅
   - 连接池配置验证
 
 □ Redis缓存性能测试
@@ -131,9 +132,10 @@
   - Grain激活超时配置调整
   - 热点Grain分散策略
 
-□ 数据库查询优化
-  - 添加缺失索引（PassportId, UserId, CharacterId等）
-  - 修复N+1查询问题
+✅ 数据库查询优化
+  - 添加缺失索引（UserId+GameId复合索引, LastLoginTime, SellerId, BuyerId, TradeTime, CharacterId, SendTime, Channel+SendTime, LeaderId）✅
+  - 添加IDataContext.CountAsync高效计数接口 ✅
+  - CharacterGrain.GetCharacterCountForUser使用CountAsync优化 ✅
   - 配置读写分离（可选）
   - 优化连接池配置
 

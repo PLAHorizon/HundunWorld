@@ -104,5 +104,11 @@ namespace Horizon.Core.Abstract
         /// <param name="selecterAction">数据传输类型数据选择器</param>
         /// <returns></returns>
         Task<TDTO> QueryFirstOrDefaultAsync<TDTO>([NotNull] Expression<Func<T, bool>> condition, [NotNull] Func<T, TDTO> selecterAction);
+        /// <summary>
+        /// 获取满足条件的记录数量
+        /// </summary>
+        /// <param name="condition">筛选条件</param>
+        /// <returns></returns>
+        Task<int> CountAsync([NotNull] Expression<Func<T, bool>> condition);
     }
 }
