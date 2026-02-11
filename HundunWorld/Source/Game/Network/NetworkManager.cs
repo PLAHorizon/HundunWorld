@@ -159,20 +159,6 @@ namespace HundunWorld.Game.Network
                 return false;
             }
 
-            // 如果检测到客户端已释放，尝试重新初始化
-            if (_client == null || _client.DisposedValue)
-            {
-                EnhancedLogging.LogInfo("[ConnectAsync] 检测到客户端已释放，准备重新初始化");
-                // 重置释放标志，允许重新初始化
-                _isDisposing = false;
-            }
-
-            if (_isDisposing)
-            {
-                EnhancedLogging.LogWarning("网络管理器正在释放，无法连接");
-                return false;
-            }
-
             lock (_connectionLock)
             {
                 if (_connectionStatus == ConnectionStatus.Connecting || _connectionStatus == ConnectionStatus.Connected)
@@ -189,44 +175,22 @@ namespace HundunWorld.Game.Network
                 // 检查客户端是否已释放或未初始化，如果是则重新初始化
                 if (_client == null || _client.DisposedValue)
                 {
-                    EnhancedLogging.LogInfo("[ConnectAsync] 正在重新初始化客户端");
+                    EnhancedLogging.LogInfo("[ConnectAsync] 检测到客户端已释放，正在重新初始化");
+                    // 重置释放标志，允许重新初始化
+                    _isDisposing = false;
                     await InitializeClient(gatewayList ?? _gatewayList);
                 }
 
+                // 如果仍在释放过程中，则无法连接
+                if (_isDisposing)
+                {
+                    EnhancedLogging.LogWarning("网络管理器正在释放，无法连接");
+                    return false;
+                }
+
                 // 检查并重新创建CancellationTokenSource（如果已被释放）
-                bool needNewConnectionCts = false;
-                try
-                {
-                    needNewConnectionCts = _connectionCts == null || _connectionCts.IsCancellationRequested;
-                }
-                catch (ObjectDisposedException)
-                {
-                    needNewConnectionCts = true;
-                }
-
-                if (needNewConnectionCts)
-                {
-                    EnhancedLogging.LogInfo("[ConnectAsync] 重新创建连接取消令牌");
-                    try { _connectionCts?.Dispose(); } catch { }
-                    _connectionCts = new CancellationTokenSource();
-                }
-
-                bool needNewGatewayCts = false;
-                try
-                {
-                    needNewGatewayCts = _gatewayCheckCts == null || _gatewayCheckCts.IsCancellationRequested;
-                }
-                catch (ObjectDisposedException)
-                {
-                    needNewGatewayCts = true;
-                }
-
-                if (needNewGatewayCts)
-                {
-                    EnhancedLogging.LogInfo("[ConnectAsync] 重新创建网关检查取消令牌");
-                    try { _gatewayCheckCts?.Dispose(); } catch { }
-                    _gatewayCheckCts = new CancellationTokenSource();
-                }
+                _connectionCts = EnsureCancellationTokenSource(_connectionCts, "连接取消令牌");
+                _gatewayCheckCts = EnsureCancellationTokenSource(_gatewayCheckCts, "网关检查取消令牌");
 
                 // 配置客户端 - 每次连接时创建新的适配器实例
                 var config = new TouchSocketConfig()
@@ -266,6 +230,39 @@ namespace HundunWorld.Game.Network
                 EnhancedDiagnostics.LogNetworkOperation("连接", $"{ip}:{port}", false, ex.Message);
                 return false;
             }
+        }
+
+        /// <summary>
+        /// 确保CancellationTokenSource有效，如果已释放则重新创建
+        /// </summary>
+        private CancellationTokenSource EnsureCancellationTokenSource(CancellationTokenSource cts, string tokenName)
+        {
+            bool needNew = false;
+            try
+            {
+                needNew = cts == null || cts.IsCancellationRequested;
+            }
+            catch (ObjectDisposedException)
+            {
+                needNew = true;
+            }
+
+            if (needNew)
+            {
+                EnhancedLogging.LogInfo($"[EnsureCancellationTokenSource] 重新创建{tokenName}");
+                try
+                {
+                    cts?.Dispose();
+                }
+                catch (ObjectDisposedException ex)
+                {
+                    // 对象已经被释放，忽略此异常
+                    EnhancedLogging.LogWarning($"[EnsureCancellationTokenSource] {tokenName}已被释放: {ex.Message}");
+                }
+                return new CancellationTokenSource();
+            }
+
+            return cts;
         }
 
         /// <summary>
