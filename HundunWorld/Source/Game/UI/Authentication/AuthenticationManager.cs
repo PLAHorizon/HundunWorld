@@ -23,6 +23,21 @@ namespace HundunWorld.Game.UI.Authentication
         private static AuthenticationManager _instance;
         public static AuthenticationManager Instance => _instance ??= new AuthenticationManager();
 
+        /// <summary>
+        /// 重置单例实例 - 在编辑器Stop/Play之间调用，防止事件订阅和状态残留
+        /// </summary>
+        public static void ResetInstance()
+        {
+            if (_instance != null)
+            {
+                _instance.LoginResponseReceived = null;
+                _instance.RegisterResponseReceived = null;
+                _instance.AuthenticationStateChanged = null;
+                _instance._isAuthenticating = false;
+            }
+            _instance = null;
+        }
+
         public LiteDataContext.PassportInfo Passport { get; internal set; }
 
         // 核心管理器

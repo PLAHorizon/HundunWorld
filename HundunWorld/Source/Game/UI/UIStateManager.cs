@@ -177,6 +177,9 @@ namespace HundunWorld.Game.UI
         /// </summary>
         private void CleanupStateManager()
         {
+            // 重置认证管理器单例，防止编辑器Play/Stop之间事件订阅残留
+            AuthenticationManager.ResetInstance();
+            
             // 简化清理过程
             FlaxEngine.Debug.Log("UI状态管理器资源已清理");
         }
