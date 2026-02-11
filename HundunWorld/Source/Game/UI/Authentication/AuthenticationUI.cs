@@ -4,6 +4,7 @@ using FlaxEngine.GUI;
 using Horizon.Game.Core.Database;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
+using HundunWorld.Game.Network;
 using HundunWorld.Game.UI;
 using HundunWorld.Game.UI.Animation;
 using HundunWorld.Game.UI.Character;
