@@ -847,6 +847,20 @@ namespace HundunWorld.Game.UI.Authentication
                 _networkManager.ConnectionStatusChanged -= OnNetworkConnectionStatusChanged;
             }
 
+            // 取消面板事件订阅，防止按钮激活关联的资源泄漏
+            if (_loginPanel != null)
+            {
+                _loginPanel.LoginButtonClicked -= OnLoginButtonClicked;
+                _loginPanel.SwitchToRegisterClicked -= OnSwitchToRegisterClicked;
+            }
+
+            if (_registerPanel != null)
+            {
+                _registerPanel.RegisterButtonClicked -= OnRegisterButtonClicked;
+                _registerPanel.SwitchToLoginClicked -= OnSwitchToLoginClicked;
+                _registerPanel.SendVerificationCodeClicked -= OnSendVerificationCodeClicked;
+            }
+
             // 清理资源
             _mainContainer?.Dispose();
         }
