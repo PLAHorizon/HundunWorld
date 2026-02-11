@@ -964,9 +964,6 @@ namespace HundunWorld.Game.Network
                     _unhandledExceptionHandler = null;
                 }
 
-                // 清理消息处理器中的处理器引用
-                // _messageProcessor 持有 IMessageHandler 实例的引用，需要清理以防止泄漏
-
                 // 清理自身事件委托，防止外部引用残留
                 ConnectionStatusChanged = null;
                 ConnectionError = null;
