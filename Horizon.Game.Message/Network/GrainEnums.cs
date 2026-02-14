@@ -1,24 +1,8 @@
+using Horizon.Game.Message.Enums;
+
 namespace Horizon.Game.Message.Network
 {
-    /// <summary>
-    /// 效果类型
-    /// </summary>
-    public enum EffectType
-    {
-        Buff,
-        Debuff,
-        DamageOverTime,
-        HealOverTime,
-        Control,
-        /// <summary>
-        /// 持续伤害（简写）
-        /// </summary>
-        DoT,
-        /// <summary>
-        /// 持续治疗（简写）
-        /// </summary>
-        HoT
-    }
+   
 
     /// <summary>
     /// 战斗日志类型
@@ -29,7 +13,11 @@ namespace Horizon.Game.Message.Network
         SkillCast,
         Death,
         Resurrect,
-        EffectApplied
+        EffectApplied,
+        Damage,
+        Critical,
+        Skill,
+        Info
     }
 
     /// <summary>
@@ -288,106 +276,5 @@ namespace Horizon.Game.Message.Network
         /// PVP积分排行
         /// </summary>
         PvpScore = 4
-    }
-
-    /// <summary>
-    /// 邮件状态枚举
-    /// </summary>
-    public enum MailStatus
-    {
-        /// <summary>
-        /// 未读
-        /// </summary>
-        Unread = 0,
-
-        /// <summary>
-        /// 已读
-        /// </summary>
-        Read = 1,
-
-        /// <summary>
-        /// 已领取附件
-        /// </summary>
-        Claimed = 2,
-
-        /// <summary>
-        /// 已删除
-        /// </summary>
-        Deleted = 3
-    }
-
-    /// <summary>
-    /// 邮件类型枚举
-    /// </summary>
-    public enum MailType
-    {
-        /// <summary>
-        /// 系统邮件
-        /// </summary>
-        System = 0,
-
-        /// <summary>
-        /// 玩家邮件
-        /// </summary>
-        Player = 1,
-
-        /// <summary>
-        /// 公会邮件
-        /// </summary>
-        Guild = 2,
-
-        /// <summary>
-        /// 活动奖励邮件
-        /// </summary>
-        ActivityReward = 3
-    }
-
-    /// <summary>
-    /// 成就类型枚举
-    /// </summary>
-    public enum AchievementCategory
-    {
-        /// <summary>
-        /// 战斗成就
-        /// </summary>
-        Combat = 0,
-
-        /// <summary>
-        /// 社交成就
-        /// </summary>
-        Social = 1,
-
-        /// <summary>
-        /// 探索成就
-        /// </summary>
-        Exploration = 2,
-
-        /// <summary>
-        /// 收集成就
-        /// </summary>
-        Collection = 3,
-
-        /// <summary>
-        /// 成长成就
-        /// </summary>
-        Growth = 4
-    }
-
-    /// <summary>
-    /// 游戏事件发布器接口 — 用于向Orleans Stream发布游戏事件
-    /// </summary>
-    public interface IGameEventPublisher
-    {
-        /// <summary>发布角色事件</summary>
-        Task PublishCharacterEventAsync(GameEvent gameEvent);
-
-        /// <summary>发布战斗事件</summary>
-        Task PublishCombatEventAsync(GameEvent gameEvent);
-
-        /// <summary>发布社交事件</summary>
-        Task PublishSocialEventAsync(GameEvent gameEvent);
-
-        /// <summary>发布系统事件</summary>
-        Task PublishSystemEventAsync(GameEvent gameEvent);
     }
 }

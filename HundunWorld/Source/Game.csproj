@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Configurations>Editor.Windows.Debug;Editor.Windows.Development;Editor.Windows.Release;Game.Windows.Debug;Game.Windows.Development;Game.Windows.Release</Configurations>
@@ -410,7 +410,11 @@
     <Compile Include="Game\UI\Events\UIEventBus.cs" />
     <Compile Include="Game\UI\Events\UIEvents.cs" />
     <Compile Include="Game\UI\GameMain\AttributeBarsUI.cs" />
+    <Compile Include="Game\UI\GameMain\BuffBarUI.cs" />
+    <Compile Include="Game\UI\GameMain\CombatHUDManager.cs" />
+    <Compile Include="Game\UI\GameMain\CombatLogUI.cs" />
     <Compile Include="Game\UI\GameMain\CraftingUI.cs" />
+    <Compile Include="Game\UI\GameMain\DPSMeterUI.cs" />
     <Compile Include="Game\UI\GameMain\EquipmentComparisonUI.cs" />
     <Compile Include="Game\UI\GameMain\FriendListUI.cs" />
     <Compile Include="Game\UI\GameMain\GameMainUI.cs" />
@@ -424,9 +428,11 @@
     <Compile Include="Game\UI\HUD.cs" />
     <Compile Include="Game\UI\Layout\ResponsiveLayoutCalculator.cs" />
     <Compile Include="Game\UI\MainUIManager.cs" />
+    <Compile Include="Game\UI\MetaHuman\ColorPickerButton.cs" />
     <Compile Include="Game\UI\MetaHuman\EyeEditorPanel.cs" />
     <Compile Include="Game\UI\MetaHuman\HairEditorPanel.cs" />
     <Compile Include="Game\UI\MetaHuman\MetaHumanEditorUI.cs" />
+    <Compile Include="Game\UI\MetaHuman\MetaHumanStyles.cs" />
     <Compile Include="Game\UI\MetaHuman\PresetManagerPanel.cs" />
     <Compile Include="Game\UI\MetaHuman\SkinEditorPanel.cs" />
     <Compile Include="Game\UI\Performance\MemoryOptimizationManager.cs" />
@@ -453,22 +459,22 @@
     <Compile Include="Game\Worlds\WorldState.cs" />
     <Compile Include="Game\Worlds\WorldStateManager.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' " >
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' ">
     <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Cache\Intermediate\GameEditorTarget\Windows\x64\Debug\Game\Game.Bindings.Gen.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|x64' " >
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|x64' ">
     <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Cache\Intermediate\GameEditorTarget\Windows\x64\Development\Game\Game.Bindings.Gen.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|x64' " >
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|x64' ">
     <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Cache\Intermediate\GameEditorTarget\Windows\x64\Release\Game\Game.Bindings.Gen.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' " >
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
     <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Cache\Intermediate\GameTarget\Windows\x64\Debug\Game\Game.Bindings.Gen.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' " >
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
     <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Cache\Intermediate\GameTarget\Windows\x64\Development\Game\Game.Bindings.Gen.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' " >
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
     <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Cache\Intermediate\GameTarget\Windows\x64\Release\Game\Game.Bindings.Gen.cs" />
   </ItemGroup>
 </Project>

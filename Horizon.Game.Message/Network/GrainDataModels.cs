@@ -1,3 +1,4 @@
+using Horizon.Game.Message.Enums;
 using MemoryPack;
 using Orleans;
 using System;
@@ -1149,7 +1150,7 @@ namespace Horizon.Game.Message.Network
         /// <summary>邮件状态</summary>
         [MemoryPackOrder(6)]
         [Id(6)]
-        public int Status { get; set; } = (int)Network.MailStatus.Unread;
+        public int Status { get; set; } = (int)MailStatus.Unread;
 
         /// <summary>附件物品列表（模板ID -> 数量）</summary>
         [MemoryPackOrder(7)]

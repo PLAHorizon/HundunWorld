@@ -1,5 +1,6 @@
 using FlaxEngine;
 using Game.Character.Attributes;
+using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 
 namespace HundunWorld.Game.ECS.Components

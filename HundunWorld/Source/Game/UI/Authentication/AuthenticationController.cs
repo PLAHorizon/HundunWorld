@@ -221,26 +221,10 @@ public class AuthenticationController : Script
             );
             FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 注册异步调用完成，结果: {result.IsSuccess}");
 
-            // 根据结果更新提示信息（仅更新状态标签，不弹窗）
             if (result.IsSuccess)
             {
-                FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 注册成功，更新Passport信息");
-
-                // 确保Passport对象存在
-                if (AuthenticationManager.Instance.Passport == null)
-                    AuthenticationManager.Instance.Passport = new Horizon.Game.Core.Database.LiteDataContext.PassportInfo();
-
-                // 保存注册信息到Passport
-                string username = _registerPanel.UsernameInput.Text;
-                string password = _registerPanel.PasswordInput.Text;
-                AuthenticationManager.Instance.Passport.PassportId = username;
-                AuthenticationManager.Instance.Passport.Password = password;
-                AuthenticationManager.Instance.Passport.RememberPassword = true;
-
-                _registerPanel.SetStatus("注册成功！正在前往登录界面...", Color.Green);
-
-                // 注册成功后切换到登录界面，并自动填充账号信息,实际工作由消息接收回调函数来执行
-
+                FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 注册请求已发送，等待服务器响应");
+                _registerPanel.SetStatus("注册中...", Color.Yellow);
             }
             else
             {

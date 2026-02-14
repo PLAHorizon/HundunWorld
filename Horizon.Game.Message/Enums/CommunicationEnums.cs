@@ -30,7 +30,19 @@ namespace Horizon.Game.Message.Enums
         Unread,     // 未读
         Read,       // 已读
         Replied,    // 已回复
+        Claimed,    // 已领取附件
         Deleted     // 已删除
+    }
+    
+    /// <summary>
+    /// 邮件类型枚举
+    /// </summary>
+    public enum MailType
+    {
+        System,         // 系统邮件
+        Player,         // 玩家邮件
+        Guild,          // 公会邮件
+        ActivityReward  // 活动奖励邮件
     }
     
     

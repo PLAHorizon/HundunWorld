@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿using FlaxEngine;
+﻿using FlaxEngine;
 using Horizon.Game.Message.Enums;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,7 +16,7 @@ namespace HundunWorld.Game
         /// <summary>
         /// 角色状态枚举
         /// </summary>
-        
+
 
         /// <summary>
         /// 移动速度（基础速度）
@@ -61,7 +61,7 @@ namespace HundunWorld.Game
         /// 是否在地面上
         /// </summary>
         private bool _isGrounded = true;
-        
+
         /// <summary>
         /// 获取角色是否在地面上
         /// </summary>
@@ -104,6 +104,11 @@ namespace HundunWorld.Game
         private InputManager _inputManager;
 
         /// <summary>
+        /// 目标选择系统引用
+        /// </summary>
+        private Combat.TargetSelectionSystem _targetSelectionSystem;
+
+        /// <summary>
         /// 状态转换记录
         /// </summary>
         private CharacterState _previousState = CharacterState.Idle;
@@ -141,6 +146,7 @@ namespace HundunWorld.Game
         /// 是否正在跑步
         /// </summary>
         private bool _isRunning = false;
+        AnimGraphParameter IsWalking { get; set; }
 
         /// <summary>
         /// 是否正在蹲伏
@@ -207,7 +213,7 @@ namespace HundunWorld.Game
         /// 是否启用移动
         /// </summary>
         public bool EnableMovement { get; set; } = true;
-        
+
         /// <summary>
         /// 是否启用输入（当UI激活时禁用）
         /// </summary>
@@ -277,14 +283,33 @@ namespace HundunWorld.Game
         {
             // 获取输入管理器
             _inputManager = Actor.Parent?.GetScript<InputManager>();
-            
+
+            // 初始化目标选择系统
+            _targetSelectionSystem = Scene.FindScript<Combat.TargetSelectionSystem>();
+            if (_targetSelectionSystem == null)
+            {
+                // 如果场景中没有，则添加一个
+                var targetSystemActor = Scene.FindActor("TargetSelectionSystem");
+                if (targetSystemActor == null)
+                {
+                    targetSystemActor = new EmptyActor { Name = "TargetSelectionSystem" };
+                    Level.SpawnActor(targetSystemActor);
+                }
+                _targetSelectionSystem = targetSystemActor.AddScript<Combat.TargetSelectionSystem>();
+                _targetSelectionSystem.MaxSelectDistance = 50f;
+                _targetSelectionSystem.ShowSelectionBox = true;
+                Debug.Log("[玩家控制器] 已创建目标选择系统");
+            }
+
             // 初始化角色控制器
             CurrentState = CharacterState.Idle;
             _previousState = CharacterState.Idle;
             _stateTime = 0f;
-            
+
             // 初始化移动缓冲
             _movementBuffer = new Queue<Vector3>();
+            IsWalking = Actor.GetChild<AnimatedModel>().GetParameter("IsWalking");
+            IsWalking.Value = _isRunning;
         }
 
         public override void OnUpdate()
@@ -294,16 +319,16 @@ namespace HundunWorld.Game
             {
                 return;
             }
-            
+
             // 更新状态时间
             _stateTime += Time.DeltaTime;
-            
+
             // 更新体力系统
             UpdateStaminaSystem();
-            
+
             // 更新滑行系统
             UpdateSlideSystem();
-            
+
             // 处理角色移动
             HandleCharacterMovement();
 
@@ -312,7 +337,7 @@ namespace HundunWorld.Game
 
             // 更新角色状态
             UpdateCharacterState();
-            
+
             // 更新移动预测缓冲
             UpdateMovementBuffer();
         }
@@ -326,31 +351,33 @@ namespace HundunWorld.Game
         /// </summary>
         private void HandleCharacterMovement()
         {
+            IsWalking.Value = false;
             // 获取输入方向
             Vector3 inputDirection = GetInputDirection();
-            
+
             // 处理辅助操作输入
             HandleAuxiliaryInputs();
-            
+
             // 计算目标移动速度
             float targetSpeed = CalculateTargetSpeed(inputDirection);
-            
+
             // 更新移动速度和方向
             UpdateMovementVelocity(inputDirection, targetSpeed);
-            
+
             // 处理重力和垂直移动
             HandleVerticalMovement();
-            
+
             // 应用移动
             ApplyMovement();
-            
+
             // 更新角色朝向
             UpdateCharacterRotation(inputDirection);
-            
+
             // 处理点击移动
             HandleClickToMove();
+
         }
-        
+
         /// <summary>
         /// 获取输入方向
         /// </summary>
@@ -358,7 +385,7 @@ namespace HundunWorld.Game
         private Vector3 GetInputDirection()
         {
             Vector3 inputDirection = Vector3.Zero;
-            
+
             // 使用输入管理器处理方向键移动
             if (_inputManager != null)
             {
@@ -383,12 +410,12 @@ namespace HundunWorld.Game
                 if (Input.GetKey(KeyboardKeys.D) || Input.GetKey(KeyboardKeys.ArrowRight))
                     inputDirection += Vector3.Right;
             }
-            
+
             // 归一化输入方向
             if (inputDirection.LengthSquared > 0.001f)
             {
                 inputDirection.Normalize();
-                
+
                 // 将移动方向从相机空间转换为世界空间
                 if (Camera != null)
                 {
@@ -398,17 +425,17 @@ namespace HundunWorld.Game
                     cameraForward.Y = 0;
                     cameraRight.Normalize();
                     cameraForward.Normalize();
-                    
+
                     inputDirection = inputDirection.X * cameraRight + inputDirection.Z * cameraForward;
                 }
-                
+
                 // 更新上次输入时间
                 _lastInputTime = Time.GameTime;
             }
-            
+
             return inputDirection;
         }
-        
+
         /// <summary>
         /// 处理辅助操作输入
         /// </summary>
@@ -416,17 +443,17 @@ namespace HundunWorld.Game
         {
             // 处理跑步输入
             _isRunning = _inputManager != null ? _inputManager.IsActionPressed("Run") : Input.GetKey(KeyboardKeys.Shift);
-            
+
             // 处理冲刺输入
             bool sprintPressed = _inputManager != null ? _inputManager.IsActionPressed("Sprint") : Input.GetKey(KeyboardKeys.Shift);
             HandleSprintInput(sprintPressed);
-            
+
             // 处理蹲伏输入
             if (_inputManager != null ? _inputManager.IsActionDown("Crouch") : Input.GetKeyDown(KeyboardKeys.C))
             {
                 HandleCrouchInput();
             }
-            
+
             // 处理滑行输入（冲刺状态下按蹲伏键）
             bool slidePressed = _inputManager != null ? _inputManager.IsActionDown("Crouch") : Input.GetKeyDown(KeyboardKeys.C);
             if (slidePressed && _isSprinting && _isGrounded)
@@ -434,7 +461,7 @@ namespace HundunWorld.Game
                 StartSlide();
             }
         }
-        
+
         /// <summary>
         /// 计算目标移动速度
         /// </summary>
@@ -444,9 +471,9 @@ namespace HundunWorld.Game
         {
             if (inputDirection.LengthSquared <= 0.001f && !_isSliding)
                 return 0f;
-            
+
             float baseSpeed = MoveSpeed;
-            
+
             // 根据状态调整速度
             if (_isSliding)
             {
@@ -465,16 +492,16 @@ namespace HundunWorld.Game
             {
                 baseSpeed *= RunSpeedMultiplier;
             }
-            
+
             // 在空中时降低移动控制力
             if (!_isGrounded)
             {
                 baseSpeed *= AirControl;
             }
-            
+
             return baseSpeed;
         }
-        
+
         /// <summary>
         /// 更新移动速度和方向
         /// </summary>
@@ -483,7 +510,7 @@ namespace HundunWorld.Game
         private void UpdateMovementVelocity(Vector3 inputDirection, float targetSpeed)
         {
             Vector3 targetVelocity = inputDirection * targetSpeed;
-            
+
             // 平滑过渡到目标速度
             if (targetSpeed > 0f)
             {
@@ -495,11 +522,11 @@ namespace HundunWorld.Game
                 // 减速
                 _currentVelocity = Vector3.Lerp(_currentVelocity, Vector3.Zero, Deceleration * Time.DeltaTime);
             }
-            
+
             _moveDirection = inputDirection;
             _currentMoveSpeed = _currentVelocity.Length;
         }
-        
+
         /// <summary>
         /// 处理垂直移动和重力
         /// </summary>
@@ -513,7 +540,7 @@ namespace HundunWorld.Game
                 _isGrounded = false;
                 ChangeState(CharacterState.Jumping);
             }
-            
+
             // 应用重力
             if (!_isGrounded)
             {
@@ -524,7 +551,7 @@ namespace HundunWorld.Game
                 _verticalVelocity = 0f;
             }
         }
-        
+
         /// <summary>
         /// 应用移动
         /// </summary>
@@ -533,23 +560,26 @@ namespace HundunWorld.Game
             // 检查是否启用移动
             if (!EnableMovement)
                 return;
-            
+
             // 水平移动
             Vector3 horizontalMovement = _currentVelocity * Time.DeltaTime;
-            
+
             // 垂直移动
             Vector3 verticalMovement = Vector3.Up * _verticalVelocity * Time.DeltaTime;
-            
+
             // 合并移动
             Vector3 totalMovement = horizontalMovement + verticalMovement;
-            
+
             // 应用移动
             Actor.Position += totalMovement;
-            
+            var raw = Vector3.Zero;
+            Vector3.Distance(ref raw, ref totalMovement, out float d);
+            if (d > 0)
+                IsWalking.Value = true;
             // 检查地面状态
             CheckGroundStatus();
         }
-        
+
         /// <summary>
         /// 更新角色朝向
         /// </summary>
@@ -559,7 +589,7 @@ namespace HundunWorld.Game
             // 检查是否启用移动
             if (!EnableMovement)
                 return;
-            
+
             if (inputDirection.LengthSquared > 0.001f)
             {
                 Quaternion targetRotation = Quaternion.LookRotation(inputDirection);
@@ -573,7 +603,7 @@ namespace HundunWorld.Game
                 }
             }
         }
-        
+
         /// <summary>
         /// 处理点击移动
         /// </summary>
@@ -582,22 +612,22 @@ namespace HundunWorld.Game
             // 检查是否启用移动
             if (!EnableMovement)
                 return;
-            
+
             if (_isMovingToTarget)
             {
                 Vector3 directionToTarget = _targetPosition - Actor.Position;
                 directionToTarget.Y = 0; // 忽略Y轴差异
-                
+
                 if (directionToTarget.LengthSquared > 0.1f)
                 {
                     directionToTarget.Normalize();
-                    
+
                     // 计算点击移动速度
                     float clickMoveSpeed = _isRunning ? MoveSpeed * RunSpeedMultiplier : MoveSpeed;
                     Vector3 moveVelocity = directionToTarget * clickMoveSpeed;
-                    
+
                     Actor.Position += moveVelocity * Time.DeltaTime;
-                    
+
                     // 平滑旋转角色朝向移动方向
                     Quaternion targetRotation = Quaternion.LookRotation(directionToTarget);
                     if (RotationSmoothing > 0.0f)
@@ -616,7 +646,7 @@ namespace HundunWorld.Game
                 }
             }
         }
-        
+
         /// <summary>
         /// 检查地面状态
         /// </summary>
@@ -624,13 +654,13 @@ namespace HundunWorld.Game
         {
             bool wasGrounded = _isGrounded;
             _isGrounded = CheckIsGrounded();
-            
+
             // 如果刚落地，调整位置
             if (!wasGrounded && _isGrounded)
             {
                 Actor.Position = new Vector3(Actor.Position.X, GetGroundHeight(), Actor.Position.Z);
                 _verticalVelocity = 0;
-                
+
                 // 触发相机震动效果
                 if (Camera != null)
                 {
@@ -669,13 +699,13 @@ namespace HundunWorld.Game
         private void UpdateCharacterState()
         {
             CharacterState newState = DetermineNewState();
-            
+
             if (newState != CurrentState)
             {
                 ChangeState(newState);
             }
         }
-        
+
         /// <summary>
         /// 确定新状态
         /// </summary>
@@ -686,24 +716,24 @@ namespace HundunWorld.Game
             bool hasInputBuffer = (Time.GameTime - _lastInputTime) < InputBufferTime;
             bool hasMovement = _currentVelocity.LengthSquared > 0.001f || hasInputBuffer;
             bool hasInput = _moveDirection.LengthSquared > 0.001f;
-            
+
             // 优先检查垂直状态
             if (!_isGrounded)
             {
                 return _verticalVelocity > 0 ? CharacterState.Jumping : CharacterState.Falling;
             }
-            
+
             // 检查特殊状态
             if (_isSliding)
             {
                 return CharacterState.Sliding;
             }
-            
+
             if (_isCrouching)
             {
                 return CharacterState.Crouching;
             }
-            
+
             // 检查移动状态
             if (hasMovement || _isMovingToTarget)
             {
@@ -720,11 +750,11 @@ namespace HundunWorld.Game
                     return CharacterState.Walking;
                 }
             }
-            
+
             // 默认为空闲状态
             return CharacterState.Idle;
         }
-        
+
         /// <summary>
         /// 改变角色状态
         /// </summary>
@@ -733,19 +763,19 @@ namespace HundunWorld.Game
         {
             if (newState == CurrentState)
                 return;
-                
+
             // 执行退出操作
             OnStateExit(CurrentState);
-            
+
             // 更新状态
             _previousState = CurrentState;
             CurrentState = newState;
             _stateTime = 0f;
-            
+
             // 执行进入操作
             OnStateEnter(newState);
         }
-        
+
         /// <summary>
         /// 状态进入回调
         /// </summary>
@@ -757,25 +787,25 @@ namespace HundunWorld.Game
                 case CharacterState.Jumping:
                     // 跳跃状态进入时的处理
                     break;
-                    
+
                 case CharacterState.Falling:
                     // 降落状态进入时的处理
                     break;
-                    
+
                 case CharacterState.Running:
                     // 跑步状态进入时的处理
                     break;
-                    
+
                 case CharacterState.Crouching:
                     // 蹲伏状态进入时的处理
                     break;
-                    
+
                 case CharacterState.Sliding:
                     // 滑行状态进入时的处理
                     break;
             }
         }
-        
+
         /// <summary>
         /// 状态退出回调
         /// </summary>
@@ -787,19 +817,19 @@ namespace HundunWorld.Game
                 case CharacterState.Jumping:
                     // 跳跃状态退出时的处理
                     break;
-                    
+
                 case CharacterState.Falling:
                     // 降落状态退出时的处理
                     break;
-                    
+
                 case CharacterState.Running:
                     // 跑步状态退出时的处理
                     break;
-                    
+
                 case CharacterState.Crouching:
                     // 蹲伏状态退出时的处理
                     break;
-                    
+
                 case CharacterState.Sliding:
                     // 滑行状态退出时的处理
                     break;
@@ -807,7 +837,7 @@ namespace HundunWorld.Game
         }
 
         #region 移动预测和缓冲
-        
+
         /// <summary>
         /// 更新移动预测缓冲
         /// </summary>
@@ -815,14 +845,14 @@ namespace HundunWorld.Game
         {
             // 娣诲姞褰撳墠浣嶇疆鍒扮紦鍐?
             _movementBuffer.Enqueue(Actor.Position);
-            
+
             // 淇濇寔缂撳啿澶у皬
             while (_movementBuffer.Count > MaxBufferSize)
             {
                 _movementBuffer.Dequeue();
             }
         }
-        
+
         /// <summary>
         /// 获取预测移动方向
         /// </summary>
@@ -831,25 +861,25 @@ namespace HundunWorld.Game
         {
             if (_movementBuffer.Count < 2)
                 return _moveDirection;
-                
+
             var positions = _movementBuffer.ToArray();
             Vector3 totalDirection = Vector3.Zero;
-            
+
             for (int i = 1; i < positions.Length; i++)
             {
                 Vector3 direction = positions[i] - positions[i - 1];
                 totalDirection += direction;
             }
-            
+
             if (totalDirection.LengthSquared > 0.001f)
             {
                 totalDirection.Normalize();
                 return totalDirection;
             }
-            
+
             return _moveDirection;
         }
-        
+
         /// <summary>
         /// 应用移动预测校正
         /// </summary>
@@ -857,18 +887,18 @@ namespace HundunWorld.Game
         public void ApplyServerCorrection(Vector3 serverPosition)
         {
             float distance = Vector3.Distance(Actor.Position, serverPosition);
-            
+
             // 濡傛灉璺濈宸紓杈冨ぇ锛岃繘琛屼綅缃牎姝?
             if (distance > 0.5f)
             {
                 // 骞虫粦杩囨浮鍒版湇鍔″櫒浣嶇疆
                 Actor.Position = Vector3.Lerp(Actor.Position, serverPosition, 0.8f);
-                
+
                 // 娓呯┖绉诲姩缂撳啿
                 _movementBuffer.Clear();
             }
         }
-        
+
         #endregion
 
         /// <summary>
@@ -878,7 +908,7 @@ namespace HundunWorld.Game
         {
             // 浣跨敤杈撳叆绠＄悊鍣ㄥ鐞嗗湴闈㈢偣鍑昏緭鍏?
             bool groundClickDown = _inputManager != null ? _inputManager.IsActionDown("GroundClick") : Input.GetMouseButtonDown(MouseButton.Left);
-            
+
             // 澶勭悊鍦伴潰鐐瑰嚮杈撳叆
             if (groundClickDown)
             {
@@ -889,7 +919,7 @@ namespace HundunWorld.Game
                     _targetPosition = hitPoint;
                     _targetPosition.Y = Actor.Position.Y; // 淇濇寔Y杞翠竴鑷?
                     _isMovingToTarget = true;
-                    
+
                     // 鏇存柊鐘舵€?
                     CurrentState = CharacterState.Walking;
                 }
@@ -1060,18 +1090,18 @@ namespace HundunWorld.Game
         private void StartSlide()
         {
             if (_isSliding) return;
-            
+
             _isSliding = true;
             _slideDuration = MaxSlideTime;
             _isCrouching = true;
             _isSprinting = false;
-            
+
             // 触发相机震动效果
             if (Camera != null)
             {
                 Camera.TriggerShake(0.05f, 0.3f);
             }
-            
+
             ChangeState(CharacterState.Sliding);
         }
 
@@ -1081,16 +1111,16 @@ namespace HundunWorld.Game
         private void UpdateSlideSystem()
         {
             if (!_isSliding) return;
-            
+
             _slideDuration -= Time.DeltaTime;
-            
+
             // 滑行结束条件
             if (_slideDuration <= 0.0f || _currentMoveSpeed <= 1.0f)
             {
                 EndSlide();
                 return;
             }
-            
+
             // 应用滑行减速
             _currentMoveSpeed = Mathf.Max(_currentMoveSpeed - SlideDeceleration * Time.DeltaTime, 1.0f);
         }

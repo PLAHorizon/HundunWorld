@@ -87,13 +87,22 @@ namespace HundunWorld.Game.Combat
                 // 4. 应用伤害到目标
                 ApplyDamage(attack.DefenderId, result.ActualDamage, attack.AttackerId);
 
-                // 5. 应用技能效果
+                // 5. 记录到DPS统计（新增）
+                DamageMeter.Instance.RecordDamage(
+                    attack.AttackerId, 
+                    attack.DefenderId, 
+                    result.ActualDamage, 
+                    damageResult.IsCritical, 
+                    attack.Skill.Name
+                );
+
+                // 6. 应用技能效果
                 ApplySkillEffects(attack);
 
-                // 6. 更新战斗状态
+                // 7. 更新战斗状态
                 UpdateCombatState(attack.AttackerId, attack.DefenderId, attack.Skill);
 
-                // 7. 消耗资源和设置冷却
+                // 8. 消耗资源和设置冷却
                 ConsumeResources(attack.AttackerId, attack.Skill);
 
                 result.IsSuccess = true;

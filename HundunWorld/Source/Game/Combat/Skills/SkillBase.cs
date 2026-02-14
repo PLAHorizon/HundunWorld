@@ -247,9 +247,18 @@ namespace Game.Combat.Skills
             var animController = Actor.GetScript<SkillAnimationController>();
             if (animController != null)
             {
-                // 使用技能名称作为动画名称
-                string animationName = $"Skill_{Data.SkillName}";
-                animController.PlaySkillAnimation(Data.SkillName, animationName, Data.CastTime * 0.3f, Data.CastTime * 0.4f, Data.CastTime * 0.3f);
+                // 优先使用技能ID播放动画（自动查找映射配置）
+                if (Data.SkillId > 0)
+                {
+                    animController.PlaySkillAnimationById(Data.SkillId);
+                }
+                else
+                {
+                    // 备用方案：使用技能名称
+                    string animationName = $"Skill_{Data.SkillName}";
+                    animController.PlaySkillAnimation(Data.SkillName, animationName, 
+                        Data.CastTime * 0.3f, Data.CastTime * 0.4f, Data.CastTime * 0.3f);
+                }
             }
             else
             {

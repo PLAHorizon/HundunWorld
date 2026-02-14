@@ -1,3 +1,4 @@
+using Horizon.Game.Message.Enums;
 using MemoryPack;
 using Orleans;
 using System;

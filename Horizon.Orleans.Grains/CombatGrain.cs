@@ -7,8 +7,6 @@ using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 using Horizon.Model.GameModel;
 using Horizon.Orleans.Interface;
-using CombatState = Horizon.Game.Message.Network.CombatState;
-using EffectType = Horizon.Game.Message.Network.EffectType;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -18,6 +16,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MemoryPack;
+
 
 namespace Horizon.Orleans.Grains
 {

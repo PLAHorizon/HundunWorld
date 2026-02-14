@@ -332,28 +332,12 @@ namespace HundunWorld.Game.Network
             Scripting.InvokeOnUpdate(() =>
            UpdateConnectionStatus(ConnectionStatus.Connected));
 
-            // 通知重连管理器连接成功
             _reconnectionManager?.MarkConnected();
 
-            // 开始发送心跳包
             if (_heartbeatManager != null)
             {
                 _heartbeatManager.StartHeartbeat();
             }
-
-            // 发送心跳消息来测试连接
-            var heartbeatMessage = new HeartbeatMessage
-            {
-                Timestamp = DateTime.UtcNow.Ticks,
-                ClientTime = DateTime.UtcNow.Ticks
-            };
-
-            // 发送心跳消息测试连接
-            RunBackground(async () =>
-            {
-                await Task.Delay(1000); // 延迟1秒发送心跳
-                await SendAsync(heartbeatMessage);
-            });
         }
 
         /// <summary>

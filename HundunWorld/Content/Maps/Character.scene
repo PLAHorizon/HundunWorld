@@ -167,12 +167,58 @@
 			"V": {}
 		},
 		{
-			"ID": "7eafe8d74b75a6c836df20a10e6a4f19",
+			"ID": "cf3fd20746b68ade8a885299b851aec2",
 			"TypeName": "HundunWorld.Game.PlayerController",
 			"ParentID": "f92187074382768c9ab1d291daf08f06",
+			"V": {}
+		},
+		{
+			"ID": "bcac98394b3829bc99cf2d8636ecf823",
+			"TypeName": "Game.Combat.Skills.AnimationGraphController",
+			"ParentID": "f92187074382768c9ab1d291daf08f06",
 			"V": {
-	"MoveSpeed": 50.0
+	"AnimatedModel": "cf633e0c421c17b740801796befbfa8e",
+	"ShowDebug": true
 }
+		},
+		{
+			"ID": "7d5bf4c3445a54b6a621c6b98419ead4",
+			"TypeName": "Game.Combat.Skills.SkillAnimationController",
+			"ParentID": "f92187074382768c9ab1d291daf08f06",
+			"V": {
+	"AnimatedModel": "cf633e0c421c17b740801796befbfa8e",
+	"GraphController": "bcac98394b3829bc99cf2d8636ecf823",
+	"AnimationMapping": "cf7d814f4859c001430346811777a3a2",
+	"ShowDebug": true
+}
+		},
+		{
+			"ID": "93f0b09d4b531066a50afabcdd5e9fa7",
+			"TypeName": "Game.Combat.Skills.SkillAnimationStateMachine",
+			"ParentID": "f92187074382768c9ab1d291daf08f06",
+			"V": {
+	"ShowDebug": true
+}
+		},
+		{
+			"ID": "cf7d814f4859c001430346811777a3a2",
+			"TypeName": "Game.Combat.Skills.SkillAnimationMapping",
+			"ParentID": "f92187074382768c9ab1d291daf08f06",
+			"V": {}
+		},
+		{
+			"ID": "1f10decc463f9e5396bbd3920d93c381",
+			"TypeName": "Game.Combat.SkillAnimationSystemInitializer",
+			"ParentID": "f92187074382768c9ab1d291daf08f06",
+			"V": {
+	"MappingInstance": "cf7d814f4859c001430346811777a3a2"
+}
+		},
+		{
+			"ID": "054e9d1246df5ba979b0339c6112f6ff",
+			"TypeName": "Game.Combat.SkillAnimationDemo",
+			"ParentID": "f92187074382768c9ab1d291daf08f06",
+			"V": {}
 		},
 		{
 			"ID": "cf633e0c421c17b740801796befbfa8e",
@@ -180,7 +226,7 @@
 			"ParentID": "f92187074382768c9ab1d291daf08f06",
 			"Name": "Running",
 			"SkinnedModel": "c7c70820409088e4d96db396a43c410f",
-			"AnimationGraph": "e1910a59411538bbab6e22925e5223d4",
+			"AnimationGraph": "ceded67f4bb2623f40b4dcb493b0d419",
 			"ShadowsMode": 1,
 			"RootMotionTarget": "f92187074382768c9ab1d291daf08f06",
 			"Buffer": {
@@ -462,33 +508,6 @@
 			},
 			"Control": "HundunWorld.UI.MetaHuman.EyeEditorPanel",
 			"Data": {
-	"ScrollBars": 0,
-	"ScrollBarsSize": 14.0,
-	"AlwaysShowScrollbars": false,
-	"ScrollMargin": {
-		"Left": 0.0,
-		"Right": 0.0,
-		"Top": 0.0,
-		"Bottom": 0.0
-	},
-	"ScrollbarTrackColor": {
-		"R": 0.32941177,
-		"G": 0.32941177,
-		"B": 0.36078432,
-		"A": 1.0
-	},
-	"ScrollbarThumbColor": {
-		"R": 0.24705882,
-		"G": 0.24705882,
-		"B": 0.27450982,
-		"A": 1.0
-	},
-	"ScrollbarThumbSelectedColor": {
-		"R": 0.0,
-		"G": 0.47843137,
-		"B": 0.8,
-		"A": 1.0
-	},
 	"ClipChildren": true,
 	"CullChildren": true,
 	"AnchorMin": {
@@ -544,33 +563,6 @@
 			},
 			"Control": "HundunWorld.UI.MetaHuman.HairEditorPanel",
 			"Data": {
-	"ScrollBars": 0,
-	"ScrollBarsSize": 14.0,
-	"AlwaysShowScrollbars": false,
-	"ScrollMargin": {
-		"Left": 0.0,
-		"Right": 0.0,
-		"Top": 0.0,
-		"Bottom": 0.0
-	},
-	"ScrollbarTrackColor": {
-		"R": 0.32941177,
-		"G": 0.32941177,
-		"B": 0.36078432,
-		"A": 1.0
-	},
-	"ScrollbarThumbColor": {
-		"R": 0.24705882,
-		"G": 0.24705882,
-		"B": 0.27450982,
-		"A": 1.0
-	},
-	"ScrollbarThumbSelectedColor": {
-		"R": 0.0,
-		"G": 0.47843137,
-		"B": 0.8,
-		"A": 1.0
-	},
 	"ClipChildren": true,
 	"CullChildren": true,
 	"AnchorMin": {
@@ -626,33 +618,6 @@
 			},
 			"Control": "HundunWorld.UI.MetaHuman.SkinEditorPanel",
 			"Data": {
-	"ScrollBars": 0,
-	"ScrollBarsSize": 14.0,
-	"AlwaysShowScrollbars": false,
-	"ScrollMargin": {
-		"Left": 0.0,
-		"Right": 0.0,
-		"Top": 0.0,
-		"Bottom": 0.0
-	},
-	"ScrollbarTrackColor": {
-		"R": 0.32941177,
-		"G": 0.32941177,
-		"B": 0.36078432,
-		"A": 1.0
-	},
-	"ScrollbarThumbColor": {
-		"R": 0.24705882,
-		"G": 0.24705882,
-		"B": 0.27450982,
-		"A": 1.0
-	},
-	"ScrollbarThumbSelectedColor": {
-		"R": 0.0,
-		"G": 0.47843137,
-		"B": 0.8,
-		"A": 1.0
-	},
 	"ClipChildren": true,
 	"CullChildren": true,
 	"AnchorMin": {
@@ -691,6 +656,121 @@
 	"BackgroundBrush": null,
 	"Enabled": true,
 	"Visible": false,
+	"AutoFocus": false
+}
+		},
+		{
+			"ID": "a46c72cd4131fbd4150368bd00a57ef1",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "ec48ab0942e2c7c009af8f87c9b2d7cf",
+			"Name": "MetaHumanCharacter"
+		},
+		{
+			"ID": "3947a1e54ebd5ae7d2c919b5feea68ac",
+			"TypeName": "HundunWorld.Game.Rendering.Materials.SkinMaterialController",
+			"ParentID": "a46c72cd4131fbd4150368bd00a57ef1",
+			"V": {}
+		},
+		{
+			"ID": "d9be1f1d4b4b07f9b395ca9226738750",
+			"TypeName": "HundunWorld.Game.Rendering.Materials.EyeMaterialController",
+			"ParentID": "a46c72cd4131fbd4150368bd00a57ef1",
+			"V": {}
+		},
+		{
+			"ID": "7c7d12ab4a39d98d05807183be1aeb33",
+			"TypeName": "HundunWorld.Game.Rendering.Materials.HairMaterialController",
+			"ParentID": "a46c72cd4131fbd4150368bd00a57ef1",
+			"V": {}
+		},
+		{
+			"ID": "8fc3b27f4ed70c90aa763a8cccf70d11",
+			"TypeName": "HundunWorld.Game.Rendering.CharacterAppearanceEditor",
+			"ParentID": "a46c72cd4131fbd4150368bd00a57ef1",
+			"V": {}
+		},
+		{
+			"ID": "fe0f35984c766bc17326e99b0c56e825",
+			"TypeName": "HundunWorld.Game.Rendering.CharacterAppearancePreviewController",
+			"ParentID": "a46c72cd4131fbd4150368bd00a57ef1",
+			"V": {}
+		},
+		{
+			"ID": "7fd9b5814595b37016385dbe355d1e14",
+			"TypeName": "HundunWorld.Game.Rendering.MetaHumanCharacterRenderer",
+			"ParentID": "a46c72cd4131fbd4150368bd00a57ef1",
+			"V": {
+	"CharacterActor": "f92187074382768c9ab1d291daf08f06",
+	"AnimatedCharacter": "cf633e0c421c17b740801796befbfa8e",
+	"Quality": 3,
+	"SkinController": "3947a1e54ebd5ae7d2c919b5feea68ac",
+	"EyeController": "d9be1f1d4b4b07f9b395ca9226738750",
+	"HairController": "7c7d12ab4a39d98d05807183be1aeb33",
+	"LightingSystem": "b4c6b31946a1adc0c03f8dafae3bb889"
+}
+		},
+		{
+			"ID": "d9a5ec8046aa189b42af98a114c8c6a9",
+			"TypeName": "FlaxEngine.UICanvas",
+			"ParentID": "ec48ab0942e2c7c009af8f87c9b2d7cf",
+			"Name": "UICanvas",
+			"Transform": {
+				"Orientation": {
+					"X": 1.0,
+					"Y": 4.371138828673793e-8,
+					"Z": 4.371138828673793e-8,
+					"W": 1.910685465164705e-15
+				}
+			},
+			"V": {}
+		},
+		{
+			"ID": "bcc9f9e34714be7f4b721f858476433a",
+			"TypeName": "FlaxEngine.UIControl",
+			"ParentID": "d9a5ec8046aa189b42af98a114c8c6a9",
+			"Name": "Canvas Scalar",
+			"Control": "HundunWorld.UI.MetaHuman.MetaHumanEditorUI",
+			"Data": {
+	"AppearanceEditor": "8fc3b27f4ed70c90aa763a8cccf70d11",
+	"PreviewController": "fe0f35984c766bc17326e99b0c56e825",
+	"ClipChildren": true,
+	"CullChildren": true,
+	"AnchorMin": {
+		"X": 0.0,
+		"Y": 0.0
+	},
+	"AnchorMax": {
+		"X": 1.0,
+		"Y": 1.0
+	},
+	"Offsets": {
+		"Left": 0.0,
+		"Right": 0.0,
+		"Top": 0.0,
+		"Bottom": 0.0
+	},
+	"Scale": {
+		"X": 1.0,
+		"Y": 1.0
+	},
+	"Pivot": {
+		"X": 0.5,
+		"Y": 0.5
+	},
+	"Shear": {
+		"X": 0.0,
+		"Y": 0.0
+	},
+	"Rotation": 0.0,
+	"BackgroundColor": {
+		"R": 0.12,
+		"G": 0.12,
+		"B": 0.14,
+		"A": 1.0
+	},
+	"BackgroundBrush": null,
+	"Enabled": true,
+	"Visible": true,
 	"AutoFocus": false
 }
 		}

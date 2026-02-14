@@ -1,4 +1,5 @@
 using Horizon.Game.Message.Network;
+using Horizon.Game.Message.Enums;
 using Horizon.Orleans.Interface;
 using Microsoft.Extensions.Logging;
 using Orleans;

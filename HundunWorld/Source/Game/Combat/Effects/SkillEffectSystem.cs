@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using HundunWorld.Game.ECS.Components;
 using HundunWorld.Game.Character;
-using Horizon.Game.Message.Network;
+using Horizon.Game.Message.Enums;
 
 namespace HundunWorld.Game.Combat.Effects
 {

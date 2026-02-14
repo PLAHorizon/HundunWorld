@@ -87,7 +87,7 @@ namespace Horizon.Game.Message.Enums
     /// <summary>
     /// 战斗状态枚举
     /// </summary>
-    public enum CombatState
+    public enum CombatStateKind
     {
         Idle = 0,         // 空闲
         InCombat = 1,     // 战斗中
@@ -147,7 +147,32 @@ namespace Horizon.Game.Message.Enums
         Invisibility = 20,// 隐身
         Teleport = 21,    // 传送
         Transform = 22,   // 变形
-        Summon = 23       // 召唤
+        Summon = 23,       // 召唤
+
+        CastStart,          // 施法开始（蓄力特效）
+        CastLoop,           // 施法循环（持续施法）
+        CastRelease,        // 施法释放（瞬间爆发）
+        Projectile,         // 弹道特效
+        Hit,                // 命中特效
+        AreaOfEffect,       // 范围特效（地面标记）
+        Buff,               // 增益特效（光环）
+        Debuff,             // 减益特效
+        Trail,              // 拖尾特效
+        Explosion ,          // 爆炸特效
+
+        
+        DamageOverTime,
+        HealOverTime,
+        Control,
+        /// <summary>
+        /// 持续伤害（简写）
+        /// </summary>
+        DoT,
+        /// <summary>
+        /// 持续治疗（简写）
+        /// </summary>
+        HoT
+
     }
     /// <summary>
     /// 装备类型枚举

@@ -9,7 +9,7 @@ using HundunWorld.Game.UI.States;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Core.Database; // 使用现有的数据库管理器
 using HundunWorld.Game.Network;
-using System.Net; // 添加这个引用用于IPAddress等
+using Horizon.Game.Message;
 
 namespace HundunWorld.Game.UI.Authentication
 {
@@ -80,7 +80,7 @@ namespace HundunWorld.Game.UI.Authentication
         }
 
         /// <summary>
-        /// 登录异步方法
+        /// 登录异步方法（重构版本，使用公共方法减少重复代码）
         /// </summary>
         public async Task<AuthenticationResult> LoginAsync(string username, string password, bool rememberPassword = false)
         {
@@ -88,9 +88,7 @@ namespace HundunWorld.Game.UI.Authentication
                 return new AuthenticationResult { IsSuccess = false, ErrorMessage = "正在进行认证操作" };
             
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
-            {
                 return new AuthenticationResult { IsSuccess = false, ErrorMessage = "用户名和密码不能为空" };
-            }
 
             _isAuthenticating = true;
             _currentUsername = username;
@@ -98,107 +96,42 @@ namespace HundunWorld.Game.UI.Authentication
             
             try
             {
-                // 设置加载状态
-                var currentState = _stateManager.GetCurrentState();
-                await _stateManager.UpdateCurrentSceneAsync(new SceneState
-                {
-                    SceneType = currentState.CurrentScene,
-                    LoadTime = DateTime.Now,
-                    IsLoading = true,
-                    LoadingMessage = "正在登录..."
-                });
+                await SetLoadingStateAsync("正在登录...");
                 
-                // 确保网络连接已建立
-                var networkManager = HundunWorldGame.Instance.NetworkManager;
-                var connectionStatus = networkManager.GetConnectionStatus();
+                var connectionError = await EnsureNetworkConnectionAsync();
+                if (connectionError != null)
+                    return connectionError;
                 
-                // 如果没有连接，则尝试连接
-                if (connectionStatus != ConnectionStatus.Connected)
-                {
-                    Debug.Log("网络未连接，尝试建立连接...");
-                    
-                    // 从配置获取网关信息
-                    var config = NetworkConfigManager.LoadConfig();
-                    if (config.GatewayList.Count > 0)
-                    {
-                        var gateway = config.GatewayList[0];
-                        var connected = await networkManager.ConnectAsync(gateway.IP, gateway.Port);
-                        
-                        if (!connected)
-                        {
-                            // 如果直接连接失败，等待一段时间看是否建立连接
-                            Debug.Log("等待连接建立...");
-                            var waitSuccess = await networkManager.WaitForConnectionAsync(5000);
-                            if (!waitSuccess)
-                            {
-                                return new AuthenticationResult { IsSuccess = false, ErrorMessage = "无法连接到游戏服务器，请检查网络连接" };
-                            }
-                        }
-                        else
-                        {
-                            // 连接成功后等待一小段时间确保连接稳定
-                            await Task.Delay(200);
-                        }
-                    }
-                    else
-                    {
-                        return new AuthenticationResult { IsSuccess = false, ErrorMessage = "未配置游戏服务器信息" };
-                    }
-                }
-                
-                // 发送登录请求
                 var loginRequest = new LoginRequest
                 {
                     Password = Base64Encode(password),
                     AccountName = username,
-                    ClientVersion = "1.0.0", // 客户端版本
-                    PlatformId = "Windows",    // 平台信息
-                    DeviceId = System.Guid.NewGuid().ToString() // 设备ID
+                    ClientVersion = "1.0.0",
+                    PlatformId = "Windows",
+                    DeviceId = System.Guid.NewGuid().ToString()
                 };
 
-                var messagePacket = new HorizonMessagePacket(loginRequest)
-                {
-                    ServiceType = ServiceType.Account,
-                    Header = new MessageHeader
-                    {
-                        MessageType = MessageType.LoginRequest,
-                        GameId = 1,
-                        ZoneId = 1,
-                        ServerId = 1,
-                        Timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
-                    }
-                };
-
-                var success = await networkManager.SendMessageAsync(messagePacket);
+                var messagePacket = CreateAuthMessagePacket(loginRequest, MessageType.LoginRequest);
+                var success = await HundunWorldGame.Instance.NetworkManager.SendMessageAsync(messagePacket);
                 
                 if (success)
                 {
                     Debug.Log($"[AuthenticationManager] 登录请求已发送: {username}");
                     
-                    // 设置超时等待登录响应
-                    var timeoutTask = Task.Delay(10000); // 10秒超时
+                    var timeoutTask = Task.Delay(10000);
                     var responseReceived = false;
                     
-                    // 等待登录响应
                     while (!responseReceived && !timeoutTask.IsCompleted)
-                    {
                         await Task.Delay(100);
-                        // 这里可以通过事件或其他机制检查是否收到响应
-                    }
                     
                     if (timeoutTask.IsCompleted)
-                    {
                         return new AuthenticationResult { IsSuccess = false, ErrorMessage = "登录响应超时，请稍后重试" };
-                    }
                 }
 
                 if (success)
                 {
-                    // 记住密码
                     if (rememberPassword)
-                    {
                         SaveLoginInfo(username, password);
-                    }
 
                     AuthenticationStateChanged?.Invoke(true);
                     return new AuthenticationResult { IsSuccess = true };
@@ -216,80 +149,34 @@ namespace HundunWorld.Game.UI.Authentication
             finally
             {
                 _isAuthenticating = false;
-                var currentState = _stateManager.GetCurrentState();
-                await _stateManager.UpdateCurrentSceneAsync(new SceneState
-                {
-                    SceneType = currentState.CurrentScene,
-                    LoadTime = DateTime.Now,
-                    IsLoading = false
-                });
+                await ClearLoadingStateAsync();
             }
         }
 
         /// <summary>
-        /// 注册异步方法
+        /// 注册异步方法（重构版本，使用公共方法减少重复代码）
         /// </summary>
         public async Task<AuthenticationResult> RegisterAsync(string username, string password, string email, string phone, string verificationCode)
         {
             if (_isAuthenticating) 
                 return new AuthenticationResult { IsSuccess = false, ErrorMessage = "正在进行认证操作" };
             
-            // 验证邮箱或手机号至少填写一个
             if (string.IsNullOrEmpty(email) && string.IsNullOrEmpty(phone))
-            {
                 return new AuthenticationResult { IsSuccess = false, ErrorMessage = "邮箱和手机号至少填写一个" };
-            }
 
             if (string.IsNullOrEmpty(verificationCode))
-            {
                 return new AuthenticationResult { IsSuccess = false, ErrorMessage = "请输入验证码" };
-            }
 
             _isAuthenticating = true;
             
             try
             {
-                // 设置加载状态
-                var currentState = _stateManager.GetCurrentState();
-                await _stateManager.UpdateCurrentSceneAsync(new SceneState
-                {
-                    SceneType = currentState.CurrentScene,
-                    LoadTime = DateTime.Now,
-                    IsLoading = true,
-                    LoadingMessage = "正在注册..."
-                });
+                await SetLoadingStateAsync("正在注册...");
                 
-                // 确保网络连接已建立
-                var networkManager = HundunWorldGame.Instance.NetworkManager;
-                var connectionStatus = networkManager.GetConnectionStatus();
+                var connectionError = await EnsureNetworkConnectionAsync();
+                if (connectionError != null)
+                    return connectionError;
                 
-                // 如果没有连接，则尝试连接
-                if (connectionStatus != ConnectionStatus.Connected)
-                {
-                    Debug.Log("网络未连接，尝试建立连接...");
-                    
-                    // 从配置获取网关信息
-                    var config = NetworkConfigManager.LoadConfig();
-                    if (config.GatewayList.Count > 0)
-                    {
-                        var gateway = config.GatewayList[0];
-                        var connected = await networkManager.ConnectAsync(gateway.IP, gateway.Port);
-                        
-                        if (!connected)
-                        {
-                            return new AuthenticationResult { IsSuccess = false, ErrorMessage = "无法连接到游戏服务器，请检查网络连接" };
-                        }
-                        
-                        // 等待连接状态更新
-                        await Task.Delay(100);
-                    }
-                    else
-                    {
-                        return new AuthenticationResult { IsSuccess = false, ErrorMessage = "未配置游戏服务器信息" };
-                    }
-                }
-                
-                // 发送注册请求
                 var registerRequest = new RegisterRequest
                 {
                     NickName = username,
@@ -300,27 +187,13 @@ namespace HundunWorld.Game.UI.Authentication
                     ClientVersion = "1.0.0",
                     PlatformId = "Windows",
                     DeviceId = System.Guid.NewGuid().ToString(),
-                    RealName = "", // 可选
-                    ID = ""        // 可选
+                    RealName = "",
+                    ID = ""
                 };
 
-                var messagePacket = new HorizonMessagePacket(registerRequest)
-                {
-                    ServiceType = ServiceType.Account,
-                    Header = new MessageHeader
-                    {
-                        MessageType = MessageType.RegisterRequest,
-                        GameId = 1,
-                        ZoneId = 1,
-                        ServerId = 1,
-                        Timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
-                    }
-                };
-
-                var success = await networkManager.SendMessageAsync(messagePacket);
+                var messagePacket = CreateAuthMessagePacket(registerRequest, MessageType.RegisterRequest);
+                var success = await HundunWorldGame.Instance.NetworkManager.SendMessageAsync(messagePacket);
                 
-               
-
                 if (success)
                 {
                     AuthenticationStateChanged?.Invoke(true);
@@ -339,13 +212,7 @@ namespace HundunWorld.Game.UI.Authentication
             finally
             {
                 _isAuthenticating = false;
-                var currentState = _stateManager.GetCurrentState();
-                await _stateManager.UpdateCurrentSceneAsync(new SceneState
-                {
-                    SceneType = currentState.CurrentScene,
-                    LoadTime = DateTime.Now,
-                    IsLoading = false
-                });
+                await ClearLoadingStateAsync();
             }
         }
 
@@ -377,70 +244,29 @@ namespace HundunWorld.Game.UI.Authentication
         }
 
         /// <summary>
-        /// 发送验证码
+        /// 发送验证码（重构版本，使用公共方法减少重复代码）
         /// </summary>
         public async Task<AuthenticationResult> SendVerificationCodeAsync(string email, string phone)
         {
             if (string.IsNullOrEmpty(email) && string.IsNullOrEmpty(phone))
-            {
                 return new AuthenticationResult { IsSuccess = false, ErrorMessage = "请先填写手机号或邮箱" };
-            }
 
             try
             {
-                // 确保网络连接已建立
-                var networkManager = HundunWorldGame.Instance.NetworkManager;
-                var connectionStatus = networkManager.GetConnectionStatus();
+                var connectionError = await EnsureNetworkConnectionAsync();
+                if (connectionError != null)
+                    return connectionError;
                 
-                // 如果没有连接，则尝试连接
-                if (connectionStatus != ConnectionStatus.Connected)
-                {
-                    Debug.Log("网络未连接，尝试建立连接...");
-                    
-                    // 从配置获取网关信息
-                    var config = NetworkConfigManager.LoadConfig();
-                    if (config.GatewayList.Count > 0)
-                    {
-                        var gateway = config.GatewayList[0];
-                        var connected = await networkManager.ConnectAsync(gateway.IP, gateway.Port);
-                        
-                        if (!connected)
-                        {
-                            return new AuthenticationResult { IsSuccess = false, ErrorMessage = "无法连接到游戏服务器，请检查网络连接" };
-                        }
-                        
-                        // 等待连接状态更新
-                        await Task.Delay(100);
-                    }
-                    else
-                    {
-                        return new AuthenticationResult { IsSuccess = false, ErrorMessage = "未配置游戏服务器信息" };
-                    }
-                }
-                
-                // 发送验证码请求
                 var verificationRequest = new VerificationCodeRequest
                 {
                     Email = email,
                     PhoneNumber = phone,
-                    Purpose = VerificationPurpose.Register, // 验证码用途
-                    ClientIP = "127.0.0.1" // 实际应用中应该获取真实IP
+                    Purpose = VerificationPurpose.Register,
+                    ClientIP = "127.0.0.1"
                 };
                 
-                var messagePacket = new HorizonMessagePacket(verificationRequest)
-                {
-                    ServiceType = ServiceType.Account,
-                    Header = new MessageHeader
-                    {
-                        MessageType = MessageType.VerificationCodeRequest,
-                        GameId = 1,
-                        ZoneId = 1,
-                        ServerId = 1,
-                        Timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
-                    }
-                };
-
-                var success = await networkManager.SendMessageAsync(messagePacket);
+                var messagePacket = CreateAuthMessagePacket(verificationRequest, MessageType.VerificationCodeRequest);
+                var success = await HundunWorldGame.Instance.NetworkManager.SendMessageAsync(messagePacket);
                 
                 if (success)
                 {
@@ -650,6 +476,93 @@ namespace HundunWorld.Game.UI.Authentication
             if (plainText == null) return string.Empty;
             var bytes = System.Text.Encoding.UTF8.GetBytes(plainText);
             return System.Convert.ToBase64String(bytes);
+        }
+
+        #endregion
+
+        #region 公共辅助方法
+
+        /// <summary>
+        /// 确保网络连接已建立（提取公共方法，避免重复代码）
+        /// </summary>
+        /// <returns>连接结果</returns>
+        private async Task<AuthenticationResult> EnsureNetworkConnectionAsync()
+        {
+            var networkManager = HundunWorldGame.Instance.NetworkManager;
+            var connectionStatus = networkManager.GetConnectionStatus();
+            
+            if (connectionStatus == ConnectionStatus.Connected)
+                return null;
+
+            Debug.Log("网络未连接，尝试建立连接...");
+            
+            var config = NetworkConfigManager.LoadConfig();
+            if (config.GatewayList.Count == 0)
+                return new AuthenticationResult { IsSuccess = false, ErrorMessage = "未配置游戏服务器信息" };
+
+            var gateway = config.GatewayList[0];
+            var connected = await networkManager.ConnectAsync(gateway.IP, gateway.Port);
+            
+            if (!connected)
+            {
+                var waitSuccess = await networkManager.WaitForConnectionAsync(5000);
+                if (!waitSuccess)
+                    return new AuthenticationResult { IsSuccess = false, ErrorMessage = "无法连接到游戏服务器，请检查网络连接" };
+            }
+            else
+            {
+                await Task.Delay(100);
+            }
+            
+            return null;
+        }
+
+        /// <summary>
+        /// 设置加载状态（提取公共方法）
+        /// </summary>
+        private async Task SetLoadingStateAsync(string message)
+        {
+            var currentState = _stateManager.GetCurrentState();
+            await _stateManager.UpdateCurrentSceneAsync(new SceneState
+            {
+                SceneType = currentState.CurrentScene,
+                LoadTime = DateTime.Now,
+                IsLoading = true,
+                LoadingMessage = message
+            });
+        }
+
+        /// <summary>
+        /// 清除加载状态（提取公共方法）
+        /// </summary>
+        private async Task ClearLoadingStateAsync()
+        {
+            var currentState = _stateManager.GetCurrentState();
+            await _stateManager.UpdateCurrentSceneAsync(new SceneState
+            {
+                SceneType = currentState.CurrentScene,
+                LoadTime = DateTime.Now,
+                IsLoading = false
+            });
+        }
+
+        /// <summary>
+        /// 创建认证消息包（提取公共方法）
+        /// </summary>
+        private HorizonMessagePacket CreateAuthMessagePacket<T>(T body, MessageType messageType) where T :MessageUnion
+        {
+            return new HorizonMessagePacket(body)
+            {
+                ServiceType = ServiceType.Account,
+                Header = new MessageHeader
+                {
+                    MessageType = messageType,
+                    GameId = 1,
+                    ZoneId = 1,
+                    ServerId = 1,
+                    Timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
+                }
+            };
         }
 
         #endregion

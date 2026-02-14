@@ -89,6 +89,32 @@
 	"CaveConfig": {},
 	"CorridorConfig": {}
 }
+		},
+		{
+			"ID": "5ccec44d43311662598c04b45e5cd8a8",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
+			"Name": "ScriptsActor"
+		},
+		{
+			"ID": "a88bfe1847c48462baaa3ea9899de6f5",
+			"TypeName": "HundunWorld.Game.Combat.Effects.CombatFeedbackSystem",
+			"ParentID": "5ccec44d43311662598c04b45e5cd8a8",
+			"V": {
+	"HitStopCurve": {}
+}
+		},
+		{
+			"ID": "b3d193a940d969393fd6258c06d74a21",
+			"TypeName": "HundunWorld.Game.UI.GameMain.SkillBarUI",
+			"ParentID": "5ccec44d43311662598c04b45e5cd8a8",
+			"V": {}
+		},
+		{
+			"ID": "d1a2ddda43568fc6020891a4b14c0a23",
+			"TypeName": "Game.Combat.Effects.SkillEffectManager",
+			"ParentID": "5ccec44d43311662598c04b45e5cd8a8",
+			"V": {}
 		}
 	]
 }

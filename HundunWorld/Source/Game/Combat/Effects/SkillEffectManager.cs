@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using FlaxEngine;
+using Horizon.Game.Message.Enums;
 
 namespace Game.Combat.Effects
 {
@@ -14,22 +15,7 @@ namespace Game.Combat.Effects
         // 单例实例
         private static SkillEffectManager _instance;
         public static SkillEffectManager Instance => _instance;
-        /// <summary>
-        /// 特效类型
-        /// </summary>
-        public enum EffectType
-        {
-            CastStart,          // 施法开始（蓄力特效）
-            CastLoop,           // 施法循环（持续施法）
-            CastRelease,        // 施法释放（瞬间爆发）
-            Projectile,         // 弹道特效
-            Hit,                // 命中特效
-            AreaOfEffect,       // 范围特效（地面标记）
-            Buff,               // 增益特效（光环）
-            Debuff,             // 减益特效
-            Trail,              // 拖尾特效
-            Explosion           // 爆炸特效
-        }
+       
 
         /// <summary>
         /// 特效数据

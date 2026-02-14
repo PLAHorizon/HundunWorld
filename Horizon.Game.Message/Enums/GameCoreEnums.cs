@@ -136,7 +136,12 @@ namespace Horizon.Game.Message.Enums
         /// <summary>
         /// 故事
         /// </summary>
-        Story
+        Story,
+
+        /// <summary>
+        /// 成长
+        /// </summary>
+        Growth
     }
 
     /// <summary>
@@ -521,32 +526,6 @@ namespace Horizon.Game.Message.Enums
         Necklace,
         Earring1,
         Earring2,
-    }
-
-    /// <summary>
-    /// 物品稀有度枚举
-    /// </summary>
-    public enum ItemRarity
-    {
-        /// <summary>
-        /// 普通
-        /// </summary>
-        Common,
-
-        /// <summary>
-        /// 稀有
-        /// </summary>
-        Rare,
-
-        /// <summary>
-        /// 史诗
-        /// </summary>
-        Epic,
-
-        /// <summary>
-        /// 传说
-        /// </summary>
-        Legendary
     }
 
     /// <summary>

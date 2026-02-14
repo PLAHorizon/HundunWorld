@@ -61,6 +61,12 @@ namespace Game.Combat.Skills
         [Tooltip("角色动画器")]
         public AnimatedModel AnimatedModel;
 
+        [Tooltip("动画图控制器")]
+        public AnimationGraphController GraphController;
+
+        [Tooltip("动画映射配置")]
+        public SkillAnimationMapping AnimationMapping;
+
         [Header("当前技能状态")]
         [Tooltip("当前播放的技能动画名称")]
         public string CurrentSkillAnimation = "";
@@ -114,6 +120,18 @@ namespace Game.Combat.Skills
             {
                 AnimatedModel = Actor.GetChild<AnimatedModel>();
             }
+
+            // 获取动画图控制器
+            if (GraphController == null)
+            {
+                GraphController = Actor.GetScript<AnimationGraphController>();
+            }
+
+            // 获取动画映射实例
+            if (AnimationMapping == null)
+            {
+                AnimationMapping = SkillAnimationMapping.Instance;
+            }
         }
 
         /// <summary>
@@ -164,28 +182,41 @@ namespace Game.Combat.Skills
             currentEvents.Clear();
             SetupAnimationEvents(startupTime, activeTime, recoveryTime);
 
-            // 播放动画 - 使用Flax Engine的动画系统播放指定动画
-            if (AnimatedModel != null)
+            // 播放动画 - 优先使用动画图控制器
+            if (GraphController != null && GraphController.IsAnimationGraphLoaded())
             {
-                // 获取动画图
+                // 通过动画图系统播放
+                GraphController.TriggerCast();
+                GraphController.PlayAnimationDirect(animationName, false, 1.0f);
+                
+                if (ShowDebug)
+                    Debug.Log($"[AnimGraphController] 播放动画: {animationName}");
+            }
+            else if (AnimatedModel != null)
+            {
+                // 备用方案：直接操作AnimatedModel
                 var animGraph = AnimatedModel.AnimationGraph;
                 if (animGraph != null)
                 {
-                    // 设置动画参数
-                    // animGraph.SetParameterValue("SkillAnimation", animationName);
-                    // 或者直接播放动画
-                    // AnimatedModel.PlayAnimation(animationName);
+                    // 设置动画参数（需要根据实际动画图配置）
+                    try
+                    {
+                        // TODO: 根据Flax Engine实际API调整
+                        // 可能的API: animGraph.Parameters.SetTrigger("TriggerCast");
+                        Debug.Log($"触发动画图参数 TriggerCast (占位实现)");
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning($"设置动画参数失败: {ex.Message}");
+                    }
                     
-                    Debug.Log($"Playing animation: {animationName} with transition time: {TransitionTime}");
+                    if (ShowDebug)
+                        Debug.Log($"Playing animation: {animationName} with transition time: {TransitionTime}");
                 }
                 else
                 {
                     Debug.LogWarning($"Animation graph not found on {AnimatedModel.Name}");
                 }
-            }
-            else
-            {
-                Debug.LogWarning("AnimatedModel is null, cannot play animation");
             }
 
             // 触发前摇开始事件
@@ -421,6 +452,66 @@ namespace Game.Combat.Skills
         public void PlayChannelSkill(string skillName, string animationName, float channelDuration)
         {
             PlaySkillAnimation(skillName, animationName, 0.3f, channelDuration, 0.2f);
+        }
+
+        /// <summary>
+        /// 根据技能ID播放动画（使用映射配置）
+        /// </summary>
+        public void PlaySkillAnimationById(int skillId)
+        {
+            if (AnimationMapping == null)
+            {
+                Debug.LogWarning("[SkillAnimationController] AnimationMapping未设置");
+                return;
+            }
+
+            var config = AnimationMapping.GetAnimationConfig(skillId);
+            if (config == null)
+            {
+                Debug.LogWarning($"[SkillAnimationController] 未找到技能ID {skillId} 的动画配置");
+                return;
+            }
+
+            // 使用配置的参数播放动画
+            PlaySkillAnimation(
+                config.SkillName,
+                config.AnimationName,
+                config.StartupTime,
+                config.ActiveTime,
+                config.RecoveryTime
+            );
+
+            // 设置播放速度
+            if (GraphController != null && Math.Abs(config.PlaybackSpeed - 1.0f) > 0.01f)
+            {
+                GraphController.SetAnimationSpeed(config.PlaybackSpeed);
+            }
+
+            if (ShowDebug)
+            {
+                Debug.Log($"[SkillAnimationController] 播放技能动画 - ID:{skillId}, 名称:{config.SkillName}, 动画:{config.AnimationName}");
+            }
+        }
+
+        /// <summary>
+        /// 根据技能名称播放动画（使用映射配置）
+        /// </summary>
+        public void PlaySkillAnimationByName(string skillName)
+        {
+            if (AnimationMapping == null)
+            {
+                Debug.LogWarning("[SkillAnimationController] AnimationMapping未设置");
+                return;
+            }
+
+            var config = AnimationMapping.GetAnimationConfigByName(skillName);
+            if (config == null)
+            {
+                Debug.LogWarning($"[SkillAnimationController] 未找到技能 {skillName} 的动画配置");
+                return;
+            }
+
+            PlaySkillAnimationById(config.SkillId);
         }
     }
 }

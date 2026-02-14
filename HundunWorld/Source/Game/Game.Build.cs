@@ -25,8 +25,10 @@ public class Game : GameModule
         string outputPath = AppDomain.CurrentDomain.BaseDirectory;
 
         string[] dlls = {
-            "Microsoft.Extensions.ObjectPoo.dll",
-            "Orleans.Serialization.Abstractions.dll",
+            "Microsoft.Extensions.ObjectPool.dll",
+            "Microsoft.Extensions.DependencyInjection.Abstractions.dll",
+            "Microsoft.Extensions.Options.dll",
+            "Orleans.Serialization.dll",
             "Arch.dll",
             "System.Net.Sockets.dll",
             "System.Net.Ping.dll",

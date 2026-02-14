@@ -4,7 +4,6 @@ using FlaxEngine;
 using HundunWorld.Game.ECS.Components;
 using Horizon.Game.Message.Network;
 using Game.Character.Attributes;
-using EffectType = Horizon.Game.Message.Network.EffectType;
 using System;
 using System.Collections.Generic;
 using Horizon.Game.Message.Enums;
