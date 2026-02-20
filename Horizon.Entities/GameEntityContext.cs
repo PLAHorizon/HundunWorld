@@ -22,7 +22,8 @@ namespace Horizon.Entities
         #region 设计
         public GameEntityContextDes()
         {
-            Database.Migrate();
+            // 不在这里调用 Database.Migrate()，因为此时 DbContext 还没有配置数据库连接
+            // 迁移应该在 OnConfiguring 之后或通过其他方式执行
         }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {

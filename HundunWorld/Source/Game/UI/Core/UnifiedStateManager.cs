@@ -55,6 +55,7 @@ namespace HundunWorld.Game.UI.Core
                             var gameObject = Level.FindActor("UnifiedStateManager") ?? new EmptyActor();
                             gameObject.Name = "UnifiedStateManager";
                             _instance = gameObject.GetScript<UnifiedStateManager>() ?? gameObject.AddScript<UnifiedStateManager>();
+                            _instance.OnAwake();
                             Engine.RequestingExit += () => { _instance = null; };
                         }
                     }

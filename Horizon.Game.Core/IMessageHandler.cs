@@ -75,7 +75,7 @@ public abstract class MessageHandlerBase : IMessageHandler
         try
         {
             (bool IsSuccess, HorizonMessagePacket tem) = await RouteHandlerAsync(message);
-            if (!IsSuccess || tem == null) return (IsSuccess, null);//无需响应客户端的请求
+            if ( tem == null) return (IsSuccess, null);//无需响应客户端的请求
             tem.Header.GameId = message.Header.GameId;
             tem.Header.ZoneId = message.Header.ZoneId;
             tem.Header.ServerId = message.Header.ServerId;

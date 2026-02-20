@@ -151,7 +151,7 @@ namespace HundunWorld.Game.Services
                     CharacterName = characterName,
                     Profession = profession,
                     Gender = gender,
-                    Appearance = appearance
+                    Appearance = appearance,
                 };
 
                 bool sent = await networkManager.SendAsync(request);

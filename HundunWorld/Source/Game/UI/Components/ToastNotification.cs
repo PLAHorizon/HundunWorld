@@ -14,6 +14,9 @@ namespace HundunWorld.Game.UI.Components
         private float _duration;
         private bool _isShowing;
         
+        private const float DEFAULT_WIDTH = 240f;
+        private const float DEFAULT_HEIGHT = 50f;
+        
         public ToastNotification() : base()
         {
             SetupComponents();
@@ -22,26 +25,30 @@ namespace HundunWorld.Game.UI.Components
         
         private void SetupComponents()
         {
-            Size = new Float2(350, 80);
-            BackgroundColor = new Color(0.2f, 0.2f, 0.25f, 0.95f);
+            // 使用固定宽度
+            Size = new Float2(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+            BackgroundColor = new Color(0.12f, 0.12f, 0.15f, 0.95f);
             
             // 图标面板
             _iconPanel = new Panel
             {
-                Size = new Float2(40, 40),
-                Location = new Float2(20, 20),
+                Size = new Float2(28, 28),
+                Location = new Float2(10, (DEFAULT_HEIGHT - 28) / 2),
                 BackgroundColor = Color.Transparent
             };
             AddChild(_iconPanel);
             
             // 消息标签
+            float messageWidth = DEFAULT_WIDTH - 50;
             _messageLabel = new Label
             {
-                Location = new Float2(80, 20),
-                Size = new Float2(250, 40),
+                Location = new Float2(42, 5),
+                Size = new Float2(messageWidth, DEFAULT_HEIGHT - 10),
                 TextColor = Color.White,
                 HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center
+                VerticalAlignment = TextAlignment.Center,
+                Wrapping = TextWrapping.WrapWords,
+                Font = UIHelper.SetFont(size: 11)
             };
             AddChild(_messageLabel);
         }
@@ -94,10 +101,11 @@ namespace HundunWorld.Game.UI.Components
             var iconLabel = new Label
             {
                 Text = iconText,
-                Size = new Float2(40, 40),
+                Size = new Float2(28, 28),
                 TextColor = iconColor,
                 HorizontalAlignment = TextAlignment.Center,
-                VerticalAlignment = TextAlignment.Center
+                VerticalAlignment = TextAlignment.Center,
+                Font = UIHelper.SetFont(size: 14)
             };
             _iconPanel.AddChild(iconLabel);
         }
@@ -175,12 +183,14 @@ namespace HundunWorld.Game.UI.Components
     public class ToastManager : ContainerControl
     {
         private const int MAX_TOASTS = 5;
-        private const float TOAST_SPACING = 90f;
+        private const float TOAST_SPACING = 60f;
+        private const float TOAST_WIDTH = 240f;
+        private const float MARGIN = 10f;
         
         public ToastManager() : base()
         {
             AnchorPreset = AnchorPresets.TopRight;
-            Size = new Float2(370, 500);
+            Size = new Float2(TOAST_WIDTH + MARGIN * 2, 400);
             BackgroundColor = Color.Transparent;
         }
         
@@ -196,7 +206,7 @@ namespace HundunWorld.Game.UI.Components
             
             // 创建新的Toast
             var toast = new ToastNotification();
-            toast.Location = new Float2(10, Children.Count * TOAST_SPACING + 10);
+            toast.Location = new Float2(MARGIN, Children.Count * TOAST_SPACING + MARGIN);
             AddChild(toast);
             
             toast.Show(message, type, duration);
@@ -210,7 +220,7 @@ namespace HundunWorld.Game.UI.Components
             for (int i = 0; i < Children.Count; i++)
             {
                 var toast = Children[i];
-                toast.Location = new Float2(10, i * TOAST_SPACING + 10);
+                toast.Location = new Float2(MARGIN, i * TOAST_SPACING + MARGIN);
             }
         }
         

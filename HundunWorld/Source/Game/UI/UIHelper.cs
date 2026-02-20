@@ -328,17 +328,17 @@ namespace HundunWorld.Game.UI
         /// <returns>计算后的对话框尺寸</returns>
         public static Float2 CalculateDialogSize(float contentHeight, bool hasIcon = false, int itemCount = 0)
         {
-            float baseHeight = 200; // 基础高度（标题+按钮+边距）
+            float baseHeight = 180; // 基础高度（标题+按钮+边距）
             float totalHeight = baseHeight + contentHeight;
 
             if (hasIcon)
-                totalHeight += 70; // 图标区域高度
+                totalHeight += 60; // 图标区域高度
 
             if (itemCount > 0)
-                totalHeight += itemCount * 45 + 20; // 条目列表高度
+                totalHeight += itemCount * 40 + 15; // 条目列表高度
 
-            var width = Screen.Size.X * 0.8f; // 水平拉伸至屏幕80%
-            var height = Math.Max(300, totalHeight); // 最小高度300px
+            var width = Math.Min(400, Screen.Size.X * 0.9f); // 最大宽度400px，不超过屏幕90%
+            var height = Math.Max(240, totalHeight); // 最小高度240px
 
             return new Float2(width, height);
         }
@@ -530,11 +530,13 @@ namespace HundunWorld.Game.UI
         public void ShowError(string message)
         {
             FlaxEngine.Debug.LogError($"[Toast错误] {message}");
+            new ConfirmDialog().ShowAdvanced("失败", message);
         }
 
         public void ShowInfo(string message)
         {
             FlaxEngine.Debug.Log($"[Toast信息] {message}");
+            new ConfirmDialog().ShowAdvanced("信息", message);
         }
 
         public void ShowToast(string message, ToastType toastType = ToastType.Info)

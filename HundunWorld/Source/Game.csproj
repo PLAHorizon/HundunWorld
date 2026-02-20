@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Configurations>Editor.Windows.Debug;Editor.Windows.Development;Editor.Windows.Release;Game.Windows.Debug;Game.Windows.Development;Game.Windows.Release</Configurations>
@@ -375,8 +375,10 @@
     <Compile Include="Game\UI\Authentication\RegisterPanel.cs" />
     <Compile Include="Game\UI\Canvas.cs" />
     <Compile Include="Game\UI\Character\CharacterCreationPanel.cs" />
+    <Compile Include="Game\UI\Character\CharacterCreationSceneController.cs" />
     <Compile Include="Game\UI\Character\CharacterManagementUI.cs" />
     <Compile Include="Game\UI\Character\CharacterManager.cs" />
+    <Compile Include="Game\UI\Character\IntegratedCharacterCreationUI.cs" />
     <Compile Include="Game\UI\Components\CharacterAnimator.cs" />
     <Compile Include="Game\UI\Components\ConfirmDialog.cs" />
     <Compile Include="Game\UI\Components\ConfirmDialogTest.cs" />

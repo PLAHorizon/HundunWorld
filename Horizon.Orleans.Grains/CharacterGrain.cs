@@ -87,7 +87,7 @@ namespace Horizon.Orleans.Grains
                     request.CharacterName, request.UserId);
 
                 // 1. 棄用现有角色检查（因为这个 Grain 是为单个角色设计的）
-                if (_characterState.State.CharacterInfo != null)
+                if (_characterState.State.CharacterInfo != null&&CharacterId!=0)
                 {
                     _logger.LogWarning("该 Grain 已经有角色了: {ExistingCharacterName}", 
                         _characterState.State.CharacterInfo.CharacterName);

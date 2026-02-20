@@ -61,16 +61,18 @@ namespace HundunWorld.Game.UI.Components
                 _renderTask = new SceneRenderTask();
                 _renderTask.Order = -100; // 确保在UI之前渲染
                 _renderTask.Output = _renderTexture;
+                _renderTask.Enabled = true; // 启用渲染任务
                 
-                // 创建相机
+                // 创建相机Actor
                 var cameraActor = new EmptyActor();
                 cameraActor.Name = "PreviewCamera";
+                Level.SpawnActor(cameraActor); // 将相机Actor添加到场景
+                
                 _camera = cameraActor.AddChild<Camera>();
-                cameraActor.Parent = null;
-                _camera.SetParent(null, false);
                 _camera.FieldOfView = 60f;
                 _camera.NearPlane = 10f;
                 _camera.FarPlane = 10000f;
+                _camera.UsePerspective = true;
                 
                 // 设置相机位置
                 UpdateCameraPosition();
@@ -83,7 +85,7 @@ namespace HundunWorld.Game.UI.Components
                 _textureBrush = new GPUTextureBrush(_renderTexture);
                 
                 _isInitialized = true;
-                FlaxEngine.Debug.Log("3D预览视口初始化成功");
+                FlaxEngine.Debug.Log($"3D预览视口初始化成功 - 尺寸: {Size}");
             }
             catch (Exception ex)
             {
@@ -96,16 +98,16 @@ namespace HundunWorld.Game.UI.Components
         /// </summary>
         private void UpdateCameraPosition()
         {
-            if (_camera == null) return;
+            if (_camera == null || _camera.Parent == null) return;
             
             // 计算相机位置
-            var cameraPos = new Vector3(0, 0, -_cameraDistance);
+            var cameraPos = new Vector3(0, 80, -_cameraDistance);
             var rotation = Quaternion.Euler(_cameraPitch, _cameraYaw, 0);
             cameraPos = Vector3.Transform(cameraPos, rotation);
             
             // 设置相机位置和朝向
             _camera.Parent.Position = cameraPos;
-            _camera.Parent.LookAt(Vector3.Zero);
+            _camera.Parent.LookAt(new Vector3(0, 80, 0)); // 看向角色中心位置
         }
         
         /// <summary>
@@ -143,6 +145,62 @@ namespace HundunWorld.Game.UI.Components
         }
         
         /// <summary>
+        /// 从预制体加载角色模型
+        /// </summary>
+        /// <param name="prefab">预制体</param>
+        public void LoadFromPrefab(Prefab prefab)
+        {
+            if (!_isInitialized)
+            {
+                FlaxEngine.Debug.LogWarning("视口未初始化，无法加载预制体");
+                return;
+            }
+            
+            if (prefab == null)
+            {
+                FlaxEngine.Debug.LogWarning("预制体为空");
+                return;
+            }
+            
+            try
+            {
+                // 清理现有模型
+                ClearModel();
+                
+                // 实例化预制体
+                _modelActor = PrefabManager.SpawnPrefab(prefab);
+                if (_modelActor == null)
+                {
+                    FlaxEngine.Debug.LogWarning($"无法实例化预制体: {prefab.Path}");
+                    return;
+                }
+                
+                // 查找模型组件
+                _animatedModel = _modelActor.GetChild<AnimatedModel>();
+                _staticModel = _modelActor.GetChild<StaticModel>();
+                
+                FlaxEngine.Debug.Log($"预制体实例化成功 - AnimatedModel: {_animatedModel != null}, StaticModel: {_staticModel != null}");
+                
+                // 设置模型位置
+                _modelActor.Position = Vector3.Zero;
+                _modelActor.LocalScale = new Vector3(1, 1, 1);
+                
+                // 将模型添加到渲染任务
+                var currentActors = _renderTask.CustomActors ?? new Actor[0];
+                var newActors = new Actor[currentActors.Length + 1];
+                Array.Copy(currentActors, newActors, currentActors.Length);
+                newActors[newActors.Length - 1] = _modelActor;
+                _renderTask.CustomActors = newActors;
+                
+                FlaxEngine.Debug.Log($"预制体加载成功: {prefab.Path}, 渲染任务Actor数量: {newActors.Length}");
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"加载预制体失败: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
         /// 加载静态3D模型
         /// </summary>
         /// <param name="modelName">静态模型名称</param>
@@ -167,11 +225,12 @@ namespace HundunWorld.Game.UI.Components
                     return;
                 }
                 
-                // 创建模型Actor
+                // 创建模型Actor并添加到场景
                 _modelActor = new EmptyActor();
                 _modelActor.Name = "StaticModelPreview";
+                Level.SpawnActor(_modelActor);
+                
                 _staticModel = _modelActor.AddChild<StaticModel>();
-                _modelActor.Parent = null;
                 _staticModel.Model = model;
                 
                 // 设置模型位置和缩放
@@ -193,10 +252,6 @@ namespace HundunWorld.Game.UI.Components
             }
         }
         
-        /// <summary>
-        /// 加载带动画的3D模型
-        /// </summary>
-        /// <param name="modelName">蒙皮模型名称</param>
         public void LoadAnimatedModel(string modelName)
         {
             if (!_isInitialized)
@@ -220,11 +275,12 @@ namespace HundunWorld.Game.UI.Components
                     return;
                 }
                 
-                // 创建模型Actor
+                // 创建模型Actor并添加到场景
                 _modelActor = new EmptyActor();
                 _modelActor.Name = "AnimatedModelPreview";
+                Level.SpawnActor(_modelActor);
+                
                 _animatedModel = _modelActor.AddChild<AnimatedModel>();
-                _modelActor.Parent = null;
                 _animatedModel.SkinnedModel = skinnedModel;
                 
                 // 添加动画控制器

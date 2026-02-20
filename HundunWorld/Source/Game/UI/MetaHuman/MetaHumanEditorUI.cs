@@ -204,12 +204,23 @@ namespace HundunWorld.UI.MetaHuman
                 BackgroundColor = MetaHumanStyles.Colors.BackgroundLight
             };
             
-            _previewViewport = new Viewport3DPreview(Float2.Zero)
+            // 计算预览区域大小
+            Float2 screenSize = FlaxEngine.Screen.Size;
+            float previewWidth = screenSize.X * (1 - LeftPanelWidthRatio) - MetaHumanStyles.Sizes.Padding * 2;
+            float previewHeight = screenSize.Y - MetaHumanStyles.Sizes.Padding * 2 - controlBarHeight - controlBarBottomMargin;
+            
+            _previewViewport = new Viewport3DPreview(new Float2(previewWidth, previewHeight))
             {
                 Parent = previewBorder,
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = new Margin(1, 1, 1, 1)
             };
+            
+            // 初始化视口（现在有正确的尺寸）
+            _previewViewport.InitializeViewport();
+            
+            // 加载默认角色模型
+            LoadDefaultCharacterModel();
             
             var previewControlBar = new Panel
             {
@@ -221,6 +232,49 @@ namespace HundunWorld.UI.MetaHuman
             };
             
             CreatePreviewControls(previewControlBar);
+        }
+        
+        private void LoadDefaultCharacterModel()
+        {
+            // 尝试加载 Player 预制体中的角色模型
+            var playerPrefab = FlaxEngine.Content.LoadAsync<Prefab>("Content/Player");
+            if (playerPrefab != null && playerPrefab.IsLoaded)
+            {
+                _previewViewport.LoadFromPrefab(playerPrefab);
+                FlaxEngine.Debug.Log($"[MetaHumanEditorUI] 已从预制体加载角色模型: Content/Player");
+                return;
+            }
+            
+            // 尝试直接加载模型资源
+            string[] modelPaths = new string[]
+            {
+                "Content/Character/Models/Pro Magic Pack/Ty",
+                "Content/Character/Models/Walking",
+                "Content/Character/Models/Running.flax",
+                "Content/Character/Models/Idle.flax"
+            };
+            
+            foreach (var path in modelPaths)
+            {
+                var skinnedModel = FlaxEngine.Content.LoadAsync<SkinnedModel>(path);
+                if (skinnedModel != null && skinnedModel.IsLoaded)
+                {
+                    _previewViewport.LoadAnimatedModel(path);
+                    FlaxEngine.Debug.Log($"[MetaHumanEditorUI] 已加载蒙皮模型: {path}");
+                    return;
+                }
+                
+                var staticModel = FlaxEngine.Content.LoadAsync<Model>(path);
+                if (staticModel != null && staticModel.IsLoaded)
+                {
+                    _previewViewport.LoadStaticModel(path);
+                    FlaxEngine.Debug.Log($"[MetaHumanEditorUI] 已加载静态模型: {path}");
+                    return;
+                }
+            }
+            
+            FlaxEngine.Debug.LogWarning("[MetaHumanEditorUI] 未找到角色模型，3D预览区域将为空");
+            FlaxEngine.Debug.LogWarning("[MetaHumanEditorUI] 请确保 Content/Player.prefab 或 Content/Character/Models 目录下有角色模型");
         }
         
         private void CreatePreviewControls(Panel parent)

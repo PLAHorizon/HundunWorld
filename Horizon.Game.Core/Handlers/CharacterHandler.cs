@@ -243,6 +243,7 @@ namespace Horizon.Game.Core.Handlers
         }
         /// <summary>
         /// 处理角色列表请求
+        /// 使用用户角色管理器获取用户所有角色
         /// </summary>
         private async Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> HandleCharacterListRequestAsync(HorizonMessagePacket message)
         {
@@ -258,15 +259,9 @@ namespace Horizon.Game.Core.Handlers
                 Logger.LogInformation("处理角色列表请求: UserId: {UserId}, ServerId: {ServerId}",
                     listRequest.UserId, listRequest.ServerId);
 
-                // 获取角色列表
-                var characterGrain = _clusterClient.GetGrain<ICharacterGrain>(0);
-                var gameQueryDto = new Share.Dtos.Games.GameQueryDto
-                {
-                    GameUserId = (long)listRequest.UserId,
-                    GameId = (int)message.Header.GameId
-                };
-
-                var characters = await characterGrain.GetAllCharactersAsync(gameQueryDto);
+                // 使用用户角色管理器获取角色列表
+                var userCharacterManager = _clusterClient.GetGrain<IUserCharacterManagerGrain>((long)listRequest.UserId);
+                var characters = await userCharacterManager.GetAllCharactersAsync((int)message.Header.GameId);
 
                 // 构建响应
                 var response = new CharacterListResponse
@@ -285,11 +280,12 @@ namespace Horizon.Game.Core.Handlers
             catch (Exception ex)
             {
                 Logger.LogError(ex, "处理角色列表请求时发生异常");
-                return (false, CreateCharacterListErrorResponse("获取角色列表失败"));
+                return (false, CreateCharacterListErrorResponse("获取角色列表失败，请稍后重试。"));
             }
         }
         /// <summary>
         /// 处理删除角色请求
+        /// 使用用户角色管理器删除角色
         /// </summary>
         private async Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> HandleDeleteCharacterAsync(HorizonMessagePacket message)
         {
@@ -305,26 +301,19 @@ namespace Horizon.Game.Core.Handlers
                 Logger.LogInformation("处理删除角色请求: CharacterId: {CharacterId}, UserId: {UserId}",
                     deleteRequest.CharacterId, deleteRequest.UserId);
 
-                // 获取角色Grain并执行删除操作
-                var characterGrain = _clusterClient.GetGrain<ICharacterGrain>((long)deleteRequest.CharacterId);
+                // 使用用户角色管理器删除角色
+                var userCharacterManager = _clusterClient.GetGrain<IUserCharacterManagerGrain>((long)deleteRequest.UserId);
+                var response = await userCharacterManager.DeleteCharacterAsync(deleteRequest.CharacterId, (int)message.Header.GameId);
 
-                // 这里需要实现删除角色的逻辑
-                // 目前返回成功响应
-                var response = new DeleteCharacterResponse
-                {
-                    Success = true,
-                    Message = "角色删除成功",
-                    CharacterId = deleteRequest.CharacterId
-                };
+                Logger.LogInformation("角色删除结果: CharacterId: {CharacterId}, Success: {Success}",
+                    deleteRequest.CharacterId, response.Success);
 
-                Logger.LogInformation("角色删除成功: CharacterId: {CharacterId}", deleteRequest.CharacterId);
-
-                return (true, CreateHorizonMessage(response));
+                return (response.Success, CreateHorizonMessage(response));
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex, "处理删除角色请求时发生异常");
-                return (false, CreateDeleteCharacterErrorResponse("删除角色处理异常"));
+                return (false, CreateDeleteCharacterErrorResponse("删除角色处理异常，请稍后重试。"));
             }
         }
 
@@ -540,6 +529,7 @@ namespace Horizon.Game.Core.Handlers
 
         /// <summary>
         /// 异步创建角色
+        /// 使用用户角色管理器支持多角色创建
         /// </summary>
         /// <param name="message">创建角色请求消息包</param>
         /// <returns>处理结果和响应消息包</returns>
@@ -551,12 +541,14 @@ namespace Horizon.Game.Core.Handlers
                 createCharacter.GameId = (int)message.Header.GameId;
                 createCharacter.ZoneId = (int)message.Header.ZoneId;
                 createCharacter.ServerId = (int)message.Header.ServerId;
+                createCharacter.UserId = message.Header.UserId;
 
-                var passport = _clusterClient.GetGrain<ICharacterGrain>(0);
-                var passportInfo = await passport.CreateCharacterAsync(createCharacter);
+                // 使用用户角色管理器来创建角色，支持多角色
+                var userCharacterManager = _clusterClient.GetGrain<IUserCharacterManagerGrain>((long)createCharacter.UserId);
+                var response = await userCharacterManager.CreateCharacterAsync(createCharacter);
 
-                var tem = CreateHorizonMessage(passportInfo);
-                return (passportInfo.IsSuccess, tem);
+                var tem = CreateHorizonMessage(response);
+                return (response.IsSuccess, tem);
             }
             catch (Exception ex)
             {
@@ -564,7 +556,7 @@ namespace Horizon.Game.Core.Handlers
                 return (false, CreateHorizonMessage(new CreateCharacterResponse
                 {
                     IsSuccess = false,
-                    Message = "创建角色失败"
+                    Message = "创建角色失败，请稍后重试。"
                 }));
             }
         }

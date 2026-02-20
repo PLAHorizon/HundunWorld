@@ -305,7 +305,7 @@ namespace HundunWorld.Game.UI.Authentication
                         SessionToken = response.SessionToken ?? "",
                         LoginTime = DateTime.Now
                     };
-
+                    Passport.UserId = response.UserId;
                     await _stateManager.UpdateUserSessionAsync(userSession);
                     
                     // 发布事件

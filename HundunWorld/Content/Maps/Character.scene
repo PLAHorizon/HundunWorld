@@ -118,6 +118,7 @@
 			"ID": "f92187074382768c9ab1d291daf08f06",
 			"TypeName": "FlaxEngine.EmptyActor",
 			"ParentID": "ec48ab0942e2c7c009af8f87c9b2d7cf",
+			"IsActive": false,
 			"Name": "CharacterRoot ",
 			"Transform": {
 				"Translation": {
@@ -322,6 +323,7 @@
 			"ID": "9bb999364495ab7299c27fb09efb33df",
 			"TypeName": "FlaxEngine.EmptyActor",
 			"ParentID": "ec48ab0942e2c7c009af8f87c9b2d7cf",
+			"IsActive": false,
 			"Name": "MetaHuman"
 		},
 		{
@@ -501,8 +503,8 @@
 			"Name": "EyeEditorPanel",
 			"Transform": {
 				"Translation": {
-					"X": 810.0,
-					"Y": 210.0,
+					"X": 303.0,
+					"Y": -23.5,
 					"Z": 0.0
 				}
 			},
@@ -557,7 +559,7 @@
 			"Transform": {
 				"Translation": {
 					"X": 50.0,
-					"Y": 210.0,
+					"Y": -23.5,
 					"Z": 0.0
 				}
 			},
@@ -611,8 +613,8 @@
 			"Name": "SkinEditorPanel",
 			"Transform": {
 				"Translation": {
-					"X": 1570.0,
-					"Y": 210.0,
+					"X": 556.0,
+					"Y": -23.5,
 					"Z": 0.0
 				}
 			},
@@ -663,6 +665,7 @@
 			"ID": "a46c72cd4131fbd4150368bd00a57ef1",
 			"TypeName": "FlaxEngine.EmptyActor",
 			"ParentID": "ec48ab0942e2c7c009af8f87c9b2d7cf",
+			"IsActive": false,
 			"Name": "MetaHumanCharacter"
 		},
 		{
@@ -713,6 +716,7 @@
 			"ID": "d9a5ec8046aa189b42af98a114c8c6a9",
 			"TypeName": "FlaxEngine.UICanvas",
 			"ParentID": "ec48ab0942e2c7c009af8f87c9b2d7cf",
+			"IsActive": false,
 			"Name": "UICanvas",
 			"Transform": {
 				"Orientation": {
@@ -766,6 +770,75 @@
 		"R": 0.12,
 		"G": 0.12,
 		"B": 0.14,
+		"A": 1.0
+	},
+	"BackgroundBrush": null,
+	"Enabled": true,
+	"Visible": true,
+	"AutoFocus": false
+}
+		},
+		{
+			"ID": "4b09ab474f8122200ef858806ccfe100",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "ec48ab0942e2c7c009af8f87c9b2d7cf",
+			"Name": "CharacterCreationUI"
+		},
+		{
+			"ID": "1bb372b648fb01fd7c214780a0890d31",
+			"TypeName": "FlaxEngine.UICanvas",
+			"ParentID": "4b09ab474f8122200ef858806ccfe100",
+			"Name": "UICanvas",
+			"Transform": {
+				"Orientation": {
+					"X": 1.0,
+					"Y": 4.371138828673793e-8,
+					"Z": 4.371138828673793e-8,
+					"W": 1.910685465164705e-15
+				}
+			},
+			"V": {}
+		},
+		{
+			"ID": "33b9f28e4f48376330c0c8a4a2f2e31f",
+			"TypeName": "FlaxEngine.UIControl",
+			"ParentID": "1bb372b648fb01fd7c214780a0890d31",
+			"Name": "Canvas Scalar",
+			"Control": "HundunWorld.Game.UI.Character.IntegratedCharacterCreationUI",
+			"Data": {
+	"ClipChildren": true,
+	"CullChildren": true,
+	"AnchorMin": {
+		"X": 0.0,
+		"Y": 0.0
+	},
+	"AnchorMax": {
+		"X": 1.0,
+		"Y": 1.0
+	},
+	"Offsets": {
+		"Left": 0.0,
+		"Right": -906.0,
+		"Top": 0.0,
+		"Bottom": -613.0
+	},
+	"Scale": {
+		"X": 1.0,
+		"Y": 1.0
+	},
+	"Pivot": {
+		"X": 0.5,
+		"Y": 0.5
+	},
+	"Shear": {
+		"X": 0.0,
+		"Y": 0.0
+	},
+	"Rotation": 0.0,
+	"BackgroundColor": {
+		"R": 0.08,
+		"G": 0.08,
+		"B": 0.1,
 		"A": 1.0
 	},
 	"BackgroundBrush": null,

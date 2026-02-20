@@ -1,15 +1,18 @@
 using Horizon.Game.Message;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
+using HundunWorld.Game.UI.Authentication;
 using K4os.Compression.LZ4;
 using MemoryPack;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using TouchSocket.Core;
 using TouchSocket.Sockets;
+using AuthenticationManager = HundunWorld.Game.UI.Authentication.AuthenticationManager;
 
 namespace HundunWorld.Game.Network
 {
@@ -81,6 +84,7 @@ namespace HundunWorld.Game.Network
                 GameId = 1,    // 设置默认GameId
                 ZoneId = 1,    // 设置默认ZoneId
                 ServerId = 1,  // 设置默认ServerId
+                UserId=AuthenticationManager.Instance.Passport?.UserId??0
             };
 
             HorizonMessagePacket messagePacket = new HorizonMessagePacket

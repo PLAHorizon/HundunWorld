@@ -48,19 +48,21 @@ namespace HundunWorld.Game.UI.Components
         }
 
         /// <summary>
-        /// 处理屏幕尺寸变化 - 使用ResponsiveLayoutCalculator进行自适应
+        /// 处理屏幕尺寸变化
         /// </summary>
         private void OnScreenSizeChanged(Float2 newSize)
         {
             if (_dialogPanel != null)
             {
-                // 重新计算对话框尺寸 - 保持80%宽度
-                var newWidth = newSize.X * 0.8f;
+                // 重新计算对话框尺寸 - 使用紧凑宽度，最大400px
+                var newWidth = Math.Min(400, newSize.X * 0.9f);
                 var currentHeight = _dialogPanel.Height;
                 _dialogPanel.Size = new Float2(newWidth, currentHeight);
                 
-                // 使用ResponsiveLayoutCalculator重新居中
-                CenterDialog();
+                // 保持 AnchorPreset 和 Pivot 设置
+                _dialogPanel.AnchorPreset = AnchorPresets.MiddleCenter;
+                _dialogPanel.Pivot = new Float2(0.5f, 0.5f);
+                _dialogPanel.Location = Float2.Zero;
 
                 // 更新边框宽度
                 if (_topBorder != null)
@@ -82,25 +84,30 @@ namespace HundunWorld.Game.UI.Components
                 
                 if (_messageLabel != null)
                 {
-                    _messageLabel.Size = new Float2(_dialogPanel.Width - 80, _messageLabel.Height);
+                    _messageLabel.Size = new Float2(_dialogPanel.Width - 60, _messageLabel.Height);
                 }
                 
                 if (_itemListPanel != null)
                 {
-                    _itemListPanel.Size = new Float2(_dialogPanel.Width - 80, _itemListPanel.Height);
+                    _itemListPanel.Size = new Float2(_dialogPanel.Width - 60, _itemListPanel.Height);
                     // 重新更新条目列表以适应新宽度
                     UpdateItemList();
                 }
                 
-                // 更新按钮位置
+                // 更新按钮位置 - 居中排列
+                var buttonWidth = 70f;
+                var buttonSpacing = 15f;
+                var totalButtonWidth = 2 * buttonWidth + buttonSpacing;
+                var startX = (_dialogPanel.Width - totalButtonWidth) / 2;
+                
                 if (_confirmButton != null)
                 {
-                    _confirmButton.Location = new Float2(_dialogPanel.Width - 180, _confirmButton.Location.Y);
+                    _confirmButton.Location = new Float2(startX, _confirmButton.Location.Y);
                 }
                 
                 if (_cancelButton != null)
                 {
-                    _cancelButton.Location = new Float2(_dialogPanel.Width - 90, _cancelButton.Location.Y);
+                    _cancelButton.Location = new Float2(startX + buttonWidth + buttonSpacing, _cancelButton.Location.Y);
                 }
                 
                 // 更新图标位置（水平居中）
@@ -118,37 +125,37 @@ namespace HundunWorld.Game.UI.Components
 
         private void CreateDialogUI()
         {
-            // 创建遮罩层
+            // 创建遮罩层 - 使用 AnchorPresets.StretchAll 填充整个父容器
             _overlay = new Panel
             {
                 AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = Margin.Zero,
                 BackgroundColor = new Color(0, 0, 0, 0.5f),
                 Visible = false
             };
 
-            // 创建对话框面板 - 根据UI界面居中规范使用AnchorPresets.MiddleCenter
+            // 创建对话框面板 - 使用 AnchorPresets.MiddleCenter 居中
+            float dialogWidth = Math.Min(400, Screen.Size.X * 0.9f);
+            float dialogHeight = 240;
             _dialogPanel = new RoundedPanel
             {
-                Size = new Float2(Screen.Size.X * 0.8f, 300), // 初始高度，会自适应调整
-                AnchorPreset = AnchorPresets.MiddleCenter, // 遵循UI界面居中规范
+                Size = new Float2(dialogWidth, dialogHeight),
+                AnchorPreset = AnchorPresets.MiddleCenter,
+                Pivot = new Float2(0.5f, 0.5f),
+                Location = Float2.Zero,
                 BackgroundColor = ChineseClassicalTheme.PanelColor,
-                CornerRadius = 12f
+                CornerRadius = 10f
             };
             
-            // 使用ResponsiveLayoutCalculator进行精确居中计算，与动态位置计算配合
-            CenterDialog();
-            
-            FlaxEngine.Debug.Log($"对话框面板创建完成 - Size: {_dialogPanel.Size}, Location: {_dialogPanel.Location}");
+            FlaxEngine.Debug.Log($"对话框面板创建完成 - Size: {_dialogPanel.Size}, AnchorPreset: {_dialogPanel.AnchorPreset}");
 
             // 添加上边框 - 使用UIHelper创建渐变边框
             _topBorder = UIHelper.CreateGradientBorder(new Float2(_dialogPanel.Width, 3), true);
-            _topBorder.AnchorPreset = AnchorPresets.TopLeft;
             _topBorder.Location = new Float2(0, 0);
             _dialogPanel.AddChild(_topBorder);
 
             // 添加下边框 - 使用UIHelper创建渐变边框
             _bottomBorder = UIHelper.CreateGradientBorder(new Float2(_dialogPanel.Width, 3), false);
-            _bottomBorder.AnchorPreset = AnchorPresets.BottomLeft;
             _bottomBorder.Location = new Float2(0, _dialogPanel.Height - 3);
             _dialogPanel.AddChild(_bottomBorder);
 
@@ -173,8 +180,8 @@ namespace HundunWorld.Game.UI.Components
 
             // 消息区域 - 自适应高度，使用中式样式
             _messageLabel = UIHelper.CreateLabel("确定要执行此操作吗？", ChineseClassicalTheme.TextColor);
-            _messageLabel.Location = new Float2(40, 120);
-            _messageLabel.Size = new Float2(_dialogPanel.Width - 80, 60);
+            _messageLabel.Location = new Float2(30, 100);
+            _messageLabel.Size = new Float2(_dialogPanel.Width - 60, 50);
             _messageLabel.HorizontalAlignment = TextAlignment.Center;
             _messageLabel.VerticalAlignment = TextAlignment.Center;
             ChineseClassicalTheme.ApplyVisualHierarchy(_messageLabel, VisualHierarchy.Auxiliary);
@@ -183,53 +190,47 @@ namespace HundunWorld.Game.UI.Components
             // 条目列表区域
             _itemListPanel = new Panel
             {
-                Location = new Float2(40, 120),
-                Size = new Float2(_dialogPanel.Width - 80, 0),
+                Location = new Float2(30, 100),
+                Size = new Float2(_dialogPanel.Width - 60, 0),
                 Visible = false,
                 BackgroundColor = Color.Transparent
             };
             _dialogPanel.AddChild(_itemListPanel);
 
-            // 按钮区域 - 使用中式按钮样式，修复位置计算
+            // 按钮区域 - 使用中式按钮样式，按钮居中排列
             var buttonPanel = new RoundedPanel
             {
-                Size = new Float2(_dialogPanel.Width, 60),
-                AnchorPreset = AnchorPresets.BottomLeft,
-                Location = new Float2(0, _dialogPanel.Height - 60),
-                BackgroundColor = new Color(0.1f, 0.1f, 0.1f, 0.3f), // 添加半透明背景以便调试
-                Visible = true,  // 根据UI组件显示规范，显式设置可见性
-                Enabled = true,   // 根据UI组件显示规范，显式设置启用状态
-                CornerRadius = 12f
+                Size = new Float2(_dialogPanel.Width, 55),
+                Location = new Float2(0, _dialogPanel.Height - 55),
+                BackgroundColor = new Color(0.1f, 0.1f, 0.1f, 0.3f),
+                Visible = true,
+                Enabled = true,
+                CornerRadius = 10f
             };
 
-            // 创建按钮 - 使用更保守的尺寸和位置
-            var buttonWidth = 80f;
-            var buttonHeight = 35f;
-            var buttonSpacing = 15f; // 按钮间距
-            var rightMargin = 30f;   // 右侧边距
+            // 创建按钮 - 居中排列
+            var buttonWidth = 70f;
+            var buttonHeight = 32f;
+            var buttonSpacing = 15f;
+            var totalButtonWidth = 2 * buttonWidth + buttonSpacing;
+            var startX = (buttonPanel.Width - totalButtonWidth) / 2;
             
             _confirmButton = UIHelper.CreatePrimaryButton("确认");
             _confirmButton.Size = new Float2(buttonWidth, buttonHeight);
-            // 确保按钮在面板范围内 - 从右往左计算位置
-            var confirmX = buttonPanel.Width - 2 * buttonWidth - buttonSpacing - rightMargin;
-            _confirmButton.Location = new Float2(Math.Max(10, confirmX), 12); // 确保不会超出左边界
+            _confirmButton.Location = new Float2(startX, 11);
             _confirmButton.ButtonClicked += OnConfirmClicked;
             _confirmButton.Visible = true;
             _confirmButton.Enabled = true;
-            // 根据UI组件显示规范，显式设置属性
-            FlaxEngine.Debug.Log($"确认按钮创建: 位置={_confirmButton.Location}, 尺寸={_confirmButton.Size}, 可见={_confirmButton.Visible}, 启用={_confirmButton.Enabled}");
+            FlaxEngine.Debug.Log($"确认按钮创建: 位置={_confirmButton.Location}, 尺寸={_confirmButton.Size}");
             buttonPanel.AddChild(_confirmButton);
 
             _cancelButton = UIHelper.CreateSecondaryButton("取消");
             _cancelButton.Size = new Float2(buttonWidth, buttonHeight);
-            // 取消按钮在确认按钮右侧
-            var cancelX = buttonPanel.Width - buttonWidth - rightMargin;
-            _cancelButton.Location = new Float2(Math.Max(confirmX + buttonWidth + buttonSpacing, cancelX), 12);
+            _cancelButton.Location = new Float2(startX + buttonWidth + buttonSpacing, 11);
             _cancelButton.ButtonClicked += OnCancelClicked;
             _cancelButton.Visible = true;
             _cancelButton.Enabled = true;
-            // 根据UI组件显示规范，显式设置属性
-            FlaxEngine.Debug.Log($"取消按钮创建: 位置={_cancelButton.Location}, 尺寸={_cancelButton.Size}, 可见={_cancelButton.Visible}, 启用={_cancelButton.Enabled}");
+            FlaxEngine.Debug.Log($"取消按钮创建: 位置={_cancelButton.Location}, 尺寸={_cancelButton.Size}");
             buttonPanel.AddChild(_cancelButton);
 
             _dialogPanel.AddChild(buttonPanel);
@@ -241,7 +242,15 @@ namespace HundunWorld.Game.UI.Components
             CreateStarParticleEffect();
 
             _overlay.AddChild(_dialogPanel);
+            
             _uICanvas = UIHelper.CreateUICanvas("ConfirmDialogUI");
+            _uICanvas.RenderMode = CanvasRenderMode.ScreenSpace;
+            _uICanvas.Order = 1000;
+            _uICanvas.ReceivesEvents = true;
+            _uICanvas.GUI.AnchorPreset = AnchorPresets.StretchAll;
+            _uICanvas.GUI.Pivot = new Float2(0.5f, 0.5f);
+            _uICanvas.GUI.Offsets = Margin.Zero;
+            _uICanvas.GUI.Size = Screen.Size;
             _uICanvas.GUI.AddChild(_overlay);
         }
 
@@ -582,7 +591,7 @@ namespace HundunWorld.Game.UI.Components
         }
 
         /// <summary>
-        /// 更新对话框高度以适应内容 - 使用UIHelper计算方法
+        /// 更新对话框高度以适应内容
         /// </summary>
         private void UpdateDialogHeight()
         {
@@ -594,7 +603,12 @@ namespace HundunWorld.Game.UI.Components
 
             // 使用UIHelper计算最终尺寸
             var newSize = UIHelper.CalculateDialogSize(contentHeight, _iconImage.Visible, _items.Count);
+            
+            // 保持 AnchorPreset 和 Pivot 设置
             _dialogPanel.Size = newSize;
+            _dialogPanel.AnchorPreset = AnchorPresets.MiddleCenter;
+            _dialogPanel.Pivot = new Float2(0.5f, 0.5f);
+            _dialogPanel.Location = Float2.Zero;
 
             // 更新边框宽度
             _topBorder.Size = new Float2(_dialogPanel.Width, 3);
@@ -619,25 +633,24 @@ namespace HundunWorld.Game.UI.Components
                 if (buttonPanel != null)
                 {
                     // 更新按钮面板位置和尺寸
-                    buttonPanel.Size = new Float2(_dialogPanel.Width, 60);
-                    buttonPanel.Location = new Float2(0, _dialogPanel.Height - 60);
-                    buttonPanel.CornerRadius = 12f;
+                    buttonPanel.Size = new Float2(_dialogPanel.Width, 55);
+                    buttonPanel.Location = new Float2(0, _dialogPanel.Height - 55);
+                    buttonPanel.CornerRadius = 10f;
                     
-                    // 重新计算按钮位置
-                    var buttonWidth = 80f;
+                    // 重新计算按钮位置 - 居中排列
+                    var buttonWidth = 70f;
                     var buttonSpacing = 15f;
-                    var rightMargin = 30f;
+                    var totalButtonWidth = 2 * buttonWidth + buttonSpacing;
+                    var startX = (buttonPanel.Width - totalButtonWidth) / 2;
                     
                     if (_confirmButton != null)
                     {
-                        var confirmX = buttonPanel.Width - 2 * buttonWidth - buttonSpacing - rightMargin;
-                        _confirmButton.Location = new Float2(Math.Max(10, confirmX), 12);
+                        _confirmButton.Location = new Float2(startX, 11);
                     }
                     
                     if (_cancelButton != null)
                     {
-                        var cancelX = buttonPanel.Width - buttonWidth - rightMargin;
-                        _cancelButton.Location = new Float2(cancelX, 12);
+                        _cancelButton.Location = new Float2(startX + buttonWidth + buttonSpacing, 11);
                     }
                     
                     FlaxEngine.Debug.Log($"按钮位置已更新 - 面板尺寸: {buttonPanel.Size}, 确认按钮: {_confirmButton?.Location}, 取消按钮: {_cancelButton?.Location}");
@@ -647,34 +660,13 @@ namespace HundunWorld.Game.UI.Components
             // 更新图标位置（水平居中）
             _iconImage.Location = new Float2((_dialogPanel.Width - 50) / 2, 65);
 
-            // 确保水平居中 - 使用ResponsiveLayoutCalculator
-            CenterDialog();
+            // 保持 AnchorPreset 和 Pivot 设置
+            _dialogPanel.AnchorPreset = AnchorPresets.MiddleCenter;
+            _dialogPanel.Pivot = new Float2(0.5f, 0.5f);
+            _dialogPanel.Location = Float2.Zero;
             
             // 更新粒子效果位置
             UpdateParticleEffectTransform();
-        }
-
-        /// <summary>
-        /// 将对话框居中显示 - 使用ResponsiveLayoutCalculator进行精确计算
-        /// </summary>
-        private void CenterDialog()
-        {
-            if (_dialogPanel == null) return;
-            
-            // 使用ResponsiveLayoutCalculator进行精确居中计算
-            Float2 centerPosition;
-            if (ResponsiveLayoutCalculator.IsUltraWideScreen())
-            {
-                centerPosition = ResponsiveLayoutCalculator.CalculateUltraWideCenterPosition(_dialogPanel.Size);
-            }
-            else
-            {
-                centerPosition = ResponsiveLayoutCalculator.CalculateCenterPosition(_dialogPanel.Size);
-            }
-            
-            _dialogPanel.Location = centerPosition;
-            
-            FlaxEngine.Debug.Log($"ConfirmDialog居中计算: 屏幕尺寸={Screen.Size}, 对话框尺寸={_dialogPanel.Size}, 位置={centerPosition}");
         }
 
         /// <summary>
@@ -796,14 +788,16 @@ namespace HundunWorld.Game.UI.Components
                         var newHeight = _dialogPanel.Height - 60; // 移除按钮区域的60px高度
                         _dialogPanel.Size = new Float2(_dialogPanel.Width, newHeight);
                         
+                        // 保持 AnchorPreset 和 Pivot 设置
+                        _dialogPanel.AnchorPreset = AnchorPresets.MiddleCenter;
+                        _dialogPanel.Pivot = new Float2(0.5f, 0.5f);
+                        _dialogPanel.Location = Float2.Zero;
+                        
                         // 更新下边框位置
                         if (_bottomBorder != null)
                         {
                             _bottomBorder.Location = new Float2(0, newHeight - 3);
                         }
-                        
-                        // 重新居中
-                        CenterDialog();
                     }
                 }
                 
@@ -823,7 +817,12 @@ namespace HundunWorld.Game.UI.Components
             // 根据UI界面居中规范，确保对话框居中显示
             _overlay.Visible = true;
             
-            FlaxEngine.Debug.Log($"对话框显示完成 - 遮罩层可见: {_overlay.Visible}");
+            // 确保 AnchorPreset 和 Pivot 设置正确
+            _dialogPanel.AnchorPreset = AnchorPresets.MiddleCenter;
+            _dialogPanel.Pivot = new Float2(0.5f, 0.5f);
+            _dialogPanel.Location = Float2.Zero;
+            
+            FlaxEngine.Debug.Log($"对话框显示完成 - 遮罩层可见: {_overlay.Visible}, 对话框尺寸: {_dialogPanel.Size}");
 
             // 更新对话框高度
             UpdateDialogHeight();

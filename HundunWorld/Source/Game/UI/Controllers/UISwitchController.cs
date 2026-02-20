@@ -100,6 +100,7 @@ namespace Game.UI.Controllers
                             var gameObject = Level.FindActor("UISwitchController") ?? new EmptyActor();
                             gameObject.Name = "UISwitchController";
                             _instance = gameObject.GetScript<UISwitchController>() ?? gameObject.AddScript<UISwitchController>();
+                            _instance.OnAwake();
                             Engine.RequestingExit += () => { _instance = null; };
                         }
                     }
