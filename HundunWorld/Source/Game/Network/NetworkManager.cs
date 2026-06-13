@@ -9,6 +9,7 @@ using Game.Game.Network;
 using Horizon.Game.Message;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
+using HundunWorld.Game.Services;
 using TouchSocket.Core;
 using TouchSocket.Sockets;
 
@@ -38,10 +39,46 @@ namespace HundunWorld.Game.Network
         private volatile bool _isDisposing = false;
         private UnhandledExceptionEventHandler _unhandledExceptionHandler;
         List<GatewayInfo> _gatewayList = new List<GatewayInfo>();
+        private readonly List<IMessageHandler> _registeredHandlers = new List<IMessageHandler>();
         public ConnectionStatus ConnectionStatus => _connectionStatus;
+        
+        /// <summary>
+        /// 游戏ID
+        /// </summary>
+        public uint GameId { get; set; } = 1;
+        
+        /// <summary>
+        /// 分区ID
+        /// </summary>
+        public uint ZoneId { get; set; } = 1;
+        
+        /// <summary>
+        /// 服务器ID
+        /// </summary>
+        public uint ServerId { get; set; } = 1;
+        
+        /// <summary>
+        /// 用户ID
+        /// </summary>
+        public ulong UserId { get; set; }
+        
+        /// <summary>
+        /// 用户鉴权令牌
+        /// </summary>
+        public string AuthToken { get; set; } = "";
 
         public event Action<ConnectionStatus> ConnectionStatusChanged;
         public event Action<string> ConnectionError;
+        
+        /// <summary>
+        /// 鉴权令牌过期事件，触发时通知上层需要重新登录
+        /// </summary>
+        public event Action AuthTokenExpired;
+        
+        /// <summary>
+        /// 令牌自动刷新中标志，防止并发刷新
+        /// </summary>
+        private volatile bool _isTokenRefreshing = false;
 
         #endregion
 
@@ -181,8 +218,6 @@ namespace HundunWorld.Game.Network
                 if (_client == null || _client.DisposedValue)
                 {
                     EnhancedLogging.LogInfo("[ConnectAsync] 检测到客户端已释放，正在重新初始化");
-                    // 重置释放标志，允许重新初始化
-                    _isDisposing = false;
                     await InitializeClient(gatewayList ?? _gatewayList);
                 }
 
@@ -413,22 +448,25 @@ namespace HundunWorld.Game.Network
                         EnhancedLogging.LogInfo($"[OnDataReceived] 成功获取消息: Type={messagePacket.Header.MessageType}, Service={messagePacket.ServiceType}");
 
                         // 验证消息头的必需字段
-                        if (messagePacket.Header.GameId <= 0)
+                        if (!messagePacket.Header.IsResponse)
                         {
-                            EnhancedLogging.LogWarning($"[OnDataReceived] 收到无效消息: GameId必须为正数");
-                            return;
-                        }
+                            if (messagePacket.Header.GameId <= 0)
+                            {
+                                EnhancedLogging.LogWarning($"[OnDataReceived] 收到无效请求消息: GameId必须为正数");
+                                return;
+                            }
 
-                        if (messagePacket.Header.ServerId <= 0)
-                        {
-                            EnhancedLogging.LogWarning($"[OnDataReceived] 收到无效消息: ServerId必须为正数");
-                            return;
-                        }
+                            if (messagePacket.Header.ServerId <= 0)
+                            {
+                                EnhancedLogging.LogWarning($"[OnDataReceived] 收到无效请求消息: ServerId必须为正数");
+                                return;
+                            }
 
-                        if (messagePacket.Header.ZoneId <= 0)
-                        {
-                            EnhancedLogging.LogWarning($"[OnDataReceived] 收到无效消息: ZoneId必须为正数");
-                            return;
+                            if (messagePacket.Header.ZoneId <= 0)
+                            {
+                                EnhancedLogging.LogWarning($"[OnDataReceived] 收到无效请求消息: ZoneId必须为正数");
+                                return;
+                            }
                         }
 
                         await ProcessMessageAsync(sender, messagePacket);
@@ -496,7 +534,6 @@ namespace HundunWorld.Game.Network
         /// <summary>
         /// 扩展方法：自动注册所有实现IMessageHandler接口的类型
         /// </summary>
-        /// <param name="assemblies">要扫描的程序集，如果为空则扫描当前程序集</param>
         public void AddAllMessageHandlers()
         {
             // 扫描所有已加载的程序集
@@ -507,11 +544,36 @@ namespace HundunWorld.Game.Network
 
             foreach (var handlerType in handlerTypes)
             {
-                var handlerInstance = Activator.CreateInstance(handlerType) as IMessageHandler;
-                foreach (var item in handlerInstance.MessageTypes)
+                IMessageHandler handlerInstance = null;
+                try
                 {
-                    _messageProcessor.RegisterHandler(item, handlerInstance);
-                    Debug.Log($"  - {item.GetDescription()}");
+                    // 优先检测需要 NetworkManager 参数的构造函数
+                    var ctorWithNetworkManager = handlerType.GetConstructor(new[] { typeof(NetworkManager) });
+                    if (ctorWithNetworkManager != null)
+                    {
+                        handlerInstance = Activator.CreateInstance(handlerType, this) as IMessageHandler;
+                    }
+                    else
+                    {
+                        handlerInstance = Activator.CreateInstance(handlerType) as IMessageHandler;
+                    }
+
+                    if (handlerInstance == null)
+                    {
+                        Debug.LogWarning($"  [跳过] 无法创建处理器实例: {handlerType.Name}");
+                        continue;
+                    }
+
+                    _registeredHandlers.Add(handlerInstance);
+                    foreach (var item in handlerInstance.MessageTypes)
+                    {
+                        _messageProcessor.RegisterHandler(item, handlerInstance);
+                        Debug.Log($"  - {item.GetDescription()}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"  [跳过] 处理器 {handlerType.Name} 注册失败: {ex.Message}");
                 }
             }
 
@@ -522,6 +584,26 @@ namespace HundunWorld.Game.Network
 
 
 
+
+        /// <summary>
+        /// 获取已注册的指定类型消息处理器
+        /// </summary>
+        /// <typeparam name="T">处理器类型</typeparam>
+        /// <returns>处理器实例，未找到返回 null</returns>
+        public T GetHandler<T>() where T : class, IMessageHandler
+        {
+            return _registeredHandlers.OfType<T>().FirstOrDefault();
+        }
+
+        /// <summary>
+        /// 按类型获取已注册的消息处理器（非泛型版本，供跨模块反射调用）
+        /// </summary>
+        /// <param name="handlerType">处理器类型</param>
+        /// <returns>处理器实例，未找到返回 null</returns>
+        public IMessageHandler GetHandler(Type handlerType)
+        {
+            return _registeredHandlers.FirstOrDefault(h => handlerType.IsInstanceOfType(h));
+        }
 
         /// <summary>
         /// 处理消息
@@ -545,11 +627,15 @@ namespace HundunWorld.Game.Network
                         await HandleHeartbeatMessageAsync(sender, (HeartbeatMessage)messagePacket.Body);
                         break;
                     case MessageType.Error:
-                        await HandleErrorMessageAsync(sender, (ErrorMessage)messagePacket.Body);
+                        if (messagePacket.Body is AuthenticationError authError)
+                            await HandleAuthenticationErrorAsync(sender, authError);
+                        else if (messagePacket.Body is Horizon.Game.Message.Network.ErrorMessage errorMessage)
+                            await HandleErrorMessageAsync(sender, errorMessage);
+                        else
+                            EnhancedLogging.LogWarning($"[ProcessMessageAsync] 未知的Error消息体类型: {messagePacket.Body?.GetType().Name}");
                         break;
                     default:
                         await _messageProcessor.ProcessMessageAsync(messagePacket);
-                        EnhancedLogging.LogInfo($"[ProcessMessageAsync] 收到未处理的消息类型: {messagePacket.Header.MessageType}");
                         break;
                 }
             }
@@ -586,7 +672,7 @@ namespace HundunWorld.Game.Network
         /// <summary>
         /// 处理错误消息
         /// </summary>
-        private async Task<bool> HandleErrorMessageAsync(ITcpClient sender, ErrorMessage message)
+        private async Task<bool> HandleErrorMessageAsync(ITcpClient sender, Horizon.Game.Message.Network.ErrorMessage message)
         {
             EnhancedLogging.LogWarning($"[HandleErrorMessageAsync] 收到错误消息: {message.Message}");
 
@@ -594,6 +680,139 @@ namespace HundunWorld.Game.Network
             ConnectionError?.Invoke(message.Message);
 
             return true;
+        }
+
+        /// <summary>
+        /// 处理认证错误消息
+        /// 当收到令牌过期错误（ErrorCode=1007）时，自动尝试刷新令牌并重新登录
+        /// </summary>
+        private async Task<bool> HandleAuthenticationErrorAsync(ITcpClient sender, AuthenticationError message)
+        {
+            EnhancedLogging.LogWarning($"[HandleAuthenticationErrorAsync] 收到认证错误消息: Code={message.ErrorCode}, Message={message.ErrorMessage}");
+
+            // 鉴权令牌过期（ErrorCode=1007），尝试自动刷新令牌
+            if (message.ErrorCode == 1007 && !_isTokenRefreshing)
+            {
+                _ = Task.Run(async () => await TryRefreshAuthTokenAsync());
+            }
+            else
+            {
+                // 非过期错误或正在刷新中，仅通知
+                ConnectionError?.Invoke(message.ErrorMessage);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 尝试自动刷新鉴权令牌
+        /// 流程：刷新HTTP令牌获取新ImAuthToken → 发送TokenLoginRequest → 服务端签发新AuthToken → 更新本地AuthToken → 恢复心跳
+        /// </summary>
+        private async Task TryRefreshAuthTokenAsync()
+        {
+            if (_isTokenRefreshing) return;
+            _isTokenRefreshing = true;
+
+            try
+            {
+                EnhancedLogging.LogInfo("[TokenRefresh] 检测到鉴权令牌过期，开始自动刷新令牌");
+
+                // 1. 停止心跳，防止持续发送过期令牌导致日志刷屏
+                _heartbeatManager?.StopHeartbeat();
+
+                // 2. 通过HTTP刷新令牌，获取新的ImAuthToken
+                var authService = GengDiAuthService.Instance;
+                var refreshed = await authService.RefreshTokenAsync();
+
+                if (!refreshed)
+                {
+                    EnhancedLogging.LogWarning("[TokenRefresh] HTTP令牌刷新失败，通知上层需要重新登录");
+                    AuthTokenExpired?.Invoke();
+                    ConnectionError?.Invoke("登录已过期，请重新登录");
+                    return;
+                }
+
+                var newImAuthToken = GengDiAuthService.GetImAuthToken();
+                var passportId = GengDiAuthService.GetPassportId();
+
+                if (string.IsNullOrEmpty(newImAuthToken) || string.IsNullOrEmpty(passportId))
+                {
+                    EnhancedLogging.LogWarning("[TokenRefresh] 刷新后令牌或PassportId为空，通知重新登录");
+                    AuthTokenExpired?.Invoke();
+                    ConnectionError?.Invoke("登录已过期，请重新登录");
+                    return;
+                }
+
+                // 3. 构建TokenLoginRequest发送消息包
+                // 服务端TokenLogin路径使用ValidateTokenWithoutExpiryCheck，允许过期令牌解密出身份信息后签发新令牌
+                var tokenLoginRequest = new TokenLoginRequest
+                {
+                    AuthToken = newImAuthToken,
+                    PassportId = passportId,
+                    UserId = (long)UserId,
+                    MachineId = MachineIdentifier.GetMachineGuid()
+                };
+
+                var messagePacket = new HorizonMessagePacket
+                {
+                    Header = new MessageHeader
+                    {
+                        MessageId = Guid.NewGuid().ToString(),
+                        MessageType = MessageType.TokenLoginRequest,
+                        ServiceType = ServiceType.Account,
+                        GameId = GameId,
+                        ZoneId = ZoneId,
+                        ServerId = ServerId,
+                        UserId = UserId,
+                        AuthToken = newImAuthToken,
+                        MachineId = MachineIdentifier.GetMachineGuid(),
+                        Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                    },
+                    ServiceType = ServiceType.Account,
+                    Body = tokenLoginRequest
+                };
+
+                EnhancedLogging.LogInfo("[TokenRefresh] 发送TokenLogin请求以获取新的鉴权令牌");
+
+                // 4. 发送TokenLogin请求
+                // 响应将由LoginResponseHandler处理，其中会调用AuthenticationManager.HandleLoginResponse
+                // 自动更新NetworkManager.AuthToken
+                var sent = await SendMessageAsync(messagePacket);
+                if (sent)
+                {
+                    EnhancedLogging.LogInfo("[TokenRefresh] TokenLogin请求已发送，等待服务端响应后自动恢复心跳");
+                    // 延迟恢复心跳，给服务端处理TokenLogin响应的时间
+                    // LoginResponseHandler处理TokenLoginResponse时会自动更新NetworkManager.AuthToken
+                    await Task.Delay(5000);
+                    if (!string.IsNullOrEmpty(AuthToken))
+                    {
+                        _heartbeatManager?.StartHeartbeat();
+                        EnhancedLogging.LogInfo("[TokenRefresh] 令牌刷新完成，心跳已恢复");
+                    }
+                    else
+                    {
+                        EnhancedLogging.LogWarning("[TokenRefresh] 等待响应后AuthToken仍为空，心跳将在下次连接时恢复");
+                        AuthTokenExpired?.Invoke();
+                    }
+                }
+                else
+                {
+                    EnhancedLogging.LogWarning("[TokenRefresh] TokenLogin请求发送失败，恢复心跳");
+                    _heartbeatManager?.StartHeartbeat();
+                    AuthTokenExpired?.Invoke();
+                }
+            }
+            catch (Exception ex)
+            {
+                EnhancedLogging.LogError($"[TokenRefresh] 令牌刷新过程中发生异常: {ex.Message}");
+                EnhancedDiagnostics.LogException(ex, "令牌自动刷新");
+                _heartbeatManager?.StartHeartbeat();
+                ConnectionError?.Invoke("登录令牌刷新失败，请重新登录");
+            }
+            finally
+            {
+                _isTokenRefreshing = false;
+            }
         }
 
         #endregion
@@ -667,7 +886,38 @@ namespace HundunWorld.Game.Network
                 return false;
             }
 
-            return await SendAsync(messagePacket.Body);
+            if (_client == null || !_client.Online)
+            {
+                EnhancedLogging.LogWarning("[SendMessageAsync] 客户端未连接，无法发送消息");
+                return false;
+            }
+
+            lock (_sendLock)
+            {
+                if (_connectionStatus != ConnectionStatus.Connected)
+                {
+                    EnhancedLogging.LogWarning($"[SendMessageAsync] 连接状态异常: {_connectionStatus}，无法发送消息");
+                    return false;
+                }
+            }
+
+            try
+            {
+                var packedData = _messageAdapter.PackPacket(messagePacket);
+
+                EnhancedLogging.LogInfo($"[SendMessageAsync] 准备发送消息包，数据长度: {packedData.Length} 字节");
+
+                await _client.SendAsync(packedData);
+                EnhancedLogging.LogInfo($"[SendMessageAsync] 消息包发送成功: {messagePacket.Header.MessageType}");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                EnhancedLogging.LogError($"[SendMessageAsync] 发送消息包失败: {ex.Message}");
+                EnhancedDiagnostics.LogException(ex, "发送消息包");
+                return false;
+            }
         }
 
         /// <summary>
@@ -885,18 +1135,29 @@ namespace HundunWorld.Game.Network
                 }
 
                 // 取消网关状态检查
-                if (_gatewayCheckCts != null && !_gatewayCheckCts.Token.IsCancellationRequested)
+                if (_gatewayCheckCts != null)
                 {
-                    _gatewayCheckCts.Cancel();
+                    try
+                    {
+                        if (!_gatewayCheckCts.Token.IsCancellationRequested)
+                        {
+                            _gatewayCheckCts.Cancel();
+                        }
+                    }
+                    catch (ObjectDisposedException) { }
                 }
 
                 // 取消连接令牌
                 if (_connectionCts != null)
                 {
-                    if (!_connectionCts.IsCancellationRequested)
+                    try
                     {
-                        _connectionCts.Cancel();
+                        if (!_connectionCts.IsCancellationRequested)
+                        {
+                            _connectionCts.Cancel();
+                        }
                     }
+                    catch (ObjectDisposedException) { }
                     _connectionCts.Dispose();
                 }
 
@@ -968,6 +1229,7 @@ namespace HundunWorld.Game.Network
                 // 清理自身事件委托，防止外部引用残留
                 ConnectionStatusChanged = null;
                 ConnectionError = null;
+                AuthTokenExpired = null;
 
                 EnhancedDiagnostics.LogDiagnostic("网络管理器资源已释放");
             }

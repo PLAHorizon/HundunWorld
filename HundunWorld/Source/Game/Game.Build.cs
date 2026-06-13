@@ -5,39 +5,37 @@ using System.IO;
 
 public class Game : GameModule
 {
-    /// <inheritdoc />
     public override void Init()
     {
         base.Init();
-
-        // C#-only scripting
         BuildNativeCode = false;
     }
 
-    /// <inheritdoc />
     public override void Setup(BuildOptions options)
     {
         base.Setup(options);
 
         options.ScriptingAPI.IgnoreMissingDocumentationWarnings = true;
 
-        // 添加外部DLL引用
         string outputPath = AppDomain.CurrentDomain.BaseDirectory;
 
+        // Common DLLs shared between editor and runtime builds
         string[] dlls = {
+             "Horizon.Game.Message.dll",
+                "Horizon.Game.ECS.dll",
+                "Horizon.Game.ECS.Arch.dll",
             "Microsoft.Extensions.ObjectPool.dll",
             "Microsoft.Extensions.DependencyInjection.Abstractions.dll",
             "Microsoft.Extensions.Options.dll",
+            "Microsoft.Extensions.Primitives.dll",
+            "Microsoft.Extensions.DependencyModel.dll",
+            "Microsoft.DotNet.PlatformAbstractions.dll",
+            "System.IO.Hashing.dll",
             "Orleans.Serialization.dll",
             "Arch.dll",
-            "System.Net.Sockets.dll",
-            "System.Net.Ping.dll",
-            "System.Net.NetworkInformation.dll",
-            "Microsoft.Win32.Primitives.dll",
             "TouchSocket.dll",
             "TouchSocket.Core.dll",
             "MemoryPack.Core.dll",
-            "Horizon.Game.Message.dll",
             "K4os.Compression.LZ4.dll",
             "Collections.Pooled.dll",
             "Schedulers.dll",
@@ -54,19 +52,36 @@ public class Game : GameModule
             {
                 options.ScriptingAPI.FileReferences.Add(dllPath);
             }
+            else
+            {
+                string altPath = Path.Combine(outputPath, "Tools", dll);
+                if (File.Exists(altPath))
+                {
+                    options.ScriptingAPI.FileReferences.Add(altPath);
+                }
+                else
+                {
+                    throw new FileNotFoundException($"关键DLL缺失: {dll}，在 {outputPath} 和 {altPath} 均未找到。请确保所有依赖DLL已放置到正确位置。");
+                }
+            }
         }
 
-        // 添加系统引用
-        options.ScriptingAPI.SystemReferences.Add("System.Text.Json");
-        options.ScriptingAPI.SystemReferences.Add("System.Net.Sockets");
-        options.ScriptingAPI.SystemReferences.Add("System.Numerics.Vectors"); // 添加这行
+        
 
-        // 添加其他必要的系统引用
+        options.ScriptingAPI.SystemReferences.Add("System.Text.Json");
+        options.ScriptingAPI.SystemReferences.Add("System.Net.Http");
+        options.ScriptingAPI.SystemReferences.Add("System.Net.HttpListener");
+        options.ScriptingAPI.SystemReferences.Add("System.Net.Sockets");
+        options.ScriptingAPI.SystemReferences.Add("System.Net.Ping");
+        options.ScriptingAPI.SystemReferences.Add("System.Net.NetworkInformation");
+        options.ScriptingAPI.SystemReferences.Add("System.Threading");
+        options.ScriptingAPI.SystemReferences.Add("Microsoft.Win32.Primitives");
+        options.ScriptingAPI.SystemReferences.Add("Microsoft.Win32.Registry");
+        options.ScriptingAPI.SystemReferences.Add("System.Diagnostics.Process");
+        options.ScriptingAPI.SystemReferences.Add("System.Numerics.Vectors");
         options.ScriptingAPI.SystemReferences.Add("System.Runtime");
         options.ScriptingAPI.SystemReferences.Add("System.Collections");
         options.ScriptingAPI.SystemReferences.Add("System.Linq");
         options.ScriptingAPI.SystemReferences.Add("System.Numerics");
-        
-
     }
 }

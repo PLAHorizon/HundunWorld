@@ -31,6 +31,7 @@ namespace Horizon.Core.Abstract
         string Avatar { get; }
         string Email { get; }
         string Phone { get; }
+        string UserId { get; }
         PassportType PassportType { get; }
         /// <summary>
         /// 

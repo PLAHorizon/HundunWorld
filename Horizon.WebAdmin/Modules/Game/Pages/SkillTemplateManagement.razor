@@ -1,0 +1,332 @@
+@page "/game/skill-templates"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Game.Services
+@namespace Horizon.WebAdmin.Modules.Game.Pages
+
+@inject GameSkillService SkillService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">技能模板</TypographyTitle>
+        <Space>
+            <Button Size="@ButtonSize.Small" OnClick="LoadSkills">刷新</Button>
+            <Select TItem="string" TItemValue="string" @bind-Value="@_typeFilter" Style="width:140px" Size="@InputSize.Small" OnChange="OnFilterChanged">
+                <SelectOption TItem="string" TItemValue="string" Value='@("")'>全部</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("主动攻击")'>主动攻击</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("主动辅助")'>主动辅助</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("被动增益")'>被动增益</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("心法")'>心法</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("轻功")'>轻功</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("内功")'>内功</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("绝学")'>绝学</SelectOption>
+            </Select>
+            <Select TItem="string" TItemValue="string" @bind-Value="@_schoolFilter" Style="width:120px" Size="@InputSize.Small" OnChange="OnFilterChanged">
+                <SelectOption TItem="string" TItemValue="string" Value='@("")'>全部</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("外功")'>外功</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("内功")'>内功</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("医术")'>医术</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("毒术")'>毒术</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("音律")'>音律</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("机关")'>机关</SelectOption>
+            </Select>
+        </Space>
+    </div>
+
+    @if (_loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="JsonElement" DataSource="@_skills" Size="@TableSize.Small" RowKey="@GetSkillRowKey">
+            <Column TData="string" Title="技能ID">
+                @(context.TryGetProperty("skillId", out var p) ? p.GetInt32().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="技能名">
+                @(context.TryGetProperty("name", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="类型">
+                <Tag Color="@GetSkillTypeColor(context)">@GetSkillTypeText(context)</Tag>
+            </Column>
+            <Column TData="string" Title="门派">
+                <Tag Color="@GetSchoolColor(context)">@GetSchoolText(context)</Tag>
+            </Column>
+            <Column TData="string" Title="职业限制">
+                @(context.TryGetProperty("professionLimit", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="最大等级">
+                @(context.TryGetProperty("maxLevel", out var p) ? p.GetInt32().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="学习等级要求">
+                @(context.TryGetProperty("learnLevelRequire", out var p) ? p.GetInt32().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="境界要求">
+                @(context.TryGetProperty("realmRequire", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="操作">
+                <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowDetail(context)">查看详情</Button>
+            </Column>
+        </Table>
+    }
+
+    <Drawer Title="@_detailDrawerTitle" Visible="@_detailDrawerVisible" OnClose="CloseDetail" Width="720" Placement="@DrawerPlacement.Right">
+        @if (_selectedSkill != null)
+        {
+            var s = _selectedSkill.Value;
+
+            <Card Title="基本信息" Size="@CardSize.Small" Style="margin-bottom:16px;">
+                <Descriptions Column="2" Size="@DescriptionsSize.Small">
+                    <DescriptionsItem Title="技能ID">@(s.TryGetProperty("skillId", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="技能名">@(s.TryGetProperty("name", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="描述" Span="2">@(s.TryGetProperty("description", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="类型">
+                        <Tag Color="@GetSkillTypeColor(s)">@GetSkillTypeText(s)</Tag>
+                    </DescriptionsItem>
+                    <DescriptionsItem Title="门派">
+                        <Tag Color="@GetSchoolColor(s)">@GetSchoolText(s)</Tag>
+                    </DescriptionsItem>
+                    <DescriptionsItem Title="门派ID">@(s.TryGetProperty("sectId", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="职业限制">@(s.TryGetProperty("professionLimit", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="最大等级">@(s.TryGetProperty("maxLevel", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="学习等级要求">@(s.TryGetProperty("learnLevelRequire", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="境界要求">@(s.TryGetProperty("realmRequire", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="前置技能">@(s.TryGetProperty("preSkillId", out var pid) ? $"{pid.GetInt32()}" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="前置技能等级">@(s.TryGetProperty("preSkillLevel", out var plv) ? plv.GetInt32().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="学习消耗">@(s.TryGetProperty("learnCost", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="悟性要求">@(s.TryGetProperty("comprehensionRequire", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                </Descriptions>
+            </Card>
+
+            <Card Title="消耗与冷却" Size="@CardSize.Small" Style="margin-bottom:16px;">
+                <Descriptions Column="1" Size="@DescriptionsSize.Small">
+                    <DescriptionsItem Title="内力消耗公式">@(s.TryGetProperty("energyCostFormula", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="冷却公式">@(s.TryGetProperty("cooldownFormula", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="施法时间公式">@(s.TryGetProperty("castTimeFormula", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                </Descriptions>
+            </Card>
+
+            <Card Title="范围与目标" Size="@CardSize.Small" Style="margin-bottom:16px;">
+                <Descriptions Column="2" Size="@DescriptionsSize.Small">
+                    <DescriptionsItem Title="攻击范围">@(s.TryGetProperty("attackRange", out var p) ? p.GetDouble().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="目标类型">@(s.TryGetProperty("targetType", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="效果范围">@(s.TryGetProperty("effectRange", out var p) ? p.GetDouble().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="最大目标数">@(s.TryGetProperty("maxTargets", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                </Descriptions>
+            </Card>
+
+            <Card Title="技能效果" Size="@CardSize.Small" Style="margin-bottom:16px;">
+                <div style="margin-bottom:12px;">
+                    <div style="font-weight:500; margin-bottom:8px;">技能效果</div>
+                    @if (s.TryGetProperty("skillEffects", out var effectsEl) && effectsEl.ValueKind == JsonValueKind.Array)
+                    {
+                        <pre style="background:#f5f5f5; padding:12px; border-radius:4px; font-size:12px; max-height:200px; overflow:auto;">@JsonSerializer.Serialize(effectsEl, new JsonSerializerOptions { WriteIndented = true })</pre>
+                    }
+                    else if (s.TryGetProperty("skillEffects", out var effectsObj) && effectsObj.ValueKind == JsonValueKind.Object)
+                    {
+                        <pre style="background:#f5f5f5; padding:12px; border-radius:4px; font-size:12px; max-height:200px; overflow:auto;">@JsonSerializer.Serialize(effectsObj, new JsonSerializerOptions { WriteIndented = true })</pre>
+                    }
+                    else
+                    {
+                        <AntDesign.Text Type="@TextElementType.Secondary">暂无数据</AntDesign.Text>
+                    }
+                </div>
+                <div>
+                    <div style="font-weight:500; margin-bottom:8px;">等级效果</div>
+                    @if (s.TryGetProperty("levelEffects", out var lvEffectsEl) && lvEffectsEl.ValueKind == JsonValueKind.Array)
+                    {
+                        <pre style="background:#f5f5f5; padding:12px; border-radius:4px; font-size:12px; max-height:200px; overflow:auto;">@JsonSerializer.Serialize(lvEffectsEl, new JsonSerializerOptions { WriteIndented = true })</pre>
+                    }
+                    else if (s.TryGetProperty("levelEffects", out var lvEffectsObj) && lvEffectsObj.ValueKind == JsonValueKind.Object)
+                    {
+                        <pre style="background:#f5f5f5; padding:12px; border-radius:4px; font-size:12px; max-height:200px; overflow:auto;">@JsonSerializer.Serialize(lvEffectsObj, new JsonSerializerOptions { WriteIndented = true })</pre>
+                    }
+                    else
+                    {
+                        <AntDesign.Text Type="@TextElementType.Secondary">暂无数据</AntDesign.Text>
+                    }
+                </div>
+            </Card>
+
+            <Card Title="进阶信息" Size="@CardSize.Small">
+                <Descriptions Column="2" Size="@DescriptionsSize.Small">
+                    <DescriptionsItem Title="进阶技能ID">@(s.TryGetProperty("advanceSkillId", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="可创建">@(s.TryGetProperty("canCreate", out var p) ? (p.GetBoolean() ? "是" : "否") : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="可进阶">@(s.TryGetProperty("canAdvance", out var p) ? (p.GetBoolean() ? "是" : "否") : "-")</DescriptionsItem>
+                </Descriptions>
+            </Card>
+        }
+    </Drawer>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@_errorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> _skills = new();
+    private bool _loading;
+    private string _errorMessage = "";
+    private bool _detailDrawerVisible;
+    private JsonElement? _selectedSkill;
+    private string _typeFilter = "";
+    private string _schoolFilter = "";
+
+    private string _detailDrawerTitle
+    {
+        get
+        {
+            if (_selectedSkill != null && _selectedSkill.Value.TryGetProperty("name", out var p))
+                return $"技能详情 - {p.GetString() ?? ""}";
+            return "技能详情";
+        }
+    }
+
+    private object GetSkillRowKey(JsonElement x) =>
+        x.TryGetProperty("skillId", out var p) ? (object)p.GetInt32() : 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSkills();
+    }
+
+    private async Task LoadSkills()
+    {
+        _loading = true;
+        _errorMessage = "";
+        try
+        {
+            var result = await SkillService.GetSkillTemplatesAsync(skillType: string.IsNullOrEmpty(_typeFilter) ? null : _typeFilter);
+            if (result?.IsSuccess == true)
+            {
+                var data = result.Data;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    _skills = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    _skills = items.EnumerateArray().ToList();
+                }
+                else
+                {
+                    _skills = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                _skills = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    _errorMessage = result.ErrorMessage ?? "加载技能模板列表失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"加载技能模板列表失败: {ex.Message}";
+            _skills = new List<JsonElement>();
+        }
+        _loading = false;
+    }
+
+    private async Task OnFilterChanged(string? value)
+    {
+        await LoadSkills();
+    }
+
+    private async void ShowDetail(JsonElement skill)
+    {
+        var skillId = skill.TryGetProperty("skillId", out var p) ? p.GetInt32() : 0;
+        try
+        {
+            var result = await SkillService.GetSkillTemplateDetailAsync(skillId);
+            if (result?.IsSuccess == true)
+            {
+                _selectedSkill = result.Data;
+            }
+            else
+            {
+                _selectedSkill = skill;
+            }
+        }
+        catch
+        {
+            _selectedSkill = skill;
+        }
+        _detailDrawerVisible = true;
+    }
+
+    private void CloseDetail()
+    {
+        _detailDrawerVisible = false;
+        _selectedSkill = null;
+    }
+
+    private string GetSkillTypeText(JsonElement s)
+    {
+        if (s.TryGetProperty("type", out var p))
+        {
+            var str = p.ValueKind == JsonValueKind.String ? p.GetString() ?? "" : "";
+            var val = p.ValueKind == JsonValueKind.Number ? p.GetInt32() : -1;
+            return val switch
+            {
+                1 => "主动攻击",
+                2 => "主动辅助",
+                3 => "被动增益",
+                4 => "心法",
+                5 => "轻功",
+                6 => "内功",
+                7 => "绝学",
+                _ => !string.IsNullOrEmpty(str) ? str : "-"
+            };
+        }
+        return "-";
+    }
+
+    private string GetSkillTypeColor(JsonElement s) => GetSkillTypeText(s) switch
+    {
+        "主动攻击" => "red",
+        "主动辅助" => "blue",
+        "被动增益" => "green",
+        "心法" => "purple",
+        "轻功" => "cyan",
+        "内功" => "orange",
+        "绝学" => "gold",
+        _ => "default"
+    };
+
+    private string GetSchoolText(JsonElement s)
+    {
+        if (s.TryGetProperty("school", out var p))
+        {
+            var str = p.ValueKind == JsonValueKind.String ? p.GetString() ?? "" : "";
+            var val = p.ValueKind == JsonValueKind.Number ? p.GetInt32() : -1;
+            return val switch
+            {
+                1 => "外功",
+                2 => "内功",
+                3 => "医术",
+                4 => "毒术",
+                5 => "音律",
+                6 => "机关",
+                _ => !string.IsNullOrEmpty(str) ? str : "-"
+            };
+        }
+        return "-";
+    }
+
+    private string GetSchoolColor(JsonElement s) => GetSchoolText(s) switch
+    {
+        "外功" => "red",
+        "内功" => "blue",
+        "医术" => "green",
+        "毒术" => "purple",
+        "音律" => "cyan",
+        "机关" => "orange",
+        _ => "default"
+    };
+}

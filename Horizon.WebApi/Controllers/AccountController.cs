@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,6 +8,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.IdentityModel.Tokens;
 using Microsoft.Extensions.Options;
 using Horizon.Core.Options;
+using Orleans;
 using Orleans.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Threading;
@@ -23,6 +24,7 @@ using Horizon.Core.Abstract.Enums;
 using Horizon.Core;
 using Horizon.WebApi.Configs;
 using Horizon.Orleans.Interface;
+using Horizon.Core.Security;
 
 namespace Horizon.WebApi.Controllers
 {
@@ -36,14 +38,19 @@ namespace Horizon.WebApi.Controllers
     {
         private readonly ILogger<AccountController> _logger;
         private readonly IPassportCurrentUser _passportCurrent;
+        private readonly UserAuthTokenProvider _authTokenProvider;
+
         public AccountController(IOptions<AdoNetOptions> options,
                                 IOptions<ClusterOptions> clusterOptions,
                                 ILogger<AccountController> logger,
-                                IPassportCurrentUser passportCurrent)
-                                : base(options, clusterOptions, logger)
+                                IPassportCurrentUser passportCurrent,
+                                IClusterClient clusterClient,
+                                UserAuthTokenProvider authTokenProvider)
+                                : base(options, clusterOptions, logger, clusterClient)
         {
             _logger = logger;
             _passportCurrent = passportCurrent;
+            _authTokenProvider = authTokenProvider;
         }
 
         /// <summary>
@@ -54,10 +61,17 @@ namespace Horizon.WebApi.Controllers
         /// <param name="dto"></param>
         /// <returns></returns>
         [AllowAnonymous]
-        [HttpPost("sigin")]
+        [HttpPost("signin")]
         public async Task<ResultVM<LoginResultDto>> LoginAsync([FromServices] IDiscoveryCache discoverCache, [FromServices] IHttpClientFactory httpClientFactory, [FromBody] LoginDto dto)
         {
             ResultVM<LoginResultDto> result = new ResultVM<LoginResultDto>();
+
+            if (string.IsNullOrWhiteSpace(dto.PassportId))
+            {
+                result.IsSuccess = false;
+                result.ErrorMessage = "通行证号不能为空";
+                return result;
+            }
 
             var httpClient = httpClientFactory.CreateClient();
 
@@ -88,12 +102,18 @@ namespace Horizon.WebApi.Controllers
             }
             else
             {
+                // 使用客户端上传的机器ID生成鉴权令牌（机器ID比IP更稳定，适用于NAT/动态IP场景）
+                var machineId = dto.MachineId ?? string.Empty;
+                var imAuthToken = TryGenerateImAuthToken(dto.PassportId, machineId);
+
                 result.Data = new LoginResultDto
                 {
                     AccessToken = tokenResponse.AccessToken,
                     RefreshToken = tokenResponse.RefreshToken,
                     ExpiresIn = tokenResponse.ExpiresIn,
-                    ExpiresTime = DateTime.Now.AddSeconds(tokenResponse.ExpiresIn)
+                    ExpiresTime = DateTime.Now.AddSeconds(tokenResponse.ExpiresIn),
+                    ImAuthToken = imAuthToken,
+
                 };
                 result.IsSuccess = true;
             }
@@ -107,9 +127,10 @@ namespace Horizon.WebApi.Controllers
         /// <param name="discoverCache"></param>
         /// <param name="httpClientFactory"></param>
         /// <param name="refreshToken"></param>
+        /// <param name="expiredImAuthToken">客户端已过期的ImAuthToken（可选），用于提取machineId以签发新令牌</param>
         /// <returns></returns>
         [HttpPost]
-        public async Task<ResultVM<LoginResultDto>> GetRefreshTokenAsync([FromServices] IDiscoveryCache discoverCache, [FromServices] IHttpClientFactory httpClientFactory, [FromBody] string refreshToken)
+        public async Task<ResultVM<LoginResultDto>> GetRefreshTokenAsync([FromServices] IDiscoveryCache discoverCache, [FromServices] IHttpClientFactory httpClientFactory, [FromBody] string refreshToken, [FromQuery] string expiredImAuthToken = null)
         {
             ResultVM<LoginResultDto> result = new ResultVM<LoginResultDto>();
 
@@ -131,6 +152,7 @@ namespace Horizon.WebApi.Controllers
                 result.IsSuccess = (tokenResponse.Exception == null && tokenResponse.ErrorType != ResponseErrorType.Exception);
             }
             else
+            {
                 result.Data = new LoginResultDto
                 {
                     AccessToken = tokenResponse.AccessToken,
@@ -138,6 +160,28 @@ namespace Horizon.WebApi.Controllers
                     ExpiresIn = tokenResponse.ExpiresIn,
                     ExpiresTime = DateTime.Now.AddSeconds(tokenResponse.ExpiresIn)
                 };
+
+                // 如果客户端提供了过期的ImAuthToken，解密提取machineId后签发新的ImAuthToken
+                if (_authTokenProvider != null && !string.IsNullOrWhiteSpace(expiredImAuthToken))
+                {
+                    try
+                    {
+                        var validation = _authTokenProvider.ValidateTokenWithoutExpiryCheck(expiredImAuthToken);
+                        if (validation.IsValid && validation.TokenData != null)
+                        {
+                            var newImAuthToken = _authTokenProvider.GenerateToken(
+                                validation.TokenData.PassportId,
+                                validation.TokenData.MachineId,
+                                validation.TokenData.CharacterId);
+                            result.Data.ImAuthToken = newImAuthToken;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "刷新令牌时重新生成ImAuthToken失败，客户端需要重新登录");
+                    }
+                }
+            }
             return result;
         }
         /// <summary>
@@ -161,6 +205,12 @@ namespace Horizon.WebApi.Controllers
                 IPassportGrain passport = client.GetGrain<IPassportGrain>(Guid.NewGuid());
                 passportInfoDto = await passport.RegisterAsync(registerDto);
 
+            }
+
+            if (passportInfoDto == null)
+            {
+                result.ErrorMessage = "注册失败，请稍后重试";
+                return result;
             }
 
             var httpClient = httpClientFactory.CreateClient();
@@ -191,13 +241,21 @@ namespace Horizon.WebApi.Controllers
                 result.IsSuccess = (tokenResponse.Exception == null && tokenResponse.ErrorType != ResponseErrorType.Exception);
             }
             else
+            {
+                // 使用客户端上传的机器ID生成鉴权令牌（与Login对齐）
+                var regMachineId = registerDto.MachineId ?? string.Empty;
+                var regImAuthToken = TryGenerateImAuthToken(passportInfoDto.PassportId, regMachineId);
+
                 result.Data = new LoginResultDto
                 {
                     AccessToken = tokenResponse.AccessToken,
                     RefreshToken = tokenResponse.RefreshToken,
                     ExpiresIn = tokenResponse.ExpiresIn,
-                    ExpiresTime = DateTime.Now.AddSeconds(tokenResponse.ExpiresIn)
+                    ExpiresTime = DateTime.Now.AddSeconds(tokenResponse.ExpiresIn),
+                    ImAuthToken = regImAuthToken
                 };
+                result.IsSuccess = true;
+            }
             return result;
         }
 
@@ -313,6 +371,48 @@ namespace Horizon.WebApi.Controllers
             }
             return new ResultVM<bool> { Data = result, ErrorMessage = result ? "注销完成" : "注销失败！" };
 
+        }
+        [Authorize]
+        [HttpPost("user")]
+        public async Task<RemoteUserEnvelope> GetUserIdAsync()
+        {
+
+            Guid.TryParse(_passportCurrent.UserId, out Guid id);
+            return await Task.FromResult( new RemoteUserEnvelope
+            {
+                PassportId = _passportCurrent.PassportId,
+                UserId = id,
+                Name = _passportCurrent.Name,
+                NickName = _passportCurrent.Name,
+                Avatar = _passportCurrent.Avatar,
+                Email = _passportCurrent.Email
+            });
+        }
+        public sealed class RemoteUserEnvelope
+        {
+            public string PassportId { get; set; }
+            public Guid UserId { get; set; }
+            public string Name { get; set; }
+            public string NickName { get; set; }
+            public string Avatar { get; set; }
+            public string Email { get; set; }
+        }
+        private string TryGenerateImAuthToken(string passportId, string machineId)
+        {
+            if (_authTokenProvider == null || string.IsNullOrWhiteSpace(passportId))
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                return _authTokenProvider.GenerateToken(passportId, machineId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "生成IM鉴权令牌失败: PassportId={PassportId}", passportId);
+                return string.Empty;
+            }
         }
     }
 }

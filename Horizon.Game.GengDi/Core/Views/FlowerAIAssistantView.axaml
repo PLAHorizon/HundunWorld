@@ -1,0 +1,122 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             x:Class="Horizon.Game.GengDi.Core.Views.FlowerAIAssistantView"
+             x:DataType="vm:FlowerAIAssistantViewModel">
+
+    <controls:GalleryPage Title="AI 花卉助手"
+                          Subtitle="Horizon.Game.GengDi.FlowerAI"
+                          Description="智能行情分析、种植建议与市场洞察。"
+                          IconSource="{StaticResource NotificationsIcon}">
+
+        <Grid RowDefinitions="*,Auto"
+              RowSpacing="0">
+
+            <!-- 对话消息列表 -->
+            <ScrollViewer Grid.Row="0"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          x:Name="MessageScrollViewer">
+                <StackPanel Spacing="12" Margin="20 16">
+                    <ItemsControl ItemsSource="{Binding Messages}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0 0 0 8">
+                                    <Border HorizontalAlignment="Right"
+                                            MaxWidth="480"
+                                            IsVisible="{Binding IsUser}"
+                                            CornerRadius="14"
+                                            Padding="14 10"
+                                            Background="#42A5F5">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="{Binding Role}" FontSize="10" Foreground="#DDDDDD" />
+                                            <TextBlock Text="{Binding Content}" TextWrapping="Wrap" FontSize="13" Foreground="#FFFFFF" />
+                                            <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" FontSize="10" Foreground="#DDDDDD" HorizontalAlignment="Right" />
+                                        </StackPanel>
+                                    </Border>
+                                    <Border HorizontalAlignment="Left"
+                                            MaxWidth="480"
+                                            IsVisible="{Binding !IsUser}"
+                                            CornerRadius="14"
+                                            Padding="14 10"
+                                            Background="#2A2A3E">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="{Binding Role}" FontSize="10" Foreground="#888888" />
+                                            <TextBlock Text="{Binding Content}" TextWrapping="Wrap" FontSize="13" Foreground="#EEEEEE" />
+                                            <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" FontSize="10" Foreground="#666666" HorizontalAlignment="Right" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- 加载指示器 -->
+                    <Border IsVisible="{Binding IsGenerating}"
+                            Padding="14 10"
+                            CornerRadius="14"
+                            Background="#2A2A3E"
+                            MaxWidth="200">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ProgressBar IsIndeterminate="True" Width="40" Height="4" />
+                            <TextBlock Text="思考中..." FontSize="12" Foreground="#888888" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 空状态 -->
+                    <Border IsVisible="{Binding IsEmpty}"
+                            Padding="40 60">
+                        <StackPanel HorizontalAlignment="Center" Spacing="16">
+                            <TextBlock Text="🌸" FontSize="48" HorizontalAlignment="Center" />
+                            <TextBlock Text="向AI助手提问花卉行情、种植建议"
+                                       FontSize="15"
+                                       Foreground="#888888"
+                                       HorizontalAlignment="Center" />
+                            <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                <Border Background="#18FFFFFF" CornerRadius="10" Padding="12 8" Cursor="Hand"
+                                        Tapped="OnSuggestionTapped">
+                                    <TextBlock Text="今天红玫瑰均价多少？" FontSize="12" Foreground="#AAAAAA" />
+                                </Border>
+                                <Border Background="#18FFFFFF" CornerRadius="10" Padding="12 8" Cursor="Hand"
+                                        Tapped="OnSuggestionTapped">
+                                    <TextBlock Text="推荐适合春季种植的花卉品种" FontSize="12" Foreground="#AAAAAA" />
+                                </Border>
+                                <Border Background="#18FFFFFF" CornerRadius="10" Padding="12 8" Cursor="Hand"
+                                        Tapped="OnSuggestionTapped">
+                                    <TextBlock Text="下周花卉价格走势预测" FontSize="12" Foreground="#AAAAAA" />
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- 输入区域 -->
+            <Border Grid.Row="1"
+                    Classes="SurfaceCard"
+                    Padding="16 12"
+                    BorderBrush="#333345"
+                    BorderThickness="0 1 0 0">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <TextBox Text="{Binding InputText}"
+                             Watermark="输入您的问题..."
+                             Padding="12 10"
+                             CornerRadius="10"
+                             Background="#2A2A3E"
+                             BorderThickness="0"
+                             Foreground="#FFFFFF"
+                             IsEnabled="{Binding !IsGenerating}"
+                             KeyDown="OnInputKeyDown" />
+                    <Button Grid.Column="1"
+                            Content="发送"
+                            Classes="PrimaryAction"
+                            Padding="20 10"
+                            CornerRadius="10"
+                            Command="{Binding SendMessageCommand}"
+                            IsEnabled="{Binding CanSend}" />
+                </Grid>
+            </Border>
+        </Grid>
+    </controls:GalleryPage>
+</UserControl>

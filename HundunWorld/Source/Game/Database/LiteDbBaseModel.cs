@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Horizon.Game.Core.Database
+namespace Game.Database
 {
    public  class LiteDbBaseModel<K>
     {

@@ -92,5 +92,12 @@ namespace Horizon.Orleans.Interface
         /// <param name="count">获取条目数量，默认50</param>
         /// <returns>战斗日志列表</returns>
         Task<List<CombatLogEntry>> GetCombatLogAsync(int count = 50);
+
+        /// <summary>
+        /// 打断指定角色的施法
+        /// </summary>
+        /// <param name="casterId">施法者ID</param>
+        /// <returns>是否成功打断</returns>
+        Task<bool> InterruptSkillCastAsync(ulong casterId);
     }
 }

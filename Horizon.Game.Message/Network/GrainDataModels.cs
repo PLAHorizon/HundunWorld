@@ -1295,4 +1295,670 @@ namespace Horizon.Game.Message.Network
     }
 
     #endregion
+
+    #region 数据池数据模型
+
+    /// <summary>
+    /// 数据池条目
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class DataPoolEntry
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public DataPoolDataType DataType { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int DataSource { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string RawPayload { get; set; } = string.Empty;
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public DateTime Timestamp { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public string RelatedEntityId { get; set; } = string.Empty;
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public string ModelVersion { get; set; } = string.Empty;
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public double? Confidence { get; set; }
+    }
+
+    #endregion
+
+    #region 花卉市场预测数据模型
+
+    /// <summary>
+    /// 花卉价格快照
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class FlowerPriceSnapshot
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long SpeciesId { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long MarketId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public decimal AvgPrice { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public decimal MinPrice { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public decimal MaxPrice { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public int Volume { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public int TradeCount { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public DateTime SnapshotTime { get; set; }
+    }
+
+    /// <summary>
+    /// 花卉价格预测
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class FlowerPriceForecast
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long SpeciesId { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long MarketId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public List<PredictedPricePoint> PredictedPrices { get; set; } = new();
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public ForecastTimeScale TimeScale { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public string ModelVersion { get; set; } = "";
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public double Confidence { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public DateTime GeneratedAt { get; set; }
+    }
+
+    /// <summary>
+    /// 预测价格点
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class PredictedPricePoint
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public DateTime Date { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public decimal PredictedPrice { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public decimal LowerBound { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public decimal UpperBound { get; set; }
+    }
+
+    /// <summary>
+    /// 预警消息
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class AlertMessage
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long RuleId { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public Guid UserId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public long SpeciesId { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long MarketId { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public AlertConditionType AlertType { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public string Message { get; set; } = "";
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public decimal TriggeredValue { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public decimal ThresholdValue { get; set; }
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public DateTime CreatedAt { get; set; }
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public bool IsRead { get; set; }
+    }
+
+    /// <summary>
+    /// 传感器读数
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class SensorReading
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public string DeviceId { get; set; } = "";
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string GreenhouseId { get; set; } = "";
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public double Temperature { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public double Humidity { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public double LightIntensity { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public double Co2Level { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public double SoilMoisture { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public DateTime ReadingTime { get; set; }
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public string Passport { get; set; } = "";
+    }
+
+    /// <summary>
+    /// 节日因子
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class FestivalFactor
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public string FestivalName { get; set; } = "";
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public DateTime FestivalDate { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public double DemandMultiplier { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public List<int> AffectedSpecies { get; set; } = new();
+    }
+
+    #endregion
+
+    #region 花卉订阅与预警管理数据模型
+
+    /// <summary>
+    /// 花卉订阅信息
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class FlowerSubscriptionInfo
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public Guid UserId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int Level { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public DateTime StartDate { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public DateTime EndDate { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public bool AutoRenew { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public string PaymentMethod { get; set; } = "";
+    }
+
+    /// <summary>
+    /// 预警规则信息
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class FlowerAlertRuleInfo
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public Guid UserId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public long SpeciesId { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long MarketId { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int ConditionType { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public decimal ThresholdValue { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public bool IsEnabled { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public DateTime? LastTriggeredAt { get; set; }
+    }
+
+    /// <summary>
+    /// 预警日志信息
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class FlowerAlertLogInfo
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long RuleId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public Guid UserId { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long SpeciesId { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public long MarketId { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public int AlertType { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public string AlertMessage { get; set; } = "";
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public decimal TriggeredValue { get; set; }
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public decimal ThresholdValue { get; set; }
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public bool IsRead { get; set; }
+
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public DateTime CreatedAt { get; set; }
+    }
+
+    #endregion
+
+    #region AI智能分析数据模型
+
+    /// <summary>
+    /// AI聊天消息
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class AIChatMessage
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public string Role { get; set; } = "";
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string Content { get; set; } = "";
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public DateTime Timestamp { get; set; }
+    }
+
+    /// <summary>
+    /// 文档块
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class DocumentChunk
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long DocumentId { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int ChunkIndex { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string Content { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public float[] Embedding { get; set; } = Array.Empty<float>();
+    }
+
+    #endregion
+
+    #region 智慧种植管理数据模型
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class PlantingBatchState
+    {
+        [MemoryPackOrder(0)] [Id(0)] public long Id { get; set; }
+        [MemoryPackOrder(1)] [Id(1)] public string BatchName { get; set; } = "";
+        [MemoryPackOrder(2)] [Id(2)] public string SpeciesId { get; set; } = "";
+        [MemoryPackOrder(3)] [Id(3)] public string SpeciesName { get; set; } = "";
+        [MemoryPackOrder(4)] [Id(4)] public string GreenhouseId { get; set; } = "";
+        [MemoryPackOrder(5)] [Id(5)] public DateTime PlantingDate { get; set; }
+        [MemoryPackOrder(6)] [Id(6)] public DateTime? ExpectedHarvestDate { get; set; }
+        [MemoryPackOrder(7)] [Id(7)] public DateTime? ActualHarvestDate { get; set; }
+        [MemoryPackOrder(8)] [Id(8)] public string Status { get; set; } = "Planted";
+        [MemoryPackOrder(9)] [Id(9)] public int PlantingQuantity { get; set; }
+        [MemoryPackOrder(10)] [Id(10)] public string Remark { get; set; } = "";
+        [MemoryPackOrder(11)] [Id(11)] public Guid UserId { get; set; }
+        [MemoryPackOrder(12)] [Id(12)] public string Passport { get; set; } = "";
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class CostRecordState
+    {
+        [MemoryPackOrder(0)] [Id(0)] public long Id { get; set; }
+        [MemoryPackOrder(1)] [Id(1)] public long BatchId { get; set; }
+        [MemoryPackOrder(2)] [Id(2)] public string Category { get; set; } = "Other";
+        [MemoryPackOrder(3)] [Id(3)] public decimal Amount { get; set; }
+        [MemoryPackOrder(4)] [Id(4)] public DateTime CostDate { get; set; }
+        [MemoryPackOrder(5)] [Id(5)] public string Remark { get; set; } = "";
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class YieldRecordState
+    {
+        [MemoryPackOrder(0)] [Id(0)] public long Id { get; set; }
+        [MemoryPackOrder(1)] [Id(1)] public long BatchId { get; set; }
+        [MemoryPackOrder(2)] [Id(2)] public string SpeciesId { get; set; } = "";
+        [MemoryPackOrder(3)] [Id(3)] public string SpeciesName { get; set; } = "";
+        [MemoryPackOrder(4)] [Id(4)] public decimal Quantity { get; set; }
+        [MemoryPackOrder(5)] [Id(5)] public string Unit { get; set; } = "Stems";
+        [MemoryPackOrder(6)] [Id(6)] public string Grade { get; set; } = "A";
+        [MemoryPackOrder(7)] [Id(7)] public DateTime HarvestDate { get; set; }
+        [MemoryPackOrder(8)] [Id(8)] public string Remark { get; set; } = "";
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class CostCategoryStats
+    {
+        [MemoryPackOrder(0)] [Id(0)] public string Category { get; set; } = "";
+        [MemoryPackOrder(1)] [Id(1)] public decimal TotalAmount { get; set; }
+        [MemoryPackOrder(2)] [Id(2)] public int RecordCount { get; set; }
+        [MemoryPackOrder(3)] [Id(3)] public double Percentage { get; set; }
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class YieldTrendItem
+    {
+        [MemoryPackOrder(0)] [Id(0)] public string Month { get; set; } = "";
+        [MemoryPackOrder(1)] [Id(1)] public decimal TotalQuantity { get; set; }
+        [MemoryPackOrder(2)] [Id(2)] public decimal LastYearQuantity { get; set; }
+        [MemoryPackOrder(3)] [Id(3)] public string SpeciesName { get; set; } = "";
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class CostMonthlyTrendInfo
+    {
+        [MemoryPackOrder(0)] [Id(0)] public string Month { get; set; } = "";
+        [MemoryPackOrder(1)] [Id(1)] public decimal TotalAmount { get; set; }
+        [MemoryPackOrder(2)] [Id(2)] public decimal SeedlingCost { get; set; }
+        [MemoryPackOrder(3)] [Id(3)] public decimal FertilizerCost { get; set; }
+        [MemoryPackOrder(4)] [Id(4)] public decimal PesticideCost { get; set; }
+        [MemoryPackOrder(5)] [Id(5)] public decimal LaborCost { get; set; }
+        [MemoryPackOrder(6)] [Id(6)] public decimal UtilityCost { get; set; }
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class BatchLifecycle
+    {
+        [MemoryPackOrder(0)] [Id(0)] public PlantingBatchState BatchInfo { get; set; } = new();
+        [MemoryPackOrder(1)] [Id(1)] public SensorDataSummary SensorDataSummary { get; set; } = new();
+        [MemoryPackOrder(2)] [Id(2)] public decimal TotalCost { get; set; }
+        [MemoryPackOrder(3)] [Id(3)] public List<CostCategoryStats> CostBreakdown { get; set; } = new();
+        [MemoryPackOrder(4)] [Id(4)] public List<YieldRecordState> YieldRecords { get; set; } = new();
+        [MemoryPackOrder(5)] [Id(5)] public List<HarvestListingSummary> ListedProducts { get; set; } = new();
+        [MemoryPackOrder(6)] [Id(6)] public List<OrderSummary> OrderSummaries { get; set; } = new();
+        [MemoryPackOrder(7)] [Id(7)] public decimal SettlementTotal { get; set; }
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class SensorDataSummary
+    {
+        [MemoryPackOrder(0)] [Id(0)] public double AvgTemperature { get; set; }
+        [MemoryPackOrder(1)] [Id(1)] public double AvgHumidity { get; set; }
+        [MemoryPackOrder(2)] [Id(2)] public double AvgLightIntensity { get; set; }
+        [MemoryPackOrder(3)] [Id(3)] public double AvgSoilMoisture { get; set; }
+        [MemoryPackOrder(4)] [Id(4)] public int ReadingCount { get; set; }
+        [MemoryPackOrder(5)] [Id(5)] public DateTime? FirstReadingTime { get; set; }
+        [MemoryPackOrder(6)] [Id(6)] public DateTime? LastReadingTime { get; set; }
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class HarvestListingSummary
+    {
+        [MemoryPackOrder(0)] [Id(0)] public long Id { get; set; }
+        [MemoryPackOrder(1)] [Id(1)] public long YieldRecordId { get; set; }
+        [MemoryPackOrder(2)] [Id(2)] public long? ProductId { get; set; }
+        [MemoryPackOrder(3)] [Id(3)] public string SpeciesName { get; set; } = "";
+        [MemoryPackOrder(4)] [Id(4)] public string Grade { get; set; } = "";
+        [MemoryPackOrder(5)] [Id(5)] public decimal Quantity { get; set; }
+        [MemoryPackOrder(6)] [Id(6)] public decimal ActualPrice { get; set; }
+        [MemoryPackOrder(7)] [Id(7)] public int Status { get; set; }
+        [MemoryPackOrder(8)] [Id(8)] public DateTime HarvestDate { get; set; }
+        [MemoryPackOrder(9)] [Id(9)] public DateTime? ListedDate { get; set; }
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class OrderSummary
+    {
+        [MemoryPackOrder(0)] [Id(0)] public long OrderId { get; set; }
+        [MemoryPackOrder(1)] [Id(1)] public string OrderNo { get; set; } = "";
+        [MemoryPackOrder(2)] [Id(2)] public decimal TotalAmount { get; set; }
+        [MemoryPackOrder(3)] [Id(3)] public int Status { get; set; }
+        [MemoryPackOrder(4)] [Id(4)] public DateTime CreatedAt { get; set; }
+        [MemoryPackOrder(5)] [Id(5)] public List<OrderItemSummary> Items { get; set; } = new();
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class OrderItemSummary
+    {
+        [MemoryPackOrder(0)] [Id(0)] public long ProductId { get; set; }
+        [MemoryPackOrder(1)] [Id(1)] public string ProductName { get; set; } = "";
+        [MemoryPackOrder(2)] [Id(2)] public int Quantity { get; set; }
+        [MemoryPackOrder(3)] [Id(3)] public decimal Subtotal { get; set; }
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class BatchProfitAnalysis
+    {
+        [MemoryPackOrder(0)] [Id(0)] public long BatchId { get; set; }
+        [MemoryPackOrder(1)] [Id(1)] public decimal TotalCost { get; set; }
+        [MemoryPackOrder(2)] [Id(2)] public decimal TotalRevenue { get; set; }
+        [MemoryPackOrder(3)] [Id(3)] public decimal NetProfit { get; set; }
+        [MemoryPackOrder(4)] [Id(4)] public double ROI { get; set; }
+        [MemoryPackOrder(5)] [Id(5)] public List<CostCategoryStats> CostBreakdown { get; set; } = new();
+        [MemoryPackOrder(6)] [Id(6)] public List<RevenueBreakdownItem> RevenueBreakdown { get; set; } = new();
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class RevenueBreakdownItem
+    {
+        [MemoryPackOrder(0)] [Id(0)] public long ProductId { get; set; }
+        [MemoryPackOrder(1)] [Id(1)] public string ProductName { get; set; } = "";
+        [MemoryPackOrder(2)] [Id(2)] public decimal Revenue { get; set; }
+        [MemoryPackOrder(3)] [Id(3)] public int QuantitySold { get; set; }
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class NotificationChannelSettings
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public bool IsWebSocketEnabled { get; set; } = true;
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public bool IsSmsEnabled { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public bool IsWeChatEnabled { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public bool IsEmailEnabled { get; set; } = true;
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public Dictionary<int, List<int>> SpeciesWatchlist { get; set; } = new();
+    }
+
+    #endregion
 }

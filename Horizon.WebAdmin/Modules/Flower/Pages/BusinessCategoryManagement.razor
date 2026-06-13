@@ -1,0 +1,185 @@
+﻿@page "/flower/business-categories"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Flower.Services
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+
+@inject FlowerBusinessCategoryService BusinessCategoryService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">经营分类管理</TypographyTitle>
+        <Space>
+            <AntDesign.InputNumber TValue="long" @bind-Value="@SearchShopId" Placeholder="店铺ID" Style="width:120px" Size="@InputSize.Small" />
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadCategories">查询</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="JsonElement" DataSource="@Categories" Size="@TableSize.Small" RowKey="@GetRowKey">
+            <Column TData="string" Title="分类ID">
+                @(context.TryGetProperty("id", out var idProp) ? idProp.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="分类名称">
+                @(context.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="店铺ID">
+                @(context.TryGetProperty("shopId", out var sidProp) ? sidProp.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="描述">
+                @(context.TryGetProperty("description", out var descProp) ? (descProp.GetString()?.Length > 30 ? descProp.GetString()?[..30] + "..." : descProp.GetString()) ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="审核状态">
+                <Tag Color="@GetAuditStatusColor(context)">@GetAuditStatusText(context)</Tag>
+            </Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    <SpaceItem>
+                        <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowAuditModal(context)">审核</Button>
+                    </SpaceItem>
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    <Modal Title="经营分类审核" Visible="@AuditModalVisible" OnCancel="CloseAuditModal" OnOk="HandleAuditOk" ConfirmLoading="@AuditLoading">
+        <Form Model="@AuditForm" Layout="@FormLayout.Vertical">
+            <FormItem Label="审核结果">
+                <RadioGroup TItem="int" TItemValue="int" @bind-Value="@AuditForm.Approved">
+                    <Radio TItem="int" TItemValue="int" Value="1">通过</Radio>
+                    <Radio TItem="int" TItemValue="int" Value="0">拒绝</Radio>
+                </RadioGroup>
+            </FormItem>
+            <FormItem Label="审核原因">
+                <TextArea @bind-Value="@AuditForm.Reason" Rows="3" Placeholder="请输入审核原因" />
+            </FormItem>
+        </Form>
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> Categories { get; set; } = new();
+    private bool Loading { get; set; }
+    private long SearchShopId { get; set; }
+    private string ErrorMessage { get; set; } = "";
+
+    private bool AuditModalVisible { get; set; }
+    private bool AuditLoading { get; set; }
+    private long AuditCategoryId { get; set; }
+    private AuditFormModel AuditForm { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (SearchShopId > 0)
+            await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await BusinessCategoryService.GetShopBusinessCategoriesAsync(SearchShopId);
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var data = result.Data.Value;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    Categories = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    Categories = items.EnumerateArray().ToList();
+                }
+                else
+                {
+                    Categories = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                Categories = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    ErrorMessage = result.ErrorMessage ?? "加载经营分类失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载经营分类失败: {ex.Message}";
+            Categories = new List<JsonElement>();
+        }
+        Loading = false;
+    }
+
+    private void ShowAuditModal(JsonElement category)
+    {
+        AuditCategoryId = category.TryGetProperty("id", out var idProp) ? idProp.GetInt64() : 0;
+        AuditForm = new AuditFormModel();
+        AuditModalVisible = true;
+    }
+
+    private void CloseAuditModal()
+    {
+        AuditModalVisible = false;
+    }
+
+    private async Task HandleAuditOk()
+    {
+        AuditLoading = true;
+        try
+        {
+            var data = new { Approved = AuditForm.Approved == 1, Reason = AuditForm.Reason };
+            var result = await BusinessCategoryService.AuditBusinessCategoryAsync(AuditCategoryId, data);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success(AuditForm.Approved == 1 ? "审核通过" : "已拒绝");
+                AuditModalVisible = false;
+                await LoadCategories();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "审核操作失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"审核操作失败: {ex.Message}";
+        }
+        AuditLoading = false;
+    }
+
+    private string GetAuditStatusColor(JsonElement category)
+    {
+        var status = category.TryGetProperty("auditStatus", out var prop) ? prop.GetInt32() : -1;
+        return status switch { 0 => "orange", 1 => "green", 2 => "red", _ => "default" };
+    }
+
+    private string GetAuditStatusText(JsonElement category)
+    {
+        var status = category.TryGetProperty("auditStatus", out var prop) ? prop.GetInt32() : -1;
+        return status switch { 0 => "待审核", 1 => "已通过", 2 => "已拒绝", _ => "未知" };
+    }
+
+    private class AuditFormModel
+    {
+        public int Approved { get; set; } = 1;
+        public string Reason { get; set; } = "";
+    }
+
+    private object GetRowKey(JsonElement x) => x.TryGetProperty("id", out var p) ? p.GetInt64() : 0L;
+}

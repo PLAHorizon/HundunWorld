@@ -1,0 +1,62 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             xmlns:models="using:Horizon.Game.GengDi.Models"
+             xmlns:converters="using:Horizon.Game.GengDi.Core.Converters"
+             x:Class="Horizon.Game.GengDi.Core.Views.LifeIndexDrawerView"
+             x:DataType="vm:HomeViewModel">
+
+    <UserControl.Resources>
+        <converters:HexToBrushConverter x:Key="HexToBrushConverter" />
+    </UserControl.Resources>
+
+    <Border Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+            BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+            BorderThickness="1 0 0 0"
+            Width="420" MaxWidth="500"
+            HorizontalAlignment="Right">
+        <Grid RowDefinitions="Auto,*">
+            <Border Grid.Row="0" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0 0 0 1" Padding="20 16">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Text="生活指数" FontSize="16" FontWeight="SemiBold" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="✕" Classes="QuietAction" Padding="8 4" FontSize="14"
+                            Command="{Binding CloseLifeIndexDetailCommand}" />
+                </Grid>
+            </Border>
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Spacing="16" Margin="20 16">
+
+                    <ItemsControl ItemsSource="{Binding LifeIndices}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="3" Rows="2" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:LifeIndexItem">
+                                <Border Background="#12FFFFFF" CornerRadius="12" Padding="12 10" Margin="4">
+                                    <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                        <TextBlock Text="{Binding Icon}" FontSize="18" HorizontalAlignment="Center" />
+                                        <TextBlock Text="{Binding Name}" FontSize="10" Foreground="#FFFFFF88" HorizontalAlignment="Center" />
+                                        <Border Background="#18FFFFFF" CornerRadius="6" Padding="6 3" HorizontalAlignment="Center">
+                                            <TextBlock Text="{Binding Level}" FontSize="12" FontWeight="SemiBold"
+                                                       Foreground="{Binding AccentColor, Converter={StaticResource HexToBrushConverter}}"
+                                                       HorizontalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Text="{Binding Description}" FontSize="9" Foreground="#FFFFFF77"
+                                                   TextWrapping="Wrap" MaxLines="2"
+                                                   HorizontalAlignment="Center" TextAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</UserControl>

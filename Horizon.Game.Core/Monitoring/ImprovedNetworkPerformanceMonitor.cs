@@ -49,7 +49,7 @@ namespace Horizon.Game.Core.Monitoring
             _reportTimer.Change(_reportInterval, _reportInterval);
             _cleanupTimer.Change(_cleanupInterval, _cleanupInterval);
 
-            _logger.LogInformation("Network performance monitor started with report interval {ReportInterval}ms",
+            _logger.LogInformation("网络性能监控器已启动，报告间隔 {ReportInterval}ms",
                 _reportInterval.TotalMilliseconds);
 
             return Task.CompletedTask;
@@ -62,7 +62,7 @@ namespace Horizon.Game.Core.Monitoring
             _reportTimer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
             _cleanupTimer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
 
-            _logger.LogInformation("Network performance monitor stopped");
+            _logger.LogInformation("网络性能监控器已停止");
 
             return Task.CompletedTask;
         }
@@ -77,7 +77,7 @@ namespace Horizon.Game.Core.Monitoring
             var metrics = GetOrCreateClientMetrics(clientId);
             metrics.RecordCorruptionRecovery(bytesSkipped, successful);
 
-            _logger.LogDebug("TCP corruption recovery for client {ClientId}: {Result}, bytes skipped: {BytesSkipped}",
+            _logger.LogDebug("客户端 {ClientId} TCP数据恢复: {Result}，跳过字节数: {BytesSkipped}",
                 clientId, successful ? "SUCCESS" : "FAILED", bytesSkipped);
         }
 
@@ -91,7 +91,7 @@ namespace Horizon.Game.Core.Monitoring
             var metrics = GetOrCreateClientMetrics(clientId);
             metrics.RecordProcessingError();
 
-            _logger.LogWarning(exception, "Processing error for client {ClientId}: {ErrorType}",
+            _logger.LogWarning(exception, "客户端 {ClientId} 处理错误: {ErrorType}",
                 clientId, errorType);
         }
 
@@ -107,7 +107,7 @@ namespace Horizon.Game.Core.Monitoring
 
             if (processingTimeMs > _config.SlowOperationThresholdMs)
             {
-                _logger.LogWarning("Slow message processing for client {ClientId}: {MessageType} took {ProcessingTime}ms",
+                _logger.LogWarning("客户端 {ClientId} 消息处理缓慢: {MessageType} 耗时 {ProcessingTime}ms",
                     clientId, messageType, processingTimeMs);
             }
         }
@@ -133,7 +133,7 @@ namespace Horizon.Game.Core.Monitoring
             var metrics = GetOrCreateClientMetrics(clientId);
             metrics.RecordProtocolVersionMismatch();
 
-            _logger.LogWarning("Protocol version mismatch for client {ClientId}: expected {Expected}, got {Actual}",
+            _logger.LogWarning("客户端 {ClientId} 协议版本不匹配: 期望 {Expected}，实际 {Actual}",
                 clientId, expectedVersion, actualVersion);
         }
 
@@ -147,7 +147,7 @@ namespace Horizon.Game.Core.Monitoring
             var metrics = GetOrCreateClientMetrics(clientId);
             metrics.RecordProtocolCompatibilityRecovery(successful);
 
-            _logger.LogInformation("Protocol compatibility recovery for client {ClientId}: {Protocol} -> {Result}",
+            _logger.LogInformation("客户端 {ClientId} 协议兼容性恢复: {Protocol} -> {Result}",
                 clientId, protocolVersion, successful ? "SUCCESS" : "FAILED");
         }
 
@@ -169,7 +169,7 @@ namespace Horizon.Game.Core.Monitoring
             // 使用信号量确保只有一个报告线程在运行
             if (!await _reportSemaphore.WaitAsync(100))
             {
-                _logger.LogDebug("Skipping metrics report - previous report still running");
+                _logger.LogDebug("跳过性能指标报告 - 上一次报告仍在运行");
                 return;
             }
 
@@ -179,7 +179,7 @@ namespace Horizon.Game.Core.Monitoring
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while reporting metrics");
+                _logger.LogError(ex, "报告性能指标时发生错误");
             }
             finally
             {
@@ -219,13 +219,13 @@ namespace Horizon.Game.Core.Monitoring
                 var avgProcessingTime = snapshot.TotalProcessingTimeMs / Math.Max(1, snapshot.SuccessfulMessages);
 
                 _logger.LogInformation(
-                    "Client {ClientId} metrics: " +
-                    "Success Rate: {SuccessRate:F2}%, " +
-                    "Avg Processing Time: {AvgProcessingTime:F2}ms, " +
-                    "Corruption Recoveries: {CorruptionRecoveries}/{CorruptionAttempts}, " +
-                    "Protocol Recoveries: {ProtocolRecoveries}/{ProtocolAttempts}, " +
-                    "Bytes Processed: {BytesProcessed}, " +
-                    "Version Mismatches: {VersionMismatches}",
+                    "客户端 {ClientId} 性能指标: " +
+                    "成功率: {SuccessRate:F2}%, " +
+                    "平均处理时间: {AvgProcessingTime:F2}ms, " +
+                    "数据恢复: {CorruptionRecoveries}/{CorruptionAttempts}, " +
+                    "协议恢复: {ProtocolRecoveries}/{ProtocolAttempts}, " +
+                    "已处理字节数: {BytesProcessed}, " +
+                    "版本不匹配次数: {VersionMismatches}",
                     clientId, successRate, avgProcessingTime,
                     snapshot.SuccessfulRecoveries, snapshot.CorruptionRecoveryAttempts,
                     snapshot.SuccessfulProtocolRecoveries, snapshot.ProtocolCompatibilityAttempts,
@@ -234,24 +234,24 @@ namespace Horizon.Game.Core.Monitoring
                 // 性能警告
                 if (successRate < 95.0)
                 {
-                    _logger.LogWarning("Low success rate for client {ClientId}: {SuccessRate:F2}%",
+                    _logger.LogWarning("客户端 {ClientId} 成功率过低: {SuccessRate:F2}%",
                         clientId, successRate);
                 }
 
                 if (snapshot.CorruptionRecoveryAttempts > 5)
                 {
-                    _logger.LogWarning("High corruption recovery attempts for client {ClientId}: {Attempts}",
+                    _logger.LogWarning("客户端 {ClientId} 数据恢复次数过高: {Attempts}",
                         clientId, snapshot.CorruptionRecoveryAttempts);
                 }
             }
 
             // 汇总报告
             _logger.LogInformation(
-                "Network Performance Summary: " +
-                "Active Clients: {ActiveClients}, " +
-                "Total Successful Messages: {TotalSuccessfulMessages}, " +
-                "Total Processing Errors: {TotalProcessingErrors}, " +
-                "Total Corruption Recoveries: {TotalCorruptionRecoveries}",
+                "网络性能汇总: " +
+                "活跃客户端: {ActiveClients}, " +
+                "成功处理消息总数: {TotalSuccessfulMessages}, " +
+                "处理错误总数: {TotalProcessingErrors}, " +
+                "数据恢复总次数: {TotalCorruptionRecoveries}",
                 activeClients, totalSuccessfulMessages, totalProcessingErrors, totalCorruptionRecoveries);
 
             // 模拟异步操作
@@ -284,13 +284,13 @@ namespace Horizon.Game.Core.Monitoring
                 if (_clientMetrics.TryRemove(clientId, out var removedMetrics))
                 {
                     removedMetrics.Dispose();
-                    _logger.LogDebug("Cleaned up expired metrics for client {ClientId}", clientId);
+                    _logger.LogDebug("已清理客户端 {ClientId} 的过期性能指标", clientId);
                 }
             }
 
             if (expiredClients.Count > 0)
             {
-                _logger.LogInformation("Cleaned up {Count} expired client metrics", expiredClients.Count);
+                _logger.LogInformation("已清理 {Count} 条过期客户端性能指标", expiredClients.Count);
             }
         }
 
@@ -314,7 +314,7 @@ namespace Horizon.Game.Core.Monitoring
             if (_clientMetrics.TryRemove(clientId, out var metrics))
             {
                 metrics.Dispose();
-                _logger.LogDebug("Cleaned up performance metrics for client {ClientId}", clientId);
+                _logger.LogDebug("已清理客户端 {ClientId} 的性能指标", clientId);
             }
         }
 
@@ -336,7 +336,7 @@ namespace Horizon.Game.Core.Monitoring
                 }
             }
 
-            _logger.LogInformation("Network performance monitor disposed");
+            _logger.LogInformation("网络性能监控器已释放");
         }
     }
 }

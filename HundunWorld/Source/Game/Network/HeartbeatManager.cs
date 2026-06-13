@@ -46,8 +46,8 @@ namespace HundunWorld.Game.Network
                 {
                     try
                     {
-                        // 检查是否可以发送消息
-                        if (_networkManager.CanSendMessage())
+                        // 检查是否可以发送消息（需要已认证用户）
+                        if (_networkManager.CanSendMessage() && !string.IsNullOrEmpty(_networkManager.AuthToken))
                         {
                             // 发送心跳消息
                             var heartbeatMessage = new HeartbeatMessage
@@ -64,7 +64,13 @@ namespace HundunWorld.Game.Network
                                 {
                                     MessageId = Guid.NewGuid().ToString(),
                                     MessageType = MessageType.Heartbeat,
-                                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                                    GameId = _networkManager.GameId,
+                                    ZoneId = _networkManager.ZoneId,
+                                    ServerId = _networkManager.ServerId,
+                                    UserId = _networkManager.UserId,
+                                    AuthToken = _networkManager.AuthToken,
+                                    MachineId = MachineIdentifier.GetMachineGuid()
                                 },
                                 ServiceType = ServiceType.System,
                                 Body = heartbeatMessage
@@ -85,8 +91,11 @@ namespace HundunWorld.Game.Network
                         }
                         else
                         {
-                            Debug.Log($"[心跳管理器] 网络未连接，跳过心跳包发送 ({DateTime.Now:HH:mm:ss})");
-                            EnhancedDiagnostics.LogDiagnostic("网络未连接，跳过心跳包发送");
+                            if (string.IsNullOrEmpty(_networkManager.AuthToken))
+                                Debug.Log($"[心跳管理器] 用户未认证，跳过心跳包发送 ({DateTime.Now:HH:mm:ss})");
+                            else
+                                Debug.Log($"[心跳管理器] 网络未连接，跳过心跳包发送 ({DateTime.Now:HH:mm:ss})");
+                            EnhancedDiagnostics.LogDiagnostic("网络未连接或未认证，跳过心跳包发送");
                         }
                         
                         // 等待下次发送

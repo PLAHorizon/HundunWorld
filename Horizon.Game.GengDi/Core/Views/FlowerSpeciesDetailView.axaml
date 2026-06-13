@@ -1,0 +1,224 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
+             x:Class="Horizon.Game.GengDi.Core.Views.FlowerSpeciesDetailView"
+             x:DataType="vm:FlowerSpeciesDetailViewModel">
+
+    <controls:GalleryPage Title="{Binding SpeciesName, StringFormat='{}{0} 行情详情'}"
+                          Subtitle="Horizon.Game.GengDi.FlowerSpecies"
+                          Description="查看品类历史价格走势、预测区间和关联商品。"
+                          IconSource="{StaticResource NotificationsIcon}">
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="20" Margin="0 0 0 24">
+
+                <!-- 价格概览卡片 -->
+                <Grid ColumnDefinitions="*,*,*,*"
+                      ColumnSpacing="16">
+                    <Border Classes="SurfaceCard" Padding="20">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="当前均价" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding CurrentPrice}" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Classes="SurfaceCard" Padding="20">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="涨跌幅" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+                                <TextBlock Text="{Binding PriceChangeDirection}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding PriceChange}" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Classes="SurfaceCard" Padding="20">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="成交情况" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding VolumeInfo}" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="3" Classes="SurfaceCard" Padding="20">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="预测置信度" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding ForecastConfidence}" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- 时间范围选择 -->
+                <Border Classes="SurfaceCard" Padding="16 12">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="时间范围" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <Button Content="7天"
+                                Classes="QuietAction"
+                                Padding="12 6"
+                                FontSize="12"
+                                Command="{Binding $parent[UserControl].DataContext.SelectTimeRangeCommand}"
+                                CommandParameter="7" />
+                        <Button Content="30天"
+                                Classes="PrimaryAction"
+                                Padding="12 6"
+                                FontSize="12"
+                                Command="{Binding $parent[UserControl].DataContext.SelectTimeRangeCommand}"
+                                CommandParameter="30" />
+                        <Button Content="90天"
+                                Classes="QuietAction"
+                                Padding="12 6"
+                                FontSize="12"
+                                Command="{Binding $parent[UserControl].DataContext.SelectTimeRangeCommand}"
+                                CommandParameter="90" />
+                        <Button Content="180天"
+                                Classes="QuietAction"
+                                Padding="12 6"
+                                FontSize="12"
+                                Command="{Binding $parent[UserControl].DataContext.SelectTimeRangeCommand}"
+                                CommandParameter="180" />
+                    </StackPanel>
+                </Border>
+
+                <!-- K线图 -->
+                <Border Classes="SurfaceCard" Padding="20" IsVisible="{Binding HasData}">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="K线走势" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding SpeciesName, StringFormat='{}{0} 日K线'}"
+                                       FontSize="12"
+                                       Foreground="#888888"
+                                       VerticalAlignment="Center" />
+                        </Grid>
+                        <lvc:CartesianChart Series="{Binding CandlestickSeries}"
+                                            XAxes="{Binding XAxes}"
+                                            YAxes="{Binding YAxes}"
+                                            Height="360"
+                                            Background="Transparent" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 预测区间图 -->
+                <Border Classes="SurfaceCard" Padding="20" IsVisible="{Binding HasData}">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="价格预测" FontSize="16" FontWeight="SemiBold" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                                <Button Content="查看种植建议"
+                                        Classes="PrimaryAction"
+                                        Padding="12 6"
+                                        FontSize="12"
+                                        Command="{Binding $parent[UserControl].DataContext.NavigateToPlantingAdviceCommand}" />
+                                <StackPanel Orientation="Horizontal" Spacing="16">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <Border Width="16" Height="3" Background="#42A5F5" CornerRadius="1" VerticalAlignment="Center" />
+                                        <TextBlock Text="历史" FontSize="11" Foreground="#888888" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <Border Width="16" Height="3" Background="#FFA726" CornerRadius="1" VerticalAlignment="Center" />
+                                        <TextBlock Text="预测" FontSize="11" Foreground="#888888" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <Border Width="16" Height="3" Background="#66BB6A40" CornerRadius="1" VerticalAlignment="Center" />
+                                        <TextBlock Text="区间" FontSize="11" Foreground="#888888" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                        <lvc:CartesianChart Series="{Binding ForecastSeries}"
+                                            XAxes="{Binding ForecastXAxes}"
+                                            YAxes="{Binding ForecastYAxes}"
+                                            Height="320"
+                                            Background="Transparent" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 关联商品列表 -->
+                <Border Classes="SurfaceCard" Padding="20" IsVisible="{Binding RelatedProducts.Count}">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="关联商品" FontSize="16" FontWeight="SemiBold" />
+                            <Button Grid.Column="1"
+                                    Content="查看全部"
+                                    Classes="QuietAction"
+                                    Padding="8 4"
+                                    FontSize="11" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding RelatedProducts}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Classes="ListItemCard"
+                                            Margin="0 0 0 12"
+                                            Padding="16 12">
+                                        <Grid ColumnDefinitions="Auto,*,Auto">
+                                            <Border Width="48" Height="48"
+                                                    CornerRadius="8"
+                                                    Background="#25FFFFFF"
+                                                    VerticalAlignment="Center">
+                                                <TextBlock Text="🌸"
+                                                           FontSize="20"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center" />
+                                            </Border>
+                                            <StackPanel Grid.Column="1"
+                                                        Spacing="4"
+                                                        Margin="12 0 0 0"
+                                                        VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding ProductName}"
+                                                           FontSize="14"
+                                                           FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding MerchantName}"
+                                                           FontSize="11"
+                                                           Foreground="#888888" />
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2"
+                                                        VerticalAlignment="Center"
+                                                        HorizontalAlignment="Right">
+                                                <TextBlock Text="{Binding Price, StringFormat='¥{0:F2}'}"
+                                                           FontSize="16"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#FF6B6B" />
+                                                <TextBlock Text="{Binding Stock, StringFormat='库存 {0}'}"
+                                                           FontSize="11"
+                                                           Foreground="#888888"
+                                                           HorizontalAlignment="Right" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- 加载状态 -->
+                <Border Classes="SurfaceCard"
+                        Padding="40"
+                        IsVisible="{Binding IsLoading}">
+                    <StackPanel HorizontalAlignment="Center" Spacing="12">
+                        <ProgressBar IsIndeterminate="True" Height="4" />
+                        <TextBlock Text="加载行情数据中..."
+                                   FontSize="13"
+                                   Foreground="#888888"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 无数据状态 -->
+                <Border Classes="SurfaceCard"
+                        Padding="40"
+                        IsVisible="{Binding !HasData}">
+                    <StackPanel HorizontalAlignment="Center" Spacing="12">
+                        <TextBlock Text="📊"
+                                   FontSize="32"
+                                   HorizontalAlignment="Center" />
+                        <TextBlock Text="暂无行情数据"
+                                   FontSize="14"
+                                   Foreground="#888888"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </controls:GalleryPage>
+</UserControl>

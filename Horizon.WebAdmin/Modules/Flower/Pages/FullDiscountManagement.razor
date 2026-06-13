@@ -1,0 +1,264 @@
+﻿@page "/flower/full-discounts"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using Horizon.Share.VMs
+@using System.Text.Json
+@using Horizon.WebAdmin.Modules.Flower.Services
+@inject FlowerFullDiscountService FullDiscountService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">🎁 满减规则管理</TypographyTitle>
+        <Space>
+            <InputNumber TValue="long" @bind-Value="@FilterShopId" Placeholder="@("店铺ID")" Style="width:140px" Size="@InputSize.Small" />
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadRules">🔍 查询</Button>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="ShowCreateModal">➕ 创建规则</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="FullDiscountItem" DataSource="@Rules" Size="@TableSize.Small" RowKey="x => x.RuleId">
+            <PropertyColumn Property="r => r.RuleId" Title="规则ID" />
+            <PropertyColumn Property="r => r.Name" Title="规则名称" />
+            <Column TData="string" Title="满减条件">满 ¥@context.MinAmount.ToString("N2")</Column>
+            <Column TData="string" Title="优惠金额">减 ¥@context.DiscountAmount.ToString("N2")</Column>
+            <Column TData="string" Title="有效期">@context.StartTime.ToString("yyyy-MM-dd") ~ @context.EndTime.ToString("yyyy-MM-dd")</Column>
+            <Column TData="string" Title="状态">
+                <Tag Color="@GetRuleStatusColor(context.Status)">@GetRuleStatusText(context.Status)</Tag>
+            </Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    <SpaceItem>
+                        <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => OpenEditModal(context)">编辑</Button>
+                    </SpaceItem>
+                    <SpaceItem>
+                        <Popconfirm Title="@("确认删除该规则？")" OnConfirm="() => DeleteRule(context.RuleId)">
+                            <Button Danger Size="@ButtonSize.Small">删除</Button>
+                        </Popconfirm>
+                    </SpaceItem>
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    <Modal Title="@(IsEditing ? "编辑满减规则" : "创建满减规则")" Visible="@ShowModal" OnCancel="CloseModal"
+           OnOk="SubmitForm" OkText="@("提交")" CancelText="@("取消")" Width="600">
+        <Form Model="@FormModel" Layout="@FormLayout.Vertical">
+            <FormItem Label="@("规则名称")">
+                <Input @bind-Value="@FormModel.Name" Placeholder="@("请输入规则名称")" />
+            </FormItem>
+            <AntDesign.Row Gutter="16">
+                <AntDesign.Col Span="12">
+                    <FormItem Label="@("满减门槛金额")">
+                        <InputNumber TValue="decimal" @bind-Value="@FormModel.MinAmount" Min="@(0.01m)" Style="width:100%" />
+                    </FormItem>
+                </AntDesign.Col>
+                <AntDesign.Col Span="12">
+                    <FormItem Label="@("优惠金额")">
+                        <InputNumber TValue="decimal" @bind-Value="@FormModel.DiscountAmount" Min="@(0.01m)" Style="width:100%" />
+                    </FormItem>
+                </AntDesign.Col>
+            </AntDesign.Row>
+            <AntDesign.Row Gutter="16">
+                <AntDesign.Col Span="12">
+                    <FormItem Label="@("开始时间")">
+                        <DatePicker TItemValue="DateTime?" @bind-Value="@FormModel.StartTime" Style="width:100%" />
+                    </FormItem>
+                </AntDesign.Col>
+                <AntDesign.Col Span="12">
+                    <FormItem Label="@("结束时间")">
+                        <DatePicker TItemValue="DateTime?" @bind-Value="@FormModel.EndTime" Style="width:100%" />
+                    </FormItem>
+                </AntDesign.Col>
+            </AntDesign.Row>
+        </Form>
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <Alert Type="@AlertType.Success" Message="@SuccessMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<FullDiscountItem> Rules { get; set; } = new();
+    private bool Loading { get; set; }
+    private long FilterShopId { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string SuccessMessage { get; set; } = "";
+    private bool ShowModal { get; set; }
+    private bool IsEditing { get; set; }
+    private long EditingRuleId { get; set; }
+    private FullDiscountFormModel FormModel { get; set; } = new();
+
+    private readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRules();
+    }
+
+    private async Task LoadRules()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await FullDiscountService.GetShopRulesAsync(FilterShopId > 0 ? FilterShopId : 0);
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                Rules = JsonSerializer.Deserialize<List<FullDiscountItem>>(result.Data.Value.GetRawText(), _jsonOpts) ?? new();
+            }
+            else
+            {
+                Rules = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载满减规则失败: {ex.Message}";
+            Rules = new();
+        }
+        Loading = false;
+    }
+
+    private void ShowCreateModal()
+    {
+        IsEditing = false;
+        EditingRuleId = 0;
+        FormModel = new FullDiscountFormModel();
+        ShowModal = true;
+    }
+
+    private void OpenEditModal(FullDiscountItem rule)
+    {
+        IsEditing = true;
+        EditingRuleId = rule.RuleId;
+        FormModel = new FullDiscountFormModel
+        {
+            Name = rule.Name,
+            MinAmount = rule.MinAmount,
+            DiscountAmount = rule.DiscountAmount,
+            StartTime = rule.StartTime,
+            EndTime = rule.EndTime
+        };
+        ShowModal = true;
+    }
+
+    private void CloseModal()
+    {
+        ShowModal = false;
+    }
+
+    private async Task SubmitForm()
+    {
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            ResultVM<JsonElement?>? result;
+            if (IsEditing)
+            {
+                result = await FullDiscountService.UpdateRuleAsync(EditingRuleId, new
+                {
+                    Name = FormModel.Name,
+                    MinAmount = FormModel.MinAmount,
+                    DiscountAmount = FormModel.DiscountAmount,
+                    StartTime = FormModel.StartTime,
+                    EndTime = FormModel.EndTime
+                });
+            }
+            else
+            {
+                result = await FullDiscountService.AddRuleAsync(new
+                {
+                    Name = FormModel.Name,
+                    MinAmount = FormModel.MinAmount,
+                    DiscountAmount = FormModel.DiscountAmount,
+                    StartTime = FormModel.StartTime,
+                    EndTime = FormModel.EndTime
+                });
+            }
+
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = IsEditing ? "规则已更新" : "规则已创建";
+                ShowModal = false;
+                await LoadRules();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "操作失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"操作失败: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteRule(long ruleId)
+    {
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var result = await FullDiscountService.DeleteRuleAsync(ruleId);
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = "规则已删除";
+                await LoadRules();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "删除失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"删除失败: {ex.Message}";
+        }
+    }
+
+    private string GetRuleStatusColor(int status) => status switch
+    {
+        0 => "green", 1 => "orange", 2 => "default", _ => "default"
+    };
+
+    private string GetRuleStatusText(int status) => status switch
+    {
+        0 => "进行中", 1 => "未开始", 2 => "已结束", _ => "未知"
+    };
+
+    public class FullDiscountItem
+    {
+        public long RuleId { get; set; }
+        public string Name { get; set; } = "";
+        public decimal MinAmount { get; set; }
+        public decimal DiscountAmount { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public int Status { get; set; }
+    }
+
+    public class FullDiscountFormModel
+    {
+        public string Name { get; set; } = "";
+        public decimal MinAmount { get; set; }
+        public decimal DiscountAmount { get; set; }
+        public DateTime? StartTime { get; set; }
+        public DateTime? EndTime { get; set; }
+    }
+}

@@ -53,7 +53,10 @@ namespace Horizon.Orleans.Silo.Services
                 existing.LastActivityAt = DateTime.UtcNow;
                 if (grainType != null)
                 {
-                    existing.AccessedGrainTypes.Add(grainType);
+                    lock (existing.AccessedGrainTypes)
+                    {
+                        existing.AccessedGrainTypes.Add(grainType);
+                    }
                 }
                 return existing;
             });
@@ -76,12 +79,18 @@ namespace Horizon.Orleans.Silo.Services
                 
                 if (_options.EnableDetailedLogging)
                 {
+                    string grainTypesStr;
+                    lock (connectionInfo.AccessedGrainTypes)
+                    {
+                        grainTypesStr = string.Join(", ", connectionInfo.AccessedGrainTypes);
+                    }
+                    
                     _logger.LogInformation(
                         "🔌 [客户端断开] ClientId={ClientId}, Duration={Duration:hh\\:mm\\:ss}, CallCount={CallCount}, GrainTypes={GrainTypes}",
                         clientId,
                         duration,
                         connectionInfo.CallCount,
-                        string.Join(", ", connectionInfo.AccessedGrainTypes));
+                        grainTypesStr);
                 }
             }
         }
@@ -91,7 +100,7 @@ namespace Horizon.Orleans.Silo.Services
             if (_connections.TryGetValue(clientId, out var connectionInfo))
             {
                 connectionInfo.LastActivityAt = DateTime.UtcNow;
-                connectionInfo.CallCount++;
+                System.Threading.Interlocked.Increment(ref connectionInfo.CallCount);
                 
                 if (_options.LogConnectionDetails)
                 {
@@ -159,7 +168,7 @@ namespace Horizon.Orleans.Silo.Services
         public string ClientEndpoint { get; set; } = string.Empty;
         public DateTime ConnectedAt { get; set; }
         public DateTime LastActivityAt { get; set; }
-        public int CallCount { get; set; }
+        public int CallCount;
         public HashSet<string> AccessedGrainTypes { get; set; } = new();
     }
 

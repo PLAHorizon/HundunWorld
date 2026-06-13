@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -57,7 +57,7 @@ namespace Horizon.Core.Abstract
         /// 创建时间
         /// </summary>
         [Required]
-        [Column(TypeName = "datetimeoffset(7)", Order = 56), TableDescription(TypeName = "datetimeoffset(7)", Name = "Passport", Order = "56", Description = "创建时间")]
+        [Column(TypeName = "datetime2(7)", Order = 56), TableDescription(TypeName = "datetime2(7)", Name = "Passport", Order = "56", Description = "创建时间")]
         public DateTime CreateTime { get; set; }
         /// <summary>
         /// 修改人通行证
@@ -67,7 +67,7 @@ namespace Horizon.Core.Abstract
         /// <summary>
         /// 修改时间
         /// </summary>        
-        [Column(TypeName = "datetimeoffset(7)", Order = 58), TableDescription(TypeName = "datetimeoffset(7)", Name = "ModifyTime", Order = "58", Description = "修改时间")]
+        [Column(TypeName = "datetime2(7)", Order = 58), TableDescription(TypeName = "datetime2(7)", Name = "ModifyTime", Order = "58", Description = "修改时间")]
         public DateTime? ModifyTime { get; set; }
 
         /// <summary>

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FlaxEngine;
-using Horizon.Game.Core.Database;
+using Game.Database;
 
 namespace HundunWorld.Game.Services
 {

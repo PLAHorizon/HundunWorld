@@ -1,0 +1,8 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Horizon.Game.GengDi.Core.Controls.WeatherIconControl"
+             xmlns:shapes="using:Avalonia.Controls.Shapes">
+    <Viewbox Stretch="Uniform">
+        <Canvas Width="64" Height="64" Name="IconCanvas" />
+    </Viewbox>
+</UserControl>

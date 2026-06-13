@@ -5,43 +5,38 @@ using K4os.Compression.LZ4;
 using MemoryPack;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Threading;
-using System.Threading.Tasks;
 using TouchSocket.Core;
-using TouchSocket.Resources;
-using TouchSocket.Sockets;
 
 namespace Horizon.Game.Core
 {
     /// <summary>
-    /// 混沌世界MMORPG网络消息适配器（客户端版本）
-    /// 专为武侠游戏的消息传输优化，基于TouchSocket 4.0.2 FixedHeaderPackageAdapter
+    /// 混沌世界 MMORPG 网络消息适配器（服务端）。
+    /// 实现 CustomFixedHeaderDataHandlingAdapter&lt;HorizonMessageInfo&gt;，
+    /// 正确处理 8 字节固定协议头（4字节载荷长度 + 1字节消息类型 + 1字节压缩标志 + 2字节校验和）。
     /// </summary>
-    public class HorizonMessageAdapter : FixedHeaderPackageAdapter
+    public class HorizonMessageAdapter : CustomFixedHeaderDataHandlingAdapter<HorizonMessageInfo>
     {
         private readonly AdapterStatistics _statistics = new();
         private readonly object _statsLock = new();
 
         /// <summary>
-        /// 消息头大小（字节）
-        /// 4字节长度 + 1字节类型 + 1字节压缩标志 + 2字节校验和 = 8字节
+        /// 协议固定头长度：8 字节。
         /// </summary>
-        public int HeaderLength { get; } = 8;
-
-        public override bool CanSendRequestInfo { get; } = true;
+        public override int HeaderLength => 8;
 
         /// <summary>
-        /// 获取统计信息
+        /// 获取统计信息快照。
         /// </summary>
         public AdapterStatistics Statistics => _statistics;
 
         /// <summary>
-        /// 生成网络消息包
+        /// 创建新的 HorizonMessageInfo 实例供适配器框架使用。
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="message"></param>
-        /// <returns></returns>
+        protected override HorizonMessageInfo GetInstance() => new HorizonMessageInfo();
+
+        /// <summary>
+        /// 生成网络消息包。
+        /// </summary>
         public HorizonMessagePacket CreateHorizonMessage<T>(T message) where T : MessageUnion, INetworkMessage
         {
             if (message == null)
@@ -49,18 +44,18 @@ namespace Horizon.Game.Core
                 throw new ArgumentNullException(nameof(message), "网络消息不能为空");
             }
 
-            // 创建默认的消息头
             var header = new MessageHeader
             {
                 MessageType = ((INetworkMessage)message).Type,
-                IsResponse = false, // 默认不是响应消息
+                ServiceType = ((INetworkMessage)message).ServiceType,
+                IsResponse = false,
                 Timestamp = DateTime.UtcNow.Ticks,
-                GameId = 1,    // 设置默认GameId
-                ZoneId = 1,    // 设置默认ZoneId
-                ServerId = 1,  // 设置默认ServerId
+                GameId = 1,
+                ZoneId = 1,
+                ServerId = 1,
             };
 
-            HorizonMessagePacket messagePacket = new HorizonMessagePacket
+            var messagePacket = new HorizonMessagePacket
             {
                 Header = header,
                 ServiceType = ((INetworkMessage)message).ServiceType,
@@ -71,56 +66,30 @@ namespace Horizon.Game.Core
             messagePacket.Header.SequenceId = CRC32.Compute(messagePacket.RawData);
             return messagePacket;
         }
-        
+
         /// <summary>
-        /// 序列化并打包消息
+        /// 序列化并打包消息为线路帧。
         /// </summary>
-        public byte[] PackMessage<T>(T message, MessageType messageType, bool compress = true) where T : MessageUnion,INetworkMessage
+        public byte[] PackMessage<T>(T message, MessageType messageType, bool compress = true) where T : MessageUnion, INetworkMessage
+        {
+            return PackMessage(message, messageType, responseToMessageId: null, compress: compress);
+        }
+
+        /// <summary>
+        /// 序列化并打包消息为线路帧（支持请求-响应关联）。
+        /// </summary>
+        public byte[] PackMessage<T>(T message, MessageType messageType, string responseToMessageId, bool compress = true) where T : MessageUnion, INetworkMessage
         {
             try
             {
                 var data = CreateHorizonMessage(message);
-                // 序列化消息
-                var messageData = MemoryPackSerializer.Serialize(data);
-                
-
-                // 压缩消息（如果需要且大于阈值）
-                byte[] finalData;
-                bool isCompressed = false;
-
-                if (compress && messageData.Length > 256) // 大于256字节才压缩
+                if (!string.IsNullOrEmpty(responseToMessageId))
                 {
-                    finalData = LZ4Pickler.Pickle(messageData);
-                    isCompressed = finalData.Length < messageData.Length; // 只有压缩有效果才使用
-                    if (!isCompressed)
-                        finalData = messageData;
-                }
-                else
-                {
-                    finalData = messageData;
+                    data.Header.IsResponse = true;
+                    data.Header.ResponseToMessageId = responseToMessageId;
                 }
 
-                // 构建完整消息包
-                var packet = new byte[HeaderLength + finalData.Length];
-                var span = packet.AsSpan();
-
-                // 写入消息长度
-                BitConverter.TryWriteBytes(span.Slice(0, 4), finalData.Length);
-
-                // 写入消息类型
-                span[4] = (byte)messageType;
-
-                // 写入压缩标志
-                span[5] = (byte)(isCompressed ? 1 : 0);
-
-                // 计算并写入校验和
-                var checksum = CalculateChecksum(finalData);
-                BitConverter.TryWriteBytes(span.Slice(6, 2), checksum);
-
-                // 写入消息体
-                finalData.AsSpan().CopyTo(span.Slice(HeaderLength));
-
-                return packet;
+                return PackPacket(data, compress);
             }
             catch (Exception ex)
             {
@@ -130,7 +99,76 @@ namespace Horizon.Game.Core
         }
 
         /// <summary>
-        /// 解包并反序列化消息
+        /// 序列化并打包完整消息包为线路帧，保留调用方已经设置好的头部字段。
+        /// </summary>
+        public byte[] PackPacket(HorizonMessagePacket packet, bool compress = true)
+        {
+            try
+            {
+                if (packet == null)
+                {
+                    throw new ArgumentNullException(nameof(packet), "消息包不能为空");
+                }
+
+                if (packet.Header == null)
+                {
+                    throw new ArgumentException("消息包头不能为空", nameof(packet));
+                }
+
+                if (packet.Body != null && (packet.RawData == null || packet.RawData.Length == 0))
+                {
+                    packet.RawData = MemoryPackSerializer.Serialize(packet.Body);
+                }
+
+                if (packet.RawData != null && packet.RawData.Length > 0)
+                {
+                    packet.Header.SequenceId = CRC32.Compute(packet.RawData);
+                }
+
+                var messageData = MemoryPackSerializer.Serialize(packet);
+                return WrapPacket(messageData, packet.Header.MessageType, compress);
+            }
+            catch (Exception ex)
+            {
+                UpdateErrorStats();
+                throw new InvalidOperationException($"消息打包失败: {ex.Message}", ex);
+            }
+        }
+
+        private byte[] WrapPacket(byte[] messageData, MessageType messageType, bool compress)
+        {
+            byte[] finalData;
+            bool isCompressed = false;
+
+            if (compress && messageData.Length > 256)
+            {
+                finalData = LZ4Pickler.Pickle(messageData);
+                isCompressed = finalData.Length < messageData.Length;
+                if (!isCompressed)
+                {
+                    finalData = messageData;
+                }
+            }
+            else
+            {
+                finalData = messageData;
+            }
+
+            var packet = new byte[HeaderLength + finalData.Length];
+            var span = packet.AsSpan();
+
+            BitConverter.TryWriteBytes(span.Slice(0, 4), finalData.Length);
+            span[4] = (byte)messageType;
+            span[5] = (byte)(isCompressed ? 1 : 0);
+            var checksum = CalculateChecksum(finalData);
+            BitConverter.TryWriteBytes(span.Slice(6, 2), checksum);
+            finalData.AsSpan().CopyTo(span.Slice(HeaderLength));
+
+            return packet;
+        }
+
+        /// <summary>
+        /// 解包并反序列化消息（用于旧有回退路径，正常流量通过适配器回调处理）。
         /// </summary>
         public HorizonMessagePacket UnpackMessage(byte[] data)
         {
@@ -140,35 +178,21 @@ namespace Horizon.Game.Core
                     throw new InvalidOperationException("数据长度不足消息头长度");
 
                 var span = data.AsSpan();
-
-                // 读取消息长度
                 var messageLength = BitConverter.ToInt32(span.Slice(0, 4));
 
-                // 验证数据长度
                 if (data.Length < HeaderLength + messageLength)
                     throw new InvalidOperationException("数据长度不足");
 
-                // 读取消息类型
-                var messageType = (MessageType)span[4];
-
-                // 读取压缩标志
                 var isCompressed = span[5] != 0;
-
-                // 读取校验和
                 var expectedChecksum = BitConverter.ToUInt16(span.Slice(6, 2));
-
-                // 读取消息体
                 var messageBody = span.Slice(HeaderLength, messageLength);
 
-                // 验证校验和
                 var actualChecksum = CalculateChecksum(messageBody);
                 if (actualChecksum != expectedChecksum)
                     throw new InvalidOperationException("消息校验和验证失败");
 
-                // 解压缩消息（如果需要）
                 byte[] finalData = isCompressed ? LZ4Pickler.Unpickle(messageBody) : messageBody.ToArray();
 
-                // 反序列化消息包
                 var packet = MemoryPackSerializer.Deserialize<HorizonMessagePacket>(finalData);
                 if (packet == null)
                     throw new InvalidOperationException("消息反序列化失败");
@@ -183,39 +207,9 @@ namespace Horizon.Game.Core
             }
         }
 
-        /// <summary>
-        /// 计算校验和
-        /// </summary>
-        private static ushort CalculateChecksum(ReadOnlySpan<byte> data)
-        {
-            uint checksum = 0;
-            foreach (var b in data)
-            {
-                checksum += b;
-            }
-            return (ushort)(checksum & 0xFFFF);
-        }
+        private static ushort CalculateChecksum(ReadOnlySpan<byte> data) =>
+            HorizonProtocol.CalculateChecksum(data);
 
-        /// <summary>
-        /// 更新处理统计信息
-        /// </summary>
-        private void UpdateProcessStats(MessageType messageType, int length)
-        {
-            lock (_statsLock)
-            {
-                _statistics.TotalMessagesProcessed++;
-                _statistics.TotalBytesProcessed += length;
-
-                if (!_statistics.MessageTypeStats.ContainsKey(messageType))
-                    _statistics.MessageTypeStats[messageType] = 0;
-
-                _statistics.MessageTypeStats[messageType]++;
-            }
-        }
-
-        /// <summary>
-        /// 更新错误统计信息
-        /// </summary>
         private void UpdateErrorStats()
         {
             lock (_statsLock)
@@ -224,40 +218,28 @@ namespace Horizon.Game.Core
             }
         }
     }
-}
-
-/// <summary>
-/// 适配器统计信息
-/// </summary>
-public class AdapterStatistics
-{
-    /// <summary>
-    /// 处理的消息总数
-    /// </summary>
-    public long TotalMessagesProcessed { get; set; }
 
     /// <summary>
-    /// 处理的字节总数
+    /// 适配器统计信息
     /// </summary>
-    public long TotalBytesProcessed { get; set; }
+    public class AdapterStatistics
+    {
+        /// <summary>处理的消息总数</summary>
+        public long TotalMessagesProcessed { get; set; }
 
-    /// <summary>
-    /// 错误总数
-    /// </summary>
-    public long ErrorCount { get; set; }
+        /// <summary>处理的字节总数</summary>
+        public long TotalBytesProcessed { get; set; }
 
-    /// <summary>
-    /// 各类型消息统计
-    /// </summary>
-    public Dictionary<MessageType, long> MessageTypeStats { get; set; } = new();
+        /// <summary>错误总数</summary>
+        public long ErrorCount { get; set; }
 
-    /// <summary>
-    /// 错误率
-    /// </summary>
-    public double ErrorRate => TotalMessagesProcessed > 0 ? (double)ErrorCount / TotalMessagesProcessed : 0;
+        /// <summary>各类型消息统计</summary>
+        public Dictionary<MessageType, long> MessageTypeStats { get; set; } = new();
 
-    /// <summary>
-    /// 平均消息大小
-    /// </summary>
-    public double AverageMessageSize => TotalMessagesProcessed > 0 ? (double)TotalBytesProcessed / TotalMessagesProcessed : 0;
+        /// <summary>错误率</summary>
+        public double ErrorRate => TotalMessagesProcessed > 0 ? (double)ErrorCount / TotalMessagesProcessed : 0;
+
+        /// <summary>平均消息大小（字节）</summary>
+        public double AverageMessageSize => TotalMessagesProcessed > 0 ? (double)TotalBytesProcessed / TotalMessagesProcessed : 0;
+    }
 }

@@ -19,6 +19,24 @@ namespace HundunWorld.Game.UI.Components
         private GPUTextureBrush _textureBrush;
         private bool _isInitialized = false;
         
+        // 目标场景引用，Actor 将生成到此场景，避免错误地生成到 TransitionScene
+        private FlaxEngine.Scene _targetScene;
+        private bool _viewportCreated = false; // 视口渲染资源是否已创建
+        private bool _actorsSpawned = false;   // Actor 是否已生成到场景
+        public FlaxEngine.Scene TargetScene
+        {
+            get => _targetScene;
+            set
+            {
+                _targetScene = value;
+                // TargetScene 设置后，如果视口已创建但 Actor 还未生成，立即生成
+                if (_viewportCreated && !_actorsSpawned)
+                {
+                    SpawnActorsToScene();
+                }
+            }
+        }
+        
         // 相机参数
         private float _cameraDistance = 300f;
         private float _cameraPitch = -15f;
@@ -43,6 +61,37 @@ namespace HundunWorld.Game.UI.Components
         /// <summary>
         /// 初始化视口
         /// </summary>
+        /// <summary>
+        /// 获取目标场景，优先使用指定的场景，否则查找 Character 场景，最后使用非过渡场景
+        /// </summary>
+        private FlaxEngine.Scene GetTargetScene()
+        {
+            if (_targetScene != null)
+                return _targetScene;
+            
+            // 尝试查找 Character 场景
+            for (int i = 0; i < Level.ScenesCount; i++)
+            {
+                var scene = Level.GetScene(i);
+                if (scene != null && scene.Name == "Character")
+                    return scene;
+            }
+            
+            // 回退：返回最后一个加载的非过渡场景
+            for (int i = Level.ScenesCount - 1; i >= 0; i--)
+            {
+                var scene = Level.GetScene(i);
+                if (scene != null && scene.Name != "TransitionScene")
+                    return scene;
+            }
+            
+            return null;
+        }
+        
+        /// <summary>
+        /// 初始化视口 - 仅创建渲染资源，不生成 Actor 到场景
+        /// Actor 将在 TargetScene 设置后通过 SpawnActorsToScene() 生成
+        /// </summary>
         public void InitializeViewport()
         {
             if (_isInitialized) return;
@@ -59,14 +108,54 @@ namespace HundunWorld.Game.UI.Components
                 
                 // 创建渲染任务
                 _renderTask = new SceneRenderTask();
-                _renderTask.Order = -100; // 确保在UI之前渲染
+                _renderTask.Order = -100;
                 _renderTask.Output = _renderTexture;
-                _renderTask.Enabled = true; // 启用渲染任务
+                _renderTask.Enabled = false; // 暂不启用，等 Actor 生成后再启用
                 
-                // 创建相机Actor
+                // 创建纹理画笔
+                _textureBrush = new GPUTextureBrush(_renderTexture);
+                
+                _isInitialized = true;
+                _viewportCreated = true;
+                
+                // 如果 TargetScene 已设置，立即生成 Actor
+                var scene = GetTargetScene();
+                if (scene != null)
+                {
+                    _targetScene = scene;
+                    SpawnActorsToScene();
+                }
+                else
+                {
+                    FlaxEngine.Debug.Log($"[Viewport3DPreview] 视口渲染资源已创建，等待 TargetScene 设置后生成 Actor");
+                }
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"3D预览视口初始化失败: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// 将相机 Actor 生成到目标场景（必须在 TargetScene 有效后调用）
+        /// </summary>
+        private void SpawnActorsToScene()
+        {
+            if (_actorsSpawned || !_viewportCreated) return;
+            
+            var scene = GetTargetScene();
+            if (scene == null)
+            {
+                FlaxEngine.Debug.LogWarning("[Viewport3DPreview] SpawnActorsToScene: 无可用场景");
+                return;
+            }
+            
+            try
+            {
+                // 创建相机Actor并生成到目标场景
                 var cameraActor = new EmptyActor();
                 cameraActor.Name = "PreviewCamera";
-                Level.SpawnActor(cameraActor); // 将相机Actor添加到场景
+                Level.SpawnActor(cameraActor, scene);
                 
                 _camera = cameraActor.AddChild<Camera>();
                 _camera.FieldOfView = 60f;
@@ -74,22 +163,19 @@ namespace HundunWorld.Game.UI.Components
                 _camera.FarPlane = 10000f;
                 _camera.UsePerspective = true;
                 
-                // 设置相机位置
                 UpdateCameraPosition();
                 
                 // 将相机添加到渲染任务
                 _renderTask.ActorsSource = ActorsSources.CustomActors;
                 _renderTask.CustomActors = new Actor[] { cameraActor };
+                _renderTask.Enabled = true;
                 
-                // 创建纹理画笔
-                _textureBrush = new GPUTextureBrush(_renderTexture);
-                
-                _isInitialized = true;
-                FlaxEngine.Debug.Log($"3D预览视口初始化成功 - 尺寸: {Size}");
+                _actorsSpawned = true;
+                FlaxEngine.Debug.Log($"[Viewport3DPreview] 相机Actor已生成到场景: {scene.Name}");
             }
             catch (Exception ex)
             {
-                FlaxEngine.Debug.LogError($"3D预览视口初始化失败: {ex.Message}");
+                FlaxEngine.Debug.LogError($"[Viewport3DPreview] SpawnActorsToScene 失败: {ex.Message}");
             }
         }
         
@@ -150,9 +236,9 @@ namespace HundunWorld.Game.UI.Components
         /// <param name="prefab">预制体</param>
         public void LoadFromPrefab(Prefab prefab)
         {
-            if (!_isInitialized)
+            if (!_isInitialized || !_actorsSpawned)
             {
-                FlaxEngine.Debug.LogWarning("视口未初始化，无法加载预制体");
+                FlaxEngine.Debug.LogWarning("[Viewport3DPreview] 视口Actor未就绪，无法加载预制体");
                 return;
             }
             
@@ -164,16 +250,18 @@ namespace HundunWorld.Game.UI.Components
             
             try
             {
-                // 清理现有模型
                 ClearModel();
                 
-                // 实例化预制体
-                _modelActor = PrefabManager.SpawnPrefab(prefab);
+                var scene = GetTargetScene();
+                _modelActor = PrefabManager.SpawnPrefab(prefab, Vector3.Zero, Quaternion.Identity);
                 if (_modelActor == null)
                 {
                     FlaxEngine.Debug.LogWarning($"无法实例化预制体: {prefab.Path}");
                     return;
                 }
+                // 确保模型生成到正确的场景
+                if (scene != null)
+                    _modelActor.Parent = scene;
                 
                 // 查找模型组件
                 _animatedModel = _modelActor.GetChild<AnimatedModel>();
@@ -206,18 +294,16 @@ namespace HundunWorld.Game.UI.Components
         /// <param name="modelName">静态模型名称</param>
         public void LoadStaticModel(string modelName)
         {
-            if (!_isInitialized)
+            if (!_isInitialized || !_actorsSpawned)
             {
-                FlaxEngine.Debug.LogWarning("视口未初始化，无法加载静态模型");
+                FlaxEngine.Debug.LogWarning("[Viewport3DPreview] 视口Actor未就绪，无法加载静态模型");
                 return;
             }
             
             try
             {
-                // 清理现有模型
                 ClearModel();
                 
-                // 加载静态模型
                 var model = FlaxEngine.Content.LoadAsync<Model>(modelName);
                 if (model == null)
                 {
@@ -225,10 +311,13 @@ namespace HundunWorld.Game.UI.Components
                     return;
                 }
                 
-                // 创建模型Actor并添加到场景
+                var scene = GetTargetScene();
                 _modelActor = new EmptyActor();
                 _modelActor.Name = "StaticModelPreview";
-                Level.SpawnActor(_modelActor);
+                if (scene != null)
+                    Level.SpawnActor(_modelActor, scene);
+                else
+                    Level.SpawnActor(_modelActor);
                 
                 _staticModel = _modelActor.AddChild<StaticModel>();
                 _staticModel.Model = model;
@@ -254,31 +343,31 @@ namespace HundunWorld.Game.UI.Components
         
         public void LoadAnimatedModel(string modelName)
         {
-            if (!_isInitialized)
+            if (!_isInitialized || !_actorsSpawned)
             {
-                FlaxEngine.Debug.LogWarning("视口未初始化，无法加载动画模型");
+                FlaxEngine.Debug.LogWarning("[Viewport3DPreview] 视口Actor未就绪，无法加载动画模型");
                 return;
             }
             
             try
             {
-                // 清理现有模型
                 ClearModel();
                 
-                // 加载蒙皮模型
                 var skinnedModel = FlaxEngine.Content.LoadAsync<SkinnedModel>(modelName);
                 if (skinnedModel == null)
                 {
                     FlaxEngine.Debug.LogWarning($"无法加载蒙皮模型: {modelName}");
-                    // 回退到静态模型
                     LoadStaticModel(modelName.Replace(".skinned", "").Replace(".Skinned", ""));
                     return;
                 }
                 
-                // 创建模型Actor并添加到场景
+                var scene = GetTargetScene();
                 _modelActor = new EmptyActor();
                 _modelActor.Name = "AnimatedModelPreview";
-                Level.SpawnActor(_modelActor);
+                if (scene != null)
+                    Level.SpawnActor(_modelActor, scene);
+                else
+                    Level.SpawnActor(_modelActor);
                 
                 _animatedModel = _modelActor.AddChild<AnimatedModel>();
                 _animatedModel.SkinnedModel = skinnedModel;

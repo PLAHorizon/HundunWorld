@@ -1576,4 +1576,37 @@ namespace Horizon.Game.Message.Network
     }
 
     #endregion
+
+
+    #region NarrativePro
+    /// <summary>
+    /// NarrativePro Horizon消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class NarrativeProHorizonMessage : MessageUnion,INetworkMessage
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public string JsonPayload { get; set; } = "";
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public MessageType Type { get; set; } = MessageType.Quest;
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Game;
+
+        [MemoryPackConstructor]
+        public NarrativeProHorizonMessage() : base()
+        {
+            Type = MessageType.Quest;
+            ServiceType = ServiceType.Game;
+        }
+
+        public NarrativeProHorizonMessage(string jsonPayload) : this()
+        {
+            JsonPayload = jsonPayload;
+        }
+    }
+    #endregion
 }

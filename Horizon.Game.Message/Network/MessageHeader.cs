@@ -104,6 +104,21 @@ namespace Horizon.Game.Message.Network
         public Dictionary<string, object> ExtensionData { get; set; } = new();
 
         /// <summary>
+        /// 用户鉴权令牌
+        /// 包含用户登录时间、机器ID与PassportId的加密数据，角色进入游戏后还含角色Id，仅网关层或服务端层可解析验证
+        /// </summary>
+        [MemoryPackOrder(18)]
+        [Id(18)]
+        public string AuthToken { get; set; } = "";
+
+        /// <summary>
+        /// 客户端机器唯一标识符（由客户端通过 MachineIdentifier.GetMachineGuid() 获取，用于令牌机器ID验证）
+        /// </summary>
+        [MemoryPackOrder(19)]
+        [Id(19)]
+        public string MachineId { get; set; } = "";
+
+        /// <summary>
         /// 是否需要响应
         /// </summary>
         [MemoryPackOrder(9)]
@@ -144,7 +159,7 @@ namespace Horizon.Game.Message.Network
         public MessageHeader()
         {
             MessageId = Guid.NewGuid().ToString("N");
-            Timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             Version = 1;
             Priority = 0;
         }

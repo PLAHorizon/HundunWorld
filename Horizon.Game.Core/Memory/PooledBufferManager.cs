@@ -44,7 +44,7 @@ namespace Horizon.Game.Core.Memory
 
             return _clientBuffers.GetOrAdd(clientId, id =>
             {
-                _logger.LogDebug("Creating new pooled buffer for client {ClientId}", id);
+                _logger.LogDebug("为客户端 {ClientId} 创建新的池化缓冲区", id);
                 return new PooledClientBuffer(id, _arrayPool, _config.MaxMessageLength);
             });
         }
@@ -59,7 +59,7 @@ namespace Horizon.Game.Core.Memory
             if (_clientBuffers.TryRemove(clientId, out var buffer))
             {
                 buffer.Dispose();
-                _logger.LogDebug("Removed buffer for client {ClientId}", clientId);
+                _logger.LogDebug("已移除客户端 {ClientId} 的缓冲区", clientId);
             }
         }
 
@@ -88,7 +88,7 @@ namespace Horizon.Game.Core.Memory
 
             if (expiredClients.Count > 0)
             {
-                _logger.LogInformation("Cleaned up {Count} expired client buffers", expiredClients.Count);
+                _logger.LogInformation("已清理 {Count} 个过期客户端缓冲区", expiredClients.Count);
             }
         }
 
@@ -120,7 +120,7 @@ namespace Horizon.Game.Core.Memory
                 }
             }
 
-            _logger.LogInformation("Pooled buffer manager disposed");
+            _logger.LogInformation("池化缓冲区管理器已释放");
         }
     }
 

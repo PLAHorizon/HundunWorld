@@ -57,8 +57,8 @@ namespace Horizon.Game.Gateway.Monitoring
                     // 添加自定义活动源
                     tracing.AddSource(GatewayMetrics.ActivitySourceName);
 
-                    // 导出到控制台（开发环境调试）
-                    tracing.AddConsoleExporter();
+                    // 导出到控制台（开发环境调试），已注释以防止巨量日志刷屏
+                    // tracing.AddConsoleExporter();
                 });
 
             return services;

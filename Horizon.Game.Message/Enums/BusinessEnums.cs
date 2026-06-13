@@ -488,4 +488,178 @@ namespace Horizon.Game.Message.Enums
         /// </summary>
         Category
     }
+
+    public enum FlowerUserType
+    {
+        Normal = 0,
+        Merchant = 1,
+        Admin = 2
+    }
+
+    public enum SubscriptionLevel
+    {
+        Free = 0,
+        Basic = 1,
+        Premium = 2,
+        VIP = 3
+    }
+
+    public enum ShopAuditStatus
+    {
+        Unusable = 0,
+        Pending = 1,
+        Approved = 2,
+        Refused = 3,
+        Opened = 4,
+        Frozen = 5,
+        Expired = 6
+    }
+
+    public enum ProductAuditStatus
+    {
+        Pending = 0,
+        Approved = 1,
+        Refused = 2
+    }
+
+    public enum OrderOperateStatus
+    {
+        PendingPayment = 0,
+        PendingDelivery = 1,
+        Shipped = 2,
+        Completed = 3,
+        Closed = 4
+    }
+
+    public enum RefundStatus
+    {
+        PendingAudit = 0,
+        SellerAgreed = 1,
+        SellerRefused = 2,
+        Refunding = 3,
+        RefundCompleted = 4,
+        RefundClosed = 5
+    }
+
+    public enum FreightValuationMethod
+    {
+        ByPiece = 0,
+        ByWeight = 1,
+        ByVolume = 2
+    }
+
+    public enum RefundMode
+    {
+        RefundOnly = 0,
+        ReturnAndRefund = 1
+    }
+
+    public enum MerchantStage
+    {
+        Agreement = 0,
+        CompanyInfo = 1,
+        BankAccount = 2,
+        ShopInfo = 3,
+        Finished = 4
+    }
+
+    public enum CouponType
+    {
+        CashCoupon = 0,
+        DiscountCoupon = 1
+    }
+
+    public enum CouponRecordStatus
+    {
+        Unused = 0,
+        Used = 1,
+        Expired = 2
+    }
+
+    public enum FullDiscountStatus
+    {
+        Inactive = 0,
+        Active = 1
+    }
+
+    public enum CashDepositStatus
+    {
+        Pending = 0,
+        Paid = 1,
+        Deducted = 2,
+        Refunded = 3
+    }
+
+    public enum BusinessCategoryAuditStatus
+    {
+        Pending = 0,
+        Approved = 1,
+        Refused = 2
+    }
+
+    public enum ComplaintStatus
+    {
+        Pending = 0,
+        Processing = 1,
+        Resolved = 2,
+        Closed = 3
+    }
+
+    public enum WithdrawStatus
+    {
+        PendingAudit = 0,
+        Approved = 1,
+        Refused = 2,
+        Paid = 3
+    }
+
+    public enum ShopAccountType
+    {
+        Income = 0,
+        Expense = 1
+    }
+
+    public enum PendingSettlementStatus
+    {
+        Pending = 0,
+        Settled = 1
+    }
+
+    public enum BrandAuditStatus
+    {
+        Pending = 0,
+        Approved = 1,
+        Refused = 2
+    }
+
+    public enum ReturnShipmentStatus
+    {
+        WaitingReturn = 0,
+        Shipped = 1,
+        Received = 2
+    }
+
+    public enum LogisticsStatus
+    {
+        NoTrack = 0,
+        Collected = 1,
+        InTransit = 2,
+        Delivering = 3,
+        Signed = 4,
+        Abnormal = 5
+    }
+
+    public enum SettlementDetailStatus
+    {
+        Normal = 0,
+        RefundDeducted = 1
+    }
+
+    public enum OrderRefundStatus
+    {
+        None = 0,
+        Refunding = 1,
+        PartialRefunded = 2,
+        Refunded = 3
+    }
 }

@@ -1,9 +1,7 @@
 using System;
-using System.Threading.Tasks;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.UI.MetaHuman;
-using HundunWorld.Game.Services;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 using static HundunWorld.Game.UI.UIHelper;
@@ -12,312 +10,228 @@ using HundunWorld.Game.UI.Components;
 namespace HundunWorld.Game.UI.Character
 {
     /// <summary>
-    /// 集成的角色创建界面
-    /// 结合基础信息输入和MetaHuman外观编辑功能
+    /// 集成的角色创建界面 - 燕云十六声风格（步骤3：精细捏脸）
+    /// 3D角色全屏背景 + 左侧分类导航/子分类/参数滑块 + 底部操作栏
     /// </summary>
     public class IntegratedCharacterCreationUI : ContainerControl
     {
         #region 事件
         public event Action<CharacterInfo> OnCharacterCreated;
         public event Action OnCancelled;
+        public event Action OnCompleteStep;
         #endregion
 
         #region UI组件
-        private Panel _leftPanel;          // 左侧：基础信息输入
-        private Panel _rightPanel;         // 右侧：MetaHuman编辑器
-        
-        // 基础信息输入
-        private ValidatedTextBox _nameInput;
-        private Dropdown _genderDropdown;
-        private Dropdown _professionDropdown;
-        
-        // 外观编辑器
-        private MetaHumanEditorUI _metaHumanEditor;
-        
-        // 底部按钮
-        private Panel _buttonPanel;
-        private Button _createButton;
-        private Button _cancelButton;
-        private Button _randomButton;
-        
+        private CategorySidebar _categorySidebar;
+        private SubCategoryPanel _subCategoryPanel;
+        private ParameterSliderGroup _parameterPanel;
+        private BottomActionBar _bottomBar;
+
+        // 左侧面板容器（分类+子分类+参数），半透明背景
+        private Panel _leftPanelContainer;
+
+        // 3D角色预览
+        private CharacterPreviewPanel _characterPreview;
+        private bool _layoutInitialized = false;
+
+        public bool IsInitialized => _layoutInitialized;
+
+        // 相机复位按钮
+        private Button _resetCameraButton;
+
         // 加载指示器
         private LoadingIndicator _loadingIndicator;
-        
-        // 提示标签
-        private Label _statusLabel;
+
+        // 下一步按钮
+        private NextStepButton _nextStepButton;
         #endregion
 
         #region 数据
         private AppearanceInfo _currentAppearance;
-        private bool _isProcessing;
+
+        // 捏脸分类数据
+        private static readonly string[] MainCategories = { "捏脸", "妆容", "发型", "体型" };
+        private static readonly string[][] SubCategories = {
+            new[] { "脸型", "额头", "颧骨", "下巴", "鼻子", "嘴唇" },
+            new[] { "眉妆", "眼妆", "腮红", "唇彩" },
+            new[] { "发型", "发色", "刘海" },
+            new[] { "身高", "体型", "肩宽", "腰围" }
+        };
+        private static readonly string[][][] ParameterDefs = {
+            new[] {
+                new[] { "宽度", "长度", "饱满度" },
+                new[] { "高度", "前后", "宽度" },
+                new[] { "高度", "宽度", "突出度" },
+                new[] { "长度", "宽度", "角度" },
+                new[] { "高度", "宽度", "长度", "鼻翼" },
+                new[] { "厚度", "宽度", "角度" }
+            },
+            new[] {
+                new[] { "粗细", "弧度", "间距" },
+                new[] { "大小", "角度", "间距" },
+                new[] { "范围", "浓度", "位置" },
+                new[] { "厚度", "宽度", "颜色" }
+            },
+            new[] {
+                new[] { "长度", "蓬松度", "卷曲度" },
+                new[] { "色相", "饱和度", "明度" },
+                new[] { "长度", "角度", "密度" }
+            },
+            new[] {
+                new[] { "高度" },
+                new[] { "胖瘦", "肌肉", "柔韧" },
+                new[] { "宽度", "角度" },
+                new[] { "粗细", "曲线" }
+            }
+        };
+
+        // 子分类对应的相机聚焦部位
+        private static readonly string[][] SubCategoryBodyParts = {
+            new[] { "脸部", "头部", "头部", "脸部", "脸部", "脸部" },
+            new[] { "头部", "头部", "脸部", "脸部" },
+            new[] { "发型", "发型", "发型" },
+            new[] { "全身", "全身", "上半身", "全身" }
+        };
         #endregion
 
         #region 初始化
-        public IntegratedCharacterCreationUI()
+        public IntegratedCharacterCreationUI(CharacterPreviewPanel sharedPreviewPanel = null)
         {
-            // 使用固定大小，确保布局正确
-            Width = 820;
-            Height = 670;  // 600内容区 + 70按钮区
-            AnchorPreset = AnchorPresets.MiddleCenter;  // 居中显示
-            
-            BackgroundColor = new Color(0.08f, 0.08f, 0.10f, 1.0f);
-            
+            AnchorPreset = AnchorPresets.StretchAll;
+            Offsets = Margin.Zero;
+            BackgroundColor = Color.Transparent;
+
             _currentAppearance = new AppearanceInfo();
-            
+
+            if (sharedPreviewPanel != null)
+            {
+                _characterPreview = sharedPreviewPanel;
+            }
+        }
+
+        public override void Update(float deltaTime)
+        {
+            base.Update(deltaTime);
+
+            if (!_layoutInitialized && Width > 0 && Height > 0)
+            {
+                _layoutInitialized = true;
+                CreateUI();
+                InitializeAppearanceDefaults();
+            }
+        }
+
+        public void ForceInitialize()
+        {
+            if (!_layoutInitialized)
+            {
+                _layoutInitialized = true;
+                CreateUI();
+                InitializeAppearanceDefaults();
+                PerformLayout();
+            }
+        }
+
+        public void CreateUIImmediate()
+        {
+            _layoutInitialized = true;
             CreateUI();
             InitializeAppearanceDefaults();
+            PerformLayout();
         }
 
         private void CreateUI()
         {
-            CreateLeftPanel();
-            CreateRightPanel();
-            CreateLoadingIndicator();
-            CreateBottomButtonPanel();  // 最后创建，确保在最上层
+            try { CreateLeftPanel(); }
+            catch (Exception ex) { Debug.LogError($"[IntegratedCharacterCreationUI] 创建左侧面板失败: {ex.Message}"); }
+
+            try { CreateBottomBar(); }
+            catch (Exception ex) { Debug.LogError($"[IntegratedCharacterCreationUI] 创建底部操作栏失败: {ex.Message}"); }
+
+            try { CreateLoadingIndicator(); }
+            catch (Exception ex) { Debug.LogError($"[IntegratedCharacterCreationUI] 创建加载指示器失败: {ex.Message}"); }
+
+            try { CreateResetCameraButton(); }
+            catch (Exception ex) { Debug.LogError($"[IntegratedCharacterCreationUI] 创建相机复位按钮失败: {ex.Message}"); }
+
+            try
+            {
+                _nextStepButton = new NextStepButton { Parent = this };
+                _nextStepButton.OnClicked += OnNextStepClicked;
+            }
+            catch (Exception ex) { Debug.LogError($"[IntegratedCharacterCreationUI] 创建下一步按钮失败: {ex.Message}"); }
         }
 
         private void CreateLeftPanel()
         {
-            // 左侧面板只占用左半部分，不处理底部预留
-            _leftPanel = new Panel
+            // 左侧面板容器 — 更紧凑的布局，参考图片中左侧面板更窄
+            _leftPanelContainer = new Panel
             {
                 Parent = this,
-                X = 0,
-                Y = 0,
-                Width = 320,
-                Height = 600,  // 固定高度，确保显示
-                BackgroundColor = new Color(0.12f, 0.12f, 0.15f, 1.0f)
+                AnchorPreset = AnchorPresets.VerticalStretchLeft,
+                Offsets = new Margin(16, 100, 16, 70),
+                Width = 400,
+                BackgroundColor = new Color(0.03f, 0.03f, 0.05f, 0.72f)
             };
 
-            float y = 20;
-            float padding = 20;
-            float labelWidth = 80;
-            float inputWidth = 200;
-            float rowHeight = 35;
-            float spacing = 10;
-
-            // 标题
-            var titleLabel = new Label
+            _categorySidebar = new CategorySidebar
             {
-                Parent = _leftPanel,
-                Text = "创建角色",
-                X = padding,
-                Y = y,
-                Width = _leftPanel.Width - padding * 2,
-                Height = 40,
-                TextColor = new Color(1.0f, 0.84f, 0.0f),
-                HorizontalAlignment = TextAlignment.Center
+                Parent = _leftPanelContainer,
+                AnchorPreset = AnchorPresets.VerticalStretchLeft,
+                Offsets = new Margin(8, 0, 8, 8),
+                Width = 110
             };
-            y += 50;
+            _categorySidebar.SetCategories(MainCategories);
+            _categorySidebar.OnCategoryChanged += OnMainCategoryChanged;
 
-            // 角色名称
-            var nameLabel = new Label
+            _subCategoryPanel = new SubCategoryPanel
             {
-                Parent = _leftPanel,
-                Text = "角色名称",
-                X = padding,
-                Y = y + 5,
-                Width = labelWidth,
-                Height = 25,
-                TextColor = MetaHumanStyles.Colors.TextSecondary,
-                VerticalAlignment = TextAlignment.Center
+                Parent = _leftPanelContainer,
+                AnchorPreset = AnchorPresets.VerticalStretchLeft,
+                Offsets = new Margin(126, 0, 8, 8),
+                Width = 130
             };
+            _subCategoryPanel.OnSubCategoryChanged += OnSubCategoryChanged;
+            _subCategoryPanel.SetSubCategories(SubCategories[0]);
 
-            _nameInput = new ValidatedTextBox
+            _parameterPanel = new ParameterSliderGroup
             {
-                Parent = _leftPanel,
-                X = padding + labelWidth + 5,
-                Y = y,
-                Width = inputWidth,
-                Height = rowHeight,
-                WatermarkText = "请输入角色名",
-                BackgroundColor = MetaHumanStyles.Colors.BackgroundDark,
-                TextColor = MetaHumanStyles.Colors.TextPrimary
+                Parent = _leftPanelContainer,
+                AnchorPreset = AnchorPresets.VerticalStretchRight,
+                Offsets = new Margin(264, 0, 8, 8)
             };
-            _nameInput.SetValidator(text =>
-            {
-                if (string.IsNullOrWhiteSpace(text))
-                    return (false, "角色名不能为空");
-                if (text.Length < 2)
-                    return (false, "角色名至少2个字符");
-                if (text.Length > 12)
-                    return (false, "角色名最多12个字符");
-                return (true, "");
-            });
-            _nameInput.TextChanged += OnInputChanged;
-            y += rowHeight + spacing;
-
-            // 性别选择
-            var genderLabel = new Label
-            {
-                Parent = _leftPanel,
-                Text = "性别",
-                X = padding,
-                Y = y + 5,
-                Width = labelWidth,
-                Height = 25,
-                TextColor = MetaHumanStyles.Colors.TextSecondary,
-                VerticalAlignment = TextAlignment.Center
-            };
-
-            _genderDropdown = new Dropdown
-            {
-                Parent = _leftPanel,
-                X = padding + labelWidth + 5,
-                Y = y,
-                Width = inputWidth,
-                Height = rowHeight,
-                BackgroundColor = MetaHumanStyles.Colors.BackgroundDark,
-                TextColor = MetaHumanStyles.Colors.TextPrimary
-            };
-            _genderDropdown.AddItem("男");
-            _genderDropdown.AddItem("女");
-            _genderDropdown.SelectedIndex = 0;
-            y += rowHeight + spacing;
-
-            // 职业选择
-            var professionLabel = new Label
-            {
-                Parent = _leftPanel,
-                Text = "职业",
-                X = padding,
-                Y = y + 5,
-                Width = labelWidth,
-                Height = 25,
-                TextColor = MetaHumanStyles.Colors.TextSecondary,
-                VerticalAlignment = TextAlignment.Center
-            };
-
-            _professionDropdown = new Dropdown
-            {
-                Parent = _leftPanel,
-                X = padding + labelWidth + 5,
-                Y = y,
-                Width = inputWidth,
-                Height = rowHeight,
-                BackgroundColor = MetaHumanStyles.Colors.BackgroundDark,
-                TextColor = MetaHumanStyles.Colors.TextPrimary
-            };
-            _professionDropdown.AddItem("剑客");
-            _professionDropdown.AddItem("刀客");
-            _professionDropdown.AddItem("枪客");
-            _professionDropdown.AddItem("弓手");
-            _professionDropdown.AddItem("法师");
-            _professionDropdown.AddItem("道士");
-            _professionDropdown.AddItem("刺客");
-            _professionDropdown.AddItem("医师");
-            _professionDropdown.SelectedIndex = 0;
-            y += rowHeight + spacing + 20;
-
-            // 分隔线
-            var separator = new Panel
-            {
-                Parent = _leftPanel,
-                X = padding,
-                Y = y,
-                Width = _leftPanel.Width - padding * 2,
-                Height = 1,
-                BackgroundColor = MetaHumanStyles.Colors.Separator
-            };
-            y += 20;
-
-            // 外观提示
-            var appearanceHint = new Label
-            {
-                Parent = _leftPanel,
-                Text = "右侧可自定义外观\n• 皮肤颜色和材质\n• 眼睛颜色和大小\n• 发型和发色",
-                X = padding,
-                Y = y,
-                Width = _leftPanel.Width - padding * 2,
-                Height = 100,
-                TextColor = MetaHumanStyles.Colors.TextMuted,
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Near,
-                Wrapping = TextWrapping.WrapWords
-            };
-            y += 110;
-
-            // 状态标签 - 固定在底部
-            _statusLabel = new Label
-            {
-                Parent = _leftPanel,
-                Text = "填写基础信息后点击创建",
-                AnchorPreset = AnchorPresets.HorizontalStretchBottom,
-                Offsets = new Margin(padding, padding, 0, 20),
-                Height = 60,
-                TextColor = MetaHumanStyles.Colors.TextMuted,
-                HorizontalAlignment = TextAlignment.Center,
-                VerticalAlignment = TextAlignment.Center,
-                Wrapping = TextWrapping.WrapWords
-            };
+            _parameterPanel.OnParameterChanged += OnParameterChanged;
+            UpdateParameterPanel(0, 0);
         }
 
-        private void CreateRightPanel()
+        private void CreateBottomBar()
         {
-            // 右侧面板固定在右边
-            _rightPanel = new Panel
+            _bottomBar = new BottomActionBar
             {
                 Parent = this,
-                X = 320,
-                Y = 0,
-                Width = 500,  // 固定宽度
-                Height = 600,
-                BackgroundColor = MetaHumanStyles.Colors.BackgroundDark
+                AnchorPreset = AnchorPresets.HorizontalStretchBottom
             };
-
-            // 创建MetaHuman编辑器
-            _metaHumanEditor = new MetaHumanEditorUI
-            {
-                Parent = _rightPanel,
-                AnchorPreset = AnchorPresets.StretchAll
-            };
-
-            // 绑定外观变更事件
-            _metaHumanEditor.OnTabChanged += OnEditorTabChanged;
+            _bottomBar.SetButtons(
+                new string[] { "返回", "随机" },
+                new BottomActionBar.ButtonStyle[] {
+                    BottomActionBar.ButtonStyle.Ghost,
+                    BottomActionBar.ButtonStyle.Default
+                }
+            );
+            _bottomBar.OnButtonClicked += OnBottomBarButtonClicked;
         }
 
-        private void CreateBottomButtonPanel()
+        private void OnBottomBarButtonClicked(string buttonName)
         {
-            // 底部按钮面板 - 绝对定位在底部，使用明亮的背景色确保可见
-            _buttonPanel = new Panel
+            switch (buttonName)
             {
-                Parent = this,
-                X = 0,
-                Y = 600,  // 固定在左侧面板底部下方
-                Width = 820,  // 320 + 500
-                Height = 70,
-                BackgroundColor = new Color(0.15f, 0.15f, 0.18f, 1.0f)  // 比主背景稍亮
-            };
-            
-            // 确保按钮面板在最上层
-            _buttonPanel.IndexInParent = 100;
-
-            float buttonWidth = 120;
-            float buttonHeight = 40;
-            float spacing = 20;
-            float leftMargin = 30;
-
-            // 随机按钮 - 左侧
-            _randomButton = MetaHumanStyles.CreateStyledButton("随机生成", buttonWidth, buttonHeight, ButtonStyle.Ghost);
-            _randomButton.Parent = _buttonPanel;
-            _randomButton.X = leftMargin;
-            _randomButton.Y = 15;
-            _randomButton.Clicked += OnRandomClicked;
-
-            // 取消按钮 - 右侧
-            _cancelButton = MetaHumanStyles.CreateStyledButton("取消", buttonWidth, buttonHeight, ButtonStyle.Default);
-            _cancelButton.Parent = _buttonPanel;
-            _cancelButton.X = _buttonPanel.Width - buttonWidth * 2 - spacing - leftMargin;
-            _cancelButton.Y = 15;
-            _cancelButton.Clicked += OnCancelClicked;
-
-            // 创建按钮 - 最右侧，高亮
-            _createButton = MetaHumanStyles.CreateStyledButton("创建角色", buttonWidth, buttonHeight, ButtonStyle.Accent);
-            _createButton.Parent = _buttonPanel;
-            _createButton.X = _buttonPanel.Width - buttonWidth - leftMargin;
-            _createButton.Y = 15;
-            _createButton.Clicked += OnCreateClicked;
-            _createButton.Enabled = false;
+                case "返回":
+                    OnCancelClicked();
+                    break;
+                case "随机":
+                    OnRandomClicked();
+                    break;
+            }
         }
 
         private void CreateLoadingIndicator()
@@ -325,6 +239,30 @@ namespace HundunWorld.Game.UI.Character
             _loadingIndicator = UIHelper.CreateLoadingIndicator();
             _loadingIndicator.Parent = this;
             _loadingIndicator.Visible = false;
+        }
+
+        private void CreateResetCameraButton()
+        {
+            _resetCameraButton = new Button
+            {
+                Parent = this,
+                Text = "\u21BA",
+                TextColor = Color.White,
+                Font = UIHelper.SetFont(size: 20),
+                BackgroundColor = new Color(0.05f, 0.05f, 0.08f, 0.75f),
+                BorderColor = new Color(212f / 255f, 175f / 255f, 55f / 255f, 0.5f),
+                BorderThickness = 1.5f,
+                AnchorPreset = AnchorPresets.BottomRight,
+                Offsets = new Margin(0, 295, 0, 85),
+                Size = new Float2(46, 46),
+                TooltipText = "复位相机视角"
+            };
+            _resetCameraButton.Clicked += OnResetCameraClicked;
+        }
+
+        private void OnResetCameraClicked()
+        {
+            _characterPreview?.ResetView();
         }
 
         private void InitializeAppearanceDefaults()
@@ -337,30 +275,113 @@ namespace HundunWorld.Game.UI.Character
         }
         #endregion
 
+        #region 分类切换逻辑 + 相机联动
+        private void OnMainCategoryChanged(int index, string name)
+        {
+            if (index >= 0 && index < SubCategories.Length)
+            {
+                _subCategoryPanel.SetSubCategories(SubCategories[index]);
+                UpdateParameterPanel(index, 0);
+            }
+
+            _characterPreview?.FocusOnCategory(name);
+        }
+
+        private void OnSubCategoryChanged(int subIndex, string subName)
+        {
+            int mainIndex = _categorySidebar.SelectedIndex;
+            UpdateParameterPanel(mainIndex, subIndex);
+
+            if (_characterPreview != null && mainIndex >= 0 && mainIndex < SubCategoryBodyParts.Length)
+            {
+                var bodyParts = SubCategoryBodyParts[mainIndex];
+                if (subIndex >= 0 && subIndex < bodyParts.Length)
+                {
+                    _characterPreview.FocusOnBodyPart(bodyParts[subIndex]);
+                }
+            }
+        }
+
+        private void UpdateParameterPanel(int mainIndex, int subIndex)
+        {
+            _parameterPanel.ClearAll();
+
+            if (mainIndex >= 0 && mainIndex < ParameterDefs.Length &&
+                subIndex >= 0 && subIndex < ParameterDefs[mainIndex].Length)
+            {
+                var paramNames = ParameterDefs[mainIndex][subIndex];
+                _parameterPanel.AddDimension("调节", paramNames);
+            }
+        }
+
+        private void OnParameterChanged(string paramName, float value)
+        {
+            ApplyPreviewParameter(paramName, value);
+        }
+
+        private void ApplyPreviewParameter(string paramName, float value)
+        {
+            var actor = _characterPreview?.CharacterActor;
+            if (actor == null) return;
+
+            float normalized = value - 0.5f;
+            float modelScale = _characterPreview.ModelScale;
+            var scale = new Vector3(modelScale, modelScale, modelScale);
+            var position = Vector3.Zero;
+
+            switch (paramName)
+            {
+                case "高度":
+                    scale.Y = modelScale * (1.0f + normalized * 0.18f);
+                    break;
+                case "宽度":
+                case "肩宽":
+                    scale.X = modelScale * (1.0f + normalized * 0.18f);
+                    break;
+                case "长度":
+                    scale.Z = modelScale * (1.0f + normalized * 0.14f);
+                    break;
+                case "前后":
+                case "突出度":
+                    position.Z = normalized * 0.08f;
+                    break;
+                case "角度":
+                case "弧度":
+                    actor.EulerAngles = new Vector3(0.0f, normalized * 8.0f, 0.0f);
+                    break;
+                default:
+                    float subtle = 1.0f + normalized * 0.06f;
+                    scale = new Vector3(modelScale * subtle, modelScale * subtle, modelScale * subtle);
+                    break;
+            }
+
+            actor.Scale = scale;
+            actor.Position = position;
+        }
+        #endregion
+
         #region 事件处理
-        private void OnInputChanged(string text)
-        {
-            UpdateCreateButtonState();
-        }
-
-        private void OnEditorTabChanged(MetaHumanEditorUI.EditorTab tab)
-        {
-            // 可以根据选项卡切换更新提示信息
-            Debug.Log($"[CharacterCreation] 切换到编辑器标签: {tab}");
-        }
-
         private void OnRandomClicked()
         {
-            // 随机生成角色名和职业
-            var random = new Random();
-            string[] surnames = { "李", "王", "张", "刘", "陈", "杨", "赵", "黄", "周", "吴" };
-            string[] names = { "明", "华", "伟", "芳", "娜", "敏", "静", "丽", "强", "磊" };
-            
-            _nameInput.Text = surnames[random.Next(surnames.Length)] + names[random.Next(names.Length)];
-            _genderDropdown.SelectedIndex = random.Next(2);
-            _professionDropdown.SelectedIndex = random.Next(8);
+            RandomizeAllParameters();
+        }
 
-            ShowStatus("已随机生成角色信息", new Color(0.3f, 0.8f, 0.3f));
+        private void RandomizeAllParameters()
+        {
+            var random = new Random();
+            int mainIndex = _categorySidebar.SelectedIndex;
+            int subIndex = _subCategoryPanel.SelectedIndex;
+
+            if (mainIndex >= 0 && mainIndex < ParameterDefs.Length &&
+                subIndex >= 0 && subIndex < ParameterDefs[mainIndex].Length)
+            {
+                var paramNames = ParameterDefs[mainIndex][subIndex];
+                foreach (var paramName in paramNames)
+                {
+                    float randomValue = (float)(random.NextDouble());
+                    _parameterPanel.SetParameterValue(paramName, randomValue);
+                }
+            }
         }
 
         private void OnCancelClicked()
@@ -368,148 +389,150 @@ namespace HundunWorld.Game.UI.Character
             OnCancelled?.Invoke();
         }
 
-        private async void OnCreateClicked()
+        private void OnNextStepClicked()
         {
-            if (_isProcessing) return;
+            OnCompleteStep?.Invoke();
+        }
+        #endregion
 
-            // 验证输入
-            if (!_nameInput.IsValid)
+        #region 鼠标交互 - 3D预览区域
+        public override bool OnMouseDown(Float2 location, MouseButton button)
+        {
+            if (_resetCameraButton != null && _resetCameraButton.Visible)
             {
-                ShowStatus("请检查角色名称", new Color(0.9f, 0.3f, 0.3f));
-                return;
-            }
-
-            string characterName = _nameInput.Text.Trim();
-            int gender = _genderDropdown.SelectedIndex;
-            Profession profession = (Profession)_professionDropdown.SelectedIndex;
-
-            try
-            {
-                _isProcessing = true;
-                _loadingIndicator.Show("正在创建角色...");
-                _createButton.Enabled = false;
-
-                // 从MetaHuman编辑器获取外观数据
-                UpdateAppearanceFromEditor();
-
-                // 调用CharacterService创建角色
-                var characterService = CharacterService.Instance;
-                var response = await characterService.CreateCharacterAsync(
-                    characterName,
-                    profession,
-                    gender,
-                    _currentAppearance
-                );
-
-                if (response != null && response.IsSuccess)
+                var btnBounds = new Rectangle(_resetCameraButton.Location, _resetCameraButton.Size);
+                if (btnBounds.Contains(location))
                 {
-                    ShowStatus("角色创建成功！", new Color(0.3f, 0.8f, 0.3f));
-                    ToastMessage.ShowSuccess("角色创建成功！");
-                    await Task.Delay(500);
-                    
-                    OnCharacterCreated?.Invoke(response.Character);
-                }
-                else
-                {
-                    string errorMsg = response?.Message ?? "未知错误";
-                    ShowStatus($"创建失败: {errorMsg}", new Color(0.9f, 0.3f, 0.3f));
-                    ToastMessage.ShowError(errorMsg);
+                    return base.OnMouseDown(location, button);
                 }
             }
-            catch (Exception ex)
+
+            if (_characterPreview != null && IsInPreviewArea(location))
             {
-                Debug.LogError($"[CharacterCreation] 创建角色异常: {ex.Message}");
-                ShowStatus($"创建失败: {ex.Message}", new Color(0.9f, 0.3f, 0.3f));
-                ToastMessage.ShowError($"创建失败: {ex.Message}");
+                Float2 previewLocal = location - _characterPreview.Location;
+                return _characterPreview.OnMouseDown(previewLocal, button);
             }
-            finally
+            return base.OnMouseDown(location, button);
+        }
+
+        public override bool OnMouseUp(Float2 location, MouseButton button)
+        {
+            if (_characterPreview != null && IsInPreviewArea(location))
             {
-                _isProcessing = false;
-                _loadingIndicator.Hide();
-                UpdateCreateButtonState();
+                Float2 previewLocal = location - _characterPreview.Location;
+                return _characterPreview.OnMouseUp(previewLocal, button);
+            }
+            return base.OnMouseUp(location, button);
+        }
+
+        public override void OnMouseMove(Float2 location)
+        {
+            base.OnMouseMove(location);
+
+            if (_characterPreview != null)
+            {
+                Float2 previewLocal = location - _characterPreview.Location;
+                _characterPreview.OnMouseMove(previewLocal);
             }
         }
 
-        private void UpdateAppearanceFromEditor()
+        public override bool OnMouseWheel(Float2 location, float delta)
         {
-            // 从MetaHuman编辑器中提取外观数据
-            // 这里需要MetaHumanEditorUI提供获取当前外观数据的接口
-            // 暂时使用默认值
-            // TODO: 添加MetaHumanEditorUI.GetCurrentAppearance()方法
+            if (_characterPreview != null)
+            {
+                Float2 previewLocal = location - _characterPreview.Location;
+                return _characterPreview.OnMouseWheel(previewLocal, delta);
+            }
+            return base.OnMouseWheel(location, delta);
         }
 
-        private void UpdateCreateButtonState()
+        private bool IsInPreviewArea(Float2 location)
         {
-            if (_isProcessing)
-            {
-                _createButton.Enabled = false;
-                return;
-            }
-
-            bool isValid = _nameInput.IsValid && 
-                          !string.IsNullOrWhiteSpace(_nameInput.Text);
-            
-            _createButton.Enabled = isValid;
-
-            if (isValid)
-            {
-                _statusLabel.Text = "点击创建按钮完成角色创建";
-                _statusLabel.TextColor = MetaHumanStyles.Colors.TextSecondary;
-            }
-            else
-            {
-                _statusLabel.Text = "请填写完整的角色信息";
-                _statusLabel.TextColor = MetaHumanStyles.Colors.TextMuted;
-            }
+            if (_leftPanelContainer != null && IsPointInControl(_leftPanelContainer, location))
+                return false;
+            if (_bottomBar != null && IsPointInControl(_bottomBar, location))
+                return false;
+            return true;
         }
 
-        private void ShowStatus(string message, Color color)
+        private bool IsPointInControl(Control control, Float2 point)
         {
-            _statusLabel.Text = message;
-            _statusLabel.TextColor = color;
-            
-            // 3秒后恢复默认提示
-            Task.Delay(3000).ContinueWith(_ =>
-            {
-                if (!_isProcessing)
-                {
-                    _statusLabel.Text = "填写基础信息后点击创建";
-                    _statusLabel.TextColor = MetaHumanStyles.Colors.TextMuted;
-                }
-            });
+            if (control == null) return false;
+            var bounds = new Rectangle(control.Location, control.Size);
+            return bounds.Contains(point);
         }
         #endregion
 
         #region 公共方法
-        /// <summary>
-        /// 显示UI
-        /// </summary>
+        public void Cleanup()
+        {
+            if (_categorySidebar != null) _categorySidebar.OnCategoryChanged -= OnMainCategoryChanged;
+            if (_subCategoryPanel != null) _subCategoryPanel.OnSubCategoryChanged -= OnSubCategoryChanged;
+            if (_bottomBar != null) _bottomBar.OnButtonClicked -= OnBottomBarButtonClicked;
+            if (_parameterPanel != null) _parameterPanel.OnParameterChanged -= OnParameterChanged;
+            if (_resetCameraButton != null) _resetCameraButton.Clicked -= OnResetCameraClicked;
+            if (_nextStepButton != null) _nextStepButton.OnClicked -= OnNextStepClicked;
+        }
+
+        public void SetTargetScene(FlaxEngine.Scene scene)
+        {
+            if (_characterPreview != null)
+                _characterPreview.TargetScene = scene;
+        }
+
+        public void SetPreviewPanel(CharacterPreviewPanel previewPanel)
+        {
+            _characterPreview = previewPanel;
+        }
+
+        public CharacterPreviewPanel GetPreviewPanel()
+        {
+            return _characterPreview;
+        }
+
         public void Show()
         {
             Visible = true;
             Reset();
+
+            _characterPreview?.FocusOnCategory("捏脸");
         }
 
-        /// <summary>
-        /// 隐藏UI
-        /// </summary>
         public void Hide()
         {
             Visible = false;
         }
 
         /// <summary>
-        /// 重置表单
+        /// 隐藏内部 NextStepButton（由控制器级按钮替代）
         /// </summary>
+        public void HideExternalButton()
+        {
+            if (_nextStepButton != null)
+                _nextStepButton.Parent = null;
+        }
+
+        public void SetStepData(StepData data)
+        {
+            if (data == null) return;
+
+            if (data.FaceParameters != null && data.FaceParameters.Count > 0)
+            {
+                foreach (var kvp in data.FaceParameters)
+                {
+                    _parameterPanel?.SetParameterValue(kvp.Key, kvp.Value);
+                }
+            }
+        }
+
         public void Reset()
         {
-            _nameInput.Text = "";
-            _genderDropdown.SelectedIndex = 0;
-            _professionDropdown.SelectedIndex = 0;
             InitializeAppearanceDefaults();
-            UpdateCreateButtonState();
-            _statusLabel.Text = "填写基础信息后点击创建";
-            _statusLabel.TextColor = MetaHumanStyles.Colors.TextMuted;
+
+            if (_categorySidebar != null)
+            {
+                _categorySidebar.SelectCategory(0);
+            }
         }
         #endregion
     }

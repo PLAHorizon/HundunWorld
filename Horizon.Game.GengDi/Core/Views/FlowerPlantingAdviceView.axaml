@@ -1,0 +1,1169 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
+             x:Class="Horizon.Game.GengDi.Core.Views.FlowerPlantingAdviceView"
+             x:DataType="vm:FlowerPlantingAdviceViewModel">
+    <controls:GalleryPage Title="智慧种植"
+                          Subtitle="Horizon.Game.GengDi.SmartPlanting"
+                          Description="IoT 设备管理、环境监测、历史曲线、成本分析、产量管理与智能建议。"
+                          IconSource="{StaticResource NotificationsIcon}">
+
+        <Grid x:Name="RootElement" RowDefinitions="Auto,*"
+              RowSpacing="16">
+
+            <!-- ===== 数据看板 ===== -->
+            <Border Classes="SurfaceCard" Padding="16">
+                <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,*,*,Auto" ColumnSpacing="12" RowSpacing="12">
+                    <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="温室环境" FontSize="11" Foreground="#888888"/>
+                            <TextBlock Text="{Binding SensorData.Summary}" FontSize="13" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10" Grid.Column="1">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="本月成本" FontSize="11" Foreground="#888888"/>
+                            <TextBlock Text="{Binding MonthlyCost, StringFormat='¥{}{0:F0}'}" FontSize="13" FontWeight="SemiBold" Foreground="#FF7043"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10" Grid.Column="2">
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="本月产量" FontSize="11" Foreground="#888888"/>
+                            <TextBlock Text="{Binding MonthlyYield, StringFormat='{}{0:F0} 支'}" FontSize="13" FontWeight="SemiBold" Foreground="#66BB6A"/>
+                        </StackPanel>
+                    </Border>
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Content="录入成本" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                Command="{Binding AddCostCommand}"/>
+                        <Button Content="记录产量" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                Command="{Binding AddYieldCommand}"/>
+                        <Button Content="刷新" Classes="PrimaryAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                Command="{Binding RefreshCommand}"/>
+                    </StackPanel>
+                    <Separator Grid.Row="1" Grid.ColumnSpan="4" Margin="0 4" Background="#1AFFFFFF"/>
+                    <Grid Grid.Row="2" Grid.ColumnSpan="4" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                        <ComboBox ItemsSource="{Binding Batches}"
+                                  SelectedItem="{Binding SelectedBatch}"
+                                  HorizontalAlignment="Stretch"
+                                  PlaceholderText="选择种植批次">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock>
+                                        <TextBlock.Text>
+                                            <MultiBinding StringFormat="{}{0} - {1}">
+                                                <Binding Path="BatchName"/>
+                                                <Binding Path="SpeciesName"/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding GreenhouseList}"
+                                  SelectedItem="{Binding SelectedGreenhouse}"
+                                  MinWidth="140"
+                                  PlaceholderText="选择温室"/>
+                        <Button Grid.Column="2" Content="查看详情" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                Command="{Binding ShowBatchDetailCommand}"
+                                CommandParameter="{Binding SelectedBatch.Id}"/>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <Border Classes="SurfaceCard" Padding="12" CornerRadius="10" IsVisible="{Binding HasError}" Background="#1AFF5252" Margin="0,0,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+                    <TextBlock Text="{Binding ErrorMessage}" FontSize="12" Foreground="#FF5252" VerticalAlignment="Center"/>
+                    <Button Content="重试" Classes="QuietAction" Padding="8 4" FontSize="11" CornerRadius="6"
+                            Command="{Binding RetryCommand}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Classes="SurfaceCard" Grid.Row="1" Padding="0" ClipToBounds="True">
+                <TabControl SelectedIndex="{Binding SelectedTabIndex}"
+                            Padding="0"
+                            Background="Transparent"
+                            BorderThickness="0">
+
+                    <!-- Tab 1: 实时环境 -->
+                    <TabItem Header="实时环境">
+                        <ScrollViewer Padding="16" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel Spacing="16">
+                                <Border Classes="SurfaceCard subtle" Padding="10" CornerRadius="10">
+                                    <StackPanel Orientation="Horizontal" Spacing="16">
+                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                            <Ellipse Width="10" Height="10" Fill="{Binding MqttStatusDotBrush}"/>
+                                            <TextBlock Text="{Binding MqttStatusText}" FontSize="12" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding PushFrequencyText}" FontSize="11" Foreground="#888888" VerticalAlignment="Center"/>
+                                        <Button Content="连接MQTT" Classes="QuietAction" Padding="8 4" FontSize="10" CornerRadius="6"
+                                                Command="{Binding ConnectMqttCommand}"/>
+                                        <Button Content="手动录入" Classes="QuietAction" Padding="8 4" FontSize="10" CornerRadius="6"
+                                                Command="{Binding OpenManualReportCommand}" Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                                <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="12">
+                                    <Border Classes="SurfaceCard subtle" Padding="14" CornerRadius="10">
+                                        <StackPanel Spacing="6" HorizontalAlignment="Center">
+                                            <TextBlock Text="温度" FontSize="11" Foreground="#888888" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.Temperature, StringFormat='{}{0:F1}℃'}"
+                                                       FontSize="22" FontWeight="Bold" Foreground="#FF7043" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.TemperatureTrend}" FontSize="10" Foreground="#888888" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Classes="SurfaceCard subtle" Padding="14" CornerRadius="10" Grid.Column="1">
+                                        <StackPanel Spacing="6" HorizontalAlignment="Center">
+                                            <TextBlock Text="湿度" FontSize="11" Foreground="#888888" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.Humidity, StringFormat='{}{0:F1}%'}"
+                                                       FontSize="22" FontWeight="Bold" Foreground="#42A5F5" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.HumidityTrend}" FontSize="10" Foreground="#888888" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Classes="SurfaceCard subtle" Padding="14" CornerRadius="10" Grid.Column="2">
+                                        <StackPanel Spacing="6" HorizontalAlignment="Center">
+                                            <TextBlock Text="光照" FontSize="11" Foreground="#888888" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.LightIntensity, StringFormat='{}{0:F0} lux'}"
+                                                       FontSize="22" FontWeight="Bold" Foreground="#FFA726" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.LightTrend}" FontSize="10" Foreground="#888888" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Classes="SurfaceCard subtle" Padding="14" CornerRadius="10" Grid.Column="3">
+                                        <StackPanel Spacing="6" HorizontalAlignment="Center">
+                                            <TextBlock Text="CO₂" FontSize="11" Foreground="#888888" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.Co2Concentration, StringFormat='{}{0:F0} ppm'}"
+                                                       FontSize="22" FontWeight="Bold" Foreground="#66BB6A" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.Co2Trend}" FontSize="10" Foreground="#888888" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Classes="SurfaceCard subtle" Padding="14" CornerRadius="10" Grid.Column="4">
+                                        <StackPanel Spacing="6" HorizontalAlignment="Center">
+                                            <TextBlock Text="土壤" FontSize="11" Foreground="#888888" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.SoilMoisture, StringFormat='{}{0:F1}%'}"
+                                                       FontSize="22" FontWeight="Bold" Foreground="#8D6E63" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.SoilTrend}" FontSize="10" Foreground="#888888" HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                                <Border Classes="SurfaceCard subtle" Padding="20" CornerRadius="10" IsVisible="{Binding SensorEmptyHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                    <TextBlock Text="{Binding SensorEmptyHint}" FontSize="13" Foreground="#888888" HorizontalAlignment="Center"/>
+                                </Border>
+                                <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="异常阈值提醒" FontSize="12" FontWeight="SemiBold"/>
+                                        <ItemsControl ItemsSource="{Binding ThresholdAlerts}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Background="#1AFF7043" Padding="10 8" CornerRadius="8" Margin="0 0 0 6">
+                                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                                            <TextBlock Text="⚠" FontSize="12"/>
+                                                            <TextBlock Text="{Binding Message}" FontSize="12"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <TextBlock Text="当前无异常" FontSize="12" Foreground="#888888"
+                                                   IsVisible="{Binding HasNoThresholdAlerts}"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- Tab 2: 历史曲线 -->
+                    <TabItem Header="历史曲线">
+                        <ScrollViewer Padding="16" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel Spacing="16">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button Content="24h" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                            Command="{Binding SetTimeRangeCommand}" CommandParameter="24h"/>
+                                    <Button Content="7天" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                            Command="{Binding SetTimeRangeCommand}" CommandParameter="7d"/>
+                                    <Button Content="30天" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                            Command="{Binding SetTimeRangeCommand}" CommandParameter="30d"/>
+                                    <TextBlock Text="{Binding CurrentTimeRangeDisplay}" FontSize="11" Foreground="#888888" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                    <Button Content="导出CSV" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                            Command="{Binding ExportDataCommand}"/>
+                                </StackPanel>
+                                <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10" Height="300">
+                                    <lvc:CartesianChart Series="{Binding HistorySeries}"
+                                                        XAxes="{Binding HistoryXAxes}"
+                                                        YAxes="{Binding HistoryYAxes}"/>
+                                </Border>
+                                <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10">
+                                    <StackPanel Spacing="12">
+                                        <TextBlock Text="数据分布" FontSize="12" FontWeight="SemiBold"/>
+                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                                            <StackPanel Spacing="8">
+                                                <TextBlock Text="温度区间占比" FontSize="11" Foreground="#888888" HorizontalAlignment="Center"/>
+                                                <lvc:PieChart Series="{Binding TemperaturePieSeries}" Height="180"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Spacing="8">
+                                                <TextBlock Text="光照时段分布" FontSize="11" Foreground="#888888" HorizontalAlignment="Center"/>
+                                                <lvc:PieChart Series="{Binding LightPieSeries}" Height="180"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- Tab 3: 成本分析 -->
+                    <TabItem Header="成本分析">
+                        <ScrollViewer Padding="16" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel Spacing="16">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <TextBlock Text="种植成本" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Content="录入成本" Classes="PrimaryAction" Padding="12 6" FontSize="11" CornerRadius="8"
+                                            Command="{Binding AddCostCommand}"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                                    <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Text="成本分类占比" FontSize="12" FontWeight="SemiBold"/>
+                                            <lvc:PieChart Series="{Binding CostPieSeries}" Height="220"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10" Grid.Column="1">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Text="月度成本趋势" FontSize="12" FontWeight="SemiBold"/>
+                                            <lvc:CartesianChart Series="{Binding CostBarSeries}"
+                                                                XAxes="{Binding CostBarXAxes}"
+                                                                YAxes="{Binding CostBarYAxes}"
+                                                                Height="220"/>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                                <ItemsControl ItemsSource="{Binding CostRecords}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="8" Margin="0 0 0 8">
+                                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                                    <Border Width="36" Height="36" CornerRadius="18" Background="{DynamicResource SubtleFillColorTertiaryBrush}">
+                                                        <TextBlock Text="{Binding CategoryIcon}" FontSize="14"
+                                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                    <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding CategoryDisplay}" FontSize="12" FontWeight="SemiBold"/>
+                                                        <TextBlock Text="{Binding CostDate, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="10" Foreground="#888888"/>
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="2" Text="{Binding Amount, StringFormat='¥{}{0:F2}'}"
+                                                               FontSize="13" FontWeight="SemiBold" Foreground="#FF7043" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- Tab 4: 产量管理 -->
+                    <TabItem Header="产量管理">
+                        <ScrollViewer Padding="16" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel Spacing="16">
+                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <TextBlock Text="产量记录" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        <CheckBox Content="全选" IsChecked="{Binding IsSelectAllYield}" Margin="8,0,0,0"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="批量上架" Classes="QuietAction" Padding="12 6" FontSize="11" CornerRadius="8"
+                                            Command="{Binding BatchListFromYieldCommand}"/>
+                                    <Button Grid.Column="2" Content="记录产量" Classes="PrimaryAction" Padding="12 6" FontSize="11" CornerRadius="8"
+                                            Command="{Binding AddYieldCommand}"/>
+                                </Grid>
+                                <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="月度产量趋势" FontSize="12" FontWeight="SemiBold"/>
+                                        <lvc:CartesianChart Series="{Binding YieldLineSeries}"
+                                                            XAxes="{Binding YieldLineXAxes}"
+                                                            YAxes="{Binding YieldLineYAxes}"
+                                                            Height="220"/>
+                                    </StackPanel>
+                                </Border>
+                                <ItemsControl ItemsSource="{Binding YieldRecords}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="8" Margin="0 0 0 8">
+                                                <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
+                                                    <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center"/>
+                                                    <Border Width="36" Height="36" CornerRadius="18" Background="{DynamicResource SubtleFillColorTertiaryBrush}" Grid.Column="1">
+                                                        <TextBlock Text="{Binding GradeIcon}" FontSize="14"
+                                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                    <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding SpeciesName}" FontSize="12" FontWeight="SemiBold"/>
+                                                        <TextBlock Text="{Binding HarvestDate, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="10" Foreground="#888888"/>
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="3" Text="{Binding Quantity, StringFormat='{}{0:F0} 支'}"
+                                                               FontSize="13" FontWeight="SemiBold" Foreground="#66BB6A" VerticalAlignment="Center"/>
+                                                    <Border Grid.Column="4" Background="{DynamicResource SubtleFillColorTertiaryBrush}"
+                                                            CornerRadius="4" Padding="6 2" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Grade}" FontSize="10" FontWeight="SemiBold"/>
+                                                    </Border>
+                                                    <Button Grid.Column="5" Content="上架销售" Classes="QuietAction" Padding="8 4" FontSize="10" CornerRadius="6"
+                                                            Command="{Binding $parent[UserControl].DataContext.ListFromYieldCommand}"
+                                                            CommandParameter="{Binding}"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- Tab 5: 智能建议 -->
+                    <TabItem Header="智能建议">
+                        <ScrollViewer Padding="16" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel Spacing="16">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button Content="全部" Classes="QuietAction" Padding="8 4" FontSize="11" CornerRadius="6"
+                                                Command="{Binding FilterAdviceCommand}" CommandParameter="All"/>
+                                        <Button Content="采收期" Classes="QuietAction" Padding="8 4" FontSize="11" CornerRadius="6"
+                                                Command="{Binding FilterAdviceCommand}" CommandParameter="Harvest"/>
+                                        <Button Content="灌溉" Classes="QuietAction" Padding="8 4" FontSize="11" CornerRadius="6"
+                                                Command="{Binding FilterAdviceCommand}" CommandParameter="Irrigation"/>
+                                        <Button Content="通风" Classes="QuietAction" Padding="8 4" FontSize="11" CornerRadius="6"
+                                                Command="{Binding FilterAdviceCommand}" CommandParameter="Ventilation"/>
+                                        <Button Content="病虫害" Classes="QuietAction" Padding="8 4" FontSize="11" CornerRadius="6"
+                                                Command="{Binding FilterAdviceCommand}" CommandParameter="Pest"/>
+                                        <Button Content="肥料" Classes="QuietAction" Padding="8 4" FontSize="11" CornerRadius="6"
+                                                Command="{Binding FilterAdviceCommand}" CommandParameter="Fertilizer"/>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="生成建议" Classes="PrimaryAction" Padding="12 6" FontSize="11" CornerRadius="8"
+                                            Command="{Binding GenerateAdviceCommand}"/>
+                                </Grid>
+
+                                <ItemsControl ItemsSource="{Binding ActiveAdvices}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Classes="SurfaceCard subtle" Padding="14" CornerRadius="10" Margin="0 0 0 10">
+                                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                                    <Border Width="40" Height="40" CornerRadius="20"
+                                                            Background="{Binding PriorityBackground}">
+                                                        <TextBlock Text="{Binding TypeIcon}" FontSize="16"
+                                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                    <StackPanel Grid.Column="1" Spacing="4">
+                                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                                            <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"/>
+                                                            <Border Background="{Binding SourceBadgeBackground}" CornerRadius="4" Padding="6 2">
+                                                                <TextBlock Text="{Binding Source}" FontSize="9" Foreground="White"/>
+                                                            </Border>
+                                                        </StackPanel>
+                                                        <TextBlock Text="{Binding Content}" FontSize="12" TextWrapping="Wrap" Foreground="#666666"/>
+                                                        <TextBlock Text="{Binding GeneratedTime, StringFormat='生成于 {}{0:HH:mm}'}"
+                                                                   FontSize="10" Foreground="#888888"/>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="2" Spacing="4" VerticalAlignment="Center">
+                                                        <Button Content="已执行" Classes="QuietAction" Padding="8 4" FontSize="10" CornerRadius="6"
+                                                                Command="{Binding $parent[UserControl].DataContext.MarkExecutedCommand}"
+                                                                CommandParameter="{Binding}"
+                                                                IsVisible="{Binding IsPending}"/>
+                                                        <TextBlock Text="已处理" FontSize="10" Foreground="#66BB6A"
+                                                                   IsVisible="{Binding IsExecuted}" HorizontalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Text="{Binding AdviceEmptyHint}" FontSize="13" Foreground="#888888" HorizontalAlignment="Center" Margin="0,16,0,0"
+                                           IsVisible="{Binding AdviceEmptyHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                <Border Classes="SurfaceCard" Padding="24" IsVisible="{Binding IsEmptyAdvice}">
+                                    <StackPanel HorizontalAlignment="Center" Spacing="8">
+                                        <TextBlock Text="📋" FontSize="24" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="暂无种植建议" FontSize="13" Foreground="#888888" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- Tab 6: IoT 设备 -->
+                    <TabItem Header="IoT 设备">
+                        <ScrollViewer Padding="16" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel Spacing="16">
+                                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="12">
+                                    <TextBlock Text="设备管理" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Content="新建分组" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                            Command="{Binding CreateGroupCommand}"/>
+                                    <Button Grid.Column="2" Content="添加设备" Classes="PrimaryAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                            Command="{Binding AddDeviceCommand}"/>
+                                    <Button Grid.Column="3" Content="绑定设备" Command="{Binding BindDeviceCommand}" Margin="4,0" />
+                                </Grid>
+                                <ItemsControl ItemsSource="{Binding DeviceGroups}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Classes="SurfaceCard subtle" Padding="14" CornerRadius="10" Margin="0 0 0 12">
+                                                <StackPanel Spacing="10">
+                                                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
+                                                        <TextBlock Text="{Binding GroupName}" FontSize="13" FontWeight="SemiBold"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding DeviceCount, StringFormat='{}{0} 台设备'}"
+                                                                   FontSize="10" Foreground="#888888" VerticalAlignment="Center"/>
+                                                        <Button Grid.Column="2" Content="✏️" Classes="QuietAction" Padding="4 2" FontSize="10" CornerRadius="4"
+                                                                Command="{Binding $parent[UserControl].DataContext.RenameGroupCommand}"
+                                                                CommandParameter="{Binding}"/>
+                                                        <Button Grid.Column="3" Content="🗑️" Classes="QuietAction" Padding="4 2" FontSize="10" CornerRadius="4"
+                                                                Command="{Binding $parent[UserControl].DataContext.DeleteGroupCommand}"
+                                                                CommandParameter="{Binding}"/>
+                                                    </Grid>
+                                                    <ItemsControl ItemsSource="{Binding Devices}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}"
+                                                                        Padding="10 8" CornerRadius="8" Margin="0 0 0 6">
+                                                                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                                                                        <Ellipse Width="10" Height="10" Fill="{Binding StatusBrush}"/>
+                                                                        <StackPanel Grid.Column="1" Spacing="2">
+                                                                            <TextBlock Text="{Binding DeviceName}" FontSize="12" FontWeight="SemiBold"/>
+                                                                            <TextBlock Text="{Binding DeviceTypeDisplay}" FontSize="10" Foreground="#888888"/>
+                                                                            <TextBlock Text="{Binding DeviceCode, StringFormat='{}编码: {0}'}" FontSize="10" Foreground="#888888" Margin="0,2,0,0"/>
+                                                                            <TextBlock Text="{Binding Location, StringFormat='{}位置: {0}'}" FontSize="10" Foreground="#888888" Margin="0,2,0,0" IsVisible="{Binding Location, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                                            <TextBlock Text="{Binding Protocol, StringFormat='{}协议: {0}'}" FontSize="10" Foreground="#888888" Margin="0,2,0,0"/>
+                                                                        </StackPanel>
+                                                                        <TextBlock Grid.Column="2" Text="{Binding LastSeenText}"
+                                                                                   FontSize="9" Foreground="#888888" VerticalAlignment="Center"/>
+                                                                        <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="4,0">
+                                                                            <TextBlock Text="{Binding BindingStatusDisplay}" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                                                            <Button Content="解绑" Command="{Binding $parent[UserControl].DataContext.UnbindDeviceCommand}" CommandParameter="{Binding}" Margin="0,0,4,0" FontSize="11" Padding="8,2" />
+                                                                            <Button Content="变更分组" Command="{Binding $parent[UserControl].DataContext.ChangeGroupCommand}" CommandParameter="{Binding}" FontSize="11" Padding="8,2" />
+                                                                            <Button Content="选择控制" Command="{Binding $parent[UserControl].DataContext.SelectDeviceForControlCommand}" CommandParameter="{Binding}" FontSize="11" Padding="8,2" />
+                                                                            <Button Content="阈值设置" Command="{Binding $parent[UserControl].DataContext.OpenThresholdDialogCommand}" CommandParameter="{Binding}" Margin="4,0" FontSize="11" Padding="8,2" />
+                                                                        </StackPanel>
+                                                                    </Grid>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <Separator Background="#1AFFFFFF" Margin="0 4"/>
+
+                                <TextBlock Text="远程控制" FontSize="14" FontWeight="SemiBold"/>
+                                <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10">
+                                    <StackPanel Spacing="12">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="当前设备：" FontSize="12" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SelectedDeviceForControl.DeviceName}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                            <TextBlock Text="未选择设备" FontSize="12" Foreground="#888888" VerticalAlignment="Center"
+                                                       IsVisible="{Binding !HasSelectedDevice}"/>
+                                        </StackPanel>
+                                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                                            <StackPanel Grid.Column="0" Spacing="4" HorizontalAlignment="Stretch">
+                                                <Button Classes="PrimaryAction" Padding="14 10" CornerRadius="8"
+                                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                        Command="{Binding SendIrrigationCommandCommand}"
+                                                        IsEnabled="{Binding CanSendCommands}"
+                                                        IsVisible="{Binding !IsSendingIrrigation}">
+                                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                                        <TextBlock Text="💧" FontSize="14" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="灌溉" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Button>
+                                                <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" Padding="14 10" CornerRadius="8"
+                                                        HorizontalAlignment="Stretch" IsVisible="{Binding IsSendingIrrigation}">
+                                                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                                        <ProgressBar IsIndeterminate="True" Width="60" Height="4" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="发送中..." FontSize="11" Foreground="#888888" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="1" Spacing="4" HorizontalAlignment="Stretch">
+                                                <Button Classes="QuietAction" Padding="14 10" CornerRadius="8"
+                                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                        Command="{Binding SendVentilationCommandCommand}"
+                                                        IsEnabled="{Binding CanSendCommands}"
+                                                        IsVisible="{Binding !IsSendingVentilation}">
+                                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                                        <TextBlock Text="🌬" FontSize="14" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="通风" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Button>
+                                                <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" Padding="14 10" CornerRadius="8"
+                                                        HorizontalAlignment="Stretch" IsVisible="{Binding IsSendingVentilation}">
+                                                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                                        <ProgressBar IsIndeterminate="True" Width="60" Height="4" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="发送中..." FontSize="11" Foreground="#888888" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="2" Spacing="4" HorizontalAlignment="Stretch">
+                                                <Button Classes="QuietAction" Padding="14 10" CornerRadius="8"
+                                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                        Command="{Binding SendLightingCommandCommand}"
+                                                        IsEnabled="{Binding CanSendCommands}"
+                                                        IsVisible="{Binding !IsSendingLighting}">
+                                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                                        <TextBlock Text="💡" FontSize="14" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="补光" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Button>
+                                                <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" Padding="14 10" CornerRadius="8"
+                                                        HorizontalAlignment="Stretch" IsVisible="{Binding IsSendingLighting}">
+                                                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                                                        <ProgressBar IsIndeterminate="True" Width="60" Height="4" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="发送中..." FontSize="11" Foreground="#888888" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </StackPanel>
+                                        </Grid>
+                                        <TextBlock Text="请先选择设备并确保MQTT已连接" FontSize="11" Foreground="#888888"
+                                                   IsVisible="{Binding !CanSendCommands}" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Separator Background="#1AFFFFFF" Margin="0 4"/>
+
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <TextBlock Text="设备孪生" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Content="加载孪生数据" Classes="PrimaryAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                            Command="{Binding LoadDeviceTwinCommand}"
+                                            IsEnabled="{Binding HasSelectedDevice}"/>
+                                </Grid>
+                                <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10" IsVisible="{Binding IsDeviceTwinLoaded}">
+                                    <StackPanel Spacing="12">
+                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                                            <StackPanel Spacing="8">
+                                                <TextBlock Text="期望属性 (Desired)" FontSize="12" FontWeight="SemiBold" Foreground="#42A5F5"/>
+                                                <ItemsControl ItemsSource="{Binding DeviceTwinDesiredProperties}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" Padding="8 6" CornerRadius="6" Margin="0 0 0 4">
+                                                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                                                    <TextBlock Text="{Binding Key}" FontSize="11" FontWeight="SemiBold" Foreground="#42A5F5" VerticalAlignment="Center"/>
+                                                                    <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="11" VerticalAlignment="Center"/>
+                                                                </Grid>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock Text="暂无期望属性" FontSize="11" Foreground="#888888"
+                                                           IsVisible="{Binding HasNoDesiredProperties}"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Spacing="8">
+                                                <TextBlock Text="报告属性 (Reported)" FontSize="12" FontWeight="SemiBold" Foreground="#66BB6A"/>
+                                                <ItemsControl ItemsSource="{Binding DeviceTwinReportedProperties}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" Padding="8 6" CornerRadius="6" Margin="0 0 0 4">
+                                                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                                                    <TextBlock Text="{Binding Key}" FontSize="11" FontWeight="SemiBold" Foreground="#66BB6A" VerticalAlignment="Center"/>
+                                                                    <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="11" VerticalAlignment="Center"/>
+                                                                </Grid>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                                <TextBlock Text="暂无报告属性" FontSize="11" Foreground="#888888"
+                                                           IsVisible="{Binding HasNoReportedProperties}"/>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <Separator Background="#1AFFFFFF" Margin="0 4"/>
+
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Text="属性差异" FontSize="12" FontWeight="SemiBold" Foreground="#FFA726"/>
+                                            <ItemsControl ItemsSource="{Binding DeviceTwinDifferences}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Background="#1AFFA726" Padding="10 8" CornerRadius="8" Margin="0 0 0 6">
+                                                            <Grid ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="12">
+                                                                <TextBlock Text="{Binding Key}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                                <StackPanel Grid.Column="1" Spacing="2">
+                                                                    <TextBlock Text="期望" FontSize="9" Foreground="#888888"/>
+                                                                    <TextBlock Text="{Binding DesiredValue}" FontSize="11" Foreground="#42A5F5"/>
+                                                                </StackPanel>
+                                                                <StackPanel Grid.Column="2" Spacing="2">
+                                                                    <TextBlock Text="报告" FontSize="9" Foreground="#888888"/>
+                                                                    <TextBlock Text="{Binding ReportedValue}" FontSize="11" Foreground="#66BB6A"/>
+                                                                </StackPanel>
+                                                            </Grid>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <TextBlock Text="无属性差异" FontSize="11" Foreground="#888888"
+                                                       IsVisible="{Binding HasNoTwinDifferences}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                                <Border Classes="SurfaceCard" Padding="24" IsVisible="{Binding !IsDeviceTwinLoaded}">
+                                    <StackPanel HorizontalAlignment="Center" Spacing="8">
+                                        <TextBlock Text="📡" FontSize="24" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="选择设备后点击&#x201C;加载孪生数据&#x201D;查看设备孪生" FontSize="13" Foreground="#888888" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <!-- Tab 7: 数据分析 -->
+                    <TabItem Header="数据分析">
+                        <ScrollViewer Padding="16" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel Spacing="16">
+                                <Button Content="刷新分析数据" Command="{Binding LoadAnalysisCommand}" HorizontalAlignment="Left" />
+
+                                <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}" CornerRadius="8" Padding="16">
+                                    <StackPanel>
+                                        <TextBlock Text="环境健康指数" FontSize="16" FontWeight="Bold" Margin="0,0,0,12" />
+                                        <Grid ColumnDefinitions="*,*,*,*,*,*" RowDefinitions="Auto,Auto" Margin="0,0,0,8">
+                                            <TextBlock Grid.Column="0" Text="综合" HorizontalAlignment="Center" FontWeight="Bold" />
+                                            <TextBlock Grid.Column="1" Text="温度" HorizontalAlignment="Center" />
+                                            <TextBlock Grid.Column="2" Text="湿度" HorizontalAlignment="Center" />
+                                            <TextBlock Grid.Column="3" Text="光照" HorizontalAlignment="Center" />
+                                            <TextBlock Grid.Column="4" Text="CO₂" HorizontalAlignment="Center" />
+                                            <TextBlock Grid.Column="5" Text="土壤" HorizontalAlignment="Center" />
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Text="{Binding HealthIndexData.OverallScore, StringFormat={}{0:F0}}" HorizontalAlignment="Center" FontSize="24" FontWeight="Bold" />
+                                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding HealthIndexData.TemperatureScore, StringFormat={}{0:F0}}" HorizontalAlignment="Center" FontSize="18" />
+                                            <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding HealthIndexData.HumidityScore, StringFormat={}{0:F0}}" HorizontalAlignment="Center" FontSize="18" />
+                                            <TextBlock Grid.Row="1" Grid.Column="3" Text="{Binding HealthIndexData.LightScore, StringFormat={}{0:F0}}" HorizontalAlignment="Center" FontSize="18" />
+                                            <TextBlock Grid.Row="1" Grid.Column="4" Text="{Binding HealthIndexData.Co2Score, StringFormat={}{0:F0}}" HorizontalAlignment="Center" FontSize="18" />
+                                            <TextBlock Grid.Row="1" Grid.Column="5" Text="{Binding HealthIndexData.SoilMoistureScore, StringFormat={}{0:F0}}" HorizontalAlignment="Center" FontSize="18" />
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}" CornerRadius="8" Padding="16">
+                                    <StackPanel>
+                                        <TextBlock Text="显著变化" FontSize="16" FontWeight="Bold" Margin="0,0,0,12" />
+                                        <ItemsControl ItemsSource="{Binding SignificantChanges}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                                            <TextBlock Text="{Binding Time, StringFormat={}{0:MM-dd HH:mm}}" />
+                                                            <TextBlock Text="{Binding Metric}" FontWeight="Bold" />
+                                                            <TextBlock Text="{Binding ChangeRate, StringFormat={}{0:F1}%}" />
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}" CornerRadius="8" Padding="16">
+                                    <StackPanel>
+                                        <TextBlock Text="异常数据" FontSize="16" FontWeight="Bold" Margin="0,0,0,12" />
+                                        <ItemsControl ItemsSource="{Binding Anomalies}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                                            <TextBlock Text="{Binding ReadingTime, StringFormat={}{0:MM-dd HH:mm}}" />
+                                                            <TextBlock Text="{Binding Metric}" FontWeight="Bold" />
+                                                            <TextBlock Text="{Binding Value, StringFormat={}值:{0:F1}}" />
+                                                            <TextBlock Text="{Binding Mean, StringFormat={}均值:{0:F1}}" />
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}" CornerRadius="8" Padding="16">
+                                    <StackPanel>
+                                        <TextBlock Text="多设备对比" FontSize="16" FontWeight="Bold" Margin="0,0,0,12" />
+                                        <TextBlock Text="选择设备进行环境数据对比" FontSize="12" Foreground="#888888" Margin="0,0,0,8" />
+                                        <ItemsControl ItemsSource="{Binding ComparisonDevices}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <CheckBox Content="{Binding DeviceName}" IsChecked="{Binding IsSelected}" Margin="0,0,0,4"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <Button Content="开始对比" Classes="PrimaryAction" Padding="10 6" FontSize="11" CornerRadius="8" Margin="0,8,0,0"
+                                                Command="{Binding LoadComparisonCommand}" HorizontalAlignment="Left"/>
+                                        <Border IsVisible="{Binding ComparisonResults.Count}" Background="{DynamicResource SubtleFillColorTertiaryBrush}" CornerRadius="6" Padding="12" Margin="0,12,0,0">
+                                            <ItemsControl ItemsSource="{Binding ComparisonResults}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                                                            <StackPanel Spacing="4">
+                                                                <TextBlock Text="{Binding DeviceId}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                                                <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                                                    <TextBlock Text="温度" FontSize="11" Foreground="#888888"/>
+                                                                    <TextBlock Grid.Column="1" Text="{Binding AvgTemperature, StringFormat='{}{0:F1}℃'}" FontSize="11"/>
+                                                                </Grid>
+                                                                <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                                                    <TextBlock Text="湿度" FontSize="11" Foreground="#888888"/>
+                                                                    <TextBlock Grid.Column="1" Text="{Binding AvgHumidity, StringFormat='{}{0:F1}%'}" FontSize="11"/>
+                                                                </Grid>
+                                                                <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                                                    <TextBlock Text="光照" FontSize="11" Foreground="#888888"/>
+                                                                    <TextBlock Grid.Column="1" Text="{Binding AvgLightIntensity, StringFormat='{}{0:F0} lux'}" FontSize="11"/>
+                                                                </Grid>
+                                                                <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                                                    <TextBlock Text="CO₂" FontSize="11" Foreground="#888888"/>
+                                                                    <TextBlock Grid.Column="1" Text="{Binding AvgCo2Level, StringFormat='{}{0:F0} ppm'}" FontSize="11"/>
+                                                                </Grid>
+                                                                <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                                                    <TextBlock Text="土壤湿度" FontSize="11" Foreground="#888888"/>
+                                                                    <TextBlock Grid.Column="1" Text="{Binding AvgSoilMoisture, StringFormat='{}{0:F1}%'}" FontSize="11"/>
+                                                                </Grid>
+                                                            </StackPanel>
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                </TabControl>
+            </Border>
+
+            <!-- ===== 成本录入 Popup ===== -->
+            <Popup IsOpen="{Binding IsCostDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="360" BoxShadow="0 8 24 0 #33000000">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="录入成本" FontSize="18" FontWeight="SemiBold"/>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="分类" FontSize="13" Foreground="#666"/>
+                            <ComboBox ItemsSource="{Binding CostCategories}" SelectedItem="{Binding CostCategory}" HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="金额" FontSize="13" Foreground="#666"/>
+                            <TextBox Text="{Binding CostAmount}" Watermark="请输入金额"/>
+                        </StackPanel>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="日期" FontSize="13" Foreground="#666"/>
+                            <CalendarDatePicker SelectedDate="{Binding CostDate}" HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="备注" FontSize="13" Foreground="#666"/>
+                            <TextBox Text="{Binding CostRemark}" Watermark="备注（可选）"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right" Margin="0,8,0,0">
+                            <Button Content="取消" Command="{Binding CancelDialogCommand}" CommandParameter="Cost"/>
+                            <Button Content="确认录入" Command="{Binding SubmitCostCommand}" Classes="accent"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Popup>
+
+            <!-- ===== 产量记录 Popup ===== -->
+            <Popup IsOpen="{Binding IsYieldDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="360" BoxShadow="0 8 24 0 #33000000">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="记录产量" FontSize="18" FontWeight="SemiBold"/>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="品种名称" FontSize="13" Foreground="#666"/>
+                            <TextBox Text="{Binding YieldSpeciesName}" Watermark="请输入品种名称"/>
+                        </StackPanel>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="数量" FontSize="13" Foreground="#666"/>
+                            <TextBox Text="{Binding YieldQuantity}" Watermark="请输入数量"/>
+                        </StackPanel>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="等级" FontSize="13" Foreground="#666"/>
+                            <ComboBox ItemsSource="{Binding YieldGrades}" SelectedItem="{Binding YieldGrade}" HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="采收日期" FontSize="13" Foreground="#666"/>
+                            <CalendarDatePicker SelectedDate="{Binding YieldHarvestDate}" HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="备注" FontSize="13" Foreground="#666"/>
+                            <TextBox Text="{Binding YieldRemark}" Watermark="备注（可选）"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right" Margin="0,8,0,0">
+                            <Button Content="取消" Command="{Binding CancelDialogCommand}" CommandParameter="Yield"/>
+                            <Button Content="确认记录" Command="{Binding SubmitYieldCommand}" Classes="accent"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Popup>
+
+            <!-- ===== 设备输入 Popup ===== -->
+            <Popup IsOpen="{Binding IsDeviceDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="360" BoxShadow="0 8 24 0 #33000000">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="添加设备" FontSize="18" FontWeight="SemiBold"/>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="设备名称" FontSize="13" Foreground="#666"/>
+                            <TextBox Text="{Binding DeviceNameInput}" Watermark="请输入设备名称"/>
+                        </StackPanel>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="设备类型" FontSize="13" Foreground="#666"/>
+                            <ComboBox ItemsSource="{Binding DeviceTypes}" SelectedItem="{Binding DeviceTypeInput}" HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="通信协议" FontSize="13" Foreground="#666"/>
+                            <ComboBox ItemsSource="{Binding DeviceProtocols}" SelectedItem="{Binding DeviceProtocolInput}" HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+                        <Grid Margin="0,4" ColumnDefinitions="Auto,*">
+                            <TextBlock Text="所属分组" FontSize="13" VerticalAlignment="Center" Width="72"/>
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableGroups}" SelectedItem="{Binding DeviceGroupInput}" HorizontalAlignment="Stretch" PlaceholderText="选择分组（可选）" DisplayMemberBinding="{Binding Name}"/>
+                        </Grid>
+                        <Grid Margin="0,4" ColumnDefinitions="Auto,*">
+                            <TextBlock Text="安装位置" FontSize="13" VerticalAlignment="Center" Width="72"/>
+                            <TextBox Grid.Column="1" Text="{Binding DeviceLocationInput}" Watermark="如：1号温室-A区-3排"/>
+                        </Grid>
+                        <Grid Margin="0,4" ColumnDefinitions="Auto,*">
+                            <TextBlock Text="设备厂商" FontSize="13" VerticalAlignment="Center" Width="72"/>
+                            <TextBox Grid.Column="1" Text="{Binding DeviceManufacturerInput}" Watermark="设备制造商"/>
+                        </Grid>
+                        <Grid Margin="0,4" ColumnDefinitions="Auto,*">
+                            <TextBlock Text="设备型号" FontSize="13" VerticalAlignment="Center" Width="72"/>
+                            <TextBox Grid.Column="1" Text="{Binding DeviceModelInput}" Watermark="设备型号"/>
+                        </Grid>
+                        <Grid Margin="0,4" ColumnDefinitions="Auto,*">
+                            <TextBlock Text="传感器" FontSize="13" VerticalAlignment="Center" Width="72"/>
+                            <TextBox Grid.Column="1" Text="{Binding DeviceCapabilitiesInput}" Watermark="如：温度,湿度,光照"/>
+                        </Grid>
+                        <Grid Margin="0,4" ColumnDefinitions="Auto,*">
+                            <TextBlock Text="备注" FontSize="13" VerticalAlignment="Center" Width="72"/>
+                            <TextBox Grid.Column="1" Text="{Binding DeviceRemarkInput}" Watermark="备注信息"/>
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right" Margin="0,8,0,0">
+                            <Button Content="取消" Command="{Binding CancelDialogCommand}" CommandParameter="Device"/>
+                            <Button Content="确认添加" Command="{Binding SubmitDeviceCommand}" Classes="accent"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Popup>
+
+            <!-- ===== 绑定设备 Popup ===== -->
+            <Popup IsOpen="{Binding IsBindDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="360" BoxShadow="0 8 24 0 #33000000">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="绑定设备" FontSize="18" FontWeight="SemiBold"/>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="DeviceCode" FontSize="13" Foreground="#666"/>
+                            <TextBox Text="{Binding BindDeviceCodeInput}" Watermark="输入设备编码"/>
+                        </StackPanel>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="分组ID (可选)" FontSize="13" Foreground="#666"/>
+                            <TextBox Text="{Binding BindGroupIdInput}" Watermark="输入分组ID"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right" Margin="0,8,0,0">
+                            <Button Content="取消" Command="{Binding CancelDialogCommand}" CommandParameter="Bind"/>
+                            <Button Content="绑定" Command="{Binding SubmitBindDeviceCommand}" Classes="accent"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Popup>
+
+            <!-- ===== 分组输入 Popup ===== -->
+            <Popup IsOpen="{Binding IsGroupDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="360" BoxShadow="0 8 24 0 #33000000">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="新建分组" FontSize="18" FontWeight="SemiBold"/>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="分组名称" FontSize="13" Foreground="#666"/>
+                            <TextBox Text="{Binding GroupNameInput}" Watermark="请输入分组名称"/>
+                        </StackPanel>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="分组描述" FontSize="13" Foreground="#666"/>
+                            <TextBox Text="{Binding GroupDescriptionInput}" Watermark="请输入分组描述（可选）"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right" Margin="0,8,0,0">
+                            <Button Content="取消" Command="{Binding CancelDialogCommand}" CommandParameter="Group"/>
+                            <Button Content="确认创建" Command="{Binding SubmitGroupCommand}" Classes="accent"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Popup>
+
+            <!-- ===== 上架确认 Popup ===== -->
+            <Popup IsOpen="{Binding IsListingDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="400" BoxShadow="0 8 24 0 #33000000">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="确认上架销售" FontSize="18" FontWeight="SemiBold"/>
+                        <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" CornerRadius="8" Padding="14">
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="8">
+                                <TextBlock Text="品种：" FontSize="13" Foreground="#888" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{Binding ListingSpeciesName}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Row="1" Text="等级：" FontSize="13" Foreground="#888" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ListingGrade}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Row="2" Text="数量：" FontSize="13" Foreground="#888" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ListingQuantity, StringFormat='{}{0:F0} 支'}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Row="3" Text="建议价：" FontSize="13" Foreground="#888" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ListingSuggestedPrice, StringFormat='¥{}{0:F2}/支'}" FontSize="13" FontWeight="SemiBold" Foreground="#FF7043" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="实际上架价格（元/支）" FontSize="13" Foreground="#666"/>
+                            <TextBox Text="{Binding ListingActualPrice}" Watermark="请输入上架价格"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right" Margin="0,8,0,0">
+                            <Button Content="取消" Command="{Binding CancelDialogCommand}" CommandParameter="Listing"/>
+                            <Button Content="确认上架" Command="{Binding ConfirmListingCommand}" Classes="accent"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Popup>
+
+            <!-- ===== 批次详情 Popup ===== -->
+            <Popup IsOpen="{Binding IsBatchDetailDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="720" MaxWidth="800" MaxHeight="700" BoxShadow="0 8 24 0 #33000000">
+                    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="16">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <TextBlock Text="批次全生命周期" FontSize="18" FontWeight="SemiBold"/>
+                                <Button Grid.Column="1" Content="关闭" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                        Command="{Binding CloseBatchDetailCommand}"/>
+                            </Grid>
+
+                            <!-- 批次基本信息 -->
+                            <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" CornerRadius="8" Padding="14">
+                                <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="6">
+                                    <TextBlock Text="批次名称：" FontSize="12" Foreground="#888" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding BatchLifecycle.BatchInfo.BatchName}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="1" Text="品种：" FontSize="12" Foreground="#888" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding BatchLifecycle.BatchInfo.SpeciesName}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="2" Text="状态：" FontSize="12" Foreground="#888" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding BatchLifecycle.BatchInfo.Status}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="3" Text="种植日期：" FontSize="12" Foreground="#888" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding BatchLifecycle.BatchInfo.PlantingDate, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="12" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="4" Text="预计采收：" FontSize="12" Foreground="#888" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding BatchLifecycle.BatchInfo.ExpectedHarvestDate, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="12" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- 生命周期时间线 -->
+                            <TextBlock Text="生命周期时间线" FontSize="14" FontWeight="SemiBold"/>
+                            <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10">
+                                <StackPanel Spacing="0">
+                                    <!-- 种植 -->
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                        <Ellipse Width="16" Height="16" Fill="#4CAF50" VerticalAlignment="Center"/>
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="🌱 种植" FontSize="12" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding BatchLifecycle.BatchInfo.PlantingDate, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="10" Foreground="#888"/>
+                                            <TextBlock Text="{Binding BatchLifecycle.BatchInfo.PlantingQuantity, StringFormat='种植数量: {}{0}'}" FontSize="10" Foreground="#888"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <Border Width="2" Height="20" Background="#4CAF50" Margin="7,0,0,0"/>
+                                    <!-- 监测 -->
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                        <Ellipse Width="16" Height="16" Fill="#2196F3" VerticalAlignment="Center"/>
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="📡 环境监测" FontSize="12" FontWeight="SemiBold"/>
+                                            <TextBlock FontSize="10" Foreground="#888">
+                                                <TextBlock.Text>
+                                                    <MultiBinding StringFormat="平均温度: {0:F1}℃ | 平均湿度: {1:F1}% | 读数: {2}次">
+                                                        <Binding Path="BatchLifecycle.SensorDataSummary.AvgTemperature"/>
+                                                        <Binding Path="BatchLifecycle.SensorDataSummary.AvgHumidity"/>
+                                                        <Binding Path="BatchLifecycle.SensorDataSummary.ReadingCount"/>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Grid>
+                                    <Border Width="2" Height="20" Background="#2196F3" Margin="7,0,0,0"/>
+                                    <!-- 成本 -->
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                        <Ellipse Width="16" Height="16" Fill="#FF9800" VerticalAlignment="Center"/>
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="💰 成本投入" FontSize="12" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding BatchLifecycle.TotalCost, StringFormat='总成本: ¥{}{0:F2}'}" FontSize="10" Foreground="#888"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <Border Width="2" Height="20" Background="#FF9800" Margin="7,0,0,0"/>
+                                    <!-- 采收 -->
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                        <Ellipse Width="16" Height="16" Fill="#66BB6A" VerticalAlignment="Center"/>
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="🌾 采收" FontSize="12" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding BatchLifecycle.YieldRecords.Count, StringFormat='采收记录: {}{0}条'}" FontSize="10" Foreground="#888"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <Border Width="2" Height="20" Background="#66BB6A" Margin="7,0,0,0"/>
+                                    <!-- 上架 -->
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                        <Ellipse Width="16" Height="16" Fill="#9C27B0" VerticalAlignment="Center"/>
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="🏪 上架销售" FontSize="12" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding BatchLifecycle.ListedProducts.Count, StringFormat='上架商品: {}{0}条'}" FontSize="10" Foreground="#888"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <Border Width="2" Height="20" Background="#9C27B0" Margin="7,0,0,0"/>
+                                    <!-- 订单 -->
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                        <Ellipse Width="16" Height="16" Fill="#F44336" VerticalAlignment="Center"/>
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="📦 订单销售" FontSize="12" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding BatchLifecycle.OrderSummaries.Count, StringFormat='关联订单: {}{0}条'}" FontSize="10" Foreground="#888"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <Border Width="2" Height="20" Background="#F44336" Margin="7,0,0,0"/>
+                                    <!-- 结算 -->
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                        <Ellipse Width="16" Height="16" Fill="#00BCD4" VerticalAlignment="Center"/>
+                                        <StackPanel Spacing="2">
+                                            <TextBlock Text="💳 结算" FontSize="12" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding BatchLifecycle.SettlementTotal, StringFormat='结算总额: ¥{}{0:F2}'}" FontSize="10" Foreground="#888"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- 利润分析 -->
+                            <TextBlock Text="利润分析" FontSize="14" FontWeight="SemiBold"/>
+                            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
+                                <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10">
+                                    <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                        <TextBlock Text="总成本" FontSize="10" Foreground="#888" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding BatchProfitAnalysis.TotalCost, StringFormat='¥{}{0:F2}'}" FontSize="14" FontWeight="Bold" Foreground="#FF7043" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10" Grid.Column="1">
+                                    <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                        <TextBlock Text="总收入" FontSize="10" Foreground="#888" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding BatchProfitAnalysis.TotalRevenue, StringFormat='¥{}{0:F2}'}" FontSize="14" FontWeight="Bold" Foreground="#66BB6A" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10" Grid.Column="2">
+                                    <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                        <TextBlock Text="净利润" FontSize="10" Foreground="#888" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding BatchProfitAnalysis.NetProfit, StringFormat='¥{}{0:F2}'}" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10" Grid.Column="3">
+                                    <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                        <TextBlock Text="ROI" FontSize="10" Foreground="#888" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding BatchProfitAnalysis.ROI, StringFormat='{}{0:F1}%'}" FontSize="14" FontWeight="Bold" Foreground="#42A5F5" HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <!-- 饼图 -->
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                                <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="成本构成" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                        <lvc:PieChart Series="{Binding ProfitCostPieSeries}" Height="200"/>
+                                    </StackPanel>
+                                </Border>
+                                <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10" Grid.Column="1">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="收入构成" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                        <lvc:PieChart Series="{Binding ProfitRevenuePieSeries}" Height="200"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                        </StackPanel>
+                    </ScrollViewer>
+                </Border>
+            </Popup>
+
+            <!-- ===== 阈值设置 Popup ===== -->
+            <Popup IsOpen="{Binding IsThresholdDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="400" BoxShadow="0 8 24 0 #33000000">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="阈值设置" FontSize="18" FontWeight="SemiBold"/>
+                        <StackPanel Spacing="8">
+                            <Grid Margin="0,4">
+                                <TextBlock Text="温度阈值 (°C)" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding ThresholdTemperature}" Width="120" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,4">
+                                <TextBlock Text="湿度阈值 (%)" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding ThresholdHumidity}" Width="120" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,4">
+                                <TextBlock Text="CO₂阈值 (ppm)" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding ThresholdCo2}" Width="120" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,4">
+                                <TextBlock Text="光照阈值 (lux)" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding ThresholdLight}" Width="120" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,4">
+                                <TextBlock Text="土壤湿度阈值 (%)" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding ThresholdSoil}" Width="120" HorizontalAlignment="Right"/>
+                            </Grid>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right" Margin="0,8,0,0">
+                            <Button Content="取消" Command="{Binding CancelThresholdCommand}"/>
+                            <Button Content="保存" Command="{Binding SaveThresholdsCommand}" IsEnabled="{Binding !IsThresholdSaving}" Classes="accent"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Popup>
+
+            <!-- ===== 手动录入传感器数据 Popup ===== -->
+            <Popup IsOpen="{Binding IsManualReportDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="400" BoxShadow="0 8 24 0 #33000000">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="手动录入传感器数据" FontSize="18" FontWeight="SemiBold"/>
+                        <StackPanel Spacing="8">
+                            <Grid Margin="0,4">
+                                <TextBlock Text="温度 (°C)" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding ManualTemperature}" Width="120" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,4">
+                                <TextBlock Text="湿度 (%)" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding ManualHumidity}" Width="120" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,4">
+                                <TextBlock Text="光照 (lux)" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding ManualLight}" Width="120" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,4">
+                                <TextBlock Text="CO₂ (ppm)" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding ManualCo2}" Width="120" HorizontalAlignment="Right"/>
+                            </Grid>
+                            <Grid Margin="0,4">
+                                <TextBlock Text="土壤湿度 (%)" VerticalAlignment="Center"/>
+                                <TextBox Text="{Binding ManualSoil}" Width="120" HorizontalAlignment="Right"/>
+                            </Grid>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right" Margin="0,8,0,0">
+                            <Button Content="取消" Command="{Binding CancelManualReportCommand}"/>
+                            <Button Content="提交" Command="{Binding SubmitManualReportCommand}" Classes="accent"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Popup>
+
+            <Popup IsOpen="{Binding IsChangeGroupDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="360" BoxShadow="0 8 24 0 #33000000">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="变更设备分组" FontSize="18" FontWeight="SemiBold"/>
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="选择目标分组" FontSize="13" Foreground="#666"/>
+                            <ComboBox ItemsSource="{Binding AvailableGroups}" SelectedItem="{Binding ChangeGroupTargetGroupId}" HorizontalAlignment="Stretch" DisplayMemberBinding="{Binding Name}"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right" Margin="0,8,0,0">
+                            <Button Content="取消" Command="{Binding CancelChangeGroupCommand}"/>
+                            <Button Content="确认变更" Command="{Binding SubmitChangeGroupCommand}" Classes="accent"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Popup>
+
+            <Popup IsOpen="{Binding IsRenameGroupDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
+                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="320" BoxShadow="0 8 24 0 #33000000">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="重命名分组" FontSize="18" FontWeight="SemiBold"/>
+                        <TextBox Text="{Binding RenameGroupNewName}" Watermark="输入新分组名称"/>
+                        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right" Margin="0,8,0,0">
+                            <Button Content="取消" Command="{Binding CancelRenameGroupCommand}"/>
+                            <Button Content="确认" Command="{Binding SubmitRenameGroupCommand}" Classes="accent"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Popup>
+
+        </Grid>
+    </controls:GalleryPage>
+</UserControl>

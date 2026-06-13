@@ -1,7 +1,8 @@
 using FlaxEngine;
-using Horizon.Game.Core.Database;
+using Game.Database;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
+using HundunWorld.Game.Network;
 using HundunWorld.Game.Network.Handlers;
 using HundunWorld.Game.UI;
 using HundunWorld.Game.UI.Authentication;
@@ -9,7 +10,7 @@ using HundunWorld.Game.UI.Character;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using static Horizon.Game.Core.Database.LiteDataContext;
+using static Game.Database.LiteDataContext;
 
 namespace ManagedHundunWorld.Network.Handlers
 {
@@ -18,7 +19,7 @@ namespace ManagedHundunWorld.Network.Handlers
     /// </summary>
     public class LoginResponseHandler : BaseMessageHandler
     {
-        public override List<MessageType> MessageTypes => new List<MessageType> { MessageType.LoginResponse, MessageType.Logout };
+        public override List<MessageType> MessageTypes => new List<MessageType> { MessageType.LoginResponse, MessageType.TokenLoginResponse, MessageType.Logout };
 
         public override ServiceType ServiceType => ServiceType.Account;
 
@@ -65,7 +66,7 @@ namespace ManagedHundunWorld.Network.Handlers
                                     loginResponse.PassportId,
                                     loginResponse.UserId,
                                     loginResponse.SessionToken,
-                                    ""
+                                    loginResponse.AuthToken ?? ""
                                 );
                                 FlaxEngine.Debug.Log("[LoginResponseHandler] 用户会话已更新");
                             }
@@ -84,7 +85,13 @@ namespace ManagedHundunWorld.Network.Handlers
                                 {
                                     MessageId = Guid.NewGuid().ToString(),
                                     MessageType = MessageType.CharacterList,
-                                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                                    AuthToken = loginResponse.AuthToken ?? "",
+                                    GameId = 1,
+                                    ServerId = 1,
+                                    ZoneId = 1,
+                                    UserId = loginResponse.UserId,
+                                    MachineId = MachineIdentifier.GetMachineGuid()
                                 },
                                 ServiceType = ServiceType.Game,
                                 Body = new CharacterListRequest { UserId = loginResponse.UserId }
@@ -171,6 +178,158 @@ namespace ManagedHundunWorld.Network.Handlers
                     });
                     
                     LoginFailed?.Invoke(loginResponse.Message);
+                }
+            }
+            else if (message.Body is TokenLoginResponse tokenLoginResponse)
+            {
+                 loginResponse = new LoginResponse
+                {
+                    IsSuccess = tokenLoginResponse.IsSuccess,
+                    PassportId = tokenLoginResponse.PassportId,
+                    UserId = tokenLoginResponse.UserId,
+                    SessionToken = tokenLoginResponse.SessionToken,
+                    AuthToken = tokenLoginResponse.AuthToken,
+                    Message = tokenLoginResponse.Message ?? (tokenLoginResponse.IsSuccess ? "Token登录成功" : "Token登录失败")
+                };
+
+                AuthenticationManager.Instance.NotifyLoginResponse(loginResponse);
+
+                if (tokenLoginResponse.IsSuccess)
+                {
+                    FlaxEngine.Debug.Log($"Token登录成功: UserId={tokenLoginResponse.UserId}, PassportId={tokenLoginResponse.PassportId}");
+                    
+                    LoginSuccess?.Invoke(loginResponse);
+                    
+                    await DatabaseManager.SetPassport(new PassportInfo
+                    {
+                        PassportId = tokenLoginResponse.PassportId,
+                        UserId = tokenLoginResponse.UserId,
+                        IsCurrentPassport = true,
+                        Password = AuthenticationManager.Instance.Passport?.Password ?? "",
+                        Token = tokenLoginResponse.SessionToken,
+                        RememberPassword = AuthenticationManager.Instance.Passport?.RememberPassword ?? true
+                    });
+                    
+                    Scripting.InvokeOnUpdate(() => {
+                        AuthenticationManager.Instance.HandleLoginResponse(loginResponse);
+                        
+                        try
+                        {
+                            var stateManager = UIStateManager.Instance;
+                            if (stateManager != null)
+                            {
+                                stateManager.HandleLoginSuccess(
+                                    tokenLoginResponse.PassportId,
+                                    tokenLoginResponse.UserId,
+                                    tokenLoginResponse.SessionToken,
+                                    tokenLoginResponse.AuthToken
+                                );
+                                FlaxEngine.Debug.Log("[LoginResponseHandler] Token登录用户会话已更新");
+                            }
+                            
+                            FlaxEngine.Debug.Log("[LoginResponseHandler] 准备查询角色列表...");
+                            var characterListRequest = new CharacterListRequest
+                            {
+                                UserId = tokenLoginResponse.UserId,
+                                ServerId = 1
+                            };
+                            
+                            var messagePacket = new HorizonMessagePacket
+                            {
+                                Header = new MessageHeader
+                                {
+                                    MessageId = Guid.NewGuid().ToString(),
+                                    MessageType = MessageType.CharacterList,
+                                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                                    AuthToken = tokenLoginResponse.AuthToken ?? "",
+                                    GameId = 1,
+                                    ServerId = 1,
+                                    ZoneId = 1,
+                                    UserId = tokenLoginResponse.UserId,
+                                    MachineId = MachineIdentifier.GetMachineGuid()
+                                },
+                                ServiceType = ServiceType.Game,
+                                Body = new CharacterListRequest { UserId = tokenLoginResponse.UserId }
+                            };
+
+                            _ = Task.Run(async () =>
+                            {
+                                try
+                                {
+                                    await HundunWorld.Game.HundunWorldGame.Instance.NetworkManager.SendMessageAsync(messagePacket);
+                                    FlaxEngine.Debug.Log("[LoginResponseHandler] 角色列表查询请求已发送");
+                                }
+                                catch (Exception ex)
+                                {
+                                    FlaxEngine.Debug.LogError($"[LoginResponseHandler] 发送角色列表查询请求失败: {ex.Message}");
+                                    FlaxEngine.Scripting.InvokeOnUpdate(() =>
+                                    {
+                                        UIHelper.ShowError("获取角色列表失败，请重试");
+                                    });
+                                }
+                            });
+                            
+                            var sceneManager = GameSceneManager.GetOrCreate();
+                            if (sceneManager != null)
+                            {
+                                FlaxEngine.Debug.Log("[LoginResponseHandler] 使用GameSceneManager切换场景");
+                                
+                                void OnTransitionCompleted(SceneType from, SceneType to)
+                                {
+                                    sceneManager.TransitionCompleted -= OnTransitionCompleted;
+                                    FlaxEngine.Debug.Log($"[LoginResponseHandler] 场景切换完成: {from} -> {to}");
+                                    var sm = UIStateManager.Instance;
+                                    if (sm != null && sm.CurrentScene != to)
+                                    {
+                                        sm.TransitionToScene(to, false);
+                                    }
+                                }
+                                
+                                sceneManager.TransitionCompleted += OnTransitionCompleted;
+                                
+                                if (!sceneManager.TransitionTo(SceneType.CharacterSelection))
+                                {
+                                    sceneManager.TransitionCompleted -= OnTransitionCompleted;
+                                    FlaxEngine.Debug.LogError("[LoginResponseHandler] 场景切换启动失败");
+                                    UIHelper.ShowError("场景切换失败，请重试");
+                                }
+                                else
+                                {
+                                    FlaxEngine.Debug.Log("[LoginResponseHandler] 场景切换已启动，等待加载完成");
+                                }
+                            }
+                            else
+                            {
+                                FlaxEngine.Debug.LogError("[LoginResponseHandler] GameSceneManager未初始化");
+                                UIHelper.ShowError("系统错误，请重启游戏");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            FlaxEngine.Debug.LogException(ex);
+                            FlaxEngine.Debug.LogError($"[LoginResponseHandler] 处理Token登录成功响应时发生异常: {ex.Message}");
+                        }
+                    });
+                }
+                else
+                {
+                    FlaxEngine.Debug.LogWarning($"Token登录失败: {tokenLoginResponse.Message}");
+                    
+                    Scripting.InvokeOnUpdate(() => {
+                        AuthenticationManager.Instance.HandleLoginResponse(new LoginResponse
+                        {
+                            IsSuccess = false,
+                            Message = tokenLoginResponse.Message ?? "Token登录失败，请重新登录"
+                        });
+                        
+                        var stateManager = UIStateManager.Instance;
+                        if (stateManager != null)
+                        {
+                            stateManager.SetError(tokenLoginResponse.Message);
+                        }
+                    });
+                    
+                    LoginFailed?.Invoke(tokenLoginResponse.Message);
                 }
             }
             else

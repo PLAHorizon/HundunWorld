@@ -147,6 +147,11 @@ namespace Horizon.Orleans.Interface
         /// 添加技能点
         /// </summary>
         Task<bool> AddSkillPointsAsync(int points);
+
+        /// <summary>
+        /// 打断施法
+        /// </summary>
+        Task InterruptCastAsync();
     }
 
     /// <summary>

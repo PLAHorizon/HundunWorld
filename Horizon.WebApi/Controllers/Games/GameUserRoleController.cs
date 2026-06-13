@@ -1,4 +1,4 @@
-﻿using Horizon.Core.Abstract;
+using Horizon.Core.Abstract;
 using Horizon.Core.Abstract.Enums;
 using Horizon.Core.Options;
 using Horizon.Share.Dtos.Games;
@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Orleans;
 using Orleans.Configuration;
 using System;
 using System.Collections.Generic;
@@ -16,9 +17,6 @@ using System.Threading.Tasks;
 
 namespace Horizon.WebApi.Controllers.Games
 {
-    /// <summary>
-    /// 游戏用户角色
-    /// </summary>
     [ApiGroup(ApiGroupName.Games)]
     [ApiController]
     [Route("[controller]")]
@@ -29,8 +27,9 @@ namespace Horizon.WebApi.Controllers.Games
         public GameUserRoleController(IOptions<AdoNetOptions> options,
                                 IOptions<ClusterOptions> clusterOptions,
                                 ILogger<GameUserRoleController> logger,
+                                IClusterClient clusterClient,
                                 IPassportCurrentUser passportCurrent)
-                                : base(options, clusterOptions, logger)
+                                : base(options, clusterOptions, logger, clusterClient)
         {
             _logger = logger;
             _passportCurrent = passportCurrent;

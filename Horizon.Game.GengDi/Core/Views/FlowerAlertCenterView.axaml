@@ -1,0 +1,87 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             x:Class="Horizon.Game.GengDi.Core.Views.FlowerAlertCenterView"
+             x:DataType="vm:FlowerAlertCenterViewModel">
+    <controls:GalleryPage Title="花卉预警中心"
+                          Subtitle="Horizon.Game.GengDi.FlowerAlert"
+                          Description="查看花卉价格预警和异常波动通知。"
+                          IconSource="{StaticResource NotificationsIcon}">
+
+        <Grid RowDefinitions="Auto,Auto,*"
+              RowSpacing="16">
+
+            <!-- 统计卡片 -->
+            <Border Classes="SurfaceCard subtle" Padding="16">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="待处理预警" Classes="PageEyebrow" />
+                        <TextBlock Text="{Binding PendingAlertCount}"
+                                   FontSize="26" FontWeight="Bold" Foreground="#FFA726"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Content="刷新" Classes="QuietAction" Padding="12 6" CornerRadius="8" FontSize="12"
+                                Command="{Binding RefreshCommand}"/>
+                        <Button Content="全部已读" Classes="PrimaryAction" Padding="12 6" CornerRadius="8" FontSize="12"
+                                Command="{Binding MarkAllReadCommand}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 品种筛选 -->
+            <Border Classes="SurfaceCard" Padding="12 8" Grid.Row="1">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="全部品种" Classes="PrimaryAction" Padding="14 6" CornerRadius="20" FontSize="12" Click="OnSpeciesFilterClick" Tag="0"/>
+                        <Button Content="红玫瑰" Classes="QuietAction" Padding="14 6" CornerRadius="20" FontSize="12" Click="OnSpeciesFilterClick" Tag="1"/>
+                        <Button Content="百合" Classes="QuietAction" Padding="14 6" CornerRadius="20" FontSize="12" Click="OnSpeciesFilterClick" Tag="2"/>
+                        <Button Content="康乃馨" Classes="QuietAction" Padding="14 6" CornerRadius="20" FontSize="12" Click="OnSpeciesFilterClick" Tag="3"/>
+                        <Button Content="混合花束" Classes="QuietAction" Padding="14 6" CornerRadius="20" FontSize="12" Click="OnSpeciesFilterClick" Tag="4"/>
+                        <Button Content="红绿搭配" Classes="QuietAction" Padding="14 6" CornerRadius="20" FontSize="12" Click="OnSpeciesFilterClick" Tag="5"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- 预警列表 -->
+            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="8" Margin="0 0 0 24">
+                    <ItemsControl ItemsSource="{Binding Alerts}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Classes="SurfaceCard" Padding="16" CornerRadius="12" Margin="0 0 0 8">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                        <TextBlock Text="{Binding LevelIcon}" FontSize="20" VerticalAlignment="Center"/>
+                                        <StackPanel Grid.Column="1" Spacing="4">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <TextBlock Text="{Binding AlertTypeDisplay}" FontSize="12" FontWeight="SemiBold" Foreground="#FFA726"/>
+                                                <TextBlock Text="{Binding SpeciesName}" FontSize="11" Foreground="#888888"/>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding Message}" TextWrapping="Wrap" FontSize="13"/>
+                                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                                <TextBlock Text="{Binding TriggeredValue, StringFormat='触发值: {0:F2}'}" FontSize="10" Foreground="#666666"/>
+                                                <TextBlock Text="{Binding ThresholdValue, StringFormat='阈值: {0:F2}'}" FontSize="10" Foreground="#666666"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                        <Button Grid.Column="2" Content="{Binding ReadIcon}"
+                                                Classes="QuietAction" Padding="8 4" FontSize="11" CornerRadius="6"
+                                                Command="{Binding $parent[ItemsControl].((vm:FlowerAlertCenterViewModel)DataContext).MarkAsReadCommand}"
+                                                CommandParameter="{Binding}"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- 空状态 -->
+                    <Border Classes="SurfaceCard" Padding="40" IsVisible="{Binding IsEmpty}">
+                        <StackPanel HorizontalAlignment="Center" Spacing="12">
+                            <TextBlock Text="✅" FontSize="32" HorizontalAlignment="Center"/>
+                            <TextBlock Text="暂无预警" FontSize="14" Foreground="#888888" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </controls:GalleryPage>
+</UserControl>

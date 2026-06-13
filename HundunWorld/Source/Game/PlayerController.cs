@@ -1,5 +1,8 @@
-﻿using FlaxEngine;
+using FlaxEngine;
 using Horizon.Game.Message.Enums;
+using Horizon.Game.Message.Network;
+using Horizon.Game.Message.Sync;
+using CharacterState = Horizon.Game.Message.Enums.CharacterState;
 using System.Collections.Generic;
 using System.Linq;
 using Game;
@@ -102,6 +105,7 @@ namespace HundunWorld.Game
         /// 输入管理器引用
         /// </summary>
         private InputManager _inputManager;
+        private global::Game.Character.Movement.QinggongSystem _qinggongSystem;
 
         /// <summary>
         /// 目标选择系统引用
@@ -122,6 +126,10 @@ namespace HundunWorld.Game
         /// 移动预测缓冲
         /// </summary>
         private Queue<Vector3> _movementBuffer = new Queue<Vector3>();
+
+        private long _clientTick = 0;
+        private float _inputSendAccumulator = 0f;
+        private const float InputSendInterval = 1f / 60f;
 
         /// <summary>
         /// 最大预测缓冲大小
@@ -283,6 +291,7 @@ namespace HundunWorld.Game
         {
             // 获取输入管理器
             _inputManager = Actor.Parent?.GetScript<InputManager>();
+            _qinggongSystem = Actor.Parent?.GetScript<global::Game.Character.Movement.QinggongSystem>();
 
             // 初始化目标选择系统
             _targetSelectionSystem = Scene.FindScript<Combat.TargetSelectionSystem>();
@@ -340,6 +349,74 @@ namespace HundunWorld.Game
 
             // 更新移动预测缓冲
             UpdateMovementBuffer();
+
+            // 构建并发送输入同步包
+            _inputSendAccumulator += Time.DeltaTime;
+            if (_inputSendAccumulator >= InputSendInterval)
+            {
+                _inputSendAccumulator -= InputSendInterval;
+                BuildAndSendInputPacket();
+            }
+        }
+
+        #endregion
+
+        #region 输入同步包发送
+
+        private void BuildAndSendInputPacket()
+        {
+            _clientTick++;
+
+            byte inputBits = _inputManager != null ? _inputManager.GetCurrentInputBits() : (byte)0;
+            if (_qinggongSystem != null)
+            {
+                inputBits |= (byte)_qinggongSystem.GetQinggongInputBits();
+            }
+
+            float moveX = _moveDirection.X;
+            float moveY = _moveDirection.Z;
+
+            float lookYaw = 0f;
+            float lookPitch = 0f;
+            if (Camera != null)
+            {
+                lookYaw = Camera.Yaw * Mathf.DegreesToRadians;
+                lookPitch = Camera.Pitch * Mathf.DegreesToRadians;
+            }
+
+            var inputPacket = new InputPacket
+            {
+                ClientTick = _clientTick,
+                InputBits = inputBits,
+                LookYaw = lookYaw,
+                LookPitch = lookPitch,
+                MoveX = moveX,
+                MoveY = moveY,
+            };
+
+            SyncPacketCodec.Encode(inputPacket, out var frame, out var frameLength);
+            try
+            {
+                var payload = new byte[frameLength];
+                System.Buffer.BlockCopy(frame, 0, payload, 0, frameLength);
+
+                var syncFrame = new SyncFrameMessage
+                {
+                    Frame = payload,
+                    PacketKind = (byte)inputPacket.Kind,
+                    ProtocolVersion = inputPacket.ProtocolVersion,
+                };
+
+                var networkManager = HundunWorldGame.Instance?.NetworkManager;
+                if (networkManager != null && networkManager.CanSendMessage())
+                {
+                    _ = networkManager.SendAsync(syncFrame);
+                }
+            }
+            finally
+            {
+                SyncPacketCodec.ReturnFrame(frame);
+            }
         }
 
         #endregion
@@ -416,8 +493,12 @@ namespace HundunWorld.Game
             {
                 inputDirection.Normalize();
 
-                // 将移动方向从相机空间转换为世界空间
-                if (Camera != null)
+                if (Camera != null && Camera.ShouldUseCameraRelativeMovement())
+                {
+                    Vector2 cameraInput = new Vector2(inputDirection.X, inputDirection.Z);
+                    inputDirection = Camera.GetCameraRelativeMoveDirection(cameraInput);
+                }
+                else if (Camera != null)
                 {
                     Vector3 cameraRight = Camera.Actor.Transform.Right;
                     Vector3 cameraForward = Camera.Actor.Transform.Forward;
@@ -429,7 +510,6 @@ namespace HundunWorld.Game
                     inputDirection = inputDirection.X * cameraRight + inputDirection.Z * cameraForward;
                 }
 
-                // 更新上次输入时间
                 _lastInputTime = Time.GameTime;
             }
 

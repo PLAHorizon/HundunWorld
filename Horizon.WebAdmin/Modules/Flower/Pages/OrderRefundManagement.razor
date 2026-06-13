@@ -1,0 +1,200 @@
+@page "/flower/refunds"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using Horizon.Share.VMs
+@using System.Text.Json
+@using Horizon.WebAdmin.Modules.Flower.Services
+@inject FlowerAdminService AdminService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">↩️ 退款管理</TypographyTitle>
+        <Space>
+            <Select TItem="int" TItemValue="int" @bind-Value="@SelectedStatus" Style="width:140px" Size="@InputSize.Small">
+                <SelectOption TItem="int" TItemValue="int" Value="-1">全部状态</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="0">待审核</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="1">已通过</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="2">已拒绝</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="3">退款中</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="4">已完成</SelectOption>
+            </Select>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadRefunds">🔍 查询</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="RefundItem" DataSource="@Refunds" Size="@TableSize.Small" RowKey="x => x.RefundId">
+            <PropertyColumn Property="r => r.RefundId" Title="退款ID" />
+            <PropertyColumn Property="r => r.OrderId" Title="订单ID" />
+            <Column TData="string" Title="退款金额">
+                <AntDesign.Text Type="@TextElementType.Danger" Strong>¥@context.RefundAmount.ToString("N2")</AntDesign.Text>
+            </Column>
+            <PropertyColumn Property="r => r.Reason" Title="退款原因" />
+            <Column TData="string" Title="状态">
+                <Tag Color="@GetRefundStatusColor(context.Status)">@GetRefundStatusText(context.Status)</Tag>
+            </Column>
+            <Column TData="string" Title="申请时间">@context.CreatedAt.ToString("yyyy-MM-dd HH:mm")</Column>
+            <Column TData="string" Title="操作">
+                @if (context.Status == 0)
+                {
+                    <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => OpenAuditModal(context)">平台审核</Button>
+                }
+                else
+                {
+                    <span style="color:rgba(0,0,0,0.45);">--</span>
+                }
+            </Column>
+        </Table>
+    }
+
+    <Modal Title="@("平台退款审核")" Visible="@ShowAuditModal" OnCancel="CloseAuditModal"
+           OnOk="SubmitAudit" OkText="@("提交")" CancelText="@("取消")">
+        @if (SelectedRefund != null)
+        {
+            <Descriptions Column="2" Size="@DescriptionsSize.Small" Style="margin-bottom:16px;">
+                <DescriptionsItem Title="退款ID">@SelectedRefund.RefundId</DescriptionsItem>
+                <DescriptionsItem Title="订单ID">@SelectedRefund.OrderId</DescriptionsItem>
+                <DescriptionsItem Title="退款金额"><AntDesign.Text Type="@TextElementType.Danger">¥@SelectedRefund.RefundAmount.ToString("N2")</AntDesign.Text></DescriptionsItem>
+                <DescriptionsItem Title="退款原因">@SelectedRefund.Reason</DescriptionsItem>
+            </Descriptions>
+        }
+        <Form Model="@AuditModel" Layout="@FormLayout.Vertical">
+            <FormItem Label="@("审核结果")">
+                <RadioGroup @bind-Value="@AuditModel.Approved">
+                    <Radio Value="true">通过</Radio>
+                    <Radio Value="false">拒绝</Radio>
+                </RadioGroup>
+            </FormItem>
+            <FormItem Label="@("审核意见")">
+                <TextArea @bind-Value="@AuditModel.Reason" Rows="3" Placeholder="@("请输入审核意见")" />
+            </FormItem>
+        </Form>
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <Alert Type="@AlertType.Success" Message="@SuccessMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<RefundItem> Refunds { get; set; } = new();
+    private bool Loading { get; set; }
+    private int SelectedStatus { get; set; } = -1;
+    private string ErrorMessage { get; set; } = "";
+    private string SuccessMessage { get; set; } = "";
+    private bool ShowAuditModal { get; set; }
+    private RefundItem? SelectedRefund { get; set; }
+    private RefundAuditModel AuditModel { get; set; } = new();
+
+    private readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRefunds();
+    }
+
+    private async Task LoadRefunds()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await AdminService.GetRefundsAsync(SelectedStatus >= 0 ? SelectedStatus : null);
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                Refunds = JsonSerializer.Deserialize<List<RefundItem>>(result.Data.Value.GetRawText(), _jsonOpts) ?? new();
+            }
+            else
+            {
+                Refunds = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载退款列表失败: {ex.Message}";
+            Refunds = new();
+        }
+        Loading = false;
+    }
+
+    private void OpenAuditModal(RefundItem refund)
+    {
+        SelectedRefund = refund;
+        AuditModel = new RefundAuditModel();
+        ShowAuditModal = true;
+    }
+
+    private void CloseAuditModal()
+    {
+        ShowAuditModal = false;
+        SelectedRefund = null;
+    }
+
+    private async Task SubmitAudit()
+    {
+        if (SelectedRefund == null) return;
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var result = await AdminService.PlatformAuditRefundAsync(SelectedRefund.RefundId, new
+            {
+                Approved = AuditModel.Approved,
+                Reason = AuditModel.Reason
+            });
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = AuditModel.Approved ? "退款审核已通过" : "退款审核已拒绝";
+                ShowAuditModal = false;
+                await LoadRefunds();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "审核操作失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"审核操作失败: {ex.Message}";
+        }
+    }
+
+    private string GetRefundStatusColor(int status) => status switch
+    {
+        0 => "orange", 1 => "green", 2 => "red", 3 => "cyan", 4 => "blue", _ => "default"
+    };
+
+    private string GetRefundStatusText(int status) => status switch
+    {
+        0 => "待审核", 1 => "已通过", 2 => "已拒绝", 3 => "退款中", 4 => "已完成", _ => "未知"
+    };
+
+    public class RefundItem
+    {
+        public long RefundId { get; set; }
+        public long OrderId { get; set; }
+        public decimal RefundAmount { get; set; }
+        public string Reason { get; set; } = "";
+        public int Status { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class RefundAuditModel
+    {
+        public bool Approved { get; set; } = true;
+        public string Reason { get; set; } = "";
+    }
+}

@@ -525,7 +525,9 @@ namespace Horizon.Game.Gateway.Tests
         {
             for (int pos = 0; pos <= 4; pos++)
             {
+#pragma warning disable CS1718 // 与自身比较是有意为之，用于验证自我踢出逻辑
                 Assert.False(pos < pos);
+#pragma warning restore CS1718
             }
         }
 

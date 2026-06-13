@@ -131,7 +131,7 @@ namespace Horizon.Orleans.Grains
                 {
                     RecipeId = recipeId,
                     Success = success,
-                    Timestamp = DateTime.UtcNow,
+                    Timestamp = DateTime.Now,
                     OutputItemId = outputItemId,
                     Quality = success ? quality : 0,
                     PrimaryElement = primaryElement,

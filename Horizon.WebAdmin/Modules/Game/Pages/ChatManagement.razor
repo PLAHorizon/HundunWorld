@@ -1,0 +1,566 @@
+@page "/game/chat"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Game.Services
+@namespace Horizon.WebAdmin.Modules.Game.Pages
+
+@inject GameChatService ChatService
+@inject MessageService MsgService
+
+<div>
+    <TypographyTitle Level="5">聊天管理</TypographyTitle>
+
+    <Tabs ActiveKey="@_activeTab" OnChange="OnTabChanged">
+        <TabPane Key="1" Tab="聊天消息">
+            <div style="margin-bottom:16px;">
+                <Space>
+                    <Select TItem="int" TItemValue="int" @bind-Value="@_channelFilter" Style="width:140px" Size="@InputSize.Small" OnChange="OnChannelFilterChanged">
+                        <SelectOption TItem="int" TItemValue="int" Value="0">全部</SelectOption>
+                        <SelectOption TItem="int" TItemValue="int" Value="1">私聊</SelectOption>
+                        <SelectOption TItem="int" TItemValue="int" Value="2">队伍</SelectOption>
+                        <SelectOption TItem="int" TItemValue="int" Value="3">帮会</SelectOption>
+                        <SelectOption TItem="int" TItemValue="int" Value="4">世界</SelectOption>
+                        <SelectOption TItem="int" TItemValue="int" Value="5">跨服</SelectOption>
+                        <SelectOption TItem="int" TItemValue="int" Value="6">附近</SelectOption>
+                        <SelectOption TItem="int" TItemValue="int" Value="7">系统</SelectOption>
+                        <SelectOption TItem="int" TItemValue="int" Value="8">喇叭</SelectOption>
+                    </Select>
+                    <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadMessages">查询</Button>
+                </Space>
+            </div>
+
+            @if (_messagesLoading)
+            {
+                <div style="text-align:center; padding:32px 0;">
+                    <Spin Size="@SpinSize.Large" />
+                    <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+                </div>
+            }
+            else
+            {
+                <Table TItem="JsonElement" DataSource="@_messages" Size="@TableSize.Small" RowKey="@GetMessageRowKey">
+                    <Column TData="string" Title="发送者">
+                        @(context.TryGetProperty("senderName", out var p) ? p.GetString() ?? "-" : "-")
+                    </Column>
+                    <Column TData="string" Title="等级">
+                        @(context.TryGetProperty("level", out var p) ? p.GetInt32().ToString() : "-")
+                    </Column>
+                    <Column TData="string" Title="频道">
+                        <Tag Color="@GetChannelColor(context)">@GetChannelText(context)</Tag>
+                    </Column>
+                    <Column TData="string" Title="内容类型">
+                        @(context.TryGetProperty("contentType", out var p) ? p.GetString() ?? "-" : "-")
+                    </Column>
+                    <Column TData="string" Title="内容摘要">
+                        @(TruncateContent(context))
+                    </Column>
+                    <Column TData="string" Title="发送时间">
+                        @(context.TryGetProperty("sendTime", out var p) ? p.GetString() ?? "-" : "-")
+                    </Column>
+                    <Column TData="string" Title="状态">
+                        <Tag Color="@GetStatusColor(context)">@GetStatusText(context)</Tag>
+                    </Column>
+                </Table>
+            }
+        </TabPane>
+
+        <TabPane Key="2" Tab="频道设置">
+            @if (_channelsLoading)
+            {
+                <div style="text-align:center; padding:32px 0;">
+                    <Spin Size="@SpinSize.Large" />
+                    <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+                </div>
+            }
+            else
+            {
+                <Table TItem="JsonElement" DataSource="@_channels" Size="@TableSize.Small" RowKey="@GetChannelRowKey">
+                    <Column TData="string" Title="频道名">
+                        @(context.TryGetProperty("channelName", out var p) ? p.GetString() ?? "-" : "-")
+                    </Column>
+                    <Column TData="string" Title="频道编号">
+                        @(context.TryGetProperty("channelCode", out var p) ? p.GetInt32().ToString() : "-")
+                    </Column>
+                    <Column TData="string" Title="最低等级">
+                        @(context.TryGetProperty("minLevel", out var p) ? p.GetInt32().ToString() : "-")
+                    </Column>
+                    <Column TData="string" Title="最低活跃等级">
+                        @(context.TryGetProperty("minActiveLevel", out var p) ? p.GetInt32().ToString() : "-")
+                    </Column>
+                    <Column TData="string" Title="冷却时间(秒)">
+                        @(context.TryGetProperty("cooldownSeconds", out var p) ? p.GetInt32().ToString() : "-")
+                    </Column>
+                    <Column TData="string" Title="消耗物品/数量">
+                        @(context.TryGetProperty("costItem", out var ci) ? ci.GetString() ?? "-" : "-") / @(context.TryGetProperty("costAmount", out var ca) ? ca.GetInt32().ToString() : "-")
+                    </Column>
+                    <Column TData="string" Title="最大长度">
+                        @(context.TryGetProperty("maxLength", out var p) ? p.GetInt32().ToString() : "-")
+                    </Column>
+                    <Column TData="string" Title="允许富文本">
+                        <Switch Checked="@(context.TryGetProperty("allowRichText", out var p1) && p1.GetBoolean())" Disabled />
+                    </Column>
+                    <Column TData="string" Title="允许语音">
+                        <Switch Checked="@(context.TryGetProperty("allowVoice", out var p2) && p2.GetBoolean())" Disabled />
+                    </Column>
+                    <Column TData="string" Title="允许物品链接">
+                        <Switch Checked="@(context.TryGetProperty("allowItemLink", out var p3) && p3.GetBoolean())" Disabled />
+                    </Column>
+                    <Column TData="string" Title="允许位置">
+                        <Switch Checked="@(context.TryGetProperty("allowLocation", out var p4) && p4.GetBoolean())" Disabled />
+                    </Column>
+                    <Column TData="string" Title="保存天数">
+                        @(context.TryGetProperty("retentionDays", out var p) ? p.GetInt32().ToString() : "-")
+                    </Column>
+                    <Column TData="string" Title="是否启用">
+                        <Switch Checked="@(context.TryGetProperty("enabled", out var p5) && p5.GetBoolean())" Disabled />
+                    </Column>
+                    <Column TData="string" Title="操作">
+                        <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowEditModal(context)">编辑</Button>
+                    </Column>
+                </Table>
+            }
+        </TabPane>
+
+        <TabPane Key="3" Tab="黑名单">
+            @if (_blacklistLoading)
+            {
+                <div style="text-align:center; padding:32px 0;">
+                    <Spin Size="@SpinSize.Large" />
+                    <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+                </div>
+            }
+            else
+            {
+                <Table TItem="JsonElement" DataSource="@_blacklist" Size="@TableSize.Small" RowKey="@GetBlacklistRowKey">
+                    <Column TData="string" Title="ID">
+                        @(context.TryGetProperty("id", out var p) ? p.GetInt64().ToString() : "-")
+                    </Column>
+                    <Column TData="string" Title="角色ID">
+                        @(context.TryGetProperty("roleId", out var p) ? p.GetInt64().ToString() : "-")
+                    </Column>
+                    <Column TData="string" Title="角色名">
+                        @(context.TryGetProperty("roleName", out var p) ? p.GetString() ?? "-" : "-")
+                    </Column>
+                    <Column TData="string" Title="被屏蔽角色ID">
+                        @(context.TryGetProperty("blockedRoleId", out var p) ? p.GetInt64().ToString() : "-")
+                    </Column>
+                    <Column TData="string" Title="被屏蔽角色名">
+                        @(context.TryGetProperty("blockedRoleName", out var p) ? p.GetString() ?? "-" : "-")
+                    </Column>
+                    <Column TData="string" Title="屏蔽原因">
+                        @(context.TryGetProperty("reason", out var p) ? p.GetString() ?? "-" : "-")
+                    </Column>
+                    <Column TData="string" Title="屏蔽时间">
+                        @(context.TryGetProperty("blockTime", out var p) ? p.GetString() ?? "-" : "-")
+                    </Column>
+                    <Column TData="string" Title="是否永久">
+                        <Tag Color="@(context.TryGetProperty("isPermanent", out var pp) && pp.GetBoolean() ? "red" : "blue")">@(context.TryGetProperty("isPermanent", out var pp2) && pp2.GetBoolean() ? "永久" : "临时")</Tag>
+                    </Column>
+                    <Column TData="string" Title="解除屏蔽时间">
+                        @(context.TryGetProperty("unblockTime", out var p) ? p.GetString() ?? "-" : "-")
+                    </Column>
+                    <Column TData="string" Title="是否活跃">
+                        <Switch Checked="@(context.TryGetProperty("isActive", out var pa) && pa.GetBoolean())" Disabled />
+                    </Column>
+                    <Column TData="string" Title="操作">
+                        <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" Danger OnClick="() => RemoveFromBlacklist(context)">解除屏蔽</Button>
+                    </Column>
+                </Table>
+            }
+        </TabPane>
+    </Tabs>
+
+    <Modal Title="编辑频道设置" Visible="@_editModalVisible" OnCancel="CloseEditModal" OnOk="HandleEditOk" ConfirmLoading="@_editLoading">
+        @if (_editingChannel != null)
+        {
+            var ch = _editingChannel.Value;
+            <Form Model="@_editForm" Layout="@FormLayout.Vertical">
+                <FormItem Label="频道名">
+                    <Input @bind-Value="@_editForm.ChannelName" />
+                </FormItem>
+                <FormItem Label="最低等级">
+                    <InputNumber TItem="int" @bind-Value="@_editForm.MinLevel" Min="0" Style="width:100%;" />
+                </FormItem>
+                <FormItem Label="最低活跃等级">
+                    <InputNumber TItem="int" @bind-Value="@_editForm.MinActiveLevel" Min="0" Style="width:100%;" />
+                </FormItem>
+                <FormItem Label="冷却时间(秒)">
+                    <InputNumber TItem="int" @bind-Value="@_editForm.CooldownSeconds" Min="0" Style="width:100%;" />
+                </FormItem>
+                <FormItem Label="消耗物品">
+                    <Input @bind-Value="@_editForm.CostItem" />
+                </FormItem>
+                <FormItem Label="消耗数量">
+                    <InputNumber TItem="int" @bind-Value="@_editForm.CostAmount" Min="0" Style="width:100%;" />
+                </FormItem>
+                <FormItem Label="最大长度">
+                    <InputNumber TItem="int" @bind-Value="@_editForm.MaxLength" Min="1" Style="width:100%;" />
+                </FormItem>
+                <FormItem Label="允许富文本">
+                    <Switch @bind-Checked="@_editForm.AllowRichText" />
+                </FormItem>
+                <FormItem Label="允许语音">
+                    <Switch @bind-Checked="@_editForm.AllowVoice" />
+                </FormItem>
+                <FormItem Label="允许物品链接">
+                    <Switch @bind-Checked="@_editForm.AllowItemLink" />
+                </FormItem>
+                <FormItem Label="允许位置">
+                    <Switch @bind-Checked="@_editForm.AllowLocation" />
+                </FormItem>
+                <FormItem Label="保存天数">
+                    <InputNumber TItem="int" @bind-Value="@_editForm.RetentionDays" Min="1" Style="width:100%;" />
+                </FormItem>
+                <FormItem Label="是否启用">
+                    <Switch @bind-Checked="@_editForm.Enabled" />
+                </FormItem>
+            </Form>
+        }
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@_errorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private string _activeTab = "1";
+    private int _channelFilter;
+    private bool _messagesLoading;
+    private bool _channelsLoading;
+    private bool _blacklistLoading;
+    private string _errorMessage = "";
+
+    private List<JsonElement> _messages = new();
+    private List<JsonElement> _channels = new();
+    private List<JsonElement> _blacklist = new();
+
+    private bool _editModalVisible;
+    private bool _editLoading;
+    private JsonElement? _editingChannel;
+    private ChannelEditForm _editForm = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMessages();
+    }
+
+    private async Task OnTabChanged(string key)
+    {
+        _activeTab = key;
+        _errorMessage = "";
+        if (key == "1") await LoadMessages();
+        else if (key == "2") await LoadChannelSettings();
+        else if (key == "3") await LoadBlacklist();
+    }
+
+    private async Task OnChannelFilterChanged(int? value)
+    {
+        _channelFilter = value ?? 0;
+        await LoadMessages();
+    }
+
+    private async Task LoadMessages()
+    {
+        _messagesLoading = true;
+        _errorMessage = "";
+        try
+        {
+            int? channel = _channelFilter == 0 ? null : _channelFilter;
+            var result = await ChatService.GetChatMessagesAsync(channel: channel);
+            if (result?.IsSuccess == true)
+            {
+                var data = result.Data;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    _messages = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    _messages = items.EnumerateArray().ToList();
+                }
+                else
+                {
+                    _messages = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                _messages = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    _errorMessage = result.ErrorMessage ?? "加载聊天消息失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"加载聊天消息失败: {ex.Message}";
+            _messages = new List<JsonElement>();
+        }
+        _messagesLoading = false;
+    }
+
+    private async Task LoadChannelSettings()
+    {
+        _channelsLoading = true;
+        _errorMessage = "";
+        try
+        {
+            var result = await ChatService.GetChannelSettingsAsync();
+            if (result?.IsSuccess == true)
+            {
+                var data = result.Data;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    _channels = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    _channels = items.EnumerateArray().ToList();
+                }
+                else
+                {
+                    _channels = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                _channels = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    _errorMessage = result.ErrorMessage ?? "加载频道设置失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"加载频道设置失败: {ex.Message}";
+            _channels = new List<JsonElement>();
+        }
+        _channelsLoading = false;
+    }
+
+    private async Task LoadBlacklist()
+    {
+        _blacklistLoading = true;
+        _errorMessage = "";
+        try
+        {
+            var result = await ChatService.GetBlacklistAsync();
+            if (result?.IsSuccess == true)
+            {
+                var data = result.Data;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    _blacklist = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    _blacklist = items.EnumerateArray().ToList();
+                }
+                else
+                {
+                    _blacklist = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                _blacklist = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    _errorMessage = result.ErrorMessage ?? "加载黑名单失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"加载黑名单失败: {ex.Message}";
+            _blacklist = new List<JsonElement>();
+        }
+        _blacklistLoading = false;
+    }
+
+    private void ShowEditModal(JsonElement channel)
+    {
+        _editingChannel = channel;
+        _editForm = new ChannelEditForm
+        {
+            ChannelCode = channel.TryGetProperty("channelCode", out var cc) ? cc.GetInt32() : 0,
+            ChannelName = channel.TryGetProperty("channelName", out var cn) ? cn.GetString() ?? "" : "",
+            MinLevel = channel.TryGetProperty("minLevel", out var ml) ? ml.GetInt32() : 0,
+            MinActiveLevel = channel.TryGetProperty("minActiveLevel", out var mal) ? mal.GetInt32() : 0,
+            CooldownSeconds = channel.TryGetProperty("cooldownSeconds", out var cs) ? cs.GetInt32() : 0,
+            CostItem = channel.TryGetProperty("costItem", out var ci) ? ci.GetString() ?? "" : "",
+            CostAmount = channel.TryGetProperty("costAmount", out var ca) ? ca.GetInt32() : 0,
+            MaxLength = channel.TryGetProperty("maxLength", out var mle) ? mle.GetInt32() : 200,
+            AllowRichText = channel.TryGetProperty("allowRichText", out var art) && art.GetBoolean(),
+            AllowVoice = channel.TryGetProperty("allowVoice", out var av) && av.GetBoolean(),
+            AllowItemLink = channel.TryGetProperty("allowItemLink", out var ail) && ail.GetBoolean(),
+            AllowLocation = channel.TryGetProperty("allowLocation", out var al) && al.GetBoolean(),
+            RetentionDays = channel.TryGetProperty("retentionDays", out var rd) ? rd.GetInt32() : 30,
+            Enabled = channel.TryGetProperty("enabled", out var en) && en.GetBoolean()
+        };
+        _editModalVisible = true;
+    }
+
+    private void CloseEditModal()
+    {
+        _editModalVisible = false;
+        _editingChannel = null;
+    }
+
+    private async Task HandleEditOk()
+    {
+        _editLoading = true;
+        try
+        {
+            var data = new
+            {
+                channelCode = _editForm.ChannelCode,
+                channelName = _editForm.ChannelName,
+                minLevel = _editForm.MinLevel,
+                minActiveLevel = _editForm.MinActiveLevel,
+                cooldownSeconds = _editForm.CooldownSeconds,
+                costItem = _editForm.CostItem,
+                costAmount = _editForm.CostAmount,
+                maxLength = _editForm.MaxLength,
+                allowRichText = _editForm.AllowRichText,
+                allowVoice = _editForm.AllowVoice,
+                allowItemLink = _editForm.AllowItemLink,
+                allowLocation = _editForm.AllowLocation,
+                retentionDays = _editForm.RetentionDays,
+                enabled = _editForm.Enabled
+            };
+            var result = await ChatService.UpdateChannelSettingAsync(data);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success("频道设置已更新");
+                _editModalVisible = false;
+                await LoadChannelSettings();
+            }
+            else
+            {
+                _errorMessage = result?.ErrorMessage ?? "更新频道设置失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"更新频道设置失败: {ex.Message}";
+        }
+        finally
+        {
+            _editLoading = false;
+        }
+    }
+
+    private async Task RemoveFromBlacklist(JsonElement item)
+    {
+        var id = item.TryGetProperty("id", out var p) ? p.GetInt64() : 0;
+        try
+        {
+            var result = await ChatService.RemoveFromBlacklistAsync(id);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success("已解除屏蔽");
+                await LoadBlacklist();
+            }
+            else
+            {
+                _errorMessage = result?.ErrorMessage ?? "解除屏蔽失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"解除屏蔽失败: {ex.Message}";
+        }
+    }
+
+    private string GetChannelText(JsonElement msg)
+    {
+        var code = msg.TryGetProperty("channel", out var p) ? p.GetInt32() : 0;
+        return code switch
+        {
+            1 => "私聊",
+            2 => "队伍",
+            3 => "帮会",
+            4 => "世界",
+            5 => "跨服",
+            6 => "附近",
+            7 => "系统",
+            8 => "喇叭",
+            _ => "-"
+        };
+    }
+
+    private string GetChannelColor(JsonElement msg)
+    {
+        var code = msg.TryGetProperty("channel", out var p) ? p.GetInt32() : 0;
+        return code switch
+        {
+            1 => "blue",
+            2 => "green",
+            3 => "purple",
+            4 => "red",
+            5 => "orange",
+            6 => "cyan",
+            7 => "default",
+            8 => "gold",
+            _ => "default"
+        };
+    }
+
+    private string GetStatusText(JsonElement msg)
+    {
+        var status = msg.TryGetProperty("status", out var p) ? p.GetInt32() : 0;
+        return status switch
+        {
+            0 => "正常",
+            1 => "撤回",
+            2 => "屏蔽",
+            3 => "删除",
+            _ => "-"
+        };
+    }
+
+    private string GetStatusColor(JsonElement msg)
+    {
+        var status = msg.TryGetProperty("status", out var p) ? p.GetInt32() : 0;
+        return status switch
+        {
+            0 => "green",
+            1 => "orange",
+            2 => "red",
+            3 => "default",
+            _ => "default"
+        };
+    }
+
+    private string TruncateContent(JsonElement msg)
+    {
+        var content = msg.TryGetProperty("content", out var p) ? p.GetString() ?? "" : "";
+        return content.Length > 50 ? content.Substring(0, 50) + "..." : content;
+    }
+
+    private object GetMessageRowKey(JsonElement x) =>
+        x.TryGetProperty("id", out var p) ? (object)p.GetInt64() : 0;
+
+    private object GetChannelRowKey(JsonElement x) =>
+        x.TryGetProperty("channelCode", out var p) ? (object)p.GetInt32() : 0;
+
+    private object GetBlacklistRowKey(JsonElement x) =>
+        x.TryGetProperty("id", out var p) ? (object)p.GetInt64() : 0;
+
+    private class ChannelEditForm
+    {
+        public int ChannelCode { get; set; }
+        public string ChannelName { get; set; } = "";
+        public int MinLevel { get; set; }
+        public int MinActiveLevel { get; set; }
+        public int CooldownSeconds { get; set; }
+        public string CostItem { get; set; } = "";
+        public int CostAmount { get; set; }
+        public int MaxLength { get; set; } = 200;
+        public bool AllowRichText { get; set; }
+        public bool AllowVoice { get; set; }
+        public bool AllowItemLink { get; set; }
+        public bool AllowLocation { get; set; }
+        public int RetentionDays { get; set; } = 30;
+        public bool Enabled { get; set; } = true;
+    }
+}

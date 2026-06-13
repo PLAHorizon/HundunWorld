@@ -1,0 +1,158 @@
+@page "/profile"
+@layout Horizon.WebAdmin.Shared.MainLayout
+@using Horizon.WebAdmin.Services.Auth
+@inject AuthService AuthService
+@inject AuthStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+
+<div style="max-width:600px;margin:0 auto;">
+    <Card Title="个人中心" Style="margin-bottom:24px;">
+        <Descriptions Column="1" Bordered="true">
+            <DescriptionsItem Title="通行证号">@_passportId</DescriptionsItem>
+            <DescriptionsItem Title="通行证类型">@_passportType</DescriptionsItem>
+            <DescriptionsItem Title="邮箱">@_email</DescriptionsItem>
+            <DescriptionsItem Title="手机号">@_phone</DescriptionsItem>
+        </Descriptions>
+    </Card>
+
+    <Card Title="修改密码">
+        <Form Model="@_changePasswordModel" OnFinish="HandleChangePassword" Layout="FormLayout.Vertical">
+            <FormItem Label="当前密码" Required>
+                <InputPassword @bind-Value="@_changePasswordModel.OldPassword" Placeholder="请输入当前密码" />
+            </FormItem>
+            <FormItem Label="新密码" Required>
+                <InputPassword @bind-Value="@_changePasswordModel.NewPassword" Placeholder="请输入新密码" />
+            </FormItem>
+            <FormItem Label="确认新密码" Required>
+                <InputPassword @bind-Value="@_changePasswordModel.ConfirmPassword" Placeholder="请再次输入新密码" />
+            </FormItem>
+            @if (!string.IsNullOrEmpty(_message))
+            {
+                <Alert Type="@(_messageType == MessageType.Success ? AlertType.Success : AlertType.Error)" 
+                       Message="@_message" ShowIcon="true" Style="margin-bottom:16px;" />
+            }
+            <Button Type="@ButtonType.Primary" HtmlType="submit" Loading="@_loading">保存修改</Button>
+        </Form>
+    </Card>
+
+    <Card Style="margin-top:24px;">
+        <div style="display:flex;justify-content:flex-end;">
+            <Button Type="@ButtonType.Primary" Danger="true" @onclick="HandleLogout">
+                <Icon Type="logout" Theme="@IconThemeType.Outline" />
+                <span style="margin-left:8px;">退出登录</span>
+            </Button>
+        </div>
+    </Card>
+</div>
+
+@code {
+    private string _passportId = "";
+    private string _passportType = "";
+    private string _email = "";
+    private string _phone = "";
+    private string _message = "";
+    private MessageType _messageType = MessageType.Info;
+    private bool _loading = false;
+    private ChangePasswordModel _changePasswordModel = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var user = await AuthService.GetCurrentUserAsync();
+        if (user != null)
+        {
+            var passportClaim = user.FindFirst("PassportId") ?? user.FindFirst("sub");
+            _passportId = passportClaim?.Value ?? "未知";
+            var passportTypeClaim = user.FindFirst("PassportType");
+            _passportType = passportTypeClaim?.Value switch
+            {
+                "0" => "系统账号",
+                "1" => "普通账号",
+                _ => "未知"
+            };
+            var emailClaim = user.FindFirst("email") ?? user.FindFirst("Email");
+            _email = emailClaim?.Value ?? "未绑定";
+            var phoneClaim = user.FindFirst("phone") ?? user.FindFirst("Phone");
+            _phone = phoneClaim?.Value ?? "未绑定";
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleChangePassword()
+    {
+        _message = "";
+        _loading = true;
+
+        try
+        {
+            if (string.IsNullOrWhiteSpace(_changePasswordModel.OldPassword))
+            {
+                _message = "请输入当前密码";
+                _messageType = MessageType.Warning;
+                _loading = false;
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_changePasswordModel.NewPassword))
+            {
+                _message = "请输入新密码";
+                _messageType = MessageType.Warning;
+                _loading = false;
+                return;
+            }
+
+            if (_changePasswordModel.NewPassword.Length < 6)
+            {
+                _message = "新密码长度不能少于6位";
+                _messageType = MessageType.Warning;
+                _loading = false;
+                return;
+            }
+
+            if (_changePasswordModel.NewPassword != _changePasswordModel.ConfirmPassword)
+            {
+                _message = "两次输入的新密码不一致";
+                _messageType = MessageType.Warning;
+                _loading = false;
+                return;
+            }
+
+            var (success, error) = await AuthService.ChangePasswordAsync(_changePasswordModel.OldPassword, _changePasswordModel.NewPassword);
+
+            if (success)
+            {
+                await AuthService.LogoutAsync();
+                await AuthStateProvider.NotifyStateChangedAsync();
+                NavigationManager.NavigateTo("/login", true);
+                return;
+            }
+
+            _message = error ?? "密码修改失败";
+            _messageType = MessageType.Error;
+        }
+        catch (Exception ex)
+        {
+            _message = $"修改失败: {ex.Message}";
+            _messageType = MessageType.Error;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task HandleLogout()
+    {
+        await AuthService.LogoutAsync();
+        await AuthStateProvider.NotifyStateChangedAsync();
+        NavigationManager.NavigateTo("/login", true);
+    }
+
+    private class ChangePasswordModel
+    {
+        public string OldPassword { get; set; } = "";
+        public string NewPassword { get; set; } = "";
+        public string ConfirmPassword { get; set; } = "";
+    }
+}

@@ -8,6 +8,10 @@ namespace Horizon.Game.Message.Enums
     public enum SceneType
     {
         /// <summary>
+        /// 根场景（持久化管理场景）
+        /// </summary>
+        Root,
+        /// <summary>
         /// 
         /// </summary>
         Start,

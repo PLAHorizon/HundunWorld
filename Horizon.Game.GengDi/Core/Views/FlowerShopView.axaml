@@ -1,0 +1,219 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             x:Class="Horizon.Game.GengDi.Core.Views.FlowerShopView"
+             x:DataType="vm:FlowerShopViewModel"
+             KeyDown="OnKeyDown">
+
+    <controls:GalleryPage Title="花卉商城"
+                          Subtitle="Horizon.Game.GengDi.FlowerShop"
+                          Description="浏览和购买优质花卉。"
+                          IconSource="{StaticResource HomeIcon}">
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="20" Margin="0 0 0 24">
+
+                <!-- 搜索栏 -->
+                <Border Classes="SurfaceCard" Padding="16 12">
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="12">
+                        <TextBox x:Name="SearchBox"
+                                 Text="{Binding SearchText}"
+                                 Watermark="搜索花卉品种、商品... (Ctrl+K)"
+                                 Padding="12 10"
+                                 CornerRadius="10"
+                                 Background="#2A2A3E"
+                                 BorderThickness="0"
+                                 Foreground="#FFFFFF" />
+                        <Button Grid.Column="1"
+                                Content="搜索"
+                                Classes="PrimaryAction"
+                                Padding="20 10"
+                                CornerRadius="10"
+                                Command="{Binding SearchCommand}" />
+                        <ComboBox Grid.Column="2"
+                                  ItemsSource="{Binding SortModes}"
+                                  SelectedIndex="{Binding SortMode}"
+                                  PlaceholderText="排序"
+                                  MinWidth="120" Padding="8 6">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding DisplayName}" FontSize="12" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <ToggleButton Grid.Column="3"
+                                      Content="批量采购"
+                                      IsChecked="{Binding IsBatchMode}"
+                                      Padding="16 8"
+                                      CornerRadius="10"
+                                      FontSize="12" />
+                    </Grid>
+                </Border>
+
+                <!-- 分类筛选 -->
+                <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Disabled">
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="4 0">
+                        <Button Content="全部" Classes="PrimaryAction" Padding="16 8" CornerRadius="20" FontSize="12" Click="OnSpeciesFilterClick" Tag="0"/>
+                        <Button Content="红玫瑰" Classes="QuietAction" Padding="16 8" CornerRadius="20" FontSize="12" Click="OnSpeciesFilterClick" Tag="1"/>
+                        <Button Content="百合" Classes="QuietAction" Padding="16 8" CornerRadius="20" FontSize="12" Click="OnSpeciesFilterClick" Tag="2"/>
+                        <Button Content="康乃馨" Classes="QuietAction" Padding="16 8" CornerRadius="20" FontSize="12" Click="OnSpeciesFilterClick" Tag="3"/>
+                        <Button Content="混合花束" Classes="QuietAction" Padding="16 8" CornerRadius="20" FontSize="12" Click="OnSpeciesFilterClick" Tag="4"/>
+                        <Button Content="红绿搭配" Classes="QuietAction" Padding="16 8" CornerRadius="20" FontSize="12" Click="OnSpeciesFilterClick" Tag="5"/>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- 卡片视图 (大卡片布局) -->
+                <ItemsControl ItemsSource="{Binding FilteredProducts}" IsVisible="{Binding IsCardView}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" ItemWidth="300" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Classes="SurfaceCard"
+                                    Margin="0 0 16 16"
+                                    Padding="0"
+                                    CornerRadius="14"
+                                    ClipToBounds="True"
+                                    Cursor="Hand"
+                                    Tapped="OnProductTapped">
+                                <StackPanel Spacing="0">
+                                    <Border Height="200"
+                                            Background="#25FFFFFF">
+                                        <Grid>
+                                            <TextBlock Text="🌸"
+                                                       FontSize="56"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center" />
+                                            <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8">
+                                                <Border Background="#80000000" CornerRadius="6" Padding="6 3" Margin="0 0 0 4">
+                                                    <TextBlock Text="{Binding SpeciesName}" FontSize="10" Foreground="#FFFFFF" />
+                                                </Border>
+                                                <Border Background="#80000000" CornerRadius="6" Padding="6 3">
+                                                    <TextBlock Text="{Binding ForecastTrend}" FontSize="14" FontWeight="Bold"
+                                                               Foreground="{Binding TrendColor}" />
+                                                </Border>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                    <StackPanel Spacing="8" Margin="14">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Text="{Binding ProductName}"
+                                                       FontSize="15"
+                                                       FontWeight="SemiBold"
+                                                       TextWrapping="Wrap"
+                                                       MaxLines="2"
+                                                       VerticalAlignment="Center" />
+                                            <Border Grid.Column="1"
+                                                    Background="#FF6B6B"
+                                                    CornerRadius="4"
+                                                    Padding="6 2"
+                                                    VerticalAlignment="Center"
+                                                    IsVisible="{Binding IsPresale}">
+                                                <TextBlock Text="预售" FontSize="10" Foreground="#FFFFFF" FontWeight="SemiBold" />
+                                            </Border>
+                                        </Grid>
+                                        <TextBlock Text="{Binding PresaleDeliveryDateText}"
+                                                   FontSize="10"
+                                                   Foreground="#FFB74D"
+                                                   IsVisible="{Binding IsPresale}" />
+                                        <TextBlock Text="{Binding MerchantName}"
+                                                   FontSize="11"
+                                                   Foreground="#888888" />
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Price, StringFormat='¥{0:F2}'}"
+                                                           FontSize="20"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#FF6B6B"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding LadderPriceHint}"
+                                                           FontSize="10"
+                                                           Foreground="#C8E6C9"
+                                                           VerticalAlignment="Center"
+                                                           IsVisible="{Binding LadderPriceHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                            </StackPanel>
+                                            <Button Grid.Column="1"
+                                                    Content="加入购物车"
+                                                    Classes="QuietAction"
+                                                    Padding="10 6"
+                                                    FontSize="11"
+                                                    CornerRadius="8"
+                                                    Command="{Binding $parent[ItemsControl].((vm:FlowerShopViewModel)DataContext).AddToCartCommand}"
+                                                    CommandParameter="{Binding ProductId}"/>
+                                        </Grid>
+                                        <TextBlock Text="{Binding Stock, StringFormat='库存 {0} 件'}"
+                                                   FontSize="10"
+                                                   Foreground="#666666" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- 批量采购 DataGrid 视图 -->
+                <Border Classes="SurfaceCard" Padding="12" IsVisible="{Binding IsBatchView}" CornerRadius="14">
+                    <StackPanel Spacing="12">
+                        <DataGrid ItemsSource="{Binding FilteredProducts}"
+                                  AutoGenerateColumns="False"
+                                  CanUserResizeColumns="True"
+                                  CanUserSortColumns="True"
+                                  IsReadOnly="False"
+                                  GridLinesVisibility="Horizontal"
+                                  BorderThickness="0"
+                                  Background="Transparent"
+                                  MinHeight="300">
+                            <DataGrid.Columns>
+                                <DataGridCheckBoxColumn Header="选择" Binding="{Binding IsSelected}" Width="60" />
+                                <DataGridTextColumn Header="品种" Binding="{Binding SpeciesName}" Width="80" IsReadOnly="True" />
+                                <DataGridTextColumn Header="商品名称" Binding="{Binding ProductName}" Width="*" IsReadOnly="True" />
+                                <DataGridTextColumn Header="商户" Binding="{Binding MerchantName}" Width="100" IsReadOnly="True" />
+                                <DataGridTextColumn Header="价格" Binding="{Binding Price, StringFormat='¥{0:F2}'}" Width="90" IsReadOnly="True" />
+                                <DataGridTextColumn Header="库存" Binding="{Binding Stock}" Width="70" IsReadOnly="True" />
+                                <DataGridTemplateColumn Header="数量" Width="100">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <NumericUpDown Value="{Binding BatchQuantity, Mode=TwoWay}"
+                                                           Minimum="1" Maximum="9999"
+                                                           Padding="4 2" FontSize="12" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="趋势" Binding="{Binding ForecastTrend}" Width="50" IsReadOnly="True" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <Button Content="批量加入购物车"
+                                Classes="PrimaryAction"
+                                HorizontalAlignment="Right"
+                                Padding="24 10"
+                                CornerRadius="10"
+                                Command="{Binding BatchAddToCartCommand}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 加载更多 -->
+                <Border Classes="SurfaceCard" Padding="20" IsVisible="{Binding HasMoreProducts}">
+                    <Button Content="加载更多商品"
+                            Classes="QuietAction"
+                            HorizontalAlignment="Center"
+                            Padding="24 10"
+                            Command="{Binding LoadMoreCommand}" />
+                </Border>
+
+                <!-- 空状态 -->
+                <Border Classes="SurfaceCard" Padding="40" IsVisible="{Binding IsEmpty}">
+                    <StackPanel HorizontalAlignment="Center" Spacing="12">
+                        <TextBlock Text="🛒" FontSize="32" HorizontalAlignment="Center" />
+                        <TextBlock Text="暂无商品" FontSize="14" Foreground="#888888" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </controls:GalleryPage>
+</UserControl>

@@ -1,4 +1,4 @@
-﻿using Horizon.Core.Abstract;
+using Horizon.Core.Abstract;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -93,13 +93,12 @@ namespace Horizon.Entities
 
         public async Task<T> AddAsync([NotNull] T entity)
         {
-            // 检查对象是否已释放
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            // 获取写操作信号量
             await _writeSemaphore.WaitAsync();
             try
             {
+                DbContextHealthCheck();
                 var model = await DbCurrent.Set<T>().AddAsync(entity);
                 try
                 {
@@ -108,14 +107,18 @@ namespace Horizon.Entities
                 }
                 catch (DbUpdateConcurrencyException ex)
                 {
-                    // 处理添加时的并发冲突（虽然罕见，但可能发生）
                     Log.Error(Log.CommRepository, $"添加操作并发冲突: {ex.Message}");
-                    throw; // 重新抛出，因为添加操作的并发冲突通常需要特殊处理
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(Log.CommRepository, $"添加操作失败: {ex.Message}");
+                    try { DbCurrent.Database.CloseConnection(); } catch { }
+                    throw;
                 }
             }
             finally
             {
-                // 获取写操作信号量
                 _writeSemaphore.Release();
             }
         }
@@ -634,7 +637,7 @@ namespace Horizon.Entities
         /// <typeparam name="K"></typeparam>
         /// <param name="id"></param>
         /// <returns></returns>
-        public async Task<bool> DeletedAsync<T, K>([NotNull] K id) where T : BaseModel<K>
+        public async Task<bool> DeletedAsync<TEntity, TKey>([NotNull] TKey id) where TEntity : BaseModel<TKey>
         {
             // 检查对象是否已释放
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -646,7 +649,7 @@ namespace Horizon.Entities
                 DbContextHealthCheck();
                 try
                 {
-                    var model = await DbCurrent.Set<T>().FindAsync(id);
+                    var model = await DbCurrent.Set<TEntity>().FindAsync(id);
                     if (model == null) return false;
 
                     if (model is ISoftDeleted)
@@ -689,7 +692,7 @@ namespace Horizon.Entities
         /// <typeparam name="K"></typeparam>
         /// <param name="ids"></param>
         /// <returns></returns>
-        public async Task<bool> DeletedsAsync<T, K>([NotNull] IList<K> ids) where T : BaseModel<K>
+        public async Task<bool> DeletedsAsync<TEntity, TKey>([NotNull] IList<TKey> ids) where TEntity : BaseModel<TKey>
         {
             // 检查对象是否已释放
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -701,7 +704,7 @@ namespace Horizon.Entities
                 DbContextHealthCheck();
                 try
                 {
-                    var models = DbCurrent.Set<T>().Where(m => ids.Contains(m.Id));
+                    var models = DbCurrent.Set<TEntity>().Where(m => ids.Contains(m.Id));
                     if (models == null || models.Count() == 0) return false;
 
                     if (models.First() is ISoftDeleted)

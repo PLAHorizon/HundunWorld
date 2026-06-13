@@ -1,0 +1,162 @@
+﻿@page "/flower/addresses"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using Horizon.Share.VMs
+@using System.Text.Json
+@using Horizon.WebAdmin.Modules.Flower.Services
+@inject FlowerAddressService AddressService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">📍 收货地址管理</TypographyTitle>
+        <Space>
+            <InputNumber TValue="long" @bind-Value="@FilterUserId" Placeholder="@("用户ID")" Style="width:140px" Size="@InputSize.Small" />
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadAddresses">🔍 查询</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="AddressItem" DataSource="@Addresses" Size="@TableSize.Small" RowKey="x => x.AddressId">
+            <PropertyColumn Property="a => a.AddressId" Title="地址ID" />
+            <PropertyColumn Property="a => a.UserId" Title="用户ID" />
+            <PropertyColumn Property="a => a.ConsigneeName" Title="收货人" />
+            <PropertyColumn Property="a => a.Phone" Title="联系电话" />
+            <Column TData="string" Title="收货地址">
+                @context.Province@context.City@context.District@context.DetailAddress
+            </Column>
+            <Column TData="string" Title="默认地址">
+                <Tag Color="@(context.IsDefault ? "green" : "default")">@(context.IsDefault ? "是" : "否")</Tag>
+            </Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    <SpaceItem>
+                        <Popconfirm Title="@("确认删除该地址？")" OnConfirm="() => DeleteAddress(context.UserId, context.AddressId)">
+                            <Button Danger Size="@ButtonSize.Small">删除</Button>
+                        </Popconfirm>
+                    </SpaceItem>
+                    @if (!context.IsDefault)
+                    {
+                        <SpaceItem>
+                            <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => SetDefault(context.UserId, context.AddressId)">设为默认</Button>
+                        </SpaceItem>
+                    }
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <Alert Type="@AlertType.Success" Message="@SuccessMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<AddressItem> Addresses { get; set; } = new();
+    private bool Loading { get; set; }
+    private long FilterUserId { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string SuccessMessage { get; set; } = "";
+
+    private readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAddresses();
+    }
+
+    private async Task LoadAddresses()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await AddressService.GetUserAddressesAsync(FilterUserId > 0 ? FilterUserId : 0);
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                Addresses = JsonSerializer.Deserialize<List<AddressItem>>(result.Data.Value.GetRawText(), _jsonOpts) ?? new();
+            }
+            else
+            {
+                Addresses = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载地址列表失败: {ex.Message}";
+            Addresses = new();
+        }
+        Loading = false;
+    }
+
+    private async Task DeleteAddress(long userId, long addressId)
+    {
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var result = await AddressService.DeleteAddressAsync(userId, addressId);
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = "地址已删除";
+                await LoadAddresses();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "删除失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"删除失败: {ex.Message}";
+        }
+    }
+
+    private async Task SetDefault(long userId, long addressId)
+    {
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var result = await AddressService.SetDefaultAddressAsync(userId, addressId);
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = "已设为默认地址";
+                await LoadAddresses();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "设置失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"设置失败: {ex.Message}";
+        }
+    }
+
+    public class AddressItem
+    {
+        public long AddressId { get; set; }
+        public long UserId { get; set; }
+        public string ConsigneeName { get; set; } = "";
+        public string Phone { get; set; } = "";
+        public string Province { get; set; } = "";
+        public string City { get; set; } = "";
+        public string District { get; set; } = "";
+        public string DetailAddress { get; set; } = "";
+        public bool IsDefault { get; set; }
+    }
+}

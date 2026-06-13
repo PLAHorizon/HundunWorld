@@ -67,5 +67,6 @@ namespace Horizon.WebApi.Identity.Users
         public static string Phone { get; set; } = nameof(Phone);
         public static string OrganizationId { get; set; } = nameof(OrganizationId);
         public static string PassportType { get; set; } = nameof(PassportType);
+        public static string UserId { get; set; } = nameof(UserId);
     }
 }

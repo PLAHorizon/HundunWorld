@@ -1,0 +1,270 @@
+﻿@page "/flower/shop-grades"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Flower.Services
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+
+@inject FlowerShopGradeService ShopGradeService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">店铺等级管理</TypographyTitle>
+        <Space>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="ShowAddModal">新增等级</Button>
+            <Button Size="@ButtonSize.Small" OnClick="LoadGrades">刷新</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="JsonElement" DataSource="@Grades" Size="@TableSize.Small" RowKey="@GetRowKey">
+            <Column TData="string" Title="等级ID">
+                @(context.TryGetProperty("id", out var idProp) ? idProp.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="等级名称">
+                @(context.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="等级图标">
+                @(context.TryGetProperty("icon", out var iconProp) ? iconProp.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="商品上限">
+                @(context.TryGetProperty("maxProducts", out var mpProp) ? mpProp.GetInt32().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="保证金">
+                @(context.TryGetProperty("depositAmount", out var daProp) ? $"¥{daProp.GetDecimal():N2}" : "-")
+            </Column>
+            <Column TData="string" Title="佣金比例">
+                @(context.TryGetProperty("commissionRate", out var crProp) ? $"{crProp.GetDecimal():P0}" : "-")
+            </Column>
+            <Column TData="string" Title="排序">
+                @(context.TryGetProperty("sortOrder", out var soProp) ? soProp.GetInt32().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    <SpaceItem>
+                        <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowEditModal(context)">编辑</Button>
+                    </SpaceItem>
+                    <SpaceItem>
+                        <Popconfirm Title="确定删除此等级？" OnConfirm="() => DeleteGrade(context)">
+                            <Button Danger Size="@ButtonSize.Small">删除</Button>
+                        </Popconfirm>
+                    </SpaceItem>
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    <Modal Title="@(IsEditMode ? "编辑店铺等级" : "新增店铺等级")" Visible="@GradeModalVisible" OnCancel="CloseModal" OnOk="HandleOk" ConfirmLoading="@ModalLoading" Width="600">
+        <Form Model="@GradeForm" Layout="@FormLayout.Vertical">
+            <FormItem Label="等级名称">
+                <Input @bind-Value="@GradeForm.Name" Placeholder="请输入等级名称" />
+            </FormItem>
+            <FormItem Label="等级图标">
+                <Input @bind-Value="@GradeForm.Icon" Placeholder="请输入图标标识" />
+            </FormItem>
+            <Row Gutter="16">
+                <Col Span="12">
+                    <FormItem Label="商品上限">
+                        <AntDesign.InputNumber TValue="int" @bind-Value="@GradeForm.MaxProducts" Min="@(0)" Style="width:100%" />
+                    </FormItem>
+                </Col>
+                <Col Span="12">
+                    <FormItem Label="保证金金额">
+                        <AntDesign.InputNumber TValue="decimal" @bind-Value="@GradeForm.DepositAmount" Min="@(0m)" Style="width:100%" />
+                    </FormItem>
+                </Col>
+            </Row>
+            <Row Gutter="16">
+                <Col Span="12">
+                    <FormItem Label="佣金比例(%)">
+                        <AntDesign.InputNumber TValue="decimal" @bind-Value="@GradeForm.CommissionRate" Min="@(0m)" Max="@(100m)" Style="width:100%" />
+                    </FormItem>
+                </Col>
+                <Col Span="12">
+                    <FormItem Label="排序号">
+                        <AntDesign.InputNumber TValue="int" @bind-Value="@GradeForm.SortOrder" Min="@(0)" Style="width:100%" />
+                    </FormItem>
+                </Col>
+            </Row>
+        </Form>
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> Grades { get; set; } = new();
+    private bool Loading { get; set; }
+    private string ErrorMessage { get; set; } = "";
+
+    private bool GradeModalVisible { get; set; }
+    private bool ModalLoading { get; set; }
+    private bool IsEditMode { get; set; }
+    private GradeFormModel GradeForm { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGrades();
+    }
+
+    private async Task LoadGrades()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await ShopGradeService.GetAllGradesAsync();
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var data = result.Data.Value;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    Grades = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    Grades = items.EnumerateArray().ToList();
+                }
+                else
+                {
+                    Grades = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                Grades = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    ErrorMessage = result.ErrorMessage ?? "加载等级列表失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载等级列表失败: {ex.Message}";
+            Grades = new List<JsonElement>();
+        }
+        Loading = false;
+    }
+
+    private void ShowAddModal()
+    {
+        IsEditMode = false;
+        GradeForm = new GradeFormModel();
+        GradeModalVisible = true;
+    }
+
+    private void ShowEditModal(JsonElement grade)
+    {
+        IsEditMode = true;
+        GradeForm = new GradeFormModel
+        {
+            Id = grade.TryGetProperty("id", out var idProp) ? idProp.GetInt64() : 0,
+            Name = grade.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "" : "",
+            Icon = grade.TryGetProperty("icon", out var iconProp) ? iconProp.GetString() ?? "" : "",
+            MaxProducts = grade.TryGetProperty("maxProducts", out var mpProp) ? mpProp.GetInt32() : 0,
+            DepositAmount = grade.TryGetProperty("depositAmount", out var daProp) ? daProp.GetDecimal() : 0,
+            CommissionRate = grade.TryGetProperty("commissionRate", out var crProp) ? crProp.GetDecimal() : 0,
+            SortOrder = grade.TryGetProperty("sortOrder", out var soProp) ? soProp.GetInt32() : 0
+        };
+        GradeModalVisible = true;
+    }
+
+    private void CloseModal()
+    {
+        GradeModalVisible = false;
+    }
+
+    private async Task HandleOk()
+    {
+        if (string.IsNullOrWhiteSpace(GradeForm.Name))
+        {
+            MsgService.Warning("请输入等级名称");
+            return;
+        }
+
+        ModalLoading = true;
+        try
+        {
+            var data = new
+            {
+                Name = GradeForm.Name,
+                Icon = GradeForm.Icon,
+                MaxProducts = GradeForm.MaxProducts,
+                DepositAmount = GradeForm.DepositAmount,
+                CommissionRate = GradeForm.CommissionRate,
+                SortOrder = GradeForm.SortOrder
+            };
+
+            ResultVM<JsonElement?>? result;
+            if (IsEditMode)
+            {
+                result = await ShopGradeService.UpdateGradeAsync(GradeForm.Id, data);
+            }
+            else
+            {
+                result = await ShopGradeService.AddGradeAsync(data);
+            }
+
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success(IsEditMode ? "编辑成功" : "新增成功");
+                GradeModalVisible = false;
+                await LoadGrades();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "操作失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"操作失败: {ex.Message}";
+        }
+        ModalLoading = false;
+    }
+
+    private async Task DeleteGrade(JsonElement grade)
+    {
+        var gradeId = grade.TryGetProperty("id", out var idProp) ? idProp.GetInt64() : 0;
+        try
+        {
+            var result = await ShopGradeService.DeleteGradeAsync(gradeId);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success("删除成功");
+                await LoadGrades();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "删除失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"删除失败: {ex.Message}";
+        }
+    }
+
+    public class GradeFormModel
+    {
+        public long Id { get; set; }
+        public string Name { get; set; } = "";
+        public string Icon { get; set; } = "";
+        public int MaxProducts { get; set; }
+        public decimal DepositAmount { get; set; }
+        public decimal CommissionRate { get; set; }
+        public int SortOrder { get; set; }
+    }
+
+    private object GetRowKey(JsonElement x) => x.TryGetProperty("id", out var p) ? p.GetInt64() : 0L;
+}

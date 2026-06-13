@@ -1,0 +1,298 @@
+@page "/flower/iot-devices"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using System.Text.Json
+@using Horizon.Share.VMs
+
+@inject FlowerIoTService IoTService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">📡 IoT设备管理</TypographyTitle>
+        <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadDevices">🔄 刷新列表</Button>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="DeviceItem" DataSource="@Devices" Size="@TableSize.Small" RowKey="x => x.DeviceCode">
+            <PropertyColumn Property="d => d.DeviceCode" Title="设备编码" />
+            <PropertyColumn Property="d => d.DeviceName" Title="设备名称" />
+            <PropertyColumn Property="d => d.GreenhouseId" Title="大棚ID" />
+            <PropertyColumn Property="d => d.Passport" Title="通行证" />
+            <Column TData="string" Title="在线状态">
+                <Tag Color="@(context.IsOnline ? "green" : "red")">@(context.IsOnline ? "在线" : "离线")</Tag>
+            </Column>
+            <PropertyColumn Property="d => d.DeviceType" Title="设备类型" />
+            <Column TData="string" Title="最后心跳">@(context.LastHeartbeat ?? "--")</Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    <SpaceItem>
+                        <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowSensorData(context)">传感器</Button>
+                    </SpaceItem>
+                    <SpaceItem>
+                        <Button Size="@ButtonSize.Small" OnClick="() => ShowThresholdDrawer(context)">阈值设置</Button>
+                    </SpaceItem>
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    <Modal Title="@($"传感器数据 - {SelectedDevice?.DeviceName}")" Visible="@ShowSensorModal"
+           OnCancel="CloseSensorModal" Footer="@((RenderFragment)null)" Width="720">
+        @if (SensorLoading)
+        {
+            <div style="text-align:center; padding:24px 0;">
+                <Spin />
+            </div>
+        }
+        else if (SensorReadings.Any())
+        {
+            <Table TItem="SensorReadingItem" DataSource="@SensorReadings" Size="@TableSize.Small" RowKey="x => x.SensorType">
+                <PropertyColumn Property="s => s.SensorType" Title="传感器类型" />
+                <Column TData="string" Title="当前值">
+                    <span style="font-weight:600;">@context.Value@context.Unit</span>
+                </Column>
+                <Column TData="string" Title="状态">
+                    <Tag Color="@GetSensorStatusColor(context.Status)">@context.Status</Tag>
+                </Column>
+                <Column TData="string" Title="更新时间">@context.UpdatedAt</Column>
+            </Table>
+        }
+        else
+        {
+            <Empty Description="@("暂无传感器数据")" />
+        }
+    </Modal>
+
+    <Drawer Title="@($"阈值设置 - {ThresholdDevice?.DeviceName}")" Visible="@ShowThresholdDrawerFlag"
+            OnClose="CloseThresholdDrawer" Width="480" Placement="@DrawerPlacement.Right">
+        @if (ThresholdDevice != null)
+        {
+            <Form Model="@ThresholdForm" Layout="@FormLayout.Vertical">
+                <FormItem Label="温度下限 (°C)">
+                    <AntDesign.InputNumber TValue="double" @bind-Value="@ThresholdForm.TempMin" Min="@(-50.0)" Max="@(100.0)" Style="width:100%" />
+                </FormItem>
+                <FormItem Label="温度上限 (°C)">
+                    <AntDesign.InputNumber TValue="double" @bind-Value="@ThresholdForm.TempMax" Min="@(-50.0)" Max="@(100.0)" Style="width:100%" />
+                </FormItem>
+                <FormItem Label="湿度下限 (%)">
+                    <AntDesign.InputNumber TValue="double" @bind-Value="@ThresholdForm.HumidityMin" Min="@(0.0)" Max="@(100.0)" Style="width:100%" />
+                </FormItem>
+                <FormItem Label="湿度上限 (%)">
+                    <AntDesign.InputNumber TValue="double" @bind-Value="@ThresholdForm.HumidityMax" Min="@(0.0)" Max="@(100.0)" Style="width:100%" />
+                </FormItem>
+                <FormItem Label="CO2下限 (ppm)">
+                    <AntDesign.InputNumber TValue="double" @bind-Value="@ThresholdForm.Co2Min" Min="@(0.0)" Max="@(5000.0)" Style="width:100%" />
+                </FormItem>
+                <FormItem Label="CO2上限 (ppm)">
+                    <AntDesign.InputNumber TValue="double" @bind-Value="@ThresholdForm.Co2Max" Min="@(0.0)" Max="@(5000.0)" Style="width:100%" />
+                </FormItem>
+                <FormItem Label="光照下限 (lux)">
+                    <AntDesign.InputNumber TValue="double" @bind-Value="@ThresholdForm.LightMin" Min="@(0.0)" Max="@(100000.0)" Style="width:100%" />
+                </FormItem>
+                <FormItem Label="光照上限 (lux)">
+                    <AntDesign.InputNumber TValue="double" @bind-Value="@ThresholdForm.LightMax" Min="@(0.0)" Max="@(100000.0)" Style="width:100%" />
+                </FormItem>
+                <FormItem>
+                    <Button Type="@ButtonType.Primary" OnClick="SaveThreshold" Loading="@ThresholdSaving">保存设置</Button>
+                </FormItem>
+            </Form>
+        }
+    </Drawer>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <Alert Type="@AlertType.Success" Message="@SuccessMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<DeviceItem> Devices { get; set; } = new();
+    private bool Loading { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string SuccessMessage { get; set; } = "";
+
+    private bool ShowSensorModal { get; set; }
+    private bool SensorLoading { get; set; }
+    private DeviceItem? SelectedDevice { get; set; }
+    private List<SensorReadingItem> SensorReadings { get; set; } = new();
+
+    private bool ShowThresholdDrawerFlag { get; set; }
+    private DeviceItem? ThresholdDevice { get; set; }
+    private bool ThresholdSaving { get; set; }
+    private ThresholdFormData ThresholdForm { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDevices();
+    }
+
+    private async Task LoadDevices()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await IoTService.ListAsync();
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var json = result.Data.Value;
+                if (json.ValueKind == JsonValueKind.Array)
+                {
+                    Devices = JsonSerializer.Deserialize<List<DeviceItem>>(json.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+                else if (json.ValueKind == JsonValueKind.Object && json.TryGetProperty("items", out var items))
+                {
+                    Devices = JsonSerializer.Deserialize<List<DeviceItem>>(items.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+                else
+                {
+                    Devices = new();
+                }
+            }
+            else
+            {
+                Devices = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载设备列表失败: {ex.Message}";
+            Devices = new();
+        }
+        Loading = false;
+    }
+
+    private async Task ShowSensorData(DeviceItem device)
+    {
+        SelectedDevice = device;
+        ShowSensorModal = true;
+        SensorLoading = true;
+        SensorReadings = new();
+        try
+        {
+            var result = await IoTService.GetDeviceTwinAsync(device.DeviceCode);
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var json = result.Data.Value;
+                if (json.ValueKind == JsonValueKind.Object && json.TryGetProperty("sensors", out var sensors))
+                {
+                    SensorReadings = JsonSerializer.Deserialize<List<SensorReadingItem>>(sensors.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+                else if (json.ValueKind == JsonValueKind.Array)
+                {
+                    SensorReadings = JsonSerializer.Deserialize<List<SensorReadingItem>>(json.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+            }
+        }
+        catch { }
+        SensorLoading = false;
+    }
+
+    private void CloseSensorModal()
+    {
+        ShowSensorModal = false;
+        SelectedDevice = null;
+        SensorReadings = new();
+    }
+
+    private void ShowThresholdDrawer(DeviceItem device)
+    {
+        ThresholdDevice = device;
+        ThresholdForm = new();
+        ShowThresholdDrawerFlag = true;
+    }
+
+    private void CloseThresholdDrawer()
+    {
+        ShowThresholdDrawerFlag = false;
+        ThresholdDevice = null;
+    }
+
+    private async Task SaveThreshold()
+    {
+        if (ThresholdDevice == null) return;
+        ThresholdSaving = true;
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var result = await IoTService.SetThresholdAsync(ThresholdDevice.DeviceCode, new
+            {
+                TempMin = ThresholdForm.TempMin,
+                TempMax = ThresholdForm.TempMax,
+                HumidityMin = ThresholdForm.HumidityMin,
+                HumidityMax = ThresholdForm.HumidityMax,
+                Co2Min = ThresholdForm.Co2Min,
+                Co2Max = ThresholdForm.Co2Max,
+                LightMin = ThresholdForm.LightMin,
+                LightMax = ThresholdForm.LightMax
+            });
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = "阈值设置保存成功";
+                ShowThresholdDrawerFlag = false;
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "保存失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"保存失败: {ex.Message}";
+        }
+        ThresholdSaving = false;
+    }
+
+    private string GetSensorStatusColor(string status) => status switch
+    {
+        "正常" => "green",
+        "警告" => "orange",
+        "异常" => "red",
+        _ => "default"
+    };
+
+    public class DeviceItem
+    {
+        public string DeviceCode { get; set; } = "";
+        public string DeviceName { get; set; } = "";
+        public string GreenhouseId { get; set; } = "";
+        public bool IsOnline { get; set; }
+        public string DeviceType { get; set; } = "";
+        public string? LastHeartbeat { get; set; }
+        public string Passport { get; set; } = "";
+    }
+
+    public class SensorReadingItem
+    {
+        public string SensorType { get; set; } = "";
+        public double Value { get; set; }
+        public string Unit { get; set; } = "";
+        public string Status { get; set; } = "正常";
+        public string UpdatedAt { get; set; } = "";
+    }
+
+    public class ThresholdFormData
+    {
+        public double TempMin { get; set; } = 10;
+        public double TempMax { get; set; } = 35;
+        public double HumidityMin { get; set; } = 40;
+        public double HumidityMax { get; set; } = 85;
+        public double Co2Min { get; set; } = 300;
+        public double Co2Max { get; set; } = 1500;
+        public double LightMin { get; set; } = 5000;
+        public double LightMax { get; set; } = 50000;
+    }
+}

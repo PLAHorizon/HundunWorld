@@ -1,4 +1,5 @@
 using Horizon.Core.Options;
+using Horizon.Core.Security;
 using Horizon.Game.Core;
 using Horizon.Game.Core.Handlers;
 using Horizon.Game.Core.Security;
@@ -11,6 +12,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using MongoDB.Driver.Core.Configuration;
 using Orleans;
 using Orleans.Configuration;
@@ -18,6 +20,7 @@ using Orleans.Hosting;
 using Orleans.Serialization;
 using System;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using TouchSocket.Core;
 using TouchSocket.Sockets;
@@ -39,6 +42,9 @@ namespace Horizon.Game.Gateway
         /// <param name="args">命令行参数</param>
         public static async Task Main(string[] args)
         {
+            // 确保控制台能正确输出简体中文
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+
             try
             {
                 // 创建并启动主机
@@ -50,11 +56,6 @@ namespace Horizon.Game.Gateway
 
                 // 启动网关服务
                 await host.RunAsync();
-                while (true)
-                {
-                    Task.Delay(10);
-                    Console.ReadLine();
-                }
             }
             catch (Exception ex)
             {
@@ -72,6 +73,62 @@ namespace Horizon.Game.Gateway
             }
         }
 
+        private static void ApplyGatewayConfiguration(IConfiguration configuration, Configuration.GatewayOptions options)
+        {
+            options.ClusterId = ResolveGatewayClusterId(configuration, options.ClusterId);
+            options.RedisConnectionString = ResolveGatewayRedisConnectionString(configuration, options.RedisConnectionString);
+        }
+
+        private static string ResolveGatewayClusterId(IConfiguration configuration, string currentValue)
+        {
+            var configuredGatewayClusterId = configuration["Gateway:ClusterId"];
+            if (!string.IsNullOrWhiteSpace(configuredGatewayClusterId))
+            {
+                return configuredGatewayClusterId;
+            }
+
+            var configuredOrleansClusterId = configuration["Orleans:ClusterId"];
+            if (!string.IsNullOrWhiteSpace(configuredOrleansClusterId))
+            {
+                return configuredOrleansClusterId;
+            }
+
+            var configuredClusterOptionsClusterId = configuration["ClusterOptions:ClusterId"];
+            if (!string.IsNullOrWhiteSpace(configuredClusterOptionsClusterId))
+            {
+                return configuredClusterOptionsClusterId;
+            }
+
+            return currentValue;
+        }
+
+        private static string ResolveGatewayRedisConnectionString(IConfiguration configuration, string currentValue)
+        {
+            var configuredGatewayConnectionString = configuration["Gateway:RedisConnectionString"];
+            if (!string.IsNullOrWhiteSpace(configuredGatewayConnectionString))
+            {
+                return configuredGatewayConnectionString;
+            }
+
+            var primaryRedisMaster = configuration.GetSection("DataBase:RedisMasters").GetChildren().FirstOrDefault();
+            if (primaryRedisMaster == null)
+            {
+                return currentValue;
+            }
+
+            var host = primaryRedisMaster["Host"];
+            var port = primaryRedisMaster["Port"];
+            if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(port))
+            {
+                return currentValue;
+            }
+
+            var password = primaryRedisMaster["Password"];
+            return string.IsNullOrWhiteSpace(password)
+                ? $"{host}:{port}"
+                : $"password={password}@{host}:{port}";
+        }
+
         /// <summary>
         /// 创建主机构建器
         /// </summary>
@@ -81,6 +138,9 @@ namespace Horizon.Game.Gateway
             Host.CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration((context, config) =>
                 {
+                    // 设置基础路径为执行文件所在目录，解决工作目录不一致导致的配置文件找不到问题
+                    config.SetBasePath(AppContext.BaseDirectory);
+                    
                     // 配置文件设置
                     config.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
                     config.AddJsonFile($"appsettings.{context.HostingEnvironment.EnvironmentName}.json",
@@ -100,7 +160,8 @@ namespace Horizon.Game.Gateway
                         options.UseUtcTimestamp = true;
                         options.JsonWriterOptions = new System.Text.Json.JsonWriterOptions
                         {
-                            Indented = false
+                            Indented = false,
+                            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
                         };
                     });
                     logging.AddConfiguration(context.Configuration.GetSection("Logging"));
@@ -111,7 +172,9 @@ namespace Horizon.Game.Gateway
                 .ConfigureServices((context, services) =>
                 {
                     // 注册配置
-                    services.Configure<Configuration.GatewayOptions>(context.Configuration.GetSection("Gateway"));
+                    services.AddOptions<Configuration.GatewayOptions>()
+                        .Bind(context.Configuration.GetSection("Gateway"));
+                    services.PostConfigure<Configuration.GatewayOptions>(options => ApplyGatewayConfiguration(context.Configuration, options));
                     services.Configure<NetworkOptions>(context.Configuration.GetSection("Network"));
                     services.Configure<OrleansOptions>(context.Configuration.GetSection("Orleans"));
                     services.Configure<OrleansClusteringDbOptions>(context.Configuration.GetSection("ClusteringSiloOptions"));
@@ -119,6 +182,20 @@ namespace Horizon.Game.Gateway
                     // 注册安全和认证服务
                     services.AddSingleton<AuthenticationValidator>();
                     services.AddSingleton<SecurityManager>();
+                    
+                    // 注册用户鉴权令牌提供器
+                    services.AddSingleton<UserAuthTokenProvider>(provider =>
+                    {
+                        var config = provider.GetRequiredService<IConfiguration>();
+                        var logger = provider.GetRequiredService<ILogger<UserAuthTokenProvider>>();
+                        var secretKey = config["Security:AuthTokenSecret"];
+                        if (string.IsNullOrWhiteSpace(secretKey))
+                        {
+                            logger.LogError("未配置 Security:AuthTokenSecret，生产环境必须配置自定义密钥！当前使用临时密钥，仅限开发环境使用。");
+                            secretKey = $"HundunWorld-Dev-Only-{Environment.MachineName}";
+                        }
+                        return new UserAuthTokenProvider(secretKey, logger);
+                    });
                     
                     // 注册CorrelationId管理器（分布式追踪）
                     services.AddSingleton<Monitoring.CorrelationIdManager>();
@@ -133,6 +210,10 @@ namespace Horizon.Game.Gateway
                     services.AddSingleton<ILoadBalancer, LoadBalancer>();
                     services.AddSingleton<ISessionManager, SessionManager>();
                     services.AddSingleton<TouchSocket.Core.ILog>(_ => ConsoleLogger.Default);
+
+                    // 注册Core服务
+                    services.AddSingleton<Horizon.Game.Core.Interfaces.IArenaService, Horizon.Game.Core.Services.ArenaService>();
+                    services.AddSingleton<Horizon.Game.Core.Interfaces.ICrossServerService, Horizon.Game.Core.Services.CrossServerService>();
                    
                     // 注册新服务
                     services.AddSingleton<IMessageSubscriptionService, MessageSubscriptionService>();
@@ -144,13 +225,44 @@ namespace Horizon.Game.Gateway
                     });
                     services.AddSingleton<IClusterCoordinationService, ClusterCoordinationService>();
                     services.AddSingleton<HorizonMessageAdapter>();
+
+                    // 注册角色指纹服务（基于 Redis，防止同一角色同时在线）
+                    services.AddSingleton<Horizon.Game.Core.Interfaces.ICharacterFingerprintService>(provider =>
+                    {
+                        var gatewayOpts = provider.GetRequiredService<IOptionsMonitor<Configuration.GatewayOptions>>();
+                        var fpLogger = provider.GetRequiredService<ILogger<Services.CharacterFingerprintService>>();
+                        var connectionString = gatewayOpts.CurrentValue.RedisConnectionString ?? "localhost:6379";
+                        var gatewayId = gatewayOpts.CurrentValue.GatewayId ?? "Unknown";
+                        return new Services.CharacterFingerprintService(connectionString, fpLogger, gatewayId);
+                    });
+
                     services.AddAllMessageHandlers(Assembly.GetAssembly(typeof(MessageHandlerBase)));
                     // 注册网络服务
                     services.AddSingleton<ITcpService, TcpService>();
                     services.AddSingleton<GameNetworkServer>();
 
+                    // P6 运行时连线：ZoneShard fanout → GatewaySyncDispatcher → IGameConnection。
+                    services.AddSingleton<Services.GatewayZoneShardFanoutSource>();
+                    services.AddSingleton<Horizon.Orleans.Interface.World.IZoneShardFanoutObserver>(sp => sp.GetRequiredService<Services.GatewayZoneShardFanoutSource>());
+                    services.AddSingleton<Horizon.Game.Core.Sim.Server.IZoneShardFanoutSource>(sp => sp.GetRequiredService<Services.GatewayZoneShardFanoutSource>());
+                    services.AddSingleton<Horizon.Game.Core.Sim.Server.ISessionRegistry, Services.ConnectionManagerSessionRegistry>();
+                    services.AddSingleton<Horizon.Game.Core.Sim.Server.IClientPacketSink, Services.GameConnectionPacketSink>();
+                    services.AddSingleton(sp => new Horizon.Game.Core.Sim.Server.GatewaySyncDispatcher(
+                        sp.GetRequiredService<Horizon.Game.Core.Sim.Server.IZoneShardFanoutSource>(),
+                        sp.GetRequiredService<Horizon.Game.Core.Sim.Server.ISessionRegistry>(),
+                        sp.GetRequiredService<Horizon.Game.Core.Sim.Server.IClientPacketSink>(),
+                        logger: sp.GetRequiredService<ILogger<Horizon.Game.Core.Sim.Server.GatewaySyncDispatcher>>(),
+                        enabled: sp.GetRequiredService<IOptions<Configuration.GatewayOptions>>().Value.UseSyncPacketDispatch));
+
                     // 注册后台服务
                     services.AddHostedService<GatewayHostedService>();
+                    services.AddHostedService<GatewayRegistryHostedService>();
+                    services.AddHostedService<Services.SyncDispatcherHostedService>();
+
+                    // 花卉市场数据采集后台服务
+                    services.AddHostedService<Services.FlowerDataCollectionService>();
+                    services.AddHostedService<Services.KifaMarketDataFetcher>();
+                    services.AddHostedService<Services.FlowerWeatherFetcher>();
 
                     // 健康检查
                     services.AddHealthChecks()
@@ -193,7 +305,7 @@ namespace Horizon.Game.Gateway
                         }).Configure<GatewayOptions>(options =>
                         {
                             options.PreferredGatewayIndex = 0;  // 首选网关索引
-                            options.GatewayListRefreshPeriod = TimeSpan.FromMinutes(10);  // 网关列表刷新周期增加到10分钟
+                            options.GatewayListRefreshPeriod = TimeSpan.FromSeconds(15);  // 更快刷新网关列表，避免卡在陈旧网关地址上
                         })
                         .Configure<ConnectionOptions>(options =>
                         {
@@ -201,6 +313,7 @@ namespace Horizon.Game.Gateway
                         })
                         .ConfigureServices(service =>
                         {
+                            service.AddSingleton<IClientConnectionRetryFilter, OrleansStartupConnectionRetryFilter>();
                             service.AddSerializer(serializerBuilder =>
                             {
                                 serializerBuilder.AddNewtonsoftJsonSerializer(

@@ -1,0 +1,176 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+			 xmlns:models="using:Horizon.Game.GengDi.Models"
+			 xmlns:ui="using:FluentAvalonia.UI.Controls"
+			 x:Class="Horizon.Game.GengDi.Core.Views.LoginView"
+			 x:DataType="vm:LoginDashboardViewModel">
+
+	<Grid ColumnDefinitions="*,440"
+		  ColumnSpacing="24"
+		  Margin="32">
+		<Border Grid.Column="0"
+				Background="{DynamicResource BattleNetHeroBackgroundBrush}"
+				CornerRadius="24"
+				Padding="36">
+			<Panel>
+				<Canvas ClipToBounds="True">
+					<Ellipse Width="280" Height="280"
+							 Canvas.Left="-60" Canvas.Top="-40"
+							 Fill="{DynamicResource LoginDecorCircleBrush}" />
+					<Ellipse Width="180" Height="180"
+							 Canvas.Left="300" Canvas.Top="350"
+							 Fill="{DynamicResource LoginDecorCircleBrush}" />
+					<Ellipse Width="120" Height="120"
+							 Canvas.Left="200" Canvas.Top="180"
+							 Fill="{DynamicResource LoginDecorCircleBrush}" />
+				</Canvas>
+			<Grid RowDefinitions="Auto,*,Auto">
+				<StackPanel Spacing="16">
+					<Border Width="72"
+							Height="72"
+							CornerRadius="36"
+							Background="{DynamicResource AccentFillColorDefaultBrush}">
+						<Viewbox Margin="18">
+							<ui:IconSourceElement IconSource="{StaticResource BrandIcon}" />
+						</Viewbox>
+					</Border>
+					<TextBlock Text="Horizon Game GengDi"
+							   Theme="{StaticResource DisplayTextBlockStyle}"
+							   FontSize="36"
+							   Foreground="{DynamicResource LoginTitleGradientBrush}" />
+					<TextBlock Text="登录后继续访问游戏库、下载中心、新闻和社交模块。记住登录信息后，客户端下次启动会自动从本地加载用户名和密码。"
+							   Classes="SupportingText"
+							   Foreground="#D9F3FF"
+							   MaxWidth="520"
+							   Opacity="0"
+							   x:Name="LoginSubtitleText" />
+				</StackPanel>
+
+				<StackPanel Grid.Row="1"
+							Spacing="16"
+							Margin="0,24,0,0"
+							HorizontalAlignment="Stretch"
+							VerticalAlignment="Center">
+					<Grid ColumnDefinitions="*,*,*"
+						  ColumnSpacing="16">
+						<Border Grid.Column="0"
+								Background="#1A1D26"
+								CornerRadius="12"
+								Padding="16"
+								HorizontalAlignment="Stretch"
+								MaxWidth="280">
+							<StackPanel Spacing="8">
+								<TextBlock Text="天气预报"
+										   FontSize="14"
+										   FontWeight="Bold"
+										   Foreground="#E3F2FD" />
+								<TextBlock Text="{Binding WeatherSummary}"
+										   FontSize="12"
+										   Foreground="#90CAF9"
+										   TextWrapping="Wrap" />
+								<TextBlock Text="加载中..."
+										   FontSize="11"
+										   Foreground="#607D8B"
+										   IsVisible="{Binding IsLoading}" />
+							</StackPanel>
+						</Border>
+						<Border Grid.Column="1"
+								Background="#1A1D26"
+								CornerRadius="12"
+								Padding="16"
+								HorizontalAlignment="Stretch"
+								MaxWidth="280">
+							<StackPanel Spacing="8">
+								<TextBlock Text="花卉预报"
+										   FontSize="14"
+										   FontWeight="Bold"
+										   Foreground="#F3E5F5" />
+								<TextBlock Text="{Binding FlowerSummary}"
+										   FontSize="12"
+										   Foreground="#CE93D8"
+										   TextWrapping="Wrap" />
+								<TextBlock Text="加载中..."
+										   FontSize="11"
+										   Foreground="#607D8B"
+										   IsVisible="{Binding IsLoading}" />
+							</StackPanel>
+						</Border>
+						<Border Grid.Column="2"
+								Background="#1A1D26"
+								CornerRadius="12"
+								Padding="16"
+								HorizontalAlignment="Stretch"
+								MaxWidth="280">
+							<StackPanel Spacing="8">
+								<TextBlock Text="推荐游戏"
+										   FontSize="14"
+										   FontWeight="Bold"
+										   Foreground="#E8F5E9" />
+								<ItemsControl ItemsSource="{Binding RecommendedGames}"
+											  FontSize="12"
+											  Foreground="#A5D6A7">
+									<ItemsControl.ItemTemplate>
+										<DataTemplate x:DataType="models:GameInfo">
+											<TextBlock Text="{Binding Name}"
+													   Margin="0,2"
+													   TextWrapping="Wrap" />
+										</DataTemplate>
+									</ItemsControl.ItemTemplate>
+								</ItemsControl>
+								<TextBlock Text="加载中..."
+										   FontSize="11"
+										   Foreground="#607D8B"
+										   IsVisible="{Binding IsLoading}" />
+							</StackPanel>
+						</Border>
+					</Grid>
+				</StackPanel>
+			</Grid>
+			</Panel>
+		</Border>
+
+		<Border Grid.Column="1"
+				Classes="SurfaceCard">
+			<StackPanel Spacing="16">
+				<TextBlock Text="登录"
+						   Theme="{StaticResource TitleTextBlockStyle}"
+						   FontSize="30" />
+				<TextBlock Text="使用已注册账户进入客户端。"
+						   Classes="SupportingText" />
+
+				<StackPanel Spacing="6">
+					<TextBlock Text="用户名"
+							   Classes="PageEyebrow" />
+					<TextBox Text="{Binding LoginVm.Username}"
+							 Watermark="请输入用户名" />
+				</StackPanel>
+
+				<StackPanel Spacing="6">
+					<TextBlock Text="密码"
+							   Classes="PageEyebrow" />
+					<TextBox Text="{Binding LoginVm.Password}"
+							 PasswordChar="*"
+							 Watermark="请输入密码" />
+				</StackPanel>
+
+				<CheckBox Content="记住登录信息"
+						  IsChecked="{Binding LoginVm.RememberLogin}" />
+
+				<TextBlock Text="{Binding LoginVm.ErrorMessage}"
+						   Foreground="IndianRed"
+						   TextWrapping="Wrap" />
+
+				<StackPanel Orientation="Horizontal"
+							Spacing="10">
+					<Button Content="登录"
+							Classes="PrimaryAction"
+							Command="{Binding LoginVm.LoginCommand}" />
+					<Button Content="注册"
+							Classes="QuietAction"
+							Command="{Binding LoginVm.NavigateToRegisterCommand}" />
+				</StackPanel>
+			</StackPanel>
+		</Border>
+	</Grid>
+</UserControl>

@@ -1,0 +1,267 @@
+@page "/flower/data-pool"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Flower.Services
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+
+@inject FlowerDataPoolService DataPoolService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">DataPool 数据浏览</TypographyTitle>
+        <Space>
+            <Select TItem="int" TItemValue="int" @bind-Value="@SelectedDataType" Style="width:150px" Size="@InputSize.Small">
+                <SelectOption TItem="int" TItemValue="int" Value="-1">全部类型</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="0">市场快照</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="1">价格预测</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="2">交易记录</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="3">用户行为</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="4">AI聊天</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="5">传感器数据</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="6">AI输出</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="7">预警事件</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="8">采集失败</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="9">天气数据</SelectOption>
+            </Select>
+            <DatePicker TItemValue="DateTime?" @bind-Value="@StartTime" Placeholder="@("开始日期")" Style="width:150px" Size="@InputSize.Small" />
+            <span style="color:rgba(0,0,0,0.45);">至</span>
+            <DatePicker TItemValue="DateTime?" @bind-Value="@EndTime" Placeholder="@("结束日期")" Style="width:150px" Size="@InputSize.Small" />
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadData">查询</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="JsonElement" DataSource="@DataEntries" Size="@TableSize.Small" RowKey="@GetDataPoolRowKey">
+            <Column TData="string" Title="ID">
+                @(context.TryGetProperty("id", out var p) ? p.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="数据类型">
+                <Tag Color="@GetDataTypeColor(context)">@GetDataTypeLabel(context)</Tag>
+            </Column>
+            <Column TData="string" Title="数据源">
+                @GetDataSourceLabel(context)
+            </Column>
+            <Column TData="string" Title="时间戳">
+                @(context.TryGetProperty("timestamp", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="置信度">
+                @if (context.TryGetProperty("confidence", out var confProp) && confProp.ValueKind != JsonValueKind.Null)
+                {
+                    <Progress Percent="@((int)(confProp.GetDouble() * 100))" Size="@ProgressSize.Small"
+                              Status="@GetProgressStatus(confProp.GetDouble())" />
+                }
+                else
+                {
+                    <span style="color:rgba(0,0,0,0.45);">--</span>
+                }
+            </Column>
+            <Column TData="string" Title="关联实体">
+                <AntDesign.Text Code>@(context.TryGetProperty("relatedEntityId", out var p) ? p.GetString() ?? "-" : "-")</AntDesign.Text>
+            </Column>
+            <Column TData="string" Title="模型版本">
+                <AntDesign.Text Code>@(context.TryGetProperty("modelVersion", out var p) ? p.GetString() ?? "-" : "-")</AntDesign.Text>
+            </Column>
+            <Column TData="string" Title="操作">
+                <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowDetail(context)">详情</Button>
+            </Column>
+        </Table>
+
+        <div style="margin-top:16px; text-align:center;">
+            <Space>
+                <Button OnClick="() => GoToPage(CurrentPage - 1)" Disabled="@(CurrentPage <= 1)">上一页</Button>
+                <span>第 @CurrentPage 页</span>
+                <Button OnClick="() => GoToPage(CurrentPage + 1)">下一页</Button>
+            </Space>
+        </div>
+    }
+
+    <Modal Title="@DataPoolDetailTitle"
+           Visible="@ShowDetailModal" OnCancel="CloseDetail"
+           Footer="@((RenderFragment)null)" Width="720">
+        @if (SelectedEntry != null)
+        {
+            <Descriptions Column="2" Size="@DescriptionsSize.Small">
+                <DescriptionsItem Title="数据类型">
+                    <Tag Color="@GetDataTypeColor(SelectedEntry.Value)">@GetDataTypeLabel(SelectedEntry.Value)</Tag>
+                </DescriptionsItem>
+                <DescriptionsItem Title="数据源">
+                    @GetDataSourceLabel(SelectedEntry.Value)
+                </DescriptionsItem>
+                <DescriptionsItem Title="时间戳">
+                    @(SelectedEntry.Value.TryGetProperty("timestamp", out var p) ? p.GetString() ?? "-" : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Title="置信度">
+                    @(SelectedEntry.Value.TryGetProperty("confidence", out var p) && p.ValueKind != JsonValueKind.Null
+                        ? $"{p.GetDouble() * 100:F1}%" : "--")
+                </DescriptionsItem>
+                <DescriptionsItem Title="关联实体ID">
+                    <AntDesign.Text Code>@(SelectedEntry.Value.TryGetProperty("relatedEntityId", out var p) ? p.GetString() ?? "-" : "-")</AntDesign.Text>
+                </DescriptionsItem>
+                <DescriptionsItem Title="模型版本">
+                    <AntDesign.Text Code>@(SelectedEntry.Value.TryGetProperty("modelVersion", out var p) ? p.GetString() ?? "-" : "-")</AntDesign.Text>
+                </DescriptionsItem>
+            </Descriptions>
+            <Divider />
+            <p style="color:rgba(0,0,0,0.45);">原始数据 (RawPayload)</p>
+            <pre style="background:#f5f5f5; padding:12px; border-radius:4px; max-height:400px; overflow:auto; font-size:0.8rem;">@(SelectedEntry.Value.TryGetProperty("rawPayload", out var p) ? p.GetString() ?? "" : "")</pre>
+        }
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> DataEntries { get; set; } = new();
+    private bool Loading { get; set; }
+    private int SelectedDataType { get; set; } = -1;
+    private DateTime? StartTime { get; set; } = DateTime.Now.AddDays(-7);
+    private DateTime? EndTime { get; set; } = DateTime.Now;
+    private int CurrentPage { get; set; } = 1;
+    private int PageSize { get; set; } = 20;
+    private string ErrorMessage { get; set; } = "";
+    private bool ShowDetailModal { get; set; }
+    private JsonElement? SelectedEntry { get; set; }
+
+    private object GetDataPoolRowKey(JsonElement x) =>
+        x.TryGetProperty("id", out var p) ? (object)p.GetInt64() : 0;
+
+    private string DataPoolDetailTitle
+    {
+        get
+        {
+            if (SelectedEntry != null && SelectedEntry.Value.TryGetProperty("id", out var p))
+                return $"数据详情 - #{p.GetInt64()}";
+            return "数据详情";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await DataPoolService.QueryAsync(SelectedDataType, StartTime, EndTime, CurrentPage, PageSize);
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var data = result.Data.Value;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    DataEntries = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object)
+                {
+                    if (data.TryGetProperty("items", out var items))
+                        DataEntries = items.EnumerateArray().ToList();
+                    else
+                        DataEntries = new List<JsonElement>();
+                }
+                else
+                {
+                    DataEntries = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                DataEntries = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    ErrorMessage = result.ErrorMessage ?? "加载数据失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载数据失败: {ex.Message}";
+            DataEntries = new List<JsonElement>();
+        }
+        Loading = false;
+    }
+
+    private async Task GoToPage(int page)
+    {
+        if (page < 1) return;
+        CurrentPage = page;
+        await LoadData();
+    }
+
+    private void ShowDetail(JsonElement entry)
+    {
+        SelectedEntry = entry;
+        ShowDetailModal = true;
+    }
+
+    private void CloseDetail()
+    {
+        ShowDetailModal = false;
+        SelectedEntry = null;
+    }
+
+    private ProgressStatus GetProgressStatus(double confidence)
+    {
+        if (confidence >= 0.8) return ProgressStatus.Success;
+        if (confidence >= 0.6) return ProgressStatus.Normal;
+        return ProgressStatus.Exception;
+    }
+
+    private int GetDataType(JsonElement item) =>
+        item.TryGetProperty("dataType", out var p) ? p.GetInt32() : -1;
+
+    private string GetDataTypeColor(JsonElement item) => GetDataType(item) switch
+    {
+        0 => "blue",
+        1 => "cyan",
+        2 => "green",
+        3 => "orange",
+        4 => "default",
+        5 => "default",
+        6 => "cyan",
+        7 => "red",
+        8 => "red",
+        9 => "blue",
+        _ => "default"
+    };
+
+    private string GetDataTypeLabel(JsonElement item) => GetDataType(item) switch
+    {
+        0 => "市场快照",
+        1 => "价格预测",
+        2 => "交易记录",
+        3 => "用户行为",
+        4 => "AI聊天",
+        5 => "传感器数据",
+        6 => "AI输出",
+        7 => "预警事件",
+        8 => "采集失败",
+        9 => "天气数据",
+        _ => "未知"
+    };
+
+    private int GetDataSource(JsonElement item) =>
+        item.TryGetProperty("dataSource", out var p) ? p.GetInt32() : -1;
+
+    private string GetDataSourceLabel(JsonElement item) => GetDataSource(item) switch
+    {
+        0 => "拍卖市场",
+        1 => "电商平台",
+        2 => "天气API",
+        3 => "搜索引擎",
+        4 => "手动录入",
+        _ => $"来源{GetDataSource(item)}"
+    };
+}

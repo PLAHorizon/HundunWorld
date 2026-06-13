@@ -1,0 +1,295 @@
+@page "/flower/products"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Flower.Services
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+
+@inject FlowerProductService ProductService
+@inject FlowerAdminService AdminService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">商品管理</TypographyTitle>
+        <Space>
+            <Select TItem="int" TItemValue="int" @bind-Value="@SelectedSpeciesId" Style="width:140px" Size="@InputSize.Small">
+                <SelectOption TItem="int" TItemValue="int" Value="0">全部品种</SelectOption>
+            </Select>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadProducts">查询</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="ProductVm" DataSource="@Products" Size="@TableSize.Small" RowKey="@GetRowKey">
+            <Column TData="long" Title="商品ID">
+                @context.ProductId
+            </Column>
+            <Column TData="string" Title="商品名称">
+                @context.ProductName
+            </Column>
+            <Column TData="long" Title="商户ID">
+                @context.MerchantId
+            </Column>
+            <Column TData="string" Title="价格">
+                @($"¥{context.Price:N2}")
+            </Column>
+            <Column TData="string" Title="审核状态">
+                <Tag Color="@GetAuditStatusColor(context.AuditStatus)">@GetAuditStatusText(context.AuditStatus)</Tag>
+            </Column>
+            <Column TData="string" Title="上架状态">
+                <Tag Color="@(context.IsActive ? "green" : "default")">@(context.IsActive ? "已上架" : "未上架")</Tag>
+            </Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    <SpaceItem>
+                        <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowAuditModal(context)">审核</Button>
+                    </SpaceItem>
+                    <SpaceItem>
+                        <Button Size="@ButtonSize.Small" OnClick="() => ShowSKUDrawer(context)">SKU</Button>
+                    </SpaceItem>
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    <Modal Title="商品审核" Visible="@AuditModalVisible" OnCancel="CloseAuditModal" OnOk="HandleAuditOk" ConfirmLoading="@AuditLoading">
+        <Form Model="@AuditForm" Layout="@FormLayout.Vertical">
+            <FormItem Label="审核结果">
+                <RadioGroup TItem="int" TItemValue="int" @bind-Value="@AuditForm.Approved">
+                    <Radio TItem="int" TItemValue="int" Value="1">通过</Radio>
+                    <Radio TItem="int" TItemValue="int" Value="0">拒绝</Radio>
+                </RadioGroup>
+            </FormItem>
+            <FormItem Label="审核原因">
+                <TextArea @bind-Value="@AuditForm.Reason" Rows="3" Placeholder="请输入审核原因" />
+            </FormItem>
+        </Form>
+    </Modal>
+
+    <Drawer Title="@("SKU列表")" Visible="@SKUDrawerVisible" OnClose="CloseSKUDrawer" Width="640">
+        @if (SKUData != null && SKUData.Count > 0)
+        {
+            @foreach (var sku in SKUData)
+            {
+                <Card Style="margin-bottom:8px;">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>SKU ID: <b>@sku.SkuId</b></span>
+                        <span>规格: <b>@(sku.SpecName ?? "-")</b></span>
+                        <span>价格: <b>¥@sku.Price.ToString("N2")</b></span>
+                        <span>库存: <b>@sku.Stock</b></span>
+                    </div>
+                </Card>
+            }
+        }
+        else
+        {
+            <Empty />
+        }
+    </Drawer>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<ProductVm> Products { get; set; } = new();
+    private bool Loading { get; set; }
+    private int SelectedSpeciesId { get; set; }
+    private string ErrorMessage { get; set; } = "";
+
+    private bool AuditModalVisible { get; set; }
+    private bool AuditLoading { get; set; }
+    private long AuditProductId { get; set; }
+    private AuditFormModel AuditForm { get; set; } = new();
+
+    private bool SKUDrawerVisible { get; set; }
+    private List<SkuVm> SKUData { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProducts();
+    }
+
+    private async Task LoadProducts()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await ProductService.GetActiveProductsAsync(SelectedSpeciesId);
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var data = result.Data.Value;
+                var list = new List<ProductVm>();
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in data.EnumerateArray())
+                    {
+                        list.Add(ParseProduct(item));
+                    }
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    foreach (var item in items.EnumerateArray())
+                    {
+                        list.Add(ParseProduct(item));
+                    }
+                }
+                Products = list;
+            }
+            else
+            {
+                Products = new List<ProductVm>();
+                if (result != null && !result.IsSuccess)
+                    ErrorMessage = result.ErrorMessage ?? "加载商品列表失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载商品列表失败: {ex.Message}";
+            Products = new List<ProductVm>();
+        }
+        Loading = false;
+    }
+
+    private ProductVm ParseProduct(JsonElement json)
+    {
+        return new ProductVm
+        {
+            ProductId = json.TryGetProperty("productId", out var p1) ? p1.GetInt64() : 0,
+            MerchantId = json.TryGetProperty("merchantId", out var p2) ? p2.GetInt64() : 0,
+            ProductName = json.TryGetProperty("productName", out var p3) ? p3.GetString() ?? "" : "",
+            Price = json.TryGetProperty("price", out var p4) ? p4.GetDecimal() : 0,
+            AuditStatus = json.TryGetProperty("auditStatus", out var p5) ? p5.GetInt32() : -1,
+            IsActive = json.TryGetProperty("isActive", out var p6) && p6.GetBoolean()
+        };
+    }
+
+    private SkuVm ParseSku(JsonElement json)
+    {
+        return new SkuVm
+        {
+            SkuId = json.TryGetProperty("skuId", out var p1) ? p1.GetInt64() : 0,
+            SpecName = json.TryGetProperty("specName", out var p2) ? p2.GetString() ?? "" : "",
+            Price = json.TryGetProperty("price", out var p3) ? p3.GetDecimal() : 0,
+            Stock = json.TryGetProperty("stock", out var p4) ? p4.GetInt32() : 0
+        };
+    }
+
+    private void ShowAuditModal(ProductVm product)
+    {
+        AuditProductId = product.ProductId;
+        AuditForm = new AuditFormModel();
+        AuditModalVisible = true;
+    }
+
+    private void CloseAuditModal()
+    {
+        AuditModalVisible = false;
+    }
+
+    private async Task HandleAuditOk()
+    {
+        AuditLoading = true;
+        try
+        {
+            var data = new { Approved = AuditForm.Approved == 1, Reason = AuditForm.Reason };
+            var result = await AdminService.AuditProductAsync(AuditProductId, data);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success(AuditForm.Approved == 1 ? "审核通过" : "已拒绝");
+                AuditModalVisible = false;
+                await LoadProducts();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "审核操作失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"审核操作失败: {ex.Message}";
+        }
+        finally
+        {
+            AuditLoading = false;
+        }
+    }
+
+    private async Task ShowSKUDrawer(ProductVm product)
+    {
+        try
+        {
+            var result = await ProductService.GetProductSKUsAsync(product.ProductId);
+            SKUData = new List<SkuVm>();
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var data = result.Data.Value;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in data.EnumerateArray())
+                    {
+                        SKUData.Add(ParseSku(item));
+                    }
+                }
+            }
+        }
+        catch
+        {
+            SKUData = new List<SkuVm>();
+        }
+        SKUDrawerVisible = true;
+    }
+
+    private void CloseSKUDrawer()
+    {
+        SKUDrawerVisible = false;
+        SKUData = new List<SkuVm>();
+    }
+
+    private string GetAuditStatusColor(int status)
+    {
+        return status switch { 0 => "orange", 1 => "green", 2 => "red", _ => "default" };
+    }
+
+    private string GetAuditStatusText(int status)
+    {
+        return status switch { 0 => "待审核", 1 => "已通过", 2 => "已拒绝", _ => "未知" };
+    }
+
+    private class ProductVm
+    {
+        public long ProductId { get; set; }
+        public long MerchantId { get; set; }
+        public string ProductName { get; set; } = "";
+        public decimal Price { get; set; }
+        public int AuditStatus { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    private class SkuVm
+    {
+        public long SkuId { get; set; }
+        public string SpecName { get; set; } = "";
+        public decimal Price { get; set; }
+        public int Stock { get; set; }
+    }
+
+    private class AuditFormModel
+    {
+        public int Approved { get; set; } = 1;
+        public string Reason { get; set; } = "";
+    }
+
+    private object GetRowKey(ProductVm x) => x.ProductId;
+}

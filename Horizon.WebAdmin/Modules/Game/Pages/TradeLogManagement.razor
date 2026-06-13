@@ -1,0 +1,205 @@
+@page "/game/trade-logs"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Game.Services
+@namespace Horizon.WebAdmin.Modules.Game.Pages
+
+@inject GameTradeService TradeService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">交易日志</TypographyTitle>
+        <Space>
+            <Button Size="@ButtonSize.Small" OnClick="LoadTradeLogs">刷新</Button>
+            <Select TItem="string" TItemValue="string" @bind-Value="@_tradeTypeFilter" Style="width:120px" Size="@InputSize.Small" OnChange="OnTradeTypeFilterChanged">
+                <SelectOption TItem="string" TItemValue="string" Value='@("")'>全部</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("1")'>面对面</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("2")'>拍卖行</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("3")'>摆摊</SelectOption>
+            </Select>
+            <RangePicker TItem="DateTime?" TItemValue="DateTime?" @bind-Value="@_dateRange" Style="width:280px" Size="@InputSize.Small" OnChange="@((DateRangeChangedEventArgs<DateTime?[]> args) => OnDateRangeChanged(args.Dates))" />
+        </Space>
+    </div>
+
+    @if (_loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="JsonElement" DataSource="@_tradeLogs" Size="@TableSize.Small" RowKey="@GetTradeLogRowKey">
+            <Column TData="string" Title="ID">
+                @(context.TryGetProperty("id", out var p) ? p.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="卖家ID">
+                @(context.TryGetProperty("sellerId", out var p) ? p.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="卖家名">
+                @(context.TryGetProperty("sellerName", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="买家ID">
+                @(context.TryGetProperty("buyerId", out var p) ? p.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="买家名">
+                @(context.TryGetProperty("buyerName", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="交易类型">
+                <Tag Color="@GetTradeTypeColor(context)">@GetTradeTypeText(context)</Tag>
+            </Column>
+            <Column TData="string" Title="货币类型">
+                <Tag Color="@GetCurrencyTypeColor(context)">@GetCurrencyTypeText(context)</Tag>
+            </Column>
+            <Column TData="string" Title="金额">
+                <AntDesign.Text Type="@TextElementType.Danger" Strong>
+                    @(context.TryGetProperty("amount", out var p) ? p.GetDecimal().ToString("N2") : "-")
+                </AntDesign.Text>
+            </Column>
+            <Column TData="string" Title="税费">
+                @(context.TryGetProperty("tax", out var p) ? p.GetDecimal().ToString("N2") : "-")
+            </Column>
+            <Column TData="string" Title="交易时间">
+                @(context.TryGetProperty("tradeTime", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="状态">
+                <Tag Color="@GetTradeStatusColor(context)">@GetTradeStatusText(context)</Tag>
+            </Column>
+        </Table>
+    }
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@_errorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> _tradeLogs = new();
+    private bool _loading;
+    private string _errorMessage = "";
+    private string _tradeTypeFilter = "";
+    private DateTime?[] _dateRange = new DateTime?[] { null, null };
+
+    private object GetTradeLogRowKey(JsonElement x) =>
+        x.TryGetProperty("id", out var p) ? (object)p.GetInt64() : 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTradeLogs();
+    }
+
+    private async Task LoadTradeLogs()
+    {
+        _loading = true;
+        _errorMessage = "";
+        try
+        {
+            int? tradeType = string.IsNullOrEmpty(_tradeTypeFilter) ? null : int.Parse(_tradeTypeFilter);
+            string? startTime = _dateRange[0]?.ToString("yyyy-MM-dd HH:mm:ss");
+            string? endTime = _dateRange[1]?.ToString("yyyy-MM-dd HH:mm:ss");
+            var result = await TradeService.GetTradeLogsAsync(1, 20, tradeType, startTime, endTime);
+            if (result?.IsSuccess == true)
+            {
+                var data = result.Data;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    _tradeLogs = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    _tradeLogs = items.EnumerateArray().ToList();
+                }
+                else
+                {
+                    _tradeLogs = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                _tradeLogs = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    _errorMessage = result.ErrorMessage ?? "加载交易日志失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"加载交易日志失败: {ex.Message}";
+            _tradeLogs = new List<JsonElement>();
+        }
+        _loading = false;
+    }
+
+    private async Task OnTradeTypeFilterChanged(string? value)
+    {
+        _tradeTypeFilter = value ?? "";
+        await LoadTradeLogs();
+    }
+
+    private async Task OnDateRangeChanged(DateTime?[] dates)
+    {
+        _dateRange = dates ?? new DateTime?[] { null, null };
+        await LoadTradeLogs();
+    }
+
+    private int GetTradeType(JsonElement t) =>
+        t.TryGetProperty("tradeType", out var p) ? p.GetInt32() : -1;
+
+    private string GetTradeTypeText(JsonElement t) => GetTradeType(t) switch
+    {
+        1 => "面对面",
+        2 => "拍卖行",
+        3 => "摆摊",
+        _ => "-"
+    };
+
+    private string GetTradeTypeColor(JsonElement t) => GetTradeType(t) switch
+    {
+        1 => "blue",
+        2 => "purple",
+        3 => "green",
+        _ => "default"
+    };
+
+    private int GetCurrencyType(JsonElement t) =>
+        t.TryGetProperty("currencyType", out var p) ? p.GetInt32() : -1;
+
+    private string GetCurrencyTypeText(JsonElement t) => GetCurrencyType(t) switch
+    {
+        1 => "铜币",
+        2 => "银两",
+        3 => "金锭",
+        4 => "元宝",
+        _ => "-"
+    };
+
+    private string GetCurrencyTypeColor(JsonElement t) => GetCurrencyType(t) switch
+    {
+        1 => "default",
+        2 => "blue",
+        3 => "orange",
+        4 => "red",
+        _ => "default"
+    };
+
+    private int GetTradeStatus(JsonElement t) =>
+        t.TryGetProperty("status", out var p) ? p.GetInt32() : -1;
+
+    private string GetTradeStatusText(JsonElement t) => GetTradeStatus(t) switch
+    {
+        1 => "正常",
+        2 => "争议",
+        3 => "已撤销",
+        _ => "-"
+    };
+
+    private string GetTradeStatusColor(JsonElement t) => GetTradeStatus(t) switch
+    {
+        1 => "green",
+        2 => "orange",
+        3 => "red",
+        _ => "default"
+    };
+}

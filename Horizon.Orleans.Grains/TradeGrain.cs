@@ -34,7 +34,7 @@ namespace Horizon.Orleans.Grains
 
         public override async Task OnActivateAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("TradeGrain {GrainKey} activating.", this.GetPrimaryKey());
+            _logger.LogInformation("TradeGrain {GrainKey} 正在激活。", this.GetPrimaryKey());
 
             if (_tradeState.State.SellerItems == null)
                 _tradeState.State.SellerItems = new List<TradeItem>();
@@ -71,7 +71,7 @@ namespace Horizon.Orleans.Grains
                 state.SellerId = sellerId;
                 state.BuyerId = buyerId;
                 state.Status = (int)TradeStatus.Created;
-                state.CreatedTime = DateTime.UtcNow;
+                state.CreatedTime = DateTime.Now;
                 state.IsCreated = true;
                 state.SellerConfirmed = false;
                 state.BuyerConfirmed = false;

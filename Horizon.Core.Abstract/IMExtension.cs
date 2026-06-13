@@ -90,7 +90,7 @@ namespace Horizon.Core.Abstract
 
                 return iMMessage;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return null;
             }
@@ -110,7 +110,7 @@ namespace Horizon.Core.Abstract
                                                                                    (int)offset, (int)size));
                 return iMMessage;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return null;
             }

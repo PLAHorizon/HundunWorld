@@ -130,8 +130,8 @@ namespace Horizon.Game.Core
                         });
                     });
                 }).ConfigureLogging(logging => logging.AddConsole()).Build();
-                _logger.LogInformation("Client successfully connected to silo host");
                 await client.StartAsync();
+                _logger?.LogInformation("客户端已成功连接到Silo主机");
                 return await Task.FromResult(client.Services.GetRequiredService<IClusterClient>());
 
             }

@@ -7,8 +7,8 @@
     <AssemblyVersion>1.0.0.1</AssemblyVersion>
     <FileVersion>1.0.0.1</FileVersion>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
-    <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
-    <!-- 强制复制所有运行时依赖到输出目录 -->
+    <DocumentationFile>$(TargetDir)$(AssemblyName).xml</DocumentationFile>
+    <!-- 强制复制所有运行时依赖到输出目�?-->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <!-- 使用滚动前向(Roll Forward)策略,允许使用较新的运行时版本 -->
     <RollForward>LatestMajor</RollForward>
@@ -32,6 +32,7 @@
     <!--  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets> -->
     <!-- </PackageReference> -->
     <PackageReference Include="Microsoft.Orleans.Core" Version="10.0.1" /> 
+    <PackageReference Include="Microsoft.Orleans.Sdk" Version="10.0.1" />
     <PackageReference Include="Microsoft.Orleans.Serialization" Version="10.0.1" />
     <PackageReference Include="TouchSocket" Version="4.1.1" />
     <PackageReference Include="TouchSocket.Core" Version="4.1.1" />
@@ -49,29 +50,46 @@
   <!-- 编译后复制文件到 Flax 目录(仅复制客户端需要的依赖) -->
   <Target Name="CopyToFlax" AfterTargets="Build">
     <PropertyGroup>    
-      <FlaxToolsDir>C:\Program Files (x86)\Flax\Flax_1.11\Binaries\Tools</FlaxToolsDir>
+      <FlaxToolsDir>C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools</FlaxToolsDir>
     </PropertyGroup>
     
     <ItemGroup>
       <!-- 主程序集 -->
-      <FilesToCopy Include="$(OutputPath)$(AssemblyName).dll" />
-      <FilesToCopy Include="$(OutputPath)$(AssemblyName).xml" />
-      <FilesToCopy Include="$(OutputPath)$(AssemblyName).pdb" Condition="Exists('$(OutputPath)$(AssemblyName).pdb')" />
+      <FilesToCopy Include="$(TargetDir)$(AssemblyName).dll" />
+      <FilesToCopy Include="$(TargetDir)$(AssemblyName).xml" />
+      <FilesToCopy Include="$(TargetDir)$(AssemblyName).pdb" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
       
       <!-- 仅复制客户端需要的 DLL: MemoryPack, LZ4, TouchSocket -->
-      <FilesToCopy Include="$(OutputPath)MemoryPack.Core.dll" />
-      <FilesToCopy Include="$(OutputPath)K4os.Compression.LZ4.dll" />
-      <FilesToCopy Include="$(OutputPath)TouchSocket.dll" />
-      <FilesToCopy Include="$(OutputPath)TouchSocket.Core.dll" />
+      <FilesToCopy Include="$(TargetDir)MemoryPack.Core.dll" />
+      <FilesToCopy Include="$(TargetDir)K4os.Compression.LZ4.dll" />
+      <FilesToCopy Include="$(TargetDir)TouchSocket.dll" />
+      <FilesToCopy Include="$(TargetDir)TouchSocket.Core.dll" />
     </ItemGroup>
     
-    <Message Text="正在复制 Horizon.Game.Message 及客户端依赖到 Flax 目录..." Importance="high" />
+    <Message Text="正在复制 Horizon.Game.Message 及客户端依赖�?Flax 目录..." Importance="high" />
     
     <Copy SourceFiles="@(FilesToCopy)" DestinationFolder="$(FlaxToolsDir)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" Retries="3" RetryDelayMilliseconds="1000" ContinueOnError="WarnAndContinue">
       <Output TaskParameter="CopiedFiles" ItemName="SuccessfullyCopiedFiles" />
     </Copy>
     
-    <Message Text="成功复制文件到 Flax 目录" Importance="high" />
+    <Message Text="成功复制文件�?Flax 目录" Importance="high" />
+  </Target>
+
+
+  <Target Name="CopyToUE5" AfterTargets="Build">
+    <PropertyGroup>
+      <UE5ManagedDir>$(MSBuildProjectDirectory)\..\HundunWorld\Binaries\Managed\net10.0</UE5ManagedDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <UE5FilesToCopy Include="$(TargetDir)$(AssemblyName).dll" />
+      <UE5FilesToCopy Include="$(TargetDir)$(AssemblyName).pdb" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(UE5ManagedDir)" ContinueOnError="WarnAndContinue" />
+    <Copy SourceFiles="@(UE5FilesToCopy)" DestinationFolder="$(UE5ManagedDir)"
+          SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true"
+          ContinueOnError="WarnAndContinue" />
   </Target>
 
 </Project>

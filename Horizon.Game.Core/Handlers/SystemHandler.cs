@@ -42,6 +42,11 @@ namespace Horizon.Game.Core.Handlers
                     case MessageType.Heartbeat:
                         return await HandleHeartbeatRequestAsync(message);
 
+                    case MessageType.HeartbeatResponse:
+                        // 网关收到客户端的心跳响应，无需再次响应，直接返回成功
+                        Logger.LogDebug("收到客户端心跳响应");
+                        return (true, null);
+
                     case MessageType.Error:
                         return await HandleErrorMessageAsync(message);
                     case MessageType.System:

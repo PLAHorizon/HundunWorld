@@ -131,7 +131,7 @@ namespace Horizon.Orleans.Grains
                 characterEntity.CharacterName = cleanedName;
                 characterEntity.Level = 1;
                 characterEntity.Experience = 0;
-                characterEntity.CreateTime = DateTime.UtcNow;
+                characterEntity.CreateTime = DateTime.Now;
                 characterEntity.ServerId = request.ServerId;
                 characterEntity.AreaId = request.ZoneId;
                 characterEntity.GameId = request.GameId;
@@ -229,7 +229,7 @@ namespace Horizon.Orleans.Grains
 
                 // 软删除
                 character.IsDeleted = true;
-                character.DeleteTime = DateTime.UtcNow;
+                character.DeleteTime = DateTime.Now;
                 await _gameCharacterContext.UpdateAsync(character, character.Id);
 
                 _logger.LogInformation("角色删除成功: CharacterId={CharacterId}", characterId);

@@ -1,0 +1,276 @@
+@page "/game/guilds"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Game.Services
+@namespace Horizon.WebAdmin.Modules.Game.Pages
+
+@inject GameGuildService GuildService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">公会管理</TypographyTitle>
+        <Space>
+            <Button Size="@ButtonSize.Small" OnClick="LoadGuilds">刷新</Button>
+            <Select TItem="string" TItemValue="string" @bind-Value="@_statusFilter" Style="width:120px" Size="@InputSize.Small" OnChange="OnStatusFilterChanged">
+                <SelectOption TItem="string" TItemValue="string" Value='@("")'>全部</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("正常")'>正常</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("解散")'>解散</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("冻结")'>冻结</SelectOption>
+            </Select>
+        </Space>
+    </div>
+
+    @if (_loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="JsonElement" DataSource="@_guilds" Size="@TableSize.Small" RowKey="@GetGuildRowKey">
+            <Column TData="string" Title="公会ID">
+                @(context.TryGetProperty("guildId", out var p) ? p.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="公会名">
+                @(context.TryGetProperty("guildName", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="等级">
+                @(context.TryGetProperty("level", out var p) ? p.GetInt32().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="公会经验">
+                @(context.TryGetProperty("experience", out var p) ? p.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="会长ID">
+                @(context.TryGetProperty("leaderId", out var p) ? p.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="公会公告">
+                @GetTruncatedAnnouncement(context)
+            </Column>
+            <Column TData="string" Title="状态">
+                <Tag Color="@GetStatusColor(context)">@GetStatusText(context)</Tag>
+            </Column>
+            <Column TData="string" Title="操作">
+                <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowDetail(context)">查看详情</Button>
+            </Column>
+        </Table>
+    }
+
+    <Drawer Title="@_detailDrawerTitle" Visible="@_detailDrawerVisible" OnClose="CloseDetail" Width="720" Placement="@DrawerPlacement.Right">
+        @if (_selectedGuild != null)
+        {
+            var g = _selectedGuild.Value;
+
+            <Card Title="基本信息" Size="@CardSize.Small" Style="margin-bottom:16px;">
+                <Descriptions Column="2" Size="@DescriptionsSize.Small">
+                    <DescriptionsItem Title="公会ID">@(g.TryGetProperty("guildId", out var p) ? p.GetInt64().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="公会名">@(g.TryGetProperty("guildName", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="等级">@(g.TryGetProperty("level", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="公会经验">@(g.TryGetProperty("experience", out var p) ? p.GetInt64().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="会长ID">@(g.TryGetProperty("leaderId", out var p) ? p.GetInt64().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="状态">
+                        <Tag Color="@GetStatusColor(g)">@GetStatusText(g)</Tag>
+                    </DescriptionsItem>
+                    <DescriptionsItem Title="公会公告" Span="2">@(g.TryGetProperty("announcement", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="创建时间">@(g.TryGetProperty("createdAt", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="更新时间">@(g.TryGetProperty("updatedAt", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                </Descriptions>
+            </Card>
+
+            <Card Title="成员列表" Size="@CardSize.Small">
+                @if (_members.Any())
+                {
+                    <Table TItem="JsonElement" DataSource="@_members" Size="@TableSize.Small" RowKey="@GetMemberRowKey">
+                        <Column TData="string" Title="成员ID">
+                            @(context.TryGetProperty("memberId", out var p) ? p.GetInt64().ToString() : "-")
+                        </Column>
+                        <Column TData="string" Title="成员名">
+                            @(context.TryGetProperty("memberName", out var p) ? p.GetString() ?? "-" : "-")
+                        </Column>
+                        <Column TData="string" Title="职位">
+                            @(context.TryGetProperty("role", out var p) ? p.GetString() ?? (context.TryGetProperty("position", out var p2) ? p2.GetString() ?? "-" : "-") : "-")
+                        </Column>
+                        <Column TData="string" Title="加入时间">
+                            @(context.TryGetProperty("joinDate", out var p) ? p.GetString() ?? "-" : "-")
+                        </Column>
+                        <Column TData="string" Title="贡献">
+                            @(context.TryGetProperty("contribution", out var p) ? p.GetInt64().ToString() : "-")
+                        </Column>
+                    </Table>
+                }
+                else
+                {
+                    <Empty Description="@("暂无成员数据")" />
+                }
+            </Card>
+        }
+    </Drawer>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@_errorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> _guilds = new();
+    private List<JsonElement> _members = new();
+    private bool _loading;
+    private string _errorMessage = "";
+    private bool _detailDrawerVisible;
+    private JsonElement? _selectedGuild;
+    private string _statusFilter = "";
+
+    private string _detailDrawerTitle
+    {
+        get
+        {
+            if (_selectedGuild != null && _selectedGuild.Value.TryGetProperty("guildName", out var p))
+                return $"公会详情 - {p.GetString() ?? ""}";
+            return "公会详情";
+        }
+    }
+
+    private object GetGuildRowKey(JsonElement x) =>
+        x.TryGetProperty("guildId", out var p) ? (object)p.GetInt64() : 0;
+
+    private object GetMemberRowKey(JsonElement x) =>
+        x.TryGetProperty("memberId", out var p) ? (object)p.GetInt64() : 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGuilds();
+    }
+
+    private async Task LoadGuilds()
+    {
+        _loading = true;
+        _errorMessage = "";
+        try
+        {
+            var status = string.IsNullOrEmpty(_statusFilter) ? null : _statusFilter;
+            var result = await GuildService.GetGuildsAsync(1, 20, status);
+            if (result?.IsSuccess == true)
+            {
+                var data = result.Data;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    _guilds = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    _guilds = items.EnumerateArray().ToList();
+                }
+                else
+                {
+                    _guilds = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                _guilds = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    _errorMessage = result.ErrorMessage ?? "加载公会列表失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"加载公会列表失败: {ex.Message}";
+            _guilds = new List<JsonElement>();
+        }
+        _loading = false;
+    }
+
+    private async Task OnStatusFilterChanged(string? value)
+    {
+        _statusFilter = value ?? "";
+        await LoadGuilds();
+    }
+
+    private async void ShowDetail(JsonElement guild)
+    {
+        _selectedGuild = guild;
+        _detailDrawerVisible = true;
+        await LoadMembers(guild);
+    }
+
+    private void CloseDetail()
+    {
+        _detailDrawerVisible = false;
+        _selectedGuild = null;
+        _members = new List<JsonElement>();
+    }
+
+    private async Task LoadMembers(JsonElement guild)
+    {
+        var guildId = guild.TryGetProperty("guildId", out var p) ? p.GetInt64() : 0;
+        try
+        {
+            var result = await GuildService.GetGuildDetailAsync(guildId);
+            if (result?.IsSuccess == true)
+            {
+                var data = result.Data;
+                if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("members", out var members))
+                {
+                    _members = members.ValueKind == JsonValueKind.Array
+                        ? members.EnumerateArray().ToList()
+                        : new List<JsonElement>();
+                }
+                else if (data.ValueKind == JsonValueKind.Array)
+                {
+                    _members = data.EnumerateArray().ToList();
+                }
+                else
+                {
+                    _members = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                _members = new List<JsonElement>();
+            }
+        }
+        catch
+        {
+            _members = new List<JsonElement>();
+        }
+    }
+
+    private string GetTruncatedAnnouncement(JsonElement g)
+    {
+        if (g.TryGetProperty("announcement", out var p))
+        {
+            var text = p.GetString() ?? "-";
+            return text.Length > 20 ? text[..20] + "..." : text;
+        }
+        return "-";
+    }
+
+    private string GetStatusText(JsonElement g)
+    {
+        if (g.TryGetProperty("status", out var p))
+        {
+            if (p.ValueKind == JsonValueKind.String)
+                return p.GetString() ?? "-";
+            if (p.ValueKind == JsonValueKind.Number)
+                return p.GetInt32() switch
+                {
+                    0 => "正常",
+                    1 => "解散",
+                    2 => "冻结",
+                    _ => "-"
+                };
+        }
+        return "-";
+    }
+
+    private string GetStatusColor(JsonElement g) => GetStatusText(g) switch
+    {
+        "正常" => "green",
+        "解散" => "red",
+        "冻结" => "blue",
+        _ => "default"
+    };
+}

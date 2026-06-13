@@ -66,7 +66,7 @@ namespace Horizon.Orleans.Grains
                 _consumerState.State.Stats.Namespace = streamNamespace;
 
                 if (_consumerState.State.Stats.StatsStartTimestamp == 0)
-                    _consumerState.State.Stats.StatsStartTimestamp = DateTime.UtcNow.Ticks;
+                    _consumerState.State.Stats.StatsStartTimestamp = DateTime.Now.Ticks;
 
                 var streamProvider = this.GetStreamProvider(OrleansConst.CommonMessageStreamProvider);
                 var streamId = StreamId.Create(streamNamespace, streamKey);
@@ -181,7 +181,7 @@ namespace Horizon.Orleans.Grains
         {
             var stats = _consumerState.State.Stats;
             stats.TotalEventsProcessed++;
-            stats.LastProcessedTimestamp = DateTime.UtcNow.Ticks;
+            stats.LastProcessedTimestamp = DateTime.Now.Ticks;
 
             var typeKey = (int)gameEvent.EventType;
             if (!stats.EventTypeCounters.ContainsKey(typeKey))
@@ -197,7 +197,7 @@ namespace Horizon.Orleans.Grains
                 EventId = gameEvent.EventId,
                 EventType = gameEvent.EventType,
                 CharacterId = gameEvent.CharacterId,
-                ProcessedTimestamp = DateTime.UtcNow.Ticks,
+                ProcessedTimestamp = DateTime.Now.Ticks,
                 Success = success,
                 Description = gameEvent.Description
             };
@@ -230,7 +230,7 @@ namespace Horizon.Orleans.Grains
             _consumerState.State.Stats = new EventProcessingStats
             {
                 Namespace = _consumerState.State.Stats.Namespace,
-                StatsStartTimestamp = DateTime.UtcNow.Ticks
+                StatsStartTimestamp = DateTime.Now.Ticks
             };
             _consumerState.State.RecentEvents.Clear();
 

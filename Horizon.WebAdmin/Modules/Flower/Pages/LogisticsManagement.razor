@@ -1,0 +1,145 @@
+@page "/flower/logistics"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using Horizon.Share.VMs
+@using System.Text.Json
+@using Horizon.WebAdmin.Modules.Flower.Services
+@inject FlowerLogisticsService LogisticsService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">🚚 物流管理</TypographyTitle>
+    </div>
+
+    <Card Title="@("运单查询")" Size="@CardSize.Small" Style="margin-bottom:16px;">
+        <Space Style="width:100%;">
+            <InputNumber TValue="long" @bind-Value="@SearchOrderId" Placeholder="@("请输入订单ID")" Style="width:240px" />
+            <Button Type="@ButtonType.Primary" Icon="@("search")" OnClick="SearchTrack" Loading="@Searching">查询物流</Button>
+        </Space>
+    </Card>
+
+    @if (TrackRecords.Any())
+    {
+        <Card Title="@("物流轨迹")" Size="@CardSize.Small" Style="margin-bottom:16px;">
+            <Steps Direction="@StepsDirection.Vertical" Size="@StepsSize.Small" Current="@CurrentStep">
+                @foreach (var step in TrackRecords)
+                {
+                    <StepPane Title="@step.Status" Description="@($"{step.Location} - {step.Time:yyyy-MM-dd HH:mm}")" />
+                }
+            </Steps>
+        </Card>
+    }
+    else if (Searched)
+    {
+        <Card Size="@CardSize.Small" Style="margin-bottom:16px;">
+            <Empty Description="@("未查询到物流信息")" />
+        </Card>
+    }
+
+    <Card Title="@("异常告警列表")" Size="@CardSize.Small">
+        @if (Alerts.Any())
+        {
+            <Table TItem="LogisticsAlertItem" DataSource="@Alerts" Size="@TableSize.Small" RowKey="x => x.Id">
+                <PropertyColumn Property="a => a.Id" Title="告警ID" />
+                <PropertyColumn Property="a => a.OrderId" Title="订单ID" />
+                <Column TData="string" Title="告警类型">
+                    <Tag Color="@GetAlertColor(context.Type)">@context.Type</Tag>
+                </Column>
+                <PropertyColumn Property="a => a.Description" Title="描述" />
+                <Column TData="string" Title="状态">
+                    <Tag Color="@(context.IsResolved ? "green" : "red")">@(context.IsResolved ? "已处理" : "未处理")</Tag>
+                </Column>
+                <Column TData="string" Title="时间">@context.CreatedAt.ToString("yyyy-MM-dd HH:mm")</Column>
+            </Table>
+        }
+        else
+        {
+            <Empty Description="@("暂无异常告警")" />
+        }
+    </Card>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private int CurrentStep { get; set; }
+    private long SearchOrderId { get; set; }
+    private bool Searching { get; set; }
+    private bool Searched { get; set; }
+    private List<TrackStepItem> TrackRecords { get; set; } = new();
+    private List<LogisticsAlertItem> Alerts { get; set; } = new();
+    private string ErrorMessage { get; set; } = "";
+
+    private readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAlerts();
+    }
+
+    private async Task SearchTrack()
+    {
+        if (SearchOrderId <= 0) return;
+        Searching = true;
+        Searched = true;
+        ErrorMessage = "";
+        TrackRecords = new();
+        try
+        {
+            var result = await LogisticsService.GetTrackHistoryAsync(SearchOrderId);
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                TrackRecords = JsonSerializer.Deserialize<List<TrackStepItem>>(result.Data.Value.GetRawText(), _jsonOpts) ?? new();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"查询物流失败: {ex.Message}";
+        }
+        Searching = false;
+    }
+
+    private async Task LoadAlerts()
+    {
+        try
+        {
+            var result = await LogisticsService.GetAlertsAsync();
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                Alerts = JsonSerializer.Deserialize<List<LogisticsAlertItem>>(result.Data.Value.GetRawText(), _jsonOpts) ?? new();
+            }
+            else
+            {
+                Alerts = new();
+            }
+        }
+        catch
+        {
+            Alerts = new();
+        }
+    }
+
+    private string GetAlertColor(string type) => type switch
+    {
+        "超时" => "red", "异常" => "orange", "退回" => "cyan", _ => "default"
+    };
+
+    public class TrackStepItem
+    {
+        public string Status { get; set; } = "";
+        public string Location { get; set; } = "";
+        public DateTime Time { get; set; }
+    }
+
+    public class LogisticsAlertItem
+    {
+        public long Id { get; set; }
+        public long OrderId { get; set; }
+        public string Type { get; set; } = "";
+        public string Description { get; set; } = "";
+        public bool IsResolved { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+}

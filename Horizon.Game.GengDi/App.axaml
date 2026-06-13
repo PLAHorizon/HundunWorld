@@ -1,0 +1,24 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sty="using:FluentAvalonia.Styling"
+             xmlns:converters="using:Horizon.Game.GengDi.Core.Converters"
+             x:Class="Horizon.Game.GengDi.App">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://Horizon.Game.GengDi/Assets/Styles/Resources.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <converters:WeatherIconConverter x:Key="WeatherIconConverter" />
+            <converters:ToastBgConverter x:Key="ToastBgConverter" />
+            <converters:ToastBorderConverter x:Key="ToastBorderConverter" />
+            <converters:ToastFgConverter x:Key="ToastFgConverter" />
+            <converters:ToastIconConverter x:Key="ToastIconConverter" />
+        </ResourceDictionary>
+    </Application.Resources>
+
+    <Application.Styles>
+        <sty:FluentAvaloniaTheme PreferSystemTheme="True" PreferUserAccentColor="True" />
+        <StyleInclude Source="avares://Horizon.Game.GengDi/Assets/Styles/Styles.xaml" />
+        <StyleInclude Source="avares://Horizon.Game.GengDi/Assets/Styles/ControlsGalleryStyles.axaml" />
+    </Application.Styles>
+</Application>

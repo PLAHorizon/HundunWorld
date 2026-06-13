@@ -1,4 +1,4 @@
-﻿using Horizon.Core.Abstract;
+using Horizon.Core.Abstract;
 using Horizon.Core.Abstract.Enums;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -67,6 +67,11 @@ namespace Horizon.WebApi.Identity.Users
         /// 手机
         /// </summary>
         public string Phone => FindClaim(PassportClaimTypes.Phone)?.Value;
+
+        /// <summary>
+        /// 用户Id（来自JWT AccessToken中的PUId/Guid声明）
+        /// </summary>
+        public string UserId => FindClaim(PassportClaimTypes.UserId)?.Value;
 
         public Claim FindClaim(string claimType)
         {

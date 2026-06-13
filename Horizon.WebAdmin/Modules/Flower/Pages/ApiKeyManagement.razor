@@ -1,0 +1,196 @@
+﻿@page "/flower/api-keys"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using Horizon.Share.VMs
+@using System.Text.Json
+@using Horizon.WebAdmin.Modules.Flower.Services
+@inject FlowerApiKeyService ApiKeyService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">🔑 ApiKey管理</TypographyTitle>
+        <Space>
+            <InputNumber TValue="long" @bind-Value="@FilterPassportId" Placeholder="@("用户ID")" Style="width:140px" Size="@InputSize.Small" />
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadApiKeys">🔍 查询</Button>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="ShowCreateModal">➕ 创建密钥</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="ApiKeyItem" DataSource="@ApiKeys" Size="@TableSize.Small" RowKey="x => x.KeyId">
+            <PropertyColumn Property="k => k.KeyId" Title="密钥ID" />
+            <Column TData="string" Title="密钥名称">
+                <AntDesign.Text Code>@context.Name</AntDesign.Text>
+            </Column>
+            <Column TData="string" Title="密钥前缀">
+                <AntDesign.Text Code>@context.KeyPrefix****</AntDesign.Text>
+            </Column>
+            <Column TData="string" Title="状态">
+                <Tag Color="@(context.IsRevoked ? "red" : "green")">@(context.IsRevoked ? "已吊销" : "有效")</Tag>
+            </Column>
+            <Column TData="string" Title="创建时间">@context.CreatedAt.ToString("yyyy-MM-dd HH:mm")</Column>
+            <Column TData="string" Title="过期时间">@(context.ExpiresAt?.ToString("yyyy-MM-dd HH:mm") ?? "永不过期")</Column>
+            <Column TData="string" Title="操作">
+                @if (!context.IsRevoked)
+                {
+                    <Popconfirm Title="@("确认吊销该密钥？此操作不可恢复")" OnConfirm="() => RevokeKey(context.KeyId)">
+                        <Button Danger Size="@ButtonSize.Small">吊销</Button>
+                    </Popconfirm>
+                }
+                else
+                {
+                    <span style="color:rgba(0,0,0,0.45);">--</span>
+                }
+            </Column>
+        </Table>
+    }
+
+    <Modal Title="@("创建ApiKey")" Visible="@ShowCreateModalFlag" OnCancel="CloseCreateModal"
+           OnOk="CreateApiKey" OkText="@("创建")" CancelText="@("取消")">
+        <Form Model="@CreateModel" Layout="@FormLayout.Vertical">
+            <FormItem Label="@("密钥名称")">
+                <Input @bind-Value="@CreateModel.Name" Placeholder="@("请输入密钥名称")" />
+            </FormItem>
+            <FormItem Label="@("过期时间")">
+                <DatePicker TItemValue="DateTime?" @bind-Value="@CreateModel.ExpiresAt" Style="width:100%" Placeholder="@("留空表示永不过期")" />
+            </FormItem>
+        </Form>
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <Alert Type="@AlertType.Success" Message="@SuccessMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<ApiKeyItem> ApiKeys { get; set; } = new();
+    private bool Loading { get; set; }
+    private long FilterPassportId { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string SuccessMessage { get; set; } = "";
+    private bool ShowCreateModalFlag { get; set; }
+    private ApiKeyCreateModel CreateModel { get; set; } = new();
+
+    private readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadApiKeys();
+    }
+
+    private async Task LoadApiKeys()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await ApiKeyService.ListApiKeysAsync(FilterPassportId > 0 ? FilterPassportId : 0);
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                ApiKeys = JsonSerializer.Deserialize<List<ApiKeyItem>>(result.Data.Value.GetRawText(), _jsonOpts) ?? new();
+            }
+            else
+            {
+                ApiKeys = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载密钥列表失败: {ex.Message}";
+            ApiKeys = new();
+        }
+        Loading = false;
+    }
+
+    private void ShowCreateModal()
+    {
+        CreateModel = new ApiKeyCreateModel();
+        ShowCreateModalFlag = true;
+    }
+
+    private void CloseCreateModal()
+    {
+        ShowCreateModalFlag = false;
+    }
+
+    private async Task CreateApiKey()
+    {
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var result = await ApiKeyService.CreateApiKeyAsync(new
+            {
+                PassportId = FilterPassportId,
+                Name = CreateModel.Name,
+                ExpiresAt = CreateModel.ExpiresAt
+            });
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = "密钥创建成功";
+                ShowCreateModalFlag = false;
+                await LoadApiKeys();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "创建失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"创建失败: {ex.Message}";
+        }
+    }
+
+    private async Task RevokeKey(long keyId)
+    {
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var result = await ApiKeyService.RevokeApiKeyAsync(keyId, FilterPassportId);
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = "密钥已吊销";
+                await LoadApiKeys();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "吊销失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"吊销失败: {ex.Message}";
+        }
+    }
+
+    public class ApiKeyItem
+    {
+        public long KeyId { get; set; }
+        public string Name { get; set; } = "";
+        public string KeyPrefix { get; set; } = "";
+        public bool IsRevoked { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? ExpiresAt { get; set; }
+    }
+
+    public class ApiKeyCreateModel
+    {
+        public string Name { get; set; } = "";
+        public DateTime? ExpiresAt { get; set; }
+    }
+}

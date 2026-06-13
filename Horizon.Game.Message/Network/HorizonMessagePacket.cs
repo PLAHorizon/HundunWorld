@@ -1,4 +1,5 @@
 using Horizon.Game.Message.Enums;
+using K4os.Compression.LZ4;
 using MemoryPack;
 using Orleans;
 using System;
@@ -77,10 +78,14 @@ namespace Horizon.Game.Message.Network
     /// 它支持从缓冲区构建请求信息、将消息转换为字节数组、解析消息头和消息体等操作。
     /// 此类的实例封装了地平线消息的原始数据和元数据。</remarks>
     [MemoryPackable(SerializeLayout.Explicit)]
-    public partial class HorizonMessageInfo :   IRequestInfo
+    public partial class HorizonMessageInfo : IFixedHeaderRequestInfo
     {
+        // 协议头固定为 8 字节：4字节载荷长度 + 1字节消息类型 + 1字节压缩标志 + 2字节校验和
+        private bool _isCompressed;
+        private ushort _expectedChecksum;
+
         /// <summary>
-        /// 消息体长度
+        /// 消息体长度（等于载荷字节数，不含8字节头）
         /// </summary>
         [MemoryPackOrder(0)]
         public int BodyLength { get; set; }
@@ -273,19 +278,32 @@ namespace Horizon.Game.Message.Network
 
         public bool OnParsingHeader(ReadOnlySpan<byte> header)
         {
-            if (header.Length < 4)
+            // 完整协议头为 8 字节：[0-3] 载荷长度, [4] 消息类型, [5] 压缩标志, [6-7] 校验和
+            if (header.Length < 8)
             {
+                System.Diagnostics.Debug.WriteLine($"HorizonMessageInfo.OnParsingHeader: header too short, length={header.Length}");
                 return false;
             }
 
             try
             {
-                // 读取消息体长度
-                BodyLength = BitConverter.ToInt32(header);
-                return BodyLength > 0 && BodyLength <= MaxLength;
+                // 先用临时变量读取，验证通过后再赋值给 BodyLength，
+                // 避免将非法大值写入属性后被 TouchSocket 框架读取并触发越界异常。
+                var bodyLength = BitConverter.ToInt32(header);
+                if (bodyLength <= 0 || bodyLength > MaxLength)
+                {
+                    System.Diagnostics.Debug.WriteLine($"HorizonMessageInfo.OnParsingHeader: invalid bodyLength={bodyLength}, MaxLength={MaxLength}");
+                    return false;
+                }
+
+                BodyLength = bodyLength;
+                _isCompressed = header[5] != 0;
+                _expectedChecksum = BitConverter.ToUInt16(header.Slice(6, 2));
+                return true;
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"HorizonMessageInfo.OnParsingHeader: exception={ex.Message}");
                 return false;
             }
         }
@@ -294,28 +312,52 @@ namespace Horizon.Game.Message.Network
         {
             if (body.Length != BodyLength)
             {
+                System.Diagnostics.Debug.WriteLine($"HorizonMessageInfo.OnParsingBody: body length mismatch, expected={BodyLength}, actual={body.Length}");
                 return false;
             }
 
             try
             {
+                // 校验和验证
+                var actualChecksum = CalculateChecksum(body);
+                if (actualChecksum != _expectedChecksum)
+                {
+                    System.Diagnostics.Debug.WriteLine($"HorizonMessageInfo.OnParsingBody: checksum mismatch, expected={_expectedChecksum}, actual={actualChecksum}");
+                    return false;
+                }
+
                 Body = body.ToArray();
 
-                // 反序列化消息包
-                Packet = MemoryPackSerializer.Deserialize<HorizonMessagePacket>(body);
+                var finalBody = _isCompressed ? LZ4Pickler.Unpickle(body) : Body;
+
+                if (finalBody.Length > MaxLength)
+                {
+                    System.Diagnostics.Debug.WriteLine($"HorizonMessageInfo.OnParsingBody: decompressed size exceeds limit, size={finalBody.Length}, MaxLength={MaxLength}");
+                    return false;
+                }
+
+                Packet = MemoryPackSerializer.Deserialize<HorizonMessagePacket>(finalBody);
                 if (Packet == null)
                 {
+                    System.Diagnostics.Debug.WriteLine("HorizonMessageInfo.OnParsingBody: MemoryPack deserialization returned null");
                     return false;
                 }
 
                 Packet.RawData = Body;
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"HorizonMessageInfo.OnParsingBody: exception={ex.Message}");
                 return false;
             }
         }
+
+        /// <summary>
+        /// 与 MessageAdapter / HorizonMessageAdapter 保持一致的轻量校验和算法。
+        /// </summary>
+        private static ushort CalculateChecksum(ReadOnlySpan<byte> data) =>
+            HorizonProtocol.CalculateChecksum(data);
 
         public void Build<TByteBlock>(ref TByteBlock byteBlock) where TByteBlock : IByteBlock
         {
@@ -336,6 +378,29 @@ namespace Horizon.Game.Message.Network
             {
                 // 构建失败时不写入任何数据
             }
+        }
+    }
+
+    /// <summary>
+    /// 地平线协议工具类：提供跨程序集共享的协议常量与算法。
+    /// </summary>
+    public static class HorizonProtocol
+    {
+        /// <summary>协议固定头长度（字节）：4字节载荷长度 + 1字节消息类型 + 1字节压缩标志 + 2字节校验和。</summary>
+        public const int HeaderLength = 8;
+
+        /// <summary>
+        /// 轻量校验和：将载荷各字节累加后截断为 ushort。
+        /// 与 MessageAdapter（客户端）和 HorizonMessageAdapter（服务端）的实现保持完全一致。
+        /// </summary>
+        public static ushort CalculateChecksum(ReadOnlySpan<byte> data)
+        {
+            uint checksum = 0;
+            foreach (var b in data)
+            {
+                checksum += b;
+            }
+            return (ushort)(checksum & 0xFFFF);
         }
     }
 }

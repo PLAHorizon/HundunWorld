@@ -1,0 +1,298 @@
+﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="clr-namespace:FluentAvalonia.UI.Controls;assembly=FluentAvalonia"
+                    xmlns:uip="clr-namespace:FluentAvalonia.UI.Controls.Primitives;assembly=FluentAvalonia"
+                    xmlns:conv="using:FluentAvalonia.Converters"
+                    x:CompileBindings="True">
+
+    <Design.PreviewWith>
+        <Border Padding="20" Width="500" Height="150" Background="Beige">
+            <ui:TabView TabStripLocation="Top">
+                <ui:TabView.TabItems>
+                    <ui:TabViewItem Header="Item1" />
+                    <ui:TabViewItem Header="Item1"/>
+                    <ui:TabViewItem Header="Item1" />
+                    <ui:TabViewItem Header="Item1"/>
+                    <ui:TabViewItem Header="Item1" />
+                    <ui:TabViewItem Header="Item1"/>
+                </ui:TabView.TabItems>
+            </ui:TabView>
+        </Border>
+    </Design.PreviewWith>
+
+    <!-- Resources in TabViewStyles.axaml -->
+    <conv:ScrollViewerVisibilityToBoolConverter x:Key="SVVTBC" />
+
+    <ControlTheme x:Key="TabViewScrollButtonTheme" TargetType="RepeatButton">
+        <Setter Property="Background" Value="{DynamicResource TabViewScrollButtonBackground}"/>
+        <Setter Property="BorderThickness" Value="{DynamicResource TabViewButtonBorderThickness}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource TabViewScrollButtonBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource TabViewScrollButtonForeground}"/>
+        <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}"/>
+        <Setter Property="FontSize" Value="{DynamicResource TabViewItemScrollButtonFontSize}"/>
+        <Setter Property="FontFamily" Value="{DynamicResource SymbolThemeFontFamily}"/>
+        <Setter Property="Width" Value="{DynamicResource TabViewItemScrollButtonWidth}"/>
+        <Setter Property="Height" Value="{DynamicResource TabViewItemScrollButtonHeight}"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <ContentPresenter Name="ContentPresenter"
+                                  Background="{TemplateBinding Background}"
+                                  Content="{TemplateBinding Content}"
+                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                  CornerRadius="{TemplateBinding CornerRadius}"
+                                  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                  VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TabViewScrollButtonBackgroundPointerOver}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TabViewScrollButtonBorderBrushPointerOver}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TabViewScrollButtonForegroundPointerOver}"/>
+        </Style>
+        <Style Selector="^:pressed /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TabViewScrollButtonBackgroundPressed}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TabViewScrollButtonBorderBrushPressed}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TabViewScrollButtonForegroundPressed}"/>
+        </Style>
+        <Style Selector="^:disabled /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource TabViewScrollButtonBackgroundDisabled}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TabViewScrollButtonBackgroundPointerOver}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TabViewScrollButtonForegroundDisabled}"/>
+        </Style>
+    </ControlTheme>
+
+
+    <ControlTheme x:Key="TabScrollViewerTheme" TargetType="ScrollViewer">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="Root"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}">
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <!--Since we can't adjust coldefs in styles, use this-->
+                        <Border Name="Column0MinWidthSpacer"
+                                IsHitTestVisible="False"
+                                IsEnabled="False" MinWidth="2" />
+                        
+                        <Rectangle Name="LeftBottomBorderLine"
+                                   Fill="{DynamicResource TabViewBorderBrush}"
+                                   Height="1"
+                                   VerticalAlignment="Bottom"/>
+
+                        <Rectangle Name="RightBottomBorderLine"
+                                   Fill="{DynamicResource TabViewBorderBrush}"
+                                   Height="1"
+                                   Grid.Column="2"
+                                   VerticalAlignment="Bottom"/>
+
+                        <Border Name="ScrollDecreaseButtonContainer"
+                                IsVisible="{Binding HorizontalScrollBarVisibility, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource SVVTBC}}"
+                                Padding="{DynamicResource TabViewItemLeftScrollButtonContainerPadding}"
+                                VerticalAlignment="Bottom">
+                            <RepeatButton Name="ScrollDecreaseButton"
+                                          Delay="50"
+                                          Interval="100"
+                                          Content="&#xEDD9;"
+                                          AutomationProperties.AccessibilityView="Raw"
+                                          Theme="{StaticResource TabViewScrollButtonTheme}"/>
+                        </Border>
+
+                        <!--Note: WinUI has 1px left padding here, which I've removed to prevent a gap
+                                  in all these border lines. Not sure why they need the 1px padding but
+                                  it doesn't work here which might just be from us having to do it differently
+                                  since we don't have Header/Footer on the ItemsPresenter-->
+                        <ScrollContentPresenter Name="ScrollContentPresenter"
+                                                Grid.Column="1"
+                                                Padding="0 0 0 0"
+                                                KeyboardNavigation.TabNavigation="Once"
+                                                Content="{TemplateBinding Content}"
+                                                HorizontalSnapPointsType="{TemplateBinding HorizontalSnapPointsType}"
+                                                VerticalSnapPointsType="{TemplateBinding VerticalSnapPointsType}"
+                                                HorizontalSnapPointsAlignment="{TemplateBinding HorizontalSnapPointsAlignment}"
+                                                VerticalSnapPointsAlignment="{TemplateBinding VerticalSnapPointsAlignment}">
+                            <ScrollContentPresenter.GestureRecognizers>
+                                <ScrollGestureRecognizer CanHorizontallyScroll="{Binding CanHorizontallyScroll, ElementName=ScrollContentPresenter}"
+                                                         CanVerticallyScroll="{Binding CanVerticallyScroll, ElementName=ScrollContentPresenter}"
+                                                         IsScrollInertiaEnabled="{Binding IsScrollInertiaEnabled, RelativeSource={RelativeSource TemplatedParent}}" />
+                            </ScrollContentPresenter.GestureRecognizers>
+                        </ScrollContentPresenter>
+
+                        <Border Name="ScrollIncreaseButtonContainer"
+                                IsVisible="{Binding HorizontalScrollBarVisibility, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource SVVTBC}}"
+                                Grid.Column="2"
+                                Padding="{DynamicResource TabViewItemRightScrollButtonContainerPadding}"
+                                VerticalAlignment="Bottom">
+                            <RepeatButton Name="ScrollIncreaseButton"
+                                          Delay="50"
+                                          Interval="100"
+                                          Content="&#xEDDA;"
+                                          AutomationProperties.AccessibilityView="Raw"
+                                          Theme="{StaticResource TabViewScrollButtonTheme}"/>
+                        </Border>
+
+                        <!--This ScrollBar is here for Vertical tabs-->
+                        <ScrollBar Name="PART_VerticalScrollBar"
+                                   Grid.Column="2" />
+                        
+                    </Grid>
+
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <!-- WinUI: NoBottomBorderLine-->
+        <Style Selector="^:noborder /template/ Rectangle#LeftBottomBorderLine,
+                         ^:noborder /template/ Rectangle#RightBottomBorderLine">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+
+        <Style Selector="^:left, ^:right">
+            <Style Selector="^ /template/ Rectangle#LeftBottomBorderLine">
+                <Setter Property="IsVisible" Value="False" />
+            </Style>
+            <Style Selector="^ /template/ Rectangle#RightBottomBorderLine">
+                <Setter Property="IsVisible" Value="False" />
+            </Style>
+            <Style Selector="^ /template/ Border#Column0MinWidthSpacer">
+                <Setter Property="IsVisible" Value="False" />
+            </Style>
+            <Style Selector="^ /template/ ScrollBar#PART_VerticalScrollBar">
+                <Setter Property="IsVisible" Value="True" />
+            </Style>
+        </Style>
+
+        <Style Selector="^:bottom">
+            <Style Selector="^ /template/ Rectangle#LeftBottomBorderLine">
+                <Setter Property="VerticalAlignment" Value="Top" />
+            </Style>
+            <Style Selector="^ /template/ Rectangle#RightBottomBorderLine">
+                <Setter Property="VerticalAlignment" Value="Top" />
+            </Style>
+        </Style>
+    </ControlTheme>
+
+
+    
+    <ControlTheme x:Key="{x:Type uip:TabViewListView}" TargetType="uip:TabViewListView">
+        <!-- WinUI doesn't set a background here, but this allows us to receive drag events
+             over the TabViewListView and allows the icon to display properly for the drag effects -->
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="VerticalAlignment" Value="Top" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="KeyboardNavigation.TabNavigation" Value="Once" />
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="ScrollViewer.IsDeferredScrollingEnabled" Value="False" />
+        <Setter Property="ScrollViewer.BringIntoViewOnFocusChange" Value="True" />
+
+        <Setter Property="ItemsPanel">
+            <ItemsPanelTemplate>
+                <VirtualizingStackPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+        </Setter>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        Background="{TemplateBinding Background}"
+                        CornerRadius="{TemplateBinding CornerRadius}" Name="Test">
+
+                    <ScrollViewer AutomationProperties.AccessibilityView="Raw"
+                                  BringIntoViewOnFocusChange="{TemplateBinding ScrollViewer.BringIntoViewOnFocusChange}"
+                                  HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                                  IsDeferredScrollingEnabled="{TemplateBinding ScrollViewer.IsDeferredScrollingEnabled}"
+                                  IsScrollChainingEnabled="{TemplateBinding ScrollViewer.IsScrollChainingEnabled}"
+                                  KeyboardNavigation.TabNavigation="{TemplateBinding KeyboardNavigation.TabNavigation}"
+                                  VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}"
+                                  Name="ScrollViewer"
+                                  Theme="{DynamicResource TabScrollViewerTheme}">
+                        <DockPanel Margin="{TemplateBinding Padding}" VerticalAlignment="Stretch">
+                            <!-- 
+                            Avalonia ItemsPresenter doesn't have Header for Footer properties
+                            Which is required here to get the solid border beneath the tab items
+                            So we have to fake it and hope putting the ItemsPresenter within the
+                            StackPanel doesn't mess with anything and all still works...
+                            -->
+
+                            <Grid Width="4" DockPanel.Dock="Left" VerticalAlignment="Bottom"
+                                  Name="LeftLineHost">
+                                <Border Name="LeftBottomBorderLine"
+                                        Background="{DynamicResource TabViewBorderBrush}"
+                                        Width="4" Height="1" VerticalAlignment="Bottom"
+                                        HorizontalAlignment="Left" />
+                            </Grid>
+                            <Grid Width="4" DockPanel.Dock="Right" VerticalAlignment="Bottom"
+                                  Name="RightLineHost">
+                                <Border Name="RightBottomBorderLine"
+                                        Background="{DynamicResource TabViewBorderBrush}"
+                                        Width="4" Height="1" VerticalAlignment="Bottom"
+                                        HorizontalAlignment="Right" />
+                            </Grid>
+
+                            <ItemsPresenter Name="TabItemsPresenter"
+                                            ItemsPanel="{TemplateBinding ItemsPanel}"/>
+                        </DockPanel>
+
+                    </ScrollViewer>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+        
+        <Style Selector="^:top, ^:bottom">
+            <Style Selector="^:leftShort /template/ Border#LeftBottomBorderLine">
+                <Setter Property="Width" Value="2" />
+            </Style>
+            <Style Selector="^:rightShort /template/ Border#RightBottomBorderLine">
+                <Setter Property="Width" Value="2" />
+            </Style>
+            <Style Selector="^:noBorder">
+                <Style Selector="^ /template/ Border#LeftBottomBorderLine">
+                    <Setter Property="IsVisible" Value="False" />
+                </Style>
+                <Style Selector="^ /template/ Border#RightBottomBorderLine">
+                    <Setter Property="IsVisible" Value="False" />
+                </Style>
+            </Style>
+        </Style>
+
+
+        <Style Selector="^:bottom">
+            <Style Selector="^ /template/ Grid#LeftLineHost">
+                <Setter Property="VerticalAlignment" Value="Top" />
+            </Style>
+            <Style Selector="^ /template/ Grid#RightLineHost">
+                <Setter Property="VerticalAlignment" Value="Top" />
+            </Style>
+            <Style Selector="^ /template/ Border#LeftBottomBorderLine">
+                <Setter Property="VerticalAlignment" Value="Top" />
+            </Style>
+            <Style Selector="^ /template/ Border#RightBottomBorderLine">
+                <Setter Property="VerticalAlignment" Value="Top" />
+            </Style>
+        </Style>
+        
+        <Style Selector="^:left, ^:right">            
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+
+            <Style Selector="^ /template/ Grid#LeftLineHost">
+                <Setter Property="IsVisible" Value="False" />
+            </Style>
+            <Style Selector="^ /template/ Grid#RightLineHost">
+                <Setter Property="IsVisible" Value="False" />
+            </Style>
+        </Style>
+        
+    </ControlTheme>
+</ResourceDictionary>

@@ -63,7 +63,7 @@ namespace Horizon.Orleans.Grains
                 await stream.OnNextAsync(gameEvent);
 
                 _totalEventsPublished++;
-                _lastEventTime = DateTime.UtcNow;
+                _lastEventTime = DateTime.Now;
 
                 _logger.LogDebug("事件流Grain发布事件: {EventType} -> {Namespace}, CharacterId={CharacterId}",
                     gameEvent.EventType, streamNamespace, gameEvent.CharacterId);

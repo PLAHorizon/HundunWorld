@@ -1,0 +1,124 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             x:Class="Horizon.Game.GengDi.Core.Views.ProfileView"
+             x:DataType="vm:ProfileViewModel">
+    <UserControl.DataContext>
+        <vm:ProfileViewModel />
+    </UserControl.DataContext>
+
+    <StackPanel Spacing="20">
+
+        <!-- 操作按钮行 -->
+        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Content="安全设置" Classes="QuietAction" Command="{Binding NavigateToSecurityCommand}" />
+            <Button Content="退出登录" Classes="QuietAction" Command="{Binding LogoutCommand}" />
+        </StackPanel>
+
+        <!-- ── 通行证信息（只读） ── -->
+        <Border Classes="SurfaceCard">
+            <StackPanel Spacing="12">
+                <TextBlock Text="通行证信息" Classes="SectionTitle" />
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                    <TextBlock Text="通行证号" Classes="PageEyebrow" VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding PassportId}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- ── 基本信息 ── -->
+        <Border Classes="SurfaceCard">
+            <StackPanel Spacing="16">
+                <TextBlock Text="基本信息" Classes="SectionTitle" />
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="昵称" Classes="PageEyebrow" />
+                    <TextBox Text="{Binding NickName}" Watermark="请输入昵称" MaxLength="32" />
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="个人简介" Classes="PageEyebrow" />
+                    <TextBox Text="{Binding Bio}" AcceptsReturn="True" TextWrapping="Wrap" Height="100" Watermark="请输入个人简介（选填）" MaxLength="200" />
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="头像" Classes="PageEyebrow" />
+                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <Border Width="72" Height="72" CornerRadius="36" ClipToBounds="True" BorderBrush="{DynamicResource SystemFillColorAttentionBackgroundBrush}" BorderThickness="1">
+                            <Panel>
+                                <Image x:Name="AvatarPreviewImage" Stretch="UniformToFill" IsVisible="{Binding AvatarIsLoaded}" />
+                                <TextBlock Text="{Binding NickNameInitial}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="28" FontWeight="SemiBold" IsVisible="{Binding !AvatarIsLoaded}" />
+                            </Panel>
+                        </Border>
+                        <StackPanel Spacing="6" VerticalAlignment="Center">
+                            <Button Content="选择图片" Classes="QuietAction" Command="{Binding PickAvatarCommand}" />
+                            <TextBox Text="{Binding Avatar}" Watermark="或直接输入头像 URL" Width="280" />
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+
+                <TextBlock Text="{Binding BasicInfoMessage}" Foreground="{Binding BasicInfoMessageBrush}" TextWrapping="Wrap" />
+                <Button Content="保存基本信息" Classes="PrimaryAction" HorizontalAlignment="Left" Command="{Binding UpdateBasicInfoCommand}" />
+            </StackPanel>
+        </Border>
+
+        <!-- ── 头衔管理 ── -->
+        <Border Classes="SurfaceCard">
+            <StackPanel Spacing="16">
+                <TextBlock Text="头衔管理" Classes="SectionTitle" />
+                <TextBlock Text="自定义头衔将展示在您的个人名片与聊天界面中。" Classes="SupportingText" />
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="当前头衔" Classes="PageEyebrow" />
+                    <TextBox Text="{Binding Title}" Watermark="请输入头衔（选填，最多16字）" MaxLength="16" />
+                </StackPanel>
+
+                <TextBlock Text="{Binding TitleMessage}" Foreground="{Binding TitleMessageBrush}" TextWrapping="Wrap" />
+                <Button Content="保存头衔" Classes="PrimaryAction" HorizontalAlignment="Left" Command="{Binding UpdateTitleCommand}" />
+            </StackPanel>
+        </Border>
+
+        <!-- ── 账号绑定 ── -->
+        <Border Classes="SurfaceCard">
+            <StackPanel Spacing="16">
+                <TextBlock Text="账号绑定" Classes="SectionTitle" />
+                <TextBlock Text="绑定手机号和邮箱后，可用于找回密码及接收重要通知。" Classes="SupportingText" />
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="手机号" Classes="PageEyebrow" />
+                    <TextBox Text="{Binding Phone}" Watermark="请输入手机号（选填）" MaxLength="20" />
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="邮箱" Classes="PageEyebrow" />
+                    <TextBox Text="{Binding Email}" Watermark="请输入邮箱地址（选填）" MaxLength="100" />
+                </StackPanel>
+
+                <TextBlock Text="{Binding ContactInfoMessage}" Foreground="{Binding ContactInfoMessageBrush}" TextWrapping="Wrap" />
+                <Button Content="保存绑定信息" Classes="PrimaryAction" HorizontalAlignment="Left" Command="{Binding UpdateContactInfoCommand}" />
+            </StackPanel>
+        </Border>
+
+        <!-- ── 实名认证 ── -->
+        <Border Classes="SurfaceCard">
+            <StackPanel Spacing="16">
+                <TextBlock Text="实名认证" Classes="SectionTitle" />
+                <TextBlock Text="当前阶段仅保存信息，不进行真实性验证。请确保填写真实有效的信息。" Classes="SupportingText" TextWrapping="Wrap" />
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="真实姓名" Classes="PageEyebrow" />
+                    <TextBox Text="{Binding RealName}" Watermark="请输入真实姓名" MaxLength="32" />
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="身份证号" Classes="PageEyebrow" />
+                    <TextBox Text="{Binding IdCard}" PasswordChar="*" Watermark="请输入身份证号" MaxLength="18" />
+                </StackPanel>
+
+                <TextBlock Text="{Binding RealNameMessage}" Foreground="{Binding RealNameMessageBrush}" TextWrapping="Wrap" />
+                <Button Content="保存实名信息" Classes="PrimaryAction" HorizontalAlignment="Left" Command="{Binding UpdateRealNameCommand}" />
+            </StackPanel>
+        </Border>
+
+    </StackPanel>
+</UserControl>

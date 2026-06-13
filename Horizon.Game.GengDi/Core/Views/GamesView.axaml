@@ -1,0 +1,350 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             xmlns:model="using:Horizon.Game.GengDi.Models"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="1200"
+             d:DesignHeight="800"
+             x:Class="Horizon.Game.GengDi.Core.Views.GamesView"
+             x:DataType="vm:GamesViewModel"
+             x:Name="gamesRoot">
+    <UserControl.DataContext>
+        <vm:GamesViewModel />
+    </UserControl.DataContext>
+
+    <controls:GalleryPage Title="游戏库"
+                          Subtitle="Horizon.Game.GengDi.Games"
+                          Description="使用与 FAControlsGallery 一致的页面头部和卡片层级，重构原有游戏列表与详情区，减少拼接式文本和不统一的操作区。"
+                          IconSource="{StaticResource GamesIcon}">
+        <Grid ColumnDefinitions="320,*"
+              ColumnSpacing="20">
+            <Grid RowDefinitions="Auto,*" RowSpacing="16">
+                <Border Classes="SurfaceCard" Grid.Row="0">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="已安装游戏"
+                                   Classes="SectionTitle" />
+                        <ListBox ItemsSource="{Binding InstalledGames}"
+                                 SelectedItem="{Binding SelectedGame}"
+                                 BorderThickness="0"
+                                 Background="Transparent">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="model:GameInfo">
+                                    <Border Classes="ListItemCard"
+                                            Margin="0 0 0 10">
+                                        <Grid ColumnDefinitions="56,*,Auto"
+                                              ColumnSpacing="12">
+                                            <Border Width="56"
+                                                    Height="56"
+                                                    CornerRadius="14"
+                                                    ClipToBounds="True"
+                                                    Background="{DynamicResource ControlFillColorTertiaryBrush}">
+                                                <Image Source="{Binding DisplayIcon}"
+                                                       Stretch="UniformToFill" />
+                                            </Border>
+
+                                            <StackPanel Grid.Column="1"
+                                                        Spacing="6">
+                                                <TextBlock Text="{Binding Name}"
+                                                           FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding Version, StringFormat='版本 {0}'}"
+                                                           Classes="SupportingText" />
+                                                <StackPanel Orientation="Horizontal"
+                                                            Spacing="10">
+                                                    <TextBlock Text="{Binding OnlinePlayerCountText, StringFormat='在线 {0}'}"
+                                                               Classes="SupportingText" />
+                                                    <TextBlock Text="{Binding TotalPlayCountText, StringFormat='累计 {0}'}"
+                                                               Classes="SupportingText" />
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <Border Grid.Column="2"
+                                                    Background="#1F2D8CFF"
+                                                    BorderBrush="#4D2D8CFF"
+                                                    BorderThickness="1"
+                                                    CornerRadius="999"
+                                                    Padding="8 3"
+                                                    VerticalAlignment="Top"
+                                                    IsVisible="{Binding HasPopularityBadge}">
+                                                <TextBlock Text="{Binding PopularityBadge}"
+                                                           FontSize="11"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#FF80C8FF" />
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="SurfaceCard subtle" Grid.Row="1">
+                    <Grid RowDefinitions="Auto,*">
+                        <TextBlock Text="全部游戏"
+                                   Margin="0,0,0,12"
+                                   Classes="SectionTitle" />
+                        <ListBox Grid.Row="1"
+                                 ItemsSource="{Binding AllGames}"
+                                 SelectedItem="{Binding SelectedGame}"
+                                 BorderThickness="0"
+                                 Background="Transparent">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="model:GameInfo">
+                                    <Border Classes="ListItemCard"
+                                            Margin="0 0 0 10">
+                                        <Grid ColumnDefinitions="56,*,Auto"
+                                              ColumnSpacing="12">
+                                            <Border Width="56"
+                                                    Height="56"
+                                                    CornerRadius="14"
+                                                    ClipToBounds="True"
+                                                    Background="{DynamicResource ControlFillColorTertiaryBrush}">
+                                                <Image Source="{Binding DisplayIcon}"
+                                                       Stretch="UniformToFill" />
+                                            </Border>
+
+                                            <StackPanel Grid.Column="1"
+                                                        Spacing="6">
+                                                <TextBlock Text="{Binding Name}"
+                                                           FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding Category}"
+                                                           Classes="SupportingText" />
+                                                <StackPanel Orientation="Horizontal"
+                                                            Spacing="10">
+                                                    <TextBlock Text="{Binding OnlinePlayerCountText, StringFormat='在线 {0}'}"
+                                                               Classes="SupportingText" />
+                                                    <TextBlock Text="{Binding TotalPlayCountText, StringFormat='累计 {0}'}"
+                                                               Classes="SupportingText" />
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <Border Grid.Column="2"
+                                                    Background="#1F2D8CFF"
+                                                    BorderBrush="#4D2D8CFF"
+                                                    BorderThickness="1"
+                                                    CornerRadius="999"
+                                                    Padding="8 3"
+                                                    VerticalAlignment="Top"
+                                                    IsVisible="{Binding HasPopularityBadge}">
+                                                <TextBlock Text="{Binding PopularityBadge}"
+                                                           FontSize="11"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#FF80C8FF" />
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Column="1"
+                  RowDefinitions="*,Auto">
+                <TransitioningContentControl Name="GameDetailsTransitionHost"
+                                             Content="{Binding SelectedGame}">
+                    <TransitioningContentControl.PageTransition>
+                        <CrossFade Duration="0:0:0.25" />
+                    </TransitioningContentControl.PageTransition>
+                    <TransitioningContentControl.ContentTemplate>
+                        <DataTemplate x:DataType="model:GameInfo">
+                            <Border Classes="SurfaceCard">
+                                <Grid RowDefinitions="280,Auto,Auto,*"
+                                      RowSpacing="18">
+                                    <Border CornerRadius="16"
+                                            ClipToBounds="True"
+                                            Background="{DynamicResource ControlFillColorTertiaryBrush}">
+                                        <Image Source="{Binding CoverImage}"
+                                               Stretch="UniformToFill" />
+                                    </Border>
+
+                                     <StackPanel Grid.Row="1"
+                                                 Spacing="10">
+                                         <TextBlock Text="{Binding Name}"
+                                                    Theme="{StaticResource TitleTextBlockStyle}"
+                                                    FontSize="28" />
+                                         <TextBlock Text="{Binding Category}"
+                                                    Classes="PageEyebrow" />
+                                         <WrapPanel Orientation="Horizontal"
+                                                    Margin="0 0 0 2">
+                                             <Border Background="#1F2D8CFF"
+                                                     BorderBrush="#4D2D8CFF"
+                                                     BorderThickness="1"
+                                                     CornerRadius="999"
+                                                     Padding="10 4"
+                                                     Margin="0 0 10 10"
+                                                     IsVisible="{Binding HasPopularityBadge}">
+                                                 <TextBlock Text="{Binding PopularityBadge}"
+                                                            FontSize="12"
+                                                            FontWeight="SemiBold"
+                                                            Foreground="#FF80C8FF" />
+                                             </Border>
+                                             <Border Background="{DynamicResource ControlFillColorTertiaryBrush}"
+                                                     CornerRadius="999"
+                                                     Padding="10 4"
+                                                     Margin="0 0 10 10">
+                                                 <TextBlock Text="{Binding OnlinePlayerCountText, StringFormat='在线人数 {0}'}"
+                                                            FontSize="12"
+                                                            FontWeight="SemiBold" />
+                                             </Border>
+                                             <Border Background="{DynamicResource ControlFillColorTertiaryBrush}"
+                                                     CornerRadius="999"
+                                                     Padding="10 4"
+                                                     Margin="0 0 10 10">
+                                                 <TextBlock Text="{Binding TotalPlayCountText, StringFormat='累计游玩 {0}'}"
+                                                            FontSize="12"
+                                                            FontWeight="SemiBold" />
+                                             </Border>
+                                         </WrapPanel>
+                                         <TextBlock Text="{Binding Description}"
+                                                    Classes="SupportingText" />
+                                     </StackPanel>
+
+                                    <Grid Grid.Row="2"
+                                          ColumnDefinitions="*,*"
+                                          ColumnSpacing="16">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Text="开发者"
+                                                       Classes="PageEyebrow" />
+                                            <TextBlock Text="{Binding Developer}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1"
+                                                    Spacing="4">
+                                            <TextBlock Text="发行商"
+                                                       Classes="PageEyebrow" />
+                                            <TextBlock Text="{Binding Publisher}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="0"
+                                                    Margin="0 58 0 0"
+                                                    Spacing="4">
+                                            <TextBlock Text="发行日期"
+                                                       Classes="PageEyebrow" />
+                                            <TextBlock Text="{Binding ReleaseDate, StringFormat='{}{0:yyyy-MM-dd}'}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1"
+                                                    Margin="0 58 0 0"
+                                                    Spacing="4">
+                                            <TextBlock Text="当前版本"
+                                                       Classes="PageEyebrow" />
+                                            <TextBlock Text="{Binding Version}" />
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <StackPanel Grid.Row="3"
+                                                Spacing="16">
+                                        <StackPanel Orientation="Horizontal"
+                                                    Spacing="10">
+                                            <Button Content="安装"
+                                                    Classes="PrimaryAction"
+                                                    IsEnabled="{Binding CanInstall}"
+                                                    Command="{Binding $parent[UserControl].DataContext.InstallGameCommand}"
+                                                    CommandParameter="{Binding}" />
+                                            <Button Content="启动"
+                                                    Classes="QuietAction"
+                                                    IsEnabled="{Binding CanStart}"
+                                                    Command="{Binding $parent[UserControl].DataContext.StartGameCommand}"
+                                                    CommandParameter="{Binding}" />
+                                            <!-- "更新" 按钮右上角红点：有 HasPendingUpdate 时显示 -->
+                                            <Panel>
+                                                <Button Content="更新"
+                                                        Classes="QuietAction"
+                                                        IsEnabled="{Binding CanUpdate}"
+                                                        Command="{Binding $parent[UserControl].DataContext.UpdateGameCommand}"
+                                                        CommandParameter="{Binding}" />
+                                                <Border Width="10" Height="10"
+                                                        CornerRadius="5"
+                                                        Background="Red"
+                                                        HorizontalAlignment="Right"
+                                                        VerticalAlignment="Top"
+                                                        Margin="0 -2 -2 0"
+                                                        IsHitTestVisible="False"
+                                                        IsVisible="{Binding HasPendingUpdate}" />
+                                            </Panel>
+                                            <Button Content="卸载"
+                                                    Classes="QuietAction"
+                                                    IsEnabled="{Binding CanUninstall}"
+                                                    Command="{Binding $parent[UserControl].DataContext.UninstallGameCommand}"
+                                                    CommandParameter="{Binding}" />
+                                            <!-- 状态 chip：展示当前 GameLifecycleState -->
+                                            <Panel VerticalAlignment="Center" Margin="4 0 0 0">
+                                                <Border Background="{DynamicResource AccentFillColorDefaultBrush}"
+                                                        Opacity="0.15"
+                                                        CornerRadius="12" />
+                                                <TextBlock Text="{Binding State}"
+                                                           Margin="12 4"
+                                                           FontSize="12"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource AccentFillColorDefaultBrush}"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center" />
+                                            </Panel>
+                                        </StackPanel>
+
+                                        <Border Background="#33E53935"
+                                                BorderBrush="#66E53935"
+                                                BorderThickness="1"
+                                                CornerRadius="12"
+                                                Padding="12 10"
+                                                IsVisible="{Binding HasLastOperationError}">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Text="最近一次安装失败"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#FFB00020" />
+                                                <TextBlock Text="{Binding LastOperationError}"
+                                                           TextWrapping="Wrap"
+                                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                            </StackPanel>
+                                        </Border>
+
+                                         <StackPanel Spacing="12">
+                                             <TextBlock Text="游戏截图"
+                                                       Classes="SectionTitle" />
+                                            <ItemsControl ItemsSource="{Binding Screenshots}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <WrapPanel />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Classes="ListItemCard"
+                                                                Margin="0 0 12 12"
+                                                                Padding="0"
+                                                                Width="220"
+                                                                Height="124"
+                                                                ClipToBounds="True">
+                                                            <Image Source="{Binding}"
+                                                                   Stretch="UniformToFill" />
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </TransitioningContentControl.ContentTemplate>
+                </TransitioningContentControl>
+
+                <Border Grid.Row="0"
+                        Background="#66000000"
+                        IsVisible="{Binding IsLoading}"
+                        CornerRadius="16">
+                    <StackPanel HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Spacing="8">
+                        <ProgressBar IsIndeterminate="True"
+                                     Width="220" />
+                        <TextBlock Text="{Binding LoadingMessage}"
+                                   FontWeight="SemiBold" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </controls:GalleryPage>
+</UserControl>

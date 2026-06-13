@@ -26,7 +26,11 @@ public interface IMessageHandler
     /// </summary>
     ServiceType ServiceType { get; }
     /// <summary>
-    /// 验证消息和路由确认
+    /// 静默检查处理器是否能处理该消息（不输出日志，用于路由分发）
+    /// </summary>
+    bool CanHandle(HorizonMessagePacket message);
+    /// <summary>
+    /// 验证消息（会输出日志，仅对已匹配的处理器调用）
     /// </summary>
     /// <param name="message"></param>
     /// <returns></returns>
@@ -75,47 +79,104 @@ public abstract class MessageHandlerBase : IMessageHandler
         try
         {
             (bool IsSuccess, HorizonMessagePacket tem) = await RouteHandlerAsync(message);
-            if ( tem == null) return (IsSuccess, null);//无需响应客户端的请求
-            tem.Header.GameId = message.Header.GameId;
-            tem.Header.ZoneId = message.Header.ZoneId;
-            tem.Header.ServerId = message.Header.ServerId;
-            var buff = _adapter.PackMessage(tem.Body, tem.Header.MessageType);
-            //HorizonMessageInfo horizonMessageInfo = new HorizonMessageInfo
-            //{
-            //    Packet = tem,
-            //    Body = buff,
-            //    BodyLength = buff.Length,
-            //};
+            if (tem == null)
+            {
+                return (IsSuccess, null);
+            }
+
+            PrepareResponsePacket(tem, message);
+            var buff = _adapter.PackPacket(tem);
             await client.SendAsync(buff);
             return (IsSuccess, tem.Body);
         }
         catch (Exception ex)
         {
-            return (false, null);
+            Logger.LogError(ex,
+                "处理消息失败。ServiceType={ServiceType}, MessageType={MessageType}, MessageId={MessageId}",
+                ServiceType,
+                message.Header.MessageType,
+                message.Header.MessageId);
+
+            try
+            {
+                var errorPacket = CreateUnhandledErrorResponse(message, ex);
+                var errorBuffer = _adapter.PackPacket(errorPacket);
+                await client.SendAsync(errorBuffer);
+                return (false, errorPacket.Body);
+            }
+            catch (Exception responseEx)
+            {
+                Logger.LogError(responseEx,
+                    "发送异常回退响应失败。ServiceType={ServiceType}, MessageType={MessageType}, MessageId={MessageId}",
+                    ServiceType,
+                    message.Header.MessageType,
+                    message.Header.MessageId);
+                return (false, null);
+            }
         }
+    }
+
+    private static void PrepareResponsePacket(HorizonMessagePacket responsePacket, HorizonMessagePacket request)
+    {
+        responsePacket.Header.GameId = request.Header.GameId;
+        responsePacket.Header.ZoneId = request.Header.ZoneId;
+        responsePacket.Header.ServerId = request.Header.ServerId;
+        responsePacket.Header.UserId = request.Header.UserId;
+        responsePacket.Header.AuthToken = request.Header.AuthToken;
+        responsePacket.Header.MachineId = request.Header.MachineId;
+        responsePacket.Header.IsResponse = true;
+        responsePacket.Header.ResponseToMessageId = request.Header.MessageId;
+        responsePacket.Header.RequireResponse = false;
+    }
+
+    private HorizonMessagePacket CreateUnhandledErrorResponse(HorizonMessagePacket request, Exception ex)
+    {
+        var errorResponse = new ErrorMessage
+        {
+            ErrorCode = 500,
+            Message = "服务器处理请求时发生异常",
+            Details = ex.Message,
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            RelatedMessageId = request.Header.MessageId,
+            ShouldRetry = false,
+            RetryCount = 0,
+        };
+
+        var errorPacket = CreateHorizonMessage(errorResponse);
+        PrepareResponsePacket(errorPacket, request);
+        return errorPacket;
     }
 
     public abstract Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> RouteHandlerAsync(HorizonMessagePacket message);
     /// <summary>
-    /// 验证消息
+    /// 静默检查处理器是否能处理该消息（不输出日志，用于路由分发）
+    /// </summary>
+    public virtual bool CanHandle(HorizonMessagePacket message)
+    {
+        return message != null
+            && MessageTypes.Contains(message.Header.MessageType)
+            && message.ServiceType == ServiceType;
+    }
+    /// <summary>
+    /// 验证消息（会输出日志，仅对已匹配的处理器调用）
     /// </summary>
     public virtual bool ValidateMessage(HorizonMessagePacket message)
     {
         if (message == null)
         {
-            Logger.LogError("Message is null");
+            Logger.LogError("消息对象为空");
             return false;
         }
 
         if (!MessageTypes.Contains(message.Header.MessageType))
         {
-            Logger.LogError($"Invalid message type. Expected: [{string.Join(", ", MessageTypes)}], Actual: {message.Header.MessageType}");
+            Logger.LogError($"消息类型无效。期望: [{string.Join(", ", MessageTypes)}], 实际: {message.Header.MessageType}");
             return false;
         }
 
         if (message.ServiceType != ServiceType)
         {
-            Logger.LogError($"Invalid service type. Expected: {ServiceType}, Actual: {message.ServiceType}");
+            Logger.LogError($"服务类型无效。期望: {ServiceType}, 实际: {message.ServiceType}");
             return false;
         }
 
@@ -139,11 +200,12 @@ public abstract class MessageHandlerBase : IMessageHandler
         var header = new MessageHeader
         {
             MessageType = ((INetworkMessage)message).Type,
-            IsResponse = false, // 默认不是响应消息
-            Timestamp = DateTime.UtcNow.Ticks,
-            GameId = 1,    // 设置默认GameId
-            ZoneId = 1,    // 设置默认ZoneId
-            ServerId = 1,  // 设置默认ServerId
+            ServiceType = ((INetworkMessage)message).ServiceType,
+            IsResponse = false,
+            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            GameId = 1,
+            ZoneId = 1,
+            ServerId = 1,
         };
 
         HorizonMessagePacket messagePacket = new HorizonMessagePacket

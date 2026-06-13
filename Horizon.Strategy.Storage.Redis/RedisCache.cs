@@ -5,6 +5,7 @@ using Horizon.Core.Abstract;
 using StackExchange.Redis;
 using System.Linq;
 using Newtonsoft.Json;
+using Microsoft.Extensions.Logging;
 
 namespace Horizon.Strategy.Storage.Redis
 {
@@ -12,16 +13,18 @@ namespace Horizon.Strategy.Storage.Redis
     {
         private readonly RedisConnection _redisConnection;
         private readonly int _defaultDb;
+        private readonly ILogger<RedisCache>? _logger;
 
         public bool IsClusterOpen { get; set; }
         public int TimeOut { get; set; }
 
-        public RedisCache(string connectionString, int db = -1)
+        public RedisCache(string connectionString, int db = -1, ILogger<RedisCache>? logger = null)
         {
             try
             {
                 _redisConnection = new RedisConnection(connectionString);
                 _defaultDb = db;
+                _logger = logger;
             }
             catch (Exception ex)
             {
@@ -53,8 +56,20 @@ namespace Horizon.Strategy.Storage.Redis
 
             var type = typeof(T);
 
+            // string 特殊处理：Redis 可能返回 byte[]，需要显式转换
+            if (type == typeof(string))
+            {
+                return (T)(object)value.ToString();
+            }
+
+            // byte[] 特殊处理
+            if (type == typeof(byte[]))
+            {
+                return (T)(object)(byte[])value;
+            }
+
             // 基础类型直接使用 Box
-            if (type.IsPrimitive || type == typeof(string) || type == typeof(byte[]))
+            if (type.IsPrimitive)
             {
                 return (T)value.Box();
             }
@@ -118,23 +133,23 @@ namespace Horizon.Strategy.Storage.Redis
         public async Task<bool> SetAsync(string key, object value, TimeSpan? expiry = null)
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
-            var expiration = expiry.HasValue ? (Expiration?)expiry.Value : null;
-            return await database.StringSetAsync(key, RedisValue.Unbox(value), expiration.Value);
+            var expiration = expiry.HasValue ? (Expiration)expiry.Value : default;
+            return await database.StringSetAsync(key, RedisValue.Unbox(value), expiration);
         }
 
         public async Task<bool> SetAllAsync(IDictionary<string, object> keyValues, TimeSpan? expiry = null)
         {
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
             var batch = database.CreateBatch();
-            var expiration = expiry.HasValue ? (Expiration?)expiry.Value : null;
+            var expiration = expiry.HasValue ? (Expiration)expiry.Value : default;
 
             foreach (var kv in keyValues)
             {
-                batch.StringSetAsync(kv.Key, RedisValue.Unbox(kv.Value), expiration.Value);
+                _ = batch.StringSetAsync(kv.Key, RedisValue.Unbox(kv.Value), expiration);
             }
 
             batch.Execute();
-            return await Task.FromResult(true);
+            return true;
         }
 
         public async Task<T> GetAsync<T>(string key)
@@ -145,27 +160,25 @@ namespace Horizon.Strategy.Storage.Redis
                 var value = await database.StringGetAsync(key);
                 return DeserializeValue<T>(value);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
+                _logger?.LogError(ex, "Redis GetAsync failed for key: {Key}", key);
                 return default;
-            }
-            finally
-            {
-
             }
         }
 
         public async Task<Dictionary<string, T>> GetAllAsync<T>(IEnumerable<string> keys)
         {
+            var keyList = keys.ToList();
             var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
-            var values = await database.StringGetAsync(keys.Select(k => (RedisKey)k).ToArray());
+            var values = await database.StringGetAsync(keyList.Select(k => (RedisKey)k).ToArray());
 
-            var result = new Dictionary<string, T>();
-            for (int i = 0; i < keys.Count(); i++)
+            var result = new Dictionary<string, T>(keyList.Count);
+            for (int i = 0; i < keyList.Count; i++)
             {
                 if (values[i].HasValue)
                 {
-                    result.Add(keys.ElementAt(i), DeserializeValue<T>(values[i]));
+                    result.Add(keyList[i], DeserializeValue<T>(values[i]));
                 }
             }
             return result;

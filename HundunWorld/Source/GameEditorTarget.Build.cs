@@ -9,6 +9,5 @@ public class GameEditorTarget : GameProjectEditorTarget
 
         // Reference the modules for editor
         Modules.Add("Game");
-        Modules.Add("CineblendEditor");
             }
 }

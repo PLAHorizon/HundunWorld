@@ -22,7 +22,7 @@ namespace Horizon.Share.Dtos.User
         /// <summary>
         /// 微信小程序密钥(前端不用传)
         /// </summary>
-        [Id(9)] public string AppSecret { get; set; }
+        [Id(9)] public string? AppSecret { get; set; }
 
         /// <summary>
         /// 微信小程序请求码

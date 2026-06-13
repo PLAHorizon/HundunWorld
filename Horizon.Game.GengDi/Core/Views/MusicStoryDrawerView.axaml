@@ -1,0 +1,142 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             xmlns:models="using:Horizon.Game.GengDi.Models"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:views="using:Horizon.Game.GengDi.Core.Views"
+             x:Class="Horizon.Game.GengDi.Core.Views.MusicStoryDrawerView"
+             x:DataType="vm:MusicStoryViewModel">
+
+    <Border Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+            BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+            BorderThickness="1 0 0 0"
+            Width="420" MaxWidth="500"
+            HorizontalAlignment="Right">
+
+        <Grid RowDefinitions="Auto,*,Auto">
+            <Border Grid.Row="0" Padding="20 16"
+                    BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                    BorderThickness="0 0 0 1">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="音乐故事" FontSize="18" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                        <TextBlock FontSize="12"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                   TextTrimming="CharacterEllipsis" MaxWidth="300">
+                            <Run Text="{Binding SongTitle}" />
+                            <Run Text=" - " />
+                            <Run Text="{Binding ArtistName}" />
+                        </TextBlock>
+                    </StackPanel>
+                    <Button Grid.Column="1" Classes="QuietAction" Padding="8"
+                            Command="{Binding CloseCommand}" ToolTip.Tip="关闭">
+                        <ui:SymbolIcon Symbol="Cancel" FontSize="16" />
+                    </Button>
+                </Grid>
+            </Border>
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Spacing="0" Margin="0" IsVisible="{Binding !IsLoading}">
+
+                    <StackPanel IsVisible="{Binding HasStory}" Spacing="0">
+                        <Border Padding="20 16"
+                                BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                                BorderThickness="0 0 0 1">
+                            <TextBlock Text="{Binding Summary}" FontSize="14"
+                                       TextWrapping="Wrap" LineHeight="22"
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                        </Border>
+
+                        <ItemsControl ItemsSource="{Binding Sections}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:MusicStorySection">
+                                    <Border Padding="20 16"
+                                            BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                                            BorderThickness="0 0 0 1">
+
+                                        <Panel>
+                                            <StackPanel Spacing="12" IsVisible="{Binding Type, Converter={x:Static views:StorySectionTypeConverter.Instance}, ConverterParameter=header}">
+                                                <TextBlock Text="{Binding Content}" FontSize="20" FontWeight="Bold"
+                                                           TextWrapping="Wrap"
+                                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                <Border IsVisible="{Binding ImageUrl, Converter={x:Static views:StringNotEmptyConverter.Instance}}"
+                                                        CornerRadius="8" ClipToBounds="True" MaxHeight="200">
+                                                    <Image Source="{Binding ImageUrl}" Stretch="UniformToFill"
+                                                           HorizontalAlignment="Center" />
+                                                </Border>
+                                                <TextBlock IsVisible="{Binding ImageCaption, Converter={x:Static views:StringNotEmptyConverter.Instance}}"
+                                                           Text="{Binding ImageCaption}" FontSize="11"
+                                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                           HorizontalAlignment="Center" />
+                                            </StackPanel>
+
+                                            <StackPanel Spacing="8" IsVisible="{Binding Type, Converter={x:Static views:StorySectionTypeConverter.Instance}, ConverterParameter=info}">
+                                                <TextBlock Text="歌曲信息" FontSize="13" FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                <TextBlock Text="{Binding Content}" FontSize="13"
+                                                           TextWrapping="Wrap" LineHeight="20"
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                            </StackPanel>
+
+                                            <StackPanel Spacing="8" IsVisible="{Binding Type, Converter={x:Static views:StorySectionTypeConverter.Instance}, ConverterParameter=text}">
+                                                <TextBlock Text="{Binding Content}" FontSize="14"
+                                                           TextWrapping="Wrap" LineHeight="22"
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                            </StackPanel>
+
+                                            <StackPanel Spacing="8" IsVisible="{Binding Type, Converter={x:Static views:StorySectionTypeConverter.Instance}, ConverterParameter=quote}"
+                                                        Margin="12 0 0 0">
+                                                <Border Width="3" Height="40" CornerRadius="1"
+                                                        Background="{DynamicResource BattleNetPrimaryBrush}"
+                                                        HorizontalAlignment="Left" />
+                                                <TextBlock Text="{Binding Quote}" FontSize="15" FontStyle="Italic"
+                                                           TextWrapping="Wrap" LineHeight="24"
+                                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                                <TextBlock Text="{Binding QuoteAuthor}" FontSize="12"
+                                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                           IsVisible="{Binding QuoteAuthor, Converter={x:Static views:StringNotEmptyConverter.Instance}}" />
+                                            </StackPanel>
+
+                                            <StackPanel Spacing="8" IsVisible="{Binding Type, Converter={x:Static views:StorySectionTypeConverter.Instance}, ConverterParameter=image}">
+                                                <Border CornerRadius="8" ClipToBounds="True" MaxHeight="280">
+                                                    <Image Source="{Binding ImageUrl}" Stretch="UniformToFill"
+                                                           HorizontalAlignment="Center" />
+                                                </Border>
+                                                <TextBlock IsVisible="{Binding ImageCaption, Converter={x:Static views:StringNotEmptyConverter.Instance}}"
+                                                           Text="{Binding ImageCaption}" FontSize="11"
+                                                           Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                           HorizontalAlignment="Center" />
+                                            </StackPanel>
+                                        </Panel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <StackPanel IsVisible="{Binding !HasStory}" Margin="20 40" Spacing="12">
+                        <TextBlock Text="📖" FontSize="40" HorizontalAlignment="Center" />
+                        <TextBlock Text="暂无音乐故事" FontSize="16"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                        <TextBlock Text="这首歌曲的故事还在整理中，敬请期待。"
+                                   FontSize="13" HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <StackPanel Grid.Row="1" IsVisible="{Binding IsLoading}"
+                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Spacing="12" Margin="0 60">
+                <ProgressBar IsIndeterminate="True" Width="200" />
+                <TextBlock Text="正在加载音乐故事..." FontSize="13"
+                           HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</UserControl>

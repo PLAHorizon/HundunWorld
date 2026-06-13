@@ -23,7 +23,7 @@ namespace Horizon.Game.Core
         {
             using (_logger.BeginScope(context ?? new Dictionary<string, object>()))
             {
-                _logger.LogInformation($"Tracing message: {messageId}, Content: {messageContent}");
+                _logger.LogInformation($"追踪消息: {messageId}，内容: {messageContent}");
             }
         }
 
@@ -34,7 +34,7 @@ namespace Horizon.Game.Core
         {
             using (_logger.BeginScope(context ?? new Dictionary<string, object>()))
             {
-                _logger.LogError(exception, $"Error tracing message: {messageId}");
+                _logger.LogError(exception, $"追踪消息时发生错误: {messageId}");
             }
         }
     }

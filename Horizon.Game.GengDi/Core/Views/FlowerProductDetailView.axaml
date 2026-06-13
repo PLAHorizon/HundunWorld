@@ -1,0 +1,229 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             x:Class="Horizon.Game.GengDi.Core.Views.FlowerProductDetailView"
+             x:DataType="vm:FlowerProductDetailViewModel">
+
+    <ScrollViewer>
+        <StackPanel Margin="24 16" Spacing="16" MaxWidth="1200" HorizontalAlignment="Center">
+
+            <Border Classes="SurfaceCard" Padding="20" CornerRadius="12" IsVisible="{Binding IsLoading}">
+                <TextBlock Text="加载中..." HorizontalAlignment="Center" Foreground="#888888" />
+            </Border>
+
+            <Border Classes="SurfaceCard" Padding="20" CornerRadius="12" IsVisible="{Binding !HasProduct}">
+                <StackPanel HorizontalAlignment="Center" Spacing="8">
+                    <TextBlock Text="商品不存在或已下架" HorizontalAlignment="Center" Foreground="#888888" />
+                </StackPanel>
+            </Border>
+
+            <Border Classes="SurfaceCard" Padding="24" CornerRadius="12" IsVisible="{Binding HasProduct}">
+                <StackPanel Spacing="20">
+
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <TextBlock Text="{Binding ProductName}" FontSize="20" FontWeight="Bold" VerticalAlignment="Center" />
+                        <ToggleButton Grid.Column="1" Content="分屏对比"
+                                      IsChecked="{Binding IsCompareMode}"
+                                      Padding="16 8" CornerRadius="10" FontSize="12" />
+                    </Grid>
+
+                    <Border Classes="SurfaceCard" Padding="24" CornerRadius="12" IsVisible="{Binding ShowSingleView}">
+                        <StackPanel Spacing="20">
+
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="20">
+                                <Border Width="160" Height="160" CornerRadius="12" Background="#25FFFFFF">
+                                    <TextBlock Text="🌸" FontSize="64" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8">
+                                    <TextBlock Text="{Binding ProductName}" FontSize="20" FontWeight="Bold" />
+                                    <TextBlock Text="{Binding MerchantName}" FontSize="12" Foreground="#888888" />
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <TextBlock Text="{Binding PriceDisplay}" FontSize="24" FontWeight="Bold" Foreground="#FF6B6B" />
+                                        <TextBlock Text="{Binding MarketPriceDisplay}" FontSize="14" Foreground="#999999"
+                                                   IsVisible="{Binding HasMarketPrice}"
+                                                   TextDecorations="Strikethrough" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <TextBlock FontSize="12" Foreground="#888888">
+                                        <TextBlock.Text>
+                                            <MultiBinding StringFormat="库存: {0} {1}">
+                                                <Binding Path="Stock" />
+                                                <Binding Path="Unit" />
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Grid>
+
+                            <Border Height="1" Background="#20FFFFFF" />
+
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="商品描述" FontSize="14" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding Description}" FontSize="13" Foreground="#CCCCCC"
+                                           TextWrapping="Wrap" IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                <TextBlock Text="暂无描述" FontSize="13" Foreground="#666666"
+                                           IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
+                            </StackPanel>
+
+                            <Border Height="1" Background="#20FFFFFF" />
+
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="阶梯价格" FontSize="14" FontWeight="SemiBold"
+                                           IsVisible="{Binding HasLadderPrices}" />
+                                <ItemsControl ItemsSource="{Binding LadderPrices}" IsVisible="{Binding HasLadderPrices}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#15FFFFFF" CornerRadius="6" Padding="10 6" Margin="0 2">
+                                                <TextBlock Text="{Binding Display}" FontSize="12" Foreground="#C8E6C9" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <Border Height="1" Background="#20FFFFFF" />
+
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="推荐商品" FontSize="14" FontWeight="SemiBold"
+                                           IsVisible="{Binding RelatedProducts.Count}" />
+                                <ItemsControl ItemsSource="{Binding RelatedProducts}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel Orientation="Horizontal" ItemWidth="180" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#15FFFFFF" CornerRadius="8" Padding="12" Margin="0 0 8 8">
+                                                <StackPanel Spacing="4">
+                                                    <TextBlock Text="{Binding ProductName}" FontSize="12" />
+                                                    <TextBlock Text="{Binding Price, StringFormat='¥{0:F2}'}" FontSize="11" Foreground="#FF6B6B" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <Border Height="1" Background="#20FFFFFF" />
+
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock Text="数量" FontSize="13" VerticalAlignment="Center" />
+                                    <Button Content="-" Padding="8 4" CornerRadius="6" FontSize="14"
+                                            Click="OnDecreaseQuantity" />
+                                    <TextBlock Text="{Binding SelectedQuantity}" FontSize="14" Width="32"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <Button Content="+" Padding="8 4" CornerRadius="6" FontSize="14"
+                                            Click="OnIncreaseQuantity" />
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="加入购物车" Classes="QuietAction" Padding="20 10"
+                                        CornerRadius="10" FontSize="13" Click="OnAddToCart" />
+                                <Button Grid.Column="2" Content="立即购买" Classes="PrimaryAction" Padding="20 10"
+                                        CornerRadius="10" FontSize="13" Click="OnBuyNow" />
+                            </Grid>
+
+                        </StackPanel>
+                    </Border>
+
+                    <Border Classes="SurfaceCard" Padding="24" CornerRadius="12" IsVisible="{Binding ShowCompareView}">
+                        <StackPanel Spacing="16">
+                            <ComboBox ItemsSource="{Binding CompareProductOptions}"
+                                      SelectedIndex="-1"
+                                      PlaceholderText="选择对比商品..."
+                                      HorizontalAlignment="Stretch"
+                                      SelectionChanged="OnCompareProductSelected">
+                                <ComboBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding ProductName}" FontSize="13" />
+                                    </DataTemplate>
+                                </ComboBox.ItemTemplate>
+                            </ComboBox>
+
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                                <Border Classes="SurfaceCard" Padding="16" CornerRadius="10">
+                                    <StackPanel Spacing="12">
+                                        <TextBlock Text="当前商品" FontSize="13" FontWeight="SemiBold" Foreground="#4CAF50" />
+                                        <Border Width="120" Height="120" CornerRadius="10" Background="#25FFFFFF">
+                                            <TextBlock Text="🌸" FontSize="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Text="{Binding ProductName}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                        <TextBlock Text="{Binding MerchantName}" FontSize="11" Foreground="#888888" />
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="{Binding PriceDisplay}" FontSize="20" FontWeight="Bold" Foreground="#FF6B6B" />
+                                            <TextBlock Text="{Binding MarketPriceDisplay}" FontSize="12" Foreground="#999999"
+                                                       IsVisible="{Binding HasMarketPrice}"
+                                                       TextDecorations="Strikethrough" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                        <TextBlock FontSize="11" Foreground="#888888">
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="库存: {0} {1}">
+                                                    <Binding Path="Stock" />
+                                                    <Binding Path="Unit" />
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding Description}" FontSize="12" Foreground="#CCCCCC"
+                                                   TextWrapping="Wrap" MaxLines="4"
+                                                   IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Grid.Column="1" Classes="SurfaceCard" Padding="16" CornerRadius="10">
+                                    <StackPanel Spacing="12">
+                                        <TextBlock Text="对比商品" FontSize="13" FontWeight="SemiBold" Foreground="#2196F3" />
+                                        <Border Width="120" Height="120" CornerRadius="10" Background="#25FFFFFF">
+                                            <TextBlock Text="🌸" FontSize="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <TextBlock Text="{Binding CompareProduct.ProductName}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"
+                                                   IsVisible="{Binding CompareProduct, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                        <TextBlock Text="请选择对比商品" FontSize="14" Foreground="#666666"
+                                                   IsVisible="{Binding CompareProduct, Converter={x:Static ObjectConverters.IsNull}}" />
+                                        <TextBlock Text="{Binding CompareProduct.MerchantName}" FontSize="11" Foreground="#888888"
+                                                   IsVisible="{Binding CompareProduct, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                        <StackPanel Orientation="Horizontal" Spacing="8"
+                                                    IsVisible="{Binding CompareProduct, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                            <TextBlock Text="{Binding CompareProduct.PriceDisplay}" FontSize="20" FontWeight="Bold" Foreground="#FF6B6B" />
+                                            <TextBlock Text="{Binding CompareProduct.MarketPriceDisplay}" FontSize="12" Foreground="#999999"
+                                                       IsVisible="{Binding CompareProduct.HasMarketPrice}"
+                                                       TextDecorations="Strikethrough" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                        <TextBlock FontSize="11" Foreground="#888888"
+                                                   IsVisible="{Binding CompareProduct, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="库存: {0} {1}">
+                                                    <Binding Path="CompareProduct.Stock" />
+                                                    <Binding Path="CompareProduct.Unit" />
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding CompareProduct.Description}" FontSize="12" Foreground="#CCCCCC"
+                                                   TextWrapping="Wrap" MaxLines="4"
+                                                   IsVisible="{Binding CompareProduct, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock Text="数量" FontSize="13" VerticalAlignment="Center" />
+                                    <Button Content="-" Padding="8 4" CornerRadius="6" FontSize="14"
+                                            Click="OnDecreaseQuantity" />
+                                    <TextBlock Text="{Binding SelectedQuantity}" FontSize="14" Width="32"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    <Button Content="+" Padding="8 4" CornerRadius="6" FontSize="14"
+                                            Click="OnIncreaseQuantity" />
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="加入购物车" Classes="QuietAction" Padding="20 10"
+                                        CornerRadius="10" FontSize="13" Click="OnAddToCart" />
+                                <Button Grid.Column="2" Content="立即购买" Classes="PrimaryAction" Padding="20 10"
+                                        CornerRadius="10" FontSize="13" Click="OnBuyNow" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,4 +1,4 @@
-﻿using Horizon.Core.Abstract;
+using Horizon.Core.Abstract;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -30,6 +30,10 @@ namespace Horizon.Core.Options
         /// 星光数据库
         /// </summary>
         public DatabaseInfo Xingguang { get; set; }
+        /// <summary>
+        /// 花卉数据库
+        /// </summary>
+        public DatabaseInfo Flower { get; set; }
     }
 
     /// <summary>

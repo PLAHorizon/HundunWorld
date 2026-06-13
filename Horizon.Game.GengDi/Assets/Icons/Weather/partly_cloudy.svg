@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <radialGradient id="pcsun" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#FFF9C4"/>
+      <stop offset="60%" style="stop-color:#FFD700"/>
+      <stop offset="100%" style="stop-color:#FFA500"/>
+    </radialGradient>
+    <linearGradient id="pcg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F5F5F5"/>
+      <stop offset="50%" style="stop-color:#E0E0E0"/>
+      <stop offset="100%" style="stop-color:#C0C0C0"/>
+    </linearGradient>
+  </defs>
+  <circle cx="35" cy="35" r="18" fill="url(#pcsun)">
+    <animate attributeName="r" values="18;19;18" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <g transform="translate(0,0)">
+    <animateTransform attributeName="transform" type="translate" values="0,0;2,0;0,0" dur="3s" repeatCount="indefinite"/>
+    <ellipse cx="62" cy="62" rx="22" ry="13" fill="url(#pcg)"/>
+    <ellipse cx="50" cy="52" rx="14" ry="10" fill="url(#pcg)"/>
+    <ellipse cx="74" cy="54" rx="12" ry="9" fill="url(#pcg)"/>
+    <ellipse cx="62" cy="58" rx="16" ry="8" fill="#D8D8D8" opacity="0.6"/>
+  </g>
+</svg>

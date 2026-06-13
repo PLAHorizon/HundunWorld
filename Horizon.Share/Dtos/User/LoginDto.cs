@@ -52,6 +52,11 @@ namespace Horizon.Share.Dtos.User
         /// 游戏上下文信息
         /// </summary>
         [Id(8)] public GameLoginContextDto? GameContext { get; set; }
+
+        /// <summary>
+        /// 客户端机器唯一标识符（由客户端通过 MachineIdentifier.GetMachineGuid() 获取后上传，用于令牌绑定）
+        /// </summary>
+        [Id(9)] public string? MachineId { get; set; }
     }
 
     /// <summary>

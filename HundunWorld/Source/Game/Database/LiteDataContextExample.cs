@@ -1,10 +1,10 @@
 using FlaxEngine;
-using Horizon.Game.Core.Database;
+using Game.Database;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Horizon.Game.Core.Database
+namespace Game.Database
 {
     /// <summary>
     /// LiteDataContext 使用示例

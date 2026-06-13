@@ -8,6 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="_build_validation\**" />
+    <EmbeddedResource Remove="_build_validation\**" />
+    <None Remove="_build_validation\**" />
+  </ItemGroup>
+
+  <ItemGroup>
 	  <PackageReference Include="Consul" Version="1.7.14.10" />
 	  <PackageReference Include="K4os.Compression.LZ4" Version="1.3.8" />
 	  <PackageReference Include="Microsoft.DependencyValidation.Analyzers" Version="0.11.0" />

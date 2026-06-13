@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using FlaxEngine;
-using Horizon.Game.Core.Database;
+using Game.Database;
 using Horizon.Game.Message.Network;
 using Horizon.Game.Message.Enums;
 using HundunWorld.Game.UI.Authentication;

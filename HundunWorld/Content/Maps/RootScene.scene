@@ -1,0 +1,97 @@
+{
+	"ID": "b3a1f0d24e5c6a8790d1e2f3a4b5c6d7",
+	"TypeName": "FlaxEngine.SceneAsset",
+	"EngineBuild": 6806,
+	"Data": [
+		{
+			"ID": "b3a1f0d24e5c6a8790d1e2f3a4b5c6d7",
+			"TypeName": "FlaxEngine.Scene",
+			"Name": "RootScene",
+			"LightmapSettings": {
+				"IndirectLightingIntensity": 1.0,
+				"GlobalObjectsScale": 1.0,
+				"ChartsPadding": 3,
+				"AtlasSize": 1024,
+				"BounceCount": 1,
+				"CompressLightmaps": true,
+				"UseGeometryWithNoMaterials": true,
+				"Quality": 10
+			}
+		},
+		{
+			"ID": "a1b2c3d44e5f6a7890123456789abcde",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "b3a1f0d24e5c6a8790d1e2f3a4b5c6d7",
+			"Name": "RootLifecycle"
+		},
+		{
+			"ID": "b2c3d4e54f6a7b890123456789abcdef",
+			"TypeName": "HundunWorld.Game.UI.UIStateManager",
+			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
+			"V": {}
+		},
+		{
+			"ID": "c3d4e5f56a7b8c90123456789abcdef0",
+			"TypeName": "HundunWorld.Game.InputManager",
+			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
+			"V": {}
+		},
+		{
+			"ID": "d4e5f6a67b8c9d0123456789abcdef01",
+			"TypeName": "HundunWorld.Game.InputConfigurationManager",
+			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
+			"V": {}
+		},
+		{
+			"ID": "e5f6a778c9d0e123456789abcdef0123",
+			"TypeName": "HundunWorld.Game.GameStartup",
+			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
+			"V": {
+				"LoginScene": "dc72848f4b0f90ee2df186a728f14858"
+			}
+		},
+		{
+			"ID": "f6a7b889d0e1f23456789abcdef01234",
+			"TypeName": "HundunWorld.Game.UI.GameSceneManager",
+			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
+			"V": {}
+		},
+		{
+			"ID": "a7b8c990e1f2a3456789abcdef012345",
+			"TypeName": "HundunWorld.Game.UI.GameMain.GameMainUI",
+			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
+			"V": {}
+		},
+		{
+			"ID": "b8c9d001f2a3b456789abcdef0123456",
+			"TypeName": "HundunWorld.Game.UI.Animation.UIAnimationManager",
+			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
+			"V": {}
+		},
+		{
+			"ID": "c9d0e112a3b4c56789abcdef01234567",
+			"TypeName": "HundunWorld.Game.UI.SceneTransitionEffect",
+			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
+			"V": {}
+		},
+		{
+			"ID": "d0e1f223b4c5d6789abcdef012345678",
+			"TypeName": "FlaxEngine.AudioListener",
+			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
+			"Name": "Audio Listener",
+			"Transform": {
+				"Translation": {
+					"X": 0.0,
+					"Y": 150.0,
+					"Z": -300.0
+				}
+			}
+		},
+		{
+			"ID": "e1f2a334c5d6e789abcdef0123456789",
+			"TypeName": "HundunWorld.Game.ECSUpdateDriver",
+			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
+			"V": {}
+		}
+	]
+}

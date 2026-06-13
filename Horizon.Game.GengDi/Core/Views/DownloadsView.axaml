@@ -1,0 +1,137 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             xmlns:models="using:Horizon.Game.GengDi.Models"
+             x:Class="Horizon.Game.GengDi.Core.Views.DownloadsView"
+             x:DataType="vm:DownloadsViewModel">
+    <controls:GalleryPage Title="下载管理"
+                          Subtitle="Horizon.Game.GengDi.Downloads"
+                          Description="将下载设置、活动任务和历史记录拆到清晰的卡片组中，减少旧页面里挤在同一列的粗糙信息块。"
+                          IconSource="{StaticResource DownloadsIcon}">
+        <Grid RowDefinitions="Auto,*"
+              RowSpacing="20">
+            <Border Classes="SurfaceCard">
+                <Grid ColumnDefinitions="Auto,120,Auto,120,*"
+                      ColumnSpacing="12"
+                                            RowDefinitions="Auto,Auto">
+                    <TextBlock Text="最大并发下载数"
+                               VerticalAlignment="Center" />
+                    <TextBox Grid.Column="1"
+                             Width="100"
+                             Text="{Binding MaxConcurrentDownloads}" />
+                    <TextBlock Grid.Column="2"
+                               Text="下载速度限制"
+                               VerticalAlignment="Center" />
+                    <TextBox Grid.Column="3"
+                             Width="100"
+                             Text="{Binding DownloadSpeedLimit}" />
+                    <Button Grid.Column="4"
+                            Content="检查更新"
+                            Classes="PrimaryAction"
+                            HorizontalAlignment="Right"
+                            Command="{Binding CheckForUpdatesCommand}" />
+
+                        <StackPanel Grid.Row="1"
+                            Grid.ColumnSpan="5"
+                            Margin="0 12 0 0"
+                            Spacing="4">
+                        <TextBlock Text="下载包保存目录"
+                               Classes="PageEyebrow" />
+                        <TextBlock Text="{Binding DownloadPackageDirectory}"
+                               TextWrapping="Wrap" />
+                        <TextBlock Text="并发数、限速和下载包保存目录都会跟随本地设置自动加载。"
+                               Classes="SupportingText" />
+                        </StackPanel>
+                </Grid>
+            </Border>
+
+            <Grid Grid.Row="1"
+                  ColumnDefinitions="*,*"
+                  ColumnSpacing="20">
+                <Border Classes="SurfaceCard">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="当前任务"
+                                   Classes="SectionTitle" />
+                        <ItemsControl ItemsSource="{Binding DownloadTasks}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:DownloadTask">
+                                    <Border Classes="ListItemCard"
+                                            Margin="0 0 0 12">
+                                        <StackPanel Spacing="10">
+                                            <Grid ColumnDefinitions="*,Auto,Auto"
+                                                  ColumnSpacing="12">
+                                                <TextBlock Text="{Binding GameName}"
+                                                           FontWeight="SemiBold" />
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding Status}"
+                                                           Classes="SupportingText" />
+                                                <TextBlock Grid.Column="2"
+                                                                                                                     Text="{Binding ProgressText}"
+                                                           Classes="SupportingText" />
+                                            </Grid>
+                                                                                        <ProgressBar Value="{Binding Progress}"
+                                                                                                                 IsIndeterminate="{Binding IsProgressIndeterminate}"
+                                                         Maximum="100" />
+                                            <Grid ColumnDefinitions="*,Auto,Auto,Auto"
+                                                  ColumnSpacing="10">
+                                                                                                <TextBlock Text="{Binding TransferStatusText}"
+                                                           Classes="SupportingText" />
+                                                <Button Grid.Column="1"
+                                                        Content="暂停"
+                                                        Classes="QuietAction"
+                                                        Command="{Binding $parent[ItemsControl].DataContext.PauseDownloadCommand}"
+                                                        CommandParameter="{Binding Id}" />
+                                                <Button Grid.Column="2"
+                                                        Content="继续"
+                                                        Classes="QuietAction"
+                                                        Command="{Binding $parent[ItemsControl].DataContext.ResumeDownloadCommand}"
+                                                        CommandParameter="{Binding Id}" />
+                                                <Button Grid.Column="3"
+                                                        Content="取消"
+                                                        Classes="QuietAction"
+                                                        Command="{Binding $parent[ItemsControl].DataContext.CancelDownloadCommand}"
+                                                        CommandParameter="{Binding Id}" />
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1"
+                        Classes="SurfaceCard subtle">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="历史记录"
+                                   Classes="SectionTitle" />
+                        <ItemsControl ItemsSource="{Binding CompletedTasks}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:DownloadTask">
+                                    <Border Classes="ListItemCard"
+                                            Margin="0 0 0 12">
+                                        <StackPanel Spacing="10">
+                                            <Grid ColumnDefinitions="*,Auto"
+                                                  ColumnSpacing="12">
+                                                <TextBlock Text="{Binding GameName}"
+                                                           FontWeight="SemiBold" />
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding Status}"
+                                                           Classes="SupportingText" />
+                                            </Grid>
+                                            <ProgressBar Value="{Binding Progress}"
+                                                         Maximum="100" />
+                                            <TextBlock Text="{Binding EndTime, StringFormat='完成于 {0:yyyy-MM-dd HH:mm}'}"
+                                                       Classes="SupportingText" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </controls:GalleryPage>
+</UserControl>

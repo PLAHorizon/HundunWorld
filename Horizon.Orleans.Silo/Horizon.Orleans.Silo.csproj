@@ -53,9 +53,12 @@
     <ProjectReference Include="..\Horizon.Core\Horizon.Core.csproj" />
     <ProjectReference Include="..\Horizon.Entities\Horizon.Entities.csproj" />
     <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
+    <ProjectReference Include="..\Horizon.IM.Message\Horizon.IM.Message.csproj" />
     <ProjectReference Include="..\Horizon.Orleans.Grains\Horizon.Orleans.Grains.csproj" />
     <ProjectReference Include="..\Horizon.Orleans.Interface\Horizon.Orleans.Interface.csproj" />
+    <ProjectReference Include="..\Horizon.Share\Horizon.Share.csproj" />
     <ProjectReference Include="..\Horizon.Strategy.Storage.Redis\Horizon.Strategy.Storage.Redis.csproj" />
+    <ProjectReference Include="..\Horizon.IoT.MQTT\Horizon.IoT.MQTT.csproj" />
   </ItemGroup>
 
   <ItemGroup>

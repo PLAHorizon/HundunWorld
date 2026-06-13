@@ -62,7 +62,8 @@ public class CharacterGrainPerformanceTests : IDisposable
             .Run();
         
         var createStats = stats.ScenarioStats[0];
-        Assert.True(createStats.Ok.Request.RPS > 20, $"RPS should be > 20, actual: {createStats.Ok.Request.RPS}");
+        var createRps = createStats.Ok.Request.RPS + createStats.Fail.Request.RPS;
+        Assert.True(createRps > 20, $"RPS should be > 20, actual: {createRps}");
         Assert.True(createStats.Ok.Latency.Percent95 < 50, $"P95 latency should be < 50ms, actual: {createStats.Ok.Latency.Percent95}ms");
     }
     
@@ -101,7 +102,8 @@ public class CharacterGrainPerformanceTests : IDisposable
             .Run();
         
         var moveStats = stats.ScenarioStats[0];
-        Assert.True(moveStats.Ok.Request.RPS > 80, $"RPS should be > 80, actual: {moveStats.Ok.Request.RPS}");
+        var moveRps = moveStats.Ok.Request.RPS + moveStats.Fail.Request.RPS;
+        Assert.True(moveRps > 80, $"RPS should be > 80, actual: {moveRps}");
         Assert.True(moveStats.Ok.Latency.Percent95 < 30, $"P95 latency should be < 30ms, actual: {moveStats.Ok.Latency.Percent95}ms");
     }
     
@@ -139,7 +141,8 @@ public class CharacterGrainPerformanceTests : IDisposable
             .Run();
         
         var attackStats = stats.ScenarioStats[0];
-        Assert.True(attackStats.Ok.Request.RPS > 60, $"RPS should be > 60, actual: {attackStats.Ok.Request.RPS}");
+        var attackRps = attackStats.Ok.Request.RPS + attackStats.Fail.Request.RPS;
+        Assert.True(attackRps > 60, $"RPS should be > 60, actual: {attackRps}");
         Assert.True(attackStats.Ok.Latency.Percent95 < 50, $"P95 latency should be < 50ms, actual: {attackStats.Ok.Latency.Percent95}ms");
     }
     

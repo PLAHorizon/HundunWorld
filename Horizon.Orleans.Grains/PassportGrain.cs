@@ -33,17 +33,17 @@ namespace Horizon.Orleans.Grains
     /// </summary>
     public class SessionInfo
     {
-        public string SessionId { get; set; }
+        public string? SessionId { get; set; }
         public Guid UserId { get; set; }
-        public string PassportId { get; set; }
+        public string? PassportId { get; set; }
         public long AppId { get; set; }
         public AppType AppType { get; set; }
         public DateTime CreateTime { get; set; }
         public DateTime LastActiveTime { get; set; }
         public bool IsActive { get; set; }
-        public string ClientIP { get; set; }
-        public string PlatformId { get; set; }
-        public string DeviceId { get; set; }
+        public string? ClientIP { get; set; }
+        public string? PlatformId { get; set; }
+        public string? DeviceId { get; set; }
     }
     public class PassportGrain : Grain, IPassportGrain
     {
@@ -119,7 +119,7 @@ namespace Horizon.Orleans.Grains
                 catch (Exception ex)
                 {
                     // 如果解码失败，认为是明文密码（向后兼容）
-                    _logger.LogDebug("密码未使用Base64编码，按明文处理: {PassportId}, Error: {Error}", 
+                    _logger.LogDebug("密码未使用Base64编码，按明文处理: {PassportId}, Error: {Error}",
                         loginDto.PassportId, ex.Message);
                     decodedPassword = loginDto.Password;
                 }
@@ -139,7 +139,7 @@ namespace Horizon.Orleans.Grains
                 {
                     // 向后兼容：使用旧的密码验证方法
                     _logger.LogInformation("使用旧密码系统验证: {PassportId}", loginDto.PassportId);
-                    
+
                     string oldEncryptedPassword = PassportHelper.SetPasportPassword(passport.Id, decodedPassword);
                     isPasswordValid = (passport.Password == oldEncryptedPassword);
                     needsPasswordUpgrade = isPasswordValid; // 标记需要升级
@@ -150,7 +150,7 @@ namespace Horizon.Orleans.Grains
                     _logger.LogWarning("密码验证失败: {PassportId}", loginDto.PassportId);
                     await RecordFailedLoginAttempt(loginDto.PassportId);
                     return null;
-                  
+
                 }
 
                 // 如果使用旧密码登录成功，立即升级到新的安全系统
@@ -160,11 +160,11 @@ namespace Horizon.Orleans.Grains
                     {
                         _logger.LogInformation("自动升级密码到安全哈希系统: {PassportId}", loginDto.PassportId);
                         var (newHash, newSalt) = SecurePasswordHasher.HashPassword(decodedPassword);
-                        
+
                         passport.Password = newHash;
                         passport.PasswordSalt = newSalt;
-                        passport.UpdateTime = DateTime.UtcNow;
-                        
+                        passport.UpdateTime = DateTime.Now;
+
                         await _dataContext.UpdateAsync(passport, passport.Id);
                         _logger.LogInformation("密码升级成功: {PassportId}", loginDto.PassportId);
                     }
@@ -206,7 +206,8 @@ namespace Horizon.Orleans.Grains
                     Email = user?.Email,
                     SessionToken = sessionToken,
                     UserId = (gameUser?.Id ?? 0),
-                    UserName = user?.NickName
+                    UserName = user?.NickName,
+                    PUId = user.Id
                 };
 
                 if (gameUser != null)
@@ -273,7 +274,7 @@ namespace Horizon.Orleans.Grains
 
                 // 1. 获取通行证
                 var passport = await _dataContext.QueryFirstOrDefaultAsync(
-                    m => m.Id == loginDto.PassportId && m.IsValid, 
+                    m => m.Id == loginDto.PassportId && m.IsValid,
                     isTracking: true);
 
                 if (passport == null)
@@ -290,16 +291,16 @@ namespace Horizon.Orleans.Grains
                     // 验证是否为有效的 Base64 字符串
                     byte[] oldPasswordBytes = Convert.FromBase64String(loginDto.OldPassword);
                     byte[] newPasswordBytes = Convert.FromBase64String(loginDto.NewPassword);
-                    
+
                     decodedOldPassword = Encoding.UTF8.GetString(oldPasswordBytes);
                     decodedNewPassword = Encoding.UTF8.GetString(newPasswordBytes);
-                    
+
                     _logger.LogDebug("密码Base64解码成功: {PassportId}", loginDto.PassportId);
                 }
                 catch (Exception ex)
                 {
                     // 如果解码失败，认为是明文密码（向后兼容）
-                    _logger.LogDebug("密码未使用Base64编码，按明文处理: {PassportId}, Error: {Error}", 
+                    _logger.LogDebug("密码未使用Base64编码，按明文处理: {PassportId}, Error: {Error}",
                         loginDto.PassportId, ex.Message);
                     decodedOldPassword = loginDto.OldPassword;
                     decodedNewPassword = loginDto.NewPassword;
@@ -330,7 +331,7 @@ namespace Horizon.Orleans.Grains
                 // 6. 更新数据库
                 passport.Password = newHash;
                 passport.PasswordSalt = newSalt;
-                passport.UpdateTime = DateTime.UtcNow;
+                passport.UpdateTime = DateTime.Now;
 
                 await _dataContext.UpdateAsync(passport, passport.Id);
 
@@ -417,12 +418,12 @@ namespace Horizon.Orleans.Grains
                         Id = passportIds.Id,
                         Password = passwordHash,
                         PasswordSalt = passwordSalt,
-                        CreateTime = DateTime.UtcNow,
-                        UpdateTime = DateTime.UtcNow,
+                        CreateTime = DateTime.Now,
+                        UpdateTime = DateTime.Now,
                         IsValid = true
                     });
 
-                    passportIds.ApplyTime = DateTime.UtcNow;
+                    passportIds.ApplyTime = DateTime.Now;
                     passportIds.IsValid = false;
                     await _contextPassportIds.DbCurrent.SaveChangesAsync();
 
@@ -527,9 +528,15 @@ namespace Horizon.Orleans.Grains
                 if (id == null)
                 {
                     await CreatePassportIdAsync(10);
+                    id = await _contextPassportIds.QueryFirstOrDefaultAsync(m => m.IsValid, isTracking: true);
+                    if (id == null)
+                    {
+                        _logger.LogError("无法获取可用的通行证ID，注册失败");
+                        return null;
+                    }
                 }
 
-                var users = await _userdataContext.QueryAsync(m => m.IsValid && (m.Phone == registerDto.Phone || m.Email == registerDto.Email),
+                var users = await _userdataContext.QueryAsync(m => m.IsValid && (m.Email == registerDto.Email),
                                                                    m => new { m.PassportId, m.AppId, m.AppType, m.PassportType });
                 if (users.Count > 0)
                 {
@@ -543,7 +550,7 @@ namespace Horizon.Orleans.Grains
                 else
                 {
                     passportId = id.Id;
-                    
+
                     // 解码Base64编码的密码
                     string decodedPassword;
                     try
@@ -556,31 +563,31 @@ namespace Horizon.Orleans.Grains
                     catch (Exception ex)
                     {
                         // 如果解码失败，认为是明文密码（向后兼容）
-                        _logger.LogDebug("注册密码未使用Base64编码，按明文处理: {PassportId}, Error: {Error}", 
+                        _logger.LogDebug("注册密码未使用Base64编码，按明文处理: {PassportId}, Error: {Error}",
                             passportId, ex.Message);
                         decodedPassword = registerDto.Password;
                     }
-                    
+
                     // 验证密码强度
                     if (!SecurePasswordHasher.IsPasswordStrong(decodedPassword))
                     {
                         _logger.LogWarning("注册密码强度不足: {PassportId}", passportId);
                         return null;
                     }
-                    
+
                     // 生成安全的密码哈希和盐值
                     (passwordHash, passwordSalt) = SecurePasswordHasher.HashPassword(decodedPassword);
-                    
+
                     var passport = await _dataContext.AddAsync(new Passport
                     {
                         Id = passportId,
                         Password = passwordHash,
                         PasswordSalt = passwordSalt,
-                        CreateTime = DateTime.UtcNow,
-                        UpdateTime = DateTime.UtcNow,
+                        CreateTime = DateTime.Now,
+                        UpdateTime = DateTime.Now,
                         IsValid = true
                     });
-                    id.ApplyTime = DateTime.UtcNow;
+                    id.ApplyTime = DateTime.Now;
                     id.IsValid = false;
                     await _contextPassportIds.DbCurrent.SaveChangesAsync();
                 }
@@ -671,7 +678,7 @@ namespace Horizon.Orleans.Grains
 
             _logger.LogInformation("开始批量生成通行证ID: Count={Count}", count);
 
-            
+
             await Policy.TimeoutAsync(10, TimeoutStrategy.Optimistic).ExecuteAsync(async () =>
             {
                 using (var plock = await Cache.AcquireLockAsync(CacheConst.PASSPORTCREATINGLOCK, TimeSpan.FromSeconds(10)))
@@ -705,7 +712,7 @@ namespace Horizon.Orleans.Grains
                                 repeat = id;
                                 goto ID;
                             }
-                            await _contextPassportIds.AddAsync(new PassportIds { IsValid = true, Id = repeat, CreatingTime = DateTime.UtcNow });
+                            await _contextPassportIds.AddAsync(new PassportIds { IsValid = true, Id = repeat, CreatingTime = DateTime.Now });
                             count--;
                             total++;
                         }
@@ -790,8 +797,8 @@ namespace Horizon.Orleans.Grains
                 }
 
                 // 更新会话信息
-                existingSession.LastActiveTime = DateTime.UtcNow;
-                
+                existingSession.LastActiveTime = DateTime.Now;
+
                 return await _sessionManager.UpdateSessionAsync(existingSession);
             }
             catch (Exception ex)
@@ -892,6 +899,7 @@ namespace Horizon.Orleans.Grains
                 m.PassportId == passport.Id &&
                 m.AppId == loginDto.AppId &&
                 m.AppType == loginDto.AppType &&
+                m.PassportType==loginDto.PassportType&&
                 m.IsValid);
 
             if (user != null)
@@ -911,7 +919,7 @@ namespace Horizon.Orleans.Grains
                 cloneUser.AppId = loginDto.AppId;
                 cloneUser.AppType = loginDto.AppType;
                 cloneUser.PassportType = PassportType.Normal;
-                cloneUser.CreateDate = DateTime.UtcNow;
+                cloneUser.CreateDate = DateTime.Now;
 
                 return await _userdataContext.AddAsync(cloneUser);
             }
@@ -925,7 +933,7 @@ namespace Horizon.Orleans.Grains
         private async Task UpdateUserLoginInfo(User user)
         {
             user.LoginNumber++;
-            user.LastLoginDate = DateTime.UtcNow;
+            user.LastLoginDate = DateTime.Now;
             user.Status = UserStatsEnum.Signin;
             await _userdataContext.UpdateAsync(user, user.Id);
         }
@@ -953,12 +961,12 @@ namespace Horizon.Orleans.Grains
                     AreaId = 0,
                     AccountName = user.NickName ?? user.PassportId,
                     Status = 0,
-                    CreateTime = DateTime.UtcNow,
+                    CreateTime = DateTime.Now,
                     Email = user.Email,
                     PasswordHash = HashPassword(loginDto.Password, user.PassportId),
                     PasswordSalt = user.PassportId,
-                    LastLoginTime = DateTime.UtcNow,
-                    Phone = user.Phone,
+                    LastLoginTime = DateTime.Now,
+                    Phone = user.Phone.Substring(0, 10),
                     LastLoginIp = "",
                     PlatformId = "",
                     DeviceId = ""
@@ -970,7 +978,7 @@ namespace Horizon.Orleans.Grains
             else
             {
                 // 更新最后登录时间
-                gameUser.LastLoginTime = DateTime.UtcNow;
+                gameUser.LastLoginTime = DateTime.Now;
                 await _gameUserContext.UpdateAsync(gameUser, gameUser.Id);
             }
 
@@ -1003,5 +1011,185 @@ namespace Horizon.Orleans.Grains
         }
 
         #endregion
+
+        /// <summary>
+        /// 验证用户鉴权令牌的合法性
+        /// 在Grain层进行二次验证，检查令牌中的PassportId和登录信息是否与会话记录一致
+        /// </summary>
+        public async Task<bool> ValidateUserAuthTokenAsync(string passportId, long loginTime, string clientIP)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(passportId))
+                {
+                    _logger.LogWarning("鉴权令牌验证失败：PassportId为空");
+                    return false;
+                }
+
+                // 1. 验证通行证是否存在且有效
+                var passport = await _dataContext.QueryFirstOrDefaultAsync(
+                    m => m.Id == passportId && m.IsValid);
+
+                if (passport == null)
+                {
+                    _logger.LogWarning("鉴权令牌验证失败：通行证不存在或已被禁用: {PassportId}", passportId);
+                    return false;
+                }
+
+                // 2. 检查用户是否有活跃会话
+                var sessions = await _sessionManager.GetUserSessionsAsync(passportId);
+                if (sessions == null || sessions.Count == 0)
+                {
+                    _logger.LogWarning("鉴权令牌验证失败：用户无活跃会话: {PassportId}", passportId);
+                    return false;
+                }
+
+                // 3. 验证是否存在匹配的会话（ClientIP匹配）
+                // 注意：当clientIP为空时跳过IP匹配验证，适用于移动端等IP可能频繁变化的场景
+                var matchingSession = sessions.Find(s =>
+                    s.IsActive &&
+                    (string.IsNullOrEmpty(clientIP) || string.Equals(s.ClientIP, clientIP, StringComparison.Ordinal)));
+
+                if (matchingSession == null)
+                {
+                    _logger.LogWarning("鉴权令牌验证失败：未找到匹配的活跃会话: PassportId={PassportId}, ClientIP={ClientIP}",
+                        passportId, clientIP);
+                    return false;
+                }
+
+                _logger.LogDebug("鉴权令牌Grain层验证通过: PassportId={PassportId}", passportId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "鉴权令牌Grain层验证异常: PassportId={PassportId}", passportId);
+                return false;
+            }
+        }
+
+        public async Task<bool> EnsureUserSessionAsync(string passportId, string machineId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(passportId))
+                {
+                    _logger.LogWarning("确保用户会话失败：PassportId为空");
+                    return false;
+                }
+
+                var sessions = await _sessionManager.GetUserSessionsAsync(passportId);
+                if (sessions != null && sessions.Count > 0)
+                {
+                    foreach (var session in sessions)
+                    {
+                        await _sessionManager.RefreshSessionAsync(session.SessionId);
+                    }
+                    _logger.LogInformation("用户会话已刷新: PassportId={PassportId}, SessionCount={Count}", passportId, sessions.Count);
+                    return true;
+                }
+
+                var passport = await _dataContext.QueryFirstOrDefaultAsync(
+                    m => m.Id == passportId && m.IsValid);
+                if (passport == null)
+                {
+                    _logger.LogWarning("确保用户会话失败：通行证不存在或已被禁用: {PassportId}", passportId);
+                    return false;
+                }
+
+                var user = await _userdataContext.QueryFirstOrDefaultAsync(
+                    m => m.PassportId == passportId);
+                if (user == null)
+                {
+                    _logger.LogWarning("确保用户会话失败：用户信息不存在: {PassportId}", passportId);
+                    return false;
+                }
+
+                var sessionInfo = new SessionInfo
+                {
+                    UserId = user.Id,
+                    PassportId = user.PassportId,
+                    DeviceId = machineId
+                };
+                await _sessionManager.CreateSessionAsync(sessionInfo);
+
+                _logger.LogInformation("用户会话已重建: PassportId={PassportId}", passportId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "确保用户会话异常: PassportId={PassportId}", passportId);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 为指定通行证用户构建游戏内用户记录。
+        /// 若记录已存在则直接返回其ID；不存在则创建并返回新分配的游戏用户ID。
+        /// </summary>
+        public async Task<long> BuildGameUserAsync(string passportId, int gameId, int areaId, int serverId)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(passportId) || gameId <= 0)
+                {
+                    _logger.LogWarning("BuildGameUserAsync参数无效: PassportId={PassportId}, GameId={GameId}", passportId, gameId);
+                    return 0;
+                }
+
+                // 1. 查找通行证对应的用户
+                var user = await _userdataContext.QueryFirstOrDefaultAsync(
+                    m => m.PassportId == passportId);
+
+                if (user == null)
+                {
+                    _logger.LogWarning("BuildGameUserAsync：通行证用户不存在: PassportId={PassportId}", passportId);
+                    return 0;
+                }
+
+                // 2. 检查是否已存在游戏用户记录
+                var gameUser = await _gameUserContext.QueryFirstOrDefaultAsync(
+                    m => m.GameUserId == user.Id && m.GameId == gameId && !m.IsDeleted);
+
+                if (gameUser != null)
+                {
+                    gameUser.LastLoginTime = DateTime.Now;
+                    await _gameUserContext.UpdateAsync(gameUser, gameUser.Id);
+                    _logger.LogInformation("BuildGameUserAsync：已找到游戏用户: PassportId={PassportId}, GameUserId={GameUserId}",
+                        passportId, gameUser.Id);
+                    return gameUser.Id;
+                }
+
+                // 3. 不存在则创建新游戏用户
+                var newGameUser = new UserEntity
+                {
+                    GameUserId = user.Id,
+                    GameId = gameId,
+                    AreaId = areaId,
+                    ServerId = serverId,
+                    AccountName = user.NickName ?? passportId,
+                    Status = 0,
+                    CreateTime = DateTime.Now,
+                    LastLoginTime = DateTime.Now,
+                    Email = user.Email ?? string.Empty,
+                    PasswordHash = user.PassportId,
+                    PasswordSalt = user.PassportId,
+                    LastLoginIp = string.Empty,
+                    PlatformId = string.Empty,
+                    DeviceId = string.Empty,
+                    Phone = string.IsNullOrWhiteSpace(user.Phone) ? "13999999999" : user.Phone.Length == 11 ? user.Phone : "13999999999",
+                    IsDeleted = false
+                };
+
+                var created = await _gameUserContext.AddAsync(newGameUser);
+                _logger.LogInformation("BuildGameUserAsync：游戏用户创建成功: PassportId={PassportId}, GameUserId={GameUserId}",
+                    passportId, created.Id);
+                return created.Id;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "BuildGameUserAsync异常: PassportId={PassportId}", passportId);
+                return 0;
+            }
+        }
     }
 }

@@ -1,0 +1,95 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             xmlns:converters="using:Horizon.Game.GengDi.Core.Converters"
+             x:Class="Horizon.Game.GengDi.Core.Views.AirQualityDrawerView"
+             x:DataType="vm:HomeViewModel">
+
+    <UserControl.Resources>
+        <converters:HexToBrushConverter x:Key="HexToBrushConverter" />
+    </UserControl.Resources>
+
+    <Border Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+            BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+            BorderThickness="1 0 0 0"
+            Width="420" MaxWidth="500"
+            HorizontalAlignment="Right">
+        <Grid RowDefinitions="Auto,*">
+            <Border Grid.Row="0" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0 0 0 1" Padding="20 16">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Text="空气质量" FontSize="16" FontWeight="SemiBold" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Content="✕" Classes="QuietAction" Padding="8 4" FontSize="14"
+                            Command="{Binding CloseAirQualityDetailCommand}" />
+                </Grid>
+            </Border>
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Spacing="16" Margin="20 16">
+
+                    <!-- 有空气质量数据 -->
+                    <StackPanel Spacing="12" IsVisible="{Binding WeatherForecast.AirQuality}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <TextBlock Text="{Binding WeatherForecast.AirQuality.Aqi}"
+                                       FontSize="42" FontWeight="Bold"
+                                       Foreground="{Binding WeatherForecast.AirQuality.LevelColor, Converter={StaticResource HexToBrushConverter}}" />
+                            <StackPanel VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="{Binding WeatherForecast.AirQuality.Level}"
+                                           FontSize="16" FontWeight="SemiBold" Foreground="#FFFFFF" />
+                                <TextBlock Text="{Binding WeatherForecast.AirQuality.MainPollutant, StringFormat='{}主要污染物: {0}'}"
+                                           FontSize="10" Foreground="#FFFFFF88" />
+                            </StackPanel>
+                        </StackPanel>
+                        <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="6">
+                            <Border Background="#12FFFFFF" CornerRadius="8" Padding="8 6">
+                                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                    <TextBlock Text="PM2.5" FontSize="9" Foreground="#FFFFFF66" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding WeatherForecast.AirQuality.Pm25, StringFormat='{}{0:F0}'}" FontSize="13" FontWeight="SemiBold" Foreground="#FFFFFF" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="1" Background="#12FFFFFF" CornerRadius="8" Padding="8 6">
+                                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                    <TextBlock Text="PM10" FontSize="9" Foreground="#FFFFFF66" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding WeatherForecast.AirQuality.Pm10, StringFormat='{}{0:F0}'}" FontSize="13" FontWeight="SemiBold" Foreground="#FFFFFF" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="2" Background="#12FFFFFF" CornerRadius="8" Padding="8 6">
+                                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                    <TextBlock Text="O₃" FontSize="9" Foreground="#FFFFFF66" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding WeatherForecast.AirQuality.O3, StringFormat='{}{0:F0}'}" FontSize="13" FontWeight="SemiBold" Foreground="#FFFFFF" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Row="1" Background="#12FFFFFF" CornerRadius="8" Padding="8 6">
+                                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                    <TextBlock Text="NO₂" FontSize="9" Foreground="#FFFFFF66" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding WeatherForecast.AirQuality.No2, StringFormat='{}{0:F0}'}" FontSize="13" FontWeight="SemiBold" Foreground="#FFFFFF" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Row="1" Grid.Column="1" Background="#12FFFFFF" CornerRadius="8" Padding="8 6">
+                                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                    <TextBlock Text="SO₂" FontSize="9" Foreground="#FFFFFF66" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding WeatherForecast.AirQuality.So2, StringFormat='{}{0:F0}'}" FontSize="13" FontWeight="SemiBold" Foreground="#FFFFFF" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Row="1" Grid.Column="2" Background="#12FFFFFF" CornerRadius="8" Padding="8 6">
+                                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                                    <TextBlock Text="CO" FontSize="9" Foreground="#FFFFFF66" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding WeatherForecast.AirQuality.Co, StringFormat='{}{0:F1}'}" FontSize="13" FontWeight="SemiBold" Foreground="#FFFFFF" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- 无空气质量数据 -->
+                    <StackPanel IsVisible="{Binding WeatherForecast.AirQuality, Converter={x:Static ObjectConverters.IsNull}}"
+                                HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" Margin="0 40">
+                        <TextBlock Text="🌬️" FontSize="48" HorizontalAlignment="Center" />
+                        <TextBlock Text="暂无空气质量数据" FontSize="14" Foreground="#FFFFFF88" HorizontalAlignment="Center" />
+                    </StackPanel>
+
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</UserControl>

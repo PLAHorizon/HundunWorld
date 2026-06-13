@@ -1,0 +1,257 @@
+﻿@page "/flower/merchants"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Flower.Services
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+
+@inject FlowerMerchantService MerchantService
+@inject FlowerAdminService AdminService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">商户管理</TypographyTitle>
+        <Space>
+            <Input @bind-Value="@SearchShopName" Placeholder="搜索店铺名" Style="width:200px" Size="@InputSize.Small"
+                   AllowClear OnPressEnter="LoadMerchants" />
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadMerchants">查询</Button>
+            <Button Size="@ButtonSize.Small" OnClick="LoadMerchants">刷新</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="JsonElement" DataSource="@Merchants" Size="@TableSize.Small" RowKey="@GetMerchantRowKey">
+            <Column TData="string" Title="ID">
+                @(context.TryGetProperty("merchantId", out var p) ? p.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="店铺名">
+                @(context.TryGetProperty("shopName", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="联系人电话">
+                @(context.TryGetProperty("contactPhone", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="商户类型">
+                <Tag>@(GetMerchantType(context))</Tag>
+            </Column>
+            <Column TData="string" Title="审核状态">
+                <Tag Color="@GetAuditStatusColor(context)">@GetAuditStatusText(context)</Tag>
+            </Column>
+            <Column TData="string" Title="认证">
+                <Tag Color="@(GetIsVerified(context) ? "green" : "default")">@(GetIsVerified(context) ? "已认证" : "未认证")</Tag>
+            </Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    @if (GetAuditStatus(context) == 0)
+                    {
+                        <SpaceItem>
+                            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="() => ShowAuditModal(context)">审核</Button>
+                        </SpaceItem>
+                    }
+                    <SpaceItem>
+                        <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => FreezeMerchant(context)">冻结</Button>
+                    </SpaceItem>
+                    <SpaceItem>
+                        <Button Size="@ButtonSize.Small" OnClick="() => UnfreezeMerchant(context)">解冻</Button>
+                    </SpaceItem>
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    <Modal Title="商户审核" Visible="@AuditModalVisible" OnCancel="CloseAuditModal" OnOk="HandleAuditOk" ConfirmLoading="@AuditLoading">
+        <Form Model="@AuditForm" Layout="@FormLayout.Vertical">
+            <FormItem Label="审核结果">
+                <RadioGroup TItem="int" TItemValue="int" @bind-Value="@AuditForm.Approved">
+                    <Radio TItem="int" TItemValue="int" Value="1">通过</Radio>
+                    <Radio TItem="int" TItemValue="int" Value="0">拒绝</Radio>
+                </RadioGroup>
+            </FormItem>
+            <FormItem Label="审核原因">
+                <TextArea @bind-Value="@AuditForm.Reason" Rows="3" Placeholder="请输入审核原因" />
+            </FormItem>
+        </Form>
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> Merchants { get; set; } = new();
+    private bool Loading { get; set; }
+    private string SearchShopName { get; set; } = "";
+    private string ErrorMessage { get; set; } = "";
+
+    private object GetMerchantRowKey(JsonElement x) =>
+        x.TryGetProperty("merchantId", out var p) ? (object)p.GetInt64() : 0;
+
+    private bool AuditModalVisible { get; set; }
+    private bool AuditLoading { get; set; }
+    private long AuditMerchantId { get; set; }
+    private AuditFormModel AuditForm { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMerchants();
+    }
+
+    private async Task LoadMerchants()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await MerchantService.GetMerchantListAsync(SearchShopName);
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var data = result.Data.Value;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    Merchants = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    Merchants = items.EnumerateArray().ToList();
+                }
+                else
+                {
+                    Merchants = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                Merchants = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    ErrorMessage = result.ErrorMessage ?? "加载商户列表失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载商户列表失败: {ex.Message}";
+            Merchants = new List<JsonElement>();
+        }
+        Loading = false;
+    }
+
+    private void ShowAuditModal(JsonElement merchant)
+    {
+        AuditMerchantId = merchant.TryGetProperty("merchantId", out var p) ? p.GetInt64() : 0;
+        AuditForm = new AuditFormModel();
+        AuditModalVisible = true;
+    }
+
+    private void CloseAuditModal() => AuditModalVisible = false;
+
+    private async Task HandleAuditOk()
+    {
+        AuditLoading = true;
+        try
+        {
+            var data = new { Approved = AuditForm.Approved == 1, Reason = AuditForm.Reason };
+            var result = await AdminService.AuditMerchantAsync(AuditMerchantId, data);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success(AuditForm.Approved == 1 ? "审核通过" : "已拒绝");
+                AuditModalVisible = false;
+                await LoadMerchants();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "审核操作失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"审核操作失败: {ex.Message}";
+        }
+        AuditLoading = false;
+    }
+
+    private async Task FreezeMerchant(JsonElement merchant)
+    {
+        var merchantId = merchant.TryGetProperty("merchantId", out var p) ? p.GetInt64() : 0;
+        try
+        {
+            var result = await AdminService.FreezeMerchantAsync(merchantId);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success("商户已冻结");
+                await LoadMerchants();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "冻结失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"冻结失败: {ex.Message}";
+        }
+    }
+
+    private async Task UnfreezeMerchant(JsonElement merchant)
+    {
+        var merchantId = merchant.TryGetProperty("merchantId", out var p) ? p.GetInt64() : 0;
+        try
+        {
+            var result = await AdminService.UnfreezeMerchantAsync(merchantId);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success("商户已解冻");
+                await LoadMerchants();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "解冻失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"解冻失败: {ex.Message}";
+        }
+    }
+
+    private string GetMerchantType(JsonElement m)
+    {
+        var type = m.TryGetProperty("merchantType", out var p) ? p.GetInt32() : 0;
+        return type == 1 ? "企业" : "个人";
+    }
+
+    private int GetAuditStatus(JsonElement m) =>
+        m.TryGetProperty("auditStatus", out var p) ? p.GetInt32() : -1;
+
+    private string GetAuditStatusColor(JsonElement m) => GetAuditStatus(m) switch
+    {
+        0 => "orange",
+        1 => "green",
+        2 => "red",
+        _ => "default"
+    };
+
+    private string GetAuditStatusText(JsonElement m) => GetAuditStatus(m) switch
+    {
+        0 => "待审核",
+        1 => "已通过",
+        2 => "已拒绝",
+        _ => "未知"
+    };
+
+    private bool GetIsVerified(JsonElement m) =>
+        m.TryGetProperty("isVerified", out var p) && p.GetBoolean();
+
+    private class AuditFormModel
+    {
+        public int Approved { get; set; } = 1;
+        public string Reason { get; set; } = "";
+    }
+}

@@ -1,0 +1,202 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             x:Class="Horizon.Game.GengDi.Core.Views.FlowerDataScreenView"
+             x:DataType="vm:FlowerDataScreenViewModel">
+
+    <controls:GalleryPage Title="数据驾驶舱"
+                          Subtitle="Horizon.Game.GengDi.FlowerDataScreen"
+                          IconSource="{StaticResource NotificationsIcon}">
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="20" Margin="0 0 0 24">
+
+                <!-- 顶部统计卡片 -->
+                <Grid ColumnDefinitions="*,*,*,*"
+                      ColumnSpacing="16">
+                    <Border Classes="SurfaceCard" Padding="20">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="今日交易额" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding TodayTradeAmount, StringFormat='¥{0:N2}'}" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Classes="SurfaceCard" Padding="20">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="交易笔数" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding TradeCount}" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Classes="SurfaceCard" Padding="20">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="活跃品种数" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding ActiveSpeciesCount}" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="3" Classes="SurfaceCard" Padding="20">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="在线商户数" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding OnlineMerchantCount}" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- 操作栏 -->
+                <Border Classes="SurfaceCard" Padding="16 12">
+                    <StackPanel Orientation="Horizontal" Spacing="16">
+                        <CheckBox Content="自动刷新" IsChecked="{Binding IsAutoRefresh}" VerticalAlignment="Center" />
+                        <Button Content="手动刷新"
+                                Classes="PrimaryAction"
+                                Padding="12 6"
+                                FontSize="12"
+                                Command="{Binding RefreshCommand}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 中间区域：热力图 + 供需关系 -->
+                <Grid ColumnDefinitions="*,*"
+                      ColumnSpacing="16">
+
+                    <!-- 区域热力图 -->
+                    <Border Classes="SurfaceCard" Padding="20">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="区域热力图" FontSize="16" FontWeight="SemiBold" />
+                            <ItemsControl ItemsSource="{Binding RegionHeatmapData}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Classes="ListItemCard"
+                                                Margin="0 0 0 8"
+                                                Padding="12 8">
+                                            <Grid ColumnDefinitions="120,Auto,*">
+                                                <TextBlock Text="{Binding RegionName}"
+                                                           FontSize="13"
+                                                           FontWeight="SemiBold"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding DemandIndex, StringFormat='需求 {0:F1}'}"
+                                                           FontSize="12"
+                                                           Foreground="#FFA726"
+                                                           VerticalAlignment="Center"
+                                                           Margin="8 0 0 0" />
+                                                <ProgressBar Grid.Column="2"
+                                                             Value="{Binding DemandIndex}"
+                                                             Maximum="100"
+                                                             Height="8"
+                                                             VerticalAlignment="Center"
+                                                             Margin="8 0 0 0" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 供需关系图 -->
+                    <Border Grid.Column="1" Classes="SurfaceCard" Padding="20">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="供需关系图" FontSize="16" FontWeight="SemiBold" />
+                            <ItemsControl ItemsSource="{Binding SupplyDemandData}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Classes="ListItemCard"
+                                                Margin="0 0 0 8"
+                                                Padding="12 8">
+                                            <Grid ColumnDefinitions="80,Auto,Auto,Auto">
+                                                <TextBlock Text="{Binding SpeciesName}"
+                                                           FontSize="13"
+                                                           FontWeight="SemiBold"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding Supply, StringFormat='供给 {0}'}"
+                                                           FontSize="12"
+                                                           Foreground="#42A5F5"
+                                                           VerticalAlignment="Center"
+                                                           Margin="8 0 0 0" />
+                                                <TextBlock Grid.Column="2"
+                                                           Text="{Binding Demand, StringFormat='需求 {0}'}"
+                                                           FontSize="12"
+                                                           Foreground="#FF6B6B"
+                                                           VerticalAlignment="Center"
+                                                           Margin="8 0 0 0" />
+                                                <TextBlock Grid.Column="3"
+                                                           Text="{Binding SupplyDemandRatio, StringFormat='供需比 {0:F2}'}"
+                                                           FontSize="12"
+                                                           Foreground="#66BB6A"
+                                                           VerticalAlignment="Center"
+                                                           Margin="8 0 0 0" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- 底部：实时交易流水 -->
+                <Border Classes="SurfaceCard" Padding="20">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="实时交易流水" FontSize="16" FontWeight="SemiBold" />
+                        <ItemsControl ItemsSource="{Binding RecentTrades}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Classes="ListItemCard"
+                                            Margin="0 0 0 8"
+                                            Padding="12 8">
+                                        <Grid ColumnDefinitions="80,Auto,Auto,Auto,*">
+                                            <TextBlock Text="{Binding TradeTime}"
+                                                       FontSize="12"
+                                                       Foreground="#AAAAAA"
+                                                       VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding SpeciesName}"
+                                                       FontSize="13"
+                                                       FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"
+                                                       Margin="8 0 0 0" />
+                                            <TextBlock Grid.Column="2"
+                                                       Text="{Binding Price, StringFormat='¥{0:F2}'}"
+                                                       FontSize="13"
+                                                       Foreground="#FF6B6B"
+                                                       FontWeight="SemiBold"
+                                                       VerticalAlignment="Center"
+                                                       Margin="8 0 0 0" />
+                                            <TextBlock Grid.Column="3"
+                                                       Text="{Binding Quantity, StringFormat='×{0}'}"
+                                                       FontSize="12"
+                                                       Foreground="#888888"
+                                                       VerticalAlignment="Center"
+                                                       Margin="8 0 0 0" />
+                                            <TextBlock Grid.Column="4"
+                                                       Text="{Binding Market}"
+                                                       FontSize="12"
+                                                       Foreground="#888888"
+                                                       VerticalAlignment="Center"
+                                                       HorizontalAlignment="Right" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- 加载状态 -->
+                <Border Classes="SurfaceCard"
+                        Padding="40"
+                        IsVisible="{Binding IsLoading}">
+                    <StackPanel HorizontalAlignment="Center" Spacing="12">
+                        <ProgressBar IsIndeterminate="True" Height="4" />
+                        <TextBlock Text="加载数据中..."
+                                   FontSize="13"
+                                   Foreground="#888888"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </controls:GalleryPage>
+</UserControl>

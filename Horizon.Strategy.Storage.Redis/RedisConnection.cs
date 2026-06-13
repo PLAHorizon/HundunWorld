@@ -30,6 +30,7 @@ namespace Horizon.Strategy.Storage.Redis
         #region 内部成员
         private readonly string _connectionString;
         private readonly ConcurrentBag<ConnectionMultiplexer> _connectionPool = new();
+        private readonly object _connectionGate = new();
         private readonly SemaphoreSlim _poolSemaphore;
         private bool _disposed;
         #endregion
@@ -42,7 +43,6 @@ namespace Horizon.Strategy.Storage.Redis
         {
             _connectionString = GetDefaultConnectionString();
             _poolSemaphore = new SemaphoreSlim(DefaultPoolSize, DefaultPoolSize);
-            InitializeConnectionPool();
         }
 
         /// <summary>
@@ -52,23 +52,10 @@ namespace Horizon.Strategy.Storage.Redis
         {
             _connectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
             _poolSemaphore = new SemaphoreSlim(poolSize, poolSize);
-            InitializeConnectionPool();
         }
         #endregion
 
         #region 连接管理
-        /// <summary>
-        /// 初始化连接池
-        /// </summary>
-        private void InitializeConnectionPool()
-        {
-            for (int i = 0; i < _poolSemaphore.CurrentCount; i++)
-            {
-                var connection = CreateNewConnection();
-                _connectionPool.Add(connection);
-            }
-        }
-
         /// <summary>
         /// 创建新连接
         /// </summary>
@@ -100,6 +87,27 @@ namespace Horizon.Strategy.Storage.Redis
                 ReconnectAsync(connection).ConfigureAwait(false);
             }
         }
+
+        private ConnectionMultiplexer GetOrCreateConnection()
+        {
+            lock (_connectionGate)
+            {
+                while (_connectionPool.TryTake(out var existing))
+                {
+                    if (existing != null && existing.IsConnected)
+                    {
+                        _connectionPool.Add(existing);
+                        return existing;
+                    }
+
+                    existing?.Dispose();
+                }
+
+                var connection = CreateNewConnection();
+                _connectionPool.Add(connection);
+                return connection;
+            }
+        }
         #endregion
 
         #region 核心操作方法
@@ -108,20 +116,7 @@ namespace Horizon.Strategy.Storage.Redis
         /// </summary>
         public async Task<IDatabase> GetDatabaseAsync(int db = -1)
         {
-            await _poolSemaphore.WaitAsync().ConfigureAwait(false);
-            try
-            {
-                if (!_connectionPool.TryTake(out var connection))
-                {
-                    connection = CreateNewConnection();
-                }
-
-                return connection.GetDatabase(db);
-            }
-            finally
-            {
-                _poolSemaphore.Release();
-            }
+            return await Task.FromResult(GetOrCreateConnection().GetDatabase(db)).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -129,20 +124,7 @@ namespace Horizon.Strategy.Storage.Redis
         /// </summary>
         public T Execute<T>(Func<IDatabase, T> func, int db = -1)
         {
-            _poolSemaphore.Wait();
-            try
-            {
-                if (!_connectionPool.TryTake(out var connection))
-                {
-                    connection = CreateNewConnection();
-                }
-
-                return func(connection.GetDatabase(db));
-            }
-            finally
-            {
-                _poolSemaphore.Release();
-            }
+            return func(GetOrCreateConnection().GetDatabase(db));
         }
 
         /// <summary>
@@ -150,20 +132,7 @@ namespace Horizon.Strategy.Storage.Redis
         /// </summary>
         public async Task<T> ExecuteAsync<T>(Func<IDatabase, Task<T>> func, int db = -1)
         {
-            await _poolSemaphore.WaitAsync().ConfigureAwait(false);
-            try
-            {
-                if (!_connectionPool.TryTake(out var connection))
-                {
-                    connection = CreateNewConnection();
-                }
-
-                return await func(connection.GetDatabase(db)).ConfigureAwait(false);
-            }
-            finally
-            {
-                _poolSemaphore.Release();
-            }
+            return await func(GetOrCreateConnection().GetDatabase(db)).ConfigureAwait(false);
         }
         #endregion
 
@@ -288,18 +257,7 @@ namespace Horizon.Strategy.Storage.Redis
         /// </summary>
         public IEnumerable<System.Net.EndPoint> GetEndPoints()
         {
-            if (_connectionPool.TryTake(out var connection))
-            {
-                try
-                {
-                    return connection.GetEndPoints();
-                }
-                finally
-                {
-                    _connectionPool.Add(connection);
-                }
-            }
-            return Enumerable.Empty<System.Net.EndPoint>();
+            return GetOrCreateConnection().GetEndPoints();
         }
 
         /// <summary>
@@ -307,18 +265,7 @@ namespace Horizon.Strategy.Storage.Redis
         /// </summary>
         public IServer GetServer(System.Net.EndPoint endpoint)
         {
-            if (_connectionPool.TryTake(out var connection))
-            {
-                try
-                {
-                    return connection.GetServer(endpoint);
-                }
-                finally
-                {
-                    _connectionPool.Add(connection);
-                }
-            }
-            return null;
+            return GetOrCreateConnection().GetServer(endpoint);
         }
         #endregion
 

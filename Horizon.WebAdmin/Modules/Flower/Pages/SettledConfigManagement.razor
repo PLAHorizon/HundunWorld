@@ -1,0 +1,176 @@
+﻿@page "/flower/settled-config"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using Horizon.Share.VMs
+@using System.Text.Json
+@using Horizon.WebAdmin.Modules.Flower.Services
+@inject FlowerSettledConfigService SettledConfigService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">⚙️ 结算配置管理</TypographyTitle>
+        <Space>
+            <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="LoadConfig">🔄 刷新</Button>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="ShowEditForm">✏️ 编辑配置</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else if (IsEditing)
+    {
+        <Card Title="@("编辑结算配置")" Size="@CardSize.Small">
+            <Form Model="@EditModel" Layout="@FormLayout.Vertical" OnFinish="SaveConfig">
+                <FormItem Label="@("结算周期(天)")">
+                    <InputNumber TValue="int" @bind-Value="@EditModel.SettlementCycleDays" Min="@(1)" Max="@(365)" Style="width:200px" />
+                </FormItem>
+                <FormItem Label="@("最低结算金额")">
+                    <InputNumber TValue="decimal" @bind-Value="@EditModel.MinSettlementAmount" Min="@(0m)" Style="width:200px" />
+                </FormItem>
+                <FormItem Label="@("手续费率(%)")">
+                    <InputNumber TValue="decimal" @bind-Value="@EditModel.CommissionRate" Min="@(0m)" Max="@(100m)" Style="width:200px" />
+                </FormItem>
+                <FormItem Label="@("提现最低金额")">
+                    <InputNumber TValue="decimal" @bind-Value="@EditModel.MinWithdrawAmount" Min="@(0m)" Style="width:200px" />
+                </FormItem>
+                <FormItem Label="@("自动结算")">
+                    <Switch @bind-Value="@EditModel.AutoSettle" />
+                </FormItem>
+                <FormItem>
+                    <Space>
+                        <Button Type="@ButtonType.Primary" HtmlType="submit">保存</Button>
+                        <Button OnClick="CancelEdit">取消</Button>
+                    </Space>
+                </FormItem>
+            </Form>
+        </Card>
+    }
+    else
+    {
+        <Card Title="@("当前结算配置")" Size="@CardSize.Small">
+            <Descriptions Column="2" Size="@DescriptionsSize.Small">
+                <DescriptionsItem Title="结算周期">@($"{Config.SettlementCycleDays} 天")</DescriptionsItem>
+                <DescriptionsItem Title="最低结算金额">¥@Config.MinSettlementAmount.ToString("N2")</DescriptionsItem>
+                <DescriptionsItem Title="手续费率">@($"{Config.CommissionRate}%")</DescriptionsItem>
+                <DescriptionsItem Title="提现最低金额">¥@Config.MinWithdrawAmount.ToString("N2")</DescriptionsItem>
+                <DescriptionsItem Title="自动结算">
+                    <Tag Color="@(Config.AutoSettle ? "green" : "orange")">@(Config.AutoSettle ? "已开启" : "已关闭")</Tag>
+                </DescriptionsItem>
+                <DescriptionsItem Title="更新时间">@(Config.UpdatedAt?.ToString("yyyy-MM-dd HH:mm") ?? "--")</DescriptionsItem>
+            </Descriptions>
+        </Card>
+    }
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <Alert Type="@AlertType.Success" Message="@SuccessMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private SettledConfigModel Config { get; set; } = new();
+    private SettledConfigModel EditModel { get; set; } = new();
+    private bool Loading { get; set; }
+    private bool IsEditing { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string SuccessMessage { get; set; } = "";
+
+    private readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadConfig();
+    }
+
+    private async Task LoadConfig()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await SettledConfigService.GetSettledConfigAsync();
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                Config = JsonSerializer.Deserialize<SettledConfigModel>(result.Data.Value.GetRawText(), _jsonOpts) ?? new();
+            }
+            else
+            {
+                Config = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载结算配置失败: {ex.Message}";
+            Config = new();
+        }
+        Loading = false;
+    }
+
+    private void ShowEditForm()
+    {
+        EditModel = new SettledConfigModel
+        {
+            SettlementCycleDays = Config.SettlementCycleDays,
+            MinSettlementAmount = Config.MinSettlementAmount,
+            CommissionRate = Config.CommissionRate,
+            MinWithdrawAmount = Config.MinWithdrawAmount,
+            AutoSettle = Config.AutoSettle
+        };
+        IsEditing = true;
+    }
+
+    private void CancelEdit()
+    {
+        IsEditing = false;
+    }
+
+    private async Task SaveConfig(Microsoft.AspNetCore.Components.Forms.EditContext ctx)
+    {
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var result = await SettledConfigService.UpdateSettledConfigAsync(new
+            {
+                SettlementCycleDays = EditModel.SettlementCycleDays,
+                MinSettlementAmount = EditModel.MinSettlementAmount,
+                CommissionRate = EditModel.CommissionRate,
+                MinWithdrawAmount = EditModel.MinWithdrawAmount,
+                AutoSettle = EditModel.AutoSettle
+            });
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = "结算配置已更新";
+                IsEditing = false;
+                await LoadConfig();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "更新失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"更新失败: {ex.Message}";
+        }
+    }
+
+    public class SettledConfigModel
+    {
+        public int SettlementCycleDays { get; set; } = 7;
+        public decimal MinSettlementAmount { get; set; } = 100;
+        public decimal CommissionRate { get; set; } = 0.6m;
+        public decimal MinWithdrawAmount { get; set; } = 50;
+        public bool AutoSettle { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+    }
+}

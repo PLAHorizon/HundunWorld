@@ -1,0 +1,64 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Horizon.Game.GengDi.Core.Views.AvatarCropWindow"
+        Title="裁剪头像"
+        Width="700"
+        Height="560"
+        MinWidth="420"
+        MinHeight="360"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True"
+        ShowInTaskbar="False">
+
+    <Grid RowDefinitions="*, Auto">
+
+        <!-- 图片显示区域 + Canvas 框选覆盖层 -->
+        <Grid Grid.Row="0"
+              x:Name="ImageContainer"
+              Background="#111111"
+              ClipToBounds="True">
+
+            <Image x:Name="SourceImage"
+                   Stretch="Uniform"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center" />
+
+            <!-- 透明 Canvas 用于捕获鼠标事件并显示框选矩形 -->
+            <Canvas x:Name="CropCanvas"
+                    Background="Transparent"
+                    Cursor="Cross" />
+        </Grid>
+
+        <!-- 底部操作栏 -->
+        <Border Grid.Row="1"
+                Padding="16 12"
+                Background="{DynamicResource SystemFillColorNeutralBackgroundBrush}"
+                BorderBrush="{DynamicResource SystemFillColorNeutralBrush}"
+                BorderThickness="0 1 0 0">
+            <Grid ColumnDefinitions="*, Auto, Auto"
+                  ColumnSpacing="8">
+
+                <TextBlock Grid.Column="0"
+                           x:Name="HintText"
+                           Text="按住鼠标左键拖动，框选需要保留的区域"
+                           VerticalAlignment="Center"
+                           Opacity="0.65"
+                           FontSize="12"
+                           TextWrapping="Wrap" />
+
+                <Button Grid.Column="1"
+                        Content="取消"
+                        Classes="QuietAction"
+                        Click="CancelButton_Click" />
+
+                <Button Grid.Column="2"
+                        x:Name="ConfirmButton"
+                        Content="确认裁剪"
+                        Classes="PrimaryAction"
+                        IsEnabled="False"
+                        Click="ConfirmButton_Click" />
+            </Grid>
+        </Border>
+
+    </Grid>
+</Window>

@@ -1,0 +1,14 @@
+[00:00:005] Flax.Build 1.0.0
+[00:00:005]   Arguments: build -log -logMessagesWithSource -logFileOnly -logFile=build.log
+[00:00:005]   Workspace: C:\Works\GitHubProjects\HundunWorld
+[00:00:005]   Engine: C:\Works\GitHubProjects
+[00:00:005]   .NET 10.0.8
+[00:00:006] Missing project file.
+[00:00:021] Loading project file from "C:\Works\GitHubProjects\Flax.flaxproj"...
+[00:00:039] Loaded project Flax, version 1.12.6913
+[00:00:051] Engine build version: 1.12.6913
+[00:00:608] Assembler time: 0.5397734s
+[00:00:609] Building targets...
+[00:00:611] Missing project
+[00:00:611] Total time: 00:00:00.6230619
+[00:00:611] End.

@@ -105,7 +105,7 @@ namespace Horizon.Game.Gateway.Tests
         public void RequestContext_GetMissing_ReturnsNull()
         {
             // Clear any existing value
-            RequestContext.Set("X-Test-Missing", null);
+            RequestContext.Set("X-Test-Missing", (object?)null);
             var retrieved = RequestContext.Get("X-Test-Missing") as string;
             Assert.Null(retrieved);
         }

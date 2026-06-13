@@ -5,10 +5,15 @@
 	"Copyright": "",
 	"GameTarget": "GameTarget",
 	"EditorTarget": "GameEditorTarget",
-	"DotNetVersion": "Net10",
 	"References": [
 		{
 			"Name": "$(EnginePath)/Flax.flaxproj"
+		},
+		{
+			"Name": "$(ProjectPath)/Plugins/Narrative/Narrative.flaxproj"
+		},
+		{
+			"Name": "$(ProjectPath)/Plugins/NarrativePro/NarrativePro.flaxproj"
 		}
 	],
 	"DefaultScene": "dc72848f4b0f90ee2df186a728f14858",
@@ -16,13 +21,14 @@
 		"Position": {
 			"X": 189.3866,
 			"Y": 109.910706,
-			"Z": 132.960159
+			"Z": 132.96016
 		},
 		"Direction": {
 			"X": -0.7114976,
-			"Y": -0.299497128,
-			"Z": -0.635666847
+			"Y": -0.29949713,
+			"Z": -0.63566685
 		}
 	},
-	"MinEngineVersion": "0.0.6194"
+	"MinEngineVersion": "0.0.6194",
+	"EngineNickname": null
 }

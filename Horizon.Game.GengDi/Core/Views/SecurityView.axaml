@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             x:Class="Horizon.Game.GengDi.Core.Views.SecurityView"
+             x:DataType="vm:SecurityViewModel">
+    <UserControl.DataContext>
+        <vm:SecurityViewModel />
+    </UserControl.DataContext>
+
+    <Border Classes="SurfaceCard">
+        <StackPanel Spacing="16">
+            <!-- 返回按钮 -->
+            <Button Content="返回个人设置" Classes="QuietAction" HorizontalAlignment="Left" Command="{Binding NavigateToProfileCommand}" />
+
+            <TextBlock Text="修改密码" Classes="SectionTitle" />
+
+            <StackPanel Spacing="6">
+                <TextBlock Text="原密码" Classes="PageEyebrow" />
+                <TextBox Text="{Binding OldPassword}" PasswordChar="*" Watermark="请输入原密码" />
+            </StackPanel>
+
+            <StackPanel Spacing="6">
+                <TextBlock Text="新密码" Classes="PageEyebrow" />
+                <TextBox Text="{Binding NewPassword}" PasswordChar="*" Watermark="请输入新密码" />
+            </StackPanel>
+
+            <StackPanel Spacing="6">
+                <TextBlock Text="确认新密码" Classes="PageEyebrow" />
+                <TextBox Text="{Binding ConfirmPassword}" PasswordChar="*" Watermark="请再次输入新密码" />
+            </StackPanel>
+
+            <TextBlock Text="{Binding Message}" Foreground="SeaGreen" TextWrapping="Wrap" />
+
+            <Button Content="修改密码" Classes="PrimaryAction" HorizontalAlignment="Left" Command="{Binding ChangePasswordCommand}" />
+        </StackPanel>
+    </Border>
+</UserControl>

@@ -1,0 +1,127 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             x:Class="Horizon.Game.GengDi.Core.Views.FlowerProfileView"
+             x:DataType="vm:FlowerProfileViewModel">
+    <controls:GalleryPage Title="个人中心"
+                          Subtitle="Horizon.Game.GengDi.FlowerProfile"
+                          Description="管理账户信息与订阅设置。"
+                          IconSource="{StaticResource NotificationsIcon}">
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="16" Margin="0 0 0 24">
+
+                <Border Classes="SurfaceCard" Padding="20">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+                        <Border Grid.Column="0" Width="64" Height="64" CornerRadius="32" Background="#E0E0E0">
+                            <TextBlock Text="👤" FontSize="28" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding DisplayName}" FontSize="18" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding PhoneNumber, StringFormat=' {0}'}" FontSize="13" Foreground="#888888"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border Classes="SurfaceCard" Padding="16">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="订阅状态" Classes="PageEyebrow" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <StackPanel Spacing="6">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="当前等级：" FontSize="13" Foreground="#888888"/>
+                                    <TextBlock Text="{Binding SubscriptionLevel}" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{Binding SubscriptionLevelColor}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="到期时间：" FontSize="13" Foreground="#888888"/>
+                                    <TextBlock Text="{Binding ExpiryDate, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="13"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="升级订阅" Classes="PrimaryAction" Padding="14 6" CornerRadius="8" FontSize="12"
+                                    Command="{Binding UpgradeSubscriptionCommand}"/>
+                        </Grid>
+                        <Border Classes="SurfaceCard subtle" Padding="12 8" CornerRadius="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="自动续费" FontSize="13" VerticalAlignment="Center"/>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsAutoRenew}"
+                                              Command="{Binding ToggleAutoRenewCommand}"/>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="SurfaceCard" Padding="16">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="消息通知设置" Classes="PageEyebrow" />
+                            <Button Grid.Column="1" Content="保存设置" Classes="QuietAction" Padding="12 6" CornerRadius="8" FontSize="12"
+                                    Command="{Binding SaveNotificationSettingsCommand}"/>
+                        </Grid>
+                        <Border Classes="SurfaceCard subtle" Padding="12 8" CornerRadius="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock Text="🔌" FontSize="14"/>
+                                    <TextBlock Text="WebSocket 实时推送" FontSize="13"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsWebSocketEnabled}"/>
+                            </Grid>
+                        </Border>
+                        <Border Classes="SurfaceCard subtle" Padding="12 8" CornerRadius="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock Text="📩" FontSize="14"/>
+                                    <TextBlock Text="SMS 短信通知" FontSize="13"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsSmsEnabled}"/>
+                            </Grid>
+                        </Border>
+                        <Border Classes="SurfaceCard subtle" Padding="12 8" CornerRadius="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock Text="💬" FontSize="14"/>
+                                    <TextBlock Text="微信通知" FontSize="13"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsWeChatEnabled}"/>
+                            </Grid>
+                        </Border>
+                        <Border Classes="SurfaceCard subtle" Padding="12 8" CornerRadius="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock Text="📧" FontSize="14"/>
+                                    <TextBlock Text="邮件通知" FontSize="13"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsEmailEnabled}"/>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="SurfaceCard" Padding="16">
+                    <Button Content="退出登录" Classes="QuietAction" HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center" Padding="12 8" CornerRadius="8" FontSize="13"
+                            Foreground="#EF5350"/>
+                </Border>
+
+                <Border Classes="SurfaceCard" Padding="16">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="身份切换" Classes="PageEyebrow" />
+                        <Border Classes="SurfaceCard subtle" Padding="12 8" CornerRadius="8">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="{Binding MerchantToggleLabel}" FontSize="13"/>
+                                    <TextBlock Text="{Binding MerchantShopName}" FontSize="12" Foreground="#888888"
+                                               IsVisible="{Binding IsMerchant}"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="切换" Classes="QuietAction" Padding="12 6" CornerRadius="8" FontSize="12"
+                                        Command="{Binding ToggleMerchantViewCommand}"/>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </controls:GalleryPage>
+</UserControl>

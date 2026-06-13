@@ -1,0 +1,316 @@
+@page "/game/users"
+@namespace Horizon.WebAdmin.Modules.Game.Pages
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Game.Services
+
+@inject GameUserService GameUserService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">游戏用户</TypographyTitle>
+        <Space>
+            <Button Size="@ButtonSize.Small" OnClick="LoadUsers">刷新</Button>
+            <Select TItem="string" TItemValue="string" @bind-Value="@_statusFilter" Style="width:120px" OnChange="OnStatusFilterChanged">
+                <SelectOption TItem="string" TItemValue="string" Value='@("")'>全部</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("0")'>正常</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("1")'>冻结</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("2")'>封禁</SelectOption>
+            </Select>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="JsonElement" DataSource="@FilteredUsers" Size="@TableSize.Small" RowKey="@GetUserRowKey">
+            <Column TData="string" Title="用户ID">
+                @(context.TryGetProperty("userId", out var p) ? p.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="账号名">
+                @(context.TryGetProperty("accountName", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="状态">
+                <Tag Color="@GetStatusColor(context)">@GetStatusText(context)</Tag>
+            </Column>
+            <Column TData="string" Title="活跃等级">
+                @(context.TryGetProperty("activityLevel", out var p) ? p.GetInt32().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="在线时长(分钟)">
+                @(context.TryGetProperty("onlineMinutes", out var p) ? p.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="最后登录时间">
+                @(context.TryGetProperty("lastLoginTime", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="最后登录IP">
+                @(context.TryGetProperty("lastLoginIp", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    @if (GetStatus(context) == 0)
+                    {
+                        <SpaceItem>
+                            <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => FreezeUser(context)">冻结</Button>
+                        </SpaceItem>
+                    }
+                    @if (GetStatus(context) == 1)
+                    {
+                        <SpaceItem>
+                            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="() => UnfreezeUser(context)">解冻</Button>
+                        </SpaceItem>
+                    }
+                    @if (GetStatus(context) != 2)
+                    {
+                        <SpaceItem>
+                            <Button Danger Size="@ButtonSize.Small" OnClick="() => BanUser(context)">封禁</Button>
+                        </SpaceItem>
+                    }
+                    <SpaceItem>
+                        <Button Size="@ButtonSize.Small" OnClick="() => ShowDetailDrawer(context)">详情</Button>
+                    </SpaceItem>
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    <Drawer Title="@("用户详情")" Visible="@_detailDrawerVisible" OnClose="CloseDetailDrawer" Width="560" Placement="@DrawerPlacement.Right">
+        @if (_selectedUser.HasValue)
+        {
+            <Descriptions Title="基本信息" Bordered Size="@DescriptionsSize.Small" Column="1" Style="margin-bottom:24px;">
+                <DescriptionsItem Label="用户ID">
+                    @(_selectedUser.Value.TryGetProperty("userId", out var p) ? p.GetInt64().ToString() : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Label="账号名">
+                    @(_selectedUser.Value.TryGetProperty("accountName", out var p) ? p.GetString() ?? "-" : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Label="状态">
+                    <Tag Color="@GetStatusColor(_selectedUser.Value)">@GetStatusText(_selectedUser.Value)</Tag>
+                </DescriptionsItem>
+                <DescriptionsItem Label="活跃等级">
+                    @(_selectedUser.Value.TryGetProperty("activityLevel", out var p) ? p.GetInt32().ToString() : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Label="在线时长(分钟)">
+                    @(_selectedUser.Value.TryGetProperty("onlineMinutes", out var p) ? p.GetInt64().ToString() : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Label="连续登录天数">
+                    @(_selectedUser.Value.TryGetProperty("consecutiveLoginDays", out var p) ? p.GetInt32().ToString() : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Label="最后登录时间">
+                    @(_selectedUser.Value.TryGetProperty("lastLoginTime", out var p) ? p.GetString() ?? "-" : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Label="最后登录IP">
+                    @(_selectedUser.Value.TryGetProperty("lastLoginIp", out var p) ? p.GetString() ?? "-" : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Label="服务器ID">
+                    @(_selectedUser.Value.TryGetProperty("serverId", out var p) ? p.GetString() ?? "-" : "-")
+                </DescriptionsItem>
+            </Descriptions>
+
+            <TypographyTitle Level="5" Style="margin-top:16px;">角色列表</TypographyTitle>
+            @if (_selectedUser.Value.TryGetProperty("characters", out var chars) && chars.ValueKind == JsonValueKind.Array)
+            {
+                <Table TItem="JsonElement" DataSource="@chars.EnumerateArray().ToList()" Size="@TableSize.Small" RowKey="@GetCharacterRowKey">
+                    <Column TData="string" Title="角色ID">
+                        @(context.TryGetProperty("characterId", out var p) ? p.GetInt64().ToString() : "-")
+                    </Column>
+                    <Column TData="string" Title="角色名">
+                        @(context.TryGetProperty("characterName", out var p) ? p.GetString() ?? "-" : "-")
+                    </Column>
+                    <Column TData="string" Title="等级">
+                        @(context.TryGetProperty("level", out var p) ? p.GetInt32().ToString() : "-")
+                    </Column>
+                    <Column TData="string" Title="职业">
+                        @(context.TryGetProperty("class", out var p) ? p.GetString() ?? "-" : "-")
+                    </Column>
+                </Table>
+            }
+            else
+            {
+                <Empty Description="@("暂无角色数据")" />
+            }
+        }
+    </Drawer>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> Users { get; set; } = new();
+    private bool Loading { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string _statusFilter = "";
+    private bool _detailDrawerVisible;
+    private JsonElement? _selectedUser;
+
+    private List<JsonElement> FilteredUsers
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(_statusFilter)) return Users;
+            var filterStatus = int.Parse(_statusFilter);
+            return Users.Where(u => GetStatus(u) == filterStatus).ToList();
+        }
+    }
+
+    private object GetUserRowKey(JsonElement x) =>
+        x.TryGetProperty("userId", out var p) ? (object)p.GetInt64() : 0;
+
+    private object GetCharacterRowKey(JsonElement x) =>
+        x.TryGetProperty("characterId", out var p) ? (object)p.GetInt64() : 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await GameUserService.GetGameUserAsync(new { });
+            if (result?.IsSuccess == true)
+            {
+                var data = result.Data;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    Users = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    Users = items.EnumerateArray().ToList();
+                }
+                else
+                {
+                    Users = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                Users = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    ErrorMessage = result.ErrorMessage ?? "加载用户列表失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载用户列表失败: {ex.Message}";
+            Users = new List<JsonElement>();
+        }
+        Loading = false;
+    }
+
+    private async Task OnStatusFilterChanged(string value)
+    {
+        _statusFilter = value;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private int GetStatus(JsonElement u) =>
+        u.TryGetProperty("status", out var p) ? p.GetInt32() : 0;
+
+    private string GetStatusColor(JsonElement u) => GetStatus(u) switch
+    {
+        0 => "green",
+        1 => "blue",
+        2 => "red",
+        _ => "default"
+    };
+
+    private string GetStatusText(JsonElement u) => GetStatus(u) switch
+    {
+        0 => "正常",
+        1 => "冻结",
+        2 => "封禁",
+        _ => "未知"
+    };
+
+    private void ShowDetailDrawer(JsonElement user)
+    {
+        _selectedUser = user;
+        _detailDrawerVisible = true;
+    }
+
+    private void CloseDetailDrawer()
+    {
+        _detailDrawerVisible = false;
+        _selectedUser = null;
+    }
+
+    private async Task FreezeUser(JsonElement user)
+    {
+        var userId = user.TryGetProperty("userId", out var p) ? p.GetInt64() : 0;
+        try
+        {
+            var result = await GameUserService.FreezeUserAsync(userId);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success("用户已冻结");
+                await LoadUsers();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "冻结失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"冻结失败: {ex.Message}";
+        }
+    }
+
+    private async Task UnfreezeUser(JsonElement user)
+    {
+        var userId = user.TryGetProperty("userId", out var p) ? p.GetInt64() : 0;
+        try
+        {
+            var result = await GameUserService.UnfreezeUserAsync(userId);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success("用户已解冻");
+                await LoadUsers();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "解冻失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"解冻失败: {ex.Message}";
+        }
+    }
+
+    private async Task BanUser(JsonElement user)
+    {
+        var userId = user.TryGetProperty("userId", out var p) ? p.GetInt64() : 0;
+        try
+        {
+            var result = await GameUserService.BanUserAsync(userId);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success("用户已封禁");
+                await LoadUsers();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "封禁失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"封禁失败: {ex.Message}";
+        }
+    }
+}

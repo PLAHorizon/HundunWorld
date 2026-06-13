@@ -105,7 +105,7 @@ namespace Horizon.Orleans.Grains
                     MaxPlayers = maxPlayers,
                     CurrentPlayers = 0,
                     Players = new HashSet<Guid>(),
-                    CreatedTime = DateTime.UtcNow,
+                    CreatedTime = DateTime.Now,
                     IsActive = true
                 };
 

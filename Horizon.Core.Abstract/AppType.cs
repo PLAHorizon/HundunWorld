@@ -1,4 +1,4 @@
-﻿using Orleans;
+using Orleans;
 using Orleans.CodeGeneration;
 using System;
 using System.Collections.Generic;
@@ -65,6 +65,11 @@ namespace Horizon.Core.Abstract
         /// 游戏
         /// </summary>
         [Description("游戏"), Id(9)]
-        Game = 369
+        Game = 369,
+        /// <summary>
+        /// 花卉产业
+        /// </summary>
+        [Description("花卉产业"), Id(10)]
+        Flower = 520
     }
 }

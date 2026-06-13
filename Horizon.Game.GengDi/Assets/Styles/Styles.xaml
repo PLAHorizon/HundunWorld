@@ -1,0 +1,282 @@
+<Styles xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <!-- ============================================ -->
+    <!-- 暴雪战网风格主题 - Battle.net Dark Theme     -->
+    <!-- 兼容 FluentAvalonia NavigationView           -->
+    <!-- ============================================ -->
+    
+    <Styles.Resources>
+        <!-- 战网核心色彩系统 -->
+        <Color x:Key="BnetDarkBg">#141826</Color>
+        <Color x:Key="BnetPanelBg">#20293c</Color>
+        <Color x:Key="BnetSidebarBg">#171e33</Color>
+        <Color x:Key="BnetCardBg">#232a3f</Color>
+        <Color x:Key="BnetCardHoverBg">#2d3753</Color>
+        <Color x:Key="BnetHeaderBg">#10131d</Color>
+        
+        <!-- 战网蓝色系 -->
+        <Color x:Key="BnetBlue">#7AA9FF</Color>
+        <Color x:Key="BnetBlueDark">#5E85D8</Color>
+        <Color x:Key="BnetBlueLight">#A1C7FF</Color>
+        <Color x:Key="BnetBlueGlow">#4C6FB8</Color>
+        <Color x:Key="BnetBlueMuted">#2f446b</Color>
+        
+        <!-- 文字色彩 -->
+        <Color x:Key="BnetTextPrimary">#FFFFFF</Color>
+        <Color x:Key="BnetTextSecondary">#A8A9C4</Color>
+        <Color x:Key="BnetTextMuted">#6F7594</Color>
+        <Color x:Key="BnetTextHighlight">#7AA9FF</Color>
+        
+        <!-- 边框和分割线 -->
+        <Color x:Key="BnetBorder">#383f5b</Color>
+        <Color x:Key="BnetBorderLight">#49546e</Color>
+        <Color x:Key="BnetDivider">#1f263e</Color>
+        
+        <!-- 状态色 -->
+        <Color x:Key="BnetGreen">#5FD19B</Color>
+        <Color x:Key="BnetYellow">#F1C96C</Color>
+        <Color x:Key="BnetRed">#F26E7D</Color>
+        <Color x:Key="BnetOrange">#FFAA6C</Color>
+        
+        <!-- 画刷 -->
+        <SolidColorBrush x:Key="CardBackground" Color="{StaticResource BnetCardBg}"/>
+        <SolidColorBrush x:Key="OverlayBackground" Color="#CC000008"/>
+        
+        <!-- 兼容旧资源键 -->
+        <Color x:Key="PrimaryColor">#00AEFF</Color>
+        <Color x:Key="PrimaryLightColor">#33C1FF</Color>
+        <Color x:Key="SecondaryColor">#1a1a24</Color>
+        <Color x:Key="BackgroundColor">#121219</Color>
+        <Color x:Key="CardBackgroundColor">#1e1e2a</Color>
+        <Color x:Key="TextColor">#FFFFFF</Color>
+        <Color x:Key="SecondaryTextColor">#8E8EA0</Color>
+        <Color x:Key="BorderColor">#2a2a3a</Color>
+        <Color x:Key="HoverColor">#262636</Color>
+        <Color x:Key="DividerColor">#222233</Color>
+        
+        <!-- 阴影效果 -->
+        <DropShadowEffect x:Key="CardShadow" BlurRadius="12" OffsetX="0" OffsetY="4" Opacity="0.4" Color="#000010"/>
+        <DropShadowEffect x:Key="ButtonShadow" BlurRadius="6" OffsetX="0" OffsetY="2" Opacity="0.3" Color="#000010"/>
+        <DropShadowEffect x:Key="GlowShadow" BlurRadius="20" OffsetX="0" OffsetY="0" Opacity="0.5" Color="#00AEFF"/>
+    </Styles.Resources>
+    
+    <!-- ========================================= -->
+    <!-- TextBlock 样式类 (不覆盖全局默认)          -->
+    <!-- ========================================= -->
+    <Style Selector="TextBlock.Title">
+        <Setter Property="FontSize" Value="22"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Margin" Value="0 0 0 16"/>
+    </Style>
+    
+    <Style Selector="TextBlock.Subtitle">
+        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{StaticResource BnetTextSecondary}"/>
+    </Style>
+    
+    <Style Selector="TextBlock.SectionHeader">
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Foreground" Value="{StaticResource BnetTextSecondary}"/>
+        <Setter Property="Margin" Value="0 0 0 8"/>
+    </Style>
+    
+    <!-- ======================================== -->
+    <!-- 战网蓝色主操作按钮 (带 .BnetPrimary 类)   -->
+    <!-- ======================================== -->
+    <Style Selector="Button.BnetPrimary">
+        <Setter Property="Background" Value="{StaticResource BnetBlue}"/>
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BnetBlueDark}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="32 12"/>
+        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="CornerRadius" Value="8"/>
+    </Style>
+    
+    <Style Selector="Button.BnetPrimary:pointerover">
+        <Setter Property="Background" Value="{StaticResource BnetBlueLight}"/>
+    </Style>
+    
+    <Style Selector="Button.BnetPrimary:pressed">
+        <Setter Property="Background" Value="{StaticResource BnetBlueDark}"/>
+    </Style>
+    
+    <!-- 战网安装/启动大按钮 -->
+    <Style Selector="Button.BnetInstall">
+        <Setter Property="Background" Value="{StaticResource BnetBlue}"/>
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="60 14"/>
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+    </Style>
+    
+    <Style Selector="Button.BnetInstall:pointerover">
+        <Setter Property="Background" Value="{StaticResource BnetBlueLight}"/>
+    </Style>
+    
+    <Style Selector="Button.BnetInstall:pressed">
+        <Setter Property="Background" Value="{StaticResource BnetBlueDark}"/>
+    </Style>
+    
+    <!-- ========================= -->
+    <!-- NavigationButton 导航按钮  -->
+    <!-- ========================= -->
+    <Style Selector="Button.NavigationButton">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{StaticResource BnetTextSecondary}"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="16 10"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="CornerRadius" Value="6"/>
+        <Setter Property="HorizontalContentAlignment" Value="Left"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+    </Style>
+    
+    <Style Selector="Button.NavigationButton:pointerover">
+        <Setter Property="Background" Value="#12FFFFFF"/>
+        <Setter Property="Foreground" Value="{StaticResource BnetTextPrimary}"/>
+    </Style>
+    
+    <!-- ========================= -->
+    <!-- Card 卡片样式              -->
+    <!-- ========================= -->
+    <Style Selector="Border.Card">
+        <Setter Property="Background" Value="{StaticResource BnetCardBg}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BnetBorder}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="18"/>
+        <Setter Property="Margin" Value="0 10 0 0"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15"/>
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.15"/>
+            </Transitions>
+        </Setter>
+    </Style>
+    
+    <Style Selector="Border.Card:pointerover">
+        <Setter Property="Background" Value="{StaticResource BnetCardHoverBg}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource BnetBorderLight}"/>
+    </Style>
+
+    <!-- ============================================= -->
+    <!-- 战网顶部导航栏样式                               -->
+    <!-- ============================================= -->
+    
+    <!-- 顶部导航标签按钮 (自定义模板, 带底部下划线指示器) -->
+    <Style Selector="Button.HeaderTab">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="#8E8EA0"/>
+        <Setter Property="BorderThickness" Value="0 0 0 2"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Padding" Value="16 0"/>
+        <Setter Property="Margin" Value="2 0"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="CornerRadius" Value="0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        Padding="{TemplateBinding Padding}"
+                        CornerRadius="{TemplateBinding CornerRadius}">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    
+    <Style Selector="Button.HeaderTab:pointerover">
+        <Setter Property="Foreground" Value="#C0C0D0"/>
+        <Setter Property="Background" Value="#08FFFFFF"/>
+    </Style>
+    
+    <Style Selector="Button.HeaderTab.Active">
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="BorderBrush" Value="#00AEFF"/>
+    </Style>
+    
+    <Style Selector="Button.HeaderTab.Active:pointerover">
+        <Setter Property="Foreground" Value="#FFFFFF"/>
+        <Setter Property="Background" Value="#08FFFFFF"/>
+    </Style>
+    
+    <!-- 顶部图标按钮 (通知铃铛、头像、社交等) -->
+    <Style Selector="Button.HeaderIconBtn">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Padding" Value="8"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        Padding="{TemplateBinding Padding}">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    
+    <Style Selector="Button.HeaderIconBtn:pointerover">
+        <Setter Property="Background" Value="#15FFFFFF"/>
+    </Style>
+    
+    <!-- 促销胶囊按钮 (绿色边框圆角) -->
+    <Style Selector="Button.HeaderPromo">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderBrush" Value="#264a36"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding" Value="14 6"/>
+        <Setter Property="CornerRadius" Value="14"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        Padding="{TemplateBinding Padding}">
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </Style>
+    
+    <Style Selector="Button.HeaderPromo:pointerover">
+        <Setter Property="Background" Value="#1a3a2a"/>
+        <Setter Property="BorderBrush" Value="#00CC66"/>
+    </Style>
+    
+    <Style Selector="Button.HeaderPromo.Active">
+        <Setter Property="Background" Value="#1a3a2a"/>
+        <Setter Property="BorderBrush" Value="#00CC66"/>
+    </Style>
+
+</Styles>

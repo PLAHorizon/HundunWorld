@@ -1,0 +1,370 @@
+﻿@page "/flower/knowledge"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Flower.Services
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+
+@inject FlowerAIService AIService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">知识文档管理</TypographyTitle>
+        <Space>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="ShowCreateModal">新建文档</Button>
+            <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="LoadDocuments">刷新</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="JsonElement" DataSource="@Documents" Size="@TableSize.Small" RowKey="@GetDocumentRowKey">
+            <Column TData="string" Title="ID">
+                @(context.TryGetProperty("id", out var p) ? p.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="标题">
+                @(context.TryGetProperty("title", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="来源">
+                <Tag>@(context.TryGetProperty("source", out var p) ? p.GetString() ?? "-" : "-")</Tag>
+            </Column>
+            <Column TData="string" Title="是否索引">
+                <Tag Color="@(GetIsIndexed(context) ? "green" : "orange")">@(GetIsIndexed(context) ? "已索引" : "未索引")</Tag>
+            </Column>
+            <Column TData="string" Title="分块数">
+                @(context.TryGetProperty("chunkCount", out var p) ? p.GetInt32().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="索引时间">
+                @(context.TryGetProperty("indexedAt", out var p) ? p.GetString() ?? "--" : "--")
+            </Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    @if (!GetIsIndexed(context))
+                    {
+                        <SpaceItem>
+                            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small"
+                                    OnClick="() => TriggerReIndex(context)">索引</Button>
+                        </SpaceItem>
+                    }
+                    <SpaceItem>
+                        <Button Size="@ButtonSize.Small" OnClick="() => ViewDocument(context)">查看</Button>
+                    </SpaceItem>
+                    <SpaceItem>
+                        <Popconfirm Title="确定删除此文档？" OnConfirm="() => DeleteDocument(context)">
+                            <Button Danger Size="@ButtonSize.Small">删除</Button>
+                        </Popconfirm>
+                    </SpaceItem>
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    <Modal Title="新建文档" Visible="@CreateModalVisible" OnCancel="CloseCreateModal" OnOk="HandleCreateOk" ConfirmLoading="@CreateLoading">
+        <Form Model="@CreateForm" Layout="@FormLayout.Vertical">
+            <FormItem Label="文档标题">
+                <Input @bind-Value="@CreateForm.Title" Placeholder="请输入文档标题" />
+            </FormItem>
+            <FormItem Label="来源">
+                <Input @bind-Value="@CreateForm.Source" Placeholder="请输入来源" />
+            </FormItem>
+            <FormItem Label="内容">
+                <TextArea @bind-Value="@CreateForm.Content" Rows="6" Placeholder="请输入文档内容" />
+            </FormItem>
+        </Form>
+    </Modal>
+
+    <Modal Title="@DocumentDetailTitle"
+           Visible="@ViewModalVisible" OnCancel="CloseViewModal"
+           Footer="@((RenderFragment)null)" Width="720">
+        @if (SelectedDocument != null)
+        {
+            <Descriptions Column="3" Size="@DescriptionsSize.Small" Style="margin-bottom:16px;">
+                <DescriptionsItem Title="来源">
+                    @(SelectedDocument.Value.TryGetProperty("source", out var p) ? p.GetString() ?? "-" : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Title="索引状态">
+                    @(GetIsIndexed(SelectedDocument.Value) ? "已索引" : "未索引")
+                </DescriptionsItem>
+                <DescriptionsItem Title="分块数">
+                    @(SelectedDocument.Value.TryGetProperty("chunkCount", out var p) ? p.GetInt32().ToString() : "-")
+                </DescriptionsItem>
+            </Descriptions>
+            <Divider />
+            <div style="white-space:pre-wrap; font-size:0.875rem;">
+                @(SelectedDocument.Value.TryGetProperty("content", out var cp) ? cp.GetString() ?? "" : "")
+            </div>
+        }
+    </Modal>
+
+    <Drawer Title="@("AI对话")" Visible="@ChatDrawerVisible" OnClose="CloseChatDrawer" Width="480">
+        <div style="display:flex; flex-direction:column; height:100%;">
+            <div style="flex:1; overflow-y:auto; margin-bottom:12px; padding:8px; background:#f5f5f5; border-radius:4px; min-height:300px;">
+                @if (ChatMessages.Any())
+                {
+                    foreach (var msg in ChatMessages)
+                    {
+                        <div style="margin-bottom:12px;">
+                            <div style="font-size:0.75rem; color:rgba(0,0,0,0.45); margin-bottom:4px;">
+                                @(msg.IsUser ? "你" : "AI")
+                            </div>
+                            <div style="background:@(msg.IsUser ? "#e6f7ff" : "#fff"); padding:8px 12px; border-radius:4px; font-size:0.875rem; white-space:pre-wrap;">
+                                @msg.Content
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <Empty Description="@("输入问题开始对话")" />
+                }
+            </div>
+            <div style="display:flex; gap:8px;">
+                <Input @bind-Value="@ChatInput" Placeholder="输入问题..." Style="flex:1"
+                       OnPressEnter="SendChat" />
+                <Button Type="@ButtonType.Primary" OnClick="SendChat" Loading="@ChatLoading">发送</Button>
+            </div>
+        </div>
+    </Drawer>
+
+    <div style="position:fixed; bottom:24px; right:24px; z-index:1000;">
+        <Button Type="@ButtonType.Primary" Shape="@ButtonShape.Circle" Size="@ButtonSize.Large"
+                Icon="@("message")" OnClick="OpenChatDrawer" />
+    </div>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <Alert Type="@AlertType.Success" Message="@SuccessMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> Documents { get; set; } = new();
+    private bool Loading { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string SuccessMessage { get; set; } = "";
+
+    private object GetDocumentRowKey(JsonElement x) =>
+        x.TryGetProperty("id", out var p) ? (object)p.GetInt64() : 0;
+
+    private string DocumentDetailTitle
+    {
+        get
+        {
+            if (SelectedDocument != null && SelectedDocument.Value.TryGetProperty("title", out var p))
+                return p.GetString() ?? "文档详情";
+            return "文档详情";
+        }
+    }
+
+    private bool CreateModalVisible { get; set; }
+    private bool CreateLoading { get; set; }
+    private DocumentFormModel CreateForm { get; set; } = new();
+
+    private bool ViewModalVisible { get; set; }
+    private JsonElement? SelectedDocument { get; set; }
+
+    private bool ChatDrawerVisible { get; set; }
+    private bool ChatLoading { get; set; }
+    private string ChatInput { get; set; } = "";
+    private List<ChatMessageItem> ChatMessages { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDocuments();
+    }
+
+    private async Task LoadDocuments()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await AIService.GetDocumentListAsync();
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var data = result.Data.Value;
+                if (data.ValueKind == JsonValueKind.Array)
+                    Documents = data.EnumerateArray().ToList();
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                    Documents = items.EnumerateArray().ToList();
+                else
+                    Documents = new List<JsonElement>();
+            }
+            else
+            {
+                Documents = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    ErrorMessage = result.ErrorMessage ?? "加载文档列表失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载文档列表失败: {ex.Message}";
+            Documents = new List<JsonElement>();
+        }
+        Loading = false;
+    }
+
+    private void ShowCreateModal()
+    {
+        CreateForm = new DocumentFormModel();
+        CreateModalVisible = true;
+    }
+
+    private void CloseCreateModal() => CreateModalVisible = false;
+
+    private async Task HandleCreateOk()
+    {
+        if (string.IsNullOrWhiteSpace(CreateForm.Title))
+        {
+            MsgService.Warning("请输入文档标题");
+            return;
+        }
+        CreateLoading = true;
+        try
+        {
+            var data = new { Title = CreateForm.Title, Source = CreateForm.Source, Content = CreateForm.Content };
+            var result = await AIService.CreateDocumentAsync(data);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success("文档创建成功");
+                CreateModalVisible = false;
+                await LoadDocuments();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "创建失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"创建失败: {ex.Message}";
+        }
+        CreateLoading = false;
+    }
+
+    private void ViewDocument(JsonElement doc)
+    {
+        SelectedDocument = doc;
+        ViewModalVisible = true;
+    }
+
+    private void CloseViewModal()
+    {
+        ViewModalVisible = false;
+        SelectedDocument = null;
+    }
+
+    private async Task TriggerReIndex(JsonElement doc)
+    {
+        var docId = doc.TryGetProperty("id", out var p) ? p.GetInt64() : 0;
+        try
+        {
+            var result = await AIService.ReIndexDocumentAsync(docId);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success("索引任务已触发");
+                await LoadDocuments();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "触发索引失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"触发索引失败: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteDocument(JsonElement doc)
+    {
+        var docId = doc.TryGetProperty("id", out var p) ? p.GetInt64() : 0;
+        try
+        {
+            var result = await AIService.DeleteDocumentAsync(docId);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success("文档已删除");
+                await LoadDocuments();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "删除失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"删除失败: {ex.Message}";
+        }
+    }
+
+    private bool GetIsIndexed(JsonElement doc) =>
+        doc.TryGetProperty("isIndexed", out var p) && p.GetBoolean();
+
+    private void OpenChatDrawer()
+    {
+        ChatDrawerVisible = true;
+    }
+
+    private void CloseChatDrawer()
+    {
+        ChatDrawerVisible = false;
+    }
+
+    private async Task SendChat()
+    {
+        if (string.IsNullOrWhiteSpace(ChatInput)) return;
+        var question = ChatInput;
+        ChatInput = "";
+        ChatMessages.Add(new ChatMessageItem { IsUser = true, Content = question });
+        ChatLoading = true;
+        try
+        {
+            var result = await AIService.ChatAsync(new { Question = question });
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var data = result.Data.Value;
+                var answer = data.TryGetProperty("answer", out var p) ? p.GetString() ?? "无回复"
+                    : data.TryGetProperty("content", out var p2) ? p2.GetString() ?? "无回复"
+                    : data.TryGetProperty("message", out var p3) ? p3.GetString() ?? "无回复"
+                    : data.GetString() ?? "无回复";
+                ChatMessages.Add(new ChatMessageItem { IsUser = false, Content = answer });
+            }
+            else
+            {
+                ChatMessages.Add(new ChatMessageItem { IsUser = false, Content = result?.ErrorMessage ?? "请求失败" });
+            }
+        }
+        catch (Exception ex)
+        {
+            ChatMessages.Add(new ChatMessageItem { IsUser = false, Content = $"请求异常: {ex.Message}" });
+        }
+        ChatLoading = false;
+    }
+
+    private class DocumentFormModel
+    {
+        public string Title { get; set; } = "";
+        public string Source { get; set; } = "";
+        public string Content { get; set; } = "";
+    }
+
+    private class ChatMessageItem
+    {
+        public bool IsUser { get; set; }
+        public string Content { get; set; } = "";
+    }
+}

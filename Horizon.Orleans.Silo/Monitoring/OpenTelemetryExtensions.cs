@@ -58,8 +58,8 @@ namespace Horizon.Orleans.Silo.Monitoring
                     // 添加自定义活动源
                     tracing.AddSource(HorizonMetrics.ActivitySourceName);
 
-                    // 导出到控制台（开发环境调试）
-                    tracing.AddConsoleExporter();
+                    // 导出到控制台（开发环境调试）已注释，避免巨量日志刷屏
+                    // tracing.AddConsoleExporter();
                 });
 
             return services;

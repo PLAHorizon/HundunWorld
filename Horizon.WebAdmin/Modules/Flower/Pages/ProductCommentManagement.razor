@@ -1,0 +1,261 @@
+﻿@page "/flower/product-comments"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Flower.Services
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+
+@inject FlowerCommentService CommentService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">商品评价管理</TypographyTitle>
+        <Space>
+            <AntDesign.InputNumber TValue="long" @bind-Value="@SearchProductId" Placeholder="商品ID" Style="width:120px" Size="@InputSize.Small" />
+            <AntDesign.InputNumber TValue="long" @bind-Value="@SearchMerchantId" Placeholder="商户ID" Style="width:120px" Size="@InputSize.Small" />
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadComments">查询</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="JsonElement" DataSource="@Comments" Size="@TableSize.Small" RowKey="@GetRowKey">
+            <Column TData="string" Title="评价ID">
+                @(context.TryGetProperty("id", out var idProp) ? idProp.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="商品ID">
+                @(context.TryGetProperty("productId", out var pidProp) ? pidProp.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="用户ID">
+                @(context.TryGetProperty("userId", out var uidProp) ? uidProp.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="评分">
+                <Rate Value="@(context.TryGetProperty("rating", out var rProp) ? rProp.GetInt32() : 0)" Disabled AllowHalf />
+            </Column>
+            <Column TData="string" Title="评价内容">
+                @(context.TryGetProperty("content", out var cProp) ? (cProp.GetString()?.Length > 30 ? cProp.GetString()?[..30] + "..." : cProp.GetString()) ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="状态">
+                <Tag Color="@GetCommentStatusColor(context)">@GetCommentStatusText(context)</Tag>
+            </Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    <SpaceItem>
+                        <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowDetailModal(context)">详情</Button>
+                    </SpaceItem>
+                    <SpaceItem>
+                        <Button Danger Size="@ButtonSize.Small" OnClick="() => ShowInterveneModal(context)">平台介入</Button>
+                    </SpaceItem>
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    <Modal Title="评价详情" Visible="@DetailModalVisible" OnCancel="CloseDetailModal" Footer="@((RenderFragment)null)" Width="640">
+        @if (SelectedComment.ValueKind != JsonValueKind.Undefined)
+        {
+            <Descriptions Column="2" Size="@DescriptionsSize.Small">
+                <DescriptionsItem Title="评价ID">@(SelectedComment.TryGetProperty("id", out var idProp) ? idProp.GetInt64().ToString() : "-")</DescriptionsItem>
+                <DescriptionsItem Title="商品ID">@(SelectedComment.TryGetProperty("productId", out var pidProp) ? pidProp.GetInt64().ToString() : "-")</DescriptionsItem>
+                <DescriptionsItem Title="用户ID">@(SelectedComment.TryGetProperty("userId", out var uidProp) ? uidProp.GetInt64().ToString() : "-")</DescriptionsItem>
+                <DescriptionsItem Title="评分"><Rate Value="@(SelectedComment.TryGetProperty("rating", out var rProp) ? rProp.GetInt32() : 0)" Disabled AllowHalf /></DescriptionsItem>
+                <DescriptionsItem Title="评价内容" Span="2">@(SelectedComment.TryGetProperty("content", out var cProp) ? cProp.GetString() ?? "-" : "-")</DescriptionsItem>
+                <DescriptionsItem Title="评价时间">@(SelectedComment.TryGetProperty("createdAt", out var catProp) ? catProp.GetString() ?? "-" : "-")</DescriptionsItem>
+                <DescriptionsItem Title="状态"><Tag Color="@GetCommentStatusColor(SelectedComment)">@GetCommentStatusText(SelectedComment)</Tag></DescriptionsItem>
+            </Descriptions>
+
+            @if (SelectedComment.TryGetProperty("images", out var imagesProp) && imagesProp.ValueKind == JsonValueKind.Array)
+            {
+                <TypographyTitle Level="5" Style="margin-top:16px;">评价图片</TypographyTitle>
+                <Space Wrap>
+                    @foreach (var img in imagesProp.EnumerateArray())
+                    {
+                        <Image Src="@img.GetString()" Width="100" Height="100" Style="object-fit:cover;" />
+                    }
+                </Space>
+            }
+
+            @if (SelectedComment.TryGetProperty("replies", out var repliesProp) && repliesProp.ValueKind == JsonValueKind.Array)
+            {
+                <TypographyTitle Level="5" Style="margin-top:16px;">回复记录</TypographyTitle>
+                <Table TItem="JsonElement" DataSource="@(repliesProp.EnumerateArray().ToList())" Size="@TableSize.Small" RowKey="@GetRowKey">
+                    <Column TData="string" Title="回复内容">
+                        @(context.TryGetProperty("content", out var rcProp) ? rcProp.GetString() ?? "-" : "-")
+                    </Column>
+                    <Column TData="string" Title="回复时间">
+                        @(context.TryGetProperty("createdAt", out var rtProp) ? rtProp.GetString() ?? "-" : "-")
+                    </Column>
+                </Table>
+            }
+        }
+    </Modal>
+
+    <Modal Title="平台介入" Visible="@InterveneModalVisible" OnCancel="CloseInterveneModal" OnOk="HandleInterveneOk" ConfirmLoading="@InterveneLoading">
+        <Form Model="@InterveneForm" Layout="@FormLayout.Vertical" Context="formCtx">
+            <FormItem Label="介入类型">
+                <Select TItem="string" TItemValue="string" @bind-Value="@InterveneForm.Action" Style="width:100%">
+                    <SelectOption TItem="string" TItemValue="string" Value="@("hide")">隐藏评价</SelectOption>
+                    <SelectOption TItem="string" TItemValue="string" Value="@("warning")">警告商户</SelectOption>
+                    <SelectOption TItem="string" TItemValue="string" Value="@("reply")">平台回复</SelectOption>
+                </Select>
+            </FormItem>
+            <FormItem Label="介入原因/回复内容">
+                <TextArea @bind-Value="@InterveneForm.Reason" Rows="4" Placeholder="请输入介入原因或回复内容" />
+            </FormItem>
+        </Form>
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> Comments { get; set; } = new();
+    private bool Loading { get; set; }
+    private long SearchProductId { get; set; }
+    private long SearchMerchantId { get; set; }
+    private string ErrorMessage { get; set; } = "";
+
+    private bool DetailModalVisible { get; set; }
+    private JsonElement SelectedComment { get; set; }
+
+    private bool InterveneModalVisible { get; set; }
+    private bool InterveneLoading { get; set; }
+    private long InterveneCommentId { get; set; }
+    private InterveneFormModel InterveneForm { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (SearchProductId > 0)
+            await LoadComments();
+    }
+
+    private async Task LoadComments()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            ResultVM<JsonElement?>? result = null;
+            if (SearchProductId > 0)
+            {
+                result = await CommentService.GetProductCommentsAsync(SearchProductId);
+            }
+            else if (SearchMerchantId > 0)
+            {
+                result = await CommentService.GetMerchantCommentsAsync(SearchMerchantId);
+            }
+
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var data = result.Data.Value;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    Comments = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    Comments = items.EnumerateArray().ToList();
+                }
+                else
+                {
+                    Comments = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                Comments = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    ErrorMessage = result.ErrorMessage ?? "加载评价列表失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载评价列表失败: {ex.Message}";
+            Comments = new List<JsonElement>();
+        }
+        Loading = false;
+    }
+
+    private void ShowDetailModal(JsonElement comment)
+    {
+        SelectedComment = comment;
+        DetailModalVisible = true;
+    }
+
+    private void CloseDetailModal()
+    {
+        DetailModalVisible = false;
+        SelectedComment = default;
+    }
+
+    private void ShowInterveneModal(JsonElement comment)
+    {
+        InterveneCommentId = comment.TryGetProperty("id", out var idProp) ? idProp.GetInt64() : 0;
+        InterveneForm = new InterveneFormModel();
+        InterveneModalVisible = true;
+    }
+
+    private void CloseInterveneModal()
+    {
+        InterveneModalVisible = false;
+    }
+
+    private async Task HandleInterveneOk()
+    {
+        InterveneLoading = true;
+        try
+        {
+            var data = new
+            {
+                Action = InterveneForm.Action,
+                Reason = InterveneForm.Reason
+            };
+            var result = await CommentService.ReplyCommentAsync(InterveneCommentId, data);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success("平台介入操作成功");
+                InterveneModalVisible = false;
+                await LoadComments();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "操作失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"操作失败: {ex.Message}";
+        }
+        InterveneLoading = false;
+    }
+
+    private string GetCommentStatusColor(JsonElement comment)
+    {
+        var status = comment.TryGetProperty("status", out var prop) ? prop.GetInt32() : 0;
+        return status switch { 0 => "default", 1 => "green", 2 => "red", 3 => "orange", _ => "default" };
+    }
+
+    private string GetCommentStatusText(JsonElement comment)
+    {
+        var status = comment.TryGetProperty("status", out var prop) ? prop.GetInt32() : 0;
+        return status switch { 0 => "待审核", 1 => "正常", 2 => "已隐藏", 3 => "已介入", _ => "未知" };
+    }
+
+    public class InterveneFormModel
+    {
+        public string Action { get; set; } = "hide";
+        public string Reason { get; set; } = "";
+    }
+
+    private object GetRowKey(JsonElement x) => x.TryGetProperty("id", out var p) ? p.GetInt64() : 0L;
+}

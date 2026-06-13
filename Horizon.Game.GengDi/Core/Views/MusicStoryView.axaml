@@ -1,0 +1,64 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             xmlns:models="using:Horizon.Game.GengDi.Models"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
+             x:Class="Horizon.Game.GengDi.Core.Views.MusicStoryView"
+             x:DataType="vm:MusicStoryListViewModel">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="20" Margin="24">
+
+            <controls:GalleryPage Title="音乐背后故事"
+                                  Subtitle="探索音乐背后的故事"
+                                  Description="了解你喜爱的音乐背后的创作故事、歌手经历和专辑历史。"
+                                  IconSource="{StaticResource MusicInfoIcon}">
+
+                <StackPanel Spacing="20">
+
+                    <Border Classes="SurfaceCard" Padding="24">
+                        <StackPanel Spacing="16">
+                            <TextBlock Text="热门音乐故事" FontSize="20" FontWeight="SemiBold" />
+                            <TextBlock Text="探索最受欢迎的音乐故事" FontSize="13" Classes="SupportingText" />
+
+                            <ItemsControl ItemsSource="{Binding StorySongs}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:Song">
+                                        <Border Padding="16 12" CornerRadius="8" Margin="0 0 0 8" Cursor="Hand"
+                                                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                                Tapped="SongStory_Tapped">
+                                            <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                                <Border Width="48" Height="48" CornerRadius="8"
+                                                        Background="{DynamicResource SocialAvatarBackgroundBrush}">
+                                                    <TextBlock Text="♪" FontSize="20"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                               Foreground="{DynamicResource SocialAvatarTextBrush}" />
+                                                </Border>
+                                                <StackPanel Grid.Column="1" Margin="16 0 0 0" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock FontSize="12" Classes="SupportingText" TextTrimming="CharacterEllipsis">
+                                                        <Run Text="{Binding DisplayArtist}" />
+                                                        <Run Text=" · " />
+                                                        <Run Text="{Binding DisplayAlbum}" />
+                                                    </TextBlock>
+                                                </StackPanel>
+                                                <ui:SymbolIcon Grid.Column="2" Symbol="Document" FontSize="16"
+                                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <TextBlock Text="暂无更多音乐故事" FontSize="14" Classes="SupportingText"
+                                       HorizontalAlignment="Center" Margin="0 40"
+                                       IsVisible="{Binding HasNoStories}" />
+                        </StackPanel>
+                    </Border>
+
+                </StackPanel>
+            </controls:GalleryPage>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

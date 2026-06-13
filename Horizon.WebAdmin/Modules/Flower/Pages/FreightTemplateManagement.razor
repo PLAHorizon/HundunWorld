@@ -1,0 +1,282 @@
+﻿@page "/flower/freight-templates"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Flower.Services
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+
+@inject FlowerFreightService FreightService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">运费模板管理</TypographyTitle>
+        <Space>
+            <AntDesign.InputNumber TValue="long" @bind-Value="@SearchMerchantId" Placeholder="商户ID" Style="width:120px" Size="@InputSize.Small" />
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadTemplates">查询</Button>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="ShowAddModal">新增模板</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="JsonElement" DataSource="@Templates" Size="@TableSize.Small" RowKey="@GetRowKey">
+            <Column TData="string" Title="模板ID">
+                @(context.TryGetProperty("id", out var idProp) ? idProp.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="模板名称">
+                @(context.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="计费方式">
+                @GetCalcTypeText(context)
+            </Column>
+            <Column TData="string" Title="首件/首重">
+                @(context.TryGetProperty("firstUnit", out var fuProp) ? fuProp.GetDecimal().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="首费">
+                @(context.TryGetProperty("firstPrice", out var fpProp) ? $"¥{fpProp.GetDecimal():N2}" : "-")
+            </Column>
+            <Column TData="string" Title="续件/续重">
+                @(context.TryGetProperty("additionalUnit", out var auProp) ? auProp.GetDecimal().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="续费">
+                @(context.TryGetProperty("additionalPrice", out var apProp) ? $"¥{apProp.GetDecimal():N2}" : "-")
+            </Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    <SpaceItem>
+                        <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowEditModal(context)">编辑</Button>
+                    </SpaceItem>
+                    <SpaceItem>
+                        <Popconfirm Title="确定删除此模板？" OnConfirm="() => DeleteTemplate(context)">
+                            <Button Danger Size="@ButtonSize.Small">删除</Button>
+                        </Popconfirm>
+                    </SpaceItem>
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    <Modal Title="@(IsEditMode ? "编辑运费模板" : "新增运费模板")" Visible="@TemplateModalVisible" OnCancel="CloseModal" OnOk="HandleOk" ConfirmLoading="@ModalLoading" Width="600">
+        <Form Model="@TemplateForm" Layout="@FormLayout.Vertical">
+            <FormItem Label="模板名称">
+                <Input @bind-Value="@TemplateForm.Name" Placeholder="请输入模板名称" />
+            </FormItem>
+            <FormItem Label="计费方式">
+                <RadioGroup TItem="int" TItemValue="int" @bind-Value="@TemplateForm.CalcType">
+                    <Radio TItem="int" TItemValue="int" Value="0">按件数</Radio>
+                    <Radio TItem="int" TItemValue="int" Value="1">按重量</Radio>
+                    <Radio TItem="int" TItemValue="int" Value="2">按体积</Radio>
+                </RadioGroup>
+            </FormItem>
+            <Row Gutter="16">
+                <Col Span="12">
+                    <FormItem Label="首件/首重">
+                        <AntDesign.InputNumber TValue="decimal" @bind-Value="@TemplateForm.FirstUnit" Min="@(0m)" Style="width:100%" />
+                    </FormItem>
+                </Col>
+                <Col Span="12">
+                    <FormItem Label="首费">
+                        <AntDesign.InputNumber TValue="decimal" @bind-Value="@TemplateForm.FirstPrice" Min="@(0m)" Style="width:100%" />
+                    </FormItem>
+                </Col>
+            </Row>
+            <Row Gutter="16">
+                <Col Span="12">
+                    <FormItem Label="续件/续重">
+                        <AntDesign.InputNumber TValue="decimal" @bind-Value="@TemplateForm.AdditionalUnit" Min="@(0m)" Style="width:100%" />
+                    </FormItem>
+                </Col>
+                <Col Span="12">
+                    <FormItem Label="续费">
+                        <AntDesign.InputNumber TValue="decimal" @bind-Value="@TemplateForm.AdditionalPrice" Min="@(0m)" Style="width:100%" />
+                    </FormItem>
+                </Col>
+            </Row>
+        </Form>
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> Templates { get; set; } = new();
+    private bool Loading { get; set; }
+    private long SearchMerchantId { get; set; }
+    private string ErrorMessage { get; set; } = "";
+
+    private bool TemplateModalVisible { get; set; }
+    private bool ModalLoading { get; set; }
+    private bool IsEditMode { get; set; }
+    private TemplateFormModel TemplateForm { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTemplates();
+    }
+
+    private async Task LoadTemplates()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await FreightService.GetMerchantTemplatesAsync(SearchMerchantId);
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var data = result.Data.Value;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    Templates = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    Templates = items.EnumerateArray().ToList();
+                }
+                else
+                {
+                    Templates = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                Templates = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    ErrorMessage = result.ErrorMessage ?? "加载运费模板失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载运费模板失败: {ex.Message}";
+            Templates = new List<JsonElement>();
+        }
+        Loading = false;
+    }
+
+    private void ShowAddModal()
+    {
+        IsEditMode = false;
+        TemplateForm = new TemplateFormModel();
+        TemplateModalVisible = true;
+    }
+
+    private void ShowEditModal(JsonElement template)
+    {
+        IsEditMode = true;
+        TemplateForm = new TemplateFormModel
+        {
+            Id = template.TryGetProperty("id", out var idProp) ? idProp.GetInt64() : 0,
+            Name = template.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "" : "",
+            CalcType = template.TryGetProperty("calcType", out var ctProp) ? ctProp.GetInt32() : 0,
+            FirstUnit = template.TryGetProperty("firstUnit", out var fuProp) ? fuProp.GetDecimal() : 0,
+            FirstPrice = template.TryGetProperty("firstPrice", out var fpProp) ? fpProp.GetDecimal() : 0,
+            AdditionalUnit = template.TryGetProperty("additionalUnit", out var auProp) ? auProp.GetDecimal() : 0,
+            AdditionalPrice = template.TryGetProperty("additionalPrice", out var apProp) ? apProp.GetDecimal() : 0
+        };
+        TemplateModalVisible = true;
+    }
+
+    private void CloseModal()
+    {
+        TemplateModalVisible = false;
+    }
+
+    private async Task HandleOk()
+    {
+        if (string.IsNullOrWhiteSpace(TemplateForm.Name))
+        {
+            MsgService.Warning("请输入模板名称");
+            return;
+        }
+
+        ModalLoading = true;
+        try
+        {
+            var data = new
+            {
+                Name = TemplateForm.Name,
+                CalcType = TemplateForm.CalcType,
+                FirstUnit = TemplateForm.FirstUnit,
+                FirstPrice = TemplateForm.FirstPrice,
+                AdditionalUnit = TemplateForm.AdditionalUnit,
+                AdditionalPrice = TemplateForm.AdditionalPrice
+            };
+
+            ResultVM<JsonElement?>? result;
+            if (IsEditMode)
+            {
+                result = await FreightService.UpdateTemplateAsync(TemplateForm.Id, data);
+            }
+            else
+            {
+                result = await FreightService.AddTemplateAsync(data);
+            }
+
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success(IsEditMode ? "编辑成功" : "新增成功");
+                TemplateModalVisible = false;
+                await LoadTemplates();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "操作失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"操作失败: {ex.Message}";
+        }
+        ModalLoading = false;
+    }
+
+    private async Task DeleteTemplate(JsonElement template)
+    {
+        var templateId = template.TryGetProperty("id", out var idProp) ? idProp.GetInt64() : 0;
+        try
+        {
+            var result = await FreightService.DeleteTemplateAsync(templateId);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success("删除成功");
+                await LoadTemplates();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "删除失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"删除失败: {ex.Message}";
+        }
+    }
+
+    private string GetCalcTypeText(JsonElement template)
+    {
+        var calcType = template.TryGetProperty("calcType", out var prop) ? prop.GetInt32() : 0;
+        return calcType switch { 0 => "按件数", 1 => "按重量", 2 => "按体积", _ => "未知" };
+    }
+
+    public class TemplateFormModel
+    {
+        public long Id { get; set; }
+        public string Name { get; set; } = "";
+        public int CalcType { get; set; }
+        public decimal FirstUnit { get; set; }
+        public decimal FirstPrice { get; set; }
+        public decimal AdditionalUnit { get; set; }
+        public decimal AdditionalPrice { get; set; }
+    }
+
+    private object GetRowKey(JsonElement x) => x.TryGetProperty("id", out var p) ? p.GetInt64() : 0L;
+}

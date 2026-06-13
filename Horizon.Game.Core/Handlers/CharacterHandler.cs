@@ -1,4 +1,6 @@
+using Horizon.Core.Security;
 using Horizon.Game.Core.Security;
+using Horizon.Game.Core.Interfaces;
 using Horizon.Game.Message;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
@@ -24,6 +26,8 @@ namespace Horizon.Game.Core.Handlers
     {
         private readonly AuthenticationValidator _validator;
         private readonly Microsoft.Extensions.Logging.ILoggerFactory _loggerFactory;
+        private readonly ICharacterFingerprintService _fingerprintService;
+        private readonly UserAuthTokenProvider _authTokenProvider;
         /// <summary>
         /// 构造函数
         /// 初始化角色消息处理器
@@ -32,12 +36,17 @@ namespace Horizon.Game.Core.Handlers
         /// <param name="clusterClient">Orleans集群客户端</param>
         public CharacterHandler(ILogger<MessageHandlerBase> logger, IClusterClient clusterClient, HorizonMessageAdapter adapter,
             Microsoft.Extensions.Logging.ILoggerFactory loggerFactory = null,
-            AuthenticationValidator validator = null) : base(logger, clusterClient, adapter)
+            AuthenticationValidator validator = null,
+            ICharacterFingerprintService characterFingerprintService = null,
+            UserAuthTokenProvider authTokenProvider = null) : base(logger, clusterClient, adapter)
         {
+            _loggerFactory = loggerFactory;
             _validator = validator ?? new AuthenticationValidator(
                _loggerFactory?.CreateLogger<AuthenticationValidator>() ??
                logger as ILogger<AuthenticationValidator> ??
                new Microsoft.Extensions.Logging.Abstractions.NullLogger<AuthenticationValidator>());
+            _fingerprintService = characterFingerprintService;
+            _authTokenProvider = authTokenProvider;
         }
 
 
@@ -101,9 +110,6 @@ namespace Horizon.Game.Core.Handlers
             MessageType.QuestUpdate,
             MessageType.AcceptQuest,
             MessageType.CompleteQuest,
-            MessageType.Heartbeat,
-            MessageType.System,
-            MessageType.Error
         };
 
         /// <summary>
@@ -233,12 +239,6 @@ namespace Horizon.Game.Core.Handlers
                     return await HandleAcceptQuestAsync(message);
                 case MessageType.CompleteQuest:
                     return await HandleCompleteQuestAsync(message);
-                case MessageType.Heartbeat:
-                    return await HandleHeartbeatAsync(message);
-                case MessageType.System:
-                    return await HandleSystemAsync(message);
-                case MessageType.Error:
-                    return await HandleErrorAsync(message);
             }
         }
         /// <summary>
@@ -487,8 +487,29 @@ namespace Horizon.Game.Core.Handlers
             {
                 EnterGameRequest entergame = message.Body as EnterGameRequest;
 
+                // 检查角色指纹：防止同一角色同时在线
+                if (_fingerprintService != null)
+                {
+                    var userId = (long)message.Header.UserId;
+                    var characterId = (long)entergame.CharacterId;
+                    var connectionId = _gameClient?.Id ?? string.Empty;
+
+                    var acquired = await _fingerprintService.TryAcquireAsync(userId, characterId, string.Empty, connectionId);
+                    if (!acquired)
+                    {
+                        Logger.LogWarning("角色 {CharacterId} 已在其他会话中在线，拒绝进入游戏", characterId);
+                        return (false, CreateHorizonMessage(new EnterGameResponse
+                        {
+                            Success = false,
+                            Message = "该角色已在其他设备或会话中在线，请先退出后再尝试"
+                        }));
+                    }
+                }
+
                 var passport = _clusterClient.GetGrain<ICharacterGrain>((long)entergame.CharacterId);
                 var passportInfo = await passport.EnterGameAsync(entergame);
+
+                TryAttachCharacterAuthToken(message, entergame, passportInfo);
 
                 var tem = CreateHorizonMessage(passportInfo);
                 return (passportInfo.Success, tem);
@@ -510,8 +531,32 @@ namespace Horizon.Game.Core.Handlers
             {
                 EnterGameRequest entergame = message.Body as EnterGameRequest;
 
+                // 切换角色时，先释放当前连接上的旧角色指纹，再获取新角色指纹
+                if (_fingerprintService != null)
+                {
+                    var userId = (long)message.Header.UserId;
+                    var characterId = (long)entergame.CharacterId;
+                    var connectionId = _gameClient?.Id ?? string.Empty;
+
+                    // 释放当前连接关联的所有旧角色指纹
+                    await _fingerprintService.ReleaseByConnectionAsync(connectionId);
+
+                    var acquired = await _fingerprintService.TryAcquireAsync(userId, characterId, string.Empty, connectionId);
+                    if (!acquired)
+                    {
+                        Logger.LogWarning("角色 {CharacterId} 已在其他会话中在线，拒绝选择", characterId);
+                        return (false, CreateHorizonMessage(new EnterGameResponse
+                        {
+                            Success = false,
+                            Message = "该角色已在其他设备或会话中在线，请先退出后再尝试"
+                        }));
+                    }
+                }
+
                 var passport = _clusterClient.GetGrain<ICharacterGrain>((long)entergame.CharacterId);
                 var passportInfo = await passport.EnterGameAsync(entergame);
+
+                TryAttachCharacterAuthToken(message, entergame, passportInfo);
 
                 var tem = CreateHorizonMessage(passportInfo);
                 return (passportInfo.Success, tem);
@@ -524,6 +569,28 @@ namespace Horizon.Game.Core.Handlers
                     IsSuccess = false,
                     Message = "角色进入游戏失败"
                 }));
+            }
+        }
+
+        /// <summary>
+        /// 角色进入游戏或选择角色成功后，生成含角色Id的新鉴权令牌并附在响应中
+        /// </summary>
+        private void TryAttachCharacterAuthToken(HorizonMessagePacket message, EnterGameRequest enterGame, EnterGameResponse response)
+        {
+            if (!response.Success || _authTokenProvider == null)
+                return;
+
+            try
+            {
+                var currentToken = _authTokenProvider.ParseToken(message.Header.AuthToken);
+                var passportId = currentToken?.PassportId ?? "";
+                var machineId = currentToken?.MachineId ?? "";
+                response.AuthToken = _authTokenProvider.GenerateToken(passportId, machineId, (long)enterGame.CharacterId);
+                Logger.LogInformation("已为角色 {CharacterId} 生成含角色Id的新鉴权令牌", enterGame.CharacterId);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "生成含角色Id的鉴权令牌失败: CharacterId={CharacterId}", enterGame.CharacterId);
             }
         }
 
@@ -578,7 +645,8 @@ namespace Horizon.Game.Core.Handlers
                     CharacterId = moveRequest.CharacterId,
                     CurrentX = moveRequest.TargetX,
                     CurrentY = moveRequest.TargetY,
-                    CurrentZ = moveRequest.TargetZ
+                    CurrentZ = moveRequest.TargetZ,
+                    AcknowledgedSequence = moveRequest.SequenceNumber
                 };
                 var tem = CreateHorizonMessage(response);
                 return (true, tem);

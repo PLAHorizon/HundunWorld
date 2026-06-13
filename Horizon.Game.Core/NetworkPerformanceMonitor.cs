@@ -44,7 +44,7 @@ namespace Horizon.Game.Core
                 Interlocked.Add(ref metrics.TotalBytesSkipped, bytesSkipped);
             }
 
-            _logger.LogWarning("TCP corruption recovery for client {ClientId}: {Result}, bytes skipped: {BytesSkipped}",
+            _logger.LogWarning("客户端 {ClientId} TCP数据恢复: {Result}，跳过字节数: {BytesSkipped}",
                 clientId, successful ? "SUCCESS" : "FAILED", bytesSkipped);
         }
 
@@ -56,7 +56,7 @@ namespace Horizon.Game.Core
             var metrics = _clientMetrics.GetOrAdd(clientId, _ => new PerformanceMetrics());
             Interlocked.Increment(ref metrics.ProcessingErrors);
 
-            _logger.LogError(exception, "Message processing error for client {ClientId}, type: {ErrorType}",
+            _logger.LogError(exception, "客户端 {ClientId} 消息处理错误，类型: {ErrorType}",
                 clientId, errorType);
         }
 
@@ -72,7 +72,7 @@ namespace Horizon.Game.Core
             // 只有当处理时间超过阈值时才记录警告
             if (processingTimeMs > 100) // 100ms阈值
             {
-                _logger.LogWarning("Slow message processing for client {ClientId}: {MessageType} took {ProcessingTime}ms",
+                _logger.LogWarning("客户端 {ClientId} 消息处理缓慢: {MessageType} 耗时 {ProcessingTime}ms",
                     clientId, messageType, processingTimeMs);
             }
         }
@@ -86,7 +86,7 @@ namespace Horizon.Game.Core
             Interlocked.Increment(ref metrics.SuccessfulDeserializations);
             Interlocked.Add(ref metrics.TotalBytesDeserialized, messageLength);
 
-            _logger.LogTrace("Successful deserialization for client {ClientId}: {MessageLength} bytes",
+            _logger.LogTrace("客户端 {ClientId} 反序列化成功: {MessageLength} 字节",
                 clientId, messageLength);
         }
 
@@ -98,7 +98,7 @@ namespace Horizon.Game.Core
             var metrics = _clientMetrics.GetOrAdd(clientId, _ => new PerformanceMetrics());
             Interlocked.Increment(ref metrics.ProtocolVersionMismatches);
 
-            _logger.LogWarning("Protocol version mismatch for client {ClientId}: expected {Expected}, got {Actual}",
+            _logger.LogWarning("客户端 {ClientId} 协议版本不匹配: 期望 {Expected}，实际 {Actual}",
                 clientId, expectedVersion, actualVersion);
         }
 
@@ -115,8 +115,8 @@ namespace Horizon.Game.Core
                 Interlocked.Increment(ref metrics.SuccessfulProtocolRecoveries);
             }
 
-            _logger.LogInformation("Protocol compatibility recovery for client {ClientId}: {Protocol} -> {Result}",
-                clientId, protocolVersion, successful ? "SUCCESS" : "FAILED");
+            _logger.LogInformation("客户端 {ClientId} 协议兼容性恢复: {Protocol} -> {Result}",
+                clientId, protocolVersion, successful ? "成功" : "失败");
         }
 
         /// <summary>
@@ -135,14 +135,16 @@ namespace Horizon.Game.Core
                 var successRate = (double)metrics.SuccessfulMessages / totalMessages * 100;
                 var avgProcessingTime = metrics.SuccessfulMessages > 0
                     ? (double)metrics.TotalProcessingTimeMs / metrics.SuccessfulMessages
-                    : 0; _logger.LogInformation(
-                    "Network Performance Report for {ClientId}: " +
-                    "Success Rate: {SuccessRate:F2}%, " +
-                    "Avg Processing Time: {AvgProcessingTime:F2}ms, " +
-                    "Corruption Recoveries: {CorruptionRecoveries}/{CorruptionAttempts}, " +
-                    "Protocol Recoveries: {ProtocolRecoveries}/{ProtocolAttempts}, " +
-                    "Bytes Processed: {BytesProcessed}, " +
-                    "Version Mismatches: {VersionMismatches}",
+                    : 0;
+
+                _logger.LogInformation(
+                    "客户端 {ClientId} 网络性能报告: " +
+                    "成功率: {SuccessRate:F2}%, " +
+                    "平均处理时间: {AvgProcessingTime:F2}ms, " +
+                    "数据恢复: {CorruptionRecoveries}/{CorruptionAttempts}, " +
+                    "协议恢复: {ProtocolRecoveries}/{ProtocolAttempts}, " +
+                    "处理字节数: {BytesProcessed}, " +
+                    "版本不匹配次数: {VersionMismatches}",
                     clientId, successRate, avgProcessingTime,
                     metrics.SuccessfulRecoveries, metrics.CorruptionRecoveryAttempts,
                     metrics.SuccessfulProtocolRecoveries, metrics.ProtocolCompatibilityAttempts,
@@ -151,13 +153,13 @@ namespace Horizon.Game.Core
                 // 如果成功率太低或恢复次数太多，发出警告
                 if (successRate < 95.0)
                 {
-                    _logger.LogWarning("Low success rate for client {ClientId}: {SuccessRate:F2}%",
+                    _logger.LogWarning("客户端 {ClientId} 成功率过低: {SuccessRate:F2}%",
                         clientId, successRate);
                 }
 
                 if (metrics.CorruptionRecoveryAttempts > 5)
                 {
-                    _logger.LogWarning("High corruption recovery attempts for client {ClientId}: {Attempts}",
+                    _logger.LogWarning("客户端 {ClientId} 数据恢复次数过高: {Attempts}",
                         clientId, metrics.CorruptionRecoveryAttempts);
                 }
             }
@@ -177,7 +179,7 @@ namespace Horizon.Game.Core
         public void CleanupClientMetrics(string clientId)
         {
             _clientMetrics.TryRemove(clientId, out _);
-            _logger.LogDebug("Cleaned up performance metrics for client {ClientId}", clientId);
+            _logger.LogDebug("已清理客户端 {ClientId} 的性能指标", clientId);
         }
 
         public void Dispose()

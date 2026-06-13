@@ -7,12 +7,17 @@ using MemoryPack;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Net;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using TouchSocket.Core;
 using TouchSocket.Sockets;
 using AuthenticationManager = HundunWorld.Game.UI.Authentication.AuthenticationManager;
+
 
 namespace HundunWorld.Game.Network
 {
@@ -20,7 +25,7 @@ namespace HundunWorld.Game.Network
     /// 混沌世界MMORPG网络消息适配器（客户端版本）
     /// 专为武侠游戏的消息传输优化
     /// </summary>
-    public class HorizonMessageAdapter : FixedHeaderPackageAdapter
+    public class HorizonMessageAdapter : CustomFixedHeaderDataHandlingAdapter<HorizonMessageInfo>
     {
         private readonly AdapterStatistics _statistics = new();
         private readonly object _statsLock = new();
@@ -29,38 +34,11 @@ namespace HundunWorld.Game.Network
         /// 消息头大小（字节）
         /// 4字节长度 + 1字节类型 + 1字节压缩标志 + 2字节校验和 = 8字节
         /// </summary>
-        public int HeaderLength { get; } = 8;
+        public override int HeaderLength => 8;
 
         public override bool CanSendRequestInfo { get; } = true;
 
-   
-   
-
-        /// <summary>
-        /// 重写解析请求信息的方法
-        /// </summary>
-        /// <param name="buffer"></param>
-        /// <returns></returns>
-        protected  HorizonMessageInfo ParseBody(byte[] target, int offset, int length)
-        {
-            try
-            {
-                // 创建一个新的数组来包含完整的消息数据（包括头部）
-                var fullData = new byte[HeaderLength + length];
-                Array.Copy(target, offset, fullData, 0, length);
-                
-                var packet = UnpackMessage(fullData);
-                return new HorizonMessageInfo
-                {
-                    Packet = packet
-                };
-            }
-            catch (Exception ex)
-            {
-                FlaxEngine.Debug.LogError($"[HorizonMessageAdapter] 解析请求时发生错误: {ex.Message}");
-                throw;
-            }
-        }
+        protected override HorizonMessageInfo GetInstance() => new HorizonMessageInfo();
 
         /// <summary>
         /// 生成网络消息包
@@ -76,15 +54,20 @@ namespace HundunWorld.Game.Network
             }
 
             // 创建默认的消息头
+            var networkManager = HundunWorldGame.Instance?.NetworkManager;
+            var passport = AuthenticationManager.Instance.Passport;
+            var authToken = AuthenticationManager.Instance.AuthToken;
             var header = new MessageHeader
             {
                 MessageType = ((INetworkMessage)message).Type,
-                IsResponse = false, // 默认不是响应消息
-                Timestamp = DateTime.UtcNow.Ticks,
-                GameId = 1,    // 设置默认GameId
-                ZoneId = 1,    // 设置默认ZoneId
-                ServerId = 1,  // 设置默认ServerId
-                UserId=AuthenticationManager.Instance.Passport?.UserId??0
+                IsResponse = false,
+                Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                GameId = networkManager?.GameId ?? AuthenticationManager.Instance.GameId,
+                ZoneId = networkManager?.ZoneId ?? AuthenticationManager.Instance.ZoneId,
+                ServerId = networkManager?.ServerId ?? AuthenticationManager.Instance.ServerId,
+                UserId = networkManager?.UserId ?? (passport?.UserId ?? 0),
+                AuthToken = !string.IsNullOrEmpty(networkManager?.AuthToken) ? networkManager.AuthToken : authToken,
+                MachineId = MachineIdentifier.GetMachineGuid()
             };
 
             HorizonMessagePacket messagePacket = new HorizonMessagePacket
@@ -99,6 +82,73 @@ namespace HundunWorld.Game.Network
             return messagePacket;
         }
         
+        /// <summary>
+        /// 序列化并打包完整消息包为线路帧，保留调用方已经设置好的头部字段
+        /// </summary>
+        public byte[] PackPacket(HorizonMessagePacket packet, bool compress = true)
+        {
+            try
+            {
+                if (packet == null)
+                {
+                    throw new ArgumentNullException(nameof(packet), "消息包不能为空");
+                }
+
+                if (packet.Header == null)
+                {
+                    throw new ArgumentException("消息包头不能为空", nameof(packet));
+                }
+
+                if (packet.Body != null && (packet.RawData == null || packet.RawData.Length == 0))
+                {
+                    packet.RawData = MemoryPackSerializer.Serialize(packet.Body);
+                }
+
+                if (packet.RawData != null && packet.RawData.Length > 0)
+                {
+                    packet.Header.SequenceId = CRC32.Compute(packet.RawData);
+                }
+
+                var messageData = MemoryPackSerializer.Serialize(packet);
+                return WrapPacket(messageData, packet.Header.MessageType, compress);
+            }
+            catch (Exception ex)
+            {
+                UpdateErrorStats();
+                throw new InvalidOperationException($"消息打包失败: {ex.Message}", ex);
+            }
+        }
+
+        private byte[] WrapPacket(byte[] messageData, MessageType messageType, bool compress)
+        {
+            byte[] finalData;
+            bool isCompressed = false;
+
+            if (compress && messageData.Length > 256)
+            {
+                finalData = LZ4Pickler.Pickle(messageData);
+                isCompressed = finalData.Length < messageData.Length;
+                if (!isCompressed)
+                    finalData = messageData;
+            }
+            else
+            {
+                finalData = messageData;
+            }
+
+            var packet = new byte[HeaderLength + finalData.Length];
+            var span = packet.AsSpan();
+
+            BitConverter.TryWriteBytes(span.Slice(0, 4), finalData.Length);
+            span[4] = (byte)messageType;
+            span[5] = (byte)(isCompressed ? 1 : 0);
+            var checksum = CalculateChecksum(finalData);
+            BitConverter.TryWriteBytes(span.Slice(6, 2), checksum);
+            finalData.AsSpan().CopyTo(span.Slice(HeaderLength));
+
+            return packet;
+        }
+
         /// <summary>
         /// 序列化并打包消息
         /// </summary>
@@ -278,17 +328,151 @@ namespace HundunWorld.Game.Network
             }
         }
     }
-
     /// <summary>
-    /// Horizon消息信息类
+    /// 跨平台机器唯一标识符工具类。
+    /// 读取操作系统内置的机器GUID，支持 Windows、Linux 和 macOS。
+    /// 结果在进程生命周期内缓存，不会重复读取文件或执行子进程。
     /// </summary>
-    public class HorizonMessageInfo : TouchSocket.Core.IRequestInfo
+    public static class MachineIdentifier
     {
-        public HorizonMessagePacket Packet { get; set; }
+        private static readonly Lazy<string> _machineGuid = new(ResolveGuid, isThreadSafe: true);
 
-        
+        /// <summary>
+        /// 获取当前机器的唯一标识符（GUID 字符串，小写，不含花括号）。
+        /// 在各平台的读取来源：
+        /// <list type="bullet">
+        ///   <item>Windows：注册表 HKLM\SOFTWARE\Microsoft\Cryptography\MachineGuid</item>
+        ///   <item>Linux：/etc/machine-id（systemd）或 /var/lib/dbus/machine-id</item>
+        ///   <item>macOS：sysctl -n kern.uuid（硬件 UUID）</item>
+        ///   <item>其他平台/读取失败：主机名的 SHA-256 哈希值</item>
+        /// </list>
+        /// </summary>
+        public static string GetMachineGuid() => _machineGuid.Value;
+
+        private static string ResolveGuid()
+        {
+            try
+            {
+                if (OperatingSystem.IsWindows())
+                    return GetWindowsMachineGuid();
+
+                if (OperatingSystem.IsLinux())
+                    return GetLinuxMachineId();
+
+                if (OperatingSystem.IsMacOS())
+                    return GetMacOsMachineUuid();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MachineIdentifier] 读取系统机器ID失败，将使用主机名回退方案: {ex.Message}");
+            }
+
+            return HostnameFallback();
+        }
+
+        /// <summary>
+        /// Windows：从注册表读取 MachineGuid。
+        /// </summary>
+        [System.Runtime.Versioning.SupportedOSPlatform("windows")]
+        private static string GetWindowsMachineGuid()
+        {
+#pragma warning disable CA1416
+            using var key = Microsoft.Win32.Registry.LocalMachine
+                .OpenSubKey(@"SOFTWARE\Microsoft\Cryptography");
+
+            var value = key?.GetValue("MachineGuid")?.ToString();
+            if (!string.IsNullOrWhiteSpace(value))
+                return Normalize(value);
+#pragma warning restore CA1416
+
+            throw new InvalidOperationException("Windows 注册表中未找到 MachineGuid 值");
+        }
+
+        /// <summary>
+        /// Linux：读取 /etc/machine-id 或 /var/lib/dbus/machine-id。
+        /// </summary>
+        private static string GetLinuxMachineId()
+        {
+            foreach (var path in new[] { "/etc/machine-id", "/var/lib/dbus/machine-id" })
+            {
+                if (!File.Exists(path))
+                    continue;
+
+                var content = File.ReadAllText(path).Trim();
+                if (!string.IsNullOrWhiteSpace(content))
+                    return Normalize(content);
+            }
+
+            throw new InvalidOperationException("Linux machine-id 文件不存在或内容为空");
+        }
+
+        /// <summary>
+        /// macOS：通过 sysctl 读取硬件 UUID。
+        /// </summary>
+        private static string GetMacOsMachineUuid()
+        {
+            var output = RunCommand("sysctl", "-n kern.uuid");
+            if (!string.IsNullOrWhiteSpace(output))
+                return Normalize(output.Trim());
+
+            throw new InvalidOperationException("macOS sysctl kern.uuid 未返回有效值");
+        }
+
+        /// <summary>
+        /// 降级方案：对主机名和机器域名求 SHA-256，以 GUID 形式表示。
+        /// </summary>
+        private static string HostnameFallback()
+        {
+            var seed = $"{Environment.MachineName}|{Environment.UserDomainName}";
+            var hash = SHA256.HashData(Encoding.UTF8.GetBytes(seed));
+
+            // 取前16字节生成确定性 GUID
+            var guidBytes = new byte[16];
+            Array.Copy(hash, guidBytes, 16);
+            // 设置版本4（随机）字段以符合 UUID 规范
+            guidBytes[6] = (byte)((guidBytes[6] & 0x0F) | 0x40);
+            guidBytes[8] = (byte)((guidBytes[8] & 0x3F) | 0x80);
+            return new Guid(guidBytes).ToString("D");
+        }
+
+        /// <summary>
+        /// 规范化 GUID 字符串：去掉花括号、转为小写。
+        /// </summary>
+        private static string Normalize(string raw)
+        {
+            return raw.Trim('{', '}', ' ').ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// 执行外部命令并返回标准输出内容，超时时间 3 秒。
+        /// </summary>
+        private static string RunCommand(string executable, string arguments)
+        {
+            try
+            {
+                using var process = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = executable,
+                        Arguments = arguments,
+                        RedirectStandardOutput = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true
+                    }
+                };
+
+                process.Start();
+                var output = process.StandardOutput.ReadToEnd();
+                process.WaitForExit(3000);
+                return output;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
     }
-
     /// <summary>
     /// 适配器统计信息
     /// </summary>

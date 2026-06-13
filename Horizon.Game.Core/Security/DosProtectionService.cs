@@ -31,10 +31,10 @@ namespace Horizon.Game.Core.Security
         /// <summary>
         /// 检查客户端请求是否被允许
         /// </summary>
-        public async Task<RateLimitResult> CheckRateLimit(string clientId, string? endpoint = null)
+        public Task<RateLimitResult> CheckRateLimit(string clientId, string? endpoint = null)
         {
             if (_disposed || string.IsNullOrEmpty(clientId))
-                return RateLimitResult.Rejected("Invalid client ID");
+                return Task.FromResult(RateLimitResult.Rejected("客户端ID无效"));
 
             var rateLimitData = _clientRateLimits.GetOrAdd(clientId, _ => new ClientRateLimitData(_config));
             var now = DateTime.UtcNow;
@@ -42,8 +42,8 @@ namespace Horizon.Game.Core.Security
             // 检查是否被临时阻止
             if (rateLimitData.IsBlocked(now))
             {
-                _logger.LogWarning("Client {ClientId} is currently blocked due to rate limiting", clientId);
-                return RateLimitResult.Rejected("Client temporarily blocked");
+                _logger.LogWarning("客户端 {ClientId} 当前因请求频率限制被临时封禁", clientId);
+                return Task.FromResult(RateLimitResult.Rejected("客户端已被临时封禁"));
             }
 
             // 检查请求频率
@@ -55,19 +55,19 @@ namespace Horizon.Game.Core.Security
                 if (rateLimitData.ShouldBlock(now, _config.DosDetectionThreshold))
                 {
                     rateLimitData.Block(now, TimeSpan.FromMinutes(5)); // 阻止5分钟
-                    _logger.LogWarning("Client {ClientId} blocked for 5 minutes due to DOS attack pattern", clientId);
+                    _logger.LogWarning("客户端 {ClientId} 因检测到DOS攻击模式被封禁5分钟", clientId);
 
                     // 异步通知安全事件
                     _ = Task.Run(() => NotifySecurityEvent(clientId, "DOS_ATTACK_DETECTED", endpoint));
 
-                    return RateLimitResult.Rejected("DOS attack detected - client blocked");
+                    return Task.FromResult(RateLimitResult.Rejected("检测到DOS攻击，客户端已被封禁"));
                 }
 
-                _logger.LogDebug("Rate limit exceeded for client {ClientId}, endpoint {Endpoint}", clientId, endpoint);
-                return RateLimitResult.Rejected("Rate limit exceeded");
+                _logger.LogDebug("客户端 {ClientId} 请求频率超限，端点: {Endpoint}", clientId, endpoint);
+                return Task.FromResult(RateLimitResult.Rejected("请求频率超限"));
             }
 
-            return RateLimitResult.Allowed(rateLimitData.GetRemainingRequests(now));
+            return Task.FromResult(RateLimitResult.Allowed(rateLimitData.GetRemainingRequests(now)));
         }
 
         /// <summary>
@@ -81,14 +81,14 @@ namespace Horizon.Game.Core.Security
             var rateLimitData = _clientRateLimits.GetOrAdd(clientId, _ => new ClientRateLimitData(_config));
             rateLimitData.RecordMaliciousActivity(DateTime.UtcNow, activityType);
 
-            _logger.LogWarning("Malicious activity detected for client {ClientId}: {ActivityType} - {Details}",
+            _logger.LogWarning("检测到客户端 {ClientId} 恶意行为: {ActivityType} - {Details}",
                 clientId, activityType, details);
 
             // 如果恶意活动频繁，立即阻止
             if (rateLimitData.GetMaliciousActivityCount(DateTime.UtcNow.AddMinutes(-5)) >= 3)
             {
                 rateLimitData.Block(DateTime.UtcNow, TimeSpan.FromMinutes(10));
-                _logger.LogError("Client {ClientId} blocked for 10 minutes due to repeated malicious activity", clientId);
+                _logger.LogError("客户端 {ClientId} 因重复恶意行为被封禁10分钟", clientId);
 
                 _ = Task.Run(() => NotifySecurityEvent(clientId, "REPEATED_MALICIOUS_ACTIVITY", details));
             }
@@ -129,7 +129,7 @@ namespace Horizon.Game.Core.Security
             if (_clientRateLimits.TryGetValue(clientId, out var data))
             {
                 data.Unblock();
-                _logger.LogInformation("Client {ClientId} manually unblocked: {Reason}", clientId, reason);
+                _logger.LogInformation("客户端 {ClientId} 已被手动解封: {Reason}", clientId, reason);
                 return true;
             }
 
@@ -190,13 +190,13 @@ namespace Horizon.Game.Core.Security
                 if (_clientRateLimits.TryRemove(clientId, out var data))
                 {
                     data.Dispose();
-                    _logger.LogDebug("Cleaned up expired rate limit data for client {ClientId}", clientId);
+                    _logger.LogDebug("已清理客户端 {ClientId} 的过期频率限制数据", clientId);
                 }
             }
 
             if (expiredClients.Count > 0)
             {
-                _logger.LogInformation("Cleaned up {Count} expired client rate limit entries", expiredClients.Count);
+                _logger.LogInformation("已清理 {Count} 条过期客户端频率限制记录", expiredClients.Count);
             }
         }
 
@@ -209,7 +209,7 @@ namespace Horizon.Game.Core.Security
             {
                 // 这里可以集成安全事件通知系统
                 // 例如：发送到SIEM系统、安全日志、告警系统等
-                _logger.LogCritical("SECURITY EVENT: {EventType} for client {ClientId} - {Details}",
+                _logger.LogCritical("安全事件: {EventType}，客户端: {ClientId} - {Details}",
                     eventType, clientId, details);
 
                 // 模拟异步通知处理
@@ -217,7 +217,7 @@ namespace Horizon.Game.Core.Security
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to notify security event {EventType} for client {ClientId}",
+                _logger.LogError(ex, "通知安全事件 {EventType} 时发生错误，客户端: {ClientId}",
                     eventType, clientId);
             }
         }
@@ -239,7 +239,7 @@ namespace Horizon.Game.Core.Security
                 }
             }
 
-            _logger.LogInformation("DOS protection service disposed");
+            _logger.LogInformation("DOS防护服务已释放");
         }
     }
 

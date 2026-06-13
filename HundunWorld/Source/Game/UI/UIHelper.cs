@@ -313,7 +313,7 @@ namespace HundunWorld.Game.UI
         /// 应用对话框专用样式
         /// </summary>
         /// <param name="panel">对话框面板</param>
-        public static void ApplyDialogStyle(Panel panel)
+        public static void ApplyDialogStyle(ContainerControl panel)
         {
             panel.BackgroundColor = ChineseClassicalTheme.PanelColor;
             ChineseClassicalTheme.ApplyChineseBorder(panel, ChineseBorderStyle.Elegant);

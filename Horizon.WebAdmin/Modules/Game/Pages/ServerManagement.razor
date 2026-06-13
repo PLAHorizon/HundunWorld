@@ -1,0 +1,314 @@
+@page "/game/servers"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Game.Services
+@namespace Horizon.WebAdmin.Modules.Game.Pages
+
+@inject GameConfigService ConfigService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">服务器管理</TypographyTitle>
+        <Space>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="ShowAddModal">添加服务器</Button>
+            <Button Size="@ButtonSize.Small" OnClick="LoadZones">刷新</Button>
+        </Space>
+    </div>
+
+    @if (_loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else if (_zones.Any())
+    {
+        <Table TItem="JsonElement" DataSource="@_zones" Size="@TableSize.Small" RowKey="@GetZoneRowKey">
+            <Column TData="string" Title="大区名称">
+                @(context.TryGetProperty("zoneName", out var zn) ? zn.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="描述">
+                @(context.TryGetProperty("description", out var d) ? d.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="服务器数量">
+                @GetServerCount(context)
+            </Column>
+            <Column TData="string" Title="操作">
+                <Button Type="@ButtonType.Link" Size="@ButtonSize.Small" OnClick="@(() => ToggleZone(context))">
+                    @(IsZoneExpanded(context) ? "收起" : "展开")
+                </Button>
+            </Column>
+        </Table>
+
+        @if (_expandedZone.HasValue)
+        {
+            <Card Title="@GetExpandedZoneTitle()" Size="@CardSize.Small" Style="margin-top:16px;">
+                @if (_expandedServers.Any())
+                {
+                    <Table TItem="JsonElement" DataSource="@_expandedServers" Size="@TableSize.Small" RowKey="@GetServerRowKey" Pagination="false">
+                        <Column TData="string" Title="服务器名称">
+                            @(context.TryGetProperty("serverName", out var sn) ? sn.GetString() ?? "-" : "-")
+                        </Column>
+                        <Column TData="string" Title="IP地址">
+                            @(context.TryGetProperty("ipAddress", out var ip) ? ip.GetString() ?? "-" : "-")
+                        </Column>
+                        <Column TData="string" Title="端口">
+                            @(context.TryGetProperty("port", out var pt) ? pt.GetInt32().ToString() : "-")
+                        </Column>
+                        <Column TData="string" Title="状态">
+                            <Tag Color="@GetServerStatusColor(context)">@GetServerStatusText(context)</Tag>
+                        </Column>
+                        <Column TData="string" Title="在线人数">
+                            <Progress Percent="@GetOnlinePercent(context)" Size="@ProgressSize.Small" />
+                        </Column>
+                    </Table>
+                }
+                else
+                {
+                    <Empty />
+                }
+            </Card>
+        }
+    }
+    else
+    {
+        <Empty />
+    }
+
+    <Modal Title="添加服务器" Visible="@_addModalVisible" OnCancel="CloseAddModal" OnOk="HandleAddOk" ConfirmLoading="@_addLoading">
+        <Form Model="@_addForm" Layout="@FormLayout.Vertical">
+            <FormItem Label="大区选择">
+                <Select TItem="string" TItemValue="string" @bind-Value="@_addForm.ZoneId" Placeholder="请选择大区" Style="width:100%" Context="selectCtx">
+                    @foreach (var opt in _zoneOptions)
+                    {
+                        <SelectOption TItem="string" TItemValue="string" Value="@opt.Value" Context="optCtx">@opt.Label</SelectOption>
+                    }
+                </Select>
+            </FormItem>
+            <FormItem Label="服务器名称">
+                <Input @bind-Value="@_addForm.ServerName" Placeholder="请输入服务器名称" />
+            </FormItem>
+            <FormItem Label="IP地址">
+                <Input @bind-Value="@_addForm.IpAddress" Placeholder="请输入IP地址" />
+            </FormItem>
+            <FormItem Label="端口">
+                <InputNumber TItem="int" @bind-Value="@_addForm.Port" Min="1" Max="65535" Style="width:100%" Placeholder="请输入端口号" />
+            </FormItem>
+            <FormItem Label="最大人数">
+                <InputNumber TItem="int" @bind-Value="@_addForm.MaxPlayers" Min="1" Style="width:100%" Placeholder="请输入最大人数" />
+            </FormItem>
+        </Form>
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@_errorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> _zones = new();
+    private List<JsonElement> _expandedServers = new();
+    private JsonElement? _expandedZone;
+    private bool _loading;
+    private string _errorMessage = "";
+    private bool _addModalVisible;
+    private bool _addLoading;
+    private AddServerFormModel _addForm = new();
+    private List<ZoneOptionItem> _zoneOptions = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadZones();
+    }
+
+    private async Task LoadZones()
+    {
+        _loading = true;
+        _errorMessage = "";
+        try
+        {
+            var result = await ConfigService.GetServersAsync(1);
+            if (result?.IsSuccess == true)
+            {
+                var data = result.Data;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    _zones = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    _zones = items.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("zones", out var zones))
+                {
+                    _zones = zones.EnumerateArray().ToList();
+                }
+                else
+                {
+                    _zones = new List<JsonElement>();
+                }
+                BuildZoneOptions();
+            }
+            else
+            {
+                _zones = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    _errorMessage = result.ErrorMessage ?? "加载服务器列表失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"加载服务器列表失败: {ex.Message}";
+            _zones = new List<JsonElement>();
+        }
+        _loading = false;
+    }
+
+    private void BuildZoneOptions()
+    {
+        _zoneOptions = _zones.Select(z => new ZoneOptionItem
+        {
+            Label = z.TryGetProperty("zoneName", out var zn) ? zn.GetString() ?? "-" : "-",
+            Value = z.TryGetProperty("zoneId", out var zi) ? zi.GetString() ?? "" : ""
+        }).ToList();
+    }
+
+    private object GetZoneRowKey(JsonElement x) =>
+        x.TryGetProperty("zoneId", out var p) ? (object)p.GetString() ?? "" : "";
+
+    private object GetServerRowKey(JsonElement x) =>
+        x.TryGetProperty("serverId", out var p) ? (object)p.GetString() ?? "" : "";
+
+    private string GetServerCount(JsonElement zone)
+    {
+        if (zone.TryGetProperty("servers", out var servers) && servers.ValueKind == JsonValueKind.Array)
+            return servers.GetArrayLength().ToString();
+        if (zone.TryGetProperty("serverCount", out var sc))
+            return sc.GetInt32().ToString();
+        return "0";
+    }
+
+    private bool IsZoneExpanded(JsonElement zone)
+    {
+        if (!_expandedZone.HasValue) return false;
+        var expandedId = _expandedZone.Value.TryGetProperty("zoneId", out var eid) ? eid.GetString() : "";
+        var currentId = zone.TryGetProperty("zoneId", out var cid) ? cid.GetString() : "";
+        return expandedId == currentId;
+    }
+
+    private void ToggleZone(JsonElement zone)
+    {
+        if (IsZoneExpanded(zone))
+        {
+            _expandedZone = null;
+            _expandedServers = new List<JsonElement>();
+        }
+        else
+        {
+            _expandedZone = zone;
+            if (zone.TryGetProperty("servers", out var servers) && servers.ValueKind == JsonValueKind.Array)
+            {
+                _expandedServers = servers.EnumerateArray().ToList();
+            }
+            else
+            {
+                _expandedServers = new List<JsonElement>();
+            }
+        }
+    }
+
+    private string GetExpandedZoneTitle()
+    {
+        if (!_expandedZone.HasValue) return "";
+        return _expandedZone.Value.TryGetProperty("zoneName", out var zn) ? zn.GetString() ?? "服务器列表" : "服务器列表";
+    }
+
+    private string GetServerStatusColor(JsonElement server)
+    {
+        var status = server.TryGetProperty("status", out var st) ? st.GetString() ?? "normal" : "normal";
+        return status switch
+        {
+            "normal" => "green",
+            "maintenance" => "orange",
+            "full" => "red",
+            _ => "default"
+        };
+    }
+
+    private string GetServerStatusText(JsonElement server)
+    {
+        var status = server.TryGetProperty("status", out var st) ? st.GetString() ?? "normal" : "normal";
+        return status switch
+        {
+            "normal" => "正常",
+            "maintenance" => "维护",
+            "full" => "爆满",
+            _ => "未知"
+        };
+    }
+
+    private int GetOnlinePercent(JsonElement server)
+    {
+        var online = server.TryGetProperty("currentPlayers", out var op) ? op.GetInt32() : 0;
+        var max = server.TryGetProperty("maxPlayers", out var mp) ? mp.GetInt32() : 1;
+        return max > 0 ? (int)((double)online / max * 100) : 0;
+    }
+
+    private void ShowAddModal()
+    {
+        _addForm = new AddServerFormModel();
+        _addModalVisible = true;
+    }
+
+    private void CloseAddModal() => _addModalVisible = false;
+
+    private async Task HandleAddOk()
+    {
+        _addLoading = true;
+        try
+        {
+            var data = new
+            {
+                ZoneId = _addForm.ZoneId,
+                ServerName = _addForm.ServerName,
+                IpAddress = _addForm.IpAddress,
+                Port = _addForm.Port,
+                MaxPlayers = _addForm.MaxPlayers
+            };
+            var result = await ConfigService.AddServerAsync(data);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success("服务器添加成功");
+                _addModalVisible = false;
+                await LoadZones();
+            }
+            else
+            {
+                _errorMessage = result?.ErrorMessage ?? "添加服务器失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"添加服务器失败: {ex.Message}";
+        }
+        _addLoading = false;
+    }
+
+    public class AddServerFormModel
+    {
+        public string ZoneId { get; set; } = "";
+        public string ServerName { get; set; } = "";
+        public string IpAddress { get; set; } = "";
+        public int Port { get; set; } = 8080;
+        public int MaxPlayers { get; set; } = 1000;
+    }
+
+    public class ZoneOptionItem
+    {
+        public string Label { get; set; } = "";
+        public string Value { get; set; } = "";
+    }
+}

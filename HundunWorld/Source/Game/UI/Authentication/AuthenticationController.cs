@@ -1,17 +1,20 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Game.Database;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
+using HundunWorld.Game.Services;
 using HundunWorld.Game.UI;
 using HundunWorld.Game.UI.Animation;
 using HundunWorld.Game.UI.Authentication;
 using HundunWorld.Game.UI.ErrorHandling;
 using HundunWorld.Game.UI.Guidance;
 using HundunWorld.Game.UI.States;
-using static Horizon.Game.Core.Database.LiteDataContext;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Threading.Tasks;
+using static Game.Database.LiteDataContext;
 
 namespace Game;
 
@@ -21,7 +24,7 @@ namespace Game;
 public class AuthenticationController : Script
 {
     // 核心管理器
-    private UIStateManager _stateManager;
+    private HundunWorld.Game.UI.UIStateManager _stateManager;
     private AuthenticationManager _authManager;
     private UIAnimationManager _animationManager;
     private ErrorHandlingManager _errorManager;
@@ -35,6 +38,7 @@ public class AuthenticationController : Script
     private RegisterPanel _registerPanel { get; set; }
     private bool _isProcessing = false;
     private bool _isSubscribed = false;
+    private bool _autoLoginAttempted = false;
     public override void OnStart()
     {
 
@@ -42,7 +46,39 @@ public class AuthenticationController : Script
 
         SubscribeEvents();
 
+        if (!_autoLoginAttempted)
+        {
+            _autoLoginAttempted = true;
+            _ = TryAutoLoginAsync();
+        }
+    }
 
+    private async Task TryAutoLoginAsync()
+    {
+        try
+        {
+            var result = await AuthenticationManager.Instance.TryAutoLoginAsync();
+            
+            if (result.IsSuccess)
+            {
+                FlaxEngine.Debug.Log("[AuthenticationController] 自动登录成功");
+            }
+            else
+            {
+                FlaxEngine.Debug.Log($"[AuthenticationController] 自动登录失败: {result.ErrorMessage}");
+                if (AuthenticationManager.IsLaunchedFromGengDi && _loginPanel != null)
+                {
+                    FlaxEngine.Scripting.InvokeOnUpdate(() =>
+                    {
+                        _loginPanel.SetStatus("登录已过期，请重新登录", Color.Orange);
+                    });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            FlaxEngine.Debug.LogError($"[AuthenticationController] 自动登录异常: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -53,7 +89,7 @@ public class AuthenticationController : Script
         var cons = (Actor.Parent.Parent.As<UICanvas>().GUI.Children[0] as CanvasScaler).Children;
         _loginPanel = cons[0] as LoginPanel;
         _registerPanel = cons[1] as RegisterPanel;
-        _stateManager = UIStateManager.Instance;
+        _stateManager = HundunWorld.Game.UI.UIStateManager.Instance;
         _authManager = AuthenticationManager.Instance;
         _animationManager = UIAnimationManager.Instance;
         _errorManager = ErrorHandlingManager.Instance;
@@ -459,7 +495,7 @@ public class AuthenticationController : Script
                 // 更新Passport信息
                 if (AuthenticationManager.Instance?.Passport == null)
                 {
-                    AuthenticationManager.Instance.Passport = new Horizon.Game.Core.Database.LiteDataContext.PassportInfo();
+                    AuthenticationManager.Instance.Passport = new LiteDataContext.PassportInfo();
                 }
                 AuthenticationManager.Instance.Passport.PassportId = passportId;
                 AuthenticationManager.Instance.Passport.Password = password;

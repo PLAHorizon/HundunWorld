@@ -167,15 +167,16 @@ namespace Horizon.Game.Gateway.Tests
         {
             Assert.Equal(0, (int)MailStatus.Unread);
             Assert.Equal(1, (int)MailStatus.Read);
-            Assert.Equal(2, (int)MailStatus.Claimed);
-            Assert.Equal(3, (int)MailStatus.Deleted);
+            Assert.Equal(2, (int)MailStatus.Replied);
+            Assert.Equal(3, (int)MailStatus.Claimed);
+            Assert.Equal(4, (int)MailStatus.Deleted);
         }
 
         [Fact]
         public void MailStatus_EnumCount_IsCorrect()
         {
             var values = Enum.GetValues<MailStatus>();
-            Assert.Equal(4, values.Length);
+            Assert.Equal(5, values.Length);
         }
 
         #endregion

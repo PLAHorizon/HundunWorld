@@ -1,0 +1,108 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+			 xmlns:ui="using:FluentAvalonia.UI.Controls"
+			 x:Class="Horizon.Game.GengDi.Core.Views.RegisterView"
+			 x:DataType="vm:RegisterViewModel">
+	<UserControl.DataContext>
+		<vm:RegisterViewModel />
+	</UserControl.DataContext>
+
+	<Grid ColumnDefinitions="*,460"
+		  ColumnSpacing="24"
+		  Margin="32">
+		<Border Grid.Column="0"
+				Background="{DynamicResource BattleNetHeroBackgroundBrush}"
+				CornerRadius="24"
+				Padding="36">
+			<Panel>
+				<Canvas ClipToBounds="True">
+					<Ellipse Width="280" Height="280"
+							 Canvas.Left="-60" Canvas.Top="-40"
+							 Fill="{DynamicResource LoginDecorCircleBrush}" />
+					<Ellipse Width="180" Height="180"
+							 Canvas.Left="300" Canvas.Top="350"
+							 Fill="{DynamicResource LoginDecorCircleBrush}" />
+					<Ellipse Width="120" Height="120"
+							 Canvas.Left="200" Canvas.Top="180"
+							 Fill="{DynamicResource LoginDecorCircleBrush}" />
+				</Canvas>
+			<StackPanel Spacing="16">
+				<Border Width="72"
+						Height="72"
+						CornerRadius="36"
+						Background="{DynamicResource AccentFillColorDefaultBrush}">
+					<Viewbox Margin="18">
+						<ui:IconSourceElement IconSource="{StaticResource BrandIcon}" />
+					</Viewbox>
+				</Border>
+				<TextBlock Text="创建新账户"
+						   Theme="{StaticResource DisplayTextBlockStyle}"
+						   FontSize="36"
+						   Foreground="{DynamicResource LoginTitleGradientBrush}" />
+				<TextBlock Text="注册完成后即可进入统一重构后的客户端界面。输入项、按钮和间距都遵循与主应用一致的 FluentAvalonia 风格。"
+						   Classes="SupportingText"
+						   Foreground="#D9F3FF"
+						   MaxWidth="520"
+						   Opacity="0"
+						   x:Name="RegisterSubtitleText" />
+			</StackPanel>
+			</Panel>
+		</Border>
+
+		<Border Grid.Column="1"
+				Classes="SurfaceCard">
+			<StackPanel Spacing="16">
+				<TextBlock Text="注册"
+						   Theme="{StaticResource TitleTextBlockStyle}"
+						   FontSize="30" />
+				<TextBlock Text="填写基本信息创建账户。"
+						   Classes="SupportingText" />
+
+				<StackPanel Spacing="6">
+					<TextBlock Text="用户名"
+							   Classes="PageEyebrow" />
+					<TextBox Text="{Binding Username}"
+							 Watermark="请输入用户名" />
+				</StackPanel>
+
+				<StackPanel Spacing="6">
+					<TextBlock Text="邮箱"
+							   Classes="PageEyebrow" />
+					<TextBox Text="{Binding Email}"
+							 Watermark="请输入邮箱" />
+				</StackPanel>
+
+				<StackPanel Spacing="6">
+					<TextBlock Text="密码"
+							   Classes="PageEyebrow" />
+					<TextBox Text="{Binding Password}"
+							 PasswordChar="*"
+							 Watermark="请输入密码" />
+				</StackPanel>
+
+				<StackPanel Spacing="6">
+					<TextBlock Text="确认密码"
+							   Classes="PageEyebrow" />
+					<TextBox Text="{Binding ConfirmPassword}"
+							 PasswordChar="*"
+							 Watermark="请再次输入密码" />
+				</StackPanel>
+
+				<TextBlock Text="{Binding ErrorMessage}"
+						   Foreground="IndianRed"
+						   TextWrapping="Wrap" />
+
+				<StackPanel Orientation="Horizontal"
+							Spacing="10">
+					<Button Content="注册"
+							Classes="PrimaryAction"
+							Command="{Binding RegisterCommand}" />
+					<Button Content="返回登录"
+							Classes="QuietAction"
+							Command="{Binding NavigateToLoginCommand}" />
+				</StackPanel>
+			</StackPanel>
+		</Border>
+	</Grid>
+</UserControl>

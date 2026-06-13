@@ -1,8 +1,12 @@
 using FlaxEngine;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
+using Horizon.Game.Message.Sync;
+using HundunWorld.Game.ECS;
+using HundunWorld.Game.ECS.Components;
 using HundunWorld.Game.Network.Handlers;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -55,6 +59,12 @@ namespace HundunWorld.Game.Network.Sync
         /// 技能回滚事件
         /// </summary>
         public event Action<PredictedSkillCast> SkillRolledBack;
+
+        public event Action<PredictedSkillCast> SkillVerified;
+
+        public event Action<ulong, int, float>? DamageApplied;
+
+        public event Action<ulong, ulong>? EntityDied;
 
         #endregion
 
@@ -128,6 +138,10 @@ namespace HundunWorld.Game.Network.Sync
 
         // 技能冷却状态（技能ID -> 剩余冷却时间秒）
         private readonly Dictionary<int, float> _skillCooldowns = new();
+
+        private NetworkEntityRegistry _entityRegistry;
+
+        private Arch.Core.World _ecsWorld;
 
         #endregion
 
@@ -314,6 +328,151 @@ namespace HundunWorld.Game.Network.Sync
 
         #endregion
 
+        #region ECS集成
+
+        public void SetEntityRegistry(NetworkEntityRegistry registry)
+        {
+            _entityRegistry = registry;
+        }
+
+        public void SetEcsWorld(Arch.Core.World world)
+        {
+            _ecsWorld = world;
+        }
+
+        #endregion
+
+        #region SyncEvent处理
+
+        private readonly ConcurrentQueue<EventPacket> _pendingEvents = new();
+
+        public void EnqueueEventPacket(EventPacket packet)
+        {
+            _pendingEvents.Enqueue(packet);
+        }
+
+        public void ProcessPendingSyncEvents()
+        {
+            while (_pendingEvents.TryDequeue(out var eventPacket))
+            {
+                foreach (var syncEvent in eventPacket.Events)
+                {
+                    if (syncEvent.Kind == SyncEventKind.SkillCast ||
+                        syncEvent.Kind == SyncEventKind.Damage ||
+                        syncEvent.Kind == SyncEventKind.Death)
+                    {
+                        OnSyncEventReceived(syncEvent);
+                    }
+                }
+            }
+        }
+
+        private void OnSyncEventReceived(SyncEvent syncEvent)
+        {
+            switch (syncEvent.Kind)
+            {
+                case SyncEventKind.SkillCast:
+                    HandleSyncSkillCast(syncEvent);
+                    break;
+                case SyncEventKind.Damage:
+                    HandleSyncDamage(syncEvent);
+                    break;
+                case SyncEventKind.Death:
+                    HandleSyncDeath(syncEvent);
+                    break;
+            }
+        }
+
+        private void HandleSyncSkillCast(SyncEvent syncEvent)
+        {
+            PredictedSkillCast matchedPrediction = null;
+
+            foreach (var prediction in _predictedSkills)
+            {
+                if (prediction.SkillId == syncEvent.IntValue &&
+                    prediction.CasterId == syncEvent.SourceEntityId &&
+                    !prediction.IsVerified && !prediction.IsRolledBack)
+                {
+                    matchedPrediction = prediction;
+                    break;
+                }
+            }
+
+            if (matchedPrediction != null)
+            {
+                matchedPrediction.IsVerified = true;
+                _successfulPredictions++;
+                SkillVerified?.Invoke(matchedPrediction);
+
+                if (EnableSkillSyncLogging)
+                {
+                    Debug.Log($"[SkillSync] SyncEvent预测验证成功 - Seq:{matchedPrediction.SequenceNumber}, Skill:{matchedPrediction.SkillId}");
+                }
+            }
+            else
+            {
+                var serverPrediction = new PredictedSkillCast
+                {
+                    SequenceNumber = 0,
+                    SkillId = syncEvent.IntValue,
+                    CasterId = syncEvent.SourceEntityId,
+                    TargetIds = new List<ulong> { syncEvent.TargetEntityId },
+                    Timestamp = Time.GameTime,
+                    IsVerified = true,
+                };
+                SkillVerified?.Invoke(serverPrediction);
+
+                if (EnableSkillSyncLogging)
+                {
+                    Debug.Log($"[SkillSync] SyncEvent服务端发起技能 - Skill:{syncEvent.IntValue}, Caster:{syncEvent.SourceEntityId}");
+                }
+            }
+        }
+
+        private void HandleSyncDamage(SyncEvent syncEvent)
+        {
+            DamageApplied?.Invoke(syncEvent.TargetEntityId, syncEvent.IntValue, syncEvent.FloatValue);
+
+            if (_entityRegistry != null && _entityRegistry.TryGetEntity(syncEvent.TargetEntityId, out var entity))
+            {
+                if (_ecsWorld != null && _ecsWorld.Has<HealthComponent>(entity))
+                {
+                    ref var health = ref _ecsWorld.Get<HealthComponent>(entity);
+                    health.CurrentHealth -= syncEvent.IntValue;
+                    if (health.CurrentHealth < 0)
+                        health.CurrentHealth = 0;
+                    _ecsWorld.Set(entity, health);
+                }
+            }
+
+            if (EnableSkillSyncLogging)
+            {
+                Debug.Log($"[SkillSync] SyncEvent伤害 - Target:{syncEvent.TargetEntityId}, Damage:{syncEvent.IntValue}, Crit:{syncEvent.FloatValue}");
+            }
+        }
+
+        private void HandleSyncDeath(SyncEvent syncEvent)
+        {
+            EntityDied?.Invoke(syncEvent.TargetEntityId, syncEvent.SourceEntityId);
+
+            if (_entityRegistry != null && _entityRegistry.TryGetEntity(syncEvent.TargetEntityId, out var entity))
+            {
+                if (_ecsWorld != null && _ecsWorld.Has<HealthComponent>(entity))
+                {
+                    ref var health = ref _ecsWorld.Get<HealthComponent>(entity);
+                    health.CurrentHealth = 0;
+                    _ecsWorld.Set(entity, health);
+                }
+            }
+
+            if (EnableSkillSyncLogging)
+            {
+                Debug.Log($"[SkillSync] SyncEvent死亡 - Target:{syncEvent.TargetEntityId}, Killer:{syncEvent.SourceEntityId}");
+            }
+        }
+
+        #endregion
+
         #region 更新与清理
 
         /// <summary>
@@ -321,6 +480,8 @@ namespace HundunWorld.Game.Network.Sync
         /// </summary>
         public override void OnUpdate()
         {
+            ProcessPendingSyncEvents();
+
             float deltaTime = Time.DeltaTime;
 
             // 更新技能冷却计时器

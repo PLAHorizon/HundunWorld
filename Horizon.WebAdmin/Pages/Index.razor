@@ -1,0 +1,12 @@
+@page "/"
+@inject NavigationManager NavigationManager
+
+@code {
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            NavigationManager.NavigateTo("/flower/dashboard", forceLoad: true);
+        }
+    }
+}

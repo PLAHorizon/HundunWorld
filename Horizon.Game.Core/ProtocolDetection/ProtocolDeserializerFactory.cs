@@ -56,7 +56,7 @@ namespace Horizon.Game.Core.ProtocolDetection
                             stopwatch.Stop();
                             RecordProtocolUsage(deserializer.ProtocolVersion);
 
-                            _logger.LogDebug("Successfully deserialized with protocol {Protocol}, took {Ms}ms",
+                            _logger.LogDebug("使用协议 {Protocol} 反序列化成功，耗时 {Ms}ms",
                                 deserializer.ProtocolVersion, stopwatch.Elapsed.TotalMilliseconds);
 
                             return new ProtocolDetectionResult
@@ -72,7 +72,7 @@ namespace Horizon.Game.Core.ProtocolDetection
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Protocol deserializer {Protocol} failed to process data", deserializer.ProtocolVersion);
+                    _logger.LogWarning(ex, "协议反序列化器 {Protocol} 处理数据失败", deserializer.ProtocolVersion);
                     // 继续尝试下一个反序列化器
                 }
             }

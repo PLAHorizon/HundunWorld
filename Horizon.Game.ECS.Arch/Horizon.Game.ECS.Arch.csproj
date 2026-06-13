@@ -1,0 +1,69 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <DocumentationFile>$(TargetDir)$(AssemblyName).xml</DocumentationFile>
+    <!-- Arch 上游尚未发布 net10.0 资产；引用其 net8.0 输出，禁用相关兼容性提示。 -->
+    <NoWarn>$(NoWarn);NU1701;NU1603;CS1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Arch" Version="2.0.0-beta" />
+    <PackageReference Include="Arch.System" Version="1.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Horizon.Game.Core\Horizon.Game.Core.csproj" />
+    <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
+    <ProjectReference Include="..\Horizon.Game.ECS\Horizon.Game.ECS.csproj" />
+  </ItemGroup>
+	<!-- 编译后复制文件到 Flax 目录 -->
+	<!-- 编译后复制文件到 Flax 目录(仅复制客户端需要的依赖) -->
+	<Target Name="CopyToFlax" AfterTargets="Build">
+		<PropertyGroup>
+			<FlaxToolsDir>C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools</FlaxToolsDir>
+		</PropertyGroup>
+
+		<ItemGroup>
+			<!-- 主程序集 -->
+			<FilesToCopy Include="$(TargetDir)$(AssemblyName).dll" />
+			<FilesToCopy Include="$(TargetDir)$(AssemblyName).xml" />
+			<FilesToCopy Include="$(TargetDir)$(AssemblyName).pdb" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
+
+			<!-- 仅复制客户端需要的 DLL: MemoryPack, LZ4, TouchSocket -->
+			<FilesToCopy Include="$(TargetDir)MemoryPack.Core.dll" />
+			<FilesToCopy Include="$(TargetDir)K4os.Compression.LZ4.dll" />
+			<FilesToCopy Include="$(TargetDir)TouchSocket.dll" />
+			<FilesToCopy Include="$(TargetDir)TouchSocket.Core.dll" />
+		</ItemGroup>
+
+		<Message Text="正在复制 Horizon.Game.ECS.Arch 及客户端依赖?Flax 目录..." Importance="high" />
+
+		<Copy SourceFiles="@(FilesToCopy)" DestinationFolder="$(FlaxToolsDir)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" Retries="3" RetryDelayMilliseconds="1000" ContinueOnError="WarnAndContinue">
+			<Output TaskParameter="CopiedFiles" ItemName="SuccessfullyCopiedFiles" />
+		</Copy>
+
+		<Message Text="成功复制文件�?Flax 目录" Importance="high" />
+	</Target>
+  <!-- 编译后复制到 UE5 托管 Binaries 目录，供 UnrealSharp 热重载直接引用。 -->
+  <Target Name="CopyToUE5" AfterTargets="Build">
+    <PropertyGroup>
+      <UE5ManagedDir>$(MSBuildProjectDirectory)\..\HundunWorld\Binaries\Managed\net10.0</UE5ManagedDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <UE5FilesToCopy Include="$(TargetDir)$(AssemblyName).dll" />
+      <UE5FilesToCopy Include="$(TargetDir)$(AssemblyName).pdb" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(UE5ManagedDir)" ContinueOnError="WarnAndContinue" />
+    <Copy SourceFiles="@(UE5FilesToCopy)" DestinationFolder="$(UE5ManagedDir)"
+          SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true"
+          ContinueOnError="WarnAndContinue" />
+  </Target>
+
+</Project>

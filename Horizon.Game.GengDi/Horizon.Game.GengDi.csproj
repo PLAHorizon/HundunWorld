@@ -1,0 +1,119 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <NoWarn>$(NoWarn);NU1507</NoWarn>
+    <NuGetAudit>false</NuGetAudit>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Avalonia 资源：XAML样式/图标/图片等 -->
+    <AvaloniaResource Include="Assets\**" Exclude="Assets\Data\*.json;Assets\Styles\ControlsGalleryStyles.axaml;Assets\Styles\Resources.axaml" />
+    
+    <!-- JSON 数据文件：需要复制到输出目录供 LiteDB 导入使用 -->
+    <Content Include="Assets\Data\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    
+    <Content Include="Assets\Icons\Weather\*.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="appsettings.*.json" Condition="'$(Configuration)' == 'Debug'">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Include="App.axaml" />
+    <Page Include="Core\Views\MainView.axaml" />
+    <Page Include="Core\Views\MainWindow.axaml" />
+    <Page Include="Core\Views\HomeView.axaml" />
+    <Page Include="Core\Views\GamesView.axaml" />
+    <Page Include="Core\Views\DownloadsView.axaml" />
+    <Page Include="Core\Views\SettingsView.axaml" />
+    <Page Include="Core\Views\LoginView.axaml" />
+    <Page Include="Core\Views\RegisterView.axaml" />
+    <Page Include="Core\Views\NewsView.axaml" />
+    <Page Include="Core\Views\NotificationView.axaml" />
+    <Page Include="Core\Views\ProfileView.axaml" />
+    <Page Include="Core\Views\SecurityView.axaml" />
+    <Page Include="Core\Views\SocialView.axaml" />
+    <Page Include="Core\Views\ForwardMessageDialog.axaml" />
+    <Page Include="Core\Views\AvatarCropWindow.axaml" />
+    <Page Include="Core\Views\MusicPlayerView.axaml" />
+    <Page Include="Core\Views\MiniPlayerView.axaml" />
+    <Page Include="Core\Views\MusicDiscoverView.axaml" />
+    <Page Include="Core\Views\MusicSearchView.axaml" />
+    <Page Include="Core\Views\MusicStoryView.axaml" />
+    <Page Include="Core\Views\MusicStoryDrawerView.axaml" />
+    <Page Include="Core\Views\PlaylistManageView.axaml" />
+    <Page Include="Core\Views\FlowerShopView.axaml" />
+    <Page Include="Core\Views\FlowerOrderCenterView.axaml" />
+    <Page Include="Core\Views\FlowerAlertCenterView.axaml" />
+    <Page Include="Core\Views\FlowerAIAssistantView.axaml" />
+    <Page Include="Core\Views\FlowerCartView.axaml" />
+    <Page Include="Core\Views\FlowerMerchantView.axaml" />
+    <Page Include="Core\Views\FlowerDashboardView.axaml" />
+    <Page Include="Core\Views\FlowerWorkbenchView.axaml" />
+    <Page Include="Core\Views\FlowerPlantingAdviceView.axaml" />
+    <Page Include="Core\Views\FlowerProfileView.axaml" />
+    <Page Include="Core\Views\FlowerDataScreenView.axaml" />
+    <Page Include="Core\Views\FlowerProductDetailView.axaml" />
+    <Page Include="Core\Views\FlowerSpeciesDetailView.axaml" />
+    <Page Include="Core\Views\FlowerAddressView.axaml" />
+    <Page Include="Assets\Styles\ControlsGalleryStyles.axaml" />
+    <Page Include="Assets\Styles\Resources.axaml" />
+  </ItemGroup>
+  
+  <!-- <PropertyGroup>
+    <StartupObject>Horizon.Game.GengDi.ExceptionTest</StartupObject>
+  </PropertyGroup> -->
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.12" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.12" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.12" />
+    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.12" />
+    <PackageReference Include="NAudio" Version="2.3.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    
+    <PackageReference Include="LiteDB" Version="5.0.17" />
+    <PackageReference Include="MiniExcel" Version="1.33.0" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.0-rc.2.25502.107" />
+    <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.0.0-rc5.4" />
+    <PackageReference Include="TouchSocket" Version="4.1.1" />
+    <PackageReference Include="TouchSocket.Core" Version="4.1.1" />
+    <PackageReference Include="WebViewControl-Avalonia" Version="3.120.11" />
+    <PackageReference Include="MQTTnet" Version="4.3.7.1207" />
+    <PackageReference Include="MQTTnet.Extensions.ManagedClient" Version="4.3.7.1207" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.2" />
+  </ItemGroup>
+
+  <Target Name="ForceMQTTnetRefs" AfterTargets="ResolvePackageAssets" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <Reference Include="$(NuGetPackageRoot)mqttnet\4.3.7.1207\lib\net7.0\MQTTnet.dll" />
+      <Reference Include="$(NuGetPackageRoot)mqttnet.extensions.managedclient\4.3.7.1207\lib\net7.0\MQTTnet.Extensions.ManagedClient.dll" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FluentAvalonia\FluentAvalonia.csproj" />
+    <ProjectReference Include="..\Horizon.Core\Horizon.Core.csproj" />
+    <ProjectReference Include="..\Horizon.IM.Message\Horizon.IM.Message.csproj" />
+    <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
+    <ProjectReference Include="..\Horizon.Orleans.Interface\Horizon.Orleans.Interface.csproj" />
+    <ProjectReference Include="..\Horizon.IoT.MQTT\Horizon.IoT.MQTT.csproj" />
+  </ItemGroup>
+
+</Project>

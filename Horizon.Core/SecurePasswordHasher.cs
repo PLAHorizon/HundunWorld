@@ -78,7 +78,7 @@ namespace Horizon.Core
                 // 使用时间常量比较防止时序攻击
                 return CryptographicOperations.FixedTimeEquals(hash, storedHashBytes);
             }
-            catch
+            catch(Exception ex)
             {
                 // 如果解码失败或发生其他错误，返回 false
                 return false;

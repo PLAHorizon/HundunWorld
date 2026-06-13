@@ -52,6 +52,11 @@ namespace Horizon.Game.Gateway.Network
         public bool IsAuthenticated { get; set; }
 
         /// <summary>
+        /// 当前鉴权令牌（登录后设置，角色进入游戏后更新为含角色Id的令牌）
+        /// </summary>
+        public string AuthToken { get; set; } = "";
+
+        /// <summary>
         /// 连接属性
         /// </summary>
         public Dictionary<string, object> Properties => _properties;

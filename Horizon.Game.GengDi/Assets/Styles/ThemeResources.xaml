@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- 主色调 -->
+    <Color x:Key="PrimaryColor">#7AA9FF</Color>
+    <Color x:Key="SecondaryColor">#7CD8CA</Color>
+    <Color x:Key="AccentColor">#E3B26A</Color>
+    
+    <!-- 背景色 -->
+    <Color x:Key="BackgroundColor">#151826</Color>
+    <Color x:Key="SurfaceColor">#232A3A</Color>
+    <Color x:Key="CardColor">#283041</Color>
+    
+    <!-- 文本颜色 -->
+    <Color x:Key="TextColor">#ECEFF8</Color>
+    <Color x:Key="SecondaryTextColor">#A7A9B8</Color>
+    <Color x:Key="DisabledTextColor">#70798F</Color>
+    
+    <!-- 边框颜色 -->
+    <Color x:Key="BorderColor">#343D56</Color>
+    <Color x:Key="HoverBorderColor">#3F4C6C</Color>
+    
+    <!-- 阴影 -->
+    <Color x:Key="ShadowColor">#00001F</Color>
+    
+    <!-- 字体 -->
+    <FontFamily x:Key="DefaultFontFamily">Segoe UI, sans-serif</FontFamily>
+    
+    <!-- 尺寸 -->
+    <Thickness x:Key="DefaultPadding">14</Thickness>
+    <Thickness x:Key="DefaultMargin">10</Thickness>
+    <CornerRadius x:Key="DefaultCornerRadius">8</CornerRadius>
+    <x:Double x:Key="DefaultBorderThickness">1</x:Double>
+</ResourceDictionary>

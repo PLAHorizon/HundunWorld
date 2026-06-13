@@ -171,17 +171,18 @@ namespace Horizon.Game.Gateway.Tests
         public void AchievementCategory_HasExpectedValues()
         {
             Assert.Equal(0, (int)AchievementCategory.Combat);
-            Assert.Equal(1, (int)AchievementCategory.Social);
-            Assert.Equal(2, (int)AchievementCategory.Exploration);
+            Assert.Equal(1, (int)AchievementCategory.Exploration);
+            Assert.Equal(2, (int)AchievementCategory.Social);
             Assert.Equal(3, (int)AchievementCategory.Collection);
-            Assert.Equal(4, (int)AchievementCategory.Growth);
+            Assert.Equal(4, (int)AchievementCategory.Story);
+            Assert.Equal(5, (int)AchievementCategory.Growth);
         }
 
         [Fact]
         public void AchievementCategory_EnumCount_IsCorrect()
         {
             var values = Enum.GetValues<AchievementCategory>();
-            Assert.Equal(5, values.Length);
+            Assert.Equal(6, values.Length);
         }
 
         #endregion
@@ -324,7 +325,7 @@ namespace Horizon.Game.Gateway.Tests
                 id++;
             }
 
-            Assert.Equal(5, state.Achievements.Count);
+            Assert.Equal(6, state.Achievements.Count);
 
             foreach (var cat in categories)
             {

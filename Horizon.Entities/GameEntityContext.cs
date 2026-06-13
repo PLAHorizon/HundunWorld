@@ -96,6 +96,19 @@ namespace Horizon.Entities
             get; set;
         }
 
+        // Arena System
+        public DbSet<Horizon.Model.Arena.ArenaSeason> ArenaSeasons { get; set; }
+        public DbSet<Horizon.Model.Arena.ArenaPlayerRecord> ArenaPlayerRecords { get; set; }
+        public DbSet<Horizon.Model.Arena.ArenaMatchRecord> ArenaMatchRecords { get; set; }
+
+        // Cross Server System
+        public DbSet<Horizon.Model.CrossServer.CrossServerMatch> CrossServerMatches { get; set; }
+        public DbSet<Horizon.Model.CrossServer.CrossServerPlayer> CrossServerPlayers { get; set; }
+
+        // World Sync
+        public DbSet<ChunkStateEntity> ChunkStates { get; set; }
+        public DbSet<DiffLogEntity> DiffLogs { get; set; }
+
         #endregion
 
 
@@ -177,6 +190,19 @@ namespace Horizon.Entities
         {
             get; set;
         }
+
+        // Arena System
+        public DbSet<Horizon.Model.Arena.ArenaSeason> ArenaSeasons { get; set; }
+        public DbSet<Horizon.Model.Arena.ArenaPlayerRecord> ArenaPlayerRecords { get; set; }
+        public DbSet<Horizon.Model.Arena.ArenaMatchRecord> ArenaMatchRecords { get; set; }
+
+        // Cross Server System
+        public DbSet<Horizon.Model.CrossServer.CrossServerMatch> CrossServerMatches { get; set; }
+        public DbSet<Horizon.Model.CrossServer.CrossServerPlayer> CrossServerPlayers { get; set; }
+
+        // World Sync
+        public DbSet<ChunkStateEntity> ChunkStates { get; set; }
+        public DbSet<DiffLogEntity> DiffLogs { get; set; }
         #endregion
 
 
@@ -243,6 +269,30 @@ namespace Horizon.Entities
             {
                 entity.HasIndex(e => e.AccountName).IsUnique().HasDatabaseName("IX_User_AccountName");
                 entity.HasIndex(e => e.LastLoginTime).HasDatabaseName("IX_User_LastLoginTime");
+            });
+
+            // ChunkState（世界 Chunk 快照）：复合主键 (morton_bucket, morton_key)
+            modelBuilder.Entity<ChunkStateEntity>(entity =>
+            {
+                entity.HasKey(e => new { e.MortonBucket, e.MortonKey })
+                      .HasName("PK_chunk_state");
+                entity.HasIndex(e => e.MortonKey).HasDatabaseName("IX_chunk_state_morton_key");
+                // 对齐 DDL: updated_at DEFAULT SYSUTCDATETIME()
+                entity.Property(e => e.UpdatedAt)
+                      .HasDefaultValueSql("SYSUTCDATETIME()");
+            });
+
+            // DiffLog（世界 Diff 追加日志）：复合主键 (morton_bucket, seq)
+            modelBuilder.Entity<DiffLogEntity>(entity =>
+            {
+                entity.HasKey(e => new { e.MortonBucket, e.Seq })
+                      .HasName("PK_diff_log");
+                entity.HasIndex(e => new { e.MortonKey, e.Seq }).HasDatabaseName("IX_diff_log_morton_key");
+                entity.HasIndex(e => e.Seq).HasDatabaseName("IX_diff_log_seq");
+                entity.HasIndex(e => e.CreatedAt).HasDatabaseName("IX_diff_log_created_at");
+                // 对齐 DDL: created_at DEFAULT SYSUTCDATETIME()
+                entity.Property(e => e.CreatedAt)
+                      .HasDefaultValueSql("SYSUTCDATETIME()");
             });
         }
     }

@@ -1,0 +1,249 @@
+@page "/flower/alert-rules"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using System.Text.Json
+@using Horizon.Share.VMs
+
+@inject FlowerAlertService AlertService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">⚠️ 预警规则管理</TypographyTitle>
+    </div>
+
+    <Tabs ActiveKey="@ActiveTab" OnChange="OnTabChanged">
+        <TabPane Key="rules" Tab="预警规则">
+            <div style="margin-bottom:16px;">
+                <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadAlertRules">🔄 刷新</Button>
+            </div>
+
+            @if (RulesLoading)
+            {
+                <div style="text-align:center; padding:32px 0;">
+                    <Spin Size="@SpinSize.Large" />
+                </div>
+            }
+            else
+            {
+                <Table TItem="AlertRuleItem" DataSource="@AlertRules" Size="@TableSize.Small" RowKey="x => x.Id">
+                    <PropertyColumn Property="r => r.Id" Title="ID" />
+                    <PropertyColumn Property="r => r.RuleName" Title="规则名称" />
+                    <PropertyColumn Property="r => r.SpeciesName" Title="品种" />
+                    <PropertyColumn Property="r => r.Condition" Title="触发条件" />
+                    <Column TData="string" Title="状态">
+                        <Tag Color="@(context.IsEnabled ? "green" : "default")">@(context.IsEnabled ? "启用" : "停用")</Tag>
+                    </Column>
+                    <Column TData="string" Title="级别">
+                        <Tag Color="@GetAlertLevelColor(context.Level)">@context.Level</Tag>
+                    </Column>
+                    <Column TData="string" Title="操作">
+                        <Space>
+                            <SpaceItem>
+                                @if (context.IsEnabled)
+                                {
+                                    <Button Danger Size="@ButtonSize.Small" OnClick="() => ToggleRule(context.Id, false)">停用</Button>
+                                }
+                                else
+                                {
+                                    <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="() => ToggleRule(context.Id, true)">启用</Button>
+                                }
+                            </SpaceItem>
+                        </Space>
+                    </Column>
+                </Table>
+            }
+        </TabPane>
+
+        <TabPane Key="logs" Tab="预警日志">
+            <div style="margin-bottom:16px;">
+                <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadAlertLogs">🔄 刷新</Button>
+            </div>
+
+            @if (LogsLoading)
+            {
+                <div style="text-align:center; padding:32px 0;">
+                    <Spin Size="@SpinSize.Large" />
+                </div>
+            }
+            else
+            {
+                <Table TItem="AlertLogItem" DataSource="@AlertLogs" Size="@TableSize.Small" RowKey="x => x.Id">
+                    <PropertyColumn Property="l => l.Id" Title="ID" />
+                    <PropertyColumn Property="l => l.RuleName" Title="规则名称" />
+                    <Column TData="string" Title="级别">
+                        <Tag Color="@GetAlertLevelColor(context.Level)">@context.Level</Tag>
+                    </Column>
+                    <PropertyColumn Property="l => l.Message" Title="预警内容" />
+                    <Column TData="string" Title="触发时间">@context.TriggeredAt</Column>
+                    <Column TData="string" Title="处理状态">
+                        <Tag Color="@GetHandleStatusColor(context.HandleStatus)">@context.HandleStatus</Tag>
+                    </Column>
+                </Table>
+            }
+        </TabPane>
+    </Tabs>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <Alert Type="@AlertType.Success" Message="@SuccessMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private string ActiveTab { get; set; } = "rules";
+    private bool RulesLoading { get; set; }
+    private bool LogsLoading { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string SuccessMessage { get; set; } = "";
+    private List<AlertRuleItem> AlertRules { get; set; } = new();
+    private List<AlertLogItem> AlertLogs { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAlertRules();
+    }
+
+    private async Task OnTabChanged(string key)
+    {
+        ActiveTab = key;
+        if (key == "rules" && !AlertRules.Any())
+            await LoadAlertRules();
+        else if (key == "logs" && !AlertLogs.Any())
+            await LoadAlertLogs();
+    }
+
+    private async Task LoadAlertRules()
+    {
+        RulesLoading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await AlertService.GetAlertRulesAsync();
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var json = result.Data.Value;
+                if (json.ValueKind == JsonValueKind.Array)
+                {
+                    AlertRules = JsonSerializer.Deserialize<List<AlertRuleItem>>(json.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+                else if (json.ValueKind == JsonValueKind.Object && json.TryGetProperty("items", out var items))
+                {
+                    AlertRules = JsonSerializer.Deserialize<List<AlertRuleItem>>(items.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+                else
+                {
+                    AlertRules = new();
+                }
+            }
+            else
+            {
+                AlertRules = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载预警规则失败: {ex.Message}";
+            AlertRules = new();
+        }
+        RulesLoading = false;
+    }
+
+    private async Task LoadAlertLogs()
+    {
+        LogsLoading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await AlertService.GetAlertLogsAsync();
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var json = result.Data.Value;
+                if (json.ValueKind == JsonValueKind.Array)
+                {
+                    AlertLogs = JsonSerializer.Deserialize<List<AlertLogItem>>(json.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+                else if (json.ValueKind == JsonValueKind.Object && json.TryGetProperty("items", out var items))
+                {
+                    AlertLogs = JsonSerializer.Deserialize<List<AlertLogItem>>(items.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+                else
+                {
+                    AlertLogs = new();
+                }
+            }
+            else
+            {
+                AlertLogs = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载预警日志失败: {ex.Message}";
+            AlertLogs = new();
+        }
+        LogsLoading = false;
+    }
+
+    private async Task ToggleRule(long ruleId, bool enable)
+    {
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var result = await AlertService.UpdateAlertRuleAsync(ruleId, new { IsEnabled = enable });
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = enable ? "规则已启用" : "规则已停用";
+                await LoadAlertRules();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "操作失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"操作失败: {ex.Message}";
+        }
+    }
+
+    private string GetAlertLevelColor(string level) => level switch
+    {
+        "严重" => "red",
+        "警告" => "orange",
+        "提示" => "blue",
+        _ => "default"
+    };
+
+    private string GetHandleStatusColor(string status) => status switch
+    {
+        "已处理" => "green",
+        "处理中" => "orange",
+        "未处理" => "red",
+        _ => "default"
+    };
+
+    public class AlertRuleItem
+    {
+        public long Id { get; set; }
+        public string RuleName { get; set; } = "";
+        public string SpeciesName { get; set; } = "";
+        public string Condition { get; set; } = "";
+        public bool IsEnabled { get; set; }
+        public string Level { get; set; } = "提示";
+    }
+
+    public class AlertLogItem
+    {
+        public long Id { get; set; }
+        public string RuleName { get; set; } = "";
+        public string Level { get; set; } = "提示";
+        public string Message { get; set; } = "";
+        public string TriggeredAt { get; set; } = "";
+        public string HandleStatus { get; set; } = "未处理";
+    }
+}

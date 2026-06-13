@@ -1,6 +1,6 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
-using Horizon.Game.Core.Database;
+using Game.Database;
 using Horizon.Game.Message.Enums;
 using HundunWorld.Game.UI.Components;
 using HundunWorld.Game.UI.Layout;

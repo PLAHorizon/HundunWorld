@@ -1,0 +1,210 @@
+@page "/flower/subscriptions"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using System.Text.Json
+@using Horizon.Share.VMs
+
+@inject FlowerSubscriptionService SubscriptionService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">💎 订阅管理</TypographyTitle>
+        <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadSubscriptions">🔄 刷新</Button>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="SubscriptionItem" DataSource="@Subscriptions" Size="@TableSize.Small" RowKey="x => x.Id">
+            <PropertyColumn Property="s => s.Id" Title="ID" />
+            <PropertyColumn Property="s => s.UserName" Title="用户" />
+            <Column TData="string" Title="订阅等级">
+                <Tag Color="@GetTierColor(context.Tier)">@context.TierName</Tag>
+            </Column>
+            <Column TData="string" Title="状态">
+                <Tag Color="@(context.IsActive ? "green" : "default")">@(context.IsActive ? "有效" : "已过期")</Tag>
+            </Column>
+            <Column TData="string" Title="到期时间">@context.ExpireAt</Column>
+            <Column TData="string" Title="自动续费">
+                <Tag Color="@(context.AutoRenew ? "blue" : "default")">@(context.AutoRenew ? "是" : "否")</Tag>
+            </Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    @if (context.IsActive)
+                    {
+                        <SpaceItem>
+                            <Button Danger Size="@ButtonSize.Small" OnClick="() => CancelSubscription(context.Id)">取消订阅</Button>
+                        </SpaceItem>
+                    }
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    <Divider />
+
+    <TypographyTitle Level="5" Style="margin-bottom:16px;">订阅等级说明</TypographyTitle>
+    <AntDesign.Row Gutter="16">
+        <AntDesign.Col Span="8">
+            <Card Size="@CardSize.Small" Hoverable>
+                <div style="text-align:center;">
+                    <TypographyTitle Level="4" Style="color:#1890ff;">🌱 基础版</TypographyTitle>
+                    <div style="margin:16px 0;">
+                        <AntDesign.Text Type="@TextElementType.Danger" Strong Style="font-size:24px;">免费</AntDesign.Text>
+                    </div>
+                    <Divider Style="margin:12px 0;" />
+                    <Paragraph Style="color:rgba(0,0,0,0.65);">
+                        <p>✅ 基础行情数据</p>
+                        <p>✅ 每日市场快照</p>
+                        <p>✅ 品种基础信息</p>
+                        <p style="color:rgba(0,0,0,0.25);">❌ AI报告</p>
+                        <p style="color:rgba(0,0,0,0.25);">❌ 预警推送</p>
+                    </Paragraph>
+                </div>
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Span="8">
+            <Card Size="@CardSize.Small" Hoverable>
+                <div style="text-align:center;">
+                    <TypographyTitle Level="4" Style="color:#722ed1;">🌿 专业版</TypographyTitle>
+                    <div style="margin:16px 0;">
+                        <AntDesign.Text Type="@TextElementType.Danger" Strong Style="font-size:24px;">¥99</AntDesign.Text>
+                        <span style="color:rgba(0,0,0,0.45);">/月</span>
+                    </div>
+                    <Divider Style="margin:12px 0;" />
+                    <Paragraph Style="color:rgba(0,0,0,0.65);">
+                        <p>✅ 全部基础版功能</p>
+                        <p>✅ AI行情报告</p>
+                        <p>✅ 价格预测</p>
+                        <p>✅ 预警推送</p>
+                        <p style="color:rgba(0,0,0,0.25);">❌ 专属顾问</p>
+                    </Paragraph>
+                </div>
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Span="8">
+            <Card Size="@CardSize.Small" Hoverable>
+                <div style="text-align:center;">
+                    <TypographyTitle Level="4" Style="color:#fa8c16;">🌳 企业版</TypographyTitle>
+                    <div style="margin:16px 0;">
+                        <AntDesign.Text Type="@TextElementType.Danger" Strong Style="font-size:24px;">¥399</AntDesign.Text>
+                        <span style="color:rgba(0,0,0,0.45);">/月</span>
+                    </div>
+                    <Divider Style="margin:12px 0;" />
+                    <Paragraph Style="color:rgba(0,0,0,0.65);">
+                        <p>✅ 全部专业版功能</p>
+                        <p>✅ 专属顾问服务</p>
+                        <p>✅ IoT数据接入</p>
+                        <p>✅ API接口调用</p>
+                        <p>✅ 定制化报告</p>
+                    </Paragraph>
+                </div>
+            </Card>
+        </AntDesign.Col>
+    </AntDesign.Row>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <Alert Type="@AlertType.Success" Message="@SuccessMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<SubscriptionItem> Subscriptions { get; set; } = new();
+    private bool Loading { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string SuccessMessage { get; set; } = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSubscriptions();
+    }
+
+    private async Task LoadSubscriptions()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await SubscriptionService.GetSubscriptionsAsync();
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var json = result.Data.Value;
+                if (json.ValueKind == JsonValueKind.Array)
+                {
+                    Subscriptions = JsonSerializer.Deserialize<List<SubscriptionItem>>(json.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+                else if (json.ValueKind == JsonValueKind.Object && json.TryGetProperty("items", out var items))
+                {
+                    Subscriptions = JsonSerializer.Deserialize<List<SubscriptionItem>>(items.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+                else
+                {
+                    Subscriptions = new();
+                }
+            }
+            else
+            {
+                Subscriptions = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载订阅列表失败: {ex.Message}";
+            Subscriptions = new();
+        }
+        Loading = false;
+    }
+
+    private async Task CancelSubscription(long subscriptionId)
+    {
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var result = await SubscriptionService.CancelSubscriptionAsync(subscriptionId);
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = "订阅已取消";
+                await LoadSubscriptions();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "取消失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"取消失败: {ex.Message}";
+        }
+    }
+
+    private string GetTierColor(int tier) => tier switch
+    {
+        0 => "blue",
+        1 => "purple",
+        2 => "orange",
+        _ => "default"
+    };
+
+    public class SubscriptionItem
+    {
+        public long Id { get; set; }
+        public string UserName { get; set; } = "";
+        public int Tier { get; set; }
+        public string TierName { get; set; } = "基础版";
+        public bool IsActive { get; set; }
+        public string ExpireAt { get; set; } = "";
+        public bool AutoRenew { get; set; }
+    }
+}

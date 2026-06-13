@@ -1371,4 +1371,2120 @@ namespace Horizon.Game.Message.Network
     }
 
     #endregion
+
+    #region 数据池状态
+
+    /// <summary>
+    /// 数据池状态
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class DataPoolState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long LastEntryId { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public DateTime LastWriteTime { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int TotalEntries { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public Dictionary<int, int> EntriesByType { get; set; } = new();
+    }
+
+    #endregion
+
+    #region 花卉市场预测状态
+
+    /// <summary>
+    /// 花卉市场状态
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class FlowerMarketState
+    {
+        /// <summary>最新价格快照（品种ID -> 快照）</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public Dictionary<long, FlowerPriceSnapshot> LatestSnapshots { get; set; } = new();
+
+        /// <summary>最后更新时间</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public DateTime LastUpdateTime { get; set; }
+
+        /// <summary>活跃品种数量</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int ActiveSpeciesCount { get; set; }
+    }
+
+    /// <summary>
+    /// 花卉品种状态
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class FlowerSpeciesState
+    {
+        /// <summary>品种ID</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long SpeciesId { get; set; }
+
+        /// <summary>品种编码</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string SpeciesCode { get; set; } = "";
+
+        /// <summary>价格历史（保留最近365天）</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public List<FlowerPriceSnapshot> PriceHistory { get; set; } = new();
+
+        /// <summary>当前预测</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public FlowerPriceForecast CurrentForecast { get; set; }
+
+        /// <summary>最后预测时间</summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public DateTime LastPredictionTime { get; set; }
+    }
+
+    /// <summary>
+    /// 区域需求状态
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class RegionDemandState
+    {
+        /// <summary>区域ID</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public int RegionId { get; set; }
+
+        /// <summary>品种需求指数（品种ID -> 搜索指数）</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public Dictionary<int, double> SpeciesDemandIndex { get; set; } = new();
+
+        /// <summary>最后更新时间</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public DateTime LastUpdateTime { get; set; }
+    }
+
+    /// <summary>
+    /// 预警规则状态
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class AlertRuleState
+    {
+        /// <summary>规则ID</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long RuleId { get; set; }
+
+        /// <summary>用户ID（对应PassportId）</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public Guid UserId { get; set; }
+
+        /// <summary>品种ID</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int SpeciesId { get; set; }
+
+        /// <summary>条件类型</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public AlertConditionType ConditionType { get; set; }
+
+        /// <summary>阈值</summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public decimal ThresholdValue { get; set; }
+
+        /// <summary>是否启用</summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public bool IsEnabled { get; set; }
+
+        /// <summary>最后触发时间</summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public DateTime LastTriggeredAt { get; set; }
+
+        /// <summary>前一价格快照</summary>
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public decimal PreviousPrice { get; set; }
+    }
+
+    /// <summary>
+    /// 通知状态
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class NotificationState
+    {
+        /// <summary>用户ID（对应PassportId）</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public Guid UserId { get; set; }
+
+        /// <summary>订阅列表（品种ID -> 渠道列表）</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public Dictionary<int, List<NotifyChannel>> Subscriptions { get; set; } = new();
+
+        /// <summary>待处理预警</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public List<AlertMessage> PendingAlerts { get; set; } = new();
+
+        /// <summary>最后推送时间</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public DateTime LastPushTime { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public Dictionary<long, DateTime> LastRuleTriggerTime { get; set; } = new();
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public int SilencePeriodMinutes { get; set; } = 30;
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public Dictionary<int, bool> EnabledChannels { get; set; } = new();
+    }
+
+    /// <summary>
+    /// IoT设备状态
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class IoTDeviceState
+    {
+        /// <summary>设备ID</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public string DeviceId { get; set; } = "";
+
+        /// <summary>温室ID</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string GreenhouseId { get; set; } = "";
+
+        /// <summary>最新读数</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public SensorReading LatestReading { get; set; }
+
+        /// <summary>阈值配置（指标名称 -> 阈值）</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public Dictionary<string, double> Thresholds { get; set; } = new();
+
+        /// <summary>是否在线</summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public bool IsOnline { get; set; }
+
+        /// <summary>最后心跳时间</summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public DateTime LastHeartbeat { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public Dictionary<string, string> DesiredProperties { get; set; } = new();
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public Dictionary<string, string> ReportedProperties { get; set; } = new();
+    }
+
+    /// <summary>
+    /// 预测调度状态
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class ForecastSchedulerState
+    {
+        /// <summary>最后每日预测时间</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public DateTime LastDailyForecastTime { get; set; }
+
+        /// <summary>最后每小时聚合时间</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public DateTime LastHourlyAggregationTime { get; set; }
+
+        /// <summary>活跃任务数</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int ActiveTaskCount { get; set; }
+
+        /// <summary>任务历史（保留最近100条）</summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public List<string> TaskHistory { get; set; } = new();
+    }
+
+    #endregion
+
+    #region AI智能分析状态
+
+    /// <summary>
+    /// AI分析师状态
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class AIAnalystState
+    {
+        /// <summary>对话历史（会话ID -> 消息列表）</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public Dictionary<string, List<AIChatMessage>> Conversations { get; set; } = new();
+    }
+
+    /// <summary>
+    /// RAG检索状态
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class RAGRetrieverState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public DateTime LastSearchTime { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long TotalSearches { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public bool EnsureIndexInitialized { get; set; }
+    }
+
+    /// <summary>
+    /// 嵌入状态
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class EmbeddingState
+    {
+        /// <summary>已嵌入文档总数</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long TotalEmbedded { get; set; }
+
+        /// <summary>最后嵌入时间</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public DateTime LastEmbedTime { get; set; }
+    }
+
+    /// <summary>
+    /// 知识库状态
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class KnowledgeBaseState
+    {
+        /// <summary>文档总数</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long TotalDocuments { get; set; }
+
+        /// <summary>已索引文档数</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long IndexedDocuments { get; set; }
+
+        /// <summary>最后索引时间</summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public DateTime LastIndexTime { get; set; }
+    }
+
+    /// <summary>
+    /// 报告生成状态
+    /// </summary>
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class ReportGeneratorState
+    {
+        /// <summary>最后报告日期</summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public DateTime LastReportDate { get; set; }
+
+        /// <summary>总报告数</summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long TotalReports { get; set; }
+    }
+
+    #endregion
+
+    #region 电商系统状态
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class ProductState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long ProductId { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long MerchantId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int SpeciesId { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string ProductName { get; set; } = "";
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public string Description { get; set; } = "";
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public decimal Price { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public int Stock { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public string Unit { get; set; } = "";
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public string Images { get; set; } = "";
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public bool IsActive { get; set; }
+
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public int Version { get; set; }
+
+        [MemoryPackOrder(11)]
+        [Id(11)]
+        public long? CategoryId { get; set; }
+
+        [MemoryPackOrder(12)]
+        [Id(12)]
+        public long? TypeId { get; set; }
+
+        [MemoryPackOrder(13)]
+        [Id(13)]
+        public long? BrandId { get; set; }
+
+        [MemoryPackOrder(14)]
+        [Id(14)]
+        public long? FreightTemplateId { get; set; }
+
+        [MemoryPackOrder(15)]
+        [Id(15)]
+        public decimal? Weight { get; set; }
+
+        [MemoryPackOrder(16)]
+        [Id(16)]
+        public decimal? Volume { get; set; }
+
+        [MemoryPackOrder(17)]
+        [Id(17)]
+        public int MaxBuyCount { get; set; }
+
+        [MemoryPackOrder(18)]
+        [Id(18)]
+        public bool IsOpenLadder { get; set; }
+
+        [MemoryPackOrder(19)]
+        [Id(19)]
+        public int ProductType { get; set; }
+
+        [MemoryPackOrder(20)]
+        [Id(20)]
+        public decimal? MarketPrice { get; set; }
+
+        [MemoryPackOrder(21)]
+        [Id(21)]
+        public decimal MinSalePrice { get; set; }
+
+        [MemoryPackOrder(22)]
+        [Id(22)]
+        public int AuditStatus { get; set; }
+
+        [MemoryPackOrder(23)]
+        [Id(23)]
+        public bool IsPresale { get; set; }
+
+        [MemoryPackOrder(24)]
+        [Id(24)]
+        public DateTime? PresaleDeliveryDate { get; set; }
+
+        [MemoryPackOrder(25)]
+        [Id(25)]
+        public long? RelatedBatchId { get; set; }
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class OrderState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long OrderId { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string OrderNo { get; set; } = "";
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public Guid BuyerId { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long MerchantId { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public decimal TotalAmount { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public OrderStatus Status { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public string PaymentMethod { get; set; } = "";
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public DateTime? PaymentTime { get; set; }
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public string ShippingAddress { get; set; } = "";
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public bool IsPresale { get; set; }
+
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public DateTime? PresaleDeliveryDate { get; set; }
+
+        [MemoryPackOrder(11)]
+        [Id(11)]
+        public List<OrderItemState> Items { get; set; } = new();
+
+        [MemoryPackOrder(12)]
+        [Id(12)]
+        public string ShipTo { get; set; } = "";
+
+        [MemoryPackOrder(13)]
+        [Id(13)]
+        public string CellPhone { get; set; } = "";
+
+        [MemoryPackOrder(14)]
+        [Id(14)]
+        public string ExpressCompanyName { get; set; } = "";
+
+        [MemoryPackOrder(15)]
+        [Id(15)]
+        public string ShipOrderNumber { get; set; } = "";
+
+        [MemoryPackOrder(16)]
+        [Id(16)]
+        public decimal Freight { get; set; }
+
+        [MemoryPackOrder(17)]
+        [Id(17)]
+        public decimal OrderTotalAmount { get; set; }
+
+        [MemoryPackOrder(18)]
+        [Id(18)]
+        public int RefundStatus { get; set; }
+
+        [MemoryPackOrder(19)]
+        [Id(19)]
+        public string SellerRemark { get; set; } = "";
+
+        [MemoryPackOrder(20)]
+        [Id(20)]
+        public decimal DiscountAmount { get; set; }
+
+        [MemoryPackOrder(21)]
+        [Id(21)]
+        public decimal FullDiscount { get; set; }
+
+        [MemoryPackOrder(22)]
+        [Id(22)]
+        public string Address { get; set; } = "";
+
+        [MemoryPackOrder(23)]
+        [Id(23)]
+        public string Platform { get; set; } = "";
+
+        [MemoryPackOrder(24)]
+        [Id(24)]
+        public decimal ProductTotalAmount { get; set; }
+
+        [MemoryPackOrder(25)]
+        [Id(25)]
+        public long? RelatedBatchId { get; set; }
+
+        [MemoryPackOrder(26)]
+        [Id(26)]
+        public DateTime? PresaleReadyNotifiedAt { get; set; }
+
+        [MemoryPackOrder(27)]
+        [Id(27)]
+        public DateTime? DeliveredAt { get; set; }
+
+        [MemoryPackOrder(28)]
+        [Id(28)]
+        public string SenderName { get; set; } = "";
+
+        [MemoryPackOrder(29)]
+        [Id(29)]
+        public string SenderPhone { get; set; } = "";
+
+        [MemoryPackOrder(30)]
+        [Id(30)]
+        public string SenderAddress { get; set; } = "";
+
+        [MemoryPackOrder(31)]
+        [Id(31)]
+        public DateTime CreatedAt { get; set; }
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class OrderItemState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long ProductId { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int SpeciesId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string ProductName { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public decimal Price { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int Quantity { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public decimal Subtotal { get; set; }
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class CartState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public Guid UserId { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public List<CartItemState> Items { get; set; } = new();
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class CartItemState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long ProductId { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int Quantity { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public DateTime AddedTime { get; set; }
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class PaymentState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long TransactionId { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long OrderId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string TransactionNo { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public PaymentChannel Channel { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public decimal Amount { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public int Status { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public string PrepayId { get; set; } = "";
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public string ChannelTransactionNo { get; set; } = "";
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public DateTime? PaidAt { get; set; }
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public DateTime? ExpiredAt { get; set; }
+
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public string IdempotencyKey { get; set; } = "";
+
+        [MemoryPackOrder(11)]
+        [Id(11)]
+        public Guid BuyerId { get; set; }
+
+        [MemoryPackOrder(12)]
+        [Id(12)]
+        public string CallbackLockKey { get; set; } = "";
+
+        [MemoryPackOrder(13)]
+        [Id(13)]
+        public DateTime? CallbackLockedAt { get; set; }
+
+        [MemoryPackOrder(14)]
+        [Id(14)]
+        public bool NeedsOrderSync { get; set; }
+
+        [MemoryPackOrder(15)]
+        [Id(15)]
+        public decimal TotalRefundedAmount { get; set; }
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class MerchantState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long MerchantId { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public Guid UserId { get; set; }
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public string Passport { get; set; } = "";
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public MerchantType MerchantType { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string ShopName { get; set; } = "";
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public string ShopDescription { get; set; } = "";
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public string ContactPhone { get; set; } = "";
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public string BusinessLicense { get; set; } = "";
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public bool IsVerified { get; set; }
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public DateTime? VerifiedAt { get; set; }
+
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public int AuditStatus { get; set; }
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class SettlementState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long MerchantId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public DateTime PeriodStart { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public DateTime PeriodEnd { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public decimal TotalAmount { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public decimal PlatformFee { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public decimal SettledAmount { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public int Status { get; set; }
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public DateTime? SettledAt { get; set; }
+    }
+
+    #endregion
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class ShopGradeState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string Name { get; set; } = "";
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int ProductLimit { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int ImageLimit { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int TemplateLimit { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public decimal ChargeStandard { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public string Remark { get; set; } = "";
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class ProductSKUState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long ProductId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string SkuCode { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string Color { get; set; } = "";
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public string Size { get; set; } = "";
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public string Version { get; set; } = "";
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public decimal SalePrice { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public decimal CostPrice { get; set; }
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public long Stock { get; set; }
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public long? SafeStock { get; set; }
+
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public string ShowPic { get; set; } = "";
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class ProductCategoryState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string Name { get; set; } = "";
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int Depth { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string Path { get; set; } = "";
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public long ParentCategoryId { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public long DisplaySequence { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public string Icon { get; set; } = "";
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public string Image { get; set; } = "";
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class FreightTemplateState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long MerchantId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string Name { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int ValuationMethod { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public bool IsFree { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public decimal FirstUnit { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public decimal FirstPrice { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public decimal ContinueUnit { get; set; }
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public decimal ContinuePrice { get; set; }
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public decimal? FreeConditionAmount { get; set; }
+
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public string AreaRules { get; set; } = "";
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class OrderRefundState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long OrderId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public long OrderItemId { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string RefundNo { get; set; } = "";
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public decimal RefundAmount { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public string Reason { get; set; } = "";
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public int Status { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public int RefundMode { get; set; }
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public string SellerAuditRemark { get; set; } = "";
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public DateTime? SellerAuditTime { get; set; }
+
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public string PlatformRemark { get; set; } = "";
+
+        [MemoryPackOrder(11)]
+        [Id(11)]
+        public DateTime? PlatformAuditTime { get; set; }
+
+        [MemoryPackOrder(12)]
+        [Id(12)]
+        public Guid BuyerId { get; set; }
+
+        [MemoryPackOrder(13)]
+        [Id(13)]
+        public long MerchantId { get; set; }
+
+        [MemoryPackOrder(14)]
+        [Id(14)]
+        public decimal EnabledRefundAmount { get; set; }
+
+        [MemoryPackOrder(15)]
+        [Id(15)]
+        public int ReturnQuantity { get; set; }
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class ProductCommentState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long ProductId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public long OrderId { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public Guid UserId { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int Rank { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public string Content { get; set; } = "";
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public string Images { get; set; } = "";
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public string ReplyContent { get; set; } = "";
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public DateTime? ReplyTime { get; set; }
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public bool IsAnonymous { get; set; }
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class ShopShipperState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long ShopId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string ShipperTag { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string ShipperName { get; set; } = "";
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int RegionId { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public string Address { get; set; } = "";
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public string TelPhone { get; set; } = "";
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public bool IsDefaultSendGoods { get; set; }
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public float? Longitude { get; set; }
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public float? Latitude { get; set; }
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class ProductLadderPriceState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long ProductId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int MinBatch { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int MaxBatch { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public decimal Price { get; set; }
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class SettledConfigState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int BusinessType { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int SettlementAccountType { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int TrialDays { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public bool IsCity { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public bool IsPeopleNumber { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public bool IsAddress { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public bool IsBusinessLicenseCode { get; set; }
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public bool IsBusinessScope { get; set; }
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public bool IsBusinessLicense { get; set; }
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class BrandState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string Name { get; set; } = "";
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string Logo { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string Description { get; set; } = "";
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public long DisplaySequence { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public bool IsRecommend { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public int AuditStatus { get; set; }
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class ShopBrandApplyState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long ShopId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string BrandName { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string ProofMaterial { get; set; } = "";
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int AuditStatus { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public string AuditRemark { get; set; } = "";
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class CouponState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long ShopId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string CouponName { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int CouponType { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public decimal Denomination { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public decimal UseCondition { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public DateTime StartDate { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public DateTime EndDate { get; set; }
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public int TotalCount { get; set; }
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public int ReceivedCount { get; set; }
+
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public int UsedCount { get; set; }
+
+        [MemoryPackOrder(11)]
+        [Id(11)]
+        public bool IsActive { get; set; }
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class CouponRecordState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long CouponId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public Guid UserId { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int Status { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public long? UsedOrderId { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public DateTime ReceivedAt { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public DateTime? UsedAt { get; set; }
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class FullDiscountRuleState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long ShopId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string RuleName { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public DateTime StartDate { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public DateTime EndDate { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public decimal LimitValue { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public decimal DiscountValue { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public bool IsActive { get; set; }
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class CashDepositState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long ShopId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public long CategoryId { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public decimal Amount { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int Status { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public DateTime? PaidAt { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public DateTime? DeductedAt { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public bool NoReasonReturn { get; set; }
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class BusinessCategoryState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long ShopId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public long CategoryId { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public decimal CommissionRate { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int AuditStatus { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public string AuditRemark { get; set; } = "";
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class ProductDescriptionTemplateState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long ShopId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string TemplateName { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string TopContent { get; set; } = "";
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public string BottomContent { get; set; } = "";
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class ProductRelationState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long ProductId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public long RelatedProductId { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int DisplaySequence { get; set; }
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class OrderComplaintState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long OrderId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public Guid UserId { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long ShopId { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public string ComplaintReason { get; set; } = "";
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public string ComplaintContent { get; set; } = "";
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public int Status { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public string ReplyContent { get; set; } = "";
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public DateTime CreatedAt { get; set; }
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public DateTime? ResolvedAt { get; set; }
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class TradeCommentState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long OrderId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public Guid UserId { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long ShopId { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int DescriptionScore { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public int ServiceScore { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public int LogisticsScore { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public string Content { get; set; } = "";
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public bool IsAnonymous { get; set; }
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class PendingSettlementState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long OrderId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public long ShopId { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public decimal OrderAmount { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public decimal PlatformCommission { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public decimal RefundAmount { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public decimal SettleableAmount { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public int Status { get; set; }
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public long? SettlementId { get; set; }
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public DateTime CreatedAt { get; set; }
+
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public DateTime? SettledAt { get; set; }
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class ShopWithdrawState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long ShopId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public decimal Amount { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string BankName { get; set; } = "";
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public string AccountNo { get; set; } = "";
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public string AccountName { get; set; } = "";
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public int Status { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public string AuditRemark { get; set; } = "";
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public DateTime CreatedAt { get; set; }
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public DateTime? AuditedAt { get; set; }
+
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public DateTime? PaidAt { get; set; }
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class ShopAccountItemState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long ShopId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int AccountType { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public decimal Amount { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public decimal BalanceAfter { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public string Description { get; set; } = "";
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public long RelatedId { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public DateTime CreatedAt { get; set; }
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class SettlementAccountState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long MerchantId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string BankName { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string AccountNo { get; set; } = "";
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public string AccountName { get; set; } = "";
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public bool IsDefault { get; set; }
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class ShippingAddressState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public Guid UserId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string ShipTo { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string Phone { get; set; } = "";
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public int? ProvinceId { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public string ProvinceName { get; set; } = "";
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public int? CityId { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public string CityName { get; set; } = "";
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public int? DistrictId { get; set; }
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public string DistrictName { get; set; } = "";
+
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public string Address { get; set; } = "";
+
+        [MemoryPackOrder(11)]
+        [Id(11)]
+        public bool IsDefault { get; set; }
+
+        [MemoryPackOrder(12)]
+        [Id(12)]
+        public double? Latitude { get; set; }
+
+        [MemoryPackOrder(13)]
+        [Id(13)]
+        public double? Longitude { get; set; }
+
+        [MemoryPackOrder(14)]
+        [Id(14)]
+        public string Passport { get; set; } = "";
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class ReturnShipmentState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long RefundId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string ExpressCompanyName { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string ShipOrderNumber { get; set; } = "";
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public string ReturnAddress { get; set; } = "";
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public DateTime? ShippedAt { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public DateTime? ReceivedAt { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public int Status { get; set; }
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class LogisticsTrackState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long OrderId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string ExpressCompanyName { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string ShipOrderNumber { get; set; } = "";
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public string TrackData { get; set; } = "";
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public DateTime? LastQueriedAt { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public int LogisticsStatus { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public bool IsReturn { get; set; }
+
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public long? RefundId { get; set; }
+
+        [MemoryPackOrder(9)]
+        [Id(9)]
+        public string OriginCity { get; set; } = "";
+
+        [MemoryPackOrder(10)]
+        [Id(10)]
+        public string DestinationCity { get; set; } = "";
+
+        [MemoryPackOrder(11)]
+        [Id(11)]
+        public string CurrentLocation { get; set; } = "";
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class SettlementDetailState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long SettlementBillId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public long OrderId { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public string OrderNo { get; set; } = "";
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public decimal OrderAmount { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public decimal PlatformCommission { get; set; }
+
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public decimal RefundAmount { get; set; }
+
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public decimal SettleableAmount { get; set; }
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class RepurchaseState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long Id { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public Guid BuyerId { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public long OriginalOrderId { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long? NewOrderId { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public DateTime RepurchaseTime { get; set; }
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class SettlementAccountSummaryState
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public long MerchantId { get; set; }
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public decimal TotalSettled { get; set; }
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public decimal TotalWithdrawn { get; set; }
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public decimal AvailableBalance { get; set; }
+
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public decimal PendingSettlement { get; set; }
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public decimal FrozenAmount { get; set; }
+    }
+
+    [MemoryPackable(SerializeLayout.Explicit)]
+    [GenerateSerializer]
+    [Serializable]
+    public partial class BatchShipRequest
+    {
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public List<long> OrderIds { get; set; } = new();
+
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public string ExpressCompanyName { get; set; } = "";
+
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string ShipOrderNumberPrefix { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public long? ShipperId { get; set; }
+    }
+
+    public class LogisticsMapData
+    {
+        public long OrderId { get; set; }
+        public string ExpressCompanyName { get; set; } = "";
+        public string ShipOrderNumber { get; set; } = "";
+        public string OriginCity { get; set; } = "";
+        public string DestinationCity { get; set; } = "";
+        public int LogisticsStatus { get; set; }
+        public List<LogisticsMapNode> Nodes { get; set; } = new();
+    }
+
+    public class LogisticsMapNode
+    {
+        public DateTime Time { get; set; }
+        public string Description { get; set; } = "";
+        public string Location { get; set; } = "";
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+    }
 }

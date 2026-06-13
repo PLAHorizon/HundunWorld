@@ -1,4 +1,4 @@
-﻿using Horizon.Core.Abstract;
+using Horizon.Core.Abstract;
 using Horizon.Core.Options;
 using Horizon.Share.Commones;
 using Horizon.Share.Dtos;
@@ -43,7 +43,7 @@ namespace Horizon.WebApi.Controllers.v1.Articles
         /// </summary>
         /// <param name="dto"></param>
         /// <returns></returns>
-        [HttpPost]
+        [HttpGet]
         public async Task<ResultVM<UserDto>> GetUserAsync()
         {
             UserQueryDto dto = new UserQueryDto

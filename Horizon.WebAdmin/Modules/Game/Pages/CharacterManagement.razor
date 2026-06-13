@@ -1,0 +1,400 @@
+@page "/game/characters"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Game.Services
+@namespace Horizon.WebAdmin.Modules.Game.Pages
+
+@inject GameCharacterService CharacterService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">角色管理</TypographyTitle>
+        <Space>
+            <Button Size="@ButtonSize.Small" OnClick="LoadCharacters">刷新</Button>
+            <Select TItem="string" TItemValue="string" @bind-Value="@_professionFilter" Style="width:120px" Size="@InputSize.Small" OnChange="OnProfessionFilterChanged">
+                <SelectOption TItem="string" TItemValue="string" Value='@("")'>全部</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("剑客")'>剑客</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("刀客")'>刀客</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("枪客")'>枪客</SelectOption>
+            </Select>
+        </Space>
+    </div>
+
+    @if (_loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="JsonElement" DataSource="@_characters" Size="@TableSize.Small" RowKey="@GetCharacterRowKey">
+            <Column TData="string" Title="角色名">
+                @(context.TryGetProperty("roleName", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="等级">
+                @(context.TryGetProperty("level", out var p) ? p.GetInt32().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="职业">
+                <Tag Color="@GetProfessionColor(context)">@GetProfessionText(context)</Tag>
+            </Column>
+            <Column TData="string" Title="性别">
+                @(GetGenderText(context))
+            </Column>
+            <Column TData="string" Title="门派">
+                @(context.TryGetProperty("sect", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="境界">
+                @(context.TryGetProperty("realm", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="战斗力">
+                <AntDesign.Text Type="@TextElementType.Danger" Strong>
+                    @(context.TryGetProperty("combatPower", out var p) ? p.GetInt64().ToString() : "-")
+                </AntDesign.Text>
+            </Column>
+            <Column TData="string" Title="所属用户ID">
+                @(context.TryGetProperty("userId", out var p) ? p.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="操作">
+                <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowDetail(context)">查看详情</Button>
+            </Column>
+        </Table>
+    }
+
+    <Drawer Title="@_detailDrawerTitle" Visible="@_detailDrawerVisible" OnClose="CloseDetail" Width="720" Placement="@DrawerPlacement.Right">
+        @if (_selectedCharacter != null)
+        {
+            var c = _selectedCharacter.Value;
+
+            <Card Title="基础属性" Size="@CardSize.Small" Style="margin-bottom:16px;">
+                <Descriptions Column="2" Size="@DescriptionsSize.Small">
+                    <DescriptionsItem Title="等级">@(c.TryGetProperty("level", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="经验">@(c.TryGetProperty("exp", out var p) ? p.GetInt64().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="职业">
+                        <Tag Color="@GetProfessionColor(c)">@GetProfessionText(c)</Tag>
+                    </DescriptionsItem>
+                    <DescriptionsItem Title="性别">@GetGenderText(c)</DescriptionsItem>
+                    <DescriptionsItem Title="门派">@(c.TryGetProperty("sect", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="阵营">@(c.TryGetProperty("faction", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="境界">@(c.TryGetProperty("realm", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="战斗力">
+                        <AntDesign.Text Type="@TextElementType.Danger" Strong>
+                            @(c.TryGetProperty("combatPower", out var p) ? p.GetInt64().ToString() : "-")
+                        </AntDesign.Text>
+                    </DescriptionsItem>
+                </Descriptions>
+            </Card>
+
+            <Card Title="五维属性" Size="@CardSize.Small" Style="margin-bottom:16px;">
+                <div style="margin-bottom:8px;">
+                    <span style="display:inline-block; width:60px;">根骨</span>
+                    <Progress Percent="@GetAttributePercent(c, "constitution")" Size="@ProgressSize.Small" Style="display:inline-block; width:calc(100% - 70px);" />
+                </div>
+                <div style="margin-bottom:8px;">
+                    <span style="display:inline-block; width:60px;">悟性</span>
+                    <Progress Percent="@GetAttributePercent(c, "comprehension")" Size="@ProgressSize.Small" Status="@ProgressStatus.Active" Style="display:inline-block; width:calc(100% - 70px);" />
+                </div>
+                <div style="margin-bottom:8px;">
+                    <span style="display:inline-block; width:60px;">身法</span>
+                    <Progress Percent="@GetAttributePercent(c, "agility")" Size="@ProgressSize.Small" Status="@ProgressStatus.Success" Style="display:inline-block; width:calc(100% - 70px);" />
+                </div>
+                <div style="margin-bottom:8px;">
+                    <span style="display:inline-block; width:60px;">臂力</span>
+                    <Progress Percent="@GetAttributePercent(c, "strength")" Size="@ProgressSize.Small" Status="@ProgressStatus.Exception" Style="display:inline-block; width:calc(100% - 70px);" />
+                </div>
+                <div>
+                    <span style="display:inline-block; width:60px;">内劲</span>
+                    <Progress Percent="@GetAttributePercent(c, "innerForce")" Size="@ProgressSize.Small" Style="display:inline-block; width:calc(100% - 70px);" />
+                </div>
+            </Card>
+
+            <Card Title="战斗属性" Size="@CardSize.Small" Style="margin-bottom:16px;">
+                <Descriptions Column="2" Size="@DescriptionsSize.Small">
+                    <DescriptionsItem Title="生命值">@(c.TryGetProperty("hp", out var hpP) ? $"{hpP.GetInt32()}" : "-")@(c.TryGetProperty("maxHp", out var mhpP) ? $"/{mhpP.GetInt32()}" : "")</DescriptionsItem>
+                    <DescriptionsItem Title="内力值">@(c.TryGetProperty("mp", out var mpP) ? $"{mpP.GetInt32()}" : "-")@(c.TryGetProperty("maxMp", out var mmpP) ? $"/{mmpP.GetInt32()}" : "")</DescriptionsItem>
+                    <DescriptionsItem Title="攻击力">@(c.TryGetProperty("attack", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="防御力">@(c.TryGetProperty("defense", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="暴击率">@(c.TryGetProperty("critRate", out var p) ? $"{p.GetDouble():F1}%" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="闪避率">@(c.TryGetProperty("dodgeRate", out var p) ? $"{p.GetDouble():F1}%" : "-")</DescriptionsItem>
+                </Descriptions>
+            </Card>
+
+            <Card Title="五行属性" Size="@CardSize.Small" Style="margin-bottom:16px;">
+                <Row Gutter="16">
+                    <AntDesign.Col Span="8">
+                        <Descriptions Column="1" Size="@DescriptionsSize.Small" Title="金">
+                            <DescriptionsItem Title="金攻">@(c.TryGetProperty("metalAtk", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                            <DescriptionsItem Title="金抗">@(c.TryGetProperty("metalRes", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                        </Descriptions>
+                    </AntDesign.Col>
+                    <AntDesign.Col Span="8">
+                        <Descriptions Column="1" Size="@DescriptionsSize.Small" Title="木">
+                            <DescriptionsItem Title="木攻">@(c.TryGetProperty("woodAtk", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                            <DescriptionsItem Title="木抗">@(c.TryGetProperty("woodRes", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                        </Descriptions>
+                    </AntDesign.Col>
+                    <AntDesign.Col Span="8">
+                        <Descriptions Column="1" Size="@DescriptionsSize.Small" Title="水">
+                            <DescriptionsItem Title="水攻">@(c.TryGetProperty("waterAtk", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                            <DescriptionsItem Title="水抗">@(c.TryGetProperty("waterRes", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                        </Descriptions>
+                    </AntDesign.Col>
+                </Row>
+                <Row Gutter="16" Style="margin-top:16px;">
+                    <AntDesign.Col Span="8">
+                        <Descriptions Column="1" Size="@DescriptionsSize.Small" Title="火">
+                            <DescriptionsItem Title="火攻">@(c.TryGetProperty("fireAtk", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                            <DescriptionsItem Title="火抗">@(c.TryGetProperty("fireRes", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                        </Descriptions>
+                    </AntDesign.Col>
+                    <AntDesign.Col Span="8">
+                        <Descriptions Column="1" Size="@DescriptionsSize.Small" Title="土">
+                            <DescriptionsItem Title="土攻">@(c.TryGetProperty("earthAtk", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                            <DescriptionsItem Title="土抗">@(c.TryGetProperty("earthRes", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                        </Descriptions>
+                    </AntDesign.Col>
+                </Row>
+            </Card>
+
+            <Card Title="外观信息" Size="@CardSize.Small" Style="margin-bottom:16px;">
+                <Descriptions Column="2" Size="@DescriptionsSize.Small">
+                    <DescriptionsItem Title="发型">@(c.TryGetProperty("hairStyle", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="脸型">@(c.TryGetProperty("faceStyle", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="肤色">@(c.TryGetProperty("skinColor", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="瞳色">@(c.TryGetProperty("eyeColor", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                </Descriptions>
+            </Card>
+
+            <Card Title="装备信息" Size="@CardSize.Small">
+                @if (_equipments.Any())
+                {
+                    <Table TItem="JsonElement" DataSource="@_equipments" Size="@TableSize.Small" RowKey="@GetEquipmentRowKey">
+                        <Column TData="string" Title="装备位">
+                            @(context.TryGetProperty("slot", out var p) ? p.GetString() ?? "-" : "-")
+                        </Column>
+                        <Column TData="string" Title="装备名">
+                            @(context.TryGetProperty("name", out var p) ? p.GetString() ?? "-" : "-")
+                        </Column>
+                        <Column TData="string" Title="品质">
+                            <Tag Color="@GetQualityColor(context)">@GetQualityText(context)</Tag>
+                        </Column>
+                        <Column TData="string" Title="等级">
+                            @(context.TryGetProperty("itemLevel", out var p) ? p.GetInt32().ToString() : "-")
+                        </Column>
+                    </Table>
+                }
+                else
+                {
+                    <Empty Description="@("暂无装备数据")" />
+                }
+            </Card>
+        }
+    </Drawer>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@_errorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> _characters = new();
+    private List<JsonElement> _equipments = new();
+    private bool _loading;
+    private string _errorMessage = "";
+    private bool _detailDrawerVisible;
+    private JsonElement? _selectedCharacter;
+    private string _professionFilter = "";
+
+    private string _detailDrawerTitle
+    {
+        get
+        {
+            if (_selectedCharacter != null && _selectedCharacter.Value.TryGetProperty("roleName", out var p))
+                return $"角色详情 - {p.GetString() ?? ""}";
+            return "角色详情";
+        }
+    }
+
+    private object GetCharacterRowKey(JsonElement x) =>
+        x.TryGetProperty("roleId", out var p) ? (object)p.GetInt64() : 0;
+
+    private object GetEquipmentRowKey(JsonElement x) =>
+        x.TryGetProperty("slot", out var p) ? (object)(p.GetString() ?? "") : "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCharacters();
+    }
+
+    private async Task LoadCharacters()
+    {
+        _loading = true;
+        _errorMessage = "";
+        try
+        {
+            var queryDto = string.IsNullOrEmpty(_professionFilter)
+                ? (object)new { }
+                : new { profession = _professionFilter };
+            var result = await CharacterService.GetGameRolesAsync(queryDto);
+            if (result?.IsSuccess == true)
+            {
+                var data = result.Data;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    _characters = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    _characters = items.EnumerateArray().ToList();
+                }
+                else
+                {
+                    _characters = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                _characters = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    _errorMessage = result.ErrorMessage ?? "加载角色列表失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"加载角色列表失败: {ex.Message}";
+            _characters = new List<JsonElement>();
+        }
+        _loading = false;
+    }
+
+    private async Task OnProfessionFilterChanged(string? value)
+    {
+        _professionFilter = value ?? "";
+        await LoadCharacters();
+    }
+
+    private async void ShowDetail(JsonElement character)
+    {
+        _selectedCharacter = character;
+        _detailDrawerVisible = true;
+        await LoadEquipments(character);
+    }
+
+    private void CloseDetail()
+    {
+        _detailDrawerVisible = false;
+        _selectedCharacter = null;
+        _equipments = new List<JsonElement>();
+    }
+
+    private async Task LoadEquipments(JsonElement character)
+    {
+        var roleId = character.TryGetProperty("roleId", out var p) ? p.GetInt64() : 0;
+        try
+        {
+            var result = await CharacterService.GetRoleEquipmentsAsync(new { roleId });
+            if (result?.IsSuccess == true)
+            {
+                var data = result.Data;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    _equipments = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    _equipments = items.EnumerateArray().ToList();
+                }
+                else
+                {
+                    _equipments = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                _equipments = new List<JsonElement>();
+            }
+        }
+        catch
+        {
+            _equipments = new List<JsonElement>();
+        }
+    }
+
+    private string GetProfessionText(JsonElement c)
+    {
+        if (c.TryGetProperty("profession", out var p))
+        {
+            var val = p.ValueKind == JsonValueKind.Number ? p.GetInt32() : -1;
+            var str = p.ValueKind == JsonValueKind.String ? p.GetString() ?? "" : "";
+            return val switch
+            {
+                1 => "剑客",
+                2 => "刀客",
+                3 => "枪客",
+                _ => !string.IsNullOrEmpty(str) ? str : "-"
+            };
+        }
+        return "-";
+    }
+
+    private string GetProfessionColor(JsonElement c) => GetProfessionText(c) switch
+    {
+        "剑客" => "blue",
+        "刀客" => "red",
+        "枪客" => "green",
+        _ => "default"
+    };
+
+    private string GetGenderText(JsonElement c)
+    {
+        if (c.TryGetProperty("gender", out var p))
+        {
+            if (p.ValueKind == JsonValueKind.Number)
+                return p.GetInt32() == 1 ? "男" : "女";
+            if (p.ValueKind == JsonValueKind.String)
+                return p.GetString() == "男" ? "男" : "女";
+        }
+        return "-";
+    }
+
+    private double GetAttributePercent(JsonElement c, string propertyName)
+    {
+        if (c.TryGetProperty(propertyName, out var p))
+        {
+            var val = p.ValueKind == JsonValueKind.Number ? p.GetDouble() : 0;
+            return Math.Min(val / 100.0 * 100, 100);
+        }
+        return 0;
+    }
+
+    private string GetQualityText(JsonElement e)
+    {
+        if (e.TryGetProperty("quality", out var p))
+        {
+            var val = p.ValueKind == JsonValueKind.Number ? p.GetInt32() : -1;
+            return val switch
+            {
+                1 => "普通",
+                2 => "优秀",
+                3 => "精良",
+                4 => "史诗",
+                5 => "传说",
+                _ => "-"
+            };
+        }
+        return "-";
+    }
+
+    private string GetQualityColor(JsonElement e) => GetQualityText(e) switch
+    {
+        "普通" => "default",
+        "优秀" => "green",
+        "精良" => "blue",
+        "史诗" => "purple",
+        "传说" => "orange",
+        _ => "default"
+    };
+}

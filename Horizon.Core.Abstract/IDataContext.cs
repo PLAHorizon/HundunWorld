@@ -63,7 +63,7 @@ namespace Horizon.Core.Abstract
         /// <typeparam name="K"></typeparam>
         /// <param name="id"></param>
         /// <returns></returns>
-        Task<bool> DeletedAsync<T, K>([NotNull] K id) where T : BaseModel<K>;
+        Task<bool> DeletedAsync<TEntity, TKey>([NotNull] TKey id) where TEntity : BaseModel<TKey>;
 
         /// <summary>
         /// 批量删除数据
@@ -72,7 +72,7 @@ namespace Horizon.Core.Abstract
         /// <typeparam name="K"></typeparam>
         /// <param name="ids"></param>
         /// <returns></returns>
-        Task<bool> DeletedsAsync<T, K>([NotNull] IList<K> ids) where T : BaseModel<K>;
+        Task<bool> DeletedsAsync<TEntity, TKey>([NotNull] IList<TKey> ids) where TEntity : BaseModel<TKey>;
         /// <summary>
         /// 条件筛选的结果集
         /// </summary>

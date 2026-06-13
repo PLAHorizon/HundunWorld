@@ -1,0 +1,213 @@
+@page "/flower/settlements"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using Horizon.Share.VMs
+@using System.Text.Json
+@using Horizon.WebAdmin.Modules.Flower.Services
+@inject FlowerSettlementService SettlementService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">💰 结算账单管理</TypographyTitle>
+        <Space>
+            <InputNumber TValue="long" @bind-Value="@FilterMerchantId" Placeholder="@("商户ID")" Style="width:140px" Size="@InputSize.Small" />
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadSettlements">🔍 查询</Button>
+            <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="LoadSettlements">🔄 刷新</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="SettlementBillItem" DataSource="@SettlementBills" Size="@TableSize.Small" RowKey="x => x.Id">
+            <PropertyColumn Property="s => s.Id" Title="账单ID" />
+            <PropertyColumn Property="s => s.MerchantId" Title="商户ID" />
+            <Column TData="string" Title="结算金额">
+                <AntDesign.Text Type="@TextElementType.Danger" Strong>¥@context.Amount.ToString("N2")</AntDesign.Text>
+            </Column>
+            <Column TData="string" Title="状态">
+                <Tag Color="@GetSettlementStatusColor(context.Status)">@GetSettlementStatusText(context.Status)</Tag>
+            </Column>
+            <Column TData="string" Title="结算周期">@context.PeriodStart ~ @context.PeriodEnd</Column>
+            <Column TData="string" Title="创建时间">@context.CreatedAt.ToString("yyyy-MM-dd HH:mm")</Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    <SpaceItem>
+                        <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowDetail(context)">详情</Button>
+                    </SpaceItem>
+                    @if (context.Status == 0)
+                    {
+                        <SpaceItem>
+                            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="() => CompleteSettlement(context.Id)">完成结算</Button>
+                        </SpaceItem>
+                    }
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    <Drawer Title="@($"结算详情 - 账单#{SelectedBill?.Id}")" Visible="@ShowDetailDrawer" OnClose="CloseDetail" Width="640">
+        @if (SelectedBill != null)
+        {
+            <Descriptions Column="2" Size="@DescriptionsSize.Small" Style="margin-bottom:16px;">
+                <DescriptionsItem Title="账单ID">@SelectedBill.Id</DescriptionsItem>
+                <DescriptionsItem Title="商户ID">@SelectedBill.MerchantId</DescriptionsItem>
+                <DescriptionsItem Title="结算金额"><AntDesign.Text Type="@TextElementType.Danger" Strong>¥@SelectedBill.Amount.ToString("N2")</AntDesign.Text></DescriptionsItem>
+                <DescriptionsItem Title="状态"><Tag Color="@GetSettlementStatusColor(SelectedBill.Status)">@GetSettlementStatusText(SelectedBill.Status)</Tag></DescriptionsItem>
+                <DescriptionsItem Title="结算周期" Span="2">@SelectedBill.PeriodStart ~ @SelectedBill.PeriodEnd</DescriptionsItem>
+                <DescriptionsItem Title="创建时间">@SelectedBill.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")</DescriptionsItem>
+                <DescriptionsItem Title="完成时间">@(SelectedBill.CompletedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "--")</DescriptionsItem>
+            </Descriptions>
+
+            @if (SettlementDetails.Any())
+            {
+                <TypographyTitle Level="5">结算明细</TypographyTitle>
+                <Table TItem="SettlementDetailItem" DataSource="@SettlementDetails" Size="@TableSize.Small" RowKey="x => x.Id">
+                    <PropertyColumn Property="d => d.Id" Title="明细ID" />
+                    <PropertyColumn Property="d => d.OrderId" Title="订单ID" />
+                    <Column TData="string" Title="金额">¥@context.Amount.ToString("N2")</Column>
+                    <Column TData="string" Title="类型"><Tag>@context.Type</Tag></Column>
+                </Table>
+            }
+        }
+    </Drawer>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <Alert Type="@AlertType.Success" Message="@SuccessMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<SettlementBillItem> SettlementBills { get; set; } = new();
+    private List<SettlementDetailItem> SettlementDetails { get; set; } = new();
+    private bool Loading { get; set; }
+    private long FilterMerchantId { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string SuccessMessage { get; set; } = "";
+    private bool ShowDetailDrawer { get; set; }
+    private SettlementBillItem? SelectedBill { get; set; }
+
+    private readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSettlements();
+    }
+
+    private async Task LoadSettlements()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await SettlementService.GetSettlementBillsAsync(FilterMerchantId > 0 ? FilterMerchantId : 0);
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                SettlementBills = JsonSerializer.Deserialize<List<SettlementBillItem>>(result.Data.Value.GetRawText(), _jsonOpts) ?? new();
+            }
+            else
+            {
+                SettlementBills = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载结算账单失败: {ex.Message}";
+            SettlementBills = new();
+        }
+        Loading = false;
+    }
+
+    private async Task ShowDetail(SettlementBillItem bill)
+    {
+        SelectedBill = bill;
+        ShowDetailDrawer = true;
+        try
+        {
+            var result = await SettlementService.GetSettlementDetailsAsync(bill.Id);
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                SettlementDetails = JsonSerializer.Deserialize<List<SettlementDetailItem>>(result.Data.Value.GetRawText(), _jsonOpts) ?? new();
+            }
+            else
+            {
+                SettlementDetails = new();
+            }
+        }
+        catch
+        {
+            SettlementDetails = new();
+        }
+    }
+
+    private void CloseDetail()
+    {
+        ShowDetailDrawer = false;
+        SelectedBill = null;
+        SettlementDetails = new();
+    }
+
+    private async Task CompleteSettlement(long settlementId)
+    {
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var result = await SettlementService.CompleteSettlementAsync(settlementId);
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = "结算完成";
+                await LoadSettlements();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "操作失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"操作失败: {ex.Message}";
+        }
+    }
+
+    private string GetSettlementStatusColor(int status) => status switch
+    {
+        0 => "orange", 1 => "green", 2 => "red", _ => "default"
+    };
+
+    private string GetSettlementStatusText(int status) => status switch
+    {
+        0 => "待结算", 1 => "已结算", 2 => "已取消", _ => "未知"
+    };
+
+    public class SettlementBillItem
+    {
+        public long Id { get; set; }
+        public long MerchantId { get; set; }
+        public decimal Amount { get; set; }
+        public int Status { get; set; }
+        public string PeriodStart { get; set; } = "";
+        public string PeriodEnd { get; set; } = "";
+        public DateTime CreatedAt { get; set; }
+        public DateTime? CompletedAt { get; set; }
+    }
+
+    public class SettlementDetailItem
+    {
+        public long Id { get; set; }
+        public long OrderId { get; set; }
+        public decimal Amount { get; set; }
+        public string Type { get; set; } = "";
+    }
+}

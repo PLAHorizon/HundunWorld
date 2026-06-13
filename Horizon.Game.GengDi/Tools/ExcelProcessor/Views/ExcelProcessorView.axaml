@@ -1,0 +1,332 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Horizon.Game.GengDi.Tools.ExcelProcessor.ViewModels"
+             xmlns:models="using:Horizon.Game.GengDi.Tools.ExcelProcessor.Models"
+             xmlns:converters="using:Horizon.Game.GengDi.Tools.ExcelProcessor.Converters"
+             x:Class="Horizon.Game.GengDi.Tools.ExcelProcessor.Views.ExcelProcessorView"
+             x:DataType="vm:ExcelProcessorViewModel"
+             Background="{DynamicResource BattleNetBackgroundBrush}">
+
+    <UserControl.Resources>
+        <converters:ProcessingButtonTextConverter x:Key="ProcessingButtonTextConverter" />
+        <converters:LogLevelColorConverter x:Key="LogLevelColorConverter" />
+    </UserControl.Resources>
+
+    <DockPanel>
+
+        <!-- Header 区域 -->
+        <Border DockPanel.Dock="Top"
+                Padding="24 20 24 16"
+                Background="{DynamicResource BattleNetHeaderBackgroundBrush}">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <TextBlock Text="📊" FontSize="28" VerticalAlignment="Center" />
+                <StackPanel>
+                    <TextBlock Text="Excel 数据处理工具"
+                               FontSize="22"
+                               FontWeight="SemiBold"
+                               Foreground="#FFFFFF" />
+                    <TextBlock Text="上传、分析、合并 Excel 文件，支持去重和格式统一"
+                               FontSize="13"
+                               Foreground="#A0A0A0"
+                               Margin="0 2 0 0" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- 主内容区域 -->
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <Border Padding="24 20">
+                <StackPanel Spacing="20">
+
+                <!-- 源文件上传区域 -->
+                <Border Classes="SurfaceCard" Padding="20">
+                    <StackPanel Spacing="16">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel>
+                                <TextBlock Text="源文件" FontSize="16" FontWeight="SemiBold" Foreground="#FFFFFF" />
+                                <TextBlock Text="添加一个或多个 Excel 文件进行合并处理"
+                                           Classes="SupportingText" />
+                            </StackPanel>
+                            <Button Grid.Column="1"
+                                    Content="+ 添加文件"
+                                    Classes="PrimaryAction"
+                                    Padding="16 8"
+                                    Command="{Binding AddSourceCommand}" />
+                        </Grid>
+
+                        <Border Background="#0DFFFFFF"
+                                CornerRadius="10"
+                                Padding="16"
+                                IsVisible="{Binding SourceFiles.Count}">
+                            <ItemsControl ItemsSource="{Binding SourceFiles}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:ExcelSourceFile">
+                                        <Border Background="#1A1A2E"
+                                                CornerRadius="8"
+                                                Padding="12"
+                                                Margin="0 0 0 8">
+                                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                                <Border Width="40" Height="40"
+                                                        CornerRadius="20"
+                                                        Background="#1F00AEFF"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center">
+                                                    <TextBlock Text="📊"
+                                                               FontSize="18"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center" />
+                                                </Border>
+
+                                                <StackPanel Grid.Column="1"
+                                                            Margin="12 0 0 0"
+                                                            VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding FileName}"
+                                                               FontSize="14"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="#FFFFFF" />
+                                                    <TextBlock Foreground="#888888" FontSize="12">
+                                                        <Run Text="{Binding RowCount}" Foreground="#00AEFF" />
+                                                        <Run Text=" 行 · " />
+                                                        <Run Text="{Binding Columns.Count}" Foreground="#00AEFF" />
+                                                        <Run Text=" 列" />
+                                                    </TextBlock>
+                                                </StackPanel>
+
+                                                <Button Grid.Column="2"
+                                                        Content="✕"
+                                                        Classes="QuietAction"
+                                                        Padding="8 4"
+                                                        Command="{Binding $parent[UserControl].DataContext.RemoveSourceCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        VerticalAlignment="Center" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Border>
+
+                        <TextBlock Text="暂无文件，点击上方按钮添加"
+                                   Classes="SupportingText"
+                                   HorizontalAlignment="Center"
+                                   IsVisible="{Binding !SourceFiles.Count}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 合并需求描述 -->
+                <Border Classes="SurfaceCard" Padding="20">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="合并需求描述" FontSize="16" FontWeight="SemiBold" Foreground="#FFFFFF" />
+                        <TextBlock Text="用自然语言描述您的合并需求，系统将自动分析并生成配置"
+                                   Classes="SupportingText" />
+                        <TextBox Text="{Binding MergeRequirement}"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 Height="80"
+                                 Watermark="例如: 将以上文件合并，以订单号为唯一键去重，保存到 订单汇总表.xlsx 的 订单数据 工作表中，按日期降序排序" />
+                        <Button Content="✦ 智能分析需求"
+                                Classes="PrimaryAction"
+                                Padding="16 8"
+                                HorizontalAlignment="Left"
+                                Command="{Binding ParseRequirementCommand}" />
+
+                        <!-- 解析结果摘要 -->
+                        <Border Background="#0D00AEFF"
+                                CornerRadius="8"
+                                Padding="12"
+                                IsVisible="{Binding IsConfigAutoGenerated}">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="📋 自动生成的配置"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="#00AEFF" />
+                                <TextBlock Text="{Binding ParsedSummary}"
+                                           FontSize="12"
+                                           Foreground="#CCCCCC"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- 合并配置（自动生成的可手动调整） -->
+                <Border Classes="SurfaceCard" Padding="20">
+                    <StackPanel Spacing="16">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="合并配置（可手动调整）"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="#FFFFFF" />
+                            <TextBlock Grid.Column="1"
+                                       Text="由 AI 自动生成"
+                                       FontSize="11"
+                                       Foreground="#00AEFF"
+                                       IsVisible="{Binding IsConfigAutoGenerated}"
+                                       VerticalAlignment="Center" />
+                        </Grid>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="目标文件路径" FontSize="13" Foreground="#AAAAAA" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <TextBox Text="{Binding TargetFilePath}"
+                                         Watermark="选择保存位置..."
+                                         IsReadOnly="True" />
+                                <Button Grid.Column="1"
+                                        Content="浏览"
+                                        Classes="QuietAction"
+                                        Padding="12 8"
+                                        Command="{Binding SelectTargetCommand}" />
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="目标工作表名称" FontSize="13" Foreground="#AAAAAA" />
+                            <TextBox Text="{Binding TargetSheetName}"
+                                     Watermark="合并结果" />
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="去重设置" FontSize="13" Foreground="#AAAAAA" />
+                            <StackPanel Spacing="6">
+                                <CheckBox Content="移除重复数据（基于整行内容）"
+                                          IsChecked="{Binding RemoveDuplicates}"
+                                          Foreground="#CCCCCC" />
+                                <StackPanel Spacing="4"
+                                            IsVisible="{Binding RemoveDuplicates}">
+                                    <TextBlock Text="唯一键列名（逗号分隔，留空则按整行去重）"
+                                               FontSize="11" Foreground="#888888" />
+                                    <TextBox Text="{Binding UniqueKeyColumns}"
+                                             Watermark="例如: ID,姓名,订单号" />
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <CheckBox Content="跳过表头行" IsChecked="{Binding SkipHeader}" Foreground="#CCCCCC" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 执行按钮 -->
+                <Button Content="{Binding IsProcessing, Converter={StaticResource ProcessingButtonTextConverter}}"
+                        Classes="PrimaryAction"
+                        Padding="24 12"
+                        HorizontalAlignment="Left"
+                        Command="{Binding ExecuteMergeCommand}"
+                        IsEnabled="{Binding !IsProcessing}" />
+
+                <!-- 进度条 -->
+                <StackPanel Spacing="8"
+                            IsVisible="{Binding IsProcessing}">
+                    <ProgressBar Value="{Binding Progress}"
+                                 Maximum="100"
+                                 Height="6" />
+                    <TextBlock Text="{Binding StatusMessage}"
+                               FontSize="12"
+                               Foreground="#AAAAAA" />
+                </StackPanel>
+
+                <!-- 数据预览 -->
+                <Border Classes="SurfaceCard"
+                        Padding="20"
+                        IsVisible="{Binding PreviewData.Count}">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="数据预览（前 50 行）"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   Foreground="#FFFFFF" />
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="400">
+                            <ItemsControl ItemsSource="{Binding PreviewData}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:PreviewRow">
+                                        <Border Background="#0DFFFFFF"
+                                                CornerRadius="6"
+                                                Padding="10 8"
+                                                Margin="0 0 0 6">
+                                            <Grid ColumnDefinitions="50,*">
+                                                <TextBlock Text="{Binding RowNumber}"
+                                                           FontSize="12"
+                                                           Foreground="#666666"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Top" />
+                                                <ItemsControl Grid.Column="1" ItemsSource="{Binding Cells}">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <WrapPanel Orientation="Horizontal" />
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Border Background="#1A1A2E"
+                                                                    CornerRadius="4"
+                                                                    Padding="6 3"
+                                                                    Margin="0 0 6 4">
+                                                                <TextBlock FontSize="11">
+                                                                    <Run Text="{Binding Key}" Foreground="#00AEFF" FontWeight="SemiBold" />
+                                                                    <Run Text=": " Foreground="#666666" />
+                                                                    <Run Text="{Binding Value}" Foreground="#CCCCCC" />
+                                                                </TextBlock>
+                                                            </Border>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+
+                <!-- 操作日志 -->
+                <Border Classes="SurfaceCard"
+                        Padding="20"
+                        IsVisible="{Binding OperationLogs.Count}">
+                    <StackPanel Spacing="16">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="操作日志" FontSize="16" FontWeight="SemiBold" Foreground="#FFFFFF" />
+                            <Button Grid.Column="1"
+                                    Content="清空日志"
+                                    Classes="QuietAction"
+                                    Padding="12 6"
+                                    Command="{Binding ClearLogsCommand}" />
+                        </Grid>
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="250">
+                            <ItemsControl ItemsSource="{Binding OperationLogs}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:OperationLog">
+                                        <Grid ColumnDefinitions="60,Auto,*"
+                                              ColumnSpacing="10"
+                                              Margin="0 3">
+                                            <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}"
+                                                       FontSize="11"
+                                                       Foreground="#666666"
+                                                       VerticalAlignment="Center" />
+                                            <Border Grid.Column="1"
+                                                    CornerRadius="4"
+                                                    Padding="6 2"
+                                                    Background="{Binding Level, Converter={StaticResource LogLevelColorConverter}}"
+                                                    VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Level}"
+                                                           FontSize="10"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="#FFFFFF" />
+                                            </Border>
+                                            <TextBlock Grid.Column="2"
+                                                       Text="{Binding Message}"
+                                                       FontSize="12"
+                                                       Foreground="#CCCCCC"
+                                                       TextWrapping="Wrap"
+                                                       VerticalAlignment="Center" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+            </Border>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

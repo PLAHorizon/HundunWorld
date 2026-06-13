@@ -2,7 +2,6 @@ using Orleans;
 using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Numerics;
 
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
@@ -197,7 +196,7 @@ namespace Horizon.Orleans.Interface
         /// <param name="characterId">角色ID</param>
         /// <param name="position">进入位置</param>
         /// <returns>是否成功进入</returns>
-        Task<bool> EnterMapAsync(ulong characterId, Vector3 position);
+        Task<bool> EnterMapAsync(ulong characterId, Position position);
 
         /// <summary>
         /// 角色离开地图
@@ -212,7 +211,7 @@ namespace Horizon.Orleans.Interface
         /// <param name="characterId">角色ID</param>
         /// <param name="position">新位置</param>
         /// <returns>是否更新成功</returns>
-        Task<bool> UpdatePositionAsync(ulong characterId, Vector3 position);
+        Task<bool> UpdatePositionAsync(ulong characterId, Position position);
 
         /// <summary>
         /// 获取地图内所有玩家
@@ -234,7 +233,7 @@ namespace Horizon.Orleans.Interface
         /// <param name="range">范围</param>
         /// <param name="message">消息内容</param>
         /// <returns>是否广播成功</returns>
-        Task<bool> BroadcastInRangeAsync(Vector3 center, float range, object message);
+        Task<bool> BroadcastInRangeAsync(Position center, float range, object message);
     }
 
     /// <summary>

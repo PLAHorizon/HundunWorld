@@ -22,6 +22,199 @@ namespace Horizon.Entities.Migrations.Games
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Horizon.Model.Arena.ArenaMatchRecord", b =>
+                {
+                    b.Property<string>("MatchId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<long>("BlueTeamCharacterId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("BlueTeamRatingChange")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DurationSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("EndTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("MatchReplayData")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<long>("RedTeamCharacterId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("RedTeamRatingChange")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SeasonId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("WinnerTeam")
+                        .HasColumnType("int");
+
+                    b.HasKey("MatchId");
+
+                    b.ToTable("log_arena_match");
+                });
+
+            modelBuilder.Entity("Horizon.Model.Arena.ArenaPlayerRecord", b =>
+                {
+                    b.Property<long>("CharacterId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("CurrentRating")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CurrentWinStreak")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Draws")
+                        .HasColumnType("int");
+
+                    b.Property<int>("HighestRating")
+                        .HasColumnType("int");
+
+                    b.Property<int>("HighestWinStreak")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LastMatchTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Losses")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SeasonId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalMatches")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Wins")
+                        .HasColumnType("int");
+
+                    b.HasKey("CharacterId");
+
+                    b.ToTable("user_arena_record");
+                });
+
+            modelBuilder.Entity("Horizon.Model.Arena.ArenaSeason", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTime>("EndTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("RequiredLevel")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RewardConfig")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.Property<string>("SeasonName")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("cfg_arena_season");
+                });
+
+            modelBuilder.Entity("Horizon.Model.CrossServer.CrossServerMatch", b =>
+                {
+                    b.Property<string>("MatchId")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("BattleType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("EndTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ParticipatingServerIds")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("WinnerServerId")
+                        .HasColumnType("int");
+
+                    b.HasKey("MatchId");
+
+                    b.ToTable("cross_server_match");
+                });
+
+            modelBuilder.Entity("Horizon.Model.CrossServer.CrossServerPlayer", b =>
+                {
+                    b.Property<long>("CharacterId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("ContributionPoints")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CurrentIslandId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CurrentMatchId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<int>("Deaths")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Kills")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LastTransferTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SourceServerId")
+                        .HasColumnType("int");
+
+                    b.HasKey("CharacterId");
+
+                    b.ToTable("cross_server_player");
+                });
+
             modelBuilder.Entity("Horizon.Model.GameModel.ActivityEntity", b =>
                 {
                     b.Property<long>("Id")
@@ -2304,18 +2497,18 @@ namespace Horizon.Entities.Migrations.Games
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at")
-                        .HasComment("创建时间");
+                        .HasComment("����ʱ��");
 
                     b.Property<int>("CurrentPlayers")
                         .HasColumnType("int")
                         .HasColumnName("current_players")
-                        .HasComment("当前玩家数");
+                        .HasComment("��ǰ�����");
 
                     b.Property<string>("IpAddress")
                         .IsRequired()
                         .HasColumnType("varchar(255)")
                         .HasColumnName("ip_address")
-                        .HasComment("IP地址");
+                        .HasComment("IP��ַ");
 
                     b.Property<bool>("IsValid")
                         .HasColumnType("bit")
@@ -2324,40 +2517,40 @@ namespace Horizon.Entities.Migrations.Games
                     b.Property<int>("MaxPlayers")
                         .HasColumnType("int")
                         .HasColumnName("max_players")
-                        .HasComment("最大玩家数");
+                        .HasComment("��������");
 
                     b.Property<int>("Port")
                         .HasColumnType("int")
                         .HasColumnName("port")
-                        .HasComment("端口");
+                        .HasComment("�˿�");
 
                     b.Property<string>("ServerName")
                         .IsRequired()
                         .HasColumnType("varchar(255)")
                         .HasColumnName("server_name")
-                        .HasComment("服务器名称");
+                        .HasComment("����������");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("varchar(50)")
                         .HasColumnName("status")
-                        .HasComment("服务器状态");
+                        .HasComment("������״̬");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("updated_at")
-                        .HasComment("更新时间");
+                        .HasComment("����ʱ��");
 
                     b.Property<int>("ZoneId")
                         .HasColumnType("int")
                         .HasColumnName("zone_id")
-                        .HasComment("分区ID");
+                        .HasComment("����ID");
 
                     b.HasKey("Id");
 
                     b.ToTable("Game_HunduShijie_Server", t =>
                         {
-                            t.HasComment("游戏服务器信息表");
+                            t.HasComment("��Ϸ��������Ϣ��");
                         });
                 });
 
@@ -3381,7 +3574,7 @@ namespace Horizon.Entities.Migrations.Games
 
                     b.Property<string>("Phone")
                         .IsRequired()
-                        .HasColumnType("varchar(20)")
+                        .HasColumnType("varchar(100)")
                         .HasColumnName("phone")
                         .HasColumnOrder(17)
                         .HasComment("手机号");
@@ -3413,9 +3606,9 @@ namespace Horizon.Entities.Migrations.Games
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AccountName")
+                    b.HasIndex("Id")
                         .IsUnique()
-                        .HasDatabaseName("IX_User_AccountName");
+                        .HasDatabaseName("IX_User_Id");
 
                     b.HasIndex("LastLoginTime")
                         .HasDatabaseName("IX_User_LastLoginTime");
@@ -3438,18 +3631,18 @@ namespace Horizon.Entities.Migrations.Games
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at")
-                        .HasComment("创建时间");
+                        .HasComment("����ʱ��");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("varchar(500)")
                         .HasColumnName("description")
-                        .HasComment("分区描述");
+                        .HasComment("��������");
 
                     b.Property<int>("GameId")
                         .HasColumnType("int")
                         .HasColumnName("game_id")
-                        .HasComment("游戏Id");
+                        .HasComment("��ϷId");
 
                     b.Property<bool>("IsValid")
                         .HasColumnType("bit")
@@ -3458,19 +3651,19 @@ namespace Horizon.Entities.Migrations.Games
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("updated_at")
-                        .HasComment("更新时间");
+                        .HasComment("����ʱ��");
 
                     b.Property<string>("ZoneName")
                         .IsRequired()
                         .HasColumnType("varchar(255)")
                         .HasColumnName("zone_name")
-                        .HasComment("分区名称");
+                        .HasComment("��������");
 
                     b.HasKey("Id");
 
                     b.ToTable("Game_HunduShijie_Zone", t =>
                         {
-                            t.HasComment("游戏分区信息表");
+                            t.HasComment("��Ϸ������Ϣ��");
                         });
                 });
 #pragma warning restore 612, 618

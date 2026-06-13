@@ -1,6 +1,8 @@
 using Arch.Core;
 using FlaxEngine;
 using HundunWorld.Game.Network;
+using Horizon.Game.Message.Network;
+using Horizon.Game.Message.Sync;
 using System;
 using System.Threading.Tasks;
 
@@ -93,22 +95,38 @@ namespace HundunWorld.Game.Worlds
         /// <param name="newPosition">新位置</param>
         private async Task SendPositionUpdateToServerAsync(Vector3 newPosition)
         {
-            // 构造位置更新消息并发送到服务器
-            // 由于缺少具体的消息定义，这里只是一个示例
-            /*
-            var message = new HorizonMessagePacket
+            if (!_networkManager.CanSendMessage())
+                return;
+
+            var inputPacket = new InputPacket
             {
-                ServiceType = ServiceType.World,
-                Header = new MessageHeader
-                {
-                    MessageType = MessageType.PlayerPositionUpdate,
-                    UserId = _playerId
-                },
-                Body = new MessageUnion { PlayerPositionUpdate = new PlayerPositionUpdateMessage { Position = newPosition } }
+                ClientTick = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                InputBits = 0,
+                MoveX = newPosition.X,
+                MoveY = newPosition.Z,
+                LookYaw = 0f,
+                LookPitch = 0f,
             };
-            
-            await _networkManager.SendMessageAsync(message);
-            */
+
+            SyncPacketCodec.Encode(inputPacket, out var frame, out var frameLength);
+            try
+            {
+                var payload = new byte[frameLength];
+                System.Buffer.BlockCopy(frame, 0, payload, 0, frameLength);
+
+                var syncFrame = new SyncFrameMessage
+                {
+                    Frame = payload,
+                    PacketKind = (byte)inputPacket.Kind,
+                    ProtocolVersion = inputPacket.ProtocolVersion,
+                };
+
+                await _networkManager.SendAsync(syncFrame);
+            }
+            finally
+            {
+                SyncPacketCodec.ReturnFrame(frame);
+            }
         }
 
         /// <summary>

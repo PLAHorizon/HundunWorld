@@ -1,4 +1,4 @@
-using Horizon.Game.Core.Database;
+using Game.Database;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 using HundunWorld.Game.Network.Handlers;
@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
-using static Horizon.Game.Core.Database.LiteDataContext;
+using static Game.Database.LiteDataContext;
 using AuthenticationManager = HundunWorld.Game.UI.Authentication.AuthenticationManager;
 
 namespace ManagedHundunWorld.Network.Handlers

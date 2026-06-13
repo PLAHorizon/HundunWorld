@@ -1,0 +1,236 @@
+﻿@page "/flower/market-data"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using System.Text.Json
+@using Horizon.Share.VMs
+
+@inject FlowerMarketService MarketService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">📈 行情数据管理</TypographyTitle>
+    </div>
+
+    <Card Size="@CardSize.Small" Style="margin-bottom:16px;">
+        <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:center;">
+            <div>
+                <span style="margin-right:8px; color:rgba(0,0,0,0.65);">市场</span>
+                <Select TItem="string" TItemValue="string" @bind-Value="@SelectedMarket" Style="width:160px"
+                        Size="@InputSize.Small" AllowClear>
+                    <SelectOption TItem="string" TItemValue="string" Value="@("all")">全部市场</SelectOption>
+                    <SelectOption TItem="string" TItemValue="string" Value="@("kunming")">昆明斗南</SelectOption>
+                    <SelectOption TItem="string" TItemValue="string" Value="@("guangzhou")">广州岭南</SelectOption>
+                    <SelectOption TItem="string" TItemValue="string" Value="@("shanghai")">上海精盛</SelectOption>
+                </Select>
+            </div>
+            <div>
+                <span style="margin-right:8px; color:rgba(0,0,0,0.65);">品种</span>
+                <Select TItem="int" TItemValue="int" @bind-Value="@SelectedSpeciesId" Style="width:160px"
+                        Size="@InputSize.Small" AllowClear>
+                    @foreach (var sp in SpeciesOptions)
+                    {
+                        <SelectOption TItem="int" TItemValue="int" Value="@sp.Id">@sp.Name</SelectOption>
+                    }
+                </Select>
+            </div>
+            <div>
+                <span style="margin-right:8px; color:rgba(0,0,0,0.65);">时间范围</span>
+                <RangePicker TItemValue="DateTime?" @bind-Value="@TimeRange" Style="width:280px" Size="@InputSize.Small" />
+            </div>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadMarketData">🔍 查询</Button>
+        </div>
+    </Card>
+
+    @if (OverviewStats != null)
+    {
+        <AntDesign.Row Gutter="16" Style="margin-bottom:16px;">
+            <AntDesign.Col Span="6">
+                <Card Size="@CardSize.Small">
+                    <Statistic Title="品种总数" Value="@OverviewStats.SpeciesCount" />
+                </Card>
+            </AntDesign.Col>
+            <AntDesign.Col Span="6">
+                <Card Size="@CardSize.Small">
+                    <Statistic Title="市场均价" Prefix="¥" Value="@OverviewStats.AvgPrice" Precision="2" />
+                </Card>
+            </AntDesign.Col>
+            <AntDesign.Col Span="6">
+                <Card Size="@CardSize.Small">
+                    <Statistic Title="今日涨跌" Value="@OverviewStats.TodayChange" Suffix="%"
+                               Style="@(OverviewStats.TodayChange >= 0 ? "color:#cf1322" : "color:#3f8600")" />
+                </Card>
+            </AntDesign.Col>
+            <AntDesign.Col Span="6">
+                <Card Size="@CardSize.Small">
+                    <Statistic Title="成交量" Value="@OverviewStats.TradeVolume" />
+                </Card>
+            </AntDesign.Col>
+        </AntDesign.Row>
+    }
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="MarketSnapshotItem" DataSource="@MarketData" Size="@TableSize.Small" RowKey="x => x.Id">
+            <PropertyColumn Property="m => m.Id" Title="ID" />
+            <PropertyColumn Property="m => m.SpeciesName" Title="品种" />
+            <PropertyColumn Property="m => m.MarketName" Title="市场" />
+            <Column TData="string" Title="最新价">
+                <AntDesign.Text Type="@TextElementType.Danger" Strong>¥@context.LatestPrice.ToString("N2")</AntDesign.Text>
+            </Column>
+            <Column TData="string" Title="涨跌幅">
+                <span style="@(context.ChangePercent >= 0 ? "color:#cf1322" : "color:#3f8600")">
+                    @(context.ChangePercent >= 0 ? "+" : "")@context.ChangePercent.ToString("N2")%
+                </span>
+            </Column>
+            <PropertyColumn Property="m => m.Volume" Title="成交量" />
+            <Column TData="string" Title="更新时间">@context.UpdatedAt</Column>
+        </Table>
+    }
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<MarketSnapshotItem> MarketData { get; set; } = new();
+    private List<SpeciesOption> SpeciesOptions { get; set; } = new();
+    private bool Loading { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string SelectedMarket { get; set; } = "all";
+    private int SelectedSpeciesId { get; set; }
+    private DateTime?[] TimeRange { get; set; } = { DateTime.Now.AddDays(-7), DateTime.Now };
+    private OverviewStatsItem? OverviewStats { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSpeciesOptions();
+        await LoadOverview();
+        await LoadMarketData();
+    }
+
+    private async Task LoadSpeciesOptions()
+    {
+        try
+        {
+            var result = await MarketService.GetSpeciesAsync();
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var json = result.Data.Value;
+                if (json.ValueKind == JsonValueKind.Array)
+                {
+                    SpeciesOptions = JsonSerializer.Deserialize<List<SpeciesOption>>(json.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+            }
+        }
+        catch { }
+    }
+
+    private async Task LoadOverview()
+    {
+        try
+        {
+            var result = await MarketService.GetOverviewAsync();
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                OverviewStats = JsonSerializer.Deserialize<OverviewStatsItem>(result.Data.Value.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            }
+        }
+        catch { }
+    }
+
+    private async Task LoadMarketData()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            if (SelectedSpeciesId > 0)
+            {
+                var result = await MarketService.GetPriceHistoryAsync(SelectedSpeciesId, TimeRange[0], TimeRange[1]);
+                if (result?.IsSuccess == true && result.Data.HasValue)
+                {
+                    var json = result.Data.Value;
+                    if (json.ValueKind == JsonValueKind.Array)
+                    {
+                        MarketData = JsonSerializer.Deserialize<List<MarketSnapshotItem>>(json.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                    }
+                    else if (json.ValueKind == JsonValueKind.Object && json.TryGetProperty("items", out var items))
+                    {
+                        MarketData = JsonSerializer.Deserialize<List<MarketSnapshotItem>>(items.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                    }
+                    else
+                    {
+                        MarketData = new();
+                    }
+                }
+                else
+                {
+                    MarketData = new();
+                }
+            }
+            else
+            {
+                var result = await MarketService.GetOverviewAsync();
+                if (result?.IsSuccess == true && result.Data.HasValue)
+                {
+                    var json = result.Data.Value;
+                    if (json.ValueKind == JsonValueKind.Object && json.TryGetProperty("items", out var items))
+                    {
+                        MarketData = JsonSerializer.Deserialize<List<MarketSnapshotItem>>(items.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                    }
+                    else if (json.ValueKind == JsonValueKind.Array)
+                    {
+                        MarketData = JsonSerializer.Deserialize<List<MarketSnapshotItem>>(json.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                    }
+                    else
+                    {
+                        MarketData = new();
+                    }
+                }
+                else
+                {
+                    MarketData = new();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载行情数据失败: {ex.Message}";
+            MarketData = new();
+        }
+        Loading = false;
+    }
+
+    public class SpeciesOption
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+    }
+
+    public class MarketSnapshotItem
+    {
+        public int Id { get; set; }
+        public string SpeciesName { get; set; } = "";
+        public string MarketName { get; set; } = "";
+        public decimal LatestPrice { get; set; }
+        public decimal ChangePercent { get; set; }
+        public int Volume { get; set; }
+        public string UpdatedAt { get; set; } = "";
+    }
+
+    public class OverviewStatsItem
+    {
+        public int SpeciesCount { get; set; }
+        public decimal AvgPrice { get; set; }
+        public decimal TodayChange { get; set; }
+        public long TradeVolume { get; set; }
+    }
+}

@@ -1,3 +1,4 @@
+using Horizon.Core.Security;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -13,6 +14,10 @@ namespace Horizon.Game.Core.Security
     public class AuthenticationValidator
     {
         private readonly ILogger<AuthenticationValidator> _logger;
+
+        // 通行证昵称验证正则（编译以提升重复调用性能）
+        private static readonly Regex _nickNameAllDigitsRegex = new(@"^\d+$", RegexOptions.Compiled);
+        private static readonly Regex _nickNameValidCharsRegex = new(@"^[\u4e00-\u9fa5a-zA-Z0-9_]+$", RegexOptions.Compiled);
         
         // 常用弱密码列表
         private readonly HashSet<string> _weakPasswords = new()
@@ -22,12 +27,7 @@ namespace Horizon.Game.Core.Security
             "sunshine", "iloveyou", "princess", "football", "123123", "welcome", "solo"
         };
 
-        // 敏感词列表（示例）
-        private readonly HashSet<string> _sensitiveWords = new()
-        {
-            "admin", "administrator", "root", "system", "guest", "null", "undefined",
-            "fuck", "shit", "damn", "hell", "stupid", "idiot", "moron", "asshole"
-        };
+        private readonly SensitiveWordFilter _sensitiveWordFilter = new();
 
         public AuthenticationValidator(ILogger<AuthenticationValidator> logger)
         {
@@ -280,56 +280,113 @@ namespace Horizon.Game.Core.Security
             if (string.IsNullOrWhiteSpace(text))
                 return false;
 
-            var lowerText = text.ToLower();
-            foreach (var sensitiveWord in _sensitiveWords)
-            {
-                if (lowerText.Contains(sensitiveWord))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return _sensitiveWordFilter.ContainsSensitiveWord(text);
         }
 
         /// <summary>
-        /// 批量验证用户输入
+        /// 验证通行证昵称
+        /// 昵称允许中文、英文字母、数字，长度2-16个字符
         /// </summary>
-        public async Task<ValidationResult> ValidateUserRegistrationAsync(
-            string accountName, 
-            string password, 
-            string email, 
-            string phoneNumber = null)
+        public ValidationResult ValidatePassportNickName(string nickName)
         {
             try
             {
-                var validations = new List<ValidationResult>
+                if (string.IsNullOrWhiteSpace(nickName))
                 {
-                    ValidateAccountName(accountName),
-                    ValidatePassword(password),
-                    ValidateEmail(email)
-                };
-
-                if (!string.IsNullOrWhiteSpace(phoneNumber))
-                {
-                    validations.Add(ValidatePhoneNumber(phoneNumber));
+                    return ValidationResult.Failure("通行证昵称不能为空");
                 }
 
-                // 检查是否有任何验证失败
-                foreach (var validation in validations)
+                // 移除前后空格后再判断长度
+                nickName = nickName.Trim();
+
+                // 长度检查（按字符数，中文占一个字符）
+                if (nickName.Length < 2 || nickName.Length > 16)
                 {
-                    if (!validation.IsValid)
-                    {
-                        return validation;
-                    }
+                    return ValidationResult.Failure("通行证昵称长度必须在2-16个字符之间");
+                }
+
+                // 不允许纯数字
+                if (_nickNameAllDigitsRegex.IsMatch(nickName))
+                {
+                    return ValidationResult.Failure("通行证昵称不能为纯数字");
+                }
+
+                // 只允许中文、英文字母、数字和下划线
+                if (!_nickNameValidCharsRegex.IsMatch(nickName))
+                {
+                    return ValidationResult.Failure("通行证昵称只能包含中文、英文字母、数字和下划线");
+                }
+
+                // 敏感词检查
+                if (ContainsSensitiveWords(nickName))
+                {
+                    return ValidationResult.Failure("通行证昵称包含不允许的词汇");
                 }
 
                 return ValidationResult.Success();
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "验证通行证昵称时发生异常: {NickName}", nickName);
+                return ValidationResult.Failure("通行证昵称验证失败");
+            }
+        }
+
+        /// <summary>
+        /// 批量验证用户注册信息
+        /// </summary>
+        /// <param name="nickName">通行证昵称（必填）</param>
+        /// <param name="password">密码（必填）</param>
+        /// <param name="email">安全邮箱（可选，用于找回密码、实名认证、注销通行证等）</param>
+        /// <param name="phoneNumber">手机号（可选）</param>
+        public Task<ValidationResult> ValidateUserRegistrationAsync(
+            string nickName, 
+            string password, 
+            string email, 
+            string phoneNumber = null)
+        {
+            try
+            {
+                // 必填项：通行证昵称
+                var nickNameValidation = ValidatePassportNickName(nickName);
+                if (!nickNameValidation.IsValid)
+                {
+                    return Task.FromResult(nickNameValidation);
+                }
+
+                // 必填项：密码
+                var passwordValidation = ValidatePassword(password);
+                if (!passwordValidation.IsValid)
+                {
+                    return Task.FromResult(passwordValidation);
+                }
+
+                // 可选项：安全邮箱（提供时才验证格式）
+                if (!string.IsNullOrWhiteSpace(email))
+                {
+                    var emailValidation = ValidateEmail(email);
+                    if (!emailValidation.IsValid)
+                    {
+                        return Task.FromResult(emailValidation);
+                    }
+                }
+
+                // 可选项：手机号（提供时才验证格式）
+                if (!string.IsNullOrWhiteSpace(phoneNumber))
+                {
+                    var phoneValidation = ValidatePhoneNumber(phoneNumber);
+                    if (!phoneValidation.IsValid)
+                    {
+                        return Task.FromResult(phoneValidation);
+                    }
+                }
+
+                return Task.FromResult(ValidationResult.Success());
+            }
+            catch (Exception ex)
+            {
                 _logger.LogError(ex, "批量验证用户注册信息时发生异常");
-                return ValidationResult.Failure("用户信息验证失败");
+                return Task.FromResult(ValidationResult.Failure("用户信息验证失败"));
             }
         }
     }

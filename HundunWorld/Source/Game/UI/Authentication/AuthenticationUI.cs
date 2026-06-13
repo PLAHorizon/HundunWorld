@@ -1,10 +1,11 @@
 using FlaxEditor.Content;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using Horizon.Game.Core.Database;
+using Game.Database;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 using HundunWorld.Game.Network;
+using HundunWorld.Game.Services;
 using HundunWorld.Game.UI;
 using HundunWorld.Game.UI.Animation;
 using HundunWorld.Game.UI.Character;
@@ -16,7 +17,7 @@ using HundunWorld.Game.UI.Layout;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
 using System.Threading.Tasks;
-using static Horizon.Game.Core.Database.LiteDataContext;
+using static Game.Database.LiteDataContext;
 
 namespace HundunWorld.Game.UI.Authentication
 {
@@ -44,6 +45,7 @@ namespace HundunWorld.Game.UI.Authentication
         private bool _isProcessing = false;
         private bool _isFirstLogin = true;
         private bool _isNetworkConnected = false;
+        private bool _autoLoginAttempted = false;
         private System.Threading.CancellationTokenSource _statusCheckCts;
 
         public ContainerControl MainContainer { get => _mainContainer; set => _mainContainer = value; }
@@ -54,13 +56,46 @@ namespace HundunWorld.Game.UI.Authentication
             InitializeUI();
             SubscribeEvents();
 
-            // 显示新手引导（首次登录）
-            if (_isFirstLogin)
+            if (!_autoLoginAttempted)
             {
-                ShowLoginGuidance();
+                _autoLoginAttempted = true;
+                _ = TryAutoLoginAsync();
             }
 
             FlaxEngine.Debug.Log("认证界面重构版初始化完成");
+        }
+
+        private async Task TryAutoLoginAsync()
+        {
+            try
+            {
+                var result = await AuthenticationManager.Instance.TryAutoLoginAsync();
+                
+                if (result.IsSuccess)
+                {
+                    FlaxEngine.Debug.Log("[AuthenticationUI] 自动登录成功，隐藏登录界面");
+                    Scripting.InvokeOnUpdate(() =>
+                    {
+                        HideAuthenticationUI();
+                    });
+                }
+                else
+                {
+                    FlaxEngine.Debug.Log($"[AuthenticationUI] 自动登录失败或未启用: {result.ErrorMessage}");
+                    if (AuthenticationManager.IsLaunchedFromGengDi)
+                    {
+                        Scripting.InvokeOnUpdate(() =>
+                        {
+                            if (_loginPanel != null)
+                                _loginPanel.SetStatus("登录已过期，请重新登录", Color.Orange);
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[AuthenticationUI] 自动登录异常: {ex.Message}");
+            }
         }
 
         /// <summary>

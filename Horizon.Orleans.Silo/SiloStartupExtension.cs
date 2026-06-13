@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Text;
@@ -53,9 +54,9 @@ namespace Horizon.Orleans.Silo
             {
                 methodInfo.MakeGenericMethod(typeof(XingguangEntityContext), item.Key, item.Value).Invoke(service, new object[] { service });
             }
-            foreach (var item in GetStorageAttributeClassType(DatabaseName.ModelAssembly, DatabaseName.Xingguang)) //星光数据库
+            foreach (var item in GetStorageAttributeClassType(DatabaseName.ModelAssembly, DatabaseName.Flower)) //花卉市场数据库
             {
-                methodInfo.MakeGenericMethod(typeof(XingguangEntityContext), item.Key, item.Value).Invoke(null, new object[] { service });
+                methodInfo.MakeGenericMethod(typeof(FlowerEntityContext), item.Key, item.Value).Invoke(service, new object[] { service });
             }
             return service;
         }
@@ -198,7 +199,7 @@ namespace Horizon.Orleans.Silo
                     }
                     
                     // 尝试处理成功加载的类型
-                    var loadedTypes = ex.Types.Where(t => t != null).ToArray();
+                    var loadedTypes = ex.Types.Where(t => t != null).Cast<Type>().ToArray();
                     foreach (var item in loadedTypes.Where(s => !s.IsInterface && s.GetCustomAttribute<EntityStorageAttribute>()?.StorageName == storageName))
                     {
                         if (item.BaseType == null || item.BaseType.GenericTypeArguments.Length == 0)
@@ -233,14 +234,78 @@ namespace Horizon.Orleans.Silo
                 }
             }
         }
-        /// <summary>
-        /// 获取一个有效的端口
-        /// </summary>
-        /// <param name="start"></param>
-        /// <param name="end"></param>
-        /// <returns></returns>
-        /// <exception cref="InvalidOperationException"></exception>
-        public static int GetAvailablePort(int start, int end)
+
+ 
+
+public static async Task<string> GetExternalIpAddressAsync()
+    {
+        // 设置合理的超时时间，避免长时间挂起
+        using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+
+        // 配置多个备用 IP 查询服务
+        string[] ipServices =
+        {
+        "https://api.ipify.org",
+        "https://icanhazip.com",
+        "https://ifconfig.me/ip"
+    };
+
+        foreach (var service in ipServices)
+        {
+            try
+            {
+                var ip = await httpClient.GetStringAsync(service);
+                if (!string.IsNullOrWhiteSpace(ip))
+                {
+                    return ip.Trim();
+                }
+            }
+            catch
+            {
+                // 忽略当前错误，尝试下一个节点
+                continue;
+            }
+        }
+
+        return "127.0.0.1"; // 所有节点都失败时的 Fallback
+    }
+
+      
+/// <summary>
+/// 获取本机处于活动状态网卡的局域网 IPv4 地址
+/// </summary>
+public static string GetLocalIpAddress()
+    {
+        foreach (var networkInterface in NetworkInterface.GetAllNetworkInterfaces())
+        {
+            // 只检查状态为 "Up" 且不是本地回环(127.0.0.1)的网卡
+            if (networkInterface.OperationalStatus == OperationalStatus.Up &&
+                networkInterface.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+            {
+                 var tem =   networkInterface.GetPhysicalAddress(); // 获取物理地址，确保网卡正常工作
+                   
+                    var properties = networkInterface.GetIPProperties();
+                foreach (var address in properties.UnicastAddresses)
+                {
+                    // 获取 IPv4 地址
+                    if (address.Address.AddressFamily == AddressFamily.InterNetwork)
+                    {
+                        return address.Address.ToString();
+                    }
+                }
+            }
+        }
+
+        return "127.0.0.1"; // 找不到合适的网卡时返回回环地址
+    }
+    /// <summary>
+    /// 获取一个有效的端口
+    /// </summary>
+    /// <param name="start"></param>
+    /// <param name="end"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public static int GetAvailablePort(int start, int end)
         {
             for (var port = start; port < end; ++port)
             {
@@ -278,19 +343,65 @@ namespace Horizon.Orleans.Silo
     }
     public class CustomGrainStorageSerializer : IGrainStorageSerializer
     {
-        
+        private static readonly byte[] JsonFallbackMarker = { 0x7F, 0x4A, 0x53, 0x4F, 0x4E };
+
+        private static readonly Newtonsoft.Json.JsonSerializerSettings JsonSettings = new()
+        {
+            NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore,
+            DefaultValueHandling = Newtonsoft.Json.DefaultValueHandling.Populate,
+            Formatting = Newtonsoft.Json.Formatting.None
+        };
 
         BinaryData IGrainStorageSerializer.Serialize<T>(T input)
         {
-            
-            return BinaryData.FromBytes(MemoryPack.MemoryPackSerializer.Serialize(input));
+            try
+            {
+                return BinaryData.FromBytes(MemoryPack.MemoryPackSerializer.Serialize(input));
+            }
+            catch (MemoryPack.MemoryPackSerializationException)
+            {
+                var json = Newtonsoft.Json.JsonConvert.SerializeObject(input, JsonSettings);
+                var jsonBytes = System.Text.Encoding.UTF8.GetBytes(json);
+                var result = new byte[JsonFallbackMarker.Length + jsonBytes.Length];
+                Buffer.BlockCopy(JsonFallbackMarker, 0, result, 0, JsonFallbackMarker.Length);
+                Buffer.BlockCopy(jsonBytes, 0, result, JsonFallbackMarker.Length, jsonBytes.Length);
+                return BinaryData.FromBytes(result);
+            }
         }
 
         public T? Deserialize<T>(BinaryData input)
         {
-            if(input!=null)
-            return   MemoryPack.MemoryPackSerializer.Deserialize<T>(input.ToArray());
-            return default;
+            if (input == null) return default;
+            var bytes = input.ToArray();
+            if (bytes.Length == 0) return default;
+
+            if (StartsWithMarker(bytes))
+            {
+                var jsonBytes = new byte[bytes.Length - JsonFallbackMarker.Length];
+                Buffer.BlockCopy(bytes, JsonFallbackMarker.Length, jsonBytes, 0, jsonBytes.Length);
+                var json = System.Text.Encoding.UTF8.GetString(jsonBytes);
+                return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json, JsonSettings);
+            }
+
+            try
+            {
+                return MemoryPack.MemoryPackSerializer.Deserialize<T>(bytes);
+            }
+            catch (MemoryPack.MemoryPackSerializationException ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MemoryPackFallback] Deserialization failed for {typeof(T).Name}: {ex.Message}. Returning default state.");
+                return default;
+            }
+        }
+
+        private static bool StartsWithMarker(byte[] data)
+        {
+            if (data.Length < JsonFallbackMarker.Length) return false;
+            for (var i = 0; i < JsonFallbackMarker.Length; i++)
+            {
+                if (data[i] != JsonFallbackMarker[i]) return false;
+            }
+            return true;
         }
     }
 }

@@ -1,0 +1,247 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sty="using:FluentAvalonia.Styling"
+                    xmlns:ui="using:FluentAvalonia.UI.Controls">
+
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Default">
+            <LinearGradientBrush x:Key="BattleNetHeroBackgroundBrush"
+                                 StartPoint="0,0"
+                                 EndPoint="1,1">
+                <GradientStop Color="#FF0E2340" Offset="0" />
+                <GradientStop Color="#FF123A6B" Offset="0.55" />
+                <GradientStop Color="#FF0E5A7E" Offset="1" />
+            </LinearGradientBrush>
+
+            <SolidColorBrush x:Key="BattleNetSurfaceTintBrush" Color="#1400AEFF" />
+
+            <LinearGradientBrush x:Key="HeaderOpacityMaskBrush"
+                                 StartPoint="0,0"
+                                 EndPoint="0,1">
+                <GradientStop Color="#BFFFFFFF" Offset="0" />
+                <GradientStop Color="#88FFFFFF" Offset="0.78" />
+                <GradientStop Color="#60FFFFFF" Offset="0.9" />
+                <GradientStop Color="#00FFFFFF" Offset="1" />
+            </LinearGradientBrush>
+
+            <LinearGradientBrush x:Key="PageHeaderBackgroundBrush"
+                                 StartPoint="0,0"
+                                 EndPoint="1,1">
+                <GradientStop Color="#99F6F0E5" Offset="0" />
+                <GradientStop Color="#88E8E6F6" Offset="0.45" />
+                <GradientStop Color="#77E3EEF7" Offset="1" />
+            </LinearGradientBrush>
+
+            <!-- 社交面板：柔和深色侧边栏 -->
+            <LinearGradientBrush x:Key="SocialSidebarBrush"
+                                 StartPoint="0,0"
+                                 EndPoint="0,1">
+                <GradientStop Color="#66456D8A" Offset="0" />
+                <GradientStop Color="#5A5E7CA3" Offset="0.5" />
+                <GradientStop Color="#50668EB8" Offset="1" />
+            </LinearGradientBrush>
+            <SolidColorBrush x:Key="SocialSidebarTextBrush" Color="#F4F7FB" />
+            <SolidColorBrush x:Key="SocialSidebarTextSecondaryBrush" Color="#BAC8D8" />
+            <SolidColorBrush x:Key="SocialSidebarDividerBrush" Color="#4A6A8A" />
+            <SolidColorBrush x:Key="SocialSidebarItemHoverBrush" Color="#33FFFFFF" />
+            <SolidColorBrush x:Key="SocialSidebarItemSelectedBrush" Color="#4C6C98FF" />
+            <SolidColorBrush x:Key="SocialAvatarBackgroundBrush" Color="#334A6A" />
+            <SolidColorBrush x:Key="SocialAvatarTextBrush" Color="#C3E4FF" />
+            <SolidColorBrush x:Key="SocialOnlineBadgeBrush" Color="#6DEA7E" />
+            <SolidColorBrush x:Key="SocialAwayBadgeBrush" Color="#F7CC78" />
+            <SolidColorBrush x:Key="SocialBusyBadgeBrush" Color="#F68B8B" />
+            <SolidColorBrush x:Key="SocialUnreadBadgeBrush" Color="#FF9DA8" />
+            <SolidColorBrush x:Key="SocialInputBackgroundBrush" Color="#314C75" />
+            <SolidColorBrush x:Key="SocialInputBorderBrush" Color="#6E93B0" />
+            <SolidColorBrush x:Key="SocialChatOutgoingBrush" Color="#1E00AEFF" />
+            <SolidColorBrush x:Key="SocialChatOutgoingBorderBrush" Color="#4000AEFF" />
+            <SolidColorBrush x:Key="SocialChatIncomingBrush" Color="#10FFFFFF" />
+            <SolidColorBrush x:Key="SocialChatIncomingBorderBrush" Color="#20FFFFFF" />
+
+            <!-- 标题栏 -->
+            <LinearGradientBrush x:Key="TitleBarBackgroundBrush"
+                                 StartPoint="0,0" EndPoint="1,0">
+                <GradientStop Color="#99F2F0E8" Offset="0" />
+                <GradientStop Color="#88E8F0F5" Offset="0.5" />
+                <GradientStop Color="#77EEF5FF" Offset="1" />
+            </LinearGradientBrush>
+            <SolidColorBrush x:Key="TitleBarBorderBrush" Color="#88D0D8E0" />
+            <SolidColorBrush x:Key="TitleBarDividerBrush" Color="#99B0C2D6" />
+            <SolidColorBrush x:Key="TitleBarTextBrush" Color="#203845" />
+            <SolidColorBrush x:Key="TitleBarTextSecondaryBrush" Color="#5A6F89" />
+            <SolidColorBrush x:Key="TitleBarNavItemHoverBrush" Color="#33FFFFFF" />
+            <SolidColorBrush x:Key="TitleBarNavItemSelectedBrush" Color="#FF72A0FF" />
+            <SolidColorBrush x:Key="SubNavBarBackgroundBrush" Color="#0A1628" />
+            <SolidColorBrush x:Key="SubNavItemHoverBrush" Color="#12FFFFFF" />
+            <SolidColorBrush x:Key="SubNavItemSelectedBorderBrush" Color="#FF00AEFF" />
+
+            <SolidColorBrush x:Key="MiniPlayerBackgroundBrush" Color="#E8F0F5" />
+            <SolidColorBrush x:Key="MusicPlayerBackgroundBrush" Color="#F0F4F8" />
+            <SolidColorBrush x:Key="MusicPlayerControlBarBrush" Color="#E0E8F0" />
+
+            <LinearGradientBrush x:Key="LoginTitleGradientBrush"
+                                 StartPoint="0,0"
+                                 EndPoint="1,0">
+                <GradientStop Color="#FFFFFFFF" Offset="0" />
+                <GradientStop Color="#FF90CAF9" Offset="1" />
+            </LinearGradientBrush>
+            <SolidColorBrush x:Key="LoginDecorCircleBrush" Color="#1AFFFFFF" />
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="Dark">
+            <LinearGradientBrush x:Key="BattleNetHeroBackgroundBrush"
+                                 StartPoint="0,0"
+                                 EndPoint="1,1">
+                <GradientStop Color="#FF071423" Offset="0" />
+                <GradientStop Color="#FF0B2340" Offset="0.45" />
+                <GradientStop Color="#FF0A4670" Offset="1" />
+            </LinearGradientBrush>
+
+            <SolidColorBrush x:Key="BattleNetSurfaceTintBrush" Color="#1F00AEFF" />
+
+            <LinearGradientBrush x:Key="HeaderOpacityMaskBrush"
+                                 StartPoint="0,0"
+                                 EndPoint="0,1">
+                <GradientStop Color="#CCFFFFFF" Offset="0" />
+                <GradientStop Color="#99FFFFFF" Offset="0.78" />
+                <GradientStop Color="#66FFFFFF" Offset="0.9" />
+                <GradientStop Color="#00FFFFFF" Offset="1" />
+            </LinearGradientBrush>
+
+            <LinearGradientBrush x:Key="PageHeaderBackgroundBrush"
+                                 StartPoint="0,0"
+                                 EndPoint="1,1">
+                <GradientStop Color="#8A12293D" Offset="0" />
+                <GradientStop Color="#77415B78" Offset="0.45" />
+                <GradientStop Color="#552D4A6F" Offset="1" />
+            </LinearGradientBrush>
+
+            <!-- 社交面板：柔和侧边栏（暗色） -->
+            <LinearGradientBrush x:Key="SocialSidebarBrush"
+                                 StartPoint="0,0"
+                                 EndPoint="0,1">
+                <GradientStop Color="#5520413D" Offset="0" />
+                <GradientStop Color="#5A3E5C78" Offset="0.5" />
+                <GradientStop Color="#4C4A6F93" Offset="1" />
+            </LinearGradientBrush>
+            <SolidColorBrush x:Key="SocialSidebarTextBrush" Color="#E5E9F0" />
+            <SolidColorBrush x:Key="SocialSidebarTextSecondaryBrush" Color="#A9B9CE" />
+            <SolidColorBrush x:Key="SocialSidebarDividerBrush" Color="#4B6A8B" />
+            <SolidColorBrush x:Key="SocialSidebarItemHoverBrush" Color="#33FFFFFF" />
+            <SolidColorBrush x:Key="SocialSidebarItemSelectedBrush" Color="#3F7BAAFF" />
+            <SolidColorBrush x:Key="SocialAvatarBackgroundBrush" Color="#3A5676" />
+            <SolidColorBrush x:Key="SocialAvatarTextBrush" Color="#B7D7FF" />
+            <SolidColorBrush x:Key="SocialOnlineBadgeBrush" Color="#6DDE7E" />
+            <SolidColorBrush x:Key="SocialAwayBadgeBrush" Color="#F7C18E" />
+            <SolidColorBrush x:Key="SocialBusyBadgeBrush" Color="#F48787" />
+            <SolidColorBrush x:Key="SocialUnreadBadgeBrush" Color="#FF8FA0" />
+            <SolidColorBrush x:Key="SocialInputBackgroundBrush" Color="#354968" />
+            <SolidColorBrush x:Key="SocialInputBorderBrush" Color="#6F8DB2" />
+            <SolidColorBrush x:Key="SocialChatOutgoingBrush" Color="#2200AEFF" />
+            <SolidColorBrush x:Key="SocialChatOutgoingBorderBrush" Color="#4000AEFF" />
+            <SolidColorBrush x:Key="SocialChatIncomingBrush" Color="#10FFFFFF" />
+            <SolidColorBrush x:Key="SocialChatIncomingBorderBrush" Color="#1EFFFFFF" />
+
+            <!-- 标题栏（暗色） -->
+            <LinearGradientBrush x:Key="TitleBarBackgroundBrush"
+                                 StartPoint="0,0" EndPoint="1,0">
+                <GradientStop Color="#883A5273" Offset="0" />
+                <GradientStop Color="#775A799C" Offset="0.5" />
+                <GradientStop Color="#664E7BAF" Offset="1" />
+            </LinearGradientBrush>
+            <SolidColorBrush x:Key="TitleBarBorderBrush" Color="#6698A6BE" />
+            <SolidColorBrush x:Key="TitleBarDividerBrush" Color="#6A91AFCD" />
+            <SolidColorBrush x:Key="TitleBarTextBrush" Color="#E8EFF8" />
+            <SolidColorBrush x:Key="TitleBarTextSecondaryBrush" Color="#B0C4D7" />
+            <SolidColorBrush x:Key="TitleBarNavItemHoverBrush" Color="#33FFFFFF" />
+            <SolidColorBrush x:Key="TitleBarNavItemSelectedBrush" Color="#FF88C3FF" />
+            <SolidColorBrush x:Key="SubNavBarBackgroundBrush" Color="#05080F" />
+            <SolidColorBrush x:Key="SubNavItemHoverBrush" Color="#0AFFFFFF" />
+            <SolidColorBrush x:Key="SubNavItemSelectedBorderBrush" Color="#FF00AEFF" />
+
+            <SolidColorBrush x:Key="MiniPlayerBackgroundBrush" Color="#1A2233" />
+            <SolidColorBrush x:Key="MusicPlayerBackgroundBrush" Color="#0F1722" />
+            <SolidColorBrush x:Key="MusicPlayerControlBarBrush" Color="#1A2535" />
+
+            <LinearGradientBrush x:Key="LoginTitleGradientBrush"
+                                 StartPoint="0,0"
+                                 EndPoint="1,0">
+                <GradientStop Color="#FFFFFFFF" Offset="0" />
+                <GradientStop Color="#FF64B5F6" Offset="1" />
+            </LinearGradientBrush>
+            <SolidColorBrush x:Key="LoginDecorCircleBrush" Color="#15FFFFFF" />
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="{x:Static sty:FluentAvaloniaTheme.HighContrastTheme}">
+            <SolidColorBrush x:Key="BattleNetHeroBackgroundBrush" Color="#202020" />
+            <SolidColorBrush x:Key="BattleNetSurfaceTintBrush" Color="#202020" />
+
+            <LinearGradientBrush x:Key="HeaderOpacityMaskBrush"
+                                 StartPoint="0,0"
+                                 EndPoint="0,1">
+                <GradientStop Color="#00000000" Offset="0" />
+                <GradientStop Color="#50000000" Offset="1" />
+            </LinearGradientBrush>
+
+            <SolidColorBrush x:Key="PageHeaderBackgroundBrush" Color="#202020" />
+            <SolidColorBrush x:Key="SocialSidebarBrush" Color="#1A1A1A" />
+            <SolidColorBrush x:Key="SocialSidebarTextBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="SocialSidebarTextSecondaryBrush" Color="#C0C0C0" />
+            <SolidColorBrush x:Key="SocialSidebarDividerBrush" Color="#404040" />
+            <SolidColorBrush x:Key="SocialSidebarItemHoverBrush" Color="#333333" />
+            <SolidColorBrush x:Key="SocialSidebarItemSelectedBrush" Color="#404040" />
+            <SolidColorBrush x:Key="SocialAvatarBackgroundBrush" Color="#2A2A2A" />
+            <SolidColorBrush x:Key="SocialAvatarTextBrush" Color="#00AEFF" />
+            <SolidColorBrush x:Key="SocialOnlineBadgeBrush" Color="#44D62C" />
+            <SolidColorBrush x:Key="SocialAwayBadgeBrush" Color="#FFB800" />
+            <SolidColorBrush x:Key="SocialBusyBadgeBrush" Color="#FF4040" />
+            <SolidColorBrush x:Key="SocialUnreadBadgeBrush" Color="#FF4040" />
+            <SolidColorBrush x:Key="SocialInputBackgroundBrush" Color="#1A1A1A" />
+            <SolidColorBrush x:Key="SocialInputBorderBrush" Color="#404040" />
+            <SolidColorBrush x:Key="SocialChatOutgoingBrush" Color="#333333" />
+            <SolidColorBrush x:Key="SocialChatOutgoingBorderBrush" Color="#505050" />
+            <SolidColorBrush x:Key="SocialChatIncomingBrush" Color="#282828" />
+            <SolidColorBrush x:Key="SocialChatIncomingBorderBrush" Color="#444444" />
+
+            <!-- 标题栏（高对比度） -->
+            <SolidColorBrush x:Key="TitleBarBackgroundBrush" Color="#1A1A1A" />
+            <SolidColorBrush x:Key="TitleBarBorderBrush" Color="#404040" />
+            <SolidColorBrush x:Key="TitleBarDividerBrush" Color="#505050" />
+            <SolidColorBrush x:Key="TitleBarTextBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="TitleBarTextSecondaryBrush" Color="#C0C0C0" />
+            <SolidColorBrush x:Key="TitleBarNavItemHoverBrush" Color="#333333" />
+            <SolidColorBrush x:Key="TitleBarNavItemSelectedBrush" Color="#00AEFF" />
+            <SolidColorBrush x:Key="SubNavBarBackgroundBrush" Color="#141414" />
+            <SolidColorBrush x:Key="SubNavItemHoverBrush" Color="#2A2A2A" />
+            <SolidColorBrush x:Key="SubNavItemSelectedBorderBrush" Color="#00AEFF" />
+
+            <SolidColorBrush x:Key="LoginTitleGradientBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="LoginDecorCircleBrush" Color="#333333" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+
+    <Thickness x:Key="NavigationViewContentMargin">0,0,0,0</Thickness>
+    <Thickness x:Key="SampleAppPageMargin">24,24,24,0</Thickness>
+    <CornerRadius x:Key="HorizonLargeCornerRadius">16</CornerRadius>
+
+    <SolidColorBrush x:Key="BattleNetPrimaryBrush" Color="#FF00AEFF" />
+    <SolidColorBrush x:Key="BattleNetPrimaryHoverBrush" Color="#FF33C1FF" />
+    <SolidColorBrush x:Key="BattleNetPrimaryPressedBrush" Color="#FF0080CC" />
+    <SolidColorBrush x:Key="BattleNetOutlineBrush" Color="#FF29527D" />
+
+    <ui:SymbolIconSource x:Key="HomeIcon" Symbol="Home" />
+    <ui:SymbolIconSource x:Key="GamesIcon" Symbol="Library" />
+    <ui:SymbolIconSource x:Key="NewsIcon" Symbol="Document" />
+    <ui:SymbolIconSource x:Key="SocialIcon" Symbol="People" />
+    <ui:SymbolIconSource x:Key="DownloadsIcon" Symbol="Download" />
+    <ui:SymbolIconSource x:Key="NotificationsIcon" Symbol="Alert" />
+    <ui:SymbolIconSource x:Key="ProfileIcon" Symbol="Contact" />
+    <ui:SymbolIconSource x:Key="SettingsIcon" Symbol="Settings" />
+    <ui:SymbolIconSource x:Key="SearchIcon" Symbol="Find" />
+    <ui:SymbolIconSource x:Key="ThemeIcon" Symbol="DarkTheme" />
+    <ui:SymbolIconSource x:Key="LightThemeIcon" Symbol="WeatherSunny" />
+    <ui:SymbolIconSource x:Key="SecurityIcon" Symbol="ProtectedDocument" />
+    <ui:SymbolIconSource x:Key="BrandIcon" Symbol="Globe" />
+    <ui:SymbolIconSource x:Key="MusicIcon" Symbol="Audio" />
+    <ui:SymbolIconSource x:Key="MusicInfoIcon" Symbol="MusicInfo" />
+</ResourceDictionary>

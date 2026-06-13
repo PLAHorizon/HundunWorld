@@ -419,8 +419,15 @@ namespace Horizon.Game.Gateway.Services
         /// </summary>
         private async void OnConnectionClosed(object? sender, ConnectionClosedEventArgs e)
         {
-            await RemoveConnectionAsync(e.ConnectionId);
-            _logger.LogInformation("连接已关闭: {ConnectionId}, 原因: {Reason}", e.ConnectionId, e.Reason);
+            try
+            {
+                await RemoveConnectionAsync(e.ConnectionId);
+                _logger.LogInformation("连接已关闭: {ConnectionId}, 原因: {Reason}", e.ConnectionId, e.Reason);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "处理连接关闭事件时发生错误: {ConnectionId}", e.ConnectionId);
+            }
         }
 
         /// <summary>

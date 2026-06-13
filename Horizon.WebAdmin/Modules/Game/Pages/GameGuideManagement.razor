@@ -1,0 +1,471 @@
+@page "/game/guides"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Game.Services
+@namespace Horizon.WebAdmin.Modules.Game.Pages
+
+@inject GameGuideService GuideService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">游戏图文</TypographyTitle>
+        <Space>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="ShowCreateDrawer">新建图文</Button>
+            <Button Size="@ButtonSize.Small" OnClick="LoadGuides">刷新</Button>
+            <Select TItem="string" TItemValue="string" @bind-Value="@_moduleFilter" Style="width:140px" Size="@InputSize.Small" OnChange="OnFilterChanged">
+                <SelectOption TItem="string" TItemValue="string" Value='@("")'>全部</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("新手引导")'>新手引导</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("战斗系统")'>战斗系统</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("角色成长")'>角色成长</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("装备系统")'>装备系统</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("技能系统")'>技能系统</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("社交系统")'>社交系统</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("经济系统")'>经济系统</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("世界探索")'>世界探索</SelectOption>
+            </Select>
+            <Select TItem="string" TItemValue="string" @bind-Value="@_statusFilter" Style="width:120px" Size="@InputSize.Small" OnChange="OnFilterChanged">
+                <SelectOption TItem="string" TItemValue="string" Value='@("")'>全部</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("draft")'>草稿</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("published")'>已发布</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("unpublished")'>已下架</SelectOption>
+            </Select>
+        </Space>
+    </div>
+
+    @if (_loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="JsonElement" DataSource="@_guides" Size="@TableSize.Small" RowKey="@GetGuideRowKey">
+            <Column TData="string" Title="标题">
+                @(context.TryGetProperty("title", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="功能模块">
+                <Tag Color="@GetModuleColor(context)">@GetModuleText(context)</Tag>
+            </Column>
+            <Column TData="string" Title="分类">
+                @(context.TryGetProperty("category", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="状态">
+                <Tag Color="@GetStatusColor(context)">@GetStatusText(context)</Tag>
+            </Column>
+            <Column TData="string" Title="排序权重">
+                @(context.TryGetProperty("sortOrder", out var p) ? p.GetInt32().ToString() : "0")
+            </Column>
+            <Column TData="string" Title="发布时间">
+                @(context.TryGetProperty("publishedAt", out var pp) ? pp.GetString() ?? "--" : "--")
+            </Column>
+            <Column TData="string" Title="浏览量">
+                @(context.TryGetProperty("viewCount", out var p) ? p.GetInt32().ToString() : "0")
+            </Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    <SpaceItem>
+                        <Button Size="@ButtonSize.Small" OnClick="() => ShowPreview(context)">预览</Button>
+                    </SpaceItem>
+                    <SpaceItem>
+                        <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowEditDrawer(context)">编辑</Button>
+                    </SpaceItem>
+                    <SpaceItem>
+                        @if (GetStatusText(context) == "已发布")
+                        {
+                            <Button Size="@ButtonSize.Small" OnClick="() => TogglePublish(context)">下架</Button>
+                        }
+                        else
+                        {
+                            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="() => TogglePublish(context)">发布</Button>
+                        }
+                    </SpaceItem>
+                    <SpaceItem>
+                        <Popconfirm Title="确定删除此图文？" OnConfirm="() => DeleteGuide(context)">
+                            <Button Danger Size="@ButtonSize.Small">删除</Button>
+                        </Popconfirm>
+                    </SpaceItem>
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    <Drawer Title="@(_isEditing ? "编辑图文" : "新建图文")" Visible="@_drawerVisible" OnClose="CloseDrawer" Width="720" Placement="@DrawerPlacement.Right">
+        <Form Model="@_formModel" Layout="@FormLayout.Vertical">
+            <FormItem Label="标题" Required>
+                <Input @bind-Value="@_formTitle" Placeholder="请输入图文标题" />
+            </FormItem>
+            <FormItem Label="功能模块分类">
+                <Select TItem="string" TItemValue="string" @bind-Value="@_formModule" Style="width:100%" Placeholder="请选择功能模块" Context="selectCtx">
+                    <SelectOption TItem="string" TItemValue="string" Value='@("新手引导")' Context="optCtx">新手引导</SelectOption>
+                    <SelectOption TItem="string" TItemValue="string" Value='@("战斗系统")' Context="optCtx">战斗系统</SelectOption>
+                    <SelectOption TItem="string" TItemValue="string" Value='@("角色成长")' Context="optCtx">角色成长</SelectOption>
+                    <SelectOption TItem="string" TItemValue="string" Value='@("装备系统")' Context="optCtx">装备系统</SelectOption>
+                    <SelectOption TItem="string" TItemValue="string" Value='@("技能系统")' Context="optCtx">技能系统</SelectOption>
+                    <SelectOption TItem="string" TItemValue="string" Value='@("社交系统")' Context="optCtx">社交系统</SelectOption>
+                    <SelectOption TItem="string" TItemValue="string" Value='@("经济系统")' Context="optCtx">经济系统</SelectOption>
+                    <SelectOption TItem="string" TItemValue="string" Value='@("世界探索")' Context="optCtx">世界探索</SelectOption>
+                </Select>
+            </FormItem>
+            <FormItem Label="标签">
+                <Input @bind-Value="@_formTags" Placeholder="多个标签用逗号分隔" />
+            </FormItem>
+            <FormItem Label="排序权重">
+                <InputNumber @bind-Value="@_formSortOrder" Min="0" Style="width:100%" />
+            </FormItem>
+            <FormItem Label="正文内容">
+                <TextArea @bind-Value="@_formContent" Rows="15" Placeholder="支持Markdown格式..." />
+            </FormItem>
+            <FormItem Label="图片上传">
+                <Upload Action="/Article/upload-image" ListType="@UploadListType.PictureCard">
+                    <div>
+                        <Icon Type="plus" />
+                        <div style="margin-top:8px;">上传图片</div>
+                    </div>
+                </Upload>
+            </FormItem>
+        </Form>
+        <div style="position:absolute; bottom:0; left:0; right:0; border-top:1px solid #e8e8e8; padding:10px 16px; background:#fff; text-align:right;">
+            <Space>
+                <Button OnClick="CloseDrawer">取消</Button>
+                <Button Type="@ButtonType.Primary" OnClick="HandleSubmit" Loading="@_submitting">提交</Button>
+            </Space>
+        </div>
+    </Drawer>
+
+    <Modal Title="图文预览" Visible="@_previewVisible" OnCancel="ClosePreview" Footer="@((RenderFragment)null)" Width="720">
+        @if (_previewGuide != null)
+        {
+            var g = _previewGuide.Value;
+            <Card Size="@CardSize.Small" Style="margin-bottom:16px; background:#fafafa;">
+                <h2 style="margin-bottom:12px;">@(g.TryGetProperty("title", out var tp) ? tp.GetString() ?? "" : "")</h2>
+                <Space Size='@("8")'>
+                    <SpaceItem>
+                        <Tag Color="@GetModuleColor(g)">@GetModuleText(g)</Tag>
+                    </SpaceItem>
+                    @if (g.TryGetProperty("tags", out var tagsProp) && tagsProp.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var tag in tagsProp.EnumerateArray())
+                        {
+                            var tagText = tag.ValueKind == JsonValueKind.String ? tag.GetString() ?? "" : tag.ToString();
+                            <SpaceItem>
+                                <Tag>@tagText</Tag>
+                            </SpaceItem>
+                        }
+                    }
+                    else if (g.TryGetProperty("tags", out var tagsStr) && tagsStr.ValueKind == JsonValueKind.String)
+                    {
+                        var tagStr = tagsStr.GetString() ?? "";
+                        foreach (var tag in tagStr.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                        {
+                            <SpaceItem>
+                                <Tag>@tag.Trim()</Tag>
+                            </SpaceItem>
+                        }
+                    }
+                </Space>
+            </Card>
+            <div style="white-space:pre-wrap; font-size:0.875rem; line-height:1.8; margin-bottom:16px;">
+                @(g.TryGetProperty("content", out var cp) ? cp.GetString() ?? "" : "")
+            </div>
+            @if (g.TryGetProperty("images", out var imagesProp) && imagesProp.ValueKind == JsonValueKind.Array)
+            {
+                var imgList = imagesProp.EnumerateArray().ToList();
+                if (imgList.Any())
+                {
+                    <Divider>图片</Divider>
+                    <Row Gutter="16">
+                        @foreach (var img in imgList)
+                        {
+                            var imgUrl = img.ValueKind == JsonValueKind.String ? img.GetString() ?? ""
+                                : img.TryGetProperty("url", out var u) ? u.GetString() ?? "" : "";
+                            <AntDesign.Col Span="8" Style="margin-bottom:16px;">
+                                <Image Src="@imgUrl" Style="width:100%; border-radius:4px;" />
+                            </AntDesign.Col>
+                        }
+                    </Row>
+                }
+            }
+        }
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@_errorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> _guides = new();
+    private bool _loading;
+    private string _errorMessage = "";
+
+    private bool _drawerVisible;
+    private bool _previewVisible;
+    private bool _isEditing;
+    private long _editingGuideId;
+    private bool _submitting;
+
+    private string _moduleFilter = "";
+    private string _statusFilter = "";
+
+    private string _formTitle = "";
+    private string _formModule = "";
+    private string _formTags = "";
+    private int _formSortOrder;
+    private string _formContent = "";
+
+    private JsonElement? _previewGuide;
+
+    private object _formModel = new();
+
+    private object GetGuideRowKey(JsonElement x) =>
+        x.TryGetProperty("id", out var p) ? (object)p.GetInt64() : 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGuides();
+    }
+
+    private async Task LoadGuides()
+    {
+        _loading = true;
+        _errorMessage = "";
+        try
+        {
+            var result = await GuideService.GetGuidesAsync(
+                module: string.IsNullOrEmpty(_moduleFilter) ? null : _moduleFilter,
+                status: string.IsNullOrEmpty(_statusFilter) ? null : _statusFilter
+            );
+            if (result?.IsSuccess == true)
+            {
+                var data = result.Data;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    _guides = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    _guides = items.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("records", out var records))
+                {
+                    _guides = records.EnumerateArray().ToList();
+                }
+                else
+                {
+                    _guides = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                _guides = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    _errorMessage = result.ErrorMessage ?? "加载图文列表失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"加载图文列表失败: {ex.Message}";
+            _guides = new List<JsonElement>();
+        }
+        _loading = false;
+    }
+
+    private async Task OnFilterChanged(string? _)
+    {
+        await LoadGuides();
+    }
+
+    private void ShowCreateDrawer()
+    {
+        _isEditing = false;
+        _editingGuideId = 0;
+        _formTitle = "";
+        _formModule = "";
+        _formTags = "";
+        _formSortOrder = 0;
+        _formContent = "";
+        _drawerVisible = true;
+    }
+
+    private void ShowEditDrawer(JsonElement guide)
+    {
+        _isEditing = true;
+        _editingGuideId = guide.TryGetProperty("id", out var idP) ? idP.GetInt64() : 0;
+        _formTitle = guide.TryGetProperty("title", out var tp) ? tp.GetString() ?? "" : "";
+        _formModule = guide.TryGetProperty("module", out var mp) ? mp.GetString() ?? "" : "";
+        _formTags = guide.TryGetProperty("tags", out var tagP) ? tagP.GetString() ?? "" : "";
+        _formSortOrder = guide.TryGetProperty("sortOrder", out var sp) ? sp.GetInt32() : 0;
+        _formContent = guide.TryGetProperty("content", out var cp) ? cp.GetString() ?? "" : "";
+        _drawerVisible = true;
+    }
+
+    private void CloseDrawer()
+    {
+        _drawerVisible = false;
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (string.IsNullOrWhiteSpace(_formTitle))
+        {
+            MsgService.Warning("请输入图文标题");
+            return;
+        }
+        _submitting = true;
+        try
+        {
+            var dto = new
+            {
+                Id = _isEditing ? _editingGuideId : (long?)null,
+                Title = _formTitle,
+                Module = _formModule,
+                Tags = _formTags,
+                SortOrder = _formSortOrder,
+                Content = _formContent,
+                Category = "game-guide"
+            };
+            if (_isEditing)
+            {
+                var updateResult = await GuideService.UpdateGuideAsync(dto);
+                if (updateResult?.IsSuccess == true)
+                {
+                    MsgService.Success("图文更新成功");
+                    _drawerVisible = false;
+                    await LoadGuides();
+                }
+                else
+                {
+                    _errorMessage = updateResult?.ErrorMessage ?? "更新失败";
+                }
+            }
+            else
+            {
+                var createResult = await GuideService.CreateGuideAsync(dto);
+                if (createResult?.IsSuccess == true)
+                {
+                    MsgService.Success("图文创建成功");
+                    _drawerVisible = false;
+                    await LoadGuides();
+                }
+                else
+                {
+                    _errorMessage = createResult?.ErrorMessage ?? "创建失败";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"{(_isEditing ? "更新" : "创建")}失败: {ex.Message}";
+        }
+        _submitting = false;
+    }
+
+    private void ShowPreview(JsonElement guide)
+    {
+        _previewGuide = guide;
+        _previewVisible = true;
+    }
+
+    private void ClosePreview()
+    {
+        _previewVisible = false;
+        _previewGuide = null;
+    }
+
+    private async Task TogglePublish(JsonElement guide)
+    {
+        var guideId = guide.TryGetProperty("id", out var p) ? p.GetInt64() : 0;
+        var isPublished = GetStatusText(guide) == "已发布";
+        try
+        {
+            ResultVM<bool>? result;
+            if (isPublished)
+            {
+                result = await GuideService.UnpublishGuideAsync(guideId);
+            }
+            else
+            {
+                result = await GuideService.PublishGuideAsync(guideId);
+            }
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success(isPublished ? "图文已下架" : "图文已发布");
+                await LoadGuides();
+            }
+            else
+            {
+                _errorMessage = result?.ErrorMessage ?? "操作失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"操作失败: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteGuide(JsonElement guide)
+    {
+        var guideId = guide.TryGetProperty("id", out var p) ? p.GetInt64() : 0;
+        try
+        {
+            var result = await GuideService.DeleteGuideAsync(guideId);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success("图文已删除");
+                await LoadGuides();
+            }
+            else
+            {
+                _errorMessage = result?.ErrorMessage ?? "删除失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"删除失败: {ex.Message}";
+        }
+    }
+
+    private string GetModuleText(JsonElement g) =>
+        g.TryGetProperty("module", out var p) ? p.GetString() ?? "-" : "-";
+
+    private string GetModuleColor(JsonElement g) => GetModuleText(g) switch
+    {
+        "新手引导" => "blue",
+        "战斗系统" => "red",
+        "角色成长" => "purple",
+        "装备系统" => "orange",
+        "技能系统" => "cyan",
+        "社交系统" => "green",
+        "经济系统" => "gold",
+        "世界探索" => "magenta",
+        _ => "default"
+    };
+
+    private string GetStatusText(JsonElement g)
+    {
+        if (g.TryGetProperty("status", out var p))
+        {
+            var val = p.ValueKind == JsonValueKind.String ? p.GetString() ?? "" : "";
+            return val switch
+            {
+                "draft" => "草稿",
+                "published" => "已发布",
+                "unpublished" => "已下架",
+                _ => !string.IsNullOrEmpty(val) ? val : "-"
+            };
+        }
+        return "-";
+    }
+
+    private string GetStatusColor(JsonElement g) => GetStatusText(g) switch
+    {
+        "草稿" => "default",
+        "已发布" => "green",
+        "已下架" => "red",
+        _ => "default"
+    };
+}

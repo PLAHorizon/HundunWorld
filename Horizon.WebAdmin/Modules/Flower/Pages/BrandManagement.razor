@@ -1,0 +1,182 @@
+﻿@page "/flower/brands"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Flower.Services
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+
+@inject FlowerBrandService BrandService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">品牌管理</TypographyTitle>
+        <Space>
+            <Button Size="@ButtonSize.Small" OnClick="LoadBrands">刷新</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="JsonElement" DataSource="@Brands" Size="@TableSize.Small" RowKey="@GetRowKey">
+            <Column TData="string" Title="品牌ID">
+                @(context.TryGetProperty("id", out var idProp) ? idProp.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="品牌名称">
+                @(context.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="品牌Logo">
+                @(context.TryGetProperty("logo", out var logoProp) ? logoProp.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="描述">
+                @(context.TryGetProperty("description", out var descProp) ? (descProp.GetString()?.Length > 30 ? descProp.GetString()?[..30] + "..." : descProp.GetString()) ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="审核状态">
+                <Tag Color="@GetAuditStatusColor(context)">@GetAuditStatusText(context)</Tag>
+            </Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    <SpaceItem>
+                        <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowAuditModal(context)">审核</Button>
+                    </SpaceItem>
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    <Modal Title="品牌审核" Visible="@AuditModalVisible" OnCancel="CloseAuditModal" OnOk="HandleAuditOk" ConfirmLoading="@AuditLoading">
+        <Form Model="@AuditForm" Layout="@FormLayout.Vertical">
+            <FormItem Label="审核结果">
+                <RadioGroup TItem="int" TItemValue="int" @bind-Value="@AuditForm.Approved">
+                    <Radio TItem="int" TItemValue="int" Value="1">通过</Radio>
+                    <Radio TItem="int" TItemValue="int" Value="0">拒绝</Radio>
+                </RadioGroup>
+            </FormItem>
+            <FormItem Label="审核原因">
+                <TextArea @bind-Value="@AuditForm.Reason" Rows="3" Placeholder="请输入审核原因" />
+            </FormItem>
+        </Form>
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> Brands { get; set; } = new();
+    private bool Loading { get; set; }
+    private string ErrorMessage { get; set; } = "";
+
+    private bool AuditModalVisible { get; set; }
+    private bool AuditLoading { get; set; }
+    private long AuditApplyId { get; set; }
+    private AuditFormModel AuditForm { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBrands();
+    }
+
+    private async Task LoadBrands()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await BrandService.GetAllBrandsAsync();
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var data = result.Data.Value;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    Brands = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    Brands = items.EnumerateArray().ToList();
+                }
+                else
+                {
+                    Brands = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                Brands = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    ErrorMessage = result.ErrorMessage ?? "加载品牌列表失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载品牌列表失败: {ex.Message}";
+            Brands = new List<JsonElement>();
+        }
+        Loading = false;
+    }
+
+    private void ShowAuditModal(JsonElement brand)
+    {
+        AuditApplyId = brand.TryGetProperty("id", out var idProp) ? idProp.GetInt64() : 0;
+        AuditForm = new AuditFormModel();
+        AuditModalVisible = true;
+    }
+
+    private void CloseAuditModal()
+    {
+        AuditModalVisible = false;
+    }
+
+    private async Task HandleAuditOk()
+    {
+        AuditLoading = true;
+        try
+        {
+            var data = new { Approved = AuditForm.Approved == 1, Reason = AuditForm.Reason };
+            var result = await BrandService.AuditBrandApplyAsync(AuditApplyId, data);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success(AuditForm.Approved == 1 ? "审核通过" : "已拒绝");
+                AuditModalVisible = false;
+                await LoadBrands();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "审核操作失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"审核操作失败: {ex.Message}";
+        }
+        AuditLoading = false;
+    }
+
+    private string GetAuditStatusColor(JsonElement brand)
+    {
+        var status = brand.TryGetProperty("auditStatus", out var prop) ? prop.GetInt32() : -1;
+        return status switch { 0 => "orange", 1 => "green", 2 => "red", _ => "default" };
+    }
+
+    private string GetAuditStatusText(JsonElement brand)
+    {
+        var status = brand.TryGetProperty("auditStatus", out var prop) ? prop.GetInt32() : -1;
+        return status switch { 0 => "待审核", 1 => "已通过", 2 => "已拒绝", _ => "未知" };
+    }
+
+    private class AuditFormModel
+    {
+        public int Approved { get; set; } = 1;
+        public string Reason { get; set; } = "";
+    }
+
+    private object GetRowKey(JsonElement x) => x.TryGetProperty("id", out var p) ? p.GetInt64() : 0L;
+}

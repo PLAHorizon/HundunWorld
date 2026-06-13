@@ -1,0 +1,161 @@
+﻿@page "/flower/cash-deposits"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Flower.Services
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+
+@inject FlowerCashDepositService CashDepositService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">保证金管理</TypographyTitle>
+        <Space>
+            <AntDesign.InputNumber TValue="long" @bind-Value="@SearchShopId" Placeholder="店铺ID" Style="width:120px" Size="@InputSize.Small" />
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadDeposits">查询</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="JsonElement" DataSource="@Deposits" Size="@TableSize.Small" RowKey="@GetRowKey">
+            <Column TData="string" Title="保证金ID">
+                @(context.TryGetProperty("id", out var idProp) ? idProp.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="店铺ID">
+                @(context.TryGetProperty("shopId", out var sidProp) ? sidProp.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="保证金金额">
+                <AntDesign.Text Type="@TextElementType.Danger" Strong>
+                    @(context.TryGetProperty("amount", out var amtProp) ? $"¥{amtProp.GetDecimal():N2}" : "-")
+                </AntDesign.Text>
+            </Column>
+            <Column TData="string" Title="已冻结">
+                @(context.TryGetProperty("frozenAmount", out var faProp) ? $"¥{faProp.GetDecimal():N2}" : "-")
+            </Column>
+            <Column TData="string" Title="可用余额">
+                @(context.TryGetProperty("availableAmount", out var aaProp) ? $"¥{aaProp.GetDecimal():N2}" : "-")
+            </Column>
+            <Column TData="string" Title="状态">
+                <Tag Color="@GetDepositStatusColor(context)">@GetDepositStatusText(context)</Tag>
+            </Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    <SpaceItem>
+                        <Popconfirm Title="确定退还此保证金？" OnConfirm="() => RefundDeposit(context)">
+                            <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small">退还</Button>
+                        </Popconfirm>
+                    </SpaceItem>
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <Alert Type="@AlertType.Success" Message="@SuccessMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> Deposits { get; set; } = new();
+    private bool Loading { get; set; }
+    private long SearchShopId { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string SuccessMessage { get; set; } = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (SearchShopId > 0)
+            await LoadDeposits();
+    }
+
+    private async Task LoadDeposits()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await CashDepositService.GetShopCashDepositsAsync(SearchShopId);
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var data = result.Data.Value;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    Deposits = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    Deposits = items.EnumerateArray().ToList();
+                }
+                else
+                {
+                    Deposits = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                Deposits = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    ErrorMessage = result.ErrorMessage ?? "加载保证金列表失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载保证金列表失败: {ex.Message}";
+            Deposits = new List<JsonElement>();
+        }
+        Loading = false;
+    }
+
+    private async Task RefundDeposit(JsonElement deposit)
+    {
+        var depositId = deposit.TryGetProperty("id", out var idProp) ? idProp.GetInt64() : 0;
+        var amount = deposit.TryGetProperty("availableAmount", out var amtProp) ? amtProp.GetDecimal() : 0;
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var data = new { Amount = amount, Reason = "平台退还保证金" };
+            var result = await CashDepositService.DeductCashDepositAsync(depositId, data);
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = "保证金退还操作成功";
+                await LoadDeposits();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "退还操作失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"退还操作失败: {ex.Message}";
+        }
+    }
+
+    private string GetDepositStatusColor(JsonElement deposit)
+    {
+        var status = deposit.TryGetProperty("status", out var prop) ? prop.GetInt32() : 0;
+        return status switch { 0 => "orange", 1 => "green", 2 => "red", 3 => "default", _ => "default" };
+    }
+
+    private string GetDepositStatusText(JsonElement deposit)
+    {
+        var status = deposit.TryGetProperty("status", out var prop) ? prop.GetInt32() : 0;
+        return status switch { 0 => "待缴纳", 1 => "已缴纳", 2 => "已扣除", 3 => "已退还", _ => "未知" };
+    }
+
+    private object GetRowKey(JsonElement x) => x.TryGetProperty("id", out var p) ? p.GetInt64() : 0L;
+}

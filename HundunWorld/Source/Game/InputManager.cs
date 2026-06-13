@@ -363,8 +363,16 @@ namespace HundunWorld.Game
         /// <returns>输入强度 (0-1)</returns>
         public float GetActionStrength(string actionName)
         {
-            // 对于数字输入，返回0或1
             return IsActionPressed(actionName) ? 1.0f : 0.0f;
+        }
+
+        public byte GetCurrentInputBits()
+        {
+            byte bits = 0;
+            if (IsActionPressed("Jump")) bits |= 1 << 0;
+            if (IsActionPressed("Run")) bits |= 1 << 1;
+            if (IsActionPressed("Crouch")) bits |= 1 << 2;
+            return bits;
         }
         
         /// <summary>

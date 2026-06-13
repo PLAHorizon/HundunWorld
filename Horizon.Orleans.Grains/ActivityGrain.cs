@@ -29,7 +29,7 @@ namespace Horizon.Orleans.Grains
 
         public override async Task OnActivateAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("ActivityGrain {GrainKey} activating.", this.GetPrimaryKeyLong());
+            _logger.LogInformation("ActivityGrain {GrainKey} 正在激活。", this.GetPrimaryKeyLong());
 
             if (_activityState.State.Participants == null)
                 _activityState.State.Participants = new Dictionary<Guid, ActivityParticipation>();
@@ -75,7 +75,7 @@ namespace Horizon.Orleans.Grains
                 state.IsCreated = true;
 
                 // Auto-determine status based on current time
-                var now = DateTime.UtcNow;
+                var now = DateTime.Now;
                 if (now >= startTime && now < endTime)
                     state.Status = (int)ActivityStatus.Active;
                 else if (now >= endTime)
@@ -168,7 +168,7 @@ namespace Horizon.Orleans.Grains
                 state.Participants[playerId] = new ActivityParticipation
                 {
                     PlayerId = playerId,
-                    JoinTime = DateTime.UtcNow,
+                    JoinTime = DateTime.Now,
                     IsActive = true,
                     Rewards = new List<RewardRecord>()
                 };
@@ -233,7 +233,7 @@ namespace Horizon.Orleans.Grains
                 {
                     RewardTemplateId = rewardTemplateId,
                     Quantity = quantity,
-                    DistributedTime = DateTime.UtcNow
+                    DistributedTime = DateTime.Now
                 };
 
                 participation.Rewards.Add(reward);
@@ -337,7 +337,7 @@ namespace Horizon.Orleans.Grains
             if (!state.IsCreated || state.Status == (int)ActivityStatus.Ended || state.Status == (int)ActivityStatus.Cancelled)
                 return;
 
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
 
             if (now >= state.EndTime)
             {

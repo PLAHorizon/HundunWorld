@@ -816,7 +816,7 @@ namespace Horizon.Game.Gateway.Tests
         public void PasswordUpgrade_EmptySalt_IndicatesOldSystem()
         {
             // 旧系统的密码没有PasswordSalt
-            string passwordSalt = null;
+            string? passwordSalt = null;
 
             bool usesOldSystem = string.IsNullOrEmpty(passwordSalt);
             Assert.True(usesOldSystem);

@@ -1,0 +1,340 @@
+﻿@page "/flower/payments"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Flower.Services
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+
+@inject FlowerPaymentService PaymentService
+@inject FlowerReconciliationService ReconciliationService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">支付对账</TypographyTitle>
+        <Space>
+            <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="LoadPayments">刷新</Button>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="RunReconciliation">执行对账</Button>
+        </Space>
+    </div>
+
+    <AntDesign.Row Gutter="16" Style="margin-bottom:16px;">
+        <AntDesign.Col Span="6">
+            <Card Size="@CardSize.Small">
+                <Statistic Title="上次对账时间" Value="@(LastReconTime.HasValue ? LastReconTime.Value.ToString("yyyy-MM-dd HH:mm") : "--")" ValueStyle="font-size:1rem" />
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Span="6">
+            <Card Size="@CardSize.Small">
+                <Statistic Title="不一致记录数" Value="@InconsistencyCount"
+                           ValueStyle="@(InconsistencyCount > 0 ? "color:#cf1322" : "color:#3f8600")" />
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Span="6">
+            <Card Size="@CardSize.Small">
+                <Statistic Title="交易总数" Value="@Payments.Count" ValueStyle="color:#1890ff" />
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Span="6">
+            <Card Size="@CardSize.Small">
+                <Statistic Title="退款记录数" Value="@Refunds.Count" ValueStyle="color:#faad14" />
+            </Card>
+        </AntDesign.Col>
+    </AntDesign.Row>
+
+    <Tabs ActiveKey="@ActiveTab" OnChange="key => ActiveTab = key">
+        <TabPane Key="payments" Tab="支付记录">
+            <Table TItem="JsonElement" DataSource="@Payments" Size="@TableSize.Small" RowKey="@GetPaymentRowKey">
+                <Column TData="string" Title="交易号">
+                    <AntDesign.Text Code>@(context.TryGetProperty("transactionNo", out var p) ? p.GetString() ?? "-" : "-")</AntDesign.Text>
+                </Column>
+                <Column TData="string" Title="订单号">
+                    @(context.TryGetProperty("orderId", out var p) ? p.GetInt64().ToString() : "-")
+                </Column>
+                <Column TData="string" Title="金额">
+                    <AntDesign.Text Strong>
+                        @(context.TryGetProperty("amount", out var p) ? $"¥{p.GetDecimal():N2}" : "-")
+                    </AntDesign.Text>
+                </Column>
+                <Column TData="string" Title="渠道">
+                    <Tag Color="@("cyan")">@(GetChannelText(context))</Tag>
+                </Column>
+                <Column TData="string" Title="状态">
+                    <Tag Color="@GetPaymentStatusColor(context)">@GetPaymentStatusText(context)</Tag>
+                </Column>
+                <Column TData="string" Title="支付时间">
+                    @(context.TryGetProperty("paidAt", out var p) ? p.GetString() ?? "--" : "--")
+                </Column>
+            </Table>
+        </TabPane>
+        <TabPane Key="reconciliation" Tab="对账管理">
+            <Card Size="@CardSize.Small" Style="margin-bottom:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <TypographyText Strong>对账状态</TypographyText>
+                        <div style="margin-top:8px;">
+                            @if (LastReconTime.HasValue)
+                            {
+                                <Tag Color="@("green")">最近对账: @LastReconTime.Value.ToString("yyyy-MM-dd HH:mm:ss")</Tag>
+                            }
+                            else
+                            {
+                                <Tag Color="@("default")">尚未执行对账</Tag>
+                            }
+                            @if (InconsistencyCount > 0)
+                            {
+                                <Tag Color="@("red")">不一致: @InconsistencyCount 条</Tag>
+                            }
+                            else if (LastReconTime.HasValue)
+                            {
+                                <Tag Color="@("green")">数据一致</Tag>
+                            }
+                        </div>
+                    </div>
+                    <Button Type="@ButtonType.Primary" OnClick="RunReconciliation" Loading="@ReconLoading">执行对账</Button>
+                </div>
+            </Card>
+
+            @if (ReconResultData.ValueKind != JsonValueKind.Undefined)
+            {
+                <Card Title="对账结果" Size="@CardSize.Small">
+                    <Descriptions Column="2" Size="@DescriptionsSize.Small">
+                        <DescriptionsItem Title="执行时间">
+                            @(ReconResultData.TryGetProperty("runTime", out var p) ? p.GetString() ?? "-" : "-")
+                        </DescriptionsItem>
+                        <DescriptionsItem Title="执行状态">
+                            <Tag Color="@(ReconResultData.TryGetProperty("isSuccess", out var sp) && sp.GetBoolean() ? "green" : "red")">
+                                @(ReconResultData.TryGetProperty("isSuccess", out var sp2) && sp2.GetBoolean() ? "成功" : "失败")
+                            </Tag>
+                        </DescriptionsItem>
+                        @if (ReconResultData.TryGetProperty("errorMessage", out var ep) && ep.GetString() is string msg && !string.IsNullOrEmpty(msg))
+                        {
+                            <DescriptionsItem Title="错误信息" Span="2">
+                                <AntDesign.Text Type="@TextElementType.Danger">@msg</AntDesign.Text>
+                            </DescriptionsItem>
+                        }
+                    </Descriptions>
+                </Card>
+            }
+
+            <Card Title="退款记录" Size="@CardSize.Small" Style="margin-top:16px;">
+                <Table TItem="JsonElement" DataSource="@Refunds" Size="@TableSize.Small" RowKey="@GetRefundRowKey">
+                    <Column TData="string" Title="退款ID">
+                        @(context.TryGetProperty("refundId", out var p) ? p.GetInt64().ToString() : "-")
+                    </Column>
+                    <Column TData="string" Title="订单ID">
+                        @(context.TryGetProperty("orderId", out var p) ? p.GetInt64().ToString() : "-")
+                    </Column>
+                    <Column TData="string" Title="退款金额">
+                        <AntDesign.Text Type="@TextElementType.Danger">
+                            @(context.TryGetProperty("refundAmount", out var p) ? $"¥{p.GetDecimal():N2}" : "-")
+                        </AntDesign.Text>
+                    </Column>
+                    <Column TData="string" Title="原因">
+                        @(context.TryGetProperty("reason", out var p) ? p.GetString() ?? "-" : "-")
+                    </Column>
+                    <Column TData="string" Title="状态">
+                        <Tag Color="@GetRefundStatusColor(context)">@GetRefundStatusText(context)</Tag>
+                    </Column>
+                </Table>
+            </Card>
+        </TabPane>
+    </Tabs>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <Alert Type="@AlertType.Success" Message="@SuccessMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> Payments { get; set; } = new();
+    private List<JsonElement> Refunds { get; set; } = new();
+    private bool Loading { get; set; }
+    private string ActiveTab { get; set; } = "payments";
+    private DateTime? LastReconTime { get; set; }
+    private int InconsistencyCount { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string SuccessMessage { get; set; } = "";
+    private bool ReconLoading { get; set; }
+    private JsonElement ReconResultData { get; set; }
+
+    private object GetPaymentRowKey(JsonElement x) =>
+        x.TryGetProperty("transactionId", out var p) ? (object)p.GetInt64() : 0;
+
+    private object GetRefundRowKey(JsonElement x) =>
+        x.TryGetProperty("refundId", out var p) ? (object)p.GetInt64() : 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(LoadPayments(), LoadRefunds(), LoadReconSummary());
+    }
+
+    private async Task LoadPayments()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await PaymentService.GetPaymentListAsync();
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var data = result.Data.Value;
+                if (data.ValueKind == JsonValueKind.Array)
+                    Payments = data.EnumerateArray().ToList();
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                    Payments = items.EnumerateArray().ToList();
+                else
+                    Payments = new List<JsonElement>();
+            }
+            else
+            {
+                Payments = new List<JsonElement>();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载支付交易失败: {ex.Message}";
+            Payments = new List<JsonElement>();
+        }
+        Loading = false;
+    }
+
+    private async Task LoadRefunds()
+    {
+        try
+        {
+            var result = await PaymentService.GetRefundListAsync();
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var data = result.Data.Value;
+                if (data.ValueKind == JsonValueKind.Array)
+                    Refunds = data.EnumerateArray().ToList();
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                    Refunds = items.EnumerateArray().ToList();
+                else
+                    Refunds = new List<JsonElement>();
+            }
+            else
+            {
+                Refunds = new List<JsonElement>();
+            }
+        }
+        catch
+        {
+            Refunds = new List<JsonElement>();
+        }
+    }
+
+    private async Task LoadReconSummary()
+    {
+        try
+        {
+            var timeResult = await ReconciliationService.GetLastRunTimeAsync();
+            if (timeResult?.IsSuccess == true && timeResult.Data.HasValue)
+            {
+                var data = timeResult.Data.Value;
+                if (data.ValueKind == JsonValueKind.String)
+                    LastReconTime = DateTime.Parse(data.GetString()!);
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("value", out var v))
+                    LastReconTime = DateTime.Parse(v.GetString()!);
+            }
+
+            var countResult = await ReconciliationService.GetLastInconsistencyCountAsync();
+            if (countResult?.IsSuccess == true && countResult.Data.HasValue)
+            {
+                var data = countResult.Data.Value;
+                if (data.ValueKind == JsonValueKind.Number)
+                    InconsistencyCount = data.GetInt32();
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("value", out var v))
+                    InconsistencyCount = v.GetInt32();
+            }
+        }
+        catch { }
+    }
+
+    private async Task RunReconciliation()
+    {
+        ErrorMessage = "";
+        SuccessMessage = "";
+        ReconLoading = true;
+        try
+        {
+            var result = await ReconciliationService.RunReconciliationAsync();
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                ReconResultData = result.Data.Value;
+                SuccessMessage = "对账执行成功";
+                await LoadReconSummary();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "对账执行失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"对账执行失败: {ex.Message}";
+        }
+        ReconLoading = false;
+    }
+
+    private string GetChannelText(JsonElement p)
+    {
+        var channel = p.TryGetProperty("channel", out var prop) ? prop.GetInt32() : -1;
+        return channel switch
+        {
+            0 => "微信支付",
+            1 => "支付宝",
+            _ => "其他"
+        };
+    }
+
+    private int GetPaymentStatus(JsonElement p) =>
+        p.TryGetProperty("status", out var prop) ? prop.GetInt32() : -1;
+
+    private string GetPaymentStatusColor(JsonElement p) => GetPaymentStatus(p) switch
+    {
+        0 => "orange",
+        1 => "green",
+        2 => "default",
+        3 => "cyan",
+        _ => "default"
+    };
+
+    private string GetPaymentStatusText(JsonElement p) => GetPaymentStatus(p) switch
+    {
+        0 => "待支付",
+        1 => "已支付",
+        2 => "已过期",
+        3 => "已退款",
+        _ => "未知"
+    };
+
+    private int GetRefundStatus(JsonElement r) =>
+        r.TryGetProperty("status", out var prop) ? prop.GetInt32() : -1;
+
+    private string GetRefundStatusColor(JsonElement r) => GetRefundStatus(r) switch
+    {
+        0 => "orange",
+        1 => "green",
+        2 => "cyan",
+        3 => "blue",
+        4 => "red",
+        _ => "default"
+    };
+
+    private string GetRefundStatusText(JsonElement r) => GetRefundStatus(r) switch
+    {
+        0 => "待审核",
+        1 => "已通过",
+        2 => "处理中",
+        3 => "已完成",
+        4 => "已拒绝",
+        _ => "未知"
+    };
+}

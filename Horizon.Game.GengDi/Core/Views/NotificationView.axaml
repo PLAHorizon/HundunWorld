@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
+			 xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+			 xmlns:model="using:Horizon.Game.GengDi.Models"
+			 x:Class="Horizon.Game.GengDi.Core.Views.NotificationView"
+			 x:DataType="vm:NotificationViewModel">
+	<controls:GalleryPage Title="通知中心"
+						  Subtitle="Horizon.Game.GengDi.Notifications"
+						  Description="通知页采用统一页头和列表卡片，修复原先字符串拼接文本与布尔颜色绑定等粗糙实现。"
+						  IconSource="{StaticResource NotificationsIcon}">
+		<controls:GalleryPage.HeaderActionContent>
+			<Button Content="全部已读"
+					Classes="QuietAction"
+					Command="{Binding MarkAllAsReadCommand}" />
+		</controls:GalleryPage.HeaderActionContent>
+
+		<Grid RowDefinitions="Auto,*"
+			  RowSpacing="20">
+			<Border Classes="SurfaceCard subtle">
+				<StackPanel Spacing="6">
+					<TextBlock Text="未读数量"
+							   Classes="PageEyebrow" />
+					<TextBlock Text="{Binding UnreadCount}"
+							   Theme="{StaticResource DisplayTextBlockStyle}"
+							   FontSize="26" />
+				</StackPanel>
+			</Border>
+
+			<Border Grid.Row="1"
+					Classes="SurfaceCard">
+				<ListBox ItemsSource="{Binding Notifications}"
+						 BorderThickness="0"
+						 Background="Transparent">
+					<ListBox.ItemTemplate>
+						<DataTemplate x:DataType="model:IMMessage">
+							<Border Classes="ListItemCard"
+									Margin="0 0 0 12">
+								<Grid ColumnDefinitions="Auto,*"
+									  ColumnSpacing="12">
+									<Ellipse Width="10"
+											 Height="10"
+											 Margin="0 6 0 0"
+											 Fill="{DynamicResource AccentFillColorDefaultBrush}"
+											 IsVisible="{Binding !IsRead}" />
+									<StackPanel Grid.Column="1"
+												Spacing="6">
+										<TextBlock Text="{Binding Content}"
+												   TextWrapping="Wrap" />
+										<StackPanel Orientation="Horizontal"
+													Spacing="12">
+											<TextBlock Text="{Binding Timestamp, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"
+													   Classes="SupportingText" />
+											<TextBlock Text="{Binding Type}"
+													   Classes="SupportingText" />
+										</StackPanel>
+									</StackPanel>
+								</Grid>
+							</Border>
+						</DataTemplate>
+					</ListBox.ItemTemplate>
+				</ListBox>
+			</Border>
+		</Grid>
+	</controls:GalleryPage>
+</UserControl>

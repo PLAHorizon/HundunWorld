@@ -1,6 +1,7 @@
 using Horizon.Game.Message;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
+using Horizon.Game.Core.Interfaces;
 using Horizon.Orleans.Interface;
 using Horizon.Share.Dtos.User;
 using MemoryPack;
@@ -13,6 +14,7 @@ using TouchSocket.Sockets;
 using Horizon.Game.Core.Security;
 using Horizon.Core.Abstract;
 using Horizon.Core.Abstract.Enums;
+using Horizon.Core.Security;
 
 namespace Horizon.Game.Core.Handlers
 {
@@ -24,11 +26,15 @@ namespace Horizon.Game.Core.Handlers
     {
         private readonly AuthenticationValidator _validator;
         private readonly SecurityManager _securityManager;
+        private readonly UserAuthTokenProvider _authTokenProvider;
         private readonly ILoggerFactory _loggerFactory;
+        private readonly ICharacterFingerprintService _fingerprintService;
 
         public AuthenticationHandler(ILogger<MessageHandlerBase> logger, IClusterClient clusterClient, 
             HorizonMessageAdapter adapter, ILoggerFactory loggerFactory = null, 
-            AuthenticationValidator validator = null, SecurityManager securityManager = null) 
+            AuthenticationValidator validator = null, SecurityManager securityManager = null,
+            UserAuthTokenProvider authTokenProvider = null,
+            ICharacterFingerprintService characterFingerprintService = null) 
             : base(logger, clusterClient, adapter)
         {
             _loggerFactory = loggerFactory;
@@ -40,16 +46,21 @@ namespace Horizon.Game.Core.Handlers
                 _loggerFactory?.CreateLogger<SecurityManager>() ?? 
                 logger as ILogger<SecurityManager> ?? 
                 new Microsoft.Extensions.Logging.Abstractions.NullLogger<SecurityManager>());
+            _authTokenProvider = authTokenProvider;
+            _fingerprintService = characterFingerprintService;
         }
 
         public override List<MessageType> MessageTypes => new()
         {
             MessageType.LoginRequest,
             MessageType.LoginResponse,
+            MessageType.TokenLoginRequest,
+            MessageType.TokenLoginResponse,
             MessageType.RegisterRequest,
             MessageType.RegisterResponse,
             MessageType.Logout,
-            MessageType.SessionInfo
+            MessageType.SessionInfo,
+            MessageType.BuildGameUserRequest
         };
 
         public override ServiceType ServiceType => ServiceType.Account;
@@ -73,6 +84,12 @@ namespace Horizon.Game.Core.Handlers
                     
                     case MessageType.SessionInfo:
                         return await HandleSessionInfoAsync(message);
+
+                    case MessageType.TokenLoginRequest:
+                        return await HandleTokenLoginRequestAsync(message);
+
+                    case MessageType.BuildGameUserRequest:
+                        return await HandleBuildGameUserAsync(message);
                         
                     default:
                         Logger.LogWarning("未支持的认证消息类型: {MessageType}", message.Header.MessageType);
@@ -159,10 +176,33 @@ namespace Horizon.Game.Core.Handlers
                 var sessionToken = _securityManager.GenerateSessionToken();
                 await _securityManager.StoreSessionTokenAsync(sessionToken, authResult.UserId.ToString());
 
-                // 7. 清除失败的登录尝试记录
+                // 7. 生成用户鉴权令牌（包含登录时间、机器ID与PassportId的加密数据）
+                var authToken = "";
+                if (_authTokenProvider != null)
+                {
+                    try
+                    {
+                        var machineId = message.Header.MachineId ?? "";
+                        authToken = _authTokenProvider.GenerateToken(authResult.PassportId, machineId);
+                        Logger.LogInformation("已为用户生成鉴权令牌: {PassportId}, MachineId: {MachineId}", 
+                            authResult.PassportId, machineId);
+}
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex, "生成鉴权令牌失败: {PassportId}", authResult.PassportId);
+                        return (true, CreateHorizonMessage(new LoginResponse
+                        {
+                            IsSuccess = false,
+                            Message = "鉴权令牌生成失败，请重新登录",
+                            Code = 1008
+                        }));
+                    }
+                }
+
+                // 8. 清除失败的登录尝试记录
                 _securityManager.ClearLoginAttempts(loginRequest.AccountName, "");
 
-                // 8. 构建成功响应
+                // 9. 构建成功响应
                 var successResponse = new LoginResponse
                 {
                     IsSuccess = true,
@@ -170,6 +210,7 @@ namespace Horizon.Game.Core.Handlers
                     PassportId = authResult.PassportId,
                     UserId = (ulong)authResult.UserId,
                     SessionToken = sessionToken,
+                    AuthToken = authToken,
                     Characters = characters,
                     Code = 0
                 };
@@ -243,6 +284,7 @@ namespace Horizon.Game.Core.Handlers
                     IsSuccess = true,
                     ErrorMessage = "",
                     PassportId = registerResult.PassportId,
+                    NickName = registerRequest.NickName,
                     RegisterTime = DateTime.UtcNow.Ticks
                 };
 
@@ -265,12 +307,21 @@ namespace Horizon.Game.Core.Handlers
         {
             try
             {
-                // 这里可以添加登出逻辑，比如：
-                // - 清理用户会话
-                // - 更新用户状态
-                // - 记录登出日志
-                
                 Logger.LogInformation("处理用户登出请求");
+
+                // 用户登出时清除该连接关联的所有角色在线指纹
+                if (_fingerprintService != null && _gameClient != null)
+                {
+                    try
+                    {
+                        await _fingerprintService.ReleaseByConnectionAsync(_gameClient.Id);
+                        Logger.LogInformation("登出时已清理角色指纹: ConnectionId={ConnectionId}", _gameClient.Id);
+                    }
+                    catch (Exception fpEx)
+                    {
+                        Logger.LogWarning(fpEx, "登出时清理角色指纹失败: ConnectionId={ConnectionId}", _gameClient.Id);
+                    }
+                }
 
                 // 简单的成功响应
                 var response = new LoginResponse
@@ -327,6 +378,214 @@ namespace Horizon.Game.Core.Handlers
             {
                 Logger.LogError(ex, "处理会话信息时发生异常");
                 return (false, CreateErrorResponse(message, "会话信息处理异常"));
+            }
+        }
+
+        /// <summary>
+        /// 处理构建游戏用户请求
+        /// 当客户端启动游戏时发现不存在游戏用户记录，通过网关主动创建
+        /// </summary>
+        private async Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> HandleBuildGameUserAsync(HorizonMessagePacket message)
+        {
+            try
+            {
+                var request =message.Body as  BuildGameUserRequest;
+                if (request == null || string.IsNullOrWhiteSpace(request.PassportId))
+                {
+                    Logger.LogError("无法反序列化构建游戏用户请求消息");
+                    return (false, CreateHorizonMessage(new BuildGameUserResponse
+                    {
+                        IsSuccess = false,
+                        ErrorMessage = "请求格式错误"
+                    }));
+                }
+
+                Logger.LogInformation("处理构建游戏用户请求: PassportId={PassportId}, GameId={GameId}, AreaId={AreaId}, ServerId={ServerId}",
+                    request.PassportId, request.GameId, request.AreaId, request.ServerId);
+
+                var passportGrain = _clusterClient.GetGrain<IPassportGrain>(Guid.NewGuid());
+                var gameUserId = await passportGrain.BuildGameUserAsync(
+                    request.PassportId,
+                    request.GameId,
+                    request.AreaId,
+                    request.ServerId);
+
+                if (gameUserId <= 0)
+                {
+                    Logger.LogWarning("构建游戏用户失败: PassportId={PassportId}", request.PassportId);
+                    return (true, CreateHorizonMessage(new BuildGameUserResponse
+                    {
+                        IsSuccess = false,
+                        ErrorMessage = "游戏用户创建失败，请检查通行证信息是否有效"
+                    }));
+                }
+
+                Logger.LogInformation("构建游戏用户成功: PassportId={PassportId}, GameUserId={GameUserId}",
+                    request.PassportId, gameUserId);
+
+                return (true, CreateHorizonMessage(new BuildGameUserResponse
+                {
+                    IsSuccess = true,
+                    GameUserId = gameUserId
+                }));
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "处理构建游戏用户请求时发生异常");
+                return (false, CreateHorizonMessage(new BuildGameUserResponse
+                {
+                    IsSuccess = false,
+                    ErrorMessage = "服务器内部错误"
+                }));
+            }
+        }
+
+        private async Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> HandleTokenLoginRequestAsync(HorizonMessagePacket message)
+        {
+            try
+            {
+                var tokenLoginRequest =message.Body as  TokenLoginRequest;
+                if (tokenLoginRequest == null)
+                {
+                    Logger.LogError("无法反序列化Token登录请求消息");
+                    return (true, CreateHorizonMessage(new TokenLoginResponse
+                    {
+                        IsSuccess = false,
+                        Message = "Token登录请求格式错误"
+                    }));
+                }
+
+                Logger.LogInformation("处理Token登录请求: PassportId={PassportId}", tokenLoginRequest.PassportId);
+
+                if (string.IsNullOrWhiteSpace(tokenLoginRequest.AuthToken))
+                {
+                    Logger.LogWarning("Token登录请求中AuthToken为空: PassportId={PassportId}", tokenLoginRequest.PassportId);
+                    return (true, CreateHorizonMessage(new TokenLoginResponse
+                    {
+                        IsSuccess = false,
+                        Message = "AuthToken不能为空"
+                    }));
+                }
+
+                if (_authTokenProvider == null)
+                {
+                    Logger.LogWarning("AuthTokenProvider未配置，无法验证Token");
+                    return (true, CreateHorizonMessage(new TokenLoginResponse
+                    {
+                        IsSuccess = false,
+                        Message = "服务端Token验证服务不可用"
+                    }));
+                }
+
+                // TokenLogin 使用跳过有效期检查的验证，允许过期令牌解密出身份信息后签发新令牌
+                var validationResult = _authTokenProvider.ValidateTokenWithoutExpiryCheck(
+                    tokenLoginRequest.AuthToken,
+                    tokenLoginRequest.PassportId,
+                    tokenLoginRequest.MachineId);
+
+                if (!validationResult.IsValid)
+                {
+                    Logger.LogWarning("Token验证失败: PassportId={PassportId}, 原因={Reason}",
+                        tokenLoginRequest.PassportId, validationResult.ErrorMessage);
+                    return (true, CreateHorizonMessage(new TokenLoginResponse
+                    {
+                        IsSuccess = false,
+                        Message = validationResult.ErrorMessage ?? "Token验证失败"
+                    }));
+                }
+
+                var tokenData = validationResult.TokenData;
+
+                var passportGrain = _clusterClient.GetGrain<IPassportGrain>(Guid.NewGuid());
+                var grainValidation = await passportGrain.ValidateUserAuthTokenAsync(
+                    tokenData.PassportId, tokenData.LoginTime, null);
+
+                if (!grainValidation)
+                {
+                    Logger.LogInformation("Token Grain层二次验证失败（可能会话已过期），尝试重建会话: PassportId={PassportId}", tokenData.PassportId);
+
+                    var sessionEnsured = await passportGrain.EnsureUserSessionAsync(
+                        tokenData.PassportId, tokenLoginRequest.MachineId);
+                    if (!sessionEnsured)
+                    {
+                        Logger.LogWarning("重建会话失败: PassportId={PassportId}", tokenData.PassportId);
+                        return (true, CreateHorizonMessage(new TokenLoginResponse
+                        {
+                            IsSuccess = false,
+                            Message = "Token验证失败，请重新登录"
+                        }));
+                    }
+                }
+
+                var gameUserId = await passportGrain.BuildGameUserAsync(
+                    tokenData.PassportId,
+                    (int)message.Header.GameId,
+                    areaId: 1,
+                    serverId: 1);
+
+                if (gameUserId <= 0)
+                {
+                    Logger.LogWarning("Token登录构建游戏用户失败: PassportId={PassportId}", tokenData.PassportId);
+                    return (true, CreateHorizonMessage(new TokenLoginResponse
+                    {
+                        IsSuccess = false,
+                        Message = "游戏用户信息获取失败"
+                    }));
+                }
+
+                var characterGrain = _clusterClient.GetGrain<ICharacterGrain>(0);
+                var gameQueryDto = new Share.Dtos.Games.GameQueryDto
+                {
+                    GameUserId = gameUserId,
+                    GameId = (int)message.Header.GameId
+                };
+                var characters = await characterGrain.GetAllCharactersAsync(gameQueryDto);
+
+                var sessionToken = _securityManager.GenerateSessionToken();
+                await _securityManager.StoreSessionTokenAsync(sessionToken, gameUserId.ToString());
+
+                var newAuthToken = "";
+                try
+                {
+                    var machineId = tokenLoginRequest.MachineId ?? "";
+                    newAuthToken = _authTokenProvider.GenerateToken(tokenData.PassportId, machineId);
+                    Logger.LogInformation("Token登录已刷新鉴权令牌: PassportId={PassportId}", tokenData.PassportId);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogError(ex, "Token登录刷新鉴权令牌失败: PassportId={PassportId}", tokenData.PassportId);
+                    return (true, CreateHorizonMessage(new TokenLoginResponse
+                    {
+                        IsSuccess = false,
+                        Message = "鉴权令牌生成失败，请重新登录"
+                    }));
+                }
+
+                _securityManager.ClearLoginAttempts(tokenData.PassportId, "");
+
+                var successResponse = new TokenLoginResponse
+                {
+                    IsSuccess = true,
+                    Message = "Token登录成功",
+                    PassportId = tokenData.PassportId,
+                    UserId = (ulong)gameUserId,
+                    SessionToken = sessionToken,
+                    AuthToken = newAuthToken
+                };
+
+                Logger.LogInformation("Token登录成功: PassportId={PassportId}, GameUserId={GameUserId}, 角色数量={CharacterCount}",
+                    tokenData.PassportId, gameUserId, characters.Count);
+
+                return (true, CreateHorizonMessage(successResponse));
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "处理Token登录请求时发生异常");
+                return (true, CreateHorizonMessage(new TokenLoginResponse
+                {
+                    IsSuccess = false,
+                    Message = "Token登录处理异常"
+                }));
             }
         }
 

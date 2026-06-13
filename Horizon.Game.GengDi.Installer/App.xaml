@@ -1,0 +1,338 @@
+<Application x:Class="Horizon.Game.GengDi.Installer.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Application.Resources>
+    <ResourceDictionary>
+
+      <!-- ═══════════════════════════════════════════
+           调色板
+           ═══════════════════════════════════════════ -->
+      <SolidColorBrush x:Key="BrushTextPrimary"   Color="#1A2333"/>
+      <SolidColorBrush x:Key="BrushTextSecondary" Color="#7A8A9E"/>
+      <SolidColorBrush x:Key="BrushBlue"          Color="#4A8EF5"/>
+      <SolidColorBrush x:Key="BrushBlueDark"      Color="#3579E0"/>
+      <SolidColorBrush x:Key="BrushBlueMuted"     Color="#A8C8F0"/>
+      <SolidColorBrush x:Key="BrushInputBg"       Color="#F2F7FD"/>
+      <SolidColorBrush x:Key="BrushInputBorder"   Color="#C8D8EE"/>
+
+      <!-- ═══════════════════════════════════════════
+           安装按钮
+           ═══════════════════════════════════════════ -->
+      <Style x:Key="InstallButtonStyle" TargetType="Button">
+        <Setter Property="Height"     Value="50"/>
+        <Setter Property="Width"      Value="240"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="FontSize"   Value="18"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Cursor"     Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="Button">
+              <Border x:Name="Root" CornerRadius="25">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="#5A9EFF" Offset="0"/>
+                    <GradientStop Color="#3D7EE8" Offset="1"/>
+                  </LinearGradientBrush>
+                </Border.Background>
+                <Border.Effect>
+                  <DropShadowEffect Color="#3A70CC" BlurRadius="14"
+                                    ShadowDepth="4" Opacity="0.35"/>
+                </Border.Effect>
+                <ContentPresenter HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"/>
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                  <Setter TargetName="Root" Property="Background">
+                    <Setter.Value>
+                      <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#6AAEFD" Offset="0"/>
+                        <GradientStop Color="#4D8EF4" Offset="1"/>
+                      </LinearGradientBrush>
+                    </Setter.Value>
+                  </Setter>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                  <Setter TargetName="Root" Property="Background">
+                    <Setter.Value>
+                      <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#3D7EE8" Offset="0"/>
+                        <GradientStop Color="#2D6ACC" Offset="1"/>
+                      </LinearGradientBrush>
+                    </Setter.Value>
+                  </Setter>
+                </Trigger>
+                <!-- 未勾选协议时按钮呈浅蓝色，视觉上提示不可点击 -->
+                <Trigger Property="IsEnabled" Value="False">
+                  <Setter TargetName="Root" Property="Background">
+                    <Setter.Value>
+                      <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#A8C8F0" Offset="0"/>
+                        <GradientStop Color="#90B8E8" Offset="1"/>
+                      </LinearGradientBrush>
+                    </Setter.Value>
+                  </Setter>
+                  <Setter TargetName="Root" Property="Effect">
+                    <Setter.Value>
+                      <DropShadowEffect Color="#90B0D0" BlurRadius="6"
+                                        ShadowDepth="2" Opacity="0.2"/>
+                    </Setter.Value>
+                  </Setter>
+                  <Setter Property="Cursor" Value="Arrow"/>
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+
+      <!-- ═══════════════════════════════════════════
+           路径输入框
+           ═══════════════════════════════════════════ -->
+      <Style x:Key="PathTextBoxStyle" TargetType="TextBox">
+        <Setter Property="Height"                   Value="44"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="Padding"                  Value="14,0,8,0"/>
+        <Setter Property="FontSize"                 Value="13"/>
+        <Setter Property="Foreground"               Value="#444A5A"/>
+        <Setter Property="CaretBrush"               Value="#4A8EF5"/>
+        <Setter Property="SelectionBrush"           Value="#C0D8F8"/>
+        <Setter Property="FocusVisualStyle"         Value="{x:Null}"/>
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="TextBox">
+              <Border x:Name="Root" CornerRadius="8"
+                      Background="{StaticResource BrushInputBg}"
+                      BorderBrush="{StaticResource BrushInputBorder}"
+                      BorderThickness="1.5">
+                <ScrollViewer x:Name="PART_ContentHost"
+                              VerticalAlignment="Center" Margin="0"/>
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="IsKeyboardFocused" Value="True">
+                  <Setter TargetName="Root" Property="BorderBrush"
+                          Value="#4A8EF5"/>
+                  <Setter TargetName="Root" Property="Background"
+                          Value="White"/>
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+
+      <!-- ═══════════════════════════════════════════
+           浏览按钮（路径框右侧图标按钮）
+           ═══════════════════════════════════════════ -->
+      <Style x:Key="BrowseButtonStyle" TargetType="Button">
+        <Setter Property="Width"             Value="44"/>
+        <Setter Property="Height"            Value="44"/>
+        <Setter Property="Cursor"            Value="Hand"/>
+        <Setter Property="FocusVisualStyle"  Value="{x:Null}"/>
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="Button">
+              <Border x:Name="Root" CornerRadius="8"
+                      Background="{StaticResource BrushInputBg}"
+                      BorderBrush="{StaticResource BrushInputBorder}"
+                      BorderThickness="1.5">
+                <ContentPresenter HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"/>
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                  <Setter TargetName="Root" Property="Background"
+                          Value="#E0EEFB"/>
+                  <Setter TargetName="Root" Property="BorderBrush"
+                          Value="#4A8EF5"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                  <Setter TargetName="Root" Property="Background"
+                          Value="#C8DDF6"/>
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+
+      <!-- ═══════════════════════════════════════════
+           用户协议 CheckBox
+           ═══════════════════════════════════════════ -->
+      <Style x:Key="EulaCheckBoxStyle" TargetType="CheckBox">
+        <Setter Property="Foreground"               Value="#556070"/>
+        <Setter Property="FontSize"                 Value="13"/>
+        <Setter Property="Cursor"                   Value="Hand"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="FocusVisualStyle"         Value="{x:Null}"/>
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="CheckBox">
+              <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <Border x:Name="CheckBd" Width="18" Height="18"
+                        CornerRadius="4" Background="White"
+                        BorderBrush="#B0C0D4" BorderThickness="1.5"
+                        Margin="0,0,7,0" VerticalAlignment="Center">
+                  <Path x:Name="Tick" Visibility="Collapsed"
+                        Data="M 3,9 L 7,13 L 15,5"
+                        Stroke="White" StrokeThickness="2"
+                        StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                        StrokeLineJoin="Round"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"/>
+                </Border>
+                <ContentPresenter VerticalAlignment="Center"/>
+              </StackPanel>
+              <ControlTemplate.Triggers>
+                <Trigger Property="IsChecked" Value="True">
+                  <Setter TargetName="CheckBd" Property="Background"
+                          Value="#4A8EF5"/>
+                  <Setter TargetName="CheckBd" Property="BorderBrush"
+                          Value="#4A8EF5"/>
+                  <Setter TargetName="Tick"    Property="Visibility"
+                          Value="Visible"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                  <Setter TargetName="CheckBd" Property="BorderBrush"
+                          Value="#4A8EF5"/>
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+
+      <!-- ═══════════════════════════════════════════
+           窗口控制按钮（最小化 / 关闭）
+           ═══════════════════════════════════════════ -->
+      <Style x:Key="WinCtrlBtnStyle" TargetType="Button">
+        <Setter Property="Width"            Value="42"/>
+        <Setter Property="Height"           Value="32"/>
+        <Setter Property="Foreground"       Value="#7A8A9E"/>
+        <Setter Property="FontSize"         Value="13"/>
+        <Setter Property="Background"       Value="Transparent"/>
+        <Setter Property="BorderThickness"  Value="0"/>
+        <Setter Property="Cursor"           Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="Button">
+              <Border x:Name="Root" Background="Transparent" CornerRadius="6">
+                <ContentPresenter HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"/>
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                  <Setter TargetName="Root" Property="Background"
+                          Value="#18000000"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                  <Setter TargetName="Root" Property="Background"
+                          Value="#28000000"/>
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+
+      <!-- 关闭按钮悬停红色 -->
+      <Style x:Key="CloseCtrlBtnStyle" TargetType="Button"
+             BasedOn="{StaticResource WinCtrlBtnStyle}">
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="Button">
+              <Border x:Name="Root" Background="Transparent" CornerRadius="6">
+                <ContentPresenter HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"/>
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                  <Setter TargetName="Root" Property="Background"
+                          Value="#CCE84040"/>
+                  <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                  <Setter TargetName="Root" Property="Background"
+                          Value="#EEC02020"/>
+                  <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+
+      <!-- ═══════════════════════════════════════════
+           进度条
+           ═══════════════════════════════════════════ -->
+      <Style x:Key="InstallerProgressBarStyle" TargetType="ProgressBar">
+        <Setter Property="Height"  Value="8"/>
+        <Setter Property="Minimum" Value="0"/>
+        <Setter Property="Maximum" Value="100"/>
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="ProgressBar">
+              <Border CornerRadius="4" Background="#D8E8F4">
+                <Border x:Name="PART_Track">
+                  <Border x:Name="PART_Indicator" HorizontalAlignment="Left"
+                          CornerRadius="4">
+                    <Border.Background>
+                      <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                        <GradientStop Color="#5AA2FF" Offset="0"/>
+                        <GradientStop Color="#3878F0" Offset="1"/>
+                      </LinearGradientBrush>
+                    </Border.Background>
+                  </Border>
+                </Border>
+              </Border>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+
+      <!-- 完成页大按钮 -->
+      <Style x:Key="FinishButtonStyle" TargetType="Button"
+             BasedOn="{StaticResource InstallButtonStyle}">
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="Width"    Value="180"/>
+        <Setter Property="Height"   Value="46"/>
+      </Style>
+
+      <!-- 次要按钮（关闭） -->
+      <Style x:Key="SecondaryButtonStyle" TargetType="Button">
+        <Setter Property="Height"            Value="46"/>
+        <Setter Property="Width"             Value="120"/>
+        <Setter Property="Foreground"        Value="#556070"/>
+        <Setter Property="FontSize"          Value="14"/>
+        <Setter Property="Cursor"            Value="Hand"/>
+        <Setter Property="FocusVisualStyle"  Value="{x:Null}"/>
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="Button">
+              <Border x:Name="Root" CornerRadius="23"
+                      Background="Transparent"
+                      BorderBrush="#B8C8DC" BorderThickness="1.5">
+                <ContentPresenter HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"/>
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                  <Setter TargetName="Root" Property="Background"
+                          Value="#10000000"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                  <Setter TargetName="Root" Property="Background"
+                          Value="#1A000000"/>
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+
+    </ResourceDictionary>
+  </Application.Resources>
+</Application>

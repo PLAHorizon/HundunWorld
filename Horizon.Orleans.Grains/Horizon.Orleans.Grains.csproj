@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Alipay.AopSdk.Core" Version="2.5.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.2" />
     <PackageReference Include="Microsoft.Orleans.Runtime" Version="10.0.1" />
 	  <PackageReference Include="Microsoft.Orleans.Core" Version="10.0.1" />
@@ -23,17 +24,25 @@
 	  <PackageReference Include="MemoryPack.Core" Version="1.21.4" />
 	  <PackageReference Include="MemoryPack.Generator" Version="1.21.4" PrivateAssets="all" />
 	  <PackageReference Include="Polly" Version="8.6.5" />
+    <PackageReference Include="MiniExcel" Version="1.33.0" />
+    <PackageReference Include="SKIT.FlurlHttpClient.Wechat.TenpayV3" Version="3.16.0" />
+    <PackageReference Include="StackExchange.Redis" Version="2.10.14" />
+    <PackageReference Include="Microsoft.SemanticKernel" Version="1.57.0" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.4" />
+    <ProjectReference Include="..\Horizon.Core\Horizon.Core.csproj" />
     <ProjectReference Include="..\Horizon.Entities\Horizon.Entities.csproj" />
     <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
+    <ProjectReference Include="..\Horizon.IM.Message\Horizon.IM.Message.csproj" />
     <ProjectReference Include="..\Horizon.Mapper\Horizon.Mapper.csproj" />
     <ProjectReference Include="..\Horizon.Model\Horizon.Model.csproj" />
     <ProjectReference Include="..\Horizon.Orleans.Interface\Horizon.Orleans.Interface.csproj" />
     <ProjectReference Include="..\Horizon.Share\Horizon.Share.csproj" />
     <ProjectReference Include="..\Horizon.Strategy.Storage.Redis\Horizon.Strategy.Storage.Redis.csproj" />
+    <ProjectReference Include="..\Horizon.AI.Kernel\Horizon.AI.Kernel.csproj" />
+    <ProjectReference Include="..\Horizon.IoT.MQTT\Horizon.IoT.MQTT.csproj" />
   </ItemGroup>
 
 </Project>

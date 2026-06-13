@@ -82,7 +82,7 @@ namespace Horizon.Orleans.Grains
                     Quantity = quantity,
                     Price = price,
                     CurrencyType = currencyType,
-                    ListTime = DateTime.UtcNow,
+                    ListTime = DateTime.Now,
                     Status = (int)MarketListingStatus.Active,
                     Category = 0
                 };
@@ -163,7 +163,7 @@ namespace Horizon.Orleans.Grains
                 }
 
                 // Auto-expire check
-                if (DateTime.UtcNow - listing.ListTime > ListingExpiration)
+                if (DateTime.Now - listing.ListTime > ListingExpiration)
                 {
                     listing.Status = (int)MarketListingStatus.Expired;
                     await _marketState.WriteStateAsync();
@@ -227,7 +227,7 @@ namespace Horizon.Orleans.Grains
             try
             {
                 var state = _marketState.State;
-                var now = DateTime.UtcNow;
+                var now = DateTime.Now;
 
                 var query = state.Listings.Values
                     .Where(l => l.Status == (int)MarketListingStatus.Active)
@@ -288,7 +288,7 @@ namespace Horizon.Orleans.Grains
             try
             {
                 var state = _marketState.State;
-                var now = DateTime.UtcNow;
+                var now = DateTime.Now;
 
                 var activeListings = state.Listings.Values
                     .Count(l => l.Status == (int)MarketListingStatus.Active && now - l.ListTime <= ListingExpiration);

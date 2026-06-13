@@ -11,6 +11,7 @@ using Arch.Core;
 using Horizon.Game.Message.Network;
 using Horizon.Game.Message.Enums;
 using TouchSocket.Core;
+using Game.Database;
 
 namespace HundunWorld.Game
 {
@@ -83,7 +84,20 @@ namespace HundunWorld.Game
                 var config = NetworkConfigManager.LoadConfig();
                 var gatewayList = NetworkConfigManager.ConvertToGatewayInfo(config.GatewayList);
 
-                // 创建网络管理器
+                var iniConfig = HorizonGameIniReader.TryRead();
+                if (iniConfig != null && iniConfig.GameGateway != null
+                    && !string.IsNullOrWhiteSpace(iniConfig.GameGateway.Host)
+                    && iniConfig.GameGateway.Port > 0)
+                {
+                    Debug.Log($"[HundunWorldGame] 使用 HorizonGame.ini 中的网关地址: {iniConfig.GameGateway.Host}:{iniConfig.GameGateway.Port}");
+                    gatewayList.Insert(0, new GatewayInfo
+                    {
+                        IP = iniConfig.GameGateway.Host,
+                        Port = iniConfig.GameGateway.Port,
+                        Region = "HorizonGame"
+                    });
+                }
+
                 _networkManager = new NetworkManager(gatewayList);
 
                 // 订阅网络事件
@@ -161,11 +175,10 @@ namespace HundunWorld.Game
             if (_isRunning)
                 return;
 
-            // 清除旧的缓存数据以解决序列化版本兼容问题
             try
             {
                 Debug.Log("正在清除旧缓存数据...");
-                Horizon.Game.Core.Database.DatabaseManager.ClearAllCacheData();
+                DatabaseManager.ClearAllCacheData();
                 Debug.Log("旧缓存数据已清除");
             }
             catch (Exception ex)
@@ -173,23 +186,14 @@ namespace HundunWorld.Game
                 Debug.LogError($"清除缓存数据失败: {ex.Message}");
             }
 
-            // 启动ECS系统
             _ecsManager.Start();
-
-            // 启动世界同步
             _worldManager.StartSynchronization();
 
-            // 启动游戏循环
             _isRunning = true;
 
-            // 在后台运行游戏主循环
-            _ = Task.Run(async () =>
-            {
-                await GameLoopAsync().ConfigureAwait(false);
-            });
             if (_instance == null)
                 _instance = this;
-            Debug.Log("游戏启动完成");
+            Debug.Log("游戏启动完成（ECS更新由ECSUpdateDriver在主线程驱动）");
         }
 
         /// <summary>
@@ -215,54 +219,6 @@ namespace HundunWorld.Game
             Debug.Log("游戏停止完成");
         }
 
-        /// <summary>
-        /// 游戏主循环
-        /// </summary>
-        private async Task GameLoopAsync()
-        {
-            Debug.Log("游戏主循环开始");
-
-            const int targetFPS = 60;
-            const int frameDelay = 1000 / targetFPS;
-
-            DateTime lastFrameTime = DateTime.UtcNow;
-
-            while (_isRunning)
-            {
-                DateTime currentFrameTime = DateTime.UtcNow;
-                float deltaTime = (float)(currentFrameTime - lastFrameTime).TotalSeconds;
-                lastFrameTime = currentFrameTime;
-
-                try
-                {
-                    // 更新ECS系统
-                    _ecsManager.Update(deltaTime);
-
-                    // 更新模块
-                    // 这里应该更新所有已加载的模块
-
-                    // 保持帧率
-                    int elapsedMs = (int)(DateTime.UtcNow - currentFrameTime).TotalMilliseconds;
-                    int sleepTime = frameDelay - elapsedMs;
-
-                    if (sleepTime > 0)
-                    {
-                        await Task.Delay(sleepTime);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogError($"游戏循环异常: {ex.Message}");
-                }
-            }
-
-            Debug.Log("游戏主循环结束");
-        }
-
-        /// <summary>
-        /// 设置玩家ID
-        /// </summary>
-        /// <param name="playerId">玩家ID</param>
         public void SetPlayerId(ulong playerId)
         {
             _playerId = playerId;

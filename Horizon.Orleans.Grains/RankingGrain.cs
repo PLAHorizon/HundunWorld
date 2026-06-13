@@ -57,7 +57,7 @@ namespace Horizon.Orleans.Grains
                 state.RankingType = rankingType;
                 state.RankingName = rankingName.Trim();
                 state.MaxEntries = maxEntries;
-                state.LastUpdateTime = DateTime.UtcNow;
+                state.LastUpdateTime = DateTime.Now;
 
                 await _rankingState.WriteStateAsync();
 
@@ -89,7 +89,7 @@ namespace Horizon.Orleans.Grains
                 }
 
                 var state = _rankingState.State;
-                var now = DateTime.UtcNow;
+                var now = DateTime.Now;
 
                 if (state.Entries.TryGetValue(playerId, out var existingEntry))
                 {
@@ -255,7 +255,7 @@ namespace Horizon.Orleans.Grains
                     sorted[i].Rank = i + 1;
                 }
 
-                state.LastUpdateTime = DateTime.UtcNow;
+                state.LastUpdateTime = DateTime.Now;
                 await _rankingState.WriteStateAsync();
 
                 _logger.LogInformation("移除玩家排名: PlayerId={PlayerId}", playerId);
@@ -274,7 +274,7 @@ namespace Horizon.Orleans.Grains
             {
                 var state = _rankingState.State;
                 state.Entries.Clear();
-                state.LastUpdateTime = DateTime.UtcNow;
+                state.LastUpdateTime = DateTime.Now;
 
                 await _rankingState.WriteStateAsync();
 

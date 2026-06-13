@@ -386,7 +386,19 @@ namespace HundunWorld.Game.UI.Controllers
 
                 case SceneType.CharacterSelection:
                 case SceneType.CharacterCreation:
-                    component = componentActor.AddScript<CharacterManagementUI>();
+                    var existingController = Actor.GetScript<CharacterSceneController>();
+                    if (existingController == null)
+                    {
+                        existingController = Level.FindScript<CharacterSceneController>();
+                    }
+                    if (existingController != null)
+                    {
+                        component = existingController;
+                    }
+                    else
+                    {
+                        component = componentActor.AddScript<CharacterSceneController>();
+                    }
                     break;
 
                 case SceneType.GameWorld:

@@ -142,6 +142,44 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(12)]
         [Id(12)]
         public ServiceType ServiceType { get; set; } = ServiceType.Account;
+
+        /// <summary>
+        /// 用户鉴权令牌
+        /// 包含用户登录时间、IP与PassportId的加密数据，客户端需在后续请求头中携带此令牌
+        /// </summary>
+        [MemoryPackOrder(13)]
+        [Id(13)]
+        public string AuthToken { get; set; } = "";
+    }
+
+    #endregion
+
+    #region Token登录相关消息
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class TokenLoginRequest : MessageUnion, INetworkMessage
+    {
+        [MemoryPackOrder(0)] [Id(0)] public string AuthToken { get; set; } = "";
+        [MemoryPackOrder(1)] [Id(1)] public string PassportId { get; set; } = "";
+        [MemoryPackOrder(2)] [Id(2)] public long UserId { get; set; }
+        [MemoryPackOrder(3)] [Id(3)] public string MachineId { get; set; } = "";
+        [MemoryPackOrder(4)] [Id(4)] public MessageType Type { get; set; } = MessageType.TokenLoginRequest;
+        [MemoryPackOrder(5)] [Id(5)] public ServiceType ServiceType { get; set; } = ServiceType.Account;
+    }
+
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class TokenLoginResponse : MessageUnion, INetworkMessage
+    {
+        [MemoryPackOrder(0)] [Id(0)] public bool IsSuccess { get; set; }
+        [MemoryPackOrder(1)] [Id(1)] public string Message { get; set; } = "";
+        [MemoryPackOrder(2)] [Id(2)] public string PassportId { get; set; } = "";
+        [MemoryPackOrder(3)] [Id(3)] public ulong UserId { get; set; }
+        [MemoryPackOrder(4)] [Id(4)] public string SessionToken { get; set; } = "";
+        [MemoryPackOrder(5)] [Id(5)] public string AuthToken { get; set; } = "";
+        [MemoryPackOrder(6)] [Id(6)] public MessageType Type { get; set; } = MessageType.TokenLoginResponse;
+        [MemoryPackOrder(7)] [Id(7)] public ServiceType ServiceType { get; set; } = ServiceType.Account;
     }
 
     #endregion
@@ -236,6 +274,9 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(12)]
         [Id(12)]
         public ServiceType ServiceType { get; set; } = ServiceType.Account;
+        [MemoryPackOrder(13)]
+        [Id(13)]
+        public string  Ip { get; set; } 
     }
 
     /// <summary>
@@ -273,11 +314,18 @@ namespace Horizon.Game.Message.Network
         [Id(3)]
         public long RegisterTime { get; set; }
 
+        /// <summary>
+        /// 通行证昵称（注册成功后返回，供客户端后续逻辑使用）
+        /// </summary>
         [MemoryPackOrder(4)]
         [Id(4)]
-        public MessageType Type { get; set; } = MessageType.RegisterResponse;
+        public string NickName { get; set; } = "";
+
         [MemoryPackOrder(5)]
         [Id(5)]
+        public MessageType Type { get; set; } = MessageType.RegisterResponse;
+        [MemoryPackOrder(6)]
+        [Id(6)]
         public ServiceType ServiceType { get; set; } = ServiceType.Account;
     }
 
@@ -696,6 +744,13 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(5)]
         [Id(5)]
         public ServiceType ServiceType { get; set; } = ServiceType.Game;
+
+        /// <summary>
+        /// 更新后的用户鉴权令牌（含游戏角色Id，客户端需用此令牌替换旧令牌）
+        /// </summary>
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public string AuthToken { get; set; } = "";
     }
 
     /// <summary>
@@ -813,6 +868,13 @@ namespace Horizon.Game.Message.Network
         [Id(7)]
         public ServiceType ServiceType { get; set; } = ServiceType.Game;
 
+        /// <summary>
+        /// 客户端预测序列号，服务端需在响应中原样回传以支持客户端预测缓冲区清理。
+        /// </summary>
+        [MemoryPackOrder(8)]
+        [Id(8)]
+        public int SequenceNumber { get; set; }
+
     }
 
     /// <summary>
@@ -863,6 +925,14 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(6)]
         [Id(6)]
         public ServiceType ServiceType { get; set; } = ServiceType.Game;
+
+        /// <summary>
+        /// 服务端已确认的客户端预测序列号（原样回传 <see cref="MoveRequest.SequenceNumber"/>），
+        /// 客户端用此值清理已确认的预测缓冲帧。-1 表示服务端不支持此字段。
+        /// </summary>
+        [MemoryPackOrder(7)]
+        [Id(7)]
+        public int AcknowledgedSequence { get; set; } = -1;
     }
 
     #endregion
@@ -1321,6 +1391,97 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(6)]
         [Id(6)]
         public ServiceType ServiceType { get; set; } = ServiceType.Game;
+    }
+
+    #endregion
+
+    #region 构建游戏用户消息
+
+    /// <summary>
+    /// 构建游戏用户请求消息
+    /// 当启动游戏时发现不存在游戏用户记录，通过网关主动请求创建
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class BuildGameUserRequest : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 通行证ID
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public string PassportId { get; set; } = "";
+
+        /// <summary>
+        /// 游戏ID
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public int GameId { get; set; }
+
+        /// <summary>
+        /// 区域ID
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public int AreaId { get; set; }
+
+        /// <summary>
+        /// 服务器ID
+        /// </summary>
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public int ServerId { get; set; }
+
+        /// <summary>
+        /// 平台ID
+        /// </summary>
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public string PlatformId { get; set; } = "";
+
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public MessageType Type { get; set; } = MessageType.BuildGameUserRequest;
+        [MemoryPackOrder(6)]
+        [Id(6)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Account;
+    }
+
+    /// <summary>
+    /// 构建游戏用户响应消息
+    /// </summary>
+    [MemoryPackable]
+    [GenerateSerializer]
+    public partial class BuildGameUserResponse : MessageUnion, INetworkMessage
+    {
+        /// <summary>
+        /// 是否成功
+        /// </summary>
+        [MemoryPackOrder(0)]
+        [Id(0)]
+        public bool IsSuccess { get; set; }
+
+        /// <summary>
+        /// 游戏用户ID（成功时返回）
+        /// </summary>
+        [MemoryPackOrder(1)]
+        [Id(1)]
+        public long GameUserId { get; set; }
+
+        /// <summary>
+        /// 错误消息（失败时返回）
+        /// </summary>
+        [MemoryPackOrder(2)]
+        [Id(2)]
+        public string ErrorMessage { get; set; } = "";
+
+        [MemoryPackOrder(3)]
+        [Id(3)]
+        public MessageType Type { get; set; } = MessageType.BuildGameUserResponse;
+        [MemoryPackOrder(4)]
+        [Id(4)]
+        public ServiceType ServiceType { get; set; } = ServiceType.Account;
     }
 
     #endregion

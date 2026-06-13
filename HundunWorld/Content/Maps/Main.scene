@@ -57,69 +57,6 @@
 			"Name": "SkyLight",
 			"Brightness": 2.5,
 			"CustomTexture": "c54410104ff39427bc11e5bc761d66b0"
-		},
-		{
-			"ID": "f27fcb034377fc817efb5eb5b8872733",
-			"TypeName": "FlaxEngine.EmptyActor",
-			"ParentID": "af4fac0d423de60ce7d573af309910b5",
-			"Name": "LifeCyce"
-		},
-		{
-			"ID": "5e6c6cbc4c2868d73eb104bdb744ae62",
-			"TypeName": "HundunWorld.Game.UI.UIStateManager",
-			"ParentID": "f27fcb034377fc817efb5eb5b8872733",
-			"V": {}
-		},
-		{
-			"ID": "77eb5c7a4ac3d37c2711b68fded07202",
-			"TypeName": "HundunWorld.Game.InputManager",
-			"ParentID": "f27fcb034377fc817efb5eb5b8872733",
-			"V": {}
-		},
-		{
-			"ID": "c0d239714b36be0b783bcc9095cfc2f2",
-			"TypeName": "HundunWorld.Game.InputConfigurationManager",
-			"ParentID": "f27fcb034377fc817efb5eb5b8872733",
-			"V": {}
-		},
-		{
-			"ID": "e18a60524240b29ceed5a8b97e762e15",
-			"TypeName": "HundunWorld.Game.GameStartup",
-			"ParentID": "f27fcb034377fc817efb5eb5b8872733",
-			"V": {
-	"LoginScene": "dc72848f4b0f90ee2df186a728f14858"
-}
-		},
-		{
-			"ID": "dcd982084b5cb76c005de684ef5b3b75",
-			"TypeName": "HundunWorld.Game.UI.GameSceneManager",
-			"ParentID": "f27fcb034377fc817efb5eb5b8872733",
-			"V": {}
-		},
-		{
-			"ID": "4ee7bac041d43e6befdbc49dded0ed5a",
-			"TypeName": "HundunWorld.Game.UI.GameMain.GameMainUI",
-			"ParentID": "f27fcb034377fc817efb5eb5b8872733",
-			"V": {}
-		},
-		{
-			"ID": "ab32d1fe41532f4f3204c1aeb17bb957",
-			"TypeName": "HundunWorld.Game.UI.Animation.UIAnimationManager",
-			"ParentID": "f27fcb034377fc817efb5eb5b8872733",
-			"V": {}
-		},
-		{
-			"ID": "3418be5d468c0149ec4c3f9838c388f3",
-			"TypeName": "FlaxEngine.AudioListener",
-			"ParentID": "f27fcb034377fc817efb5eb5b8872733",
-			"Name": "Audio Listener",
-			"Transform": {
-				"Translation": {
-					"X": 0.0,
-					"Y": 150.0,
-					"Z": -300.0
-				}
-			}
 		}
 	]
 }

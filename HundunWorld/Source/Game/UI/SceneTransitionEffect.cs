@@ -195,10 +195,22 @@ namespace HundunWorld.Game.UI
                 }
             }
 
-            // 创建新的 UICanvas（使用 UIHelper 的方式）
+            // 创建新的 UICanvas（在 RootScene 下创建，避免被场景切换卸载）
             var actor = new EmptyActor { Name = "TransitionCanvasParent" };
             actor.SetStaticFlag(StaticFlags.FullyStatic, true);
-            Level.SpawnActor(actor);
+
+            // 查找 RootScene 作为父场景
+            FlaxEngine.Scene rootScene = null;
+            for (int i = 0; i < Level.ScenesCount; i++)
+            {
+                var s = Level.GetScene(i);
+                if (s != null && s.Name == "RootScene")
+                {
+                    rootScene = s;
+                    break;
+                }
+            }
+            Level.SpawnActor(actor, rootScene);
 
             var newCanvas = actor.AddChild<UICanvas>();
             newCanvas.Name = "TransitionCanvas";
@@ -350,7 +362,23 @@ namespace HundunWorld.Game.UI
             if (_instance != null)
                 return _instance;
 
-            // 从场景中查找
+            // 优先从 RootScene 上查找（RootScene 是持久场景，SceneTransitionEffect 预置其上）
+            for (int i = 0; i < Level.ScenesCount; i++)
+            {
+                var scene = Level.GetScene(i);
+                if (scene != null && scene.Name == "RootScene")
+                {
+                    var scripts = scene.GetScripts<SceneTransitionEffect>();
+                    if (scripts != null && scripts.Length > 0)
+                    {
+                        _instance = scripts[0];
+                        Debug.Log("[SceneTransitionEffect] 从 RootScene 找到预置实例");
+                        return _instance;
+                    }
+                }
+            }
+
+            // Fallback: 从所有场景中查找
             for (int i = 0; i < Level.ScenesCount; i++)
             {
                 var scene = Level.GetScene(i);
@@ -365,7 +393,8 @@ namespace HundunWorld.Game.UI
                 }
             }
 
-            // 创建新实例
+            // 最后 fallback: 动态创建（不应该走到这里，因为 RootScene 上预置了该脚本）
+            Debug.LogWarning("[SceneTransitionEffect] 未找到预置实例，动态创建（建议在 RootScene 上预置）");
             var actor = new EmptyActor { Name = "SceneTransitionEffect" };
             actor.SetStaticFlag(StaticFlags.FullyStatic, true);
             Level.SpawnActor(actor);

@@ -1,4 +1,4 @@
-﻿using Horizon.Core.Abstract;
+using Horizon.Core.Abstract;
 using Horizon.Core.Abstract.Enums;
 using Horizon.Share.Commones;
 using Orleans;
@@ -12,6 +12,12 @@ namespace Horizon.Share.Dtos.User
     [GenerateSerializer]
     public class UserDto
     {
+        /// <summary>
+        /// 用户Id
+        /// </summary>
+        [Id(12)]
+        public Guid UserId { get; set; }
+
         /// <summary>
         /// 通行证
         /// </summary>

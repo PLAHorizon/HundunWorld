@@ -208,7 +208,9 @@ namespace Horizon.Game.Gateway.Tests
         public void TradeState_PreventSelfTrade_SameIds()
         {
             var playerId = Guid.NewGuid();
+#pragma warning disable CS1718 // 与自身比较是有意为之，用于验证自交易防护逻辑
             bool isSelfTrade = playerId == playerId;
+#pragma warning restore CS1718
             Assert.True(isSelfTrade);
         }
 

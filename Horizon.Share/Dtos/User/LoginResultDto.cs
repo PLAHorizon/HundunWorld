@@ -32,5 +32,10 @@ namespace Horizon.Share.Dtos.User
         /// </summary>
         [Id(3)] public DateTime ExpiresTime { get; set; }
 
+        /// <summary>
+        /// IM网关鉴权令牌（AES-256-CBC加密，用于IM Gateway身份验证）
+        /// </summary>
+        [Id(4)] public string ImAuthToken { get; set; }
+
     }
 }

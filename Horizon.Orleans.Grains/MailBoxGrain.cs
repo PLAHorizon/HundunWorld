@@ -35,7 +35,7 @@ namespace Horizon.Orleans.Grains
 
         public override async Task OnActivateAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("MailBoxGrain {GrainKey} activating.", this.GetPrimaryKey());
+            _logger.LogInformation("MailBoxGrain {GrainKey} 正在激活。", this.GetPrimaryKey());
 
             if (_mailBoxState.State.Mails == null)
                 _mailBoxState.State.Mails = new Dictionary<long, MailData>();
@@ -88,7 +88,7 @@ namespace Horizon.Orleans.Grains
                     };
                 }
 
-                var now = DateTime.UtcNow;
+                var now = DateTime.Now;
                 var mailId = state.NextMailId++;
 
                 var mail = new MailData
@@ -302,7 +302,7 @@ namespace Horizon.Orleans.Grains
             try
             {
                 var state = _mailBoxState.State;
-                var now = DateTime.UtcNow;
+                var now = DateTime.Now;
                 var expiredIds = new List<long>();
 
                 foreach (var kvp in state.Mails)

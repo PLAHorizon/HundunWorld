@@ -63,26 +63,36 @@ namespace Horizon.Game.Gateway.Services
                 _logger.LogInformation("正在启动混沌世界游戏网关...");
                 ChangeStatus(GatewayStatus.Starting, "服务启动中");
 
-                // 启动网络服务器
                 await _networkServer.StartAsync(cancellationToken);
                 _logger.LogInformation("网络服务器启动成功");
 
-                // 启动消息路由器
-                //await _messageRouter.StartAsync(cancellationToken);
                 _logger.LogInformation("消息路由器启动成功");
 
-                // 启动负载均衡器
-                await _loadBalancer.StartAsync(cancellationToken);
-                _logger.LogInformation("负载均衡器启动成功");
+                try
+                {
+                    await _loadBalancer.StartAsync(cancellationToken);
+                    _logger.LogInformation("负载均衡器启动成功");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "负载均衡器启动失败，回滚已启动的组件");
+                    await RollbackStartedComponentsAsync(cancellationToken);
+                    throw;
+                }
 
-                // 启动会话管理器
-                await _sessionManager.StartAsync(cancellationToken);
-                _logger.LogInformation("会话管理器启动成功");
+                try
+                {
+                    await _sessionManager.StartAsync(cancellationToken);
+                    _logger.LogInformation("会话管理器启动成功");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "会话管理器启动失败，回滚已启动的组件");
+                    await RollbackStartedComponentsAsync(cancellationToken);
+                    throw;
+                }
 
-                // 启动统计定时器
                 StartStatisticsTimer();
-
-                // 启动运行时间计时器
                 _uptimeStopwatch.Start();
 
                 ChangeStatus(GatewayStatus.Running, "服务启动完成");
@@ -96,6 +106,36 @@ namespace Horizon.Game.Gateway.Services
             }
         }
 
+        private async Task RollbackStartedComponentsAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await _sessionManager.StopAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "回滚会话管理器时发生错误");
+            }
+
+            try
+            {
+                await _loadBalancer.StopAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "回滚负载均衡器时发生错误");
+            }
+
+            try
+            {
+                await _networkServer.StopAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "回滚网络服务器时发生错误");
+            }
+        }
+
         /// <summary>
         /// 停止网关服务
         /// </summary>
@@ -106,25 +146,42 @@ namespace Horizon.Game.Gateway.Services
                 _logger.LogInformation("正在停止混沌世界游戏网关...");
                 ChangeStatus(GatewayStatus.Stopping, "服务停止中");
 
-                // 停止统计定时器
                 _statisticsTimer?.Dispose();
                 _statisticsTimer = null;
 
-                // 停止运行时间计时器
                 _uptimeStopwatch.Stop();
 
-                // 停止各个组件
-                await _sessionManager.StopAsync(cancellationToken);
-                _logger.LogInformation("会话管理器已停止");
+                try
+                {
+                    await _sessionManager.StopAsync(cancellationToken);
+                    _logger.LogInformation("会话管理器已停止");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "停止会话管理器时发生错误，继续停止其他组件");
+                }
 
-                await _loadBalancer.StopAsync(cancellationToken);
-                _logger.LogInformation("负载均衡器已停止");
+                try
+                {
+                    await _loadBalancer.StopAsync(cancellationToken);
+                    _logger.LogInformation("负载均衡器已停止");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "停止负载均衡器时发生错误，继续停止其他组件");
+                }
 
-                //await _messageRouter.StopAsync(cancellationToken);
                 _logger.LogInformation("消息路由器已停止");
 
-                await _networkServer.StopAsync(cancellationToken);
-                _logger.LogInformation("网络服务器已停止");
+                try
+                {
+                    await _networkServer.StopAsync(cancellationToken);
+                    _logger.LogInformation("网络服务器已停止");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "停止网络服务器时发生错误");
+                }
 
                 ChangeStatus(GatewayStatus.Stopped, "服务停止完成");
                 _logger.LogInformation("混沌世界游戏网关停止成功");

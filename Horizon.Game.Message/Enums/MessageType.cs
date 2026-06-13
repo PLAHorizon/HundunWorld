@@ -99,6 +99,24 @@ namespace Horizon.Game.Message.Enums
         [Description("验证码响应")]
         VerificationCodeResponse = 15,
 
+        /// <summary>
+        /// 构建游戏用户请求
+        /// </summary>
+        [Description("构建游戏用户请求")]
+        BuildGameUserRequest = 16,
+
+        /// <summary>
+        /// 构建游戏用户响应
+        /// </summary>
+        [Description("构建游戏用户响应")]
+        BuildGameUserResponse = 17,
+
+        [Description("Token登录请求")]
+        TokenLoginRequest = 18,
+
+        [Description("Token登录响应")]
+        TokenLoginResponse = 19,
+
         #endregion
 
         #region 游戏核心玩法消息 (100-299)
@@ -925,7 +943,132 @@ namespace Horizon.Game.Message.Enums
         /// 排行榜查询响应
         /// </summary>
         [Description("排行榜查询响应")]
-        RankingQueryResponse = 1391
+        RankingQueryResponse = 1391,
+
+        /// <summary>
+        /// 实时同步帧（承载 SyncPacketCodec 编码后的帧）
+        /// </summary>
+        [Description("实时同步帧")]
+        SyncPacket = 1392,
+        #region Arena
+        [Description("ArenaJoinRequest")]
+        ArenaJoinRequest = 1400,
+        [Description("ArenaJoinResponse")]
+        ArenaJoinResponse = 1401,
+        [Description("ArenaLeaveRequest")]
+        ArenaLeaveRequest = 1402,
+        [Description("ArenaLeaveResponse")]
+        ArenaLeaveResponse = 1403,
+        [Description("ArenaInfoRequest")]
+        ArenaInfoRequest = 1404,
+        [Description("ArenaInfoResponse")]
+        ArenaInfoResponse = 1405,
+        #endregion
+
+        #region CrossServer
+        [Description("CrossServerTransferRequest")]
+        CrossServerTransferRequest = 1500,
+        [Description("CrossServerTransferResponse")]
+        CrossServerTransferResponse = 1501,
+        #endregion
+
+        #region IM即时通信消息 (1600-1699)
+
+        /// <summary>
+        /// IM私聊消息发送
+        /// </summary>
+        [Description("IM私聊消息发送")]
+        IMPrivateChatSend = 1600,
+
+        /// <summary>
+        /// IM私聊消息通知
+        /// </summary>
+        [Description("IM私聊消息通知")]
+        IMPrivateChatNotify = 1601,
+
+        /// <summary>
+        /// IM消息回执
+        /// </summary>
+        [Description("IM消息回执")]
+        IMChatAck = 1602,
+
+        /// <summary>
+        /// IM消息撤回
+        /// </summary>
+        [Description("IM消息撤回")]
+        IMChatRecall = 1603,
+
+        /// <summary>
+        /// IM已读回执
+        /// </summary>
+        [Description("IM已读回执")]
+        IMChatReadReceipt = 1604,
+
+        /// <summary>
+        /// IM正在输入
+        /// </summary>
+        [Description("IM正在输入")]
+        IMTypingIndicator = 1605,
+
+        /// <summary>
+        /// IM群聊消息发送
+        /// </summary>
+        [Description("IM群聊消息发送")]
+        IMGroupChatSend = 1610,
+
+        /// <summary>
+        /// IM群聊消息通知
+        /// </summary>
+        [Description("IM群聊消息通知")]
+        IMGroupChatNotify = 1611,
+
+        /// <summary>
+        /// IM陌生人聊天请求
+        /// </summary>
+        [Description("IM陌生人聊天请求")]
+        IMStrangerChatRequest = 1620,
+
+        /// <summary>
+        /// IM陌生人聊天响应
+        /// </summary>
+        [Description("IM陌生人聊天响应")]
+        IMStrangerChatResponse = 1621,
+
+        /// <summary>
+        /// IM陌生人聊天消息发送
+        /// </summary>
+        [Description("IM陌生人聊天消息发送")]
+        IMStrangerChatSend = 1622,
+
+        /// <summary>
+        /// IM陌生人聊天消息通知
+        /// </summary>
+        [Description("IM陌生人聊天消息通知")]
+        IMStrangerChatNotify = 1623,
+
+        /// <summary>
+        /// IM联系人操作
+        /// </summary>
+        [Description("IM联系人操作")]
+        IMContactOperation = 1630,
+
+        /// <summary>
+        /// IM会话管理
+        /// </summary>
+        [Description("IM会话管理")]
+        IMConversation = 1640,
+
+        /// <summary>
+        /// IM聊天记录查询
+        /// </summary>
+        [Description("IM聊天记录查询")]
+        IMChatHistory = 1650,
+
         #endregion
     }
 }
+
+
+
+#endregion
+

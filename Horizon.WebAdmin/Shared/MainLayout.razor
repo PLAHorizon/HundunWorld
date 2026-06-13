@@ -1,0 +1,299 @@
+@inherits LayoutComponentBase
+@using Horizon.WebAdmin.Core
+@using Horizon.WebAdmin.Services.Auth
+@using Microsoft.AspNetCore.Components.Routing
+@inject ModuleRegistry ModuleRegistry
+@inject NavigationManager NavigationManager
+@inject AuthService AuthService
+@inject AuthStateProvider AuthStateProvider
+@inject TokenStorage TokenStorage
+
+<div class="app-layout">
+    @* Header *@
+    <div class="app-header">
+        <div class="app-header-left">
+            <div class="app-logo">
+                <Icon Type="appstore" Theme="@IconThemeType.Outline" Class="app-logo-icon" />
+                <span>Horizon 管理后台</span>
+            </div>
+            <div class="module-switcher">
+                <Select TItem="string" TItemValue="string" Value="@_activeModuleId" ValueChanged="@OnModuleChanged"
+                        Placeholder="切换模块" Style="width:120px;">
+                    @foreach (var module in ModuleRegistry.Modules)
+                    {
+                        <SelectOption Value="@module.ModuleId">@module.ModuleName</SelectOption>
+                    }
+                </Select>
+            </div>
+        </div>
+        <div class="app-header-right">
+            <div class="header-action-btn" title="全屏" @onclick="ToggleFullscreen">
+                <Icon Type="fullscreen" Theme="@IconThemeType.Outline" />
+            </div>
+            <div class="header-action-btn" title="通知">
+                <Badge Count="0" Dot>
+                    <Icon Type="bell" Theme="@IconThemeType.Outline" />
+                </Badge>
+            </div>
+            <Dropdown Placement="@Placement.BottomRight">
+                <ChildContent>
+                    <div class="user-info">
+                        <div class="user-avatar">管</div>
+                        <span>@_userName</span>
+                        <Icon Type="down" Theme="@IconThemeType.Outline" Style="font-size:12px;" />
+                    </div>
+                </ChildContent>
+                <Overlay>
+                    <Menu>
+                        <MenuItem @onclick="NavigateToProfile">
+                            <Icon Type="user" Theme="@IconThemeType.Outline" />
+                            <span style="margin-left:8px;">个人中心</span>
+                        </MenuItem>
+                        <MenuItem @onclick="NavigateToProfile">
+                            <Icon Type="setting" Theme="@IconThemeType.Outline" />
+                            <span style="margin-left:8px;">个人设置</span>
+                        </MenuItem>
+                        <MenuDivider />
+                        <MenuItem @onclick="HandleLogout">
+                            <Icon Type="logout" Theme="@IconThemeType.Outline" />
+                            <span style="margin-left:8px;">退出登录</span>
+                        </MenuItem>
+                    </Menu>
+                </Overlay>
+            </Dropdown>
+        </div>
+    </div>
+
+    @* Sider *@
+    <div class="app-sider @(_siderCollapsed ? "app-sider-collapsed" : "")" Style="width:@(_siderCollapsed ? "80" : "240")px;">
+        <div class="sider-toggle" @onclick="@ToggleSider">
+            <Icon Type="@(_siderCollapsed ? "right" : "left")" Theme="@IconThemeType.Outline" />
+        </div>
+        @if (ModuleRegistry.ActiveModule != null)
+        {
+            <Menu Mode="@MenuMode.Inline" SelectedKeys="@(_selectedKeys)"
+                  OnMenuItemClicked="@OnMenuClicked" Class="sider-menu"
+                  InlineCollapsed="@_siderCollapsed">
+                @foreach (var group in ModuleRegistry.ActiveModule.MenuItems)
+                {
+                    @if (group.Children.Any())
+                    {
+                        <SubMenu Key="@group.Name" @key="group.Name">
+                            <TitleTemplate>
+                                <Icon Type="@group.Icon" Theme="@IconThemeType.Outline" />
+                                <span class="menu-group-name">@group.Name</span>
+                            </TitleTemplate>
+                            <ChildContent>
+                                @foreach (var item in group.Children)
+                                {
+                                    <MenuItem Key="@item.Route" @key="item.Route">
+                                        <span>@item.Name</span>
+                                    </MenuItem>
+                                }
+                            </ChildContent>
+                        </SubMenu>
+                    }
+                    else
+                    {
+                        <MenuItem Key="@group.Route" @key="group.Route">
+                            <Icon Type="@group.Icon" Theme="@IconThemeType.Outline" />
+                            <span class="menu-group-name">@group.Name</span>
+                        </MenuItem>
+                    }
+                }
+            </Menu>
+        }
+    </div>
+
+    @* Content Area *@
+    <div class="app-content-layout @(_siderCollapsed ? "app-content-layout-expanded" : "")">
+        @* Page Header with Breadcrumb *@
+        @if (!string.IsNullOrEmpty(_pageTitle))
+        {
+            <div class="page-header">
+                @if (_breadcrumbs.Count > 0)
+                {
+                    <Breadcrumb Separator=">">
+                        @foreach (var bc in _breadcrumbs)
+                        {
+                            @if (string.IsNullOrEmpty(bc.Url))
+                            {
+                                <BreadcrumbItem>@bc.Label</BreadcrumbItem>
+                            }
+                            else
+                            {
+                                <BreadcrumbItem>
+                                    <a href="@bc.Url" @onclick:preventDefault @onclick="() => NavigationManager.NavigateTo(bc.Url!)">@bc.Label</a>
+                                </BreadcrumbItem>
+                            }
+                        }
+                    </Breadcrumb>
+                }
+                <div class="page-title-row">
+                    <div>
+                        <h2 class="page-title">@_pageTitle</h2>
+                        @if (!string.IsNullOrEmpty(_pageDescription))
+                        {
+                            <p class="page-description">@_pageDescription</p>
+                        }
+                    </div>
+                    <div class="page-actions">
+                        <Button Type="@ButtonType.Default" Size="@ButtonSize.Small"
+                                OnClick="() => NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true)">
+                            <Icon Type="reload" Theme="@IconThemeType.Outline" />
+                            <span style="margin-left:4px;">刷新</span>
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="app-content">
+            <div class="content-card">
+                @Body
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    private bool _siderCollapsed = false;
+    private string _activeModuleId = "";
+    private string[] _selectedKeys = Array.Empty<string>();
+    private string _pageTitle = "";
+    private string _pageDescription = "";
+    private List<BreadcrumbItemModel> _breadcrumbs = new();
+    private string _userName = "管理员";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var user = await AuthService.GetCurrentUserAsync();
+        if (user?.Identity?.IsAuthenticated != true)
+        {
+            NavigationManager.NavigateTo("/login", true);
+            return;
+        }
+
+        var nameClaim = user.FindFirst("name") ?? user.FindFirst("sub") ?? user.FindFirst("PassportId");
+        if (nameClaim != null)
+        {
+            _userName = nameClaim.Value;
+        }
+
+        _activeModuleId = ModuleRegistry.ActiveModule?.ModuleId ?? "";
+
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var path = uri.LocalPath.Trim('/');
+
+        if (ModuleRegistry.ActiveModule != null)
+        {
+            foreach (var group in ModuleRegistry.ActiveModule.MenuItems)
+            {
+                if (group.Children.Any())
+                {
+                    foreach (var item in group.Children)
+                    {
+                        var itemPath = item.Route.TrimStart('/');
+                        if (path == itemPath || path.StartsWith(itemPath + "/"))
+                        {
+                            _selectedKeys = new[] { item.Route };
+                            _pageTitle = item.Name;
+                            _breadcrumbs = new()
+                            {
+                                new() { Label = ModuleRegistry.ActiveModule.ModuleName, Url = "/" },
+                                new() { Label = group.Name },
+                                new() { Label = item.Name }
+                            };
+                            StateHasChanged();
+                            return;
+                        }
+                    }
+                }
+                else
+                {
+                    var groupPath = group.Route.TrimStart('/');
+                    if (path == groupPath || path.StartsWith(groupPath + "/"))
+                    {
+                        _selectedKeys = new[] { group.Route };
+                        _pageTitle = group.Name;
+                        _breadcrumbs = new()
+                        {
+                            new() { Label = ModuleRegistry.ActiveModule.ModuleName, Url = "/" },
+                            new() { Label = group.Name }
+                        };
+                        StateHasChanged();
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    private void ToggleSider()
+    {
+        _siderCollapsed = !_siderCollapsed;
+    }
+
+    private void OnModuleChanged(string moduleId)
+    {
+        _activeModuleId = moduleId;
+        ModuleRegistry.SetActiveModule(moduleId);
+        var activeModule = ModuleRegistry.ActiveModule;
+        if (activeModule != null)
+        {
+            var defaultRoute = activeModule.MenuItems.FirstOrDefault()?.Route
+                ?? activeModule.MenuItems.FirstOrDefault()?.Children.FirstOrDefault()?.Route;
+            if (!string.IsNullOrEmpty(defaultRoute))
+            {
+                NavigationManager.NavigateTo(defaultRoute);
+            }
+        }
+    }
+
+    private void OnMenuClicked(MenuItem e)
+    {
+        if (!string.IsNullOrEmpty(e.Key))
+        {
+            NavigationManager.NavigateTo(e.Key);
+        }
+    }
+
+    private void NavigateToProfile()
+    {
+        NavigationManager.NavigateTo("/profile");
+    }
+
+    private async Task ToggleFullscreen()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("eval", "document.documentElement.requestFullscreen?.() || document.documentElement.webkitRequestFullscreen?.()");
+        }
+        catch { }
+    }
+
+    private async Task HandleLogout()
+    {
+        await AuthService.LogoutAsync();
+        await AuthStateProvider.NotifyStateChangedAsync();
+        NavigationManager.NavigateTo("/login", true);
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (ModuleRegistry.ActiveModule != null && _activeModuleId != ModuleRegistry.ActiveModule.ModuleId)
+        {
+            _activeModuleId = ModuleRegistry.ActiveModule.ModuleId;
+        }
+    }
+
+    private class BreadcrumbItemModel
+    {
+        public string Label { get; set; } = "";
+        public string? Url { get; set; }
+    }
+}

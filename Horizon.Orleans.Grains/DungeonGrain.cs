@@ -187,7 +187,7 @@ namespace Horizon.Orleans.Grains
                 if (state.Status == (int)DungeonStatus.Waiting)
                 {
                     state.Status = (int)DungeonStatus.InProgress;
-                    state.StartTime = DateTime.UtcNow;
+                    state.StartTime = DateTime.Now;
                 }
 
                 await _dungeonState.WriteStateAsync();
@@ -258,7 +258,7 @@ namespace Horizon.Orleans.Grains
                 }
 
                 boss.IsDefeated = true;
-                boss.DefeatTime = DateTime.UtcNow;
+                boss.DefeatTime = DateTime.Now;
 
                 await _dungeonState.WriteStateAsync();
 
@@ -313,7 +313,7 @@ namespace Horizon.Orleans.Grains
                 double clearTimeSeconds = 0;
                 if (state.StartTime.HasValue)
                 {
-                    clearTimeSeconds = (DateTime.UtcNow - state.StartTime.Value).TotalSeconds;
+                    clearTimeSeconds = (DateTime.Now - state.StartTime.Value).TotalSeconds;
                 }
 
                 state.Status = (int)DungeonStatus.Completed;
@@ -383,7 +383,7 @@ namespace Horizon.Orleans.Grains
                 if (state.Status != (int)DungeonStatus.InProgress)
                     return Task.FromResult(false);
 
-                var elapsed = DateTime.UtcNow - state.StartTime.Value;
+                var elapsed = DateTime.Now - state.StartTime.Value;
                 return Task.FromResult(elapsed.TotalMinutes >= state.TimeLimitMinutes);
             }
             catch (Exception ex)

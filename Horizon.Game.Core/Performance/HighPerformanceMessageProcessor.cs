@@ -72,8 +72,9 @@ namespace Horizon.Game.Core.Performance
 
                 if (deserializationResult.Success && deserializationResult.Packet != null)
                 {
-                    _logger.LogDebug("Successfully deserialized message for client {ClientId} using protocol {Protocol}",
-                        clientId, deserializationResult.ProtocolVersion); return MessageProcessingResult.CreateSuccess(
+                    _logger.LogDebug("客户端 {ClientId} 消息反序列化成功，使用协议: {Protocol}",
+                        clientId, deserializationResult.ProtocolVersion);
+                    return MessageProcessingResult.CreateSuccess(
                         deserializationResult.Packet,
                         deserializationResult.ProtocolVersion ?? "Unknown",
                         stopwatch.Elapsed,
@@ -83,9 +84,10 @@ namespace Horizon.Game.Core.Performance
                 }
                 else
                 {
-                    _logger.LogWarning("Failed to deserialize message for client {ClientId}: {Error}",
-                        clientId, deserializationResult.ErrorMessage); return MessageProcessingResult.CreateFailure(
-                        deserializationResult.ErrorMessage ?? "Unknown deserialization error",
+                    _logger.LogWarning("客户端 {ClientId} 消息反序列化失败: {Error}",
+                        clientId, deserializationResult.ErrorMessage);
+                    return MessageProcessingResult.CreateFailure(
+                        deserializationResult.ErrorMessage ?? "反序列化错误",
                         stopwatch.Elapsed,
                         data.Length,
                         clientId);
@@ -94,15 +96,18 @@ namespace Horizon.Game.Core.Performance
             catch (Exception ex)
             {
                 stopwatch.Stop();
-                _logger.LogError(ex, "Exception occurred while processing message for client {ClientId}", clientId); return MessageProcessingResult.CreateFailure(
-                    $"Processing exception: {ex.Message}",
+                _logger.LogError(ex, "处理客户端 {ClientId} 消息时发生异常", clientId);
+                return MessageProcessingResult.CreateFailure(
+                    $"处理异常: {ex.Message}",
                     stopwatch.Elapsed,
                     data.Length,
                     clientId);
             }
-        }        /// <summary>
-                 /// 高性能协议检测 - 使用模式匹配避免多次数据访问
-                 /// </summary>
+        }
+
+        /// <summary>
+        /// 高性能协议检测 - 使用模式匹配避免多次数据访问
+        /// </summary>
         public static FastProtocolDetectionResult DetectProtocolFast(ReadOnlySpan<byte> data)
         {
             if (data.Length < 4)

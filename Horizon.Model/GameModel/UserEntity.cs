@@ -25,25 +25,28 @@ namespace Horizon.Model.GameModel
         /// <summary>
         /// 账号名
         /// </summary>
-        [Required]
+        
         [Column("account_name", TypeName = "varchar(50)", Order = 2), TableDescription(TypeName = "varchar(50)", Name = "account_name", Order = "2", Description = "账号名")]
         [Comment("账号名")]
+        [Required]
         public string AccountName { get; set; }
         
         /// <summary>
         /// 密码哈希
         /// </summary>
-        [Required]
+        
         [Column("password_hash", TypeName = "varchar(256)", Order = 3), TableDescription(TypeName = "varchar(256)", Name = "password_hash", Order = "3", Description = "密码哈希")]
         [Comment("密码哈希")]
+        [Required]
         public string PasswordHash { get; set; }
         
         /// <summary>
         /// 密码盐
         /// </summary>
-        [Required]
+        
         [Column("password_salt", TypeName = "varchar(128)", Order = 4), TableDescription(TypeName = "varchar(128)", Name = "password_salt", Order = "4", Description = "密码盐")]
         [Comment("密码盐")]
+        [Required]
         public string PasswordSalt { get; set; }
         
         /// <summary>
@@ -133,7 +136,7 @@ namespace Horizon.Model.GameModel
         /// <summary>
         /// 手机号
         /// </summary>
-        [Column("phone", TypeName = "varchar(20)", Order = 17), TableDescription(TypeName = "varchar(20)", Name = "phone", Order = "17", Description = "手机号")]
+        [Column("phone", TypeName = "varchar(100)", Order = 17), TableDescription(TypeName = "varchar(100)", Name = "phone", Order = "17", Description = "手机号")]
         [Comment("手机号")]
         public string Phone { get; set; }
         

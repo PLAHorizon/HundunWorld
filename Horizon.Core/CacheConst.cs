@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -147,5 +147,91 @@ namespace Horizon.Core
         /// 聊天客户端Sesssion Id Key 标识前缀
         /// </summary>
         public const string IMSocketClientIdKey = nameof(IMSocketClientIdKey);
+        /// <summary>
+        /// 花卉行情快照缓存键
+        /// </summary>
+        public const string FLOWER_MARKET_SNAPSHOT = Prefix + JoinChar + nameof(FLOWER_MARKET_SNAPSHOT);
+        /// <summary>
+        /// 花卉热点价格缓存键
+        /// </summary>
+        public const string FLOWER_PRICE_HOT = Prefix + JoinChar + nameof(FLOWER_PRICE_HOT);
+        /// <summary>
+        /// 花卉购物车缓存键前缀
+        /// </summary>
+        public const string FLOWER_CART_PREFIX = Prefix + JoinChar + "FLOWER_CART";
+        /// <summary>
+        /// 花卉AI问答缓存键
+        /// </summary>
+        public const string FLOWER_AI_QA_CACHE = Prefix + JoinChar + nameof(FLOWER_AI_QA_CACHE);
+        /// <summary>
+        /// 花卉订单锁前缀
+        /// </summary>
+        public const string FLOWER_ORDER_LOCK_PREFIX = Prefix + JoinChar + "FLOWER_ORDER_LOCK";
+        /// <summary>
+        /// 花卉库存锁前缀
+        /// </summary>
+        public const string FLOWER_INVENTORY_LOCK_PREFIX = Prefix + JoinChar + "FLOWER_INVENTORY_LOCK";
+        /// <summary>
+        /// 花卉向量索引缓存键
+        /// </summary>
+        public const string FLOWER_VECTOR_INDEX = Prefix + JoinChar + nameof(FLOWER_VECTOR_INDEX);
+        /// <summary>
+        /// 花卉知识库文档缓存键
+        /// </summary>
+        public const string FLOWER_KNOWLEDGE_DOC = Prefix + JoinChar + nameof(FLOWER_KNOWLEDGE_DOC);
+        /// <summary>
+        /// 花卉预测结果缓存键
+        /// </summary>
+        public const string FLOWER_PREDICTION_RESULT = Prefix + JoinChar + nameof(FLOWER_PREDICTION_RESULT);
+        /// <summary>
+        /// 花卉日报缓存键
+        /// </summary>
+        public const string FLOWER_DAILY_REPORT = Prefix + JoinChar + nameof(FLOWER_DAILY_REPORT);
+        /// <summary>
+        /// 花卉品种价格缓存键
+        /// </summary>
+        public const string FLOWER_SPECIES_PRICE = Prefix + JoinChar + nameof(FLOWER_SPECIES_PRICE);
+        /// <summary>
+        /// 花卉IoT设备缓存键
+        /// </summary>
+        public const string FLOWER_IOT_DEVICE = Prefix + JoinChar + nameof(FLOWER_IOT_DEVICE);
+        /// <summary>
+        /// 花卉传感器数据缓存键
+        /// </summary>
+        public const string FLOWER_SENSOR_DATA = Prefix + JoinChar + nameof(FLOWER_SENSOR_DATA);
+        /// <summary>
+        /// 花卉种植批次缓存键
+        /// </summary>
+        public const string FLOWER_PLANTING_BATCH = Prefix + JoinChar + nameof(FLOWER_PLANTING_BATCH);
+        /// <summary>
+        /// 花卉成本记录缓存键
+        /// </summary>
+        public const string FLOWER_COST_RECORD = Prefix + JoinChar + nameof(FLOWER_COST_RECORD);
+        /// <summary>
+        /// 花卉产量记录缓存键
+        /// </summary>
+        public const string FLOWER_YIELD_RECORD = Prefix + JoinChar + nameof(FLOWER_YIELD_RECORD);
+        /// <summary>
+        /// 花卉种植建议缓存键
+        /// </summary>
+        public const string FLOWER_PLANTING_ADVICE = Prefix + JoinChar + nameof(FLOWER_PLANTING_ADVICE);
+        /// <summary>
+        /// 花卉购物车缓存键
+        /// </summary>
+        /// <param name="userId">用户ID</param>
+        /// <returns></returns>
+        public static string FlowerCartKey(string userId) => $"{FLOWER_CART_PREFIX}{JoinChar}{userId}";
+        /// <summary>
+        /// 花卉订单锁缓存键
+        /// </summary>
+        /// <param name="orderId">订单ID</param>
+        /// <returns></returns>
+        public static string FlowerOrderLockKey(long orderId) => $"{FLOWER_ORDER_LOCK_PREFIX}{JoinChar}{orderId}";
+        /// <summary>
+        /// 花卉库存锁缓存键
+        /// </summary>
+        /// <param name="productId">商品ID</param>
+        /// <returns></returns>
+        public static string FlowerInventoryLockKey(long productId) => $"{FLOWER_INVENTORY_LOCK_PREFIX}{JoinChar}{productId}";
     }
 }

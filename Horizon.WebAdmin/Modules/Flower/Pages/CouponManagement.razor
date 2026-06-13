@@ -1,0 +1,249 @@
+@page "/flower/coupons"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using Horizon.Share.VMs
+@using System.Text.Json
+@using Horizon.WebAdmin.Modules.Flower.Services
+@inject FlowerCouponService CouponService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">🎫 优惠券管理</TypographyTitle>
+        <Space>
+            <InputNumber TValue="long" @bind-Value="@FilterShopId" Placeholder="@("店铺ID")" Style="width:140px" Size="@InputSize.Small" />
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadCoupons">🔍 查询</Button>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="ShowCreateModal">➕ 创建优惠券</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="CouponItem" DataSource="@Coupons" Size="@TableSize.Small" RowKey="x => x.CouponId">
+            <PropertyColumn Property="c => c.CouponId" Title="优惠券ID" />
+            <PropertyColumn Property="c => c.Name" Title="名称" />
+            <Column TData="string" Title="优惠金额">¥@context.DiscountAmount.ToString("N2")</Column>
+            <Column TData="string" Title="使用门槛">¥@context.MinOrderAmount.ToString("N2")</Column>
+            <PropertyColumn Property="c => c.TotalCount" Title="发行量" />
+            <PropertyColumn Property="c => c.UsedCount" Title="已使用" />
+            <Column TData="string" Title="有效期">@context.StartTime.ToString("yyyy-MM-dd") ~ @context.EndTime.ToString("yyyy-MM-dd")</Column>
+            <Column TData="string" Title="状态">
+                <Tag Color="@GetCouponStatusColor(context.Status)">@GetCouponStatusText(context.Status)</Tag>
+            </Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    @if (context.Status == 0)
+                    {
+                        <SpaceItem>
+                            <Popconfirm Title="@("确认停用该优惠券？")" OnConfirm="() => DisableCoupon(context.CouponId)">
+                                <Button Danger Size="@ButtonSize.Small">停用</Button>
+                            </Popconfirm>
+                        </SpaceItem>
+                    }
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    <Modal Title="@("创建优惠券")" Visible="@ShowCreateModalFlag" OnCancel="CloseCreateModal"
+           OnOk="CreateCoupon" OkText="@("创建")" CancelText="@("取消")" Width="600">
+        <Form Model="@CreateModel" Layout="@FormLayout.Vertical">
+            <FormItem Label="@("优惠券名称")">
+                <Input @bind-Value="@CreateModel.Name" Placeholder="@("请输入优惠券名称")" />
+            </FormItem>
+            <AntDesign.Row Gutter="16">
+                <AntDesign.Col Span="12">
+                    <FormItem Label="@("优惠金额")">
+                        <InputNumber TValue="decimal" @bind-Value="@CreateModel.DiscountAmount" Min="@(0.01m)" Style="width:100%" />
+                    </FormItem>
+                </AntDesign.Col>
+                <AntDesign.Col Span="12">
+                    <FormItem Label="@("使用门槛金额")">
+                        <InputNumber TValue="decimal" @bind-Value="@CreateModel.MinOrderAmount" Min="@(0m)" Style="width:100%" />
+                    </FormItem>
+                </AntDesign.Col>
+            </AntDesign.Row>
+            <AntDesign.Row Gutter="16">
+                <AntDesign.Col Span="12">
+                    <FormItem Label="@("发行总量")">
+                        <InputNumber TValue="int" @bind-Value="@CreateModel.TotalCount" Min="@(1)" Style="width:100%" />
+                    </FormItem>
+                </AntDesign.Col>
+                <AntDesign.Col Span="12">
+                    <FormItem Label="@("每人限领")">
+                        <InputNumber TValue="int" @bind-Value="@CreateModel.PerUserLimit" Min="@(1)" Style="width:100%" />
+                    </FormItem>
+                </AntDesign.Col>
+            </AntDesign.Row>
+            <AntDesign.Row Gutter="16">
+                <AntDesign.Col Span="12">
+                    <FormItem Label="@("开始时间")">
+                        <DatePicker TItemValue="DateTime?" @bind-Value="@CreateModel.StartTime" Style="width:100%" />
+                    </FormItem>
+                </AntDesign.Col>
+                <AntDesign.Col Span="12">
+                    <FormItem Label="@("结束时间")">
+                        <DatePicker TItemValue="DateTime?" @bind-Value="@CreateModel.EndTime" Style="width:100%" />
+                    </FormItem>
+                </AntDesign.Col>
+            </AntDesign.Row>
+        </Form>
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <Alert Type="@AlertType.Success" Message="@SuccessMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<CouponItem> Coupons { get; set; } = new();
+    private bool Loading { get; set; }
+    private long FilterShopId { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string SuccessMessage { get; set; } = "";
+    private bool ShowCreateModalFlag { get; set; }
+    private CouponCreateModel CreateModel { get; set; } = new();
+
+    private readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCoupons();
+    }
+
+    private async Task LoadCoupons()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await CouponService.GetShopCouponsAsync(FilterShopId > 0 ? FilterShopId : 0);
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                Coupons = JsonSerializer.Deserialize<List<CouponItem>>(result.Data.Value.GetRawText(), _jsonOpts) ?? new();
+            }
+            else
+            {
+                Coupons = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载优惠券列表失败: {ex.Message}";
+            Coupons = new();
+        }
+        Loading = false;
+    }
+
+    private void ShowCreateModal()
+    {
+        CreateModel = new CouponCreateModel();
+        ShowCreateModalFlag = true;
+    }
+
+    private void CloseCreateModal()
+    {
+        ShowCreateModalFlag = false;
+    }
+
+    private async Task CreateCoupon()
+    {
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var result = await CouponService.CreateCouponAsync(new
+            {
+                Name = CreateModel.Name,
+                DiscountAmount = CreateModel.DiscountAmount,
+                MinOrderAmount = CreateModel.MinOrderAmount,
+                TotalCount = CreateModel.TotalCount,
+                PerUserLimit = CreateModel.PerUserLimit,
+                StartTime = CreateModel.StartTime,
+                EndTime = CreateModel.EndTime
+            });
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = "优惠券创建成功";
+                ShowCreateModalFlag = false;
+                await LoadCoupons();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "创建失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"创建失败: {ex.Message}";
+        }
+    }
+
+    private async Task DisableCoupon(long couponId)
+    {
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var result = await CouponService.DisableCouponAsync(couponId);
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = "优惠券已停用";
+                await LoadCoupons();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "停用失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"停用失败: {ex.Message}";
+        }
+    }
+
+    private string GetCouponStatusColor(int status) => status switch
+    {
+        0 => "green", 1 => "orange", 2 => "red", 3 => "default", _ => "default"
+    };
+
+    private string GetCouponStatusText(int status) => status switch
+    {
+        0 => "进行中", 1 => "未开始", 2 => "已停用", 3 => "已结束", _ => "未知"
+    };
+
+    public class CouponItem
+    {
+        public long CouponId { get; set; }
+        public string Name { get; set; } = "";
+        public decimal DiscountAmount { get; set; }
+        public decimal MinOrderAmount { get; set; }
+        public int TotalCount { get; set; }
+        public int UsedCount { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public int Status { get; set; }
+    }
+
+    public class CouponCreateModel
+    {
+        public string Name { get; set; } = "";
+        public decimal DiscountAmount { get; set; }
+        public decimal MinOrderAmount { get; set; }
+        public int TotalCount { get; set; } = 100;
+        public int PerUserLimit { get; set; } = 1;
+        public DateTime? StartTime { get; set; }
+        public DateTime? EndTime { get; set; }
+    }
+}

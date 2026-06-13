@@ -1,0 +1,208 @@
+﻿@page "/flower/species"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using System.Text.Json
+@using Horizon.Share.VMs
+
+@inject FlowerSpeciesService SpeciesService
+@inject FlowerDashboardService DashboardService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">🌸 品种管理</TypographyTitle>
+        <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadSpecies">🔄 刷新列表</Button>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="SpeciesItem" DataSource="@SpeciesList" Size="@TableSize.Small" RowKey="x => x.Id">
+            <PropertyColumn Property="s => s.Id" Title="ID" />
+            <PropertyColumn Property="s => s.Name" Title="品种名称" />
+            <PropertyColumn Property="s => s.Category" Title="分类" />
+            <Column TData="string" Title="均价">
+                <AntDesign.Text Type="@TextElementType.Danger" Strong>¥@context.AvgPrice.ToString("N2")</AntDesign.Text>
+            </Column>
+            <Column TData="string" Title="状态">
+                <Tag Color="@(context.IsActive ? "green" : "default")">@(context.IsActive ? "活跃" : "停用")</Tag>
+            </Column>
+            <PropertyColumn Property="s => s.Origin" Title="产地" />
+            <Column TData="string" Title="操作">
+                <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowDetail(context)">详情</Button>
+            </Column>
+        </Table>
+    }
+
+    <Drawer Title="@($"品种详情 - {SelectedSpecies?.Name}")" Visible="@ShowDetailDrawer"
+            OnClose="CloseDetail" Width="640" Placement="@DrawerPlacement.Right">
+        @if (SelectedSpecies != null)
+        {
+            <Descriptions Column="2" Size="@DescriptionsSize.Small" Style="margin-bottom:24px;">
+                <DescriptionsItem Title="品种ID">@SelectedSpecies.Id</DescriptionsItem>
+                <DescriptionsItem Title="品种名称">@SelectedSpecies.Name</DescriptionsItem>
+                <DescriptionsItem Title="分类">@SelectedSpecies.Category</DescriptionsItem>
+                <DescriptionsItem Title="产地">@SelectedSpecies.Origin</DescriptionsItem>
+                <DescriptionsItem Title="均价">¥@SelectedSpecies.AvgPrice.ToString("N2")</DescriptionsItem>
+                <DescriptionsItem Title="状态">
+                    <Tag Color="@(SelectedSpecies.IsActive ? "green" : "default")">@(SelectedSpecies.IsActive ? "活跃" : "停用")</Tag>
+                </DescriptionsItem>
+            </Descriptions>
+
+            <Divider />
+
+            <TypographyTitle Level="5">价格走势</TypographyTitle>
+            <div style="margin-bottom:8px;">
+                <Space>
+                    <Select TItem="int" TItemValue="int" @bind-Value="@PriceTrendDays" Style="width:120px" Size="@InputSize.Small">
+                        <SelectOption TItem="int" TItemValue="int" Value="7">近7天</SelectOption>
+                        <SelectOption TItem="int" TItemValue="int" Value="30">近30天</SelectOption>
+                        <SelectOption TItem="int" TItemValue="int" Value="90">近90天</SelectOption>
+                    </Select>
+                    <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadPriceTrend">查询走势</Button>
+                </Space>
+            </div>
+
+            @if (PriceTrendLoading)
+            {
+                <div style="text-align:center; padding:24px 0;">
+                    <Spin />
+                </div>
+            }
+            else if (PriceTrendData.Any())
+            {
+                <Table TItem="PriceTrendPoint" DataSource="@PriceTrendData" Size="@TableSize.Small" RowKey="x => x.Date"
+                       ScrollY="300">
+                    <PropertyColumn Property="p => p.Date" Title="日期" />
+                    <Column TData="string" Title="价格">¥@context.Price.ToString("N2")</Column>
+                </Table>
+            }
+            else
+            {
+                <Empty Description="@("暂无价格走势数据")" />
+            }
+        }
+    </Drawer>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<SpeciesItem> SpeciesList { get; set; } = new();
+    private bool Loading { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private bool ShowDetailDrawer { get; set; }
+    private SpeciesItem? SelectedSpecies { get; set; }
+    private int PriceTrendDays { get; set; } = 30;
+    private bool PriceTrendLoading { get; set; }
+    private List<PriceTrendPoint> PriceTrendData { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSpecies();
+    }
+
+    private async Task LoadSpecies()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await SpeciesService.GetSpeciesListAsync();
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var json = result.Data.Value;
+                if (json.ValueKind == JsonValueKind.Array)
+                {
+                    SpeciesList = JsonSerializer.Deserialize<List<SpeciesItem>>(json.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+                else if (json.ValueKind == JsonValueKind.Object && json.TryGetProperty("items", out var items))
+                {
+                    SpeciesList = JsonSerializer.Deserialize<List<SpeciesItem>>(items.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+            }
+            else
+            {
+                SpeciesList = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载品种列表失败: {ex.Message}";
+            SpeciesList = new();
+        }
+        Loading = false;
+    }
+
+    private void ShowDetail(SpeciesItem species)
+    {
+        SelectedSpecies = species;
+        ShowDetailDrawer = true;
+        _ = LoadPriceTrend();
+    }
+
+    private void CloseDetail()
+    {
+        ShowDetailDrawer = false;
+        SelectedSpecies = null;
+        PriceTrendData = new();
+    }
+
+    private async Task LoadPriceTrend()
+    {
+        if (SelectedSpecies == null) return;
+        PriceTrendLoading = true;
+        try
+        {
+            var result = await DashboardService.GetPriceTrendAsync(SelectedSpecies.Id, PriceTrendDays);
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var json = result.Data.Value;
+                if (json.ValueKind == JsonValueKind.Array)
+                {
+                    PriceTrendData = JsonSerializer.Deserialize<List<PriceTrendPoint>>(json.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+                else if (json.ValueKind == JsonValueKind.Object && json.TryGetProperty("items", out var items))
+                {
+                    PriceTrendData = JsonSerializer.Deserialize<List<PriceTrendPoint>>(items.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+                else
+                {
+                    PriceTrendData = new();
+                }
+            }
+            else
+            {
+                PriceTrendData = new();
+            }
+        }
+        catch
+        {
+            PriceTrendData = new();
+        }
+        PriceTrendLoading = false;
+    }
+
+    public class SpeciesItem
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public string Category { get; set; } = "";
+        public decimal AvgPrice { get; set; }
+        public bool IsActive { get; set; }
+        public string Origin { get; set; } = "";
+    }
+
+    public class PriceTrendPoint
+    {
+        public string Date { get; set; } = "";
+        public decimal Price { get; set; }
+    }
+}

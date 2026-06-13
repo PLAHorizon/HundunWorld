@@ -1,0 +1,292 @@
+﻿@page "/flower/forecast-models"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Flower.Services
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+
+@inject FlowerForecastService ForecastService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">预测模型管理</TypographyTitle>
+        <Space>
+            <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="LoadModels">刷新</Button>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="TriggerTraining">手动触发训练</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="JsonElement" DataSource="@Models" Size="@TableSize.Small" RowKey="@GetModelRowKey">
+            <Column TData="string" Title="品种ID">
+                @(context.TryGetProperty("speciesId", out var p) ? p.GetInt32().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="品种名称">
+                @(context.TryGetProperty("speciesName", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="模型类型">
+                <Tag Color="@("cyan")">@(context.TryGetProperty("modelType", out var p) ? p.GetString() ?? "价格预测" : "价格预测")</Tag>
+            </Column>
+            <Column TData="string" Title="模型版本">
+                <AntDesign.Text Code>@(context.TryGetProperty("modelVersion", out var p) ? p.GetString() ?? "-" : "-")</AntDesign.Text>
+            </Column>
+            <Column TData="string" Title="置信度">
+                <Progress Percent="@GetConfidencePercent(context)" Size="@ProgressSize.Small"
+                          Status="@GetProgressStatusFromElement(context)" />
+            </Column>
+            <Column TData="string" Title="时间尺度">
+                <Tag>@GetTimeScaleText(context)</Tag>
+            </Column>
+            <Column TData="string" Title="生成时间">
+                @(context.TryGetProperty("generatedAt", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="是否活跃">
+                <Tag Color="@(GetIsActive(context) ? "green" : "default")">@(GetIsActive(context) ? "活跃" : "停用")</Tag>
+            </Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    @if (GetIsActive(context))
+                    {
+                        <SpaceItem>
+                            <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small"
+                                    OnClick="() => ToggleModel(context, false)">停用</Button>
+                        </SpaceItem>
+                    }
+                    else
+                    {
+                        <SpaceItem>
+                            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small"
+                                    OnClick="() => ToggleModel(context, true)">激活</Button>
+                        </SpaceItem>
+                    }
+                    <SpaceItem>
+                        <Button Size="@ButtonSize.Small" OnClick="() => ViewForecast(context)">预测</Button>
+                    </SpaceItem>
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    <Modal Title="@ForecastModalTitle" Visible="@ShowForecastModal" OnCancel="CloseForecast"
+           Footer="@((RenderFragment)null)" Width="720">
+        @if (ForecastData.ValueKind != JsonValueKind.Undefined)
+        {
+            <AntDesign.Row Gutter="16" Style="margin-bottom:16px;">
+                <AntDesign.Col Span="8">
+                    <Card Size="@CardSize.Small">
+                        <Statistic Title="模型版本" Value="@ForecastModelVersion" />
+                    </Card>
+                </AntDesign.Col>
+                <AntDesign.Col Span="8">
+                    <Card Size="@CardSize.Small">
+                        <Statistic Title="置信度" Value="@ForecastConfidence" Suffix="%" />
+                    </Card>
+                </AntDesign.Col>
+                <AntDesign.Col Span="8">
+                    <Card Size="@CardSize.Small">
+                        <Statistic Title="生成时间" Value="@ForecastGeneratedAt" ValueStyle="font-size:1rem" />
+                    </Card>
+                </AntDesign.Col>
+            </AntDesign.Row>
+
+            @if (ForecastPrices.Any())
+            {
+                <TypographyTitle Level="5">预测价格</TypographyTitle>
+                <Table TItem="JsonElement" DataSource="@ForecastPrices" Size="@TableSize.Small" RowKey="@GetPriceRowKey">
+                    <Column TData="string" Title="日期">
+                        @(context.TryGetProperty("date", out var p) ? p.GetString() ?? "-" : "-")
+                    </Column>
+                    <Column TData="string" Title="预测价格">
+                        <AntDesign.Text Strong>
+                            @(context.TryGetProperty("predictedPrice", out var p) ? $"¥{p.GetDecimal():N2}" : "-")
+                        </AntDesign.Text>
+                    </Column>
+                    <Column TData="string" Title="下限">
+                        <AntDesign.Text Type="@TextElementType.Success">
+                            @(context.TryGetProperty("lowerBound", out var p) ? $"¥{p.GetDecimal():N2}" : "-")
+                        </AntDesign.Text>
+                    </Column>
+                    <Column TData="string" Title="上限">
+                        <AntDesign.Text Type="@TextElementType.Danger">
+                            @(context.TryGetProperty("upperBound", out var p) ? $"¥{p.GetDecimal():N2}" : "-")
+                        </AntDesign.Text>
+                    </Column>
+                </Table>
+            }
+        }
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <Alert Type="@AlertType.Success" Message="@SuccessMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> Models { get; set; } = new();
+    private bool Loading { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string SuccessMessage { get; set; } = "";
+    private bool ShowForecastModal { get; set; }
+    private int ForecastSpeciesId { get; set; }
+    private JsonElement ForecastData { get; set; }
+    private List<JsonElement> ForecastPrices { get; set; } = new();
+
+    private string ForecastModalTitle => $"品种 {ForecastSpeciesId} 价格预测";
+    private string ForecastModelVersion => ForecastData.TryGetProperty("modelVersion", out var p) ? p.GetString() ?? "-" : "-";
+    private string ForecastConfidence => ForecastData.TryGetProperty("confidence", out var p) ? (p.GetDouble() * 100).ToString("F1") : "0";
+    private string ForecastGeneratedAt => ForecastData.TryGetProperty("generatedAt", out var p) ? p.GetString() ?? "-" : "-";
+
+    private object GetModelRowKey(JsonElement x) =>
+        x.TryGetProperty("speciesId", out var p) ? (object)p.GetInt32() : 0;
+
+    private object GetPriceRowKey(JsonElement x) =>
+        x.TryGetProperty("date", out var p) ? (object)(p.GetString() ?? "") : "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadModels();
+    }
+
+    private async Task LoadModels()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await ForecastService.GetModelListAsync();
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var data = result.Data.Value;
+                if (data.ValueKind == JsonValueKind.Array)
+                    Models = data.EnumerateArray().ToList();
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                    Models = items.EnumerateArray().ToList();
+                else
+                    Models = new List<JsonElement>();
+            }
+            else
+            {
+                Models = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    ErrorMessage = result.ErrorMessage ?? "加载预测模型失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载预测模型失败: {ex.Message}";
+            Models = new List<JsonElement>();
+        }
+        Loading = false;
+    }
+
+    private async Task TriggerTraining()
+    {
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var result = await ForecastService.TriggerDailyForecastAsync();
+            if (result?.IsSuccess == true)
+                SuccessMessage = "训练任务已触发";
+            else
+                ErrorMessage = result?.ErrorMessage ?? "触发训练失败";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"触发训练失败: {ex.Message}";
+        }
+    }
+
+    private async Task ToggleModel(JsonElement model, bool activate)
+    {
+        var speciesId = model.TryGetProperty("speciesId", out var p) ? p.GetInt32() : 0;
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var result = await ForecastService.ToggleModelAsync(speciesId, activate);
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = $"模型已{(activate ? "激活" : "停用")}";
+                await LoadModels();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "操作失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"操作失败: {ex.Message}";
+        }
+    }
+
+    private async Task ViewForecast(JsonElement model)
+    {
+        ForecastSpeciesId = model.TryGetProperty("speciesId", out var p) ? p.GetInt32() : 0;
+        try
+        {
+            var result = await ForecastService.PredictPriceAsync(ForecastSpeciesId);
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                ForecastData = result.Data.Value;
+                if (ForecastData.TryGetProperty("predictedPrices", out var pricesProp) && pricesProp.ValueKind == JsonValueKind.Array)
+                    ForecastPrices = pricesProp.EnumerateArray().ToList();
+                else
+                    ForecastPrices = new List<JsonElement>();
+                ShowForecastModal = true;
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "获取预测数据失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"获取预测数据失败: {ex.Message}";
+        }
+    }
+
+    private void CloseForecast()
+    {
+        ShowForecastModal = false;
+        ForecastData = default;
+        ForecastPrices = new List<JsonElement>();
+    }
+
+    private double GetConfidence(JsonElement m) =>
+        m.TryGetProperty("confidence", out var p) ? p.GetDouble() : 0;
+
+    private int GetConfidencePercent(JsonElement m) => (int)(GetConfidence(m) * 100);
+
+    private ProgressStatus GetProgressStatusFromElement(JsonElement m)
+    {
+        var conf = GetConfidence(m);
+        if (conf >= 0.8) return ProgressStatus.Success;
+        if (conf >= 0.6) return ProgressStatus.Normal;
+        return ProgressStatus.Exception;
+    }
+
+    private string GetTimeScaleText(JsonElement m)
+    {
+        var scale = m.TryGetProperty("timeScale", out var p) ? p.GetInt32() : 0;
+        return scale == 0 ? "短期" : "中期";
+    }
+
+    private bool GetIsActive(JsonElement m) =>
+        m.TryGetProperty("isActive", out var p) && p.GetBoolean();
+}

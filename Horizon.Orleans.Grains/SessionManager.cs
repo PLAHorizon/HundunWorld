@@ -42,8 +42,8 @@ namespace Horizon.Orleans.Grains
                     sessionInfo.SessionId = GenerateSessionId();
                 }
 
-                sessionInfo.CreateTime = DateTime.UtcNow;
-                sessionInfo.LastActiveTime = DateTime.UtcNow;
+                sessionInfo.CreateTime = DateTime.Now;
+                sessionInfo.LastActiveTime = DateTime.Now;
                 sessionInfo.IsActive = true;
 
                 // 存储会话到Redis
@@ -84,7 +84,7 @@ namespace Horizon.Orleans.Grains
                 if (session != null && session.IsActive)
                 {
                     // 更新最后活跃时间
-                    session.LastActiveTime = DateTime.UtcNow;
+                    session.LastActiveTime = DateTime.Now;
                     await Cache.InsertAsync(sessionKey, session, DEFAULT_SESSION_TIMEOUT_MINUTES);
                 }
 
@@ -109,7 +109,7 @@ namespace Horizon.Orleans.Grains
                     return false;
                 }
 
-                sessionInfo.LastActiveTime = DateTime.UtcNow;
+                sessionInfo.LastActiveTime = DateTime.Now;
 
                 string sessionKey = GetSessionKey(sessionInfo.SessionId);
                 return await Cache.InsertAsync(sessionKey, sessionInfo, DEFAULT_SESSION_TIMEOUT_MINUTES);
@@ -138,7 +138,7 @@ namespace Horizon.Orleans.Grains
 
                 if (session != null && session.IsActive)
                 {
-                    session.LastActiveTime = DateTime.UtcNow;
+                    session.LastActiveTime = DateTime.Now;
                     return await Cache.InsertAsync(sessionKey, session, timeoutMinutes);
                 }
 
@@ -317,7 +317,7 @@ namespace Horizon.Orleans.Grains
 
         private string GenerateSessionId()
         {
-            return $"{Guid.NewGuid():N}_{DateTime.UtcNow.Ticks}";
+            return $"{Guid.NewGuid():N}_{DateTime.Now.Ticks}";
         }
 
         #endregion

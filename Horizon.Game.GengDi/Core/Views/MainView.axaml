@@ -1,0 +1,355 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:uiw="using:FluentAvalonia.UI.Windowing"
+             xmlns:views="using:Horizon.Game.GengDi.Core.Views"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
+             mc:Ignorable="d"
+             d:DesignWidth="1280"
+             d:DesignHeight="800"
+             x:Class="Horizon.Game.GengDi.Core.Views.MainView"
+             x:DataType="vm:MainViewModel">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <!-- ══════════════════════════════════════════════════════════════════
+             战网风格标题栏：品牌 Logo + 水平导航 + 右侧工具区（搜索/通知/用户）
+             ══════════════════════════════════════════════════════════════════ -->
+        <Border Name="TitleBarHost"
+                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                BorderThickness="0 0 0 1">
+            <Grid ColumnDefinitions="Auto,*,Auto" MinHeight="48">
+                <!-- 左：品牌 Logo + 主导航项 -->
+                <StackPanel Name="TitleBarNavPanel"
+                            Grid.Column="0"
+                            Orientation="Horizontal"
+                            Spacing="2"
+                            Margin="12 0 0 0"
+                            VerticalAlignment="Center">
+                    <!-- Logo -->
+                    <Button Classes="TitleBarBrand"
+                            uiw:AppWindow.AllowInteractionInTitleBar="True"
+                            ToolTip.Tip="耕地"
+                            Command="{Binding NavigateToHomeCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Border Width="26" Height="26" CornerRadius="13"
+                                    Background="{DynamicResource AccentFillColorSecondaryBrush}">
+                                <Viewbox Margin="5">
+                                    <ui:IconSourceElement IconSource="{StaticResource BrandIcon}" />
+                                </Viewbox>
+                            </Border>
+                        </StackPanel>
+                    </Button>
+
+                    <Border Width="1" Height="20" Margin="6 0"
+                            Background="{DynamicResource TitleBarDividerBrush}" />
+
+                    <!-- 主导航项（水平文本链接） -->
+                    <Button Classes="TitleBarNavItem"
+                            Tag="Games"
+                            Content="游戏"
+                            uiw:AppWindow.AllowInteractionInTitleBar="True"
+                            Command="{Binding NavigateToGamesCommand}" />
+                    <Button Classes="TitleBarNavItem"
+                            Tag="News"
+                            Content="新闻"
+                            uiw:AppWindow.AllowInteractionInTitleBar="True"
+                            Command="{Binding NavigateToNewsCommand}" />
+                    <Button Classes="TitleBarNavItem"
+                            Tag="FlowerShop"
+                            Content="花卉市场"
+                            uiw:AppWindow.AllowInteractionInTitleBar="True"
+                            Command="{Binding NavigateToFlowerShopCommand}" />
+                    <Button Classes="TitleBarNavItem"
+                            Tag="Music"
+                            Content="音乐"
+                            uiw:AppWindow.AllowInteractionInTitleBar="True"
+                            Command="{Binding NavigateToMusicDiscoverCommand}" />
+                    <!-- 更多菜单 -->
+                    <Button Classes="TitleBarNavItem"
+                            Content="···"
+                            uiw:AppWindow.AllowInteractionInTitleBar="True"
+                            FontSize="14"
+                            Padding="10 6">
+                        <Button.Flyout>
+                            <ui:FAMenuFlyout Placement="BottomEdgeAlignedLeft">
+                                <ui:MenuFlyoutItem Text="主页" IconSource="{StaticResource HomeIcon}"
+                                                   Command="{Binding NavigateToHomeCommand}" />
+                                <ui:MenuFlyoutItem Text="花卉市场" IconSource="{StaticResource HomeIcon}"
+                                                   Command="{Binding NavigateToFlowerShopCommand}" />
+                                <ui:MenuFlyoutItem Text="购物车" IconSource="{StaticResource HomeIcon}"
+                                                   Command="{Binding NavigateToFlowerCartCommand}" />
+                                <ui:MenuFlyoutItem Text="订单" IconSource="{StaticResource HomeIcon}"
+                                                   Command="{Binding NavigateToFlowerOrderCenterCommand}" />
+                                <ui:MenuFlyoutItem Text="商家管理" IconSource="{StaticResource HomeIcon}"
+                                                   Command="{Binding NavigateToFlowerMerchantCommand}" />
+                                <ui:MenuFlyoutItem Text="Excel 工具" IconSource="{StaticResource SettingsIcon}"
+                                                   Command="{Binding NavigateToExcelProcessorCommand}" />
+                                <ui:MenuFlyoutItem Text="个人设置" IconSource="{StaticResource ProfileIcon}"
+                                                   Command="{Binding NavigateToProfileCommand}" />
+                                <ui:MenuFlyoutItem Text="安全设置" IconSource="{StaticResource SecurityIcon}"
+                                                   Command="{Binding NavigateToSecurityCommand}" />
+                                <ui:MenuFlyoutItem Text="应用设置" IconSource="{StaticResource SettingsIcon}"
+                                                   Command="{Binding NavigateToSettingsCommand}" />
+                                <ui:MenuFlyoutSeparator />
+                                <ui:MenuFlyoutItem Text="退出登录"
+                                                   Command="{Binding LogoutCommand}" />
+                            </ui:FAMenuFlyout>
+                        </Button.Flyout>
+                    </Button>
+                </StackPanel>
+
+                <!-- 中：搜索框 -->
+               <!-- <Border Grid.Column="1"
+                        Padding="12 6"
+                        HorizontalAlignment="Center"
+                        MaxWidth="400"
+                        VerticalAlignment="Center">
+                    <AutoCompleteBox Name="SearchBox"
+                                     Watermark="搜索页面"
+                                     MaxWidth="380"
+                                     uiw:AppWindow.AllowInteractionInTitleBar="True"
+                                     ValueMemberBinding="{Binding Title, DataType=vm:NavigationSearchItem}"
+                                     ItemsSource="{Binding SearchItems}">
+                        <AutoCompleteBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:NavigationSearchItem">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Title}" />
+                                    <TextBlock Text="{Binding Description}"
+                                               Theme="{StaticResource CaptionTextBlockStyle}"
+                                               Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                                               FontStyle="Italic" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </AutoCompleteBox.ItemTemplate>
+                    </AutoCompleteBox>
+                </Border>-->
+
+                <!-- 右：工具按钮 + 用户头像 + 窗口按钮预留区 -->
+                <StackPanel Grid.Column="2"
+                            Orientation="Horizontal"
+                            Spacing="2"
+                            Margin="0 0 6 0"
+                            VerticalAlignment="Center">
+                    <!-- 下载 -->
+                    <Button Classes="TitleBarIconButton"
+                            ToolTip.Tip="下载"
+                            uiw:AppWindow.AllowInteractionInTitleBar="True"
+                            Command="{Binding NavigateToDownloadsCommand}">
+                        <ui:IconSourceElement IconSource="{StaticResource DownloadsIcon}" Width="16" Height="16" />
+                    </Button>
+
+                    <!-- 通知 -->
+                    <Button Classes="TitleBarIconButton"
+                            ToolTip.Tip="通知"
+                            uiw:AppWindow.AllowInteractionInTitleBar="True"
+                            Command="{Binding NavigateToNotificationCommand}">
+                        <ui:IconSourceElement IconSource="{StaticResource NotificationsIcon}" Width="16" Height="16" />
+                    </Button>
+
+                    <Border Width="1" Height="20" Margin="4 0"
+                            Background="{DynamicResource TitleBarDividerBrush}" />
+
+                    <!-- 用户头像 + 名字/状态（点击展开下拉菜单） -->
+                    <Button Name="UserButton"
+                            Classes="TitleBarUserButton"
+                            uiw:AppWindow.AllowInteractionInTitleBar="True">
+                        <Button.Flyout>
+                            <ui:FAMenuFlyout Placement="BottomEdgeAlignedRight">
+                                <ui:MenuFlyoutItem Text="社交" IconSource="{StaticResource SocialIcon}"
+                                                   Command="{Binding NavigateToSocialCommand}" />
+                                <ui:MenuFlyoutItem Text="用户设置" IconSource="{StaticResource ProfileIcon}"
+                                                   Command="{Binding NavigateToProfileCommand}" />
+                                <ui:MenuFlyoutItem Text="修改密码" IconSource="{StaticResource SecurityIcon}"
+                                                   Command="{Binding NavigateToSecurityCommand}" />
+                                <ui:MenuFlyoutSeparator />
+                                <ui:MenuFlyoutItem Text="主题：跟随系统"
+                                                   Command="{Binding SetSystemThemeCommand}" />
+                                <ui:MenuFlyoutItem Text="主题：浅色"
+                                                   Command="{Binding SetLightThemeCommand}" />
+                                <ui:MenuFlyoutItem Text="主题：深色"
+                                                   Command="{Binding SetDarkThemeCommand}" />
+                                <ui:MenuFlyoutSeparator />
+                                <ui:MenuFlyoutItem Text="退出登录"
+                                                   Command="{Binding LogoutCommand}" />
+                            </ui:FAMenuFlyout>
+                        </Button.Flyout>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Grid Width="32" Height="32">
+                                <Border CornerRadius="16"
+                                        ClipToBounds="True"
+                                        Background="{DynamicResource SocialAvatarBackgroundBrush}">
+                                    <Panel>
+                                        <TextBlock Text="{Binding UserAvatarInitial}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="14" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource SocialAvatarTextBrush}"
+                                                   IsVisible="{Binding !UserHasAvatarBitmap}" />
+                                        <Image Source="{Binding UserAvatarBitmap}"
+                                               Stretch="UniformToFill"
+                                               IsVisible="{Binding UserHasAvatarBitmap}" />
+                                    </Panel>
+                                </Border>
+                                <!-- 在线指示点 -->
+                                <Border Width="10" Height="10"
+                                        CornerRadius="5"
+                                        Background="{DynamicResource SocialOnlineBadgeBrush}"
+                                        BorderBrush="{DynamicResource TitleBarBackgroundBrush}"
+                                        BorderThickness="2"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Bottom" />
+                            </Grid>
+                            <StackPanel VerticalAlignment="Center" Spacing="0">
+                                <TextBlock Text="{Binding UserDisplayName}"
+                                           FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TitleBarTextBrush}" />
+                                <TextBlock Text="{Binding UserPassportId}"
+                                           FontSize="10"
+                                           Foreground="{DynamicResource TitleBarTextSecondaryBrush}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- 窗口控制按钮预留空间 -->
+                    <Border Name="TitleBarRightInset" Width="0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ══════════════════════════════════════════════════════════════════
+             内容区域 + 底部游戏导航栏（类似战网副导航条）
+             ══════════════════════════════════════════════════════════════════ -->
+        <Grid Grid.Row="1" RowDefinitions="Auto,*">
+            <!-- 副导航条：当前页上下文切换栏 -->
+            <Border Grid.Row="0"
+                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="0 0 0 1"
+                    Padding="16 0"
+                    MinHeight="42">
+                <StackPanel Name="SubNavBar"
+                            Orientation="Horizontal"
+                            Spacing="4"
+                            VerticalAlignment="Center">
+                    <Button Classes="SubNavItem SubNavSelected"
+                            Tag="Home"
+                            Content="总览"
+                            Command="{Binding NavigateToHomeCommand}" />
+                    <Button Classes="SubNavItem"
+                            Tag="Games"
+                            Content="全部游戏"
+                            Command="{Binding NavigateToGamesCommand}" />
+                    <Button Classes="SubNavItem"
+                            Tag="Downloads"
+                            Content="下载"
+                            Command="{Binding NavigateToDownloadsCommand}" />
+                    <Button Classes="SubNavItem"
+                            Tag="Settings"
+                            Content="设置"
+                            Command="{Binding NavigateToSettingsCommand}" />
+                    <Border Width="1" Height="20" Margin="8 0"
+                            Background="{DynamicResource TitleBarDividerBrush}" />
+                    <Button Classes="SubNavItem"
+                            Tag="MusicDiscover"
+                            Content="发现"
+                            Command="{Binding NavigateToMusicDiscoverCommand}" />
+                    <Button Classes="SubNavItem"
+                            Tag="PlaylistManage"
+                            Content="歌单"
+                            Command="{Binding NavigateToPlaylistManageCommand}" />
+                    <Button Classes="SubNavItem"
+                            Tag="MusicSearch"
+                            Content="搜索"
+                            Command="{Binding NavigateToMusicSearchCommand}" />
+                    <!--<Button Classes="SubNavItem"
+                            Tag="MusicStory"
+                            Content="背后故事"
+                            Command="{Binding NavigateToMusicStoryCommand}" />-->
+                    <Border Width="1" Height="20" Margin="8 0"
+                            Background="{DynamicResource TitleBarDividerBrush}" />
+                    <Button Classes="SubNavItem"
+                            Tag="FlowerDashboard"
+                            Content="行情仪表盘"
+                            Command="{Binding NavigateToFlowerDashboardCommand}" />
+                    <Button Classes="SubNavItem"
+                            Tag="FlowerShop"
+                            Content="市场"
+                            Command="{Binding NavigateToFlowerShopCommand}" />
+                    <Button Classes="SubNavItem"
+                            Tag="FlowerPlantingAdvice"
+                            Content="种植建议"
+                            Command="{Binding NavigateToFlowerPlantingAdviceCommand}" />
+                    <Button Classes="SubNavItem"
+                            Tag="FlowerCart"
+                            Content="购物车"
+                            Command="{Binding NavigateToFlowerCartCommand}" />
+                    <Button Classes="SubNavItem"
+                            Tag="FlowerOrderCenter"
+                            Content="订单"
+                            Command="{Binding NavigateToFlowerOrderCenterCommand}" />
+                    <Button Classes="SubNavItem"
+                            Tag="FlowerAlertCenter"
+                            Content="预警"
+                            Command="{Binding NavigateToFlowerAlertCenterCommand}" />
+                    <Button Classes="SubNavItem"
+                            Tag="FlowerAIAssistant"
+                            Content="AI助手"
+                            Command="{Binding NavigateToFlowerAIAssistantCommand}" />
+                    <Button Classes="SubNavItem"
+                            Tag="FlowerDataScreen"
+                            Content="数据大屏"
+                            Command="{Binding NavigateToFlowerDataScreenCommand}" />
+                    <Border Width="1" Height="20" Margin="8 0"
+                            Background="{DynamicResource TitleBarDividerBrush}" />
+                    <Button Classes="SubNavItem"
+                            Tag="FlowerMerchant"
+                            Content="商家"
+                            Command="{Binding NavigateToFlowerMerchantCommand}" />
+                    <Button Classes="SubNavItem"
+                            Tag="FlowerAddress"
+                            Content="收货地址"
+                            Command="{Binding NavigateToFlowerAddressCommand}" />
+                    <Button Classes="SubNavItem"
+                            Tag="FlowerProfile"
+                            Content="个人中心"
+                            Command="{Binding NavigateToFlowerProfileCommand}" />
+                </StackPanel>
+            </Border>
+
+            <!-- 主内容 -->
+            <TransitioningContentControl Grid.Row="1"
+                                          x:Name="ContentFrame"
+                                          Content="{Binding CurrentView}">
+                <TransitioningContentControl.PageTransition>
+                    <CrossFade Duration="0:0:0.18" />
+                </TransitioningContentControl.PageTransition>
+            </TransitioningContentControl>
+        </Grid>
+
+        <Panel Name="OverlayHost" Grid.Row="1" />
+
+        <views:MiniPlayerView Grid.Row="2" />
+
+        <Panel Grid.RowSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+               IsVisible="{Binding Source={x:Static vm:MusicStoryViewModel.Instance}, Path=IsOpen}">
+            <Border Background="#80000000" Tapped="StoryOverlay_Tapped" />
+            <views:MusicStoryDrawerView HorizontalAlignment="Right" VerticalAlignment="Stretch">
+                <views:MusicStoryDrawerView.Transitions>
+                    <Transitions>
+                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+                    </Transitions>
+                </views:MusicStoryDrawerView.Transitions>
+            </views:MusicStoryDrawerView>
+        </Panel>
+
+        <controls:ToastContainer Grid.RowSpan="3"
+                                  HorizontalAlignment="Stretch"
+                                  VerticalAlignment="Stretch"
+                                  IsHitTestVisible="True"
+                                  ZIndex="9999" />
+    </Grid>
+</UserControl>

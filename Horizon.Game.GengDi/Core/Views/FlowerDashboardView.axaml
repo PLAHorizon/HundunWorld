@@ -1,0 +1,175 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             x:Class="Horizon.Game.GengDi.Core.Views.FlowerDashboardView"
+             x:DataType="vm:FlowerDashboardViewModel"
+             Background="#1E1E2E"
+             Foreground="#FFFFFF">
+
+    <controls:GalleryPage Title="行情仪表盘"
+                          Subtitle="Horizon.Game.GengDi.FlowerDashboard"
+                          Description="花卉市场实时行情概览与预警监控。"
+                          IconSource="{StaticResource NotificationsIcon}">
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="20" Margin="0 0 0 24">
+
+                <Grid ColumnDefinitions="*,*,*"
+                      ColumnSpacing="16">
+                    <Border Classes="SurfaceCard" Padding="20" Background="#252536">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="今日均价" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding AvgPrice, StringFormat='¥{0:F2}'}" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Classes="SurfaceCard" Padding="20" Background="#252536">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="涨跌幅" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+                                <TextBlock Text="{Binding PriceChangeDirection}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding PriceChangePercent, StringFormat='{}{0:F2}%'}" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Classes="SurfaceCard" Padding="20" Background="#252536">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="预警数" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding AlertCount}" FontSize="24" FontWeight="SemiBold" Foreground="#FFA726" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Border Classes="SurfaceCard" Padding="16 12" Background="#252536">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="品种价格走势" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <Button Grid.Column="1"
+                                Content="刷新"
+                                Classes="QuietAction"
+                                Padding="12 6"
+                                FontSize="12"
+                                Command="{Binding RefreshCommand}" />
+                    </Grid>
+                </Border>
+
+                <Border Classes="SurfaceCard" Padding="20" Background="#252536">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                            <TextBlock Text="品种" FontSize="12" Foreground="#888888" FontWeight="SemiBold" />
+                            <TextBlock Grid.Column="1" Text="价格" FontSize="12" Foreground="#888888" FontWeight="SemiBold" MinWidth="80" TextAlignment="Right" />
+                            <TextBlock Grid.Column="2" Text="涨跌幅" FontSize="12" Foreground="#888888" FontWeight="SemiBold" MinWidth="80" TextAlignment="Right" />
+                            <TextBlock Grid.Column="3" Text="趋势" FontSize="12" Foreground="#888888" FontWeight="SemiBold" MinWidth="40" TextAlignment="Center" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding TopSpecies}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Padding="0 8" BorderBrush="#20FFFFFF" BorderThickness="0 0 0 1">
+                                        <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding SpeciesIcon}" FontSize="16" VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding SpeciesName}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                                <Border Background="#1A26A69A"
+                                                        CornerRadius="4"
+                                                        Padding="6 2"
+                                                        IsVisible="{Binding IsExpandSuggestion}"
+                                                        VerticalAlignment="Center">
+                                                    <TextBlock Text="建议扩种" FontSize="10" Foreground="#26A69A" FontWeight="SemiBold" />
+                                                </Border>
+                                                <Border Background="#1AEF5350"
+                                                        CornerRadius="4"
+                                                        Padding="6 2"
+                                                        IsVisible="{Binding IsEarlyHarvestSuggestion}"
+                                                        VerticalAlignment="Center">
+                                                    <TextBlock Text="建议提前采收" FontSize="10" Foreground="#EF5350" FontWeight="SemiBold" />
+                                                </Border>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding Price, StringFormat='¥{0:F2}'}"
+                                                       FontSize="14"
+                                                       FontWeight="SemiBold"
+                                                       MinWidth="80"
+                                                       TextAlignment="Right"
+                                                       VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="2"
+                                                       Text="{Binding ChangePercent, StringFormat='{}{0:F2}%'}"
+                                                       FontSize="14"
+                                                       FontWeight="SemiBold"
+                                                       MinWidth="80"
+                                                       TextAlignment="Right"
+                                                       VerticalAlignment="Center">
+                                                <TextBlock.Foreground>
+                                                    <MultiBinding StringFormat="{}">
+                                                        <Binding Path="IsPositive" />
+                                                    </MultiBinding>
+                                                </TextBlock.Foreground>
+                                            </TextBlock>
+                                            <TextBlock Grid.Column="3"
+                                                       Text="{Binding ForecastTrendDisplay}"
+                                                       FontSize="12"
+                                                       MinWidth="40"
+                                                       TextAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="#888888" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="SurfaceCard" Padding="20" Background="#252536">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="最新预警" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding AlertCount, StringFormat='共 {0} 条'}"
+                                       FontSize="12"
+                                       Foreground="#888888"
+                                       VerticalAlignment="Center" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding RecentAlerts}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Padding="12 8" Margin="0 0 0 8" Background="#1E1E2E" CornerRadius="8">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                            <TextBlock Text="{Binding LevelIcon}" FontSize="18" VerticalAlignment="Center" />
+                                            <StackPanel Grid.Column="1" Spacing="4">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <TextBlock Text="{Binding AlertTypeDisplay}" FontSize="12" FontWeight="SemiBold" Foreground="#FFA726" />
+                                                    <TextBlock Text="{Binding SpeciesName}" FontSize="11" Foreground="#888888" />
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding Message}" TextWrapping="Wrap" FontSize="13" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2"
+                                                       Text="{Binding TriggeredValue, StringFormat='¥{0:F2}'}"
+                                                       FontSize="14"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="#FF6B6B"
+                                                       VerticalAlignment="Center" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="SurfaceCard"
+                        Padding="40"
+                        Background="#252536"
+                        IsVisible="{Binding IsLoading}">
+                    <StackPanel HorizontalAlignment="Center" Spacing="12">
+                        <ProgressBar IsIndeterminate="True" Height="4" />
+                        <TextBlock Text="加载行情数据中..."
+                                   FontSize="13"
+                                   Foreground="#888888"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </controls:GalleryPage>
+</UserControl>

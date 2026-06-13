@@ -44,12 +44,10 @@
     <PackageReference Include="Microsoft.DependencyValidation.Analyzers" Version="0.11.0" />
     <PackageReference Include="Microsoft.Orleans.Client" Version="10.0.1" />
     <PackageReference Include="Microsoft.Orleans.Clustering.AdoNet" Version="10.0.1" />
-    <PackageReference Include="Microsoft.Orleans.CodeGenerator" Version="10.0.1">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="Microsoft.Orleans.CodeGenerator" Version="10.0.1" />
     <PackageReference Include="Microsoft.Orleans.Core" Version="10.0.1" />
     <PackageReference Include="Microsoft.Orleans.Sdk" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Orleans.Serialization" Version="10.0.1" />
     <PackageReference Include="Microsoft.Orleans.Serialization.Abstractions" Version="10.0.1" />
     <PackageReference Include="Microsoft.Orleans.Serialization.NewtonsoftJson" Version="10.0.1" />
     <PackageReference Include="NetCoreServer" Version="8.0.7" />
@@ -63,11 +61,14 @@
   <ItemGroup>
     <ProjectReference Include="..\Horizon.Core.Abstract\Horizon.Core.Abstract.csproj" />
     <ProjectReference Include="..\Horizon.Core\Horizon.Core.csproj" />
+    <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
+    <ProjectReference Include="..\Horizon.IM.Message\Horizon.IM.Message.csproj" />
     <ProjectReference Include="..\Horizon.Model\Horizon.Model.csproj" />
     <ProjectReference Include="..\Horizon.Orleans.Grains\Horizon.Orleans.Grains.csproj" />
     <ProjectReference Include="..\Horizon.Orleans.Interface\Horizon.Orleans.Interface.csproj" />
     <ProjectReference Include="..\Horizon.Share\Horizon.Share.csproj" />
     <ProjectReference Include="..\Horizon.Strategy.Storage.Redis\Horizon.Strategy.Storage.Redis.csproj" />
+    <ProjectReference Include="..\Horizon.IoT.MQTT\Horizon.IoT.MQTT.csproj" />
   </ItemGroup>
 
   <ItemGroup>

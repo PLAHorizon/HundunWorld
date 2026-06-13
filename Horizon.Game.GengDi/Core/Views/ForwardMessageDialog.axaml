@@ -1,0 +1,60 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:views="using:Horizon.Game.GengDi.Core.Views"
+        x:Class="Horizon.Game.GengDi.Core.Views.ForwardMessageDialog"
+        Title="选择转发对象"
+        Width="420" Height="520"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+    <Grid RowDefinitions="Auto,*,Auto" Margin="16">
+        <TextBox Grid.Row="0"
+                 x:Name="SearchBox"
+                 Watermark="搜索好友或群组..."
+                 Margin="0 0 0 12" />
+
+        <ListBox Grid.Row="1"
+                 x:Name="ContactList"
+                 SelectionMode="Single">
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="views:ForwardTarget">
+                    <StackPanel Orientation="Horizontal" Spacing="10" Margin="4 4 4 4">
+                        <Border Width="36" Height="36"
+                                CornerRadius="18"
+                                Background="#1E3A5F">
+                            <TextBlock HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Foreground="White"
+                                       FontSize="14"
+                                       Text="{Binding Initial}" />
+                        </Border>
+                        <StackPanel Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Name}"
+                                       FontWeight="SemiBold"
+                                       FontSize="13" />
+                            <TextBlock Text="{Binding SubTitle}"
+                                       FontSize="11"
+                                       Opacity="0.65" />
+                        </StackPanel>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Grid Grid.Row="2"
+              ColumnDefinitions="*,8,Auto"
+              Margin="0 12 0 0">
+            <Button Grid.Column="0"
+                    Content="取消"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Click="CancelButton_Click" />
+            <Button Grid.Column="2"
+                    x:Name="ForwardConfirmButton"
+                    Content="转发"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    IsEnabled="{Binding #ContactList.SelectedItem, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    Click="ForwardConfirmButton_Click" />
+        </Grid>
+    </Grid>
+</Window>

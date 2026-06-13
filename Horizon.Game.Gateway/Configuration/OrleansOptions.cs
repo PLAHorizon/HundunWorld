@@ -33,8 +33,8 @@ namespace Horizon.Game.Gateway.Configuration
         /// <summary>
         /// 连接重试次数
         /// </summary>
-        [Range(1, 100)]
-        public int RetryCount { get; set; } = 5;
+        [Range(0, 100000)]
+        public int RetryCount { get; set; } = 0;
 
         /// <summary>
         /// 连接重试间隔（毫秒）

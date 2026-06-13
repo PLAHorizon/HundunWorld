@@ -31,7 +31,7 @@ namespace Horizon.Orleans.Grains
                 queue = new Queue<DateTime>();
                 _playerMessageTimes[playerId] = queue;
             }
-            queue.Enqueue(DateTime.UtcNow);
+            queue.Enqueue(DateTime.Now);
         }
 
         public int GetRemainingMessages(long playerId)
@@ -56,7 +56,7 @@ namespace Horizon.Orleans.Grains
         {
             if (!_playerMessageTimes.TryGetValue(playerId, out var queue))
                 return;
-            var cutoff = DateTime.UtcNow - _windowDuration;
+            var cutoff = DateTime.Now - _windowDuration;
             while (queue.Count > 0 && queue.Peek() < cutoff)
                 queue.Dequeue();
         }

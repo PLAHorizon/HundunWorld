@@ -134,7 +134,7 @@ namespace Horizon.Orleans.Grains
                 if (achievement.CurrentProgress >= achievement.TargetProgress)
                 {
                     achievement.IsUnlocked = true;
-                    achievement.UnlockTime = DateTime.UtcNow;
+                    achievement.UnlockTime = DateTime.Now;
 
                     state.UnlockedCount++;
                     state.TotalPoints += achievement.Points;

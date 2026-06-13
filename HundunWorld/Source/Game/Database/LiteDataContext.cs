@@ -9,7 +9,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Reflection;
 
-namespace Horizon.Game.Core.Database
+namespace Game.Database
 {
 
     public enum LiteDatabaseKind
@@ -420,7 +420,7 @@ namespace Horizon.Game.Core.Database
         /// <returns>如果查询结果为空则返回 null</returns>
         public static T FirstOrDefault<T>(LiteDatabaseKind liteDatabaseKind, Expression<Func<T, bool>> predicate)
         {
-            return _databaseKind[liteDatabaseKind].GetCollection<T>().FindOne(predicate);
+            return _databaseKind[liteDatabaseKind].GetCollection<T>().Find(predicate).FirstOrDefault();
         }
         #endregion
         /// <summary>
@@ -509,7 +509,7 @@ namespace Horizon.Game.Core.Database
             try
             {
                 var collection = _configDatabase.GetCollection<GameConfig>();
-                var existing = collection.FindOne(x => x.Key == key && x.Category == category);
+                var existing = collection.Find(x => x.Key == key && x.Category == category).FirstOrDefault();
 
                 if (existing != null)
                 {
@@ -547,7 +547,7 @@ namespace Horizon.Game.Core.Database
             try
             {
                 var collection = _configDatabase.GetCollection<GameConfig>();
-                var config = collection.FindOne(x => x.Key == key && x.Category == category);
+                var config = collection.Find(x => x.Key == key && x.Category == category).FirstOrDefault();
                 return config?.Value ?? defaultValue;
             }
             catch (Exception ex)
@@ -589,7 +589,7 @@ namespace Horizon.Game.Core.Database
             try
             {
                 var collection = _gameDatabase.GetCollection<CharacterLocalData>();
-                var existing = collection.FindOne(x => x.CharacterId == characterData.CharacterId);
+                var existing = collection.Find(x => x.CharacterId == characterData.CharacterId).FirstOrDefault();
 
                 if (existing != null)
                 {
@@ -621,7 +621,7 @@ namespace Horizon.Game.Core.Database
             try
             {
                 var collection = _gameDatabase.GetCollection<CharacterLocalData>();
-                return collection.FindOne(x => x.CharacterId == characterId);
+                return collection.Find(x => x.CharacterId == characterId).FirstOrDefault();
             }
             catch (Exception ex)
             {
@@ -680,7 +680,7 @@ namespace Horizon.Game.Core.Database
             try
             {
                 var collection = _configDatabase.GetCollection<UserPreferences>();
-                var existing = collection.FindOne(x => x.UserId == preferences.UserId);
+                var existing = collection.Find(x => x.UserId == preferences.UserId).FirstOrDefault();
 
                 if (existing != null)
                 {
@@ -713,7 +713,7 @@ namespace Horizon.Game.Core.Database
             try
             {
                 var collection = _configDatabase.GetCollection<UserPreferences>();
-                return collection.FindOne(x => x.UserId == userId);
+                return collection.Find(x => x.UserId == userId).FirstOrDefault();
             }
             catch (Exception ex)
             {
@@ -734,7 +734,7 @@ namespace Horizon.Game.Core.Database
             try
             {
                 var collection = _cacheDatabase.GetCollection<CacheData>();
-                var existing = collection.FindOne(x => x.Key == key);
+                var existing = collection.Find(x => x.Key == key).FirstOrDefault();
                 var expiresAt = expiration.HasValue ? DateTime.Now.Add(expiration.Value) : DateTime.Now.AddDays(30);
 
                 if (existing != null)
@@ -773,7 +773,7 @@ namespace Horizon.Game.Core.Database
             try
             {
                 var collection = _cacheDatabase.GetCollection<CacheData>();
-                var cache = collection.FindOne(x => x.Key == key);
+                var cache = collection.Find(x => x.Key == key).FirstOrDefault();
 
                 if (cache == null || cache.ExpiresAt < DateTime.Now)
                 {

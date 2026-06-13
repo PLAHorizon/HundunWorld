@@ -1,0 +1,5 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Horizon.Game.GengDi.Core.Controls.LogisticsMapView">
+    <ContentControl x:Name="MapHost" />
+</UserControl>

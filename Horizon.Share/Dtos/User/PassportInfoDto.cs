@@ -63,6 +63,8 @@ namespace Horizon.Share.Dtos.User
         [Id(10)] public string SessionToken { get; set; }
         [Id(11)]
         public string UserName { get; set; }
+        [Id(12)]
+        public Guid PUId { get; set; }
     }
 
     [Serializable]

@@ -1,0 +1,165 @@
+﻿@page "/flower/reconciliation"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using Horizon.Share.VMs
+@using System.Text.Json
+@using Horizon.WebAdmin.Modules.Flower.Services
+@inject FlowerReconciliationService ReconciliationService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">🔍 对账管理</TypographyTitle>
+        <Space>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="RunReconciliation" Loading="@RunningRecon">▶ 执行对账</Button>
+            <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="LoadSummary">🔄 刷新</Button>
+        </Space>
+    </div>
+
+    <AntDesign.Row Gutter="16" Style="margin-bottom:16px;">
+        <AntDesign.Col Span="8">
+            <Card Size="@CardSize.Small">
+                <Statistic Title="@("上次对账时间")" Value="@(LastRunTime.HasValue ? LastRunTime.Value.ToString("yyyy-MM-dd HH:mm") : "--")" />
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Span="8">
+            <Card Size="@CardSize.Small">
+                <Statistic Title="@("不一致记录数")" Value="@InconsistencyCount"
+                           ValueStyle="@(InconsistencyCount > 0 ? "color:#cf1322" : "color:#3f8600")" />
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Span="8">
+            <Card Size="@CardSize.Small">
+                <Statistic Title="@("对账状态")" Value="@(RunningRecon ? "执行中" : "空闲")"
+                           ValueStyle="@(RunningRecon ? "color:#1890ff" : "color:#3f8600")" />
+            </Card>
+        </AntDesign.Col>
+    </AntDesign.Row>
+
+    @if (ReconResult != null)
+    {
+        <Alert Type="@AlertType.Success" Message="@("对账执行完成")" Description="@($"执行时间: {ReconResult.RunTime:yyyy-MM-dd HH:mm:ss}")" ShowIcon="true" Style="margin-bottom:16px;" />
+    }
+
+    <Card Title="@("差异报告")" Size="@CardSize.Small">
+        @if (DiffRecords.Any())
+        {
+            <Table TItem="DiffRecordItem" DataSource="@DiffRecords" Size="@TableSize.Small" RowKey="x => x.Id">
+                <PropertyColumn Property="d => d.Id" Title="记录ID" />
+                <PropertyColumn Property="d => d.OrderId" Title="订单ID" />
+                <Column TData="string" Title="系统金额">¥@context.SystemAmount.ToString("N2")</Column>
+                <Column TData="string" Title="渠道金额">¥@context.ChannelAmount.ToString("N2")</Column>
+                <Column TData="string" Title="差异金额">
+                    <AntDesign.Text Type="@TextElementType.Danger">¥@context.DiffAmount.ToString("N2")</AntDesign.Text>
+                </Column>
+                <Column TData="string" Title="差异类型">
+                    <Tag Color="@GetDiffTypeColor(context.DiffType)">@context.DiffType</Tag>
+                </Column>
+                <Column TData="string" Title="发现时间">@context.FoundAt.ToString("yyyy-MM-dd HH:mm")</Column>
+            </Table>
+        }
+        else
+        {
+            <Empty Description="@("暂无差异记录")" />
+        }
+    </Card>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <Alert Type="@AlertType.Success" Message="@SuccessMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<DiffRecordItem> DiffRecords { get; set; } = new();
+    private bool RunningRecon { get; set; }
+    private DateTime? LastRunTime { get; set; }
+    private int InconsistencyCount { get; set; }
+    private ReconResultItem? ReconResult { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string SuccessMessage { get; set; } = "";
+
+    private readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSummary();
+    }
+
+    private async Task LoadSummary()
+    {
+        ErrorMessage = "";
+        try
+        {
+            var timeResult = await ReconciliationService.GetLastRunTimeAsync();
+            if (timeResult?.IsSuccess == true && timeResult.Data != null)
+            {
+                LastRunTime = timeResult.Data.Value.TryGetProperty("lastRunTime", out var val)
+                    ? val.GetDateTime()
+                    : null;
+            }
+
+            var countResult = await ReconciliationService.GetLastInconsistencyCountAsync();
+            if (countResult?.IsSuccess == true && countResult.Data != null)
+            {
+                InconsistencyCount = countResult.Data.Value.TryGetProperty("count", out var val2)
+                    ? val2.GetInt32()
+                    : 0;
+            }
+        }
+        catch { }
+    }
+
+    private async Task RunReconciliation()
+    {
+        RunningRecon = true;
+        ErrorMessage = "";
+        SuccessMessage = "";
+        ReconResult = null;
+        try
+        {
+            var result = await ReconciliationService.RunReconciliationAsync();
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                ReconResult = JsonSerializer.Deserialize<ReconResultItem>(result.Data.Value.GetRawText(), _jsonOpts);
+                SuccessMessage = "对账执行成功";
+                await LoadSummary();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "对账执行失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"对账执行失败: {ex.Message}";
+        }
+        RunningRecon = false;
+    }
+
+    private string GetDiffTypeColor(string diffType) => diffType switch
+    {
+        "金额不一致" => "red", "缺失记录" => "orange", "多余记录" => "cyan", _ => "default"
+    };
+
+    public class DiffRecordItem
+    {
+        public long Id { get; set; }
+        public long OrderId { get; set; }
+        public decimal SystemAmount { get; set; }
+        public decimal ChannelAmount { get; set; }
+        public decimal DiffAmount { get; set; }
+        public string DiffType { get; set; } = "";
+        public DateTime FoundAt { get; set; }
+    }
+
+    public class ReconResultItem
+    {
+        public DateTime RunTime { get; set; }
+        public bool IsSuccess { get; set; }
+        public string ErrorMessage { get; set; } = "";
+    }
+}

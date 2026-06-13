@@ -84,7 +84,7 @@ namespace Horizon.Orleans.Grains
                     Level = level,
                     Status = (int)QuestProgressStatus.InProgress,
                     Rewards = rewards ?? new Dictionary<string, int>(),
-                    AcceptTime = DateTime.UtcNow,
+                    AcceptTime = DateTime.Now,
                     Objectives = new List<QuestObjectiveData>()
                 };
 
@@ -248,7 +248,7 @@ namespace Horizon.Orleans.Grains
                 }
 
                 quest.Status = (int)QuestProgressStatus.Completed;
-                quest.CompleteTime = DateTime.UtcNow;
+                quest.CompleteTime = DateTime.Now;
 
                 // Move from active to completed
                 state.ActiveQuests.Remove(questId);

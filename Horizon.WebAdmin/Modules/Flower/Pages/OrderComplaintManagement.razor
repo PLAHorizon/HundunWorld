@@ -1,0 +1,197 @@
+﻿@page "/flower/complaints"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using Horizon.Share.VMs
+@using System.Text.Json
+@using Horizon.WebAdmin.Modules.Flower.Services
+@inject FlowerComplaintService ComplaintService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">📢 订单投诉管理</TypographyTitle>
+        <Space>
+            <InputNumber TValue="long" @bind-Value="@FilterShopId" Placeholder="@("店铺ID")" Style="width:140px" Size="@InputSize.Small" />
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadComplaints">🔍 查询</Button>
+            <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="LoadComplaints">🔄 刷新</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="ComplaintItem" DataSource="@Complaints" Size="@TableSize.Small" RowKey="x => x.ComplaintId">
+            <PropertyColumn Property="c => c.ComplaintId" Title="投诉ID" />
+            <PropertyColumn Property="c => c.OrderId" Title="订单ID" />
+            <PropertyColumn Property="c => c.UserId" Title="用户ID" />
+            <Column TData="string" Title="投诉类型">
+                <Tag>@context.Type</Tag>
+            </Column>
+            <PropertyColumn Property="c => c.Description" Title="投诉描述" />
+            <Column TData="string" Title="状态">
+                <Tag Color="@GetComplaintStatusColor(context.Status)">@GetComplaintStatusText(context.Status)</Tag>
+            </Column>
+            <Column TData="string" Title="创建时间">@context.CreatedAt.ToString("yyyy-MM-dd HH:mm")</Column>
+            <Column TData="string" Title="操作">
+                @if (context.Status == 0)
+                {
+                    <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => OpenHandleModal(context)">处理</Button>
+                }
+                else
+                {
+                    <span style="color:rgba(0,0,0,0.45);">已处理</span>
+                }
+            </Column>
+        </Table>
+    }
+
+    <Modal Title="@("平台处理投诉")" Visible="@ShowHandleModal" OnCancel="CloseHandleModal"
+           OnOk="SubmitHandle" OkText="@("提交")" CancelText="@("取消")">
+        @if (SelectedComplaint != null)
+        {
+            <Descriptions Column="2" Size="@DescriptionsSize.Small" Style="margin-bottom:16px;">
+                <DescriptionsItem Title="投诉ID">@SelectedComplaint.ComplaintId</DescriptionsItem>
+                <DescriptionsItem Title="订单ID">@SelectedComplaint.OrderId</DescriptionsItem>
+                <DescriptionsItem Title="投诉类型">@SelectedComplaint.Type</DescriptionsItem>
+                <DescriptionsItem Title="用户ID">@SelectedComplaint.UserId</DescriptionsItem>
+                <DescriptionsItem Title="投诉描述" Span="2">@SelectedComplaint.Description</DescriptionsItem>
+            </Descriptions>
+        }
+        <Form Model="@HandleModel" Layout="@FormLayout.Vertical">
+            <FormItem Label="@("处理结果")">
+                <RadioGroup @bind-Value="@HandleModel.Result">
+                    <Radio Value="@("已解决")">已解决</Radio>
+                    <Radio Value="@("已驳回")">已驳回</Radio>
+                </RadioGroup>
+            </FormItem>
+            <FormItem Label="@("处理说明")">
+                <TextArea @bind-Value="@HandleModel.Remark" Rows="3" Placeholder="@("请输入处理说明")" />
+            </FormItem>
+        </Form>
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <Alert Type="@AlertType.Success" Message="@SuccessMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<ComplaintItem> Complaints { get; set; } = new();
+    private bool Loading { get; set; }
+    private long FilterShopId { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string SuccessMessage { get; set; } = "";
+    private bool ShowHandleModal { get; set; }
+    private ComplaintItem? SelectedComplaint { get; set; }
+    private HandleFormModel HandleModel { get; set; } = new();
+
+    private readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadComplaints();
+    }
+
+    private async Task LoadComplaints()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await ComplaintService.GetShopComplaintsAsync(FilterShopId > 0 ? FilterShopId : 0);
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                Complaints = JsonSerializer.Deserialize<List<ComplaintItem>>(result.Data.Value.GetRawText(), _jsonOpts) ?? new();
+            }
+            else
+            {
+                Complaints = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载投诉列表失败: {ex.Message}";
+            Complaints = new();
+        }
+        Loading = false;
+    }
+
+    private void OpenHandleModal(ComplaintItem complaint)
+    {
+        SelectedComplaint = complaint;
+        HandleModel = new HandleFormModel();
+        ShowHandleModal = true;
+    }
+
+    private void CloseHandleModal()
+    {
+        ShowHandleModal = false;
+        SelectedComplaint = null;
+    }
+
+    private async Task SubmitHandle()
+    {
+        if (SelectedComplaint == null) return;
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var result = await ComplaintService.HandleComplaintAsync(SelectedComplaint.ComplaintId, new
+            {
+                Result = HandleModel.Result,
+                Remark = HandleModel.Remark
+            });
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = "投诉处理成功";
+                ShowHandleModal = false;
+                await LoadComplaints();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "处理失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"处理失败: {ex.Message}";
+        }
+    }
+
+    private string GetComplaintStatusColor(int status) => status switch
+    {
+        0 => "orange", 1 => "green", 2 => "red", _ => "default"
+    };
+
+    private string GetComplaintStatusText(int status) => status switch
+    {
+        0 => "待处理", 1 => "已解决", 2 => "已驳回", _ => "未知"
+    };
+
+    public class ComplaintItem
+    {
+        public long ComplaintId { get; set; }
+        public long OrderId { get; set; }
+        public long UserId { get; set; }
+        public string Type { get; set; } = "";
+        public string Description { get; set; } = "";
+        public int Status { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class HandleFormModel
+    {
+        public string Result { get; set; } = "已解决";
+        public string Remark { get; set; } = "";
+    }
+}

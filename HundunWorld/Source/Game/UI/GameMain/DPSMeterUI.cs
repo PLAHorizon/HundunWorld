@@ -23,13 +23,13 @@ namespace HundunWorld.Game.UI.GameMain
 
         [Header("UI设置")]
         [Tooltip("背景颜色")]
-        public Color BackgroundColor = new Color(0, 0, 0, 0.5f);
+        public new Color BackgroundColor = new Color(0, 0, 0, 0.5f);
 
         [Tooltip("UI锚点")]
         public AnchorPresets Anchor = AnchorPresets.TopLeft;
 
         [Tooltip("偏移量")]
-        public Margin Offsets = new Margin(10, 60, 250, 200);
+        public new Margin Offsets = new Margin(10, 60, 250, 200);
 
         // UI组件
         private Panel _containerPanel;

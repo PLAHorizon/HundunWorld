@@ -3,9 +3,9 @@ using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
-using static Horizon.Game.Core.Database.LiteDataContext;
+using static Game.Database.LiteDataContext;
 
-namespace Horizon.Game.Core.Database
+namespace Game.Database
 {
     /// <summary>
     /// 数据库管理器 - 统一管理游戏本地数据存储

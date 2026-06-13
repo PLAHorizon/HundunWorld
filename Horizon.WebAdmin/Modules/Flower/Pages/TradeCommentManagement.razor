@@ -1,0 +1,155 @@
+﻿@page "/flower/trade-comments"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using Horizon.Share.VMs
+@using System.Text.Json
+@using Horizon.WebAdmin.Modules.Flower.Services
+@inject FlowerTradeCommentService TradeCommentService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">💬 交易评价管理</TypographyTitle>
+        <Space>
+            <InputNumber TValue="long" @bind-Value="@FilterShopId" Placeholder="@("店铺ID")" Style="width:140px" Size="@InputSize.Small" />
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadComments">🔍 查询</Button>
+            <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="LoadComments">🔄 刷新</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="TradeCommentItem" DataSource="@Comments" Size="@TableSize.Small" RowKey="x => x.Id">
+            <PropertyColumn Property="c => c.Id" Title="评价ID" />
+            <PropertyColumn Property="c => c.OrderId" Title="订单ID" />
+            <PropertyColumn Property="c => c.UserId" Title="用户ID" />
+            <Column TData="string" Title="评分">
+                <Rate Value="@context.Score" Disabled AllowHalf />
+            </Column>
+            <PropertyColumn Property="c => c.Content" Title="评价内容" />
+            <Column TData="string" Title="审核状态">
+                <Tag Color="@GetAuditStatusColor(context.AuditStatus)">@GetAuditStatusText(context.AuditStatus)</Tag>
+            </Column>
+            <Column TData="string" Title="评价时间">@context.CreatedAt.ToString("yyyy-MM-dd HH:mm")</Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    @if (context.AuditStatus == 0)
+                    {
+                        <SpaceItem>
+                            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="() => AuditComment(context.Id, true)">通过</Button>
+                        </SpaceItem>
+                        <SpaceItem>
+                            <Button Danger Size="@ButtonSize.Small" OnClick="() => AuditComment(context.Id, false)">拒绝</Button>
+                        </SpaceItem>
+                    }
+                    else
+                    {
+                        <span style="color:rgba(0,0,0,0.45);">已审核</span>
+                    }
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <Alert Type="@AlertType.Success" Message="@SuccessMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<TradeCommentItem> Comments { get; set; } = new();
+    private bool Loading { get; set; }
+    private long FilterShopId { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string SuccessMessage { get; set; } = "";
+
+    private readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadComments();
+    }
+
+    private async Task LoadComments()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await TradeCommentService.GetShopTradeCommentsAsync(FilterShopId > 0 ? FilterShopId : 0);
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                Comments = JsonSerializer.Deserialize<List<TradeCommentItem>>(result.Data.Value.GetRawText(), _jsonOpts) ?? new();
+            }
+            else
+            {
+                Comments = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载评价列表失败: {ex.Message}";
+            Comments = new();
+        }
+        Loading = false;
+    }
+
+    private async Task AuditComment(long commentId, bool approved)
+    {
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var result = await TradeCommentService.SubmitTradeCommentAsync(new
+            {
+                CommentId = commentId,
+                AuditStatus = approved ? 1 : 2
+            });
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = approved ? "评价审核已通过" : "评价审核已拒绝";
+                await LoadComments();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "审核操作失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"审核操作失败: {ex.Message}";
+        }
+    }
+
+    private string GetAuditStatusColor(int status) => status switch
+    {
+        0 => "orange", 1 => "green", 2 => "red", _ => "default"
+    };
+
+    private string GetAuditStatusText(int status) => status switch
+    {
+        0 => "待审核", 1 => "已通过", 2 => "已拒绝", _ => "未知"
+    };
+
+    public class TradeCommentItem
+    {
+        public long Id { get; set; }
+        public long OrderId { get; set; }
+        public long UserId { get; set; }
+        public decimal Score { get; set; }
+        public string Content { get; set; } = "";
+        public int AuditStatus { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+}

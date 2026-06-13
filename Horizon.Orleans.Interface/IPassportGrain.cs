@@ -82,5 +82,36 @@ namespace Horizon.Orleans.Interface
         /// <param name="gameQueryDto">游戏查询数据传输对象</param>
         /// <returns>角色信息列表</returns>
         Task<List<CharacterInfo>> GetAllCharactersAsync(Share.Dtos.Games.GameQueryDto gameQueryDto);
+
+        /// <summary>
+        /// 验证用户鉴权令牌的合法性
+        /// 在Grain层进行二次验证，检查令牌中的PassportId和登录时间是否与会话记录一致
+        /// </summary>
+        /// <param name="passportId">通行证ID</param>
+        /// <param name="loginTime">令牌中的登录时间（UTC Unix毫秒）</param>
+        /// <param name="clientIP">令牌中的客户端IP</param>
+        /// <returns>验证通过返回 true，失败返回 false</returns>
+        Task<bool> ValidateUserAuthTokenAsync(string passportId, long loginTime, string clientIP);
+
+        /// <summary>
+        /// 确保用户有活跃会话。若会话已过期或不存在则创建新会话（自愈机制），
+        /// 若会话仍有效则刷新其TTL。
+        /// 用于Token登录路径中Grain层二次验证失败时的会话恢复。
+        /// </summary>
+        /// <param name="passportId">通行证ID</param>
+        /// <param name="machineId">客户端机器唯一标识符</param>
+        /// <returns>操作成功返回 true，失败返回 false</returns>
+        Task<bool> EnsureUserSessionAsync(string passportId, string machineId);
+
+        /// <summary>
+        /// 为指定通行证用户构建游戏内用户记录。
+        /// 若记录已存在则直接返回其ID；不存在则创建并返回新分配的游戏用户ID。
+        /// </summary>
+        /// <param name="passportId">通行证ID</param>
+        /// <param name="gameId">游戏ID</param>
+        /// <param name="areaId">区域ID</param>
+        /// <param name="serverId">服务器ID</param>
+        /// <returns>游戏用户ID，失败时返回 0</returns>
+        Task<long> BuildGameUserAsync(string passportId, int gameId, int areaId, int serverId);
     }
 }

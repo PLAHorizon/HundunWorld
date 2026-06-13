@@ -1,0 +1,120 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             x:Class="Horizon.Game.GengDi.Core.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+    <UserControl.DataContext>
+        <vm:SettingsViewModel />
+    </UserControl.DataContext>
+
+    <Grid ColumnDefinitions="*,*" ColumnSpacing="20">
+        <Border Classes="SurfaceCard">
+            <StackPanel Spacing="16">
+                <TextBlock Text="通用设置" Classes="SectionTitle" />
+                <TransitioningContentControl Name="InstallPathPreviewHost" Content="{Binding InstallPathPreview}">
+                    <TransitioningContentControl.PageTransition>
+                        <CrossFade Duration="0:0:0.25" />
+                    </TransitioningContentControl.PageTransition>
+                    <TransitioningContentControl.ContentTemplate>
+                        <DataTemplate x:DataType="vm:SettingsPreviewState">
+                            <Border Classes="ListItemCard" Margin="0 0 0 4">
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                                    <Border Width="56" Height="56" CornerRadius="16" Background="{DynamicResource BattleNetSurfaceTintBrush}">
+                                        <Viewbox Margin="12">
+                                            <ui:IconSourceElement IconSource="{Binding Icon}" />
+                                        </Viewbox>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Spacing="4">
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Description}" Classes="SupportingText" />
+                                        <TextBlock Text="{Binding Detail}" Classes="PageEyebrow" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </TransitioningContentControl.ContentTemplate>
+                </TransitioningContentControl>
+
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <Button Content="使用默认路径" Classes="QuietAction" Command="{Binding UseDefaultInstallPathCommand}" />
+                    <Button Content="使用自定义路径" Classes="QuietAction" Command="{Binding UseCustomInstallPathCommand}" />
+                </StackPanel>
+
+                <StackPanel Spacing="6">
+                    <TextBlock Text="游戏安装目录" Classes="PageEyebrow" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                        <TextBox Text="{Binding CustomInstallPath}" IsEnabled="{Binding IsCustomInstallPathMode}" Watermark="选择自定义安装目录" />
+                        <Button Grid.Column="1" Content="浏览并保存" Classes="QuietAction" IsEnabled="{Binding IsCustomInstallPathMode}" Click="BrowseInstallPathButton_Click" />
+                    </Grid>
+                </StackPanel>
+
+                <Border Classes="SurfaceCard subtle">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="当前生效路径" Classes="PageEyebrow" />
+                        <TextBlock Text="{Binding ResolvedInstallPath}" TextWrapping="Wrap" />
+                        <TextBlock Text="默认路径会使用文档目录下的 HorizonGames；切换到自定义模式后，保存的路径会直接作为游戏安装根目录。" Classes="SupportingText" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <StackPanel Grid.Column="1" Spacing="20">
+            <Border Classes="SurfaceCard subtle">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="主题" Classes="SectionTitle" />
+                    <TransitioningContentControl Name="ThemePreviewHost" Content="{Binding ThemePreview}">
+                        <TransitioningContentControl.PageTransition>
+                            <CrossFade Duration="0:0:0.25" />
+                        </TransitioningContentControl.PageTransition>
+                        <TransitioningContentControl.ContentTemplate>
+                            <DataTemplate x:DataType="vm:SettingsPreviewState">
+                                <Border Classes="ListItemCard" Margin="0 0 0 4">
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                                        <Border Width="56" Height="56" CornerRadius="16" Background="{DynamicResource BattleNetSurfaceTintBrush}">
+                                            <Viewbox Margin="12">
+                                                <ui:IconSourceElement IconSource="{Binding Icon}" />
+                                            </Viewbox>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Spacing="4">
+                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding Description}" Classes="SupportingText" />
+                                            <TextBlock Text="{Binding Detail}" Classes="PageEyebrow" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </TransitioningContentControl.ContentTemplate>
+                    </TransitioningContentControl>
+
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Content="跟随系统" Classes="PrimaryAction" Command="{Binding UseSystemThemeCommand}" />
+                        <Button x:Name="LightThemeButton" Content="浅色" Classes="QuietAction" Command="{Binding UseLightThemeCommand}" />
+                        <Button x:Name="DarkThemeButton" Content="深色" Classes="QuietAction" Command="{Binding UseDarkThemeCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Classes="SurfaceCard">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="状态与说明" Classes="SectionTitle" />
+                    <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" />
+                    <TextBlock Text="Horizon Game GengDi" Classes="PageEyebrow" />
+                    <TextBlock Text="{Binding CurrentVersion, StringFormat='版本 {0}'}" Classes="SupportingText" />
+                </StackPanel>
+            </Border>
+
+            <Border Classes="SurfaceCard">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="软件更新" Classes="SectionTitle" />
+                    <TextBlock Text="{Binding UpdateStatusMessage}" TextWrapping="Wrap" Classes="SupportingText" />
+                    <ProgressBar IsVisible="{Binding IsDownloadingUpdate}" Value="{Binding UpdateDownloadProgress}" Minimum="0" Maximum="100" />
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Content="检查更新" Classes="QuietAction" Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsCheckingForUpdate}" />
+                        <Button Content="下载并安装" Classes="PrimaryAction" Command="{Binding DownloadAndApplyUpdateCommand}" IsVisible="{Binding IsUpdateAvailable}" IsEnabled="{Binding !IsDownloadingUpdate}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Grid>
+</UserControl>

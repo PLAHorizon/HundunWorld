@@ -1,0 +1,256 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.app-layout {
+    min-height: 100vh;
+}
+
+/* Header */
+.app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 48px;
+    line-height: 48px;
+    background: #001529;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+
+.app-header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.app-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.app-logo-icon {
+    font-size: 24px;
+}
+
+/* Module Switcher in Header */
+.module-switcher {
+    margin-left: 16px;
+}
+
+.module-switcher .ant-select {
+    width: 120px;
+}
+
+.module-switcher .ant-select .ant-select-selector {
+    background: rgba(255,255,255,.12);
+    border-color: rgba(255,255,255,.2);
+    color: #fff;
+    border-radius: 4px;
+    height: 32px;
+}
+
+.module-switcher .ant-select .ant-select-selector:hover {
+    border-color: rgba(255,255,255,.4);
+}
+
+.module-switcher .ant-select .ant-select-arrow {
+    color: #fff;
+}
+
+.app-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+}
+
+.header-action-btn {
+    color: rgba(255,255,255,.65);
+    font-size: 18px;
+    padding: 0 8px;
+    cursor: pointer;
+    transition: color .2s;
+    height: 48px;
+    display: flex;
+    align-items: center;
+}
+
+.header-action-btn:hover {
+    color: #fff;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255,255,255,.85);
+    font-size: 14px;
+    padding: 0 12px;
+    cursor: pointer;
+}
+
+.user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #1890ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 13px;
+}
+
+/* Sider */
+.app-sider {
+    position: fixed;
+    top: 48px;
+    left: 0;
+    bottom: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: #fff;
+    border-right: 1px solid #f0f0f0;
+    z-index: 50;
+    transition: width .2s cubic-bezier(.645,.045,.355,1);
+}
+
+.app-sider-collapsed {
+    width: 80px !important;
+}
+
+.app-sider-collapsed .menu-group-name {
+    display: none;
+}
+
+.app-sider-collapsed .ant-menu-item span {
+    display: none;
+}
+
+.sider-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    color: rgba(0,0,0,.45);
+    transition: all .2s;
+}
+
+.sider-toggle:hover {
+    color: #1890ff;
+    background: #f5f5f5;
+}
+
+.sider-menu {
+    border-right: none;
+}
+
+/* Content Area */
+.app-content-layout {
+    margin-left: 240px;
+    margin-top: 48px;
+    transition: margin-left .2s cubic-bezier(.645,.045,.355,1);
+    min-height: calc(100vh - 48px);
+    background: #f0f2f5;
+}
+
+.app-content-layout-expanded {
+    margin-left: 80px;
+}
+
+.app-content {
+    padding: 24px;
+}
+
+/* Page Header (Breadcrumb + Title) */
+.page-header {
+    background: #fff;
+    padding: 16px 24px;
+    margin: -24px -24px 24px -24px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.page-breadcrumb {
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: rgba(0,0,0,.45);
+}
+
+.page-breadcrumb .ant-breadcrumb-link {
+    color: rgba(0,0,0,.45);
+}
+
+.page-breadcrumb .ant-breadcrumb-separator {
+    color: rgba(0,0,0,.25);
+}
+
+.page-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.page-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: rgba(0,0,0,.85);
+    margin: 0;
+}
+
+.page-description {
+    font-size: 13px;
+    color: rgba(0,0,0,.45);
+    margin: 4px 0 0 0;
+}
+
+.page-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Content Card */
+.content-card {
+    background: #fff;
+    border-radius: 4px;
+    padding: 24px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.06);
+}
+
+/* Menu Styles */
+.menu-group-name {
+    font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .app-sider {
+        display: none;
+    }
+
+    .app-content-layout {
+        margin-left: 0 !important;
+    }
+
+    .app-header-left {
+        gap: 8px;
+    }
+
+    .app-logo span {
+        display: none;
+    }
+}

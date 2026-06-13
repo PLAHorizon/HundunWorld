@@ -1,0 +1,524 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             xmlns:models="using:Horizon.Game.GengDi.Models"
+             xmlns:converters="using:Horizon.Game.GengDi.Core.Converters"
+             xmlns:views="using:Horizon.Game.GengDi.Core.Views"
+             x:Class="Horizon.Game.GengDi.Core.Views.HomeView"
+             x:DataType="vm:HomeViewModel">
+
+    <UserControl.Resources>
+        <converters:WeatherIconConverter x:Key="WeatherIconConverter" />
+        <converters:BoolToMaxHeightConverter x:Key="BoolToMaxHeightConverter" />
+        <converters:BoolToTextConverter x:Key="BoolToTextConverter" />
+        <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter" />
+        <converters:HexToBrushConverter x:Key="HexToBrushConverter" />
+        <converters:MapLayerToForegroundConverter x:Key="MapLayerToForegroundConverter" />
+    </UserControl.Resources>
+
+    <Grid>
+        <controls:GalleryPage Title="Horizon 游戏管理平台"
+                              Subtitle="Horizon.Game.GengDi"
+                              Description="下载、更新和启动您喜爱的游戏。"
+                              IconSource="{StaticResource HomeIcon}">
+
+        <ScrollViewer
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="20">
+
+                <!-- 天气加载中 -->
+                <Border Background="#0CFFFFFF" CornerRadius="16" Padding="24" Margin="28 0"
+                        IsVisible="{Binding IsLoadingWeather}">
+                    <StackPanel Spacing="8" HorizontalAlignment="Center">
+                        <ProgressBar IsIndeterminate="True" Height="3" Foreground="#7AA9FF" Background="#1AFFFFFF"
+                                     HorizontalAlignment="Stretch" />
+                        <TextBlock Text="正在加载天气数据..." FontSize="13" Foreground="#FFFFFF88" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 天气预报模块 -->
+                <Border Padding="0"
+                        MinHeight="520"
+                        CornerRadius="20"
+                        ClipToBounds="True"
+                        IsVisible="{Binding WeatherForecast}">
+                    <Grid>
+                        <controls:WeatherAnimationControl WeatherType="{Binding WeatherForecast.Type}"
+                                                          HorizontalAlignment="Stretch"
+                                                          VerticalAlignment="Stretch" />
+                        <Border HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                                    <GradientStop Color="#080E1A" Offset="0.0" />
+                                    <GradientStop Color="#0D1520CC" Offset="0.25" />
+                                    <GradientStop Color="#0A0F1ABB" Offset="0.65" />
+                                    <GradientStop Color="#080E1A" Offset="1.0" />
+                                </LinearGradientBrush>
+                            </Border.Background>
+                        </Border>
+
+                        <Grid Margin="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <!-- 顶部栏 -->
+                            <Grid Grid.Row="0" Margin="28 20 28 0">
+                                <StackPanel HorizontalAlignment="Left"
+                                            VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal"
+                                                Spacing="6"
+                                                VerticalAlignment="Center">
+                                        <TextBlock Text="📍" FontSize="15" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding SelectedCityName}"
+                                                   FontSize="22"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#FFFFFF"
+                                                   VerticalAlignment="Center" />
+                                        <Button Classes="QuietAction"
+                                                Padding="6 4"
+                                                Command="{Binding ToggleCityPickerCommand}"
+                                                VerticalAlignment="Center"
+                                                CornerRadius="8">
+                                            <TextBlock Text="▾" FontSize="12" Foreground="#FFFFFFBB" />
+                                        </Button>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding WeatherForecast.LastUpdateTime, StringFormat='{}更新于 {0:HH:mm}'}"
+                                               FontSize="11"
+                                               Foreground="#FFFFFF66"
+                                               Margin="0 3 0 0" />
+                                </StackPanel>
+
+                                <Popup IsOpen="{Binding IsCityPickerOpen}"
+                                       Placement="Bottom"
+                                       HorizontalOffset="-100"
+                                       VerticalOffset="8"
+                                       MinWidth="320"
+                                       MaxWidth="400">
+                                    <Popup.Child>
+                                        <Border Background="#1A1F2E"
+                                                BorderBrush="#2A3040"
+                                                BorderThickness="1"
+                                                CornerRadius="14"
+                                                Padding="16"
+                                                BoxShadow="0 12 40 0 #00000088">
+                                            <StackPanel Spacing="12" MaxHeight="400">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <TextBox Text="{Binding CitySearchText}"
+                                                             Watermark="🔍 搜索城市名称..."
+                                                             Padding="10 8"
+                                                             CornerRadius="10"
+                                                             Background="#252B3B"
+                                                             BorderBrush="#3A4050"
+                                                             BorderThickness="1"
+                                                             Foreground="#FFFFFF" />
+                                                    <Button Grid.Column="1"
+                                                            Content="✕"
+                                                            Classes="QuietAction"
+                                                            Padding="8 4"
+                                                            Margin="8 0 0 0"
+                                                            Command="{Binding CloseCityPickerCommand}"
+                                                            VerticalAlignment="Center" />
+                                                </Grid>
+                                                <ProgressBar IsIndeterminate="True"
+                                                             IsVisible="{Binding IsSearchingCities}"
+                                                             Height="2"
+                                                             Foreground="#7AA9FF"
+                                                             Background="#252B3B"
+                                                             Margin="0 0 0 4" />
+                                                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="320">
+                                                    <StackPanel Spacing="4">
+                                                        <ItemsControl ItemsSource="{Binding FilteredCities}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate x:DataType="models:CityInfo">
+                                                                    <Button Classes="QuietAction"
+                                                                            Padding="12 10"
+                                                                            HorizontalAlignment="Stretch"
+                                                                            HorizontalContentAlignment="Left"
+                                                                            CornerRadius="8"
+                                                                            Command="{Binding $parent[UserControl].DataContext.SelectCityCommand}"
+                                                                            CommandParameter="{Binding LocationId}">
+                                                                        <Button.Styles>
+                                                                            <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                                                                <Setter Property="Background" Value="#2A3040" />
+                                                                            </Style>
+                                                                        </Button.Styles>
+                                                                        <StackPanel>
+                                                                            <TextBlock Text="{Binding DisplayName}" FontSize="14" FontWeight="Medium" Foreground="#FFFFFF" />
+                                                                            <TextBlock Text="{Binding Province}" FontSize="11" Foreground="#6F7594"
+                                                                                       IsVisible="{Binding Province, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                                                        </StackPanel>
+                                                                    </Button>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                        <TextBlock Text="未找到匹配的城市，请尝试其他关键词"
+                                                                   FontSize="13" Foreground="#6F7594"
+                                                                   HorizontalAlignment="Center" Margin="0 20"
+                                                                   IsVisible="{Binding FilteredCities, Converter={x:Static ObjectConverters.IsNull}}" />
+                                                    </StackPanel>
+                                                </ScrollViewer>
+                                            </StackPanel>
+                                        </Border>
+                                    </Popup.Child>
+                                </Popup>
+                            </Grid>
+
+                            <!-- 滚动内容区 -->
+                            <ScrollViewer Grid.Row="1"
+                                          VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel Spacing="12" Margin="0 0 0 24">
+
+                                    <!-- Hero: 当前天气 -->
+                                    <Grid Margin="28 0" ColumnDefinitions="*,Auto">
+                                        <StackPanel Spacing="4" VerticalAlignment="Center">
+                                            <Border Background="#18FFFFFF" CornerRadius="8" Padding="10 4" HorizontalAlignment="Left">
+                                                <TextBlock Text="{Binding WeatherForecast.Current.ConditionText}"
+                                                           FontSize="13" Foreground="#FFFFFFDD" FontWeight="Medium" />
+                                            </Border>
+                                            <StackPanel Orientation="Horizontal" Spacing="0" VerticalAlignment="Bottom" Margin="0 4 0 0">
+                                                <TextBlock Text="{Binding WeatherForecast.Current.Temperature}"
+                                                           FontSize="80" FontWeight="Bold" Foreground="#FFFFFF"
+                                                           VerticalAlignment="Bottom" LineHeight="80" />
+                                                <TextBlock Text="°" FontSize="28" Foreground="#FFFFFF66"
+                                                           VerticalAlignment="Top" Margin="0 14 0 0" />
+                                            </StackPanel>
+                                            <StackPanel Orientation="Horizontal" Spacing="12" Margin="0 4 0 0">
+                                                <StackPanel Orientation="Horizontal" Spacing="3">
+                                                    <TextBlock Text="↑" Foreground="#F26E7D" FontSize="12" VerticalAlignment="Center" />
+                                                    <TextBlock Text="{Binding WeatherForecast.Daily[0].TemperatureMax, Mode=OneWay}" Foreground="#F26E7D" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" />
+                                                    <TextBlock Text="°" Foreground="#F26E7D" FontSize="10" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Spacing="3">
+                                                    <TextBlock Text="↓" Foreground="#7AA9FF" FontSize="12" VerticalAlignment="Center" />
+                                                    <TextBlock Text="{Binding WeatherForecast.Daily[0].TemperatureMin, Mode=OneWay}" Foreground="#7AA9FF" FontSize="13" FontWeight="Medium" VerticalAlignment="Center" />
+                                                    <TextBlock Text="°" Foreground="#7AA9FF" FontSize="10" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                                <Border Background="#12FFFFFF" CornerRadius="6" Padding="6 3">
+                                                    <TextBlock Text="{Binding WeatherForecast.Current.FeelsLike, StringFormat='{}体感 {0}'}"
+                                                               FontSize="11" Foreground="#FFFFFFAA" />
+                                                </Border>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding WeatherForecast.Current.WindDescription}"
+                                                       FontSize="11" Foreground="#FFFFFF77" Margin="0 2 0 0" />
+                                            <Grid ColumnDefinitions="*,Auto" Margin="0 8 0 0">
+                                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                    <TextBlock Text="今日:" FontSize="11" Foreground="#FFFFFFAA" VerticalAlignment="Center" />
+                                                    <TextBlock Text="{Binding WeatherForecast.Current.ConditionText}" FontSize="11" Foreground="#FFFFFFCC" VerticalAlignment="Center" />
+                                                    <TextBlock Text="·" FontSize="11" Foreground="#FFFFFF44" VerticalAlignment="Center" />
+                                                    <TextBlock Text="{Binding WeatherForecast.Daily[0].Precipitation, StringFormat='{}降水{0:F0}%'}" FontSize="11" Foreground="#7AA9FF" VerticalAlignment="Center" />
+                                                    <TextBlock Text="·" FontSize="11" Foreground="#FFFFFF44" VerticalAlignment="Center" />
+                                                    <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding WeatherForecast.Daily[0].TemperatureMin, Mode=OneWay}" FontSize="11" Foreground="#7AA9FF" VerticalAlignment="Center" />
+                                                        <TextBlock Text="/" FontSize="9" Foreground="#FFFFFF44" VerticalAlignment="Center" />
+                                                        <TextBlock Text="{Binding WeatherForecast.Daily[0].TemperatureMax, Mode=OneWay}" FontSize="11" Foreground="#F26E7D" VerticalAlignment="Center" />
+                                                        <TextBlock Text="°" FontSize="9" Foreground="#FFFFFF44" VerticalAlignment="Center" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                                <Button Grid.Column="1" Content="详情 ▸" Classes="QuietAction"
+                                                        Padding="6 3" FontSize="10" Foreground="#7AA9FF"
+                                                        Command="{Binding ToggleWeatherDetailCommand}" />
+                                            </Grid>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="0"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <controls:WeatherIconControl WmoCode="{Binding WeatherForecast.Current.WmoCode}"
+                                                                         Width="110" Height="110" />
+                                        </StackPanel>
+                                    </Grid>
+
+                                    <!-- 天气地图卡片 -->
+                                   <!-- <Border Background="#0CFFFFFF" CornerRadius="16" Padding="16" Margin="28 0"
+                                            BoxShadow="0 2 12 0 #00000022">
+                                        <StackPanel Spacing="10">
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <TextBlock Text="🗺️" FontSize="12" VerticalAlignment="Center" />
+                                                    <TextBlock Text="天气地图" FontSize="12" FontWeight="SemiBold" Foreground="#FFFFFFBB" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Spacing="4" Grid.Column="1">
+                                                    <Button Classes="QuietAction" Padding="8 4" CornerRadius="8" FontSize="10"
+                                                            Foreground="{Binding SelectedMapLayer, Converter={StaticResource MapLayerToForegroundConverter}, ConverterParameter=temperature}"
+                                                            Command="{Binding SelectMapLayerCommand}" CommandParameter="temperature">
+                                                        <TextBlock Text="温度" />
+                                                    </Button>
+                                                    <Button Classes="QuietAction" Padding="8 4" CornerRadius="8" FontSize="10"
+                                                            Foreground="{Binding SelectedMapLayer, Converter={StaticResource MapLayerToForegroundConverter}, ConverterParameter=precipitation}"
+                                                            Command="{Binding SelectMapLayerCommand}" CommandParameter="precipitation">
+                                                        <TextBlock Text="降水" />
+                                                    </Button>
+                                                    <Button Classes="QuietAction" Padding="8 4" CornerRadius="8" FontSize="10"
+                                                            Foreground="{Binding SelectedMapLayer, Converter={StaticResource MapLayerToForegroundConverter}, ConverterParameter=wind}"
+                                                            Command="{Binding SelectMapLayerCommand}" CommandParameter="wind">
+                                                        <TextBlock Text="风" />
+                                                    </Button>
+                                                    <Button Classes="QuietAction" Padding="8 4" CornerRadius="8" FontSize="10"
+                                                            Foreground="{Binding SelectedMapLayer, Converter={StaticResource MapLayerToForegroundConverter}, ConverterParameter=humidity}"
+                                                            Command="{Binding SelectMapLayerCommand}" CommandParameter="humidity">
+                                                        <TextBlock Text="湿度" />
+                                                    </Button>
+                                                </StackPanel>
+                                            </Grid>
+                                            <Border Background="#0AFFFFFF" CornerRadius="10" Height="180" ClipToBounds="True">
+                                                <controls:WeatherMapView Latitude="{Binding MapLatitude}"
+                                                                          Longitude="{Binding MapLongitude}"
+                                                                          CityName="{Binding MapCityName}"
+                                                                          SelectedLayer="{Binding SelectedMapLayer}" />
+                                            </Border>
+                                        </StackPanel>
+                                    </Border>-->
+
+                                    <Border Background="#0CFFFFFF" CornerRadius="12" Padding="8 6" Margin="28 0">
+                                        <Grid ColumnDefinitions="*,10,*,10,*,10,*">
+                                            <Button Classes="QuietAction" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                    Command="{Binding ToggleHourlyDetailCommand}" CornerRadius="8" Padding="6 8">
+                                                <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                                    <TextBlock Text="🕐" FontSize="18" HorizontalAlignment="Center" />
+                                                    <TextBlock Text="逐时预报" FontSize="10" Foreground="#FFFFFFCC" HorizontalAlignment="Center" />
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Grid.Column="2" Classes="QuietAction" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                    Command="{Binding ToggleAirQualityDetailCommand}" CornerRadius="8" Padding="6 8">
+                                                <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                                    <TextBlock Text="🌬️" FontSize="18" HorizontalAlignment="Center" />
+                                                    <TextBlock Text="空气质量" FontSize="10" Foreground="#FFFFFFCC" HorizontalAlignment="Center" />
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Grid.Column="4" Classes="QuietAction" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                    Command="{Binding ToggleLifeIndexDetailCommand}" CornerRadius="8" Padding="6 8"
+                                                    IsVisible="{Binding LifeIndices.Count, Converter={StaticResource CountToVisibilityConverter}}">
+                                                <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                                    <TextBlock Text="🎯" FontSize="18" HorizontalAlignment="Center" />
+                                                    <TextBlock Text="生活指数" FontSize="10" Foreground="#FFFFFFCC" HorizontalAlignment="Center" />
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Grid.Column="6" Classes="QuietAction" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                                    Command="{Binding ToggleNewsDetailCommand}" CornerRadius="8" Padding="6 8">
+                                                <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                                    <TextBlock Text="📰" FontSize="18" HorizontalAlignment="Center" />
+                                                    <TextBlock Text="天气资讯" FontSize="10" Foreground="#FFFFFFCC" HorizontalAlignment="Center" />
+                                                </StackPanel>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+
+                                    <!-- 二十四节气卡片 -->
+                                    <Border Background="#0CFFFFFF" CornerRadius="16" Padding="16" Margin="28 0"
+                                            BoxShadow="0 2 12 0 #00000022">
+                                        <StackPanel Spacing="6">
+                                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                    <Border CornerRadius="6" Padding="4 2">
+                                                        <Border.Background>
+                                                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                                                                <GradientStop Color="#25FFD700" Offset="0.0" />
+                                                                <GradientStop Color="#20FF8A65" Offset="1.0" />
+                                                            </LinearGradientBrush>
+                                                        </Border.Background>
+                                                        <TextBlock Text="{Binding WeatherForecast.SolarTerm.Name}"
+                                                                   FontSize="13" FontWeight="SemiBold" Foreground="#FFD700" />
+                                                    </Border>
+                                                    <TextBlock Text="{Binding WeatherForecast.SolarTerm.Season}"
+                                                               FontSize="10" Foreground="#FFFFFF77" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="1" Text="{Binding WeatherForecast.SolarTerm.Description}"
+                                                           FontSize="11" Foreground="#FFFFFFAA" VerticalAlignment="Center"
+                                                           Margin="8 0 0 0" TextTrimming="CharacterEllipsis" />
+                                                <Button Grid.Column="2" Classes="QuietAction" Padding="6 3"
+                                                        Command="{Binding ToggleDishDetailCommand}" VerticalAlignment="Center">
+                                                    <TextBlock FontSize="10" Foreground="#FFD700AA">
+                                                        <Run Text="食补" />
+                                                        <Run Text=" ▸" />
+                                                    </TextBlock>
+                                                </Button>
+                                            </Grid>
+                                            <TextBlock Text="{Binding WeatherForecast.SolarTerm.HealthTip}"
+                                                       FontSize="10" Foreground="#FFFFFF77" TextWrapping="Wrap" MaxLines="1" />
+                                        </StackPanel>
+                                    </Border>
+
+
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <!-- 天气加载错误 -->
+                <Border Background="#0CFFFFFF" CornerRadius="16" Padding="24" Margin="28 0"
+                        IsVisible="{Binding WeatherLoadError, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <StackPanel Spacing="8" HorizontalAlignment="Center">
+                        <TextBlock Text="⚠️" FontSize="24" HorizontalAlignment="Center" />
+                        <TextBlock Text="{Binding WeatherLoadError}" FontSize="13" Foreground="#F26E7D" HorizontalAlignment="Center" TextWrapping="Wrap" />
+                        <Button Content="重试" Classes="QuietAction" Padding="12 6" CornerRadius="8"
+                                Foreground="#7AA9FF" HorizontalAlignment="Center"
+                                Command="{Binding LoadWeatherCommand}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 花卉行情模块 -->
+                <Border Classes="SurfaceCard" Padding="24" CornerRadius="16"
+                        IsVisible="{Binding IsFlowerDataLoaded}">
+                    <StackPanel Spacing="16">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="🌸" FontSize="20" VerticalAlignment="Center" />
+                                <TextBlock Text="花卉行情" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="预警中心" Classes="QuietAction" Padding="8 4" FontSize="11" />
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="16">
+                            <Border Background="#18FFFFFF" CornerRadius="12" Padding="16 12">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="今日均价" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding FlowerAvgPrice}" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="1" Background="#18FFFFFF" CornerRadius="12" Padding="16 12">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="涨跌幅" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding FlowerPriceChange}" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="2" Background="#18FFFFFF" CornerRadius="12" Padding="16 12">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="预警数" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding FlowerAlertCount}" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                        <Border Background="#18FFFFFF" CornerRadius="12" Padding="16 12"
+                                Cursor="Hand" Tapped="OnFlowerSpeciesDetailTapped">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="趋势预览" FontSize="12" Foreground="#AAAAAA" />
+                                <TextBlock Text="📈 查看K线走势与预测区间 →" FontSize="13" Foreground="#42A5F5" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- Quick Access -->
+                <TextBlock Text="快速访问" Classes="SectionTitle" />
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="16">
+                    <Border Classes="SurfaceCard" Cursor="Hand" Padding="20">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="游戏库" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="浏览、安装和启动您的游戏" Classes="SupportingText" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Classes="SurfaceCard" Cursor="Hand" Padding="20">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="新闻与活动" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="获取最新游戏资讯和公告" Classes="SupportingText" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Classes="SurfaceCard" Cursor="Hand" Padding="20">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="好友与社交" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="与好友聊天、组队和互动" Classes="SupportingText" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Recent Activity -->
+                <Border Classes="SurfaceCard subtle" Padding="24">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="最近活动" Classes="SectionTitle" />
+                        <TextBlock Text="暂无活动记录" Classes="SupportingText" HorizontalAlignment="Center" />
+                        <TextBlock Text="您的游戏动态、更新记录和社交互动将在这里展示" Classes="SupportingText" FontSize="12" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </controls:GalleryPage>
+
+        <!-- 天气详情侧滑抽屉 -->
+        <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+               IsVisible="{Binding IsWeatherDetailOpen}"
+               ZIndex="100">
+            <Border Background="#80000000" Tapped="OnWeatherOverlayTapped" />
+            <views:WeatherDetailDrawerView HorizontalAlignment="Right" VerticalAlignment="Stretch">
+                <views:WeatherDetailDrawerView.Transitions>
+                    <Transitions>
+                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+                    </Transitions>
+                </views:WeatherDetailDrawerView.Transitions>
+            </views:WeatherDetailDrawerView>
+        </Panel>
+
+        <!-- 节气食补侧滑抽屉 -->
+        <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+               IsVisible="{Binding IsDishDetailOpen}"
+               ZIndex="100">
+            <Border Background="#80000000" Tapped="OnDishOverlayTapped" />
+            <views:DishDetailDrawerView HorizontalAlignment="Right" VerticalAlignment="Stretch">
+                <views:DishDetailDrawerView.Transitions>
+                    <Transitions>
+                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+                    </Transitions>
+                </views:DishDetailDrawerView.Transitions>
+            </views:DishDetailDrawerView>
+        </Panel>
+
+        <!-- 逐时预报侧滑抽屉 -->
+        <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+               IsVisible="{Binding IsHourlyDetailOpen}"
+               ZIndex="100">
+            <Border Background="#80000000" Tapped="OnHourlyOverlayTapped" />
+            <views:HourlyForecastDrawerView HorizontalAlignment="Right" VerticalAlignment="Stretch">
+                <views:HourlyForecastDrawerView.Transitions>
+                    <Transitions>
+                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+                    </Transitions>
+                </views:HourlyForecastDrawerView.Transitions>
+            </views:HourlyForecastDrawerView>
+        </Panel>
+
+        <!-- 空气质量侧滑抽屉 -->
+        <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+               IsVisible="{Binding IsAirQualityDetailOpen}"
+               ZIndex="100">
+            <Border Background="#80000000" Tapped="OnAirQualityOverlayTapped" />
+            <views:AirQualityDrawerView HorizontalAlignment="Right" VerticalAlignment="Stretch">
+                <views:AirQualityDrawerView.Transitions>
+                    <Transitions>
+                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+                    </Transitions>
+                </views:AirQualityDrawerView.Transitions>
+            </views:AirQualityDrawerView>
+        </Panel>
+
+        <!-- 生活指数侧滑抽屉 -->
+        <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+               IsVisible="{Binding IsLifeIndexDetailOpen}"
+               ZIndex="100">
+            <Border Background="#80000000" Tapped="OnLifeIndexOverlayTapped" />
+            <views:LifeIndexDrawerView HorizontalAlignment="Right" VerticalAlignment="Stretch">
+                <views:LifeIndexDrawerView.Transitions>
+                    <Transitions>
+                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+                    </Transitions>
+                </views:LifeIndexDrawerView.Transitions>
+            </views:LifeIndexDrawerView>
+        </Panel>
+
+        <!-- 天气资讯侧滑抽屉 -->
+        <Panel HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+               IsVisible="{Binding IsNewsDetailOpen}"
+               ZIndex="100">
+            <Border Background="#80000000" Tapped="OnNewsOverlayTapped" />
+            <views:WeatherNewsDrawerView HorizontalAlignment="Right" VerticalAlignment="Stretch">
+                <views:WeatherNewsDrawerView.Transitions>
+                    <Transitions>
+                        <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+                    </Transitions>
+                </views:WeatherNewsDrawerView.Transitions>
+            </views:WeatherNewsDrawerView>
+        </Panel>
+    </Grid>
+</UserControl>

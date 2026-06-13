@@ -121,7 +121,7 @@ namespace Horizon.Orleans.Grains
                 // 记录战斗日志
                 AddCombatLogEntry(new CombatLogEntry
                 {
-                    Timestamp = DateTime.UtcNow,
+                    Timestamp = DateTime.Now,
                     AttackerId = request.AttackerId,
                     DefenderId = request.TargetId,
                     DamageDealt = damage,
@@ -171,6 +171,65 @@ namespace Horizon.Orleans.Grains
                 // 消耗能量
                 casterInfo.Energy -= request.EnergyCost;
 
+                if (request.TargetEntityId > 0)
+                {
+                    var targetInfo = await GetOrCreateCombatInfo(request.TargetEntityId);
+
+                    if (CombatCalculator.RollDodge(targetInfo.DodgeRate))
+                    {
+                        await EnterCombatAsync(request.CasterId);
+                        await EnterCombatAsync(request.TargetEntityId);
+                        await _combatState.WriteStateAsync();
+
+                        return new SkillCastMessage
+                        {
+                            CasterId = request.CasterId,
+                            SkillId = request.SkillId,
+                            Success = true,
+                            Message = "技能被闪避",
+                            CastTime = request.CastTime,
+                            Range = request.Range,
+                            TargetEntityId = request.TargetEntityId
+                        };
+                    }
+
+                    float baseDamage = casterInfo.AttackPower * 0.6f;
+                    float damage = await CalculateDamage(casterInfo, targetInfo, baseDamage, 0);
+
+                    bool isCritical = Random.Shared.NextDouble() < casterInfo.CritRate;
+                    damage = CombatCalculator.ApplyCriticalDamage(damage, isCritical, casterInfo.CritDamageMultiplier);
+
+                    var (blockedDamage, isBlocked) = CombatCalculator.ApplyBlock(damage, targetInfo.BlockRate);
+                    damage = blockedDamage;
+
+                    targetInfo.Health = CombatCalculator.ClampHealth(targetInfo.Health, damage);
+
+                    AddCombatLogEntry(new CombatLogEntry
+                    {
+                        Timestamp = DateTime.Now,
+                        AttackerId = request.CasterId,
+                        DefenderId = request.TargetEntityId,
+                        DamageDealt = damage,
+                        SkillId = request.SkillId,
+                        ElementType = 0,
+                        IsCritical = isCritical,
+                        IsDodged = false,
+                        IsBlocked = isBlocked,
+                        LogType = CombatLogType.SkillCast
+                    });
+
+                    if (targetInfo.Health <= 0)
+                    {
+                        await ProcessDeathAsync(new DeathMessage
+                        {
+                            DeceasedId = request.TargetEntityId,
+                            KillerId = request.CasterId,
+                            Cause = "技能击杀",
+                            DeathPosition = request.TargetPosition
+                        });
+                    }
+                }
+
                 // 根据技能类型执行不同逻辑
                 var response = new SkillCastMessage
                 {
@@ -213,6 +272,12 @@ namespace Horizon.Orleans.Grains
 
                 // 进入战斗状态
                 await EnterCombatAsync(request.VictimId);
+
+                // 检查打断施法
+                if (victimInfo.IsInCombat && request.Damage > 0)
+                {
+                    await InterruptSkillCastAsync(request.VictimId);
+                }
 
                 // 检查是否死亡
                 if (victimInfo.Health <= 0)
@@ -333,7 +398,7 @@ namespace Horizon.Orleans.Grains
                 var combatInfo = await GetOrCreateCombatInfo(characterId);
                 
                 combatInfo.IsInCombat = true;
-                combatInfo.LastActionTime = DateTime.UtcNow;
+                combatInfo.LastActionTime = DateTime.Now;
 
                 await _combatState.WriteStateAsync();
 
@@ -383,7 +448,7 @@ namespace Horizon.Orleans.Grains
                     
                     // 检查是否超过5秒无动作，自动退出战斗
                     if (combatInfo.IsInCombat && 
-                        (DateTime.UtcNow - combatInfo.LastActionTime).TotalSeconds > 5)
+                        (DateTime.Now - combatInfo.LastActionTime).TotalSeconds > 5)
                     {
                         combatInfo.IsInCombat = false;
                         await _combatState.WriteStateAsync();
@@ -482,6 +547,39 @@ namespace Horizon.Orleans.Grains
             }
         }
 
+        public async Task<bool> InterruptSkillCastAsync(ulong casterId)
+        {
+            try
+            {
+                var skillGrainKey = Guid.NewGuid();
+                var skillGrain = GrainFactory.GetGrain<ISkillGrain>(skillGrainKey);
+
+                if (_combatState.State.CombatParticipants.TryGetValue(casterId, out var combatInfo))
+                {
+                    if (combatInfo.Health <= 0)
+                    {
+                        await skillGrain.InterruptCastAsync();
+                        _logger.LogInformation("角色 {CasterId} 因死亡被打断施法", casterId);
+                        return true;
+                    }
+
+                    if (combatInfo.IsInCombat && Random.Shared.NextDouble() < 0.3)
+                    {
+                        await skillGrain.InterruptCastAsync();
+                        _logger.LogInformation("角色 {CasterId} 受到攻击被打断施法", casterId);
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "打断施法时发生异常: {CasterId}", casterId);
+                return false;
+            }
+        }
+
         #region Private Helper Methods
 
         /// <summary>
@@ -511,7 +609,7 @@ namespace Horizon.Orleans.Grains
                         CritRate = 0.1f,
                         CritDamageMultiplier = 1.5f,
                         IsInCombat = false,
-                        LastActionTime = DateTime.UtcNow
+                        LastActionTime = DateTime.Now
                     };
                     
                     _combatState.State.CombatParticipants[characterId] = combatInfo;
@@ -534,7 +632,7 @@ namespace Horizon.Orleans.Grains
                         CritRate = 0.1f,
                         CritDamageMultiplier = 1.5f,
                         IsInCombat = false,
-                        LastActionTime = DateTime.UtcNow
+                        LastActionTime = DateTime.Now
                     };
                     
                     _combatState.State.CombatParticipants[characterId] = combatInfo;

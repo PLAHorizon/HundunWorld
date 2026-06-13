@@ -1,0 +1,293 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             x:Class="Horizon.Game.GengDi.Core.Views.FlowerWorkbenchView"
+             x:DataType="vm:FlowerWorkbenchViewModel"
+             Background="#1E1E2E"
+             Foreground="#FFFFFF">
+
+    <controls:GalleryPage Title="花卉工作台"
+                          Subtitle="Horizon.Game.GengDi.FlowerWorkbench"
+                          Description="统一工作台，整合行情预报、种植管理、采收管理与销售管理。"
+                          IconSource="{StaticResource NotificationsIcon}">
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Spacing="16" Margin="0 0 0 24">
+
+                <Border Classes="SurfaceCard" Padding="12 8" Background="#252536">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <TextBlock Text="角色" FontSize="12" Foreground="#AAAAAA" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                            <Button Content="种植户" Classes="QuietAction" Padding="10 4" FontSize="12"
+                                    Command="{Binding RefreshCommand}"
+                                    Background="{Binding UserRole, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                    Tag="Farmer" />
+                            <Button Content="采购商" Classes="QuietAction" Padding="10 4" FontSize="12" Tag="Buyer" />
+                            <Button Content="商户" Classes="QuietAction" Padding="10 4" FontSize="12" Tag="Merchant" />
+                        </StackPanel>
+                        <Button Grid.Column="2" Content="刷新" Classes="QuietAction" Padding="12 6" FontSize="12"
+                                Command="{Binding RefreshCommand}" />
+                    </Grid>
+                </Border>
+
+                <Grid ColumnDefinitions="*,*"
+                      RowDefinitions="*,*"
+                      ColumnSpacing="16"
+                      RowSpacing="16">
+
+                    <Border Classes="SurfaceCard" Padding="20" Background="#252536"
+                            IsVisible="{Binding ShowForecastQuadrant}"
+                            PointerPressed="ForecastQuadrant_Click">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="📊" FontSize="18" VerticalAlignment="Center" />
+                                    <TextBlock Text="行情预报" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <Border Grid.Column="1" Background="#1AFFA726" CornerRadius="4" Padding="6 2"
+                                        IsVisible="{Binding ForecastAlertCount, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                    <TextBlock Text="{Binding ForecastAlertCount, StringFormat='{}{0} 条预警'}"
+                                               FontSize="10" Foreground="#FFA726" FontWeight="SemiBold" />
+                                </Border>
+                            </Grid>
+                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="今日均价" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding ForecastAvgPrice, StringFormat='¥{0:F2}'}"
+                                               FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                                    <TextBlock Text="涨跌幅" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="{Binding ForecastPriceChangeDirection}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding ForecastPriceChangePercent, StringFormat='{}{0:F2}%'}"
+                                                   FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center"
+                                                   Foreground="{Binding ForecastPriceChangeColor}" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                                    <TextBlock Text="预警数" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding ForecastAlertCount}" FontSize="22" FontWeight="SemiBold"
+                                               Foreground="#FFA726" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Grid>
+                            <Border Height="1" Background="#20FFFFFF" />
+                            <ItemsControl ItemsSource="{Binding SpeciesPriceRanking}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8" Margin="0 4">
+                                            <TextBlock Text="{Binding SpeciesIcon}" FontSize="14" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1" Text="{Binding SpeciesName}" FontSize="13" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="2" Text="{Binding Price, StringFormat='¥{0:F2}'}"
+                                                       FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"
+                                                       MinWidth="60" TextAlignment="Right" />
+                                            <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding ChangeArrow}" FontSize="11"
+                                                           Foreground="{Binding ChangeColor}" VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding ChangePercent, StringFormat='{}{0:F1}%'}"
+                                                           FontSize="11" Foreground="{Binding ChangeColor}" VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="SurfaceCard" Padding="20" Background="#252536"
+                            IsVisible="{Binding ShowPlantingQuadrant}"
+                            PointerPressed="PlantingQuadrant_Click">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="🌱" FontSize="18" VerticalAlignment="Center" />
+                                    <TextBlock Text="种植管理" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <Border Grid.Column="1" Background="#1A66BB6A" CornerRadius="4" Padding="6 2"
+                                        IsVisible="{Binding PlantingSensorAlerts, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                    <TextBlock Text="{Binding PlantingSensorAlerts, StringFormat='{}{0} 项异常'}"
+                                               FontSize="10" Foreground="#66BB6A" FontWeight="SemiBold" />
+                                </Border>
+                            </Grid>
+                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="活跃批次" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding PlantingActiveBatches}" FontSize="22" FontWeight="SemiBold"
+                                               Foreground="#42A5F5" HorizontalAlignment="Center" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                                    <TextBlock Text="待处理建议" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding PlantingPendingAdvice}" FontSize="22" FontWeight="SemiBold"
+                                               Foreground="#FFA726" HorizontalAlignment="Center" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                                    <TextBlock Text="传感器异常" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding PlantingSensorAlerts}" FontSize="22" FontWeight="SemiBold"
+                                               Foreground="#EF5350" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Grid>
+                            <Border Height="1" Background="#20FFFFFF" />
+                            <ItemsControl ItemsSource="{Binding ActiveBatchList}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="0 4">
+                                            <Border Width="8" Height="8" CornerRadius="4" VerticalAlignment="Center">
+                                                <Border.Background>
+                                                    <SolidColorBrush Color="{Binding StatusColor}" />
+                                                </Border.Background>
+                                            </Border>
+                                            <TextBlock Grid.Column="1" Text="{Binding SpeciesName}" FontSize="13" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="2" Text="{Binding StatusDisplay}" FontSize="11"
+                                                       Foreground="{Binding StatusColor}" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="1" Classes="SurfaceCard" Padding="20" Background="#252536"
+                            IsVisible="{Binding ShowHarvestQuadrant}"
+                            PointerPressed="HarvestQuadrant_Click">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="🌾" FontSize="18" VerticalAlignment="Center" />
+                                    <TextBlock Text="采收管理" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <Border Grid.Column="1" Background="#1AFFA726" CornerRadius="4" Padding="6 2"
+                                        IsVisible="{Binding HarvestPendingListings, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                    <TextBlock Text="{Binding HarvestPendingListings, StringFormat='{}{0} 待上架'}"
+                                               FontSize="10" Foreground="#FFA726" FontWeight="SemiBold" />
+                                </Border>
+                            </Grid>
+                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="待采收批次" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding HarvestPendingBatches}" FontSize="22" FontWeight="SemiBold"
+                                               Foreground="#FFA726" HorizontalAlignment="Center" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                                    <TextBlock Text="7日采收量" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding HarvestSevenDayVolume, StringFormat='{}{0:F0}'}"
+                                               FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                                    <TextBlock Text="待上架" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding HarvestPendingListings}" FontSize="22" FontWeight="SemiBold"
+                                               Foreground="#42A5F5" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Grid>
+                            <Border Height="1" Background="#20FFFFFF" />
+                            <ItemsControl ItemsSource="{Binding PendingHarvestList}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0 4">
+                                            <TextBlock Text="{Binding SpeciesName}" FontSize="13" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1" Text="{Binding ExpectedDateDisplay}" FontSize="11"
+                                                       Foreground="#AAAAAA" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="1" Grid.Column="1" Classes="SurfaceCard" Padding="20" Background="#252536"
+                            IsVisible="{Binding ShowSalesQuadrant}"
+                            PointerPressed="SalesQuadrant_Click">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="💰" FontSize="18" VerticalAlignment="Center" />
+                                    <TextBlock Text="销售管理" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <Border Grid.Column="1" Background="#1AEF5350" CornerRadius="4" Padding="6 2"
+                                        IsVisible="{Binding SalesStockAlerts, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                    <TextBlock Text="{Binding SalesStockAlerts, StringFormat='{}{0} 库存预警'}"
+                                               FontSize="10" Foreground="#EF5350" FontWeight="SemiBold" />
+                                </Border>
+                            </Grid>
+                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="待发货" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding SalesPendingShipments}" FontSize="22" FontWeight="SemiBold"
+                                               Foreground="#FFA726" HorizontalAlignment="Center" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                                    <TextBlock Text="今日营收" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding SalesTodayRevenue, StringFormat='¥{0:F0}'}"
+                                               FontSize="22" FontWeight="SemiBold" Foreground="#26A69A" HorizontalAlignment="Center" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                                    <TextBlock Text="库存预警" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="{Binding SalesStockAlerts}" FontSize="22" FontWeight="SemiBold"
+                                               Foreground="#EF5350" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Grid>
+                            <Border Height="1" Background="#20FFFFFF" />
+                            <ItemsControl ItemsSource="{Binding PendingShipList}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0 4">
+                                            <TextBlock Text="{Binding OrderNo}" FontSize="12" Foreground="#AAAAAA" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="1" Text="{Binding TotalAmount, StringFormat='¥{0:F2}'}"
+                                                       FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+
+                </Grid>
+
+                <Border Classes="SurfaceCard" Padding="16 12" Background="#252536">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="快捷操作" FontSize="14" FontWeight="SemiBold" Foreground="#AAAAAA" />
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Button Classes="QuietAction" Padding="16 8" FontSize="13"
+                                    Command="{Binding QuickRecordHarvestCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="🌾" FontSize="14" VerticalAlignment="Center" />
+                                    <TextBlock Text="记录采收" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button Classes="QuietAction" Padding="16 8" FontSize="13"
+                                    Command="{Binding QuickListProductCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="📦" FontSize="14" VerticalAlignment="Center" />
+                                    <TextBlock Text="上架商品" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button Classes="QuietAction" Padding="16 8" FontSize="13"
+                                    Command="{Binding QuickViewAlertsCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="🔔" FontSize="14" VerticalAlignment="Center" />
+                                    <TextBlock Text="查看预警" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                            <Button Classes="QuietAction" Padding="16 8" FontSize="13"
+                                    Command="{Binding QuickAIAssistantCommand}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="🤖" FontSize="14" VerticalAlignment="Center" />
+                                    <TextBlock Text="AI助手" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="SurfaceCard" Padding="40" Background="#252536" IsVisible="{Binding IsLoading}">
+                    <StackPanel HorizontalAlignment="Center" Spacing="12">
+                        <ProgressBar IsIndeterminate="True" Height="4" />
+                        <TextBlock Text="加载工作台数据中..." FontSize="13" Foreground="#888888" HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </controls:GalleryPage>
+</UserControl>

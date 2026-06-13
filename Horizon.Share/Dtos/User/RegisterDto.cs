@@ -52,6 +52,12 @@ namespace Horizon.Share.Dtos.User
         [Id(9)]
         public string ID { get; set; }
 
+        /// <summary>
+        /// 客户端机器唯一标识符（由客户端通过 MachineIdentifier.GetMachineGuid() 获取后上传，用于令牌绑定）
+        /// </summary>
+        [Id(10)]
+        public string MachineId { get; set; }
+
     }
 
     /// <summary>

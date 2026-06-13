@@ -55,6 +55,7 @@ namespace Game.Character.Movement
         private int currentJumpCount = 0;
         private bool isGliding = false;
         private float glideTimer = 0f;
+        private float _verticalVelocity;
         private CharacterAttributesComponent attributes;
         private CharacterController characterController;
 
@@ -96,16 +97,13 @@ namespace Game.Character.Movement
             currentJumpCount++;
             float jumpHeight = CalculateJumpHeight();
             
-            // 计算跳跃速度
             float jumpVelocity = Mathf.Sqrt(2 * 9.81f * jumpHeight);
+            _verticalVelocity = jumpVelocity;
 
-            // 应用跳跃（需要与CharacterController集成）
             Debug.Log($"执行跳跃 - 第{currentJumpCount}段跳，高度: {jumpHeight}米");
 
-            // 播放跳跃动画
             PlayJumpAnimation();
 
-            // 生成跳跃特效
             SpawnJumpEffect();
         }
 
@@ -181,12 +179,25 @@ namespace Game.Character.Movement
         {
             float deltaTime = Time.DeltaTime;
 
-            // 处理滑翔状态
+            if (characterController != null)
+            {
+                float gravity = isGliding ? 9.81f * 0.3f : 9.81f;
+                _verticalVelocity -= gravity * deltaTime;
+
+                characterController.Move(new Vector3(0, _verticalVelocity * deltaTime, 0));
+
+                if (characterController.IsGrounded && _verticalVelocity < 0f)
+                {
+                    _verticalVelocity = 0f;
+                    if (currentJumpCount > 0)
+                        OnLanded();
+                }
+            }
+
             if (isGliding)
             {
                 glideTimer += deltaTime;
 
-                // 消耗体力
                 if (attributes != null)
                 {
                     bool hasStamina = attributes.ConsumeStamina(GlideStaminaCost * deltaTime);
@@ -196,10 +207,8 @@ namespace Game.Character.Movement
                     }
                 }
 
-                // 应用滑翔物理
                 ApplyGlidePhysics(deltaTime);
 
-                // 播放滑翔动画
                 PlayGlideAnimation();
             }
         }
@@ -218,6 +227,21 @@ namespace Game.Character.Movement
         public bool IsGliding()
         {
             return isGliding;
+        }
+
+        public uint GetQinggongInputBits()
+        {
+            uint bits = 0;
+            if (currentJumpCount > 0)
+                bits |= 1u << 3;
+            if (isGliding)
+                bits |= 1u << 4;
+            return bits;
+        }
+
+        public int GetCurrentJumpCount()
+        {
+            return currentJumpCount;
         }
 
         /// <summary>

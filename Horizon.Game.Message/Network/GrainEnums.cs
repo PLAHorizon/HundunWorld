@@ -1,4 +1,5 @@
 using Horizon.Game.Message.Enums;
+using Orleans;
 
 namespace Horizon.Game.Message.Network
 {
@@ -276,5 +277,142 @@ namespace Horizon.Game.Message.Network
         /// PVP积分排行
         /// </summary>
         PvpScore = 4
+    }
+
+    /// <summary>
+    /// 数据池数据类型枚举
+    /// </summary>
+    [GenerateSerializer]
+    public enum DataPoolDataType
+    {
+        [Id(0)] MarketSnapshot = 0,
+        [Id(1)] PricePrediction = 1,
+        [Id(2)] TradeRecord = 2,
+        [Id(3)] UserBehavior = 3,
+        [Id(4)] AIChat = 4,
+        [Id(5)] SensorData = 5,
+        [Id(6)] AIOutput = 6,
+        [Id(7)] AlertEvent = 7,
+        [Id(8)] CollectionFailure = 8,
+        [Id(9)] WeatherData = 9
+    }
+
+    /// <summary>
+    /// 花卉类别枚举
+    /// </summary>
+    [GenerateSerializer]
+    public enum FlowerCategory
+    {
+        [Id(0)] CutFlower = 0,
+        [Id(1)] PottedPlant = 1,
+        [Id(2)] Seedling = 2,
+        [Id(3)] Bulb = 3,
+        [Id(4)] DriedFlower = 4
+    }
+
+    /// <summary>
+    /// 预警条件类型枚举
+    /// </summary>
+    [GenerateSerializer]
+    public enum AlertConditionType
+    {
+        [Id(0)] PriceAbove = 0,
+        [Id(1)] PriceBelow = 1,
+        [Id(2)] PriceChangeAbove = 2,
+        [Id(3)] PriceChangeBelow = 3
+    }
+
+    /// <summary>
+    /// 预测时间尺度枚举
+    /// </summary>
+    [GenerateSerializer]
+    public enum ForecastTimeScale
+    {
+        [Id(0)] ShortTerm = 0,
+        [Id(1)] MediumTerm = 1
+    }
+
+    /// <summary>
+    /// 通知渠道枚举
+    /// </summary>
+    [GenerateSerializer]
+    public enum NotifyChannel
+    {
+        [Id(0)] WebSocket = 0,
+        [Id(1)] SMS = 1,
+        [Id(2)] WeChat = 2,
+        [Id(3)] Email = 3
+    }
+
+    /// <summary>
+    /// 数据源类型枚举
+    /// </summary>
+    [GenerateSerializer]
+    public enum DataSourceType
+    {
+        [Id(0)] AuctionMarket = 0,
+        [Id(1)] ECommerce = 1,
+        [Id(2)] WeatherApi = 2,
+        [Id(3)] SearchEngine = 3,
+        [Id(4)] Manual = 4
+    }
+
+    /// <summary>
+    /// 订单状态枚举
+    /// </summary>
+    [GenerateSerializer]
+    public enum OrderStatus
+    {
+        [Id(0)] Pending = 0,
+        [Id(1)] Paid = 1,
+        [Id(2)] Shipped = 2,
+        [Id(3)] Delivered = 3,
+        [Id(4)] Completed = 4,
+        [Id(5)] Cancelled = 5,
+        [Id(6)] Refunding = 6
+    }
+
+    /// <summary>
+    /// 支付渠道枚举
+    /// </summary>
+    [GenerateSerializer]
+    public enum PaymentScene
+    {
+        [Id(0)] Native = 0,
+        [Id(1)] JsApi = 1,
+        [Id(2)] H5 = 2,
+        [Id(3)] App = 3,
+        [Id(4)] Page = 4,
+        [Id(5)] Wap = 5
+    }
+
+    [GenerateSerializer]
+    public enum PaymentChannel
+    {
+        [Id(0)] WechatPay = 0,
+        [Id(1)] Alipay = 1
+    }
+
+    /// <summary>
+    /// 退款状态枚举
+    /// </summary>
+    [GenerateSerializer]
+    public enum RefundStatus
+    {
+        [Id(0)] Pending = 0,
+        [Id(1)] Approved = 1,
+        [Id(2)] Processing = 2,
+        [Id(3)] Completed = 3,
+        [Id(4)] Rejected = 4
+    }
+
+    /// <summary>
+    /// 商户类型枚举
+    /// </summary>
+    [GenerateSerializer]
+    public enum MerchantType
+    {
+        [Id(0)] Individual = 0,
+        [Id(1)] Enterprise = 1
     }
 }

@@ -1,0 +1,228 @@
+﻿@page "/flower/orders"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Flower.Services
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+
+@inject FlowerOrderService OrderService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">订单管理</TypographyTitle>
+        <Space>
+            <Select TItem="int" TItemValue="int" @bind-Value="@SelectedStatus" Style="width:140px" Size="@InputSize.Small">
+                <SelectOption TItem="int" TItemValue="int" Value="-1">全部状态</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="0">待付款</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="1">待发货</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="2">待收货</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="3">已完成</SelectOption>
+                <SelectOption TItem="int" TItemValue="int" Value="4">已取消</SelectOption>
+            </Select>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadOrders">查询</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="JsonElement" DataSource="@Orders" Size="@TableSize.Small" RowKey="@GetOrderRowKey">
+            <Column TData="string" Title="订单号">
+                <AntDesign.Text Code>@(context.TryGetProperty("orderNo", out var p) ? p.GetString() ?? "-" : "-")</AntDesign.Text>
+            </Column>
+            <Column TData="string" Title="买家ID">
+                @(context.TryGetProperty("buyerId", out var p) ? p.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="商户ID">
+                @(context.TryGetProperty("merchantId", out var p) ? p.GetInt64().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="金额">
+                <AntDesign.Text Type="@TextElementType.Danger" Strong>
+                    @(context.TryGetProperty("totalAmount", out var p) ? $"¥{p.GetDecimal():N2}" : "-")
+                </AntDesign.Text>
+            </Column>
+            <Column TData="string" Title="状态">
+                <Tag Color="@GetOrderStatusColor(context)">@GetOrderStatusText(context)</Tag>
+            </Column>
+            <Column TData="string" Title="支付方式">
+                @(context.TryGetProperty("paymentMethod", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="操作">
+                <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowDetail(context)">详情</Button>
+            </Column>
+        </Table>
+    }
+
+    <Modal Title="@OrderDetailTitle"
+           Visible="@ShowDetailModal" OnCancel="CloseDetail"
+           Footer="@((RenderFragment)null)" Width="720">
+        @if (SelectedOrder != null)
+        {
+            <Descriptions Column="2" Size="@DescriptionsSize.Small" Style="margin-bottom:16px;">
+                <DescriptionsItem Title="订单ID">
+                    @(SelectedOrder.Value.TryGetProperty("orderId", out var p) ? p.GetInt64().ToString() : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Title="状态">
+                    <Tag Color="@GetOrderStatusColor(SelectedOrder.Value)">@GetOrderStatusText(SelectedOrder.Value)</Tag>
+                </DescriptionsItem>
+                <DescriptionsItem Title="买家ID">
+                    @(SelectedOrder.Value.TryGetProperty("buyerId", out var p) ? p.GetInt64().ToString() : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Title="商户ID">
+                    @(SelectedOrder.Value.TryGetProperty("merchantId", out var p) ? p.GetInt64().ToString() : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Title="商品总额">
+                    @(SelectedOrder.Value.TryGetProperty("productTotalAmount", out var p) ? $"¥{p.GetDecimal():N2}" : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Title="运费">
+                    @(SelectedOrder.Value.TryGetProperty("freight", out var p) ? $"¥{p.GetDecimal():N2}" : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Title="优惠金额">
+                    @(SelectedOrder.Value.TryGetProperty("discountAmount", out var p) ? $"¥{p.GetDecimal():N2}" : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Title="订单总额">
+                    <AntDesign.Text Type="@TextElementType.Danger" Strong>
+                        @(SelectedOrder.Value.TryGetProperty("orderTotalAmount", out var p) ? $"¥{p.GetDecimal():N2}" : "-")
+                    </AntDesign.Text>
+                </DescriptionsItem>
+                <DescriptionsItem Title="收货地址" Span="2">
+                    @(SelectedOrder.Value.TryGetProperty("shippingAddress", out var p) ? p.GetString() ?? "-" : "-")
+                </DescriptionsItem>
+            </Descriptions>
+
+            @if (SelectedOrder.Value.TryGetProperty("items", out var itemsProp) && itemsProp.ValueKind == JsonValueKind.Array)
+            {
+                var itemList = itemsProp.EnumerateArray().ToList();
+                <TypographyTitle Level="5">商品明细</TypographyTitle>
+                <Table TItem="JsonElement" DataSource="@itemList" Size="@TableSize.Small" RowKey="@GetOrderItemRowKey">
+                    <Column TData="string" Title="商品名">
+                        @(context.TryGetProperty("productName", out var p) ? p.GetString() ?? "-" : "-")
+                    </Column>
+                    <Column TData="string" Title="单价">
+                        @(context.TryGetProperty("price", out var p) ? $"¥{p.GetDecimal():N2}" : "-")
+                    </Column>
+                    <Column TData="string" Title="数量">
+                        @(context.TryGetProperty("quantity", out var p) ? p.GetInt32().ToString() : "-")
+                    </Column>
+                    <Column TData="string" Title="小计">
+                        @(context.TryGetProperty("subtotal", out var p) ? $"¥{p.GetDecimal():N2}" : "-")
+                    </Column>
+                </Table>
+            }
+        }
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> Orders { get; set; } = new();
+    private bool Loading { get; set; }
+    private int SelectedStatus { get; set; } = -1;
+    private string ErrorMessage { get; set; } = "";
+    private bool ShowDetailModal { get; set; }
+    private JsonElement? SelectedOrder { get; set; }
+
+    private object GetOrderRowKey(JsonElement x) =>
+        x.TryGetProperty("orderId", out var p) ? (object)p.GetInt64() : 0;
+
+    private object GetOrderItemRowKey(JsonElement x) =>
+        x.TryGetProperty("productName", out var p) ? (object)(p.GetString() ?? "") : "";
+
+    private string OrderDetailTitle
+    {
+        get
+        {
+            if (SelectedOrder != null && SelectedOrder.Value.TryGetProperty("orderNo", out var p))
+                return $"订单详情 - {p.GetString() ?? ""}";
+            return "订单详情";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrders();
+    }
+
+    private async Task LoadOrders()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await OrderService.GetMerchantOrdersAsync(0, SelectedStatus >= 0 ? SelectedStatus : null);
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var data = result.Data.Value;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    Orders = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    Orders = items.EnumerateArray().ToList();
+                }
+                else
+                {
+                    Orders = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                Orders = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    ErrorMessage = result.ErrorMessage ?? "加载订单列表失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载订单列表失败: {ex.Message}";
+            Orders = new List<JsonElement>();
+        }
+        Loading = false;
+    }
+
+    private void ShowDetail(JsonElement order)
+    {
+        SelectedOrder = order;
+        ShowDetailModal = true;
+    }
+
+    private void CloseDetail()
+    {
+        ShowDetailModal = false;
+        SelectedOrder = null;
+    }
+
+    private int GetOrderStatus(JsonElement o) =>
+        o.TryGetProperty("status", out var p) ? p.GetInt32() : -1;
+
+    private string GetOrderStatusColor(JsonElement o) => GetOrderStatus(o) switch
+    {
+        0 => "orange",
+        1 => "blue",
+        2 => "cyan",
+        3 => "green",
+        4 => "red",
+        _ => "default"
+    };
+
+    private string GetOrderStatusText(JsonElement o) => GetOrderStatus(o) switch
+    {
+        0 => "待付款",
+        1 => "待发货",
+        2 => "待收货",
+        3 => "已完成",
+        4 => "已取消",
+        _ => "未知"
+    };
+}

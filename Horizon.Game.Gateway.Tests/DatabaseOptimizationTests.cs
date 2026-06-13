@@ -346,7 +346,7 @@ namespace Horizon.Game.Gateway.Tests
                 It.IsAny<TimeSpan?>(),
                 It.IsAny<bool>(),
                 It.IsAny<TimeSpan?>()))
-                .ReturnsAsync((string?)null);
+                .ReturnsAsync((string)null!);
 
             // Act
             var result = await mockCache.Object.GetOrSetAsync<string>(

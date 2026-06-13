@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using FlaxEngine;
+using Horizon.Game.Message.Sim;
 using Horizon.Game.Message.Network;
 
 namespace Game.Network
@@ -83,6 +84,9 @@ namespace Game.Network
         private int predictedFrameCount = 0;
         private int correctionCount = 0;
         private float averagePredictionError = 0;
+        private float _verticalVelocity;
+        private int _jumpCount;
+        private bool _wasGrounded = true;
 
         /// <summary>
         /// 预测状态数据
@@ -95,6 +99,7 @@ namespace Game.Network
             public Quaternion Rotation;
             public Vector3 Velocity;
             public Vector3 Input;
+            public float JumpImpulse;
         }
 
         /// <summary>
@@ -119,6 +124,7 @@ namespace Game.Network
             serverPosition = currentPosition;
             serverRotation = currentRotation;
             lastServerUpdateTime = Time.GameTime;
+            _verticalVelocity = 0f;
 
             if (ShowDebug)
             {
@@ -191,17 +197,46 @@ namespace Game.Network
         /// </summary>
         private void PredictMovement(Vector3 input)
         {
-            // 计算预测位置
             float deltaTime = Time.DeltaTime;
-            Vector3 movement = input * 5.0f * deltaTime; // 假设移动速度为5m/s
-            
-            currentPosition += movement;
-            currentVelocity = movement / deltaTime;
+            bool isGrounded = currentPosition.Y <= 0.01f && _verticalVelocity <= 0f;
+            if (isGrounded && !_wasGrounded)
+            {
+                _jumpCount = 0;
+            }
+            _wasGrounded = isGrounded;
+            bool jumpPressed = Input.GetKey(KeyboardKeys.Spacebar);
+            float jumpImpulse = 0f;
+            if (jumpPressed && isGrounded)
+            {
+                _jumpCount = 1;
+                jumpImpulse = 5.5f;
+            }
+            else if (jumpPressed && !isGrounded && _jumpCount < 3)
+            {
+                _jumpCount++;
+                jumpImpulse = _jumpCount switch
+                {
+                    2 => 4.5f,
+                    3 => 3.5f,
+                    _ => 5.5f,
+                };
+            }
 
-            // 应用到Actor
+            Vector3 previousPosition = currentPosition;
+            var (nx, ny, nz, nvz) = MovementFormula.Step(
+                currentPosition.X, currentPosition.Z, currentPosition.Y, _verticalVelocity,
+                input.X, input.Z, jumpImpulse,
+                deltaTime, MovementFormula.DefaultMaxSpeed);
+
+            currentPosition.X = nx;
+            currentPosition.Z = ny;
+            currentPosition.Y = nz;
+            _verticalVelocity = nvz;
+
+            currentVelocity = deltaTime > 0f ? (currentPosition - previousPosition) / deltaTime : Vector3.Zero;
+
             Actor.Position = currentPosition;
 
-            // 保存预测状态到缓冲区
             if (predictionBuffer.Count >= PredictionBufferSize)
             {
                 predictionBuffer.Dequeue();
@@ -214,7 +249,8 @@ namespace Game.Network
                 Position = currentPosition,
                 Rotation = currentRotation,
                 Velocity = currentVelocity,
-                Input = input
+                Input = input,
+                JumpImpulse = jumpImpulse
             });
         }
 
@@ -400,7 +436,6 @@ namespace Game.Network
         /// </summary>
         private void ReplayPredictions(int fromSequence)
         {
-            // 从服务端校验的序列号开始重新预测
             List<PredictedState> statesToReplay = new List<PredictedState>();
             
             foreach (var state in predictionBuffer)
@@ -411,11 +446,17 @@ namespace Game.Network
                 }
             }
 
-            // 重新预测
             foreach (var state in statesToReplay)
             {
-                Vector3 movement = state.Input * 5.0f * Time.DeltaTime;
-                currentPosition += movement;
+                var (nx, ny, nz, nvz) = MovementFormula.Step(
+                    currentPosition.X, currentPosition.Z, currentPosition.Y, _verticalVelocity,
+                    state.Input.X, state.Input.Z, state.JumpImpulse,
+                    Time.DeltaTime, MovementFormula.DefaultMaxSpeed);
+
+                currentPosition.X = nx;
+                currentPosition.Z = ny;
+                currentPosition.Y = nz;
+                _verticalVelocity = nvz;
             }
 
             Actor.Position = currentPosition;
@@ -518,6 +559,7 @@ namespace Game.Network
             currentRotation = Actor.Orientation;
             serverPosition = currentPosition;
             serverRotation = currentRotation;
+            _verticalVelocity = 0f;
         }
     }
 }

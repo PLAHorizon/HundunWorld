@@ -26,13 +26,13 @@ namespace HundunWorld.Game.UI.GameMain
 
         [Header("UI设置")]
         [Tooltip("背景颜色")]
-        public Color BackgroundColor = new Color(0, 0, 0, 0.6f);
+        public new Color BackgroundColor = new Color(0, 0, 0, 0.6f);
 
         [Tooltip("UI锚点")]
         public AnchorPresets Anchor = AnchorPresets.BottomLeft;
 
         [Tooltip("偏移量")]
-        public Margin Offsets = new Margin(10, -300, 400, 290);
+        public new Margin Offsets = new Margin(10, -300, 400, 290);
 
         // 日志条目列表
         private List<CombatLogEntry> _logEntries = new List<CombatLogEntry>();

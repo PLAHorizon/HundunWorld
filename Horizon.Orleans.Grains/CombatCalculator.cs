@@ -153,7 +153,7 @@ namespace Horizon.Orleans.Grains
         public static bool IsSkillReady(DateTime lastCastTime, long cooldownMs)
         {
             if (cooldownMs <= 0) return true;
-            return (DateTime.UtcNow - lastCastTime).TotalMilliseconds >= cooldownMs;
+            return (DateTime.Now - lastCastTime).TotalMilliseconds >= cooldownMs;
         }
 
         /// <summary>
@@ -165,7 +165,7 @@ namespace Horizon.Orleans.Grains
         public static float GetRemainingCooldown(DateTime lastCastTime, long cooldownMs)
         {
             if (cooldownMs <= 0) return 0f;
-            var elapsed = (DateTime.UtcNow - lastCastTime).TotalMilliseconds;
+            var elapsed = (DateTime.Now - lastCastTime).TotalMilliseconds;
             var remaining = cooldownMs - elapsed;
             return remaining > 0 ? (float)(remaining / 1000.0) : 0f;
         }
@@ -259,7 +259,7 @@ namespace Horizon.Orleans.Grains
         public static bool IsGlobalCooldownReady(DateTime lastActionTime, long gcdMs = 1000)
         {
             if (gcdMs <= 0) return true;
-            return (DateTime.UtcNow - lastActionTime).TotalMilliseconds >= gcdMs;
+            return (DateTime.Now - lastActionTime).TotalMilliseconds >= gcdMs;
         }
 
         /// <summary>
@@ -436,7 +436,7 @@ namespace Horizon.Orleans.Grains
         /// - 等级2(高级共鸣): 3+种元素, 3-4对相生 → 20%伤害/10%防御
         /// - 等级3(混沌共鸣): 5种元素齐全(5对相生) → 35%伤害/20%防御
         /// </summary>
-        public static WuxingResonanceResult CalculateWuxingResonance(List<int> teamElements)
+        public static WuxingResonanceResult CalculateWuxingResonance(List<int>? teamElements)
         {
             var result = new WuxingResonanceResult
             {

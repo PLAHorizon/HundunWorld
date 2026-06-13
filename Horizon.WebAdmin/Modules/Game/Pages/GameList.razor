@@ -1,0 +1,422 @@
+@page "/game/games"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Game.Services
+@namespace Horizon.WebAdmin.Modules.Game.Pages
+
+@inject GameConfigService ConfigService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">游戏列表</TypographyTitle>
+        <Space>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="ShowAddModal">添加游戏</Button>
+            <Button Size="@ButtonSize.Small" OnClick="LoadGames">刷新</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="JsonElement" DataSource="@Games" Size="@TableSize.Small" RowKey="@GetGameRowKey">
+            <Column TData="string" Title="封面图">
+                @{
+                    var coverUrl = context.TryGetProperty("coverUrl", out var cu) ? cu.GetString() : null;
+                    if (!string.IsNullOrEmpty(coverUrl))
+                    {
+                        <img src="@coverUrl" style="width:60px; height:40px; object-fit:cover; border-radius:4px;" />
+                    }
+                    else
+                    {
+                        <div style="width:60px; height:40px; background:#f0f0f0; border-radius:4px; display:flex; align-items:center; justify-content:center; color:#999; font-size:12px;">无</div>
+                    }
+                }
+            </Column>
+            <Column TData="string" Title="游戏名称">
+                @(context.TryGetProperty("name", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="版本">
+                @(context.TryGetProperty("version", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="类型">
+                @(context.TryGetProperty("genre", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="平台">
+                @(context.TryGetProperty("platform", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="开发商">
+                @(context.TryGetProperty("developer", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="发行商">
+                @(context.TryGetProperty("publisher", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    <SpaceItem>
+                        <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowDetailDrawer(context)">详情</Button>
+                    </SpaceItem>
+                    <SpaceItem>
+                        <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowEditModal(context)">编辑</Button>
+                    </SpaceItem>
+                    <SpaceItem>
+                        <Popconfirm Title="确定删除该游戏？" OnConfirm="() => DeleteGame(context)">
+                            <Button Type="@ButtonType.Primary" Danger Ghost Size="@ButtonSize.Small">删除</Button>
+                        </Popconfirm>
+                    </SpaceItem>
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    <Modal Title="@(_isEditing ? "编辑游戏" : "添加游戏")"
+           Visible="@_addModalVisible"
+           OnCancel="CloseAddModal"
+           OnOk="HandleAddOk"
+           ConfirmLoading="@_addLoading"
+           Width="600">
+        <Form Model="@_addForm" Layout="@FormLayout.Vertical">
+            <FormItem Label="游戏名称">
+                <Input @bind-Value="@_addForm.Name" Placeholder="请输入游戏名称" />
+            </FormItem>
+            <FormItem Label="描述">
+                <TextArea @bind-Value="@_addForm.Description" Rows="3" Placeholder="请输入游戏描述" />
+            </FormItem>
+            <AntDesign.Row Gutter="16">
+                <AntDesign.Col Span="12">
+                    <FormItem Label="版本">
+                        <Input @bind-Value="@_addForm.Version" Placeholder="如 1.0.0" />
+                    </FormItem>
+                </AntDesign.Col>
+                <AntDesign.Col Span="12">
+                    <FormItem Label="类型">
+                        <Input @bind-Value="@_addForm.Genre" Placeholder="如 RPG, FPS" />
+                    </FormItem>
+                </AntDesign.Col>
+            </AntDesign.Row>
+            <AntDesign.Row Gutter="16">
+                <AntDesign.Col Span="12">
+                    <FormItem Label="平台">
+                        <Input @bind-Value="@_addForm.Platform" Placeholder="如 PC, Mobile" />
+                    </FormItem>
+                </AntDesign.Col>
+                <AntDesign.Col Span="12">
+                    <FormItem Label="开发商">
+                        <Input @bind-Value="@_addForm.Developer" Placeholder="请输入开发商" />
+                    </FormItem>
+                </AntDesign.Col>
+            </AntDesign.Row>
+            <AntDesign.Row Gutter="16">
+                <AntDesign.Col Span="12">
+                    <FormItem Label="发行商">
+                        <Input @bind-Value="@_addForm.Publisher" Placeholder="请输入发行商" />
+                    </FormItem>
+                </AntDesign.Col>
+                <AntDesign.Col Span="12">
+                    <FormItem Label="封面图URL">
+                        <Input @bind-Value="@_addForm.CoverUrl" Placeholder="请输入封面图地址" />
+                    </FormItem>
+                </AntDesign.Col>
+            </AntDesign.Row>
+            <FormItem Label="下载URL">
+                <Input @bind-Value="@_addForm.DownloadUrl" Placeholder="请输入下载地址" />
+            </FormItem>
+        </Form>
+    </Modal>
+
+    <Drawer Title='@("游戏详情")'
+            Visible="@_detailDrawerVisible"
+            OnClose="CloseDetailDrawer"
+            Width="500"
+            Placement="@DrawerPlacement.Right">
+        @if (_selectedGame.ValueKind != JsonValueKind.Undefined)
+        {
+            <div style="margin-bottom:16px; text-align:center;">
+                @{
+                    var detailCover = _selectedGame.TryGetProperty("coverUrl", out var dcu) ? dcu.GetString() : null;
+                    if (!string.IsNullOrEmpty(detailCover))
+                    {
+                        <img src="@detailCover" style="max-width:100%; max-height:200px; border-radius:8px; object-fit:cover;" />
+                    }
+                }
+            </div>
+            <Descriptions Title="@(_selectedGame.TryGetProperty("name", out var dn) ? dn.GetString() ?? "" : "")"
+                          Size="@DescriptionsSize.Small" Column="1" Bordered>
+                <DescriptionsItem Label="游戏名称">
+                    @(_selectedGame.TryGetProperty("name", out var n) ? n.GetString() ?? "-" : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Label="描述">
+                    @(_selectedGame.TryGetProperty("description", out var d) ? d.GetString() ?? "-" : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Label="版本">
+                    @(_selectedGame.TryGetProperty("version", out var v) ? v.GetString() ?? "-" : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Label="类型">
+                    @(_selectedGame.TryGetProperty("genre", out var g) ? g.GetString() ?? "-" : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Label="平台">
+                    @(_selectedGame.TryGetProperty("platform", out var pl) ? pl.GetString() ?? "-" : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Label="开发商">
+                    @(_selectedGame.TryGetProperty("developer", out var dev) ? dev.GetString() ?? "-" : "-")
+                </DescriptionsItem>
+                <DescriptionsItem Label="发行商">
+                    @(_selectedGame.TryGetProperty("publisher", out var pub) ? pub.GetString() ?? "-" : "-")
+                </DescriptionsItem>
+            </Descriptions>
+
+            @if (_selectedGame.TryGetProperty("tags", out var tagsEl) && tagsEl.ValueKind == JsonValueKind.Array)
+            {
+                <div style="margin-top:16px;">
+                    <div style="font-weight:500; margin-bottom:8px;">标签</div>
+                    <Space>
+                        @foreach (var tag in tagsEl.EnumerateArray())
+                        {
+                            <SpaceItem>
+                                <Tag Color='@("blue")'>@(tag.GetString() ?? "")</Tag>
+                            </SpaceItem>
+                        }
+                    </Space>
+                </div>
+            }
+
+            @if (_selectedGame.TryGetProperty("features", out var featuresEl) && featuresEl.ValueKind == JsonValueKind.Array)
+            {
+                <div style="margin-top:16px;">
+                    <div style="font-weight:500; margin-bottom:8px;">特性</div>
+                    <Space>
+                        @foreach (var feat in featuresEl.EnumerateArray())
+                        {
+                            <SpaceItem>
+                                <Tag Color='@("green")'>@(feat.GetString() ?? "")</Tag>
+                            </SpaceItem>
+                        }
+                    </Space>
+                </div>
+            }
+
+            @if (_selectedGame.TryGetProperty("screenshots", out var screenshotsEl) && screenshotsEl.ValueKind == JsonValueKind.Array)
+            {
+                <div style="margin-top:16px;">
+                    <div style="font-weight:500; margin-bottom:8px;">截图</div>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        @foreach (var ss in screenshotsEl.EnumerateArray())
+                        {
+                            var ssUrl = ss.GetString();
+                            if (!string.IsNullOrEmpty(ssUrl))
+                            {
+                                <img src="@ssUrl" style="width:120px; height:80px; object-fit:cover; border-radius:4px; border:1px solid #f0f0f0;" />
+                            }
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </Drawer>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> Games { get; set; } = new();
+    private bool Loading { get; set; }
+    private string ErrorMessage { get; set; } = "";
+
+    private bool _addModalVisible;
+    private bool _addLoading;
+    private bool _isEditing;
+    private int _editingGameId;
+    private JsonElement _selectedGame;
+    private bool _detailDrawerVisible;
+
+    private AddGameFormModel _addForm { get; set; } = new();
+
+    private object GetGameRowKey(JsonElement x) =>
+        x.TryGetProperty("id", out var p) ? (object)p.GetInt32() : 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGames();
+    }
+
+    private async Task LoadGames()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await ConfigService.GetGameListAsync();
+            if (result?.IsSuccess == true)
+            {
+                var data = result.Data;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    Games = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    Games = items.EnumerateArray().ToList();
+                }
+                else
+                {
+                    Games = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                Games = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    ErrorMessage = result.ErrorMessage ?? "加载游戏列表失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载游戏列表失败: {ex.Message}";
+            Games = new List<JsonElement>();
+        }
+        Loading = false;
+    }
+
+    private void ShowAddModal()
+    {
+        _isEditing = false;
+        _editingGameId = 0;
+        _addForm = new AddGameFormModel();
+        _addModalVisible = true;
+    }
+
+    private void ShowEditModal(JsonElement game)
+    {
+        _isEditing = true;
+        _editingGameId = game.TryGetProperty("id", out var p) ? p.GetInt32() : 0;
+        _addForm = new AddGameFormModel
+        {
+            Name = game.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "",
+            Description = game.TryGetProperty("description", out var d) ? d.GetString() ?? "" : "",
+            Version = game.TryGetProperty("version", out var v) ? v.GetString() ?? "" : "",
+            Genre = game.TryGetProperty("genre", out var g) ? g.GetString() ?? "" : "",
+            Platform = game.TryGetProperty("platform", out var pl) ? pl.GetString() ?? "" : "",
+            Developer = game.TryGetProperty("developer", out var dev) ? dev.GetString() ?? "" : "",
+            Publisher = game.TryGetProperty("publisher", out var pub) ? pub.GetString() ?? "" : "",
+            CoverUrl = game.TryGetProperty("coverUrl", out var cu) ? cu.GetString() ?? "" : "",
+            DownloadUrl = game.TryGetProperty("downloadUrl", out var du) ? du.GetString() ?? "" : ""
+        };
+        _addModalVisible = true;
+    }
+
+    private void CloseAddModal() => _addModalVisible = false;
+
+    private async Task HandleAddOk()
+    {
+        _addLoading = true;
+        try
+        {
+            var dto = new
+            {
+                Name = _addForm.Name,
+                Description = _addForm.Description,
+                Version = _addForm.Version,
+                Genre = _addForm.Genre,
+                Platform = _addForm.Platform,
+                Developer = _addForm.Developer,
+                Publisher = _addForm.Publisher,
+                CoverUrl = _addForm.CoverUrl,
+                DownloadUrl = _addForm.DownloadUrl
+            };
+
+            ResultVM<bool>? result;
+            if (_isEditing)
+            {
+                result = await ConfigService.UpdateGameAsync(_editingGameId, dto);
+            }
+            else
+            {
+                result = await ConfigService.AddGameAsync(dto);
+            }
+
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success(_isEditing ? "更新成功" : "添加成功");
+                _addModalVisible = false;
+                await LoadGames();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? (_isEditing ? "更新失败" : "添加失败");
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"{(_isEditing ? "更新" : "添加")}失败: {ex.Message}";
+        }
+        _addLoading = false;
+    }
+
+    private async Task DeleteGame(JsonElement game)
+    {
+        var gameId = game.TryGetProperty("id", out var p) ? p.GetInt32() : 0;
+        try
+        {
+            var result = await ConfigService.DeleteGameAsync(gameId);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success("删除成功");
+                await LoadGames();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "删除失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"删除失败: {ex.Message}";
+        }
+    }
+
+    private async Task ShowDetailDrawer(JsonElement game)
+    {
+        var gameId = game.TryGetProperty("id", out var p) ? p.GetInt32() : 0;
+        try
+        {
+            var result = await ConfigService.GetGameDetailAsync(gameId);
+            if (result?.IsSuccess == true)
+            {
+                _selectedGame = result.Data;
+            }
+            else
+            {
+                _selectedGame = game;
+            }
+        }
+        catch
+        {
+            _selectedGame = game;
+        }
+        _detailDrawerVisible = true;
+    }
+
+    private void CloseDetailDrawer() => _detailDrawerVisible = false;
+
+    private class AddGameFormModel
+    {
+        public string Name { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string Version { get; set; } = "";
+        public string Genre { get; set; } = "";
+        public string Platform { get; set; } = "";
+        public string Developer { get; set; } = "";
+        public string Publisher { get; set; } = "";
+        public string CoverUrl { get; set; } = "";
+        public string DownloadUrl { get; set; } = "";
+    }
+}

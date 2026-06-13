@@ -31,14 +31,14 @@ namespace HundunWorld.Game.UI.GameMain
         public Color DebuffBorderColor = new Color(1.0f, 0.0f, 0.0f, 1.0f);
 
         [Tooltip("背景颜色")]
-        public Color BackgroundColor = new Color(0, 0, 0, 0.3f);
+        public new Color BackgroundColor = new Color(0, 0, 0, 0.3f);
 
         [Header("位置设置")]
         [Tooltip("UI锚点")]
         public AnchorPresets Anchor = AnchorPresets.TopRight;
 
         [Tooltip("偏移量")]
-        public Margin Offsets = new Margin(10, 10, 300, 60);
+        public new Margin Offsets = new Margin(10, 10, 300, 60);
 
         [Tooltip("是否启用调试日志")]
         public bool EnableDebugLog = false;

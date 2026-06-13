@@ -1,0 +1,269 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             x:Class="Horizon.Game.GengDi.Core.Views.FlowerOrderCenterView"
+             x:DataType="vm:FlowerOrderCenterViewModel">
+
+    <controls:GalleryPage Title="订单中心"
+                          Subtitle="Horizon.Game.GengDi.FlowerOrders"
+                          Description="管理您的花卉订单。"
+                          IconSource="{StaticResource HomeIcon}">
+
+        <Grid>
+        <Grid RowDefinitions="Auto,Auto,*" RowSpacing="16">
+
+            <!-- 订单状态筛选 -->
+            <Border Classes="SurfaceCard" Padding="12 8">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="全部" Classes="PrimaryAction" Padding="14 6" CornerRadius="20" FontSize="12" Click="OnStatusFilterClick" Tag="-1"/>
+                        <Button Content="待支付" Classes="QuietAction" Padding="14 6" CornerRadius="20" FontSize="12" Click="OnStatusFilterClick" Tag="0"/>
+                        <Button Content="已支付" Classes="QuietAction" Padding="14 6" CornerRadius="20" FontSize="12" Click="OnStatusFilterClick" Tag="1"/>
+                        <Button Content="已发货" Classes="QuietAction" Padding="14 6" CornerRadius="20" FontSize="12" Click="OnStatusFilterClick" Tag="2"/>
+                        <Button Content="已签收" Classes="QuietAction" Padding="14 6" CornerRadius="20" FontSize="12" Click="OnStatusFilterClick" Tag="3"/>
+                        <Button Content="已完成" Classes="QuietAction" Padding="14 6" CornerRadius="20" FontSize="12" Click="OnStatusFilterClick" Tag="4"/>
+                        <Button Content="已取消" Classes="QuietAction" Padding="14 6" CornerRadius="20" FontSize="12" Click="OnStatusFilterClick" Tag="5"/>
+                        <Button Content="退款中" Classes="QuietAction" Padding="14 6" CornerRadius="20" FontSize="12" Click="OnStatusFilterClick" Tag="6"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- 操作栏 -->
+            <Border Classes="SurfaceCard" Padding="12 8" Grid.Row="1">
+                <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="#42A5F5" VerticalAlignment="Center"/>
+                    <Button Grid.Column="1" Content="刷新" Classes="QuietAction" Padding="12 6" CornerRadius="8" FontSize="12"
+                            Command="{Binding RefreshCommand}"/>
+                </Grid>
+            </Border>
+
+            <!-- 订单列表 -->
+            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="12" Margin="0 0 0 24">
+                    <ItemsControl ItemsSource="{Binding FilteredOrders}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Classes="SurfaceCard" Padding="16" CornerRadius="14">
+                                    <StackPanel Spacing="10">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Text="{Binding OrderNo}" FontSize="13" FontWeight="SemiBold" />
+                                            <Border Grid.Column="1"
+                                                    Background="#25FFFFFF"
+                                                    CornerRadius="8"
+                                                    Padding="8 4">
+                                                <TextBlock Text="{Binding StatusText}" FontSize="11" Foreground="#FFA726" />
+                                            </Border>
+                                        </Grid>
+
+                                        <ItemsControl ItemsSource="{Binding Items}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid ColumnDefinitions="Auto,*,Auto" Margin="0 4 0 0">
+                                                        <Border Width="40" Height="40"
+                                                                CornerRadius="8"
+                                                                Background="#25FFFFFF">
+                                                            <TextBlock Text="🌸" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                        </Border>
+                                                        <StackPanel Grid.Column="1" Margin="10 0 0 0" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding ProductName}" FontSize="12" />
+                                                            <TextBlock Text="{Binding Quantity, StringFormat='x{0}'}" FontSize="10" Foreground="#888888" />
+                                                        </StackPanel>
+                                                        <TextBlock Grid.Column="2"
+                                                                   Text="{Binding Subtotal, StringFormat='¥{0:F2}'}"
+                                                                   FontSize="13"
+                                                                   FontWeight="SemiBold"
+                                                                   VerticalAlignment="Center" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <Border Height="1" Background="#20FFFFFF" />
+
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock Text="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"
+                                                       FontSize="11" Foreground="#888888" VerticalAlignment="Center" />
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Text="{Binding TotalAmount, StringFormat='合计: ¥{0:F2}'}"
+                                                           FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0 0 8 0" />
+
+                                                <Button Content="支付" Classes="PrimaryAction" Padding="10 5" FontSize="11" CornerRadius="8"
+                                                        IsVisible="{Binding CanPay}"
+                                                        Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).PayOrderCommand}"
+                                                        CommandParameter="{Binding OrderId}"/>
+                                                <Button Content="确认收货" Classes="PrimaryAction" Padding="10 5" FontSize="11" CornerRadius="8"
+                                                        IsVisible="{Binding CanConfirmDelivery}"
+                                                        Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).ConfirmDeliveryCommand}"
+                                                        CommandParameter="{Binding OrderId}"/>
+                                                <Button Content="确认完成" Classes="PrimaryAction" Padding="10 5" FontSize="11" CornerRadius="8"
+                                                        IsVisible="{Binding CanComplete}"
+                                                        Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).CompleteOrderCommand}"
+                                                        CommandParameter="{Binding OrderId}"/>
+                                                <Button Content="取消" Classes="QuietAction" Padding="10 5" FontSize="11" CornerRadius="8"
+                                                        IsVisible="{Binding CanCancel}"
+                                                        Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).CancelOrderCommand}"
+                                                        CommandParameter="{Binding OrderId}"/>
+                                                <Button Content="退款" Classes="QuietAction" Padding="10 5" FontSize="11" CornerRadius="8"
+                                                        IsVisible="{Binding CanRefund}"
+                                                        Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).RequestRefundCommand}"
+                                                        CommandParameter="{Binding OrderId}"/>
+                                                <Button Content="评价" Classes="PrimaryAction" Padding="10 5" FontSize="11" CornerRadius="8"
+                                                        IsVisible="{Binding CanReview}"
+                                                        Click="OnReviewClick" Tag="{Binding OrderId}"/>
+                                                <Button Content="查看物流" Classes="QuietAction" Padding="10 5" FontSize="11" CornerRadius="8"
+                                                        IsVisible="{Binding CanViewLogistics}"
+                                                        Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).ViewLogisticsCommand}"
+                                                        CommandParameter="{Binding OrderId}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- 空状态 -->
+                    <Border Classes="SurfaceCard" Padding="40" IsVisible="{Binding IsEmpty}">
+                        <StackPanel HorizontalAlignment="Center" Spacing="12">
+                            <TextBlock Text="📦" FontSize="32" HorizontalAlignment="Center" />
+                            <TextBlock Text="暂无订单" FontSize="14" Foreground="#888888" HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <Panel IsVisible="{Binding ShowLogisticsDialog}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ZIndex="1000">
+            <Border Background="#80000000" />
+            <Border HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Background="#1E1E2E" CornerRadius="16" Padding="24" MaxWidth="620" MaxHeight="1003">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="16">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="物流跟踪" FontSize="16" FontWeight="SemiBold"/>
+                            <Button Grid.Column="1" Content="✕" Classes="QuietAction" Padding="8 4" CornerRadius="8"
+                                    Command="{Binding CloseLogisticsDialogCommand}"/>
+                        </Grid>
+
+                        <Border Background="#25FFFFFF" CornerRadius="10" Padding="12">
+                            <StackPanel Spacing="4">
+                                <TextBlock FontSize="12" Foreground="#AAAAAA">
+                                    <Run Text="快递公司："/>
+                                    <Run Text="{Binding LogisticsMapData.ExpressCompanyName}" Foreground="#FFFFFF"/>
+                                </TextBlock>
+                                <TextBlock FontSize="12" Foreground="#AAAAAA">
+                                    <Run Text="运单号："/>
+                                    <Run Text="{Binding LogisticsMapData.ShipOrderNumber}" Foreground="#FFFFFF"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel IsVisible="{Binding IsLoadingLogistics}" HorizontalAlignment="Center" Spacing="8" Margin="0 20">
+                            <TextBlock Text="⏳" FontSize="24" HorizontalAlignment="Center"/>
+                            <TextBlock Text="正在查询物流信息..." FontSize="12" Foreground="#888888" HorizontalAlignment="Center"/>
+                        </StackPanel>
+
+                        <StackPanel IsVisible="{Binding HasNoLogistics}" HorizontalAlignment="Center" Spacing="8" Margin="0 20">
+                            <TextBlock Text="📦" FontSize="24" HorizontalAlignment="Center"/>
+                            <TextBlock Text="暂无物流信息" FontSize="12" Foreground="#888888" HorizontalAlignment="Center"/>
+                        </StackPanel>
+
+                        <controls:LogisticsMapView MapData="{Binding LogisticsMapData}" Height="250" IsVisible="{Binding HasLogisticsNodes}"/>
+
+                        <ItemsControl ItemsSource="{Binding LogisticsMapData.Nodes}" IsVisible="{Binding HasLogisticsNodes}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnDefinitions="Auto,12,*" Margin="0 0 0 0">
+                                        <StackPanel Width="20" VerticalAlignment="Stretch">
+                                            <Border Width="10" Height="10" CornerRadius="5" HorizontalAlignment="Center"
+                                                    Background="#66BB6A" Margin="0 4 0 0"/>
+                                            <Border Width="2" Background="#3066BB6A" HorizontalAlignment="Center"
+                                                    Margin="0 2 0 0" VerticalAlignment="Stretch"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Spacing="2" Margin="0 0 0 16">
+                                            <TextBlock Text="{Binding Time, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"
+                                                       FontSize="11" Foreground="#888888"/>
+                                            <TextBlock Text="{Binding Description}" FontSize="12" TextWrapping="Wrap"/>
+                                            <TextBlock Text="{Binding Location}" FontSize="11" Foreground="#AAAAAA"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Panel>
+
+        <Panel IsVisible="{Binding ShowPaymentDialog}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ZIndex="1000">
+            <Border Background="#CC0D0D0D" />
+            <Border HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Background="#272727" CornerRadius="20" Padding="32" MaxWidth="560" MinWidth="480">
+                <StackPanel Spacing="24">
+                    <!-- Header -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                            <Border Width="44" Height="44" CornerRadius="22" Background="#1A8B5C">
+                                <TextBlock Text="💳" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <TextBlock Text="确认支付" FontSize="20" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="✕" Classes="QuietAction" Padding="10 6" CornerRadius="8"
+                                Command="{Binding CancelPaymentCommand}" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- Amount Card -->
+                    <Border Background="#1A1A1A" CornerRadius="16" Padding="24 20">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="应付金额" FontSize="13" Foreground="#888888"/>
+                            <TextBlock FontSize="32" FontWeight="Bold" Foreground="#4ECB71"
+                                       Text="{Binding PaymentAmount, StringFormat='¥{0:F2}'}"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Payment Method Card -->
+                    <Border Background="#1A1A1A" CornerRadius="16" Padding="24 20">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="支付方式" FontSize="14" FontWeight="SemiBold" Foreground="#CCCCCC"/>
+                            <ComboBox SelectedIndex="{Binding SelectedPaymentChannel}"
+                                      HorizontalAlignment="Stretch"
+                                      Background="#2A2A2A"
+                                      BorderBrush="#3A3A3A"
+                                      Foreground="White">
+                                <ComboBox.Items>
+                                    <ComboBoxItem Content="微信支付"/>
+                                    <ComboBoxItem Content="支付宝"/>
+                                </ComboBox.Items>
+                            </ComboBox>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Processing Indicator -->
+                    <StackPanel IsVisible="{Binding IsPaymentProcessing}" HorizontalAlignment="Center" Spacing="12" Margin="0 4">
+                        <ProgressBar IsIndeterminate="True" Height="4"/>
+                        <TextBlock Text="正在支付，请稍候..." FontSize="12" Foreground="#666666" HorizontalAlignment="Center"/>
+                    </StackPanel>
+
+                    <!-- Result Message -->
+                    <TextBlock Text="{Binding PaymentResultMessage}" FontSize="13" Foreground="#4ECB71"
+                               HorizontalAlignment="Center"
+                               IsVisible="{Binding !!PaymentResultMessage}"/>
+
+                    <!-- Action Buttons -->
+                    <Grid ColumnDefinitions="120,*" ColumnSpacing="12">
+                        <Button Content="取消" Classes="QuietAction" CornerRadius="12" Padding="0 14"
+                                HorizontalAlignment="Stretch" FontSize="14"
+                                Command="{Binding CancelPaymentCommand}"
+                                IsEnabled="{Binding !IsPaymentProcessing}"/>
+                        <Button Grid.Column="1" Content="确认支付" Classes="PrimaryAction" CornerRadius="12" Padding="0 14"
+                                HorizontalAlignment="Stretch" FontSize="14" FontWeight="SemiBold"
+                                Command="{Binding ConfirmPaymentCommand}"
+                                IsEnabled="{Binding !IsPaymentProcessing}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Panel>
+        </Grid>
+    </controls:GalleryPage>
+</UserControl>

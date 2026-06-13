@@ -1,0 +1,185 @@
+﻿@page "/flower/billing"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using Horizon.Share.VMs
+@using System.Text.Json
+@using Horizon.WebAdmin.Modules.Flower.Services
+@inject FlowerBillingService BillingService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">📊 店铺账单管理</TypographyTitle>
+        <Space>
+            <InputNumber TValue="long" @bind-Value="@FilterShopId" Placeholder="@("店铺ID")" Style="width:140px" Size="@InputSize.Small" />
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadBillings">🔍 查询</Button>
+            <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="LoadBillings">🔄 刷新</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="BillingItem" DataSource="@Billings" Size="@TableSize.Small" RowKey="x => x.Id">
+            <PropertyColumn Property="b => b.Id" Title="账单ID" />
+            <PropertyColumn Property="b => b.ShopId" Title="店铺ID" />
+            <Column TData="string" Title="账单金额">
+                <AntDesign.Text Strong>¥@context.Amount.ToString("N2")</AntDesign.Text>
+            </Column>
+            <Column TData="string" Title="类型">
+                <Tag Color="@(context.Type == "收入" ? "green" : "orange")">@context.Type</Tag>
+            </Column>
+            <Column TData="string" Title="状态">
+                <Tag Color="@GetBillingStatusColor(context.Status)">@GetBillingStatusText(context.Status)</Tag>
+            </Column>
+            <Column TData="string" Title="创建时间">@context.CreatedAt.ToString("yyyy-MM-dd HH:mm")</Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    <SpaceItem>
+                        <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => OpenAuditModal(context)">提现审核</Button>
+                    </SpaceItem>
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    <Modal Title="@("提现审核")" Visible="@ShowAuditModal" OnCancel="CloseAuditModal"
+           OnOk="SubmitAudit" OkText="@("提交")" CancelText="@("取消")">
+        <Form Model="@AuditModel" Layout="@FormLayout.Vertical">
+            <FormItem Label="@("提现ID")">
+                <Input @bind-Value="@AuditModel.WithdrawId" Disabled />
+            </FormItem>
+            <FormItem Label="@("审核结果")">
+                <RadioGroup @bind-Value="@AuditModel.Approved">
+                    <Radio Value="true">通过</Radio>
+                    <Radio Value="false">拒绝</Radio>
+                </RadioGroup>
+            </FormItem>
+            <FormItem Label="@("审核意见")">
+                <TextArea @bind-Value="@AuditModel.Reason" Rows="3" Placeholder="@("请输入审核意见")" />
+            </FormItem>
+        </Form>
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <Alert Type="@AlertType.Success" Message="@SuccessMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<BillingItem> Billings { get; set; } = new();
+    private bool Loading { get; set; }
+    private long FilterShopId { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string SuccessMessage { get; set; } = "";
+    private bool ShowAuditModal { get; set; }
+    private AuditFormModel AuditModel { get; set; } = new();
+
+    private readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBillings();
+    }
+
+    private async Task LoadBillings()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await BillingService.GetShopAccountItemsAsync(FilterShopId > 0 ? FilterShopId : 0);
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                Billings = JsonSerializer.Deserialize<List<BillingItem>>(result.Data.Value.GetRawText(), _jsonOpts) ?? new();
+            }
+            else
+            {
+                Billings = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载账单列表失败: {ex.Message}";
+            Billings = new();
+        }
+        Loading = false;
+    }
+
+    private void OpenAuditModal(BillingItem item)
+    {
+        AuditModel = new AuditFormModel { WithdrawId = item.Id.ToString() };
+        ShowAuditModal = true;
+    }
+
+    private void CloseAuditModal()
+    {
+        ShowAuditModal = false;
+    }
+
+    private async Task SubmitAudit()
+    {
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var withdrawId = long.Parse(AuditModel.WithdrawId);
+            var result = await BillingService.AuditWithdrawAsync(withdrawId, new
+            {
+                Approved = AuditModel.Approved,
+                Reason = AuditModel.Reason
+            });
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = AuditModel.Approved ? "提现审核已通过" : "提现审核已拒绝";
+                ShowAuditModal = false;
+                await LoadBillings();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "审核操作失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"审核操作失败: {ex.Message}";
+        }
+    }
+
+    private string GetBillingStatusColor(int status) => status switch
+    {
+        0 => "orange", 1 => "green", 2 => "red", 3 => "cyan", _ => "default"
+    };
+
+    private string GetBillingStatusText(int status) => status switch
+    {
+        0 => "待处理", 1 => "已完成", 2 => "已拒绝", 3 => "处理中", _ => "未知"
+    };
+
+    public class BillingItem
+    {
+        public long Id { get; set; }
+        public long ShopId { get; set; }
+        public decimal Amount { get; set; }
+        public string Type { get; set; } = "";
+        public int Status { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class AuditFormModel
+    {
+        public string WithdrawId { get; set; } = "";
+        public bool Approved { get; set; } = true;
+        public string Reason { get; set; } = "";
+    }
+}

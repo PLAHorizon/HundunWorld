@@ -164,22 +164,14 @@ namespace HundunWorld.Game
     /// </summary>
     public enum CameraState
     {
-        /// <summary>正常跟随模式</summary>
         Normal,
-        
-        /// <summary>战斗模式(锁定目标,距离拉近)</summary>
         Combat,
-        
-        /// <summary>攀爬模式(俯视角度,距离拉近)</summary>
+        OverShoulder,
+        LockOn,
+        BossBattle,
         Climbing,
-        
-        /// <summary>游泳模式(水平视角)</summary>
         Swimming,
-        
-        /// <summary>飞行模式(自由视角,距离拉远)</summary>
         Flying,
-        
-        /// <summary>过场动画模式(禁用用户输入)</summary>
         Cutscene
     }
     
@@ -280,6 +272,21 @@ namespace HundunWorld.Game
         [Tooltip("相机聚焦点相对于目标的位置偏移")]
         public Vector3 FocusOffset = new Vector3(0, 1.8f, 0);
 
+        [Tooltip("启用动态聚焦高度（近距离时聚焦点上移至上半身）")]
+        public bool EnableDynamicFocusHeight = true;
+
+        [Tooltip("近距离时聚焦点高度（厘米，约头部高度）")]
+        public float CloseRangeFocusHeight = 170f;
+
+        [Tooltip("远距离时聚焦点高度（厘米，约腰部高度）")]
+        public float FarRangeFocusHeight = 120f;
+
+        [Tooltip("近距离阈值（厘米）")]
+        public float CloseRangeDistance = 500f;
+
+        [Tooltip("远距离阈值（厘米）")]
+        public float FarRangeDistance = 1500f;
+
         [Header("距离控制")]
         [Range(5.0f,3000.0f)]
         public float Distance = 15.0f;
@@ -339,7 +346,7 @@ namespace HundunWorld.Game
         public float CollisionRadius = 0.3f;
 
         [Tooltip("碰撞平滑过渡速度")]
-        public float CollisionSmoothSpeed = 10f;
+        public float CollisionSmoothSpeed = 12f;
 
         [Tooltip("启用智能避障（碰撞时自动调整到最佳视角）")]
         public bool EnableSmartAvoidance = true;
@@ -421,7 +428,7 @@ namespace HundunWorld.Game
         public bool EnableAutoAlign = true;
         
         [Tooltip("自动对齐延迟时间（秒，停止手动旋转后等待时间）")]
-        public float AlignDelay = 5.0f;
+        public float AlignDelay = 2.0f;
         
         [Tooltip("自动对齐旋转速度（度/秒）")]
         public float AlignRotationSpeed = 90f;
@@ -434,37 +441,6 @@ namespace HundunWorld.Game
         
         [Tooltip("战斗中禁用自动对齐")]
         public bool DisableAlignInCombat = true;
-        
-        [Header("拍照功能")]
-        [Tooltip("启用拍照功能")]
-        public bool EnablePhotoMode = true;
-        
-        [Tooltip("拍摄2寸头像的快捷键")]
-        public KeyboardKeys TakeHeadshotKey = KeyboardKeys.F9;
-        
-        [Tooltip("拍摄全身照的快捷键")]
-        public KeyboardKeys TakeFullBodyKey = KeyboardKeys.F10;
-        
-        [Tooltip("游戏截图的快捷键")]
-        public KeyboardKeys TakeScreenshotKey = KeyboardKeys.F11;
-        
-        [Tooltip("截图保存路径（相对于项目根目录）")]
-        public string ScreenshotPath = "Screenshots";
-        
-        [Tooltip("头像照片距离（米）")]
-        public float HeadshotDistance = 2.5f;
-        
-        [Tooltip("头像照片俯仰角")]
-        public float HeadshotPitch = 0f;
-        
-        [Tooltip("全身照距离（米）")]
-        public float FullBodyDistance = 5f;
-        
-        [Tooltip("全身照俯仰角")]
-        public float FullBodyPitch = 10f;
-        
-        [Tooltip("拍照后恢复原视角的速度")]
-        public float PhotoReturnSpeed = 8f;
         
         [Header("弹性跟随系统")]
         [Tooltip("启用弹性跟随(角色移动时相机有延迟感,模仿剑侠情缘3/魔兽世界效果)")]
@@ -505,6 +481,22 @@ namespace HundunWorld.Game
         [Tooltip("FOV变化平滑速度")]
         public float FOVSmoothSpeed = 3f;
         
+        [Header("越肩视角设置")]
+        [Tooltip("越肩水平偏移量（厘米）")]
+        public float ShoulderOffset = 40f;
+
+        [Tooltip("越肩高度偏移量（厘米）")]
+        public float ShoulderHeightOffset = 10f;
+
+        [Tooltip("越肩侧边（true=右肩，false=左肩）")]
+        public bool ShoulderRightSide = true;
+
+        [Tooltip("越肩切换平滑速度")]
+        public float ShoulderSwapSpeed = 8f;
+
+        [Tooltip("越肩碰撞回退阈值（厘米，偏移量低于此值时回退到标准视角）")]
+        public float ShoulderMinOffset = 10f;
+
         [Header("状态FOV调整")]
         [Tooltip("启用基于状态的FOV调整（优先级高于速度FOV）")]
         public bool EnableStateFOV = true;
@@ -556,7 +548,7 @@ namespace HundunWorld.Game
             TargetPitch = 25f,
             AllowRotation = true,
             AllowZoom = false,
-            FOVOverride = 65f,
+            FOVOverride = 60f,
             TransitionSpeed = 8f
         };
         
@@ -604,6 +596,116 @@ namespace HundunWorld.Game
             AllowZoom = false,
             TransitionSpeed = 2f
         };
+
+        [Tooltip("OverShoulder状态配置(越肩视角)")]
+        public CameraStateConfig OverShoulderStateConfig = new CameraStateConfig
+        {
+            State = CameraState.OverShoulder,
+            TargetDistance = 4f,
+            TargetPitch = 5f,
+            AllowRotation = true,
+            AllowZoom = true,
+            FOVOverride = 60f,
+            TransitionSpeed = 10f
+        };
+
+        [Tooltip("LockOn状态配置(锁定目标)")]
+        public CameraStateConfig LockOnStateConfig = new CameraStateConfig
+        {
+            State = CameraState.LockOn,
+            TargetDistance = 5f,
+            TargetPitch = 10f,
+            AllowRotation = true,
+            AllowZoom = false,
+            FOVOverride = 60f,
+            TransitionSpeed = 10f
+        };
+
+        [Header("战斗动态镜头")]
+        [Tooltip("启用战斗动态镜头效果")]
+        public bool EnableCombatCameraEffects = true;
+
+        [Tooltip("攻击命中推进距离（厘米）")]
+        public float HitPushDistance = 30f;
+
+        [Tooltip("攻击命中持续时间（秒）")]
+        public float HitPushDuration = 0.15f;
+
+        [Tooltip("重击命中推进距离（厘米）")]
+        public float HeavyHitPushDistance = 80f;
+
+        [Tooltip("重击命中持续时间（秒）")]
+        public float HeavyHitPushDuration = 0.25f;
+
+        [Tooltip("重击FOV缩放量（度）")]
+        public float HeavyHitFOVPunch = -3f;
+
+        [Tooltip("闪避镜头偏移强度")]
+        public float DodgeOffsetStrength = 0.3f;
+
+        [Tooltip("闪避镜头恢复速度")]
+        public float DodgeRecoverySpeed = 8f;
+
+        [Tooltip("受击镜头偏移强度")]
+        public float HitReactionStrength = 0.5f;
+
+        [Tooltip("受击镜头持续时间（秒）")]
+        public float HitReactionDuration = 0.3f;
+
+        [Tooltip("处决镜头距离（厘米）")]
+        public float ExecutionDistance = 250f;
+
+        [Tooltip("处决镜头俯仰角")]
+        public float ExecutionPitch = 5f;
+
+        [Tooltip("处决镜头FOV")]
+        public float ExecutionFOV = 50f;
+
+        [Tooltip("处决镜头持续时间（秒）")]
+        public float ExecutionDuration = 1.5f;
+
+        [Tooltip("BossBattle状态配置(Boss战)")]
+        public CameraStateConfig BossBattleStateConfig = new CameraStateConfig
+        {
+            State = CameraState.BossBattle,
+            TargetDistance = 10f,
+            TargetPitch = 15f,
+            AllowRotation = true,
+            AllowZoom = true,
+            FOVOverride = 70f,
+            TransitionSpeed = 8f
+        };
+        
+        [Header("锁定目标设置")]
+        [Tooltip("启用锁定目标系统")]
+        public bool EnableLockOn = true;
+
+        [Tooltip("锁定目标最大距离（厘米）")]
+        public float LockOnMaxDistance = 2000f;
+
+        [Tooltip("锁定目标检测角度范围（度）")]
+        public float LockOnDetectionAngle = 60f;
+
+        [Tooltip("锁定目标切换检测角度（度）")]
+        public float LockOnSwitchAngle = 90f;
+
+        [Tooltip("锁定相机平滑速度")]
+        public float LockOnSmoothSpeed = 10f;
+
+        [Tooltip("锁定目标丢失后恢复延迟（秒）")]
+        public float LockOnLostDelay = 0.5f;
+
+        [Tooltip("软锁定检测角度范围（度）")]
+        public float SoftLockAngle = 45f;
+
+        [Tooltip("软锁定相机偏转强度")]
+        public float SoftLockInfluence = 0.3f;
+
+        [Tooltip("Boss检测标签")]
+        public string BossTag = "Boss";
+
+        [Tooltip("锁定目标层掩码")]
+        public LayersMask LockOnTargetLayers = LayersMask.Default;
         
         [Tooltip("启用性能监控统计")]
         public bool EnablePerformanceMonitoring = false;
@@ -747,6 +849,33 @@ namespace HundunWorld.Game
         private InputManager _inputManager;
         private float _currentCollisionDistance;
         private Vector3[] _collisionRayDirections;
+        private Actor _lockOnTarget;
+        private bool _isInCombat;
+        private List<Actor> _potentialTargets = new List<Actor>();
+        private Actor _softLockTarget;
+        private float _lockOnLostTimer;
+        private bool _isLockOnActive;
+        private Vector3 _lockOnTargetLastPosition;
+        private float _currentShoulderOffset;
+        private float _targetShoulderOffset;
+        private bool _isOverShoulderFallback;
+        private float _combatPushDistance;
+        private float _combatPushTimer;
+        private bool _isCombatPushing;
+        private bool _isHeavyHit;
+        private float _combatPushFOV;
+        private Vector3 _dodgeOffset;
+        private Vector3 _dodgeDirection;
+        private bool _isDodging;
+        private Vector3 _hitReactionOffset;
+        private Vector3 _hitDirection;
+        private float _hitReactionTimer;
+        private bool _isHitReacting;
+        private bool _isExecutionCamera;
+        private float _executionTimer;
+        private float _preExecutionDistance;
+        private float _preExecutionPitch;
+        private float _preExecutionFOV;
         
         // 碰撞缓存相关
         private CollisionCacheData _collisionCache = new CollisionCacheData();
@@ -791,15 +920,6 @@ namespace HundunWorld.Game
         private float _baselinePitch;    // 基准俯仰角
         private float _baselineYaw;      // 基准水平角
         private bool _isResetting;       // 是否正在恢复中
-        
-        // 拍照模式相关
-        private bool _isPhotoMode;       // 是否在拍照模式
-        private float _prePhotoDistance; // 拍照前的距离
-        private float _prePhotoPitch;    // 拍照前的俯仰角
-        private float _prePhotoYaw;      // 拍照前的水平角
-        private float _targetPhotoDistance; // 目标拍照距离
-        private float _targetPhotoPitch;    // 目标拍照俯仰角
-        private bool _photoTransitioning;   // 拍照过渡中
         
         // 弹性跟随相关
         private Vector3 _lastTargetPosition; // 上一帧角色位置
@@ -896,19 +1016,30 @@ namespace HundunWorld.Game
             _targetPitch = Pitch;
             _isColliding = false;
             
+            _isCombatPushing = false;
+            _isDodging = false;
+            _isHitReacting = false;
+            _isExecutionCamera = false;
+            _combatPushDistance = 0f;
+            _combatPushFOV = 0f;
+            _dodgeOffset = Vector3.Zero;
+            _hitReactionOffset = Vector3.Zero;
+            
             // 初始化自动对齐
             _isAligning = false;
+            _currentShoulderOffset = 0f;
+            _targetShoulderOffset = 0f;
+            _isOverShoulderFallback = false;
             _alignTimer = 0f;
             _wasManualRotating = false;
             _targetAlignYaw = Yaw;
             
             // 注：基准视角不需要保存，将在ResetToBaseline时智能计算
             
-            // 初始化拍照模式
-            _isPhotoMode = false;
-            _photoTransitioning = false;
+            _isLockOnActive = false;
+            _lockOnLostTimer = 0f;
+            _softLockTarget = null;
             
-            // 初始化弹性跟随
             if (Target != null)
             {
                 _lastTargetPosition = Target.Position;
@@ -937,9 +1068,6 @@ namespace HundunWorld.Game
             // 初始化性能LOD系统
             InitializePerformanceLOD();
             
-            // 确保截图目录存在
-            EnsureScreenshotDirectory();
-
             //Debug.Log($"[ThirdPersonCamera] 初始化完成 - Distance: {Distance:F2}, Pitch: {Pitch:F2}, Yaw: {Yaw:F2}, State: {CurrentState}, Environment: {CurrentEnvironment}");
         }
 
@@ -982,11 +1110,20 @@ namespace HundunWorld.Game
                 UpdateStateTransition();
             }
 
+            if (EnableCombatCameraEffects)
+            {
+                UpdateCombatCameraEffects();
+            }
+
             // 4. 处理输入(根据当前状态决定是否允许)
             HandleInput();
             
-            // 4.3 处理自动对齐
-            if (EnableAutoAlign && !_isResetting && !_photoTransitioning)
+            if (EnableLockOn)
+            {
+                UpdateLockOn();
+            }
+            
+            if (EnableAutoAlign && !_isResetting)
             {
                 UpdateAutoAlign();
             }
@@ -998,13 +1135,6 @@ namespace HundunWorld.Game
                 return; // 恢复期间跳过后续逻辑
             }
             
-            // 4.6 处理拍照模式过渡
-            if (_photoTransitioning)
-            {
-                UpdatePhotoTransition();
-                return; // 拍照期间跳过后续逻辑
-            }
-
             // 2. 计算角色移动速度(无论是否启用弹性跟随都需要,用于FOV调整)
             Vector3 targetPosition = Target.Position;
             _targetVelocity = (targetPosition - _lastTargetPosition) / Mathf.Max(Time.DeltaTime, 0.001f);
@@ -1013,10 +1143,10 @@ namespace HundunWorld.Game
             // 3. 计算聚焦点
             Vector3 focusPoint;
             
-            if (EnableElasticFollow && !_photoTransitioning && !_isResetting)
+            if (EnableElasticFollow && !_isResetting)
             {
                 // ✅ 启用弹性跟随
-                Vector3 currentFocusPoint = Actor.Position - CalculateCameraOffset(Pitch, _smoothYaw, _currentCollisionDistance);
+                Vector3 currentFocusPoint = Actor.Position - CalculateCameraOffsetWithShoulder(Pitch, _smoothYaw, _currentCollisionDistance, _currentShoulderOffset);
                 
                 // 动态计算弹性系数（基于速度）
                 float currentElasticity = PositionElasticity;
@@ -1039,7 +1169,7 @@ namespace HundunWorld.Game
                 
                 focusPoint = Vector3.Lerp(
                     currentFocusPoint,
-                    targetPosition + FocusOffset,
+                    targetPosition + GetDynamicFocusOffset(),
                     currentElasticity
                 );
                 
@@ -1057,10 +1187,20 @@ namespace HundunWorld.Game
             else
             {
                 // ❌ 禁用弹性跟随,直接使用目标位置
-                focusPoint = targetPosition + FocusOffset;
+                focusPoint = targetPosition + GetDynamicFocusOffset();
                 _smoothYaw = Yaw;
                 _cameraInertia = Vector3.Zero;
             }
+
+            if (CurrentState == CameraState.OverShoulder || CurrentState == CameraState.LockOn)
+            {
+                _targetShoulderOffset = ShoulderRightSide ? ShoulderOffset : -ShoulderOffset;
+            }
+            else
+            {
+                _targetShoulderOffset = 0f;
+            }
+            _currentShoulderOffset = Mathf.Lerp(_currentShoulderOffset, _targetShoulderOffset, Time.DeltaTime * ShoulderSwapSpeed);
 
             // 4. 执行碰撞检测和智能避障
             float effectiveDistance;
@@ -1090,6 +1230,19 @@ namespace HundunWorld.Game
                     _isColliding = hasCollision;
                 }
                 
+                if (CurrentState == CameraState.OverShoulder && hasCollision && collisionDistance <= MinDistance)
+                {
+                    _isOverShoulderFallback = true;
+                }
+                else if (!hasCollision || collisionDistance > MinDistance * 1.5f)
+                {
+                    _isOverShoulderFallback = false;
+                }
+                if (_isOverShoulderFallback)
+                {
+                    _currentShoulderOffset = Mathf.Lerp(_currentShoulderOffset, 0f, Time.DeltaTime * ShoulderSwapSpeed);
+                }
+
                 // 优先级控制：设置碰撞优先级（已移除优化代码，此处保留空逻辑）
                 
                 if (hasCollision)
@@ -1121,82 +1274,63 @@ namespace HundunWorld.Game
                 
                 // === 动态距离调整策略：快速缩短、缓慢恢复 ===
                 float smoothSpeed;
+                float effectiveCollisionSmoothSpeed = (CurrentState == CameraState.OverShoulder || CurrentState == CameraState.LockOn || CurrentState == CameraState.BossBattle) ? 15f : CollisionSmoothSpeed;
                 
                 {
-                    // 使用原有逻辑
-                    // 计算距离变化
                     float distanceChange = Mathf.Abs(collisionDistance - _currentCollisionDistance);
                 
-                    // ✅ 关键修复：碰撞状态稳定机制
                     bool stableCollisionState = hasCollision;
                     
-                    // 如果碰撞状态发生变化，检查是否达到稳定时间
                     if (hasCollision != _wasColliding)
                     {
-                        // 状态变化，记录时间
                         if (_collisionStateChangeTime == 0f)
                         {
                             _collisionStateChangeTime = _gameTime;
-                            //Debug.Log($"[碰撞状态] 检测到状态变化: {_wasColliding} → {hasCollision}, 启动稳定计时");
                         }
                         
-                        // 检查是否达到稳定时间
                         float timeSinceChange = _gameTime - _collisionStateChangeTime;
                         if (timeSinceChange < CollisionStateStableTime)
                         {
-                            // 未达到稳定时间，保持原有状态
                             stableCollisionState = _wasColliding;
-                            //Debug.Log($"[碰撞状态] 未达到稳定时间({timeSinceChange:F3}s < {CollisionStateStableTime}s), 保持原状态: {_wasColliding}");
                         }
                         else
                         {
-                            // 达到稳定时间，允许状态变化
-                            //Debug.Log($"[碰撞状态] 达到稳定时间({timeSinceChange:F3}s), 允许状态变化: {_wasColliding} → {hasCollision}");
-                            _collisionStateChangeTime = 0f; // 重置计时器
+                            _collisionStateChangeTime = 0f;
                         }
                     }
                     else
                     {
-                        // 状态未变化，重置计时器
                         _collisionStateChangeTime = 0f;
                     }
                     
                     if (stableCollisionState)
                     {
-                        // === 碰撞状态：快速缩短 ===
                         if (!_wasColliding)
                         {
-                            // 刚刚进入碰撞状态
-                            //Debug.Log($"[距离调整] 进入碰撞状态，快速缩短距离: {_currentCollisionDistance:F2}cm -> {collisionDistance:F2}cm");
                         }
                         
-                        // 距离变化自适应速度
-                        if (distanceChange > 50.0f) // 距离变化>50cm，快速缩短
+                        if (distanceChange > 50.0f)
                         {
-                            smoothSpeed = CollisionSmoothSpeed * 5.0f; // 5倍速
+                            smoothSpeed = effectiveCollisionSmoothSpeed * 5.0f;
                         }
-                        else if (distanceChange > 20.0f) // 距离变化>20cm，中速缩短
+                        else if (distanceChange > 20.0f)
                         {
-                            smoothSpeed = CollisionSmoothSpeed * 2.0f; // 2倍速
+                            smoothSpeed = effectiveCollisionSmoothSpeed * 2.0f;
                         }
-                        else // 距离变化较小，正常缩短
+                        else
                         {
-                            smoothSpeed = CollisionSmoothSpeed * 1.5f; // 1.5倍速
+                            smoothSpeed = effectiveCollisionSmoothSpeed * 1.5f;
                         }
                         
                         _lastObstructionDistance = collisionDistance;
                     }
                     else
                     {
-                        // === 无碰撞状态：缓慢恢复 ===
                         if (_wasColliding)
                         {
-                            // 刚刚离开碰撞状态
-                            //Debug.Log($"[距离调整] 离开碰撞状态，缓慢恢复距离: {_currentCollisionDistance:F2}cm -> {Distance:F2}cm");
                         }
                         
-                        // 缓慢恢复速度（真正的缓慢恢复，避免快速切换导致震荡）
-                        smoothSpeed = CollisionSmoothSpeed * 0.5f; // 0.5倍速（比碰撞时慢，平滑恢复）
+                        smoothSpeed = effectiveCollisionSmoothSpeed * 0.5f;
                     }
                     
                     _wasColliding = stableCollisionState;
@@ -1223,7 +1357,7 @@ namespace HundunWorld.Game
             }
 
             // 6. 计算相机位置(使用有效俯仰角和平滑Yaw角，避免重影)
-            Vector3 cameraPosition = CalculateCameraPosition(focusPoint, effectivePitch, _smoothYaw, effectiveDistance);
+            Vector3 cameraPosition = CalculateCameraPosition(focusPoint, effectivePitch, _smoothYaw, effectiveDistance, _currentShoulderOffset);
             
             //Debug.Log($"[CameraPosition] Pitch:{Pitch:F1}° -> effectivePitch:{effectivePitch:F1}°, Distance:{Distance:F2} -> effectiveDistance:{effectiveDistance:F2}, Position:{cameraPosition}");
 
@@ -1242,7 +1376,7 @@ namespace HundunWorld.Game
             }
 
             // 8. 设置相机位置和朝向
-            Actor.Position = cameraPosition;
+            Actor.Position = cameraPosition + GetCombatCameraOffset();
             
             // 计算朝向向量
             Vector3 direction = focusPoint - cameraPosition;
@@ -1250,7 +1384,7 @@ namespace HundunWorld.Game
             Actor.Orientation = Quaternion.LookRotation(direction, Vector3.Up);
             
             // 9. 更新FOV
-            if (EnableDynamicFOV && !_photoTransitioning)
+            if (EnableDynamicFOV)
             {
                 UpdateDynamicFOV();
             }
@@ -1511,40 +1645,46 @@ namespace HundunWorld.Game
         /// </summary>
         private void HandleInput()
         {
-            // 如果正在恢复中或拍照中，不处理用户输入
-            if (_isResetting || _photoTransitioning)
+            if (_isResetting)
             {
                 return;
-            }
-            
-            // 检查拍照快捷键
-            if (EnablePhotoMode)
-            {
-                if (Input.GetKeyDown(TakeHeadshotKey))
-                {
-                    TakeHeadshot();
-                    return;
-                }
-                if (Input.GetKeyDown(TakeFullBodyKey))
-                {
-                    TakeFullBodyPhoto();
-                    return;
-                }
-                if (Input.GetKeyDown(TakeScreenshotKey))
-                {
-                    TakeGameScreenshot();
-                    return;
-                }
             }
             
             // 检查一键恢复基准视角
             if (EnableBaselineReset && Input.GetKeyDown(ResetKey))
             {
                 ResetToBaseline();
-                return; // 开始恢复，不处理其他输入
+                return;
             }
             
-            // 获取当前状态配置
+            if (Input.GetKeyDown(KeyboardKeys.V))
+            {
+                ShoulderRightSide = !ShoulderRightSide;
+            }
+            
+            if (Input.GetKeyDown(KeyboardKeys.Tab))
+            {
+                if (_isLockOnActive)
+                {
+                    DeactivateLockOn();
+                }
+                else
+                {
+                    ActivateLockOn();
+                }
+            }
+            if (_isLockOnActive)
+            {
+                if (Input.GetKeyDown(KeyboardKeys.Q))
+                {
+                    SwitchLockOnTarget(-1f);
+                }
+                if (Input.GetKeyDown(KeyboardKeys.E))
+                {
+                    SwitchLockOnTarget(1f);
+                }
+            }
+            
             CameraStateConfig currentConfig = GetCurrentStateConfig();
             
             // 鼠标右键旋转(检查状态是否允许)
@@ -1583,7 +1723,7 @@ namespace HundunWorld.Game
         private void CalculateInitialParameters()
         {
             // 计算聚焦点（角色头部位置）
-            Vector3 focusPoint = Target.Position + FocusOffset;
+            Vector3 focusPoint = Target.Position + GetDynamicFocusOffset();
             
             // 当前相机位置
             Vector3 cameraPosition = Actor.Position;
@@ -1706,7 +1846,15 @@ namespace HundunWorld.Game
             
             // 计算相机方向
             Vector3 idealCameraPos = CalculateCameraPosition(focusPoint, pitch, Yaw, Distance);
-            Vector3 direction = idealCameraPos - focusPoint;
+            Vector3 shoulderAdjustedFocusPoint = focusPoint;
+            if (CurrentState == CameraState.OverShoulder || CurrentState == CameraState.LockOn)
+            {
+                float yawRad = Yaw * Mathf.DegreesToRadians;
+                Vector3 right = new Vector3(Mathf.Cos(yawRad), 0, Mathf.Sin(yawRad));
+                shoulderAdjustedFocusPoint += right * _currentShoulderOffset;
+                shoulderAdjustedFocusPoint.Y += ShoulderHeightOffset;
+            }
+            Vector3 direction = idealCameraPos - shoulderAdjustedFocusPoint;
             float targetDistance = direction.Length;
             
             // 异常情况检查
@@ -1858,14 +2006,23 @@ namespace HundunWorld.Game
         /// <summary>
         /// 计算相机位置
         /// </summary>
-        private Vector3 CalculateCameraPosition(Vector3 focusPoint, float pitch, float yaw, float distance)
+        private Vector3 CalculateCameraPosition(Vector3 focusPoint, float pitch, float yaw, float distance, float shoulderOffset = 0f)
         {
-            return focusPoint + CalculateCameraOffset(pitch, yaw, distance);
+            return focusPoint + CalculateCameraOffsetWithShoulder(pitch, yaw, distance, shoulderOffset);
         }
         
         /// <summary>
         /// 计算相机相对于聚焦点的偏移
         /// </summary>
+        private Vector3 GetDynamicFocusOffset()
+        {
+            if (!EnableDynamicFocusHeight) return FocusOffset;
+            float currentDistance = _currentCollisionDistance > 0 ? _currentCollisionDistance : Distance;
+            float t = Mathf.Clamp((currentDistance - CloseRangeDistance) / (FarRangeDistance - CloseRangeDistance), 0f, 1f);
+            float dynamicHeight = Mathf.Lerp(CloseRangeFocusHeight, FarRangeFocusHeight, t);
+            return new Vector3(FocusOffset.X, dynamicHeight, FocusOffset.Z);
+        }
+
         private Vector3 CalculateCameraOffset(float pitch, float yaw, float distance)
         {
             // 转换角度为弧度
@@ -1881,6 +2038,16 @@ namespace HundunWorld.Game
                 verticalDistance,
                 -horizontalDistance * Mathf.Cos(yawRad)
             );
+        }
+
+        private Vector3 CalculateCameraOffsetWithShoulder(float pitch, float yaw, float distance, float shoulderOffset)
+        {
+            Vector3 baseOffset = CalculateCameraOffset(pitch, yaw, distance);
+            if (Mathf.Abs(shoulderOffset) < 0.01f) return baseOffset;
+            float yawRad = yaw * Mathf.DegreesToRadians;
+            Vector3 right = new Vector3(Mathf.Cos(yawRad), 0, Mathf.Sin(yawRad));
+            baseOffset += right * shoulderOffset;
+            return baseOffset;
         }
 
         /// <summary>
@@ -1900,10 +2067,28 @@ namespace HundunWorld.Game
                 switch (CurrentState)
                 {
                     case CameraState.Combat:
-                        stateFOVOffset = CombatFOVOffset; // -5°
+                        stateFOVOffset = CombatFOVOffset;
+                        break;
+                    case CameraState.OverShoulder:
+                        stateFOVOffset = CombatFOVOffset;
+                        break;
+                    case CameraState.LockOn:
+                        if (_lockOnTarget != null)
+                        {
+                            float lockDistance = Vector3.Distance(Target.Position, _lockOnTarget.Position);
+                            float distanceRatio = Mathf.Clamp(lockDistance / LockOnMaxDistance, 0f, 1f);
+                            stateFOVOffset = Mathf.Lerp(-5f, 10f, distanceRatio);
+                        }
+                        else
+                        {
+                            stateFOVOffset = -2.5f;
+                        }
+                        break;
+                    case CameraState.BossBattle:
+                        stateFOVOffset = FlyingFOVOffset;
                         break;
                     case CameraState.Flying:
-                        stateFOVOffset = FlyingFOVOffset; // +10°
+                        stateFOVOffset = FlyingFOVOffset;
                         break;
                     default:
                         // 检查是否在冲刺（通过PlayerController或速度判断）
@@ -1943,7 +2128,7 @@ namespace HundunWorld.Game
             
             // === 步骤3：合并FOV偏移（优先级：状态 > 速度） ===
             float totalFOVOffset = stateFOVOffset != 0f ? stateFOVOffset : speedFOVOffset;
-            _targetFOV = baseFOV + totalFOVOffset;
+            _targetFOV = baseFOV + totalFOVOffset + GetCombatFOVOffset();
             
             // === 步骤4：平滑过渡到目标FOV ===
             _currentFOV = Mathf.Lerp(_currentFOV, _targetFOV, Time.DeltaTime * FOVSmoothSpeed);
@@ -2007,6 +2192,122 @@ namespace HundunWorld.Game
             
             return false;
         }
+
+        #region 战斗动态镜头
+
+        public void TriggerHitCamera(bool isHeavy = false)
+        {
+            if (!EnableCombatCameraEffects) return;
+            _isCombatPushing = true;
+            _isHeavyHit = isHeavy;
+            _combatPushDistance = isHeavy ? HeavyHitPushDistance : HitPushDistance;
+            _combatPushTimer = isHeavy ? HeavyHitPushDuration : HitPushDuration;
+            if (isHeavy)
+            {
+                _combatPushFOV = HeavyHitFOVPunch;
+            }
+        }
+
+        public void TriggerDodgeCamera(Vector3 dodgeDirection)
+        {
+            if (!EnableCombatCameraEffects) return;
+            _isDodging = true;
+            _dodgeDirection = dodgeDirection;
+            _dodgeOffset = dodgeDirection * DodgeOffsetStrength;
+        }
+
+        public void TriggerHitReactionCamera(Vector3 hitDirection, float damage = 1f)
+        {
+            if (!EnableCombatCameraEffects) return;
+            _isHitReacting = true;
+            _hitDirection = hitDirection;
+            _hitReactionOffset = hitDirection * HitReactionStrength * Mathf.Clamp(damage, 0.5f, 3f);
+            _hitReactionTimer = HitReactionDuration;
+        }
+
+        public void TriggerExecutionCamera()
+        {
+            if (!EnableCombatCameraEffects) return;
+            _isExecutionCamera = true;
+            _executionTimer = ExecutionDuration;
+            _preExecutionDistance = Distance;
+            _preExecutionPitch = Pitch;
+            _preExecutionFOV = _currentFOV;
+            Distance = ExecutionDistance;
+            Pitch = ExecutionPitch;
+            _targetFOV = ExecutionFOV;
+        }
+
+        private void UpdateCombatCameraEffects()
+        {
+            if (_isCombatPushing)
+            {
+                _combatPushTimer -= Time.DeltaTime;
+                if (_combatPushTimer <= 0f)
+                {
+                    _isCombatPushing = false;
+                    _combatPushDistance = 0f;
+                    _combatPushFOV = 0f;
+                }
+            }
+            if (_isDodging)
+            {
+                _dodgeOffset = Vector3.Lerp(_dodgeOffset, Vector3.Zero, Time.DeltaTime * DodgeRecoverySpeed);
+                if (_dodgeOffset.Length < 0.01f)
+                {
+                    _isDodging = false;
+                    _dodgeOffset = Vector3.Zero;
+                }
+            }
+            if (_isHitReacting)
+            {
+                _hitReactionTimer -= Time.DeltaTime;
+                _hitReactionOffset = Vector3.Lerp(_hitReactionOffset, Vector3.Zero, Time.DeltaTime * (1f / HitReactionDuration));
+                if (_hitReactionTimer <= 0f)
+                {
+                    _isHitReacting = false;
+                    _hitReactionOffset = Vector3.Zero;
+                }
+            }
+            if (_isExecutionCamera)
+            {
+                _executionTimer -= Time.DeltaTime;
+                if (_executionTimer <= 0f)
+                {
+                    _isExecutionCamera = false;
+                    Distance = _preExecutionDistance;
+                    Pitch = _preExecutionPitch;
+                    _targetFOV = _preExecutionFOV;
+                }
+            }
+        }
+
+        public Vector3 GetCombatCameraOffset()
+        {
+            Vector3 offset = Vector3.Zero;
+            if (_isCombatPushing)
+            {
+                float progress = 1f - (_combatPushTimer / (_isHeavyHit ? HeavyHitPushDuration : HitPushDuration));
+                float curve = Mathf.Sin(progress * Mathf.Pi);
+                offset += Vector3.Forward * _combatPushDistance * curve;
+            }
+            offset += _dodgeOffset;
+            offset += _hitReactionOffset;
+            return offset;
+        }
+
+        public float GetCombatFOVOffset()
+        {
+            if (_isCombatPushing && _isHeavyHit)
+            {
+                float progress = 1f - (_combatPushTimer / HeavyHitPushDuration);
+                float curve = Mathf.Sin(progress * Mathf.Pi);
+                return _combatPushFOV * curve;
+            }
+            return 0f;
+        }
+
+        #endregion
 
         #region 公共API方法
 
@@ -2145,7 +2446,7 @@ namespace HundunWorld.Game
             }
             
             // 4. 碰撞检测微调（确保不会被遮挡）
-            Vector3 testFocusPoint = Target.Position + FocusOffset;
+            Vector3 testFocusPoint = Target.Position + GetDynamicFocusOffset();
             if (CheckCollision(testFocusPoint, _baselinePitch, out float safeDistance))
             {
                 // 如果基准距离会碰撞，使用安全距离
@@ -2167,7 +2468,7 @@ namespace HundunWorld.Game
             bool isManualRotating = Input.GetMouseButton(MouseButton.Right);
             
             // 检查是否在战斗中（如果启用了此选项）
-            bool isInCombat = DisableAlignInCombat && CurrentState == CameraState.Combat;
+            bool isInCombat = DisableAlignInCombat && (CurrentState == CameraState.Combat || CurrentState == CameraState.OverShoulder);
             
             // 检查角色移动速度
             float characterSpeed = _targetVelocity.Length;
@@ -2292,7 +2593,7 @@ namespace HundunWorld.Game
             _currentCollisionDistance = Distance;
             
             // ✅ 关键：恢复期间也需要更新相机位置和朝向
-            Vector3 focusPoint = Target.Position + FocusOffset;
+            Vector3 focusPoint = Target.Position + GetDynamicFocusOffset();
             Vector3 cameraPosition = CalculateCameraPosition(focusPoint, Pitch, Yaw, Distance);
             Actor.Position = cameraPosition;
             
@@ -2327,180 +2628,6 @@ namespace HundunWorld.Game
             }
         }
         
-        /// <summary>
-        /// 拍摄42寸头像照片
-        /// </summary>
-        public void TakeHeadshot()
-        {
-            if (_photoTransitioning || Target == null) return;
-            
-            //Debug.Log("[拍照模式] 开始拍摄42寸头像...");
-            StartPhotoMode(HeadshotDistance, HeadshotPitch, 180f); // 正面
-        }
-        
-        /// <summary>
-        /// 拍摄全身正面照
-        /// </summary>
-        public void TakeFullBodyPhoto()
-        {
-            if (_photoTransitioning || Target == null) return;
-            
-            //Debug.Log("[拍照模式] 开始拍摄全身照...");
-            StartPhotoMode(FullBodyDistance, FullBodyPitch, 180f); // 正面
-        }
-        
-        /// <summary>
-        /// 游戏界面截图
-        /// </summary>
-        public void TakeGameScreenshot()
-        {
-            string filename = GenerateScreenshotFilename("Game");
-            CaptureScreenshot(filename);
-            //Debug.Log($"[截图] 游戏截图已保存: {filename}");
-        }
-        
-        /// <summary>
-        /// 开始拍照模式
-        /// </summary>
-        private void StartPhotoMode(float targetDistance, float targetPitch, float targetYaw)
-        {
-            // 保存当前视角
-            _prePhotoDistance = Distance;
-            _prePhotoPitch = Pitch;
-            _prePhotoYaw = Yaw;
-            
-            // 设置目标视角
-            _targetPhotoDistance = targetDistance;
-            _targetPhotoPitch = targetPitch;
-            
-            // 计算目标Yaw（角色当前朴向 + 180° = 正面）
-            if (Target != null)
-            {
-                // 获取角色当前朴向的Yaw角（假设角色有Orientation属性）
-                float characterYaw = Target.Orientation.EulerAngles.Y;
-                _prePhotoYaw = (characterYaw + targetYaw) % 360f;
-            }
-            
-            _isPhotoMode = true;
-            _photoTransitioning = true;
-        }
-        
-        /// <summary>
-        /// 更新拍照模式过渡
-        /// </summary>
-        private void UpdatePhotoTransition()
-        {
-            if (!_photoTransitioning) return;
-            
-            float lerpSpeed = Time.DeltaTime * PhotoReturnSpeed;
-            
-            // 平滑过渡到目标视角
-            Distance = Mathf.Lerp(Distance, _targetPhotoDistance, lerpSpeed);
-            Pitch = Mathf.Lerp(Pitch, _targetPhotoPitch, lerpSpeed);
-            
-            // Yaw特殊处理
-            float yawDiff = _prePhotoYaw - Yaw;
-            if (yawDiff > 180f) yawDiff -= 360f;
-            if (yawDiff < -180f) yawDiff += 360f;
-            Yaw += yawDiff * lerpSpeed;
-            
-            // 规范化Yaw
-            while (Yaw < 0) Yaw += 360;
-            while (Yaw >= 360) Yaw -= 360;
-            
-            // 检查是否到达目标
-            float distanceDiff = Mathf.Abs(Distance - _targetPhotoDistance);
-            float pitchDiff = Mathf.Abs(Pitch - _targetPhotoPitch);
-            
-            if (distanceDiff < 0.05f && pitchDiff < 0.5f)
-            {
-                // 到达目标，拍照
-                Distance = _targetPhotoDistance;
-                Pitch = _targetPhotoPitch;
-                _photoTransitioning = false;
-                
-                // 优先级控制：拍照完成，开始恢复优先级（在返回时完全降级）
-                // 注意：这里不降级，等待返回原视角完成后再降级
-                
-                // 等待一帧后截图
-                Task.Run(async () =>
-                {
-                    await Task.Delay(100); // 等待100ms确保画面稳定
-                    
-                    string filename = _targetPhotoDistance == HeadshotDistance 
-                        ? GenerateScreenshotFilename("Headshot")
-                        : GenerateScreenshotFilename("FullBody");
-                    
-                    CaptureScreenshot(filename);
-                    //Debug.Log($"[拍照模式] ✅ 照片已保存: {filename}");
-                    
-                    // 开始返回原视角
-                    await Task.Delay(200);
-                    ReturnFromPhotoMode();
-                });
-            }
-        }
-        
-        /// <summary>
-        /// 从拍照模式返回
-        /// </summary>
-        private void ReturnFromPhotoMode()
-        {
-            _targetPhotoDistance = _prePhotoDistance;
-            _targetPhotoPitch = _prePhotoPitch;
-            // Yaw已经在_prePhotoYaw中
-            
-            _photoTransitioning = true;
-            _isPhotoMode = false;
-            
-            //Debug.Log("[拍照模式] 返回原视角...");
-        }
-        
-        /// <summary>
-        /// 生成截图文件名
-        /// </summary>
-        private string GenerateScreenshotFilename(string prefix)
-        {
-            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            return $"{ScreenshotPath}/{prefix}_{timestamp}.png";
-        }
-        
-        /// <summary>
-        /// 捕获屏幕截图
-        /// </summary>
-        private void CaptureScreenshot(string filepath)
-        {
-            try
-            {
-                // 使用Flax Engine的截图 API
-                Screenshot.Capture(filepath);
-            }
-            catch (System.Exception ex)
-            {
-                //Debug.LogError($"[截图] 截图失败: {ex.Message}");
-            }
-        }
-        
-        /// <summary>
-        /// 确保截图目录存在
-        /// </summary>
-        private void EnsureScreenshotDirectory()
-        {
-            try
-            {
-                string fullPath = System.IO.Path.Combine(Globals.ProjectFolder, ScreenshotPath);
-                if (!System.IO.Directory.Exists(fullPath))
-                {
-                    System.IO.Directory.CreateDirectory(fullPath);
-                    //Debug.Log($"[截图] 创建截图目录: {fullPath}");
-                }
-            }
-            catch (System.Exception ex)
-            {
-                //Debug.LogError($"[截图] 创建目录失败: {ex.Message}");
-            }
-        }
-        
         #endregion
         
         #region 状态机系统
@@ -2515,6 +2642,9 @@ namespace HundunWorld.Game
             {
                 { CameraState.Normal, NormalStateConfig },
                 { CameraState.Combat, CombatStateConfig },
+                { CameraState.OverShoulder, OverShoulderStateConfig },
+                { CameraState.LockOn, LockOnStateConfig },
+                { CameraState.BossBattle, BossBattleStateConfig },
                 { CameraState.Climbing, ClimbingStateConfig },
                 { CameraState.Swimming, SwimmingStateConfig },
                 { CameraState.Flying, FlyingStateConfig },
@@ -2561,7 +2691,21 @@ namespace HundunWorld.Game
         /// </summary>
         private CameraState DetectCameraState()
         {
-            // 攀爬状态检测：直接检查攀爬控制器
+            if (_lockOnTarget != null && _lockOnTarget.Tag == "Boss")
+            {
+                return CameraState.BossBattle;
+            }
+
+            if (_lockOnTarget != null)
+            {
+                return CameraState.LockOn;
+            }
+
+            if (_isInCombat)
+            {
+                return CameraState.OverShoulder;
+            }
+
             var climbingController = Target.GetScript<ClimbingSystem.ClimbingController>();
             if (climbingController != null && climbingController.IsClimbing())
             {
@@ -2688,6 +2832,235 @@ namespace HundunWorld.Game
         public void ForceSetState(CameraState state)
         {
             SwitchState(state);
+        }
+
+        #endregion
+
+        #region 锁定目标系统
+
+        public void ActivateLockOn()
+        {
+            if (!EnableLockOn) return;
+            Actor bestTarget = FindBestLockOnTarget();
+            if (bestTarget != null)
+            {
+                _lockOnTarget = bestTarget;
+                _isLockOnActive = true;
+                _lockOnLostTimer = 0f;
+                _lockOnTargetLastPosition = bestTarget.Position;
+                if (bestTarget.Tag == BossTag)
+                {
+                    SwitchState(CameraState.BossBattle);
+                }
+                else
+                {
+                    SwitchState(CameraState.LockOn);
+                }
+            }
+        }
+
+        public void DeactivateLockOn()
+        {
+            _lockOnTarget = null;
+            _isLockOnActive = false;
+            _softLockTarget = null;
+            _lockOnLostTimer = 0f;
+            if (CurrentState == CameraState.LockOn || CurrentState == CameraState.BossBattle)
+            {
+                SwitchState(_isInCombat ? CameraState.OverShoulder : CameraState.Normal);
+            }
+        }
+
+        public void SwitchLockOnTarget(float direction)
+        {
+            if (!_isLockOnActive || _lockOnTarget == null) return;
+            Actor nextTarget = FindAdjacentTarget(direction);
+            if (nextTarget != null)
+            {
+                _lockOnTarget = nextTarget;
+                _lockOnTargetLastPosition = nextTarget.Position;
+                if (nextTarget.Tag == BossTag && CurrentState != CameraState.BossBattle)
+                {
+                    SwitchState(CameraState.BossBattle);
+                }
+                else if (nextTarget.Tag != BossTag && CurrentState == CameraState.BossBattle)
+                {
+                    SwitchState(CameraState.LockOn);
+                }
+            }
+        }
+
+        public Actor GetLockOnTarget()
+        {
+            return _isLockOnActive ? _lockOnTarget : null;
+        }
+
+        public Actor GetSoftLockTarget()
+        {
+            return _softLockTarget;
+        }
+
+        public bool IsLockOnActive()
+        {
+            return _isLockOnActive;
+        }
+
+        private Actor FindBestLockOnTarget()
+        {
+            if (Target == null) return null;
+            _potentialTargets.Clear();
+            Vector3 forward = _camera != null ? _camera.Direction : Vector3.Forward;
+            Vector3 cameraPos = Target.Position + GetDynamicFocusOffset();
+            float bestScore = float.MinValue;
+            Actor bestTarget = null;
+            foreach (var actor in Level.GetActors<Actor>())
+            {
+                if (actor == Target) continue;
+                if (!actor.IsActiveInHierarchy) continue;
+                Vector3 toTarget = actor.Position - cameraPos;
+                float distance = toTarget.Length;
+                if (distance > LockOnMaxDistance) continue;
+                Vector3 dirToTarget = Vector3.Normalize(toTarget);
+                float angle = Mathf.Acos(Vector3.Dot(forward, dirToTarget)) * Mathf.RadiansToDegrees;
+                if (angle > LockOnDetectionAngle) continue;
+                float score = -distance - angle * 10f;
+                if (actor.Tag == BossTag) score += 1000f;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestTarget = actor;
+                }
+            }
+            return bestTarget;
+        }
+
+        private Actor FindAdjacentTarget(float direction)
+        {
+            if (_lockOnTarget == null || Target == null) return null;
+            Vector3 toCurrent = _lockOnTarget.Position - Target.Position;
+            Vector3 right = Vector3.Cross(Vector3.Up, toCurrent);
+            right.Normalize();
+            float bestScore = float.MinValue;
+            Actor bestTarget = null;
+            foreach (var actor in Level.GetActors<Actor>())
+            {
+                if (actor == Target || actor == _lockOnTarget) continue;
+                if (!actor.IsActiveInHierarchy) continue;
+                Vector3 toTarget = actor.Position - Target.Position;
+                float distance = toTarget.Length;
+                if (distance > LockOnMaxDistance) continue;
+                float dot = Vector3.Dot(right, toTarget.Normalized);
+                if ((direction > 0 && dot < 0.1f) || (direction < 0 && dot > -0.1f)) continue;
+                float score = Mathf.Abs(dot) - distance * 0.01f;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestTarget = actor;
+                }
+            }
+            return bestTarget;
+        }
+
+        private void UpdateLockOn()
+        {
+            if (!_isLockOnActive || _lockOnTarget == null)
+            {
+                UpdateSoftLock();
+                return;
+            }
+            if (!_lockOnTarget.IsActiveInHierarchy)
+            {
+                DeactivateLockOn();
+                return;
+            }
+            float distance = Vector3.Distance(Target.Position, _lockOnTarget.Position);
+            if (distance > LockOnMaxDistance)
+            {
+                _lockOnLostTimer += Time.DeltaTime;
+                if (_lockOnLostTimer > LockOnLostDelay)
+                {
+                    DeactivateLockOn();
+                    return;
+                }
+            }
+            else
+            {
+                _lockOnLostTimer = 0f;
+            }
+            Vector3 targetDir = _lockOnTarget.Position - Target.Position;
+            float targetYaw = Mathf.Atan2(targetDir.X, targetDir.Z) * Mathf.RadiansToDegrees;
+            Yaw = Mathf.Lerp(Yaw, targetYaw, Time.DeltaTime * LockOnSmoothSpeed);
+            _lockOnTargetLastPosition = _lockOnTarget.Position;
+        }
+
+        private void UpdateSoftLock()
+        {
+            if (!EnableLockOn || _isLockOnActive) return;
+            _softLockTarget = null;
+            if (Target == null || _camera == null) return;
+            Vector3 forward = _camera.Direction;
+            Vector3 cameraPos = Target.Position + GetDynamicFocusOffset();
+            float bestScore = float.MinValue;
+            foreach (var actor in Level.GetActors<Actor>())
+            {
+                if (actor == Target) continue;
+                if (!actor.IsActiveInHierarchy) continue;
+                Vector3 toTarget = actor.Position - cameraPos;
+                float distance = toTarget.Length;
+                if (distance > LockOnMaxDistance) continue;
+                Vector3 dirToTarget = Vector3.Normalize(toTarget);
+                float angle = Mathf.Acos(Vector3.Dot(forward, dirToTarget)) * Mathf.RadiansToDegrees;
+                if (angle > SoftLockAngle) continue;
+                float score = -distance;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    _softLockTarget = actor;
+                }
+            }
+            if (_softLockTarget != null && _isInCombat)
+            {
+                Vector3 toSoftTarget = _softLockTarget.Position - Target.Position;
+                float softYaw = Mathf.Atan2(toSoftTarget.X, toSoftTarget.Z) * Mathf.RadiansToDegrees;
+                float yawDiff = Mathf.DeltaAngle(Yaw, softYaw);
+                Yaw += yawDiff * SoftLockInfluence * Time.DeltaTime;
+            }
+        }
+
+        public Vector3 GetCameraRelativeMoveDirection(Vector2 inputDirection)
+        {
+            if (inputDirection.Length < 0.01f) return Vector3.Zero;
+            Vector3 forward;
+            Vector3 right;
+            if (CurrentState == CameraState.LockOn && _lockOnTarget != null && Target != null)
+            {
+                Vector3 toTarget = _lockOnTarget.Position - Target.Position;
+                toTarget.Y = 0;
+                if (toTarget.Length < 0.01f) toTarget = Vector3.Forward;
+                forward = Vector3.Normalize(toTarget);
+                right = Vector3.Cross(Vector3.Up, forward);
+            }
+            else if (CurrentState == CameraState.OverShoulder && _camera != null)
+            {
+                forward = _camera.Direction;
+                forward.Y = 0;
+                if (forward.Length < 0.01f) forward = Vector3.Forward;
+                forward = Vector3.Normalize(forward);
+                right = Vector3.Cross(Vector3.Up, forward);
+                right.Y = 0;
+                if (right.Length < 0.01f) right = Vector3.Right;
+                right = Vector3.Normalize(right);
+            }
+            else
+            {
+                return Vector3.Zero;
+            }
+            return Vector3.Normalize(forward * inputDirection.Y + right * inputDirection.X);
+        }
+
+        public bool ShouldUseCameraRelativeMovement()
+        {
+            return CurrentState == CameraState.LockOn || CurrentState == CameraState.OverShoulder;
         }
 
         #endregion

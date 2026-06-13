@@ -1,0 +1,167 @@
+﻿@page "/flower/open-api"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using Horizon.Share.VMs
+@using System.Text.Json
+@using Horizon.WebAdmin.Modules.Flower.Services
+@inject FlowerOpenApiService OpenApiService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">🌐 开放API管理</TypographyTitle>
+        <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="LoadData">🔄 刷新</Button>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <AntDesign.Row Gutter="16" Style="margin-bottom:16px;">
+            <AntDesign.Col Span="8">
+                <Card Size="@CardSize.Small">
+                    <Statistic Title="@("市场概览接口")" Value="@ApiEndpoints.Count(e => e.Category == "市场")" Suffix="@(" 个端点")" ValueStyle="color:#1890ff" />
+                </Card>
+            </AntDesign.Col>
+            <AntDesign.Col Span="8">
+                <Card Size="@CardSize.Small">
+                    <Statistic Title="@("预测接口")" Value="@ApiEndpoints.Count(e => e.Category == "预测")" Suffix="@(" 个端点")" ValueStyle="color:#52c41a" />
+                </Card>
+            </AntDesign.Col>
+            <AntDesign.Col Span="8">
+                <Card Size="@CardSize.Small">
+                    <Statistic Title="@("仪表盘接口")" Value="@ApiEndpoints.Count(e => e.Category == "仪表盘")" Suffix="@(" 个端点")" ValueStyle="color:#722ed1" />
+                </Card>
+            </AntDesign.Col>
+        </AntDesign.Row>
+
+        <Card Title="@("API端点列表")" Size="@CardSize.Small" Style="margin-bottom:16px;">
+            @if (ApiEndpoints.Any())
+            {
+                <Table TItem="ApiEndpointItem" DataSource="@ApiEndpoints" Size="@TableSize.Small" RowKey="x => x.Path">
+                    <Column TData="string" Title="端点路径">
+                        <AntDesign.Text Code>@context.Path</AntDesign.Text>
+                    </Column>
+                    <Column TData="string" Title="方法">
+                        <Tag Color="@GetMethodColor(context.Method)">@context.Method</Tag>
+                    </Column>
+                    <Column TData="string" Title="分类">
+                        <Tag>@context.Category</Tag>
+                    </Column>
+                    <PropertyColumn Property="e => e.Description" Title="描述" />
+                </Table>
+            }
+            else
+            {
+                <Empty Description="@("暂无API端点数据")" />
+            }
+        </Card>
+
+        <Card Title="@("调用统计")" Size="@CardSize.Small">
+            @if (CallStats.Any())
+            {
+                <Table TItem="CallStatItem" DataSource="@CallStats" Size="@TableSize.Small" RowKey="x => x.Endpoint">
+                    <PropertyColumn Property="s => s.Endpoint" Title="端点" />
+                    <Column TData="string" Title="今日调用">
+                        <AntDesign.Text Strong>@context.TodayCalls.ToString("N0")</AntDesign.Text>
+                    </Column>
+                    <Column TData="string" Title="本周调用">@context.WeekCalls.ToString("N0")</Column>
+                    <Column TData="string" Title="平均响应时间">@(context.AvgResponseMs.ToString("F0"))ms</Column>
+                    <Column TData="string" Title="错误率">
+                        <AntDesign.Text Type="@(context.ErrorRate > 0.05 ? TextElementType.Danger : TextElementType.Success)">
+                            @($"{context.ErrorRate * 100:F2}%")
+                        </AntDesign.Text>
+                    </Column>
+                </Table>
+            }
+            else
+            {
+                <Empty Description="@("暂无调用统计数据")" />
+            }
+        </Card>
+    }
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<ApiEndpointItem> ApiEndpoints { get; set; } = new();
+    private List<CallStatItem> CallStats { get; set; } = new();
+    private bool Loading { get; set; }
+    private string ErrorMessage { get; set; } = "";
+
+    private readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            ApiEndpoints = new List<ApiEndpointItem>
+            {
+                new() { Path = "/api/open/FlowerOpenApi/market/overview", Method = "GET", Category = "市场", Description = "市场概览数据" },
+                new() { Path = "/api/open/FlowerOpenApi/market/species/{id}/price", Method = "GET", Category = "市场", Description = "品种价格查询" },
+                new() { Path = "/api/open/FlowerOpenApi/market/species/{id}/forecast", Method = "GET", Category = "预测", Description = "品种价格预测" },
+                new() { Path = "/api/open/FlowerOpenApi/market/hot-species", Method = "GET", Category = "市场", Description = "热门品种排行" },
+                new() { Path = "/api/open/FlowerOpenApi/dashboard/summary", Method = "GET", Category = "仪表盘", Description = "仪表盘汇总数据" }
+            };
+
+            var overviewResult = await OpenApiService.GetMarketOverviewAsync();
+            if (overviewResult?.IsSuccess == true && overviewResult.Data != null)
+            {
+                var doc = overviewResult.Data.Value;
+                if (doc.TryGetProperty("callStats", out var statsEl))
+                {
+                    CallStats = JsonSerializer.Deserialize<List<CallStatItem>>(statsEl.GetRawText(), _jsonOpts) ?? new();
+                }
+                else
+                {
+                    CallStats = new();
+                }
+            }
+            else
+            {
+                CallStats = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载数据失败: {ex.Message}";
+        }
+        Loading = false;
+    }
+
+    private string GetMethodColor(string method) => method switch
+    {
+        "GET" => "green", "POST" => "blue", "PUT" => "orange", "DELETE" => "red", _ => "default"
+    };
+
+    public class ApiEndpointItem
+    {
+        public string Path { get; set; } = "";
+        public string Method { get; set; } = "";
+        public string Category { get; set; } = "";
+        public string Description { get; set; } = "";
+    }
+
+    public class CallStatItem
+    {
+        public string Endpoint { get; set; } = "";
+        public long TodayCalls { get; set; }
+        public long WeekCalls { get; set; }
+        public double AvgResponseMs { get; set; }
+        public double ErrorRate { get; set; }
+    }
+}

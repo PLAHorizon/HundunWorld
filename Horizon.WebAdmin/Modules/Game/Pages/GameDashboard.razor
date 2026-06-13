@@ -1,0 +1,253 @@
+@page "/game/dashboard"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Game.Services
+@namespace Horizon.WebAdmin.Modules.Game.Pages
+
+@inject GameConfigService ConfigService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">游戏仪表盘</TypographyTitle>
+        <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadAll">刷新数据</Button>
+    </div>
+
+    <AntDesign.Row Gutter="16" Style="margin-bottom:16px;">
+        <AntDesign.Col Span="6">
+            <Card Size="@CardSize.Small">
+                <Statistic Title="在线玩家数" Value="@OnlinePlayerCount" ValueStyle="color:#1890ff">
+                    <Prefix>
+                        <Icon Type="team" />
+                    </Prefix>
+                </Statistic>
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Span="6">
+            <Card Size="@CardSize.Small">
+                <Statistic Title="注册用户总数" Value="@TotalUserCount" ValueStyle="color:#52c41a">
+                    <Prefix>
+                        <Icon Type="user" />
+                    </Prefix>
+                </Statistic>
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Span="6">
+            <Card Size="@CardSize.Small">
+                <Statistic Title="活跃角色数" Value="@ActiveRoleCount" ValueStyle="color:#722ed1">
+                    <Prefix>
+                        <Icon Type="crown" />
+                    </Prefix>
+                </Statistic>
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Span="6">
+            <Card Size="@CardSize.Small">
+                <Statistic Title="服务器数量" Value="@ServerCount" ValueStyle="color:#fa8c16">
+                    <Prefix>
+                        <Icon Type="cloud-server" />
+                    </Prefix>
+                </Statistic>
+            </Card>
+        </AntDesign.Col>
+    </AntDesign.Row>
+
+    <Card Title="服务器状态" Size="@CardSize.Small" Style="margin-bottom:16px;">
+        @if (ServersData.ValueKind == JsonValueKind.Array)
+        {
+            <Table TItem="JsonElement" DataSource="@ServersList" Size="@TableSize.Small" RowKey="@GetServerRowKey">
+                <Column TData="string" Title="服务器名称">
+                    @(context.TryGetProperty("name", out var p) ? p.GetString() ?? "-" : "-")
+                </Column>
+                <Column TData="string" Title="IP">
+                    @(context.TryGetProperty("ip", out var p) ? p.GetString() ?? "-" : "-")
+                </Column>
+                <Column TData="string" Title="端口">
+                    @(context.TryGetProperty("port", out var p) ? p.GetInt32().ToString() : "-")
+                </Column>
+                <Column TData="string" Title="状态">
+                    @{
+                        var status = context.TryGetProperty("status", out var sp) ? sp.GetString() ?? "" : "";
+                        <Tag Color="@GetServerStatusColor(status)">@GetServerStatusText(status)</Tag>
+                    }
+                </Column>
+                <Column TData="string" Title="在线人数">
+                    @{
+                        var current = context.TryGetProperty("currentPlayers", out var cp) ? cp.GetInt32() : 0;
+                        var max = context.TryGetProperty("maxPlayers", out var mp) ? mp.GetInt32() : 0;
+                        <div>
+                            <span>@current / @max</span>
+                            <Progress Percent="@(max > 0 ? (int)((double)current / max * 100) : 0)"
+                                      Size="@ProgressSize.Small"
+                                      Status="@GetProgressStatus(current, max)"
+                                      Style="margin-top:4px;" />
+                        </div>
+                    }
+                </Column>
+            </Table>
+        }
+        else
+        {
+            <Empty />
+        }
+    </Card>
+
+    <Card Title="最近注册用户" Size="@CardSize.Small" Style="margin-bottom:16px;">
+        @if (RecentUsersData.ValueKind == JsonValueKind.Array)
+        {
+            <Table TItem="JsonElement" DataSource="@RecentUsersList" Size="@TableSize.Small" RowKey="@GetUserRowKey">
+                <Column TData="string" Title="用户名">
+                    @(context.TryGetProperty("username", out var p) ? p.GetString() ?? "-" : "-")
+                </Column>
+                <Column TData="string" Title="注册时间">
+                    @(context.TryGetProperty("registerTime", out var p) ? p.GetString() ?? "-" : "-")
+                </Column>
+                <Column TData="string" Title="状态">
+                    @{
+                        var userStatus = context.TryGetProperty("status", out var usp) ? usp.GetString() ?? "" : "";
+                        <Tag Color="@GetUserStatusColor(userStatus)">@GetUserStatusText(userStatus)</Tag>
+                    }
+                </Column>
+            </Table>
+        }
+        else
+        {
+            <Empty />
+        }
+    </Card>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private int OnlinePlayerCount { get; set; }
+    private int TotalUserCount { get; set; }
+    private int ActiveRoleCount { get; set; }
+    private int ServerCount { get; set; }
+
+    private JsonElement ServersData { get; set; }
+    private List<JsonElement> ServersList { get; set; } = new();
+
+    private JsonElement RecentUsersData { get; set; }
+    private List<JsonElement> RecentUsersList { get; set; } = new();
+
+    private string ErrorMessage { get; set; } = "";
+
+    private object GetServerRowKey(JsonElement x) =>
+        x.TryGetProperty("name", out var p) ? p.GetString() ?? "" : "";
+
+    private object GetUserRowKey(JsonElement x) =>
+        x.TryGetProperty("username", out var p) ? p.GetString() ?? "" : "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAll();
+    }
+
+    private async Task LoadAll()
+    {
+        ErrorMessage = "";
+        try
+        {
+            await Task.WhenAll(
+                LoadServers(),
+                LoadRecentUsers()
+            );
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载数据失败: {ex.Message}";
+        }
+    }
+
+    private async Task LoadServers()
+    {
+        try
+        {
+            var result = await ConfigService.GetServersAsync(0);
+            if (result?.IsSuccess == true && result.Data.ValueKind != JsonValueKind.Undefined)
+            {
+                var json = JsonSerializer.Serialize(result.Data);
+                ServersData = JsonSerializer.Deserialize<JsonElement>(json);
+                ServersList = ServersData.ValueKind == JsonValueKind.Array
+                    ? ServersData.EnumerateArray().ToList()
+                    : new List<JsonElement>();
+
+                ServerCount = ServersList.Count;
+                OnlinePlayerCount = ServersList.Sum(s =>
+                    s.TryGetProperty("currentPlayers", out var p) ? p.GetInt32() : 0);
+            }
+        }
+        catch { }
+    }
+
+    private async Task LoadRecentUsers()
+    {
+        try
+        {
+            var result = await ConfigService.GetServersAsync(0);
+            if (result?.IsSuccess == true && result.Data.ValueKind != JsonValueKind.Undefined)
+            {
+                var data = JsonSerializer.SerializeToElement(result.Data);
+                if (data.TryGetProperty("recentUsers", out var ru) && ru.ValueKind == JsonValueKind.Array)
+                {
+                    RecentUsersData = ru;
+                    RecentUsersList = ru.EnumerateArray().ToList();
+                    TotalUserCount = RecentUsersList.Count;
+                    ActiveRoleCount = RecentUsersList.Count(u =>
+                        u.TryGetProperty("status", out var s) && s.GetString() == "active");
+                }
+                else
+                {
+                    RecentUsersData = default;
+                    RecentUsersList = new List<JsonElement>();
+                }
+            }
+        }
+        catch { }
+    }
+
+    private string GetServerStatusColor(string status) => status switch
+    {
+        "online" => "green",
+        "offline" => "red",
+        "maintenance" => "orange",
+        _ => "default"
+    };
+
+    private string GetServerStatusText(string status) => status switch
+    {
+        "online" => "在线",
+        "offline" => "离线",
+        "maintenance" => "维护中",
+        _ => "未知"
+    };
+
+    private string GetUserStatusColor(string status) => status switch
+    {
+        "active" => "green",
+        "frozen" => "orange",
+        "banned" => "red",
+        _ => "default"
+    };
+
+    private string GetUserStatusText(string status) => status switch
+    {
+        "active" => "正常",
+        "frozen" => "冻结",
+        "banned" => "封禁",
+        _ => "未知"
+    };
+
+    private ProgressStatus GetProgressStatus(int current, int max)
+    {
+        if (max <= 0) return ProgressStatus.Normal;
+        var ratio = (double)current / max;
+        if (ratio >= 0.9) return ProgressStatus.Exception;
+        if (ratio >= 0.7) return ProgressStatus.Active;
+        return ProgressStatus.Normal;
+    }
+}

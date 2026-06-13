@@ -9,10 +9,12 @@ using Horizon.WebApi.Identity.Users;
 using IdentityServer4.Validation;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Orleans;
 using Orleans.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -25,8 +27,9 @@ namespace Horizon.WebApi.Identity
         public ResourceOwnerPasswordValidator(IOptions<AdoNetOptions> options,
                                 IOptions<ClusterOptions> clusterOptions,
                                 IOptions<PassportSecurityOptions> security,
-                                ILogger<ResourceOwnerPasswordValidator> logger)
-                                : base(options, clusterOptions, logger)
+                                ILogger<ResourceOwnerPasswordValidator> logger,
+                                IClusterClient clusterClient)
+                                : base(options, clusterOptions, logger, clusterClient)
         {
             _logger = logger;
             _security = security.Value;
@@ -43,7 +46,7 @@ namespace Horizon.WebApi.Identity
                 user = await passport.AuthenticationAsync(new LoginDto
                 {
                     PassportId = context.UserName,
-                    Password = PassportHelper.SetPasportPassword(context.UserName, context.Password),
+                    Password = Convert.ToBase64String(Encoding.UTF8.GetBytes(context.Password)),
                     AppId = long.Parse(context.Request.Raw.Get(0)),
                     AppType = (AppType)int.Parse(context.Request.Raw.Get(1)),
                     PassportType = (PassportType)int.Parse(context.Request.Raw.Get(2)),
@@ -73,6 +76,7 @@ namespace Horizon.WebApi.Identity
             return new[]
             {
                 new Claim(PassportClaimTypes.PassportId, dto.PassportId),
+                new Claim(PassportClaimTypes.UserId, dto.PUId.ToString()),
                 new Claim(PassportClaimTypes.Name, dto.Name??"-"),
                 new Claim(PassportClaimTypes.Avatar, dto.Avatar??"-"),
                 new Claim(PassportClaimTypes.AppId, dto.AppId.ToString()),

@@ -77,12 +77,14 @@ namespace Horizon.Game.Core.Handlers
             try
             {
                 LearnSkillRequest learnSkillRequest = message.Body as LearnSkillRequest;
-                // 处理学习技能逻辑
+                var skillGrainKey = GuidFromUlong(learnSkillRequest.CharacterId);
+                var skillGrain = _clusterClient.GetGrain<ISkillGrain>(skillGrainKey);
+                var success = await skillGrain.LearnSkillAsync(learnSkillRequest.SkillId);
                 var response = new LearnSkillResponse
                 {
-                    Success = true,
-                    Message = "技能学习成功",
-                    LearnedSkill = new SkillInfo(),
+                    Success = success,
+                    Message = success ? "技能学习成功" : "技能学习失败",
+                    LearnedSkill = new SkillInfo { SkillId = learnSkillRequest.SkillId },
                     ConsumedGold = 0,
                     ConsumedItems = new List<long>()
                 };
@@ -101,11 +103,18 @@ namespace Horizon.Game.Core.Handlers
             try
             {
                 SkillCooldownQueryRequest skillCooldownQueryRequest = message.Body as SkillCooldownQueryRequest;
-                // 处理技能冷却查询逻辑
+                var skillGrainKey = GuidFromUlong(skillCooldownQueryRequest.CharacterId);
+                var skillGrain = _clusterClient.GetGrain<ISkillGrain>(skillGrainKey);
+                var cooldowns = new Dictionary<int, long>();
+                foreach (var skillId in skillCooldownQueryRequest.SkillIds)
+                {
+                    var remaining = await skillGrain.GetSkillCooldownAsync(skillId);
+                    cooldowns[skillId] = (long)(remaining * 1000);
+                }
                 var response = new SkillCooldownQueryResponse
                 {
                     CharacterId = skillCooldownQueryRequest.CharacterId,
-                    SkillCooldowns = new Dictionary<int, long>()
+                    SkillCooldowns = cooldowns
                 };
                 var tem = CreateHorizonMessage(response);
                 return (true, tem);
@@ -143,12 +152,14 @@ namespace Horizon.Game.Core.Handlers
             try
             {
                 UpgradeSkillRequest upgradeSkillRequest = message.Body as UpgradeSkillRequest;
-                // 处理升级技能逻辑
+                var skillGrainKey = GuidFromUlong(upgradeSkillRequest.CharacterId);
+                var skillGrain = _clusterClient.GetGrain<ISkillGrain>(skillGrainKey);
+                var success = await skillGrain.UpgradeSkillAsync(upgradeSkillRequest.SkillId);
                 var response = new UpgradeSkillResponse
                 {
-                    Success = true,
-                    Message = "技能升级成功",
-                    UpgradedSkill = new SkillInfo(),
+                    Success = success,
+                    Message = success ? "技能升级成功" : "技能升级失败",
+                    UpgradedSkill = new SkillInfo { SkillId = upgradeSkillRequest.SkillId },
                     ConsumedGold = 0,
                     ConsumedItems = new List<long>(),
                     ConsumedExperience = 0
@@ -168,12 +179,34 @@ namespace Horizon.Game.Core.Handlers
             try
             {
                 SkillCastMessage skillCastMessage = message.Body as SkillCastMessage;
-                // 处理技能施放逻辑
+                var skillGrainKey = GuidFromUlong(skillCastMessage.CasterId);
+                var skillGrain = _clusterClient.GetGrain<ISkillGrain>(skillGrainKey);
+                var castResult = await skillGrain.CastSkillAsync(skillCastMessage);
+                if (!castResult.Success)
+                {
+                    var failResponse = new SkillCastMessage
+                    {
+                        CasterId = skillCastMessage.CasterId,
+                        SkillId = skillCastMessage.SkillId,
+                        Success = false,
+                        Message = castResult.Message
+                    };
+                    return (true, CreateHorizonMessage(failResponse));
+                }
+                var combatGrainKey = Guid.NewGuid();
+                var combatGrain = _clusterClient.GetGrain<ICombatGrain>(combatGrainKey);
+                var combatResult = await combatGrain.ProcessSkillCastAsync(castResult);
                 var response = new AttributeUpdateMessage
                 {
                     CharacterId = skillCastMessage.CasterId,
                     UpdateTime = DateTime.UtcNow.Ticks,
-                    AttributeChanges = new Dictionary<string, object>()
+                    AttributeChanges = new Dictionary<string, object>
+                    {
+                        { "SkillId", combatResult.SkillId },
+                        { "Success", combatResult.Success },
+                        { "EnergyCost", combatResult.EnergyCost },
+                        { "Message", combatResult.Message }
+                    }
                 };
                 var tem = CreateHorizonMessage(response);
                 return (true, tem);
@@ -190,18 +223,10 @@ namespace Horizon.Game.Core.Handlers
             try
             {
                 AttackMessage attackMessage = message.Body as AttackMessage;
-                // 处理攻击逻辑
-                var response = new DamageMessage
-                {
-                    VictimId = attackMessage.TargetId,
-                    AttackerId = attackMessage.AttackerId,
-                    Damage = attackMessage.Damage,
-                    IsCritical = attackMessage.IsCritical,
-                    RemainingHealth = 100,
-                    IsDodged = false,
-                    IsBlocked = false
-                };
-                var tem = CreateHorizonMessage(response);
+                var combatGrainKey = Guid.NewGuid();
+                var combatGrain = _clusterClient.GetGrain<ICombatGrain>(combatGrainKey);
+                var damageResult = await combatGrain.ProcessAttackAsync(attackMessage);
+                var tem = CreateHorizonMessage(damageResult);
                 return (true, tem);
             }
             catch (Exception ex)
@@ -216,16 +241,9 @@ namespace Horizon.Game.Core.Handlers
             try
             {
                 QingGongMessage qingGongMessage = message.Body as QingGongMessage;
-                // 处理轻功逻辑
-                var response = new QingGongMessage
-                {
-                    CharacterId = qingGongMessage.CharacterId,
-                    QingGongSkillId = qingGongMessage.QingGongSkillId,
-                    StartPosition = qingGongMessage.StartPosition,
-                    TargetPosition = qingGongMessage.TargetPosition,
-                    PathPoints = qingGongMessage.PathPoints
-                };
-                var tem = CreateHorizonMessage(response);
+                var characterGrain = _clusterClient.GetGrain<ICharacterGrain>((long)qingGongMessage.CharacterId);
+                var result = await characterGrain.UseQingGongAsync(qingGongMessage);
+                var tem = CreateHorizonMessage(result);
                 return (true, tem);
             }
             catch (Exception ex)
@@ -305,6 +323,13 @@ namespace Horizon.Game.Core.Handlers
                 Logger.LogError(ex, "处理防御消息失败");
                 return (false, CreateHorizonMessage(new ErrorMessage { ErrorCode = 500, Message = "处理防御消息失败" }));
             }
+        }
+
+        private static Guid GuidFromUlong(ulong value)
+        {
+            var bytes = new byte[16];
+            BitConverter.GetBytes(value).CopyTo(bytes, 0);
+            return new Guid(bytes);
         }
     }
 }

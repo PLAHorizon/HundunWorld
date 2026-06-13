@@ -7,13 +7,9 @@ using System.Threading.Tasks;
 
 namespace Horizon.Game.Gateway.Services
 {
-    /// <summary>
-    /// Redis集群协调存储服务
-    /// 用于存储网关实例信息和连接分布数据，支持容灾恢复
-    /// </summary>
     public class RedisClusterStorage
     {
-        private readonly RedisCache _redisCache;
+        private readonly Lazy<RedisCache> _redisCacheLazy;
         private readonly ILogger<RedisClusterStorage> _logger;
         private readonly string _clusterId;
         private readonly string _gatewayInstancesKey;
@@ -21,6 +17,8 @@ namespace Horizon.Game.Gateway.Services
         private readonly TimeSpan _instanceExpiration;
         private readonly int _maxRetryAttempts = 3;
         private readonly TimeSpan _retryDelay = TimeSpan.FromMilliseconds(500);
+
+        private RedisCache RedisCache => _redisCacheLazy.Value;
 
         public RedisClusterStorage(
             ILogger<RedisClusterStorage> logger,
@@ -32,25 +30,24 @@ namespace Horizon.Game.Gateway.Services
             _clusterId = clusterId ?? throw new ArgumentNullException(nameof(clusterId));
             _gatewayInstancesKey = $"cluster:{_clusterId}:gateway_instances";
             _connectionDistributionKey = $"cluster:{_clusterId}:connection_distribution";
-            _instanceExpiration = TimeSpan.FromMinutes(5); // 实例信息5分钟过期，用于检测失效实例
+            _instanceExpiration = TimeSpan.FromMinutes(5);
 
-            try
+            _redisCacheLazy = new Lazy<RedisCache>(() =>
             {
-                _redisCache = new RedisCache(connectionString, db);
-                _logger.LogInformation("Redis缓存初始化成功，集群ID: {ClusterId}", _clusterId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Redis缓存初始化失败，集群ID: {ClusterId}", _clusterId);
-                throw;
-            }
+                try
+                {
+                    var cache = new RedisCache(connectionString, db);
+                    _logger.LogInformation("Redis缓存延迟初始化成功，集群ID: {ClusterId}", _clusterId);
+                    return cache;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Redis缓存延迟初始化失败，集群ID: {ClusterId}", _clusterId);
+                    throw;
+                }
+            });
         }
 
-        // ... rest of the existing code remains the same ...
-        
-        /// <summary>
-        /// 注册网关实例
-        /// </summary>
         public async Task RegisterGatewayInstanceAsync(GatewayInstanceInfo instanceInfo)
         {
             for (int attempt = 1; attempt <= _maxRetryAttempts; attempt++)
@@ -59,13 +56,10 @@ namespace Horizon.Game.Gateway.Services
                 {
                     var instanceKey = GetInstanceKey(instanceInfo.InstanceId);
                     var jsonData = JsonSerializer.Serialize(instanceInfo);
-                    
-                    // 存储实例详细信息
-                    await _redisCache.SetAsync(instanceKey, jsonData, _instanceExpiration);
-                    
-                    // 将实例ID添加到实例列表集合中
-                    await _redisCache.AddItemToSetAsync(_gatewayInstancesKey, instanceInfo.InstanceId);
-                    
+
+                    await RedisCache.SetAsync(instanceKey, jsonData, _instanceExpiration);
+                    await RedisCache.AddItemToSetAsync(_gatewayInstancesKey, instanceInfo.InstanceId);
+
                     _logger.LogDebug("网关实例注册成功: {InstanceId}", instanceInfo.InstanceId);
                     return;
                 }
@@ -82,9 +76,6 @@ namespace Horizon.Game.Gateway.Services
             }
         }
 
-        /// <summary>
-        /// 更新网关实例心跳
-        /// </summary>
         public async Task UpdateGatewayInstanceHeartbeatAsync(string instanceId)
         {
             for (int attempt = 1; attempt <= _maxRetryAttempts; attempt++)
@@ -92,10 +83,7 @@ namespace Horizon.Game.Gateway.Services
                 try
                 {
                     var instanceKey = GetInstanceKey(instanceId);
-                    
-                    // 延长实例信息的过期时间
-                    await _redisCache.ExpireEntryInAsync(instanceKey, _instanceExpiration);
-                    
+                    await RedisCache.ExpireEntryInAsync(instanceKey, _instanceExpiration);
                     _logger.LogDebug("网关实例心跳更新成功: {InstanceId}", instanceId);
                     return;
                 }
@@ -112,9 +100,6 @@ namespace Horizon.Game.Gateway.Services
             }
         }
 
-        /// <summary>
-        /// 获取所有有效的网关实例
-        /// </summary>
         public async Task<List<GatewayInstanceInfo>> GetAllGatewayInstancesAsync()
         {
             var instances = new List<GatewayInstanceInfo>();
@@ -123,13 +108,13 @@ namespace Horizon.Game.Gateway.Services
             {
                 try
                 {
-                    var instanceIds = await _redisCache.GetAllItemsFromSetAsync(_gatewayInstancesKey);
+                    var instanceIds = await RedisCache.GetAllItemsFromSetAsync(_gatewayInstancesKey);
 
                     foreach (var instanceId in instanceIds)
                     {
                         var instanceKey = GetInstanceKey(instanceId);
-                        var jsonData = await _redisCache.GetAsync(instanceKey);
-                        
+                        var jsonData = await RedisCache.GetAsync(instanceKey);
+
                         if (!string.IsNullOrEmpty(jsonData))
                         {
                             try
@@ -140,14 +125,12 @@ namespace Horizon.Game.Gateway.Services
                             catch (JsonException jsonEx)
                             {
                                 _logger.LogWarning(jsonEx, "反序列化网关实例信息失败，将移除无效数据: {InstanceId}", instanceId);
-                                // 如果反序列化失败，移除无效数据
                                 await RemoveGatewayInstanceAsync(instanceId);
                             }
                         }
                         else
                         {
-                            // 如果实例信息已过期，从实例列表中移除
-                            await _redisCache.RemoveItemFromSetAsync(_gatewayInstancesKey, instanceId);
+                            await RedisCache.RemoveItemFromSetAsync(_gatewayInstancesKey, instanceId);
                         }
                     }
 
@@ -169,9 +152,6 @@ namespace Horizon.Game.Gateway.Services
             return instances;
         }
 
-        /// <summary>
-        /// 获取指定网关实例
-        /// </summary>
         public async Task<GatewayInstanceInfo> GetGatewayInstanceAsync(string instanceId)
         {
             for (int attempt = 1; attempt <= _maxRetryAttempts; attempt++)
@@ -179,13 +159,13 @@ namespace Horizon.Game.Gateway.Services
                 try
                 {
                     var instanceKey = GetInstanceKey(instanceId);
-                    var jsonData = await _redisCache.GetAsync(instanceKey);
-                    
+                    var jsonData = await RedisCache.GetAsync(instanceKey);
+
                     if (!string.IsNullOrEmpty(jsonData))
                     {
                         return JsonSerializer.Deserialize<GatewayInstanceInfo>(jsonData);
                     }
-                    
+
                     return null;
                 }
                 catch (Exception ex) when (attempt < _maxRetryAttempts)
@@ -203,9 +183,6 @@ namespace Horizon.Game.Gateway.Services
             return null;
         }
 
-        /// <summary>
-        /// 移除网关实例
-        /// </summary>
         public async Task RemoveGatewayInstanceAsync(string instanceId)
         {
             for (int attempt = 1; attempt <= _maxRetryAttempts; attempt++)
@@ -213,13 +190,8 @@ namespace Horizon.Game.Gateway.Services
                 try
                 {
                     var instanceKey = GetInstanceKey(instanceId);
-                    
-                    // 删除实例详细信息
-                    await _redisCache.RemoveAsync(instanceKey);
-                    
-                    // 从实例列表中移除
-                    await _redisCache.RemoveItemFromSetAsync(_gatewayInstancesKey, instanceId);
-                    
+                    await RedisCache.RemoveAsync(instanceKey);
+                    await RedisCache.RemoveItemFromSetAsync(_gatewayInstancesKey, instanceId);
                     _logger.LogDebug("网关实例移除成功: {InstanceId}", instanceId);
                     return;
                 }
@@ -236,9 +208,6 @@ namespace Horizon.Game.Gateway.Services
             }
         }
 
-        /// <summary>
-        /// 更新连接分布信息
-        /// </summary>
         public async Task UpdateConnectionDistributionAsync(ConnectionDistributionInfo distributionInfo)
         {
             for (int attempt = 1; attempt <= _maxRetryAttempts; attempt++)
@@ -246,8 +215,7 @@ namespace Horizon.Game.Gateway.Services
                 try
                 {
                     var jsonData = JsonSerializer.Serialize(distributionInfo);
-                    await _redisCache.SetAsync(_connectionDistributionKey, jsonData, TimeSpan.FromMinutes(10));
-                    
+                    await RedisCache.SetAsync(_connectionDistributionKey, jsonData, TimeSpan.FromMinutes(10));
                     _logger.LogDebug("连接分布信息更新成功");
                     return;
                 }
@@ -264,22 +232,19 @@ namespace Horizon.Game.Gateway.Services
             }
         }
 
-        /// <summary>
-        /// 获取连接分布信息
-        /// </summary>
         public async Task<ConnectionDistributionInfo> GetConnectionDistributionAsync()
         {
             for (int attempt = 1; attempt <= _maxRetryAttempts; attempt++)
             {
                 try
                 {
-                    var jsonData = await _redisCache.GetAsync(_connectionDistributionKey);
-                    
+                    var jsonData = await RedisCache.GetAsync(_connectionDistributionKey);
+
                     if (!string.IsNullOrEmpty(jsonData))
                     {
                         return JsonSerializer.Deserialize<ConnectionDistributionInfo>(jsonData);
                     }
-                    
+
                     return new ConnectionDistributionInfo
                     {
                         TotalConnections = 0,
@@ -305,9 +270,6 @@ namespace Horizon.Game.Gateway.Services
             };
         }
 
-        /// <summary>
-        /// 保存集群状态快照（用于容灾恢复）
-        /// </summary>
         public async Task SaveClusterSnapshotAsync(ClusterState clusterState)
         {
             for (int attempt = 1; attempt <= _maxRetryAttempts; attempt++)
@@ -316,10 +278,7 @@ namespace Horizon.Game.Gateway.Services
                 {
                     var snapshotKey = $"cluster:{_clusterId}:snapshot";
                     var jsonData = JsonSerializer.Serialize(clusterState);
-                    
-                    // 保存快照，设置较长的过期时间
-                    await _redisCache.SetAsync(snapshotKey, jsonData, TimeSpan.FromHours(24));
-                    
+                    await RedisCache.SetAsync(snapshotKey, jsonData, TimeSpan.FromHours(24));
                     _logger.LogInformation("集群状态快照保存成功");
                     return;
                 }
@@ -336,9 +295,6 @@ namespace Horizon.Game.Gateway.Services
             }
         }
 
-        /// <summary>
-        /// 恢复集群状态快照
-        /// </summary>
         public async Task<ClusterState> RestoreClusterSnapshotAsync()
         {
             for (int attempt = 1; attempt <= _maxRetryAttempts; attempt++)
@@ -346,13 +302,13 @@ namespace Horizon.Game.Gateway.Services
                 try
                 {
                     var snapshotKey = $"cluster:{_clusterId}:snapshot";
-                    var jsonData = await _redisCache.GetAsync(snapshotKey);
-                    
+                    var jsonData = await RedisCache.GetAsync(snapshotKey);
+
                     if (!string.IsNullOrEmpty(jsonData))
                     {
                         return JsonSerializer.Deserialize<ClusterState>(jsonData);
                     }
-                    
+
                     return null;
                 }
                 catch (Exception ex) when (attempt < _maxRetryAttempts)
@@ -370,29 +326,25 @@ namespace Horizon.Game.Gateway.Services
             return null;
         }
 
-        /// <summary>
-        /// 清理过期的实例信息
-        /// </summary>
         public async Task CleanupExpiredInstancesAsync()
         {
             for (int attempt = 1; attempt <= _maxRetryAttempts; attempt++)
             {
                 try
                 {
-                    var instanceIds = await _redisCache.GetAllItemsFromSetAsync(_gatewayInstancesKey);
-                    
+                    var instanceIds = await RedisCache.GetAllItemsFromSetAsync(_gatewayInstancesKey);
+
                     foreach (var instanceId in instanceIds)
                     {
                         var instanceKey = GetInstanceKey(instanceId);
-                        var exists = await _redisCache.ExistsAsync(instanceKey);
-                        
+                        var exists = await RedisCache.ExistsAsync(instanceKey);
+
                         if (!exists)
                         {
-                            // 实例信息已过期，从实例列表中移除
-                            await _redisCache.RemoveItemFromSetAsync(_gatewayInstancesKey, instanceId);
+                            await RedisCache.RemoveItemFromSetAsync(_gatewayInstancesKey, instanceId);
                         }
                     }
-                    
+
                     _logger.LogDebug("过期实例清理完成");
                     return;
                 }
@@ -409,9 +361,6 @@ namespace Horizon.Game.Gateway.Services
             }
         }
 
-        /// <summary>
-        /// 获取实例详细信息的Redis键
-        /// </summary>
         private string GetInstanceKey(string instanceId)
         {
             return $"cluster:{_clusterId}:instance:{instanceId}";

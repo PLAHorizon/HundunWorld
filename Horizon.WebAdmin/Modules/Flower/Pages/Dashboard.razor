@@ -1,0 +1,458 @@
+@page "/flower/dashboard"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Flower.Services
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+
+@inject FlowerDashboardService DashboardService
+@inject FlowerSpeciesService SpeciesService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">数据驾驶舱</TypographyTitle>
+        <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadAll">刷新数据</Button>
+    </div>
+
+    <AntDesign.Row Gutter="16" Style="margin-bottom:16px;">
+        <AntDesign.Col Span="6">
+            <Card Size="@CardSize.Small">
+                <Statistic Title="今日交易额" Prefix="¥" Value="@OverviewTodayAmount" ValueStyle="color:#3f8600" />
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Span="6">
+            <Card Size="@CardSize.Small">
+                <Statistic Title="交易笔数" Value="@OverviewTransactionCount" ValueStyle="color:#1890ff" />
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Span="6">
+            <Card Size="@CardSize.Small">
+                <Statistic Title="活跃品种数" Value="@OverviewActiveSpecies" ValueStyle="color:#722ed1" />
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Span="6">
+            <Card Size="@CardSize.Small">
+                <Statistic Title="在线商户数" Value="@OverviewOnlineMerchants" ValueStyle="color:#fa8c16" />
+            </Card>
+        </AntDesign.Col>
+    </AntDesign.Row>
+
+    <AntDesign.Row Gutter="16" Style="margin-bottom:16px;">
+        <AntDesign.Col Span="12">
+            <Card Title="区域热力图" Size="@CardSize.Small" Style="height:100%">
+                @if (RegionalData.ValueKind == JsonValueKind.Array)
+                {
+                    <Table TItem="JsonElement" DataSource="@RegionalList" Size="@TableSize.Small" RowKey="@GetRegionalRowKey">
+                        <Column TData="string" Title="区域ID">
+                            @(context.TryGetProperty("regionId", out var p) ? p.GetInt32().ToString() : "-")
+                        </Column>
+                        <Column TData="string" Title="品种ID">
+                            @(context.TryGetProperty("speciesId", out var p) ? p.GetInt32().ToString() : "-")
+                        </Column>
+                        <Column TData="string" Title="需求指数">
+                            @(context.TryGetProperty("demandIndex", out var p) ? p.GetDouble().ToString("F2") : "-")
+                        </Column>
+                    </Table>
+                }
+                else
+                {
+                    <Empty />
+                }
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Span="12">
+            <Card Title="供需关系" Size="@CardSize.Small" Style="height:100%">
+                @if (SupplyDemandData.ValueKind == JsonValueKind.Array)
+                {
+                    <Table TItem="JsonElement" DataSource="@SupplyDemandList" Size="@TableSize.Small" RowKey="@GetSupplyDemandRowKey">
+                        <Column TData="string" Title="品种ID">
+                            @(context.TryGetProperty("speciesId", out var p) ? p.GetInt64().ToString() : "-")
+                        </Column>
+                        <Column TData="string" Title="平均价格">
+                            @(context.TryGetProperty("avgPrice", out var p) ? $"¥{p.GetDecimal():N2}" : "-")
+                        </Column>
+                        <Column TData="string" Title="交易总量">
+                            @(context.TryGetProperty("totalVolume", out var p) ? p.GetInt32().ToString("N0") : "-")
+                        </Column>
+                    </Table>
+                }
+                else
+                {
+                    <Empty />
+                }
+            </Card>
+        </AntDesign.Col>
+    </AntDesign.Row>
+
+    <Card Title="价格走势" Size="@CardSize.Small" Style="margin-bottom:16px;">
+        <div style="margin-bottom:12px;">
+            <Space>
+                <Select TItem="int" TItemValue="int" @bind-Value="@SelectedSpeciesId" Style="width:200px"
+                        Size="@InputSize.Small" OnChange="OnSpeciesChanged">
+                    <SelectOption TItem="int" TItemValue="int" Value="0" Disabled>请选择品种</SelectOption>
+                    @foreach (var sp in SpeciesList)
+                    {
+                        <SelectOption TItem="int" TItemValue="int" Value="@sp.Key">@sp.Value</SelectOption>
+                    }
+                </Select>
+            </Space>
+        </div>
+        @if (PriceTrendData.ValueKind == JsonValueKind.Array)
+        {
+            <Table TItem="JsonElement" DataSource="@PriceTrendList" Size="@TableSize.Small" RowKey="@GetPriceTrendRowKey">
+                <Column TData="string" Title="日期">
+                    @(context.TryGetProperty("date", out var p) ? p.GetDateTime().ToString("yyyy-MM-dd") : "-")
+                </Column>
+                <Column TData="string" Title="平均价格">
+                    <AntDesign.Text Strong>
+                        @(context.TryGetProperty("avgPrice", out var p) ? $"¥{p.GetDecimal():N2}" : "-")
+                    </AntDesign.Text>
+                </Column>
+                <Column TData="string" Title="最低价">
+                    @(context.TryGetProperty("minPrice", out var p) ? $"¥{p.GetDecimal():N2}" : "-")
+                </Column>
+                <Column TData="string" Title="最高价">
+                    @(context.TryGetProperty("maxPrice", out var p) ? $"¥{p.GetDecimal():N2}" : "-")
+                </Column>
+                <Column TData="string" Title="成交量">
+                    @(context.TryGetProperty("volume", out var p) ? p.GetInt32().ToString("N0") : "-")
+                </Column>
+            </Table>
+        }
+        else if (SelectedSpeciesId > 0)
+        {
+            <Empty Description="@("暂无价格数据")" />
+        }
+        else
+        {
+            <Empty Description="@("请选择品种查看价格走势")" />
+        }
+    </Card>
+
+    <AntDesign.Row Gutter="16" Style="margin-bottom:16px;">
+        <AntDesign.Col Span="8">
+            <Card Title="AI市场判读" Size="@CardSize.Small" Style="height:100%">
+                @if (AiSummaryData.ValueKind != JsonValueKind.Undefined)
+                {
+                    <div>
+                        @if (AiSummaryData.TryGetProperty("trend", out var trendProp))
+                        {
+                            <div style="margin-bottom:8px;">
+                                <Tag Color="@GetTrendColor(trendProp.GetString() ?? "")">@GetTrendText(trendProp.GetString() ?? "")</Tag>
+                            </div>
+                        }
+                        @if (AiSummaryData.TryGetProperty("confidence", out var confProp))
+                        {
+                            <div style="margin-bottom:8px; font-size:0.85rem; color:rgba(0,0,0,0.45);">
+                                置信度: @(confProp.GetDouble() * 100)%
+                            </div>
+                        }
+                        @if (AiSummaryData.TryGetProperty("summary", out var summaryProp))
+                        {
+                            <div style="white-space:pre-wrap; font-size:0.875rem;">@summaryProp.GetString()</div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <Empty Description="@("暂无AI判读")" />
+                }
+            </Card>
+        </AntDesign.Col>
+        <AntDesign.Col Span="16">
+            <Card Title="最近交易" Size="@CardSize.Small" Style="height:100%">
+                @if (TransactionsData.ValueKind == JsonValueKind.Array)
+                {
+                    <Table TItem="JsonElement" DataSource="@TransactionsList" Size="@TableSize.Small" RowKey="@GetTransactionRowKey">
+                        <Column TData="string" Title="时间">
+                            @(context.TryGetProperty("tradeTime", out var p) ? p.GetString() ?? "-" : "-")
+                        </Column>
+                        <Column TData="string" Title="品种">
+                            @(context.TryGetProperty("speciesName", out var p) ? p.GetString() ?? "-" : "-")
+                        </Column>
+                        <Column TData="string" Title="价格">
+                            @(context.TryGetProperty("price", out var p) ? $"¥{p.GetDecimal():N2}" : "-")
+                        </Column>
+                        <Column TData="string" Title="数量">
+                            @(context.TryGetProperty("quantity", out var p) ? p.GetInt32().ToString("N0") : "-")
+                        </Column>
+                        <Column TData="string" Title="市场">
+                            @(context.TryGetProperty("market", out var p) ? p.GetString() ?? "-" : "-")
+                        </Column>
+                    </Table>
+                }
+                else
+                {
+                    <Empty />
+                }
+            </Card>
+        </AntDesign.Col>
+    </AntDesign.Row>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private decimal OverviewTodayAmount { get; set; }
+    private int OverviewTransactionCount { get; set; }
+    private int OverviewActiveSpecies { get; set; }
+    private int OverviewOnlineMerchants { get; set; }
+
+    private JsonElement RegionalData { get; set; }
+    private List<JsonElement> RegionalList { get; set; } = new();
+
+    private JsonElement SupplyDemandData { get; set; }
+    private List<JsonElement> SupplyDemandList { get; set; } = new();
+
+    private int SelectedSpeciesId { get; set; }
+    private Dictionary<int, string> SpeciesList { get; set; } = new();
+    private JsonElement PriceTrendData { get; set; }
+    private List<JsonElement> PriceTrendList { get; set; } = new();
+
+    private JsonElement AiSummaryData { get; set; }
+    private JsonElement TransactionsData { get; set; }
+    private List<JsonElement> TransactionsList { get; set; } = new();
+
+    private string ErrorMessage { get; set; } = "";
+
+    private object GetRegionalRowKey(JsonElement x) =>
+        x.TryGetProperty("regionId", out var p) ? p.GetInt32().ToString() : "";
+
+    private object GetSupplyDemandRowKey(JsonElement x) =>
+        x.TryGetProperty("speciesId", out var p) ? p.GetInt64().ToString() : "";
+
+    private object GetPriceTrendRowKey(JsonElement x) =>
+        x.TryGetProperty("date", out var p) ? p.GetDateTime().ToString("yyyy-MM-dd") : "";
+
+    private object GetTransactionRowKey(JsonElement x) =>
+        x.TryGetProperty("tradeTime", out var p) ? p.GetString() ?? "" : "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAll();
+    }
+
+    private async Task LoadAll()
+    {
+        ErrorMessage = "";
+        try
+        {
+            await Task.WhenAll(
+                LoadOverview(),
+                LoadRegionalHeatmap(),
+                LoadSupplyDemand(),
+                LoadAiSummary(),
+                LoadTransactions(),
+                LoadSpeciesList()
+            );
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载数据失败: {ex.Message}";
+        }
+    }
+
+    private async Task LoadOverview()
+    {
+        try
+        {
+            var result = await DashboardService.GetStatsAsync();
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                var data = JsonSerializer.SerializeToElement(result.Data);
+                if (data.TryGetProperty("todayTradeAmount", out var ta)) OverviewTodayAmount = ta.GetDecimal();
+                if (data.TryGetProperty("tradeCount", out var tc)) OverviewTransactionCount = tc.GetInt32();
+                if (data.TryGetProperty("activeSpeciesCount", out var as_)) OverviewActiveSpecies = as_.GetInt32();
+                if (data.TryGetProperty("onlineMerchantCount", out var om)) OverviewOnlineMerchants = om.GetInt32();
+            }
+        }
+        catch { }
+    }
+
+    private async Task LoadRegionalHeatmap()
+    {
+        try
+        {
+            var result = await DashboardService.GetRegionalHeatmapAsync();
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                var json = JsonSerializer.Serialize(result.Data);
+                RegionalData = JsonSerializer.Deserialize<JsonElement>(json);
+                RegionalList = RegionalData.ValueKind == JsonValueKind.Array
+                    ? RegionalData.EnumerateArray().ToList()
+                    : new List<JsonElement>();
+            }
+        }
+        catch { }
+    }
+
+    private async Task LoadSupplyDemand()
+    {
+        try
+        {
+            var result = await DashboardService.GetSupplyDemandDataAsync();
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                var json = JsonSerializer.Serialize(result.Data);
+                SupplyDemandData = JsonSerializer.Deserialize<JsonElement>(json);
+                SupplyDemandList = SupplyDemandData.ValueKind == JsonValueKind.Array
+                    ? SupplyDemandData.EnumerateArray().ToList()
+                    : new List<JsonElement>();
+            }
+        }
+        catch { }
+    }
+
+    private async Task LoadSpeciesList()
+    {
+        try
+        {
+            var result = await SpeciesService.GetSpeciesListAsync();
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var data = result.Data.Value;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    SpeciesList = new Dictionary<int, string>();
+                    foreach (var item in data.EnumerateArray())
+                    {
+                        var id = item.TryGetProperty("id", out var idProp) ? idProp.GetInt32() : 0;
+                        var name = item.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "" : "";
+                        if (id > 0) SpeciesList[id] = name;
+                    }
+                }
+            }
+        }
+        catch { }
+    }
+
+    private async Task LoadPriceTrend()
+    {
+        if (SelectedSpeciesId <= 0) return;
+        try
+        {
+            var result = await DashboardService.GetPriceTrendAsync(SelectedSpeciesId);
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                var json = JsonSerializer.Serialize(result.Data);
+                PriceTrendData = JsonSerializer.Deserialize<JsonElement>(json);
+                PriceTrendList = PriceTrendData.ValueKind == JsonValueKind.Array
+                    ? PriceTrendData.EnumerateArray().ToList()
+                    : new List<JsonElement>();
+            }
+            else
+            {
+                PriceTrendData = default;
+                PriceTrendList = new List<JsonElement>();
+            }
+        }
+        catch
+        {
+            PriceTrendData = default;
+            PriceTrendList = new List<JsonElement>();
+        }
+    }
+
+    private async Task OnSpeciesChanged(int value)
+    {
+        SelectedSpeciesId = value;
+        await LoadPriceTrend();
+    }
+
+    private async Task LoadAiSummary()
+    {
+        try
+        {
+            var result = await DashboardService.GetAIMarketSummaryAsync();
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                var summary = result.Data.Value.GetString();
+                if (!string.IsNullOrEmpty(summary))
+                {
+                    AiSummaryData = JsonSerializer.SerializeToElement(new { summary });
+                }
+            }
+        }
+        catch { }
+    }
+
+    private async Task LoadTransactions()
+    {
+        try
+        {
+            var result = await DashboardService.GetTransactionsAsync();
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                var json = JsonSerializer.Serialize(result.Data);
+                TransactionsData = JsonSerializer.Deserialize<JsonElement>(json);
+                TransactionsList = TransactionsData.ValueKind == JsonValueKind.Array
+                    ? TransactionsData.EnumerateArray().ToList()
+                    : new List<JsonElement>();
+            }
+        }
+        catch { }
+    }
+
+    private string GetHeatLevelColor(JsonElement item)
+    {
+        var value = item.TryGetProperty("demandIndex", out var p) ? p.GetDouble() : 0;
+        if (value >= 80) return "red";
+        if (value >= 50) return "orange";
+        if (value >= 20) return "blue";
+        return "default";
+    }
+
+    private string GetHeatLevelText(JsonElement item)
+    {
+        var value = item.TryGetProperty("demandIndex", out var p) ? p.GetDouble() : 0;
+        if (value >= 80) return "火热";
+        if (value >= 50) return "活跃";
+        if (value >= 20) return "一般";
+        return "冷清";
+    }
+
+    private string GetSupplyDemandColor(JsonElement item)
+    {
+        var supply = item.TryGetProperty("supply", out var sp) ? sp.GetInt32() : 0;
+        var demand = item.TryGetProperty("demand", out var dp) ? dp.GetInt32() : 0;
+        if (demand == 0) return "default";
+        var ratio = (decimal)supply / demand;
+        if (ratio < 0.8m) return "red";
+        if (ratio > 1.2m) return "blue";
+        return "green";
+    }
+
+    private string GetSupplyDemandRatio(JsonElement item)
+    {
+        var supply = item.TryGetProperty("supply", out var sp) ? sp.GetInt32() : 0;
+        var demand = item.TryGetProperty("demand", out var dp) ? dp.GetInt32() : 0;
+        if (demand == 0) return "--";
+        return ((decimal)supply / demand).ToString("F2");
+    }
+
+    private string GetPriceChange(JsonElement item)
+    {
+        if (!item.TryGetProperty("avgPrice", out var p)) return "--";
+        var price = p.GetDecimal();
+        return $"¥{price:N2}";
+    }
+
+    private string GetTrendColor(string trend) => trend switch
+    {
+        "up" => "red",
+        "down" => "green",
+        "stable" => "blue",
+        _ => "default"
+    };
+
+    private string GetTrendText(string trend) => trend switch
+    {
+        "up" => "上涨",
+        "down" => "下跌",
+        "stable" => "平稳",
+        _ => "未知"
+    };
+}

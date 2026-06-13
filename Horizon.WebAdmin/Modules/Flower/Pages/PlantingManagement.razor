@@ -1,0 +1,260 @@
+@page "/flower/planting"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using Horizon.Share.VMs
+@using System.Text.Json
+@using Horizon.WebAdmin.Modules.Flower.Services
+@inject FlowerPlantingService PlantingService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">🌱 种植管理</TypographyTitle>
+        <Space>
+            <Input @bind-Value="@FilterGreenhouseId" Placeholder="@("温室ID")" Style="width:140px" Size="@InputSize.Small" />
+            <Select TItem="string" TItemValue="string" @bind-Value="@FilterStatus" Style="width:120px" Size="@InputSize.Small" DefaultValue="@("All")">
+                <SelectOption TItem="string" TItemValue="string" Value="@("All")">全部状态</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value="@("Planting")">种植中</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value="@("Growing")">生长期</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value="@("Harvestable")">可采收</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value="@("Completed")">已完成</SelectOption>
+            </Select>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="LoadBatches">🔍 查询</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="PlantingBatchItem" DataSource="@Batches" Size="@TableSize.Small" RowKey="x => x.BatchId">
+            <PropertyColumn Property="b => b.BatchId" Title="批次ID" />
+            <PropertyColumn Property="b => b.GreenhouseId" Title="温室ID" />
+            <PropertyColumn Property="b => b.SpeciesName" Title="品种" />
+            <PropertyColumn Property="b => b.Quantity" Title="种植数量" />
+            <Column TData="string" Title="状态">
+                <Tag Color="@GetBatchStatusColor(context.Status)">@GetBatchStatusText(context.Status)</Tag>
+            </Column>
+            <Column TData="string" Title="种植时间">@context.PlantedAt.ToString("yyyy-MM-dd")</Column>
+            <Column TData="string" Title="预计采收">@(context.ExpectedHarvestDate?.ToString("yyyy-MM-dd") ?? "--")</Column>
+            <Column TData="string" Title="操作">
+                <Space>
+                    <SpaceItem>
+                        <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowHarvestDrawer(context)">采收记录</Button>
+                    </SpaceItem>
+                    <SpaceItem>
+                        <Button Size="@ButtonSize.Small" OnClick="() => ShowCostInfo(context)">成本</Button>
+                    </SpaceItem>
+                </Space>
+            </Column>
+        </Table>
+    }
+
+    <Drawer Title="@($"采收记录 - 批次#{SelectedBatch?.BatchId}")" Visible="@ShowHarvestDrawerFlag" OnClose="CloseHarvestDrawer" Width="640">
+        @if (SelectedBatch != null)
+        {
+            <Descriptions Column="2" Size="@DescriptionsSize.Small" Style="margin-bottom:16px;">
+                <DescriptionsItem Title="品种">@SelectedBatch.SpeciesName</DescriptionsItem>
+                <DescriptionsItem Title="状态"><Tag Color="@GetBatchStatusColor(SelectedBatch.Status)">@GetBatchStatusText(SelectedBatch.Status)</Tag></DescriptionsItem>
+            </Descriptions>
+
+            @if (HarvestRecords.Any())
+            {
+                <Table TItem="HarvestRecordItem" DataSource="@HarvestRecords" Size="@TableSize.Small" RowKey="x => x.Id">
+                    <PropertyColumn Property="h => h.Id" Title="记录ID" />
+                    <Column TData="string" Title="采收数量">@context.Quantity</Column>
+                    <Column TData="string" Title="采收时间">@context.HarvestedAt.ToString("yyyy-MM-dd HH:mm")</Column>
+                    <PropertyColumn Property="h => h.Operator" Title="操作人" />
+                </Table>
+            }
+            else
+            {
+                <Empty Description="@("暂无采收记录")" />
+            }
+        }
+    </Drawer>
+
+    <Modal Title="@($"成本记录 - 批次#{CostBatch?.BatchId}")" Visible="@ShowCostModal" OnCancel="CloseCostModal"
+           Footer="@((RenderFragment)null)" Width="600">
+        @if (CostBatch != null)
+        {
+            <Descriptions Column="2" Size="@DescriptionsSize.Small" Style="margin-bottom:16px;">
+                <DescriptionsItem Title="品种">@CostBatch.SpeciesName</DescriptionsItem>
+                <DescriptionsItem Title="种植数量">@CostBatch.Quantity</DescriptionsItem>
+            </Descriptions>
+            @if (CostInfo != null)
+            {
+                <Descriptions Column="2" Size="@DescriptionsSize.Small">
+                    <DescriptionsItem Title="种子成本">¥@CostInfo.SeedCost.ToString("N2")</DescriptionsItem>
+                    <DescriptionsItem Title="肥料成本">¥@CostInfo.FertilizerCost.ToString("N2")</DescriptionsItem>
+                    <DescriptionsItem Title="人工成本">¥@CostInfo.LaborCost.ToString("N2")</DescriptionsItem>
+                    <DescriptionsItem Title="其他成本">¥@CostInfo.OtherCost.ToString("N2")</DescriptionsItem>
+                    <DescriptionsItem Title="总成本"><AntDesign.Text Type="@TextElementType.Danger" Strong>¥@CostInfo.TotalCost.ToString("N2")</AntDesign.Text></DescriptionsItem>
+                </Descriptions>
+            }
+            else
+            {
+                <Empty Description="@("暂无成本数据")" />
+            }
+        }
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<PlantingBatchItem> Batches { get; set; } = new();
+    private List<HarvestRecordItem> HarvestRecords { get; set; } = new();
+    private bool Loading { get; set; }
+    private string FilterGreenhouseId { get; set; } = "";
+    private string FilterStatus { get; set; } = "All";
+    private string ErrorMessage { get; set; } = "";
+    private bool ShowHarvestDrawerFlag { get; set; }
+    private bool ShowCostModal { get; set; }
+    private PlantingBatchItem? SelectedBatch { get; set; }
+    private PlantingBatchItem? CostBatch { get; set; }
+    private CostInfoItem? CostInfo { get; set; }
+
+    private readonly JsonSerializerOptions _jsonOpts = new() { PropertyNameCaseInsensitive = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBatches();
+    }
+
+    private async Task LoadBatches()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await PlantingService.ListBatchesAsync(
+                string.IsNullOrEmpty(FilterGreenhouseId) ? "0" : FilterGreenhouseId,
+                FilterStatus == "All" ? null : FilterStatus);
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                Batches = JsonSerializer.Deserialize<List<PlantingBatchItem>>(result.Data.Value.GetRawText(), _jsonOpts) ?? new();
+            }
+            else
+            {
+                Batches = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载种植批次失败: {ex.Message}";
+            Batches = new();
+        }
+        Loading = false;
+    }
+
+    private async void ShowHarvestDrawer(PlantingBatchItem batch)
+    {
+        SelectedBatch = batch;
+        ShowHarvestDrawerFlag = true;
+        try
+        {
+            var result = await PlantingService.GetBatchLifecycleAsync(batch.BatchId);
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                var doc = result.Data.Value;
+                if (doc.TryGetProperty("harvestRecords", out var arr))
+                {
+                    HarvestRecords = JsonSerializer.Deserialize<List<HarvestRecordItem>>(arr.GetRawText(), _jsonOpts) ?? new();
+                }
+                else
+                {
+                    HarvestRecords = new();
+                }
+            }
+            else
+            {
+                HarvestRecords = new();
+            }
+        }
+        catch
+        {
+            HarvestRecords = new();
+        }
+    }
+
+    private void CloseHarvestDrawer()
+    {
+        ShowHarvestDrawerFlag = false;
+        SelectedBatch = null;
+        HarvestRecords = new();
+    }
+
+    private async Task ShowCostInfo(PlantingBatchItem batch)
+    {
+        CostBatch = batch;
+        ShowCostModal = true;
+        try
+        {
+            var result = await PlantingService.GetBatchProfitAsync(batch.BatchId);
+            if (result?.IsSuccess == true && result.Data != null)
+            {
+                CostInfo = JsonSerializer.Deserialize<CostInfoItem>(result.Data.Value.GetRawText(), _jsonOpts);
+            }
+            else
+            {
+                CostInfo = null;
+            }
+        }
+        catch
+        {
+            CostInfo = null;
+        }
+    }
+
+    private void CloseCostModal()
+    {
+        ShowCostModal = false;
+        CostBatch = null;
+        CostInfo = null;
+    }
+
+    private string GetBatchStatusColor(string status) => status switch
+    {
+        "Planting" => "blue", "Growing" => "cyan", "Harvestable" => "green", "Completed" => "default", _ => "default"
+    };
+
+    private string GetBatchStatusText(string status) => status switch
+    {
+        "Planting" => "种植中", "Growing" => "生长期", "Harvestable" => "可采收", "Completed" => "已完成", _ => status
+    };
+
+    public class PlantingBatchItem
+    {
+        public long BatchId { get; set; }
+        public string GreenhouseId { get; set; } = "";
+        public string SpeciesName { get; set; } = "";
+        public int Quantity { get; set; }
+        public string Status { get; set; } = "";
+        public DateTime PlantedAt { get; set; }
+        public DateTime? ExpectedHarvestDate { get; set; }
+    }
+
+    public class HarvestRecordItem
+    {
+        public long Id { get; set; }
+        public int Quantity { get; set; }
+        public DateTime HarvestedAt { get; set; }
+        public string Operator { get; set; } = "";
+    }
+
+    public class CostInfoItem
+    {
+        public decimal SeedCost { get; set; }
+        public decimal FertilizerCost { get; set; }
+        public decimal LaborCost { get; set; }
+        public decimal OtherCost { get; set; }
+        public decimal TotalCost { get; set; }
+    }
+}

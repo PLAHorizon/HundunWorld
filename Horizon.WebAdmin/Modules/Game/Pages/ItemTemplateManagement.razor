@@ -1,0 +1,342 @@
+@page "/game/item-templates"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Game.Services
+@namespace Horizon.WebAdmin.Modules.Game.Pages
+
+@inject GameItemService ItemService
+@inject MessageService MsgService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">物品模板</TypographyTitle>
+        <Space>
+            <Select TItem="string" TItemValue="string" @bind-Value="@_typeFilter" Style="width:120px" Size="@InputSize.Small" OnChange="OnFilterChanged">
+                <SelectOption TItem="string" TItemValue="string" Value='@("")'>全部</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("武器")'>武器</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("防具")'>防具</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("饰品")'>饰品</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("消耗品")'>消耗品</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("材料")'>材料</SelectOption>
+            </Select>
+            <Select TItem="string" TItemValue="string" @bind-Value="@_qualityFilter" Style="width:120px" Size="@InputSize.Small" OnChange="OnFilterChanged">
+                <SelectOption TItem="string" TItemValue="string" Value='@("")'>全部</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("普通")'>普通</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("优秀")'>优秀</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("精良")'>精良</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("史诗")'>史诗</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("传说")'>传说</SelectOption>
+                <SelectOption TItem="string" TItemValue="string" Value='@("神器")'>神器</SelectOption>
+            </Select>
+            <Button Size="@ButtonSize.Small" OnClick="LoadItemTemplates">刷新</Button>
+        </Space>
+    </div>
+
+    @if (_loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="JsonElement" DataSource="@_itemTemplates" Size="@TableSize.Small" RowKey="@GetItemRowKey">
+            <Column TData="string" Title="模板ID">
+                @(context.TryGetProperty("templateId", out var p) ? p.GetInt32().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="物品名">
+                @(context.TryGetProperty("name", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="类型">
+                <Tag Color="@GetItemTypeColor(context)">@GetItemTypeText(context)</Tag>
+            </Column>
+            <Column TData="string" Title="子类型">
+                @(context.TryGetProperty("subType", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="品质">
+                <Tag Color="@GetRarityColor(context)">@GetRarityText(context)</Tag>
+            </Column>
+            <Column TData="string" Title="五行">
+                @(context.TryGetProperty("element", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="等级要求">
+                @(context.TryGetProperty("levelRequire", out var p) ? p.GetInt32().ToString() : "-")
+            </Column>
+            <Column TData="string" Title="境界要求">
+                @(context.TryGetProperty("realmRequire", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="职业限制">
+                @(context.TryGetProperty("professionLimit", out var p) ? p.GetString() ?? "-" : "-")
+            </Column>
+            <Column TData="string" Title="操作">
+                <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowDetail(context)">查看详情</Button>
+            </Column>
+        </Table>
+    }
+
+    <Drawer Title="@_detailDrawerTitle" Visible="@_detailDrawerVisible" OnClose="CloseDetail" Width="720" Placement="@DrawerPlacement.Right">
+        @if (_selectedItem != null)
+        {
+            var item = _selectedItem.Value;
+
+            <Card Title="基本信息" Size="@CardSize.Small" Style="margin-bottom:16px;">
+                <Descriptions Column="2" Size="@DescriptionsSize.Small">
+                    <DescriptionsItem Title="模板ID">@(item.TryGetProperty("templateId", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="物品名">@(item.TryGetProperty("name", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="描述" Span="2">@(item.TryGetProperty("description", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="类型">
+                        <Tag Color="@GetItemTypeColor(item)">@GetItemTypeText(item)</Tag>
+                    </DescriptionsItem>
+                    <DescriptionsItem Title="子类型">@(item.TryGetProperty("subType", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="基础品质">@(item.TryGetProperty("baseQuality", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="稀有度">
+                        <Tag Color="@GetRarityColor(item)">@GetRarityText(item)</Tag>
+                    </DescriptionsItem>
+                    <DescriptionsItem Title="五行">@(item.TryGetProperty("element", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="材料等级">@(item.TryGetProperty("materialGrade", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="等级要求">@(item.TryGetProperty("levelRequire", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="境界要求">@(item.TryGetProperty("realmRequire", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="职业限制">@(item.TryGetProperty("professionLimit", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="最大堆叠">@(item.TryGetProperty("maxStack", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="掉落率">@(item.TryGetProperty("dropRate", out var p) ? $"{p.GetDouble():F2}" : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="来源类型">@(item.TryGetProperty("sourceType", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                </Descriptions>
+            </Card>
+
+            <Card Title="属性信息" Size="@CardSize.Small" Style="margin-bottom:16px;">
+                <Row Gutter="16">
+                    <AntDesign.Col Span="12">
+                        <Descriptions Column="1" Size="@DescriptionsSize.Small" Title="基础属性">
+                            @if (item.TryGetProperty("baseAttributes", out var baseAttrs) && baseAttrs.ValueKind != JsonValueKind.Null)
+                            {
+                                <DescriptionsItem>
+                                    <pre style="margin:0; font-size:0.8rem; white-space:pre-wrap; word-break:break-all;">@JsonSerializer.Serialize(baseAttrs, new JsonSerializerOptions { WriteIndented = true })</pre>
+                                </DescriptionsItem>
+                            }
+                            else
+                            {
+                                <DescriptionsItem>-</DescriptionsItem>
+                            }
+                        </Descriptions>
+                    </AntDesign.Col>
+                    <AntDesign.Col Span="12">
+                        <Descriptions Column="1" Size="@DescriptionsSize.Small" Title="随机属性">
+                            @if (item.TryGetProperty("randomAttributes", out var randomAttrs) && randomAttrs.ValueKind != JsonValueKind.Null)
+                            {
+                                <DescriptionsItem>
+                                    <pre style="margin:0; font-size:0.8rem; white-space:pre-wrap; word-break:break-all;">@JsonSerializer.Serialize(randomAttrs, new JsonSerializerOptions { WriteIndented = true })</pre>
+                                </DescriptionsItem>
+                            }
+                            else
+                            {
+                                <DescriptionsItem>-</DescriptionsItem>
+                            }
+                        </Descriptions>
+                    </AntDesign.Col>
+                </Row>
+            </Card>
+
+            <Card Title="合成配方" Size="@CardSize.Small" Style="margin-bottom:16px;">
+                @if (item.TryGetProperty("synthesisRecipe", out var recipe) && recipe.ValueKind != JsonValueKind.Null)
+                {
+                    <pre style="margin:0; font-size:0.8rem; white-space:pre-wrap; word-break:break-all;">@JsonSerializer.Serialize(recipe, new JsonSerializerOptions { WriteIndented = true })</pre>
+                }
+                else
+                {
+                    <Empty Description="@("暂无合成配方")" />
+                }
+            </Card>
+
+            <Card Title="套装信息" Size="@CardSize.Small" Style="margin-bottom:16px;">
+                <Descriptions Column="2" Size="@DescriptionsSize.Small">
+                    <DescriptionsItem Title="套装ID">@(item.TryGetProperty("setId", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="套装名">@(item.TryGetProperty("setName", out var p) ? p.GetString() ?? "-" : "-")</DescriptionsItem>
+                </Descriptions>
+            </Card>
+
+            <Card Title="价格" Size="@CardSize.Small">
+                <Descriptions Column="2" Size="@DescriptionsSize.Small">
+                    <DescriptionsItem Title="出售价格">@(item.TryGetProperty("sellPrice", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                    <DescriptionsItem Title="购买价格">@(item.TryGetProperty("buyPrice", out var p) ? p.GetInt32().ToString() : "-")</DescriptionsItem>
+                </Descriptions>
+            </Card>
+        }
+    </Drawer>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@_errorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<JsonElement> _itemTemplates = new();
+    private bool _loading;
+    private string _errorMessage = "";
+    private bool _detailDrawerVisible;
+    private JsonElement? _selectedItem;
+    private string _typeFilter = "";
+    private string _qualityFilter = "";
+
+    private string _detailDrawerTitle
+    {
+        get
+        {
+            if (_selectedItem != null && _selectedItem.Value.TryGetProperty("name", out var p))
+                return $"物品详情 - {p.GetString() ?? ""}";
+            return "物品详情";
+        }
+    }
+
+    private object GetItemRowKey(JsonElement x) =>
+        x.TryGetProperty("templateId", out var p) ? (object)p.GetInt32() : 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadItemTemplates();
+    }
+
+    private async Task LoadItemTemplates()
+    {
+        _loading = true;
+        _errorMessage = "";
+        try
+        {
+            var itemType = string.IsNullOrEmpty(_typeFilter) ? null : _typeFilter;
+            var quality = string.IsNullOrEmpty(_qualityFilter) ? null : _qualityFilter;
+            var result = await ItemService.GetItemTemplatesAsync(1, 100, itemType, quality);
+            if (result?.IsSuccess == true)
+            {
+                var data = result.Data;
+                if (data.ValueKind == JsonValueKind.Array)
+                {
+                    _itemTemplates = data.EnumerateArray().ToList();
+                }
+                else if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("items", out var items))
+                {
+                    _itemTemplates = items.EnumerateArray().ToList();
+                }
+                else
+                {
+                    _itemTemplates = new List<JsonElement>();
+                }
+            }
+            else
+            {
+                _itemTemplates = new List<JsonElement>();
+                if (result != null && !result.IsSuccess)
+                    _errorMessage = result.ErrorMessage ?? "加载物品模板列表失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"加载物品模板列表失败: {ex.Message}";
+            _itemTemplates = new List<JsonElement>();
+        }
+        _loading = false;
+    }
+
+    private async Task OnFilterChanged(string? value)
+    {
+        await LoadItemTemplates();
+    }
+
+    private async void ShowDetail(JsonElement item)
+    {
+        var templateId = item.TryGetProperty("templateId", out var p) ? p.GetInt32() : 0;
+        if (templateId > 0)
+        {
+            try
+            {
+                var result = await ItemService.GetItemTemplateDetailAsync(templateId);
+                if (result?.IsSuccess == true)
+                {
+                    _selectedItem = result.Data;
+                }
+                else
+                {
+                    _selectedItem = item;
+                }
+            }
+            catch
+            {
+                _selectedItem = item;
+            }
+        }
+        else
+        {
+            _selectedItem = item;
+        }
+        _detailDrawerVisible = true;
+        StateHasChanged();
+    }
+
+    private void CloseDetail()
+    {
+        _detailDrawerVisible = false;
+        _selectedItem = null;
+    }
+
+    private string GetItemTypeText(JsonElement item)
+    {
+        if (item.TryGetProperty("type", out var p))
+        {
+            var str = p.ValueKind == JsonValueKind.String ? p.GetString() ?? "" : "";
+            if (!string.IsNullOrEmpty(str)) return str;
+            var val = p.ValueKind == JsonValueKind.Number ? p.GetInt32() : -1;
+            return val switch
+            {
+                1 => "武器",
+                2 => "防具",
+                3 => "饰品",
+                4 => "消耗品",
+                5 => "材料",
+                _ => "-"
+            };
+        }
+        return "-";
+    }
+
+    private string GetItemTypeColor(JsonElement item) => GetItemTypeText(item) switch
+    {
+        "武器" => "red",
+        "防具" => "blue",
+        "饰品" => "purple",
+        "消耗品" => "green",
+        "材料" => "orange",
+        _ => "default"
+    };
+
+    private string GetRarityText(JsonElement item)
+    {
+        if (item.TryGetProperty("rarity", out var p))
+        {
+            var str = p.ValueKind == JsonValueKind.String ? p.GetString() ?? "" : "";
+            if (!string.IsNullOrEmpty(str)) return str;
+            var val = p.ValueKind == JsonValueKind.Number ? p.GetInt32() : -1;
+            return val switch
+            {
+                1 => "普通",
+                2 => "优秀",
+                3 => "精良",
+                4 => "史诗",
+                5 => "传说",
+                6 => "神器",
+                _ => "-"
+            };
+        }
+        return "-";
+    }
+
+    private string GetRarityColor(JsonElement item) => GetRarityText(item) switch
+    {
+        "普通" => "default",
+        "优秀" => "blue",
+        "精良" => "purple",
+        "史诗" => "orange",
+        "传说" => "red",
+        "神器" => "gold",
+        _ => "default"
+    };
+}

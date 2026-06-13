@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -29,6 +29,10 @@ namespace Horizon.Entities
         /// 星光数据库
         /// </summary>
         public const string Xingguang = nameof(Xingguang);
+        /// <summary>
+        /// 花卉数据库
+        /// </summary>
+        public const string Flower = nameof(Flower);
         /// <summary>
         /// 数据实体类类库程序集名称
         /// </summary>

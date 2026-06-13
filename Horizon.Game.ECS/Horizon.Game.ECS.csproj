@@ -6,31 +6,55 @@
     <Nullable>enable</Nullable>
     <!-- 生成 XML 文档文件 -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <DocumentationFile>$(OutputPath)$(AssemblyName).xml</DocumentationFile>
+    <DocumentationFile>$(TargetDir)$(AssemblyName).xml</DocumentationFile>
   </PropertyGroup>
 
-  <!-- 包引用 -->
+  <!-- 包引�?-->
 
   <!-- 编译后复制文件到 Flax 目录 -->
   <Target Name="CopyToFlax" AfterTargets="Build">
     <PropertyGroup>
-      <FlaxToolsDir>D:\Program Files (x86)\Flax\Flax_1.10\Binaries\Tools</FlaxToolsDir>
+      <FlaxToolsDir>C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools</FlaxToolsDir>
     </PropertyGroup>
     
     <ItemGroup>
-      <FilesToCopy Include="$(OutputPath)$(AssemblyName).dll" />
-      <FilesToCopy Include="$(OutputPath)$(AssemblyName).xml" />
-      <FilesToCopy Include="$(OutputPath)$(AssemblyName).pdb" Condition="Exists('$(OutputPath)$(AssemblyName).pdb')" />
+      <FilesToCopy Include="$(TargetDir)$(AssemblyName).dll" />
+      <FilesToCopy Include="$(TargetDir)$(AssemblyName).xml" />
+      <FilesToCopy Include="$(TargetDir)$(AssemblyName).pdb" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
     </ItemGroup>
     
-    <Message Text="正在复制 Horizon.Game.ECS 文件到 Flax 目录..." Importance="high" />
+    <Message Text="正在复制 Horizon.Game.ECS 文件�?Flax 目录..." Importance="high" />
     
-    <Copy SourceFiles="@(FilesToCopy)" DestinationFolder="$(FlaxToolsDir)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" Retries="3" RetryDelayMilliseconds="1000" ContinueOnError="false">
+    <Copy SourceFiles="@(FilesToCopy)" DestinationFolder="$(FlaxToolsDir)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" Retries="3" RetryDelayMilliseconds="1000" ContinueOnError="WarnAndContinue">
       <Output TaskParameter="CopiedFiles" ItemName="SuccessfullyCopiedFiles" />
     </Copy>
     
     <Message Text="成功复制文件: @(SuccessfullyCopiedFiles)" Importance="high" />
   </Target>
+
+  <!-- 编译后复制到 UE5 托管 Binaries 目录，供 UnrealSharp 热重载直接引用。
+       目标路径相对于本项目文件：..\HundunWorld\Binaries\Managed\net10.0\ -->
+  <Target Name="CopyToUE5" AfterTargets="Build">
+    <PropertyGroup>
+      <UE5ManagedDir>$(MSBuildProjectDirectory)\..\HundunWorld\Binaries\Managed\net10.0</UE5ManagedDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <UE5FilesToCopy Include="$(TargetDir)$(AssemblyName).dll" />
+      <UE5FilesToCopy Include="$(TargetDir)$(AssemblyName).pdb" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(UE5ManagedDir)" ContinueOnError="WarnAndContinue" />
+    <Copy SourceFiles="@(UE5FilesToCopy)" DestinationFolder="$(UE5ManagedDir)"
+          SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true"
+          ContinueOnError="WarnAndContinue" />
+  </Target>
+
+  <ItemGroup>
+    <Compile Remove="_build_validation\**" />
+    <EmbeddedResource Remove="_build_validation\**" />
+    <None Remove="_build_validation\**" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
   </ItemGroup>

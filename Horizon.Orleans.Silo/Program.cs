@@ -34,9 +34,12 @@ using Horizon.Orleans.Silo.Filters;
 using ClientConnectionOptions = Horizon.Orleans.Silo.Services.ClientConnectionOptions;
 using Horizon.Orleans.Silo.Tasks;
 using Horizon.Game.Message.Network;
+using Horizon.IM.Message.Network;
 using Horizon.Orleans.Silo.Monitoring;
 using Horizon.Core.Monitoring;
 using Horizon.Orleans.Grains;
+using Horizon.Orleans.Grains.Payment;
+using Horizon.IoT.MQTT;
 
 namespace Horizon.Orleans.Silo
 {
@@ -55,11 +58,11 @@ namespace Horizon.Orleans.Silo
                     builder.AddConsole().SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Information));
                 _logger = loggerFactory.CreateLogger<Program>();
 
-                _logger.LogInformation("Starting Horizon Orleans Silo...");                // Load configuration
+                _logger.LogInformation("混沌世界Orleans Silo正在启动...");                // Load configuration
                 _config = await SiloStartupExtension.GetConfiguration();
                 if (_config == null)
                 {
-                    _logger.LogError("Failed to load configuration");
+                    _logger.LogError("加载配置失败");
                     return 1;
                 }
 
@@ -73,12 +76,18 @@ namespace Horizon.Orleans.Silo
                 var host = await StartSilo();
                 if (host == null)
                 {
-                    _logger.LogError("Silo host failed to start");
+                    if (IsEfDesignTimeInvocation())
+                    {
+                        _logger.LogInformation("检测到 EF 设计时启动探测，已跳过 Orleans Silo 运行时启动。");
+                        return 0;
+                    }
+
+                    _logger.LogError("Silo主机启动失败");
                     return 1;
                 }
 
-                _logger.LogInformation("Horizon Orleans Silo started successfully");
-                _logger.LogInformation("Press Ctrl+C to gracefully shutdown...");
+                _logger.LogInformation("混沌世界Orleans Silo启动成功");
+                _logger.LogInformation("按Ctrl+C可优雅地关闭服务器...");
 
                 // Wait for cancellation
                 var cancellationToken = new CancellationTokenSource();
@@ -86,25 +95,25 @@ namespace Horizon.Orleans.Silo
                 {
                     e.Cancel = true;
                     cancellationToken.Cancel();
-                    _logger.LogInformation("Shutdown requested...");
+                    _logger.LogInformation("正在请求关闭服务器...");
                 };
 
                 await Task.Delay(-1, cancellationToken.Token);
 
-                _logger.LogInformation("Stopping Orleans Silo...");
+                _logger.LogInformation("正在停止Orleans Silo...");
                 await host.StopAsync();
-                _logger.LogInformation("Orleans Silo stopped successfully");
+                _logger.LogInformation("Orleans Silo已成功停止");
 
                 return 0;
             }
             catch (OperationCanceledException)
             {
-                _logger?.LogInformation("Orleans Silo shutdown completed");
+                _logger?.LogInformation("Orleans Silo关闭完成");
                 return 0;
             }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Fatal error occurred during Orleans Silo execution");
+                _logger?.LogError(ex, "Orleans Silo运行过程中发生致命错误");
                 return 1;
             }
         }
@@ -113,7 +122,7 @@ namespace Horizon.Orleans.Silo
             try
             {
                 var startTime = DateTime.Now;
-                _logger?.LogInformation("Configuring Orleans Silo...");
+                _logger?.LogInformation("正在配置Orleans Silo...");
 
                 var oco = _config?.GetSection("ClusteringSiloOptions").Get<OrleansClusteringDbOptions>();
                 var sql = oco?.SqlServer;
@@ -122,11 +131,11 @@ namespace Horizon.Orleans.Silo
                 // 调试：检查数据库配置是否加载成功
                 if (_database == null)
                 {
-                    _logger?.LogWarning("Failed to load DatabaseOptions from configuration. Check appsettings.json structure.");
+                    _logger?.LogWarning("从配置文件加载DatabaseOptions失败，请检查appsettings.json结构。");
                 }
                 else
                 {
-                    _logger?.LogInformation("DatabaseOptions loaded successfully");
+                    _logger?.LogInformation("DatabaseOptions加载成功");
                     LogDatabaseConfiguration(_database);
                 }
 
@@ -143,7 +152,7 @@ namespace Horizon.Orleans.Silo
                 var gatewayPort = ports[1];
                 var healthCheckPort = ports[2];
 
-                _logger?.LogInformation("Configured ports - Silo: {SiloPort}, Gateway: {GatewayPort}, HealthCheck: {HealthCheckPort}",
+                _logger?.LogInformation("端口配置完成 - Silo端口: {SiloPort}, 网关端口: {GatewayPort}, 健康检查端口: {HealthCheckPort}",
                     siloPort, gatewayPort, healthCheckPort);
                     
                 var builder = Host.CreateDefaultBuilder()
@@ -220,12 +229,31 @@ namespace Horizon.Orleans.Silo
                         // 注册启动报告服务
                         services.AddHostedService<StartupReportService>();
 
+                        // 注册花卉用户数据同步服务
+                        services.AddSingleton<FlowerUserDataSyncService>();
+                        services.AddHostedService<FlowerUserSyncStartupService>();
+
                         // 注册OpenTelemetry监控（APM + Prometheus指标导出）
                         var prometheusPort = context.Configuration.GetValue<int>("Monitoring:PrometheusPort", 9464);
                         services.AddHorizonOpenTelemetry(prometheusPort: prometheusPort);
+
+                        services.Configure<MqttBrokerOptions>(context.Configuration.GetSection(MqttBrokerOptions.SectionName));
+                        services.AddSingleton<MqttConnectionValidator>();
+                        services.AddSingleton<MqttTopicAuthorizer>();
+                        services.AddHostedService<MqttBrokerService>();
+                        services.AddHostedService<MqttBridgeHostedService>();
+                        services.AddSingleton<IMqttClientProvider, MqttClientProvider>();
+
+                        services.AddHostedService<PaymentCompensationService>();
+
+                        // 注册订单超时定时任务激活服务
+                        services.AddHostedService<OrderTimeoutStartupService>();
                     })
                     .ConfigureLogging((context, logging) =>
                     {
+                        logging.ClearProviders();
+                        logging.AddConfiguration(context.Configuration.GetSection("Logging"));
+                        
                         logging.AddConsole();
                         logging.AddJsonConsole(options =>
                         {
@@ -237,7 +265,12 @@ namespace Horizon.Orleans.Silo
                                 Indented = false
                             };
                         });
-                        logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Information);
+
+                        // 减少框架底层的冗余日志
+                        logging.AddFilter("Orleans", Microsoft.Extensions.Logging.LogLevel.Warning);
+                        logging.AddFilter("Runtime", Microsoft.Extensions.Logging.LogLevel.Warning);
+                        logging.AddFilter("Microsoft", Microsoft.Extensions.Logging.LogLevel.Warning);
+                        logging.AddFilter("Microsoft.Hosting.Lifetime", Microsoft.Extensions.Logging.LogLevel.Information);
 
                         // 开发环境启用Seq日志聚合（Phase 2.2）
                         logging.AddSeqIfEnabled(context.Configuration, "HundunWorld.Silo");
@@ -252,27 +285,40 @@ namespace Horizon.Orleans.Silo
                     MapperInstance.Current = mapper;
                 }
                 
-                _logger?.LogInformation("Starting Orleans Silo...");
+                _logger?.LogInformation("正在启动Orleans Silo...");
                 var siloStartTime = DateTime.Now;
                 await siloHost.StartAsync();
                 
                 var siloStartDuration = DateTime.Now - siloStartTime;
-                _logger?.LogInformation("Orleans Silo started successfully in {Duration}ms", siloStartDuration.TotalMilliseconds);
+                _logger?.LogInformation("Orleans Silo启动成功，耗时 {Duration}ms", siloStartDuration.TotalMilliseconds);
 
                 // 将诊断移到后台执行，不阻塞启动
                 _ = Task.Run(async () => await RunPostStartupDiagnosticsAsync(siloHost));
 
                 var totalDuration = DateTime.Now - startTime;
-                _logger?.LogInformation("Total Silo startup time: {Duration}ms", totalDuration.TotalMilliseconds);
+                _logger?.LogInformation("Silo总启动时间: {Duration}ms", totalDuration.TotalMilliseconds);
 
                 return siloHost;
             }
+            catch (HostAbortedException) when (IsEfDesignTimeInvocation())
+            {
+                _logger?.LogInformation("检测到 EF 设计时主机构建中止，忽略该异常并交由 EF 工具继续处理。");
+                return null;
+            }
             catch (Exception ex)
             {
-                _logger?.LogError(ex, "Failed to start Orleans Silo");
+                _logger?.LogError(ex, "Orleans Silo启动失败");
                 return null;
             }
         }
+
+        private static bool IsEfDesignTimeInvocation()
+        {
+            return DesignTimeContextChecker.IsDesignTime()
+                || (AppDomain.CurrentDomain.FriendlyName?.Contains("ef", StringComparison.OrdinalIgnoreCase) ?? false)
+                || Environment.GetCommandLineArgs().Any(arg => arg.Contains("ef", StringComparison.OrdinalIgnoreCase));
+        }
+
         private static void ConfigureOrleansCluster(ISiloBuilder siloBuilder, DbInfo? sql, OrleansClusteringDbOptions? oco, int siloPort, int gatewayPort)
         {
             // Configure clustering
@@ -286,7 +332,7 @@ namespace Horizon.Orleans.Silo
             }
             else
             {
-                _logger?.LogWarning("No SQL configuration found, using localhost clustering");
+                _logger?.LogWarning("未找到SQL配置，使用本地集群");
                 siloBuilder.UseLocalhostClustering();
             }
 
@@ -295,7 +341,7 @@ namespace Horizon.Orleans.Silo
             {
                 var clusterOptions = _config?.GetSection("ClusterOptions").Get<ClusterOptions>();
                 options.ClusterId = clusterOptions?.ClusterId ?? "dev";
-                options.ServiceId = clusterOptions?.ServiceId ?? "HorizonService";
+                options.ServiceId = clusterOptions?.ServiceId ?? "BaseService";
             });
 
             // 配置Grain接口版本管理策略（支持滚动升级）
@@ -349,6 +395,30 @@ namespace Horizon.Orleans.Silo
 
                     options.GrainStorageSerializer = new CustomGrainStorageSerializer();
                 });
+
+                // P4-a：世界状态持久化（WorldChunkCellGrain / WorldDiffLogGrain）。
+                // 表结构见 scripts/sql/001_world_state.sql；后续 grain 通过
+                // [PersistentState("chunk"/"difflog", OrleansConst.WorldSqlStore)] 使用。
+                siloBuilder.AddAdoNetGrainStorage(OrleansConst.WorldSqlStore, options =>
+                {
+                    options.ConnectionString = sql.ConnectionString;
+                    options.Invariant = sql.Invariant;
+                    options.GrainStorageSerializer = new CustomGrainStorageSerializer();
+                });
+
+                siloBuilder.AddAdoNetGrainStorage(OrleansConst.FlowerStore, options =>
+                {
+                    options.ConnectionString = sql.ConnectionString;
+                    options.Invariant = sql.Invariant;
+                    options.GrainStorageSerializer = new CustomGrainStorageSerializer();
+                });
+
+                siloBuilder.AddAdoNetGrainStorage(OrleansConst.AIStore, options =>
+                {
+                    options.ConnectionString = sql.ConnectionString;
+                    options.Invariant = sql.Invariant;
+                    options.GrainStorageSerializer = new CustomGrainStorageSerializer();
+                });
                
             }
         }
@@ -361,6 +431,10 @@ namespace Horizon.Orleans.Silo
                 services.AddSerializer(serializerBuilder =>
                 {
                     serializerBuilder.AddAssembly(typeof(HorizonMessagePacket).Assembly);
+                    serializerBuilder.AddAssembly(typeof(IMGroupChatNotifyMessage).Assembly);
+                    serializerBuilder.AddAssembly(typeof(Horizon.Share.VMs.ResultVM<>).Assembly);
+                    serializerBuilder.AddNewtonsoftJsonSerializer(
+                        isSupported: type => type.Namespace != null && type.Namespace.StartsWith("Horizon.Share"));
                 });
 
                 // Configure health checks
@@ -459,16 +533,77 @@ namespace Horizon.Orleans.Silo
 
             // Configure AutoMapper
             services.AddMappingProfiles();
+
+            // Configure payment settings
+            services.AddSingleton(sp =>
+            {
+                var config = sp.GetRequiredService<IConfiguration>();
+                var section = config.GetSection("AlipaySettings");
+                return new AlipaySettings
+                {
+                    AppId = Environment.GetEnvironmentVariable("ALIPAY_APP_ID") ?? section["AppId"] ?? "",
+                    PrivateKey = Environment.GetEnvironmentVariable("ALIPAY_PRIVATE_KEY") ?? section["PrivateKey"] ?? "",
+                    AlipayPublicKey = Environment.GetEnvironmentVariable("ALIPAY_PUBLIC_KEY") ?? section["AlipayPublicKey"] ?? "",
+                    NotifyUrl = Environment.GetEnvironmentVariable("ALIPAY_NOTIFY_URL") ?? section["NotifyUrl"] ?? "",
+                    ReturnUrl = Environment.GetEnvironmentVariable("ALIPAY_RETURN_URL") ?? section["ReturnUrl"] ?? "",
+                    IsSandbox = section.GetValue<bool>("IsSandbox", true)
+                };
+            });
+            services.AddSingleton(sp =>
+            {
+                var config = sp.GetRequiredService<IConfiguration>();
+                var section = config.GetSection("WechatPaySettings");
+                return new WechatPaySettings
+                {
+                    MerchantId = Environment.GetEnvironmentVariable("WECHAT_MERCHANT_ID") ?? section["MerchantId"] ?? "",
+                    AppId = Environment.GetEnvironmentVariable("WECHAT_APP_ID") ?? section["AppId"] ?? "",
+                    MerchantV3Secret = Environment.GetEnvironmentVariable("WECHAT_V3_SECRET") ?? section["MerchantV3Secret"] ?? "",
+                    CertSerialNumber = Environment.GetEnvironmentVariable("WECHAT_CERT_SERIAL") ?? section["CertSerialNumber"] ?? "",
+                    PrivateKey = Environment.GetEnvironmentVariable("WECHAT_PRIVATE_KEY") ?? section["PrivateKey"] ?? "",
+                    NotifyUrl = Environment.GetEnvironmentVariable("WECHAT_NOTIFY_URL") ?? section["NotifyUrl"] ?? "",
+                    IsSandbox = section.GetValue<bool>("IsSandbox", true)
+                };
+            });
+            services.AddSingleton<WechatPaymentChannel>(sp =>
+            {
+                var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+                var settings = sp.GetRequiredService<WechatPaySettings>();
+                return new WechatPaymentChannel(
+                    loggerFactory.CreateLogger<WechatPaymentChannel>(),
+                    settings.MerchantId,
+                    settings.MerchantV3Secret,
+                    settings.CertSerialNumber,
+                    settings.PrivateKey,
+                    settings.NotifyUrl,
+                    settings.IsSandbox,
+                    settings.AppId);
+            });
+            services.AddSingleton<AlipayChannel>(sp =>
+            {
+                var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+                var settings = sp.GetRequiredService<AlipaySettings>();
+                return new AlipayChannel(
+                    loggerFactory.CreateLogger<AlipayChannel>(),
+                    settings.AppId,
+                    settings.PrivateKey,
+                    settings.AlipayPublicKey,
+                    settings.NotifyUrl,
+                    settings.ReturnUrl,
+                    settings.IsSandbox);
+            });
+            services.AddScoped<FlowerPaymentCallbackService>();
+            services.AddHttpClient();
+            services.AddSingleton<KdniaoApiClient>();
         }
 
         private static void ConfigureDbContexts(IServiceCollection services)
         {
-            if (_database?.Basic == null || _database?.Game == null || _database?.Article == null || _database?.Support == null || _database?.Xingguang == null)
+            if (_database?.Basic == null || _database?.Game == null || _database?.Article == null || _database?.Support == null || _database?.Xingguang == null || _database?.Flower == null)
             {
-                _logger?.LogError("Database configuration not found or incomplete. Please check your appsettings.json file.");
-                _logger?.LogError("Basic: {Basic}, Game: {Game}, Article: {Article}, Support: {Support}, Xingguang: {Xingguang}", 
-                    _database?.Basic, _database?.Game, _database?.Article, _database?.Support, _database?.Xingguang);
-                throw new InvalidOperationException("Database configuration is missing or incomplete. Please check your appsettings.json file.");
+                _logger?.LogError("未找到数据库配置或配置不完整，请检查appsettings.json文件。");
+                _logger?.LogError("Basic: {Basic}, Game: {Game}, Article: {Article}, Support: {Support}, Xingguang: {Xingguang}, Flower: {Flower}", 
+                    _database?.Basic, _database?.Game, _database?.Article, _database?.Support, _database?.Xingguang, _database?.Flower);
+                throw new InvalidOperationException("数据库配置缺失或不完整，请检查appsettings.json文件。");
             }
 
             services.AddDbContextPool<BasicEntityContext>((provider, options) =>
@@ -495,6 +630,11 @@ namespace Horizon.Orleans.Silo
             {
                 options.SetDbContext(_database.Xingguang);
             });
+
+            services.AddDbContextPool<FlowerEntityContext>((provider, options) =>
+            {
+                options.SetDbContext(_database.Flower);
+            });
         }
 
         /// <summary>
@@ -504,28 +644,29 @@ namespace Horizon.Orleans.Silo
         {
             if (database == null)
             {
-                _logger?.LogWarning("DatabaseOptions is null");
+                _logger?.LogWarning("DatabaseOptions为空");
                 return;
             }
 
-            _logger?.LogInformation("Database configuration:");
+            _logger?.LogInformation("数据库配置信息:");
             LogDatabaseInfo("Basic", database.Basic);
             LogDatabaseInfo("Game", database.Game);
             LogDatabaseInfo("Article", database.Article);
             LogDatabaseInfo("Support", database.Support);
             LogDatabaseInfo("Xingguang", database.Xingguang);
+            LogDatabaseInfo("Flower", database.Flower);
         }
 
         private static void LogDatabaseInfo(string name, DatabaseInfo? info)
         {
             if (info == null)
             {
-                _logger?.LogWarning("{Name}: null", name);
+                _logger?.LogWarning("{Name}: 为空", name);
                 return;
             }
 
-            _logger?.LogInformation("{Name}: Type={Type}, ConnectionString={ConnectionString}", 
-                name, info.Type, string.IsNullOrEmpty(info.ConnectionString) ? "null/empty" : "***");
+            _logger?.LogInformation("{Name}: 类型={Type}, 连接字符串={ConnectionString}", 
+                name, info.Type, string.IsNullOrEmpty(info.ConnectionString) ? "空/未配置" : "***");
         }
 
         /// <summary>
@@ -577,5 +718,61 @@ namespace Horizon.Orleans.Silo
         }
 
 
+    }
+
+    internal class PaymentCompensationService : IHostedService, IDisposable
+    {
+        private readonly IServiceProvider _serviceProvider;
+        private readonly ILogger<PaymentCompensationService> _logger;
+        private Timer _timer;
+
+        public PaymentCompensationService(
+            IServiceProvider serviceProvider,
+            ILogger<PaymentCompensationService> logger)
+        {
+            _serviceProvider = serviceProvider;
+            _logger = logger;
+        }
+
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            _timer = new Timer(DoCompensationQuery, null, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5));
+            _logger.LogInformation("支付补偿查询服务已启动，间隔5分钟");
+            return Task.CompletedTask;
+        }
+
+        private void DoCompensationQuery(object state)
+        {
+            _ = ExecuteCompensationAsync();
+        }
+
+        private async Task ExecuteCompensationAsync()
+        {
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var callbackService = scope.ServiceProvider.GetService<FlowerPaymentCallbackService>();
+                if (callbackService != null)
+                {
+                    await callbackService.CompensatePendingTransactionsAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "支付补偿查询执行失败");
+            }
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            _timer?.Change(Timeout.Infinite, 0);
+            _logger.LogInformation("支付补偿查询服务已停止");
+            return Task.CompletedTask;
+        }
+
+        public void Dispose()
+        {
+            _timer?.Dispose();
+        }
     }
 }

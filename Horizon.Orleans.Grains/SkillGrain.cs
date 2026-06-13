@@ -19,6 +19,12 @@ namespace Horizon.Orleans.Grains
         private readonly ILogger<SkillGrain> _logger;
         private readonly IPersistentState<SkillState> _skillState;
 
+        private bool _isCasting;
+        private int _castingSkillId;
+        private ulong _castingCasterId;
+
+        public bool IsCasting => _isCasting;
+
         public SkillGrain(
             ILogger<SkillGrain> logger,
             [PersistentState("skill", "GameStore")] IPersistentState<SkillState> skillState)
@@ -82,7 +88,65 @@ namespace Horizon.Orleans.Grains
                 }
 
                 // 记录冷却
-                state.SkillCooldowns[request.SkillId] = DateTime.UtcNow;
+                state.SkillCooldowns[request.SkillId] = DateTime.Now;
+
+                if (request.TargetEntityId > 0)
+                {
+                    var targetGrain = GrainFactory.GetGrain<ICharacterGrain>((long)request.TargetEntityId);
+                    var targetInfo = await targetGrain.GetCharacterInfoAsync(null);
+                    if (targetInfo == null)
+                    {
+                        return new SkillCastMessage
+                        {
+                            CasterId = request.CasterId,
+                            SkillId = request.SkillId,
+                            Success = false,
+                            Message = "目标不存在"
+                        };
+                    }
+                }
+
+                if (skill.Range > 0 && request.TargetEntityId > 0)
+                {
+                    var casterX = request.StartPosition.X;
+                    var casterZ = request.StartPosition.Z;
+                    var targetX = request.TargetPosition.X;
+                    var targetZ = request.TargetPosition.Z;
+
+                    if (casterX != 0 || casterZ != 0 || targetX != 0 || targetZ != 0)
+                    {
+                        float dx = targetX - casterX;
+                        float dz = targetZ - casterZ;
+                        float distance = MathF.Sqrt(dx * dx + dz * dz);
+                        if (distance > skill.Range)
+                        {
+                            return new SkillCastMessage
+                            {
+                                CasterId = request.CasterId,
+                                SkillId = request.SkillId,
+                                Success = false,
+                                Message = "目标超出技能范围"
+                            };
+                        }
+                    }
+                }
+
+                var casterGrain = GrainFactory.GetGrain<ICharacterGrain>((long)request.CasterId);
+                var casterInfo = await casterGrain.GetCharacterInfoAsync(null);
+                if (casterInfo != null && casterInfo.CurrentHealth <= 0)
+                {
+                    return new SkillCastMessage
+                    {
+                        CasterId = request.CasterId,
+                        SkillId = request.SkillId,
+                        Success = false,
+                        Message = "施法者已死亡"
+                    };
+                }
+
+                _isCasting = true;
+                _castingSkillId = request.SkillId;
+                _castingCasterId = request.CasterId;
 
                 await _skillState.WriteStateAsync();
 
@@ -96,7 +160,8 @@ namespace Horizon.Orleans.Grains
                     Message = "技能施放成功",
                     EnergyCost = skill.NeiLiCost,
                     CastTime = skill.CastTime,
-                    Range = skill.Range
+                    Range = skill.Range,
+                    TargetEntityId = request.TargetEntityId
                 };
             }
             catch (Exception ex)
@@ -392,6 +457,15 @@ namespace Horizon.Orleans.Grains
                 _logger.LogError(ex, "添加技能点失败: Points={Points}", points);
                 throw;
             }
+        }
+
+        public Task InterruptCastAsync()
+        {
+            _isCasting = false;
+            _castingSkillId = 0;
+            _castingCasterId = 0;
+            _logger.LogInformation("施法被打断");
+            return Task.CompletedTask;
         }
     }
 }

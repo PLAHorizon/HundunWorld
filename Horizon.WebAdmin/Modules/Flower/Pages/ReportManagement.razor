@@ -1,0 +1,228 @@
+﻿@page "/flower/reports"
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+@using System.Text.Json
+@using Horizon.Share.VMs
+
+@inject FlowerReportService ReportService
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">🤖 AI报告管理</TypographyTitle>
+        <Space>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="ShowGenerateDialog">📝 生成报告</Button>
+            <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="LoadReports">🔄 刷新</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Table TItem="ReportItem" DataSource="@Reports" Size="@TableSize.Small" RowKey="x => x.Id">
+            <PropertyColumn Property="r => r.Id" Title="ID" />
+            <PropertyColumn Property="r => r.Title" Title="报告标题" />
+            <Column TData="string" Title="报告类型">
+                <Tag Color="@GetReportTypeColor(context.ReportType)">@context.ReportType</Tag>
+            </Column>
+            <Column TData="string" Title="生成时间">@context.GeneratedAt</Column>
+            <Column TData="string" Title="状态">
+                <Tag Color="@(context.Status == "完成" ? "green" : context.Status == "生成中" ? "orange" : "default")">@context.Status</Tag>
+            </Column>
+            <Column TData="string" Title="操作">
+                <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ViewReport(context)">查看</Button>
+            </Column>
+        </Table>
+    }
+
+    <Modal Title="@SelectedReport?.Title" Visible="@ShowViewModal" OnCancel="CloseViewModal"
+           Footer="@((RenderFragment)null)" Width="800">
+        @if (SelectedReport != null)
+        {
+            <Descriptions Column="2" Size="@DescriptionsSize.Small" Style="margin-bottom:16px;">
+                <DescriptionsItem Title="报告ID">@SelectedReport.Id</DescriptionsItem>
+                <DescriptionsItem Title="类型"><Tag Color="@GetReportTypeColor(SelectedReport.ReportType)">@SelectedReport.ReportType</Tag></DescriptionsItem>
+                <DescriptionsItem Title="生成时间">@SelectedReport.GeneratedAt</DescriptionsItem>
+                <DescriptionsItem Title="状态">
+                    <Tag Color="@(SelectedReport.Status == "完成" ? "green" : SelectedReport.Status == "生成中" ? "orange" : "default")">@SelectedReport.Status</Tag>
+                </DescriptionsItem>
+            </Descriptions>
+            <Divider />
+            <div style="white-space:pre-wrap; font-size:0.875rem; line-height:1.8; max-height:500px; overflow:auto;">
+                @SelectedReport.Content
+            </div>
+        }
+    </Modal>
+
+    <Modal Title="生成AI报告" Visible="@ShowGenerateModal" OnCancel="CloseGenerateDialog"
+           OnOk="GenerateReport" OkText="@("生成")" CancelText="@("取消")" ConfirmLoading="@Generating">
+        <div style="display:flex; flex-direction:column; gap:16px;">
+            <div>
+                <div style="margin-bottom:4px; color:rgba(0,0,0,0.85);">报告类型</div>
+                <Select TItem="string" TItemValue="string" @bind-Value="@GenerateForm.ReportType" Style="width:100%">
+                    <SelectOption TItem="string" TItemValue="string" Value="@("日报")">日报</SelectOption>
+                    <SelectOption TItem="string" TItemValue="string" Value="@("周报")">周报</SelectOption>
+                    <SelectOption TItem="string" TItemValue="string" Value="@("月报")">月报</SelectOption>
+                    <SelectOption TItem="string" TItemValue="string" Value="@("专题分析")">专题分析</SelectOption>
+                </Select>
+            </div>
+            <div>
+                <div style="margin-bottom:4px; color:rgba(0,0,0,0.85);">报告日期</div>
+                <DatePicker TItemValue="DateTime?" @bind-Value="@GenerateForm.ReportDate" Style="width:100%" />
+            </div>
+            <div>
+                <div style="margin-bottom:4px; color:rgba(0,0,0,0.85);">备注</div>
+                <TextArea @bind-Value="@GenerateForm.Remark" Rows="3" Placeholder="可选，输入备注信息" />
+            </div>
+        </div>
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+
+    @if (!string.IsNullOrEmpty(SuccessMessage))
+    {
+        <Alert Type="@AlertType.Success" Message="@SuccessMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<ReportItem> Reports { get; set; } = new();
+    private bool Loading { get; set; }
+    private string ErrorMessage { get; set; } = "";
+    private string SuccessMessage { get; set; } = "";
+
+    private bool ShowViewModal { get; set; }
+    private ReportItem? SelectedReport { get; set; }
+
+    private bool ShowGenerateModal { get; set; }
+    private bool Generating { get; set; }
+    private GenerateFormData GenerateForm { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadReports();
+    }
+
+    private async Task LoadReports()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await ReportService.GetDailyReportAsync();
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                var json = result.Data.Value;
+                if (json.ValueKind == JsonValueKind.Array)
+                {
+                    Reports = JsonSerializer.Deserialize<List<ReportItem>>(json.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+                else if (json.ValueKind == JsonValueKind.Object && json.TryGetProperty("items", out var items))
+                {
+                    Reports = JsonSerializer.Deserialize<List<ReportItem>>(items.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                }
+                else
+                {
+                    Reports = new();
+                }
+            }
+            else
+            {
+                Reports = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载报告列表失败: {ex.Message}";
+            Reports = new();
+        }
+        Loading = false;
+    }
+
+    private void ViewReport(ReportItem report)
+    {
+        SelectedReport = report;
+        ShowViewModal = true;
+    }
+
+    private void CloseViewModal()
+    {
+        ShowViewModal = false;
+        SelectedReport = null;
+    }
+
+    private void ShowGenerateDialog()
+    {
+        GenerateForm = new GenerateFormData { ReportDate = DateTime.Now };
+        ShowGenerateModal = true;
+    }
+
+    private void CloseGenerateDialog()
+    {
+        ShowGenerateModal = false;
+    }
+
+    private async Task GenerateReport()
+    {
+        Generating = true;
+        ErrorMessage = "";
+        SuccessMessage = "";
+        try
+        {
+            var result = await ReportService.GenerateDailyReportAsync(new
+            {
+                ReportType = GenerateForm.ReportType,
+                ReportDate = GenerateForm.ReportDate?.ToString("yyyy-MM-dd"),
+                Remark = GenerateForm.Remark
+            });
+            if (result?.IsSuccess == true)
+            {
+                SuccessMessage = "报告生成任务已提交";
+                ShowGenerateModal = false;
+                await LoadReports();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "生成失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"生成失败: {ex.Message}";
+        }
+        Generating = false;
+    }
+
+    private string GetReportTypeColor(string type) => type switch
+    {
+        "日报" => "blue",
+        "周报" => "cyan",
+        "月报" => "green",
+        "专题分析" => "purple",
+        _ => "default"
+    };
+
+    public class ReportItem
+    {
+        public long Id { get; set; }
+        public string Title { get; set; } = "";
+        public string ReportType { get; set; } = "日报";
+        public string GeneratedAt { get; set; } = "";
+        public string Status { get; set; } = "完成";
+        public string Content { get; set; } = "";
+    }
+
+    public class GenerateFormData
+    {
+        public string ReportType { get; set; } = "日报";
+        public DateTime? ReportDate { get; set; }
+        public string Remark { get; set; } = "";
+    }
+}

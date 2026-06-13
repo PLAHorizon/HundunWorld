@@ -1,13 +1,15 @@
 using Horizon.Game.Message.Network;
 using System;
+using System.Text;
 using System.Threading.Tasks;
 using FlaxEngine;
+using HundunWorld.Game.Services;
 using HundunWorld.Game.UI.ErrorHandling;
 using HundunWorld.Game.UI.Events;
 using HundunWorld.Game.UI.Controllers;
 using HundunWorld.Game.UI.States;
 using Horizon.Game.Message.Enums;
-using Horizon.Game.Core.Database; // 使用现有的数据库管理器
+using Game.Database;
 using HundunWorld.Game.Network;
 using Horizon.Game.Message;
 
@@ -23,6 +25,8 @@ namespace HundunWorld.Game.UI.Authentication
         private static AuthenticationManager _instance;
         public static AuthenticationManager Instance => _instance ??= new AuthenticationManager();
 
+        public static bool IsLaunchedFromGengDi => HorizonGameIniReader.TryRead()?.IsValid == true;
+
         /// <summary>
         /// 重置单例实例 - 在编辑器Stop/Play之间调用，防止事件订阅和状态残留
         /// </summary>
@@ -36,12 +40,38 @@ namespace HundunWorld.Game.UI.Authentication
                 _instance.LoginResponseReceived = null;
                 _instance.RegisterResponseReceived = null;
                 _instance.AuthenticationStateChanged = null;
+                _instance._loginTcs?.TrySetCanceled();
+                _instance._loginTcs = null;
                 _instance._isAuthenticating = false;
+                _instance._authToken = "";
             }
             _instance = null;
         }
 
         public LiteDataContext.PassportInfo Passport { get; internal set; }
+
+        public string AuthToken => _authToken;
+        
+        /// <summary>
+        /// 游戏ID
+        /// </summary>
+        public uint GameId { get; set; } = 1;
+        
+        /// <summary>
+        /// 区域ID
+        /// </summary>
+        public uint AreaId { get; set; } = 1;
+        
+        /// <summary>
+        /// 服务器ID
+        /// </summary>
+        public uint ServerId { get; set; } = 1;
+        
+        /// <summary>
+        /// 区域ID
+        /// </summary>
+        public uint ZoneId { get; set; } = 1;
+        private string _authToken = "";
 
         // 核心管理器
         private UIStateManager _stateManager;
@@ -53,6 +83,7 @@ namespace HundunWorld.Game.UI.Authentication
         private bool _isAuthenticating = false;
         private string _currentUsername = "";
         private bool _rememberPassword = false;
+        private TaskCompletionSource<LoginResponse> _loginTcs;
 
         // 事件
         public event Action<LoginResponse> LoginResponseReceived;
@@ -79,9 +110,6 @@ namespace HundunWorld.Game.UI.Authentication
             _eventBus.Subscribe<NetworkStateChangedEvent>(OnNetworkStateChanged, subscriberName: "AuthenticationManager");
         }
 
-        /// <summary>
-        /// 登录异步方法（重构版本，使用公共方法减少重复代码）
-        /// </summary>
         public async Task<AuthenticationResult> LoginAsync(string username, string password, bool rememberPassword = false)
         {
             if (_isAuthenticating) 
@@ -98,51 +126,72 @@ namespace HundunWorld.Game.UI.Authentication
             {
                 await SetLoadingStateAsync("正在登录...");
                 
+                var loginResult = await GengDiAuthService.Instance.LoginAsync(username, password);
+                
+                if (!loginResult.IsSuccess)
+                    return new AuthenticationResult { IsSuccess = false, ErrorMessage = loginResult.ErrorMessage ?? "用户名或密码错误" };
+
                 var connectionError = await EnsureNetworkConnectionAsync();
                 if (connectionError != null)
                     return connectionError;
-                
-                var loginRequest = new LoginRequest
+
+                var tokenLoginRequest = new TokenLoginRequest
                 {
-                    Password = Base64Encode(password),
-                    AccountName = username,
-                    ClientVersion = "1.0.0",
-                    PlatformId = "Windows",
-                    DeviceId = System.Guid.NewGuid().ToString()
+                    AuthToken = loginResult.ImAuthToken,
+                    PassportId = username,
+                    UserId = 0,
+                    MachineId = MachineIdentifier.GetMachineGuid()
                 };
 
-                var messagePacket = CreateAuthMessagePacket(loginRequest, MessageType.LoginRequest);
+                var messagePacket = CreateAuthMessagePacket(tokenLoginRequest, MessageType.TokenLoginRequest);
+                messagePacket.Header.AuthToken = loginResult.ImAuthToken;
+                messagePacket.Header.UserId = 0;
+
+                _loginTcs = new TaskCompletionSource<LoginResponse>();
                 var success = await HundunWorldGame.Instance.NetworkManager.SendMessageAsync(messagePacket);
                 
                 if (success)
                 {
                     Debug.Log($"[AuthenticationManager] 登录请求已发送: {username}");
-                    
-                    var timeoutTask = Task.Delay(10000);
-                    var responseReceived = false;
-                    
-                    while (!responseReceived && !timeoutTask.IsCompleted)
-                        await Task.Delay(100);
-                    
-                    if (timeoutTask.IsCompleted)
-                        return new AuthenticationResult { IsSuccess = false, ErrorMessage = "登录响应超时，请稍后重试" };
-                }
 
-                if (success)
-                {
+                    var loginTcs = _loginTcs;
+                    var completedTask = await Task.WhenAny(loginTcs.Task, Task.Delay(10000));
+
+                    if (completedTask != loginTcs.Task)
+                    {
+                        loginTcs.TrySetCanceled();
+                        _loginTcs = null;
+                        return new AuthenticationResult { IsSuccess = false, ErrorMessage = "登录响应超时，请稍后重试" };
+                    }
+
+                    var loginResponse = await loginTcs.Task;
+                    _loginTcs = null;
+
+                    if (loginResponse == null)
+                    {
+                        return new AuthenticationResult { IsSuccess = false, ErrorMessage = "登录响应数据为空" };
+                    }
+
+                    if (!loginResponse.IsSuccess)
+                    {
+                        return new AuthenticationResult { IsSuccess = false, ErrorMessage = loginResponse.Message ?? "登录失败" };
+                    }
+
                     if (rememberPassword)
                         SaveLoginInfo(username, password);
 
-                    AuthenticationStateChanged?.Invoke(true);
                     return new AuthenticationResult { IsSuccess = true };
                 }
                 else
                 {
+                    _loginTcs?.TrySetCanceled();
+                    _loginTcs = null;
                     return new AuthenticationResult { IsSuccess = false, ErrorMessage = "登录失败，请检查网络链接" };
                 }
             }
             catch (Exception ex)
             {
+                _loginTcs = null;
                 _errorHandler.HandleError(UIErrorType.Network, $"登录过程中发生错误: {ex.Message}", ex, "login_process");
                 return new AuthenticationResult { IsSuccess = false, ErrorMessage = ex.Message };
             }
@@ -150,6 +199,122 @@ namespace HundunWorld.Game.UI.Authentication
             {
                 _isAuthenticating = false;
                 await ClearLoadingStateAsync();
+            }
+        }
+
+        public async Task<AuthenticationResult> LoginWithTokenAsync(string authToken, string passportId, long userId)
+        {
+            if (_isAuthenticating)
+                return new AuthenticationResult { IsSuccess = false, ErrorMessage = "正在进行认证操作" };
+
+            if (string.IsNullOrEmpty(authToken))
+                return new AuthenticationResult { IsSuccess = false, ErrorMessage = "AuthToken不能为空" };
+
+            _isAuthenticating = true;
+            _currentUsername = passportId ?? "";
+
+            try
+            {
+                await SetLoadingStateAsync("正在使用Token登录...");
+
+                var connectionError = await EnsureNetworkConnectionAsync();
+                if (connectionError != null)
+                    return connectionError;
+
+                var tokenLoginRequest = new TokenLoginRequest
+                {
+                    AuthToken = authToken,
+                    PassportId = passportId ?? "",
+                    UserId = userId,
+                    MachineId = MachineIdentifier.GetMachineGuid()
+                };
+
+                var messagePacket = CreateAuthMessagePacket(tokenLoginRequest, MessageType.TokenLoginRequest);
+                messagePacket.Header.AuthToken = authToken;
+                messagePacket.Header.UserId = (ulong)userId;
+
+                _loginTcs = new TaskCompletionSource<LoginResponse>();
+                var success = await HundunWorldGame.Instance.NetworkManager.SendMessageAsync(messagePacket);
+
+                if (success)
+                {
+                    Debug.Log($"[AuthenticationManager] Token登录请求已发送: {passportId}");
+
+                    var loginTcs = _loginTcs;
+                    var completedTask = await Task.WhenAny(loginTcs.Task, Task.Delay(10000));
+
+                    if (completedTask != loginTcs.Task)
+                    {
+                        loginTcs.TrySetCanceled();
+                        _loginTcs = null;
+                        return new AuthenticationResult { IsSuccess = false, ErrorMessage = "Token登录响应超时，请稍后重试" };
+                    }
+
+                    var tokenLoginResponse = await loginTcs.Task;
+                    _loginTcs = null;
+
+                    if (tokenLoginResponse == null)
+                    {
+                        return new AuthenticationResult { IsSuccess = false, ErrorMessage = "Token登录响应数据为空" };
+                    }
+
+                    if (!tokenLoginResponse.IsSuccess)
+                    {
+                        return new AuthenticationResult { IsSuccess = false, ErrorMessage = tokenLoginResponse.Message ?? "Token登录失败" };
+                    }
+
+                    return new AuthenticationResult { IsSuccess = true };
+                }
+                else
+                {
+                    _loginTcs?.TrySetCanceled();
+                    _loginTcs = null;
+                    return new AuthenticationResult { IsSuccess = false, ErrorMessage = "Token登录失败，请检查网络链接" };
+                }
+            }
+            catch (Exception ex)
+            {
+                _loginTcs = null;
+                _errorHandler.HandleError(UIErrorType.Network, $"Token登录过程中发生错误: {ex.Message}", ex, "token_login_process");
+                return new AuthenticationResult { IsSuccess = false, ErrorMessage = ex.Message };
+            }
+            finally
+            {
+                _isAuthenticating = false;
+                await ClearLoadingStateAsync();
+            }
+        }
+
+        public async Task<AuthenticationResult> TryAutoLoginAsync()
+        {
+            try
+            {
+                var iniConfig = HorizonGameIniReader.TryRead();
+                if (iniConfig == null || !iniConfig.IsValid)
+                {
+                    Debug.Log("[AuthenticationManager] HorizonGame.ini 不存在或无效，跳过自动登录");
+                    return new AuthenticationResult { IsSuccess = false, ErrorMessage = "无自动登录信息" };
+                }
+
+                Debug.Log($"[AuthenticationManager] 检测到 HorizonGame.ini，尝试Token自动登录: {iniConfig.User.PassportId}");
+
+                Passport = new LiteDataContext.PassportInfo
+                {
+                    PassportId = iniConfig.User.PassportId,
+                    UserId = (ulong)iniConfig.User.UserId,
+                    RememberPassword = true
+                };
+
+                return await LoginWithTokenAsync(
+                    iniConfig.Auth.AuthToken,
+                    iniConfig.User.PassportId,
+                    iniConfig.User.UserId
+                );
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[AuthenticationManager] 自动登录异常: {ex.Message}");
+                return new AuthenticationResult { IsSuccess = false, ErrorMessage = $"自动登录失败: {ex.Message}" };
             }
         }
 
@@ -285,6 +450,12 @@ namespace HundunWorld.Game.UI.Authentication
             }
         }
 
+        public void NotifyLoginResponse(LoginResponse response)
+        {
+            _loginTcs?.TrySetResult(response);
+            FlaxEngine.Debug.Log($"[AuthenticationManager] NotifyLoginResponse: IsSuccess={response.IsSuccess}, _loginTcs存在={_loginTcs != null}");
+        }
+
         /// <summary>
         /// 处理登录响应（注意：场景切换由LoginResponseHandler负责）
         /// </summary>
@@ -297,6 +468,21 @@ namespace HundunWorld.Game.UI.Authentication
                 {
                     FlaxEngine.Debug.Log($"[AuthenticationManager] 登录成功: {response.PassportId}");
                     
+                    // 同步 GameId/ZoneId/ServerId/UserId/AuthToken 到 NetworkManager（供心跳等后台任务使用）
+                    var networkManager = HundunWorldGame.Instance.NetworkManager;
+                    if (networkManager != null)
+                    {
+                        networkManager.GameId = GameId;
+                        networkManager.ZoneId = ZoneId;
+                        networkManager.ServerId = ServerId;
+                        networkManager.UserId = response.UserId;
+                        networkManager.AuthToken = response.AuthToken ?? "";
+                    }
+                    
+                    // 更新本地会话字段
+                    Passport.UserId = response.UserId;
+                    _authToken = response.AuthToken ?? "";
+                    
                     // 更新用户会话
                     var userSession = new UserSession
                     {
@@ -305,7 +491,6 @@ namespace HundunWorld.Game.UI.Authentication
                         SessionToken = response.SessionToken ?? "",
                         LoginTime = DateTime.Now
                     };
-                    Passport.UserId = response.UserId;
                     await _stateManager.UpdateUserSessionAsync(userSession);
                     
                     // 发布事件
@@ -495,15 +680,32 @@ namespace HundunWorld.Game.UI.Authentication
                 return null;
 
             Debug.Log("网络未连接，尝试建立连接...");
-            
+
+            var currentGateway = networkManager.GetCurrentGateway();
+            if (currentGateway != null)
+            {
+                var connected = await networkManager.ConnectAsync(currentGateway.IP, currentGateway.Port);
+                if (!connected)
+                {
+                    var waitSuccess = await networkManager.WaitForConnectionAsync(5000);
+                    if (!waitSuccess)
+                        return new AuthenticationResult { IsSuccess = false, ErrorMessage = "无法连接到游戏服务器，请检查网络连接" };
+                }
+                else
+                {
+                    await Task.Delay(100);
+                }
+                return null;
+            }
+
             var config = NetworkConfigManager.LoadConfig();
             if (config.GatewayList.Count == 0)
                 return new AuthenticationResult { IsSuccess = false, ErrorMessage = "未配置游戏服务器信息" };
 
             var gateway = config.GatewayList[0];
-            var connected = await networkManager.ConnectAsync(gateway.IP, gateway.Port);
+            var fallbackConnected = await networkManager.ConnectAsync(gateway.IP, gateway.Port);
             
-            if (!connected)
+            if (!fallbackConnected)
             {
                 var waitSuccess = await networkManager.WaitForConnectionAsync(5000);
                 if (!waitSuccess)
@@ -557,10 +759,11 @@ namespace HundunWorld.Game.UI.Authentication
                 Header = new MessageHeader
                 {
                     MessageType = messageType,
-                    GameId = 1,
-                    ZoneId = 1,
-                    ServerId = 1,
-                    Timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds()
+                    GameId = GameId,
+                    ZoneId = ZoneId,
+                    ServerId = ServerId,
+                    MachineId = MachineIdentifier.GetMachineGuid(),
+                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
                 }
             };
         }

@@ -1,0 +1,201 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             xmlns:models="using:Horizon.Game.GengDi.Models"
+             x:Class="Horizon.Game.GengDi.Core.Views.NewsView"
+             x:DataType="vm:NewsViewModel"
+             Background="{DynamicResource BattleNetBackgroundBrush}">
+
+    <!-- 主内容区域 -->
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- Header 区域 -->
+        <Border Padding="24 20 24 16"
+                Background="{DynamicResource BattleNetHeaderBackgroundBrush}">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <PathIcon Data="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"
+                              Width="28" Height="28"
+                              Foreground="#00AEFF" />
+                    <StackPanel>
+                        <TextBlock Text="新闻与活动"
+                                   FontSize="22"
+                                   FontWeight="SemiBold"
+                                   Foreground="#FFFFFF" />
+                        <TextBlock Text="获取最新的游戏资讯、版本公告和社区活动"
+                                   FontSize="13"
+                                   Foreground="#A0A0A0"
+                                   Margin="0 2 0 0" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- 分类标签切换 -->
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            Spacing="2"
+                            VerticalAlignment="Center">
+                    <Button Content="全部新闻"
+                            Classes="SubNavItem"
+                            Classes.SubNavSelected="{Binding IsAllNewsActive}"
+                            Command="{Binding LoadNewsCommand}" />
+                    <Button Content="游戏动态"
+                            Classes="SubNavItem"
+                            Classes.SubNavSelected="{Binding IsGameDynamicActive}"
+                            Command="{Binding LoadNewsByCategoryCommand}"
+                            CommandParameter="游戏动态" />
+                    <Button Content="活动公告"
+                            Classes="SubNavItem"
+                            Classes.SubNavSelected="{Binding IsActivityAnnouncementActive}"
+                            Command="{Binding LoadNewsByCategoryCommand}"
+                            CommandParameter="活动公告" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 内容区域 -->
+        <Grid Grid.Row="1"
+              ColumnDefinitions="320,*"
+              ColumnSpacing="16"
+              Margin="16 0 16 16">
+
+            <!-- 左侧：新闻列表 -->
+            <Border Background="#1A1A1A"
+                    CornerRadius="12"
+                    BorderBrush="#2A2A2A"
+                    BorderThickness="1">
+                <Grid RowDefinitions="Auto,*">
+                    <Border Padding="16 12"
+                            BorderBrush="#2A2A2A"
+                            BorderThickness="0 0 0 1">
+                        <TextBlock Text="新闻列表"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="#FFFFFF" />
+                    </Border>
+
+                    <ScrollViewer Grid.Row="1"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  Padding="8">
+                        <ItemsControl ItemsSource="{Binding NewsList}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:News">
+                                    <Border Padding="12"
+                                            Margin="0 0 0 2"
+                                            CornerRadius="8"
+                                            Cursor="Hand"
+                                            Background="Transparent">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="{Binding Title}"
+                                                       FontSize="13"
+                                                       FontWeight="SemiBold"
+                                                       TextWrapping="Wrap"
+                                                       MaxLines="2"
+                                                       Foreground="#FFFFFF" />
+                                            <Grid ColumnDefinitions="Auto,*">
+                                                <Border Background="#00AEFF15"
+                                                        CornerRadius="4"
+                                                        Padding="8 3"
+                                                        HorizontalAlignment="Left">
+                                                    <TextBlock Text="{Binding Category}"
+                                                               FontSize="10"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="#00AEFF" />
+                                                </Border>
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding PublishDate, StringFormat='{}{0:MM-dd}'}"
+                                                           FontSize="11"
+                                                           Foreground="#666666"
+                                                           HorizontalAlignment="Right" />
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <!-- 右侧：新闻详情 -->
+            <Border Background="#1A1A1A"
+                    CornerRadius="12"
+                    BorderBrush="#2A2A2A"
+                    BorderThickness="1"
+                    Padding="24">
+                <Grid>
+                    <!-- 有选中新闻时显示详情 -->
+                    <StackPanel Spacing="20"
+                                IsVisible="{Binding SelectedNews}">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="{Binding SelectedNews.Title}"
+                                       FontSize="22"
+                                       FontWeight="SemiBold"
+                                       TextWrapping="Wrap"
+                                       Foreground="#FFFFFF" />
+                            <StackPanel Orientation="Horizontal" Spacing="16">
+                                <Border Background="#00AEFF15"
+                                        CornerRadius="999"
+                                        Padding="10 5">
+                                    <TextBlock Text="{Binding SelectedNews.Category}"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="#00AEFF" />
+                                </Border>
+                                <TextBlock Text="{Binding SelectedNews.PublishDate, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"
+                                           FontSize="12"
+                                           Foreground="#666666"
+                                           VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding SelectedNews.Author}"
+                                           FontSize="12"
+                                           Foreground="#666666"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <Border Background="#0DFFFFFF"
+                                CornerRadius="10"
+                                Padding="20"
+                                BorderBrush="#2A2A2A"
+                                BorderThickness="1">
+                            <TextBlock Text="{Binding SelectedNews.Content}"
+                                       TextWrapping="Wrap"
+                                       LineHeight="24"
+                                       FontSize="14"
+                                       Foreground="#CCCCCC" />
+                        </Border>
+                    </StackPanel>
+
+                    <!-- 无选中新闻时显示占位 -->
+                    <StackPanel Spacing="16"
+                                IsVisible="{Binding !SelectedNews}"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Center">
+                        <Border Width="80"
+                                Height="80"
+                                CornerRadius="40"
+                                Background="#0DFFFFFF"
+                                HorizontalAlignment="Center">
+                            <Viewbox Width="36" Height="36">
+                                <PathIcon Data="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"
+                                        Foreground="#666666"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" />
+                            </Viewbox>
+                        </Border>
+                        <TextBlock Text="选择一条新闻查看详情"
+                                   FontSize="15"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"
+                                   Foreground="#FFFFFF" />
+                        <TextBlock Text="从左侧列表中选择感兴趣的新闻"
+                                   FontSize="12"
+                                   HorizontalAlignment="Center"
+                                   Foreground="#666666" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

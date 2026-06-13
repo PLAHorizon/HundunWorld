@@ -24,7 +24,8 @@ namespace Horizon.WebApi
         protected readonly AdoNetOptions _options;
         protected readonly ClusterOptions _clusterOptions;
         private readonly ILogger<OrleansControllerBase> _logger;
-        private IHost client = null;
+        private readonly IClusterClient _clusterClient;
+
         /// <summary>
         /// 
         /// </summary>
@@ -35,88 +36,21 @@ namespace Horizon.WebApi
         /// <param name="options"></param>
         /// <param name="clusterOptions"></param>
         /// <param name="logger"></param>
-        public OrleansControllerBase(IOptions<AdoNetOptions> options, IOptions<ClusterOptions> clusterOptions, ILogger<OrleansControllerBase> logger)
+        /// <param name="clusterClient">已注册为单例的Orleans集群客户端</param>
+        public OrleansControllerBase(IOptions<AdoNetOptions> options, IOptions<ClusterOptions> clusterOptions, ILogger<OrleansControllerBase> logger, IClusterClient clusterClient)
         {
             _options = options.Value;
             _clusterOptions = clusterOptions.Value;
             _logger = logger;
+            _clusterClient = clusterClient;
         }
         /// <summary>
-        /// Oleans 客户端
+        /// 获取Orleans集群客户端（单例，无需每次请求创建新连接）
         /// </summary>
         /// <returns></returns>
-        protected async Task<IClusterClient> OrleansConnectClient()
+        protected Task<IClusterClient> OrleansConnectClient()
         {
-            var invariant = _options.Invariant;
-            var connectionString = _options.ConnectionString;
-
-            try
-            {
-                client = new HostBuilder().UseOrleansClient(client =>
-                {
-                    //集群
-                    client.UseAdoNetClustering(options =>
-                    {
-                        options.ConnectionString = connectionString;
-                        options.Invariant = invariant;
-                    }).Configure<ClusterOptions>(options =>
-                    {
-                        options.ClusterId = _clusterOptions.ClusterId;
-                        options.ServiceId = _clusterOptions.ServiceId;
-                    })                    // ******* 关键修复：客户端超时配置以解决30分钟超时问题 *******
-                    .Configure<ClientMessagingOptions>(options =>
-                    {
-                        options.ResponseTimeout = TimeSpan.FromSeconds(30);  // 客户端响应超时30秒
-                        options.ResponseTimeoutWithDebugger = TimeSpan.FromMinutes(5);  // 调试时超时
-                    }).Configure<GatewayOptions>(options =>
-                    {
-                        options.PreferredGatewayIndex = 0;  // 首选网关索引
-                        options.GatewayListRefreshPeriod = TimeSpan.FromMinutes(10);  // 网关列表刷新周期增加到10分钟
-                    })
-                    .Configure<ConnectionOptions>(options =>
-                    {
-                        options.OpenConnectionTimeout = TimeSpan.FromSeconds(10);  // 连接超时
-                    })
-                    .ConfigureServices(service =>
-                    {
-                        service.AddSerializer(serializerBuilder =>
-                        {
-                            serializerBuilder.AddNewtonsoftJsonSerializer(
-                                isSupported: type => type.Namespace.StartsWith("Horizon.Share"));
-                        });
-                    });
-                }).ConfigureLogging(logging => logging.AddConsole()).Build();
-                _logger.LogInformation("Client successfully connected to silo host");
-                await client.StartAsync();
-                return await Task.FromResult(client.Services.GetRequiredService<IClusterClient>());
-
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex.Message);
-                return await Task.FromException<IClusterClient>(ex);
-            }
-
+            return Task.FromResult(_clusterClient);
         }
-        /// <summary>
-        /// 释放客服端对象
-        /// </summary>
-        protected async Task DisposeAsync()
-        {
-            if (client != null)
-            {
-                await client.StopAsync();
-                client.Dispose();
-                client = null;
-            }
-        }
-        /// <summary>
-        /// 析构函数
-        /// </summary>
-        ~OrleansControllerBase()
-        {
-            DisposeAsync();
-        }
-
     }
 }

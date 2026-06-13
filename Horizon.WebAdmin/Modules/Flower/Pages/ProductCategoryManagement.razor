@@ -1,0 +1,403 @@
+@page "/flower/product-categories"
+@using System.Text.Json
+@using Horizon.Share.VMs
+@using Horizon.WebAdmin.Modules.Flower.Services
+@namespace Horizon.WebAdmin.Modules.Flower.Pages
+
+@inject FlowerCategoryService CategoryService
+@inject MessageService MsgService
+
+<style>
+    .category-tree .ant-tree-node-content-wrapper {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        padding: 4px 8px;
+        border-radius: 6px;
+        transition: background-color 0.2s;
+    }
+
+    .category-tree .ant-tree-node-content-wrapper:hover {
+        background-color: rgba(24, 144, 255, 0.08);
+    }
+
+    .category-tree .ant-tree-node-content-wrapper .node-content {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .category-tree .ant-tree-node-content-wrapper .node-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+    }
+
+    .category-tree .ant-tree-node-content-wrapper .node-title .level-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .category-tree .ant-tree-node-content-wrapper .node-title .level-badge.level-1 {
+        background-color: #e6f7ff;
+        color: #1890ff;
+        border: 1px solid #91d5ff;
+    }
+
+    .category-tree .ant-tree-node-content-wrapper .node-title .level-badge.level-2 {
+        background-color: #f6ffed;
+        color: #52c41a;
+        border: 1px solid #b7eb8f;
+    }
+
+    .category-tree .ant-tree-node-content-wrapper .node-title .level-badge.level-3 {
+        background-color: #fff7e6;
+        color: #fa8c16;
+        border: 1px solid #ffd591;
+    }
+
+    .category-tree .ant-tree-node-content-wrapper .node-actions {
+        display: flex;
+        gap: 8px;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    .category-tree .ant-tree-node-content-wrapper:hover .node-actions {
+        opacity: 1;
+    }
+
+    .category-tree .ant-tree .ant-tree-indent-unit {
+        width: 24px;
+    }
+
+    .category-tree .ant-tree-switcher {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+
+<div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <TypographyTitle Level="5">商品分类管理</TypographyTitle>
+        <Space>
+            <Button Type="@ButtonType.Primary" Size="@ButtonSize.Small" OnClick="@(() => ShowAddCategoryModal(null))">新增一级分类</Button>
+            <Button Size="@ButtonSize.Small" OnClick="LoadCategoryTree">刷新</Button>
+        </Space>
+    </div>
+
+    @if (Loading)
+    {
+        <div style="text-align:center; padding:32px 0;">
+            <Spin Size="@SpinSize.Large" />
+            <p style="margin-top:8px; color:rgba(0,0,0,0.45);">加载中...</p>
+        </div>
+    }
+    else
+    {
+        <Card>
+            <Tree TItem="CategoryTreeNode" 
+                  DataSource="@TreeData" 
+                  TitleExpression="node => node.DataItem.Title"
+                  KeyExpression="node => node.DataItem.Key" 
+                  ChildrenExpression="node => node.DataItem.Children"
+                  IsLeafExpression="node => !node.DataItem.Children.Any()"
+                  DefaultExpandAll="false"
+                  ShowIcon="true"
+                  BlockNode="true"
+                  Class="category-tree">
+                <TitleTemplate>
+                    <div class="node-content">
+                        <div class="node-title">
+                            <span class="level-badge @(GetLevelClass(context.DataItem))">@GetLevelText(context.DataItem)</span>
+                            <span>@context.DataItem.Title</span>
+                            @if (context.DataItem.Children.Count > 0)
+                            {
+                                <span style="color: rgba(0,0,0,0.45); font-size: 12px;">(@context.DataItem.Children.Count 个子分类)</span>
+                            }
+                        </div>
+                        <div class="node-actions">
+                            <Button Type="@ButtonType.Primary" Ghost Size="@ButtonSize.Small" OnClick="() => ShowAddCategoryModal(context.DataItem)">新增子分类</Button>
+                            <Button Size="@ButtonSize.Small" OnClick="() => ShowEditCategoryModal(context.DataItem)">编辑</Button>
+                            <Popconfirm Title="确定删除此分类？删除后该分类下的子分类将一并删除。" OnConfirm="() => DeleteCategory(context.DataItem)">
+                                <Button Danger Size="@ButtonSize.Small">删除</Button>
+                            </Popconfirm>
+                        </div>
+                    </div>
+                </TitleTemplate>
+            </Tree>
+        </Card>
+    }
+
+    <Modal Title="@(IsEditMode ? "编辑分类" : "新增分类")" Visible="@CategoryModalVisible" OnCancel="CloseCategoryModal" OnOk="HandleCategoryOk" ConfirmLoading="@CategoryLoading">
+        <Form Model="@CategoryForm" Layout="@FormLayout.Vertical">
+            <FormItem Label="分类名称">
+                <Input @bind-Value="@CategoryForm.Name" Placeholder="请输入分类名称" />
+            </FormItem>
+            <FormItem Label="排序号">
+                <AntDesign.InputNumber TValue="int" @bind-Value="@CategoryForm.SortOrder" Min="@(0)" Style="width:100%" />
+            </FormItem>
+            @if (IsEditMode)
+            {
+                <FormItem Label="分类ID">
+                    <Input Value="@CategoryForm.Id.ToString()" Disabled />
+                </FormItem>
+            }
+            @if (!IsEditMode && ParentId.HasValue)
+            {
+                <FormItem Label="上级分类">
+                    <Input Value="@GetParentCategoryName(ParentId.Value)" Disabled />
+                </FormItem>
+            }
+        </Form>
+    </Modal>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <Alert Type="@AlertType.Error" Message="@ErrorMessage" ShowIcon="true" Style="margin-top:8px;" />
+    }
+</div>
+
+@code {
+    private List<CategoryTreeNode> TreeData { get; set; } = new();
+    private bool Loading { get; set; }
+    private string ErrorMessage { get; set; } = "";
+
+    private bool CategoryModalVisible { get; set; }
+    private bool CategoryLoading { get; set; }
+    private bool IsEditMode { get; set; }
+    private CategoryFormModel CategoryForm { get; set; } = new();
+    private long? ParentId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategoryTree();
+    }
+
+    private async Task LoadCategoryTree()
+    {
+        Loading = true;
+        ErrorMessage = "";
+        try
+        {
+            var result = await CategoryService.GetCategoryTreeAsync();
+            if (result?.IsSuccess == true && result.Data.HasValue)
+            {
+                TreeData = BuildTreeNodes(result.Data.Value);
+            }
+            else
+            {
+                TreeData = new List<CategoryTreeNode>();
+                if (result != null && !result.IsSuccess)
+                    ErrorMessage = result.ErrorMessage ?? "加载分类树失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"加载分类树失败: {ex.Message}";
+            TreeData = new List<CategoryTreeNode>();
+        }
+        Loading = false;
+    }
+
+    private List<CategoryTreeNode> BuildTreeNodes(JsonElement data)
+    {
+        var nodes = new List<CategoryTreeNode>();
+        if (data.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in data.EnumerateArray())
+            {
+                nodes.Add(BuildTreeNode(item, 1));
+            }
+        }
+        return nodes;
+    }
+
+    private CategoryTreeNode BuildTreeNode(JsonElement item, int level)
+    {
+        var node = new CategoryTreeNode
+        {
+            Key = item.TryGetProperty("id", out var idProp) ? idProp.GetInt64().ToString() : "0",
+            Title = item.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "" : "",
+            Id = item.TryGetProperty("id", out var idProp2) ? idProp2.GetInt64() : 0,
+            ParentId = item.TryGetProperty("parentId", out var pidProp) ? pidProp.GetInt64() : 0,
+            SortOrder = item.TryGetProperty("sortOrder", out var sortProp) ? sortProp.GetInt32() : 0,
+            Level = level
+        };
+
+        if (item.TryGetProperty("children", out var childrenProp) && childrenProp.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var child in childrenProp.EnumerateArray())
+            {
+                node.Children.Add(BuildTreeNode(child, level + 1));
+            }
+        }
+
+        return node;
+    }
+
+    private string GetLevelClass(CategoryTreeNode node)
+    {
+        return node.Level switch
+        {
+            1 => "level-1",
+            2 => "level-2",
+            3 => "level-3",
+            _ => "level-1"
+        };
+    }
+
+    private string GetLevelText(CategoryTreeNode node)
+    {
+        return node.Level switch
+        {
+            1 => "一级",
+            2 => "二级",
+            3 => "三级",
+            _ => "分类"
+        };
+    }
+
+    private string GetParentCategoryName(long parentId)
+    {
+        var node = FindNodeById(TreeData, parentId);
+        return node?.Title ?? "未知分类";
+    }
+
+    private CategoryTreeNode? FindNodeById(List<CategoryTreeNode> nodes, long id)
+    {
+        foreach (var node in nodes)
+        {
+            if (node.Id == id)
+                return node;
+            
+            var found = FindNodeById(node.Children, id);
+            if (found != null)
+                return found;
+        }
+        return null;
+    }
+
+    private void ShowAddCategoryModal(CategoryTreeNode? parent)
+    {
+        IsEditMode = false;
+        ParentId = parent?.Id;
+        CategoryForm = new CategoryFormModel { ParentId = parent?.Id };
+        CategoryModalVisible = true;
+    }
+
+    private void ShowEditCategoryModal(CategoryTreeNode node)
+    {
+        IsEditMode = true;
+        ParentId = null;
+        CategoryForm = new CategoryFormModel
+        {
+            Id = node.Id,
+            Name = node.Title,
+            SortOrder = node.SortOrder
+        };
+        CategoryModalVisible = true;
+    }
+
+    private void CloseCategoryModal()
+    {
+        CategoryModalVisible = false;
+    }
+
+    private async Task HandleCategoryOk()
+    {
+        if (string.IsNullOrWhiteSpace(CategoryForm.Name))
+        {
+            MsgService.Warning("请输入分类名称");
+            return;
+        }
+
+        CategoryLoading = true;
+        try
+        {
+            ResultVM<JsonElement?>? result;
+            if (IsEditMode)
+            {
+                result = await CategoryService.UpdateCategoryAsync(CategoryForm.Id, new
+                {
+                    Name = CategoryForm.Name,
+                    SortOrder = CategoryForm.SortOrder
+                });
+            }
+            else
+            {
+                result = await CategoryService.AddCategoryAsync(new
+                {
+                    Name = CategoryForm.Name,
+                    ParentId = ParentId ?? 0,
+                    SortOrder = CategoryForm.SortOrder
+                });
+            }
+
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success(IsEditMode ? "编辑成功" : "新增成功");
+                CategoryModalVisible = false;
+                await LoadCategoryTree();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "操作失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"操作失败: {ex.Message}";
+        }
+        CategoryLoading = false;
+    }
+
+    private async Task DeleteCategory(CategoryTreeNode node)
+    {
+        try
+        {
+            var result = await CategoryService.DeleteCategoryAsync(node.Id);
+            if (result?.IsSuccess == true)
+            {
+                MsgService.Success("删除成功");
+                await LoadCategoryTree();
+            }
+            else
+            {
+                ErrorMessage = result?.ErrorMessage ?? "删除失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"删除失败: {ex.Message}";
+        }
+    }
+
+    public class CategoryTreeNode
+    {
+        public string Key { get; set; } = "";
+        public string Title { get; set; } = "";
+        public long Id { get; set; }
+        public long ParentId { get; set; }
+        public int SortOrder { get; set; }
+        public int Level { get; set; } = 1;
+        public List<CategoryTreeNode> Children { get; set; } = new();
+    }
+
+    public class CategoryFormModel
+    {
+        public long Id { get; set; }
+        public long? ParentId { get; set; }
+        public string Name { get; set; } = "";
+        public int SortOrder { get; set; }
+    }
+}

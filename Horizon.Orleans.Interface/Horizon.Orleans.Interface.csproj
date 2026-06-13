@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
+    <ProjectReference Include="..\Horizon.IM.Message\Horizon.IM.Message.csproj" />
     <ProjectReference Include="..\Horizon.Share\Horizon.Share.csproj" />
   </ItemGroup>
 
