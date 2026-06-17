@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.3" />
     <ProjectReference Include="..\Horizon.Core.Abstract\Horizon.Core.Abstract.csproj">
       <Private>True</Private>
     </ProjectReference>
