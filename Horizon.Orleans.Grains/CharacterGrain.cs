@@ -3,6 +3,8 @@ using AutoMapper.QueryableExtensions;
 using Horizon.Core.Abstract;
 using Horizon.Core.Helper;
 using Horizon.Entities;
+using Horizon.Game.Core.Interfaces;
+using Horizon.Game.Core.Sim.Server;
 using Horizon.Game.Message;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
@@ -30,6 +32,8 @@ namespace Horizon.Orleans.Grains
     {
         private readonly ILogger<CharacterGrain> _logger;
         private readonly IPersistentState<CharacterState> _characterState;
+        private readonly ICharacterPresenceStore _presenceStore;
+        private readonly ICharacterFingerprintService _fingerprintService;
 
         private readonly IDataContext<GameEntityContext, UserEntity, long> _gameUserContext;
         private readonly IDataContext<GameEntityContext, CharacterEntity, long> _gameCharacterContext;
@@ -37,11 +41,19 @@ namespace Horizon.Orleans.Grains
 
         private ulong CharacterId { get; set; } = 0;
 
-        
+        /// <summary>
+        /// 角色是否在线（内存缓存，不持久化）。<br/>
+        /// 权威在线状态由 Redis presence key 管理，见 <see cref="ICharacterPresenceStore"/>。
+        /// </summary>
+        private bool _isOnline;
+
+
 
         public CharacterGrain(
             ILogger<CharacterGrain> logger,
             [PersistentState("character", "GameStore")] IPersistentState<CharacterState> characterState,
+            ICharacterPresenceStore presenceStore,
+            ICharacterFingerprintService fingerprintService,
 
             IDataContext<GameEntityContext, UserEntity, long> gameUserContext,
             IDataContext<GameEntityContext, CharacterEntity, long> gameCharacterContext,
@@ -49,6 +61,8 @@ namespace Horizon.Orleans.Grains
         {
             _logger = logger;
             _characterState = characterState;
+            _presenceStore = presenceStore;
+            _fingerprintService = fingerprintService;
 
             _mapper = mapper;
             _gameUserContext = gameUserContext;
@@ -59,6 +73,16 @@ namespace Horizon.Orleans.Grains
         {
             CharacterId = (ulong)this.GetPrimaryKeyLong();
             _logger.LogInformation("CharacterGrain {CharacterId} 正在激活。", CharacterId);
+
+            // 防御性初始化：CustomGrainStorageSerializer 在 Redis 无数据或反序列化失败时会返回 default(T)，
+            // 对于引用类型 CharacterState 即为 null，导致后续访问 .CharacterInfo 抛出 NullReferenceException。
+            // 这里确保 State 一定为非 null 实例。
+            if (_characterState.State == null)
+            {
+                _logger.LogWarning("CharacterGrain {CharacterId} 激活时 State 为 null（持久化存储无数据或反序列化失败），初始化为默认实例。", CharacterId);
+                _characterState.State = new CharacterState();
+            }
+
             // If the state is new, it means this is the first activation or state was cleared.
             // We try to load from the database as a fallback.
             if (_characterState.State.CharacterInfo == null)
@@ -68,7 +92,7 @@ namespace Horizon.Orleans.Grains
                 if (characterEntity != null)
                 {
                     _characterState.State.CharacterInfo = _mapper.Map<CharacterInfo>(characterEntity);
-                    _characterState.State.IsOnline = false; // Default to offline
+                    _isOnline = false; // 内存缓存默认离线，权威状态由 Redis presence 管理
                     await _characterState.WriteStateAsync();
                     _logger.LogInformation("已从数据库成功加载角色 {CharacterName}。", characterEntity.CharacterName);
                 }
@@ -77,18 +101,18 @@ namespace Horizon.Orleans.Grains
                     _logger.LogWarning("激活期间未在数据库中找到角色 {CharacterId}。", CharacterId);
                 }
             }
-            else if (_characterState.State.IsOnline)
+            else
             {
-                // 修复 BUG（角色离线后持久化在线信息未更新）：
-                // grain 激活意味着这是一个新实例，角色必然不在线（必须重新调用 EnterGameAsync 才能上线）。
-                // 如果持久化状态里 IsOnline=true，说明之前未正确下线（服务器崩溃、GoOfflineAsync 未调用、
-                // 或 WriteStateAsync 失败），此 true 值是过时数据。必须重置为 false 并立即持久化，
-                // 否则 IsOnlineAsync 会永远返回 true，角色离线信息无法从服务端移除，实体永久残留。
-                _logger.LogWarning(
-                    "CharacterGrain {CharacterId} 激活时发现持久化 IsOnline=true（可能是之前未正确下线），已重置为 false 并持久化。",
-                    CharacterId);
-                _characterState.State.IsOnline = false;
-                await _characterState.WriteStateAsync();
+                // 双轨制架构：IsOnline 已从 CharacterState 中移除，不再持久化。
+                // grain 激活即新实例，角色必然不在线（必须重新调用 EnterGameAsync 才能上线）。
+                // 权威在线状态由 Redis presence key（TTL 90 秒）管理，IsOnlineAsync 查询 Redis。
+                if (_isOnline)
+                {
+                    _logger.LogDebug(
+                        "CharacterGrain {CharacterId} 激活时发现内存 _isOnline=true，重置为 false（权威状态由 Redis presence 管理）。",
+                        CharacterId);
+                    _isOnline = false;
+                }
             }
             await base.OnActivateAsync(cancellationToken);
         }
@@ -194,7 +218,7 @@ namespace Horizon.Orleans.Grains
 
                 // 7. 更新 Grain 状态
                 _characterState.State.CharacterInfo = _mapper.Map<CharacterInfo>(characterEntity);
-                _characterState.State.IsOnline = false;
+                _isOnline = false;
                 await _characterState.WriteStateAsync();
                 
                 CharacterId = (ulong)characterEntity.Id;
@@ -243,36 +267,48 @@ namespace Horizon.Orleans.Grains
                 if (_characterState.State.CharacterInfo == null)
                 {
                     _logger.LogWarning("角色数据未加载: CharacterId={CharacterId}", request.CharacterId);
-                    return new EnterGameResponse 
-                    { 
-                        Success = false, 
-                        Message = "角色数据未加载。" 
+                    return new EnterGameResponse
+                    {
+                        Success = false,
+                        Message = "角色数据未加载。"
                     };
                 }
 
-                // 2. 检查角色是否已经在线
-                if (_characterState.State.IsOnline)
+                // 2. 检查角色是否已经在线（查询 Redis 权威源）
+                var isOnlineInRedis = await _presenceStore.IsOnlineAsync((long)CharacterId);
+                if (isOnlineInRedis || _isOnline)
                 {
-                    _logger.LogInformation("角色已经在线: {CharacterName}", 
-                        _characterState.State.CharacterInfo.CharacterName);
+                    _logger.LogInformation("角色已经在线: {CharacterName} (Redis={Redis}, Mem={Mem})",
+                        _characterState.State.CharacterInfo.CharacterName, isOnlineInRedis, _isOnline);
                     // 允许重复进入，但记录日志
                 }
 
-                // 3. 更新角色状态
-                _characterState.State.IsOnline = true;
+                // 3. 更新角色内存状态（IsOnline 不持久化，只保留在内存中）
+                _isOnline = true;
                 _characterState.State.CharacterInfo.LastLoginTime = DateTime.Now;
-                
+
                 // 4. 在数据库中更新最后登录时间
                 await UpdateCharacterLastLoginTime(_characterState.State.CharacterInfo.CharacterId);
-                
-                // 5. 保存状态
+
+                // 5. 保存 grain 状态（仅持久化 CharacterInfo 等业务数据，IsOnline 不再持久化）
                 await _characterState.WriteStateAsync();
 
-                _logger.LogInformation("角色成功进入游戏: {CharacterName} (ID: {CharacterId})", 
+                // 6. 设置 Redis presence key（权威在线状态，TTL 90 秒）
+                // gatewayId/connectionId 此处传空字符串，由 Gateway 侧在连接建立时更新真实值。
+                // 如果 Redis 不可用，SetOnlineAsync 内部降级返回 false，不影响进入游戏流程。
+                var presenceSet = await _presenceStore.SetOnlineAsync((long)CharacterId, string.Empty, string.Empty);
+                if (!presenceSet)
+                {
+                    _logger.LogWarning(
+                        "角色 {CharacterId} Redis presence 设置失败（Redis 可能不可用），仅使用内存状态。",
+                        CharacterId);
+                }
+
+                _logger.LogInformation("角色成功进入游戏: {CharacterName} (ID: {CharacterId})",
                     _characterState.State.CharacterInfo.CharacterName,
                     _characterState.State.CharacterInfo.CharacterId);
 
-                // 6. 返回成功响应。必须设置 CharacterId 顶层字段，网关依赖此字段
+                // 7. 返回成功响应。必须设置 CharacterId 顶层字段，网关依赖此字段
                 //    注册 characterId → connection 映射，断线 Despawn 正确反查角色 ID。
                 return new EnterGameResponse
                 {
@@ -285,9 +321,9 @@ namespace Horizon.Orleans.Grains
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "角色进入游戏时发生异常: CharacterId={CharacterId}", 
+                _logger.LogError(ex, "角色进入游戏时发生异常: CharacterId={CharacterId}",
                     request.CharacterId);
-                    
+
                 return new EnterGameResponse
                 {
                     Success = false,
@@ -298,7 +334,7 @@ namespace Horizon.Orleans.Grains
 
         public Task<MoveResponse> MoveAsync(MoveRequest request)
         {
-            if (!_characterState.State.IsOnline)
+            if (!_isOnline)
             {
                 return Task.FromResult(new MoveResponse { Success = false });
             }
@@ -330,8 +366,39 @@ namespace Horizon.Orleans.Grains
         {
             if (_characterState.State.CharacterInfo == null) return false;
 
-            _characterState.State.IsOnline = false;
-            // Persist final state on logout
+            // 关键修复：IsOnline 不再持久化，只更新内存缓存。
+            // 权威在线状态由 Redis presence key 管理，离线后立即清理 Redis presence key。
+            _isOnline = false;
+
+            // 清理 Redis presence key（权威在线状态）
+            // 即使 Redis 不可用，SetOfflineAsync 内部降级返回 false，不影响 grain 下线流程。
+            var presenceCleared = await _presenceStore.SetOfflineAsync((long)CharacterId);
+            if (!presenceCleared)
+            {
+                _logger.LogWarning(
+                    "角色 {CharacterId} Redis presence 清理失败（Redis 可能不可用），仅使用内存状态。",
+                    CharacterId);
+            }
+
+            // 修复 BUG：清理 Redis fingerprint key（character:fingerprint:{id}，TTL 5min）。
+            // fingerprint 是网关侧防止同一角色重复登录的锁，离线时必须立即清理，
+            // 否则角色离线后 Redis 中仍残留 fingerprint key 长达 5 分钟，
+            // 外部观察"角色在线信息未及时更新"，且会导致角色重新上线时被指纹拦截（误判已在线）。
+            // 原实现只在网关侧 PlayerDespawnScheduler 清理 fingerprint，但 Silo 端的
+            // ZoneShardGrain.TryGoOfflineAsync 兜底路径不经过 PlayerDespawnScheduler，
+            // 因此 GoOfflineAsync 本身必须清理 fingerprint。
+            try
+            {
+                await _fingerprintService.ReleaseAsync((long)CharacterId);
+            }
+            catch (Exception fpEx)
+            {
+                _logger.LogWarning(fpEx,
+                    "角色 {CharacterId} Redis fingerprint 清理失败（依赖 TTL 5min 兜底过期）",
+                    CharacterId);
+            }
+
+            // 持久化 CharacterInfo 等业务数据（不含 IsOnline）
             await _characterState.WriteStateAsync();
 
             _logger.LogInformation("角色 '{CharacterName}'（{CharacterId}）已下线。", _characterState.State.CharacterInfo.CharacterName, CharacterId);
@@ -342,9 +409,11 @@ namespace Horizon.Orleans.Grains
             return true;
         }
 
-        public Task<bool> IsOnlineAsync()
+        public async Task<bool> IsOnlineAsync()
         {
-            return Task.FromResult(_characterState.State.IsOnline);
+            // 双轨制架构：查询 Redis presence 作为权威源。
+            // Redis 不可用时返回 false（降级），调用方应结合 ConnectionManager 内存状态兜底判断。
+            return await _presenceStore.IsOnlineAsync((long)CharacterId);
         }
 
         public Task<bool> UpdateAttributesAsync(Dictionary<string, object> attributes)

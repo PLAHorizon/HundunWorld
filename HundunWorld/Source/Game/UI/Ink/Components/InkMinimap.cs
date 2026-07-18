@@ -264,29 +264,40 @@ namespace HundunWorld.Game.UI.Ink.Components
 
         /// <summary>
         /// 绘制北/东/南/西方位文字标签。
+        /// 对齐 combat-hud-v2.html 设计：
+        /// 北方位使用鎏金亮色（GoldBright）突出主方位，
+        /// 南/东/西使用褪色纸色（PaperFaded）作为次要方位，
+        /// 字体采用 Display（毛笔书法）字号 11，与设计 .compass 一致。
         /// </summary>
         private static void DrawDirectionLabels(Float2 center, float radius)
         {
             if (radius <= 24f)
                 return;
 
-            var font = InkWashTheme.GetFont(InkWashTheme.FontRole.Heading);
+            var font = InkWashTheme.GetFont(InkWashTheme.FontRole.Display);
+            if (font == null)
+            {
+                font = InkWashTheme.GetFont(InkWashTheme.FontRole.Heading);
+            }
             if (font == null)
                 return;
 
-            var fontRef = new FontReference(font, 9f);
-            float labelOffset = radius - 10f;
-            Color color = InkWashTheme.TextBrand;
+            var fontRef = new FontReference(font, 11f);
+            float labelOffset = radius - 12f;
 
-            DrawLabel(fontRef, center + new Float2(0f, -labelOffset), "北", color);
-            DrawLabel(fontRef, center + new Float2(0f, labelOffset), "南", color);
-            DrawLabel(fontRef, center + new Float2(labelOffset, 0f), "东", color);
-            DrawLabel(fontRef, center + new Float2(-labelOffset, 0f), "西", color);
+            // 北：鎏金亮色（主方位突出，对齐设计 .compass-n 的 ink-gold-bright）
+            DrawLabel(fontRef, center + new Float2(0f, -labelOffset), "北", InkWashTheme.GoldBright);
+            // 南/东/西：褪色纸色（次要方位，对齐设计 .compass-s/.compass-w/.compass-e 的 ink-paper-faded）
+            Color fadedColor = InkWashTheme.PaperFaded;
+            DrawLabel(fontRef, center + new Float2(0f, labelOffset), "南", fadedColor);
+            DrawLabel(fontRef, center + new Float2(labelOffset, 0f), "东", fadedColor);
+            DrawLabel(fontRef, center + new Float2(-labelOffset, 0f), "西", fadedColor);
         }
 
         private static void DrawLabel(FontReference fontRef, Float2 center, string text, Color color)
         {
-            float size = 12f;
+            // 字号提升至 14px 以适配 11px 字体的毛笔书法字形
+            float size = 14f;
             var rect = new Rectangle(center.X - size * 0.5f, center.Y - size * 0.5f, size, size);
             var font = fontRef.GetFont();
             if (font != null)

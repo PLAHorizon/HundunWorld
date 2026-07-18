@@ -467,11 +467,23 @@ namespace HundunWorld.Game
 
                         if (isWalkingParam != null)
                         {
-                            // 判断是否移动：检查插值位置与上一帧位置的差异
+                            // [优化] 优先用服务端权威的 MovementStateAuthComponent.MovementMode 判定动画，
+                            // 比 InterpolatedTransformComponent 的 Target/Start 差值更准确（避免插值收敛期间的误判）。
+                            // 映射表与 LocalPlayerActorSyncSystem.ApplyAnimationState 一致：
+                            //   Walk/Run/Crouch → IsWalking=true，Jump/Fall/Swim → IsWalking=false
+                            // 若实体暂无 MovementStateAuthComponent（SnapshotApplySystem 尚未应用），
+                            // 回退到 Target/Start 差值判定，保证过渡期动画仍能驱动。
                             bool isMoving = false;
-                            if (_entityIdToLastPosition.TryGetValue(entityId, out var currPos))
+                            if (_archWorld.Has<MovementStateAuthComponent>(entity))
                             {
-                                // 用 TargetX/Y/Z 与 StartX/Y/Z 的差值判断移动意图（更稳定）
+                                ref var movement = ref _archWorld.Get<MovementStateAuthComponent>(entity);
+                                isMoving = movement.MovementMode == MovementMode.Walk
+                                        || movement.MovementMode == MovementMode.Run
+                                        || movement.MovementMode == MovementMode.Crouch;
+                            }
+                            else
+                            {
+                                // 回退：用 TargetX/Y/Z 与 StartX/Y/Z 的差值判断移动意图
                                 float moveDelta = (new Vector3(interp.TargetX, interp.TargetY, interp.TargetZ)
                                                   - new Vector3(interp.StartX, interp.StartY, interp.StartZ)).LengthSquared;
                                 isMoving = moveDelta > 0.0001f;

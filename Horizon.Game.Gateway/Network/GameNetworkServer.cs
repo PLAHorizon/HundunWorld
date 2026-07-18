@@ -1,5 +1,6 @@
 using Horizon.Game.Core;
 using Horizon.Game.Core.Interfaces;
+using Horizon.Game.Core.Sim.Server;
 using Horizon.Game.Gateway.Configuration;
 using Horizon.Game.Gateway.Services;
 using Horizon.Game.Message;
@@ -36,6 +37,7 @@ namespace Horizon.Game.Gateway.Network
         private readonly UserAuthTokenProvider _authTokenProvider;
         private readonly ICharacterFingerprintService _fingerprintService;
         private readonly PlayerDespawnScheduler _despawnScheduler;
+        private readonly ICharacterPresenceStore _presenceStore;
         private TcpService? _tcpService;
         private volatile bool _isRunning;
         private HorizonMessageAdapter _adapter;
@@ -50,6 +52,7 @@ namespace Horizon.Game.Gateway.Network
             IConnectionManager connectionManager,
             IEnumerable<IMessageHandler> messageHandlers, HorizonMessageAdapter adapter,
             PlayerDespawnScheduler despawnScheduler,
+            ICharacterPresenceStore presenceStore,
             UserAuthTokenProvider? authTokenProvider = null,
             ICharacterFingerprintService? fingerprintService = null)
         {
@@ -63,6 +66,7 @@ namespace Horizon.Game.Gateway.Network
             _authTokenProvider = authTokenProvider;
             _fingerprintService = fingerprintService;
             _despawnScheduler = despawnScheduler;
+            _presenceStore = presenceStore ?? throw new ArgumentNullException(nameof(presenceStore));
         }
 
 
@@ -480,6 +484,34 @@ namespace Horizon.Game.Gateway.Network
                         catch (Exception despawnEx)
                         {
                             _logger.LogWarning(despawnEx, "同步 Despawn 失败: 角色={CharacterId}", characterId);
+                            // 兜底：Despawn 失败时直接清理 Redis 中所有角色在线持久化点，
+                            // 避免角色在线状态残留。CharacterPresenceMonitorHostedService 也会在
+                            // 90 秒后扫描过期 presence 兜底。
+                            // 修复 BUG：原实现只清理 presence（90s TTL），未清理 fingerprint（5min TTL），
+                            // 导致角色离线后 Redis 中仍残留 fingerprint key 长达 5 分钟。
+                            try
+                            {
+                                await _presenceStore.SetOfflineAsync(characterId);
+                            }
+                            catch (Exception presenceEx)
+                            {
+                                _logger.LogWarning(presenceEx,
+                                    "Despawn 失败后清理 presence 也失败: 角色={CharacterId}（依赖 Monitor 兜底）",
+                                    characterId);
+                            }
+                            try
+                            {
+                                if (_fingerprintService != null)
+                                {
+                                    await _fingerprintService.ReleaseAsync(characterId);
+                                }
+                            }
+                            catch (Exception fpEx)
+                            {
+                                _logger.LogWarning(fpEx,
+                                    "Despawn 失败后清理 fingerprint 也失败: 角色={CharacterId}（依赖 TTL 5min 兜底过期）",
+                                    characterId);
+                            }
                         }
                     }
                     _logger.LogInformation(

@@ -441,14 +441,15 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             // 从本 tick 待处理的输入中提取最新 LookYaw 作为实体权威朝向。
             // 必须直接从 PendingInputs 提取（而非 PendingInputBuffer，后者是上一次 tick 的旧数据），
             // 且必须在 PendingInputs.Clear() 之前提取，否则 Clear 之后 Count==0 永远取不到 Yaw。
+            // [旋转同步修复] 原条件 `lastInput.LookYaw != 0f || entity.Yaw == 0f` 会导致：
+            // 当玩家转回正前方（LookYaw=0）且 entity.Yaw!=0 时，服务端不更新朝向，
+            // 远程客户端看到的角色朝向卡在旧值。移除条件后，有输入时直接用最新 LookYaw，
+            // 无输入时保持上一帧 entity.Yaw（静止实体朝向不变）。
             float latestYaw = entity.Yaw;
             if (entity.PendingInputs.Count > 0)
             {
                 var lastInput = entity.PendingInputs[entity.PendingInputs.Count - 1];
-                if (lastInput.LookYaw != 0f || entity.Yaw == 0f)
-                {
-                    latestYaw = lastInput.LookYaw;
-                }
+                latestYaw = lastInput.LookYaw;
             }
             entity.Yaw = latestYaw;
 
@@ -1071,6 +1072,21 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                 this.GetPrimaryKeyLong(), kind, entityId, triggerChunkKey,
                 string.Join(",", allSubscribersBeforeFilter), string.Join(",", allOtherSessionIds),
                 _fanoutObservers.Count);
+
+            // 关键修复：Despawn 必须实际送达至少一个其他客户端，才能认为广播成功。
+            // 若当前无其他在线 session（allOtherSessionIds.Length == 0），返回 false 让调用方
+            // 保留实体并过期租约，由孤儿清理定时器在后续有其他玩家上线或订阅恢复后重试广播。
+            // 原实现只要存在 fanout observer 就返回 true，导致无受众时实体被移除但 Despawn
+            // delta 从未发出，其他客户端看到离线角色永久残留。
+            if (kind == EntityDeltaKind.Despawn && allOtherSessionIds.Length == 0)
+            {
+                _logger.LogError(
+                    "ZoneShard {ShardId}: [Despawn BUG 修复] Despawn 全广播目标为空！EntityId={EntityId}, " +
+                    "AllSubscribersCount={AllSubsCount}。保留实体并过期租约，等待孤儿清理重试。",
+                    this.GetPrimaryKeyLong(), entityId, allSubscribersBeforeFilter.Count);
+                return false;
+            }
+
             if (allOtherSessionIds.Length > 0)
             {
                 var observers = GetObserversSnapshot();
@@ -1090,12 +1106,11 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             }
             else
             {
-                // 诊断日志：全广播目标为空，说明 GetAllSubscribers() 返回空集合或只包含触发方自身。
-                // 这意味着 A 离线时，B 的 AOI 订阅已不在 _sessionToChunks 中。
-                _logger.LogError(
-                    "ZoneShard {ShardId}: [Despawn诊断] {Kind} 全广播目标为空！EntityId={EntityId}, " +
-                    "AllSubscribersCount={AllSubsCount}。其他客户端将收不到 {Kind} delta。",
-                    this.GetPrimaryKeyLong(), kind, entityId, allSubscribersBeforeFilter.Count, kind);
+                // 仅 Spawn 可能走到这里：当前无其他玩家，但新玩家自己的 Spawn 通过 includeNewSession 分支补发。
+                _logger.LogWarning(
+                    "ZoneShard {ShardId}: [Spawn诊断] Spawn 全广播目标为空。EntityId={EntityId}, " +
+                    "AllSubscribersCount={AllSubsCount}。当前场景无其他玩家在线。",
+                    this.GetPrimaryKeyLong(), entityId, allSubscribersBeforeFilter.Count);
             }
         }
 

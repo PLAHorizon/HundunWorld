@@ -1,0 +1,214 @@
+[00:00:006] Flax.Build 1.0.0
+[00:00:006]   Arguments: -log -logfile=$outputFile -build -buildtargets=GameEditorTarget -skiptargets=FlaxEditor -platform=Windows -arch=x64 -configuration=Development
+[00:00:006]   Workspace: C:\Works\GitHubProjects\HundunWorld\HundunWorld
+[00:00:006]   Engine: C:\Program Files (x86)\Flax\Flax_1.12
+[00:00:006]   .NET 10.0.9
+[00:00:025] Loading project file from "C:\Works\GitHubProjects\HundunWorld\HundunWorld\HundunWorld.flaxproj"...
+[00:00:044] Loading project file from "C:\Program Files (x86)\Flax\Flax_1.12\Flax.flaxproj"...
+[00:00:045] Loaded project Flax, version 1.12.6913
+[00:00:045] Loading project file from "C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\Narrative\Narrative.flaxproj"...
+[00:00:045] Loaded project Narrative, version 1.0
+[00:00:045] Loading project file from "C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\NarrativePro.flaxproj"...
+[00:00:045] Loaded project NarrativePro, version 1.0
+[00:00:045] Loaded project HundunWorld, version 1.0
+[00:00:130] Engine build version: 1.12.6913
+[00:00:169] Building targets...
+[00:00:199] Found Android SDK at C:\Program Files (x86)\Android\android-sdk
+[00:00:200] Missing Linux Toolchain. Cannot build for Linux platform.
+[00:00:206] Found Windows SDK v10_0_22621_0 at C:\Program Files (x86)\Windows Kits\10\
+[00:00:206] Found Windows SDK v10_0_26100_0 at C:\Program Files (x86)\Windows Kits\10\
+[00:00:223] Unknown Visual Studio installation. Display name: SQL Server Management Studio 22
+[00:00:227] Found VisualStudio2026 at C:\Program Files\Microsoft Visual Studio\18\Enterprise
+[00:00:230] Found Windows toolset v142 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.29.30133
+[00:00:230] Found Windows toolset v143 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.38.33130
+[00:00:230] Found Windows toolset v144 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.44.35207
+[00:00:230] Found Windows toolset v145 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231
+[00:00:233] Missing Emscripten SDK. Cannot build for Web platform.
+[00:00:246] Building target GameEditorTarget in Development for Windows x64
+[00:00:253] Using Windows Toolset v145, 14.51.36231 (C:\Program Files (x86)\Windows Kits\10\)
+[00:00:253] Using Windows SDK 10.0.26100.0 (C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\bin\Hostx64\x64)
+[00:00:254] Building referenced target Flax
+[00:00:262] Missing VULKAN_SDK environment variable. Cannot build Vulkan.
+[00:00:262] Building for Windows without Vulkan rendering backend (Vulkan SDK is missing)
+[00:00:265] Parsing API bindings for Profiler (FlaxEngine)
+[00:00:369] Parsing API bindings for Platform (FlaxEngine)
+[00:00:478] Parsing API bindings for Core (FlaxEngine)
+[00:01:304] Parsing API bindings for Debug (FlaxEngine)
+[00:01:396] Parsing API bindings for Physics (FlaxEngine)
+[00:01:581] Parsing API bindings for AudioTool (FlaxEngine)
+[00:01:587] Parsing API bindings for TextureTool (FlaxEngine)
+[00:01:600] Parsing API bindings for ModelTool (FlaxEngine)
+[00:01:636] Found the following .NET SDK versions: 10.0.301, 9.0.316, 8.0.423
+[00:01:637] Found the following .NET runtime versions: 10.0.9, 9.0.18, 9.0.17, 8.0.29, 8.0.28
+[00:01:649] Using .NET SDK 10.0.301, runtime 10.0.9 (C:\Program Files\dotnet)
+[00:01:652]   - Host Runtime for Windows x64
+[00:01:652]   - Host Runtime for Windows x86
+[00:01:652]   - Host Runtime for Windows ARM64
+[00:01:652]   - Host Runtime for Android ARM
+[00:01:652]   - Host Runtime for Android ARM64
+[00:01:652]   - Host Runtime for iOS ARM
+[00:01:652]   - Host Runtime for iOS ARM64
+[00:01:654] Parsing API bindings for ShaderCompilerD3D (FlaxEngine)
+[00:01:655] Parsing API bindings for ShaderCompilerDX (FlaxEngine)
+[00:01:658] Parsing API bindings for Graphics (FlaxEngine)
+[00:02:045] Parsing API bindings for Utilities (FlaxEngine)
+[00:02:059] Parsing API bindings for Particles (FlaxEngine)
+[00:02:079] Parsing API bindings for Visject (FlaxEngine)
+[00:02:089] Parsing API bindings for ContentImporters (FlaxEngine)
+[00:02:090] Parsing API bindings for ContentExporters (FlaxEngine)
+[00:02:091] Parsing API bindings for Content (FlaxEngine)
+[00:02:196] Parsing API bindings for Renderer (FlaxEngine)
+[00:02:254] Parsing API bindings for Scripting (FlaxEngine)
+[00:02:295] Parsing API bindings for Serialization (FlaxEngine)
+[00:02:301] Parsing API bindings for CSG (FlaxEngine)
+[00:02:302] Parsing API bindings for Level (FlaxEngine)
+[00:02:493] Parsing API bindings for Navigation (FlaxEngine)
+[00:02:510] Parsing API bindings for AI (FlaxEngine)
+[00:02:532] Parsing API bindings for Animations (FlaxEngine)
+[00:02:696] Parsing API bindings for Audio (FlaxEngine)
+[00:02:714] Parsing API bindings for Video (FlaxEngine)
+[00:02:722] Parsing API bindings for Foliage (FlaxEngine)
+[00:02:734] Parsing API bindings for Render2D (FlaxEngine)
+[00:02:774] Parsing API bindings for Input (FlaxEngine)
+[00:02:824] Parsing API bindings for Networking (FlaxEngine)
+[00:02:876] Parsing API bindings for Streaming (FlaxEngine)
+[00:02:881] Parsing API bindings for Terrain (FlaxEngine)
+[00:02:915] Parsing API bindings for Threading (FlaxEngine)
+[00:02:923] Parsing API bindings for Localization (FlaxEngine)
+[00:02:931] Parsing API bindings for UI (FlaxEngine)
+[00:02:940] Parsing API bindings for Online (FlaxEngine)
+[00:02:950] Parsing API bindings for Engine (FlaxEngine)
+[00:02:970] Using Dotnet runtime versions range 10-12 for Game Cooker
+[00:02:973] Parsing API bindings for Editor (FlaxEngine)
+[00:02:996] Building module tracy
+[00:02:999] Building module Profiler
+[00:02:999] Building module Platform
+[00:02:999] Building module fmt
+[00:02:999] Building module Core
+[00:02:999] Building module Debug
+[00:02:999] Building module Main
+[00:02:999] Building module PhysX
+[00:02:999] Building module NvCloth
+[00:02:999] Building module Physics
+[00:03:000] Building module lz4
+[00:03:000] Building module minimp3
+[00:03:000] Building module ogg
+[00:03:000] Building module vorbis
+[00:03:000] Building module AudioTool
+[00:03:000] Building module DirectXTex
+[00:03:000] Building module tinyexr
+[00:03:000] Building module astc
+[00:03:000] Building module basis_universal
+[00:03:000] Building module TextureTool
+[00:03:000] Building module assimp
+[00:03:000] Building module OpenFBX
+[00:03:000] Building module DirectXMesh
+[00:03:000] Building module UVAtlas
+[00:03:000] Building module meshoptimizer
+[00:03:000] Building module MikkTSpace
+[00:03:000] Building module ModelTool
+[00:03:000] Building module GraphicsDeviceNull
+[00:03:000] Building module nvapi
+[00:03:000] Building module AGS
+[00:03:000] Building module GraphicsDeviceDX11
+[00:03:000] Building module GraphicsDeviceDX12
+[00:03:000] Building module ShaderCompilerD3D
+[00:03:000] Building module ShaderCompilerDX
+[00:03:000] Building module glslang
+[00:03:000] Building module spirv-tools
+[00:03:000] Building module ShaderCompilerVulkan
+[00:03:000] Building module ShaderCompilerWebGPU
+[00:03:000] Building module ShadersCompilation
+[00:03:000] Building module Graphics
+[00:03:000] Building module Utilities
+[00:03:000] Building module Particles
+[00:03:000] Building module Visject
+[00:03:001] Building module MaterialGenerator
+[00:03:001] Building module ContentImporters
+[00:03:001] Building module ContentExporters
+[00:03:001] Building module Content
+[00:03:001] Building module Renderer
+[00:03:001] Building module nethost
+[00:03:001] Building module Scripting
+[00:03:001] Building module rapidjson
+[00:03:001] Building module Serialization
+[00:03:001] Building module CSG
+[00:03:001] Building module Level
+[00:03:001] Building module recastnavigation
+[00:03:001] Building module Navigation
+[00:03:001] Building module AI
+[00:03:001] Building module Animations
+[00:03:001] Building module Audio
+[00:03:001] Building module Video
+[00:03:002] Building module Foliage
+[00:03:002] Building module freetype
+[00:03:002] Building module msdfgen
+[00:03:002] Building module Render2D
+[00:03:002] Building module Input
+[00:03:002] Building module Networking
+[00:03:002] Building module Streaming
+[00:03:002] Building module Terrain
+[00:03:002] Building module Threading
+[00:03:002] Building module Localization
+[00:03:002] Building module UI
+[00:03:002] Building module Online
+[00:03:002] Building module Engine
+[00:03:002] Building module pugixml
+[00:03:002] Building module curl
+[00:03:002] Building module ShadowsOfMordor
+[00:03:002] Building module Editor
+[00:03:006] Skipping build for target FlaxEditor
+[00:03:006] Building referenced target Narrative
+[00:03:055] Using Dotnet runtime versions range 10-12 for Game Cooker
+[00:03:059] Generating binary module bindings for Narrative
+[00:03:065] Skipped saving file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\Narrative\Source\Narrative.Gen.cs
+[00:03:065] Generating binary module bindings for NarrativeEditor
+[00:03:065] Skipped saving file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\Narrative\Source\NarrativeEditor.Gen.cs
+[00:03:066] Building module Narrative
+[00:03:066] Building module NarrativeEditor
+[00:03:073] Skipped saving file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\Narrative\Cache/Intermediate\NarrativeEditorTarget\Windows\x64\Development\Narrative.CSharp.response
+[00:03:077] Skipped saving file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\Narrative\Cache/Intermediate\NarrativeEditorTarget\Windows\x64\Development\NarrativeEditor.CSharp.response
+[00:03:090] Skipped saving file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\Narrative\Binaries\NarrativeEditorTarget\Windows\x64\Development\NarrativeEditorTarget.Build.json
+[00:03:100] Found 24 valid and 0 invalid actions in Task Graph cache
+[00:03:101] 
+[00:03:101] Total 4 tasks
+[00:03:102] Done!
+[00:03:102] Building referenced target NarrativePro
+[00:03:161] Using Dotnet runtime versions range 10-12 for Game Cooker
+[00:03:163] Generating binary module bindings for NarrativePro
+[00:03:164] Skipped saving file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro.Gen.cs
+[00:03:164] Generating binary module bindings for NarrativeProEditor
+[00:03:164] Skipped saving file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativeProEditor.Gen.cs
+[00:03:164] Building module NarrativePro
+[00:03:164] Building module NarrativeProEditor
+[00:03:167] Skipped saving file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Cache/Intermediate\NarrativeProEditorTarget\Windows\x64\Development\NarrativePro.CSharp.response
+[00:03:169] Skipped saving file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Cache/Intermediate\NarrativeProEditorTarget\Windows\x64\Development\NarrativeProEditor.CSharp.response
+[00:03:170] Skipped saving file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Binaries\NarrativeProEditorTarget\Windows\x64\Development\NarrativeProEditorTarget.Build.json
+[00:03:189] Found 13 valid and 0 invalid actions in Task Graph cache
+[00:03:189] 
+[00:03:189] Total 4 tasks
+[00:03:189] Done!
+[00:03:253] Generating binary module bindings for Game
+[00:03:254] Skipped saving file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game.Gen.cs
+[00:03:254] Building module Game
+[00:03:257] Skipped saving file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Cache/Intermediate\GameEditorTarget\Windows\x64\Development\Game.CSharp.response
+[00:03:260] Skipped saving file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Binaries\GameEditorTarget\Windows\x64\Development\GameEditorTarget.Build.json
+[00:03:287] Found 73 valid and 0 invalid actions in Task Graph cache
+[00:03:287] 
+[00:03:287] Total 34 tasks
+[00:03:287] Executing 3 tasks using 3 threads
+[00:03:353] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Core.Abstract.dll
+[00:03:403] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.Arch.dll
+[00:03:458] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Message.dll
+[00:03:673] ������ͻ
+[00:03:676] Task xcopy /y "C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Core.Abstract.dll" "C:\Works\GitHubProjects\HundunWorld\HundunWorld\Binaries\GameEditorTarget\Windows\x64\Development" failed with exit code 4
+[00:03:676] 
+[00:03:724] ������ͻ
+[00:03:726] Task xcopy /y "C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.Arch.dll" "C:\Works\GitHubProjects\HundunWorld\HundunWorld\Binaries\GameEditorTarget\Windows\x64\Development" failed with exit code 4
+[00:03:726] 
+[00:03:779] ������ͻ
+[00:03:782] Task xcopy /y "C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Message.dll" "C:\Works\GitHubProjects\HundunWorld\HundunWorld\Binaries\GameEditorTarget\Windows\x64\Development" failed with exit code 4
+[00:03:782] 
+[00:03:782] 3 tasks failed
+[00:03:791] Total time: 00:00:03.8045303
+[00:03:791] End.

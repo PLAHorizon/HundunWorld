@@ -229,6 +229,91 @@ public class ZoneShardInteractionTests
         Assert.True(packet!.ServerTick >= 0);
     }
 
+    /// <summary>
+    /// 修复验证：Despawn 存在其他在线玩家时，必须广播 Despawn delta 并移除实体。
+    /// 避免"有 fanout observer 但无 AOI 受众时误返回 true 导致实体被移除但 Despawn 未发出"的 BUG。
+    /// </summary>
+    [Fact]
+    public async Task UnregisterEntityAsync_WithOtherSubscribers_BroadcastsDespawnAndRemovesEntity()
+    {
+        var grain = CreateGrain();
+        var observer = new FakeFanoutObserver();
+        await grain.SubscribeFanoutAsync(Guid.NewGuid(), observer);
+
+        // A (entityId=22) 进入世界
+        await grain.EnterWorldAsync(
+            sessionId: 22,
+            entityId: 22,
+            initialX: 0, initialY: 0, initialZ: 0,
+            initialInterestChunks: new ulong[] { 0 });
+
+        // B (entityId=23) 进入世界并订阅同一 chunk
+        await grain.EnterWorldAsync(
+            sessionId: 23,
+            entityId: 23,
+            initialX: 0, initialY: 0, initialZ: 0,
+            initialInterestChunks: new ulong[] { 0 });
+
+        observer.ReceivedDiffs.Clear(); // 忽略 Spawn 广播
+
+        // A 离线
+        await grain.UnregisterEntityAsync(22);
+
+        // Despawn 必须被广播给 B（至少包含 session 23）
+        var despawnDiffs = observer.ReceivedDiffs
+            .Where(d => d.Diff.PayloadType == WorldChunkDiffPayloadType.EntityDelta)
+            .ToList();
+        Assert.Single(despawnDiffs);
+        Assert.Contains(23L, despawnDiffs[0].SessionIds);
+
+        // 实体 22 必须已从服务端移除
+        var entitiesField = typeof(ZoneShardGrain).GetField("_simulatedEntities", BindingFlags.NonPublic | BindingFlags.Instance);
+        var entities = (System.Collections.Generic.Dictionary<ulong, object>)entitiesField!.GetValue(grain)!;
+        Assert.DoesNotContain(22UL, entities.Keys);
+        Assert.Contains(23UL, entities.Keys);
+    }
+
+    /// <summary>
+    /// 修复验证：Despawn 无其他在线玩家时，不应广播 Despawn（没有受众），
+    /// 应保留实体并过期租约，等待孤儿清理重试。避免误以为广播成功而提前移除实体。
+    /// </summary>
+    [Fact]
+    public async Task UnregisterEntityAsync_WithoutOtherSubscribers_KeepsEntityForRetry()
+    {
+        var grain = CreateGrain();
+        var observer = new FakeFanoutObserver();
+        await grain.SubscribeFanoutAsync(Guid.NewGuid(), observer);
+
+        // 只有 A (entityId=22) 在线
+        await grain.EnterWorldAsync(
+            sessionId: 22,
+            entityId: 22,
+            initialX: 0, initialY: 0, initialZ: 0,
+            initialInterestChunks: new ulong[] { 0 });
+
+        observer.ReceivedDiffs.Clear(); // 忽略 Spawn 广播
+
+        // A 离线
+        await grain.UnregisterEntityAsync(22);
+
+        // 没有受众，不应发出 Despawn delta
+        var despawnDiffs = observer.ReceivedDiffs
+            .Where(d => d.Diff.PayloadType == WorldChunkDiffPayloadType.EntityDelta)
+            .ToList();
+        Assert.Empty(despawnDiffs);
+
+        // 实体应被保留（等待孤儿清理重试）
+        var entitiesField = typeof(ZoneShardGrain).GetField("_simulatedEntities", BindingFlags.NonPublic | BindingFlags.Instance);
+        var entities = (System.Collections.Generic.Dictionary<ulong, object>)entitiesField!.GetValue(grain)!;
+        Assert.Contains(22UL, entities.Keys);
+
+        // 租约应立即过期（负数或过去时间）
+        var entityValue = entities[22UL];
+        var leaseField = entityValue.GetType().GetField("LeaseExpiry");
+        var leaseExpiry = (DateTime)leaseField!.GetValue(entityValue)!;
+        Assert.True(leaseExpiry < DateTime.UtcNow, "LeaseExpiry 应已过期，等待孤儿清理重试");
+    }
+
     // ===== Fake fanout observer：捕获收到的 diff 与 sessionIds =====
     private sealed class FakeFanoutObserver : IZoneShardFanoutObserver
     {

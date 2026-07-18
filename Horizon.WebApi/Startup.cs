@@ -316,7 +316,7 @@ namespace Horizon.WebApi
             var password = primary["Password"];
             return string.IsNullOrWhiteSpace(password)
                 ? $"{host}:{port}"
-                : $"password={password}@{host}:{port}";
+                : $"{host}:{port},password={password}";
         }
 
 

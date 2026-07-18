@@ -42,6 +42,18 @@ public sealed class LocalSimulationSystem : ArchSystemBase
     /// </summary>
     public event Action<float, float, float>? PlayerChunkChanged;
 
+    /// <summary>
+    /// 地面高度采样委托：给定 ECS 世界坐标 (x, y)（ECS 为 Z-up，x=左右, y=前后），
+    /// 返回该位置对应的地面 ECS.Z 高度（米）。
+    /// <para>
+    /// ECS 层为纯逻辑，不能依赖 FlaxEngine.Physics；由 <c>HundunWorldGame</c> 在启动时
+    /// 注入一个使用 <c>Physics.RayCast</c> 采样 Terrain/碰撞体的回调。
+    /// 若委托为 null（未注入），则不做地面约束，角色将受重力持续下落穿透 Terrain。
+    /// 委托返回 <c>float.NaN</c> 表示采样失败（无地面），本系统会跳过约束。
+    /// </para>
+    /// </summary>
+    public Func<float, float, float>? GroundHeightSampler { get; set; }
+
     private readonly Dictionary<int, int> _jumpCounts = new();
 
     // Task 5：_jumpCounts 懒清理相关字段。
@@ -87,7 +99,12 @@ public sealed class LocalSimulationSystem : ArchSystemBase
             }
 
             var isQinggongJump = (input.InputBits & (1u << 3)) != 0;
-            var isJumpPressed = (input.InputBits & 0x1) != 0;
+            // 修复：用边沿触发 JumpPressedThisFrame 替代 InputBits bit0 推断。
+            // 原实现 (input.InputBits & 0x1) != 0 在持续按住空格时每帧为 true，
+            // 轻功分支 jumpCount++ 会在 3 帧（50ms）内消耗完三段跳。
+            // 改用 JumpPressedThisFrame（仅按下边沿为 true）后，持续按住只触发一次 jumpCount++。
+            // 非轻功分支原 jumpCount = 1 重置保证只跳一次，边沿触发后行为一致。
+            var isJumpPressed = input.JumpPressedThisFrame;
 
             if (!_jumpCounts.ContainsKey(entity.Id))
                 _jumpCounts[entity.Id] = 0;
@@ -130,6 +147,24 @@ public sealed class LocalSimulationSystem : ArchSystemBase
                 FixedDtSeconds,
                 maxSpeed: 0f);
 
+            // 地面碰撞检测：采样 (nx, ny) 处的地面 ECS.Z 高度，
+            // 若新位置低于地面则吸附到地面并清零垂直速度，防止角色穿透 Terrain。
+            // GroundHeightSampler 由 HundunWorldGame 注入（使用 FlaxEngine.Physics.RayCast）。
+            // 未注入或返回 NaN 时跳过约束（保持原行为，仅用于测试/离线场景）。
+            var sampler = GroundHeightSampler;
+            if (sampler != null)
+            {
+                var groundZ = sampler(nx, ny);
+                if (!float.IsNaN(groundZ) && nz < groundZ)
+                {
+                    nz = groundZ;
+                    nvz = 0f;
+                    // 落地后重置跳跃计数，允许下一轮三段跳
+                    _jumpCounts[entity.Id] = 0;
+                    jumpCount = 0;
+                }
+            }
+
             pred.X = nx;
             pred.Y = ny;
             pred.Z = nz;
@@ -138,6 +173,12 @@ public sealed class LocalSimulationSystem : ArchSystemBase
             if (isLocal)
             {
                 pred.ClientTick = CurrentClientTick;
+
+                // 修复：将 input.LookYaw 写入 pred.Yaw，使 LocalPlayerActorSyncSystem 能读到朝向。
+                // 原实现完全不更新 pred.Yaw，导致 LocalPlayerActorSyncSystem 读到的 Yaw 永远是初始值 0。
+                // 服务端 ZoneShardGrain.TickAsync 也从 lastInput.LookYaw 提取 entity.Yaw，
+                // 客户端写入 pred.Yaw 后 LocalPlayerActorSyncSystem 据此设置 Actor.Orientation。
+                pred.Yaw = input.LookYaw;
 
                 // 多玩家 AOI：检测本地玩家是否跨越 chunk 边界。
                 // 首次：附加 PlayerSubscriptionStateComponent 并触发事件，让订阅方发起初始订阅。

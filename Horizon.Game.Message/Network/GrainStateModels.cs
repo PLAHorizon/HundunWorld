@@ -165,10 +165,11 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(0)]
         [Id(0)]
         public CharacterInfo CharacterInfo { get; set; }
-        
-        [MemoryPackOrder(1)]
-        [Id(1)]
-        public bool IsOnline { get; set; }
+
+        // 注意：IsOnline 已从持久化状态中移除。
+        // 角色在线状态不再由 Orleans GrainStorage 持久化，而是使用 Redis presence key（TTL 90 秒）
+        // 作为权威源，避免离线后因持久化状态残留导致角色永远显示在线的严重 BUG。
+        // 如需内存缓存，请在 CharacterGrain 中使用私有字段。
     }
 
     #endregion

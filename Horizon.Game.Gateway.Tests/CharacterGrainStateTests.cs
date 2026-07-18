@@ -177,7 +177,9 @@ namespace Horizon.Game.Gateway.Tests
             var state = new CharacterState();
 
             Assert.Null(state.CharacterInfo);
-            Assert.False(state.IsOnline);
+            // IsOnline 已从 CharacterState 持久化状态中移除（双轨制架构），
+            // 权威在线状态由 Redis presence key 管理，见 RedisCharacterPresenceStore。
+            Assert.Null(typeof(CharacterState).GetProperty("IsOnline"));
         }
 
         [Fact]
@@ -190,14 +192,12 @@ namespace Horizon.Game.Gateway.Tests
                     CharacterId = 999,
                     CharacterName = "TestHero",
                     Level = 10
-                },
-                IsOnline = true
+                }
             };
 
             Assert.NotNull(state.CharacterInfo);
             Assert.Equal(999UL, state.CharacterInfo.CharacterId);
             Assert.Equal("TestHero", state.CharacterInfo.CharacterName);
-            Assert.True(state.IsOnline);
         }
 
         [Fact]
@@ -209,15 +209,12 @@ namespace Horizon.Game.Gateway.Tests
                 {
                     CharacterId = 1,
                     CharacterName = "Player1"
-                },
-                IsOnline = false
+                }
             };
 
-            // Simulate login
-            state.IsOnline = true;
+            // Simulate login（IsOnline 不再持久化，仅更新 LastLoginTime）
             state.CharacterInfo.LastLoginTime = DateTime.UtcNow;
 
-            Assert.True(state.IsOnline);
             Assert.True(state.CharacterInfo.LastLoginTime > DateTime.MinValue);
         }
 

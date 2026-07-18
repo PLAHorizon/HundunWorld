@@ -27,6 +27,8 @@ using TouchSocket.Sockets;
 using GatewayOptions = Orleans.Configuration.GatewayOptions;
 using Horizon.Orleans.Grains.World;
 using Horizon.Orleans.Interface.World;
+using Horizon.Strategy.Storage.Redis;
+using StackExchange.Redis;
 
 namespace Horizon.Game.Gateway
 {
@@ -134,7 +136,7 @@ namespace Horizon.Game.Gateway
             var password = primaryRedisMaster["Password"];
             return string.IsNullOrWhiteSpace(password)
                 ? $"{host}:{port}"
-                : $"password={password}@{host}:{port}";
+                : $"{host}:{port},password={password}";
         }
 
         /// <summary>
@@ -244,7 +246,28 @@ namespace Horizon.Game.Gateway
                         return new Services.CharacterFingerprintService(connectionString, fpLogger, gatewayId);
                     });
 
-                    services.AddAllMessageHandlers(Assembly.GetAssembly(typeof(MessageHandlerBase)));
+                    services.AddAllMessageHandlers(
+                        Assembly.GetAssembly(typeof(MessageHandlerBase)),
+                        Assembly.GetExecutingAssembly());
+
+                    // ===== 角色在线状态 Redis 存储（双轨制架构） =====
+                    // 注册 RedisConnection 单例，供 RedisCharacterPresenceStore / 后续心跳监控服务复用。
+                    // 连接字符串优先从 Redis:ConnectionString 读取，回退到 Gateway:RedisConnectionString。
+                    services.AddSingleton<RedisConnection>(provider =>
+                    {
+                        var config = provider.GetRequiredService<IConfiguration>();
+                        var connStr = config.GetSection("Redis:ConnectionString").Value
+                                      ?? config.GetSection("Gateway:RedisConnectionString").Value
+                                      ?? "127.0.0.1:9379,password=DB65F7F9C,abortConnect=false,syncTimeout=5000,asyncTimeout=10000";
+                        return new RedisConnection(connStr);
+                    });
+                    services.AddSingleton<Horizon.Game.Core.Sim.Server.ICharacterPresenceStore>(provider =>
+                    {
+                        var redisConnection = provider.GetRequiredService<RedisConnection>();
+                        var logger = provider.GetService<ILogger<RedisCharacterPresenceStore>>();
+                        return new RedisCharacterPresenceStore(redisConnection, logger);
+                    });
+
                     // 注册网络服务
                     services.AddSingleton<ITcpService, TcpService>();
                     services.AddSingleton<PlayerDespawnScheduler>();
@@ -255,8 +278,7 @@ namespace Horizon.Game.Gateway
                     services.AddSingleton<Horizon.Orleans.Interface.World.IZoneShardFanoutObserver>(sp => sp.GetRequiredService<Services.GatewayZoneShardFanoutSource>());
                     services.AddSingleton<Horizon.Game.Core.Sim.Server.IZoneShardFanoutSource>(sp => sp.GetRequiredService<Services.GatewayZoneShardFanoutSource>());
                     services.AddSingleton<Horizon.Game.Core.Sim.Server.ISessionRegistry>(sp => new Services.ConnectionManagerSessionRegistry(
-                        sp.GetRequiredService<Services.IConnectionManager>(),
-                        sp.GetService<ILogger<Services.ConnectionManagerSessionRegistry>>()));
+                        sp.GetRequiredService<Services.IConnectionManager>()));
                     services.AddSingleton<Horizon.Game.Core.Sim.Server.IClientPacketSink, Services.GameConnectionPacketSink>();
                     services.AddSingleton(sp => new Horizon.Game.Core.Sim.Server.GatewaySyncDispatcher(
                         sp.GetRequiredService<Horizon.Game.Core.Sim.Server.IZoneShardFanoutSource>(),
@@ -282,6 +304,9 @@ namespace Horizon.Game.Gateway
                     services.AddHostedService<GatewayRegistryHostedService>();
                     services.AddHostedService<Services.SyncDispatcherHostedService>();
 
+                    // 角色在线状态监控后台服务（双轨制架构：每 10 秒扫描过期 Redis presence，兜底清理离线角色）
+                    services.AddHostedService<Services.CharacterPresenceMonitorHostedService>();
+
                     // 花卉市场数据采集后台服务
                     services.AddHostedService<Services.FlowerDataCollectionService>();
                     services.AddHostedService<Services.KifaMarketDataFetcher>();
@@ -305,16 +330,15 @@ namespace Horizon.Game.Gateway
                     var settings = new OrleansOptions();
                     context.Configuration.GetSection("Orleans").Bind(settings);
 
-                    if (networkSettings?.SqlServer?.ConnectionString == null)
-                    {
-                        throw new InvalidOperationException("Orleans 集群数据库配置加载失败：SqlServer ConnectionString 为空");
-                    }
+                    // ===== Redis 集群配置（主方案） =====
+                    var redisConnectionStr = context.Configuration.GetSection("Redis:ConnectionString").Value
+                        ?? "127.0.0.1:9379,password=DB65F7F9C,abortConnect=false,syncTimeout=5000,asyncTimeout=10000";
+                    var redisConfigOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConnectionStr);
 
                     //集群
-                    client.UseAdoNetClustering(options =>
+                    client.UseRedisClustering(options =>
                     {
-                        options.ConnectionString = networkSettings.SqlServer.ConnectionString;
-                        options.Invariant = networkSettings.SqlServer.Invariant;
+                        options.ConfigurationOptions = redisConfigOptions;
                     }).Configure<ClusterOptions>(options =>
                     {
                         options.ClusterId = settings.ClusterId;

@@ -40,6 +40,7 @@ using Horizon.Core.Monitoring;
 using Horizon.Orleans.Grains;
 using Horizon.Orleans.Grains.Payment;
 using Horizon.IoT.MQTT;
+using StackExchange.Redis;
 
 namespace Horizon.Orleans.Silo
 {
@@ -321,20 +322,31 @@ namespace Horizon.Orleans.Silo
 
         private static void ConfigureOrleansCluster(ISiloBuilder siloBuilder, DbInfo? sql, OrleansClusteringDbOptions? oco, int siloPort, int gatewayPort)
         {
-            // Configure clustering
-            if (sql != null)
+            // ===== Redis 集群配置（主方案） =====
+            // 从配置读取 Redis 连接字符串，默认连接本地 Redis
+            var redisConnectionStr = _config?.GetSection("Redis:ConnectionString").Value
+                ?? "127.0.0.1:9379,password=DB65F7F9C,abortConnect=false,syncTimeout=5000,asyncTimeout=10000";
+            var redisConfigOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConnectionStr);
+            _logger?.LogInformation("使用 Redis 集群存储: {Endpoint}", redisConfigOptions.ToString());
+            siloBuilder.UseRedisClustering(options =>
             {
-                siloBuilder.UseAdoNetClustering(options =>
-                {
-                    options.ConnectionString = sql.ConnectionString;
-                    options.Invariant = sql.Invariant;
-                });
-            }
-            else
-            {
-                _logger?.LogWarning("未找到SQL配置，使用本地集群");
-                siloBuilder.UseLocalhostClustering();
-            }
+                options.ConfigurationOptions = redisConfigOptions;
+            });
+
+            // ===== 原 SQL Server 集群配置（备份方案，Redis 故障时取消注释上方 Redis 配置块并启用下方代码） =====
+            // if (sql != null)
+            // {
+            //     siloBuilder.UseAdoNetClustering(options =>
+            //     {
+            //         options.ConnectionString = sql.ConnectionString;
+            //         options.Invariant = sql.Invariant;
+            //     });
+            // }
+            // else
+            // {
+            //     _logger?.LogWarning("未找到SQL配置，使用本地集群");
+            //     siloBuilder.UseLocalhostClustering();
+            // }
 
             // Configure cluster options
             siloBuilder.Configure<ClusterOptions>(options =>
@@ -359,68 +371,106 @@ namespace Horizon.Orleans.Silo
             // 配置Orleans Memory Stream Provider（事件驱动架构）
             siloBuilder.AddMemoryStreams(OrleansConst.CommonMessageStreamProvider);
 
-            if (sql != null)
+            // ===== Redis 存储配置（主方案） =====
+            // 从配置读取 Redis 连接字符串（与 Clustering 共用同一 Redis 实例）
+            var redisConnectionStr = _config?.GetSection("Redis:ConnectionString").Value
+                ?? "127.0.0.1:9379,password=DB65F7F9C,abortConnect=false,syncTimeout=5000,asyncTimeout=10000";
+            var redisConfigOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConnectionStr);
+            _logger?.LogInformation("使用 Redis 存储（Reminders + GrainStorage）: {Endpoint}", redisConfigOptions.ToString());
+
+            // Configure reminders (Redis)
+            siloBuilder.UseRedisReminderService(options =>
             {
-                // Configure reminders
-                siloBuilder.UseAdoNetReminderService(options =>
-                {
-                    options.ConnectionString = sql.ConnectionString;
-                    options.Invariant = sql.Invariant;
-                });
+                options.ConfigurationOptions = redisConfigOptions;
+            });
 
-                // Configure grain storage
-                siloBuilder.AddAdoNetGrainStorage(OrleansConst.PubSubStore, options =>
-                {
-                    options.ConnectionString = sql.ConnectionString;
-                    options.Invariant = sql.Invariant;
-                });
-                siloBuilder.AddAdoNetGrainStorageAsDefault(options =>
-                {
-                    options.ConnectionString = sql.ConnectionString;
-                    options.Invariant = sql.Invariant;
-                });
-                siloBuilder.AddAdoNetGrainStorage(OrleansConst.GameStore, options =>
-                {
-                    options.ConnectionString = sql.ConnectionString;
-                    options.Invariant = sql.Invariant;
-                    // 添加显式参数映射
+            // Configure grain storage (Redis)
+            siloBuilder.AddRedisGrainStorage(OrleansConst.PubSubStore, options =>
+            {
+                options.ConfigurationOptions = redisConfigOptions;
+            });
+            siloBuilder.AddRedisGrainStorageAsDefault(options =>
+            {
+                options.ConfigurationOptions = redisConfigOptions;
+            });
+            siloBuilder.AddRedisGrainStorage(OrleansConst.GameStore, options =>
+            {
+                options.ConfigurationOptions = redisConfigOptions;
+                // 保留自定义序列化器（与原 SQL Server 配置一致，确保 grain 状态序列化兼容）
+                options.GrainStorageSerializer = new CustomGrainStorageSerializer();
+            });
+            siloBuilder.AddRedisGrainStorage(OrleansConst.PassportStore, options =>
+            {
+                options.ConfigurationOptions = redisConfigOptions;
+                options.GrainStorageSerializer = new CustomGrainStorageSerializer();
+            });
+            // P4-a：世界状态持久化（WorldChunkCellGrain / WorldDiffLogGrain）。
+            // 切换到 Redis 后通过 [PersistentState("chunk"/"difflog", OrleansConst.WorldSqlStore)] 使用。
+            siloBuilder.AddRedisGrainStorage(OrleansConst.WorldSqlStore, options =>
+            {
+                options.ConfigurationOptions = redisConfigOptions;
+                options.GrainStorageSerializer = new CustomGrainStorageSerializer();
+            });
+            siloBuilder.AddRedisGrainStorage(OrleansConst.FlowerStore, options =>
+            {
+                options.ConfigurationOptions = redisConfigOptions;
+                options.GrainStorageSerializer = new CustomGrainStorageSerializer();
+            });
+            siloBuilder.AddRedisGrainStorage(OrleansConst.AIStore, options =>
+            {
+                options.ConfigurationOptions = redisConfigOptions;
+                options.GrainStorageSerializer = new CustomGrainStorageSerializer();
+            });
 
-                    options.GrainStorageSerializer = new CustomGrainStorageSerializer();
-                });
-                siloBuilder.AddAdoNetGrainStorage(OrleansConst.PassportStore, options =>
-                {
-                    options.ConnectionString = sql.ConnectionString;
-                    options.Invariant = sql.Invariant;
-                    // 添加显式参数映射
-
-                    options.GrainStorageSerializer = new CustomGrainStorageSerializer();
-                });
-
-                // P4-a：世界状态持久化（WorldChunkCellGrain / WorldDiffLogGrain）。
-                // 表结构见 scripts/sql/001_world_state.sql；后续 grain 通过
-                // [PersistentState("chunk"/"difflog", OrleansConst.WorldSqlStore)] 使用。
-                siloBuilder.AddAdoNetGrainStorage(OrleansConst.WorldSqlStore, options =>
-                {
-                    options.ConnectionString = sql.ConnectionString;
-                    options.Invariant = sql.Invariant;
-                    options.GrainStorageSerializer = new CustomGrainStorageSerializer();
-                });
-
-                siloBuilder.AddAdoNetGrainStorage(OrleansConst.FlowerStore, options =>
-                {
-                    options.ConnectionString = sql.ConnectionString;
-                    options.Invariant = sql.Invariant;
-                    options.GrainStorageSerializer = new CustomGrainStorageSerializer();
-                });
-
-                siloBuilder.AddAdoNetGrainStorage(OrleansConst.AIStore, options =>
-                {
-                    options.ConnectionString = sql.ConnectionString;
-                    options.Invariant = sql.Invariant;
-                    options.GrainStorageSerializer = new CustomGrainStorageSerializer();
-                });
-               
-            }
+            // ===== 原 SQL Server 存储配置（备份方案，Redis 故障时取消注释上方 Redis 配置块并启用下方代码） =====
+            // if (sql != null)
+            // {
+            //     siloBuilder.UseAdoNetReminderService(options =>
+            //     {
+            //         options.ConnectionString = sql.ConnectionString;
+            //         options.Invariant = sql.Invariant;
+            //     });
+            //     siloBuilder.AddAdoNetGrainStorage(OrleansConst.PubSubStore, options =>
+            //     {
+            //         options.ConnectionString = sql.ConnectionString;
+            //         options.Invariant = sql.Invariant;
+            //     });
+            //     siloBuilder.AddAdoNetGrainStorageAsDefault(options =>
+            //     {
+            //         options.ConnectionString = sql.ConnectionString;
+            //         options.Invariant = sql.Invariant;
+            //     });
+            //     siloBuilder.AddAdoNetGrainStorage(OrleansConst.GameStore, options =>
+            //     {
+            //         options.ConnectionString = sql.ConnectionString;
+            //         options.Invariant = sql.Invariant;
+            //         options.GrainStorageSerializer = new CustomGrainStorageSerializer();
+            //     });
+            //     siloBuilder.AddAdoNetGrainStorage(OrleansConst.PassportStore, options =>
+            //     {
+            //         options.ConnectionString = sql.ConnectionString;
+            //         options.Invariant = sql.Invariant;
+            //         options.GrainStorageSerializer = new CustomGrainStorageSerializer();
+            //     });
+            //     siloBuilder.AddAdoNetGrainStorage(OrleansConst.WorldSqlStore, options =>
+            //     {
+            //         options.ConnectionString = sql.ConnectionString;
+            //         options.Invariant = sql.Invariant;
+            //         options.GrainStorageSerializer = new CustomGrainStorageSerializer();
+            //     });
+            //     siloBuilder.AddAdoNetGrainStorage(OrleansConst.FlowerStore, options =>
+            //     {
+            //         options.ConnectionString = sql.ConnectionString;
+            //         options.Invariant = sql.Invariant;
+            //         options.GrainStorageSerializer = new CustomGrainStorageSerializer();
+            //     });
+            //     siloBuilder.AddAdoNetGrainStorage(OrleansConst.AIStore, options =>
+            //     {
+            //         options.ConnectionString = sql.ConnectionString;
+            //         options.Invariant = sql.Invariant;
+            //         options.GrainStorageSerializer = new CustomGrainStorageSerializer();
+            //     });
+            // }
         }
 
         private static void ConfigureOrleansServices(ISiloBuilder siloBuilder, int healthCheckPort)
@@ -524,6 +574,43 @@ namespace Horizon.Orleans.Silo
 
             // Configure Redis
             services.AddRedisServiceProvider();
+
+            // ===== 角色在线状态 Redis 存储（双轨制架构） =====
+            // 注册 RedisConnection 单例，供 RedisCharacterPresenceStore / 后续心跳监控服务复用。
+            // 连接字符串优先从 Redis:ConnectionString 读取，回退到 DataBase:RedisMasters[0]。
+            services.AddSingleton<RedisConnection>(provider =>
+            {
+                var connStr = _config?.GetSection("Redis:ConnectionString").Value;
+                if (string.IsNullOrWhiteSpace(connStr))
+                {
+                    // 回退：从 DataBase:RedisMasters[0] 拼接连接字符串
+                    var redisMaster = _config?.GetSection("DataBase:RedisMasters").GetChildren().FirstOrDefault();
+                    var host = redisMaster?["Host"] ?? "127.0.0.1";
+                    var port = redisMaster?["Port"] ?? "9379";
+                    var password = redisMaster?["Password"] ?? "DB65F7F9C";
+                    // StackExchange.Redis 标准格式：端点在前，password 作为 key-value 参数
+                    connStr = $"{host}:{port},password={password},abortConnect=false,syncTimeout=5000,asyncTimeout=10000";
+                }
+                return new RedisConnection(connStr);
+            });
+            services.AddSingleton<Horizon.Game.Core.Sim.Server.ICharacterPresenceStore>(provider =>
+            {
+                var redisConnection = provider.GetRequiredService<RedisConnection>();
+                var logger = provider.GetService<ILogger<RedisCharacterPresenceStore>>();
+                return new RedisCharacterPresenceStore(redisConnection, logger);
+            });
+
+            // 注册角色指纹服务（Silo 端，复用 RedisConnection 单例）。
+            // 修复 BUG：CharacterGrain.GoOfflineAsync 需要清理 character:fingerprint:{id} key（TTL 5min），
+            // 否则角色离线后 Redis 中仍残留 fingerprint key，外部观察"角色在线信息未及时更新"。
+            // Silo 端的 ZoneShardGrain.TryGoOfflineAsync 兜底路径不经过网关的 PlayerDespawnScheduler，
+            // 因此 GoOfflineAsync 本身必须能清理 fingerprint。
+            services.AddSingleton<Horizon.Game.Core.Interfaces.ICharacterFingerprintService>(provider =>
+            {
+                var redisConnection = provider.GetRequiredService<RedisConnection>();
+                var logger = provider.GetService<ILogger<Horizon.Strategy.Storage.Redis.RedisCharacterFingerprintStore>>();
+                return new Horizon.Strategy.Storage.Redis.RedisCharacterFingerprintStore(redisConnection, logger);
+            });
 
             // Configure event publisher (Orleans Stream事件驱动架构)
             services.AddSingleton<IGameEventPublisher, GameEventPublisher>();

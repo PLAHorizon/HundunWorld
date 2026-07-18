@@ -213,6 +213,13 @@
 			"TypeName": "FlaxEngine.Terrain",
 			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
 			"Name": "Terrain",
+			"Transform": {
+				"Translation": {
+					"X": -4383.3818359375,
+					"Y": 0.0,
+					"Z": -1671.61962890625
+				}
+			},
 			"LODCount": 6,
 			"ChunkSize": 127,
 			"Patches": [

@@ -28,6 +28,7 @@
 	  <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.2" />
 	  <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.2" />
 	  <PackageReference Include="Microsoft.Orleans.Clustering.AdoNet" Version="10.0.1" />
+	  <PackageReference Include="Microsoft.Orleans.Clustering.Redis" Version="10.0.1" />
 	  <PackageReference Include="Microsoft.Orleans.CodeGenerator" Version="10.0.1">
 	    <PrivateAssets>all</PrivateAssets>
 	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -36,6 +37,7 @@
 	  <PackageReference Include="Microsoft.Orleans.Persistence.AdoNet" Version="10.0.1" />
 	  <PackageReference Include="Microsoft.Orleans.Persistence.Redis" Version="10.0.1" />
 	  <PackageReference Include="Microsoft.Orleans.Reminders.AdoNet" Version="10.0.1" />
+	  <PackageReference Include="Microsoft.Orleans.Reminders.Redis" Version="10.0.1" />
 	  <PackageReference Include="Microsoft.Orleans.Serialization" Version="10.0.1" />
 	  <PackageReference Include="Microsoft.Orleans.Serialization.NewtonsoftJson" Version="10.0.1" />
 	  <PackageReference Include="Polly" Version="8.6.5" />

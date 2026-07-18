@@ -61,20 +61,70 @@ namespace Horizon.Strategy.Storage.Redis
         /// </summary>
         private ConnectionMultiplexer CreateNewConnection()
         {
-            var config = new ConfigurationOptions
-            {
-                AbortOnConnectFail = false,
-                ConnectTimeout = (int)DefaultConnectTimeout.TotalMilliseconds,
-                SyncTimeout = (int)DefaultSyncTimeout.TotalMilliseconds,
-                Password = ParsePasswordFromString(_connectionString),
-                EndPoints = { ParseEndPoint(_connectionString) }
-            };
+            var config = BuildConfigurationOptions(_connectionString);
 
             var connection = ConnectionMultiplexer.Connect(config);
             connection.ConnectionFailed += (sender, args) =>
                 HandleConnectionFailure(sender as ConnectionMultiplexer);
 
             return connection;
+        }
+
+        /// <summary>
+        /// 统一解析连接字符串，兼容两种格式：
+        /// 1. 旧格式：<c>password=xxx@host:port,...</c>（项目历史遗留）
+        /// 2. StackExchange.Redis 标准格式：<c>host:port,password=xxx,...</c>
+        /// </summary>
+        private static ConfigurationOptions BuildConfigurationOptions(string connectionString)
+        {
+            var normalized = NormalizeConnectionString(connectionString);
+            var config = StackExchange.Redis.ConfigurationOptions.Parse(normalized);
+
+            // 确保基础默认配置
+            if (config.AbortOnConnectFail)
+            {
+                config.AbortOnConnectFail = false;
+            }
+
+            if (config.ConnectTimeout == 0)
+            {
+                config.ConnectTimeout = (int)DefaultConnectTimeout.TotalMilliseconds;
+            }
+
+            if (config.SyncTimeout == 0)
+            {
+                config.SyncTimeout = (int)DefaultSyncTimeout.TotalMilliseconds;
+            }
+
+            return config;
+        }
+
+        /// <summary>
+        /// 将旧格式 <c>password=xxx@host:port</c> 转换为 StackExchange.Redis 标准格式。
+        /// </summary>
+        private static string NormalizeConnectionString(string connectionString)
+        {
+            if (string.IsNullOrWhiteSpace(connectionString))
+                throw new ArgumentException("Connection string cannot be empty", nameof(connectionString));
+
+            // 旧格式特征：包含 '@' 且 '@' 前是 password=xxx
+            var atIndex = connectionString.IndexOf('@');
+            if (atIndex > 0)
+            {
+                var beforeAt = connectionString.Substring(0, atIndex);
+                var afterAt = connectionString.Substring(atIndex + 1);
+
+                if (beforeAt.StartsWith("password=", StringComparison.OrdinalIgnoreCase))
+                {
+                    var password = beforeAt.Substring(9);
+                    if (string.IsNullOrWhiteSpace(password))
+                        return afterAt;
+
+                    return $"{afterAt},password={password}";
+                }
+            }
+
+            return connectionString;
         }
 
         /// <summary>
@@ -175,76 +225,6 @@ namespace Horizon.Strategy.Storage.Redis
         #endregion
 
         #region 辅助方法
-        private static string ParsePasswordFromString(string connectionString)
-        {
-            if (string.IsNullOrWhiteSpace(connectionString))
-                throw new ArgumentException("Connection string cannot be empty");
-
-            try
-            {
-                // 支持多种连接字符串格式
-                // 1. password=your_password@host:port
-                // 2. host:port (无密码)
-                if (connectionString.Contains("@"))
-                {
-                    var parts = connectionString.Split('@');
-                    if (parts.Length != 2)
-                        throw new FormatException("Invalid connection string format");
-
-                    var passwordPart = parts[0];
-                    if (passwordPart.StartsWith("password="))
-                    {
-                        var password = passwordPart.Substring(9); // Skip "password="
-                        if (string.IsNullOrWhiteSpace(password))
-                            return null; // No password
-
-                        return password;
-                    }
-                }
-                
-                // 如果没有@符号，说明没有密码
-                return null;
-            }
-            catch (Exception ex)
-            {
-                throw new ArgumentException("Failed to parse password from connection string", ex);
-            }
-        }
-
-        private static string ParseEndPoint(string connectionString)
-        {
-            if (string.IsNullOrWhiteSpace(connectionString))
-                throw new ArgumentException("Connection string cannot be empty");
-
-            try
-            {
-                // 支持多种连接字符串格式
-                // 1. password=your_password@host:port
-                // 2. host:port (无密码)
-                if (connectionString.Contains("@"))
-                {
-                    var parts = connectionString.Split('@');
-                    if (parts.Length != 2)
-                        throw new FormatException("Invalid connection string format");
-
-                    var endpoint = parts[1];
-                    if (string.IsNullOrWhiteSpace(endpoint))
-                        throw new ArgumentException("Endpoint cannot be empty");
-
-                    return endpoint;
-                }
-                else
-                {
-                    // 直接返回连接字符串作为端点
-                    return connectionString;
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new ArgumentException("Failed to parse endpoint from connection string", ex);
-            }
-        }
-
         private static string GetDefaultConnectionString()
         {
             return "localhost:6379"; // 默认使用无密码的本地连接

@@ -778,7 +778,9 @@ namespace Horizon.Game.Gateway.Tests
             var state = new CharacterState();
 
             Assert.Null(state.CharacterInfo);
-            Assert.False(state.IsOnline);
+            // IsOnline 已从 CharacterState 持久化状态中移除（双轨制架构），
+            // 权威在线状态由 Redis presence key 管理，见 RedisCharacterPresenceStore。
+            Assert.Null(typeof(CharacterState).GetProperty("IsOnline"));
         }
 
         [Fact]
@@ -786,12 +788,10 @@ namespace Horizon.Game.Gateway.Tests
         {
             var state = new CharacterState
             {
-                CharacterInfo = new Horizon.Game.Message.Network.CharacterInfo(),
-                IsOnline = true
+                CharacterInfo = new Horizon.Game.Message.Network.CharacterInfo()
             };
 
             Assert.NotNull(state.CharacterInfo);
-            Assert.True(state.IsOnline);
         }
 
         [Fact]

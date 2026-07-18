@@ -581,4 +581,116 @@ public class NetworkSyncIntegrationTests
 
         Assert.True(processedCount >= 1);
     }
+
+    /// <summary>
+    /// 多端一致性端到端测试：验证"客户端输入（行走+旋转+跳跃）→服务端权威 TickAsync→广播 EntityDelta"
+    /// 链路产出的 delta 包含正确的位置、朝向、动作状态，作为多端同步的代码层证据。
+    /// </summary>
+    /// <remarks>
+    /// 覆盖目标要求的"行走、旋转、跳跃等基础动作的多端一致性"：
+    /// <list type="bullet">
+    ///   <item>行走：MoveX=0.5 → EntityDelta.Transform.X 增加</item>
+    ///   <item>旋转：LookYaw=π/2 → EntityDelta.Transform.Yaw 等于输入值</item>
+    ///   <item>跳跃：InputBits bit0=1 → EntityDelta.Transform.Y(Z 轴)上升 + MovementMode=Fall + IsGrounded=false</item>
+    /// </list>
+    /// 坐标系：服务端 entity 使用 ECS Z-up（X=左右, Y=前后, Z=上下），
+    /// EntityDelta.Transform 使用 Flax Y-up（X=左右, Y=上下, Z=前后），
+    /// TickAsync 在构建 delta 时执行 ECS→Flax 转换：Transform.Y=entity.Z, Transform.Z=entity.Y。
+    /// </remarks>
+    [Fact]
+    public async Task EndToEnd_InputWithRotationAndJump_BroadcastsDeltaWithCorrectTransformAndMovementState()
+    {
+        var grain = CreateGrain();
+        var observer = new CapturingFanoutObserver();
+        await grain.SubscribeFanoutAsync(Guid.NewGuid(), observer);
+
+        // 订阅实体所在 chunk（实体位于原点 ECS(0,0,0)）
+        var chunkKey0 = WorldCoord.ToChunkMortonKey(0, 0, 0);
+        await grain.SubscribeSessionAsync(sessionId: 5001, mortonKeys: new[] { chunkKey0 });
+
+        const ulong entityId = 4001;
+        // RegisterEntityAsync 接受 Flax 坐标 (initialX, initialY, initialZ)，
+        // 内部转换为 ECS（ecsX=initialX, ecsY=initialZ, ecsZ=initialY）。
+        // 传入 (0,0,0) → ECS(0,0,0)。
+        await grain.RegisterEntityAsync(entityId, initialX: 0, initialY: 0, initialZ: 0);
+
+        // 清空注册阶段产生的 Spawn delta，只保留 TickAsync 产生的 Update delta
+        observer.ReceivedDiffs.Clear();
+
+        // 构造输入包：MoveX=0.5（行走） + LookYaw=π/2（旋转 90°） + InputBits bit0=1（跳跃，边沿触发后语义）
+        const float lookYaw = MathF.PI / 2f;
+        var input = new InputPacket
+        {
+            ClientTick = 1,
+            MoveX = 0.5f,
+            MoveY = 0f,
+            LookYaw = lookYaw,
+            InputBits = 0x1, // 跳跃位（客户端边沿触发后写入）
+            CharacterId = entityId,
+        };
+
+        // 用 MovementFormula 计算客户端预测的终点（与服务端权威回放一致）
+        // 跳跃：jumpImpulse = 5.5 m/s（基础单次跳跃）
+        var (predictedX, predictedY, predictedZ, predictedVz) = MovementFormula.Step(
+            x: 0f, y: 0f, z: 0f, vz: 0f,
+            input.MoveX, input.MoveY, jumpImpulse: 5.5f,
+            Dt, MovementFormula.DefaultMaxSpeed);
+
+        await grain.SubmitInputAsync(
+            entityId, input,
+            reportedEndX: predictedX, reportedEndY: predictedY, reportedEndZ: predictedZ);
+
+        // 触发服务端权威 TickAsync
+        var processedCount = await grain.TickAsync(tickTime: 1.0);
+        Assert.Equal(1, processedCount);
+
+        // TickAsync 的 BroadcastSnapshotAsync 是 fire-and-forget，需等待广播完成
+        await Task.Delay(300);
+
+        // 从 observer 捕获的 diff 中找到对应 entityId 的 Update delta
+        EntityDelta? targetDelta = null;
+        foreach (var (diff, _) in observer.ReceivedDiffs)
+        {
+            if (diff.PayloadType != WorldChunkDiffPayloadType.EntityDelta) continue;
+            var deltas = MemoryPackSerializer.Deserialize<EntityDelta[]>(diff.Payload);
+            if (deltas is null) continue;
+            var found = deltas.FirstOrDefault(d => d.EntityId == entityId && d.Kind == EntityDeltaKind.Update);
+            if (found.EntityId == entityId)
+            {
+                targetDelta = found;
+                break;
+            }
+        }
+
+        // 验证 1：TickAsync 应广播包含该实体的 Update delta
+        Assert.NotNull(targetDelta, "未捕获到 entityId={EntityId} 的 Update delta");
+        Assert.NotNull(targetDelta!.Transform, "delta.Transform 不应为 null（每 tick 都应填充）");
+        Assert.NotNull(targetDelta.MovementState, "delta.MovementState 不应为 null（每 tick 都应填充）");
+
+        var transform = targetDelta.Transform!.Value;
+        var movementState = targetDelta.MovementState!.Value;
+
+        // 验证 2：旋转同步 — Transform.Yaw 等于输入的 LookYaw
+        // 服务端 TickAsync: entity.Yaw = lastInput.LookYaw → EntityDelta.Transform.Yaw = entity.Yaw
+        Assert.Equal(lookYaw, transform.Yaw, 5);
+
+        // 验证 3：行走同步 — Transform.X 增加（ECS X = Flax X，无转换）
+        // MoveX=0.5, maxSpeed=6, dt=1/60 → dx = 0.5*6*(1/60) = 0.05m
+        Assert.True(transform.X > 0f,
+            $"行走后 Transform.X 应增加，实际 X={transform.X}（预期约 0.05）");
+
+        // 验证 4：跳跃同步 — Transform.Y（Flax 上下轴 = ECS Z）上升
+        // 服务端 TickAsync 构建 delta: Transform.Y = entity.Z（ECS Z → Flax Y）
+        // 跳跃后 entity.Z 上升约 0.0889m（jumpImpulse=5.5, gravity=9.81, dt=1/60）
+        Assert.True(transform.Y > 0f,
+            $"跳跃后 Transform.Y（Flax 上下轴）应上升，实际 Y={transform.Y}（预期约 0.089）");
+
+        // 验证 5：动作状态同步 — MovementMode = Fall（跳跃后离地）
+        // 服务端 TickAsync 推导：!entity.IsGrounded → MovementMode.Fall
+        Assert.Equal(MovementMode.Fall, movementState.MovementMode);
+
+        // 验证 6：落地状态同步 — IsGrounded = false（跳跃后空中）
+        Assert.False(movementState.IsGrounded,
+            $"跳跃后 IsGrounded 应为 false，实际 = {movementState.IsGrounded}");
+    }
 }

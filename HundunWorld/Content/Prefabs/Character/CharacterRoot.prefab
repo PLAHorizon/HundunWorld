@@ -52,7 +52,7 @@
 		"TypeName": "HundunWorld.Game.PlayerController",
 		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
 		"V": {
-	"MoveSpeed": 100.0,
+	"MoveSpeed": 900.0,
 	"JumpForce": 120.0
 }
 	},

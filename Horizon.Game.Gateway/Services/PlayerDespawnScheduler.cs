@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Horizon.Game.Core.Interfaces;
+using Horizon.Game.Core.Sim.Server;
 using Horizon.Orleans.Interface;
 using Horizon.Orleans.Interface.World;
 
@@ -17,12 +20,21 @@ namespace Horizon.Game.Gateway.Services
     /// DeactivateOnIdle 也未触发，grain 长期保持激活态，IsOnlineAsync 永远返回 true）。<br/>
     /// 客户端收到 Despawn delta 后由 <c>SnapshotApplySystem.HandleDespawn</c> 销毁 Arch 实体，
     /// <c>FlaxActorSyncSystem.OnEntityDespawned</c> 销毁对应 Flax Actor 及关联资源，
-    /// 从而彻底移除该角色的在线信息（角色模型、在线状态、关联动作/状态组件等）。
+    /// 从而彻底移除该角色的在线信息（角色模型、在线状态、关联动作/状态组件等）。<br/>
+    /// 同时清理 Redis 中的所有角色在线持久化点（双轨制 + 指纹）：
+    /// <list type="bullet">
+    /// <item><c>character:presence:{characterId}</c>（TTL 90s，由 ICharacterPresenceStore 管理）</item>
+    /// <item><c>character:fingerprint:{characterId}</c>（TTL 5min，由 ICharacterFingerprintService 管理）</item>
+    /// </list>
+    /// 修复 BUG：原实现只清理 presence key，未清理 fingerprint key，导致角色离线后 Redis 中
+    /// 仍残留 fingerprint key 长达 5 分钟，外部观察"角色在线信息未及时更新"。
     /// </summary>
     public class PlayerDespawnScheduler
     {
         private readonly IClusterClient _clusterClient;
         private readonly IConnectionManager _connectionManager;
+        private readonly ICharacterPresenceStore _presenceStore;
+        private readonly ICharacterFingerprintService _fingerprintService;
         private readonly ILogger<PlayerDespawnScheduler> _logger;
 
         /// <summary>characterId → 待执行的 Despawn 取消令牌。</summary>
@@ -34,10 +46,14 @@ namespace Horizon.Game.Gateway.Services
         public PlayerDespawnScheduler(
             IClusterClient clusterClient,
             IConnectionManager connectionManager,
+            ICharacterPresenceStore presenceStore,
+            ICharacterFingerprintService fingerprintService,
             ILogger<PlayerDespawnScheduler> logger)
         {
             _clusterClient = clusterClient ?? throw new ArgumentNullException(nameof(clusterClient));
             _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
+            _presenceStore = presenceStore ?? throw new ArgumentNullException(nameof(presenceStore));
+            _fingerprintService = fingerprintService ?? throw new ArgumentNullException(nameof(fingerprintService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
             _logger.LogInformation("PlayerDespawnScheduler 初始化完成，断线立即 Despawn。");
@@ -153,6 +169,39 @@ namespace Horizon.Game.Gateway.Services
                 {
                     _logger.LogWarning(charEx,
                         "角色 {CharacterId} GoOfflineAsync 异常（持久化在线状态可能未重置，依赖 OnActivateAsync 兜底重置）",
+                        characterId);
+                }
+
+                // 4) 兜底：直接清理 Redis 中所有角色在线持久化点（双轨制架构）。
+                //    GoOfflineAsync 内部已调用 SetOfflineAsync，但若 grain 调用失败或超时，
+                //    presence/fingerprint key 可能未被清理。这里直接调用确保一定被清除，
+                //    避免角色在线状态残留导致 IsOnlineAsync 误返回 true。
+                //    CharacterPresenceMonitorHostedService 也会在 90 秒后兜底清理过期 presence。
+                //
+                //    修复 BUG（角色离线后 Redis 中仍看到在线信息）：
+                //    原实现只清理 character:presence:{id}（TTL 90s），未清理 character:fingerprint:{id}（TTL 5min）。
+                //    fingerprint key 残留 5 分钟，外部观察"角色在线信息未及时更新"。
+                //    现在按 characterId 直接调用 ReleaseAsync，不依赖 connectionId 反查 Set，
+                //    确保 fingerprint key 被立即删除。
+                try
+                {
+                    await _presenceStore.SetOfflineAsync(characterId).ConfigureAwait(false);
+                }
+                catch (Exception presenceEx)
+                {
+                    _logger.LogWarning(presenceEx,
+                        "角色 {CharacterId} 直接清理 Redis presence 失败（依赖 Monitor 兜底）",
+                        characterId);
+                }
+
+                try
+                {
+                    await _fingerprintService.ReleaseAsync(characterId).ConfigureAwait(false);
+                }
+                catch (Exception fpEx)
+                {
+                    _logger.LogWarning(fpEx,
+                        "角色 {CharacterId} 直接清理 Redis fingerprint 失败（依赖 TTL 5min 兜底过期）",
                         characterId);
                 }
             }
@@ -285,6 +334,32 @@ namespace Horizon.Game.Gateway.Services
                 {
                     _logger.LogWarning(charEx,
                         "角色 {CharacterId} GoOfflineAsync 异常（持久化在线状态可能未重置，依赖 OnActivateAsync 兜底重置）",
+                        characterId);
+                }
+
+                // 4) 兜底：直接清理 Redis 中所有角色在线持久化点（与 DespawnImmediatelyAsync 一致）
+                //    修复 BUG：原实现只清理 character:presence:{id}，未清理 character:fingerprint:{id}。
+                //    fingerprint key TTL 5 分钟，远长于 presence 的 90 秒，离线后会残留导致
+                //    外部观察"角色在线信息未及时更新"。现在按 characterId 直接 ReleaseAsync。
+                try
+                {
+                    await _presenceStore.SetOfflineAsync(characterId).ConfigureAwait(false);
+                }
+                catch (Exception presenceEx)
+                {
+                    _logger.LogWarning(presenceEx,
+                        "角色 {CharacterId} 直接清理 Redis presence 失败（依赖 Monitor 兜底）",
+                        characterId);
+                }
+
+                try
+                {
+                    await _fingerprintService.ReleaseAsync(characterId).ConfigureAwait(false);
+                }
+                catch (Exception fpEx)
+                {
+                    _logger.LogWarning(fpEx,
+                        "角色 {CharacterId} 直接清理 Redis fingerprint 失败（依赖 TTL 5min 兜底过期）",
                         characterId);
                 }
             }

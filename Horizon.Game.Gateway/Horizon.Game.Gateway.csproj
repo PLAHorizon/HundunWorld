@@ -44,6 +44,7 @@
     <!-- Orleans相关 -->
     <PackageReference Include="Microsoft.Orleans.Client" Version="10.0.1" />
     <PackageReference Include="Microsoft.Orleans.Clustering.AdoNet" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Orleans.Clustering.Redis" Version="10.0.1" />
     <PackageReference Include="Microsoft.Orleans.Core.Abstractions" Version="10.0.1" />
     <PackageReference Include="Microsoft.Orleans.Serialization.Abstractions" Version="10.0.1" />
     <PackageReference Include="Microsoft.Orleans.Serialization.NewtonsoftJson" Version="10.0.1" />

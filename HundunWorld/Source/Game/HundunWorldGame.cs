@@ -611,6 +611,14 @@ namespace HundunWorld.Game
                         localSimSystem.PlayerChunkChanged += OnPlayerChunkChanged;
                         _isPlayerChunkChangedSubscribed = true;
                         Debug.Log("[HundunWorldGame] 已订阅 LocalSimulationSystem.PlayerChunkChanged 事件");
+
+                        // 注入地面高度采样器：ECS 层不能依赖 FlaxEngine.Physics，
+                        // 由本类（Flax 端）提供一个 RayCast 回调，让 LocalSimulationSystem
+                        // 在每帧预测后采样 (x, y) 处的 Terrain 高度约束 pred.Z，防止穿透地面。
+                        // 坐标转换：ECS 为 Z-up（x=左右, y=前后, z=高度），
+                        // Flax 为 Y-up → Flax 世界 (x, 0, y) 处射线，命中点的 Flax.Y 即 ECS.Z。
+                        localSimSystem.GroundHeightSampler = SampleGroundHeightEcs;
+                        Debug.Log("[HundunWorldGame] 已注入 LocalSimulationSystem.GroundHeightSampler");
                     }
                     else
                     {
@@ -618,6 +626,46 @@ namespace HundunWorld.Game
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// 地面高度采样器：供 <see cref="Horizon.Game.ECS.Arch.Systems.LocalSimulationSystem.GroundHeightSampler"/> 使用。
+        /// 给定 ECS 水平坐标 (x, y)（Z-up 坐标系，x=左右, y=前后），
+        /// 通过 <see cref="Physics.RayCast"/> 从高空向下射线检测 Terrain/碰撞体，
+        /// 返回该位置的地面 ECS.Z 高度（米）；未命中任何碰撞体时返回 <see cref="float.NaN"/>。
+        /// <para>
+        /// 坐标转换：ECS Z-up ↔ Flax Y-up
+        /// <list type="bullet">
+        ///   <item>Flax.X = ECS.X（左右）</item>
+        ///   <item>Flax.Y = ECS.Z（上下，高度）</item>
+        ///   <item>Flax.Z = ECS.Y（前后）</item>
+        /// </list>
+        /// 因此在 Flax 世界 (x, 1000, y) 处从高空向下射线，命中点的 Flax.Y 即为地面 ECS.Z。
+        /// </para>
+        /// <para>
+        /// 射线起点的 Y=1000 假定游戏世界地形最高点不超过 1000 米；若场景超高可调大。
+        /// 射线长度 2000 覆盖从 +1000 到 -1000 的范围。
+        /// 使用 <see cref="LayersMask.Default"/> 与 ThirdPersonCamera.GroundLayers 默认值一致。
+        /// </para>
+        /// </summary>
+        /// <param name="ecsX">ECS 世界坐标 X（左右，米）</param>
+        /// <param name="ecsY">ECS 世界坐标 Y（前后，米）</param>
+        /// <returns>该位置的地面 ECS.Z 高度（米）；无地面返回 <see cref="float.NaN"/></returns>
+        private float SampleGroundHeightEcs(float ecsX, float ecsY)
+        {
+            // ECS (x, y) → Flax 世界坐标 (x, 高空起点, y)
+            var rayStart = new Vector3(ecsX, 1000f, ecsY);
+            var rayDir = Vector3.Down;
+
+            if (Physics.RayCast(rayStart, rayDir, out RayCastHit hit, 2000f, LayersMask.Default))
+            {
+                // 命中点的 Flax.Y 即对应 ECS.Z（地面高度）
+                return hit.Point.Y;
+            }
+
+            // 未命中任何碰撞体（例如角色走到 Terrain 边界外或场景未配置地面）
+            // 返回 NaN 让 LocalSimulationSystem 跳过地面约束，避免错误地把角色拉到 0 高度
+            return float.NaN;
         }
 
         /// <summary>
@@ -1393,6 +1441,20 @@ namespace HundunWorld.Game
                 Debug.Log($"[HundunWorldGame] LocalPlayerActor 缺少 CharacterAttributesComponent，已自动添加");
             }
             Debug.Log($"[HundunWorldGame] 已确保 LocalPlayerActor 挂载 CharacterAttributesComponent: Level={attrComp.Level}, Nickname={attrComp.Nickname}, Stage={attrComp.CurrentStage}");
+
+            // 挂载 LocalPlayerActorSyncSystem：从 ECS PredictedTransformComponent 读取位置/朝向应用到 Actor。
+            // [重构背景] PlayerController 不再直接修改 Actor.Position/Orientation，
+            // 改由本系统从 ECS 同步，确保客户端显示位置 = 本地预测位置 = 服务端校验输入三者一致。
+            // 执行顺序：Flax 中同一 Actor 上的 Script 按 AddScript 顺序执行 OnUpdate，
+            // LocalPlayerActorSyncSystem 在 PlayerController 之后挂载，OnUpdate 在其后执行；
+            // 而 ECSUpdateDriver 挂在不同 Actor 上，按场景树顺序先于 LocalPlayerActor 执行，
+            // 保证本系统读取的 PredictedTransformComponent 是本帧最新值。
+            var localPlayerSyncSystem = actor.GetScript<LocalPlayerActorSyncSystem>();
+            if (localPlayerSyncSystem == null)
+            {
+                localPlayerSyncSystem = actor.AddScript<LocalPlayerActorSyncSystem>();
+                Debug.Log($"[HundunWorldGame] 已挂载 LocalPlayerActorSyncSystem: CharacterId={characterId}");
+            }
 
             return actor;
         }

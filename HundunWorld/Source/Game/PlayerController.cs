@@ -5,6 +5,12 @@ using Horizon.Game.ECS.Arch.Components;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 using Horizon.Game.Message.Sync;
+using Horizon.Game.Message.Sync.Components;
+// 消除 PredictedTransformComponent 命名空间歧义：
+// ECS.Arch.Components.PredictedTransformComponent 是客户端本地预测组件（LocalSimulationSystem 操作），
+// Message.Sync.Components.PredictedTransformComponent 是网络序列化版本。
+// 客户端本地预测/读写应使用 ECS.Arch.Components 版本。
+using PredictedTransformComponent = Horizon.Game.ECS.Arch.Components.PredictedTransformComponent;
 using CharacterState = Horizon.Game.Message.Enums.CharacterState;
 using System.Collections.Generic;
 using System.Linq;
@@ -137,6 +143,14 @@ namespace HundunWorld.Game
         /// <summary>Arch ECS 中本地玩家实体的缓存引用。</summary>
         private Entity _localPlayerEntity;
         private bool _localPlayerEntityFound = false;
+
+        /// <summary>
+        /// [边沿触发] 上一帧跳跃键是否按下，用于计算 JumpPressedThisFrame 边沿。
+        /// 由 WriteInputToEcs 维护：当前帧 jumpPressed 且 _prevJumpPressed=false 时
+        /// 写入 input.JumpPressedThisFrame=true，否则 false，确保持续按住空格时
+        /// 仅在按下边沿的那一帧触发 jumpCount++，避免三段跳在 50ms 内被消耗完。
+        /// </summary>
+        private bool _prevJumpPressed = false;
 
         /// <summary>
         /// 最大预测缓冲大小
@@ -416,17 +430,14 @@ namespace HundunWorld.Game
             // 更新滑行系统
             UpdateSlideSystem();
 
-            // 处理角色移动
-            HandleCharacterMovement();
-
-            // 处理地面点击
-            HandleGroundClick();
-
-            // 更新角色状态
-            UpdateCharacterState();
-
-            // 更新移动预测缓冲
-            UpdateMovementBuffer();
+            // [重构] 本地物理模拟已删除：位置/朝向/跳跃全部由 ECS LocalSimulationSystem 计算，
+            // 由 LocalPlayerActorSyncSystem 应用到 Actor。本控制器退化为"输入采集器 + ECS 写入器"。
+            // 原 HandleCharacterMovement/HandleGroundClick/UpdateCharacterState/UpdateMovementBuffer
+            // 直接修改 Actor.Position 与 Actor.Orientation，与 ECS 双轨脱节。
+            SetIsWalking(false);
+            _moveDirection = GetInputDirection();
+            HandleAuxiliaryInputs();
+            UpdateGroundedFromEcs();
 
             // 将输入写入 ECS 管线（供 InputSendSystem 打包发送）
             bool ecsInputSent = WriteInputToEcs();
@@ -444,6 +455,33 @@ namespace HundunWorld.Game
             else
             {
                 _inputSendAccumulator = 0f;
+            }
+        }
+
+        /// <summary>
+        /// [重构] 从 ECS 读取服务端权威的 IsGrounded 状态，覆盖本地 _isGrounded 字段。
+        /// 原 CheckGroundStatus 使用 Actor.Position.Y <= GetGroundHeight() 检测地面，
+        /// 但本地物理模拟移除后 Actor.Position 不再由本控制器更新，应改由服务端权威判定。
+        /// </summary>
+        private void UpdateGroundedFromEcs()
+        {
+            var archWorld = HundunWorldGame.Instance?.ArchWorld;
+            if (archWorld == null || !TryFindLocalPlayerEntity())
+            {
+                return;
+            }
+
+            try
+            {
+                if (archWorld.Has<MovementStateAuthComponent>(_localPlayerEntity))
+                {
+                    ref var movement = ref archWorld.Get<MovementStateAuthComponent>(_localPlayerEntity);
+                    _isGrounded = movement.IsGrounded;
+                }
+            }
+            catch
+            {
+                _localPlayerEntityFound = false;
             }
         }
 
@@ -507,7 +545,23 @@ namespace HundunWorld.Game
                 {
                     inputBits |= (byte)_qinggongSystem.GetQinggongInputBits();
                 }
+
+                // [边沿触发修复] 计算跳跃按下边沿并改写 InputBits bit0。
+                // 服务端 ZoneShardGrain 通过 InputBits bit0 推断跳跃（(inputBits & 0x1) != 0 → jumpCount++），
+                // 若客户端持续按住空格，每帧 bit0=1 会导致三段跳在 50ms 内被消耗完。
+                // 修复策略：客户端先行做边沿触发——仅在 jumpPressedRaw && !_prevJumpPressed 的那一帧
+                //   保留 bit0=1 并设置 JumpPressedThisFrame=true；下一帧即使持续按住也清除 bit0=0。
+                // LocalSimulationSystem 已改用 input.JumpPressedThisFrame 推断跳跃，
+                // 但 InputBits bit0 仍需保持边沿语义以兼容服务端原逻辑（服务端无需改动）。
+                bool jumpPressedRaw = (inputBits & 0x1) != 0;
+                bool jumpPressedThisFrame = jumpPressedRaw && !_prevJumpPressed;
+                if (!jumpPressedThisFrame)
+                {
+                    inputBits &= 0xFE; // 清除 bit0（跳跃位）
+                }
                 input.InputBits = inputBits;
+                input.JumpPressedThisFrame = jumpPressedThisFrame;
+                _prevJumpPressed = jumpPressedRaw;
 
                 // [修复] ClientTick 由 LocalSimulationSystem（FixedUpdate）统一递增，
                 // 避免 OnUpdate 渲染帧率与 FixedUpdate 60Hz 不一致导致 tick 漂移。
@@ -616,36 +670,13 @@ namespace HundunWorld.Game
         #region 角色移动处理
 
         /// <summary>
-        /// 处理角色移动
+        /// [重构] 原本地物理模拟入口已禁用。
+        /// 位置/朝向/跳跃全部由 ECS LocalSimulationSystem 计算并通过 LocalPlayerActorSyncSystem 应用到 Actor。
+        /// 此方法保留为空操作以兼容潜在的反射调用，不再修改 Actor.Position/Orientation。
         /// </summary>
         private void HandleCharacterMovement()
         {
-            
-            SetIsWalking(false);
-            // 获取输入方向
-            Vector3 inputDirection = GetInputDirection();
-
-            // 处理辅助操作输入
-            HandleAuxiliaryInputs();
-
-            // 计算目标移动速度
-            float targetSpeed = CalculateTargetSpeed(inputDirection);
-
-            // 更新移动速度和方向
-            UpdateMovementVelocity(inputDirection, targetSpeed);
-
-            // 处理重力和垂直移动
-            HandleVerticalMovement();
-
-            // 应用移动
-            ApplyMovement();
-
-            // 更新角色朝向
-            UpdateCharacterRotation(inputDirection);
-
-            // 处理点击移动
-            HandleClickToMove();
-
+            // 空操作：本地物理模拟已迁移至 ECS LocalSimulationSystem
         }
 
         /// <summary>
@@ -801,123 +832,47 @@ namespace HundunWorld.Game
         }
 
         /// <summary>
-        /// 处理垂直移动和重力
+        /// [重构] 原本地重力/跳跃模拟已禁用。
+        /// 跳跃由 PlayerInputComponent.JumpPressedThisFrame 边沿触发，服务端 ZoneShardGrain 通过 InputBits bit0
+        /// 推断并在 MovementFormula.Step 中应用 jumpImpulse；垂直速度由服务端权威计算并下发
+        /// MovementStateAuthComponent.VelocityXZ。本方法保留为空操作以兼容旧调用点。
         /// </summary>
         private void HandleVerticalMovement()
         {
-            // 处理跳跃
-            bool jumpPressed = _inputManager != null ? _inputManager.IsActionPressed("Jump") : Input.GetKey(KeyboardKeys.Spacebar);
-            if (_isGrounded && jumpPressed)
-            {
-                _verticalVelocity = JumpForce;
-                _isGrounded = false;
-                ChangeState(CharacterState.Jumping);
-            }
-
-            // 应用重力
-            if (!_isGrounded)
-            {
-                _verticalVelocity += Gravity * Time.DeltaTime;
-            }
-            else
-            {
-                _verticalVelocity = 0f;
-            }
+            // 空操作：垂直速度与跳跃已迁移至服务端权威模拟
         }
 
         /// <summary>
-        /// 应用移动
+        /// [重构] 原本地移动应用已禁用。
+        /// Actor.Position/Orientation 由 LocalPlayerActorSyncSystem 从 ECS PredictedTransformComponent
+        /// 应用，本方法保留为空操作以兼容旧调用点（不再修改 Actor.Position 或调用 CheckGroundStatus）。
         /// </summary>
         private void ApplyMovement()
         {
-            // 检查是否启用移动
-            if (!EnableMovement)
-                return;
-
-            // 水平移动
-            Vector3 horizontalMovement = _currentVelocity * Time.DeltaTime;
-
-            // 垂直移动
-            Vector3 verticalMovement = Vector3.Up * _verticalVelocity * Time.DeltaTime;
-
-            // 合并移动
-            Vector3 totalMovement = horizontalMovement + verticalMovement;
-
-            // 应用移动
-            Actor.Position += totalMovement;
-            var raw = Vector3.Zero;
-            Vector3.Distance(ref raw, ref totalMovement, out float d);
-            if (d > 0 )
-                SetIsWalking(true);
-            // 检查地面状态
-            CheckGroundStatus();
+            // 空操作：Actor 变换已由 LocalPlayerActorSyncSystem 从 ECS 应用
         }
 
         /// <summary>
-        /// 更新角色朝向
+        /// [重构] 原本地朝向更新已禁用。
+        /// Actor.Orientation 由 LocalPlayerActorSyncSystem 从 ECS PredictedTransformComponent.Yaw
+        /// 应用（yaw 弧度 → 度 → Quaternion.Euler(0, yawDeg, 0)）。本方法保留为空操作以兼容旧调用点。
+        /// RotationSmoothing 属性仍保留以兼容 SystemOptimizer 等外部调用方。
         /// </summary>
-        /// <param name="inputDirection">输入方向</param>
+        /// <param name="inputDirection">输入方向（已忽略）</param>
         private void UpdateCharacterRotation(Vector3 inputDirection)
         {
-            // 检查是否启用移动
-            if (!EnableMovement)
-                return;
-
-            if (inputDirection.LengthSquared > 0.001f)
-            {
-                Quaternion targetRotation = Quaternion.LookRotation(inputDirection);
-                if (RotationSmoothing > 0.0f)
-                {
-                    Actor.Orientation = Quaternion.Lerp(Actor.Orientation, targetRotation, RotationSmoothing);
-                }
-                else
-                {
-                    Actor.Orientation = targetRotation;
-                }
-            }
+            // 空操作：朝向已由 LocalPlayerActorSyncSystem 从 ECS PredictedTransformComponent.Yaw 应用
         }
 
         /// <summary>
-        /// 处理点击移动
+        /// [重构] 点击移动已禁用。
+        /// 原实现直接修改 Actor.Position/Orientation，与 ECS 单一事实源原则冲突。
+        /// 后续如需启用，应改造为生成虚拟输入方向写入 PlayerInputComponent.MoveX/MoveY，
+        /// 让 ECS LocalSimulationSystem 统一计算移动。本方法保留为空操作以兼容旧调用点。
         /// </summary>
         private void HandleClickToMove()
         {
-            // 检查是否启用移动
-            if (!EnableMovement)
-                return;
-
-            if (_isMovingToTarget)
-            {
-                Vector3 directionToTarget = _targetPosition - Actor.Position;
-                directionToTarget.Y = 0; // 忽略Y轴差异
-
-                if (directionToTarget.LengthSquared > 0.1f)
-                {
-                    directionToTarget.Normalize();
-
-                    // 计算点击移动速度
-                    float clickMoveSpeed = _isRunning ? MoveSpeed * RunSpeedMultiplier : MoveSpeed;
-                    Vector3 moveVelocity = directionToTarget * clickMoveSpeed;
-
-                    Actor.Position += moveVelocity * Time.DeltaTime;
-
-                    // 平滑旋转角色朝向移动方向
-                    Quaternion targetRotation = Quaternion.LookRotation(directionToTarget);
-                    if (RotationSmoothing > 0.0f)
-                    {
-                        Actor.Orientation = Quaternion.Lerp(Actor.Orientation, targetRotation, RotationSmoothing);
-                    }
-                    else
-                    {
-                        Actor.Orientation = targetRotation;
-                    }
-                }
-                else
-                {
-                    _isMovingToTarget = false;
-                    ChangeState(CharacterState.Idle);
-                }
-            }
+            // 空操作：点击移动功能已禁用，等待后续基于 ECS 输入采集的重新实现
         }
 
         /// <summary>

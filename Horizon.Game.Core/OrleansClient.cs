@@ -1,4 +1,4 @@
-﻿using Horizon.Core.Abstract;
+using Horizon.Core.Abstract;
 using Horizon.Core.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -14,6 +14,7 @@ using System.Net;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Consul;
+using StackExchange.Redis;
 
 namespace Horizon.Game.Core
 {
@@ -86,7 +87,11 @@ namespace Horizon.Game.Core
         public async Task<IClusterClient> OrleansConnectClient()
         {
             var invariant = _options.SqlServer.Invariant;
-            var connectionString = _options.SqlServer.ConnectionString;
+            // ===== Redis 集群配置（主方案） =====
+            // 从配置读取 Redis 连接字符串（优先使用 Redis:ConnectionString，降级到原 SqlServer 配置）
+            var redisConnectionStr = Configuration?.GetSection("Redis:ConnectionString").Value
+                ?? "127.0.0.1:9379,password=DB65F7F9C,abortConnect=false,syncTimeout=5000,asyncTimeout=10000";
+            var redisConfigOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConnectionStr);
 
             try
             {
@@ -98,11 +103,10 @@ namespace Horizon.Game.Core
                 }
                 client = new HostBuilder().UseOrleansClient(client =>
                 {
-                    //集群
-                    client.UseAdoNetClustering(options =>
+                    //集群（Redis 主方案）
+                    client.UseRedisClustering(options =>
                     {
-                        options.ConnectionString = connectionString;
-                        options.Invariant = invariant;
+                        options.ConfigurationOptions = redisConfigOptions;
                     }).Configure<ClusterOptions>(options =>
                     {
                         options.ClusterId = _clusterOptions.ClusterId;

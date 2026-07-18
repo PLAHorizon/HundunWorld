@@ -500,11 +500,15 @@ public sealed class SnapshotApplySystem : ArchSystemBase
 
             if (netId.IsLocalPlayer)
             {
+                // 本地玩家：仅写权威 Transform（供 ReconciliationSystem 比对与 LocalPlayerActorSyncSystem 兜底读取）。
+                // 注意：原实现此处 `return;` 会导致后续 MovementState/State/AnimationState 应用被跳过，
+                // 本地玩家永远收不到服务端权威的移动模式与 Montage 事件，本地动画状态机无法驱动。
+                // 修复：删除 return;，让代码继续向下执行 MovementState/State/AnimationState 应用分支。
+                // 后续 `if (world.Has<InterpolatedTransformComponent>(archEntity))` 判断天然会跳过本地玩家
+                // （本地玩家无 InterpolatedTransformComponent），插值不会被错误更新。
                 world.Set(archEntity, ref newTransform);
-                return;
             }
-
-            if (world.Has<InterpolatedTransformComponent>(archEntity))
+            else if (world.Has<InterpolatedTransformComponent>(archEntity))
             {
                 ref var oldAuth = ref world.Get<AuthTransformComponent>(archEntity);
                 ref var interp = ref world.Get<InterpolatedTransformComponent>(archEntity);
@@ -523,9 +527,13 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 interp.TargetZ = newTransform.Z;
                 interp.Alpha = 0f;
                 interp.ServerTick = serverTick;
-            }
 
-            world.Set(archEntity, ref newTransform);
+                world.Set(archEntity, ref newTransform);
+            }
+            else
+            {
+                world.Set(archEntity, ref newTransform);
+            }
         }
 
         if (delta.State != null)

@@ -18,6 +18,7 @@ using Orleans.Configuration;
 using Orleans.Hosting;
 
 using TouchSocket.Core;
+using StackExchange.Redis;
 
 namespace Horizon.IM.Gateway;
 
@@ -87,15 +88,14 @@ public class Program
 
                 var options = ResolveOrleansOptions(context.Configuration);
 
-                if (string.IsNullOrWhiteSpace(dbOptions.SqlServer?.ConnectionString))
-                {
-                    throw new InvalidOperationException("IM Gateway Orleans 配置无效：SqlServer ConnectionString 为空");
-                }
+                // ===== Redis 集群配置（主方案） =====
+                var redisConnectionStr = context.Configuration.GetSection("Redis:ConnectionString").Value
+                    ?? "127.0.0.1:9379,password=DB65F7F9C,abortConnect=false,syncTimeout=5000,asyncTimeout=10000";
+                var redisConfigOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConnectionStr);
 
-                client.UseAdoNetClustering(clustering =>
+                client.UseRedisClustering(clustering =>
                     {
-                        clustering.ConnectionString = dbOptions.SqlServer.ConnectionString;
-                        clustering.Invariant = dbOptions.SqlServer.Invariant;
+                        clustering.ConfigurationOptions = redisConfigOptions;
                     })
                     .Configure<ClusterOptions>(cluster =>
                     {
@@ -198,7 +198,7 @@ public class Program
         var password = primaryRedisMaster["Password"];
         return string.IsNullOrWhiteSpace(password)
             ? $"{host}:{port}"
-            : $"password={password}@{host}:{port}";
+            : $"{host}:{port},password={password}";
     }
     /// <summary>
     /// 为 IM 网关的 <see cref="GatewayOptions"/> 补齐默认值：
@@ -244,7 +244,7 @@ public class Program
             var password = primaryRedisMaster["Password"];
             options.RedisConnectionString = string.IsNullOrWhiteSpace(password)
                 ? $"{host}:{port}"
-                : $"password={password}@{host}:{port}";
+                : $"{host}:{port},password={password}";
         }
     }
 }

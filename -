@@ -1,0 +1,14 @@
+[00:00:005] Flax.Build 1.0.0
+[00:00:006]   Arguments: -log -logfile=- -build -buildtargets=GameEditorTarget -skiptargets=FlaxEditor -platform=Windows -arch=x64 -configuration=Development
+[00:00:006]   Workspace: C:\Works\GitHubProjects\HundunWorld
+[00:00:006]   Engine: C:\Program Files (x86)\Flax\Flax_1.12
+[00:00:006]   .NET 10.0.9
+[00:00:007] Missing project file.
+[00:00:023] Loading project file from "C:\Program Files (x86)\Flax\Flax_1.12\Flax.flaxproj"...
+[00:00:045] Loaded project Flax, version 1.12.6913
+[00:00:060] Engine build version: 1.12.6913
+[00:00:651] Assembler time: 0.5772378s
+[00:00:652] Building targets...
+[00:00:653] Missing project
+[00:00:653] Total time: 00:00:00.6669478
+[00:00:653] End.

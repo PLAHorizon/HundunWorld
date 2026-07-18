@@ -174,8 +174,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             InkWashTheme.InkQuality.Common
         };
 
-        /// <summary>玩家角色名（mock）</summary>
-        private string _playerName = "燕归人";
+        /// <summary>玩家角色名（mock）— 与队伍成员区分，采用正式武侠姓氏命名</summary>
+        private string _playerName = "慕容凌霄";
 
         /// <summary>玩家气血比例（mock，0-1）</summary>
         private float _mockHpRatio = 0.72f;

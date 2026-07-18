@@ -17,6 +17,7 @@ using Orleans.Configuration;
 using Orleans.Hosting;
 using Orleans.Serialization;
 using Horizon.IoT.MQTT;
+using StackExchange.Redis;
 
 namespace Horizon.WebApi
 {
@@ -46,16 +47,14 @@ namespace Horizon.WebApi
                 var adoNetOptions = context.Configuration.GetSection("AdoNetOptions").Get<AdoNetOptions>();
                 var clusterOptions = context.Configuration.GetSection("ClusterOptions").Get<ClusterOptions>();
 
-                if (string.IsNullOrWhiteSpace(adoNetOptions?.ConnectionString))
-                    throw new InvalidOperationException("WebApi Orleans配置无效：AdoNetOptions ConnectionString为空");
+                // ===== Redis 集群配置（主方案） =====
+                var redisConnectionStr = context.Configuration.GetSection("Redis:ConnectionString").Value
+                    ?? "127.0.0.1:9379,password=DB65F7F9C,abortConnect=false,syncTimeout=5000,asyncTimeout=10000";
+                var redisConfigOptions = StackExchange.Redis.ConfigurationOptions.Parse(redisConnectionStr);
 
-                if (string.IsNullOrWhiteSpace(adoNetOptions?.Invariant))
-                    throw new InvalidOperationException("WebApi Orleans配置无效：AdoNetOptions Invariant为空");
-
-                client.UseAdoNetClustering(options =>
+                client.UseRedisClustering(options =>
                 {
-                    options.ConnectionString = adoNetOptions.ConnectionString;
-                    options.Invariant = adoNetOptions.Invariant;
+                    options.ConfigurationOptions = redisConfigOptions;
                 })
                 .Configure<ClusterOptions>(options =>
                 {

@@ -130,47 +130,22 @@ namespace Horizon.Game.Gateway.Services
     public sealed class ConnectionManagerSessionRegistry : ISessionRegistry
     {
         private readonly IConnectionManager _connections;
-        private readonly ILogger<ConnectionManagerSessionRegistry>? _logger;
-        private long _hitCount;
-        private long _missCount;
 
-        public ConnectionManagerSessionRegistry(
-            IConnectionManager connections,
-            ILogger<ConnectionManagerSessionRegistry>? logger = null)
+        public ConnectionManagerSessionRegistry(IConnectionManager connections)
         {
             _connections = connections ?? throw new ArgumentNullException(nameof(connections));
-            _logger = logger;
         }
 
         /// <inheritdoc />
         public bool TryGetEndpoint(long sessionId, out object? endpoint)
         {
-            // 优先按 characterId 查找（fanout 推送使用 characterId 作为 sessionId）
             var conn = _connections.GetConnectionByCharacterId(sessionId);
             if (conn is { IsConnected: true })
             {
                 endpoint = conn;
-                Interlocked.Increment(ref _hitCount);
                 return true;
             }
 
-            // 诊断（Despawn 丢失 BUG）：characterId 查找失败时，记录失败原因。
-            // 可能原因：(1) B 的 characterId→connection 映射不存在（RegisterCharacter 未被调用）；
-            //           (2) 映射存在但 conn == null（连接已被移除）；
-            //           (3) conn != null 但 IsConnected=false（TCP 暂时断开）。
-            var missReason = conn is null
-                ? "映射不存在或连接已移除"
-                : "连接存在但 IsConnected=false";
-            var missTotal = Interlocked.Increment(ref _missCount);
-            // 前 10 次失败无条件输出，之后每 60 次输出一次，避免刷屏
-            if (missTotal <= 10 || missTotal % 60 == 0)
-            {
-                _logger?.LogWarning(
-                    "[TryGetEndpoint诊断] 查找失败 SessionId={SessionId}。原因：{Reason}。HitCount={Hit}, MissCount={Miss}",
-                    sessionId, missReason, Interlocked.Read(ref _hitCount), missTotal);
-            }
-
-            // 回退到按 UserId 查找（兼容）
             var conn2 = _connections.GetConnectionByUserId(sessionId);
             if (conn2 is { IsConnected: true })
             {

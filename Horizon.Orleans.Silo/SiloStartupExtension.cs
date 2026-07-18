@@ -71,9 +71,10 @@ namespace Horizon.Orleans.Silo
             Task.Run(() =>
             {
                 var redis = Configuration?.GetSection("DataBase")?.Get<DataBase>()?.RedisMasters[0] ?? null;
-                Cache.Current = redis != null ? new RedisCache($"password={redis.Password}@{redis.Host}:{redis.Port}")
-                    : new RedisCache("password=DB65F7F9C@localhost:9379");
-                // Cache.Current = new RedisCache("password=DB65F7F9C@localhost:9379");
+                // StackExchange.Redis 连接字符串格式：端点在前，password 作为 key-value 参数（不能用 password=xxx@host:port 混合格式）
+                Cache.Current = redis != null ? new RedisCache($"{redis.Host}:{redis.Port},password={redis.Password}")
+                    : new RedisCache("127.0.0.1:9379,password=DB65F7F9C");
+                // Cache.Current = new RedisCache("127.0.0.1:9379,password=DB65F7F9C");
                 service.AddSingleton(Cache.Current);
             });
 
