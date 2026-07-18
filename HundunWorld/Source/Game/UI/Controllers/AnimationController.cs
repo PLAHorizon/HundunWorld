@@ -1,7 +1,7 @@
 ﻿using FlaxEngine;
 using FlaxEngine.GUI;
 using Horizon.Game.Message.Enums;
-using HundunWorld.Game.UI.Enums;
+
 using HundunWorld.Game.UI.Events;
 using System;
 using System.Collections.Generic;

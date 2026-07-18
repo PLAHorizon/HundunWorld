@@ -1,0 +1,148 @@
+{
+  "projectName": "yy-misc-system",
+  "projectPath": "yy-misc-system",
+  "brandCssPath": "colors_and_type.css",
+  "styleContinuityAnchors": {
+    "colorSystem": "墨色系(#0d0d0d-#6a6a6a) + 纸色系(#f5f0e8-#a89e8a) + 朱红(#c0392b) + 金色(#c9a84c) + 玉色(#5e8b6e) + 青灰(#6b7b8a)",
+    "primaryBackground": "var(--color-ink-dark) #1a1a1a",
+    "primaryText": "var(--color-paper-bright) #f5f0e8",
+    "accentColor": "var(--color-vermilion) #c0392b + var(--color-gold) #c9a84c",
+    "fontFamily": "Noto Serif SC(标题/装饰) + Noto Sans SC(正文)",
+    "panelStyle": "ink-panel: 渐变背景(135deg, #2d2d2d→#1a1a1a) + 1px墨色边框 + 8px圆角 + SVG噪点纹理叠层",
+    "buttonStyle": "ink-button: 1px金色边框 + 楷体字体 + 朱红/金色/透明三种变体",
+    "animationStyle": "inkFadeIn/inkSpread/inkDissolve 水墨晕染动画",
+    "qualityColorSystem": "common(#a89e8a) / uncommon(#5e8b6e) / rare(#4a7c9a) / epic(#c9a84c) / legendary(#c0392b)",
+    "sharedShellPattern": "left-nav(240px) + top-info-bar(60px) + right-content-area(剩余)",
+    "hudBarStyle": "ink-progress + ink-progress-bar-vermilion(血条) / ink-progress-bar-gold(内力) / ink-progress-bar-jade(队友)"
+  },
+  "pages": [
+    {
+      "id": "page-photo-mode",
+      "name": "拍照模式",
+      "file": "photo-mode.html",
+      "order": 1,
+      "pageType": "visual-centric",
+      "description": "拍照模式界面，全屏沉浸式。展示取景框、滤镜选择、角度调整、拍照按钮。背景为游戏场景占位。",
+      "backgroundImage": null,
+      "visualNorthStar": "全屏拍照模式界面。中央为取景框(金色边框占位)，底部为拍照控制栏(滤镜/角度/快门)，左上角为退出按钮，右上角为设置。背景使用暗色渐变模拟游戏场景。",
+      "composition": "full-screen | 背景层(暗色渐变+水墨装饰) + 取景框(金色边框,居中) + 底部控制栏(滤镜/角度/快门) + 左上退出 + 右上设置",
+      "components": [
+        "ink-panel",
+        "ink-button-gold",
+        "ink-button-secondary",
+        "ink-badge-gold",
+        "ink-divider"
+      ]
+    },
+    {
+      "id": "page-settings-audio",
+      "name": "音频设置",
+      "file": "settings-audio.html",
+      "order": 2,
+      "pageType": "information-dense",
+      "description": "音频与操作设置页面，使用共享Shell。左侧分类标签(音频/操作/界面)，右侧设置项列表(音量滑块、按键绑定)。",
+      "backgroundImage": null,
+      "visualNorthStar": "共享Shell布局(左导航+顶栏+右内容)。右侧内容区分两列：左列分类标签(音频active/操作/界面)，右列音频设置项(主音量/音乐/音效/语音/环境音的滑动条)。",
+      "composition": "shared-shell(240px左导航+60px顶栏) | 右侧: 左列分类标签(200px) + 右列设置项列表(主音量/音乐/音效/语音/环境音滑块) + 底部保存按钮",
+      "components": [
+        "ink-panel",
+        "ink-button",
+        "ink-button-secondary",
+        "ink-progress",
+        "ink-divider"
+      ]
+    },
+    {
+      "id": "page-mini-game-complete",
+      "name": "小游戏完成",
+      "file": "mini-game-complete.html",
+      "order": 3,
+      "pageType": "visual-centric",
+      "description": "小游戏完成通知弹窗，居中显示。展示游戏名称、得分、评级、奖励，带有水墨晕染动画。",
+      "backgroundImage": null,
+      "visualNorthStar": "居中弹窗(440px)，展示小游戏完成。中央为得分和评级(大号金色字)，上方为游戏名称，下方为奖励列表。带有inkSpread入场动画。",
+      "composition": "dark-overlay(rgba(13,13,13,0.7)) + center-modal(440px) | modal: '小游戏完成'标题 + 游戏名称 + 得分(大号) + 评级(A/B/C) + 奖励列表 + 确认按钮",
+      "components": [
+        "ink-panel",
+        "ink-badge-gold",
+        "ink-progress-bar-gold",
+        "ink-button-gold",
+        "ink-divider"
+      ]
+    },
+    {
+      "id": "page-guide-action",
+      "name": "引导操作",
+      "file": "guide-action.html",
+      "order": 4,
+      "pageType": "visual-centric",
+      "description": "操作引导提示弹窗，小型浮层。展示当前操作提示、按键示意、目标说明，带有箭头指向(视觉占位)。",
+      "backgroundImage": null,
+      "visualNorthStar": "小型浮层弹窗(320px)，半透明背景。展示操作引导标题、按键示意(WASD/Space等)、操作说明文字。底部有'知道了'按钮。",
+      "composition": "dark-overlay(rgba(13,13,13,0.5)) + center-modal(320px) | modal: 引导标题 + 按键示意区 + 操作说明 + '知道了'按钮",
+      "components": [
+        "ink-panel",
+        "ink-badge-gold",
+        "ink-button-secondary",
+        "ink-divider"
+      ]
+    },
+    {
+      "id": "page-guide-martial",
+      "name": "引导奇术",
+      "file": "guide-martial.html",
+      "order": 5,
+      "pageType": "visual-centric",
+      "description": "奇术引导提示弹窗，小型浮层。展示奇术使用引导、招式组合提示、释放时机说明。",
+      "backgroundImage": null,
+      "visualNorthStar": "小型浮层弹窗(360px)，展示奇术引导。顶部为奇术图标和名称，中部为招式组合提示(3步连招)，底部为释放时机说明和'开始练习'按钮。",
+      "composition": "dark-overlay(rgba(13,13,13,0.5)) + center-modal(360px) | modal: 奇术图标+名称 + 连招步骤(3步) + 释放时机说明 + '开始练习'按钮",
+      "components": [
+        "ink-panel",
+        "ink-badge-gold",
+        "ink-button-gold",
+        "ink-divider"
+      ]
+    },
+    {
+      "id": "page-multiplayer",
+      "name": "多人模式",
+      "file": "multiplayer.html",
+      "order": 6,
+      "pageType": "information-dense",
+      "description": "多人模式大厅界面，全屏布局。展示房间列表、创建房间、快速匹配、好友列表。",
+      "backgroundImage": null,
+      "visualNorthStar": "全屏多人模式大厅。左侧为模式选择(快速匹配/创建房间/好友列表)，右侧为房间列表或好友列表。顶部为玩家信息和网络状态。",
+      "composition": "full-screen | 顶部栏(玩家信息+网络状态) + 左侧模式选择(200px) + 右侧内容区(房间列表/好友列表) + 底部操作栏",
+      "components": [
+        "ink-panel",
+        "ink-badge-jade",
+        "ink-badge-gold",
+        "ink-button-primary",
+        "ink-button-gold",
+        "ink-button-secondary",
+        "ink-progress",
+        "ink-divider"
+      ]
+    },
+    {
+      "id": "page-combat-hud-v2",
+      "name": "战斗HUDv2",
+      "file": "combat-hud-v2.html",
+      "order": 7,
+      "pageType": "visual-centric",
+      "description": "战斗HUD升级版，全屏沉浸式。展示血条/内力条/技能栏/目标信息/连击数/队友状态，比v1更精致。",
+      "backgroundImage": null,
+      "visualNorthStar": "全屏战斗HUD。左下角为角色状态(血条+内力条+头像)，底部中央为技能栏(8个技能格)，右下角为道具栏，顶部中央为目标信息(敌人血条)，右上角为队友状态列表，左侧中央为连击数显示。",
+      "composition": "full-screen | 左下角色状态 + 底部技能栏(8格) + 右下道具栏 + 顶部目标信息 + 右上队友状态 + 左侧连击数 + 顶部右 Buff列表",
+      "components": [
+        "ink-panel",
+        "ink-progress",
+        "ink-progress-bar-vermilion",
+        "ink-badge-gold",
+        "ink-badge-vermilion"
+      ]
+    }
+  ],
+  "images": []
+}

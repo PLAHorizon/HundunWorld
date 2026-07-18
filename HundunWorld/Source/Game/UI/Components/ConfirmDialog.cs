@@ -830,8 +830,12 @@ namespace HundunWorld.Game.UI.Components
             {
                 Task.Delay(500).ContinueWith(_ =>
                 {
-                    Close();
-                    action?.Invoke();
+                    // 必须在主线程执行 UI 操作（Close 操作控件层级）
+                    FlaxEngine.Scripting.InvokeOnUpdate(() =>
+                    {
+                        Close();
+                        action?.Invoke();
+                    });
                 });
             }
         }

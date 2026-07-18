@@ -1,6 +1,17 @@
 using FlaxEngine;
+using FlaxEngine.GUI;
+using Game.Character.Attributes;
+using Game.Combat.Skills;
 using Horizon.Game.Message.Enums;
 using HundunWorld.Game.UI.Authentication;
+using HundunWorld.Game.UI.Ink;
+using HundunWorld.Game.UI.Ink.Pages;
+using HundunWorld.Game.UI.Ink.Pages.Combat;
+using HundunWorld.Game.UI.Ink.Pages.Character;
+using HundunWorld.Game.UI.Ink.Pages.Social;
+using HundunWorld.Game.UI.Ink.Pages.Reward;
+using HundunWorld.Game.UI.StyleSystem;
+using HundunWorld.Game;
 using System;
 using System.Collections.Generic;
 
@@ -25,8 +36,29 @@ namespace HundunWorld.Game.UI
         // 当前活动的UI
         private Script _currentActiveUI;
 
+        // 水墨主题 UI 组件（进入 GameWorld 场景后激活）
+        /// <summary>水墨页面外壳，承载背景层/暗角层/内容层/返回按钮</summary>
+        private InkPageShell _inkPageShell;
+        /// <summary>水墨页面路由器，管理页面栈与导航</summary>
+        private InkPageRouter _inkPageRouter;
+        /// <summary>承载水墨 UI 的专用 UICanvas</summary>
+        private UICanvas _inkCanvas;
+
         // 活跃的效果图标
         private readonly Dictionary<(ulong TargetId, int EffectId), EffectIconEntry> _activeEffectIcons = new();
+
+        // 本地玩家数据绑定缓存
+        private CharacterAttributesComponent _cachedAttributes;
+        private SkillBase[] _cachedSkills;
+        private bool _localPlayerReady;
+        private float _rebindLogThrottle;
+
+        /// <summary>最后已知活动页面 dom-id，用于 Canvas 自愈重建后恢复导航状态</summary>
+        private string _lastKnownDomId = InkPageDomIds.CombatHud;
+        // 活动页面引用（用于 OnUpdate 动态刷新）
+        private CombatHudPage _activeCombatHud;
+        private CombatHudV2Page _activeCombatHudV2;
+        private MenuCharAttributesV2Page _activeMenuCharAttributesV2;
 
         public override void OnStart()
         {
@@ -36,6 +68,124 @@ namespace HundunWorld.Game.UI
             SubscribeEvents();
             
             FlaxEngine.Debug.Log("主UI管理器初始化完成");
+        }
+
+        /// <summary>
+        /// 每帧更新：检测本地玩家就绪状态翻转，刷新 CombatHud 动态数据。
+        /// </summary>
+        public override void OnUpdate()
+        {
+            base.OnUpdate();
+            float deltaTime = Time.DeltaTime;
+            try
+            {
+                // 0. 水墨 UI 健康自愈：检测 Canvas/Shell 被意外销毁并自动重建
+                //    仅当 _inkPageShell 非 null（已首次创建过）且健康检查失败时触发，
+                //    避免在 Login 场景每帧尝试创建
+                if (_inkPageShell != null && !IsInkUIHealthy())
+                {
+                    FlaxEngine.Debug.LogWarning("[MainUIManager] 检测到水墨 UI 已损坏，触发自愈重建");
+                    string lastDom = _lastKnownDomId;
+                    DestroyInkWashUI();
+                    InitializeInkWashUI();
+                    if (_inkPageRouter != null && !string.IsNullOrEmpty(lastDom))
+                    {
+                        _inkPageRouter.NavigateTo(lastDom);
+                    }
+                    if (_localPlayerReady && _cachedAttributes != null)
+                    {
+                        RebindActivePageData();
+                    }
+                }
+
+                // 1. 检测本地玩家从 null → 非 null 的状态翻转
+                if (!_localPlayerReady)
+                {
+                    if (TryGetLocalPlayerAttributes(out var attr))
+                    {
+                        _cachedAttributes = attr;
+                        _localPlayerReady = true;
+                        if (TryGetLocalPlayerSkills(out var skills))
+                            _cachedSkills = skills;
+                        FlaxEngine.Debug.Log("[MainUIManager] 本地玩家已就绪，下次导航到 combat-hud/nav-character-v2 时将自动绑定");
+
+                        // 若当前已打开 MenuCharAttributesV2Page 但创建时玩家未就绪（使用 mock 数据），立即重绑真实数据
+                        if (_activeMenuCharAttributesV2 != null)
+                        {
+                            try
+                            {
+                                _activeMenuCharAttributesV2.BindCharacter(attr);
+                                FlaxEngine.Debug.Log("[MainUIManager] MenuCharAttributesV2 已重绑本地玩家数据");
+                            }
+                            catch (Exception bindEx)
+                            {
+                                FlaxEngine.Debug.LogError($"[MainUIManager] MenuCharAttributesV2 重绑失败: {bindEx.Message}");
+                            }
+                        }
+                    }
+                }
+
+                // 2. 持续刷新 CombatHud 动态数据（仅当当前页面为 combat-hud 且玩家就绪时）
+                if (_localPlayerReady && _inkPageRouter?.CurrentPageDomId == InkPageDomIds.CombatHud && _activeCombatHud != null)
+                {
+                    RefreshCombatHudDynamicData();
+                }
+            }
+            catch (Exception ex)
+            {
+                _rebindLogThrottle += deltaTime;
+                if (_rebindLogThrottle > 5f)
+                {
+                    _rebindLogThrottle = 0f;
+                    FlaxEngine.Debug.LogError($"[MainUIManager] OnUpdate 异常: {ex.Message}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 刷新 CombatHud 的动态数据：小地图玩家朝向 + 技能冷却进度。
+        /// </summary>
+        private void RefreshCombatHudDynamicData()
+        {
+            var game = HundunWorldGame.Instance;
+            var actor = game?.LocalPlayerActor;
+            if (actor == null || _activeCombatHud == null)
+                return;
+
+            // 小地图朝向：从 Actor.Orientation 提取 Yaw 角（度，0=正北，顺时针增加）
+            // 按 Flax 项目惯例：Y 轴为向上轴，Yaw = 绕 Y 轴旋转 = EulerAngles.Y
+            try
+            {
+                var orient = actor.Orientation;
+                var eulerAngles = orient.EulerAngles;
+                float yaw = eulerAngles.Y;
+                // 归一化到 0-360
+                yaw = ((yaw % 360f) + 360f) % 360f;
+                _activeCombatHud.MinimapPlayerYaw = yaw;
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[MainUIManager] 刷新小地图朝向异常: {ex.Message}");
+            }
+
+            // 技能冷却：遍历 _cachedSkills，反转 GetCooldownProgress (0=刚释放/1=就绪) → CombatHud (0=就绪/1=冷却中)
+            try
+            {
+                if (_cachedSkills != null && _cachedSkills.Length > 0)
+                {
+                    var cooldowns = new float[_cachedSkills.Length];
+                    for (int i = 0; i < _cachedSkills.Length; i++)
+                    {
+                        float progress = _cachedSkills[i]?.GetCooldownProgress() ?? 1f;
+                        cooldowns[i] = 1f - progress;
+                    }
+                    _activeCombatHud.SkillCooldowns = cooldowns;
+                }
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[MainUIManager] 刷新技能冷却异常: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -51,8 +201,8 @@ namespace HundunWorld.Game.UI
             }
             else if (_instance != this)
             {
-                // 销毁多余的实例
-                Destroy(Actor);
+                // 销毁多余的脚本实例（仅销毁脚本，不销毁 Actor，避免级联销毁兄弟脚本）
+                Destroy(this);
                 return;
             }
         }
@@ -98,6 +248,10 @@ namespace HundunWorld.Game.UI
                 _stateManager.SceneChanged += OnSceneChanged;
                 _stateManager.LoadingStateChanged += OnLoadingStateChanged;
                 FlaxEngine.Debug.Log("已订阅状态管理器事件");
+
+                // 立即同步当前场景状态，处理脚本启动时场景已是 GameWorld 的情况
+                // 避免 OnStart 执行晚于场景切换事件导致 InitializeInkWashUI 永不调用
+                OnSceneChanged(SceneType.Start, _stateManager.CurrentScene);
             }
         }
 
@@ -107,18 +261,30 @@ namespace HundunWorld.Game.UI
         private void OnSceneChanged(SceneType previousScene, SceneType newScene)
         {
             FlaxEngine.Debug.Log($"主UI管理器处理场景切换: {previousScene} -> {newScene}");
-            
+
             try
             {
+                // 离开 GameWorld 场景时隐藏水墨 UI（不销毁，保留控件树与页面状态）
+                if (previousScene == SceneType.GameWorld)
+                {
+                    HideInkWashUI();
+                }
+
                 // 隐藏之前的UI
                 HidePreviousUI(previousScene);
-                
+
                 // 显示新的UI
                 ShowNewUI(newScene);
-                
+
+                // 进入 GameWorld 场景时初始化并激活水墨 UI（不再激活 GameMainUI）
+                if (newScene == SceneType.GameWorld)
+                {
+                    InitializeInkWashUI();
+                }
+
                 // 更新当前活动UI
                 UpdateCurrentActiveUI(newScene);
-                
+
                 FlaxEngine.Debug.Log($"场景切换处理完成: {newScene}");
             }
             catch (Exception ex)
@@ -210,6 +376,896 @@ namespace HundunWorld.Game.UI
         {
             // 可以在这里实现全局的加载状态显示
             FlaxEngine.Debug.Log($"全局加载状态变化: {isLoading}");
+        }
+
+        // ===================================================================
+        // 水墨主题 UI（InkPageShell + InkPageRouter）
+        // =======================================================================
+
+        /// <summary>
+        /// 初始化水墨主题 UI（InkPageShell + InkPageRouter + 全部页面注册）。
+        /// 在进入 GameWorld 场景时调用，创建专用 UICanvas 承载 Ink UI，
+        /// 默认导航到战斗 HUD 页面。所有初始化代码 try/catch 包裹，失败记录日志但不抛异常。
+        /// </summary>
+        private void InitializeInkWashUI()
+        {
+            try
+            {
+                // 确保 MainUIManager 处于启用状态，以便 OnUpdate 能正常调用
+                // （RootScene 中初始 Enabled=false，进入 GameWorld 后需要启用以驱动动态数据刷新）
+                if (!Enabled)
+                {
+                    Enabled = true;
+                    FlaxEngine.Debug.Log("[MainUIManager] 已启用 MainUIManager（进入 GameWorld）");
+                }
+
+                // 幂等检测：若水墨 UI 已存在且健康，仅恢复可见性并返回，不重建控件树
+                if (_inkPageShell != null && IsInkUIHealthy())
+                {
+                    _inkPageShell.Visible = true;
+                    if (_inkCanvas?.GUI != null)
+                        _inkCanvas.GUI.Visible = true;
+                    FlaxEngine.Debug.Log("[MainUIManager] 水墨 UI 已存在，仅恢复可见性");
+                    return;
+                }
+
+                // 1. 查找或创建专用 UICanvas
+                _inkCanvas = FindOrCreateInkUICanvas();
+                if (_inkCanvas?.GUI == null)
+                {
+                    FlaxEngine.Debug.LogError("[MainUIManager] Ink UICanvas.GUI 为 null，无法初始化水墨 UI");
+                    return;
+                }
+
+                // 2. 初始化水墨主题字体
+                InkWashTheme.InitializeFonts();
+
+                // 3. 创建 InkPageShell（全屏拉伸），添加到 UICanvas.GUI
+                _inkPageShell = new InkPageShell
+                {
+                    AnchorPreset = AnchorPresets.StretchAll,
+                    Visible = true,
+                };
+                _inkCanvas.GUI.AddChild(_inkPageShell);
+
+                // 4. 创建 InkPageRouter，添加到 UICanvas.GUI，并关联 Shell
+                _inkPageRouter = new InkPageRouter();
+                _inkCanvas.GUI.AddChild(_inkPageRouter);
+                _inkPageRouter.Initialize(_inkPageShell, InkPageDomIds.CombatHud);
+
+                // 5. 注册全部 19 个页面
+                RegisterInkPages();
+
+                // 6. 默认导航到战斗 HUD
+                FlaxEngine.Debug.Log("[MainUIManager] 准备导航到 CombatHud...");
+                bool navSuccess = NavigateToPage(InkPageDomIds.CombatHud);
+                if (!navSuccess)
+                {
+                    FlaxEngine.Debug.LogError("[MainUIManager] 首次导航到 CombatHud 失败，Ink UI 可能仅显示空背景");
+                }
+
+                FlaxEngine.Debug.Log($"[MainUIManager] 水墨主题 UI 初始化完成，Canvas.ChildrenCount={_inkCanvas.GUI.ChildrenCount}, 导航结果={navSuccess}");
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[MainUIManager] 初始化水墨 UI 时出错: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 查找或创建承载水墨 UI 的专用 UICanvas。
+        /// 关键约束：主 UI 必须使用名为 InkWashUICanvas 的独立 Canvas，禁止与其他 UI
+        /// （AuthenticationUI 的 MainUICanvas / GameMainUI 的 GameMainUICanvas 等）共用。
+        /// 所有查找分支均按名称 InkWashUICanvas 精确匹配，禁止通用 GetScript/GetChild 查找。
+        /// </summary>
+        /// <returns>UICanvas 实例，失败时返回 null</returns>
+        private UICanvas FindOrCreateInkUICanvas()
+        {
+            const string InkCanvasName = "InkWashUICanvas";
+            UICanvas uiCanvas = null;
+
+            // 方式1: 从 Actor 自身查找（仅当 Actor 自身就是 InkWashUICanvas 容器时才返回其 UICanvas）
+            if (Actor != null && Actor.Name == InkCanvasName)
+            {
+                uiCanvas = Actor.GetScript<UICanvas>();
+                if (uiCanvas != null)
+                {
+                    FlaxEngine.Debug.Log($"[MainUIManager] Ink UICanvas 命中方式1（Actor 自身）: {uiCanvas.Name}");
+                }
+            }
+
+            // 方式2: 从 Actor 子级查找（遍历 Children，仅匹配名为 InkWashUICanvas 的子 Actor）
+            if (uiCanvas == null && Actor != null)
+            {
+                var children = Actor.Children;
+                if (children != null)
+                {
+                    foreach (var child in children)
+                    {
+                        if (child != null && child.Name == InkCanvasName)
+                        {
+                            var c = child.GetScript<UICanvas>();
+                            if (c != null)
+                            {
+                                uiCanvas = c;
+                                FlaxEngine.Debug.Log($"[MainUIManager] Ink UICanvas 命中方式2（Actor 子级）: {uiCanvas.Name}, Actor={child.Name}");
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 方式3: 从父 Actor 查找（仅当 Parent 自身就是 InkWashUICanvas 容器时才返回其 UICanvas）
+            if (uiCanvas == null && Actor?.Parent != null && Actor.Parent.Name == InkCanvasName)
+            {
+                uiCanvas = Actor.Parent.GetScript<UICanvas>();
+                if (uiCanvas != null)
+                {
+                    FlaxEngine.Debug.Log($"[MainUIManager] Ink UICanvas 命中方式3（父 Actor）: {uiCanvas.Name}");
+                }
+            }
+
+            // 方式4: 从场景中查找（同时按 Name == InkWashUICanvas 和 Scene == Actor.Scene 过滤，
+            // 避免命中子场景中的同名 Canvas 或其他 UI 的 Canvas）
+            if (uiCanvas == null && Actor?.Scene != null)
+            {
+                var sceneCanvases = Level.GetActors<UICanvas>();
+                if (sceneCanvases != null)
+                {
+                    foreach (var c in sceneCanvases)
+                    {
+                        if (c != null
+                            && c.Name == InkCanvasName
+                            && c.Scene == Actor.Scene)
+                        {
+                            uiCanvas = c;
+                            FlaxEngine.Debug.Log($"[MainUIManager] Ink UICanvas 命中方式4（场景查找）: {uiCanvas.Name}, Scene={c.Scene?.Name}");
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // 方式5: 从 Level 全局查找（同方式4过滤条件，不再使用「用第一个」兜底）
+            if (uiCanvas == null && Actor?.Scene != null)
+            {
+                var allCanvases = Level.GetActors<UICanvas>();
+                if (allCanvases != null && allCanvases.Length > 0)
+                {
+                    foreach (var c in allCanvases)
+                    {
+                        if (c != null
+                            && c.Name == InkCanvasName
+                            && c.Scene == Actor.Scene)
+                        {
+                            uiCanvas = c;
+                            FlaxEngine.Debug.Log($"[MainUIManager] Ink UICanvas 命中方式5（Level 全局）: {uiCanvas.Name}, Scene={c.Scene?.Name}");
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // 方式6: 自动创建专用 UICanvas（始终挂到 MainUIManager.Actor 下，确保属于 RootScene）
+            if (uiCanvas == null)
+            {
+                FlaxEngine.Debug.LogWarning("[MainUIManager] 未找到 InkWashUICanvas，自动创建专用 Canvas");
+
+                var canvasActor = new EmptyActor { Name = InkCanvasName };
+                // 强制挂载到 MainUIManager.Actor 下，确保属于 RootScene 且随 MainUIManager 生命周期
+                canvasActor.Parent = Actor;
+
+                uiCanvas = canvasActor.AddChild<UICanvas>();
+                uiCanvas.Name = InkCanvasName;
+
+                // 显式设置 GUI 尺寸，避免首帧尺寸为 0 导致 StretchAll 子控件不可见
+                var screenSize = FlaxEngine.Screen.Size;
+                if (screenSize.X > 0f && screenSize.Y > 0f)
+                {
+                    uiCanvas.GUI.Size = screenSize;
+                }
+
+                FlaxEngine.Debug.Log($"[MainUIManager] 已创建专用 Ink UICanvas: Actor={canvasActor.Name}, Parent={Actor?.Name}");
+            }
+
+            // 确保设置为 ScreenSpace 模式
+            if (uiCanvas != null && uiCanvas.RenderMode != CanvasRenderMode.ScreenSpace)
+            {
+                uiCanvas.RenderMode = CanvasRenderMode.ScreenSpace;
+            }
+
+            // 关键修复：无论 UICanvas 是找到的还是新建的，都强制同步 GUI 尺寸为屏幕尺寸。
+            // 否则使用旧 Canvas 时 GUI.Size 可能为 0，导致 StretchAll 子控件无法布局。
+            if (uiCanvas?.GUI != null)
+            {
+                var screenSize = FlaxEngine.Screen.Size;
+                if (screenSize.X > 0f && screenSize.Y > 0f)
+                {
+                    uiCanvas.GUI.Size = screenSize;
+                }
+                uiCanvas.GUI.AnchorPreset = AnchorPresets.StretchAll;
+                uiCanvas.GUI.Offsets = Margin.Zero;
+                FlaxEngine.Debug.Log($"[MainUIManager] Ink UICanvas 已就绪: GUI.Size={uiCanvas.GUI.Size}, RenderMode={uiCanvas.RenderMode}");
+            }
+
+            return uiCanvas;
+        }
+
+        /// <summary>
+        /// 向 InkPageRouter 注册全部 19 个页面工厂。
+        /// 涵盖战斗 HUD、加载页、章节过场、菜单、弹窗、奖励、设置，
+        /// 并通过事件订阅打通完整导航链路。
+        /// </summary>
+        private void RegisterInkPages()
+        {
+            if (_inkPageRouter == null)
+            {
+                FlaxEngine.Debug.LogWarning("[MainUIManager] InkPageRouter 为 null，无法注册页面");
+                return;
+            }
+
+            _inkPageRouter.RegisterPage(InkPageDomIds.CombatHud, () => CreateCombatHud());
+            _inkPageRouter.RegisterPage(InkPageDomIds.Loading1, () => CreateLoadingPage1());
+            _inkPageRouter.RegisterPage(InkPageDomIds.Loading2, () => CreateLoadingPage2());
+            _inkPageRouter.RegisterPage(InkPageDomIds.ChapterTransition, () => CreateChapterTransition());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavQuests, () => CreateMenuQuests());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavShop, () => CreateMenuShop());
+            _inkPageRouter.RegisterPage(InkPageDomIds.PopupItemAcquired, () => CreatePopupItemAcquired());
+            _inkPageRouter.RegisterPage(InkPageDomIds.PopupMessage, () => CreatePopupMessage());
+            _inkPageRouter.RegisterPage(InkPageDomIds.RewardAchievement, () => CreateRewardAchievement());
+            _inkPageRouter.RegisterPage(InkPageDomIds.RewardQuestComplete, () => CreateRewardQuestComplete());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavSettings, () => CreateSettings());
+            _inkPageRouter.RegisterPage(InkPageDomIds.CombatHudV2, () => CreateCombatHudV2());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavCharacterV2, () => CreateMenuCharAttributesV2());
+            _inkPageRouter.RegisterPage(InkPageDomIds.DeathScreen, () => CreateDeathScreen());
+            _inkPageRouter.RegisterPage(InkPageDomIds.DialogueConfirm, () => CreateDialogueConfirm());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavBattlePrep, () => CreateMenuBattlePrep());
+            _inkPageRouter.RegisterPage(InkPageDomIds.Acupoint, () => CreateAcupoint());
+            _inkPageRouter.RegisterPage(InkPageDomIds.Qte, () => CreateQte());
+            _inkPageRouter.RegisterPage(InkPageDomIds.RewardLevelUp, () => CreateRewardLevelUp());
+        }
+
+        /// <summary>
+        /// 尝试获取本地玩家的角色属性组件。
+        /// null 安全：Instance/LocalPlayerActor/GetScript 任一为 null 时返回 false。
+        /// </summary>
+        private bool TryGetLocalPlayerAttributes(out CharacterAttributesComponent component)
+        {
+            component = null;
+            try
+            {
+                var game = HundunWorldGame.Instance;
+                var actor = game?.LocalPlayerActor;
+                if (actor == null)
+                    return false;
+                component = actor.GetScript<CharacterAttributesComponent>();
+                if (component == null)
+                {
+                    FlaxEngine.Debug.LogWarning("[MainUIManager] LocalPlayerActor 未挂载 CharacterAttributesComponent");
+                    return false;
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[MainUIManager] TryGetLocalPlayerAttributes 异常: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 尝试获取本地玩家的技能数组。
+        /// 使用 GetScripts&lt;SkillBase&gt;() 获取所有挂载的技能。
+        /// </summary>
+        private bool TryGetLocalPlayerSkills(out SkillBase[] slots)
+        {
+            slots = null;
+            try
+            {
+                var game = HundunWorldGame.Instance;
+                var actor = game?.LocalPlayerActor;
+                if (actor == null)
+                    return false;
+                var arr = actor.GetScripts<SkillBase>();
+                if (arr == null || arr.Length == 0)
+                    return false;
+                slots = arr;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[MainUIManager] TryGetLocalPlayerSkills 异常: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 检测水墨 UI 是否处于健康状态（Canvas 与 Shell 均非 null 且可访问）。
+        /// 用于 <see cref="InitializeInkWashUI"/> 的幂等判断与 <see cref="OnUpdate"/> 的自愈触发。
+        /// 注意：Flax 的 <see cref="Actor"/> 与 <see cref="Control"/> 不暴露 IsDisposed 属性，
+        /// 这里通过关键属性可达性判断（Actor 销毁后 GUI 通常为 null，Control 销毁后访问 IsDisposing 会抛异常），
+        /// 因此用 try/catch 兜底，确保任何异常情况都返回 false 触发自愈。
+        /// </summary>
+        /// <returns>健康返回 true；任一资源为 null 或已释放返回 false</returns>
+        private bool IsInkUIHealthy()
+        {
+            try
+            {
+                return _inkCanvas != null
+                    && _inkCanvas.GUI != null
+                    && _inkPageShell != null
+                    && !_inkPageShell.IsDisposing;
+            }
+            catch
+            {
+                // 访问已销毁对象的关键属性可能抛异常，视为不健康
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 隐藏水墨主题 UI（保留控件树与页面状态，仅设置 Visible = false）。
+        /// 在离开 GameWorld 场景时调用，与 <see cref="DestroyInkWashUI"/> 区分：
+        /// 本方法不释放任何资源，仅切换可见性，以便重新进入 GameWorld 时通过
+        /// <see cref="InitializeInkWashUI"/> 的幂等分支快速恢复显示。
+        /// </summary>
+        private void HideInkWashUI()
+        {
+            try
+            {
+                if (_inkPageShell != null)
+                {
+                    _inkPageShell.Visible = false;
+                }
+                if (_inkCanvas?.GUI != null)
+                {
+                    _inkCanvas.GUI.Visible = false;
+                }
+                FlaxEngine.Debug.Log("[MainUIManager] 水墨 UI 已隐藏（保留控件树）");
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[MainUIManager] 隐藏水墨 UI 时出错: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 销毁水墨主题 UI（InkPageShell + InkPageRouter），释放资源。
+        /// 在离开 GameWorld 场景或重新初始化时调用。
+        /// 保留 _inkCanvas 以便复用，不主动销毁。
+        /// </summary>
+        private void DestroyInkWashUI()
+        {
+            try
+            {
+                if (_inkPageShell != null)
+                {
+                    _inkPageShell.Dispose();
+                    _inkPageShell = null;
+                }
+
+                if (_inkPageRouter != null)
+                {
+                    _inkPageRouter.Dispose();
+                    _inkPageRouter = null;
+                }
+
+                // 清理活动页面引用，避免悬空指针
+                _activeCombatHud = null;
+                _activeCombatHudV2 = null;
+                _activeMenuCharAttributesV2 = null;
+
+                FlaxEngine.Debug.Log("[MainUIManager] 水墨主题 UI 已销毁");
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[MainUIManager] 销毁水墨 UI 时出错: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 自愈重建后对当前活动页面重新执行数据绑定。
+        /// 根据 _lastKnownDomId 判断页面类型，对 _activeCombatHud/_activeCombatHudV2/_activeMenuCharAttributesV2
+        /// 调用对应的 BindCharacter/BindSkills。null 安全，try/catch 包裹。
+        /// </summary>
+        private void RebindActivePageData()
+        {
+            try
+            {
+                if (_cachedAttributes == null) return;
+
+                // 根据最后已知 dom-id 判断页面类型并重绑
+                if (_lastKnownDomId == InkPageDomIds.CombatHud && _activeCombatHud != null)
+                {
+                    _activeCombatHud.BindCharacter(_cachedAttributes);
+                    if (_cachedSkills != null) _activeCombatHud.BindSkills(_cachedSkills);
+                    FlaxEngine.Debug.Log("[MainUIManager] 自愈后已重绑 CombatHud 数据");
+                }
+                else if (_lastKnownDomId == InkPageDomIds.CombatHudV2 && _activeCombatHudV2 != null)
+                {
+                    _activeCombatHudV2.BindCharacter(_cachedAttributes);
+                    FlaxEngine.Debug.Log("[MainUIManager] 自愈后已重绑 CombatHudV2 数据");
+                }
+                else if (_lastKnownDomId == InkPageDomIds.NavCharacterV2 && _activeMenuCharAttributesV2 != null)
+                {
+                    _activeMenuCharAttributesV2.BindCharacter(_cachedAttributes);
+                    FlaxEngine.Debug.Log("[MainUIManager] 自愈后已重绑 MenuCharAttributesV2 数据");
+                }
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[MainUIManager] RebindActivePageData 失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 统一的页面导航辅助方法：调用路由器 NavigateTo 并在成功后更新 _lastKnownDomId。
+        /// 返回值表示导航是否成功（路由器为 null、NavigateTo 返回 false 或抛异常均返回 false）。
+        /// </summary>
+        /// <param name="domId">目标页面 dom-id</param>
+        /// <returns>导航是否成功</returns>
+        private bool NavigateToPage(string domId)
+        {
+            try
+            {
+                if (_inkPageRouter != null && _inkPageRouter.NavigateTo(domId))
+                {
+                    _lastKnownDomId = domId;
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[MainUIManager] NavigateToPage({domId}) 失败: {ex.Message}");
+            }
+            return false;
+        }
+
+        // ===================================================================
+        // 页面工厂方法（创建页面控件并订阅事件）
+        // =======================================================================
+
+        /// <summary>
+        /// 创建战斗 HUD 页面并订阅导航请求事件。
+        /// 头像按钮、系统导航按钮触发 <see cref="CombatHudPage.NavigationRequested"/> 后，
+        /// 由路由器执行 <see cref="InkPageRouter.NavigateTo"/> 跳转到目标子页面。
+        /// </summary>
+        /// <returns>CombatHudPage 实例</returns>
+        private CombatHudPage CreateCombatHud()
+        {
+            var page = new CombatHudPage();
+            page.NavigationRequested += (domId) =>
+            {
+                try
+                {
+                    NavigateToPage(domId);
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] CombatHud 导航失败 ({domId}): {ex.Message}");
+                }
+            };
+            // 即时绑定：若本地玩家已就绪则直接绑定真实数据
+            if (TryGetLocalPlayerAttributes(out var attr))
+            {
+                page.BindCharacter(attr);
+                _cachedAttributes = attr;
+                if (TryGetLocalPlayerSkills(out var skills))
+                {
+                    page.BindSkills(skills);
+                    _cachedSkills = skills;
+                }
+                _localPlayerReady = true;
+                FlaxEngine.Debug.Log("[MainUIManager] CombatHud 已即时绑定本地玩家数据");
+            }
+            else
+            {
+                FlaxEngine.Debug.Log("[MainUIManager] CombatHud 创建时本地玩家未就绪，等待重绑");
+            }
+            _activeCombatHud = page;
+            return page;
+        }
+
+        /// <summary>
+        /// 创建加载页 1 并订阅进度完成事件。
+        /// 进度满后自动推进到加载页 2。
+        /// </summary>
+        /// <returns>LoadingPage1 实例</returns>
+        private LoadingPage1 CreateLoadingPage1()
+        {
+            var page = new LoadingPage1();
+            page.ProgressComplete += () =>
+            {
+                try
+                {
+                    NavigateToPage(InkPageDomIds.Loading2);
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] LoadingPage1 推进失败: {ex.Message}");
+                }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建加载页 2 并订阅进度完成事件。
+        /// 进度满后自动推进到章节过场页。
+        /// </summary>
+        /// <returns>LoadingPage2 实例</returns>
+        private LoadingPage2 CreateLoadingPage2()
+        {
+            var page = new LoadingPage2();
+            page.ProgressComplete += () =>
+            {
+                try
+                {
+                    NavigateToPage(InkPageDomIds.ChapterTransition);
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] LoadingPage2 推进失败: {ex.Message}");
+                }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建章节过场页并订阅"进入世界"按钮点击事件。
+        /// 点击后导航到战斗 HUD。
+        /// </summary>
+        /// <returns>ChapterTransitionPage 实例</returns>
+        private ChapterTransitionPage CreateChapterTransition()
+        {
+            var page = new ChapterTransitionPage();
+            page.EnterWorldClicked += () =>
+            {
+                try
+                {
+                    NavigateToPage(InkPageDomIds.CombatHud);
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] ChapterTransition 进入世界失败: {ex.Message}");
+                }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建任务菜单页面。
+        /// </summary>
+        /// <returns>MenuQuestsPage 实例</returns>
+        private MenuQuestsPage CreateMenuQuests()
+        {
+            return new MenuQuestsPage();
+        }
+
+        /// <summary>
+        /// 创建商店菜单页面。
+        /// </summary>
+        /// <returns>MenuShopPage 实例</returns>
+        private MenuShopPage CreateMenuShop()
+        {
+            return new MenuShopPage();
+        }
+
+        /// <summary>
+        /// 创建物品获得弹窗并订阅确认事件。
+        /// 确认后返回战斗 HUD。
+        /// </summary>
+        /// <returns>PopupItemAcquired 实例</returns>
+        private PopupItemAcquired CreatePopupItemAcquired()
+        {
+            var page = new PopupItemAcquired();
+            page.Confirmed += () =>
+            {
+                try
+                {
+                    _inkPageRouter?.NavigateToHud();
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] PopupItemAcquired 确认失败: {ex.Message}");
+                }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建留言弹窗并订阅关闭事件。
+        /// 关闭后返回战斗 HUD。
+        /// </summary>
+        /// <returns>PopupMessage 实例</returns>
+        private PopupMessage CreatePopupMessage()
+        {
+            var page = new PopupMessage();
+            page.Closed += () =>
+            {
+                try
+                {
+                    _inkPageRouter?.NavigateToHud();
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] PopupMessage 关闭失败: {ex.Message}");
+                }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建成就奖励弹窗并订阅领取事件。
+        /// 领取后返回战斗 HUD。
+        /// </summary>
+        /// <returns>RewardAchievementPage 实例</returns>
+        private RewardAchievementPage CreateRewardAchievement()
+        {
+            var page = new RewardAchievementPage();
+            page.Claimed += () =>
+            {
+                try
+                {
+                    _inkPageRouter?.NavigateToHud();
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] RewardAchievement 领取失败: {ex.Message}");
+                }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建任务完成奖励弹窗并订阅领取事件。
+        /// 领取后返回战斗 HUD。
+        /// </summary>
+        /// <returns>RewardQuestCompletePage 实例</returns>
+        private RewardQuestCompletePage CreateRewardQuestComplete()
+        {
+            var page = new RewardQuestCompletePage();
+            page.Claimed += () =>
+            {
+                try
+                {
+                    _inkPageRouter?.NavigateToHud();
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] RewardQuestComplete 领取失败: {ex.Message}");
+                }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建设置页面。
+        /// </summary>
+        /// <returns>SettingsPage 实例</returns>
+        private SettingsPage CreateSettings()
+        {
+            return new SettingsPage();
+        }
+
+        /// <summary>
+        /// 创建战斗 HUD v2 页面并订阅导航请求事件。
+        /// </summary>
+        /// <returns>CombatHudV2Page 实例</returns>
+        private CombatHudV2Page CreateCombatHudV2()
+        {
+            var page = new CombatHudV2Page();
+            page.NavigationRequested += (domId) =>
+            {
+                try
+                {
+                    NavigateToPage(domId);
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] CombatHudV2 导航失败 ({domId}): {ex.Message}");
+                }
+            };
+            // 即时绑定：若本地玩家已就绪则直接绑定真实数据
+            if (TryGetLocalPlayerAttributes(out var attr))
+            {
+                page.BindCharacter(attr);
+                _cachedAttributes = attr;
+                _localPlayerReady = true;
+                FlaxEngine.Debug.Log("[MainUIManager] CombatHudV2 已即时绑定本地玩家数据");
+            }
+            else
+            {
+                FlaxEngine.Debug.Log("[MainUIManager] CombatHudV2 创建时本地玩家未就绪，等待重绑");
+            }
+            _activeCombatHudV2 = page;
+            return page;
+        }
+
+        /// <summary>
+        /// 创建角色属性菜单 v2 页面并订阅导航请求事件。
+        /// </summary>
+        /// <returns>MenuCharAttributesV2Page 实例</returns>
+        private MenuCharAttributesV2Page CreateMenuCharAttributesV2()
+        {
+            var page = new MenuCharAttributesV2Page();
+            page.NavigationRequested += (domId) =>
+            {
+                try
+                {
+                    NavigateToPage(domId);
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] MenuCharAttributesV2 导航失败 ({domId}): {ex.Message}");
+                }
+            };
+            // 即时绑定：若本地玩家已就绪则直接绑定真实数据
+            if (TryGetLocalPlayerAttributes(out var attr))
+            {
+                page.BindCharacter(attr);
+                _cachedAttributes = attr;
+                _localPlayerReady = true;
+                FlaxEngine.Debug.Log("[MainUIManager] MenuCharAttributesV2 已即时绑定本地玩家数据");
+            }
+            else
+            {
+                FlaxEngine.Debug.Log("[MainUIManager] MenuCharAttributesV2 创建时本地玩家未就绪，等待重绑");
+            }
+            _activeMenuCharAttributesV2 = page;
+            return page;
+        }
+
+        /// <summary>
+        /// 创建阵亡界面并订阅破招与返回事件。
+        /// 破招或返回后均返回战斗 HUD。
+        /// </summary>
+        /// <returns>DeathScreenPage 实例</returns>
+        private DeathScreenPage CreateDeathScreen()
+        {
+            var page = new DeathScreenPage();
+            page.ReviveRequested += () =>
+            {
+                try
+                {
+                    _inkPageRouter?.NavigateToHud();
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] DeathScreen 破招失败: {ex.Message}");
+                }
+            };
+            page.ReturnRequested += () =>
+            {
+                try
+                {
+                    _inkPageRouter?.NavigateToHud();
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] DeathScreen 返回失败: {ex.Message}");
+                }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建 NPC 对话确认页面并订阅对话确认事件。
+        /// 无论选择接受/拒绝/询问，均返回战斗 HUD。
+        /// </summary>
+        /// <returns>DialogueConfirmPage 实例</returns>
+        private DialogueConfirmPage CreateDialogueConfirm()
+        {
+            var page = new DialogueConfirmPage();
+            page.DialogueConfirmed += (optionIndex) =>
+            {
+                try
+                {
+                    _inkPageRouter?.NavigateToHud();
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] DialogueConfirm 确认失败 (选项={optionIndex}): {ex.Message}");
+                }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建战前备战菜单页面并订阅导航请求事件。
+        /// </summary>
+        /// <returns>MenuBattlePrepPage 实例</returns>
+        private MenuBattlePrepPage CreateMenuBattlePrep()
+        {
+            var page = new MenuBattlePrepPage();
+            page.NavigationRequested += (domId) =>
+            {
+                try
+                {
+                    NavigateToPage(domId);
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] MenuBattlePrep 导航失败 ({domId}): {ex.Message}");
+                }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建点穴系统页面并订阅导航请求事件。
+        /// </summary>
+        /// <returns>AcupointPage 实例</returns>
+        private AcupointPage CreateAcupoint()
+        {
+            var page = new AcupointPage();
+            page.NavigationRequested += (domId) =>
+            {
+                try
+                {
+                    NavigateToPage(domId);
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] Acupoint 导航失败 ({domId}): {ex.Message}");
+                }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建 QTE 千钧一发页面并订阅失败与成功事件。
+        /// 失败或成功后均返回战斗 HUD。
+        /// </summary>
+        /// <returns>QtePage 实例</returns>
+        private QtePage CreateQte()
+        {
+            var page = new QtePage();
+            page.QteFailed += () =>
+            {
+                try
+                {
+                    _inkPageRouter?.NavigateToHud();
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] Qte 失败处理异常: {ex.Message}");
+                }
+            };
+            page.QteSucceeded += () =>
+            {
+                try
+                {
+                    _inkPageRouter?.NavigateToHud();
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] Qte 成功处理异常: {ex.Message}");
+                }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建等级提升奖励弹窗并订阅确认事件。
+        /// 确认后返回战斗 HUD。
+        /// </summary>
+        /// <returns>RewardLevelUpPage 实例</returns>
+        private RewardLevelUpPage CreateRewardLevelUp()
+        {
+            var page = new RewardLevelUpPage();
+            page.Confirmed += () =>
+            {
+                try
+                {
+                    _inkPageRouter?.NavigateToHud();
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] RewardLevelUp 确认失败: {ex.Message}");
+                }
+            };
+            return page;
         }
 
         /// <summary>
@@ -367,6 +1423,9 @@ namespace HundunWorld.Game.UI
 
         public override void OnDestroy()
         {
+            // 销毁水墨主题 UI
+            DestroyInkWashUI();
+
             // 取消事件订阅
             if (_stateManager != null)
             {
@@ -377,6 +1436,14 @@ namespace HundunWorld.Game.UI
             // 清理组件引用
             _uiComponents.Clear();
             _currentActiveUI = null;
+
+            // 清理本地玩家数据绑定引用，避免悬空指针
+            _cachedAttributes = null;
+            _cachedSkills = null;
+            _localPlayerReady = false;
+            _activeCombatHud = null;
+            _activeCombatHudV2 = null;
+            _activeMenuCharAttributesV2 = null;
 
             // 清空单例引用
             if (_instance == this)

@@ -57,6 +57,7 @@ namespace Horizon.Orleans.Grains
 
         public override async Task OnActivateAsync(CancellationToken cancellationToken)
         {
+            CharacterId = (ulong)this.GetPrimaryKeyLong();
             _logger.LogInformation("CharacterGrain {CharacterId} 正在激活。", CharacterId);
             // If the state is new, it means this is the first activation or state was cleared.
             // We try to load from the database as a fallback.
@@ -75,6 +76,19 @@ namespace Horizon.Orleans.Grains
                 {
                     _logger.LogWarning("激活期间未在数据库中找到角色 {CharacterId}。", CharacterId);
                 }
+            }
+            else if (_characterState.State.IsOnline)
+            {
+                // 修复 BUG（角色离线后持久化在线信息未更新）：
+                // grain 激活意味着这是一个新实例，角色必然不在线（必须重新调用 EnterGameAsync 才能上线）。
+                // 如果持久化状态里 IsOnline=true，说明之前未正确下线（服务器崩溃、GoOfflineAsync 未调用、
+                // 或 WriteStateAsync 失败），此 true 值是过时数据。必须重置为 false 并立即持久化，
+                // 否则 IsOnlineAsync 会永远返回 true，角色离线信息无法从服务端移除，实体永久残留。
+                _logger.LogWarning(
+                    "CharacterGrain {CharacterId} 激活时发现持久化 IsOnline=true（可能是之前未正确下线），已重置为 false 并持久化。",
+                    CharacterId);
+                _characterState.State.IsOnline = false;
+                await _characterState.WriteStateAsync();
             }
             await base.OnActivateAsync(cancellationToken);
         }
@@ -258,11 +272,13 @@ namespace Horizon.Orleans.Grains
                     _characterState.State.CharacterInfo.CharacterName,
                     _characterState.State.CharacterInfo.CharacterId);
 
-                // 6. 返回成功响应
+                // 6. 返回成功响应。必须设置 CharacterId 顶层字段，网关依赖此字段
+                //    注册 characterId → connection 映射，断线 Despawn 正确反查角色 ID。
                 return new EnterGameResponse
                 {
                     Success = true,
                     Message = $"角色{_characterState.State.CharacterInfo.CharacterName}进入游戏",
+                    CharacterId = _characterState.State.CharacterInfo.CharacterId,
                     CharacterInfo = _characterState.State.CharacterInfo
                     // 这里还可以加载其他数据，如背包、技能、任务等
                 };

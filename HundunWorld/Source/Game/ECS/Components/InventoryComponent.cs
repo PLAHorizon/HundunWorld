@@ -1,5 +1,6 @@
 using Arch.Core;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace HundunWorld.Game.ECS.Components
 {
@@ -46,12 +47,43 @@ namespace HundunWorld.Game.ECS.Components
     }
 
     /// <summary>
+    /// 已装备的扩展背包装备数据
+    /// </summary>
+    public struct EquippedBag
+    {
+        /// <summary>背包槽索引（0-3）</summary>
+        public int BagSlotIndex;
+
+        /// <summary>背包装备物品模板ID</summary>
+        public int TemplateId;
+
+        /// <summary>该背包提供的扩展格子数</summary>
+        public int ExtraSlots;
+
+        public EquippedBag(int bagSlotIndex, int templateId, int extraSlots)
+        {
+            BagSlotIndex = bagSlotIndex;
+            TemplateId = templateId;
+            ExtraSlots = extraSlots;
+        }
+    }
+
+    /// <summary>
     /// 背包组件
     /// 管理实体的物品存储
     /// </summary>
     public struct InventoryComponent
     {
-        /// <summary>背包容量</summary>
+        /// <summary>默认基础容量（6×6 = 36 格）</summary>
+        public const int BaseCapacity = 36;
+
+        /// <summary>最大背包槽数量（4 个扩展背包槽）</summary>
+        public const int MaxBagSlots = 4;
+
+        /// <summary>总容量上限（基础 36 + 最多 4 个背包）</summary>
+        public const int MaxTotalCapacity = 108;
+
+        /// <summary>背包容量（向后兼容字段，实际容量判断请使用 <see cref="TotalCapacity"/>）</summary>
         public int Capacity;
 
         /// <summary>背包物品列表</summary>
@@ -60,11 +92,15 @@ namespace HundunWorld.Game.ECS.Components
         /// <summary>下一个可用槽位</summary>
         public int NextSlotIndex;
 
+        /// <summary>已装备的扩展背包列表</summary>
+        public List<EquippedBag> BagSlots;
+
         public InventoryComponent(int capacity = 60)
         {
             Capacity = capacity;
             Items = new Dictionary<int, InventoryItem>();
             NextSlotIndex = 0;
+            BagSlots = new List<EquippedBag>();
         }
 
         /// <summary>
@@ -73,9 +109,14 @@ namespace HundunWorld.Game.ECS.Components
         public int CurrentCount => Items?.Count ?? 0;
 
         /// <summary>
-        /// 背包是否已满
+        /// 总容量（基础容量 + 所有已装备背包提供的扩展格子数）
         /// </summary>
-        public bool IsFull => CurrentCount >= Capacity;
+        public int TotalCapacity => BaseCapacity + (BagSlots != null ? BagSlots.Sum(b => b.ExtraSlots) : 0);
+
+        /// <summary>
+        /// 背包是否已满（基于 <see cref="TotalCapacity"/> 判断）
+        /// </summary>
+        public bool IsFull => CurrentCount >= TotalCapacity;
 
         /// <summary>
         /// 尝试添加物品
@@ -87,7 +128,11 @@ namespace HundunWorld.Game.ECS.Components
             if (Items == null)
                 Items = new Dictionary<int, InventoryItem>();
 
-            if (IsFull)
+            if (BagSlots == null)
+                BagSlots = new List<EquippedBag>();
+
+            // 使用 TotalCapacity（基础容量 + 已装备背包扩展格子）判断容量上限
+            if (CurrentCount >= TotalCapacity)
                 return false;
 
             // 查找是否有可堆叠的同类物品

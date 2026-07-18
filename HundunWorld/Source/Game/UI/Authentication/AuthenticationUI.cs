@@ -313,22 +313,25 @@ namespace HundunWorld.Game.UI.Authentication
 
         /// <summary>
         /// 更新按钮状态
+        /// 修复：按钮始终保持可点击，由 AuthenticationManager 内部处理连接；
+        /// 此处仅根据网络状态刷新提示文本，避免网络未就绪时按钮被禁用导致“无响应”。
         /// </summary>
         private void UpdateButtonStates()
         {
             if (_isNetworkConnected)
             {
-                // 网络已连接，启用按钮
                 _loginPanel?.EnableButtons();
                 _registerPanel?.EnableButtons();
-                FlaxEngine.Debug.Log($"[AuthenticationUI] 按钮已启用");
+                FlaxEngine.Debug.Log($"[AuthenticationUI] 网络已连接，按钮已启用");
             }
             else
             {
-                // 网络未连接，禁用按钮
-                _loginPanel?.DisableButtons();
-                _registerPanel?.DisableButtons();
-                FlaxEngine.Debug.Log($"[AuthenticationUI] 按钮已禁用");
+                // 网络未连接时仍然启用按钮，点击后会由业务逻辑尝试建立连接
+                _loginPanel?.EnableButtons();
+                _registerPanel?.EnableButtons();
+                _loginPanel?.SetStatus($"网络未连接，点击登录将尝试连接", Color.Yellow);
+                _registerPanel?.SetStatus($"网络未连接，点击注册将尝试连接", Color.Yellow);
+                FlaxEngine.Debug.Log($"[AuthenticationUI] 网络未连接，但保持按钮可点击以便触发重连");
             }
         }
 
@@ -352,12 +355,12 @@ namespace HundunWorld.Game.UI.Authentication
                     
             // 等待一帧，确保异步InitializeUIAsync执行
             await Task.Delay(50);
-            FlaxEngine.Debug.Log("[AuthenticationUI] 等待50ms后，尝试设置按钮为禁用状态");
-                    
-            // 立即设置按钮初始状态为禁用，等待网络连接
-            _loginPanel?.DisableButtons();
-            _registerPanel?.DisableButtons();
-            FlaxEngine.Debug.Log("[AuthenticationUI] 初始化时设置按钮为禁用状态");
+            FlaxEngine.Debug.Log("[AuthenticationUI] 等待50ms后，尝试设置按钮为启用状态");
+
+            // 修复：初始化时即启用按钮，由业务层在点击后处理连接，避免网络未就绪时无响应。
+            _loginPanel?.EnableButtons();
+            _registerPanel?.EnableButtons();
+            FlaxEngine.Debug.Log("[AuthenticationUI] 初始化时设置按钮为启用状态");
                     
             // 初始化加载指示器位置 - 动态居中显示
             var loadingSize = new Float2(0, 0);

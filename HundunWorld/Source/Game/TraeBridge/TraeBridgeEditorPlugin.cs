@@ -1,3 +1,4 @@
+#if FLAX_EDITOR
 using System;
 using FlaxEngine;
 using FlaxEditor;
@@ -67,3 +68,4 @@ namespace HundunWorld.TraeBridge
         }
     }
 }
+#endif

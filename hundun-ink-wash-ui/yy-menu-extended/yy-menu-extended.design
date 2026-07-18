@@ -1,0 +1,195 @@
+{
+  "name": "燕云十六声UI - 扩展菜单与系统",
+  "id": "yy-menu-extended",
+  "version": "1.0.0",
+  "scope": "project",
+  "path": "yy-menu-extended",
+  "versionSource": "manual",
+  "data": [
+    {
+      "id": "page-menu-casual-mode",
+      "type": "page",
+      "title": "不肝（休闲模式）",
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-casual-mode.html",
+        "interactions": []
+      },
+      "version": 1,
+      "createdAt": 1783729575562
+    },
+    {
+      "id": "page-menu-gacha",
+      "type": "page",
+      "title": "抽卡（祈愿）",
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 1400,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-gacha.html",
+        "interactions": []
+      },
+      "version": 1,
+      "createdAt": 1783729575562
+    },
+    {
+      "id": "page-menu-activities",
+      "type": "page",
+      "title": "活动",
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 900,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-activities.html",
+        "interactions": []
+      },
+      "version": 1,
+      "createdAt": 1783729575562
+    },
+    {
+      "id": "page-menu-battle-pass",
+      "type": "page",
+      "title": "通行证",
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 1400,
+        "y": 900,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-battle-pass.html",
+        "interactions": []
+      },
+      "version": 1,
+      "createdAt": 1783729575562
+    },
+    {
+      "id": "page-menu-char-attributes-v2",
+      "type": "page",
+      "title": "属性面板V2",
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 1800,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-char-attributes-v2.html",
+        "interactions": []
+      },
+      "version": 1,
+      "createdAt": 1783729575562
+    },
+    {
+      "id": "page-shop-rare-items",
+      "type": "page",
+      "title": "奇珍阁",
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 1400,
+        "y": 1800,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/shop-rare-items.html",
+        "interactions": []
+      },
+      "version": 1,
+      "createdAt": 1783729575562
+    },
+    {
+      "id": "page-settings",
+      "type": "page",
+      "title": "设置",
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 2700,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/settings.html",
+        "interactions": []
+      },
+      "version": 1,
+      "createdAt": 1783729575562
+    },
+    {
+      "id": "image-005",
+      "type": "image",
+      "title": "抽卡金色光效背景",
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 1400,
+        "y": 0
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-gacha-glow.jpg"
+      },
+      "version": 1,
+      "createdAt": 1783729575562
+    },
+    {
+      "id": "image-006",
+      "type": "image",
+      "title": "角色预览背景V2",
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 1800
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-char-preview-v2.jpg"
+      },
+      "version": 1,
+      "createdAt": 1783729575562
+    }
+  ]
+}

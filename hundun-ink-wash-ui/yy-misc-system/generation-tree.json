@@ -1,0 +1,64 @@
+{
+  "root": {
+    "id": "project-shell",
+    "type": "project-shell",
+    "children": [
+      {
+        "id": "page-leaf-page-photo-mode",
+        "type": "page-leaf",
+        "pageId": "page-photo-mode",
+        "pageFile": "photo-mode.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-settings-audio",
+        "type": "page-leaf",
+        "pageId": "page-settings-audio",
+        "pageFile": "settings-audio.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-mini-game-complete",
+        "type": "page-leaf",
+        "pageId": "page-mini-game-complete",
+        "pageFile": "mini-game-complete.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-guide-action",
+        "type": "page-leaf",
+        "pageId": "page-guide-action",
+        "pageFile": "guide-action.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-guide-martial",
+        "type": "page-leaf",
+        "pageId": "page-guide-martial",
+        "pageFile": "guide-martial.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-multiplayer",
+        "type": "page-leaf",
+        "pageId": "page-multiplayer",
+        "pageFile": "multiplayer.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-combat-hud-v2",
+        "type": "page-leaf",
+        "pageId": "page-combat-hud-v2",
+        "pageFile": "combat-hud-v2.html",
+        "dependencies": [],
+        "status": "pending"
+      }
+    ]
+  }
+}

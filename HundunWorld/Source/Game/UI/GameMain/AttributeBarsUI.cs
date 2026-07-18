@@ -3,6 +3,7 @@ using FlaxEngine;
 using FlaxEngine.GUI;
 using Game.Character.Attributes;
 using HundunWorld.Game.UI.Components;
+using Horizon.Game.Message.Enums;
 
 namespace HundunWorld.Game.UI.GameMain
 {
@@ -81,7 +82,27 @@ namespace HundunWorld.Game.UI.GameMain
         {
             InitializeAttributeBars();
             FindCharacterAttributes();
+
+            // 初始隐藏：属性条仅在游戏世界场景可见
+            if (_mainPanel != null)
+                _mainPanel.Visible = false;
+
+            // 订阅场景切换事件，控制可见性
+            var stateManager = UIStateManager.Instance;
+            if (stateManager != null)
+            {
+                stateManager.SceneChanged += OnSceneChanged;
+                // 检查当前场景
+                OnSceneChanged(SceneType.Start, stateManager.CurrentScene);
+            }
+
             Debug.Log("[AttributeBarsUI] 属性条UI初始化完成");
+        }
+
+        private void OnSceneChanged(SceneType previousScene, SceneType newScene)
+        {
+            if (_mainPanel == null) return;
+            _mainPanel.Visible = (newScene == SceneType.GameWorld);
         }
 
         public override void OnUpdate()
@@ -94,6 +115,11 @@ namespace HundunWorld.Game.UI.GameMain
 
         public override void OnDestroy()
         {
+            var stateManager = UIStateManager.Instance;
+            if (stateManager != null)
+            {
+                stateManager.SceneChanged -= OnSceneChanged;
+            }
             CleanupAttributeBars();
         }
 

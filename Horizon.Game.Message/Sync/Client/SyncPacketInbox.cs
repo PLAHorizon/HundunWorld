@@ -25,6 +25,12 @@ public sealed class SyncPacketInbox
     /// <summary>最新的 input ACK（覆盖式，只保留最新一条；reconciliation 只关心 high-water）。</summary>
     public InputAckPacket? LatestAck { get; private set; }
 
+    /// <summary>待消费的交互槽状态事件（阶段 1；按到达顺序，应用层按 SlotIdx/ServerTick 排序）。</summary>
+    public ConcurrentQueue<InteractionSyncPacket> InteractionEvents { get; } = new();
+
+    /// <summary>待消费的场景对象状态事件（阶段 C；按到达顺序，应用层按 ObjectId/ServerTick 排序）。</summary>
+    public ConcurrentQueue<SceneObjectSyncPacket> SceneObjectEvents { get; } = new();
+
     /// <summary>截至本次应用结束的全局 diff seq，用于后续 <see cref="ReconnectResumePacket.LastAppliedDiffSeq"/>。</summary>
     public long AppliedDiffSeq { get; set; }
 
@@ -46,6 +52,8 @@ public sealed class SyncPacketInbox
     {
         PendingChunkDiffCount = ChunkDiffs.Count,
         PendingManifestCount = PatchManifests.Count,
+        PendingInteractionEventCount = InteractionEvents.Count,
+        PendingSceneObjectEventCount = SceneObjectEvents.Count,
         LatestAckTick = LatestAck?.LastProcessedClientTick ?? 0,
         AppliedDiffSeq = AppliedDiffSeq,
         DroppedOutOfOrderCount = DroppedOutOfOrderCount,
@@ -57,6 +65,13 @@ public readonly struct SyncInboxSnapshot
 {
     public int PendingChunkDiffCount { get; init; }
     public int PendingManifestCount { get; init; }
+
+    /// <summary>待消费的交互槽状态事件数量（<see cref="SyncPacketInbox.InteractionEvents"/> 队列深度）。</summary>
+    public int PendingInteractionEventCount { get; init; }
+
+    /// <summary>待消费的场景对象状态事件数量（<see cref="SyncPacketInbox.SceneObjectEvents"/> 队列深度）。</summary>
+    public int PendingSceneObjectEventCount { get; init; }
+
     public long LatestAckTick { get; init; }
     public long AppliedDiffSeq { get; init; }
     public long DroppedOutOfOrderCount { get; init; }

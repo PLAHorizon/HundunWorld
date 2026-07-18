@@ -1,0 +1,210 @@
+{
+  "name": "燕云十六声-核心菜单-任务与探索",
+  "version": 1,
+  "createdAt": 1783729000,
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "projectName": "燕云十六声-核心菜单-任务与探索"
+  },
+  "data": [
+    {
+      "id": "page-menu-quests",
+      "type": "page",
+      "name": "菜单-任务",
+      "title": "菜单-任务",
+      "version": 1,
+      "createdAt": 1783729000,
+      "devMetadata": {
+        "htmlSrc": "pages/menu-quests.html",
+        "device": "desktop",
+        "order": 1,
+        "pageType": "information-dense",
+        "dataDomId": "page-menu-quests",
+        "description": "任务分类标签（主线/支线/世界）+ 任务列表 + 详情面板，水墨卷轴风格"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-menu-bestiary",
+      "type": "page",
+      "name": "菜单-博物志",
+      "title": "菜单-博物志",
+      "version": 1,
+      "createdAt": 1783729000,
+      "devMetadata": {
+        "htmlSrc": "pages/menu-bestiary.html",
+        "device": "desktop",
+        "order": 2,
+        "pageType": "information-dense",
+        "dataDomId": "page-menu-bestiary",
+        "description": "收集品分类 + 网格卡片 + 详情侧弹窗预览，水墨插图占位"
+      },
+      "canvasData": {
+        "x": 400,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-menu-martial-record",
+      "type": "page",
+      "name": "菜单-武林录",
+      "title": "菜单-武林录",
+      "version": 1,
+      "createdAt": 1783729000,
+      "devMetadata": {
+        "htmlSrc": "pages/menu-martial-record.html",
+        "device": "desktop",
+        "order": 3,
+        "pageType": "information-dense",
+        "dataDomId": "page-menu-martial-record",
+        "description": "探索度地图 + 成就进度 + 区域列表，水墨地图风格"
+      },
+      "canvasData": {
+        "x": 800,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-menu-livelihood",
+      "type": "page",
+      "name": "菜单-营生",
+      "title": "菜单-营生",
+      "version": 1,
+      "createdAt": 1783729000,
+      "devMetadata": {
+        "htmlSrc": "pages/menu-livelihood.html",
+        "device": "desktop",
+        "order": 4,
+        "pageType": "information-dense",
+        "dataDomId": "page-menu-livelihood",
+        "description": "营生技能列表 + 等级进度 + 配方/产出，水墨图标"
+      },
+      "canvasData": {
+        "x": 1200,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-menu-team",
+      "type": "page",
+      "name": "菜单-组队",
+      "title": "菜单-组队",
+      "version": 1,
+      "createdAt": 1783729000,
+      "devMetadata": {
+        "htmlSrc": "pages/menu-team.html",
+        "device": "desktop",
+        "order": 5,
+        "pageType": "information-dense",
+        "dataDomId": "page-menu-team",
+        "description": "队伍成员列表 + 邀请/搜索 + 队伍设置"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 400,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-menu-mail",
+      "type": "page",
+      "name": "菜单-邮箱",
+      "title": "菜单-邮箱",
+      "version": 1,
+      "createdAt": 1783729000,
+      "devMetadata": {
+        "htmlSrc": "pages/menu-mail.html",
+        "device": "desktop",
+        "order": 6,
+        "pageType": "information-dense",
+        "dataDomId": "page-menu-mail",
+        "description": "邮件列表 + 邮件内容 + 附件领取，信笺纸质感"
+      },
+      "canvasData": {
+        "x": 400,
+        "y": 400,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-menu-shop",
+      "type": "page",
+      "name": "菜单-商店",
+      "title": "菜单-商店",
+      "version": 1,
+      "createdAt": 1783729000,
+      "devMetadata": {
+        "htmlSrc": "pages/menu-shop.html",
+        "device": "desktop",
+        "order": 7,
+        "pageType": "information-dense",
+        "dataDomId": "page-menu-shop",
+        "description": "商品分类 + 商品网格 + 购买确认，金色品质标签"
+      },
+      "canvasData": {
+        "x": 800,
+        "y": 400,
+        "group": 0
+      }
+    },
+    {
+      "id": "image-001",
+      "type": "image",
+      "name": "博物志插图",
+      "title": "博物志插图",
+      "version": 1,
+      "createdAt": 1783729000,
+      "devMetadata": {
+        "imageSrc": "assets/bg-bestiary-illust.jpg",
+        "device": "desktop",
+        "order": 100
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 800
+      }
+    },
+    {
+      "id": "image-002",
+      "type": "image",
+      "name": "水墨地图",
+      "title": "水墨地图",
+      "version": 1,
+      "createdAt": 1783729000,
+      "devMetadata": {
+        "imageSrc": "assets/bg-map-ink.jpg",
+        "device": "desktop",
+        "order": 101
+      },
+      "canvasData": {
+        "x": 300,
+        "y": 800
+      }
+    },
+    {
+      "id": "image-003",
+      "type": "image",
+      "name": "信笺纸纹理",
+      "title": "信笺纸纹理",
+      "version": 1,
+      "createdAt": 1783729000,
+      "devMetadata": {
+        "imageSrc": "assets/bg-letter-paper.jpg",
+        "device": "desktop",
+        "order": 102
+      },
+      "canvasData": {
+        "x": 600,
+        "y": 800
+      }
+    }
+  ]
+}

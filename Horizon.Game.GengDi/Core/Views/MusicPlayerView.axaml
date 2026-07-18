@@ -77,9 +77,9 @@
                         MaxWidth="500">
                     <StackPanel Spacing="6" HorizontalAlignment="Center">
                         <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-                            <ui:SymbolIcon Symbol="Cancel" FontSize="16" Foreground="#FF4444" />
+                            <ui:SymbolIcon Symbol="Cancel" FontSize="16" Foreground="{DynamicResource LoginErrorBrush}" />
                             <TextBlock Text="{Binding StatusMessage}" FontSize="13"
-                                       Foreground="#FF4444"
+                                       Foreground="{DynamicResource LoginErrorBrush}"
                                        VerticalAlignment="Center"
                                        TextWrapping="Wrap" MaxWidth="400" />
                         </StackPanel>

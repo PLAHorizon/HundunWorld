@@ -3,6 +3,8 @@ using FlaxEngine.GUI;
 using System;
 using HundunWorld.Game.Combat;
 using HundunWorld.Game.Combat.Effects;
+using HundunWorld.Game;
+using HundunWorld.Game.Character;
 
 namespace HundunWorld.Game.UI.GameMain
 {
@@ -236,8 +238,9 @@ namespace HundunWorld.Game.UI.GameMain
                     _targetNameLabel.Text = newTarget.Name;
                 }
 
-                // TODO: 获取目标实体ID（需要从Actor获取）
-                _currentTargetEntityId = 0; // 临时值
+                // 从 Actor 获取实体 ID：查找 RemotePlayerActor 脚本
+                var remoteActor = newTarget.GetScript<RemotePlayerActor>();
+                _currentTargetEntityId = remoteActor?.EntityId ?? 0;
 
                 // 添加战斗日志
                 if (_combatLog != null)
@@ -346,13 +349,11 @@ namespace HundunWorld.Game.UI.GameMain
 
             try
             {
-                // TODO: 从属性管理器获取目标血量
-                // var currentHP = AttributeManager.Instance.GetCurrentHealth(_currentTargetEntityId);
-                // var maxHP = AttributeManager.Instance.GetMaxHealth(_currentTargetEntityId);
-                // _targetHPLabel.Text = $"HP: {currentHP:F0}/{maxHP:F0}";
-
-                // 临时显示
-                _targetHPLabel.Text = "HP: ???/???";
+                // 从 CharacterAttributeManager 获取目标血量
+                var attrMgr = CharacterAttributeManager.Instance;
+                var currentHP = attrMgr.GetCurrentHealth(_currentTargetEntityId);
+                var maxHP = attrMgr.GetMaxHealth(_currentTargetEntityId);
+                _targetHPLabel.Text = $"HP: {currentHP:F0}/{maxHP:F0}";
             }
             catch (Exception ex)
             {

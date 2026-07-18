@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using HundunWorld.Game.UI;
 using HundunWorld.Game.UI.Components;
 
 namespace HundunWorld.Game.UI.GameMain
@@ -133,6 +134,9 @@ namespace HundunWorld.Game.UI.GameMain
 
             // 填充示例成员数据
             PopulateSampleMembers();
+
+            // 为面板中的所有文本控件应用中文字体（打包构建中默认字体可能不支持中文）
+            UIHelper.ApplyChineseFontRecursive(panel);
         }
 
         /// <summary>

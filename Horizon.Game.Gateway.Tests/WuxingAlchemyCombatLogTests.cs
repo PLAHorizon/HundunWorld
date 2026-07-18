@@ -248,7 +248,7 @@ namespace Horizon.Game.Gateway.Tests
         [Fact]
         public void IsGlobalCooldownReady_ActiveGCD_ReturnsFalse()
         {
-            var lastAction = DateTime.UtcNow.AddMilliseconds(-200);
+            var lastAction = DateTime.Now.AddMilliseconds(-200);
             var result = CombatCalculator.IsGlobalCooldownReady(lastAction, 1000); // 1 sec GCD, only 0.2 sec ago
             Assert.False(result);
         }
@@ -256,7 +256,7 @@ namespace Horizon.Game.Gateway.Tests
         [Fact]
         public void IsGlobalCooldownReady_DefaultGCD_Is1000ms()
         {
-            var lastAction = DateTime.UtcNow.AddMilliseconds(-500);
+            var lastAction = DateTime.Now.AddMilliseconds(-500);
             var result = CombatCalculator.IsGlobalCooldownReady(lastAction); // default 1000ms
             Assert.False(result);
         }

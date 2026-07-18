@@ -2,6 +2,7 @@ using FlaxEngine;
 using System;
 using System.Collections.Generic;
 using HundunWorld.Game.UI.GameMain;
+using HundunWorld.Game;
 
 namespace HundunWorld.Game.Combat
 {
@@ -93,8 +94,13 @@ namespace HundunWorld.Game.Combat
                 return false;
             }
 
-            // TODO: 从Actor获取实体ID（需要实现Actor到EntityId的映射）
-            ulong targetEntityId = 0; // 临时值
+            // 从 Actor 获取实体 ID：优先查找 RemotePlayerActor 脚本
+            ulong targetEntityId = 0;
+            var remoteActor = target.GetScript<RemotePlayerActor>();
+            if (remoteActor != null)
+            {
+                targetEntityId = remoteActor.EntityId;
+            }
 
             // 创建攻击动作
             var attack = new AttackAction
@@ -245,9 +251,9 @@ namespace HundunWorld.Game.Combat
         /// </summary>
         private bool IsAOESkill(SkillInfo skill)
         {
-            // TODO: 根据技能类型判断
-            // 临时实现：BaseDamage > 0 表示AOE
-            return skill.BaseDamage > 2f;
+            // 根据技能范围判断：范围 > 0 表示 AOE 技能
+            // 单体目标技能通常 Range <= 0（需要选中目标），AOE 技能 Range > 0（范围释放）
+            return skill.Range > 0f;
         }
 
         /// <summary>
@@ -255,9 +261,11 @@ namespace HundunWorld.Game.Combat
         /// </summary>
         private AOEIndicatorSystem.IndicatorShape GetIndicatorShape(SkillInfo skill)
         {
-            // TODO: 根据技能类型返回不同形状
-            // 临时实现：都返回圆形
-            return AOEIndicatorSystem.IndicatorShape.Circle;
+            // 根据技能基础伤害范围选择形状
+            // 大范围（BaseDamage > 5）使用圆形，小范围使用扇形
+            if (skill.BaseDamage > 5f)
+                return AOEIndicatorSystem.IndicatorShape.Circle;
+            return AOEIndicatorSystem.IndicatorShape.Sector;
         }
 
         /// <summary>
@@ -265,9 +273,25 @@ namespace HundunWorld.Game.Combat
         /// </summary>
         private List<ulong> FindEnemiesInRadius(Vector3 center, float radius)
         {
-            // TODO: 实现真实的范围查找
-            // 临时返回空列表
-            return new List<ulong>();
+            var result = new List<ulong>();
+            float radiusSquared = radius * radius;
+
+            // 遍历场景中所有 RemotePlayerActor，筛选范围内的实体
+            var remoteActors = Level.GetScripts<RemotePlayerActor>();
+            foreach (var ra in remoteActors)
+            {
+                if (ra == null || ra.Actor == null) continue;
+                if (ra.EntityId == _playerEntityId) continue; // 排除自己
+
+                var pos = ra.Actor.Position;
+                float distSquared = (pos - center).LengthSquared;
+                if (distSquared <= radiusSquared)
+                {
+                    result.Add(ra.EntityId);
+                }
+            }
+
+            return result;
         }
 
         /// <summary>

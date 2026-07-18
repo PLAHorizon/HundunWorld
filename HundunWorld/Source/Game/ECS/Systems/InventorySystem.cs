@@ -2,8 +2,10 @@ using Arch.Core;
 using Arch.Core.Utils;
 using FlaxEngine;
 using HundunWorld.Game.ECS.Components;
+using HundunWorld.Game.Equipment;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace HundunWorld.Game.ECS.Systems
 {
@@ -250,6 +252,219 @@ namespace HundunWorld.Game.ECS.Systems
             });
 
             return success;
+        }
+
+        /// <summary>
+        /// 判断装备类型是否为背包。
+        /// 使用 ToString() 字符串比较，避免依赖 <see cref="EquipmentType.Bag"/> 枚举值是否已定义
+        /// （Task 2 可能并行添加 EquipmentType.Bag）。
+        /// </summary>
+        private static bool IsBagType(EquipmentType type)
+        {
+            return type.ToString() == "Bag";
+        }
+
+        /// <summary>
+        /// 从 EquipmentData 中获取背包提供的扩展格子数。
+        /// 优先从 BaseStats["ExtraSlots"] 读取，否则默认 12 格。
+        /// </summary>
+        private static int GetBagExtraSlots(EquipmentData data)
+        {
+            if (data == null) return 0;
+            if (data.BaseStats != null && data.BaseStats.TryGetValue("ExtraSlots", out float val) && val > 0)
+                return (int)val;
+            return 12;
+        }
+
+        /// <summary>
+        /// 装备扩展背包到指定背包槽
+        /// </summary>
+        /// <param name="world">ECS世界</param>
+        /// <param name="playerId">玩家ID</param>
+        /// <param name="bagTemplateId">背包装备模板ID</param>
+        /// <param name="bagSlotIndex">背包槽索引（0-3）</param>
+        /// <returns>是否成功装备</returns>
+        public bool EquipBag(World world, ulong playerId, int bagTemplateId, int bagSlotIndex)
+        {
+            // 校验背包槽索引范围
+            if (bagSlotIndex < 0 || bagSlotIndex >= InventoryComponent.MaxBagSlots)
+            {
+                Debug.LogWarning($"[InventorySystem] 背包槽索引无效: {bagSlotIndex}，有效范围 0-{InventoryComponent.MaxBagSlots - 1}");
+                return false;
+            }
+
+            // 校验物品存在且为背包类型
+            var equipmentData = EquipmentDatabase.GetEquipment(bagTemplateId);
+            if (equipmentData == null)
+            {
+                Debug.LogWarning($"[InventorySystem] 找不到装备模板: {bagTemplateId}");
+                return false;
+            }
+            if (!IsBagType(equipmentData.Type))
+            {
+                Debug.LogWarning($"[InventorySystem] 装备 {equipmentData.Name}({bagTemplateId}) 不是背包类型");
+                return false;
+            }
+
+            int extraSlots = GetBagExtraSlots(equipmentData);
+
+            bool success = false;
+            world.Query(in _inventoryQuery, (Entity entity, ref InventoryComponent inventory, ref PlayerComponent player) =>
+            {
+                if (player.PlayerId != playerId) return;
+
+                if (inventory.BagSlots == null)
+                    inventory.BagSlots = new List<EquippedBag>();
+
+                // 校验目标背包槽是否已被占用
+                if (inventory.BagSlots.Any(b => b.BagSlotIndex == bagSlotIndex))
+                {
+                    Debug.LogWarning($"[InventorySystem] 背包槽 {bagSlotIndex} 已被占用");
+                    return;
+                }
+
+                // 校验装备后总容量不超过最大值
+                int newTotal = inventory.TotalCapacity + extraSlots;
+                if (newTotal > InventoryComponent.MaxTotalCapacity)
+                {
+                    Debug.LogWarning($"[InventorySystem] 装备后总容量 {newTotal} 超过上限 {InventoryComponent.MaxTotalCapacity}");
+                    return;
+                }
+
+                // 从背包 Items 中移除该背包装备（按模板ID移除1个）
+                if (!inventory.TryRemoveItem(bagTemplateId, 1))
+                {
+                    Debug.LogWarning($"[InventorySystem] 背包中没有该背包装备: {bagTemplateId}");
+                    return;
+                }
+
+                // 添加到 BagSlots
+                inventory.BagSlots.Add(new EquippedBag(bagSlotIndex, bagTemplateId, extraSlots));
+                Debug.Log($"[InventorySystem] 装备背包成功: 槽 {bagSlotIndex}, 模板 {bagTemplateId}, 扩展 {extraSlots} 格");
+                success = true;
+            });
+
+            return success;
+        }
+
+        /// <summary>
+        /// 卸下指定背包槽的扩展背包
+        /// </summary>
+        /// <param name="world">ECS世界</param>
+        /// <param name="playerId">玩家ID</param>
+        /// <param name="bagSlotIndex">背包槽索引（0-3）</param>
+        /// <returns>是否成功卸下</returns>
+        public bool UnequipBag(World world, ulong playerId, int bagSlotIndex)
+        {
+            if (bagSlotIndex < 0 || bagSlotIndex >= InventoryComponent.MaxBagSlots)
+            {
+                Debug.LogWarning($"[InventorySystem] 背包槽索引无效: {bagSlotIndex}");
+                return false;
+            }
+
+            bool success = false;
+            world.Query(in _inventoryQuery, (Entity entity, ref InventoryComponent inventory, ref PlayerComponent player) =>
+            {
+                if (player.PlayerId != playerId) return;
+
+                if (inventory.BagSlots == null || inventory.BagSlots.Count == 0)
+                {
+                    Debug.LogWarning($"[InventorySystem] 未装备任何扩展背包");
+                    return;
+                }
+
+                // 查找该槽位的背包
+                int bagIndex = -1;
+                for (int i = 0; i < inventory.BagSlots.Count; i++)
+                {
+                    if (inventory.BagSlots[i].BagSlotIndex == bagSlotIndex)
+                    {
+                        bagIndex = i;
+                        break;
+                    }
+                }
+                if (bagIndex < 0)
+                {
+                    Debug.LogWarning($"[InventorySystem] 背包槽 {bagSlotIndex} 未装备背包");
+                    return;
+                }
+
+                var bag = inventory.BagSlots[bagIndex];
+
+                // 计算该背包对应的扩展槽位范围（按 BagSlots 列表顺序累计分配）
+                // 起始 = BaseCapacity + 之前所有 bag 的 ExtraSlots 之和
+                // 结束 = 起始 + 当前 bag.ExtraSlots
+                int startSlot = InventoryComponent.BaseCapacity;
+                for (int i = 0; i < bagIndex; i++)
+                {
+                    startSlot += inventory.BagSlots[i].ExtraSlots;
+                }
+                int endSlot = startSlot + bag.ExtraSlots;
+
+                // 检查该范围内是否有物品
+                if (inventory.Items != null)
+                {
+                    for (int s = startSlot; s < endSlot; s++)
+                    {
+                        if (inventory.Items.ContainsKey(s))
+                        {
+                            Debug.LogWarning($"[InventorySystem] 背包槽 {bagSlotIndex} 的扩展格子中有物品，无法卸下");
+                            return;
+                        }
+                    }
+                }
+
+                // 卸下该背包后总容量会减少 bag.ExtraSlots
+                // 放回的背包装备本身占用一个基础格子（属于 BaseCapacity 范围）
+                // 因此需要确保 CurrentCount + 1 不超过新的总容量
+                int newTotalCapacity = inventory.TotalCapacity - bag.ExtraSlots;
+                if (inventory.CurrentCount + 1 > newTotalCapacity)
+                {
+                    Debug.LogWarning($"[InventorySystem] 卸下背包后空间不足，无法放回背包装备");
+                    return;
+                }
+
+                // 从 BagSlots 移除
+                inventory.BagSlots.RemoveAt(bagIndex);
+
+                // 将背包装备放回 Items
+                var equipmentData = EquipmentDatabase.GetEquipment(bag.TemplateId);
+                string bagName = equipmentData != null ? equipmentData.Name : $"Bag_{bag.TemplateId}";
+                int itemType = equipmentData != null ? (int)equipmentData.Type : 0;
+                int quality = equipmentData != null ? equipmentData.Quality : 0;
+                var returnItem = new InventoryItem(
+                    itemId: 0,
+                    templateId: bag.TemplateId,
+                    itemName: bagName,
+                    itemType: itemType,
+                    count: 1,
+                    quality: quality,
+                    isBound: false,
+                    slotIndex: -1);
+                inventory.TryAddItem(returnItem);
+
+                Debug.Log($"[InventorySystem] 卸下背包成功: 槽 {bagSlotIndex}, 模板 {bag.TemplateId}");
+                success = true;
+            });
+
+            return success;
+        }
+
+        /// <summary>
+        /// 获取指定玩家背包的总容量（基础容量 + 已装备背包扩展格子）
+        /// </summary>
+        /// <param name="world">ECS世界</param>
+        /// <param name="playerId">玩家ID</param>
+        /// <returns>总容量；若未找到玩家返回 0</returns>
+        public int GetTotalCapacity(World world, ulong playerId)
+        {
+            int totalCapacity = 0;
+            world.Query(in _inventoryQuery, (Entity entity, ref InventoryComponent inventory, ref PlayerComponent player) =>
+            {
+                if (player.PlayerId != playerId) return;
+                totalCapacity = inventory.TotalCapacity;
+            });
+            return totalCapacity;
         }
     }
 }

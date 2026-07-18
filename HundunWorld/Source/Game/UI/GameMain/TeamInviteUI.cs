@@ -135,6 +135,9 @@ namespace HundunWorld.Game.UI.GameMain
 
             // 填充示例邀请数据
             PopulateSampleInvites();
+
+            // 为整个面板递归应用中文字体，防止动态创建的 Label/Button/TextBox 使用默认字体导致中文乱码
+            UIHelper.ApplyChineseFontRecursive(panel);
         }
 
         /// <summary>

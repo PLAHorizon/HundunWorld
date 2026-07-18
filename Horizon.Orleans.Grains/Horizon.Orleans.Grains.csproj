@@ -18,6 +18,10 @@
 	  <PackageReference Include="Microsoft.Orleans.Core.Abstractions" Version="10.0.1" />
 	  <PackageReference Include="Microsoft.Orleans.Persistence.Redis" Version="10.0.1" />
 	  <PackageReference Include="Microsoft.Orleans.Sdk" Version="10.0.1" />
+	  <PackageReference Include="Microsoft.Orleans.CodeGenerator" Version="10.0.1">
+	    <PrivateAssets>all</PrivateAssets>
+	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	  </PackageReference>
 	  <PackageReference Include="Microsoft.Orleans.Streaming" Version="10.0.1" />
 	  <PackageReference Include="Microsoft.Orleans.Streaming.EventHubs" Version="10.0.1" />
     <PackageReference Include="MongoDB.Driver" Version="3.6.0" />
@@ -43,6 +47,10 @@
     <ProjectReference Include="..\Horizon.Strategy.Storage.Redis\Horizon.Strategy.Storage.Redis.csproj" />
     <ProjectReference Include="..\Horizon.AI.Kernel\Horizon.AI.Kernel.csproj" />
     <ProjectReference Include="..\Horizon.IoT.MQTT\Horizon.IoT.MQTT.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Horizon.Game.Gateway.Tests" />
   </ItemGroup>
 
 </Project>

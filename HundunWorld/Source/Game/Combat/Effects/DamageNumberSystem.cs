@@ -38,8 +38,8 @@ namespace Game.Combat.Effects
         /// </summary>
         private void Initialize()
         {
-            // 加载字体
-            _font = Content.Load<FontAsset>("/Game/Fonts/DefaultFont");
+            // 加载字体（使用项目内确认存在的思源宋体）
+            _font = Content.Load<FontAsset>("Content/Fonts/Source_Han_Serif_SC_Light_Light.flax");
             
             // 获取或创建Canvas用于显示伤害数字
             _canvas = Actor.Parent?.GetScript<UICanvas>();

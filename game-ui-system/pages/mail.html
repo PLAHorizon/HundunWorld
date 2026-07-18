@@ -1,0 +1,1876 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飞鸽传书</title>
+    <style id="theme-vars">
+/**
+ * TraeWork design library tokens
+ * Light-mode canonical tokens in parser-friendly standard structure.
+ *
+ * Source of truth:
+ * - /Users/bytedance/Desktop/样板间/TraeWork skill.md
+ *
+ * Notes:
+ * - Token values are preserved from the current TraeWork Light system.
+ * - Added numeric tokens use direct values, e.g. --radius-12: 12px.
+ * - Component HTML should reference these canonical token names.
+ */
+
+/* @light-only */
+/* @group-priority: radius, spacers, font, body, heading, code, bg, bg-brand, text, icon, border, accent, status, brand */
+
+:root {
+  /* radius */
+  --radius-0: 0px;
+  --radius-2: 2px;
+  --radius-4: 4px;
+  --radius-6: 6px;
+  --radius-8: 8px;
+  --radius-10: 10px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --radius-20: 20px;
+  --radius-24: 24px;
+  --radius-32: 32px;
+  --radius-full: 999px;
+  --radius-xs: var(--radius-2);
+  --radius-sm: var(--radius-4);
+  --radius-md: var(--radius-6);
+  --radius-lg: var(--radius-8);
+  --radius-xl: var(--radius-10);
+  --border-width-default: 1px;
+
+  /* spacers */
+  --spacer-0: 0px;
+  --spacer-2: 2px;
+  --spacer-3: 3px;
+  --spacer-4: 4px;
+  --spacer-6: 6px;
+  --spacer-8: 8px;
+  --spacer-10: 10px;
+  --spacer-12: 12px;
+  --spacer-16: 16px;
+  --spacer-20: 20px;
+  --spacer-24: 24px;
+  --spacer-32: 32px;
+  --spacer-40: 40px;
+  --spacer-48: 48px;
+  --spacer-64: 64px;
+
+  /* icon sizes */
+  --icon-size-12: 12px;
+  --icon-size-14: 14px;
+  --icon-size-16: 16px;
+  --icon-size-20: 20px;
+  --icon-size-24: 24px;
+
+  /* font */
+  --font-family-default: "SF Pro Text", "PingFang SC", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-family-heading: "SF Pro", "PingFang SC", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-family-metric: "Inter", "SF Pro Text", "PingFang SC", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-family-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-weight-default: 400;
+  --font-weight-code: 450;
+  --font-weight-medium: 500;
+  --font-weight-strong: 600;
+  --font-family-base: var(--font-family-default);
+  --font-family-heading-alias: var(--font-family-heading);
+  --font-family-mono-alias: var(--font-family-mono);
+
+  /* body */
+  --body-xs-font-family: var(--font-family-default);
+  --body-xs-font-size: 10px;
+  --body-xs-font-weight: 400;
+  --body-xs-line-height: 14px;
+  --body-xs-letter-spacing: 0;
+  --body-xs-strong-font-family: var(--font-family-default);
+  --body-xs-strong-font-size: 10px;
+  --body-xs-strong-font-weight: 500;
+  --body-xs-strong-line-height: 14px;
+  --body-xs-strong-letter-spacing: 0;
+  --body-sm-font-family: var(--font-family-default);
+  --body-sm-font-size: 11px;
+  --body-sm-font-weight: 400;
+  --body-sm-line-height: 16px;
+  --body-sm-letter-spacing: 0;
+  --body-sm-strong-font-family: var(--font-family-default);
+  --body-sm-strong-font-size: 11px;
+  --body-sm-strong-font-weight: 500;
+  --body-sm-strong-line-height: 16px;
+  --body-sm-strong-letter-spacing: 0;
+  --body-md-font-family: var(--font-family-default);
+  --body-md-font-size: 12px;
+  --body-md-font-weight: 400;
+  --body-md-line-height: 18px;
+  --body-md-letter-spacing: 0;
+  --body-md-strong-font-family: var(--font-family-default);
+  --body-md-strong-font-size: 12px;
+  --body-md-strong-font-weight: 500;
+  --body-md-strong-line-height: 18px;
+  --body-md-strong-letter-spacing: 0;
+  --body-base-font-family: var(--font-family-default);
+  --body-base-font-size: 14px;
+  --body-base-font-weight: 400;
+  --body-base-line-height: 20px;
+  --body-base-letter-spacing: -0.02em;
+  --body-base-strong-font-family: var(--font-family-default);
+  --body-base-strong-font-size: 14px;
+  --body-base-strong-font-weight: 500;
+  --body-base-strong-line-height: 20px;
+  --body-base-strong-letter-spacing: -0.02em;
+  --body-lg-font-family: var(--font-family-default);
+  --body-lg-font-size: 18px;
+  --body-lg-font-weight: 400;
+  --body-lg-line-height: 28px;
+  --body-lg-letter-spacing: -0.02em;
+
+  /* heading */
+  --heading-3xs-font-family: var(--font-family-default);
+  --heading-3xs-font-size: 11px;
+  --heading-3xs-font-weight: 600;
+  --heading-3xs-line-height: 16px;
+  --heading-3xs-letter-spacing: 0;
+  --heading-2xs-font-family: var(--font-family-default);
+  --heading-2xs-font-size: 12px;
+  --heading-2xs-font-weight: 600;
+  --heading-2xs-line-height: 18px;
+  --heading-2xs-letter-spacing: 0;
+  --heading-xs-font-family: var(--font-family-default);
+  --heading-xs-font-size: 13px;
+  --heading-xs-font-weight: 600;
+  --heading-xs-line-height: 20px;
+  --heading-xs-letter-spacing: 0;
+  --heading-sm-font-family: var(--font-family-default);
+  --heading-sm-font-size: 16px;
+  --heading-sm-font-weight: 600;
+  --heading-sm-line-height: 24px;
+  --heading-sm-letter-spacing: 0;
+  --heading-md-font-family: var(--font-family-heading);
+  --heading-md-font-size: 20px;
+  --heading-md-font-weight: 600;
+  --heading-md-line-height: 28px;
+  --heading-md-letter-spacing: 0;
+  --heading-lg-font-family: var(--font-family-heading);
+  --heading-lg-font-size: 22px;
+  --heading-lg-font-weight: 600;
+  --heading-lg-line-height: 30px;
+  --heading-lg-letter-spacing: 0;
+  --heading-xl-font-family: var(--font-family-heading);
+  --heading-xl-font-size: 24px;
+  --heading-xl-font-weight: 600;
+  --heading-xl-line-height: 32px;
+  --heading-xl-letter-spacing: 0;
+  --heading-2xl-font-family: var(--font-family-heading);
+  --heading-2xl-font-size: 28px;
+  --heading-2xl-font-weight: 600;
+  --heading-2xl-line-height: 36px;
+  --heading-2xl-letter-spacing: 0;
+  --heading-3xl-font-family: var(--font-family-heading);
+  --heading-3xl-font-size: 32px;
+  --heading-3xl-font-weight: 600;
+  --heading-3xl-line-height: 40px;
+  --heading-3xl-letter-spacing: 0;
+  --heading-display-font-family: var(--font-family-heading);
+  --heading-display-font-size: 52px;
+  --heading-display-font-weight: 600;
+  --heading-display-line-height: 60px;
+  --heading-display-letter-spacing: -0.03em;
+  --heading-display-sm-font-family: var(--font-family-heading);
+  --heading-display-sm-font-size: 40px;
+  --heading-display-sm-font-weight: 600;
+  --heading-display-sm-line-height: 48px;
+  --heading-display-sm-letter-spacing: -0.02em;
+
+  /* code */
+  --code-editor-font-family: var(--font-family-mono);
+  --code-editor-font-size: 13px;
+  --code-editor-font-weight: 450;
+  --code-editor-line-height: 20px;
+  --code-terminal-font-family: var(--font-family-mono);
+  --code-terminal-font-size: 12px;
+  --code-terminal-font-weight: 450;
+  --code-terminal-line-height: 18px;
+  --code-text: #17181A;
+  --code-doc: #8393A3;
+  --code-link: #2F74FF;
+  --code-number: #E54595;
+  --code-action: #5F36B2;
+  --code-instruction: #B15EF2;
+  --code-function: #FF5D4D;
+  --code-constant: #175CE6;
+  --code-parameter: #4DA621;
+  --code-attribute: #C99100;
+  --code-tag: #E24864;
+
+  /* bg */
+  --bg-base-default: #FFFFFF;
+  --bg-base-secondary: #F5F5F5;
+  --bg-base-tertiary: #E5E5E5;
+  --bg-overlay-l1: rgba(115, 115, 115, 0.08);
+  --bg-overlay-l2: rgba(115, 115, 115, 0.12);
+  --bg-overlay-l3: rgba(115, 115, 115, 0.16);
+  --bg-overlay-l4: rgba(115, 115, 115, 0.20);
+  --bg-white: #FFFFFF;
+  --bg-menu: #FFFFFF;
+  --bg-tooltip: #FFFFFF;
+  --bg-invert: #262626;
+  --bg-invert-hover: #404040;
+  --bg-invert-active: #171717;
+  --bg-invert-disabled: rgba(115, 115, 115, 0.20);
+  --color-background: var(--bg-base-default);
+  --color-surface: var(--bg-base-secondary);
+  --color-surface-variant: var(--bg-base-tertiary);
+  --color-overlay-1: var(--bg-overlay-l1);
+  --color-overlay-2: var(--bg-overlay-l2);
+  --color-overlay-3: var(--bg-overlay-l3);
+  --color-overlay-4: var(--bg-overlay-l4);
+  --color-card: var(--bg-base-secondary);
+  --color-tooltip: var(--bg-tooltip);
+  --color-menu: var(--bg-menu);
+
+  /* bg-brand */
+  --bg-brand: #4B3FE3;
+  --bg-brand-hover: #6A6FFF;
+  --bg-brand-active: #3F31C6;
+  --bg-brand-disabled: rgba(75, 63, 227, 0.22);
+  --bg-brand-popup: rgba(170, 183, 255, 0.36);
+  --color-primary: var(--bg-brand);
+  --color-primary-hover: var(--bg-brand-hover);
+  --color-primary-disabled: var(--bg-brand-disabled);
+  --color-primary-soft: var(--bg-brand-popup);
+  --color-accent: var(--bg-brand);
+
+  /* text */
+  --text-default: #171717;
+  --text-default-hover: #262626;
+  --text-default-active: #262626;
+  --text-secondary: #404040;
+  --text-secondary-hover: #171717;
+  --text-secondary-active: #171717;
+  --text-tertiary: #737373;
+  --text-disabled: #A1A1A1;
+  --text-onbrand: #FFFFFF;
+  --text-onaccent: #FFFFFF;
+  --text-white: #FFFFFF;
+  --color-foreground: var(--text-default);
+  --color-foreground-hover: var(--text-default-hover);
+  --color-on-surface: var(--text-default);
+  --color-on-surface-variant: var(--text-secondary);
+  --color-muted-foreground: var(--text-secondary);
+  --color-disabled-foreground: var(--text-disabled);
+  --color-on-primary: var(--text-onbrand);
+  --text-brand: #4B3FE3;
+  --text-brand-hover: #6A6FFF;
+
+  /* icon */
+  --icon-default: #262626;
+  --icon-default-hover: #171717;
+  --icon-default-active: #171717;
+  --icon-secondary: #404040;
+  --icon-secondary-hover: #262626;
+  --icon-secondary-active: #262626;
+  --icon-tertiary: #737373;
+  --icon-disabled: #A1A1A1;
+  --icon-onbrand: #FFFFFF;
+  --icon-onaccent: #FFFFFF;
+  --icon-white: #FFFFFF;
+  --icon-brand: #4B3FE3;
+  --icon-brand-hover: #6A6FFF;
+
+  /* border */
+  --border-neutral-l1: rgba(115, 115, 115, 0.12);
+  --border-neutral-l2: rgba(115, 115, 115, 0.18);
+  --border-neutral-l3: rgba(115, 115, 115, 0.36);
+  --border-contrast: #000000;
+  --border-brand: #4B3FE3;
+  --color-border: var(--border-neutral-l1);
+  --color-border-strong: var(--border-neutral-l2);
+  --color-border-stronger: var(--border-neutral-l3);
+  --color-border-contrast: var(--border-contrast);
+  --color-outline: var(--border-neutral-l1);
+
+  /* accent */
+  --accent-teal: #00B983;
+  --accent-coral: #FF6B45;
+  --accent-amber: #F2A90C;
+  --accent-lime: #5FC000;
+  --accent-cyan: #00B6F5;
+  --accent-blue: #3F85FF;
+  --accent-magenta: #F53CFF;
+  --accent-violet: #9570FF;
+  --accent-slate: #747E94;
+
+  /* status */
+  --status-primary-default: #2F74FF;
+  --status-primary-hover: #4C88FF;
+  --status-primary-active: #1759DD;
+  --status-primary-surface-l1: rgba(47, 116, 255, 0.12);
+  --status-primary-surface-l2: rgba(47, 116, 255, 0.18);
+  --status-primary-surface-l3: rgba(47, 116, 255, 0.36);
+  --status-success-default: #15A877;
+  --status-success-hover: #2FB287;
+  --status-success-active: #1E8B56;
+  --status-success-surface-l1: rgba(64, 176, 139, 0.12);
+  --status-success-surface-l2: rgba(64, 176, 139, 0.18);
+  --status-success-surface-l3: rgba(64, 176, 139, 0.36);
+  --status-alert-default: #FEA900;
+  --status-alert-hover: #FFB700;
+  --status-alert-active: #E59100;
+  --status-alert-surface-l1: rgba(254, 169, 0, 0.14);
+  --status-alert-surface-l2: rgba(254, 169, 0, 0.20);
+  --status-alert-surface-l3: rgba(254, 169, 0, 0.36);
+  --status-warning-default: #E27900;
+  --status-warning-hover: #F39A35;
+  --status-warning-active: #C46F11;
+  --status-warning-surface-l1: rgba(226, 121, 0, 0.12);
+  --status-warning-surface-l2: rgba(226, 121, 0, 0.16);
+  --status-warning-surface-l3: rgba(226, 121, 0, 0.36);
+  --status-error-default: #E8463A;
+  --status-error-hover: #EA574C;
+  --status-error-active: #C9382F;
+  --status-error-surface-l1: rgba(232, 70, 58, 0.12);
+  --status-error-surface-l2: rgba(232, 70, 58, 0.16);
+  --status-error-surface-l3: rgba(232, 70, 58, 0.36);
+  --color-info: var(--status-primary-default);
+  --color-success: var(--status-success-default);
+  --color-warning: var(--status-warning-default);
+  --color-error: var(--status-error-default);
+  --color-error-soft: var(--status-error-surface-l1);
+
+  /* brand */
+  --brand-50: #F2F7FF;
+  --brand-100: #E5EAFF;
+  --brand-200: #CFD8FF;
+  --brand-300: #AAB7FF;
+  --brand-400: #8894FF;
+  --brand-500: #6A6FFF;
+  --brand-600: #4B3FE3;
+  --brand-700: #3F31C6;
+  --brand-800: #2C2290;
+  --brand-900: #1A1759;
+  --brand-950: #010109;
+  --brand-grey-50: #FAFAFA;
+  --brand-grey-100: #F5F5F5;
+  --brand-grey-200: #E5E5E5;
+  --brand-grey-300: #D4D4D4;
+  --brand-grey-400: #A1A1A1;
+  --brand-grey-500: #737373;
+  --brand-grey-600: #525252;
+  --brand-grey-700: #404040;
+  --brand-grey-800: #262626;
+  --brand-grey-900: #171717;
+  --brand-grey-950: #0A0A0A;
+  --brand-green-100: var(--brand-50);
+  --brand-green-200: var(--brand-100);
+  --brand-green-300: var(--brand-200);
+  --brand-green-400: var(--brand-300);
+  --brand-green-500: var(--brand-600);
+  --brand-green-600: var(--brand-500);
+  --brand-green-700: var(--brand-700);
+  --brand-green-800: var(--brand-800);
+  --brand-green-900: var(--brand-900);
+  --brand-green-1000: var(--brand-950);
+  --brand-red-100: #FFE5E5;
+  --brand-red-200: #FFCCCC;
+  --brand-red-300: #FFB2B2;
+  --brand-red-400: #FF9999;
+  --brand-red-500: #FF8080;
+  --brand-red-600: #FF6464;
+  --brand-red-700: #E63737;
+  --brand-red-800: #CB1010;
+  --brand-red-900: #8F0505;
+  --brand-red-1000: #4D0000;
+  --brand-yellow-100: #FFF6E5;
+  --brand-yellow-200: #FFECCC;
+  --brand-yellow-300: #FFE3B2;
+  --brand-yellow-400: #FFDA99;
+  --brand-yellow-500: #FFD080;
+  --brand-yellow-600: #FFC864;
+  --brand-yellow-700: #E6A637;
+  --brand-yellow-800: #CB8710;
+  --brand-yellow-900: #8F5C05;
+  --brand-yellow-1000: #4D3000;
+  --brand-blue-100: #E5F3FF;
+  --brand-blue-200: #CCE6FF;
+  --brand-blue-300: #B2DAFF;
+  --brand-blue-400: #99CEFF;
+  --brand-blue-500: #80C1FF;
+  --brand-blue-600: #64B4FF;
+  --brand-blue-700: #3792E6;
+  --brand-blue-800: #1071CB;
+  --brand-blue-900: #054C8F;
+  --brand-blue-1000: #00284D;
+  --brand-purple-100: #E8E5FF;
+  --brand-purple-200: #D2CCFF;
+  --brand-purple-300: #BBB2FF;
+  --brand-purple-400: #A599FF;
+  --brand-purple-500: #8E80FF;
+  --brand-purple-600: #7864FF;
+  --brand-purple-700: #4C37E6;
+  --brand-purple-800: #2610CB;
+  --brand-purple-900: #15058F;
+  --brand-purple-1000: #09004D;
+  --brand-neutral-grey-100: #F2F2F2;
+  --brand-neutral-grey-200: #E3E3E3;
+  --brand-neutral-grey-300: #D6D6D6;
+  --brand-neutral-grey-400: #C7C7C7;
+  --brand-neutral-grey-500: #BABABA;
+  --brand-neutral-grey-600: #ABABAB;
+  --brand-neutral-grey-700: #8A8A8A;
+  --brand-neutral-grey-800: #686868;
+  --brand-neutral-grey-900: #474747;
+  --brand-neutral-grey-1000: #262626;
+  --brand-blue-grey-100: #F1EFF4;
+  --brand-blue-grey-200: #E0E1E6;
+  --brand-blue-grey-300: #CFD3D8;
+  --brand-blue-grey-400: #BFC5CA;
+  --brand-blue-grey-500: #B0B5BA;
+  --brand-blue-grey-600: #A0A6AB;
+  --brand-blue-grey-700: #80898E;
+  --brand-blue-grey-800: #5E696E;
+  --brand-blue-grey-900: #404A4F;
+  --brand-blue-grey-1000: #21262B;
+  --brand-green-grey-100: #F1F4F4;
+  --brand-green-grey-200: #E0E6E6;
+  --brand-green-grey-300: #CFD8D8;
+  --brand-green-grey-400: #BFCACA;
+  --brand-green-grey-500: #B0BABA;
+  --brand-green-grey-600: #A0ABAB;
+  --brand-green-grey-700: #808E8E;
+  --brand-green-grey-800: #5E6E6E;
+  --brand-green-grey-900: #404F4F;
+  --brand-green-grey-1000: #212B2B;
+
+  /* generic fallback */
+  --font-family: var(--font-family-default);
+  --font-size: var(--body-xs-font-size);
+  --font-weight: var(--body-xs-font-weight);
+  --line-height: var(--body-xs-line-height);
+
+  /* viz */
+  --viz-series-brand: var(--bg-brand);
+  --viz-series-brand-soft: var(--brand-300);
+  --viz-series-brand-mid: var(--brand-500);
+  --viz-series-brand-deep: var(--brand-700);
+  --viz-series-neutral: var(--brand-grey-500);
+  --viz-series-coral: #F87454;
+  --viz-series-amber: #EDAA45;
+  --viz-series-mint: #1DC981;
+  --viz-series-teal: #59E8E8;
+  --viz-series-sky: #22A5F7;
+  --viz-series-violet: #B655FC;
+  --viz-series-magenta: #FB9DD7;
+  --viz-series-indigo: #B6A3FF;
+  --viz-series-lime: #A6EA39;
+  --viz-series-slate: #859EAD;
+  --viz-ui-bg-chart: var(--bg-menu);
+  --viz-ui-bg-tooltip: var(--bg-tooltip);
+  --viz-ui-chart-title: var(--text-default);
+  --viz-ui-chart-subtitle: var(--text-secondary);
+  --viz-ui-chart-axis: var(--border-neutral-l2);
+  --viz-ui-chart-tick: var(--text-secondary);
+  --viz-ui-legend-label: var(--text-secondary);
+  --viz-ui-legend-value: var(--text-default);
+
+  /* special */
+  --special-white: #FFFFFF;
+  --special-black: #000000;
+  --special-bgtabsoverlay: rgba(255, 255, 255, 0.12);
+  --special-bggoldoverlay: rgba(210, 181, 19, 0.12);
+
+  /* layout aliases */
+  --brand-1: var(--brand-600);
+  --brand-2: var(--brand-500);
+  --brand-3: var(--brand-300);
+  --brand-4: var(--brand-100);
+  --site-canvas: var(--bg-base-default);
+  --bg-layout-1: var(--bg-base-secondary);
+  --bg-layout-2: var(--bg-overlay-l1);
+  --border-1: var(--border-neutral-l1);
+}
+
+/*
+ * scaffold.css - Layout, reset, typography utilities, shared atoms
+ * Provides the page chrome consumed by preview/component-*.html and
+ * ui_kits/*.html. Component-specific styles live in components.css.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg-base-default);
+  color: var(--text-default);
+  font-family: var(--body-base-font-family);
+  font-size: var(--body-base-font-size);
+  line-height: var(--body-base-line-height);
+  font-weight: var(--body-base-font-weight);
+  letter-spacing: var(--body-base-letter-spacing);
+  min-height: 100%;
+}
+/* avoid x-overflow inside the parent iframe */
+html, body { overflow-x: hidden; max-width: 100%; }
+body { padding: var(--spacer-32); }
+img, svg, video, canvas { max-width: 100%; }
+a { color: var(--text-default); text-decoration: none; }
+a:hover { color: var(--text-default-hover); }
+hr { border: 0; border-top: 1px solid var(--border-neutral-l1); margin: var(--spacer-24) 0; }
+
+/* Section / heading helpers */
+.h1 { font-family: var(--heading-2xl-font-family); font-size: var(--heading-2xl-font-size); line-height: var(--heading-2xl-line-height); font-weight: var(--heading-2xl-font-weight); color: var(--text-default); }
+.h2 { font-family: var(--heading-md-font-family); font-size: var(--heading-md-font-size); line-height: var(--heading-md-line-height); font-weight: var(--heading-md-font-weight); color: var(--text-default); }
+.h3 { font-family: var(--heading-sm-font-family); font-size: var(--heading-sm-font-size); line-height: var(--heading-sm-line-height); font-weight: var(--heading-sm-font-weight); color: var(--text-default); }
+.eyebrow { font-size: var(--body-xs-font-size); line-height: var(--body-xs-line-height); color: var(--text-tertiary); text-transform: uppercase; letter-spacing: var(--body-xs-letter-spacing); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+
+/* ===== Hero / brand title =====
+ * Display title for marketing heroes ("The Real AI Engineer"-style). Each
+ * brand-led letter (T / R / A / E or "T"-"R"-"A"-"E") gets its own brand
+ * accent. Use the .ds-hero-title element with .brand1-.brand4 children.
+ * Numerics inside any hero MUST inherit the body sans (NOT mono) — heroes
+ * are typeset content, not data.
+ */
+.ds-hero-title {
+  font-family: var(--heading-3xl-font-family);
+  font-size: var(--heading-3xl-font-size);
+  line-height: var(--heading-3xl-line-height);
+  font-weight: var(--heading-3xl-font-weight);
+  letter-spacing: var(--heading-3xl-letter-spacing);
+  color: var(--text-default);
+}
+.ds-hero-title .brand1 { color: var(--bg-brand); }
+.ds-hero-title .brand2 { color: var(--text-default); }
+.ds-hero-title .brand3 { color: var(--bg-brand); }
+.ds-hero-title .brand4 { color: var(--text-default); }
+.ds-hero-title__sub {
+  display: block;
+  margin-top: var(--spacer-12);
+  font-size: var(--heading-2xl-font-size);
+  line-height: var(--heading-2xl-line-height);
+  color: var(--text-secondary);
+  letter-spacing: var(--heading-2xl-letter-spacing);
+}
+
+/* ===== Section title with mono index =====
+ * Pattern: [00] brand-mono index above a 2-line section heading.
+ * Reference: trae.ai value-section card titles.
+ */
+.ds-section-title__index {
+  display: block;
+  font-family: var(--code-editor-font-family);
+  font-size: var(--body-sm-font-size);
+  line-height: var(--body-sm-line-height);
+  letter-spacing: var(--body-sm-letter-spacing);
+  color: var(--bg-brand);
+  margin-bottom: var(--spacer-12);
+}
+.ds-section-title {
+  font-family: var(--heading-xl-font-family);
+  font-size: var(--heading-xl-font-size);
+  line-height: var(--heading-xl-line-height);
+  letter-spacing: var(--heading-xl-letter-spacing);
+  color: var(--text-default);
+  font-weight: var(--heading-xl-font-weight);
+  margin: 0;
+}
+
+/* ===== Layout helpers ===== */
+.row { display: flex; gap: var(--spacer-12); flex-wrap: wrap; align-items: center; }
+.col { display: flex; flex-direction: column; gap: var(--spacer-12); }
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--spacer-24); }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--spacer-24); }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--spacer-24); }
+.stack-8 { display: flex; flex-direction: column; gap: var(--spacer-8); }
+.stack-12 { display: flex; flex-direction: column; gap: var(--spacer-12); }
+.stack-16 { display: flex; flex-direction: column; gap: var(--spacer-16); }
+.stack-24 { display: flex; flex-direction: column; gap: var(--spacer-24); }
+.stack-40 { display: flex; flex-direction: column; gap: var(--spacer-40); }
+
+/* preview header (per page) */
+.pv-header { margin-bottom: var(--spacer-32); padding-bottom: var(--spacer-16); border-bottom: 1px solid var(--border-neutral-l1); }
+.pv-header h1 { font-size: var(--heading-lg-font-size); line-height: var(--heading-lg-line-height); font-weight: var(--heading-lg-font-weight); margin-bottom: var(--spacer-4); }
+.pv-header p { color: var(--text-secondary); font-size: var(--body-base-font-size); line-height: var(--body-base-line-height); }
+
+.pv-section { margin-bottom: var(--spacer-32); }
+.pv-section__title { font-size: var(--heading-sm-font-size); line-height: var(--heading-sm-line-height); font-weight: var(--heading-sm-font-weight); margin-bottom: var(--spacer-12); color: var(--text-default); }
+.pv-section__sub { font-size: var(--body-base-font-size); line-height: var(--body-base-line-height); color: var(--text-tertiary); margin-bottom: var(--spacer-12); }
+
+/* ===== Tooltip / Popover ===== */
+.ds-tooltip {
+  display: inline-flex; align-items: center; gap: var(--spacer-6);
+  padding: var(--spacer-6) var(--spacer-8);
+  background: var(--bg-tooltip);
+  color: var(--text-default);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-8);
+  font-size: var(--body-sm-font-size); line-height: var(--body-sm-line-height);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--text-default) 16%, transparent);
+}
+
+.ds-popover {
+  background: var(--bg-base-default);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--radius-12);
+  padding: var(--spacer-8);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--text-default) 16%, transparent);
+}
+
+/* ===== Empty state ===== */
+.ds-empty {
+  display: flex; flex-direction: column; align-items: center;
+  padding: var(--spacer-40) var(--spacer-24);
+  color: var(--text-tertiary); text-align: center;
+  border: 1px dashed var(--border-neutral-l1);
+  border-radius: var(--radius-12);
+}
+.ds-empty__icon {
+  width: 40px; height: 40px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-neutral-l1); margin-bottom: var(--spacer-12);
+  color: var(--icon-secondary);
+  border-radius: var(--radius-8);
+}
+.ds-empty__title { color: var(--text-default); font-size: var(--body-base-font-size); font-weight: var(--font-weight-medium, 500); margin-bottom: var(--spacer-4); }
+.ds-empty__desc { font-size: var(--body-sm-font-size); }
+
+/* ===== Code block ===== */
+.ds-code {
+  background: var(--bg-overlay-l1);
+  border: 1px solid var(--border-neutral-l1);
+  border-radius: var(--radius-8);
+  padding: var(--spacer-12) var(--spacer-16);
+  color: var(--text-default);
+  font-family: var(--code-editor-font-family);
+  font-size: var(--code-editor-font-size);
+  line-height: var(--code-editor-line-height);
+  white-space: pre;
+  overflow: auto;
+}
+
+/* ===== Kbd ===== */
+.ds-kbd {
+  display: inline-flex; align-items: center;
+  padding: 0 var(--spacer-6); height: 20px;
+  background: transparent;
+  border: 1px solid var(--border-neutral-l1);
+  border-radius: var(--radius-8);
+  box-shadow: none;
+  font-family: var(--body-md-font-family);
+  font-size: var(--body-md-font-size);
+  font-weight: var(--font-weight-default, 400);
+  font-variant-numeric: normal;
+  font-feature-settings: normal;
+  letter-spacing: var(--body-md-letter-spacing);
+  color: var(--text-secondary);
+}
+
+.icon,
+.icon-img {
+  display: inline-block;
+  color: currentColor;
+  flex: 0 0 auto;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
+/* ===== Mono / Numeric utilities =====
+ * Anything code-like or numeric (counts, currencies, percentages, IDs,
+ * tabular cells, kbd, code) MUST use the mono token + tabular figures.
+ */
+.mono,
+.num,
+code, kbd, samp, pre {
+  font-family: var(--code-editor-font-family);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+.metric-value,
+.kpi-value,
+.scorecard-value {
+  font-family: var(--font-family-metric);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+@media (max-width: 720px) {
+  body { padding: var(--spacer-16); }
+  .grid-2,
+  .grid-3,
+  .grid-4 { grid-template-columns: 1fr; }
+}
+
+
+/* ========================================
+   水墨古风 Dark Theme Override
+   Overrides TRAE Work Light tokens with
+   燕云十六声-style wuxia ink-wash aesthetic
+   ======================================== */
+
+:root {
+  /* === Font Overrides === */
+  --font-family-default: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-family-heading: "STKaiti", "KaiTi", "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+  --font-family-metric: "DIN Alternate", "DIN", "Roboto Mono", "Inter", monospace;
+  --font-family-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menos, Consolas, monospace;
+  --font-family-base: var(--font-family-default);
+  --font-family-heading-alias: var(--font-family-heading);
+  --font-family-mono-alias: var(--font-family-mono);
+
+  /* === Background Layer (Dark Ink) === */
+  --bg-base-default: #0E1016;
+  --bg-base-secondary: #14171E;
+  --bg-base-tertiary: #1C1F28;
+  --bg-overlay-l1: rgba(200, 168, 88, 0.04);
+  --bg-overlay-l2: rgba(200, 168, 88, 0.08);
+  --bg-overlay-l3: rgba(200, 168, 88, 0.12);
+  --bg-overlay-l4: rgba(200, 168, 88, 0.16);
+  --bg-white: #1C1F28;
+  --bg-menu: #14171E;
+  --bg-tooltip: #1C1F28;
+  --bg-invert: #F0EDE4;
+  --bg-invert-hover: #D8D4C8;
+  --bg-invert-active: #C8A858;
+  --bg-invert-disabled: rgba(240, 237, 228, 0.2);
+  --color-background: #0E1016;
+  --color-surface: #14171E;
+  --color-surface-variant: #1C1F28;
+  --color-overlay-1: rgba(200, 168, 88, 0.04);
+  --color-overlay-2: rgba(200, 168, 88, 0.08);
+  --color-overlay-3: rgba(200, 168, 88, 0.12);
+  --color-overlay-4: rgba(200, 168, 88, 0.16);
+  --color-card: #14171E;
+  --color-tooltip: #1C1F28;
+  --color-menu: #14171E;
+
+  /* === Brand Color (Gold) === */
+  --bg-brand: #C8A858;
+  --bg-brand-hover: #E0C880;
+  --bg-brand-active: #8A7438;
+  --bg-brand-disabled: rgba(200, 168, 88, 0.22);
+  --bg-brand-popup: rgba(200, 168, 88, 0.36);
+  --color-primary: #C8A858;
+  --color-primary-hover: #E0C880;
+  --color-primary-disabled: rgba(200, 168, 88, 0.22);
+  --color-primary-soft: rgba(200, 168, 88, 0.36);
+  --color-accent: #C8A858;
+  --brand-1: #C8A858;
+  --brand-2: #E0C880;
+  --brand-3: rgba(200, 168, 88, 0.36);
+  --brand-4: rgba(200, 168, 88, 0.08);
+  --site-canvas: #0E1016;
+  --bg-layout-1: #14171E;
+  --bg-layout-2: rgba(200, 168, 88, 0.04);
+  --border-1: rgba(200, 168, 88, 0.12);
+
+  /* === Text Colors === */
+  --text-default: #F0EDE4;
+  --text-default-hover: #FFFFFF;
+  --text-default-active: #FFFFFF;
+  --text-secondary: #B8B0A0;
+  --text-secondary-hover: #F0EDE4;
+  --text-secondary-active: #F0EDE4;
+  --text-tertiary: #8A8275;
+  --text-disabled: rgba(240, 237, 228, 0.3);
+  --text-onbrand: #0E1016;
+  --text-onaccent: #0E1016;
+  --text-white: #F0EDE4;
+  --color-foreground: #F0EDE4;
+  --color-foreground-hover: #FFFFFF;
+  --color-on-surface: #F0EDE4;
+  --color-on-surface-variant: #B8B0A0;
+  --color-muted-foreground: #8A8275;
+  --color-disabled-foreground: rgba(240, 237, 228, 0.3);
+  --color-on-primary: #0E1016;
+  --text-brand: #C8A858;
+  --text-brand-hover: #E0C880;
+
+  /* === Icon Colors === */
+  --icon-default: #D8D4C8;
+  --icon-default-hover: #F0EDE4;
+  --icon-default-active: #F0EDE4;
+  --icon-secondary: #B8B0A0;
+  --icon-secondary-hover: #D8D4C8;
+  --icon-secondary-active: #D8D4C8;
+  --icon-tertiary: #8A8275;
+  --icon-disabled: rgba(240, 237, 228, 0.3);
+  --icon-onbrand: #0E1016;
+  --icon-onaccent: #0E1016;
+  --icon-white: #F0EDE4;
+  --icon-brand: #C8A858;
+  --icon-brand-hover: #E0C880;
+
+  /* === Border Colors === */
+  --border-neutral-l1: rgba(200, 168, 88, 0.08);
+  --border-neutral-l2: rgba(200, 168, 88, 0.15);
+  --border-neutral-l3: rgba(200, 168, 88, 0.25);
+  --border-contrast: #C8A858;
+  --border-brand: #C8A858;
+  --color-border: rgba(200, 168, 88, 0.08);
+  --color-border-strong: rgba(200, 168, 88, 0.15);
+  --color-border-stronger: rgba(200, 168, 88, 0.25);
+  --color-border-contrast: #C8A858;
+  --color-outline: rgba(200, 168, 88, 0.08);
+
+  /* === Status Colors (Adjusted for dark bg) === */
+  --status-primary-default: #4A7BA8;
+  --status-primary-hover: #6A9BC8;
+  --status-primary-active: #3A6B98;
+  --status-primary-surface-l1: rgba(74, 123, 168, 0.12);
+  --status-primary-surface-l2: rgba(74, 123, 168, 0.18);
+  --status-primary-surface-l3: rgba(74, 123, 168, 0.36);
+  --status-success-default: #5E8B5E;
+  --status-success-hover: #7EAB7E;
+  --status-success-active: #4E7B4E;
+  --status-success-surface-l1: rgba(94, 139, 94, 0.12);
+  --status-success-surface-l2: rgba(94, 139, 94, 0.18);
+  --status-success-surface-l3: rgba(94, 139, 94, 0.36);
+  --status-alert-default: #C49B5E;
+  --status-alert-hover: #D4BB7E;
+  --status-alert-active: #B48B4E;
+  --status-alert-surface-l1: rgba(196, 155, 94, 0.14);
+  --status-alert-surface-l2: rgba(196, 155, 94, 0.2);
+  --status-alert-surface-l3: rgba(196, 155, 94, 0.36);
+  --status-warning-default: #C47B3E;
+  --status-warning-hover: #E49B5E;
+  --status-warning-active: #B46B2E;
+  --status-warning-surface-l1: rgba(196, 123, 62, 0.12);
+  --status-warning-surface-l2: rgba(196, 123, 62, 0.16);
+  --status-warning-surface-l3: rgba(196, 123, 62, 0.36);
+  --status-error-default: #B85450;
+  --status-error-hover: #D87470;
+  --status-error-active: #A84440;
+  --status-error-surface-l1: rgba(184, 84, 80, 0.12);
+  --status-error-surface-l2: rgba(184, 84, 80, 0.16);
+  --status-error-surface-l3: rgba(184, 84, 80, 0.36);
+
+  /* === Wuxia Ink-Wash Custom Tokens === */
+  --ink-bg-void: #0E1016;
+  --ink-bg-abyss: #0A0B10;
+  --ink-bg-ink: #14171E;
+  --ink-bg-panel: rgba(20, 23, 30, 0.85);
+  --ink-bg-paper: #1C1F28;
+  --ink-bg-mist: rgba(200, 168, 88, 0.04);
+  --ink-bg-elevated: #1A1D26;
+  --ink-bg-hover: rgba(200, 168, 88, 0.08);
+
+  --ink-gold-primary: #C8A858;
+  --ink-gold-bright: #E0C880;
+  --ink-gold-deep: #8A7438;
+  --ink-gold-glow: rgba(200, 168, 88, 0.4);
+  --ink-gold-dim: rgba(200, 168, 88, 0.5);
+  --ink-gold-faint: rgba(200, 168, 88, 0.15);
+  --ink-gold-trace: rgba(200, 168, 88, 0.08);
+
+  --ink-jade-primary: #5E8B7E;
+  --ink-jade-bright: #7EAB9E;
+  --ink-jade-deep: #3E6B5E;
+  --ink-jade-glow: rgba(94, 139, 126, 0.4);
+  --ink-jade-dim: rgba(94, 139, 126, 0.5);
+  --ink-jade-faint: rgba(94, 139, 126, 0.12);
+
+  --ink-blood-primary: #B85450;
+  --ink-blood-bright: #D87470;
+  --ink-blood-deep: #8A3E3A;
+  --ink-blood-glow: rgba(184, 84, 80, 0.4);
+  --ink-blood-dim: rgba(184, 84, 80, 0.5);
+  --ink-blood-faint: rgba(184, 84, 80, 0.12);
+
+  --ink-text-primary: #F0EDE4;
+  --ink-text-secondary: #B8B0A0;
+  --ink-text-muted: #8A8275;
+  --ink-text-faint: rgba(240, 237, 228, 0.4);
+  --ink-text-gold: #C8A858;
+  --ink-text-jade: #7EAB9E;
+  --ink-text-blood: #D87470;
+  --ink-text-inverse: #0E1016;
+
+  --ink-border-gold: rgba(200, 168, 88, 0.25);
+  --ink-border-gold-bright: rgba(200, 168, 88, 0.5);
+  --ink-border-faint: rgba(200, 168, 88, 0.08);
+  --ink-border-jade: rgba(94, 139, 126, 0.3);
+  --ink-divider: rgba(200, 168, 88, 0.12);
+
+  --ink-shadow-deep: rgba(0, 0, 0, 0.6);
+  --ink-shadow-mid: rgba(0, 0, 0, 0.4);
+  --ink-shadow-soft: rgba(0, 0, 0, 0.2);
+  --ink-shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --ink-shadow-gold: 0 0 24px rgba(200, 168, 88, 0.2);
+  --ink-shadow-inset: inset 0 1px 0 rgba(200, 168, 88, 0.08);
+
+  --ink-font-display: "STKaiti", "KaiTi", "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+  --ink-font-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --ink-font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Consolas, monospace;
+  --ink-font-number: "DIN Alternate", "DIN", "Bebas Neue", monospace;
+
+  --ink-quality-common: #8A8275;
+  --ink-quality-uncommon: #6B8E5A;
+  --ink-quality-rare: #4A7EA8;
+  --ink-quality-epic: #8B5E9E;
+  --ink-quality-legendary: #C8A858;
+
+  --ink-element-metal: #D4C4A0;
+  --ink-element-wood: #6B8E5A;
+  --ink-element-water: #4A6E8A;
+  --ink-element-fire: #B85638;
+  --ink-element-earth: #8A7B5A;
+
+  --ink-radius-none: 0px;
+  --ink-radius-sm: 2px;
+  --ink-radius-md: 4px;
+  --ink-radius-lg: 8px;
+
+  --ink-blur-panel: blur(8px);
+  --ink-blur-overlay: blur(4px);
+}
+
+/* === Body / Global Element Overrides === */
+body {
+  background-color: var(--ink-bg-void) !important;
+  background-image:
+    radial-gradient(ellipse at top, rgba(200, 168, 88, 0.03), transparent 60%),
+    radial-gradient(ellipse at bottom, rgba(94, 139, 126, 0.02), transparent 60%);
+  color: var(--ink-text-primary) !important;
+  font-family: var(--ink-font-body) !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--ink-font-display) !important;
+  color: var(--ink-text-primary) !important;
+}
+
+/* === Scrollbar Styling === */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--ink-bg-abyss); }
+::-webkit-scrollbar-thumb {
+  background: var(--ink-gold-dim);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--ink-gold-primary); }
+
+    </style>
+    <style id="component-vars">
+/* ═══════════════════════════════════════════════════════════════
+   components.css — Design System Component Definitions
+   Auto-extracted from preview/component-*.html
+   DO NOT EDIT MANUALLY — regenerate via extract-components-css.mjs
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Alert ─────────────────────────────────────────────────── */
+/* ===== Notification / Toast ===== */
+    .ds-notif {
+      display: flex; align-items: flex-start;
+      gap: var(--spacer-8);
+      width: 100%; max-width: 560px;
+      padding: var(--spacer-8) var(--spacer-12);
+      border: 1px solid var(--border-neutral-l1);
+      background: var(--bg-base-secondary);
+      border-radius: var(--radius-8);
+      color: var(--text-default);
+      font-family: var(--body-md-font-family);
+      font-size: var(--body-md-font-size);
+      line-height: var(--body-md-line-height);
+      letter-spacing: var(--body-md-letter-spacing);
+      box-shadow: none;
+    }
+    .ds-notif__icon { flex: 0 0 16px; width: 16px; height: 16px; margin-top: var(--spacer-2); color: var(--icon-default); display: inline-flex; align-items: center; justify-content: center; }
+    .ds-notif__body { flex: 1; min-width: 0; }
+    .ds-notif__title { font-family: var(--body-md-strong-font-family); font-size: var(--body-md-strong-font-size); line-height: var(--body-md-strong-line-height); font-weight: var(--body-md-strong-font-weight); letter-spacing: var(--body-md-strong-letter-spacing); color: var(--text-default); }
+    .ds-notif__text { flex: 1; color: var(--text-default); }
+    .ds-notif__desc { margin-top: var(--spacer-2); color: var(--text-secondary); font-size: var(--body-md-font-size); line-height: var(--body-md-line-height); }
+    .ds-notif__actions { display: inline-flex; align-items: center; gap: var(--spacer-8); margin-top: var(--spacer-8); }
+    .ds-notif__close { flex-shrink: 0; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: none; cursor: pointer; color: var(--icon-secondary); border-radius: var(--radius-8); }
+    .ds-notif__close .icon { width: 14px; height: 14px; }
+    .ds-notif__close:hover { background: var(--bg-overlay-l2); color: var(--icon-default); }
+    .ds-notif--simple { align-items: center; }
+    .ds-notif--error { background: var(--status-error-surface-l1); border-color: var(--status-error-surface-l2); }
+    .ds-notif--error .ds-notif__icon { color: var(--status-error-default); }
+    .ds-notif--warning { background: var(--status-warning-surface-l1); border-color: var(--status-warning-surface-l2); }
+    .ds-notif--warning .ds-notif__icon { color: var(--status-warning-default); }
+    .ds-notif--alert { background: var(--status-alert-surface-l1); border-color: var(--status-alert-surface-l2); }
+    .ds-notif--alert .ds-notif__icon { color: var(--status-alert-default); }
+    .ds-notif--info { background: var(--status-primary-surface-l1); border-color: var(--status-primary-surface-l2); }
+    .ds-notif--info .ds-notif__icon { color: var(--status-primary-default); }
+    .ds-notif--success { background: var(--status-success-surface-l1); border-color: var(--status-success-surface-l2); }
+    .ds-notif--success .ds-notif__icon { color: var(--status-success-default); }
+
+    /* ===== Alert / Banner ===== */
+    .ds-alert {
+      display: flex; align-items: flex-start;
+      gap: var(--spacer-12);
+      padding: var(--spacer-12) var(--spacer-16);
+      background: var(--bg-base-secondary);
+      border: 1px solid var(--border-neutral-l1);
+      border-radius: var(--radius-8);
+      color: var(--text-default);
+      font-family: var(--body-md-font-family);
+      font-size: var(--body-md-font-size);
+      line-height: var(--body-md-line-height);
+      letter-spacing: var(--body-md-letter-spacing);
+    }
+    .ds-alert__icon { flex: 0 0 16px; width: 16px; height: 16px; margin-top: var(--spacer-2); color: var(--icon-default); display: inline-flex; align-items: center; justify-content: center; }
+    .ds-notif__icon .icon, .ds-alert__icon .icon { width: 16px; height: 16px; display: block; }
+    .ds-alert--success .ds-alert__icon { color: var(--status-success-default); }
+    .ds-alert--warning .ds-alert__icon { color: var(--status-warning-default); }
+    .ds-alert--danger .ds-alert__icon { color: var(--status-error-default); }
+    .ds-alert--info .ds-alert__icon { color: var(--status-primary-default); }
+    .ds-alert__title { font-family: var(--body-md-strong-font-family); font-size: var(--body-md-strong-font-size); line-height: var(--body-md-strong-line-height); font-weight: var(--body-md-strong-font-weight); letter-spacing: var(--body-md-strong-letter-spacing); margin-bottom: var(--spacer-4); }
+    .ds-alert__desc { color: var(--text-secondary); font-size: var(--body-md-font-size); line-height: var(--body-md-line-height); }
+
+/* ── Avatar ────────────────────────────────────────────────── */
+/* ===== Avatar ===== */
+    .ds-avatar {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; border-radius: var(--radius-full);
+      background: var(--bg-overlay-l3);
+      color: var(--text-default);
+      font-family: var(--body-base-strong-font-family);
+      font-size: var(--body-base-strong-font-size);
+      font-weight: var(--body-base-strong-font-weight);
+      line-height: var(--body-base-strong-line-height);
+      flex-shrink: 0;
+    }
+    .ds-avatar--sm { width: 24px; height: 24px; font-size: var(--body-sm-font-size); }
+    .ds-avatar--lg { width: 40px; height: 40px; }
+
+/* ── Breadcrumb ────────────────────────────────────────────── */
+/* ===== Breadcrumb ===== */
+    .ds-breadcrumb { display: flex; align-items: center; gap: var(--spacer-8); font-size: var(--body-base-font-size); line-height: var(--body-base-line-height); color: var(--text-tertiary); }
+    .ds-breadcrumb a { display: inline-flex; align-items: center; color: var(--text-tertiary); }
+    .ds-breadcrumb a:hover { color: var(--text-default); }
+    .ds-breadcrumb__sep { color: var(--text-tertiary); }
+    .ds-breadcrumb__current { color: var(--text-default); }
+
+/* ── Buttons ───────────────────────────────────────────────── */
+/* ===== Buttons ===== */
+    .ds-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: var(--spacer-6);
+      height: 28px; padding: 0 var(--spacer-12);
+      border-radius: var(--radius-8);
+      border: 1px solid transparent;
+      cursor: pointer; user-select: none; white-space: nowrap;
+      font-family: var(--body-base-strong-font-family);
+      font-size: var(--body-base-strong-font-size);
+      line-height: var(--body-base-strong-line-height);
+      font-weight: var(--body-base-strong-font-weight);
+      letter-spacing: var(--body-base-strong-letter-spacing);
+      transition: background .12s ease, color .12s ease, border-color .12s ease, opacity .12s ease;
+    }
+    .ds-btn .icon {
+      display: inline-block;
+      width: var(--icon-size-16);
+      height: var(--icon-size-16);
+      flex: 0 0 auto;
+    }
+    .ds-btn .icon--12 { width: var(--icon-size-12); height: var(--icon-size-12); }
+    .ds-btn .icon--14 { width: var(--icon-size-14); height: var(--icon-size-14); }
+    .ds-btn .icon--16 { width: var(--icon-size-16); height: var(--icon-size-16); }
+    .ds-btn .icon--20 { width: var(--icon-size-20); height: var(--icon-size-20); }
+    .ds-btn .icon--24 { width: var(--icon-size-24); height: var(--icon-size-24); }
+    /* Button heights are fixed to 24 / 28 / 32px. */
+    .ds-btn--sm { height: 24px; padding: 0 var(--spacer-8); border-radius: var(--radius-8); font-size: var(--body-sm-font-size); }
+    .ds-btn--md { height: 28px; padding: 0 var(--spacer-12); border-radius: var(--radius-8); }
+    .ds-btn--lg { height: 32px; padding: 0 var(--spacer-16); border-radius: var(--radius-8); font-size: var(--body-base-font-size); }
+    .ds-btn--primary { background: var(--bg-invert); color: var(--text-white); border-color: var(--bg-invert); }
+    .ds-btn--primary:hover { background: var(--bg-invert-hover); border-color: var(--bg-invert-hover); }
+    .ds-btn--primary:active { background: var(--bg-invert-active); border-color: var(--bg-invert-active); }
+    .ds-btn--primary[disabled] { background: var(--bg-invert-disabled); color: var(--text-disabled); border-color: transparent; cursor: not-allowed; }
+    .ds-btn--secondary { background: var(--bg-overlay-l1); color: var(--text-default); border-color: var(--border-neutral-l1); }
+    .ds-btn--secondary:hover { background: var(--bg-overlay-l2); border-color: var(--border-neutral-l2); }
+    .ds-btn--secondary:active { background: var(--bg-overlay-l3); border-color: var(--border-neutral-l3); }
+    .ds-btn--secondary[disabled] { color: var(--text-disabled); cursor: not-allowed; opacity: .7; }
+    .ds-btn--tertiary,
+    .ds-btn--ghost { background: transparent; color: var(--text-default); border-color: transparent; }
+    .ds-btn--tertiary:hover,
+    .ds-btn--ghost:hover { background: var(--bg-overlay-l2); color: var(--text-default-hover); }
+    .ds-btn--tertiary:active,
+    .ds-btn--ghost:active { background: var(--bg-overlay-l3); }
+    .ds-btn--tertiary[disabled],
+    .ds-btn--ghost[disabled] { color: var(--text-disabled); cursor: not-allowed; }
+    .ds-btn--danger,
+    .ds-btn--danger-strong { background: var(--status-error-default); color: var(--text-onaccent); border-color: var(--status-error-default); }
+    .ds-btn--danger:hover,
+    .ds-btn--danger-strong:hover { background: var(--status-error-hover); border-color: var(--status-error-hover); }
+    .ds-btn--danger:active,
+    .ds-btn--danger-strong:active { background: var(--status-error-active); border-color: var(--status-error-active); }
+    .ds-btn--danger-subtle { background: var(--status-error-surface-l1); color: var(--status-error-default); border-color: var(--status-error-surface-l2); }
+    .ds-btn--danger-subtle:hover { background: var(--status-error-surface-l2); }
+    .ds-btn--danger-subtle:active { background: var(--status-error-surface-l3); }
+    .ds-btn--warning { background: var(--status-warning-default); color: var(--text-onaccent); border-color: var(--status-warning-default); }
+    .ds-btn--warning:hover { background: var(--status-warning-hover); border-color: var(--status-warning-hover); }
+    .ds-btn--warning:active { background: var(--status-warning-active); border-color: var(--status-warning-active); }
+    .ds-btn--brand { background: var(--bg-brand); color: var(--text-onbrand); border-color: var(--bg-brand); }
+    .ds-btn--brand:hover { background: var(--bg-brand-hover); border-color: var(--bg-brand-hover); }
+    .ds-btn--brand:active { background: var(--bg-brand-active); border-color: var(--bg-brand-active); }
+    .ds-btn--brand[disabled] { background: var(--bg-brand-disabled); border-color: transparent; color: var(--text-onbrand); cursor: not-allowed; }
+    .ds-btn--link { background: transparent; color: var(--text-default); border-color: transparent; padding: 0; height: auto; }
+    .ds-btn--link:hover { color: var(--text-default-hover); text-decoration: underline; }
+    .ds-btn--link[disabled] { color: var(--text-disabled); text-decoration: none; cursor: not-allowed; }
+    .ds-btn--icon { width: 28px; padding: 0; justify-content: center; }
+    .ds-btn--icon.ds-btn--sm { width: 24px; }
+    .ds-btn--icon.ds-btn--lg { width: 32px; }
+    .ds-btn-group { display: inline-flex; }
+    .ds-btn-group > .ds-btn { border-radius: var(--radius-0); margin-left: calc(-1 * var(--border-width-default)); }
+    .ds-btn-group > .ds-btn:first-child { border-top-left-radius: var(--radius-8); border-bottom-left-radius: var(--radius-8); margin-left: 0; }
+    .ds-btn-group > .ds-btn:last-child { border-top-right-radius: var(--radius-8); border-bottom-right-radius: var(--radius-8); }
+
+/* ── Cards ─────────────────────────────────────────────────── */
+/* ===== Card ===== */
+    .ds-card {
+      background: var(--bg-base-secondary);
+      border: 1px solid var(--border-neutral-l1);
+      border-radius: var(--radius-12);
+      padding: var(--spacer-20);
+      color: var(--text-default);
+    }
+    .ds-card__title { font-size: var(--heading-sm-font-size); line-height: var(--heading-sm-line-height); font-weight: var(--heading-sm-font-weight); margin-bottom: var(--spacer-8); }
+    .ds-card__desc { font-size: var(--body-base-font-size); line-height: var(--body-base-line-height); color: var(--text-secondary); }
+
+/* ── Dialog ────────────────────────────────────────────────── */
+/* ===== Dialog / Modal ===== */
+    .ds-backdrop { position: relative; background: var(--bg-overlay-l4); border: 1px solid var(--border-neutral-l1); padding: var(--spacer-32) var(--spacer-24); display: flex; align-items: center; justify-content: center; }
+    .ds-dialog { background: var(--bg-base-default); border: 1px solid var(--border-neutral-l1); border-radius: var(--radius-12); width: 100%; max-width: 520px; overflow: hidden; color: var(--text-default); box-shadow: 0 24px 64px color-mix(in srgb, var(--text-default) 14%, transparent), 0 4px 16px color-mix(in srgb, var(--text-default) 8%, transparent); }
+    .ds-dialog--form { max-width: 560px; }
+    .ds-dialog__head { padding: var(--spacer-16) var(--spacer-20); display: flex; align-items: center; justify-content: space-between; border-bottom: 0; }
+    .ds-dialog__title { font-size: var(--heading-sm-font-size); line-height: var(--heading-sm-line-height); font-weight: var(--heading-sm-font-weight); color: var(--text-default); }
+    .ds-dialog__close { width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; background: transparent; border: none; color: var(--icon-secondary); cursor: pointer; border-radius: var(--radius-8); }
+    .ds-dialog__close:hover { background: var(--bg-overlay-l2); color: var(--icon-default); }
+    .ds-dialog__body { padding: var(--spacer-16) var(--spacer-20); color: var(--text-secondary); font-size: var(--body-base-font-size); line-height: var(--body-base-line-height); }
+    .ds-dialog__foot { padding: var(--spacer-12) var(--spacer-20); display: flex; justify-content: flex-end; gap: var(--spacer-8); border-top: 0; }
+    .ds-drawer { background: var(--bg-base-default); border: 1px solid var(--border-neutral-l1); border-radius: var(--radius-12); width: 100%; max-width: 360px; display: flex; flex-direction: column; box-shadow: 0 24px 64px color-mix(in srgb, var(--text-default) 14%, transparent), 0 4px 16px color-mix(in srgb, var(--text-default) 8%, transparent); }
+    .ds-drawer__head { padding: var(--spacer-16) var(--spacer-20); display: flex; justify-content: space-between; align-items: center; border-bottom: 0; }
+    .ds-drawer__body { padding: var(--spacer-16) var(--spacer-20); flex: 1; }
+    .dialog-form { display: grid; gap: var(--spacer-16); }
+    .dialog-field { display: flex; flex-direction: column; gap: var(--spacer-6); }
+    .dialog-field__label { color: var(--text-default); font-size: var(--body-base-font-size); line-height: var(--body-base-line-height); font-weight: var(--font-weight-medium); }
+    .dialog-field__hint { color: var(--text-tertiary); font-size: var(--body-base-font-size); line-height: var(--body-base-line-height); }
+    .dialog-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--spacer-12); }
+    .dialog-form .ds-input,
+    .dialog-form .ds-select,
+    .dialog-form .ds-textarea { background: var(--bg-base-default); font-size: var(--body-base-font-size); line-height: var(--body-base-line-height); letter-spacing: var(--body-base-letter-spacing); }
+    .dialog-form .ds-input:focus-within,
+    .dialog-form .ds-select:focus,
+    .dialog-form .ds-textarea:focus { background: var(--bg-base-default); }
+    .dialog-form .ds-textarea { min-height: 72px; resize: none; }
+    .dialog-calendar-icon { width: 16px; height: 16px; color: var(--icon-secondary); object-fit: contain; }
+    @media (max-width: 720px) { .dialog-grid { grid-template-columns: 1fr; } }
+
+/* ── Forms ─────────────────────────────────────────────────── */
+/* ===== Input / Search ===== */
+    .ds-input { display: flex; align-items: center; gap: var(--spacer-8); min-height: 32px; padding: 0 var(--spacer-12); background: var(--bg-base-default); border: 1px solid var(--border-neutral-l1); border-radius: var(--radius-8); color: var(--text-default); width: 100%; font-family: var(--body-base-font-family); font-size: var(--body-base-font-size); line-height: var(--body-base-line-height); }
+    .ds-input:focus-within { border-color: var(--border-contrast); background: var(--bg-base-default); }
+    .ds-input input { flex: 1; background: transparent; border: none; outline: none; color: var(--text-default); font: inherit; min-width: 0; }
+    .ds-input input[type="number"] { appearance: textfield; -moz-appearance: textfield; }
+    .ds-input input[type="number"]::-webkit-outer-spin-button,
+    .ds-input input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .ds-input input::placeholder { color: var(--text-tertiary); }
+    .ds-input input:disabled { color: var(--text-disabled); cursor: not-allowed; }
+    .ds-input.is-error { border-color: var(--status-error-default); }
+    .ds-input.is-disabled { background: var(--bg-base-secondary); color: var(--text-disabled); cursor: not-allowed; }
+    .ds-input__icon { color: var(--icon-secondary); display: inline-flex; align-items: center; }
+    .ds-search { position: relative; }
+    .ds-select { width: 100%; height: 32px; padding: 0 var(--spacer-32) 0 var(--spacer-12); background-color: var(--bg-base-default); color: var(--text-default); border: 1px solid var(--border-neutral-l1); border-radius: var(--radius-8); appearance: none; -webkit-appearance: none; font: inherit; font-size: var(--body-base-font-size); }
+    .ds-select:focus { border-color: var(--border-contrast); background-color: var(--bg-base-default); outline: none; }
+    .ds-select:disabled { background-color: var(--bg-base-secondary); color: var(--text-disabled); cursor: not-allowed; opacity: 1; }
+    .ds-select-wrap { position: relative; width: 100%; }
+    .ds-select-wrap .ds-select { padding-right: var(--spacer-32); }
+    .ds-select__icon { position: absolute; right: var(--spacer-12); top: 50%; width: 16px; height: 16px; color: var(--icon-secondary); pointer-events: none; transform: translateY(-50%); object-fit: contain; }
+    .ds-select-wrap > .icon-img { position: absolute; top: 50%; right: var(--spacer-10); transform: translateY(-50%); color: var(--icon-secondary); pointer-events: none; }
+    .icon-img { display: inline-block; width: 16px; height: 16px; flex: 0 0 16px; object-fit: contain; vertical-align: middle; }
+    .icon-img--12 { width: 12px; height: 12px; flex-basis: 12px; }
+    .icon-img--14 { width: 14px; height: 14px; flex-basis: 14px; }
+    .ds-textarea { width: 100%; min-height: 96px; padding: var(--spacer-8) var(--spacer-12); background: var(--bg-base-default); border: 1px solid var(--border-neutral-l1); border-radius: var(--radius-8); color: var(--text-default); font-family: var(--body-base-font-family); font-size: var(--body-base-font-size); line-height: var(--body-base-line-height); resize: none; }
+    .ds-textarea:focus { outline: none; border-color: var(--border-contrast); background: var(--bg-base-default); }
+    .ds-textarea.is-error { border-color: var(--status-error-default); }
+    .ds-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background: var(--bg-overlay-l3); border-radius: var(--radius-full); outline: none; }
+    .ds-slider--progress { background: var(--bg-overlay-l3); }
+    .ds-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: var(--radius-full); background: var(--bg-base-default); border: 1px solid var(--border-neutral-l3); box-shadow: none; cursor: pointer; }
+    .ds-slider::-moz-range-track { height: 4px; background: var(--bg-overlay-l3); border-radius: var(--radius-full); }
+    .ds-slider--progress::-moz-range-progress { height: 4px; background: var(--bg-brand); border-radius: var(--radius-full); }
+    .ds-slider::-moz-range-thumb { width: 14px; height: 14px; border-radius: var(--radius-full); background: var(--bg-base-default); border: 1px solid var(--border-neutral-l3); box-shadow: none; cursor: pointer; }
+    .ds-check, .ds-radio { display: inline-flex; align-items: center; gap: var(--spacer-8); min-height: 40px; font-size: var(--body-base-font-size); color: var(--text-default); cursor: pointer; user-select: none; }
+    .ds-check__box { width: 16px; height: 16px; border: 1px solid var(--border-neutral-l2); background: var(--bg-base-default); border-radius: var(--radius-4); display: inline-flex; align-items: center; justify-content: center; color: var(--text-onbrand); transition: background .12s, border-color .12s; }
+    .ds-check input { display: none; }
+    .ds-check input:checked + .ds-check__box { background: var(--bg-brand); border-color: var(--bg-brand); }
+    .ds-check input:checked + .ds-check__box::after { content: ''; width: 8px; height: 4px; border-left: 2px solid var(--text-onbrand); border-bottom: 2px solid var(--text-onbrand); transform: rotate(-45deg) translate(1px, -1px); }
+    .ds-check input:disabled + .ds-check__box { opacity: .5; cursor: not-allowed; }
+    .ds-radio__dot { width: 16px; height: 16px; border: 1px solid var(--border-neutral-l2); background: var(--bg-base-default); border-radius: var(--radius-full); display: inline-flex; align-items: center; justify-content: center; }
+    .ds-radio input { display: none; }
+    .ds-radio input:checked + .ds-radio__dot { border-color: var(--bg-brand); }
+    .ds-radio input:checked + .ds-radio__dot::after { content: ''; width: 10px; height: 10px; border-radius: var(--radius-full); background: var(--bg-brand); }
+    .ds-switch { position: relative; display: inline-flex; width: 32px; height: 18px; background: var(--bg-overlay-l3); border: 1px solid var(--border-neutral-l1); border-radius: var(--radius-full); cursor: pointer; transition: background .15s, border-color .15s; }
+    .ds-switch input { display: none; }
+    .ds-switch__thumb { position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; background: var(--bg-base-default); border-radius: var(--radius-full); transition: left .15s, background .15s; }
+    .ds-switch input:checked ~ .ds-switch__thumb { left: 16px; background: var(--icon-onbrand); }
+    .ds-switch:has(input:checked) { background: var(--bg-brand); border-color: var(--bg-brand); }
+    .input-affix { color: var(--text-tertiary); font-family: var(--body-base-font-family); font-size: var(--body-base-font-size); line-height: var(--body-base-line-height); white-space: nowrap; }
+    .ds-date-input { position: relative; }
+    .ds-date-input input { padding-right: var(--spacer-32); }
+    .ds-date-input input::-webkit-calendar-picker-indicator { opacity: 0; cursor: pointer; }
+    .ds-date-input .icon-img { position: absolute; top: 50%; right: var(--spacer-12); transform: translateY(-50%); color: var(--icon-secondary); pointer-events: none; }
+    .tag-field { display: flex; align-items: center; flex-wrap: wrap; gap: var(--spacer-6); min-height: 32px; padding: var(--spacer-4) var(--spacer-8); border: 1px solid var(--border-neutral-l1); border-radius: var(--radius-8); background: var(--bg-base-default); }
+    .tag-field:focus-within { border-color: var(--border-contrast); }
+    .tag-remove { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; padding: 0; border: 0; background: transparent; color: var(--icon-tertiary); cursor: pointer; border-radius: var(--radius-4); }
+    .tag-remove:hover { background: var(--bg-overlay-l2); color: var(--icon-default); }
+    .stepper { display: inline-flex; align-items: center; width: fit-content; border: 1px solid var(--border-neutral-l1); border-radius: var(--radius-8); overflow: hidden; background: var(--bg-base-default); }
+    .stepper button { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 0; background: transparent; color: var(--icon-secondary); cursor: pointer; }
+    .stepper button:hover { background: var(--bg-overlay-l2); color: var(--icon-default); }
+    .stepper input { width: 48px; height: 32px; padding: 0; border: 0; border-left: 1px solid var(--border-neutral-l1); border-right: 1px solid var(--border-neutral-l1); background: transparent; color: var(--text-default); text-align: center; font: inherit; line-height: var(--body-base-line-height); appearance: textfield; -moz-appearance: textfield; }
+    .stepper input::-webkit-outer-spin-button,
+    .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* ── Menu ──────────────────────────────────────────────────── */
+/* ===== Menu ===== */
+    .ds-menu { display: flex; flex-direction: column; gap: var(--spacer-2); background: var(--bg-menu); border: 1px solid var(--border-neutral-l1); border-radius: var(--radius-12); padding: var(--spacer-8); min-width: 180px; color: var(--text-default); box-shadow: 0 12px 32px color-mix(in srgb, var(--text-default) 12%, transparent), 0 2px 8px color-mix(in srgb, var(--text-default) 8%, transparent); }
+    .ds-menu__item { display: flex; align-items: center; gap: var(--spacer-8); min-height: 32px; padding: var(--spacer-6) var(--spacer-8); border-radius: var(--radius-8); color: var(--text-default); font-family: var(--body-base-font-family); font-size: var(--body-base-font-size); line-height: var(--body-base-line-height); font-weight: var(--body-base-font-weight); cursor: pointer; }
+    .ds-menu__item .icon { color: var(--icon-secondary); }
+    .ds-menu__icon { width: 16px; height: 16px; flex: 0 0 auto; object-fit: contain; }
+    .ds-menu__item:hover { background: var(--bg-overlay-l2); }
+    .ds-menu__item--danger { color: var(--status-error-default); }
+    .ds-menu__item--danger .icon,
+    .ds-menu__item--danger .ds-menu__icon { color: var(--status-error-default); }
+    .ds-menu__divider { height: 1px; background: var(--border-neutral-l1); margin: var(--spacer-4) 0; }
+    .ds-menu__shortcut { margin-left: auto; color: var(--text-tertiary); font-family: var(--body-md-font-family); font-size: var(--body-md-font-size); line-height: var(--body-md-line-height); font-weight: var(--body-md-font-weight); font-variant-numeric: normal; font-feature-settings: normal; }
+    .ds-menu__group-label { padding: var(--spacer-8); color: var(--text-tertiary); font-family: var(--body-md-font-family); font-size: var(--body-md-font-size); line-height: var(--body-md-line-height); font-weight: var(--body-md-font-weight); letter-spacing: var(--body-md-letter-spacing); text-transform: uppercase; }
+    .ds-popover .ds-menu { border: 0; padding: 0; box-shadow: none; }
+
+/* ── Pagination ────────────────────────────────────────────── */
+/* ===== Pagination ===== */
+    .ds-pagination { display: inline-flex; gap: var(--spacer-4); }
+    .ds-pagination__item { min-width: 32px; height: 32px; padding: 0 var(--spacer-8); display: inline-flex; align-items: center; justify-content: center; background: transparent; color: var(--text-secondary); border: 1px solid var(--border-neutral-l1); border-radius: var(--radius-8); font: inherit; font-size: var(--body-base-font-size); cursor: pointer; }
+    .ds-pagination__item:hover { background: var(--bg-overlay-l2); color: var(--text-default); }
+    .ds-pagination__item.is-active { background: var(--bg-overlay-l3); color: var(--text-default); border-color: var(--border-neutral-l2); }
+    .ds-pagination__item[disabled] { opacity: .4; cursor: not-allowed; }
+    .ds-pagination__range { color: var(--text-tertiary); font-family: var(--body-sm-font-family); font-size: var(--body-sm-font-size); line-height: var(--body-sm-line-height); font-weight: var(--body-sm-font-weight); letter-spacing: var(--body-sm-letter-spacing); }
+
+/* ── Progress ──────────────────────────────────────────────── */
+/* ===== Progress ===== */
+    .ds-progress { height: 6px; background: var(--bg-overlay-l2); border-radius: var(--radius-full); overflow: hidden; }
+    .ds-progress__bar { height: 100%; background: var(--text-default); border-radius: inherit; }
+    .ds-progress--brand .ds-progress__bar { background: var(--bg-brand); }
+
+/* ── Skeleton ──────────────────────────────────────────────── */
+/* ===== Skeleton ===== */
+    .ds-skeleton { display: block; background: var(--bg-overlay-l2); border-radius: var(--radius-8); position: relative; overflow: hidden; }
+    .ds-skeleton::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, var(--bg-overlay-l3), transparent); animation: ds-skeleton-shine 1.6s ease-in-out infinite; }
+    @keyframes ds-skeleton-shine { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+    .ds-skeleton--line { height: 12px; }
+    .ds-skeleton--title { height: 18px; width: 50%; }
+    .ds-skeleton--circle { width: 32px; height: 32px; border-radius: var(--radius-full); }
+
+/* ── Table ─────────────────────────────────────────────────── */
+/* ===== Table ===== */
+    .ds-table-card { overflow-x: auto; }
+    .ds-table { width: 100%; min-width: 720px; border-collapse: collapse; }
+    .ds-table--fixed { table-layout: fixed; }
+    .ds-table__col-member { width: 42%; }
+    .ds-table__col-role { width: 16%; }
+    .ds-table__col-active { width: 20%; }
+    .ds-table__col-status { width: 16%; }
+    .ds-table__col-actions { width: 6%; }
+    .ds-table th, .ds-table td { text-align: left; vertical-align: middle; padding: var(--spacer-16) var(--spacer-8); border-bottom: 1px solid var(--border-neutral-l1); font-size: var(--body-base-font-size); line-height: var(--body-base-line-height); }
+    .ds-table th { padding-top: var(--spacer-8); padding-bottom: var(--spacer-12); color: var(--text-tertiary); font-weight: var(--font-weight-medium); font-size: var(--body-md-font-size); line-height: var(--body-md-line-height); text-transform: uppercase; letter-spacing: var(--body-md-letter-spacing); background: transparent; }
+    .ds-table td { color: var(--text-secondary); }
+    .ds-table td:first-child { color: var(--text-default); }
+    .ds-table tr:last-child td { border-bottom: none; }
+    .ds-table td.num,
+    .ds-table th.num { text-align: right; font-family: var(--code-editor-font-family); font-variant-numeric: tabular-nums; }
+    .ds-table__member { display: flex; align-items: center; gap: var(--spacer-16); min-width: 0; }
+    .ds-table__member-meta { display: flex; flex-direction: column; gap: var(--spacer-2); min-width: 0; }
+    .ds-table__member-name { color: var(--text-default); font-weight: var(--font-weight-medium); white-space: nowrap; }
+    .ds-table__member-email { color: var(--text-tertiary); font-size: var(--body-md-font-size); line-height: var(--body-md-line-height); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ds-table td.ds-table__actions { width: 1%; text-align: right; }
+
+/* ── Tabs ──────────────────────────────────────────────────── */
+/* ===== Tabs ===== */
+    .ds-tabs { display: flex; gap: var(--spacer-24); border-bottom: 1px solid var(--border-neutral-l1); }
+    .ds-tab { display: inline-flex; align-items: center; padding: var(--spacer-12) 0; background: transparent; border: none; color: var(--text-tertiary); cursor: pointer; font: inherit; font-size: var(--body-base-font-size); line-height: var(--body-base-line-height); font-weight: var(--font-weight-medium); position: relative; }
+    .ds-tab:hover { color: var(--text-default); }
+    .ds-tab.is-active { color: var(--text-default); }
+    .ds-tab.is-active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--icon-default); }
+    .ds-tab__count,
+    .ds-tab .ds-tag.num { margin-left: var(--spacer-6); min-width: 18px; height: 18px; padding: 0 var(--spacer-6); display: inline-grid; place-items: center; vertical-align: middle; border: none; border-radius: var(--radius-full); background: var(--bg-overlay-l2); color: var(--text-tertiary); font-family: var(--font-family-metric); font-size: var(--body-xs-font-size); line-height: var(--body-xs-line-height); font-weight: var(--body-xs-font-weight); font-variant-numeric: tabular-nums; }
+
+/* ── Tag ───────────────────────────────────────────────────── */
+/* ===== Tag / Badge ===== */
+    .ds-tag { display: inline-flex; align-items: center; gap: var(--spacer-4); height: 22px; padding: 0 var(--spacer-8); border-radius: var(--radius-8); font-size: var(--body-sm-font-size); line-height: var(--body-sm-line-height); background: var(--bg-overlay-l2); color: var(--text-secondary); border: 1px solid var(--border-neutral-l1); }
+    .ds-tag .icon { width: 12px; height: 12px; }
+    .ds-tag--brand { background: var(--bg-brand-popup); color: var(--text-brand); }
+    .ds-tag--success { background: var(--status-success-surface-l1); color: var(--status-success-default); }
+    .ds-tag--warning { background: var(--status-warning-surface-l1); color: var(--status-warning-default); }
+    .ds-tag--danger { background: var(--status-error-surface-l1); color: var(--status-error-default); }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--color-background);
+    --color-foreground: var(--color-foreground);
+    --color-card: var(--color-card);
+    --color-primary: var(--color-primary);
+    --color-muted-foreground: var(--color-muted-foreground);
+    --color-accent: var(--color-accent);
+    --color-border: var(--color-border);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <main>
+      <div class="w-full h-screen flex flex-col overflow-hidden" style="background: var(--ink-bg-void);">
+
+        <!-- ===== Top Title Bar ===== -->
+        <header class="flex items-center justify-between px-5 h-14 shrink-0" style="background: rgba(20,23,30,0.9); backdrop-filter: blur(8px); border-bottom: 1px solid var(--ink-border-gold);">
+          <div class="flex items-center gap-4 min-w-0">
+            <button data-dom-id="back-hud" class="flex items-center justify-center w-8 h-8 rounded shrink-0" style="background: transparent; border: 1px solid var(--ink-border-gold); color: var(--ink-gold-primary);" aria-label="返回">
+              <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+            </button>
+            <h1 class="text-xl font-bold tracking-widest truncate" style="font-family: var(--ink-font-display); color: var(--ink-gold-primary);">飞鸽传书</h1>
+          </div>
+          <div class="flex items-center gap-4 shrink-0">
+            <div class="flex items-center gap-1.5 text-sm" style="color: var(--ink-text-muted);">
+              <i data-lucide="mail" style="width:14px;height:14px;"></i>
+              <span>未读 <span class="num" style="color: var(--ink-gold-primary);">3</span> 封</span>
+            </div>
+            <button class="flex items-center justify-center gap-1.5 px-3 h-8 rounded text-sm whitespace-nowrap" style="background: rgba(200,168,88,0.12); border: 1px solid var(--ink-border-gold); color: var(--ink-gold-primary);" data-dom-id="btn-compose">
+              <i data-lucide="feather" style="width:14px;height:14px;"></i>写信
+            </button>
+          </div>
+        </header>
+
+        <!-- ===== Three Column Layout ===== -->
+        <div class="flex-1 flex overflow-hidden">
+
+          <!-- ===== Left Panel — Mail List (300px) ===== -->
+          <aside class="w-[300px] shrink-0 flex flex-col overflow-hidden" style="background: rgba(20,23,30,0.85); backdrop-filter: blur(8px); border-right: 1px solid var(--ink-border-gold);">
+
+            <!-- Search Box -->
+            <div class="p-3 shrink-0">
+              <div class="flex items-center gap-2 px-3 h-9 rounded" style="background: var(--ink-bg-paper); border: 1px solid var(--ink-border-gold);">
+                <i data-lucide="search" style="width:14px;height:14px;color:var(--ink-text-muted); flex-shrink:0;"></i>
+                <input type="text" placeholder="检索信件关键词" class="flex-1 min-w-0 bg-transparent border-none outline-none text-sm truncate" style="color: var(--ink-text-primary);" />
+              </div>
+            </div>
+
+            <!-- Category Tabs -->
+            <div class="flex shrink-0 px-3 gap-1 mb-2">
+              <button class="mail-tab is-active flex-1 flex items-center justify-center h-8 text-sm whitespace-nowrap" style="font-family: var(--ink-font-body);" data-dom-id="tab-all">全部</button>
+              <button class="mail-tab flex-1 flex items-center justify-center h-8 text-sm whitespace-nowrap" style="font-family: var(--ink-font-body);" data-dom-id="tab-system">系统</button>
+              <button class="mail-tab flex-1 flex items-center justify-center h-8 text-sm whitespace-nowrap" style="font-family: var(--ink-font-body);" data-dom-id="tab-player">玩家</button>
+              <button class="mail-tab flex-1 flex items-center justify-center h-8 text-sm whitespace-nowrap" style="font-family: var(--ink-font-body);" data-dom-id="tab-guild">帮派</button>
+            </div>
+
+            <!-- Mail List (scrollable) -->
+            <div class="flex-1 overflow-y-auto px-2 pb-2">
+
+              <!-- System Section Label -->
+              <div class="flex items-center gap-2 px-2 py-1.5 mb-0.5">
+                <span class="w-1.5 h-1.5 rounded-full" style="background: var(--ink-gold-primary); box-shadow: 0 0 4px var(--ink-gold-glow);"></span>
+                <span class="text-xs font-medium" style="color: var(--ink-text-secondary);">系统 <span class="num" style="color: var(--ink-gold-bright);">3</span></span>
+              </div>
+
+              <!-- Mail: 周末庆典 (selected, unread, attachment) -->
+              <div class="mail-item is-selected flex items-center gap-2.5 px-2.5 py-2 rounded mb-0.5" data-dom-id="mail-1">
+                <span class="unread-dot w-2 h-2 rounded-full shrink-0" style="background: var(--ink-gold-primary); box-shadow: 0 0 6px var(--ink-gold-glow);"></span>
+                <div class="w-9 h-9 rounded shrink-0 flex items-center justify-center text-sm font-bold" style="background: rgba(200,168,88,0.15); border: 1px solid var(--ink-border-gold); color: var(--ink-gold-primary); font-family: var(--ink-font-display);">系</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-sm font-medium truncate" style="color: var(--ink-text-primary);">系统官府</span>
+                    <span class="num text-xs shrink-0" style="color: var(--ink-text-muted); font-family: var(--ink-font-number);">今日 辰时</span>
+                  </div>
+                  <div class="flex items-center justify-between gap-2 mt-0.5">
+                    <span class="text-xs truncate" style="color: var(--ink-text-secondary); font-family: var(--ink-font-display);">周末庆典 · 论剑豪礼</span>
+                    <i data-lucide="paperclip" style="width:12px;height:12px;color:var(--ink-gold-primary); flex-shrink:0;"></i>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mail: 服务器维护公告 (read) -->
+              <div class="mail-item flex items-center gap-2.5 px-2.5 py-2 rounded mb-0.5" data-dom-id="mail-2">
+                <span class="w-2 h-2 rounded-full shrink-0" style="background: transparent;"></span>
+                <div class="w-9 h-9 rounded shrink-0 flex items-center justify-center text-sm font-bold" style="background: rgba(200,168,88,0.06); border: 1px solid var(--ink-border-gold); color: var(--ink-text-muted); font-family: var(--ink-font-display);">系</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-sm truncate" style="color: var(--ink-text-secondary);">系统官府</span>
+                    <span class="num text-xs shrink-0" style="color: var(--ink-text-muted); font-family: var(--ink-font-number);">今日 卯时</span>
+                  </div>
+                  <div class="flex items-center justify-between gap-2 mt-0.5">
+                    <span class="text-xs truncate" style="color: var(--ink-text-muted); font-family: var(--ink-font-display);">服务器维护公告</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mail: 充值到账 (read) -->
+              <div class="mail-item flex items-center gap-2.5 px-2.5 py-2 rounded mb-0.5" data-dom-id="mail-3">
+                <span class="w-2 h-2 rounded-full shrink-0" style="background: transparent;"></span>
+                <div class="w-9 h-9 rounded shrink-0 flex items-center justify-center text-sm font-bold" style="background: rgba(200,168,88,0.06); border: 1px solid var(--ink-border-gold); color: var(--ink-text-muted); font-family: var(--ink-font-display);">系</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-sm truncate" style="color: var(--ink-text-secondary);">系统官府</span>
+                    <span class="num text-xs shrink-0" style="color: var(--ink-text-muted); font-family: var(--ink-font-number);">三日前</span>
+                  </div>
+                  <div class="flex items-center justify-between gap-2 mt-0.5">
+                    <span class="text-xs truncate" style="color: var(--ink-text-muted); font-family: var(--ink-font-display);">充值灵石到账通知</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Guild Section Label -->
+              <div class="flex items-center gap-2 px-2 py-1.5 mt-1 mb-0.5">
+                <span class="w-1.5 h-1.5 rounded-full" style="background: var(--ink-jade-primary); box-shadow: 0 0 4px var(--ink-jade-glow);"></span>
+                <span class="text-xs font-medium" style="color: var(--ink-text-secondary);">帮派 <span class="num" style="color: var(--ink-jade-bright);">2</span></span>
+              </div>
+
+              <!-- Mail: 帮派战结算 (unread, attachment) -->
+              <div class="mail-item flex items-center gap-2.5 px-2.5 py-2 rounded mb-0.5" data-dom-id="mail-4">
+                <span class="unread-dot w-2 h-2 rounded-full shrink-0" style="background: var(--ink-gold-primary); box-shadow: 0 0 6px var(--ink-gold-glow);"></span>
+                <div class="w-9 h-9 rounded shrink-0 flex items-center justify-center text-sm font-bold" style="background: rgba(94,139,126,0.15); border: 1px solid var(--ink-border-gold); color: var(--ink-jade-bright); font-family: var(--ink-font-display);">帮</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-sm font-medium truncate" style="color: var(--ink-text-primary);">玄武堂</span>
+                    <span class="num text-xs shrink-0" style="color: var(--ink-text-muted); font-family: var(--ink-font-number);">昨日</span>
+                  </div>
+                  <div class="flex items-center justify-between gap-2 mt-0.5">
+                    <span class="text-xs truncate" style="color: var(--ink-text-secondary); font-family: var(--ink-font-display);">帮派战结算奖励</span>
+                    <i data-lucide="paperclip" style="width:12px;height:12px;color:var(--ink-gold-primary); flex-shrink:0;"></i>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mail: 每周贡献 (read, attachment) -->
+              <div class="mail-item flex items-center gap-2.5 px-2.5 py-2 rounded mb-0.5" data-dom-id="mail-5">
+                <span class="w-2 h-2 rounded-full shrink-0" style="background: transparent;"></span>
+                <div class="w-9 h-9 rounded shrink-0 flex items-center justify-center text-sm font-bold" style="background: rgba(94,139,126,0.06); border: 1px solid var(--ink-border-gold); color: var(--ink-text-muted); font-family: var(--ink-font-display);">帮</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-sm truncate" style="color: var(--ink-text-secondary);">朱雀堂</span>
+                    <span class="num text-xs shrink-0" style="color: var(--ink-text-muted); font-family: var(--ink-font-number);">七月十二</span>
+                  </div>
+                  <div class="flex items-center justify-between gap-2 mt-0.5">
+                    <span class="text-xs truncate" style="color: var(--ink-text-muted); font-family: var(--ink-font-display);">每周贡献奖励</span>
+                    <i data-lucide="paperclip" style="width:12px;height:12px;color:var(--ink-text-muted); flex-shrink:0;"></i>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Player Section Label -->
+              <div class="flex items-center gap-2 px-2 py-1.5 mt-1 mb-0.5">
+                <span class="w-1.5 h-1.5 rounded-full" style="background: var(--ink-blood-primary); box-shadow: 0 0 4px var(--ink-blood-glow);"></span>
+                <span class="text-xs font-medium" style="color: var(--ink-text-secondary);">玩家 <span class="num" style="color: var(--ink-blood-bright);">3</span></span>
+              </div>
+
+              <!-- Mail: 切磋之约 (read, attachment) -->
+              <div class="mail-item flex items-center gap-2.5 px-2.5 py-2 rounded mb-0.5" data-dom-id="mail-6">
+                <span class="w-2 h-2 rounded-full shrink-0" style="background: transparent;"></span>
+                <div class="w-9 h-9 rounded shrink-0 flex items-center justify-center text-sm font-bold" style="background: rgba(94,139,126,0.06); border: 1px solid var(--ink-border-gold); color: var(--ink-text-muted); font-family: var(--ink-font-display);">张</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-sm truncate" style="color: var(--ink-text-secondary);">剑客张三</span>
+                    <span class="num text-xs shrink-0" style="color: var(--ink-text-muted); font-family: var(--ink-font-number);">昨日</span>
+                  </div>
+                  <div class="flex items-center justify-between gap-2 mt-0.5">
+                    <span class="text-xs truncate" style="color: var(--ink-text-muted); font-family: var(--ink-font-display);">切磋之约 · 紫霄宫</span>
+                    <i data-lucide="paperclip" style="width:12px;height:12px;color:var(--ink-text-muted); flex-shrink:0;"></i>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mail: 西域奇遇 (unread) -->
+              <div class="mail-item flex items-center gap-2.5 px-2.5 py-2 rounded mb-0.5" data-dom-id="mail-7">
+                <span class="unread-dot w-2 h-2 rounded-full shrink-0" style="background: var(--ink-gold-primary); box-shadow: 0 0 6px var(--ink-gold-glow);"></span>
+                <div class="w-9 h-9 rounded shrink-0 flex items-center justify-center text-sm font-bold" style="background: rgba(94,139,126,0.15); border: 1px solid var(--ink-border-gold); color: var(--ink-jade-bright); font-family: var(--ink-font-display);">李</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-sm font-medium truncate" style="color: var(--ink-text-primary);">飞燕李四</span>
+                    <span class="num text-xs shrink-0" style="color: var(--ink-text-muted); font-family: var(--ink-font-number);">三日前</span>
+                  </div>
+                  <div class="flex items-center justify-between gap-2 mt-0.5">
+                    <span class="text-xs truncate" style="color: var(--ink-text-secondary); font-family: var(--ink-font-display);">西域奇遇相告</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mail: 商队护送 (read) -->
+              <div class="mail-item flex items-center gap-2.5 px-2.5 py-2 rounded mb-0.5" data-dom-id="mail-8">
+                <span class="w-2 h-2 rounded-full shrink-0" style="background: transparent;"></span>
+                <div class="w-9 h-9 rounded shrink-0 flex items-center justify-center text-sm font-bold" style="background: rgba(94,139,126,0.06); border: 1px solid var(--ink-border-gold); color: var(--ink-text-muted); font-family: var(--ink-font-display);">王</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="text-sm truncate" style="color: var(--ink-text-secondary);">玄武王五</span>
+                    <span class="num text-xs shrink-0" style="color: var(--ink-text-muted); font-family: var(--ink-font-number);">七月十一</span>
+                  </div>
+                  <div class="flex items-center justify-between gap-2 mt-0.5">
+                    <span class="text-xs truncate" style="color: var(--ink-text-muted); font-family: var(--ink-font-display);">商队护送谢礼</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </aside>
+
+          <!-- ===== Center Panel — Mail Content ===== -->
+          <section class="flex-1 min-w-0 flex flex-col overflow-hidden" style="background: var(--ink-bg-void);">
+            <div class="flex-1 overflow-y-auto">
+
+              <!-- Sender Info Header -->
+              <div class="px-6 pt-6 pb-5" style="background: linear-gradient(180deg, rgba(200,168,88,0.06) 0%, transparent 100%); border-bottom: 1px solid var(--ink-border-gold);">
+                <div class="flex items-start gap-4">
+                  <div class="w-14 h-14 rounded shrink-0 flex items-center justify-center text-2xl font-bold" style="background: rgba(200,168,88,0.12); border: 2px solid var(--ink-gold-primary); color: var(--ink-gold-primary); font-family: var(--ink-font-display); box-shadow: 0 0 16px rgba(200,168,88,0.15);">系</div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1.5">
+                      <span class="text-lg font-bold truncate" style="font-family: var(--ink-font-display); color: var(--ink-text-primary);">系统官府</span>
+                      <span class="text-xs px-2 py-0.5 rounded whitespace-nowrap shrink-0" style="background: rgba(200,168,88,0.12); border: 1px solid var(--ink-border-gold); color: var(--ink-gold-bright); font-family: var(--ink-font-display);">系统</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-sm" style="color: var(--ink-text-secondary);">
+                      <span class="flex items-center gap-1">
+                        <i data-lucide="clock" style="width:13px;height:13px;color:var(--ink-text-muted);"></i>
+                        <span class="truncate">丙午年 七月十五 辰时三刻</span>
+                      </span>
+                      <span class="shrink-0" style="color: var(--ink-text-muted);">|</span>
+                      <span class="flex items-center gap-1 shrink-0">
+                        <i data-lucide="paperclip" style="width:13px;height:13px;color:var(--ink-gold-primary);"></i>
+                        <span style="color: var(--ink-gold-primary);">附有赏赐</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mail Subject -->
+              <div class="px-6 pt-6 pb-3">
+                <h2 class="text-3xl font-bold tracking-wide" style="font-family: var(--ink-font-display); color: var(--ink-text-primary); text-wrap: balance; word-break: keep-all;">周末庆典 · 论剑豪礼</h2>
+                <div class="flex items-center gap-2 mt-2">
+                  <span class="h-px flex-1" style="background: linear-gradient(90deg, var(--ink-gold-primary), transparent);"></span>
+                  <span class="text-xs px-2 py-0.5 rounded whitespace-nowrap" style="background: rgba(200,168,88,0.08); color: var(--ink-gold-bright); font-family: var(--ink-font-display);">庆典 · 论剑</span>
+                </div>
+              </div>
+
+              <!-- Letter Body (信笺排版) -->
+              <div class="px-6 pb-5">
+                <div class="letter-paper relative px-7 py-6 rounded" style="background: var(--ink-bg-paper); border: 1px solid var(--ink-border-gold); background-image: linear-gradient(rgba(200,168,88,0.04) 1px, transparent 1px); background-size: 100% 32px; box-shadow: var(--ink-shadow-panel);">
+                  <!-- Decorative corner -->
+                  <div class="absolute top-2 left-2 w-6 h-6" style="border-top: 1px solid var(--ink-gold-faint); border-left: 1px solid var(--ink-gold-faint);"></div>
+                  <div class="absolute top-2 right-2 w-6 h-6" style="border-top: 1px solid var(--ink-gold-faint); border-right: 1px solid var(--ink-gold-faint);"></div>
+                  <div class="absolute bottom-2 left-2 w-6 h-6" style="border-bottom: 1px solid var(--ink-gold-faint); border-left: 1px solid var(--ink-gold-faint);"></div>
+                  <div class="absolute bottom-2 right-2 w-6 h-6" style="border-bottom: 1px solid var(--ink-gold-faint); border-right: 1px solid var(--ink-gold-faint);"></div>
+
+                  <div class="space-y-4 text-sm leading-loose" style="color: var(--ink-text-primary); font-family: var(--ink-font-body); line-height: 2;">
+                    <p style="text-indent: 2em;">少侠台鉴：</p>
+                    <p style="text-indent: 2em;">适逢周末庆典，江湖豪杰齐聚论剑台。阁下于本次论剑大会中表现卓绝，连挫数名强敌，名列前茅，特此致书恭贺。</p>
+                    <p style="text-indent: 2em;">依江湖规矩，凡入榜者皆有赏赐。现将论剑豪礼附于信中，望少侠查收。灵石五百以充修炼之资，九转还魂丹三枚可续命于生死之间，玄铁精十两可铸神兵，真武剑诀残卷一卷乃武当秘传，习之可窥剑道真意。</p>
+                    <p style="text-indent: 2em;">江湖路远，望少侠珍重。下月论剑，再期相会。</p>
+                    <div class="text-right pt-2" style="color: var(--ink-text-secondary); font-family: var(--ink-font-display);">
+                      <p>—— 论剑台主办 · 系统官府</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Reward Claim Area (system mail) -->
+              <div class="px-6 pb-6">
+                <div class="rounded p-5" style="background: rgba(200,168,88,0.04); border: 1px solid var(--ink-border-gold);">
+                  <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                      <i data-lucide="gift" style="width:16px;height:16px;color:var(--ink-gold-primary);"></i>
+                      <h3 class="text-sm font-semibold" style="color: var(--ink-text-primary); font-family: var(--ink-font-display);">赏赐明细</h3>
+                    </div>
+                    <span class="text-xs" style="color: var(--ink-text-muted);">请于右侧信物栏领取</span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2.5">
+                    <div class="flex items-center gap-2.5 px-3 py-2 rounded" style="background: var(--ink-bg-paper); border: 1px solid var(--ink-quality-common);">
+                      <i data-lucide="gem" style="width:16px;height:16px;color:var(--ink-quality-common);"></i>
+                      <span class="text-sm truncate" style="color: var(--ink-text-primary);">灵石</span>
+                      <span class="num text-sm font-bold ml-auto shrink-0" style="color: var(--ink-quality-common); font-family: var(--ink-font-number);">×500</span>
+                    </div>
+                    <div class="flex items-center gap-2.5 px-3 py-2 rounded" style="background: var(--ink-bg-paper); border: 1px solid var(--ink-quality-rare);">
+                      <i data-lucide="anvil" style="width:16px;height:16px;color:var(--ink-quality-rare);"></i>
+                      <span class="text-sm truncate" style="color: var(--ink-text-primary);">玄铁精</span>
+                      <span class="num text-sm font-bold ml-auto shrink-0" style="color: var(--ink-quality-rare); font-family: var(--ink-font-number);">×10</span>
+                    </div>
+                    <div class="flex items-center gap-2.5 px-3 py-2 rounded" style="background: var(--ink-bg-paper); border: 1px solid var(--ink-quality-epic);">
+                      <i data-lucide="pill" style="width:16px;height:16px;color:var(--ink-quality-epic);"></i>
+                      <span class="text-sm truncate" style="color: var(--ink-text-primary);">九转还魂丹</span>
+                      <span class="num text-sm font-bold ml-auto shrink-0" style="color: var(--ink-quality-epic); font-family: var(--ink-font-number);">×3</span>
+                    </div>
+                    <div class="flex items-center gap-2.5 px-3 py-2 rounded" style="background: var(--ink-bg-paper); border: 1px solid var(--ink-quality-legendary);">
+                      <i data-lucide="scroll" style="width:16px;height:16px;color:var(--ink-quality-legendary);"></i>
+                      <span class="text-sm truncate" style="color: var(--ink-text-primary);">真武剑诀·残卷</span>
+                      <span class="num text-sm font-bold ml-auto shrink-0" style="color: var(--ink-quality-legendary); font-family: var(--ink-font-number);">×1</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- ===== Right Panel — Attachments (280px) ===== -->
+          <aside class="w-[280px] shrink-0 flex flex-col overflow-hidden" style="background: rgba(20,23,30,0.85); backdrop-filter: blur(8px); border-left: 1px solid var(--ink-border-gold);">
+
+            <!-- Attachment Header -->
+            <div class="px-4 py-3 shrink-0 flex items-center justify-between" style="border-bottom: 1px solid var(--ink-border-gold);">
+              <div class="flex items-center gap-2">
+                <i data-lucide="package" style="width:15px;height:15px;color:var(--ink-gold-primary);"></i>
+                <h3 class="text-sm font-semibold" style="color: var(--ink-text-primary); font-family: var(--ink-font-display);">信物附件</h3>
+              </div>
+              <span class="num text-xs px-2 py-0.5 rounded" style="background: rgba(200,168,88,0.12); color: var(--ink-gold-primary); font-family: var(--ink-font-number);">4 件</span>
+            </div>
+
+            <!-- Attachment List (scrollable) -->
+            <div class="flex-1 overflow-y-auto px-3 py-3">
+              <div class="stack-8 flex flex-col gap-2">
+
+                <!-- 灵石 (common, claimable) -->
+                <div class="attach-item flex items-center gap-3 p-2.5 rounded" style="background: var(--ink-bg-paper); border: 1px solid var(--ink-quality-common);" data-dom-id="attach-1">
+                  <div class="w-10 h-10 rounded shrink-0 flex items-center justify-center" style="background: rgba(138,130,117,0.12); border: 1px solid var(--ink-quality-common);">
+                    <i data-lucide="gem" style="width:20px;height:20px;color:var(--ink-quality-common);"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium truncate" style="color: var(--ink-quality-common); font-family: var(--ink-font-display);">灵石</div>
+                    <div class="text-xs" style="color: var(--ink-text-muted);">修炼资材</div>
+                  </div>
+                  <span class="num text-sm font-bold shrink-0" style="color: var(--ink-text-primary); font-family: var(--ink-font-number);">×500</span>
+                </div>
+
+                <!-- 玄铁精 (rare, claimable) -->
+                <div class="attach-item flex items-center gap-3 p-2.5 rounded" style="background: var(--ink-bg-paper); border: 1px solid var(--ink-quality-rare);" data-dom-id="attach-2">
+                  <div class="w-10 h-10 rounded shrink-0 flex items-center justify-center" style="background: rgba(74,126,168,0.12); border: 1px solid var(--ink-quality-rare);">
+                    <i data-lucide="anvil" style="width:20px;height:20px;color:var(--ink-quality-rare);"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium truncate" style="color: var(--ink-quality-rare); font-family: var(--ink-font-display);">玄铁精</div>
+                    <div class="text-xs" style="color: var(--ink-text-muted);">铸兵材料</div>
+                  </div>
+                  <span class="num text-sm font-bold shrink-0" style="color: var(--ink-text-primary); font-family: var(--ink-font-number);">×10</span>
+                </div>
+
+                <!-- 九转还魂丹 (epic, claimable) -->
+                <div class="attach-item flex items-center gap-3 p-2.5 rounded" style="background: var(--ink-bg-paper); border: 1px solid var(--ink-quality-epic);" data-dom-id="attach-3">
+                  <div class="w-10 h-10 rounded shrink-0 flex items-center justify-center" style="background: rgba(139,94,158,0.12); border: 1px solid var(--ink-quality-epic);">
+                    <i data-lucide="pill" style="width:20px;height:20px;color:var(--ink-quality-epic);"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium truncate" style="color: var(--ink-quality-epic); font-family: var(--ink-font-display);">九转还魂丹</div>
+                    <div class="text-xs" style="color: var(--ink-text-muted);">续命灵药</div>
+                  </div>
+                  <span class="num text-sm font-bold shrink-0" style="color: var(--ink-text-primary); font-family: var(--ink-font-number);">×3</span>
+                </div>
+
+                <!-- 真武剑诀·残卷 (legendary, already claimed — demonstrates post-claim state) -->
+                <div class="attach-item is-claimed flex items-center gap-3 p-2.5 rounded" style="background: var(--ink-bg-paper); border: 1px solid var(--ink-quality-legendary);" data-dom-id="attach-4">
+                  <div class="w-10 h-10 rounded shrink-0 flex items-center justify-center" style="background: rgba(200,168,88,0.12); border: 1px solid var(--ink-quality-legendary);">
+                    <i data-lucide="scroll" style="width:20px;height:20px;color:var(--ink-quality-legendary);"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium truncate" style="color: var(--ink-quality-legendary); font-family: var(--ink-font-display);">真武剑诀·残卷</div>
+                    <div class="text-xs flex items-center gap-1" style="color: var(--ink-jade-bright);">
+                      <i data-lucide="check" style="width:11px;height:11px;"></i>已领取
+                    </div>
+                  </div>
+                  <span class="num text-sm font-bold shrink-0" style="color: var(--ink-text-muted); font-family: var(--ink-font-number);">×1</span>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Claim All Button -->
+            <div class="px-3 py-3 shrink-0" style="border-top: 1px solid var(--ink-border-gold);">
+              <button class="claim-btn w-full flex items-center justify-center gap-2 h-10 rounded text-sm font-semibold whitespace-nowrap" style="background: linear-gradient(180deg, var(--ink-gold-primary) 0%, var(--ink-gold-deep) 100%); border: 1px solid var(--ink-gold-bright); color: var(--ink-text-inverse); font-family: var(--ink-font-display); box-shadow: 0 0 12px rgba(200,168,88,0.2);" data-dom-id="btn-claim-all">
+                <i data-lucide="package-check" style="width:16px;height:16px;"></i>一键领取
+              </button>
+              <div class="text-xs text-center mt-2" style="color: var(--ink-text-muted);">剩余可领取 <span class="num" style="color: var(--ink-gold-primary); font-family: var(--ink-font-number);">3</span> 件</div>
+            </div>
+
+            <!-- Mail Actions -->
+            <div class="px-3 pb-3 shrink-0 grid grid-cols-3 gap-2">
+              <button class="action-btn flex items-center justify-center gap-1.5 h-9 rounded text-sm whitespace-nowrap" style="background: rgba(200,168,88,0.12); border: 1px solid var(--ink-gold-primary); color: var(--ink-gold-primary);" data-dom-id="btn-reply">
+                <i data-lucide="reply" style="width:14px;height:14px;"></i>回复
+              </button>
+              <button class="action-btn flex items-center justify-center gap-1.5 h-9 rounded text-sm whitespace-nowrap" style="background: rgba(200,168,88,0.06); border: 1px solid var(--ink-border-gold); color: var(--ink-text-primary);" data-dom-id="btn-forward">
+                <i data-lucide="forward" style="width:14px;height:14px;"></i>转发
+              </button>
+              <button class="action-btn flex items-center justify-center gap-1.5 h-9 rounded text-sm whitespace-nowrap" style="background: rgba(184,84,80,0.08); border: 1px solid var(--ink-blood-faint); color: var(--ink-blood-bright);" data-dom-id="btn-delete">
+                <i data-lucide="trash-2" style="width:14px;height:14px;"></i>删除
+              </button>
+            </div>
+
+          </aside>
+
+        </div>
+      </div>
+    </main>
+    <style>
+      /* === Mail Category Tabs === */
+      .mail-tab {
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: var(--ink-radius-lg);
+        color: var(--ink-text-secondary);
+        cursor: pointer;
+        font-weight: 500;
+        transition: color 0.12s ease, background-color 0.12s ease, border-color 0.12s ease;
+      }
+      .mail-tab:hover {
+        color: var(--ink-text-primary);
+        background: rgba(200, 168, 88, 0.06);
+      }
+      .mail-tab.is-active {
+        color: var(--ink-gold-primary);
+        background: rgba(200, 168, 88, 0.12);
+        border-color: var(--ink-border-gold);
+      }
+      .mail-tab:focus-visible {
+        outline: 1px solid var(--ink-gold-primary);
+        outline-offset: 2px;
+      }
+
+      /* === Mail List Items === */
+      .mail-item {
+        transition: background-color 0.12s ease, border-color 0.12s ease;
+        cursor: pointer;
+        border-left: 2px solid transparent;
+      }
+      .mail-item:hover {
+        background: rgba(200, 168, 88, 0.06);
+      }
+      .mail-item.is-selected {
+        background: rgba(200, 168, 88, 0.1);
+        border-left-color: var(--ink-gold-primary);
+      }
+      .mail-item:focus-visible {
+        outline: 1px solid var(--ink-gold-primary);
+        outline-offset: 2px;
+      }
+
+      /* === Unread Gold Dot — breathing micro-interaction === */
+      .unread-dot {
+        animation: unread-breath 2.4s ease-in-out infinite;
+      }
+      @keyframes unread-breath {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.55; transform: scale(0.82); }
+      }
+
+      /* === Attachment Items === */
+      .attach-item {
+        transition: transform 0.14s ease, border-color 0.14s ease, opacity 0.3s ease, filter 0.3s ease;
+        cursor: pointer;
+      }
+      .attach-item:hover {
+        transform: translateY(-1px);
+      }
+      .attach-item:focus-visible {
+        outline: 1px solid var(--ink-gold-primary);
+        outline-offset: 2px;
+      }
+      /* Post-claim state: item dims and recedes (领取后消失的终态) */
+      .attach-item.is-claimed {
+        opacity: 0.42;
+        filter: grayscale(0.55);
+        transform: scale(0.97);
+        cursor: default;
+      }
+
+      /* === Claim Button === */
+      .claim-btn {
+        cursor: pointer;
+        transition: filter 0.14s ease, transform 0.14s ease, box-shadow 0.14s ease;
+      }
+      .claim-btn:hover {
+        filter: brightness(1.12);
+        transform: translateY(-1px);
+        box-shadow: 0 0 18px rgba(200, 168, 88, 0.35);
+      }
+      .claim-btn:active {
+        transform: translateY(0);
+        filter: brightness(0.95);
+      }
+      .claim-btn:focus-visible {
+        outline: 1px solid var(--ink-gold-bright);
+        outline-offset: 2px;
+      }
+
+      /* === Action Buttons === */
+      .action-btn {
+        font-family: var(--ink-font-body);
+        cursor: pointer;
+        transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease, transform 0.12s ease;
+      }
+      .action-btn:hover {
+        transform: translateY(-1px);
+      }
+      .action-btn:active {
+        transform: translateY(0);
+      }
+      .action-btn:focus-visible {
+        outline: 1px solid var(--ink-gold-primary);
+        outline-offset: 2px;
+      }
+
+      /* === Back Button === */
+      [data-dom-id="back-hud"] {
+        transition: background-color 0.12s ease, border-color 0.12s ease;
+      }
+      [data-dom-id="back-hud"]:hover {
+        background: rgba(200, 168, 88, 0.12);
+        border-color: var(--ink-gold-primary);
+      }
+      [data-dom-id="back-hud"]:focus-visible {
+        outline: 1px solid var(--ink-gold-primary);
+        outline-offset: 2px;
+      }
+
+      /* === Compose Button === */
+      [data-dom-id="btn-compose"] {
+        transition: background-color 0.12s ease, border-color 0.12s ease;
+      }
+      [data-dom-id="btn-compose"]:hover {
+        background: rgba(200, 168, 88, 0.2);
+      }
+      [data-dom-id="btn-compose"]:focus-visible {
+        outline: 1px solid var(--ink-gold-primary);
+        outline-offset: 2px;
+      }
+
+      /* === Letter Paper === */
+      .letter-paper {
+        transition: border-color 0.14s ease;
+      }
+
+      /* === Reduced Motion === */
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          transition-duration: 0.01ms !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+        }
+      }
+    </style>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

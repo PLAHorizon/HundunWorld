@@ -66,6 +66,9 @@ namespace HundunWorld.Game.Network
                 ZoneId = networkManager?.ZoneId ?? AuthenticationManager.Instance.ZoneId,
                 ServerId = networkManager?.ServerId ?? AuthenticationManager.Instance.ServerId,
                 UserId = networkManager?.UserId ?? (passport?.UserId ?? 0),
+                // 设置 CharacterId：服务端 HandleSubscriptionUpdateAsync 等依赖此字段路由订阅变更。
+                // 玩家选角前为 0，选角进入游戏后由 HundunWorldGame.SetPlayerId 设置。
+                CharacterId = networkManager?.CharacterId ?? 0,
                 AuthToken = !string.IsNullOrEmpty(networkManager?.AuthToken) ? networkManager.AuthToken : authToken,
                 MachineId = MachineIdentifier.GetMachineGuid()
             };

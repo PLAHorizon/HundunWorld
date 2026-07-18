@@ -164,8 +164,14 @@
     <Reference Include="Horizon.Game.ECS">
       <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.dll</HintPath>
     </Reference>
+    <Reference Include="Horizon.Game.Core">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Core.dll</HintPath>
+    </Reference>
     <Reference Include="Horizon.Game.ECS.Arch">
       <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.Arch.dll</HintPath>
+    </Reference>
+    <Reference Include="Horizon.Core.Abstract">
+      <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Core.Abstract.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Extensions.ObjectPool">
       <HintPath>..\..\..\..\..\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.ObjectPool.dll</HintPath>
@@ -235,9 +241,12 @@
     <Compile Include="Game\Audio\GameAudioManager.cs" />
     <Compile Include="Game\CameraCollisionDebugger.cs" />
     <Compile Include="Game\CameraShakeSystem.cs" />
+    <Compile Include="Game\Character\Attributes\CharacterAttributes.cs" />
     <Compile Include="Game\Character\Attributes\CharacterAttributesComponent.cs" />
     <Compile Include="Game\Character\Attributes\WuxingElement.cs" />
+    <Compile Include="Game\Character\CharacterAttachmentSlot.cs" />
     <Compile Include="Game\Character\CharacterAttributeManager.cs" />
+    <Compile Include="Game\Character\CharacterEquipmentManager.cs" />
     <Compile Include="Game\Character\CharacterStats.cs" />
     <Compile Include="Game\Character\ControlStateManager.cs" />
     <Compile Include="Game\Character\ICharacterAttributeManager.cs" />
@@ -311,10 +320,14 @@
     <Compile Include="Game\ECS\Systems\RenderingSystem.cs" />
     <Compile Include="Game\ECS\Systems\SkillSystem.cs" />
     <Compile Include="Game\ECSUpdateDriver.cs" />
+    <Compile Include="Game\Editor\AutoSkinnedModelImportPlugin.cs" />
     <Compile Include="Game\Effects\Tween.cs" />
     <Compile Include="Game\Equipment\Crafting\MaterialCraftingSystem.cs" />
+    <Compile Include="Game\Equipment\EquipmentData.cs" />
+    <Compile Include="Game\Equipment\EquipmentDatabase.cs" />
     <Compile Include="Game\Equipment\Material\MaterialData.cs" />
     <Compile Include="Game\ExitOnEsc.cs" />
+    <Compile Include="Game\FlaxActorSyncSystem.cs" />
     <Compile Include="Game\Game.Gen.cs" />
     <Compile Include="Game\GameSceneInitializer.cs" />
     <Compile Include="Game\GameStartup.cs" />
@@ -389,6 +402,7 @@
     <Compile Include="Game\PerformanceMonitor.cs" />
     <Compile Include="Game\PhotoMode.cs" />
     <Compile Include="Game\PlayerController.cs" />
+    <Compile Include="Game\RemotePlayerActor.cs" />
     <Compile Include="Game\Rendering\Atmospheric\AtmosphericParticleEffect.cs" />
     <Compile Include="Game\Rendering\Atmospheric\GroundShadowPlane.cs" />
     <Compile Include="Game\Rendering\CharacterAppearanceEditor.cs" />
@@ -428,11 +442,15 @@
     <Compile Include="Game\UI\Character\CharacterManager.cs" />
     <Compile Include="Game\UI\Character\CharacterSceneController.cs" />
     <Compile Include="Game\UI\Character\CharacterSelectionUI.cs" />
+    <Compile Include="Game\UI\Character\CharacterStateManager.cs" />
     <Compile Include="Game\UI\Character\FacePresetSelectionUI.cs" />
     <Compile Include="Game\UI\Character\GenderSelectionUI.cs" />
     <Compile Include="Game\UI\Character\IntegratedCharacterCreationUI.cs" />
     <Compile Include="Game\UI\Character\NamingCompleteUI.cs" />
     <Compile Include="Game\UI\Character\StepNavigation.cs" />
+    <Compile Include="Game\UI\Character\StepNavigationManager.cs" />
+    <Compile Include="Game\UI\Character\UIComponentManager.cs" />
+    <Compile Include="Game\UI\Character\UIFactory.cs" />
     <Compile Include="Game\UI\Components\BottomActionBar.cs" />
     <Compile Include="Game\UI\Components\CategorySidebar.cs" />
     <Compile Include="Game\UI\Components\CharacterAnimator.cs" />
@@ -443,6 +461,7 @@
     <Compile Include="Game\UI\Components\ConfirmDialog.cs" />
     <Compile Include="Game\UI\Components\ConfirmDialogTest.cs" />
     <Compile Include="Game\UI\Components\CustomTextDrawing.cs" />
+    <Compile Include="Game\UI\Components\EquipmentSlotView.cs" />
     <Compile Include="Game\UI\Components\FacePresetCard.cs" />
     <Compile Include="Game\UI\Components\FloatingParticles.cs" />
     <Compile Include="Game\UI\Components\FrostedGlassPanel.cs" />
@@ -462,6 +481,7 @@
     <Compile Include="Game\UI\Components\UICharacterCameraSystem.cs" />
     <Compile Include="Game\UI\Components\ValidatedTextBox.cs" />
     <Compile Include="Game\UI\Components\Viewport3DPreview.cs" />
+    <Compile Include="Game\UI\Components\WuxingRadarChart.cs" />
     <Compile Include="Game\UI\Controllers\AnimationController.cs" />
     <Compile Include="Game\UI\Controllers\ErrorHandler.cs" />
     <Compile Include="Game\UI\Controllers\SceneController.cs" />
@@ -475,7 +495,6 @@
     <Compile Include="Game\UI\Effects\ParticleSystemTest.cs" />
     <Compile Include="Game\UI\Effects\StarParticleSystem.cs" />
     <Compile Include="Game\UI\Effects\UIParticleEffectManager.cs" />
-    <Compile Include="Game\UI\Enums\SceneType.cs" />
     <Compile Include="Game\UI\ErrorHandling\EnhancedErrorHandlingManager.cs" />
     <Compile Include="Game\UI\ErrorHandling\ErrorHandlingManager.cs" />
     <Compile Include="Game\UI\ErrorHandling\ErrorTypes.cs" />
@@ -499,6 +518,42 @@
     <Compile Include="Game\UI\Guidance\GuidanceStep.cs" />
     <Compile Include="Game\UI\Guidance\UserGuidanceManager.cs" />
     <Compile Include="Game\UI\HUD.cs" />
+    <Compile Include="Game\UI\Ink\Components\CharacterPreview3D.cs" />
+    <Compile Include="Game\UI\Ink\Components\HexRadarChartOverlay.cs" />
+    <Compile Include="Game\UI\Ink\Components\InkAttributeTooltip.cs" />
+    <Compile Include="Game\UI\Ink\Components\InkBackpackGrid.cs" />
+    <Compile Include="Game\UI\Ink\Components\InkDialClock.cs" />
+    <Compile Include="Game\UI\Ink\Components\InkEquipmentSlot.cs" />
+    <Compile Include="Game\UI\Ink\Components\InkMeridianDiagram.cs" />
+    <Compile Include="Game\UI\Ink\Components\InkMinimap.cs" />
+    <Compile Include="Game\UI\Ink\Components\InkSkillSlotGrid.cs" />
+    <Compile Include="Game\UI\Ink\IInkPage.cs" />
+    <Compile Include="Game\UI\Ink\InkBackgrounds.cs" />
+    <Compile Include="Game\UI\Ink\InkBars.cs" />
+    <Compile Include="Game\UI\Ink\InkButtons.cs" />
+    <Compile Include="Game\UI\Ink\InkCells.cs" />
+    <Compile Include="Game\UI\Ink\InkDividers.cs" />
+    <Compile Include="Game\UI\Ink\InkPageRouter.cs" />
+    <Compile Include="Game\UI\Ink\InkPageShell.cs" />
+    <Compile Include="Game\UI\Ink\InkPanels.cs" />
+    <Compile Include="Game\UI\Ink\InkText.cs" />
+    <Compile Include="Game\UI\Ink\Pages\Character\MenuCharAttributesV2Page.cs" />
+    <Compile Include="Game\UI\Ink\Pages\Character\MenuEquipmentPage.cs" />
+    <Compile Include="Game\UI\Ink\Pages\Combat\AcupointPage.cs" />
+    <Compile Include="Game\UI\Ink\Pages\Combat\CombatHudV2Page.cs" />
+    <Compile Include="Game\UI\Ink\Pages\Combat\DeathScreenPage.cs" />
+    <Compile Include="Game\UI\Ink\Pages\Combat\MenuBattlePrepPage.cs" />
+    <Compile Include="Game\UI\Ink\Pages\Combat\QtePage.cs" />
+    <Compile Include="Game\UI\Ink\Pages\CombatHudPage.cs" />
+    <Compile Include="Game\UI\Ink\Pages\LoadingPages.cs" />
+    <Compile Include="Game\UI\Ink\Pages\MenuCharAttributesPage.cs" />
+    <Compile Include="Game\UI\Ink\Pages\MenuQuestsPage.cs" />
+    <Compile Include="Game\UI\Ink\Pages\MenuShopPage.cs" />
+    <Compile Include="Game\UI\Ink\Pages\PopupPages.cs" />
+    <Compile Include="Game\UI\Ink\Pages\Reward\RewardLevelUpPage.cs" />
+    <Compile Include="Game\UI\Ink\Pages\RewardPages.cs" />
+    <Compile Include="Game\UI\Ink\Pages\SettingsPage.cs" />
+    <Compile Include="Game\UI\Ink\Pages\Social\DialogueConfirmPage.cs" />
     <Compile Include="Game\UI\Kungfu\KungfuSystemUI.cs" />
     <Compile Include="Game\UI\Layout\ResponsiveLayoutCalculator.cs" />
     <Compile Include="Game\UI\MainUIManager.cs" />
@@ -522,8 +577,11 @@
     <Compile Include="Game\UI\States\UIState.cs" />
     <Compile Include="Game\UI\StateValidation\SceneTransitionValidator.cs" />
     <Compile Include="Game\UI\StyleSystem\ChineseClassicalTheme.cs" />
+    <Compile Include="Game\UI\StyleSystem\InkWashTheme.cs" />
     <Compile Include="Game\UI\StyleSystem\KungfuTheme.cs" />
     <Compile Include="Game\UI\Tests\CharacterPreviewTest.cs" />
+    <Compile Include="Game\UI\Tests\EquipmentComparisonUITest.cs" />
+    <Compile Include="Game\UI\Tests\EquipmentSlotViewTest.cs" />
     <Compile Include="Game\UI\UIHelper.cs" />
     <Compile Include="Game\UI\UISceneManager.cs" />
     <Compile Include="Game\UI\UIStateManager.cs" />
@@ -534,6 +592,7 @@
     <Compile Include="Game\Worlds\WorldManager.cs" />
     <Compile Include="Game\Worlds\WorldState.cs" />
     <Compile Include="Game\Worlds\WorldStateManager.cs" />
+    <Compile Include="Game\WorldSceneInitializer.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' " >
     <Compile Visible="false" Include="C:\Works\GitHubProjects\HundunWorld\HundunWorld\Cache\Intermediate\GameEditorTarget\Windows\x64\Debug\Game\Game.Bindings.Gen.cs" />

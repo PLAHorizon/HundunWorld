@@ -10,6 +10,7 @@ using HundunWorld.Game.UI.Components;
 using HundunWorld.Game.UI.StyleSystem;
 using UIStateManager = HundunWorld.Game.UI.UIStateManager;
 using CharacterService = HundunWorld.Game.Services.CharacterService;
+using Game.UI.Character;
 
 namespace HundunWorld.Game.UI.Character
 {
@@ -188,6 +189,23 @@ namespace HundunWorld.Game.UI.Character
                     OnCreateNewCharacterClicked();
                     break;
                 case "进入游戏":
+                    // 通过选中的角色ID找到角色对象并进入游戏
+                    if (!string.IsNullOrEmpty(_selectedCharacterId))
+                    {
+                        var selectedCharacter = _characters.Find(c => c.CharacterId.ToString() == _selectedCharacterId);
+                        if (selectedCharacter != null)
+                        {
+                            OnEnterGameClicked(selectedCharacter);
+                        }
+                        else
+                        {
+                            Debug.LogWarning("[CharacterSelectionUI] 未找到选中的角色");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[CharacterSelectionUI] 请先选择一个角色");
+                    }
                     break;
             }
         }
@@ -263,42 +281,88 @@ namespace HundunWorld.Game.UI.Character
                 _isProcessing = true;
                 _loadingIndicator.Show();
 
-                var request = new EnterGameRequest
+                // 使用 CharacterManager 统一管理角色选择 + 进入游戏流程
+                var charMgr = CharacterManager.Instance;
+                if (charMgr == null)
                 {
-                    CharacterId = character.CharacterId,
-                    ClientVersion = "1.0.0"
-                };
-
-                var messagePacket = new HorizonMessagePacket
-                {
-                    Header = new MessageHeader
+                    Debug.LogError("[CharacterSelectionUI] CharacterManager 不可用，降级使用直接发送");
+                    // 降级方案：直接发送网络消息
+                    var request = new EnterGameRequest
                     {
-                        MessageId = Guid.NewGuid().ToString(),
-                        MessageType = MessageType.EnterGame,
+                        CharacterId = character.CharacterId,
+                        ClientVersion = "1.0.0"
+                    };
+                    var messagePacket = new HorizonMessagePacket
+                    {
+                        Header = new MessageHeader
+                        {
+                            MessageId = Guid.NewGuid().ToString(),
+                            MessageType = MessageType.EnterGame,
+                            ServiceType = ServiceType.Game,
+                            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                        },
                         ServiceType = ServiceType.Game,
-                        Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-                    },
-                    ServiceType = ServiceType.Game,
-                    Body = request
-                };
+                        Body = request
+                    };
+                    var networkManager = HundunWorldGame.Instance?.NetworkManager;
+                    if (networkManager == null || !networkManager.CanSendMessage())
+                    {
+                        Debug.LogError("[CharacterSelectionUI] 网络未连接，无法进入游戏");
+                        return;
+                    }
+                    
+                    messagePacket.Header.GameId = networkManager.GameId;
+                    messagePacket.Header.ZoneId = networkManager.ZoneId;
+                    messagePacket.Header.ServerId = networkManager.ServerId;
+                    messagePacket.Header.UserId = networkManager.UserId;
+                    messagePacket.Header.AuthToken = networkManager.AuthToken;
+                    messagePacket.Header.MachineId = MachineIdentifier.GetMachineGuid();
+                    var sent = await networkManager.SendMessageAsync(messagePacket);
+                    if (sent)
+                    {
+                        CharacterService.Instance.SelectCharacter(character);
+                        OnCharacterSelected?.Invoke();
 
-                var networkManager = HundunWorldGame.Instance?.NetworkManager;
-                if (networkManager == null || !networkManager.CanSendMessage())
-                {
-                    Debug.LogError("[CharacterSelectionUI] 网络未连接，无法进入游戏");
+                        // 降级路径：CharacterManager 不可用，直接通过 GameSceneManager 切换到游戏世界场景
+                        // （与主路径 CharacterManager.EnterGameAsync 中的场景切换写法一致）
+                        var sceneManager = GameSceneManager.Instance ?? GameSceneManager.GetOrCreate();
+                        if (sceneManager != null)
+                        {
+                            Debug.Log("[CharacterSelectionUI] 降级路径：启动场景切换到 GameWorld");
+                            bool transitionStarted = sceneManager.TransitionTo(SceneType.GameWorld);
+                            if (!transitionStarted)
+                            {
+                                Debug.LogError("[CharacterSelectionUI] 降级路径：GameSceneManager.TransitionTo(GameWorld) 返回 false，场景切换未启动");
+                            }
+                        }
+                        else
+                        {
+                            Debug.LogError("[CharacterSelectionUI] 降级路径：GameSceneManager 不可用，无法切换到游戏世界场景");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogError("[CharacterSelectionUI] 发送进入游戏请求失败");
+                    }
                     return;
                 }
 
-                var success = await networkManager.SendMessageAsync(messagePacket);
+                // 1. 选择角色（更新状态管理器）
+                if (!charMgr.SelectCharacter(character))
+                {
+                    Debug.LogError("[CharacterSelectionUI] 选择角色失败");
+                    return;
+                }
 
+                // 2. 发送进入游戏请求
+                bool success = await charMgr.EnterGameAsync();
                 if (success)
                 {
-                    CharacterService.Instance.SelectCharacter(character);
                     OnCharacterSelected?.Invoke();
                 }
                 else
                 {
-                    Debug.LogError("[CharacterSelectionUI] 发送进入游戏请求失败");
+                    Debug.LogError("[CharacterSelectionUI] 进入游戏失败");
                 }
             }
             catch (Exception ex)

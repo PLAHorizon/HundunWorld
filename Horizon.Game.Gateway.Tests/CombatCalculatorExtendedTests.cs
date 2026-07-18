@@ -143,7 +143,7 @@ namespace Horizon.Game.Gateway.Tests
         [Fact]
         public void IsSkillReady_StillOnCooldown_ReturnsFalse()
         {
-            var lastCast = DateTime.UtcNow.AddMilliseconds(-500);
+            var lastCast = DateTime.Now.AddMilliseconds(-500);
             var result = CombatCalculator.IsSkillReady(lastCast, 3000); // 3秒冷却，只过了0.5秒
             Assert.False(result);
         }
@@ -177,7 +177,7 @@ namespace Horizon.Game.Gateway.Tests
         [Fact]
         public void GetRemainingCooldown_StillOnCooldown_ReturnsPositive()
         {
-            var lastCast = DateTime.UtcNow.AddMilliseconds(-500);
+            var lastCast = DateTime.Now.AddMilliseconds(-500);
             var result = CombatCalculator.GetRemainingCooldown(lastCast, 3000); // 3秒冷却
             Assert.True(result > 0f);
             Assert.True(result <= 3.0f);

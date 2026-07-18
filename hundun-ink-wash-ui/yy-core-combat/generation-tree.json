@@ -1,0 +1,12 @@
+{
+  "projectId": "yy-core-combat",
+  "nodes": [
+    { "id": "page-combat-hud", "type": "leaf", "status": "planned", "dependsOn": [], "output": "pages/combat-hud.html" },
+    { "id": "page-guide-hud", "type": "leaf", "status": "planned", "dependsOn": [], "output": "pages/guide-hud.html" },
+    { "id": "page-element-vision", "type": "leaf", "status": "planned", "dependsOn": [], "output": "pages/element-vision.html" },
+    { "id": "page-death-screen", "type": "leaf", "status": "planned", "dependsOn": [], "output": "pages/death-screen.html" },
+    { "id": "page-qte", "type": "leaf", "status": "planned", "dependsOn": [], "output": "pages/qte.html" },
+    { "id": "page-acupoint", "type": "leaf", "status": "planned", "dependsOn": [], "output": "pages/acupoint.html" },
+    { "id": "page-dialogue-confirm", "type": "leaf", "status": "planned", "dependsOn": [], "output": "pages/dialogue-confirm.html" }
+  ]
+}

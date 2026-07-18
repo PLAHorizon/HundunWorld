@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using FlaxEngine;
 using Horizon.Game.Message.Sim;
 using Horizon.Game.Message.Network;
+using Horizon.Game.Message.Sync;
 
 namespace Game.Network
 {
@@ -291,21 +292,66 @@ namespace Game.Network
 
         /// <summary>
         /// 发送移动更新到服务端
+        /// [修复] 使用新的 InputPacket + SyncFrameMessage 管线发送，替代旧的 MoveRequest，
+        /// 以与 ECS 同步管线（InputSendSystem → InputSendQueue → ECSUpdateDriver）保持一致。
+        /// 
+        /// 重要：当 IsLocalPlayer=true 时，本地玩家的输入发送已由 ECS 管线
+        /// （PlayerController.WriteInputToEcs → InputSendSystem → ECSUpdateDriver.FlushInputSendQueue）负责，
+        /// 此方法不再发送网络包，避免重复发送导致服务端收到双倍输入包。
+        /// 客户端预测（PredictMovement）和服务端校验（OnServerPositionUpdate/CorrectPrediction）逻辑不受影响。
         /// </summary>
         private void SendMovementUpdate()
         {
-            var networkManager = HundunWorld.Game.HundunWorldGame.Instance?.NetworkManager;
-            if (networkManager != null)
+            // 本地玩家的输入发送已由 ECS 管线负责，此处跳过网络发送以避免重复
+            if (IsLocalPlayer)
             {
-                var moveRequest = new MoveRequest
+                if (ShowDebug)
                 {
-                    TargetX = currentPosition.X,
-                    TargetY = currentPosition.Y,
-                    TargetZ = currentPosition.Z,
-                    Speed = currentVelocity.Length,
-                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                    Debug.Log($"[Network] Local player input sending skipped (handled by ECS pipeline): Seq={predictedFrameCount}");
+                }
+                return;
+            }
+
+            var networkManager = HundunWorld.Game.HundunWorldGame.Instance?.NetworkManager;
+            if (networkManager != null && networkManager.CanSendMessage() && networkManager.IsSyncHandshakeComplete)
+            {
+                // 从 HundunWorldGame 获取玩家 CharacterId
+                var characterId = HundunWorld.Game.HundunWorldGame.Instance?.PlayerId ?? 0;
+
+                // [修复] MoveX/MoveY 应为归一化移动方向（-1..1），而非位置差值（单位为米）。
+                // 使用 currentVelocity 的方向分量，与 PlayerController 使用 _moveDirection 一致。
+                Vector3 moveDir = currentVelocity.Length > 0.01f ? Vector3.Normalize(currentVelocity) : Vector3.Zero;
+
+                var inputPacket = new InputPacket
+                {
+                    ClientTick = predictedFrameCount,
+                    MoveX = moveDir.X,
+                    MoveY = moveDir.Z,
+                    InputBits = 0,
+                    LookYaw = 0f,
+                    LookPitch = 0f,
+                    CharacterId = characterId,
                 };
-                _ = networkManager.SendMessageAsync(moveRequest);
+
+                SyncPacketCodec.Encode(inputPacket, out var frame, out var frameLength);
+                try
+                {
+                    var payload = new byte[frameLength];
+                    System.Buffer.BlockCopy(frame, 0, payload, 0, frameLength);
+
+                    var syncFrame = new SyncFrameMessage
+                    {
+                        Frame = payload,
+                        PacketKind = (byte)inputPacket.Kind,
+                        ProtocolVersion = inputPacket.ProtocolVersion,
+                    };
+
+                    _ = networkManager.SendAsync(syncFrame);
+                }
+                finally
+                {
+                    SyncPacketCodec.ReturnFrame(frame);
+                }
             }
 
             if (ShowDebug)

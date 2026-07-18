@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>菜单-时辰</title>
+    <style id="theme-vars">
+/* ============================================================
+   混沌世界 HundunWorld · 燕云融合 UI 品牌样式
+   模式: free-explore | 主题: dark | 设备: desktop
+   融合策略：ink- 深墨黑沉浸底 + yy- 纸色面板 + 朱红战斗强调
+   仿《燕云十六声》：深墨黑 + 鎏金/古铜/朱红 + 纸色卷轴 + 毛笔书法
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+
+/* ---------- 设计 Token ---------- */
+:root {
+  /* 背景层 — 深墨黑 */
+  --bg-base-default: #0E1016;
+  --bg-base-secondary: #14171E;
+  --bg-base-tertiary: #1C1F28;
+  --bg-base-elevated: #232733;
+  --ink-bg-panel: rgba(20, 23, 30, 0.85);
+  --ink-bg-panel-solid: #14171E;
+  --ink-bg-void: #0E1016;
+  --ink-bg-abyss: #0A0B10;
+  --ink-bg-scrim: rgba(8, 9, 14, 0.72);
+
+  /* 品牌主色 — 鎏金 */
+  --bg-brand: #C8A858;
+  --bg-brand-hover: #E0C880;
+  --bg-brand-active: #8A7438;
+  --bg-brand-disabled: rgba(200, 168, 88, 0.28);
+  --ink-gold-primary: #C8A858;
+  --ink-gold-bright: #E0C880;
+  --ink-gold-deep: #8A7438;
+  --ink-gold-glow: rgba(200, 168, 88, 0.4);
+
+  /* 铜色体系 — 辅助主色 */
+  --ink-bronze-primary: #B87333;
+  --ink-bronze-bright: #D4944E;
+  --ink-bronze-deep: #7A4A20;
+  --ink-bronze-glow: rgba(184, 115, 51, 0.4);
+
+  /* 朱红系 — yy- 引入，战斗/危险/传世品质强调 */
+  --ink-vermilion-primary: #c0392b;
+  --ink-vermilion-bright: #d9504a;
+  --ink-vermilion-deep: #a93226;
+  --ink-vermilion-faded: #8b2a20;
+  --ink-vermilion-glow: rgba(192, 57, 43, 0.4);
+
+  /* 纸色系 — yy- 引入，用于浅色卷轴/对话框/信笺面板 */
+  --ink-paper-bright: #f5f0e8;
+  --ink-paper: #ebe5d8;
+  --ink-paper-aged: #d4c9b8;
+  --ink-paper-faded: #c8bba8;
+  --ink-paper-dark: #a89e8a;
+
+  /* 辅助语义色 */
+  --ink-jade-primary: #5E8B7E;
+  --ink-jade-bright: #7EAE9E;
+  --ink-blood-primary: #B85450;
+  --ink-blood-bright: #D46862;
+
+  /* 品质色 — 游戏语义（传世=朱红） */
+  --ink-quality-common: #8A8275;
+  --ink-quality-uncommon: #6B8E5A;
+  --ink-quality-rare: #4A7EA8;
+  --ink-quality-epic: #8B5E9E;
+  --ink-quality-legendary: #c0392b;
+
+  /* 状态色（错误=朱红） */
+  --state-success: #6B8E5A;
+  --state-warning: #C8A858;
+  --state-error: #c0392b;
+  --state-info: #4A7EA8;
+
+  /* 文字 */
+  --text-default: #F0EDE4;
+  --text-secondary: #B8B0A0;
+  --text-tertiary: #7A7468;
+  --text-disabled: #4A4640;
+  --text-brand: #E0C880;
+  --text-on-brand: #1A1408;
+  --text-on-paper: #2a2520;
+  --text-vermilion: #d9504a;
+
+  /* 边框 */
+  --border-neutral-l1: rgba(240, 237, 228, 0.06);
+  --border-neutral-l2: rgba(200, 168, 88, 0.15);
+  --border-neutral-l3: rgba(200, 168, 88, 0.25);
+  --ink-border-gold: rgba(200, 168, 88, 0.35);
+  --ink-border-gold-strong: rgba(200, 168, 88, 0.6);
+  --ink-border-bronze: rgba(184, 115, 51, 0.3);
+  --ink-border-vermilion: rgba(192, 57, 43, 0.35);
+  --ink-divider: rgba(200, 168, 88, 0.12);
+
+  /* 纸色面板专用 */
+  --ink-paper-panel-bg: rgba(245, 240, 232, 0.92);
+  --ink-paper-panel-border: rgba(168, 158, 138, 0.4);
+  --ink-paper-panel-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+
+  /* 字体 */
+  --ink-font-display: "Ma Shan Zheng", "STKaiti", "KaiTi", serif;
+  --ink-font-heading: "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+  --ink-font-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --ink-font-number: "DIN Alternate", "DIN", "Bebas Neue", monospace;
+  --font-family-heading: var(--ink-font-heading);
+  --font-family-default: var(--ink-font-body);
+
+  /* 圆角 — 古风克制 */
+  --radius-0: 0px;
+  --radius-2: 2px;
+  --radius-4: 4px;
+  --radius-8: 8px;
+  --radius-full: 999px;
+  --ink-radius-none: 0px;
+  --ink-radius-sm: 2px;
+  --ink-radius-md: 4px;
+  --ink-radius-lg: 8px;
+
+  /* 阴影 / 深度 */
+  --ink-shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --ink-shadow-soft: 0 1px 0 rgba(0, 0, 0, 0.05);
+  --ink-shadow-gold: 0 0 24px rgba(200, 168, 88, 0.2);
+  --ink-shadow-vermilion: 0 0 24px rgba(192, 57, 43, 0.2);
+  --ink-shadow-inset: inset 0 1px 0 rgba(200, 168, 88, 0.08);
+  --ink-shadow-inset-deep: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+  --ink-blur-panel: blur(8px);
+
+  /* 间距 */
+  --ink-space-1: 4px;
+  --ink-space-2: 8px;
+  --ink-space-3: 12px;
+  --ink-space-4: 16px;
+  --ink-space-5: 24px;
+  --ink-space-6: 32px;
+  --ink-space-8: 48px;
+
+  /* 控件尺寸 */
+  --ink-control-h-sm: 28px;
+  --ink-control-h-md: 36px;
+  --ink-control-h-lg: 44px;
+
+  /* Tailwind v4 语义别名 — 供 fill-html-head 生成 @theme inline 桥接（ink 前缀版） */
+  --ink-background: var(--bg-base-default);
+  --ink-foreground: var(--text-default);
+  --ink-card: var(--bg-base-secondary);
+  --ink-card-foreground: var(--text-default);
+  --ink-popover: var(--ink-bg-panel-solid);
+  --ink-popover-foreground: var(--text-default);
+  --ink-primary: var(--bg-brand);
+  --ink-primary-foreground: var(--text-on-brand);
+  --ink-secondary: var(--bg-base-tertiary);
+  --ink-secondary-foreground: var(--text-secondary);
+  --ink-muted: var(--bg-base-tertiary);
+  --ink-muted-foreground: var(--text-tertiary);
+  --ink-accent: var(--ink-bronze-primary);
+  --ink-accent-foreground: var(--text-default);
+  --ink-destructive: var(--ink-vermilion-primary);
+  --ink-destructive-foreground: var(--text-default);
+  --ink-border: var(--ink-border-gold);
+  --ink-input: var(--ink-border-gold);
+  --ink-ring: var(--ink-gold-primary);
+  --ink-radius-small: var(--ink-radius-sm);
+  --ink-radius-medium: var(--ink-radius-md);
+  --ink-radius-large: var(--ink-radius-lg);
+  --ink-radius-xlarge: var(--ink-radius-lg);
+}
+
+/* ---------- 基础重置 ---------- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg-base-default);
+  color: var(--text-default);
+  font-family: var(--ink-font-body);
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* 游戏沉浸根容器 */
+.ink-game-root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-base-default);
+}
+
+/* 全局水墨背景层 */
+.ink-bg-layer {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(200, 168, 88, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(184, 115, 51, 0.04) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(10, 11, 16, 0.8) 0%, transparent 60%),
+    var(--bg-base-default);
+  pointer-events: none;
+  z-index: 0;
+}
+.ink-bg-layer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+}
+
+/* 暗角晕影 */
+.ink-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.55) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ---------- 面板系统 ---------- */
+.ink-panel {
+  position: relative;
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  -webkit-backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-inset), var(--ink-shadow-soft);
+  border-radius: var(--ink-radius-md);
+}
+.ink-panel-solid {
+  background: var(--ink-bg-panel-solid);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-inset);
+  border-radius: var(--ink-radius-md);
+}
+.ink-panel-elevated {
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-panel);
+  border-radius: var(--ink-radius-md);
+}
+
+/* 纸色面板 — yy- 引入，卷轴/信笺/对话框专用 */
+.ink-paper-panel {
+  position: relative;
+  background: var(--ink-paper-panel-bg);
+  border: 1px solid var(--ink-paper-panel-border);
+  border-radius: var(--ink-radius-md);
+  box-shadow: var(--ink-paper-panel-shadow);
+  color: var(--text-on-paper);
+  overflow: hidden;
+}
+.ink-paper-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.3'/%3E%3C/svg%3E");
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+/* 水墨笔触描边 — 多层错位金线模拟飞白 */
+.ink-brush-border {
+  position: relative;
+  border: 1px solid var(--ink-border-gold);
+  box-shadow:
+    inset 0 0 0 1px rgba(200, 168, 88, 0.05),
+    0 0 0 1px rgba(200, 168, 88, 0.08),
+    0 1px 0 rgba(200, 168, 88, 0.1);
+}
+.ink-brush-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1px solid transparent;
+  border-image: linear-gradient(135deg, rgba(200, 168, 88, 0.4) 0%, rgba(200, 168, 88, 0.08) 40%, rgba(184, 115, 51, 0.3) 100%) 1;
+  pointer-events: none;
+}
+
+/* 面板四角装饰 */
+.ink-corner-deco {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--ink-gold-primary);
+  opacity: 0.7;
+}
+.ink-corner-deco.tl { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+.ink-corner-deco.tr { top: -1px; right: -1px; border-left: none; border-bottom: none; }
+.ink-corner-deco.bl { bottom: -1px; left: -1px; border-right: none; border-top: none; }
+.ink-corner-deco.br { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+/* 面板标题栏 */
+.ink-panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--ink-space-2);
+  padding: var(--ink-space-3) var(--ink-space-4);
+  border-bottom: 1px solid var(--ink-divider);
+  font-family: var(--ink-font-heading);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-brand);
+  letter-spacing: 2px;
+}
+.ink-panel-title::before {
+  content: "";
+  width: 3px;
+  height: 16px;
+  background: linear-gradient(180deg, var(--ink-gold-bright), var(--ink-gold-deep));
+  border-radius: var(--ink-radius-sm);
+}
+
+/* ---------- 排版 ---------- */
+.ink-text-display {
+  font-family: var(--ink-font-display);
+  font-size: 32px;
+  color: var(--text-brand);
+  letter-spacing: 4px;
+  line-height: 1.2;
+}
+.ink-text-heading {
+  font-family: var(--ink-font-heading);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-default);
+  letter-spacing: 1px;
+}
+.ink-text-subheading {
+  font-family: var(--ink-font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}
+.ink-text-body {
+  font-family: var(--ink-font-body);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+.ink-text-caption {
+  font-family: var(--ink-font-body);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.ink-text-number {
+  font-family: var(--ink-font-number);
+  font-weight: 700;
+  color: var(--text-brand);
+}
+
+/* 竖排标题 — yy- 引入，加载页/章节过场专用 */
+.ink-vertical-title {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-family: var(--ink-font-display);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  line-height: 2.0;
+  color: var(--text-brand);
+}
+
+/* ---------- 按钮 ---------- */
+.ink-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ink-space-2);
+  height: var(--ink-control-h-md);
+  padding: 0 var(--ink-space-4);
+  font-family: var(--ink-font-heading);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: var(--text-default);
+  background: var(--bg-base-tertiary);
+  border: 1px solid var(--ink-border-gold);
+  border-radius: var(--ink-radius-sm);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+.ink-btn:hover {
+  background: var(--bg-base-elevated);
+  border-color: var(--ink-border-gold-strong);
+  color: var(--text-brand);
+}
+.ink-btn:active { transform: translateY(1px); }
+.ink-btn-primary {
+  color: var(--text-on-brand);
+  background: linear-gradient(135deg, var(--ink-gold-bright), var(--ink-gold-deep));
+  border-color: var(--ink-gold-primary);
+  box-shadow: var(--ink-shadow-gold);
+}
+.ink-btn-primary:hover {
+  color: var(--text-on-brand);
+  background: linear-gradient(135deg, var(--ink-gold-primary), var(--ink-gold-deep));
+  border-color: var(--ink-gold-bright);
+}
+/* 朱红按钮 — 战斗/危险操作 */
+.ink-btn-vermilion {
+  color: var(--ink-paper-bright);
+  background: linear-gradient(135deg, var(--ink-vermilion-primary), var(--ink-vermilion-deep));
+  border-color: var(--ink-vermilion-deep);
+  box-shadow: var(--ink-shadow-vermilion);
+}
+.ink-btn-vermilion:hover {
+  color: var(--ink-paper-bright);
+  background: linear-gradient(135deg, var(--ink-vermilion-bright), var(--ink-vermilion-primary));
+  border-color: var(--ink-vermilion-bright);
+}
+.ink-btn-ghost {
+  background: transparent;
+  border-color: var(--border-neutral-l2);
+  color: var(--text-secondary);
+}
+.ink-btn-ghost:hover {
+  background: rgba(200, 168, 88, 0.06);
+  border-color: var(--ink-border-gold);
+  color: var(--text-brand);
+}
+.ink-btn-sm { height: var(--ink-control-h-sm); font-size: 12px; padding: 0 var(--ink-space-3); }
+.ink-btn-lg { height: var(--ink-control-h-lg); font-size: 15px; padding: 0 var(--ink-space-5); }
+
+/* ---------- 标签 / 徽章 ---------- */
+.ink-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-family: var(--ink-font-body);
+  color: var(--text-secondary);
+  background: rgba(200, 168, 88, 0.08);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  letter-spacing: 1px;
+}
+.ink-tag-brand {
+  color: var(--text-brand);
+  background: rgba(200, 168, 88, 0.12);
+  border-color: var(--ink-border-gold);
+}
+.ink-tag-vermilion {
+  color: var(--text-vermilion);
+  background: rgba(192, 57, 43, 0.12);
+  border-color: var(--ink-border-vermilion);
+}
+
+/* 品质色 */
+.ink-q-common { color: var(--ink-quality-common); border-color: var(--ink-quality-common); }
+.ink-q-uncommon { color: var(--ink-quality-uncommon); border-color: var(--ink-quality-uncommon); }
+.ink-q-rare { color: var(--ink-quality-rare); border-color: var(--ink-quality-rare); }
+.ink-q-epic { color: var(--ink-quality-epic); border-color: var(--ink-quality-epic); }
+.ink-q-legendary { color: var(--ink-quality-legendary); border-color: var(--ink-quality-legendary); box-shadow: 0 0 12px rgba(192, 57, 43, 0.3); }
+
+/* ---------- 进度条 ---------- */
+.ink-bar {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  overflow: hidden;
+}
+.ink-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ink-gold-deep), var(--ink-gold-bright));
+  border-radius: var(--ink-radius-sm);
+  box-shadow: 0 0 8px rgba(200, 168, 88, 0.3);
+  transition: width 0.4s ease;
+}
+.ink-bar-fill-jade { background: linear-gradient(90deg, #3E6B5E, var(--ink-jade-bright)); box-shadow: 0 0 8px rgba(94, 139, 126, 0.3); }
+.ink-bar-fill-blood { background: linear-gradient(90deg, #8A3E3A, var(--ink-blood-bright)); box-shadow: 0 0 8px rgba(184, 84, 80, 0.3); }
+/* 朱红进度条 — 气血/战斗 */
+.ink-bar-fill-vermilion { background: linear-gradient(90deg, var(--ink-vermilion-deep), var(--ink-vermilion-bright)); box-shadow: 0 0 8px rgba(192, 57, 43, 0.3); }
+.ink-bar-thin { height: 4px; }
+
+/* 竖向属性条 */
+.ink-bar-v {
+  position: relative;
+  width: 8px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  overflow: hidden;
+  display: inline-block;
+}
+.ink-bar-v-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(0deg, var(--ink-gold-deep), var(--ink-gold-bright));
+  border-radius: var(--ink-radius-sm);
+}
+
+/* ---------- 网格格子（背包/技能槽） ---------- */
+.ink-cell {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ink-cell:hover {
+  border-color: var(--ink-border-gold-strong);
+  background: rgba(200, 168, 88, 0.08);
+}
+.ink-cell-quality { border-width: 1px; border-style: solid; }
+.ink-cell-badge {
+  position: absolute;
+  bottom: 1px;
+  right: 2px;
+  font-family: var(--ink-font-number);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-default);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+/* ---------- 列表项 ---------- */
+.ink-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--ink-space-3);
+  padding: var(--ink-space-3) var(--ink-space-4);
+  border-bottom: 1px solid var(--ink-divider);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.ink-list-item:hover { background: rgba(200, 168, 88, 0.05); }
+.ink-list-item.active {
+  background: rgba(200, 168, 88, 0.1);
+  border-left: 2px solid var(--ink-gold-primary);
+}
+
+/* ---------- 头像 / 圆点 ---------- */
+.ink-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ink-radius-md);
+  border: 1px solid var(--ink-border-gold);
+  background: var(--bg-base-tertiary);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.ink-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--ink-quality-common);
+}
+.ink-dot-online { background: var(--ink-quality-uncommon); box-shadow: 0 0 6px rgba(107, 142, 90, 0.6); }
+
+/* ---------- 分割线 ---------- */
+.ink-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ink-divider) 20%, var(--ink-divider) 80%, transparent);
+  border: none;
+}
+.ink-divider-v {
+  width: 1px;
+  align-self: stretch;
+  background: linear-gradient(180deg, transparent, var(--ink-divider) 20%, var(--ink-divider) 80%, transparent);
+}
+
+/* ---------- 水墨晕染装饰 — yy- 引入 ---------- */
+.ink-splash { position: absolute; border-radius: 50%; filter: blur(15px); opacity: 0.3; pointer-events: none; }
+.ink-splash-1 { width: 300px; height: 300px; background: radial-gradient(circle, var(--bg-base-tertiary) 0%, transparent 70%); }
+.ink-splash-2 { width: 200px; height: 200px; background: radial-gradient(circle, var(--bg-base-elevated) 0%, transparent 70%); }
+.ink-splash-vermilion { width: 250px; height: 250px; background: radial-gradient(circle, rgba(192, 57, 43, 0.15) 0%, transparent 70%); }
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+::-webkit-scrollbar-thumb {
+  background: rgba(200, 168, 88, 0.25);
+  border-radius: var(--ink-radius-sm);
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(200, 168, 88, 0.45); }
+
+/* ---------- 选中态 ---------- */
+::selection { background: rgba(200, 168, 88, 0.3); color: var(--text-default); }
+
+/* ---------- 辅助 ---------- */
+.ink-flex { display: flex; }
+.ink-flex-col { display: flex; flex-direction: column; }
+.ink-items-center { align-items: center; }
+.ink-justify-between { justify-content: space-between; }
+.ink-gap-2 { gap: var(--ink-space-2); }
+.ink-gap-3 { gap: var(--ink-space-3); }
+.ink-gap-4 { gap: var(--ink-space-4); }
+.ink-flex-1 { flex: 1; }
+.ink-text-center { text-align: center; }
+.ink-text-right { text-align: right; }
+.ink-overflow-auto { overflow: auto; }
+.ink-overflow-hidden { overflow: hidden; }
+.ink-relative { position: relative; }
+.ink-absolute { position: absolute; }
+.ink-pointer { cursor: pointer; }
+
+/* 通用内容层（在背景层之上） */
+.ink-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+}
+
+/* 返回按钮 */
+.ink-back-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  border-radius: var(--ink-radius-sm);
+  color: var(--text-brand);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.ink-back-btn:hover {
+  background: rgba(200, 168, 88, 0.12);
+  border-color: var(--ink-border-gold-strong);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--ink-background);
+    --color-foreground: var(--ink-foreground);
+    --color-card: var(--ink-card);
+    --color-card-foreground: var(--ink-card-foreground);
+    --color-popover: var(--ink-popover);
+    --color-popover-foreground: var(--ink-popover-foreground);
+    --color-primary: var(--ink-primary);
+    --color-primary-foreground: var(--ink-primary-foreground);
+    --color-secondary: var(--ink-secondary);
+    --color-secondary-foreground: var(--ink-secondary-foreground);
+    --color-muted: var(--ink-muted);
+    --color-muted-foreground: var(--ink-muted-foreground);
+    --color-accent: var(--ink-accent);
+    --color-accent-foreground: var(--ink-accent-foreground);
+    --color-destructive: var(--ink-destructive);
+    --color-destructive-foreground: var(--ink-destructive-foreground);
+    --color-border: var(--ink-border);
+    --color-input: var(--ink-input);
+    --color-ring: var(--ink-ring);
+    --radius-sm: var(--ink-radius-small);
+    --radius-md: var(--ink-radius-medium);
+    --radius-lg: var(--ink-radius-large);
+    --radius-xl: var(--ink-radius-xlarge);
+  }
+  @layer base {
+    body { background: var(--ink-background); color: var(--ink-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+    <style>
+        /* === Nav Item（共享壳层） === */
+        .nav-item { cursor: pointer; text-decoration: none; }
+        .nav-item-active {
+            color: var(--text-brand) !important;
+            border-left: 3px solid var(--ink-gold-primary);
+            background: rgba(200, 168, 88, 0.10);
+        }
+        .nav-item:not(.nav-item-disabled):not(.nav-item-active):hover {
+            background: rgba(200, 168, 88, 0.06);
+            color: var(--ink-paper-bright);
+        }
+        .nav-item-disabled {
+            color: var(--text-disabled) !important;
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .nav-item:focus-visible {
+            outline: 2px solid var(--ink-gold-primary);
+            outline-offset: -2px;
+        }
+
+        /* === 时辰罗盘 === */
+        .dial-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            aspect-ratio: 1;
+            margin: 0 auto;
+        }
+        .dial-svg { width: 100%; height: 100%; display: block; }
+        .shichen-text {
+            font-family: var(--ink-font-heading), "STKaiti", "KaiTi", serif;
+            font-size: 18px;
+            font-weight: 600;
+            fill: var(--ink-paper-aged);
+            text-anchor: middle;
+            dominant-baseline: central;
+        }
+        .shichen-text-active {
+            font-family: var(--ink-font-heading), "STKaiti", "KaiTi", serif;
+            font-size: 24px;
+            font-weight: 700;
+            fill: var(--ink-gold-primary);
+            text-anchor: middle;
+            dominant-baseline: central;
+        }
+        .activity-text {
+            font-family: var(--ink-font-body), "Noto Sans SC", sans-serif;
+            font-size: 10px;
+            fill: var(--ink-paper-faded);
+            text-anchor: middle;
+            dominant-baseline: central;
+            opacity: 0.7;
+        }
+        .activity-text-active {
+            font-family: var(--ink-font-body), "Noto Sans SC", sans-serif;
+            font-size: 11px;
+            fill: var(--ink-gold-bright);
+            text-anchor: middle;
+            dominant-baseline: central;
+            font-weight: 500;
+        }
+        .center-shichen {
+            font-family: var(--ink-font-display), "STKaiti", "KaiTi", serif;
+            font-size: 30px;
+            font-weight: 700;
+            fill: var(--ink-gold-bright);
+            text-anchor: middle;
+            dominant-baseline: central;
+            letter-spacing: 0.05em;
+        }
+        .center-date {
+            font-family: var(--ink-font-heading), "STKaiti", "KaiTi", serif;
+            font-size: 14px;
+            fill: var(--ink-gold-deep);
+            text-anchor: middle;
+            dominant-baseline: central;
+            letter-spacing: 0.1em;
+        }
+
+        @keyframes pointerPulse {
+            0%, 100% { opacity: 0.85; }
+            50% { opacity: 1; }
+        }
+        .dial-pointer {
+            animation: pointerPulse 2.5s ease-in-out infinite;
+            transform-origin: 250px 250px;
+        }
+
+        /* === 时辰信息网格（纸色历书卡） === */
+        .time-info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--ink-space-2);
+        }
+        .time-info-item {
+            text-align: center;
+            padding: var(--ink-space-4) var(--ink-space-2);
+            background: rgba(168, 158, 138, 0.18);
+            border: 1px solid var(--ink-paper-panel-border);
+            border-radius: var(--ink-radius-md);
+        }
+        .time-info-label {
+            font-family: var(--ink-font-body);
+            font-size: 11px;
+            color: var(--ink-paper-dark);
+            margin-bottom: var(--ink-space-1);
+            letter-spacing: 0.1em;
+        }
+        .time-info-value {
+            font-family: var(--ink-font-heading);
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-on-paper);
+        }
+        .time-info-value-active {
+            color: var(--text-on-paper);
+            font-weight: 700;
+        }
+        .time-info-seal {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--ink-gold-primary);
+            margin-left: 4px;
+            vertical-align: middle;
+        }
+
+        /* === 时辰影响列表（深墨玻璃面板） === */
+        .effect-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--ink-space-2);
+        }
+        .effect-item {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--ink-space-4);
+            padding: var(--ink-space-4);
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 2px solid var(--ink-gold-deep);
+            border-radius: var(--ink-radius-sm);
+            transition: border-left-color 0.15s ease;
+        }
+        .effect-item:hover {
+            border-left-color: var(--ink-gold-primary);
+        }
+        .effect-icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+            color: var(--ink-gold-primary);
+            margin-top: 1px;
+        }
+        .effect-text {
+            font-family: var(--ink-font-body);
+            font-size: 13px;
+            line-height: 1.7;
+            color: var(--ink-paper-aged);
+        }
+
+        /* === 提示条 === */
+        .hint-bar {
+            display: flex;
+            align-items: center;
+            gap: var(--ink-space-2);
+            padding: 10px var(--ink-space-4);
+            background: rgba(200, 168, 88, 0.08);
+            border: 1px solid var(--ink-gold-deep);
+            border-radius: var(--ink-radius-sm);
+            font-family: var(--ink-font-body);
+            font-size: 13px;
+            color: var(--text-brand);
+        }
+        .hint-icon {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        /* === 罗盘图例 === */
+        .dial-legend {
+            display: flex;
+            gap: var(--ink-space-5);
+            justify-content: center;
+            margin-top: var(--ink-space-4);
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--ink-font-body);
+            font-size: 11px;
+            color: var(--ink-paper-aged);
+        }
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* === 面板标题（深墨面板：鎏金强调） === */
+        .panel-title-gold {
+            font-family: var(--ink-font-heading);
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-brand);
+            margin-bottom: var(--ink-space-4);
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: var(--ink-space-2);
+        }
+        .panel-title-gold::before {
+            content: "";
+            width: 3px;
+            height: 14px;
+            background: linear-gradient(180deg, var(--ink-gold-bright), var(--ink-gold-deep));
+            border-radius: var(--ink-radius-sm);
+        }
+        /* 纸色面板标题（墨字 + 鎏金描条） */
+        .panel-title-paper {
+            font-family: var(--ink-font-heading);
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-on-paper);
+            margin-bottom: var(--ink-space-4);
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: var(--ink-space-2);
+        }
+        .panel-title-paper::before {
+            content: "";
+            width: 3px;
+            height: 14px;
+            background: linear-gradient(180deg, var(--ink-gold-primary), var(--ink-gold-deep));
+            border-radius: var(--ink-radius-sm);
+        }
+
+        /* === 响应式 === */
+        @media (max-width: 1024px) {
+            .dial-section-wrap {
+                flex-direction: column !important;
+            }
+            .dial-section {
+                flex-basis: auto !important;
+            }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .dial-pointer { animation: none; }
+            * { transition-duration: 0.01ms !important; }
+        }
+    </style>
+
+    <main class="ink-game-root">
+        <div class="ink-bg-layer"></div>
+        <div class="ink-vignette"></div>
+
+        <div class="ink-content flex overflow-hidden">
+            <!-- 左侧导航栏（240px） -->
+            <aside class="hidden lg:flex flex-col shrink-0" style="width: 240px; background: linear-gradient(180deg, var(--bg-base-tertiary) 0%, var(--bg-base-secondary) 100%); border-right: 1px solid var(--border-neutral-l2);">
+                <!-- 竖排装饰文字 -->
+                <div class="flex items-center justify-center shrink-0" style="padding: var(--ink-space-5) 0; border-bottom: 1px solid var(--border-neutral-l2);">
+                    <span class="ink-vertical-title" style="font-size: 22px; color: var(--ink-gold-primary); opacity: 0.5; letter-spacing: 0.3em;">时辰</span>
+                </div>
+
+                <!-- 导航 -->
+                <nav class="flex flex-col flex-1 overflow-y-auto" style="padding: var(--ink-space-2) 0;">
+                    <!-- 主功能组 -->
+                    <a href="#" class="nav-item flex items-center whitespace-nowrap" style="padding: 10px 24px; font-family: var(--ink-font-heading); font-size: 14px; color: var(--ink-paper-bright); transition: background 0.15s ease, color 0.15s ease;" data-nav-key="char-attributes">角色</a>
+                    <a href="#" class="nav-item flex items-center whitespace-nowrap" style="padding: 10px 24px; font-family: var(--ink-font-heading); font-size: 14px; color: var(--ink-paper-bright); transition: background 0.15s ease, color 0.15s ease;" data-nav-key="equipment">装备</a>
+                    <a href="#" class="nav-item flex items-center whitespace-nowrap" style="padding: 10px 24px; font-family: var(--ink-font-heading); font-size: 14px; color: var(--ink-paper-bright); transition: background 0.15s ease, color 0.15s ease;" data-nav-key="appearance">外观</a>
+                    <a href="#" class="nav-item flex items-center whitespace-nowrap" style="padding: 10px 24px; font-family: var(--ink-font-heading); font-size: 14px; color: var(--ink-paper-bright); transition: background 0.15s ease, color 0.15s ease;" data-nav-key="battle-prep">备战</a>
+                    <a href="#" class="nav-item flex items-center whitespace-nowrap" style="padding: 10px 24px; font-family: var(--ink-font-heading); font-size: 14px; color: var(--ink-paper-bright); transition: background 0.15s ease, color 0.15s ease;" data-nav-key="sect">门派</a>
+                    <a href="#" class="nav-item flex items-center whitespace-nowrap" style="padding: 10px 24px; font-family: var(--ink-font-heading); font-size: 14px; color: var(--ink-paper-bright); transition: background 0.15s ease, color 0.15s ease;" data-nav-key="personal-info">个人信息</a>
+                    <a href="#" class="nav-item nav-item-active flex items-center whitespace-nowrap" style="padding: 10px 24px; font-family: var(--ink-font-heading); font-size: 14px; font-weight: 700; transition: background 0.15s ease, color 0.15s ease;" data-nav-key="time" data-active="true">时间</a>
+
+                    <hr class="ink-divider" style="margin: var(--ink-space-2) var(--ink-space-5);">
+
+                    <!-- 次级功能组（锁定） -->
+                    <a href="#" class="nav-item nav-item-disabled flex items-center whitespace-nowrap" style="padding: 10px 24px; font-family: var(--ink-font-heading); font-size: 14px; transition: none;" data-nav-key="quest" aria-disabled="true">任务</a>
+                    <a href="#" class="nav-item nav-item-disabled flex items-center whitespace-nowrap" style="padding: 10px 24px; font-family: var(--ink-font-heading); font-size: 14px; transition: none;" data-nav-key="bestiary" aria-disabled="true">博物志</a>
+                    <a href="#" class="nav-item nav-item-disabled flex items-center whitespace-nowrap" style="padding: 10px 24px; font-family: var(--ink-font-heading); font-size: 14px; transition: none;" data-nav-key="martial-records" aria-disabled="true">武林录</a>
+                    <a href="#" class="nav-item nav-item-disabled flex items-center whitespace-nowrap" style="padding: 10px 24px; font-family: var(--ink-font-heading); font-size: 14px; transition: none;" data-nav-key="trade" aria-disabled="true">营生</a>
+                    <a href="#" class="nav-item nav-item-disabled flex items-center whitespace-nowrap" style="padding: 10px 24px; font-family: var(--ink-font-heading); font-size: 14px; transition: none;" data-nav-key="team" aria-disabled="true">组队</a>
+                    <a href="#" class="nav-item nav-item-disabled flex items-center whitespace-nowrap" style="padding: 10px 24px; font-family: var(--ink-font-heading); font-size: 14px; transition: none;" data-nav-key="mailbox" aria-disabled="true">邮箱</a>
+                    <a href="#" class="nav-item nav-item-disabled flex items-center whitespace-nowrap" style="padding: 10px 24px; font-family: var(--ink-font-heading); font-size: 14px; transition: none;" data-nav-key="shop" aria-disabled="true">商店</a>
+
+                    <hr class="ink-divider" style="margin: var(--ink-space-2) var(--ink-space-5);">
+
+                    <!-- 系统组（锁定） -->
+                    <a href="#" class="nav-item nav-item-disabled flex items-center whitespace-nowrap" style="padding: 10px 24px; font-family: var(--ink-font-heading); font-size: 14px; transition: none;" data-nav-key="settings" aria-disabled="true">设置</a>
+                </nav>
+            </aside>
+
+            <!-- 右侧主区域 -->
+            <div class="flex flex-col flex-1 min-w-0">
+                <!-- 顶部信息条 -->
+                <header class="flex items-center justify-between shrink-0" style="height: 60px; background: var(--bg-base-tertiary); border-bottom: 1px solid var(--border-neutral-l2); padding: 0 var(--ink-space-6);">
+                    <!-- 左：返回 + 角色信息 -->
+                    <div class="flex items-center min-w-0" style="gap: var(--ink-space-4);">
+                        <button class="ink-btn ink-btn-ghost" style="width: 36px; height: 36px; padding: 0;" data-dom-id="back-hud" aria-label="返回">
+                            <i data-lucide="arrow-left" style="width: 18px; height: 18px;"></i>
+                        </button>
+                        <button class="lg:hidden flex items-center justify-center" style="width: 36px; height: 36px; color: var(--ink-paper-bright); background: none; border: none; cursor: pointer;" aria-label="打开菜单">
+                            <i data-lucide="menu" style="width: 20px; height: 20px;"></i>
+                        </button>
+                        <div class="flex items-center justify-center shrink-0" style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--ink-gold-bright) 0%, var(--ink-gold-deep) 100%); border: 1px solid var(--ink-border-gold-strong); font-family: var(--ink-font-display); font-size: 18px; font-weight: 700; color: var(--text-on-brand);">无</div>
+                        <div class="flex items-center min-w-0" style="gap: var(--ink-space-4);">
+                            <span class="truncate" style="font-family: var(--ink-font-heading); font-size: 18px; font-weight: 700; color: var(--ink-paper-bright);">无名侠</span>
+                            <span class="ink-tag ink-tag-brand" style="white-space: nowrap;">Lv.42</span>
+                            <span class="hidden md:inline truncate" style="font-family: var(--ink-font-body); font-size: 13px; color: var(--text-brand);">逍遥派</span>
+                        </div>
+                    </div>
+                    <!-- 右：任务快捷入口 + 货币 -->
+                    <div class="flex items-center" style="gap: var(--ink-space-5);">
+                        <button class="ink-btn ink-btn-ghost ink-btn-sm shrink-0" data-dom-id="shortcut-quests">
+                            <i data-lucide="scroll-text" style="width: 14px; height: 14px;"></i>
+                            任务
+                        </button>
+                        <div class="hidden sm:flex items-center" style="gap: var(--ink-space-5);">
+                            <div class="flex items-center" style="gap: var(--ink-space-2);">
+                                <span style="font-family: var(--ink-font-body); font-size: 13px; color: var(--ink-paper-aged); white-space: nowrap;">铜钱</span>
+                                <span style="font-family: var(--ink-font-number), 'DIN Alternate', monospace; font-size: 13px; color: var(--ink-paper-bright); font-variant-numeric: tabular-nums; white-space: nowrap;">12,450</span>
+                            </div>
+                            <div class="flex items-center" style="gap: var(--ink-space-2);">
+                                <span style="font-family: var(--ink-font-body); font-size: 13px; color: var(--ink-paper-aged); white-space: nowrap;">银两</span>
+                                <span style="font-family: var(--ink-font-number), 'DIN Alternate', monospace; font-size: 13px; color: var(--ink-gold-bright); font-variant-numeric: tabular-nums; white-space: nowrap;">328</span>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- 内容区：罗盘 + 操作面板 -->
+                <div class="flex flex-1 min-h-0 dial-section-wrap">
+                    <!-- 罗盘区（55%） -->
+                    <div class="dial-section shrink-0 flex flex-col" style="flex-basis: 55%; background: var(--bg-base-default); border-right: 1px solid var(--border-neutral-l2); position: relative;">
+                        <div class="ink-splash ink-splash-1" style="top: 5%; left: 5%;"></div>
+                        <div class="ink-splash ink-splash-2" style="bottom: 10%; right: 8%;"></div>
+
+                        <!-- 标题 -->
+                        <div class="flex items-start shrink-0" style="gap: var(--ink-space-5); padding: var(--ink-space-6) var(--ink-space-6) 0;">
+                            <span class="ink-vertical-title shrink-0" style="font-size: 22px; color: var(--ink-gold-primary); opacity: 0.4; letter-spacing: 0.3em;">时辰</span>
+                            <div class="min-w-0">
+                                <h1 style="font-family: var(--ink-font-display), 'STKaiti', 'KaiTi', serif; font-size: 28px; font-weight: 700; color: var(--ink-paper-bright); letter-spacing: 0.05em; text-wrap: balance; word-break: keep-all; overflow-wrap: break-word;">十二时辰</h1>
+                                <p style="font-family: var(--ink-font-body); font-size: 13px; color: var(--ink-paper-aged); margin-top: var(--ink-space-1);">子丑寅卯辰巳 · 午未申酉戌亥</p>
+                            </div>
+                        </div>
+
+                        <!-- 罗盘 -->
+                        <div class="flex-1 flex items-center justify-center" style="padding: var(--ink-space-4); position: relative; z-index: 1;">
+                            <div class="dial-wrapper">
+                                <svg class="dial-svg" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+                                    <defs>
+                                        <radialGradient id="dialFace" cx="50%" cy="50%" r="50%">
+                                            <stop offset="0%" style="stop-color: var(--bg-base-tertiary);"/>
+                                            <stop offset="55%" style="stop-color: var(--bg-base-secondary);"/>
+                                            <stop offset="100%" style="stop-color: var(--bg-base-default);"/>
+                                        </radialGradient>
+                                        <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
+                                            <stop offset="0%" style="stop-color: var(--ink-gold-primary); stop-opacity: 0.15;"/>
+                                            <stop offset="100%" style="stop-color: var(--ink-gold-primary); stop-opacity: 0;"/>
+                                        </radialGradient>
+                                        <filter id="pointerGlow">
+                                            <feGaussianBlur stdDeviation="2" result="blur"/>
+                                            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                                        </filter>
+                                    </defs>
+
+                                    <!-- 外层装饰环 -->
+                                    <circle cx="250" cy="250" r="242" fill="none" style="stroke: var(--ink-gold-primary);" stroke-width="1" opacity="0.2"/>
+                                    <circle cx="250" cy="250" r="237" fill="none" style="stroke: var(--ink-gold-primary);" stroke-width="0.5" opacity="0.12"/>
+
+                                    <!-- 罗盘盘面 -->
+                                    <circle cx="250" cy="250" r="220" fill="url(#dialFace)" style="stroke: var(--ink-border-gold);" stroke-width="1"/>
+
+                                    <!-- 内层装饰环 -->
+                                    <circle cx="250" cy="250" r="145" fill="none" style="stroke: var(--text-tertiary);" stroke-width="1" opacity="0.35"/>
+
+                                    <!-- 刻度线 -->
+                                    <line x1="250" y1="95" x2="250" y2="82" style="stroke: var(--text-tertiary);" stroke-width="1"/>
+                                    <line x1="327.5" y1="115.8" x2="334" y2="104.5" style="stroke: var(--text-tertiary);" stroke-width="1"/>
+                                    <line x1="384.2" y1="172.5" x2="395.5" y2="166" style="stroke: var(--text-tertiary);" stroke-width="1"/>
+                                    <line x1="405" y1="250" x2="418" y2="250" style="stroke: var(--text-tertiary);" stroke-width="1"/>
+                                    <line x1="384.2" y1="327.5" x2="395.5" y2="334" style="stroke: var(--text-tertiary);" stroke-width="1"/>
+                                    <line x1="327.5" y1="384.2" x2="334" y2="395.5" style="stroke: var(--text-tertiary);" stroke-width="1"/>
+                                    <!-- 午时（当前，鎏金加粗） -->
+                                    <line x1="250" y1="405" x2="250" y2="418" style="stroke: var(--ink-gold-primary);" stroke-width="2.5"/>
+                                    <line x1="172.5" y1="384.2" x2="166" y2="395.5" style="stroke: var(--text-tertiary);" stroke-width="1"/>
+                                    <line x1="115.8" y1="327.5" x2="104.5" y2="334" style="stroke: var(--text-tertiary);" stroke-width="1"/>
+                                    <line x1="95" y1="250" x2="82" y2="250" style="stroke: var(--text-tertiary);" stroke-width="1"/>
+                                    <line x1="115.8" y1="172.5" x2="104.5" y2="166" style="stroke: var(--text-tertiary);" stroke-width="1"/>
+                                    <line x1="172.5" y1="115.8" x2="166" y2="104.5" style="stroke: var(--text-tertiary);" stroke-width="1"/>
+
+                                    <!-- 外圈活动提示 -->
+                                    <text x="250" y="45" class="activity-text">夜市</text>
+                                    <text x="352.5" y="72.5" class="activity-text">巡夜</text>
+                                    <text x="427.5" y="147.5" class="activity-text">晨钟</text>
+                                    <text x="455" y="250" class="activity-text">早市</text>
+                                    <text x="427.5" y="352.5" class="activity-text">早课</text>
+                                    <text x="352.5" y="427.5" class="activity-text">武馆</text>
+                                    <text x="250" y="455" class="activity-text-active">集市</text>
+                                    <text x="147.5" y="427.5" class="activity-text">茶馆</text>
+                                    <text x="72.5" y="352.5" class="activity-text">比武</text>
+                                    <text x="45" y="250" class="activity-text">晚歇</text>
+                                    <text x="72.5" y="147.5" class="activity-text">花灯</text>
+                                    <text x="147.5" y="72.5" class="activity-text">夜行</text>
+
+                                    <!-- 时辰名称 -->
+                                    <text x="250" y="72" class="shichen-text">子</text>
+                                    <text x="339" y="95.9" class="shichen-text">丑</text>
+                                    <text x="404.1" y="161" class="shichen-text">寅</text>
+                                    <text x="428" y="250" class="shichen-text">卯</text>
+                                    <text x="404.1" y="339" class="shichen-text">辰</text>
+                                    <text x="339" y="404.1" class="shichen-text">巳</text>
+                                    <text x="250" y="428" class="shichen-text-active">午</text>
+                                    <text x="161" y="404.1" class="shichen-text">未</text>
+                                    <text x="95.9" y="339" class="shichen-text">申</text>
+                                    <text x="72" y="250" class="shichen-text">酉</text>
+                                    <text x="95.9" y="161" class="shichen-text">戌</text>
+                                    <text x="161" y="95.9" class="shichen-text">亥</text>
+
+                                    <!-- 指针（鎏金，指向午时） -->
+                                    <g class="dial-pointer">
+                                        <line x1="250" y1="250" x2="250" y2="392" style="stroke: var(--ink-gold-primary);" stroke-width="2.5" stroke-linecap="round" filter="url(#pointerGlow)"/>
+                                        <circle cx="250" cy="392" r="5" style="fill: var(--ink-gold-primary);" filter="url(#pointerGlow)"/>
+                                    </g>
+
+                                    <!-- 中心枢轴 -->
+                                    <circle cx="250" cy="250" r="4" style="fill: var(--ink-gold-primary);"/>
+
+                                    <!-- 中心圆（鎏金光晕 + 深墨底） -->
+                                    <circle cx="250" cy="250" r="80" fill="url(#centerGlow)" style="stroke: var(--ink-border-gold);" stroke-width="1"/>
+                                    <circle cx="250" cy="250" r="76" style="fill: var(--bg-base-secondary); stroke: var(--ink-gold-primary);" stroke-width="0.5" opacity="0.95"/>
+
+                                    <!-- 中心文字 -->
+                                    <text x="250" y="238" class="center-shichen">午时</text>
+                                    <text x="250" y="268" class="center-date">三月初七</text>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- 图例 -->
+                        <div class="dial-legend shrink-0" style="padding-bottom: var(--ink-space-5);">
+                            <div class="legend-item">
+                                <span class="legend-dot" style="background: var(--ink-gold-primary);"></span>
+                                <span>当前时辰</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-dot" style="background: var(--text-tertiary);"></span>
+                                <span>其他时辰</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-dot" style="background: var(--ink-gold-deep);"></span>
+                                <span>外圈活动</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 操作面板区（45%） -->
+                    <div class="flex-1 overflow-y-auto" style="flex-basis: 45%; padding: var(--ink-space-6); display: flex; flex-direction: column; gap: var(--ink-space-4);">
+
+                        <!-- 当前时辰（纸色历书卡） -->
+                        <div class="ink-paper-panel" style="padding: var(--ink-space-5);">
+                            <h2 class="panel-title-paper">当前时辰</h2>
+                            <div class="time-info-grid">
+                                <div class="time-info-item">
+                                    <div class="time-info-label">日期</div>
+                                    <div class="time-info-value">三月初七</div>
+                                </div>
+                                <div class="time-info-item">
+                                    <div class="time-info-label">时辰</div>
+                                    <div class="time-info-value time-info-value-active">午时<span class="time-info-seal"></span></div>
+                                </div>
+                                <div class="time-info-item">
+                                    <div class="time-info-label">天气</div>
+                                    <div class="time-info-value" style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                        <i data-lucide="sun" style="width: 16px; height: 16px; color: var(--ink-gold-deep);"></i>
+                                        晴
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 时间快进（深墨玻璃 + 四角金角） -->
+                        <div class="ink-panel" style="padding: var(--ink-space-5);">
+                            <span class="ink-corner-deco tl"></span>
+                            <span class="ink-corner-deco tr"></span>
+                            <span class="ink-corner-deco bl"></span>
+                            <span class="ink-corner-deco br"></span>
+                            <h2 class="panel-title-gold">时间快进</h2>
+                            <div class="flex flex-col" style="gap: var(--ink-space-2);">
+                                <button class="ink-btn ink-btn-primary ink-btn-lg w-full" data-dom-id="btn-wait-1shichen">
+                                    <i data-lucide="clock" style="width: 16px; height: 16px;"></i>
+                                    等待1时辰
+                                </button>
+                                <button class="ink-btn ink-btn-ghost ink-btn-lg w-full" data-dom-id="btn-wait-dusk">
+                                    <i data-lucide="sunset" style="width: 16px; height: 16px;"></i>
+                                    等待至黄昏
+                                </button>
+                                <button class="ink-btn ink-btn-ghost ink-btn-lg w-full" data-dom-id="btn-wait-dawn">
+                                    <i data-lucide="sunrise" style="width: 16px; height: 16px;"></i>
+                                    等待至黎明
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 时辰影响（深墨玻璃 + 四角金角） -->
+                        <div class="ink-panel" style="padding: var(--ink-space-5); flex: 1;">
+                            <span class="ink-corner-deco tl"></span>
+                            <span class="ink-corner-deco tr"></span>
+                            <span class="ink-corner-deco bl"></span>
+                            <span class="ink-corner-deco br"></span>
+                            <h2 class="panel-title-gold">时辰影响</h2>
+                            <div class="effect-list">
+                                <div class="effect-item">
+                                    <i data-lucide="users" class="effect-icon"></i>
+                                    <div class="effect-text">不同时辰影响NPC出现与消失，部分商贩仅在昼间营业，夜行侠客多出没于亥子之时</div>
+                                </div>
+                                <div class="effect-item">
+                                    <i data-lucide="moon" class="effect-icon"></i>
+                                    <div class="effect-text">夜间某些区域出现特殊事件，荒郊古寺、深巷暗街或有奇遇</div>
+                                </div>
+                                <div class="effect-item">
+                                    <i data-lucide="swords" class="effect-icon"></i>
+                                    <div class="effect-text">特定时辰可修炼特定功法，子时练阴属功法事半功倍，午时修阳属心法收效甚佳</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 提示条 -->
+                        <div class="hint-bar">
+                            <i data-lucide="alert-triangle" class="hint-icon"></i>
+                            <span>等待时间可能触发随机事件</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 底部状态条 -->
+                <footer class="flex items-center justify-between shrink-0" style="height: 32px; background: var(--bg-base-default); border-top: 1px solid var(--border-neutral-l2); padding: 0 var(--ink-space-6);">
+                    <span style="font-family: var(--ink-font-body); font-size: 13px; color: var(--text-tertiary); white-space: nowrap;">混沌世界 v1.0.0</span>
+                    <span style="font-family: var(--ink-font-body); font-size: 13px; color: var(--text-tertiary); white-space: nowrap;">混沌盛世 · 32ms</span>
+                </footer>
+            </div>
+        </div>
+    </main>
+
+    <script>lucide.createIcons();</script>
+</body>
+</html>
+
+
+
+
+
+
+

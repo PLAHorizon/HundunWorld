@@ -135,59 +135,33 @@ namespace HundunWorld.Game.UI.Authentication
                 if (connectionError != null)
                     return connectionError;
 
-                var tokenLoginRequest = new TokenLoginRequest
+                // 服务端已废弃 TCP TokenLoginRequest，改为 WebApi /Account/signin 直接返回 ImAuthToken。
+                // 将 ImAuthToken 作为 AuthToken 使用，直接完成登录后续流程。
+                var loginResponse = new LoginResponse
                 {
-                    AuthToken = loginResult.ImAuthToken,
+                    IsSuccess = true,
                     PassportId = username,
-                    UserId = 0,
-                    MachineId = MachineIdentifier.GetMachineGuid()
+                    UserId = loginResult.UserId,
+                    AuthToken = loginResult.ImAuthToken ?? string.Empty,
+                    SessionToken = loginResult.ImAuthToken ?? string.Empty,
+                    Message = "WebApi 登录成功"
                 };
 
-                var messagePacket = CreateAuthMessagePacket(tokenLoginRequest, MessageType.TokenLoginRequest);
-                messagePacket.Header.AuthToken = loginResult.ImAuthToken;
-                messagePacket.Header.UserId = 0;
-
-                _loginTcs = new TaskCompletionSource<LoginResponse>();
-                var success = await HundunWorldGame.Instance.NetworkManager.SendMessageAsync(messagePacket);
-                
-                if (success)
+                Passport = new LiteDataContext.PassportInfo
                 {
-                    Debug.Log($"[AuthenticationManager] 登录请求已发送: {username}");
+                    PassportId = username,
+                    UserId = loginResult.UserId,
+                    IsCurrentPassport = true,
+                    Token = loginResult.ImAuthToken ?? string.Empty,
+                    RememberPassword = rememberPassword
+                };
 
-                    var loginTcs = _loginTcs;
-                    var completedTask = await Task.WhenAny(loginTcs.Task, Task.Delay(10000));
+                await FinalizeLoginAsync(loginResponse);
 
-                    if (completedTask != loginTcs.Task)
-                    {
-                        loginTcs.TrySetCanceled();
-                        _loginTcs = null;
-                        return new AuthenticationResult { IsSuccess = false, ErrorMessage = "登录响应超时，请稍后重试" };
-                    }
+                if (rememberPassword)
+                    SaveLoginInfo(username, password);
 
-                    var loginResponse = await loginTcs.Task;
-                    _loginTcs = null;
-
-                    if (loginResponse == null)
-                    {
-                        return new AuthenticationResult { IsSuccess = false, ErrorMessage = "登录响应数据为空" };
-                    }
-
-                    if (!loginResponse.IsSuccess)
-                    {
-                        return new AuthenticationResult { IsSuccess = false, ErrorMessage = loginResponse.Message ?? "登录失败" };
-                    }
-
-                    if (rememberPassword)
-                        SaveLoginInfo(username, password);
-
-                    return new AuthenticationResult { IsSuccess = true };
-                }
-                else
-                {
-                    _loginTcs?.TrySetCanceled();
-                    _loginTcs = null;
-                    return new AuthenticationResult { IsSuccess = false, ErrorMessage = "登录失败，请检查网络链接" };
-                }
+                return new AuthenticationResult { IsSuccess = true };
             }
             catch (Exception ex)
             {
@@ -221,56 +195,29 @@ namespace HundunWorld.Game.UI.Authentication
                 if (connectionError != null)
                     return connectionError;
 
-                var tokenLoginRequest = new TokenLoginRequest
+                // 服务端已废弃 TCP TokenLoginRequest，ImAuthToken 直接作为 AuthToken 使用。
+                var loginResponse = new LoginResponse
                 {
+                    IsSuccess = true,
+                    PassportId = passportId ?? string.Empty,
+                    UserId = (ulong)userId,
                     AuthToken = authToken,
-                    PassportId = passportId ?? "",
-                    UserId = userId,
-                    MachineId = MachineIdentifier.GetMachineGuid()
+                    SessionToken = authToken,
+                    Message = "Token 登录成功"
                 };
 
-                var messagePacket = CreateAuthMessagePacket(tokenLoginRequest, MessageType.TokenLoginRequest);
-                messagePacket.Header.AuthToken = authToken;
-                messagePacket.Header.UserId = (ulong)userId;
-
-                _loginTcs = new TaskCompletionSource<LoginResponse>();
-                var success = await HundunWorldGame.Instance.NetworkManager.SendMessageAsync(messagePacket);
-
-                if (success)
+                Passport = new LiteDataContext.PassportInfo
                 {
-                    Debug.Log($"[AuthenticationManager] Token登录请求已发送: {passportId}");
+                    PassportId = passportId ?? string.Empty,
+                    UserId = (ulong)userId,
+                    IsCurrentPassport = true,
+                    Token = authToken,
+                    RememberPassword = true
+                };
 
-                    var loginTcs = _loginTcs;
-                    var completedTask = await Task.WhenAny(loginTcs.Task, Task.Delay(10000));
+                await FinalizeLoginAsync(loginResponse);
 
-                    if (completedTask != loginTcs.Task)
-                    {
-                        loginTcs.TrySetCanceled();
-                        _loginTcs = null;
-                        return new AuthenticationResult { IsSuccess = false, ErrorMessage = "Token登录响应超时，请稍后重试" };
-                    }
-
-                    var tokenLoginResponse = await loginTcs.Task;
-                    _loginTcs = null;
-
-                    if (tokenLoginResponse == null)
-                    {
-                        return new AuthenticationResult { IsSuccess = false, ErrorMessage = "Token登录响应数据为空" };
-                    }
-
-                    if (!tokenLoginResponse.IsSuccess)
-                    {
-                        return new AuthenticationResult { IsSuccess = false, ErrorMessage = tokenLoginResponse.Message ?? "Token登录失败" };
-                    }
-
-                    return new AuthenticationResult { IsSuccess = true };
-                }
-                else
-                {
-                    _loginTcs?.TrySetCanceled();
-                    _loginTcs = null;
-                    return new AuthenticationResult { IsSuccess = false, ErrorMessage = "Token登录失败，请检查网络链接" };
-                }
+                return new AuthenticationResult { IsSuccess = true };
             }
             catch (Exception ex)
             {
@@ -457,7 +404,182 @@ namespace HundunWorld.Game.UI.Authentication
         }
 
         /// <summary>
-        /// 处理登录响应（注意：场景切换由LoginResponseHandler负责）
+        /// WebApi 登录/Token 登录成功后统一收尾：同步会话、查询角色列表、切换场景。
+        /// 替代已废弃的 TCP TokenLoginResponse 处理路径。
+        /// </summary>
+        private async Task FinalizeLoginAsync(LoginResponse response)
+        {
+            FlaxEngine.Debug.Log($"[AuthenticationManager] 开始完成登录后续流程: UserId={response.UserId}, PassportId={response.PassportId}");
+
+            // 同步到 NetworkManager（供心跳等后台任务使用）
+            var networkManager = HundunWorldGame.Instance.NetworkManager;
+            if (networkManager != null)
+            {
+                networkManager.GameId = GameId;
+                networkManager.ZoneId = ZoneId;
+                networkManager.ServerId = ServerId;
+                networkManager.UserId = response.UserId;
+                networkManager.AuthToken = response.AuthToken ?? "";
+            }
+
+            // 更新本地会话字段
+            if (Passport != null)
+                Passport.UserId = response.UserId;
+            _authToken = response.AuthToken ?? "";
+
+            // 触发登录响应事件（兼容旧订阅者）
+            LoginResponseReceived?.Invoke(response);
+            AuthenticationStateChanged?.Invoke(true);
+
+            // 在 UI 线程继续：更新状态、查询角色、切换场景
+            var tcs = new TaskCompletionSource<bool>();
+            FlaxEngine.Scripting.InvokeOnUpdate(async () =>
+            {
+                try
+                {
+                    // 1. 更新用户会话状态
+                    var stateManager = UIStateManager.Instance;
+                    if (stateManager != null)
+                    {
+                        stateManager.HandleLoginSuccess(
+                            response.PassportId,
+                            response.UserId,
+                            response.SessionToken ?? "",
+                            response.AuthToken ?? ""
+                        );
+                        FlaxEngine.Debug.Log("[AuthenticationManager] 用户会话已更新");
+                    }
+
+                    // 2. 发送角色列表查询请求
+                    FlaxEngine.Debug.Log("[AuthenticationManager] 准备查询角色列表...");
+                    var characterListRequest = new CharacterListRequest
+                    {
+                        UserId = response.UserId,
+                        ServerId = 1
+                    };
+
+                    var messagePacket = new HorizonMessagePacket
+                    {
+                        Header = new MessageHeader
+                        {
+                            MessageId = Guid.NewGuid().ToString(),
+                            MessageType = MessageType.CharacterList,
+                            Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                            AuthToken = response.AuthToken ?? "",
+                            GameId = 1,
+                            ServerId = 1,
+                            ZoneId = 1,
+                            UserId = response.UserId,
+                            MachineId = MachineIdentifier.GetMachineGuid()
+                        },
+                        ServiceType = ServiceType.Game,
+                        Body = characterListRequest
+                    };
+
+                    // 发送角色列表查询请求（带重试机制，确保请求不会因瞬时状态问题静默丢失）
+                    bool sendSuccess = false;
+                    int maxRetries = 3;
+                    for (int attempt = 1; attempt <= maxRetries; attempt++)
+                    {
+                        try
+                        {
+                            var nm = HundunWorldGame.Instance.NetworkManager;
+                            if (nm == null)
+                            {
+                                FlaxEngine.Debug.LogError("[AuthenticationManager] NetworkManager 为空，无法发送角色列表请求");
+                                break;
+                            }
+
+                            // 确保连接已就绪（ConnectAsync 返回 true 后连接状态可能还未刷新）
+                            if (nm.GetConnectionStatus() != ConnectionStatus.Connected)
+                            {
+                                FlaxEngine.Debug.Log($"[AuthenticationManager] 连接尚未就绪，等待连接建立... (尝试 {attempt}/{maxRetries})");
+                                var ready = await nm.WaitForConnectionAsync(3000);
+                                if (!ready)
+                                {
+                                    FlaxEngine.Debug.LogWarning($"[AuthenticationManager] 等待连接超时 (尝试 {attempt}/{maxRetries})");
+                                    if (attempt < maxRetries) { await Task.Delay(500); continue; }
+                                    break;
+                                }
+                            }
+
+                            sendSuccess = await nm.SendMessageAsync(messagePacket);
+                            if (sendSuccess)
+                            {
+                                FlaxEngine.Debug.Log($"[AuthenticationManager] 角色列表查询请求已发送 (尝试 {attempt}/{maxRetries})");
+                                break;
+                            }
+
+                            FlaxEngine.Debug.LogWarning($"[AuthenticationManager] 发送角色列表请求返回 false (尝试 {attempt}/{maxRetries})");
+                            if (attempt < maxRetries) { await Task.Delay(500); }
+                        }
+                        catch (Exception ex)
+                        {
+                            FlaxEngine.Debug.LogError($"[AuthenticationManager] 发送角色列表查询请求异常 (尝试 {attempt}/{maxRetries}): {ex.Message}");
+                            if (attempt < maxRetries) { await Task.Delay(500); }
+                        }
+                    }
+
+                    if (!sendSuccess)
+                    {
+                        FlaxEngine.Debug.LogError("[AuthenticationManager] 角色列表查询请求发送失败，已达到最大重试次数");
+                        UIHelper.ShowError("获取角色列表失败，请检查网络后重新登录");
+                    }
+
+                    // 3. 切换到角色选择场景
+                    var sceneManager = GameSceneManager.GetOrCreate();
+                    if (sceneManager != null)
+                    {
+                        FlaxEngine.Debug.Log("[AuthenticationManager] 使用GameSceneManager切换场景");
+
+                        void OnTransitionCompleted(SceneType from, SceneType to)
+                        {
+                            sceneManager.TransitionCompleted -= OnTransitionCompleted;
+                            FlaxEngine.Debug.Log($"[AuthenticationManager] 场景切换完成: {from} -> {to}");
+
+                            var sm = UIStateManager.Instance;
+                            if (sm != null && sm.CurrentScene != to)
+                            {
+                                sm.TransitionToScene(to, false);
+                            }
+                        }
+
+                        sceneManager.TransitionCompleted += OnTransitionCompleted;
+
+                        if (!sceneManager.TransitionTo(SceneType.CharacterSelection))
+                        {
+                            sceneManager.TransitionCompleted -= OnTransitionCompleted;
+                            FlaxEngine.Debug.LogError("[AuthenticationManager] 场景切换启动失败");
+                            UIHelper.ShowError("场景切换失败，请重试");
+                        }
+                        else
+                        {
+                            FlaxEngine.Debug.Log("[AuthenticationManager] 场景切换已启动，等待加载完成");
+                        }
+                    }
+                    else
+                    {
+                        FlaxEngine.Debug.LogError("[AuthenticationManager] GameSceneManager未初始化");
+                        UIHelper.ShowError("系统错误，请重启游戏");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogException(ex);
+                    FlaxEngine.Debug.LogError($"[AuthenticationManager] 完成登录后续流程时发生异常: {ex.Message}");
+                }
+                finally
+                {
+                    tcs.TrySetResult(true);
+                }
+            });
+
+            await tcs.Task;
+            FlaxEngine.Debug.Log($"[AuthenticationManager] 登录后续流程完成: {response.PassportId}");
+        }
+
+        /// <summary>
+        /// 处理登录响应（主要由旧 TCP 登录路径调用；WebApi 登录路径使用 FinalizeLoginAsync）
         /// </summary>
         public async void HandleLoginResponse(LoginResponse response)
         {
@@ -505,7 +627,6 @@ namespace HundunWorld.Game.UI.Authentication
                     LoginResponseReceived?.Invoke(response);
                     AuthenticationStateChanged?.Invoke(true);
                     
-                    // 注意：不再调用场景切换，由LoginResponseHandler统一处理
                     Debug.Log($"[AuthenticationManager] 登录成功处理完成: {response.PassportId}");
                 }
                 else
@@ -693,7 +814,10 @@ namespace HundunWorld.Game.UI.Authentication
                 }
                 else
                 {
-                    await Task.Delay(100);
+                    // ConnectAsync 返回 true 后连接状态可能还未刷新到 Connected，
+                    // 需等待状态就绪后再返回，避免后续 SendMessageAsync 因状态判断失败而拒绝发送
+                    if (networkManager.GetConnectionStatus() != ConnectionStatus.Connected)
+                        await networkManager.WaitForConnectionAsync(3000);
                 }
                 return null;
             }
@@ -704,7 +828,7 @@ namespace HundunWorld.Game.UI.Authentication
 
             var gateway = config.GatewayList[0];
             var fallbackConnected = await networkManager.ConnectAsync(gateway.IP, gateway.Port);
-            
+
             if (!fallbackConnected)
             {
                 var waitSuccess = await networkManager.WaitForConnectionAsync(5000);
@@ -713,9 +837,12 @@ namespace HundunWorld.Game.UI.Authentication
             }
             else
             {
-                await Task.Delay(100);
+                // ConnectAsync 返回 true 后连接状态可能还未刷新到 Connected，
+                // 需等待状态就绪后再返回，避免后续 SendMessageAsync 因状态判断失败而拒绝发送
+                if (networkManager.GetConnectionStatus() != ConnectionStatus.Connected)
+                    await networkManager.WaitForConnectionAsync(3000);
             }
-            
+
             return null;
         }
 

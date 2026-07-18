@@ -1,0 +1,278 @@
+{
+  "name": "燕云十六声-角色创建与加载",
+  "version": 1,
+  "createdAt": 1783722000,
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "projectName": "燕云十六声-角色创建与加载"
+  },
+  "data": [
+    {
+      "id": "page-cc-naming",
+      "type": "page",
+      "name": "创角-命名",
+      "title": "创角-命名",
+      "version": 1,
+      "createdAt": 1783722000,
+      "devMetadata": {
+        "htmlSrc": "pages/cc-naming.html",
+        "device": "desktop",
+        "order": 1,
+        "pageType": "task-driven",
+        "dataDomId": "page-cc-naming",
+        "description": "水墨背景 + 中心竖排命名标题 + 输入框（纸色底+墨色边框）+ 确认按钮"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-cc-face-customize",
+      "type": "page",
+      "name": "创角-捏脸",
+      "title": "创角-捏脸",
+      "version": 1,
+      "createdAt": 1783722000,
+      "devMetadata": {
+        "htmlSrc": "pages/cc-face-customize.html",
+        "device": "desktop",
+        "order": 2,
+        "pageType": "information-dense",
+        "dataDomId": "page-cc-face-customize",
+        "description": "左侧3D预览区 + 右侧参数面板（水墨滑动条），分类标签页"
+      },
+      "canvasData": {
+        "x": 400,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-loading-1",
+      "type": "page",
+      "name": "Loading1",
+      "title": "Loading1",
+      "version": 1,
+      "createdAt": 1783722000,
+      "devMetadata": {
+        "htmlSrc": "pages/loading-1.html",
+        "device": "desktop",
+        "order": 3,
+        "pageType": "showcase",
+        "dataDomId": "page-loading-1",
+        "description": "全屏水墨画 + 底部墨色进度条 + 竖排诗意文字"
+      },
+      "canvasData": {
+        "x": 800,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-loading-2",
+      "type": "page",
+      "name": "Loading2",
+      "title": "Loading2",
+      "version": 1,
+      "createdAt": 1783722000,
+      "devMetadata": {
+        "htmlSrc": "pages/loading-2.html",
+        "device": "desktop",
+        "order": 4,
+        "pageType": "showcase",
+        "dataDomId": "page-loading-2",
+        "description": "全屏山水水墨 + 旋转墨环进度指示 + 章节名竖排"
+      },
+      "canvasData": {
+        "x": 1200,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-ink-anim-ref-1",
+      "type": "page",
+      "name": "水墨动画参考1",
+      "title": "水墨动画参考1",
+      "version": 1,
+      "createdAt": 1783722000,
+      "devMetadata": {
+        "htmlSrc": "pages/ink-anim-ref-1.html",
+        "device": "desktop",
+        "order": 5,
+        "pageType": "showcase",
+        "dataDomId": "page-ink-anim-ref-1",
+        "description": "水墨晕染转场动画分镜：淡入→扩散→凝聚→淡出"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 400,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-ink-anim-ref-2",
+      "type": "page",
+      "name": "水墨动画参考2",
+      "title": "水墨动画参考2",
+      "version": 1,
+      "createdAt": 1783722000,
+      "devMetadata": {
+        "htmlSrc": "pages/ink-anim-ref-2.html",
+        "device": "desktop",
+        "order": 6,
+        "pageType": "showcase",
+        "dataDomId": "page-ink-anim-ref-2",
+        "description": "水墨笔触动画分镜：横扫→飞溅→消散"
+      },
+      "canvasData": {
+        "x": 400,
+        "y": 400,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-chapter-transition",
+      "type": "page",
+      "name": "章节过场",
+      "title": "章节过场",
+      "version": 1,
+      "createdAt": 1783722000,
+      "devMetadata": {
+        "htmlSrc": "pages/chapter-transition.html",
+        "device": "desktop",
+        "order": 7,
+        "pageType": "showcase",
+        "dataDomId": "page-chapter-transition",
+        "description": "电影级章节过渡：全屏墨黑 → 竖排章节名淡入 → 水墨晕染散出"
+      },
+      "canvasData": {
+        "x": 800,
+        "y": 400,
+        "group": 0
+      }
+    },
+    {
+      "id": "image-001",
+      "type": "image",
+      "name": "创角命名背景",
+      "title": "创角命名背景",
+      "version": 1,
+      "createdAt": 1783722000,
+      "devMetadata": {
+        "imageSrc": "assets/bg-cc-naming.jpg",
+        "device": "desktop",
+        "order": 100
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 800
+      }
+    },
+    {
+      "id": "image-002",
+      "type": "image",
+      "name": "角色预览背景",
+      "title": "角色预览背景",
+      "version": 1,
+      "createdAt": 1783722000,
+      "devMetadata": {
+        "imageSrc": "assets/bg-cc-preview.jpg",
+        "device": "desktop",
+        "order": 101
+      },
+      "canvasData": {
+        "x": 300,
+        "y": 800
+      }
+    },
+    {
+      "id": "image-003",
+      "type": "image",
+      "name": "加载背景1",
+      "title": "加载背景1",
+      "version": 1,
+      "createdAt": 1783722000,
+      "devMetadata": {
+        "imageSrc": "assets/bg-loading-landscape.jpg",
+        "device": "desktop",
+        "order": 102
+      },
+      "canvasData": {
+        "x": 600,
+        "y": 800
+      }
+    },
+    {
+      "id": "image-004",
+      "type": "image",
+      "name": "加载背景2",
+      "title": "加载背景2",
+      "version": 1,
+      "createdAt": 1783722000,
+      "devMetadata": {
+        "imageSrc": "assets/bg-loading-mountain.jpg",
+        "device": "desktop",
+        "order": 103
+      },
+      "canvasData": {
+        "x": 900,
+        "y": 800
+      }
+    },
+    {
+      "id": "image-005",
+      "type": "image",
+      "name": "水墨晕染分镜",
+      "title": "水墨晕染分镜",
+      "version": 1,
+      "createdAt": 1783722000,
+      "devMetadata": {
+        "imageSrc": "assets/ink-anim-spread.jpg",
+        "device": "desktop",
+        "order": 104
+      },
+      "canvasData": {
+        "x": 1200,
+        "y": 800
+      }
+    },
+    {
+      "id": "image-006",
+      "type": "image",
+      "name": "水墨笔触分镜",
+      "title": "水墨笔触分镜",
+      "version": 1,
+      "createdAt": 1783722000,
+      "devMetadata": {
+        "imageSrc": "assets/ink-anim-brush.jpg",
+        "device": "desktop",
+        "order": 105
+      },
+      "canvasData": {
+        "x": 1500,
+        "y": 800
+      }
+    },
+    {
+      "id": "image-007",
+      "type": "image",
+      "name": "章节过场背景",
+      "title": "章节过场背景",
+      "version": 1,
+      "createdAt": 1783722000,
+      "devMetadata": {
+        "imageSrc": "assets/bg-chapter-ink.jpg",
+        "device": "desktop",
+        "order": 106
+      },
+      "canvasData": {
+        "x": 1800,
+        "y": 800
+      }
+    }
+  ]
+}

@@ -1,8 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Horizon.Game.Core;
 using Horizon.Game.Core.Sim.Server;
+using Horizon.Game.Message.Enums;
+using Horizon.Game.Message.Network;
 using Horizon.Game.Message.Sync;
 using Horizon.Orleans.Interface.World;
 using Microsoft.Extensions.Logging;
@@ -24,6 +28,7 @@ namespace Horizon.Game.Gateway.Services
     {
         private readonly Channel<FanoutEvent> _channel;
         private readonly ILogger<GatewayZoneShardFanoutSource>? _logger;
+        private int _diagCount;
 
         /// <summary>累计收到的 fanout 事件数（来自 grain 推送）。</summary>
         public long ReceivedEventCount { get; private set; }
@@ -41,7 +46,7 @@ namespace Horizon.Game.Gateway.Services
             _channel = Channel.CreateBounded<FanoutEvent>(new BoundedChannelOptions(capacity)
             {
                 FullMode = BoundedChannelFullMode.DropOldest,
-                SingleReader = true,
+                SingleReader = false,  // Task 18：多 worker 模式，多个 worker 并发 TryRead
                 SingleWriter = false,
             });
             _logger = logger;
@@ -50,9 +55,9 @@ namespace Horizon.Game.Gateway.Services
         // --- IZoneShardFanoutObserver（grain 回调） ---
 
         /// <inheritdoc />
-        public Task OnChunkDiffAsync(WorldChunkDiffPacket diff, long[] sessionIds)
+        public Task OnChunkDiffAsync(WorldChunkDiffPacket diff, IReadOnlyCollection<long> sessionIds)
         {
-            if (diff is null || sessionIds is null || sessionIds.Length == 0)
+            if (diff is null || sessionIds is null || sessionIds.Count == 0)
                 return Task.CompletedTask;
 
             var evt = new FanoutEvent
@@ -62,6 +67,22 @@ namespace Horizon.Game.Gateway.Services
             };
 
             ReceivedEventCount++;
+
+            // 诊断：前 5 次无条件输出，确认 fanout 推送链路联通
+            _diagCount++;
+            if (_diagCount <= 5)
+            {
+                _logger?.LogWarning(
+                    "[GatewayFanoutSource 诊断#{N}] 收到 fanout 推送。ReceivedCount={Count}, Sessions={SessionCount}, PendingCount={Pending}, PayloadType={PayloadType}, ChunkKey=0x{ChunkKey:X16}",
+                    _diagCount, ReceivedEventCount, sessionIds.Count, PendingCount, diff.PayloadType, diff.ChunkMortonKey);
+            }
+            else if (ReceivedEventCount % 60 == 1)
+            {
+                _logger?.LogInformation(
+                    "GatewayZoneShardFanoutSource：收到 fanout 推送。ReceivedCount={Count}, Sessions={SessionCount}, PendingCount={Pending}, PayloadType={PayloadType}, ChunkKey=0x{ChunkKey:X16}",
+                    ReceivedEventCount, sessionIds.Count, PendingCount, diff.PayloadType, diff.ChunkMortonKey);
+            }
+
             if (!_channel.Writer.TryWrite(evt))
             {
                 // BoundedChannelFullMode.DropOldest 下 TryWrite 不会失败（会直接挤掉旧项），
@@ -103,66 +124,245 @@ namespace Horizon.Game.Gateway.Services
     /// <summary>
     /// 把 <see cref="GatewaySyncDispatcher"/> 所需的 <see cref="ISessionRegistry"/> 契约
     /// 适配到 gateway 的 <see cref="IConnectionManager"/>。<br/>
-    /// 以 <see cref="IGameConnection.UserId"/>（即 sessionId）为 key 反查 <see cref="IGameConnection"/>。
+    /// fanout 推送使用 <c>characterId</c> 作为 sessionId，因此优先按 characterId 反查
+    /// <see cref="IGameConnection"/>；找不到时回退到按 <see cref="IGameConnection.UserId"/> 查找（兼容旧路径）。
     /// </summary>
     public sealed class ConnectionManagerSessionRegistry : ISessionRegistry
     {
         private readonly IConnectionManager _connections;
+        private readonly ILogger<ConnectionManagerSessionRegistry>? _logger;
+        private long _hitCount;
+        private long _missCount;
 
-        public ConnectionManagerSessionRegistry(IConnectionManager connections)
+        public ConnectionManagerSessionRegistry(
+            IConnectionManager connections,
+            ILogger<ConnectionManagerSessionRegistry>? logger = null)
         {
             _connections = connections ?? throw new ArgumentNullException(nameof(connections));
+            _logger = logger;
         }
 
         /// <inheritdoc />
         public bool TryGetEndpoint(long sessionId, out object? endpoint)
         {
-            var conn = _connections.GetConnectionByUserId(sessionId);
+            // 优先按 characterId 查找（fanout 推送使用 characterId 作为 sessionId）
+            var conn = _connections.GetConnectionByCharacterId(sessionId);
             if (conn is { IsConnected: true })
             {
                 endpoint = conn;
+                Interlocked.Increment(ref _hitCount);
                 return true;
             }
+
+            // 诊断（Despawn 丢失 BUG）：characterId 查找失败时，记录失败原因。
+            // 可能原因：(1) B 的 characterId→connection 映射不存在（RegisterCharacter 未被调用）；
+            //           (2) 映射存在但 conn == null（连接已被移除）；
+            //           (3) conn != null 但 IsConnected=false（TCP 暂时断开）。
+            var missReason = conn is null
+                ? "映射不存在或连接已移除"
+                : "连接存在但 IsConnected=false";
+            var missTotal = Interlocked.Increment(ref _missCount);
+            // 前 10 次失败无条件输出，之后每 60 次输出一次，避免刷屏
+            if (missTotal <= 10 || missTotal % 60 == 0)
+            {
+                _logger?.LogWarning(
+                    "[TryGetEndpoint诊断] 查找失败 SessionId={SessionId}。原因：{Reason}。HitCount={Hit}, MissCount={Miss}",
+                    sessionId, missReason, Interlocked.Read(ref _hitCount), missTotal);
+            }
+
+            // 回退到按 UserId 查找（兼容）
+            var conn2 = _connections.GetConnectionByUserId(sessionId);
+            if (conn2 is { IsConnected: true })
+            {
+                endpoint = conn2;
+                return true;
+            }
+
             endpoint = null;
             return false;
         }
     }
 
     /// <summary>
-    /// 把 <see cref="SyncPacket"/> 通过 <see cref="SyncPacketCodec"/> 编码后写回 <see cref="IGameConnection"/>。<br/>
+    /// 把 <see cref="SyncPacket"/> 通过 <see cref="SyncPacketCodec"/> 编码后，
+    /// 包装为 <see cref="SyncFrameMessage"/> → <see cref="HorizonMessageAdapter"/> 帧格式，
+    /// 写回 <see cref="IGameConnection"/>。<br/>
     /// 发送是 fire-and-forget：dispatcher 是同步分派，真实 IO 走 TouchSocket 异步栈。<br/>
     /// 异常被吞并计入 <see cref="FailedSendCount"/>，以免一个坏连接拖垮整轮广播。
     /// </summary>
     public sealed class GameConnectionPacketSink : IClientPacketSink
     {
         private readonly ILogger<GameConnectionPacketSink>? _logger;
+        private readonly HorizonMessageAdapter _adapter;
+        private long _sendAttemptCount;
+        private int _diagCount;
 
         /// <summary>累计发送失败次数（连接异常、已关闭、序列化失败等）。</summary>
         public long FailedSendCount { get; private set; }
 
-        public GameConnectionPacketSink(ILogger<GameConnectionPacketSink>? logger = null)
+        public GameConnectionPacketSink(HorizonMessageAdapter adapter, ILogger<GameConnectionPacketSink>? logger = null)
         {
+            _adapter = adapter ?? throw new ArgumentNullException(nameof(adapter));
             _logger = logger;
         }
 
         /// <inheritdoc />
         public void Send(object endpoint, SyncPacket packet)
         {
-            if (endpoint is not IGameConnection conn || !conn.IsConnected) return;
+            var attempt = Interlocked.Increment(ref _sendAttemptCount);
+            _diagCount++;
+
+            if (endpoint is not IGameConnection conn)
+            {
+                if (_diagCount <= 5 || attempt % 60 == 1)
+                {
+                    _logger?.LogWarning(
+                        "[GameConnectionPacketSink 诊断#{N}] endpoint 不是 IGameConnection，静默丢弃（Attempt={Attempt}, EndpointType={Type}, PacketKind={Kind}）",
+                        _diagCount, attempt, endpoint?.GetType().Name ?? "null", packet.Kind);
+                }
+                return;
+            }
+
+            if (!conn.IsConnected)
+            {
+                if (_diagCount <= 5 || attempt % 60 == 1)
+                {
+                    _logger?.LogWarning(
+                        "[GameConnectionPacketSink 诊断#{N}] 连接已断开，静默丢弃（Attempt={Attempt}, ConnectionId={Id}, PacketKind={Kind}）",
+                        _diagCount, attempt, conn.ConnectionId, packet.Kind);
+                }
+                return;
+            }
+
             try
             {
+                // 1. 用 SyncPacketCodec 编码内部帧（6 字节同步帧头 + payload）
                 SyncPacketCodec.Encode(packet, out var frame, out var frameLength);
-                // 拷贝到精确长度数组：IGameConnection.SendAsync 约定接收刚好帧长的字节流，
-                // 且 Encode 的 frame 由 ArrayPool 借出，直接异步送出可能在 await 到达前被归还。
-                var copy = new byte[frameLength];
-                Buffer.BlockCopy(frame, 0, copy, 0, frameLength);
+                var payload = new byte[frameLength];
+                Buffer.BlockCopy(frame, 0, payload, 0, frameLength);
                 System.Buffers.ArrayPool<byte>.Shared.Return(frame);
-                _ = conn.SendAsync(copy);
+
+                // 2. 包装为 SyncFrameMessage（与 SyncPacketHandler.CreateSyncResponse 一致）
+                var syncFrame = new SyncFrameMessage
+                {
+                    Frame = payload,
+                    PacketKind = (byte)packet.Kind,
+                    ProtocolVersion = packet.ProtocolVersion,
+                };
+
+                // 3. 通过 HorizonMessageAdapter 打包为 8 字节线路帧（客户端期望的格式）
+                // 不压缩：同步包对延迟敏感，且通常较小
+                var wireBytes = _adapter.PackMessage(syncFrame, MessageType.SyncPacket, compress: false);
+
+                // 4. 发送到连接
+                _ = conn.SendAsync(wireBytes);
+
+                if (_diagCount <= 5)
+                {
+                    _logger?.LogWarning(
+                        "[GameConnectionPacketSink 诊断#{N}] 已发送 SyncPacket 到客户端（ConnectionId={Id}, PacketKind={Kind}, WireBytes={Bytes}）",
+                        _diagCount, conn.ConnectionId, packet.Kind, wireBytes.Length);
+                }
+                else if (attempt % 60 == 1)
+                {
+                    _logger?.LogInformation(
+                        "GameConnectionPacketSink：已发送 SyncPacket 到客户端（Attempt={Attempt}, ConnectionId={Id}, PacketKind={Kind}, WireBytes={Bytes}）",
+                        attempt, conn.ConnectionId, packet.Kind, wireBytes.Length);
+                }
             }
             catch (Exception ex)
             {
                 FailedSendCount++;
-                _logger?.LogDebug(ex, "GameConnectionPacketSink 写回失败（ConnectionId={Id}）", conn.ConnectionId);
+                // 提升日志级别：前 5 次用 Warning，确保异常不被吞掉
+                if (_diagCount <= 5)
+                {
+                    _logger?.LogWarning(ex,
+                        "[GameConnectionPacketSink 诊断#{N}] 写回失败（ConnectionId={Id}, PacketKind={Kind}）",
+                        _diagCount, conn.ConnectionId, packet.Kind);
+                }
+                else
+                {
+                    _logger?.LogDebug(ex, "GameConnectionPacketSink 写回失败（ConnectionId={Id}）", conn.ConnectionId);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Task 15：一次性编码 SyncPacket 为 wireBytes，供所有 session 复用。
+        /// dispatcher 在并行分发前调用此方法编码一次，然后通过 <see cref="Send(object, byte[], int)"/> 复用。
+        /// </summary>
+        public byte[] Encode(SyncPacket packet, out int length)
+        {
+            // 1. 用 SyncPacketCodec 编码内部帧（6 字节同步帧头 + payload）
+            SyncPacketCodec.Encode(packet, out var frame, out var frameLength);
+            var payload = new byte[frameLength];
+            Buffer.BlockCopy(frame, 0, payload, 0, frameLength);
+            System.Buffers.ArrayPool<byte>.Shared.Return(frame);
+
+            // 2. 包装为 SyncFrameMessage（与 SyncPacketHandler.CreateSyncResponse 一致）
+            var syncFrame = new SyncFrameMessage
+            {
+                Frame = payload,
+                PacketKind = (byte)packet.Kind,
+                ProtocolVersion = packet.ProtocolVersion,
+            };
+
+            // 3. 通过 HorizonMessageAdapter 打包为 8 字节线路帧（客户端期望的格式）
+            // 不压缩：同步包对延迟敏感，且通常较小
+            var wireBytes = _adapter.PackMessage(syncFrame, MessageType.SyncPacket, compress: false);
+            length = wireBytes.Length;
+            return wireBytes;
+        }
+
+        /// <summary>
+        /// Task 16：使用预编码的 wireBytes 直接发送，跳过 SyncPacketCodec.Encode + PackMessage。
+        /// 由 GatewaySyncDispatcher.Dispatch 在并行分发前一次性编码，所有 session 复用。
+        /// </summary>
+        public void Send(object endpoint, byte[] wireBytes, int length)
+        {
+            var attempt = Interlocked.Increment(ref _sendAttemptCount);
+            _diagCount++;
+
+            if (endpoint is not IGameConnection conn)
+            {
+                if (_diagCount <= 5 || attempt % 60 == 1)
+                {
+                    _logger?.LogWarning(
+                        "[GameConnectionPacketSink 诊断#{N}] endpoint 不是 IGameConnection，静默丢弃（Attempt={Attempt}, EndpointType={Type}）",
+                        _diagCount, attempt, endpoint?.GetType().Name ?? "null");
+                }
+                return;
+            }
+
+            if (!conn.IsConnected)
+            {
+                if (_diagCount <= 5 || attempt % 60 == 1)
+                {
+                    _logger?.LogWarning(
+                        "[GameConnectionPacketSink 诊断#{N}] 连接已断开，静默丢弃（Attempt={Attempt}, ConnectionId={Id}）",
+                        _diagCount, attempt, conn.ConnectionId);
+                }
+                return;
+            }
+
+            try
+            {
+                // 调用方（GatewaySyncDispatcher）每次编码会创建新 byte[]，可直接传递引用，无需拷贝
+                _ = conn.SendAsync(wireBytes);
+            }
+            catch (Exception ex)
+            {
+                FailedSendCount++;
+                if (_diagCount <= 5)
+                {
+                    _logger?.LogWarning(ex,
+                        "[GameConnectionPacketSink 诊断#{N}] 写回失败（ConnectionId={Id}）",
+                        _diagCount, conn.ConnectionId);
+                }
+                else
+                {
+                    _logger?.LogDebug(ex, "GameConnectionPacketSink 写回失败（ConnectionId={Id}）", conn.ConnectionId);
+                }
             }
         }
     }

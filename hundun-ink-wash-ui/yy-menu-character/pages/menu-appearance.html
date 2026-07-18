@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html class="dark" lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Untitled</title>
+    <style id="theme-vars">
+/* === 燕云十六声 UI 体系 - 水墨设计系统 === */
+/* Brand CSS for Ink Wash (水墨) Game UI Aesthetic */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+:root {
+  /* === 墨色系 - 主色调 === */
+  --color-ink-darkest: #0d0d0d;
+  --color-ink-dark: #1a1a1a;
+  --color-ink-medium: #2d2d2d;
+  --color-ink-light: #3d3d3d;
+  --color-ink-wash: #4a4a4a;
+  --color-ink-faded: #6a6a6a;
+
+  /* === 纸色系 - 面板/文字 === */
+  --color-paper-bright: #f5f0e8;
+  --color-paper: #ebe5d8;
+  --color-paper-aged: #d4c9b8;
+  --color-paper-faded: #c8bba8;
+  --color-paper-dark: #a89e8a;
+
+  /* === 朱红系 - 强调色 === */
+  --color-vermilion: #c0392b;
+  --color-vermilion-dark: #a93226;
+  --color-vermilion-light: #d9504a;
+  --color-vermilion-faded: #8b2a20;
+
+  /* === 金色系 - 品牌色/品质 === */
+  --color-gold: #c9a84c;
+  --color-gold-bright: #d4af37;
+  --color-gold-dark: #a08838;
+  --color-gold-faded: #8a7430;
+
+  /* === 玉色系 - 状态色 === */
+  --color-jade: #5e8b6e;
+  --color-jade-dark: #4a7c59;
+  --color-jade-light: #7aa889;
+
+  /* === 青灰系 - 次级信息 === */
+  --color-cyan-gray: #6b7b8a;
+  --color-cyan-gray-dark: #5a6a78;
+  --color-cyan-gray-light: #8a9ba8;
+
+  /* === Tailwind 语义令牌映射 === */
+  --color-background: var(--color-ink-dark);
+  --color-foreground: var(--color-paper-bright);
+  --color-card: var(--color-ink-medium);
+  --color-card-foreground: var(--color-paper-bright);
+  --color-popover: var(--color-ink-dark);
+  --color-popover-foreground: var(--color-paper-bright);
+  --color-primary: var(--color-vermilion);
+  --color-primary-foreground: var(--color-paper-bright);
+  --color-secondary: var(--color-ink-light);
+  --color-secondary-foreground: var(--color-paper-bright);
+  --color-muted: var(--color-ink-light);
+  --color-muted-foreground: var(--color-paper-aged);
+  --color-accent: var(--color-gold);
+  --color-accent-foreground: var(--color-ink-dark);
+  --color-destructive: var(--color-vermilion);
+  --color-destructive-foreground: var(--color-paper-bright);
+  --color-border: var(--color-ink-wash);
+  --color-input: var(--color-ink-medium);
+  --color-ring: var(--color-gold);
+
+  /* === Tailwind 圆角令牌映射 === */
+  --color-radius-small: var(--radius-sm);
+  --color-radius-medium: var(--radius-md);
+  --color-radius-large: var(--radius-lg);
+  --color-radius-xlarge: var(--radius-xl);
+
+  /* === 语义状态色 === */
+  --state-success: var(--color-jade);
+  --state-warning: var(--color-gold);
+  --state-error: var(--color-vermilion);
+  --state-info: var(--color-cyan-gray);
+
+  /* === 品质色 === */
+  --quality-common: #a89e8a;
+  --quality-uncommon: #5e8b6e;
+  --quality-rare: #4a7c9a;
+  --quality-epic: #c9a84c;
+  --quality-legendary: #c0392b;
+
+  /* === 字体系统 === */
+  --font-display: "Noto Serif SC", "STKaiti", "KaiTi", "楷体", serif;
+  --font-body: "Noto Sans SC", "Noto Sans", "Microsoft YaHei", "微软雅黑", sans-serif;
+  --font-decorative: "STKaiti", "KaiTi", "楷体", "Noto Serif SC", serif;
+  --font-mono: "Courier New", "Consolas", monospace;
+
+  /* === 字号系统 === */
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+  --text-3xl: 36px;
+  --text-4xl: 48px;
+  --text-5xl: 64px;
+  --text-6xl: 84px;
+
+  /* === 字重系统 === */
+  --weight-light: 300;
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-bold: 700;
+  --weight-black: 900;
+
+  /* === 行高系统 === */
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+  --leading-loose: 2.0;
+
+  /* === 圆角系统 === */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* === 间距系统 === */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+
+  /* === 边框系统 === */
+  --border-width-thin: 1px;
+  --border-width-medium: 2px;
+  --border-width-thick: 3px;
+  --border-color-ink: rgba(26, 26, 26, 0.6);
+  --border-color-paper: rgba(235, 229, 216, 0.2);
+  --border-color-gold: rgba(201, 168, 76, 0.4);
+
+  /* === 阴影系统（静态阴影 alpha<=0.05，浮层阴影单独定义）=== */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.05);
+  /* === 浮层阴影（仅 modal/popover/drawer 使用）=== */
+  --shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.15);
+  --shadow-overlay: 0 0 20px rgba(13, 13, 13, 0.4);
+
+  /* === 透明度系统 === */
+  --opacity-ink-overlay: 0.85;
+  --opacity-paper-translucent: 0.92;
+  --opacity-hover: 0.85;
+  --opacity-disabled: 0.4;
+
+  /* === 过渡动画 === */
+  --transition-fast: 150ms ease-out;
+  --transition-normal: 250ms ease-out;
+  --transition-slow: 400ms ease-out;
+  --transition-ink: 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* === 基础重置 === */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--color-paper-bright);
+  background-color: var(--color-ink-dark);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* === 水墨面板组件 === */
+.ink-panel {
+  background: linear-gradient(135deg, rgba(45, 45, 45, 0.95) 0%, rgba(26, 26, 26, 0.95) 100%);
+  border: 1px solid var(--border-color-ink);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.ink-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.18 0 0 0 0 0.18 0 0 0 0 0.18 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* === 侧滑面板 === */
+.side-slide-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 420px;
+  height: 100vh;
+  background: linear-gradient(180deg, rgba(26, 26, 26, 0.98) 0%, rgba(13, 13, 13, 0.98) 100%);
+  border-left: 1px solid var(--border-color-gold);
+  padding: var(--spacing-xl);
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform var(--transition-ink);
+  z-index: 300;
+}
+
+.side-slide-panel.active {
+  transform: translateX(0);
+}
+
+/* === 中式按钮 === */
+.ink-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  border: 1px solid var(--border-color-gold);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.ink-button-primary {
+  background: linear-gradient(135deg, var(--color-vermilion) 0%, var(--color-vermilion-dark) 100%);
+  color: var(--color-paper-bright);
+  border-color: var(--color-vermilion-dark);
+}
+
+.ink-button-primary:hover {
+  background: linear-gradient(135deg, var(--color-vermilion-light) 0%, var(--color-vermilion) 100%);
+  box-shadow: 0 0 12px rgba(192, 57, 43, 0.3);
+}
+
+.ink-button-secondary {
+  background: transparent;
+  color: var(--color-paper-bright);
+  border-color: var(--border-color-ink);
+}
+
+.ink-button-secondary:hover {
+  background: rgba(235, 229, 216, 0.08);
+  border-color: var(--color-paper-faded);
+}
+
+.ink-button-gold {
+  background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-gold-dark) 100%);
+  color: var(--color-ink-dark);
+  border-color: var(--color-gold-dark);
+}
+
+.ink-button-gold:hover {
+  background: linear-gradient(135deg, var(--color-gold-bright) 0%, var(--color-gold) 100%);
+  box-shadow: 0 0 12px rgba(201, 168, 76, 0.3);
+}
+
+/* === 竖排标题 === */
+.vertical-title {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-family: var(--font-decorative);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.2em;
+  line-height: var(--leading-loose);
+}
+
+/* === 墨色进度条 === */
+.ink-progress {
+  width: 100%;
+  height: 6px;
+  background: rgba(13, 13, 13, 0.8);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  position: relative;
+}
+
+.ink-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-ink-wash) 0%, var(--color-paper-aged) 100%);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-slow);
+}
+
+.ink-progress-bar-vermilion {
+  background: linear-gradient(90deg, var(--color-vermilion-dark) 0%, var(--color-vermilion-light) 100%);
+}
+
+.ink-progress-bar-gold {
+  background: linear-gradient(90deg, var(--color-gold-dark) 0%, var(--color-gold-bright) 100%);
+}
+
+.ink-progress-bar-jade {
+  background: linear-gradient(90deg, var(--color-jade-dark) 0%, var(--color-jade-light) 100%);
+}
+
+/* === 水墨分隔线 === */
+.ink-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--color-ink-faded) 50%, transparent 100%);
+  border: none;
+  margin: var(--spacing-md) 0;
+}
+
+.ink-divider-vertical {
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(180deg, transparent 0%, var(--color-ink-faded) 50%, transparent 100%);
+  border: none;
+}
+
+/* === 标签徽章 === */
+.ink-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--spacing-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+}
+
+.ink-badge-gold {
+  color: var(--color-gold-bright);
+  border-color: var(--color-gold-dark);
+  background: rgba(201, 168, 76, 0.1);
+}
+
+.ink-badge-jade {
+  color: var(--color-jade-light);
+  border-color: var(--color-jade-dark);
+  background: rgba(94, 139, 110, 0.1);
+}
+
+.ink-badge-vermilion {
+  color: var(--color-vermilion-light);
+  border-color: var(--color-vermilion-dark);
+  background: rgba(192, 57, 43, 0.1);
+}
+
+.ink-badge-common {
+  color: var(--color-paper-dark);
+  border-color: var(--color-paper-faded);
+  background: rgba(168, 158, 138, 0.1);
+}
+
+/* === 悬浮提示 === */
+.ink-tooltip {
+  position: absolute;
+  background: rgba(13, 13, 13, 0.95);
+  border: 1px solid var(--border-color-gold);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--text-sm);
+  color: var(--color-paper-bright);
+  pointer-events: none;
+  z-index: 400;
+  box-shadow: var(--shadow-md);
+}
+
+/* === 加载画面 === */
+.ink-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--color-ink-darkest);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+
+/* === 章节过场 === */
+.chapter-transition {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--color-ink-darkest);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  animation: inkFadeIn var(--transition-ink) forwards;
+}
+
+@keyframes inkFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes inkSpread {
+  0% { transform: scale(0.8); opacity: 0; filter: blur(20px); }
+  50% { transform: scale(1.1); opacity: 0.8; filter: blur(5px); }
+  100% { transform: scale(1); opacity: 1; filter: blur(0); }
+}
+
+@keyframes inkDissolve {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; filter: blur(10px); }
+  100% { opacity: 0; filter: blur(20px); }
+}
+
+/* === 水墨晕染效果 === */
+.ink-splash {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(15px);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.ink-splash-1 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, var(--color-ink-medium) 0%, transparent 70%);
+}
+
+.ink-splash-2 {
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, var(--color-ink-wash) 0%, transparent 70%);
+}
+
+/* === 纸质纹理覆盖 === */
+.paper-texture {
+  position: relative;
+}
+
+.paper-texture::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5' result='noise'/%3E%3CfeDiffuseLighting in='noise' lighting-color='%23f5f0e8' surfaceScale='2'%3E%3CfeDistantLight azimuth='45' elevation='60'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+/* === 中式纹样边框 === */
+.pattern-border-fret {
+  border-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M0 0h40v40H0z' fill='none'/%3E%3Cpath d='M5 5h30v30H5z' fill='none' stroke='%23c9a84c' stroke-width='1' opacity='0.3'/%3E%3Cpath d='M10 10h20v20H10z' fill='none' stroke='%23c9a84c' stroke-width='0.5' opacity='0.2'/%3E%3C/svg%3E") 8 stretch;
+}
+
+/* === 通用工具类 === */
+.text-display { font-family: var(--font-display); }
+.text-body { font-family: var(--font-body); }
+.text-decorative { font-family: var(--font-decorative); }
+
+.text-ink { color: var(--color-ink-dark); }
+.text-paper { color: var(--color-paper-bright); }
+.text-vermilion { color: var(--color-vermilion); }
+.text-gold { color: var(--color-gold); }
+.text-jade { color: var(--color-jade); }
+.text-cyan-gray { color: var(--color-cyan-gray); }
+.text-muted { color: var(--color-ink-faded); }
+
+.bg-ink { background-color: var(--color-ink-dark); }
+.bg-ink-medium { background-color: var(--color-ink-medium); }
+.bg-paper { background-color: var(--color-paper); }
+.bg-vermilion { background-color: var(--color-vermilion); }
+.bg-gold { background-color: var(--color-gold); }
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.gap-sm { gap: var(--spacing-sm); }
+.gap-md { gap: var(--spacing-md); }
+.gap-lg { gap: var(--spacing-lg); }
+
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed { position: fixed; }
+
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.h-screen { height: 100vh; }
+
+.overflow-hidden { overflow: hidden; }
+.overflow-auto { overflow: auto; }
+
+.cursor-pointer { cursor: pointer; }
+
+.opacity-hover { opacity: var(--opacity-hover); }
+.opacity-disabled { opacity: var(--opacity-disabled); }
+
+.transition-normal { transition: all var(--transition-normal); }
+.transition-ink { transition: all var(--transition-ink); }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--color-background);
+    --color-foreground: var(--color-foreground);
+    --color-card: var(--color-card);
+    --color-card-foreground: var(--color-card-foreground);
+    --color-popover: var(--color-popover);
+    --color-popover-foreground: var(--color-popover-foreground);
+    --color-primary: var(--color-primary);
+    --color-primary-foreground: var(--color-primary-foreground);
+    --color-secondary: var(--color-secondary);
+    --color-secondary-foreground: var(--color-secondary-foreground);
+    --color-muted: var(--color-muted);
+    --color-muted-foreground: var(--color-muted-foreground);
+    --color-accent: var(--color-accent);
+    --color-accent-foreground: var(--color-accent-foreground);
+    --color-destructive: var(--color-destructive);
+    --color-destructive-foreground: var(--color-destructive-foreground);
+    --color-border: var(--color-border);
+    --color-input: var(--color-input);
+    --color-ring: var(--color-ring);
+    --radius-sm: var(--color-radius-small);
+    --radius-md: var(--color-radius-medium);
+    --radius-lg: var(--color-radius-large);
+    --radius-xl: var(--color-radius-xlarge);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="overflow-hidden" style="background-color: var(--color-ink-dark); color: var(--color-paper-bright); font-family: var(--font-body); font-size: 14px; line-height: 1.5;">
+  <main class="h-screen flex overflow-hidden">
+
+    <!-- === Left Navigation (240px) === -->
+    <nav class="w-[240px] shrink-0 flex flex-col" style="background: linear-gradient(180deg, var(--color-ink-medium) 0%, var(--color-ink-dark) 100%); border-right: 1px solid var(--border-color-ink);">
+      <!-- Logo / Title -->
+      <div class="h-[60px] flex items-center justify-center shrink-0" style="border-bottom: 1px solid var(--border-color-ink);">
+        <span style="font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--color-gold); letter-spacing: 0.15em;">燕云十六声</span>
+      </div>
+
+      <!-- Nav items scroll area -->
+      <div class="flex-1 overflow-y-auto py-4">
+        <!-- Group: Character -->
+        <div class="px-4 mb-2">
+          <span style="font-size: 12px; color: var(--color-ink-faded); letter-spacing: 0.1em;">角色</span>
+        </div>
+        <div class="flex flex-col gap-1 px-2 mb-4">
+          <a href="#" class="nav-item" data-dom-id="nav-character">
+            <i data-lucide="user" class="w-4 h-4 shrink-0"></i>
+            <span>角色</span>
+          </a>
+          <a href="#" class="nav-item" data-dom-id="nav-equipment">
+            <i data-lucide="sword" class="w-4 h-4 shrink-0"></i>
+            <span>装备</span>
+          </a>
+          <a href="#" class="nav-item nav-item-active" data-dom-id="nav-appearance">
+            <i data-lucide="shirt" class="w-4 h-4 shrink-0"></i>
+            <span>外观</span>
+          </a>
+          <a href="#" class="nav-item" data-dom-id="nav-battle-prep">
+            <i data-lucide="shield" class="w-4 h-4 shrink-0"></i>
+            <span>备战</span>
+          </a>
+          <a href="#" class="nav-item" data-dom-id="nav-sect">
+            <i data-lucide="landmark" class="w-4 h-4 shrink-0"></i>
+            <span>门派</span>
+          </a>
+          <a href="#" class="nav-item" data-dom-id="nav-personal-info">
+            <i data-lucide="info" class="w-4 h-4 shrink-0"></i>
+            <span>个人信息</span>
+          </a>
+          <a href="#" class="nav-item" data-dom-id="nav-time">
+            <i data-lucide="clock" class="w-4 h-4 shrink-0"></i>
+            <span>时间</span>
+          </a>
+        </div>
+
+        <!-- Divider -->
+        <div class="mx-4 mb-4" style="height: 1px; background: linear-gradient(90deg, transparent 0%, var(--color-ink-faded) 50%, transparent 100%);"></div>
+
+        <!-- Group: World -->
+        <div class="px-4 mb-2">
+          <span style="font-size: 12px; color: var(--color-ink-faded); letter-spacing: 0.1em;">江湖</span>
+        </div>
+        <div class="flex flex-col gap-1 px-2 mb-4">
+          <a href="#" class="nav-item" data-dom-id="nav-quest">
+            <i data-lucide="scroll-text" class="w-4 h-4 shrink-0"></i>
+            <span>任务</span>
+          </a>
+          <a href="#" class="nav-item" data-dom-id="nav-bestiary">
+            <i data-lucide="book-open" class="w-4 h-4 shrink-0"></i>
+            <span>博物志</span>
+          </a>
+          <a href="#" class="nav-item" data-dom-id="nav-martial">
+            <i data-lucide="book" class="w-4 h-4 shrink-0"></i>
+            <span>武林录</span>
+          </a>
+          <a href="#" class="nav-item" data-dom-id="nav-livelihood">
+            <i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i>
+            <span>营生</span>
+          </a>
+          <a href="#" class="nav-item" data-dom-id="nav-team">
+            <i data-lucide="users" class="w-4 h-4 shrink-0"></i>
+            <span>组队</span>
+          </a>
+          <a href="#" class="nav-item" data-dom-id="nav-mail">
+            <i data-lucide="mail" class="w-4 h-4 shrink-0"></i>
+            <span>邮箱</span>
+          </a>
+          <a href="#" class="nav-item nav-item-disabled" data-dom-id="nav-shop">
+            <i data-lucide="store" class="w-4 h-4 shrink-0"></i>
+            <span>商店</span>
+          </a>
+        </div>
+
+        <!-- Divider -->
+        <div class="mx-4 mb-4" style="height: 1px; background: linear-gradient(90deg, transparent 0%, var(--color-ink-faded) 50%, transparent 100%);"></div>
+
+        <!-- Group: System -->
+        <div class="px-4 mb-2">
+          <span style="font-size: 12px; color: var(--color-ink-faded); letter-spacing: 0.1em;">系统</span>
+        </div>
+        <div class="flex flex-col gap-1 px-2">
+          <a href="#" class="nav-item nav-item-disabled" data-dom-id="nav-settings">
+            <i data-lucide="settings" class="w-4 h-4 shrink-0"></i>
+            <span>设置</span>
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- === Right Area === -->
+    <div class="flex-1 flex flex-col min-w-0">
+      <!-- Top Character Info Bar (60px) -->
+      <header class="h-[60px] shrink-0 flex items-center justify-between px-6" style="background: var(--color-ink-medium); border-bottom: 1px solid var(--border-color-ink);">
+        <!-- Left: Avatar + Info -->
+        <div class="flex items-center gap-4">
+          <div class="w-10 h-10 rounded-full shrink-0 flex items-center justify-center" style="background: linear-gradient(135deg, var(--color-ink-light) 0%, var(--color-ink-wash) 100%); border: 1px solid var(--border-color-gold);">
+            <span style="font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--color-gold);">无</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span style="font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--color-paper-bright);">无名侠</span>
+            <span class="ink-badge ink-badge-vermilion whitespace-nowrap">Lv.42</span>
+            <span style="font-size: 13px; color: var(--color-paper-aged);">逍遥派</span>
+          </div>
+        </div>
+        <!-- Right: Currency -->
+        <div class="flex items-center gap-6">
+          <div class="flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full shrink-0" style="background: radial-gradient(circle, #c9a84c 30%, #8a7430 100%); border: 1px solid #a08838;"></span>
+            <span style="font-size: 13px; color: var(--color-paper-bright); font-variant-numeric: tabular-nums;">铜钱 12,450</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full shrink-0" style="background: radial-gradient(circle, #d4d4d0 30%, #a0a0a8 100%); border: 1px solid #8a9ba8;"></span>
+            <span style="font-size: 13px; color: var(--color-paper-bright); font-variant-numeric: tabular-nums;">银两 328</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content Area -->
+      <div class="flex-1 flex min-h-0">
+
+        <!-- === Left: Preview (45%) === -->
+        <section class="w-[45%] shrink-0 p-6 flex flex-col">
+          <div class="flex-1 flex flex-col relative overflow-hidden" style="background: linear-gradient(180deg, var(--color-ink-medium) 0%, var(--color-ink-darkest) 100%); border: 1px solid var(--border-color-ink); border-radius: 8px;">
+
+            <!-- Ink splash decorations -->
+            <div class="absolute top-10 left-10 w-[300px] h-[300px] rounded-full pointer-events-none" style="background: radial-gradient(circle, var(--color-ink-light) 0%, transparent 70%); filter: blur(15px); opacity: 0.3;"></div>
+            <div class="absolute bottom-20 right-10 w-[200px] h-[200px] rounded-full pointer-events-none" style="background: radial-gradient(circle, var(--color-ink-wash) 0%, transparent 70%); filter: blur(15px); opacity: 0.3;"></div>
+
+            <!-- Vertical title decoration -->
+            <div class="absolute top-6 right-6 vertical-title" style="font-size: 18px; color: var(--color-gold); opacity: 0.4;">外观预览</div>
+
+            <!-- Character silhouette -->
+            <div class="flex-1 flex items-center justify-center relative">
+              <svg viewBox="0 0 200 400" class="h-[80%] max-h-[500px]" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 0 20px rgba(192,57,43,0.1));">
+                <!-- Head -->
+                <ellipse cx="100" cy="50" rx="22" ry="26" fill="var(--color-paper-aged)" opacity="0.12"/>
+                <!-- Hair topknot -->
+                <ellipse cx="100" cy="28" rx="10" ry="8" fill="var(--color-ink-wash)" opacity="0.2"/>
+                <!-- Neck -->
+                <rect x="92" y="72" width="16" height="12" fill="var(--color-paper-aged)" opacity="0.1"/>
+                <!-- Robe/Body -->
+                <path d="M100 84 C75 84 62 100 58 125 L48 220 L42 380 L62 392 L70 392 L78 230 L88 130 L88 392 L112 392 L112 130 L122 230 L130 392 L138 392 L158 380 L152 220 L142 125 C138 100 125 84 100 84 Z" fill="var(--color-paper-aged)" opacity="0.12"/>
+                <!-- Inner robe lines -->
+                <line x1="100" y1="90" x2="100" y2="390" stroke="var(--color-gold)" stroke-width="0.5" opacity="0.15"/>
+                <!-- Belt -->
+                <rect x="68" y="195" width="64" height="10" fill="var(--color-gold)" opacity="0.1" rx="2"/>
+                <!-- Sleeves -->
+                <path d="M62 100 C45 105 35 125 32 155 L38 170 L48 165 L55 130 L65 110 Z" fill="var(--color-paper-aged)" opacity="0.1"/>
+                <path d="M138 100 C155 105 165 125 168 155 L162 170 L152 165 L145 130 L135 110 Z" fill="var(--color-paper-aged)" opacity="0.1"/>
+                <!-- Sword on back -->
+                <line x1="70" y1="80" x2="140" y2="250" stroke="var(--color-gold)" stroke-width="2" opacity="0.08" stroke-linecap="round"/>
+                <line x1="68" y1="82" x2="138" y2="252" stroke="var(--color-gold)" stroke-width="1" opacity="0.05" stroke-linecap="round"/>
+              </svg>
+            </div>
+
+            <!-- Bottom toolbar -->
+            <div class="shrink-0 flex items-center justify-center gap-3 pb-5 pt-2 relative">
+              <button class="preview-ctrl" data-dom-id="btn-rotate-left" title="左旋" aria-label="左旋">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+              </button>
+              <button class="preview-ctrl" data-dom-id="btn-rotate-right" title="右旋" aria-label="右旋">
+                <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+              </button>
+              <div class="w-px h-5" style="background: var(--color-ink-faded);"></div>
+              <button class="preview-ctrl" data-dom-id="btn-zoom-in" title="放大" aria-label="放大">
+                <i data-lucide="zoom-in" class="w-4 h-4"></i>
+              </button>
+              <button class="preview-ctrl" data-dom-id="btn-zoom-out" title="缩小" aria-label="缩小">
+                <i data-lucide="zoom-out" class="w-4 h-4"></i>
+              </button>
+              <div class="w-px h-5" style="background: var(--color-ink-faded);"></div>
+              <button class="preview-ctrl" data-dom-id="btn-reset-view" title="重置" aria-label="重置视角">
+                <i data-lucide="maximize" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- === Right: Sets + Dye (55%) === -->
+        <section class="flex-1 min-w-0 p-6 flex flex-col gap-4">
+
+          <!-- Tabs -->
+          <div class="shrink-0">
+            <div class="flex items-center gap-1" style="border-bottom: 1px solid var(--border-color-ink);">
+              <button class="tab-item" data-dom-id="tab-headwear">头饰</button>
+              <button class="tab-item tab-item-active" data-dom-id="tab-costume">服装</button>
+              <button class="tab-item" data-dom-id="tab-cape">披风</button>
+              <button class="tab-item" data-dom-id="tab-weapon-skin">武器外观</button>
+              <button class="tab-item" data-dom-id="tab-mount">坐骑</button>
+            </div>
+          </div>
+
+          <!-- Set Card Grid (3 cols x 2 rows) -->
+          <div class="grid grid-cols-3 gap-3 shrink-0">
+            <!-- Card 1 -->
+            <div class="set-card" data-dom-id="card-set-1">
+              <div class="set-card-thumb" style="background: linear-gradient(135deg, var(--color-ink-wash) 0%, var(--color-ink-dark) 100%);">
+                <i data-lucide="shirt" class="w-8 h-8" style="color: var(--color-paper-dark); opacity: 0.5;"></i>
+              </div>
+              <div class="flex-1 min-w-0 flex flex-col justify-center gap-1">
+                <span class="truncate" style="font-family: var(--font-display); font-size: 14px; font-weight: 500; color: var(--color-paper-bright);">青衫客服</span>
+                <span class="ink-badge ink-badge-common whitespace-nowrap self-start">凡品</span>
+              </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="set-card" data-dom-id="card-set-2">
+              <div class="set-card-thumb" style="background: linear-gradient(135deg, #3a4a5a 0%, var(--color-ink-dark) 100%);">
+                <i data-lucide="shirt" class="w-8 h-8" style="color: #6b9bba; opacity: 0.5;"></i>
+              </div>
+              <div class="flex-1 min-w-0 flex flex-col justify-center gap-1">
+                <span class="truncate" style="font-family: var(--font-display); font-size: 14px; font-weight: 500; color: var(--color-paper-bright);">墨衣夜行</span>
+                <span class="ink-badge whitespace-nowrap self-start" style="color: #6b9bba; border-color: #4a6a7a; background: rgba(74,124,154,0.1);">珍品</span>
+              </div>
+            </div>
+
+            <!-- Card 3 (selected) -->
+            <div class="set-card set-card-selected" data-dom-id="card-set-3">
+              <div class="set-card-thumb" style="background: linear-gradient(135deg, var(--color-gold-dark) 0%, var(--color-ink-dark) 100%);">
+                <i data-lucide="shirt" class="w-8 h-8" style="color: var(--color-gold); opacity: 0.6;"></i>
+              </div>
+              <div class="flex-1 min-w-0 flex flex-col justify-center gap-1">
+                <span class="truncate" style="font-family: var(--font-display); font-size: 14px; font-weight: 500; color: var(--color-gold-bright);">朱雀翎衫</span>
+                <span class="ink-badge ink-badge-gold whitespace-nowrap self-start">仙品</span>
+              </div>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="set-card" data-dom-id="card-set-4">
+              <div class="set-card-thumb" style="background: linear-gradient(135deg, var(--color-jade-dark) 0%, var(--color-ink-dark) 100%);">
+                <i data-lucide="shirt" class="w-8 h-8" style="color: var(--color-jade-light); opacity: 0.5;"></i>
+              </div>
+              <div class="flex-1 min-w-0 flex flex-col justify-center gap-1">
+                <span class="truncate" style="font-family: var(--font-display); font-size: 14px; font-weight: 500; color: var(--color-paper-bright);">玉虚道袍</span>
+                <span class="ink-badge ink-badge-jade whitespace-nowrap self-start">灵品</span>
+              </div>
+            </div>
+
+            <!-- Card 5 -->
+            <div class="set-card" data-dom-id="card-set-5">
+              <div class="set-card-thumb" style="background: linear-gradient(135deg, var(--color-vermilion-faded) 0%, var(--color-ink-dark) 100%);">
+                <i data-lucide="shirt" class="w-8 h-8" style="color: var(--color-vermilion-light); opacity: 0.5;"></i>
+              </div>
+              <div class="flex-1 min-w-0 flex flex-col justify-center gap-1">
+                <span class="truncate" style="font-family: var(--font-display); font-size: 14px; font-weight: 500; color: var(--color-paper-bright);">赤焰战甲</span>
+                <span class="ink-badge ink-badge-vermilion whitespace-nowrap self-start">神品</span>
+              </div>
+            </div>
+
+            <!-- Card 6 -->
+            <div class="set-card" data-dom-id="card-set-6">
+              <div class="set-card-thumb" style="background: linear-gradient(135deg, var(--color-gold-dark) 0%, var(--color-ink-dark) 100%);">
+                <i data-lucide="shirt" class="w-8 h-8" style="color: var(--color-gold); opacity: 0.5;"></i>
+              </div>
+              <div class="flex-1 min-w-0 flex flex-col justify-center gap-1">
+                <span class="truncate" style="font-family: var(--font-display); font-size: 14px; font-weight: 500; color: var(--color-paper-bright);">玄武铁铠</span>
+                <span class="ink-badge ink-badge-gold whitespace-nowrap self-start">仙品</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dye Area -->
+          <div class="flex-1 flex flex-col min-h-0" style="background: linear-gradient(135deg, rgba(45,45,45,0.6) 0%, rgba(26,26,26,0.6) 100%); border: 1px solid var(--border-color-ink); border-radius: 8px; padding: 20px;">
+            <!-- Dye Header -->
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2">
+                <i data-lucide="palette" class="w-4 h-4" style="color: var(--color-gold);"></i>
+                <span style="font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--color-paper-bright);">染色</span>
+                <span style="font-size: 12px; color: var(--color-paper-aged);">·</span>
+                <span style="font-size: 13px; color: var(--color-gold-bright);">朱雀翎衫</span>
+              </div>
+              <span style="font-size: 12px; color: var(--color-ink-faded);">选择颜色后点击应用</span>
+            </div>
+
+            <!-- Dye Rows -->
+            <div class="flex flex-col gap-4 flex-1">
+              <!-- 主色 -->
+              <div class="flex items-center gap-4">
+                <div class="w-16 shrink-0 flex flex-col gap-1">
+                  <span style="font-family: var(--font-display); font-size: 14px; font-weight: 500; color: var(--color-paper-bright);">主色</span>
+                  <span style="font-size: 12px; color: var(--color-ink-faded);">大面积</span>
+                </div>
+                <div class="flex-1 flex items-center gap-2 flex-wrap">
+                  <button class="dye-dot dye-dot-selected" data-dom-id="dye-primary-1" style="background-color: var(--color-vermilion);" title="朱红" aria-label="朱红"></button>
+                  <button class="dye-dot" data-dom-id="dye-primary-2" style="background-color: var(--color-ink-dark);" title="墨黑" aria-label="墨黑"></button>
+                  <button class="dye-dot" data-dom-id="dye-primary-3" style="background-color: var(--color-paper-bright);" title="纸白" aria-label="纸白"></button>
+                  <button class="dye-dot" data-dom-id="dye-primary-4" style="background-color: var(--color-gold);" title="金色" aria-label="金色"></button>
+                  <button class="dye-dot" data-dom-id="dye-primary-5" style="background-color: var(--color-jade);" title="玉色" aria-label="玉色"></button>
+                  <button class="dye-dot" data-dom-id="dye-primary-6" style="background-color: #3a4a5a;" title="藏青" aria-label="藏青"></button>
+                  <button class="dye-dot" data-dom-id="dye-primary-7" style="background-color: #6a3a4a;" title="绛紫" aria-label="绛紫"></button>
+                  <button class="dye-dot" data-dom-id="dye-primary-8" style="background-color: var(--color-cyan-gray);" title="青灰" aria-label="青灰"></button>
+                </div>
+              </div>
+
+              <!-- Divider -->
+              <div style="height: 1px; background: linear-gradient(90deg, transparent 0%, var(--color-ink-faded) 50%, transparent 100%);"></div>
+
+              <!-- 辅色 -->
+              <div class="flex items-center gap-4">
+                <div class="w-16 shrink-0 flex flex-col gap-1">
+                  <span style="font-family: var(--font-display); font-size: 14px; font-weight: 500; color: var(--color-paper-bright);">辅色</span>
+                  <span style="font-size: 12px; color: var(--color-ink-faded);">点缀面</span>
+                </div>
+                <div class="flex-1 flex items-center gap-2 flex-wrap">
+                  <button class="dye-dot" data-dom-id="dye-secondary-1" style="background-color: #8b5a3c;" title="赭石" aria-label="赭石"></button>
+                  <button class="dye-dot dye-dot-selected" data-dom-id="dye-secondary-2" style="background-color: var(--color-gold);" title="金色" aria-label="金色"></button>
+                  <button class="dye-dot" data-dom-id="dye-secondary-3" style="background-color: #4a6a5a;" title="黛绿" aria-label="黛绿"></button>
+                  <button class="dye-dot" data-dom-id="dye-secondary-4" style="background-color: #a0a0a8;" title="银灰" aria-label="银灰"></button>
+                  <button class="dye-dot" data-dom-id="dye-secondary-5" style="background-color: #6a4a3a;" title="茶褐" aria-label="茶褐"></button>
+                  <button class="dye-dot" data-dom-id="dye-secondary-6" style="background-color: #d4d4d0;" title="月白" aria-label="月白"></button>
+                  <button class="dye-dot" data-dom-id="dye-secondary-7" style="background-color: #5a5a5a;" title="烟灰" aria-label="烟灰"></button>
+                  <button class="dye-dot" data-dom-id="dye-secondary-8" style="background-color: #9a4a4a;" title="胭脂" aria-label="胭脂"></button>
+                </div>
+              </div>
+
+              <!-- Divider -->
+              <div style="height: 1px; background: linear-gradient(90deg, transparent 0%, var(--color-ink-faded) 50%, transparent 100%);"></div>
+
+              <!-- 点缀 -->
+              <div class="flex items-center gap-4">
+                <div class="w-16 shrink-0 flex flex-col gap-1">
+                  <span style="font-family: var(--font-display); font-size: 14px; font-weight: 500; color: var(--color-paper-bright);">点缀</span>
+                  <span style="font-size: 12px; color: var(--color-ink-faded);">纹饰</span>
+                </div>
+                <div class="flex-1 flex items-center gap-2 flex-wrap">
+                  <button class="dye-dot" data-dom-id="dye-accent-1" style="background-color: var(--color-gold);" title="金色" aria-label="金色"></button>
+                  <button class="dye-dot" data-dom-id="dye-accent-2" style="background-color: var(--color-vermilion);" title="朱红" aria-label="朱红"></button>
+                  <button class="dye-dot dye-dot-selected" data-dom-id="dye-accent-3" style="background-color: var(--color-jade);" title="玉色" aria-label="玉色"></button>
+                  <button class="dye-dot" data-dom-id="dye-accent-4" style="background-color: #e0d8c8;" title="银白" aria-label="银白"></button>
+                  <button class="dye-dot" data-dom-id="dye-accent-5" style="background-color: #4a8a5a;" title="翠绿" aria-label="翠绿"></button>
+                  <button class="dye-dot" data-dom-id="dye-accent-6" style="background-color: #b88a3c;" title="琥珀" aria-label="琥珀"></button>
+                  <button class="dye-dot" data-dom-id="dye-accent-7" style="background-color: #d9685a;" title="珊瑚" aria-label="珊瑚"></button>
+                  <button class="dye-dot" data-dom-id="dye-accent-8" style="background-color: #4a7c9a;" title="碧蓝" aria-label="碧蓝"></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dye Buttons -->
+            <div class="flex items-center justify-end gap-3 mt-4 pt-4" style="border-top: 1px solid var(--border-color-ink);">
+              <button class="ink-button ink-button-secondary" data-dom-id="btn-reset-dye" style="height: 36px; padding: 0 20px;">
+                <i data-lucide="undo-2" class="w-4 h-4"></i>
+                <span>重置</span>
+              </button>
+              <button class="ink-button ink-button-primary" data-dom-id="btn-apply-dye" style="height: 36px; padding: 0 24px;">
+                <i data-lucide="check" class="w-4 h-4"></i>
+                <span>应用染色</span>
+              </button>
+            </div>
+          </div>
+
+        </section>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Lucide init -->
+  <script>lucide.createIcons();</script>
+
+  <!-- Custom styles (free-explore mode: placed in body, not head) -->
+  <style>
+    /* === Navigation Items === */
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 12px;
+      height: 40px;
+      border-radius: 4px;
+      font-size: 14px;
+      color: var(--color-paper-aged);
+      transition: background-color 150ms ease-out, color 150ms ease-out;
+      cursor: pointer;
+      border-left: 2px solid transparent;
+    }
+    .nav-item:hover {
+      background-color: rgba(235, 229, 216, 0.05);
+      color: var(--color-paper-bright);
+    }
+    .nav-item:focus-visible {
+      outline: 2px solid var(--color-gold);
+      outline-offset: 2px;
+    }
+    .nav-item-active {
+      background: linear-gradient(90deg, rgba(192, 57, 43, 0.15) 0%, transparent 100%);
+      color: var(--color-vermilion-light);
+      border-left: 2px solid var(--color-vermilion);
+      font-weight: 500;
+    }
+    .nav-item-active:hover {
+      background: linear-gradient(90deg, rgba(192, 57, 43, 0.2) 0%, transparent 100%);
+      color: var(--color-vermilion-light);
+    }
+    .nav-item-disabled {
+      color: var(--color-ink-faded);
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+    .nav-item-disabled:hover {
+      background-color: transparent;
+      color: var(--color-ink-faded);
+    }
+
+    /* === Tabs === */
+    .tab-item {
+      padding: 8px 16px;
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--color-paper-aged);
+      border: none;
+      border-bottom: 2px solid transparent;
+      background: transparent;
+      cursor: pointer;
+      transition: color 150ms ease-out, border-color 150ms ease-out;
+      white-space: nowrap;
+    }
+    .tab-item:hover {
+      color: var(--color-paper-bright);
+    }
+    .tab-item:focus-visible {
+      outline: 2px solid var(--color-gold);
+      outline-offset: 2px;
+    }
+    .tab-item-active {
+      color: var(--color-vermilion-light);
+      border-bottom: 2px solid var(--color-vermilion);
+      font-weight: 500;
+    }
+    .tab-item-active:hover {
+      color: var(--color-vermilion-light);
+    }
+
+    /* === Set Cards === */
+    .set-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--color-ink-medium);
+      border: 1px solid var(--border-color-ink);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: border-color 150ms ease-out, background-color 150ms ease-out;
+    }
+    .set-card:hover {
+      border-color: var(--color-paper-faded);
+      background: var(--color-ink-light);
+    }
+    .set-card:focus-visible {
+      outline: 2px solid var(--color-gold);
+      outline-offset: 2px;
+    }
+    .set-card-selected {
+      border-color: var(--color-gold);
+      background: linear-gradient(135deg, rgba(201, 168, 76, 0.08) 0%, var(--color-ink-medium) 100%);
+    }
+    .set-card-selected:hover {
+      border-color: var(--color-gold-bright);
+      background: linear-gradient(135deg, rgba(201, 168, 76, 0.12) 0%, var(--color-ink-light) 100%);
+    }
+    .set-card-thumb {
+      width: 48px;
+      height: 48px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      shrink: 0;
+      flex-shrink: 0;
+      border: 1px solid var(--border-color-ink);
+    }
+
+    /* === Dye Dots === */
+    .dye-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--color-ink-faded);
+      cursor: pointer;
+      transition: transform 150ms ease-out, border-color 150ms ease-out, box-shadow 150ms ease-out;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .dye-dot:hover {
+      transform: scale(1.12);
+      border-color: var(--color-paper-aged);
+    }
+    .dye-dot:focus-visible {
+      outline: 2px solid var(--color-gold);
+      outline-offset: 2px;
+    }
+    .dye-dot-selected {
+      border-color: var(--color-gold-bright);
+      box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.3);
+    }
+    .dye-dot-selected:hover {
+      border-color: var(--color-gold-bright);
+      box-shadow: 0 0 0 2px rgba(201, 168, 76, 0.4);
+    }
+
+    /* === Preview Controls === */
+    .preview-ctrl {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      border: 1px solid var(--border-color-ink);
+      background: rgba(45, 45, 45, 0.6);
+      color: var(--color-paper-aged);
+      cursor: pointer;
+      transition: background-color 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out;
+    }
+    .preview-ctrl:hover {
+      background: rgba(61, 61, 61, 0.8);
+      color: var(--color-paper-bright);
+      border-color: var(--color-paper-faded);
+    }
+    .preview-ctrl:focus-visible {
+      outline: 2px solid var(--color-gold);
+      outline-offset: 2px;
+    }
+    .preview-ctrl:active {
+      background: rgba(26, 26, 26, 0.8);
+    }
+
+    /* === Ink Button Override for consistency === */
+    .ink-button {
+      font-size: 14px;
+    }
+    .ink-button:focus-visible {
+      outline: 2px solid var(--color-gold);
+      outline-offset: 2px;
+    }
+
+    /* === Reduced Motion === */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+
+    /* === Scrollbar === */
+    nav ::-webkit-scrollbar {
+      width: 4px;
+    }
+    nav ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    nav ::-webkit-scrollbar-thumb {
+      background: var(--color-ink-faded);
+      border-radius: 2px;
+    }
+  </style>
+</body>
+</html>

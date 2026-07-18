@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace Horizon.Game.Core.World;
@@ -32,6 +33,64 @@ public static class WorldCoord
     {
         var c = ToChunk(x, y, z);
         return MortonCodec.Encode3D(c.X, c.Y, c.Z);
+    }
+
+    /// <summary>
+    /// 返回以 (centerChunkX, centerChunkY, centerChunkZ) 为中心，半径 radius 内的所有 chunk 的 MortonKey 集合。
+    /// <para>
+    /// 语义：以中心 chunk 为原点，沿 X/Y/Z 三轴各 ±radius 的立方体覆盖的所有 chunk。
+    /// <c>radius=0</c> 表示只包含中心 chunk；<c>radius=1</c> 表示 3x3x3=27 chunk。
+    /// </para>
+    /// <para>
+    /// 用于客户端 AOI 视野计算：玩家所在 chunk 经 <see cref="ToChunk"/> 得到中心坐标，
+    /// 再以客户端配置的 ViewRadiusChunks 为 radius 调用本方法得到订阅 chunk 集合。
+    /// </para>
+    /// <para>
+    /// 注意：底层 <see cref="MortonCodec.Encode3D"/> 会做范围校验，若中心 ± radius 超出
+    /// <see cref="MortonCodec.AxisMin"/>~<see cref="MortonCodec.AxisMax"/> 会抛 <see cref="ArgumentOutOfRangeException"/>。
+    /// 正常游戏场景下玩家位置远离世界边界，不会触发。
+    /// </para>
+    /// </summary>
+    /// <param name="centerChunkX">中心 chunk 的 X 轴坐标（整数块坐标）。</param>
+    /// <param name="centerChunkY">中心 chunk 的 Y 轴坐标。</param>
+    /// <param name="centerChunkZ">中心 chunk 的 Z 轴坐标。</param>
+    /// <param name="radius">视野半径（chunk 数），<c>&lt; 0</c> 视为 <c>0</c>（仅中心）。</param>
+    /// <returns>覆盖范围内所有 chunk 的 MortonKey 集合。</returns>
+    public static HashSet<ulong> GetChunksInView(int centerChunkX, int centerChunkY, int centerChunkZ, int radius)
+    {
+        // 防御性处理：负数半径等价于 0（仅中心 chunk）
+        if (radius < 0)
+        {
+            radius = 0;
+        }
+
+        var chunks = new HashSet<ulong>();
+        for (int dx = -radius; dx <= radius; dx++)
+        {
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dz = -radius; dz <= radius; dz++)
+                {
+                    chunks.Add(MortonCodec.Encode3D(centerChunkX + dx, centerChunkY + dy, centerChunkZ + dz));
+                }
+            }
+        }
+        return chunks;
+    }
+
+    /// <summary>
+    /// 从世界坐标（浮点）计算视野范围内的所有 chunk 的 MortonKey 集合。
+    /// 内部先经 <see cref="ToChunk"/> 换算到整数块坐标，再调用 <see cref="GetChunksInView(int, int, int, int)"/>。
+    /// </summary>
+    /// <param name="worldX">世界 X 坐标（米）。</param>
+    /// <param name="worldY">世界 Y 坐标（米）。</param>
+    /// <param name="worldZ">世界 Z 坐标（米）。</param>
+    /// <param name="radius">视野半径（chunk 数），<c>&lt; 0</c> 视为 <c>0</c>（仅中心）。</param>
+    /// <returns>覆盖范围内所有 chunk 的 MortonKey 集合。</returns>
+    public static HashSet<ulong> GetChunksInView(float worldX, float worldY, float worldZ, int radius)
+    {
+        var c = ToChunk(worldX, worldY, worldZ);
+        return GetChunksInView(c.X, c.Y, c.Z, radius);
     }
 
     /// <summary>ChunkCoord → ChunkCell 原点坐标（左下角，单位米）。</summary>

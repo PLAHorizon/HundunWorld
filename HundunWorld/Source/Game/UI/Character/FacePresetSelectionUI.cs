@@ -86,7 +86,7 @@ namespace HundunWorld.Game.UI.Character
                 CreateUI();
             }
 
-            if (_uiCreated)
+            if (_uiCreated && Visible)
             {
                 if (Input.GetKeyDown(KeyboardKeys.Q)) SwitchMainTab(0);
                 if (Input.GetKeyDown(KeyboardKeys.E)) SwitchMainTab(1);
@@ -157,7 +157,7 @@ namespace HundunWorld.Game.UI.Character
                 Parent = _topTabBar,
                 Size = new Float2(80, 3),
                 Location = new Float2(340, 42),
-                BackgroundColor = new Color(205f / 255f, 165f / 255f, 85f / 255f, 0f)
+                BackgroundColor = ChineseClassicalTheme.SecondaryColorWithAlpha(0f)
             };
         }
 
@@ -209,7 +209,7 @@ namespace HundunWorld.Game.UI.Character
                 Parent = _subTabBar,
                 Size = new Float2(60, 2),
                 Location = new Float2(320, 30),
-                BackgroundColor = new Color(205f / 255f, 165f / 255f, 85f / 255f, 0f)
+                BackgroundColor = ChineseClassicalTheme.SecondaryColorWithAlpha(0f)
             };
         }
 
@@ -260,7 +260,7 @@ namespace HundunWorld.Game.UI.Character
                 Size = new Float2(140, 44),
                 BackgroundColor = new Color(0.12f, 0.12f, 0.15f, 0.8f),
                 TextColor = new Color(0.85f, 0.85f, 0.9f),
-                BorderColor = new Color(205f / 255f, 165f / 255f, 85f / 255f, 0.6f),
+                BorderColor = ChineseClassicalTheme.BorderColor,
                 BorderThickness = 1.5f,
                 Font = UIHelper.SetFont(size: 18)
             };
@@ -281,7 +281,7 @@ namespace HundunWorld.Game.UI.Character
         #endregion
 
         #region CreateUI - Right Icons
-        private static readonly Color ThumbSelectedBorder = new Color(212f / 255f, 175f / 255f, 55f / 255f, 1f);
+        private static readonly Color ThumbSelectedBorder = ChineseClassicalTheme.SecondaryColor;
         private static readonly Color ThumbNormalBg = new Color(0.08f, 0.08f, 0.12f, 0.85f);
         private static readonly Color ThumbLabelColor = new Color(0.85f, 0.85f, 0.9f, 0.9f);
         private const float ThumbSize = 56f;
@@ -404,7 +404,7 @@ namespace HundunWorld.Game.UI.Character
                 Parent = container,
                 Location = new Float2(0, 0),
                 Size = new Float2(size, size),
-                BackgroundColor = isSelected ? new Color(212f / 255f, 175f / 255f, 55f / 255f, 0.25f) : new Color(0, 0, 0, 0.4f)
+                BackgroundColor = isSelected ? ChineseClassicalTheme.SecondaryColorWithAlpha(0.25f) : new Color(0, 0, 0, 0.4f)
             };
 
             var label = new Label
@@ -544,7 +544,7 @@ namespace HundunWorld.Game.UI.Character
         private void UpdateMainTabVisual()
         {
             Color goldUnderline = ChineseClassicalTheme.SecondaryColor;
-            Color dimmedUnderline = new Color(205f / 255f, 165f / 255f, 85f / 255f, 0f);
+            Color dimmedUnderline = ChineseClassicalTheme.SecondaryColorWithAlpha(0f);
 
             if (_mainTab1 != null)
             {
@@ -573,7 +573,7 @@ namespace HundunWorld.Game.UI.Character
         private void UpdateSubTabVisual()
         {
             Color goldUnderline = ChineseClassicalTheme.SecondaryColor;
-            Color dimmedUnderline = new Color(205f / 255f, 165f / 255f, 85f / 255f, 0f);
+            Color dimmedUnderline = ChineseClassicalTheme.SecondaryColorWithAlpha(0f);
 
             if (_subTab1 != null)
             {

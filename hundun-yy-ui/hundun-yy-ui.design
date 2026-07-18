@@ -1,0 +1,1815 @@
+{
+  "data": [
+    {
+      "id": "page-cc-naming",
+      "title": "创角·命名",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/cc-naming.html",
+        "interactions": [
+          {
+            "domId": "cta-next",
+            "targetPageId": "page-cc-face-customize",
+            "transitionLabel": "下一步"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-cc-face-customize",
+      "title": "创角·捏脸",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 620,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/cc-face-customize.html",
+        "interactions": [
+          {
+            "domId": "cta-enter-game",
+            "targetPageId": "page-loading-1",
+            "transitionLabel": "踏入江湖"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-loading-1",
+      "title": "加载·山水",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 1240,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/loading-1.html",
+        "interactions": [
+          {
+            "domId": "auto-advance",
+            "targetPageId": "page-loading-2",
+            "transitionLabel": "继续加载"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-loading-2",
+      "title": "加载·远峰",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 1860,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/loading-2.html",
+        "interactions": [
+          {
+            "domId": "auto-advance",
+            "targetPageId": "page-chapter-transition",
+            "transitionLabel": "继续"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-ink-anim-ref-1",
+      "title": "水墨分镜·晕染",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 0,
+        "y": 922,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/ink-anim-ref-1.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-ink-anim-ref-2",
+      "title": "水墨分镜·笔触",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 620,
+        "y": 922,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/ink-anim-ref-2.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-chapter-transition",
+      "title": "章节过场",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 2480,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/chapter-transition.html",
+        "interactions": [
+          {
+            "domId": "cta-enter-world",
+            "targetPageId": "page-combat-hud",
+            "transitionLabel": "进入世界"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-combat-hud",
+      "title": "战斗HUD",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 3100,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/combat-hud.html",
+        "interactions": [
+          {
+            "domId": "link-guide-hud",
+            "targetPageId": "page-guide-hud",
+            "transitionLabel": "引导"
+          },
+          {
+            "domId": "nav-character",
+            "targetPageId": "page-menu-char-attributes",
+            "transitionLabel": "角色属性"
+          },
+          {
+            "domId": "nav-quests",
+            "targetPageId": "page-menu-quests",
+            "hideEdge": true,
+            "transitionLabel": "任务"
+          },
+          {
+            "domId": "nav-casual",
+            "targetPageId": "page-menu-casual-mode",
+            "hideEdge": true,
+            "transitionLabel": "休闲"
+          },
+          {
+            "domId": "nav-bestiary-popup",
+            "targetPageId": "page-popup-bestiary-side",
+            "hideEdge": true,
+            "transitionLabel": "博物"
+          },
+          {
+            "domId": "nav-reward",
+            "targetPageId": "page-reward-achievement",
+            "hideEdge": true,
+            "transitionLabel": "成就"
+          },
+          {
+            "domId": "nav-photo",
+            "targetPageId": "page-photo-mode",
+            "hideEdge": true,
+            "transitionLabel": "拍照"
+          },
+          {
+            "domId": "nav-settings",
+            "targetPageId": "page-settings",
+            "hideEdge": true,
+            "transitionLabel": "设置"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-guide-hud",
+      "title": "引导·HUD",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 3720,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/guide-hud.html",
+        "interactions": [
+          {
+            "domId": "link-element-vision",
+            "targetPageId": "page-element-vision",
+            "transitionLabel": "元素视野"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-element-vision",
+      "title": "元素视野",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 4340,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/element-vision.html",
+        "interactions": [
+          {
+            "domId": "link-death-screen",
+            "targetPageId": "page-death-screen",
+            "transitionLabel": "阵亡"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-death-screen",
+      "title": "阵亡",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 4960,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/death-screen.html",
+        "interactions": [
+          {
+            "domId": "link-qte",
+            "targetPageId": "page-qte",
+            "transitionLabel": "QTE"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-qte",
+      "title": "QTE·千钧",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 5580,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/qte.html",
+        "interactions": [
+          {
+            "domId": "link-acupoint",
+            "targetPageId": "page-acupoint",
+            "transitionLabel": "点穴"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-acupoint",
+      "title": "点穴·经络",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 6200,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/acupoint.html",
+        "interactions": [
+          {
+            "domId": "link-dialogue-confirm",
+            "targetPageId": "page-dialogue-confirm",
+            "transitionLabel": "对话确认"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-dialogue-confirm",
+      "title": "对话确认",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 6820,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/dialogue-confirm.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-menu-char-attributes",
+      "title": "角色属性",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 3720,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-char-attributes.html",
+        "interactions": [
+          {
+            "domId": "nav-equipment",
+            "targetPageId": "page-menu-equipment",
+            "transitionLabel": "装备"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-menu-equipment",
+      "title": "装备",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 4340,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-equipment.html",
+        "interactions": [
+          {
+            "domId": "nav-appearance",
+            "targetPageId": "page-menu-appearance",
+            "transitionLabel": "外观"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-menu-appearance",
+      "title": "外观",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 4960,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-appearance.html",
+        "interactions": [
+          {
+            "domId": "nav-battle-prep",
+            "targetPageId": "page-menu-battle-prep",
+            "transitionLabel": "备战"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-menu-battle-prep",
+      "title": "备战",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 5580,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-battle-prep.html",
+        "interactions": [
+          {
+            "domId": "nav-sect",
+            "targetPageId": "page-menu-sect",
+            "transitionLabel": "门派"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-menu-sect",
+      "title": "门派",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 6200,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-sect.html",
+        "interactions": [
+          {
+            "domId": "nav-personal-info",
+            "targetPageId": "page-menu-personal-info",
+            "transitionLabel": "个人信息"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-menu-personal-info",
+      "title": "个人信息",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 6820,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-personal-info.html",
+        "interactions": [
+          {
+            "domId": "nav-time",
+            "targetPageId": "page-menu-time",
+            "transitionLabel": "时辰"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-menu-time",
+      "title": "时辰",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 7440,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-time.html",
+        "interactions": [
+          {
+            "domId": "shortcut-quests",
+            "targetPageId": "page-menu-quests",
+            "transitionLabel": "任务"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-menu-quests",
+      "title": "任务",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 8060,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-quests.html",
+        "interactions": [
+          {
+            "domId": "nav-bestiary",
+            "targetPageId": "page-menu-bestiary",
+            "transitionLabel": "博物志"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-menu-bestiary",
+      "title": "博物志",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 8680,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-bestiary.html",
+        "interactions": [
+          {
+            "domId": "nav-martial-record",
+            "targetPageId": "page-menu-martial-record",
+            "transitionLabel": "武林录"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-menu-martial-record",
+      "title": "武林录",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 9300,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-martial-record.html",
+        "interactions": [
+          {
+            "domId": "nav-livelihood",
+            "targetPageId": "page-menu-livelihood",
+            "transitionLabel": "营生"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-menu-livelihood",
+      "title": "营生",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 9920,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-livelihood.html",
+        "interactions": [
+          {
+            "domId": "nav-team",
+            "targetPageId": "page-menu-team",
+            "transitionLabel": "组队"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-menu-team",
+      "title": "组队",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 10540,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-team.html",
+        "interactions": [
+          {
+            "domId": "nav-mail",
+            "targetPageId": "page-menu-mail",
+            "transitionLabel": "邮箱"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-menu-mail",
+      "title": "邮箱",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 11160,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-mail.html",
+        "interactions": [
+          {
+            "domId": "nav-shop",
+            "targetPageId": "page-menu-shop",
+            "transitionLabel": "商店"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-menu-shop",
+      "title": "商店",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 11780,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-shop.html",
+        "interactions": [
+          {
+            "domId": "shortcut-casual-mode",
+            "targetPageId": "page-menu-casual-mode",
+            "transitionLabel": "休闲模式"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-menu-casual-mode",
+      "title": "休闲模式",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 12400,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-casual-mode.html",
+        "interactions": [
+          {
+            "domId": "nav-gacha",
+            "targetPageId": "page-menu-gacha",
+            "transitionLabel": "抽卡祈愿"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-menu-gacha",
+      "title": "抽卡祈愿",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 13020,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-gacha.html",
+        "interactions": [
+          {
+            "domId": "nav-activities",
+            "targetPageId": "page-menu-activities",
+            "transitionLabel": "活动"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-menu-activities",
+      "title": "活动",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 13640,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-activities.html",
+        "interactions": [
+          {
+            "domId": "nav-battle-pass",
+            "targetPageId": "page-menu-battle-pass",
+            "transitionLabel": "通行证"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-menu-battle-pass",
+      "title": "通行证",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 14260,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-battle-pass.html",
+        "interactions": [
+          {
+            "domId": "nav-char-attributes-v2",
+            "targetPageId": "page-menu-char-attributes-v2",
+            "transitionLabel": "属性V2"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-menu-char-attributes-v2",
+      "title": "属性面板V2",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 14880,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/menu-char-attributes-v2.html",
+        "interactions": [
+          {
+            "domId": "nav-shop-rare-items",
+            "targetPageId": "page-shop-rare-items",
+            "transitionLabel": "奇珍阁"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-shop-rare-items",
+      "title": "奇珍阁",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 15500,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/shop-rare-items.html",
+        "interactions": [
+          {
+            "domId": "nav-settings",
+            "targetPageId": "page-settings",
+            "transitionLabel": "设置"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-settings",
+      "title": "设置",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 16120,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/settings.html",
+        "interactions": [
+          {
+            "domId": "shortcut-popup-bestiary",
+            "targetPageId": "page-popup-bestiary-side",
+            "transitionLabel": "博物弹窗"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-popup-bestiary-side",
+      "title": "博物侧弹窗",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 16740,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/popup-bestiary-side.html",
+        "interactions": [
+          {
+            "domId": "link-popup-message",
+            "targetPageId": "page-popup-message",
+            "transitionLabel": "留言"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-popup-message",
+      "title": "留言",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 17360,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/popup-message.html",
+        "interactions": [
+          {
+            "domId": "link-popup-martial-detail",
+            "targetPageId": "page-popup-martial-detail",
+            "transitionLabel": "奇术"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-popup-martial-detail",
+      "title": "奇术详情",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 17980,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/popup-martial-detail.html",
+        "interactions": [
+          {
+            "domId": "link-popup-guide-side",
+            "targetPageId": "page-popup-guide-side",
+            "transitionLabel": "引导"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-popup-guide-side",
+      "title": "引导侧弹窗",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 18600,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/popup-guide-side.html",
+        "interactions": [
+          {
+            "domId": "link-popup-martial-arts",
+            "targetPageId": "page-popup-martial-arts",
+            "transitionLabel": "武学"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-popup-martial-arts",
+      "title": "武学",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 19220,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/popup-martial-arts.html",
+        "interactions": [
+          {
+            "domId": "link-popup-item-acquired",
+            "targetPageId": "page-popup-item-acquired",
+            "transitionLabel": "物品获得"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-popup-item-acquired",
+      "title": "物品获得",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 19840,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/popup-item-acquired.html",
+        "interactions": [
+          {
+            "domId": "link-popup-skill-realization",
+            "targetPageId": "page-popup-skill-realization",
+            "transitionLabel": "心法领悟"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-popup-skill-realization",
+      "title": "心法领悟",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 20460,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/popup-skill-realization.html",
+        "interactions": [
+          {
+            "domId": "link-popup-verification",
+            "targetPageId": "page-popup-verification",
+            "transitionLabel": "验讫"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-popup-verification",
+      "title": "验讫",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 21080,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/popup-verification.html",
+        "interactions": [
+          {
+            "domId": "shortcut-reward-achievement",
+            "targetPageId": "page-reward-achievement",
+            "transitionLabel": "成就解锁"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-reward-achievement",
+      "title": "成就解锁",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 21700,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/reward-achievement.html",
+        "interactions": [
+          {
+            "domId": "link-reward-teleport",
+            "targetPageId": "page-reward-teleport-unlock",
+            "transitionLabel": "传送解锁"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-reward-teleport-unlock",
+      "title": "传送解锁",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 22320,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/reward-teleport-unlock.html",
+        "interactions": [
+          {
+            "domId": "link-reward-map",
+            "targetPageId": "page-reward-map-unlock",
+            "transitionLabel": "地图解锁"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-reward-map-unlock",
+      "title": "地图解锁",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 22940,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/reward-map-unlock.html",
+        "interactions": [
+          {
+            "domId": "link-reward-level-up",
+            "targetPageId": "page-reward-level-up",
+            "transitionLabel": "等级提升"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-reward-level-up",
+      "title": "等级提升",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 23560,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/reward-level-up.html",
+        "interactions": [
+          {
+            "domId": "link-reward-congratulations",
+            "targetPageId": "page-reward-congratulations",
+            "transitionLabel": "恭喜获得"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-reward-congratulations",
+      "title": "恭喜获得",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 24180,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/reward-congratulations.html",
+        "interactions": [
+          {
+            "domId": "link-reward-quest-complete",
+            "targetPageId": "page-reward-quest-complete",
+            "transitionLabel": "任务完成"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-reward-quest-complete",
+      "title": "任务完成",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 24800,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/reward-quest-complete.html",
+        "interactions": [
+          {
+            "domId": "shortcut-photo-mode",
+            "targetPageId": "page-photo-mode",
+            "transitionLabel": "拍照模式"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-photo-mode",
+      "title": "拍照模式",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 25420,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/photo-mode.html",
+        "interactions": [
+          {
+            "domId": "link-settings-audio",
+            "targetPageId": "page-settings-audio",
+            "transitionLabel": "音频设置"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-settings-audio",
+      "title": "音频设置",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 26040,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/settings-audio.html",
+        "interactions": [
+          {
+            "domId": "link-mini-game-complete",
+            "targetPageId": "page-mini-game-complete",
+            "transitionLabel": "小游戏完成"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-mini-game-complete",
+      "title": "小游戏完成",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 26660,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/mini-game-complete.html",
+        "interactions": [
+          {
+            "domId": "link-guide-action",
+            "targetPageId": "page-guide-action",
+            "transitionLabel": "引导操作"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-guide-action",
+      "title": "引导操作",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 27280,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/guide-action.html",
+        "interactions": [
+          {
+            "domId": "link-guide-martial",
+            "targetPageId": "page-guide-martial",
+            "transitionLabel": "引导奇术"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-guide-martial",
+      "title": "引导奇术",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 27900,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/guide-martial.html",
+        "interactions": [
+          {
+            "domId": "link-multiplayer",
+            "targetPageId": "page-multiplayer",
+            "transitionLabel": "多人模式"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-multiplayer",
+      "title": "多人模式",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 28520,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/multiplayer.html",
+        "interactions": [
+          {
+            "domId": "link-combat-hud-v2",
+            "targetPageId": "page-combat-hud-v2",
+            "transitionLabel": "战斗HUDv2"
+          },
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-combat-hud-v2",
+      "title": "战斗HUDv2",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 29140,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/combat-hud-v2.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "image-001",
+      "title": "创角命名背景",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 0,
+        "y": 1299
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-cc-naming.jpg"
+      }
+    },
+    {
+      "id": "image-002",
+      "title": "角色预览背景",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 620,
+        "y": 1299
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-cc-preview.jpg"
+      }
+    },
+    {
+      "id": "image-003",
+      "title": "加载山水背景",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 1240,
+        "y": 1299
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-loading-landscape.jpg"
+      }
+    },
+    {
+      "id": "image-004",
+      "title": "加载远峰背景",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 1860,
+        "y": 1299
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-loading-mountain.jpg"
+      }
+    },
+    {
+      "id": "image-005",
+      "title": "水墨晕染分镜",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 2480,
+        "y": 1299
+      },
+      "devMetadata": {
+        "imageSrc": "assets/ink-anim-spread.jpg"
+      }
+    },
+    {
+      "id": "image-006",
+      "title": "水墨笔触分镜",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 3100,
+        "y": 1299
+      },
+      "devMetadata": {
+        "imageSrc": "assets/ink-anim-brush.jpg"
+      }
+    },
+    {
+      "id": "image-007",
+      "title": "章节过场背景",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 3720,
+        "y": 1299
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-chapter-ink.jpg"
+      }
+    },
+    {
+      "id": "image-008",
+      "title": "水墨山色战场",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 4340,
+        "y": 1299
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-ink-wash-scene.jpg"
+      }
+    },
+    {
+      "id": "image-009",
+      "title": "元素视野背景",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 4960,
+        "y": 1299
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-element-vision.jpg"
+      }
+    },
+    {
+      "id": "image-010",
+      "title": "阵亡水墨背景",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 5580,
+        "y": 1299
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-ink-wash-death.jpg"
+      }
+    },
+    {
+      "id": "image-011",
+      "title": "水墨笔触",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 6200,
+        "y": 1299
+      },
+      "devMetadata": {
+        "imageSrc": "assets/ink-brush-stroke.jpg"
+      }
+    },
+    {
+      "id": "image-012",
+      "title": "经络穴位图",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 6820,
+        "y": 1299
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-meridian-diagram.jpg"
+      }
+    },
+    {
+      "id": "image-013",
+      "title": "角色预览",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 7440,
+        "y": 1299
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-char-preview.jpg"
+      }
+    },
+    {
+      "id": "image-014",
+      "title": "门派徽章",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 8060,
+        "y": 1299
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-sect-emblem.jpg"
+      }
+    },
+    {
+      "id": "image-015",
+      "title": "博物志插画",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 8680,
+        "y": 1299
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-bestiary-illust.jpg"
+      }
+    },
+    {
+      "id": "image-016",
+      "title": "信笺纸张",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 9300,
+        "y": 1299
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-letter-paper.jpg"
+      }
+    },
+    {
+      "id": "image-017",
+      "title": "水墨地图",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 9920,
+        "y": 1299
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-map-ink.jpg"
+      }
+    },
+    {
+      "id": "image-018",
+      "title": "抽卡光效",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 10540,
+        "y": 1299
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-gacha-glow.jpg"
+      }
+    },
+    {
+      "id": "image-019",
+      "title": "属性面板V2预览",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784092000000,
+      "canvasData": {
+        "x": 11160,
+        "y": 1299
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-char-preview-v2.jpg"
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "projectName": "混沌世界·燕云融合UI",
+    "designLibrary": null
+  }
+}

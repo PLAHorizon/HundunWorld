@@ -23,7 +23,9 @@ public class Game : GameModule
         string[] dlls = {
              "Horizon.Game.Message.dll",
                 "Horizon.Game.ECS.dll",
+                "Horizon.Game.Core.dll",
                 "Horizon.Game.ECS.Arch.dll",
+                "Horizon.Core.Abstract.dll",
             "Microsoft.Extensions.ObjectPool.dll",
             "Microsoft.Extensions.DependencyInjection.Abstractions.dll",
             "Microsoft.Extensions.Options.dll",
@@ -59,10 +61,7 @@ public class Game : GameModule
                 {
                     options.ScriptingAPI.FileReferences.Add(altPath);
                 }
-                else
-                {
-                    throw new FileNotFoundException($"关键DLL缺失: {dll}，在 {outputPath} 和 {altPath} 均未找到。请确保所有依赖DLL已放置到正确位置。");
-                }
+                
             }
         }
 

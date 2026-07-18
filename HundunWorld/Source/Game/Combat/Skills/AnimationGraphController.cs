@@ -196,16 +196,17 @@ namespace Game.Combat.Skills
 
             try
             {
-                // 注意：Flax Engine的直接动画播放API可能需要根据实际版本调整
-                // 这里提供基本框架
+                // Flax Engine 中直接播放动画：通过设置动画图参数触发对应状态
                 AnimatedModel.UpdateSpeed = speed;
-                
-                // TODO: 根据Flax Engine版本实现直接播放动画的逻辑
-                // 可能需要：
-                // 1. 加载动画资源
-                // 2. 设置到AnimatedModel
-                // 3. 控制循环和速度
-                
+
+                // 尝试通过参数名触发动画（动画图中应配置对应的触发参数）
+                var param = AnimatedModel.GetParameter(animationName);
+                if (param != null)
+                {
+                    param.Value = true;
+                    // 对于非循环动画，下一帧自动重置由动画图状态机处理
+                }
+
                 if (ShowDebug)
                     Debug.Log($"[AnimGraph] 直接播放动画: {animationName}, 循环: {loop}, 速度: {speed}");
             }
@@ -230,17 +231,34 @@ namespace Game.Combat.Skills
                 
                 if (value is bool boolValue)
                 {
-                    // TODO: 根据Flax Engine实际API调整
-                    // 可能的API: _animGraph.Parameters.SetValue(paramName, boolValue);
-                    Debug.Log($"[AnimGraph] 设置布尔参数 {paramName} = {boolValue}");
+                    // Flax API: AnimatedModel.GetParameter(name).Value = value
+                    var param = AnimatedModel.GetParameter(paramName);
+                    if (param != null)
+                    {
+                        param.Value = boolValue;
+                    }
+                    if (ShowDebug)
+                        Debug.Log($"[AnimGraph] 设置布尔参数 {paramName} = {boolValue}");
                 }
                 else if (value is int intValue)
                 {
-                    Debug.Log($"[AnimGraph] 设置整数参数 {paramName} = {intValue}");
+                    var param = AnimatedModel.GetParameter(paramName);
+                    if (param != null)
+                    {
+                        param.Value = intValue;
+                    }
+                    if (ShowDebug)
+                        Debug.Log($"[AnimGraph] 设置整数参数 {paramName} = {intValue}");
                 }
                 else if (value is float floatValue)
                 {
-                    Debug.Log($"[AnimGraph] 设置浮点参数 {paramName} = {floatValue}");
+                    var param = AnimatedModel.GetParameter(paramName);
+                    if (param != null)
+                    {
+                        param.Value = floatValue;
+                    }
+                    if (ShowDebug)
+                        Debug.Log($"[AnimGraph] 设置浮点参数 {paramName} = {floatValue}");
                 }
                 else
                 {
@@ -255,18 +273,22 @@ namespace Game.Combat.Skills
 
         /// <summary>
         /// 触发动画事件（Trigger类型参数）
+        /// Flax 无 SetTrigger 概念，用 bool 参数模拟：设为 true 触发，下一帧由动画图状态机处理
         /// </summary>
         private void TriggerAnimationEvent(string triggerName)
         {
-            if (_animGraph == null) return;
+            if (AnimatedModel == null) return;
 
             try
             {
-                // TODO: 根据Flax Engine实际API调整
-                // 可能的API: _animGraph.Parameters.SetTrigger(triggerName);
-                Debug.Log($"[AnimGraph] 触发动画事件: {triggerName}");
-                
-                // 注意：某些引擎需要手动重置trigger，Flax可能自动处理
+                // Flax API：用 bool 参数模拟 trigger（设为 true，动画图状态机消费后自动重置）
+                var param = AnimatedModel.GetParameter(triggerName);
+                if (param != null)
+                {
+                    param.Value = true;
+                }
+                if (ShowDebug)
+                    Debug.Log($"[AnimGraph] 触发动画事件: {triggerName}");
             }
             catch (Exception ex)
             {
@@ -276,6 +298,7 @@ namespace Game.Combat.Skills
 
         /// <summary>
         /// 获取当前动画的播放进度（0-1）
+        /// 注意：Flax AnimatedModel 不直接暴露当前动画播放进度，需通过动画图参数间接判断
         /// </summary>
         public float GetCurrentAnimationProgress()
         {
@@ -283,9 +306,12 @@ namespace Game.Combat.Skills
 
             try
             {
-                // TODO: 根据Flax Engine API实现
-                // 可能需要访问当前动画状态的时间信息
-                return 0f; // 占位符
+                // Flax 无直接获取动画进度的 API，基于动画参数状态推断
+                // 如果处于攻击/施法状态返回进行中，否则返回完成
+                var attackParam = AnimatedModel.GetParameter(AttackTriggerName);
+                if (attackParam != null && attackParam.Value is bool b && b)
+                    return 0.5f; // 攻击动画进行中
+                return 1.0f; // 默认认为已完成
             }
             catch
             {
@@ -295,16 +321,21 @@ namespace Game.Combat.Skills
 
         /// <summary>
         /// 检查指定动画是否正在播放
+        /// 通过检查对应的触发参数是否为 true 来判断
         /// </summary>
         public bool IsAnimationPlaying(string animationName)
         {
-            if (AnimatedModel == null || _animGraph == null) return false;
+            if (AnimatedModel == null) return false;
 
             try
             {
-                // TODO: 根据Flax Engine API实现
-                // 需要查询当前活动的动画状态
-                return false; // 占位符
+                // Flax API：通过动画图参数值判断当前动画状态
+                var param = AnimatedModel.GetParameter(animationName);
+                if (param != null && param.Value is bool b)
+                {
+                    return b;
+                }
+                return false;
             }
             catch
             {

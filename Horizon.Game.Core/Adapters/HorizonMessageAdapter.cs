@@ -53,6 +53,7 @@ namespace Horizon.Game.Core
                 GameId = 1,
                 ZoneId = 1,
                 ServerId = 1,
+                CharacterId = ExtractCharacterId(message),
             };
 
             var messagePacket = new HorizonMessagePacket
@@ -209,6 +210,46 @@ namespace Horizon.Game.Core
 
         private static ushort CalculateChecksum(ReadOnlySpan<byte> data) =>
             HorizonProtocol.CalculateChecksum(data);
+
+        /// <summary>
+        /// 从消息体提取角色ID并填充到消息头，供服务端按角色路由和订阅管理使用。
+        /// 支持 CharacterId（ulong/long）和 LocalCharacterId（ulong）两种常见字段名。
+        /// </summary>
+        private static ulong ExtractCharacterId<T>(T message) where T : MessageUnion, INetworkMessage
+        {
+            try
+            {
+                var type = message.GetType();
+
+                // 优先查找 CharacterId 属性（最常见的字段名）
+                var characterIdProp = type.GetProperty("CharacterId");
+                if (characterIdProp != null && characterIdProp.CanRead)
+                {
+                    var value = characterIdProp.GetValue(message);
+                    if (value is ulong ul)
+                        return ul;
+                    if (value is long l && l >= 0)
+                        return (ulong)l;
+                }
+
+                // 其次查找 LocalCharacterId（如 HandshakePacket / ReconnectResumePacket）
+                var localCharacterIdProp = type.GetProperty("LocalCharacterId");
+                if (localCharacterIdProp != null && localCharacterIdProp.CanRead)
+                {
+                    var value = localCharacterIdProp.GetValue(message);
+                    if (value is ulong ul)
+                        return ul;
+                    if (value is long l && l >= 0)
+                        return (ulong)l;
+                }
+            }
+            catch
+            {
+                // 提取失败不应阻塞消息发送，静默忽略
+            }
+
+            return 0;
+        }
 
         private void UpdateErrorStats()
         {

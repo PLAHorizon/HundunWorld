@@ -17,14 +17,52 @@ namespace Horizon.Game.GengDi.Core.Views
     {
         public FlowerMerchantView()
         {
-            InitializeComponent();
-            DataContext = new FlowerMerchantViewModel();
-
-            var publishSpeciesComboBox = this.FindControl<ComboBox>("PublishSpeciesComboBox");
-            if (publishSpeciesComboBox != null)
+            DiagLog.Log($"[FlowerMerchantView] ctor START");
+            try
             {
-                publishSpeciesComboBox.SelectionChanged += OnPublishSpeciesSelectionChanged;
+                DiagLog.Log("[FlowerMerchantView] before InitializeComponent");
+                InitializeComponent();
+                DiagLog.Log("[FlowerMerchantView] after InitializeComponent");
             }
+            catch (Exception ex)
+            {
+                DiagLog.Log($"[FlowerMerchantView] InitializeComponent THREW: {ex}");
+                throw;
+            }
+
+            // 关键修复：DataContext 赋值推迟到 Loaded 事件。
+            // 诊断日志显示第二次导航时 UI 线程卡在构造函数中的 DataContext 赋值（触发
+            // Avalonia 绑定初始化），此时 View 尚未加入可视化树。将 DataContext 赋值
+            // 推迟到 Loaded 事件（View 已在可视化树中），绑定初始化在正确的时机执行。
+            Loaded += OnFlowerMerchantViewLoaded;
+            DiagLog.Log("[FlowerMerchantView] ctor END");
+        }
+
+        private void OnFlowerMerchantViewLoaded(object sender, RoutedEventArgs e)
+        {
+            DiagLog.Log("[FlowerMerchantView] Loaded START");
+            Loaded -= OnFlowerMerchantViewLoaded;
+            try
+            {
+                DiagLog.Log("[FlowerMerchantView] before new FlowerMerchantViewModel");
+                var vm = new FlowerMerchantViewModel();
+                DiagLog.Log("[FlowerMerchantView] VM created, before DataContext set");
+                DataContext = vm;
+                DiagLog.Log("[FlowerMerchantView] after DataContext set");
+
+                var publishSpeciesComboBox = this.FindControl<ComboBox>("PublishSpeciesComboBox");
+                if (publishSpeciesComboBox != null)
+                {
+                    publishSpeciesComboBox.SelectionChanged += OnPublishSpeciesSelectionChanged;
+                }
+
+                vm.StartInitialization();
+            }
+            catch (Exception ex)
+            {
+                DiagLog.Log($"[FlowerMerchantView] Loaded THREW: {ex}");
+            }
+            DiagLog.Log("[FlowerMerchantView] Loaded END");
         }
 
         private void InitializeComponent()

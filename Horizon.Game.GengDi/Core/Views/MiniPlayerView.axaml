@@ -37,8 +37,8 @@
                                    IsVisible="{Binding !ShowErrorStatus}" />
                         <StackPanel Orientation="Horizontal" Spacing="4"
                                     IsVisible="{Binding ShowErrorStatus}">
-                            <ui:SymbolIcon Symbol="Cancel" FontSize="10" Foreground="#FF4444" />
-                            <TextBlock Text="无法播放" FontSize="11" Foreground="#FF4444" />
+                            <ui:SymbolIcon Symbol="Cancel" FontSize="10" Foreground="{DynamicResource LoginErrorBrush}" />
+                            <TextBlock Text="无法播放" FontSize="11" Foreground="{DynamicResource LoginErrorBrush}" />
                             <Button Command="{Binding RetryCommand}" Padding="4 0" FontSize="10"
                                     Classes="QuietAction" VerticalAlignment="Center">
                                 <TextBlock Text="重试" FontSize="10" />

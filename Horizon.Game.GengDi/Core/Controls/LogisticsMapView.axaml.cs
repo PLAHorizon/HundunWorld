@@ -34,8 +34,10 @@ namespace Horizon.Game.GengDi.Core.Controls
 
         public LogisticsMapView()
         {
+            DiagLog.Log($"[LogisticsMapView] ctor START");
             InitializeComponent();
             _mapHost = this.FindControl<ContentControl>("MapHost");
+            DiagLog.Log("[LogisticsMapView] ctor END");
         }
 
         private void InitializeComponent()

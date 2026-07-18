@@ -20,7 +20,25 @@ namespace ManagedHundunWorld.Network.Handlers
         public event Action<InputAckPacket> InputAckReceived;
         public event Action<EventPacket> EventReceived;
         public event Action<WorldChunkDiffPacket> ChunkDiffReceived;
-        public event Action<HandshakePacket> HandshakeReceived;
+
+        // 修复：将 HandshakeReceived 改为自定义事件，缓存最后一次握手响应。
+        // 解决握手响应在 HundunWorldGame 订阅事件之前到达而导致“同步握手未完成”的竞态。
+        private event Action<HandshakePacket> _handshakeReceivedInternal;
+        private HandshakePacket _lastHandshake;
+
+        public event Action<HandshakePacket> HandshakeReceived
+        {
+            add
+            {
+                _handshakeReceivedInternal += value;
+                // 若握手响应已提前到达，立即分发给新订阅者，避免永远等待。
+                if (_lastHandshake != null)
+                {
+                    value?.Invoke(_lastHandshake);
+                }
+            }
+            remove => _handshakeReceivedInternal -= value;
+        }
 
         public SyncPacketMessageHandler() : base(MessageType.SyncPacket)
         {
@@ -62,7 +80,9 @@ namespace ManagedHundunWorld.Network.Handlers
                     ChunkDiffReceived?.Invoke(chunkDiff);
                     break;
                 case HandshakePacket handshake:
-                    HandshakeReceived?.Invoke(handshake);
+                    // 缓存最后一次握手响应，使后续订阅者能立即收到。
+                    _lastHandshake = handshake;
+                    _handshakeReceivedInternal?.Invoke(handshake);
                     break;
                 default:
                     FlaxEngine.Debug.LogWarning($"Unknown sync packet kind: {packet.Kind}");

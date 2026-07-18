@@ -1,0 +1,162 @@
+{
+  "project": {
+    "name": "混沌世界登录界面",
+    "path": "c:\\Works\\GitHubProjects\\HundunWorld\\hundun-login",
+    "operation": "create",
+    "deviceType": "desktop",
+    "language": "zh-CN",
+    "dashboardMode": false,
+    "replicationMode": null,
+    "sourceUrl": null,
+    "visualSpecExcerpt": null,
+    "styleDefinitionBrief": "武侠仙侠玄幻融合MMO登录，水墨写意基底+云雾灵光，青灰主调+水墨青绿点缀，Noto Serif SC+Noto Sans SC，清冷飘逸，克制留白",
+    "designRead": "Game login screen / xianxia-wuxia players / cool ethereal literati-ink / low density / avoid generic neon-glow dark UI",
+    "designDials": {
+      "layoutVariance": 4,
+      "motionIntensity": 2,
+      "visualDensity": 2
+    },
+    "styleContinuityAnchors": {
+      "colorSystem": {
+        "primaryColorRole": "水墨青绿(#4A7C7E)用于主CTA登录按钮、输入聚焦、链接、激活态、玄幻灵光点缀",
+        "brandHuePolicy": "free-explore单色相策略：仅水墨青绿一个品牌色相+tint scale；青灰归入中性tint系统(非品牌色相)；无secondary/accent品牌色相",
+        "stateColors": "赭红#B85450(error)/苍绿#5E8B5E(success)/赭石#C49B5E(warning)/水墨青#4A7C7E(info)，仅语义状态"
+      },
+      "shapeSystem": "圆角sm4px/md8px/lg12px/full9999px；克制雅致，卡片不超12px，输入框4px，按钮8px",
+      "typographySystem": "Noto Serif SC标题(宽字距0.15em书法舒朗感)+Noto Sans SC正文；display48px/heading-lg28px/body-lg16px/body14px/body-sm12px",
+      "spacingSystem": "留白克制，表单内距24-32px，区块间距48-64px，xs4/sm8/md16/lg24/xl32/2xl48/3xl64",
+      "componentLanguage": "底线输入框(无边框全框，聚焦底线变青绿)、实色主按钮(hover墨色加深)、毛玻璃浮层面板(backdrop-blur)、水墨分隔笔触",
+      "surfaceAndDepth": "静态表面边框优先/阴影alpha≤0.05；仅表单浮层允许backdrop-blur(20px)+rgba(245,246,244,0.72)+微阴影0 8px 40px rgba(28,33,40,0.12)",
+      "imageryAndIconography": "水墨写意山水云雾背景；图标用线性水墨笔触风；印章/落款点缀；玄幻灵光粒子(radial-gradient呼吸动画)",
+      "interactionTone": "云雾缓动背景(20s漂移)、聚焦青绿辉光、按钮hover墨色加深、复选勾选青绿填充；克制不喧宾"
+    },
+    "specsConstraints": null,
+    "sharedProjectShellContract": {
+      "navigationShell": "无传统导航栏；全屏背景层+品牌标题区(左60%)+表单浮层(右40%)+底部辅助通栏",
+      "primaryColorSystem": "水墨青绿#4A7C7E单色相+tint scale；无secondary/accent",
+      "typographySystem": "Noto Serif SC(display/heading) + Noto Sans SC(body)；宽字距标题+清晰正文",
+      "radiusScale": "sm4px(输入)/md8px(按钮)/lg12px(面板)/full9999px(圆点)；最大12px",
+      "surfaceDepthModel": "静态表面边框优先阴影alpha≤0.05；表单浮层backdrop-blur+深阴影",
+      "ctaStyle": "全宽实色主按钮(进 入 江 湖)，primary-500填充，hover→600，active→700，微缩放0.98",
+      "alignmentRules": "60/40非对称分栏；表单面板右40%垂直居中；辅助层底部通栏三段分布"
+    },
+    "generationTree": {
+      "root": {
+        "nodeId": "gen-project-shell",
+        "kind": "project-shell",
+        "pageIds": ["page-login"],
+        "output": "partials/project-shell.html",
+        "sharedRegions": ["全屏背景容器", "水墨氛围遮罩层", "品牌标题区骨架", "辅助层骨架", "全局水墨氛围"],
+        "privateRegions": [],
+        "mutableSlots": ["pageTitle", "pageContent"],
+        "status": "planned",
+        "children": [
+          {
+            "nodeId": "gen-page-login",
+            "kind": "page-leaf",
+            "pageIds": ["page-login"],
+            "output": "pages/login.html",
+            "sharedRegions": [],
+            "privateRegions": ["登录表单卡片", "记住密码/自动登录", "注册找回入口"],
+            "mutableSlots": ["pageTitle", "pageContent"],
+            "status": "planned",
+            "children": []
+          }
+        ]
+      }
+    }
+  },
+  "designSource": {
+    "operatingMode": "free-explore",
+    "libraryIdentity": null,
+    "libraryPath": null,
+    "cssFilePath": "c:\\Works\\GitHubProjects\\HundunWorld\\hundun-login\\colors_and_type.css",
+    "brandPrefix": "hd",
+    "themeMode": "light",
+    "designDecisionSummary": "水墨写意融合风格；青灰中性tint+水墨青绿单色相；Noto Serif SC+Noto Sans SC；圆角≤12px；毛玻璃表单浮层",
+    "componentContractKind": null,
+    "forbiddenInventedComponents": [],
+    "allowedComponents": ["input", "button", "checkbox", "link"],
+    "styleConstraints": {
+      "radiusMax": 12,
+      "spacingBase": 4,
+      "fontSizeBody": 14,
+      "fontSizeMin": 12,
+      "controlHeightDefault": 40,
+      "controlHeightLarge": 48
+    },
+    "productContext": {
+      "kitType": null,
+      "productType": "MMORPG游戏客户端登录界面"
+    },
+    "actualTokenNameReference": [
+      { "semanticPurpose": "品牌主色-登录按钮", "tokenName": "--hd-primary-500" },
+      { "semanticPurpose": "品牌主色hover", "tokenName": "--hd-primary-600" },
+      { "semanticPurpose": "输入聚焦色", "tokenName": "--hd-primary-400" },
+      { "semanticPurpose": "标题文字", "tokenName": "--hd-ink-900" },
+      { "semanticPurpose": "正文文字", "tokenName": "--hd-ink-700" },
+      { "semanticPurpose": "辅助文字", "tokenName": "--hd-ink-500" },
+      { "semanticPurpose": "占位符", "tokenName": "--hd-ink-400" },
+      { "semanticPurpose": "边框", "tokenName": "--hd-ink-200" },
+      { "semanticPurpose": "页面基底", "tokenName": "--hd-paper" },
+      { "semanticPurpose": "状态-错误", "tokenName": "--state-error" },
+      { "semanticPurpose": "状态-成功", "tokenName": "--state-success" }
+    ]
+  },
+  "pages": [
+    {
+      "nodeId": "page-login",
+      "slug": "login",
+      "title": "登录",
+      "htmlSrc": "pages/login.html",
+      "pageIndex": 1,
+      "stateGroupId": null,
+      "stateRole": null,
+      "baseStatePageId": null,
+      "sharedShellContract": ["全屏背景容器", "品牌标题区", "辅助层"],
+      "mutableRegions": [],
+      "derivedFromHtmlSrc": null,
+      "derivationType": "original",
+      "sourcePageId": null,
+      "sourceHtmlSrc": null,
+      "pageType": "task-driven",
+      "businessScenario": "MMORPG游戏客户端登录入口，玩家输入账号密码进入游戏世界",
+      "visualNorthStar": "水墨山水云雾背景上悬浮毛玻璃表单面板，左侧品牌意境区配书法体游戏名与印章，清冷飘逸的入境感",
+      "compositionPattern": "60/40非对称分栏：左侧品牌意境区(印章+游戏名+水墨笔触+诗句+灵光)，右侧毛玻璃表单浮层(账号/密码/记住密码/自动登录/登录按钮/注册找回)，底部辅助通栏(服务器状态/版本/版权)",
+      "continuityAnchors": ["水墨青绿单色相CTA", "底线输入框聚焦青绿", "毛玻璃浮层backdrop-blur", "Noto Serif SC宽字距标题", "圆角≤12px克制", "云雾缓动背景动画"],
+      "libraryRestraintMode": false,
+      "uiKitPath": null,
+      "componentPlan": ["input", "button", "checkbox", "link"],
+      "imagePlan": ["login-bg.jpg"],
+      "chartsRequired": false,
+      "miniProgramStyle": false,
+      "qualityRisks": ["水墨背景图可能偏暗影响文字可读性", "毛玻璃backdrop-filter兼容性", "单色相策略与青灰+青绿双调的平衡"]
+    }
+  ],
+  "assets": [
+    {
+      "filename": "login-bg.jpg",
+      "role": "critical-hero",
+      "owningPage": "login",
+      "semanticDescription": "水墨写意山水云雾背景，青灰色调，仙侠空灵意境，大量留白，远处山峦渐入雾中",
+      "status": "planned"
+    }
+  ],
+  "wiringPlan": [],
+  "hiddenInteractionPlan": [
+    {
+      "sourceNodeId": "page-login",
+      "domId": "link-register",
+      "targetPageId": null,
+      "hideEdge": true,
+      "reason": "注册入口，当前单页项目无目标页，保留语义供未来扩展"
+    },
+    {
+      "sourceNodeId": "page-login",
+      "domId": "link-forgot",
+      "targetPageId": null,
+      "hideEdge": true,
+      "reason": "找回密码入口，当前单页项目无目标页，保留语义供未来扩展"
+    }
+  ]
+}

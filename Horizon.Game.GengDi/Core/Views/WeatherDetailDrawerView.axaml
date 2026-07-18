@@ -67,12 +67,12 @@
                           ColumnSpacing="12" RowSpacing="12">
                         <Border Background="#12FFFFFF" CornerRadius="16" Padding="16 14">
                             <StackPanel Spacing="6">
-                                <TextBlock Text="🌬️ 风" FontSize="12" FontWeight="SemiBold" Foreground="#7AA9FF" />
+                                <TextBlock Text="🌬️ 风" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource BattleNetOutlineBrush}" />
                                 <TextBlock Text="{Binding WeatherForecast.Current.WindDirection}"
                                            FontSize="24" FontWeight="Bold" Foreground="#FFFFFF" />
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <TextBlock Text="{Binding WeatherForecast.Current.WindSpeed, StringFormat='{}{0:F0} km/h'}"
-                                               FontSize="11" Foreground="#7AA9FF" />
+                                               FontSize="11" Foreground="{DynamicResource BattleNetOutlineBrush}" />
                                     <TextBlock Text="{Binding WeatherForecast.Current.WindLevel}"
                                                FontSize="11" Foreground="#5FD19B" />
                                 </StackPanel>
@@ -80,11 +80,11 @@
                         </Border>
                         <Border Grid.Column="1" Background="#12FFFFFF" CornerRadius="16" Padding="16 14">
                             <StackPanel Spacing="6">
-                                <TextBlock Text="💧 湿度" FontSize="12" FontWeight="SemiBold" Foreground="#7AA9FF" />
+                                <TextBlock Text="💧 湿度" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource BattleNetOutlineBrush}" />
                                 <TextBlock Text="{Binding WeatherForecast.Current.Humidity, StringFormat='{}{0}%'}"
                                            FontSize="24" FontWeight="Bold" Foreground="#FFFFFF" />
                                 <ProgressBar Value="{Binding WeatherForecast.Current.Humidity}" Maximum="100"
-                                             Height="4" Foreground="#7AA9FF" Background="#1AFFFFFF" CornerRadius="2" />
+                                             Height="4" Foreground="{DynamicResource BattleNetOutlineBrush}" Background="#1AFFFFFF" CornerRadius="2" />
                                 <TextBlock Text="{Binding WeatherForecast.Current.DewPoint, StringFormat='{}露点 {0}°'}"
                                            FontSize="10" Foreground="#FFFFFF88" />
                             </StackPanel>
@@ -120,14 +120,14 @@
                     <Border Background="#12FFFFFF" CornerRadius="16" Padding="16 14">
                         <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
                             <StackPanel Spacing="4">
-                                <TextBlock Text="👁️ 能见度" FontSize="12" FontWeight="SemiBold" Foreground="#7AA9FF" />
+                                <TextBlock Text="👁️ 能见度" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource BattleNetOutlineBrush}" />
                                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
                                     <TextBlock Text="{Binding WeatherForecast.Current.Visibility, StringFormat='{}{0:F0}'}"
                                                FontSize="24" FontWeight="Bold" Foreground="#FFFFFF" />
                                     <TextBlock Text="km" FontSize="11" Foreground="#FFFFFF88" VerticalAlignment="Bottom" Margin="0 0 0 3" />
                                 </StackPanel>
                                 <TextBlock Text="{Binding WeatherForecast.Current.VisibilityLevel}"
-                                           FontSize="11" Foreground="#7AA9FF" />
+                                           FontSize="11" Foreground="{DynamicResource BattleNetOutlineBrush}" />
                             </StackPanel>
                             <StackPanel Grid.Column="2" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal" Spacing="4">
@@ -176,13 +176,13 @@
                                                     </Border>
                                                 </Grid>
                                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                                    <TextBlock Text="{Binding Precipitation, StringFormat='{}降水{0:F0}%'}" FontSize="9" Foreground="#7AA9FF" />
+                                                    <TextBlock Text="{Binding Precipitation, StringFormat='{}降水{0:F0}%'}" FontSize="9" Foreground="{DynamicResource BattleNetOutlineBrush}" />
                                                     <TextBlock Text="{Binding Humidity, StringFormat='{}湿度{0}%'}" FontSize="9" Foreground="#FFFFFF88" />
                                                 </StackPanel>
                                             </StackPanel>
                                             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="2">
-                                                <TextBlock Text="{Binding TemperatureMin}" Foreground="#7AA9FF" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                                <TextBlock Text="°" Foreground="#7AA9FF" FontSize="10" VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding TemperatureMin}" Foreground="{DynamicResource BattleNetOutlineBrush}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                                <TextBlock Text="°" Foreground="{DynamicResource BattleNetOutlineBrush}" FontSize="10" VerticalAlignment="Center" />
                                                 <TextBlock Text=" ~ " Foreground="#FFFFFF33" FontSize="9" VerticalAlignment="Center" />
                                                 <TextBlock Text="{Binding TemperatureMax}" Foreground="#F26E7D" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
                                                 <TextBlock Text="°" Foreground="#F26E7D" FontSize="10" VerticalAlignment="Center" />

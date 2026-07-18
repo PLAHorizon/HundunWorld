@@ -1,0 +1,73 @@
+{
+  "data": [
+    {
+      "id": "page-login",
+      "type": "page",
+      "title": "登录页 - 元阳游戏方舟",
+      "version": 1,
+      "createdAt": 1782522857,
+      "canvasData": {
+        "x": -12,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/login.html"
+      }
+    },
+    {
+      "id": "image-001",
+      "type": "image",
+      "title": "武侠背景氛围",
+      "version": 1,
+      "createdAt": 1782530484,
+      "canvasData": {
+        "x": 0,
+        "y": 0
+      },
+      "devMetadata": {
+        "imageSrc": "assets/wuxia-atmosphere.jpg"
+      }
+    },
+    {
+      "id": "image-002",
+      "type": "image",
+      "title": "白鸽",
+      "version": 1,
+      "createdAt": 1782530484,
+      "canvasData": {
+        "x": 0,
+        "y": 0
+      },
+      "devMetadata": {
+        "imageSrc": "assets/white-dove.jpg"
+      }
+    },
+    {
+      "id": "image-003",
+      "type": "image",
+      "title": "远山朦胧",
+      "version": 1,
+      "createdAt": 1782530484,
+      "canvasData": {
+        "x": 0,
+        "y": 0
+      },
+      "devMetadata": {
+        "imageSrc": "assets/misty-mountains.jpg"
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": false,
+    "deviceType": "desktop",
+    "designLibrary": {
+      "name": "Claude",
+      "id": "dl_builtin_claude",
+      "version": null,
+      "scope": "built-in-global",
+      "path": "c:\\Users\\33011\\.trae-cn\\design_libraries\\dl_builtin_claude",
+      "versionSource": null
+    }
+  }
+}

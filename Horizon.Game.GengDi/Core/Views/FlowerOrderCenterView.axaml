@@ -32,7 +32,7 @@
             <!-- 操作栏 -->
             <Border Classes="SurfaceCard" Padding="12 8" Grid.Row="1">
                 <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="#42A5F5" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="{DynamicResource BattleNetOutlineBrush}" VerticalAlignment="Center"/>
                     <Button Grid.Column="1" Content="刷新" Classes="QuietAction" Padding="12 6" CornerRadius="8" FontSize="12"
                             Command="{Binding RefreshCommand}"/>
                 </Grid>
@@ -49,7 +49,7 @@
                                         <Grid ColumnDefinitions="*,Auto">
                                             <TextBlock Text="{Binding OrderNo}" FontSize="13" FontWeight="SemiBold" />
                                             <Border Grid.Column="1"
-                                                    Background="#25FFFFFF"
+                                                    Background="{DynamicResource BattleNetSurfaceTintBrush}"
                                                     CornerRadius="8"
                                                     Padding="8 4">
                                                 <TextBlock Text="{Binding StatusText}" FontSize="11" Foreground="#FFA726" />
@@ -62,12 +62,12 @@
                                                     <Grid ColumnDefinitions="Auto,*,Auto" Margin="0 4 0 0">
                                                         <Border Width="40" Height="40"
                                                                 CornerRadius="8"
-                                                                Background="#25FFFFFF">
+                                                                Background="{DynamicResource BattleNetSurfaceTintBrush}">
                                                             <TextBlock Text="🌸" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                                         </Border>
                                                         <StackPanel Grid.Column="1" Margin="10 0 0 0" VerticalAlignment="Center">
                                                             <TextBlock Text="{Binding ProductName}" FontSize="12" />
-                                                            <TextBlock Text="{Binding Quantity, StringFormat='x{0}'}" FontSize="10" Foreground="#888888" />
+                                                            <TextBlock Text="{Binding Quantity, StringFormat='x{0}'}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" />
                                                         </StackPanel>
                                                         <TextBlock Grid.Column="2"
                                                                    Text="{Binding Subtotal, StringFormat='¥{0:F2}'}"
@@ -79,11 +79,11 @@
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
 
-                                        <Border Height="1" Background="#20FFFFFF" />
+                                        <Border Height="1" Background="{DynamicResource BattleNetSurfaceTintBrush}" />
 
                                         <Grid ColumnDefinitions="*,Auto">
                                             <TextBlock Text="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"
-                                                       FontSize="11" Foreground="#888888" VerticalAlignment="Center" />
+                                                       FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center" />
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
                                                 <TextBlock Text="{Binding TotalAmount, StringFormat='合计: ¥{0:F2}'}"
                                                            FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0 0 8 0" />
@@ -127,7 +127,7 @@
                     <Border Classes="SurfaceCard" Padding="40" IsVisible="{Binding IsEmpty}">
                         <StackPanel HorizontalAlignment="Center" Spacing="12">
                             <TextBlock Text="📦" FontSize="32" HorizontalAlignment="Center" />
-                            <TextBlock Text="暂无订单" FontSize="14" Foreground="#888888" HorizontalAlignment="Center" />
+                            <TextBlock Text="暂无订单" FontSize="14" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -137,7 +137,7 @@
         <Panel IsVisible="{Binding ShowLogisticsDialog}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ZIndex="1000">
             <Border Background="#80000000" />
             <Border HorizontalAlignment="Center" VerticalAlignment="Center"
-                    Background="#1E1E2E" CornerRadius="16" Padding="24" MaxWidth="620" MaxHeight="1003">
+                    Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="16" Padding="24" MaxWidth="620" MaxHeight="1003">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Spacing="16">
                         <Grid ColumnDefinitions="*,Auto">
@@ -146,27 +146,27 @@
                                     Command="{Binding CloseLogisticsDialogCommand}"/>
                         </Grid>
 
-                        <Border Background="#25FFFFFF" CornerRadius="10" Padding="12">
+                        <Border Background="{DynamicResource BattleNetSurfaceTintBrush}" CornerRadius="10" Padding="12">
                             <StackPanel Spacing="4">
-                                <TextBlock FontSize="12" Foreground="#AAAAAA">
+                                <TextBlock FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                                     <Run Text="快递公司："/>
-                                    <Run Text="{Binding LogisticsMapData.ExpressCompanyName}" Foreground="#FFFFFF"/>
+                                    <Run Text="{Binding LogisticsMapData.ExpressCompanyName}" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                 </TextBlock>
-                                <TextBlock FontSize="12" Foreground="#AAAAAA">
+                                <TextBlock FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                                     <Run Text="运单号："/>
-                                    <Run Text="{Binding LogisticsMapData.ShipOrderNumber}" Foreground="#FFFFFF"/>
+                                    <Run Text="{Binding LogisticsMapData.ShipOrderNumber}" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                 </TextBlock>
                             </StackPanel>
                         </Border>
 
                         <StackPanel IsVisible="{Binding IsLoadingLogistics}" HorizontalAlignment="Center" Spacing="8" Margin="0 20">
                             <TextBlock Text="⏳" FontSize="24" HorizontalAlignment="Center"/>
-                            <TextBlock Text="正在查询物流信息..." FontSize="12" Foreground="#888888" HorizontalAlignment="Center"/>
+                            <TextBlock Text="正在查询物流信息..." FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                         </StackPanel>
 
                         <StackPanel IsVisible="{Binding HasNoLogistics}" HorizontalAlignment="Center" Spacing="8" Margin="0 20">
                             <TextBlock Text="📦" FontSize="24" HorizontalAlignment="Center"/>
-                            <TextBlock Text="暂无物流信息" FontSize="12" Foreground="#888888" HorizontalAlignment="Center"/>
+                            <TextBlock Text="暂无物流信息" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                         </StackPanel>
 
                         <controls:LogisticsMapView MapData="{Binding LogisticsMapData}" Height="250" IsVisible="{Binding HasLogisticsNodes}"/>
@@ -177,15 +177,15 @@
                                     <Grid ColumnDefinitions="Auto,12,*" Margin="0 0 0 0">
                                         <StackPanel Width="20" VerticalAlignment="Stretch">
                                             <Border Width="10" Height="10" CornerRadius="5" HorizontalAlignment="Center"
-                                                    Background="#66BB6A" Margin="0 4 0 0"/>
-                                            <Border Width="2" Background="#3066BB6A" HorizontalAlignment="Center"
+                                                    Background="{DynamicResource BattleNetPrimaryBrush}" Margin="0 4 0 0"/>
+                                            <Border Width="2" Background="{DynamicResource BattleNetSurfaceTintBrush}" HorizontalAlignment="Center"
                                                     Margin="0 2 0 0" VerticalAlignment="Stretch"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="2" Spacing="2" Margin="0 0 0 16">
                                             <TextBlock Text="{Binding Time, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"
-                                                       FontSize="11" Foreground="#888888"/>
+                                                       FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                                             <TextBlock Text="{Binding Description}" FontSize="12" TextWrapping="Wrap"/>
-                                            <TextBlock Text="{Binding Location}" FontSize="11" Foreground="#AAAAAA"/>
+                                            <TextBlock Text="{Binding Location}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                         </StackPanel>
                                     </Grid>
                                 </DataTemplate>
@@ -199,38 +199,38 @@
         <Panel IsVisible="{Binding ShowPaymentDialog}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ZIndex="1000">
             <Border Background="#CC0D0D0D" />
             <Border HorizontalAlignment="Center" VerticalAlignment="Center"
-                    Background="#272727" CornerRadius="20" Padding="32" MaxWidth="560" MinWidth="480">
+                    Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="20" Padding="32" MaxWidth="560" MinWidth="480">
                 <StackPanel Spacing="24">
                     <!-- Header -->
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                            <Border Width="44" Height="44" CornerRadius="22" Background="#1A8B5C">
+                            <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource BattleNetPrimaryBrush}">
                                 <TextBlock Text="💳" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
-                            <TextBlock Text="确认支付" FontSize="20" FontWeight="Bold" Foreground="White" VerticalAlignment="Center"/>
+                            <TextBlock Text="确认支付" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource LoginFormTextBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
                         <Button Grid.Column="1" Content="✕" Classes="QuietAction" Padding="10 6" CornerRadius="8"
                                 Command="{Binding CancelPaymentCommand}" VerticalAlignment="Center"/>
                     </Grid>
 
                     <!-- Amount Card -->
-                    <Border Background="#1A1A1A" CornerRadius="16" Padding="24 20">
+                    <Border Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="16" Padding="24 20">
                         <StackPanel Spacing="8">
-                            <TextBlock Text="应付金额" FontSize="13" Foreground="#888888"/>
-                            <TextBlock FontSize="32" FontWeight="Bold" Foreground="#4ECB71"
+                            <TextBlock Text="应付金额" FontSize="13" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                            <TextBlock FontSize="32" FontWeight="Bold" Foreground="{DynamicResource BattleNetPrimaryBrush}"
                                        Text="{Binding PaymentAmount, StringFormat='¥{0:F2}'}"/>
                         </StackPanel>
                     </Border>
 
                     <!-- Payment Method Card -->
-                    <Border Background="#1A1A1A" CornerRadius="16" Padding="24 20">
+                    <Border Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="16" Padding="24 20">
                         <StackPanel Spacing="12">
-                            <TextBlock Text="支付方式" FontSize="14" FontWeight="SemiBold" Foreground="#CCCCCC"/>
+                            <TextBlock Text="支付方式" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             <ComboBox SelectedIndex="{Binding SelectedPaymentChannel}"
                                       HorizontalAlignment="Stretch"
-                                      Background="#2A2A2A"
-                                      BorderBrush="#3A3A3A"
-                                      Foreground="White">
+                                      Background="{DynamicResource LoginInputBackgroundBrush}"
+                                      BorderBrush="{DynamicResource LoginInputBorderBrush}"
+                                      Foreground="{DynamicResource LoginFormTextBrush}">
                                 <ComboBox.Items>
                                     <ComboBoxItem Content="微信支付"/>
                                     <ComboBoxItem Content="支付宝"/>
@@ -242,11 +242,11 @@
                     <!-- Processing Indicator -->
                     <StackPanel IsVisible="{Binding IsPaymentProcessing}" HorizontalAlignment="Center" Spacing="12" Margin="0 4">
                         <ProgressBar IsIndeterminate="True" Height="4"/>
-                        <TextBlock Text="正在支付，请稍候..." FontSize="12" Foreground="#666666" HorizontalAlignment="Center"/>
+                        <TextBlock Text="正在支付，请稍候..." FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                     </StackPanel>
 
                     <!-- Result Message -->
-                    <TextBlock Text="{Binding PaymentResultMessage}" FontSize="13" Foreground="#4ECB71"
+                    <TextBlock Text="{Binding PaymentResultMessage}" FontSize="13" Foreground="{DynamicResource BattleNetPrimaryBrush}"
                                HorizontalAlignment="Center"
                                IsVisible="{Binding !!PaymentResultMessage}"/>
 

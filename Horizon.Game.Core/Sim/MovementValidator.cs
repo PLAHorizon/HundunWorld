@@ -142,13 +142,16 @@ public sealed class MovementValidator
         CorrectionPacket? correction = null;
         if (needCorrection || hardCapViolated || jumpCountExceeded)
         {
+            // 优先级：位置漂移 > 速度超限 > 跳跃次数超限。
+            // 当 drift > PositionEpsilon 时，核心问题是位置不一致，应发 PredictionDrift correction；
+            // 仅当漂移未超阈值但客户端自报速度超限时，才归类为 SpeedHackSuspected（早期预警）。
             CorrectionReason reason;
-            if (hardCapViolated)
-                reason = CorrectionReason.SpeedHackSuspected;
-            else if (jumpCountExceeded)
-                reason = CorrectionReason.JumpCountExceeded;
-            else
+            if (needCorrection)
                 reason = CorrectionReason.PredictionDrift;
+            else if (hardCapViolated)
+                reason = CorrectionReason.SpeedHackSuspected;
+            else
+                reason = CorrectionReason.JumpCountExceeded;
 
             correction = new CorrectionPacket
             {

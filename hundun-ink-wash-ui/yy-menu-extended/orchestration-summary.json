@@ -1,0 +1,241 @@
+{
+  "projectName": "yy-menu-extended",
+  "projectPath": "yy-menu-extended",
+  "brandCssPath": "colors_and_type.css",
+  "styleContinuityAnchors": {
+    "colorSystem": "墨色系(#0d0d0d-#6a6a6a) + 纸色系(#f5f0e8-#a89e8a) + 朱红(#c0392b) + 金色(#c9a84c) + 玉色(#5e8b6e) + 青灰(#6b7b8a)",
+    "primaryBackground": "var(--color-ink-dark) #1a1a1a",
+    "primaryText": "var(--color-paper-bright) #f5f0e8",
+    "accentColor": "var(--color-vermilion) #c0392b + var(--color-gold) #c9a84c",
+    "fontFamily": "Noto Serif SC(标题/装饰) + Noto Sans SC(正文)",
+    "panelStyle": "ink-panel: 渐变背景(135deg, #2d2d2d→#1a1a1a) + 1px墨色边框 + 8px圆角 + SVG噪点纹理叠层",
+    "buttonStyle": "ink-button: 1px金色边框 + 楷体字体 + 朱红/金色/透明三种变体",
+    "dividerStyle": "ink-divider: 线性渐变(透明→墨灰→透明) 水墨分离线",
+    "badgeStyle": "ink-badge: 1px边框 + 对应品质色半透明背景",
+    "progressBarStyle": "ink-progress: 6px高度 + 线性渐变 + 朱红/金色/玉色三种变体",
+    "animationStyle": "inkFadeIn/inkSpread/inkDissolve 水墨晕染动画",
+    "textureStyle": "paper-texture: SVG分形噪点 + overlay混合模式 模拟宣纸质感",
+    "sharedShellPattern": "left-nav(240px) + top-info-bar(60px) + right-content-area(剩余)",
+    "qualityColorSystem": "common(#a89e8a) / uncommon(#5e8b6e) / rare(#4a7c9a) / epic(#c9a84c) / legendary(#c0392b)"
+  },
+  "sharedProjectShellContract": {
+    "description": "扩展菜单页面共享Shell：左侧导航栏(240px) + 顶部角色信息栏(60px) + 右侧内容区",
+    "leftNav": {
+      "width": "240px",
+      "background": "linear-gradient(180deg, rgba(13,13,13,0.98) 0%, rgba(26,26,26,0.98) 100%)",
+      "borderRight": "1px solid var(--border-color-gold)",
+      "navItems": [
+        "不肝",
+        "抽卡",
+        "活动",
+        "通行证",
+        "属性",
+        "奇珍阁",
+        "设置"
+      ],
+      "activeItemStyle": "color: var(--color-gold-bright); border-left: 3px solid var(--color-gold); background: rgba(201,168,76,0.08)"
+    },
+    "topBar": {
+      "height": "60px",
+      "background": "linear-gradient(90deg, rgba(26,26,26,0.95) 0%, rgba(45,45,45,0.95) 100%)",
+      "borderBottom": "1px solid var(--border-color-ink)",
+      "content": "角色头像(36px) + 角色名 + 等级 + 货币栏(铜钱/元宝) + 系统时间"
+    },
+    "rightContent": {
+      "background": "var(--color-ink-dark)",
+      "padding": "24px",
+      "overflow": "auto"
+    },
+    "exceptions": [
+      "menu-gacha.html: 全屏沉浸式布局，不使用共享Shell",
+      "menu-char-attributes-v2.html: 全屏布局，不使用共享Shell，左侧角色预览+右侧属性面板"
+    ]
+  },
+  "pages": [
+    {
+      "id": "page-menu-casual-mode",
+      "name": "不肝（休闲模式）",
+      "file": "menu-casual-mode.html",
+      "order": 1,
+      "pageType": "information-dense",
+      "description": "休闲模式活动列表，展示每日推荐任务、轻松玩法的活动入口、奖励预览。强调低压力、轻松的游戏体验。",
+      "backgroundImage": null,
+      "visualNorthStar": "暖色调水墨风格，左侧导航栏+顶部角色信息栏+右侧休闲活动卡片网格。每张活动卡片有水墨插画背景、活动名称、奖励图标、剩余时间。",
+      "composition": "shared-shell(240px左导航+60px顶栏) | 右侧内容区：顶部tab切换(推荐/全部/日常/周常) + 活动卡片网格(2列) + 底部奖励预览栏",
+      "components": [
+        "ink-panel",
+        "ink-badge",
+        "ink-progress",
+        "ink-button",
+        "ink-divider"
+      ],
+      "businessScenario": "玩家进入休闲模式，浏览低压力活动，选择感兴趣的任务轻松游玩",
+      "qualityRisks": [
+        "活动卡片信息密度要适中，不能太挤",
+        "休闲感的视觉传达——暖色、圆润、轻松"
+      ]
+    },
+    {
+      "id": "page-menu-gacha",
+      "name": "抽卡（祈愿）",
+      "file": "menu-gacha.html",
+      "order": 2,
+      "pageType": "visual-centric",
+      "description": "抽卡主界面，展示当前卡池、抽卡按钮、历史记录入口。使用金色光效背景图营造神秘感。",
+      "backgroundImage": "assets/bg-gacha-glow.jpg",
+      "visualNorthStar": "全屏沉浸式抽卡界面，背景为金色水墨光效。中央展示卡池主角立绘区域（占位），下方为抽卡按钮区（单抽/十连），右侧为卡池详情和概率公示入口。",
+      "composition": "full-screen(无共享shell) | 背景图层 + 中央卡池展示区 + 底部抽卡按钮区(单抽/十连) + 左侧卡池切换tab + 右上角货币余额 + 右下角历史记录入口",
+      "components": [
+        "ink-panel",
+        "ink-button-gold",
+        "ink-badge-gold",
+        "ink-progress-bar-gold",
+        "ink-divider"
+      ],
+      "businessScenario": "玩家查看当前卡池，进行单抽或十连抽，查看抽卡历史和概率",
+      "qualityRisks": [
+        "金色光效背景不能过于刺眼",
+        "抽卡按钮要突出但不能破坏水墨美感",
+        "卡池切换要流畅"
+      ]
+    },
+    {
+      "id": "page-menu-activities",
+      "name": "活动",
+      "file": "menu-activities.html",
+      "order": 3,
+      "pageType": "information-dense",
+      "description": "活动列表页，展示当前进行中的所有活动，包含活动banner、活动详情、倒计时、参与入口。",
+      "backgroundImage": null,
+      "visualNorthStar": "活动列表页，顶部大banner展示精选活动（水墨横幅），下方活动列表（每行包含活动图标、名称、时间、进度、奖励），右侧活动详情面板。",
+      "composition": "shared-shell(240px左导航+60px顶栏) | 右侧内容区：顶部精选banner(横幅) + 活动列表(左列，可滚动) + 活动详情面板(右侧固定)",
+      "components": [
+        "ink-panel",
+        "ink-badge",
+        "ink-progress",
+        "ink-button",
+        "ink-divider",
+        "ink-tooltip"
+      ],
+      "businessScenario": "玩家浏览所有活动，查看详情，参与活动",
+      "qualityRisks": [
+        "活动列表和详情面板的信息层次要清晰",
+        "倒计时显示要醒目",
+        "活动状态区分（进行中/即将开始/已结束）"
+      ]
+    },
+    {
+      "id": "page-menu-battle-pass",
+      "name": "通行证",
+      "file": "menu-battle-pass.html",
+      "order": 4,
+      "pageType": "information-dense",
+      "description": "通行证等级轨道页面，展示当前等级、奖励列表、升级进度、免费/付费轨道切换。",
+      "backgroundImage": null,
+      "visualNorthStar": "通行证等级轨道横向展示，每个等级节点显示奖励图标。上方为当前等级和进度条，下方为奖励详情。免费轨道（灰色）和付费轨道（金色）上下排列。",
+      "composition": "shared-shell(240px左导航+60px顶栏) | 右侧内容区：顶部通行证信息(等级/进度/到期时间) + 水平等级轨道(可滚动，免费行+付费行) + 底部当前等级奖励详情",
+      "components": [
+        "ink-panel",
+        "ink-progress-bar-gold",
+        "ink-badge-gold",
+        "ink-badge-common",
+        "ink-button-gold",
+        "ink-divider"
+      ],
+      "businessScenario": "玩家查看通行证进度，领取已解锁奖励，了解升级路径",
+      "qualityRisks": [
+        "等级轨道节点不能太密集",
+        "免费/付费轨道视觉区分要明显",
+        "已领取/可领取/未解锁状态要清晰"
+      ]
+    },
+    {
+      "id": "page-menu-char-attributes-v2",
+      "name": "属性面板V2",
+      "file": "menu-char-attributes-v2.html",
+      "order": 5,
+      "pageType": "information-dense",
+      "description": "精简版角色属性面板，展示核心属性数值、装备摘要、武学摘要。使用角色预览背景图。",
+      "backgroundImage": "assets/bg-char-preview-v2.jpg",
+      "visualNorthStar": "左侧角色立绘区域（使用bg-char-preview-v2.jpg背景），右侧精简属性面板。属性面板包含：基础属性（气血/攻击/防御/暴击）、进阶属性（穿透/格挡/闪避）、装备摘要、武学摘要。",
+      "composition": "full-screen(无共享shell) | 左侧角色预览区(背景图+角色占位) + 右侧属性面板(可滚动) + 顶部返回按钮 + 底部操作栏(详细属性/装备/武学)",
+      "components": [
+        "ink-panel",
+        "ink-progress",
+        "ink-badge",
+        "ink-divider",
+        "ink-button-secondary"
+      ],
+      "businessScenario": "玩家快速查看角色核心属性，无需进入完整角色菜单",
+      "qualityRisks": [
+        "属性数值排版要清晰易读",
+        "精简版不能信息过载",
+        "与Project 3角色属性页的视觉一致性"
+      ]
+    },
+    {
+      "id": "page-shop-rare-items",
+      "name": "奇珍阁",
+      "file": "shop-rare-items.html",
+      "order": 6,
+      "pageType": "information-dense",
+      "description": "稀有商品专区，展示限时稀有商品、珍品列表、商品详情弹窗。使用品质色区分商品稀有度。",
+      "backgroundImage": null,
+      "visualNorthStar": "商品网格展示，每个商品卡片有品质色边框（传说-朱红/史诗-金色/稀有-蓝色/普通-灰色）。顶部tab切换（限时/珍品/兑换），右侧商品详情弹窗。",
+      "composition": "shared-shell(240px左导航+60px顶栏) | 右侧内容区：顶部tab(限时/珍品/兑换) + 商品网格(3列，品质色边框) + 点击商品弹出详情弹窗(modal)",
+      "components": [
+        "ink-panel",
+        "ink-badge-gold",
+        "ink-badge-vermilion",
+        "ink-button-gold",
+        "ink-button-primary",
+        "ink-divider",
+        "ink-tooltip"
+      ],
+      "businessScenario": "玩家浏览稀有商品，查看详情，购买限时商品",
+      "qualityRisks": [
+        "品质色系统要统一",
+        "商品卡片不能太拥挤",
+        "详情弹窗要清晰展示商品信息"
+      ]
+    },
+    {
+      "id": "page-settings",
+      "name": "设置",
+      "file": "settings.html",
+      "order": 7,
+      "pageType": "information-dense",
+      "description": "设置页面，左侧分类标签（画面/音效/操作/账号/其他），右侧设置项列表，包含滑动条、开关、下拉选择。",
+      "backgroundImage": null,
+      "visualNorthStar": "设置页面，左侧分类导航（竖排标签），右侧设置项列表。每个设置项包含名称、说明、控件（开关/滑动条/下拉/按钮）。",
+      "composition": "shared-shell(240px左导航+60px顶栏) | 右侧内容区：左侧分类标签(画面/音效/操作/账号/其他) + 右侧设置项列表(可滚动) + 底部保存/重置按钮",
+      "components": [
+        "ink-panel",
+        "ink-button",
+        "ink-button-secondary",
+        "ink-divider",
+        "ink-progress"
+      ],
+      "businessScenario": "玩家调整游戏设置，包括画面质量、音效音量、操作方式等",
+      "qualityRisks": [
+        "设置项控件要统一风格",
+        "分类切换要流畅",
+        "滑动条和开关要符合水墨风格"
+      ]
+    }
+  ],
+  "images": [
+    {
+      "id": "image-005",
+      "name": "抽卡金色光效背景",
+      "file": "bg-gacha-glow.jpg",
+      "description": "金色水墨光效背景，用于抽卡界面"
+    },
+    {
+      "id": "image-006",
+      "name": "角色预览背景V2",
+      "file": "bg-char-preview-v2.jpg",
+      "description": "深色水墨渐变背景，用于精简版角色属性面板"
+    }
+  ]
+}

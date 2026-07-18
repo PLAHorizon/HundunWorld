@@ -25,7 +25,20 @@ namespace HundunWorld.Game
 
             if (HundunWorldGamePlugin.Instance == null)
             {
-                Debug.LogWarning("HundunWorldGamePlugin 尚未由引擎初始化，游戏可能未正确加载插件。请确保插件已在项目中注册。");
+                // 修复：Flax 不会自动发现并实例化游戏主程序集中的 Plugin 类，
+                // 必须在 .flaxproj 的 GamePlugins 字段中注册或在此手动创建。
+                // 这里采用手动创建作为兜底，确保 ECS 系统能被初始化。
+                Debug.LogWarning("HundunWorldGamePlugin 尚未由引擎初始化，将手动创建 Plugin 实例以初始化游戏。");
+                try
+                {
+                    var plugin = new HundunWorldGamePlugin();
+                    plugin.Initialize();
+                    Debug.Log("[GameStartup] 已手动初始化 HundunWorldGamePlugin");
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[GameStartup] 手动初始化 HundunWorldGamePlugin 失败: {ex.Message}\n{ex.StackTrace}");
+                }
             }
 
             _ = LoadScenesSafe();

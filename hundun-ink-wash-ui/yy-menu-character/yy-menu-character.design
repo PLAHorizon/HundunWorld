@@ -1,0 +1,193 @@
+{
+  "name": "燕云十六声-核心菜单-角色与装备",
+  "version": 1,
+  "createdAt": 1783723000,
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "projectName": "燕云十六声-核心菜单-角色与装备"
+  },
+  "data": [
+    {
+      "id": "page-menu-char-attributes",
+      "type": "page",
+      "name": "菜单-角色属性",
+      "title": "菜单-角色属性",
+      "version": 1,
+      "createdAt": 1783723000,
+      "devMetadata": {
+        "htmlSrc": "pages/menu-char-attributes.html",
+        "device": "desktop",
+        "order": 1,
+        "pageType": "information-dense",
+        "dataDomId": "page-menu-char-attributes",
+        "description": "角色模型预览 + 属性面板（气血/内力/力量等），墨色进度条"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-menu-equipment",
+      "type": "page",
+      "name": "菜单-装备",
+      "title": "菜单-装备",
+      "version": 1,
+      "createdAt": 1783723000,
+      "devMetadata": {
+        "htmlSrc": "pages/menu-equipment.html",
+        "device": "desktop",
+        "order": 2,
+        "pageType": "information-dense",
+        "dataDomId": "page-menu-equipment",
+        "description": "装备槽位网格（人物轮廓+槽位）+ 装备列表 + 属性对比"
+      },
+      "canvasData": {
+        "x": 400,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-menu-appearance",
+      "type": "page",
+      "name": "菜单-外观",
+      "title": "菜单-外观",
+      "version": 1,
+      "createdAt": 1783723000,
+      "devMetadata": {
+        "htmlSrc": "pages/menu-appearance.html",
+        "device": "desktop",
+        "order": 3,
+        "pageType": "information-dense",
+        "dataDomId": "page-menu-appearance",
+        "description": "外观预览 + 套装列表 + 染色选项，水墨边框装备卡片"
+      },
+      "canvasData": {
+        "x": 800,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-menu-battle-prep",
+      "type": "page",
+      "name": "菜单-备战",
+      "title": "菜单-备战",
+      "version": 1,
+      "createdAt": 1783723000,
+      "devMetadata": {
+        "htmlSrc": "pages/menu-battle-prep.html",
+        "device": "desktop",
+        "order": 4,
+        "pageType": "information-dense",
+        "dataDomId": "page-menu-battle-prep",
+        "description": "套装推荐 + 属性目标 + 一键配装，流派指引标签"
+      },
+      "canvasData": {
+        "x": 1200,
+        "y": 0,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-menu-sect",
+      "type": "page",
+      "name": "菜单-门派",
+      "title": "菜单-门派",
+      "version": 1,
+      "createdAt": 1783723000,
+      "devMetadata": {
+        "htmlSrc": "pages/menu-sect.html",
+        "device": "desktop",
+        "order": 5,
+        "pageType": "information-dense",
+        "dataDomId": "page-menu-sect",
+        "description": "门派列表 + 门派详情（技能树/关系图），水墨门派徽章"
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 400,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-menu-personal-info",
+      "type": "page",
+      "name": "菜单-个人信息",
+      "title": "菜单-个人信息",
+      "version": 1,
+      "createdAt": 1783723000,
+      "devMetadata": {
+        "htmlSrc": "pages/menu-personal-info.html",
+        "device": "desktop",
+        "order": 6,
+        "pageType": "information-dense",
+        "dataDomId": "page-menu-personal-info",
+        "description": "角色头像 + 基本信息卡 + 成就/统计，竖排角色名"
+      },
+      "canvasData": {
+        "x": 400,
+        "y": 400,
+        "group": 0
+      }
+    },
+    {
+      "id": "page-menu-time",
+      "type": "page",
+      "name": "菜单-时间",
+      "title": "菜单-时间",
+      "version": 1,
+      "createdAt": 1783723000,
+      "devMetadata": {
+        "htmlSrc": "pages/menu-time.html",
+        "device": "desktop",
+        "order": 7,
+        "pageType": "task-driven",
+        "dataDomId": "page-menu-time",
+        "description": "游戏内时辰显示（十二时辰）+ 时间操作选项"
+      },
+      "canvasData": {
+        "x": 800,
+        "y": 400,
+        "group": 0
+      }
+    },
+    {
+      "id": "image-001",
+      "type": "image",
+      "name": "角色预览背景",
+      "title": "角色预览背景",
+      "version": 1,
+      "createdAt": 1783723000,
+      "devMetadata": {
+        "imageSrc": "assets/bg-char-preview.jpg",
+        "device": "desktop",
+        "order": 100
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 800
+      }
+    },
+    {
+      "id": "image-002",
+      "type": "image",
+      "name": "门派徽章",
+      "title": "门派徽章",
+      "version": 1,
+      "createdAt": 1783723000,
+      "devMetadata": {
+        "imageSrc": "assets/bg-sect-emblem.jpg",
+        "device": "desktop",
+        "order": 101
+      },
+      "canvasData": {
+        "x": 300,
+        "y": 800
+      }
+    }
+  ]
+}

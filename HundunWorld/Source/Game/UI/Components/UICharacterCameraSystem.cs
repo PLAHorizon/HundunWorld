@@ -276,6 +276,16 @@ namespace HundunWorld.Game.UI.Components
                 else
                 {
                     content = Content.Load(assetPath);
+                    if (content == null)
+                    {
+                        // 主路径（带扩展名）失败，尝试无扩展名回退路径
+                        var extension = System.IO.Path.GetExtension(assetPath);
+                        if (!string.IsNullOrEmpty(extension))
+                        {
+                            var fallbackPath = assetPath.Substring(0, assetPath.Length - extension.Length).Replace('\\', '/');
+                            content = Content.Load(fallbackPath);
+                        }
+                    }
                     if (content != null)
                     {
                         _assetCache[assetPath] = content;

@@ -61,8 +61,8 @@
                                             </StackPanel>
 
                                             <Border Grid.Column="2"
-                                                    Background="#1F2D8CFF"
-                                                    BorderBrush="#4D2D8CFF"
+                                                    Background="{DynamicResource BattleNetSurfaceTintBrush}"
+                                                    BorderBrush="{DynamicResource BattleNetOutlineBrush}"
                                                     BorderThickness="1"
                                                     CornerRadius="999"
                                                     Padding="8 3"
@@ -71,7 +71,7 @@
                                                 <TextBlock Text="{Binding PopularityBadge}"
                                                            FontSize="11"
                                                            FontWeight="SemiBold"
-                                                           Foreground="#FF80C8FF" />
+                                                           Foreground="{DynamicResource BattleNetOutlineBrush}" />
                                             </Border>
                                         </Grid>
                                     </Border>
@@ -122,8 +122,8 @@
                                             </StackPanel>
 
                                             <Border Grid.Column="2"
-                                                    Background="#1F2D8CFF"
-                                                    BorderBrush="#4D2D8CFF"
+                                                    Background="{DynamicResource BattleNetSurfaceTintBrush}"
+                                                    BorderBrush="{DynamicResource BattleNetOutlineBrush}"
                                                     BorderThickness="1"
                                                     CornerRadius="999"
                                                     Padding="8 3"
@@ -132,7 +132,7 @@
                                                 <TextBlock Text="{Binding PopularityBadge}"
                                                            FontSize="11"
                                                            FontWeight="SemiBold"
-                                                           Foreground="#FF80C8FF" />
+                                                           Foreground="{DynamicResource BattleNetOutlineBrush}" />
                                             </Border>
                                         </Grid>
                                     </Border>
@@ -171,8 +171,8 @@
                                                     Classes="PageEyebrow" />
                                          <WrapPanel Orientation="Horizontal"
                                                     Margin="0 0 0 2">
-                                             <Border Background="#1F2D8CFF"
-                                                     BorderBrush="#4D2D8CFF"
+                                             <Border Background="{DynamicResource BattleNetSurfaceTintBrush}"
+                                                     BorderBrush="{DynamicResource BattleNetOutlineBrush}"
                                                      BorderThickness="1"
                                                      CornerRadius="999"
                                                      Padding="10 4"
@@ -181,7 +181,7 @@
                                                  <TextBlock Text="{Binding PopularityBadge}"
                                                             FontSize="12"
                                                             FontWeight="SemiBold"
-                                                            Foreground="#FF80C8FF" />
+                                                            Foreground="{DynamicResource BattleNetOutlineBrush}" />
                                              </Border>
                                              <Border Background="{DynamicResource ControlFillColorTertiaryBrush}"
                                                      CornerRadius="999"

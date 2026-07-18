@@ -7,7 +7,7 @@ using Game.UI.Character;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 using HundunWorld.Game.UI.Authentication;
-using HundunWorld.Game.UI.Enums;
+
 using HundunWorld.Game.UI.ErrorRecovery;
 using HundunWorld.Game.UI.States;
 using HundunWorld.Game.UI.StateValidation;

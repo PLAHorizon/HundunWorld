@@ -1,0 +1,1809 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>战斗HUD v2 — 混沌世界</title>
+    <style id="theme-vars">
+/* ============================================================
+   混沌世界 HundunWorld · 燕云融合 UI 品牌样式
+   模式: free-explore | 主题: dark | 设备: desktop
+   融合策略：ink- 深墨黑沉浸底 + yy- 纸色面板 + 朱红战斗强调
+   仿《燕云十六声》：深墨黑 + 鎏金/古铜/朱红 + 纸色卷轴 + 毛笔书法
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+
+/* ---------- 设计 Token ---------- */
+:root {
+  /* 背景层 — 深墨黑 */
+  --bg-base-default: #0E1016;
+  --bg-base-secondary: #14171E;
+  --bg-base-tertiary: #1C1F28;
+  --bg-base-elevated: #232733;
+  --ink-bg-panel: rgba(20, 23, 30, 0.85);
+  --ink-bg-panel-solid: #14171E;
+  --ink-bg-void: #0E1016;
+  --ink-bg-abyss: #0A0B10;
+  --ink-bg-scrim: rgba(8, 9, 14, 0.72);
+
+  /* 品牌主色 — 鎏金 */
+  --bg-brand: #C8A858;
+  --bg-brand-hover: #E0C880;
+  --bg-brand-active: #8A7438;
+  --bg-brand-disabled: rgba(200, 168, 88, 0.28);
+  --ink-gold-primary: #C8A858;
+  --ink-gold-bright: #E0C880;
+  --ink-gold-deep: #8A7438;
+  --ink-gold-glow: rgba(200, 168, 88, 0.4);
+
+  /* 铜色体系 — 辅助主色 */
+  --ink-bronze-primary: #B87333;
+  --ink-bronze-bright: #D4944E;
+  --ink-bronze-deep: #7A4A20;
+  --ink-bronze-glow: rgba(184, 115, 51, 0.4);
+
+  /* 朱红系 — yy- 引入，战斗/危险/传世品质强调 */
+  --ink-vermilion-primary: #c0392b;
+  --ink-vermilion-bright: #d9504a;
+  --ink-vermilion-deep: #a93226;
+  --ink-vermilion-faded: #8b2a20;
+  --ink-vermilion-glow: rgba(192, 57, 43, 0.4);
+
+  /* 纸色系 — yy- 引入，用于浅色卷轴/对话框/信笺面板 */
+  --ink-paper-bright: #f5f0e8;
+  --ink-paper: #ebe5d8;
+  --ink-paper-aged: #d4c9b8;
+  --ink-paper-faded: #c8bba8;
+  --ink-paper-dark: #a89e8a;
+
+  /* 辅助语义色 */
+  --ink-jade-primary: #5E8B7E;
+  --ink-jade-bright: #7EAE9E;
+  --ink-blood-primary: #B85450;
+  --ink-blood-bright: #D46862;
+
+  /* 品质色 — 游戏语义（传世=朱红） */
+  --ink-quality-common: #8A8275;
+  --ink-quality-uncommon: #6B8E5A;
+  --ink-quality-rare: #4A7EA8;
+  --ink-quality-epic: #8B5E9E;
+  --ink-quality-legendary: #c0392b;
+
+  /* 状态色（错误=朱红） */
+  --state-success: #6B8E5A;
+  --state-warning: #C8A858;
+  --state-error: #c0392b;
+  --state-info: #4A7EA8;
+
+  /* 文字 */
+  --text-default: #F0EDE4;
+  --text-secondary: #B8B0A0;
+  --text-tertiary: #7A7468;
+  --text-disabled: #4A4640;
+  --text-brand: #E0C880;
+  --text-on-brand: #1A1408;
+  --text-on-paper: #2a2520;
+  --text-vermilion: #d9504a;
+
+  /* 边框 */
+  --border-neutral-l1: rgba(240, 237, 228, 0.06);
+  --border-neutral-l2: rgba(200, 168, 88, 0.15);
+  --border-neutral-l3: rgba(200, 168, 88, 0.25);
+  --ink-border-gold: rgba(200, 168, 88, 0.35);
+  --ink-border-gold-strong: rgba(200, 168, 88, 0.6);
+  --ink-border-bronze: rgba(184, 115, 51, 0.3);
+  --ink-border-vermilion: rgba(192, 57, 43, 0.35);
+  --ink-divider: rgba(200, 168, 88, 0.12);
+
+  /* 纸色面板专用 */
+  --ink-paper-panel-bg: rgba(245, 240, 232, 0.92);
+  --ink-paper-panel-border: rgba(168, 158, 138, 0.4);
+  --ink-paper-panel-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+
+  /* 字体 */
+  --ink-font-display: "Ma Shan Zheng", "STKaiti", "KaiTi", serif;
+  --ink-font-heading: "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+  --ink-font-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --ink-font-number: "DIN Alternate", "DIN", "Bebas Neue", monospace;
+  --font-family-heading: var(--ink-font-heading);
+  --font-family-default: var(--ink-font-body);
+
+  /* 圆角 — 古风克制 */
+  --radius-0: 0px;
+  --radius-2: 2px;
+  --radius-4: 4px;
+  --radius-8: 8px;
+  --radius-full: 999px;
+  --ink-radius-none: 0px;
+  --ink-radius-sm: 2px;
+  --ink-radius-md: 4px;
+  --ink-radius-lg: 8px;
+
+  /* 阴影 / 深度 */
+  --ink-shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --ink-shadow-soft: 0 1px 0 rgba(0, 0, 0, 0.05);
+  --ink-shadow-gold: 0 0 24px rgba(200, 168, 88, 0.2);
+  --ink-shadow-vermilion: 0 0 24px rgba(192, 57, 43, 0.2);
+  --ink-shadow-inset: inset 0 1px 0 rgba(200, 168, 88, 0.08);
+  --ink-shadow-inset-deep: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+  --ink-blur-panel: blur(8px);
+
+  /* 间距 */
+  --ink-space-1: 4px;
+  --ink-space-2: 8px;
+  --ink-space-3: 12px;
+  --ink-space-4: 16px;
+  --ink-space-5: 24px;
+  --ink-space-6: 32px;
+  --ink-space-8: 48px;
+
+  /* 控件尺寸 */
+  --ink-control-h-sm: 28px;
+  --ink-control-h-md: 36px;
+  --ink-control-h-lg: 44px;
+
+  /* Tailwind v4 语义别名 — 供 fill-html-head 生成 @theme inline 桥接（ink 前缀版） */
+  --ink-background: var(--bg-base-default);
+  --ink-foreground: var(--text-default);
+  --ink-card: var(--bg-base-secondary);
+  --ink-card-foreground: var(--text-default);
+  --ink-popover: var(--ink-bg-panel-solid);
+  --ink-popover-foreground: var(--text-default);
+  --ink-primary: var(--bg-brand);
+  --ink-primary-foreground: var(--text-on-brand);
+  --ink-secondary: var(--bg-base-tertiary);
+  --ink-secondary-foreground: var(--text-secondary);
+  --ink-muted: var(--bg-base-tertiary);
+  --ink-muted-foreground: var(--text-tertiary);
+  --ink-accent: var(--ink-bronze-primary);
+  --ink-accent-foreground: var(--text-default);
+  --ink-destructive: var(--ink-vermilion-primary);
+  --ink-destructive-foreground: var(--text-default);
+  --ink-border: var(--ink-border-gold);
+  --ink-input: var(--ink-border-gold);
+  --ink-ring: var(--ink-gold-primary);
+  --ink-radius-small: var(--ink-radius-sm);
+  --ink-radius-medium: var(--ink-radius-md);
+  --ink-radius-large: var(--ink-radius-lg);
+  --ink-radius-xlarge: var(--ink-radius-lg);
+}
+
+/* ---------- 基础重置 ---------- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg-base-default);
+  color: var(--text-default);
+  font-family: var(--ink-font-body);
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* 游戏沉浸根容器 */
+.ink-game-root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-base-default);
+}
+
+/* 全局水墨背景层 */
+.ink-bg-layer {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(200, 168, 88, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(184, 115, 51, 0.04) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(10, 11, 16, 0.8) 0%, transparent 60%),
+    var(--bg-base-default);
+  pointer-events: none;
+  z-index: 0;
+}
+.ink-bg-layer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+}
+
+/* 暗角晕影 */
+.ink-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.55) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ---------- 面板系统 ---------- */
+.ink-panel {
+  position: relative;
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  -webkit-backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-inset), var(--ink-shadow-soft);
+  border-radius: var(--ink-radius-md);
+}
+.ink-panel-solid {
+  background: var(--ink-bg-panel-solid);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-inset);
+  border-radius: var(--ink-radius-md);
+}
+.ink-panel-elevated {
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-panel);
+  border-radius: var(--ink-radius-md);
+}
+
+/* 纸色面板 — yy- 引入，卷轴/信笺/对话框专用 */
+.ink-paper-panel {
+  position: relative;
+  background: var(--ink-paper-panel-bg);
+  border: 1px solid var(--ink-paper-panel-border);
+  border-radius: var(--ink-radius-md);
+  box-shadow: var(--ink-paper-panel-shadow);
+  color: var(--text-on-paper);
+  overflow: hidden;
+}
+.ink-paper-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.3'/%3E%3C/svg%3E");
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+/* 水墨笔触描边 — 多层错位金线模拟飞白 */
+.ink-brush-border {
+  position: relative;
+  border: 1px solid var(--ink-border-gold);
+  box-shadow:
+    inset 0 0 0 1px rgba(200, 168, 88, 0.05),
+    0 0 0 1px rgba(200, 168, 88, 0.08),
+    0 1px 0 rgba(200, 168, 88, 0.1);
+}
+.ink-brush-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1px solid transparent;
+  border-image: linear-gradient(135deg, rgba(200, 168, 88, 0.4) 0%, rgba(200, 168, 88, 0.08) 40%, rgba(184, 115, 51, 0.3) 100%) 1;
+  pointer-events: none;
+}
+
+/* 面板四角装饰 */
+.ink-corner-deco {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--ink-gold-primary);
+  opacity: 0.7;
+}
+.ink-corner-deco.tl { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+.ink-corner-deco.tr { top: -1px; right: -1px; border-left: none; border-bottom: none; }
+.ink-corner-deco.bl { bottom: -1px; left: -1px; border-right: none; border-top: none; }
+.ink-corner-deco.br { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+/* 面板标题栏 */
+.ink-panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--ink-space-2);
+  padding: var(--ink-space-3) var(--ink-space-4);
+  border-bottom: 1px solid var(--ink-divider);
+  font-family: var(--ink-font-heading);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-brand);
+  letter-spacing: 2px;
+}
+.ink-panel-title::before {
+  content: "";
+  width: 3px;
+  height: 16px;
+  background: linear-gradient(180deg, var(--ink-gold-bright), var(--ink-gold-deep));
+  border-radius: var(--ink-radius-sm);
+}
+
+/* ---------- 排版 ---------- */
+.ink-text-display {
+  font-family: var(--ink-font-display);
+  font-size: 32px;
+  color: var(--text-brand);
+  letter-spacing: 4px;
+  line-height: 1.2;
+}
+.ink-text-heading {
+  font-family: var(--ink-font-heading);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-default);
+  letter-spacing: 1px;
+}
+.ink-text-subheading {
+  font-family: var(--ink-font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}
+.ink-text-body {
+  font-family: var(--ink-font-body);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+.ink-text-caption {
+  font-family: var(--ink-font-body);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.ink-text-number {
+  font-family: var(--ink-font-number);
+  font-weight: 700;
+  color: var(--text-brand);
+}
+
+/* 竖排标题 — yy- 引入，加载页/章节过场专用 */
+.ink-vertical-title {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-family: var(--ink-font-display);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  line-height: 2.0;
+  color: var(--text-brand);
+}
+
+/* ---------- 按钮 ---------- */
+.ink-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ink-space-2);
+  height: var(--ink-control-h-md);
+  padding: 0 var(--ink-space-4);
+  font-family: var(--ink-font-heading);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: var(--text-default);
+  background: var(--bg-base-tertiary);
+  border: 1px solid var(--ink-border-gold);
+  border-radius: var(--ink-radius-sm);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+.ink-btn:hover {
+  background: var(--bg-base-elevated);
+  border-color: var(--ink-border-gold-strong);
+  color: var(--text-brand);
+}
+.ink-btn:active { transform: translateY(1px); }
+.ink-btn-primary {
+  color: var(--text-on-brand);
+  background: linear-gradient(135deg, var(--ink-gold-bright), var(--ink-gold-deep));
+  border-color: var(--ink-gold-primary);
+  box-shadow: var(--ink-shadow-gold);
+}
+.ink-btn-primary:hover {
+  color: var(--text-on-brand);
+  background: linear-gradient(135deg, var(--ink-gold-primary), var(--ink-gold-deep));
+  border-color: var(--ink-gold-bright);
+}
+/* 朱红按钮 — 战斗/危险操作 */
+.ink-btn-vermilion {
+  color: var(--ink-paper-bright);
+  background: linear-gradient(135deg, var(--ink-vermilion-primary), var(--ink-vermilion-deep));
+  border-color: var(--ink-vermilion-deep);
+  box-shadow: var(--ink-shadow-vermilion);
+}
+.ink-btn-vermilion:hover {
+  color: var(--ink-paper-bright);
+  background: linear-gradient(135deg, var(--ink-vermilion-bright), var(--ink-vermilion-primary));
+  border-color: var(--ink-vermilion-bright);
+}
+.ink-btn-ghost {
+  background: transparent;
+  border-color: var(--border-neutral-l2);
+  color: var(--text-secondary);
+}
+.ink-btn-ghost:hover {
+  background: rgba(200, 168, 88, 0.06);
+  border-color: var(--ink-border-gold);
+  color: var(--text-brand);
+}
+.ink-btn-sm { height: var(--ink-control-h-sm); font-size: 12px; padding: 0 var(--ink-space-3); }
+.ink-btn-lg { height: var(--ink-control-h-lg); font-size: 15px; padding: 0 var(--ink-space-5); }
+
+/* ---------- 标签 / 徽章 ---------- */
+.ink-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-family: var(--ink-font-body);
+  color: var(--text-secondary);
+  background: rgba(200, 168, 88, 0.08);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  letter-spacing: 1px;
+}
+.ink-tag-brand {
+  color: var(--text-brand);
+  background: rgba(200, 168, 88, 0.12);
+  border-color: var(--ink-border-gold);
+}
+.ink-tag-vermilion {
+  color: var(--text-vermilion);
+  background: rgba(192, 57, 43, 0.12);
+  border-color: var(--ink-border-vermilion);
+}
+
+/* 品质色 */
+.ink-q-common { color: var(--ink-quality-common); border-color: var(--ink-quality-common); }
+.ink-q-uncommon { color: var(--ink-quality-uncommon); border-color: var(--ink-quality-uncommon); }
+.ink-q-rare { color: var(--ink-quality-rare); border-color: var(--ink-quality-rare); }
+.ink-q-epic { color: var(--ink-quality-epic); border-color: var(--ink-quality-epic); }
+.ink-q-legendary { color: var(--ink-quality-legendary); border-color: var(--ink-quality-legendary); box-shadow: 0 0 12px rgba(192, 57, 43, 0.3); }
+
+/* ---------- 进度条 ---------- */
+.ink-bar {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  overflow: hidden;
+}
+.ink-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ink-gold-deep), var(--ink-gold-bright));
+  border-radius: var(--ink-radius-sm);
+  box-shadow: 0 0 8px rgba(200, 168, 88, 0.3);
+  transition: width 0.4s ease;
+}
+.ink-bar-fill-jade { background: linear-gradient(90deg, #3E6B5E, var(--ink-jade-bright)); box-shadow: 0 0 8px rgba(94, 139, 126, 0.3); }
+.ink-bar-fill-blood { background: linear-gradient(90deg, #8A3E3A, var(--ink-blood-bright)); box-shadow: 0 0 8px rgba(184, 84, 80, 0.3); }
+/* 朱红进度条 — 气血/战斗 */
+.ink-bar-fill-vermilion { background: linear-gradient(90deg, var(--ink-vermilion-deep), var(--ink-vermilion-bright)); box-shadow: 0 0 8px rgba(192, 57, 43, 0.3); }
+.ink-bar-thin { height: 4px; }
+
+/* 竖向属性条 */
+.ink-bar-v {
+  position: relative;
+  width: 8px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  overflow: hidden;
+  display: inline-block;
+}
+.ink-bar-v-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(0deg, var(--ink-gold-deep), var(--ink-gold-bright));
+  border-radius: var(--ink-radius-sm);
+}
+
+/* ---------- 网格格子（背包/技能槽） ---------- */
+.ink-cell {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ink-cell:hover {
+  border-color: var(--ink-border-gold-strong);
+  background: rgba(200, 168, 88, 0.08);
+}
+.ink-cell-quality { border-width: 1px; border-style: solid; }
+.ink-cell-badge {
+  position: absolute;
+  bottom: 1px;
+  right: 2px;
+  font-family: var(--ink-font-number);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-default);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+/* ---------- 列表项 ---------- */
+.ink-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--ink-space-3);
+  padding: var(--ink-space-3) var(--ink-space-4);
+  border-bottom: 1px solid var(--ink-divider);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.ink-list-item:hover { background: rgba(200, 168, 88, 0.05); }
+.ink-list-item.active {
+  background: rgba(200, 168, 88, 0.1);
+  border-left: 2px solid var(--ink-gold-primary);
+}
+
+/* ---------- 头像 / 圆点 ---------- */
+.ink-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ink-radius-md);
+  border: 1px solid var(--ink-border-gold);
+  background: var(--bg-base-tertiary);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.ink-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--ink-quality-common);
+}
+.ink-dot-online { background: var(--ink-quality-uncommon); box-shadow: 0 0 6px rgba(107, 142, 90, 0.6); }
+
+/* ---------- 分割线 ---------- */
+.ink-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ink-divider) 20%, var(--ink-divider) 80%, transparent);
+  border: none;
+}
+.ink-divider-v {
+  width: 1px;
+  align-self: stretch;
+  background: linear-gradient(180deg, transparent, var(--ink-divider) 20%, var(--ink-divider) 80%, transparent);
+}
+
+/* ---------- 水墨晕染装饰 — yy- 引入 ---------- */
+.ink-splash { position: absolute; border-radius: 50%; filter: blur(15px); opacity: 0.3; pointer-events: none; }
+.ink-splash-1 { width: 300px; height: 300px; background: radial-gradient(circle, var(--bg-base-tertiary) 0%, transparent 70%); }
+.ink-splash-2 { width: 200px; height: 200px; background: radial-gradient(circle, var(--bg-base-elevated) 0%, transparent 70%); }
+.ink-splash-vermilion { width: 250px; height: 250px; background: radial-gradient(circle, rgba(192, 57, 43, 0.15) 0%, transparent 70%); }
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+::-webkit-scrollbar-thumb {
+  background: rgba(200, 168, 88, 0.25);
+  border-radius: var(--ink-radius-sm);
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(200, 168, 88, 0.45); }
+
+/* ---------- 选中态 ---------- */
+::selection { background: rgba(200, 168, 88, 0.3); color: var(--text-default); }
+
+/* ---------- 辅助 ---------- */
+.ink-flex { display: flex; }
+.ink-flex-col { display: flex; flex-direction: column; }
+.ink-items-center { align-items: center; }
+.ink-justify-between { justify-content: space-between; }
+.ink-gap-2 { gap: var(--ink-space-2); }
+.ink-gap-3 { gap: var(--ink-space-3); }
+.ink-gap-4 { gap: var(--ink-space-4); }
+.ink-flex-1 { flex: 1; }
+.ink-text-center { text-align: center; }
+.ink-text-right { text-align: right; }
+.ink-overflow-auto { overflow: auto; }
+.ink-overflow-hidden { overflow: hidden; }
+.ink-relative { position: relative; }
+.ink-absolute { position: absolute; }
+.ink-pointer { cursor: pointer; }
+
+/* 通用内容层（在背景层之上） */
+.ink-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+}
+
+/* 返回按钮 */
+.ink-back-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  border-radius: var(--ink-radius-sm);
+  color: var(--text-brand);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.ink-back-btn:hover {
+  background: rgba(200, 168, 88, 0.12);
+  border-color: var(--ink-border-gold-strong);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--ink-background);
+    --color-foreground: var(--ink-foreground);
+    --color-card: var(--ink-card);
+    --color-card-foreground: var(--ink-card-foreground);
+    --color-popover: var(--ink-popover);
+    --color-popover-foreground: var(--ink-popover-foreground);
+    --color-primary: var(--ink-primary);
+    --color-primary-foreground: var(--ink-primary-foreground);
+    --color-secondary: var(--ink-secondary);
+    --color-secondary-foreground: var(--ink-secondary-foreground);
+    --color-muted: var(--ink-muted);
+    --color-muted-foreground: var(--ink-muted-foreground);
+    --color-accent: var(--ink-accent);
+    --color-accent-foreground: var(--ink-accent-foreground);
+    --color-destructive: var(--ink-destructive);
+    --color-destructive-foreground: var(--ink-destructive-foreground);
+    --color-border: var(--ink-border);
+    --color-input: var(--ink-input);
+    --color-ring: var(--ink-ring);
+    --radius-sm: var(--ink-radius-small);
+    --radius-md: var(--ink-radius-medium);
+    --radius-lg: var(--ink-radius-large);
+    --radius-xl: var(--ink-radius-xlarge);
+  }
+  @layer base {
+    body { background: var(--ink-background); color: var(--ink-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+  <main class="combat-hud-root" role="application" aria-label="战斗界面抬头显示">
+
+    <!-- ============ 隐藏退出按钮（链路终点，无可见出口） ============ -->
+    <button class="hud-exit-hidden" data-dom-id="back-hud" aria-label="退出战斗界面" tabindex="-1"></button>
+
+    <!-- ============ 1. 背景层：暗色渐变 + 水墨晕染装饰 ============ -->
+    <div class="hud-background" aria-hidden="true">
+      <div class="ink-splash ink-splash-1" style="top:-60px; left:-40px;"></div>
+      <div class="ink-splash ink-splash-2" style="top:30%; right:-50px;"></div>
+      <div class="ink-splash ink-splash-3" style="bottom:-80px; left:35%;"></div>
+      <div class="ink-splash ink-splash-vermilion" style="top:55%; left:-60px;"></div>
+      <!-- 远景墨山剪影 -->
+      <div class="ink-mountain mountain-1"></div>
+      <div class="ink-mountain mountain-2"></div>
+      <!-- 场景占位文字 -->
+      <div class="scene-placeholder">
+        <i data-lucide="mountain-snow" class="scene-icon"></i>
+        <span class="scene-label">游戏场景 · 墨麒麟巢穴</span>
+      </div>
+    </div>
+
+    <!-- ============ 9. 小地图（左上角） ============ -->
+    <section class="hud-minimap" aria-label="小地图">
+      <div class="minimap-frame">
+        <div class="minimap-disc">
+          <span class="compass compass-n">北</span>
+          <span class="compass compass-s">南</span>
+          <span class="compass compass-w">西</span>
+          <span class="compass compass-e">东</span>
+          <div class="minimap-terrain"></div>
+          <span class="map-dot dot-player" title="自己"></span>
+          <span class="map-dot dot-enemy" style="top:32%; left:58%;" title="敌人"></span>
+          <span class="map-dot dot-enemy" style="top:46%; left:64%;" title="敌人"></span>
+          <span class="map-dot dot-ally" style="top:62%; left:42%;" title="队友"></span>
+          <span class="map-dot dot-ally" style="top:70%; left:50%;" title="队友"></span>
+          <span class="map-dot dot-ally" style="top:58%; left:38%;" title="队友"></span>
+          <div class="minimap-vision"></div>
+        </div>
+        <div class="minimap-coord">
+          <i data-lucide="navigation" class="coord-icon"></i>
+          <span>昆仑墟 · 深渊</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 5. 目标信息（顶部中央） ============ -->
+    <section class="hud-target" aria-label="目标信息">
+      <div class="target-frame">
+        <div class="target-header">
+          <div class="target-identity">
+            <span class="target-avatar">麟</span>
+            <div class="target-text">
+              <div class="target-name-row">
+                <span class="target-name">墨麒麟</span>
+                <span class="ink-tag ink-tag-vermilion target-badge">传说</span>
+              </div>
+              <span class="target-level">Lv. 50 · 首领</span>
+            </div>
+          </div>
+          <div class="target-distance">
+            <i data-lucide="locate-fixed" class="distance-icon"></i>
+            <span>18m</span>
+          </div>
+        </div>
+        <div class="target-hp">
+          <div class="ink-bar target-hp-bar" style="height:10px;">
+            <div class="ink-bar-fill ink-bar-fill-vermilion" style="width:74%;"></div>
+          </div>
+          <span class="target-hp-text">18,500 / 25,000</span>
+        </div>
+        <div class="target-meta">
+          <span class="target-tag"><i data-lucide="swords" class="meta-icon"></i>弱点·雷</span>
+          <span class="target-tag target-tag-warn"><i data-lucide="shield-alert" class="meta-icon"></i>狂暴 imminent</span>
+          <span class="target-tag"><i data-lucide="clock" class="meta-icon"></i>剩余 03:42</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 6. 队伍状态（右上角） ============ -->
+    <section class="hud-party" aria-label="队伍状态">
+      <div class="party-header">
+        <span class="party-title"><i data-lucide="users" class="party-icon"></i>队伍 (4/4)</span>
+        <span class="ink-tag ink-tag-brand party-sync">同步</span>
+      </div>
+      <ul class="party-list">
+        <li class="party-member">
+          <span class="member-avatar avatar-jade">青</span>
+          <div class="member-body">
+            <div class="member-top">
+              <span class="member-name">青云剑客</span>
+              <span class="member-level">Lv.40</span>
+            </div>
+            <div class="ink-bar member-hp" style="height:6px;">
+              <div class="ink-bar-fill ink-bar-fill-jade" style="width:80%;"></div>
+            </div>
+            <div class="member-foot">
+              <span class="member-mp-label">内力</span>
+              <div class="ink-bar member-mp" style="height:3px;">
+                <div class="ink-bar-fill" style="width:92%;"></div>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li class="party-member">
+          <span class="member-avatar avatar-jade">紫</span>
+          <div class="member-body">
+            <div class="member-top">
+              <span class="member-name">紫霞仙子</span>
+              <span class="member-level">Lv.38</span>
+            </div>
+            <div class="ink-bar member-hp" style="height:6px;">
+              <div class="ink-bar-fill ink-bar-fill-jade" style="width:65%;"></div>
+            </div>
+            <div class="member-foot">
+              <span class="member-mp-label">内力</span>
+              <div class="ink-bar member-mp" style="height:3px;">
+                <div class="ink-bar-fill" style="width:70%;"></div>
+              </div>
+            </div>
+          </div>
+        </li>
+        <li class="party-member member-low">
+          <span class="member-avatar avatar-vermilion">铁</span>
+          <div class="member-body">
+            <div class="member-top">
+              <span class="member-name">铁拳和尚</span>
+              <span class="member-level">Lv.41</span>
+            </div>
+            <div class="ink-bar member-hp" style="height:6px;">
+              <div class="ink-bar-fill ink-bar-fill-vermilion" style="width:25%;"></div>
+            </div>
+            <div class="member-foot">
+              <span class="member-mp-label">内力</span>
+              <div class="ink-bar member-mp" style="height:3px;">
+                <div class="ink-bar-fill" style="width:48%;"></div>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ============ 8. 增益/减益列表（右上角，队伍下方） ============ -->
+    <section class="hud-buffs" aria-label="自身增益减益">
+      <div class="buffs-header">
+        <span class="buffs-title"><i data-lucide="sparkles" class="buffs-icon"></i>状态效果</span>
+      </div>
+      <ul class="buffs-list">
+        <li class="buff-item buff-positive">
+          <span class="buff-glyph buff-glyph-gold">攻</span>
+          <div class="buff-info">
+            <span class="buff-name">攻击力 +10%</span>
+            <span class="buff-time">5:30</span>
+          </div>
+        </li>
+        <li class="buff-item buff-positive">
+          <span class="buff-glyph buff-glyph-jade">防</span>
+          <div class="buff-info">
+            <span class="buff-name">防御力 +15%</span>
+            <span class="buff-time">8:45</span>
+          </div>
+        </li>
+        <li class="buff-item buff-negative">
+          <span class="buff-glyph buff-glyph-vermilion">毒</span>
+          <div class="buff-info">
+            <span class="buff-name buff-name-warn">中毒 · 每秒 -120</span>
+            <span class="buff-time buff-time-warn">2:15</span>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <!-- ============ 7. 连击计数器（左侧中央） ============ -->
+    <section class="hud-combo" aria-label="连击数">
+      <div class="combo-wrap">
+        <div class="combo-label">
+          <i data-lucide="flame" class="combo-icon"></i>
+          <span>连击</span>
+        </div>
+        <div class="combo-number">23</div>
+        <div class="combo-sub">COMBO</div>
+        <div class="ink-bar ink-bar-thin combo-timer" style="width:60px;">
+          <div class="ink-bar-fill" style="width:68%;"></div>
+        </div>
+        <div class="combo-hint">倍率 ×1.8</div>
+      </div>
+    </section>
+
+    <!-- ============ 2. 玩家状态（左下角） ============ -->
+    <section class="hud-player" aria-label="玩家状态">
+      <div class="player-frame">
+        <span class="player-avatar">客</span>
+        <div class="player-body">
+          <div class="player-top">
+            <span class="player-name">江湖过客</span>
+            <span class="player-level">Lv.42</span>
+            <span class="ink-tag ink-tag-brand player-class">剑客</span>
+          </div>
+          <div class="player-hp">
+            <div class="ink-bar" style="height:12px; width:280px;">
+              <div class="ink-bar-fill ink-bar-fill-vermilion" style="width:100%;"></div>
+            </div>
+            <span class="player-hp-text">12,450 / 12,450</span>
+          </div>
+          <div class="player-mp">
+            <div class="ink-bar" style="height:8px; width:280px;">
+              <div class="ink-bar-fill" style="width:92.5%;"></div>
+            </div>
+            <span class="player-mp-text">1,850 / 2,000</span>
+          </div>
+          <div class="player-xp">
+            <span class="xp-label">经验</span>
+            <div class="ink-bar ink-bar-thin" style="height:2px; width:280px;">
+              <div class="ink-bar-fill ink-bar-fill-jade" style="width:54%;"></div>
+            </div>
+          </div>
+          <div class="player-buffs" role="list">
+            <span class="player-buff" role="listitem" title="攻击力+10% 剩余 5:30">
+              <span class="player-buff-glyph">攻</span>
+              <span class="player-buff-time">5:30</span>
+            </span>
+            <span class="player-buff" role="listitem" title="防御力+15% 剩余 8:45">
+              <span class="player-buff-glyph">防</span>
+              <span class="player-buff-time">8:45</span>
+            </span>
+            <span class="player-buff" role="listitem" title="轻功加速 剩余 0:18">
+              <span class="player-buff-glyph">轻</span>
+              <span class="player-buff-time">0:18</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 3. 技能栏（底部中央） ============ -->
+    <section class="hud-skillbar" aria-label="技能栏">
+      <div class="skillbar-row">
+        <button class="skill-slot skill-ready" type="button" aria-label="剑招 按键1">
+          <span class="skill-glyph">剑</span>
+          <span class="skill-key">1</span>
+        </button>
+        <button class="skill-slot skill-cooldown" type="button" aria-label="遁术 按键2 冷却中">
+          <span class="skill-glyph">遁</span>
+          <span class="skill-key">2</span>
+          <span class="cooldown-overlay" style="--cooldown-angle:108deg;">
+            <span class="cooldown-number">3</span>
+          </span>
+        </button>
+        <button class="skill-slot skill-ready" type="button" aria-label="防御 按键3">
+          <span class="skill-glyph">防</span>
+          <span class="skill-key">3</span>
+        </button>
+        <button class="skill-slot skill-ready" type="button" aria-label="强攻 按键4">
+          <span class="skill-glyph">攻</span>
+          <span class="skill-key">4</span>
+        </button>
+        <button class="skill-slot skill-cooldown" type="button" aria-label="轻功 按键Q 冷却中">
+          <span class="skill-glyph">轻</span>
+          <span class="skill-key">Q</span>
+          <span class="cooldown-overlay" style="--cooldown-angle:192deg;">
+            <span class="cooldown-number">8</span>
+          </span>
+        </button>
+        <button class="skill-slot skill-ultimate" type="button" aria-label="绝学 按键E 就绪">
+          <span class="skill-glyph">绝</span>
+          <span class="skill-key">E</span>
+          <span class="ultimate-glow"></span>
+        </button>
+        <button class="skill-slot skill-ready" type="button" aria-label="服药 按键R">
+          <span class="skill-glyph">药</span>
+          <span class="skill-key">R</span>
+        </button>
+        <button class="skill-slot skill-ready" type="button" aria-label="进食 按键F">
+          <span class="skill-glyph">食</span>
+          <span class="skill-key">F</span>
+        </button>
+      </div>
+      <div class="skillbar-hint">
+        <i data-lucide="keyboard" class="hint-icon"></i>
+        <span>数字键 / Q E R F 释放 · 长按蓄力</span>
+      </div>
+    </section>
+
+    <!-- ============ 4. 道具栏（右下角） ============ -->
+    <section class="hud-items" aria-label="道具栏">
+      <div class="items-header">
+        <span class="items-title"><i data-lucide="backpack" class="items-icon"></i>道具</span>
+      </div>
+      <div class="items-column">
+        <button class="item-slot item-vermilion" type="button" aria-label="回血丹 ×5">
+          <span class="item-glyph">血</span>
+          <span class="item-count">×5</span>
+        </button>
+        <button class="item-slot item-gold" type="button" aria-label="回气丹 ×3">
+          <span class="item-glyph">气</span>
+          <span class="item-count">×3</span>
+        </button>
+        <button class="item-slot item-jade" type="button" aria-label="解毒散 ×2">
+          <span class="item-glyph">解</span>
+          <span class="item-count">×2</span>
+        </button>
+        <button class="item-slot item-gray" type="button" aria-label="烟幕弹 ×1">
+          <span class="item-glyph">烟</span>
+          <span class="item-count">×1</span>
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============ 自定义样式（FullHtmlReplaceHead 模式：置于 body 内） ============ -->
+  <style>
+    /* ---------- 战斗 HUD 全局 ---------- */
+    .combat-hud-root {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      font-family: var(--ink-font-body);
+      color: var(--ink-paper-bright);
+      pointer-events: none;
+    }
+    .combat-hud-root > section,
+    .combat-hud-root .hud-background .scene-placeholder {
+      pointer-events: none;
+    }
+    .combat-hud-root button {
+      pointer-events: auto;
+    }
+
+    /* ---------- 隐藏退出按钮 ---------- */
+    .hud-exit-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+      top: 0;
+      left: 0;
+      border: none;
+      background: transparent;
+      padding: 0;
+    }
+
+    /* ---------- 背景层 ---------- */
+    .hud-background {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--bg-base-secondary) 0%, var(--bg-base-default) 100%);
+      z-index: 0;
+    }
+    .ink-splash-3 {
+      width: 360px;
+      height: 360px;
+      background: radial-gradient(circle, var(--bg-base-elevated) 0%, transparent 70%);
+      border-radius: 50%;
+      filter: blur(20px);
+      opacity: 0.25;
+      position: absolute;
+    }
+    .ink-mountain {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 180px;
+      background: linear-gradient(180deg, transparent 0%, rgba(14, 16, 22, 0.9) 100%);
+      pointer-events: none;
+    }
+    .mountain-1 {
+      clip-path: polygon(0 100%, 0 62%, 14% 40%, 26% 58%, 38% 30%, 52% 52%, 66% 36%, 80% 56%, 92% 42%, 100% 60%, 100% 100%);
+      background: linear-gradient(180deg, rgba(28, 31, 40, 0.5) 0%, rgba(14, 16, 22, 0.95) 100%);
+      opacity: 0.7;
+      height: 220px;
+    }
+    .mountain-2 {
+      clip-path: polygon(0 100%, 0 74%, 12% 60%, 24% 70%, 36% 52%, 50% 66%, 62% 56%, 76% 68%, 88% 58%, 100% 70%, 100% 100%);
+      background: linear-gradient(180deg, rgba(20, 23, 30, 0.7) 0%, rgba(14, 16, 22, 1) 100%);
+      opacity: 0.9;
+    }
+    .scene-placeholder {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--ink-space-2);
+      color: var(--text-tertiary);
+      opacity: 0.4;
+      font-family: var(--ink-font-display);
+      letter-spacing: 0.2em;
+    }
+    .scene-icon {
+      width: 56px;
+      height: 56px;
+      stroke-width: 1;
+    }
+    .scene-label {
+      font-size: 18px;
+    }
+
+    /* ---------- 通用 HUD 面板定位 ---------- */
+    .hud-minimap,
+    .hud-target,
+    .hud-party,
+    .hud-buffs,
+    .hud-combo,
+    .hud-player,
+    .hud-skillbar,
+    .hud-items {
+      position: absolute;
+      z-index: 10;
+      opacity: 0.92;
+    }
+
+    /* ---------- 9. 小地图（左上） ---------- */
+    .hud-minimap {
+      top: var(--ink-space-5);
+      left: var(--ink-space-5);
+    }
+    .minimap-frame {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--ink-space-1);
+    }
+    .minimap-disc {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      border-radius: var(--radius-full);
+      background: radial-gradient(circle, var(--bg-base-tertiary) 0%, var(--ink-bg-abyss) 100%);
+      border: 2px solid var(--ink-border-gold);
+      box-shadow: 0 0 12px rgba(200, 168, 88, 0.15), inset 0 0 18px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+    }
+    .minimap-terrain {
+      position: absolute;
+      inset: 6px;
+      border-radius: var(--radius-full);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cpath d='M10 80 Q30 60 50 70 T90 65 T110 75' fill='none' stroke='%234a4a4a' stroke-width='1' opacity='0.5'/%3E%3Cpath d='M20 40 Q45 30 60 45 T100 40' fill='none' stroke='%233d3d3d' stroke-width='1' opacity='0.4'/%3E%3Ccircle cx='60' cy='60' r='30' fill='none' stroke='%23c8a858' stroke-width='0.5' opacity='0.2'/%3E%3C/svg%3E");
+      opacity: 0.6;
+    }
+    .compass {
+      position: absolute;
+      font-family: var(--ink-font-display);
+      font-size: 11px;
+      color: var(--ink-gold-bright);
+      opacity: 0.8;
+    }
+    .compass-n { top: 3px; left: 50%; transform: translateX(-50%); }
+    .compass-s { bottom: 3px; left: 50%; transform: translateX(-50%); color: var(--ink-paper-faded); }
+    .compass-w { left: 4px; top: 50%; transform: translateY(-50%); color: var(--ink-paper-faded); }
+    .compass-e { right: 4px; top: 50%; transform: translateY(-50%); color: var(--ink-paper-faded); }
+    .map-dot {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-radius: var(--radius-full);
+      transform: translate(-50%, -50%);
+    }
+    .dot-player {
+      top: 50%;
+      left: 50%;
+      width: 8px;
+      height: 8px;
+      background: var(--ink-gold-bright);
+      box-shadow: 0 0 6px var(--ink-gold-bright);
+    }
+    .dot-enemy { background: var(--ink-vermilion-bright); box-shadow: 0 0 4px var(--ink-vermilion-primary); }
+    .dot-ally { background: var(--ink-jade-bright); box-shadow: 0 0 4px var(--ink-jade-primary); }
+    .minimap-vision {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 70px;
+      height: 70px;
+      transform: translate(-50%, -100%);
+      background: conic-gradient(from -30deg, rgba(200, 168, 88, 0.25) 0deg, rgba(200, 168, 88, 0.25) 60deg, transparent 60deg);
+      transform-origin: bottom center;
+      pointer-events: none;
+    }
+    .minimap-coord {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--ink-paper-aged);
+      font-family: var(--ink-font-display);
+    }
+    .coord-icon { width: 12px; height: 12px; color: var(--ink-gold-primary); }
+
+    /* ---------- 5. 目标信息（顶部中央） ---------- */
+    .hud-target {
+      top: var(--ink-space-5);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 360px;
+    }
+    .target-frame {
+      background: linear-gradient(135deg, rgba(28, 31, 40, 0.92) 0%, rgba(14, 16, 22, 0.92) 100%);
+      border: 1px solid var(--ink-vermilion-deep);
+      border-radius: var(--ink-radius-lg);
+      padding: var(--ink-space-2) var(--ink-space-4);
+      box-shadow: 0 0 16px rgba(192, 57, 43, 0.18);
+      position: relative;
+      overflow: hidden;
+    }
+    .target-frame::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.18 0 0 0 0 0.18 0 0 0 0 0.18 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      opacity: 0.4;
+      pointer-events: none;
+    }
+    .target-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 1;
+    }
+    .target-identity { display: flex; align-items: center; gap: var(--ink-space-2); }
+    .target-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--ink-radius-md);
+      background: linear-gradient(135deg, var(--ink-vermilion-primary) 0%, var(--ink-vermilion-deep) 100%);
+      border: 1px solid var(--ink-vermilion-bright);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--ink-font-display);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink-paper-bright);
+    }
+    .target-text { display: flex; flex-direction: column; gap: 2px; }
+    .target-name-row { display: flex; align-items: center; gap: var(--ink-space-2); }
+    .target-name {
+      font-family: var(--ink-font-display);
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ink-vermilion-bright);
+      letter-spacing: 0.05em;
+    }
+    .target-badge { font-size: 10px; }
+    .target-level {
+      font-size: 12px;
+      color: var(--ink-paper-faded);
+    }
+    .target-distance {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--ink-paper-aged);
+    }
+    .distance-icon { width: 12px; height: 12px; color: var(--ink-vermilion-bright); }
+    .target-hp {
+      position: relative;
+      z-index: 1;
+      margin-top: var(--ink-space-2);
+      display: flex;
+      align-items: center;
+      gap: var(--ink-space-2);
+    }
+    .target-hp-bar { flex: 1; width: 300px; }
+    .target-hp-text {
+      font-size: 10px;
+      color: var(--ink-paper-bright);
+      font-family: var(--ink-font-number);
+      white-space: nowrap;
+    }
+    .target-meta {
+      position: relative;
+      z-index: 1;
+      margin-top: var(--ink-space-1);
+      display: flex;
+      gap: var(--ink-space-2);
+      flex-wrap: wrap;
+    }
+    .target-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 10px;
+      color: var(--ink-paper-aged);
+      padding: 1px 6px;
+      border: 1px solid var(--border-neutral-l1);
+      border-radius: var(--ink-radius-sm);
+    }
+    .target-tag-warn {
+      color: var(--ink-vermilion-bright);
+      border-color: var(--ink-vermilion-deep);
+      background: rgba(192, 57, 43, 0.1);
+    }
+    .meta-icon { width: 11px; height: 11px; }
+
+    /* ---------- 6. 队伍状态（右上） ---------- */
+    .hud-party {
+      top: var(--ink-space-5);
+      right: var(--ink-space-5);
+      width: 220px;
+    }
+    .party-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--ink-space-1);
+    }
+    .party-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--ink-font-display);
+      font-size: 13px;
+      color: var(--ink-gold-bright);
+      font-weight: 500;
+    }
+    .party-icon { width: 14px; height: 14px; }
+    .party-sync { font-size: 10px; }
+    .party-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: var(--ink-space-1);
+    }
+    .party-member {
+      display: flex;
+      align-items: center;
+      gap: var(--ink-space-2);
+      padding: 6px var(--ink-space-2);
+      background: linear-gradient(135deg, rgba(28, 31, 40, 0.85) 0%, rgba(14, 16, 22, 0.85) 100%);
+      border: 1px solid var(--border-neutral-l1);
+      border-left: 2px solid var(--ink-jade-primary);
+      border-radius: var(--ink-radius-md);
+    }
+    .party-member.member-low {
+      border-left-color: var(--ink-vermilion-primary);
+      animation: lowHpPulse 1.6s ease-in-out infinite;
+    }
+    @keyframes lowHpPulse {
+      0%, 100% { box-shadow: 0 0 0 rgba(192, 57, 43, 0); }
+      50% { box-shadow: 0 0 10px rgba(192, 57, 43, 0.35); }
+    }
+    .member-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--ink-font-display);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink-paper-bright);
+      flex-shrink: 0;
+    }
+    .avatar-jade {
+      background: linear-gradient(135deg, var(--ink-jade-primary) 0%, #3E6B5E 100%);
+      border: 1px solid var(--ink-jade-bright);
+    }
+    .avatar-vermilion {
+      background: linear-gradient(135deg, var(--ink-vermilion-primary) 0%, var(--ink-vermilion-deep) 100%);
+      border: 1px solid var(--ink-vermilion-bright);
+    }
+    .member-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .member-top { display: flex; align-items: baseline; justify-content: space-between; }
+    .member-name {
+      font-family: var(--ink-font-display);
+      font-size: 12px;
+      color: var(--ink-paper-bright);
+      font-weight: 500;
+    }
+    .member-level { font-size: 10px; color: var(--ink-paper-faded); }
+    .member-hp { width: 120px; }
+    .member-foot { display: flex; align-items: center; gap: 4px; }
+    .member-mp-label { font-size: 9px; color: var(--ink-paper-dark); }
+    .member-mp { flex: 1; }
+
+    /* ---------- 8. 增益/减益（队伍下方） ---------- */
+    .hud-buffs {
+      top: 256px;
+      right: var(--ink-space-5);
+      width: 220px;
+    }
+    .buffs-header { margin-bottom: var(--ink-space-1); }
+    .buffs-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--ink-font-display);
+      font-size: 13px;
+      color: var(--ink-gold-bright);
+      font-weight: 500;
+    }
+    .buffs-icon { width: 14px; height: 14px; }
+    .buffs-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .buff-item {
+      display: flex;
+      align-items: center;
+      gap: var(--ink-space-2);
+      padding: 4px var(--ink-space-2);
+      background: linear-gradient(135deg, rgba(28, 31, 40, 0.85) 0%, rgba(14, 16, 22, 0.85) 100%);
+      border: 1px solid var(--border-neutral-l1);
+      border-radius: var(--ink-radius-md);
+    }
+    .buff-glyph {
+      width: 24px;
+      height: 24px;
+      border-radius: var(--ink-radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--ink-font-display);
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .buff-glyph-gold { background: rgba(200, 168, 88, 0.15); border: 1px solid var(--ink-gold-deep); color: var(--ink-gold-bright); }
+    .buff-glyph-jade { background: rgba(94, 139, 126, 0.15); border: 1px solid var(--ink-jade-primary); color: var(--ink-jade-bright); }
+    .buff-glyph-vermilion { background: rgba(192, 57, 43, 0.15); border: 1px solid var(--ink-vermilion-deep); color: var(--ink-vermilion-bright); }
+    .buff-info { display: flex; flex-direction: column; gap: 1px; }
+    .buff-name { font-size: 11px; color: var(--ink-paper-bright); }
+    .buff-time { font-size: 10px; color: var(--ink-paper-faded); font-family: var(--ink-font-number); }
+    .buff-name-warn { color: var(--ink-vermilion-bright); }
+    .buff-time-warn { color: var(--ink-vermilion-bright); }
+
+    /* ---------- 7. 连击计数器（左中） ---------- */
+    .hud-combo {
+      top: 50%;
+      left: var(--ink-space-6);
+      transform: translateY(-50%);
+    }
+    .combo-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: var(--ink-space-2) var(--ink-space-4);
+      background: linear-gradient(135deg, rgba(28, 31, 40, 0.7) 0%, rgba(14, 16, 22, 0.7) 100%);
+      border: 1px solid var(--ink-border-gold);
+      border-radius: var(--ink-radius-lg);
+      animation: comboFade 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes comboFade {
+      from { opacity: 0; transform: translateY(-50%) translateX(-20px); }
+      to { opacity: 0.92; transform: translateY(-50%) translateX(0); }
+    }
+    .combo-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--ink-font-display);
+      font-size: 14px;
+      color: var(--ink-gold-bright);
+      letter-spacing: 0.1em;
+    }
+    .combo-icon { width: 14px; height: 14px; color: var(--ink-vermilion-bright); }
+    .combo-number {
+      font-family: var(--ink-font-display);
+      font-size: 48px;
+      font-weight: 900;
+      color: var(--ink-gold-bright);
+      text-shadow: 0 0 15px rgba(200, 168, 88, 0.5);
+      line-height: 1;
+      letter-spacing: 0.02em;
+    }
+    .combo-sub {
+      font-size: 12px;
+      color: var(--ink-paper-faded);
+      letter-spacing: 0.2em;
+      font-family: var(--ink-font-body);
+    }
+    .combo-timer { margin-top: 4px; }
+    .combo-hint {
+      font-size: 10px;
+      color: var(--ink-vermilion-bright);
+      font-family: var(--ink-font-display);
+      margin-top: 2px;
+    }
+
+    /* ---------- 2. 玩家状态（左下） ---------- */
+    .hud-player {
+      bottom: var(--ink-space-5);
+      left: var(--ink-space-5);
+    }
+    .player-frame {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--ink-space-2);
+    }
+    .player-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, var(--ink-gold-primary) 0%, var(--ink-gold-deep) 100%);
+      border: 2px solid var(--ink-gold-bright);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--ink-font-display);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-on-brand);
+      box-shadow: 0 0 10px rgba(200, 168, 88, 0.25);
+      flex-shrink: 0;
+    }
+    .player-body { display: flex; flex-direction: column; gap: 4px; }
+    .player-top {
+      display: flex;
+      align-items: center;
+      gap: var(--ink-space-2);
+    }
+    .player-name {
+      font-family: var(--ink-font-display);
+      font-size: 14px;
+      color: var(--ink-gold-bright);
+      font-weight: 700;
+    }
+    .player-level { font-size: 12px; color: var(--ink-paper-faded); }
+    .player-class { font-size: 10px; }
+    .player-hp, .player-mp {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .player-hp-text, .player-mp-text {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 10px;
+      color: var(--ink-paper-bright);
+      font-family: var(--ink-font-number);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .player-xp {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .xp-label { font-size: 9px; color: var(--ink-paper-dark); }
+    .player-buffs {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .player-buff {
+      position: relative;
+      width: 24px;
+      height: 24px;
+      border-radius: var(--ink-radius-sm);
+      background: rgba(14, 16, 22, 0.8);
+      border: 1px solid var(--ink-jade-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .player-buff-glyph {
+      font-family: var(--ink-font-display);
+      font-size: 12px;
+      color: var(--ink-jade-bright);
+      font-weight: 700;
+    }
+    .player-buff-time {
+      position: absolute;
+      bottom: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 8px;
+      color: var(--ink-paper-faded);
+      font-family: var(--ink-font-number);
+      white-space: nowrap;
+    }
+
+    /* ---------- 3. 技能栏（底部中央） ---------- */
+    .hud-skillbar {
+      bottom: var(--ink-space-5);
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .skillbar-row {
+      display: flex;
+      gap: 4px;
+      padding: 6px;
+      background: linear-gradient(180deg, rgba(20, 23, 30, 0.7) 0%, rgba(14, 16, 22, 0.85) 100%);
+      border: 1px solid var(--ink-border-gold);
+      border-radius: var(--ink-radius-lg);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+    .skill-slot {
+      position: relative;
+      width: 48px;
+      height: 48px;
+      border-radius: var(--ink-radius-md);
+      background: linear-gradient(135deg, var(--bg-base-tertiary) 0%, var(--bg-base-secondary) 100%);
+      border: 1px solid var(--ink-gold-deep);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      overflow: hidden;
+      padding: 0;
+    }
+    .skill-slot:hover {
+      border-color: var(--ink-gold-bright);
+      box-shadow: 0 0 8px rgba(200, 168, 88, 0.3);
+      transform: translateY(-2px);
+    }
+    .skill-slot:focus-visible {
+      outline: 2px solid var(--ink-gold-bright);
+      outline-offset: 1px;
+    }
+    .skill-ready { opacity: 1; }
+    .skill-cooldown { opacity: 0.75; cursor: not-allowed; }
+    .skill-ultimate {
+      border: 2px solid var(--ink-gold-bright);
+      background: linear-gradient(135deg, var(--ink-vermilion-faded) 0%, var(--bg-base-secondary) 100%);
+      box-shadow: 0 0 12px rgba(200, 168, 88, 0.4), inset 0 0 8px rgba(192, 57, 43, 0.2);
+    }
+    .skill-ultimate:hover {
+      box-shadow: 0 0 18px rgba(200, 168, 88, 0.6), inset 0 0 10px rgba(192, 57, 43, 0.3);
+    }
+    .ultimate-glow {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(200, 168, 88, 0.25) 0%, transparent 65%);
+      animation: ultimatePulse 2s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes ultimatePulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+    .skill-glyph {
+      font-family: var(--ink-font-display);
+      font-size: 20px;
+      color: var(--ink-gold-bright);
+      font-weight: 700;
+      z-index: 1;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    }
+    .skill-ultimate .skill-glyph { color: var(--ink-gold-bright); text-shadow: 0 0 8px rgba(200, 168, 88, 0.6); }
+    .skill-key {
+      position: absolute;
+      bottom: 2px;
+      right: 3px;
+      font-size: 10px;
+      color: var(--ink-paper-faded);
+      font-family: var(--ink-font-number);
+      z-index: 2;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+    }
+    .cooldown-overlay {
+      position: absolute;
+      inset: 0;
+      background: conic-gradient(rgba(14, 16, 22, 0.82) 0deg, rgba(14, 16, 22, 0.82) var(--cooldown-angle), transparent var(--cooldown-angle));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 3;
+      pointer-events: none;
+    }
+    .cooldown-number {
+      font-family: var(--ink-font-display);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink-paper-bright);
+      text-shadow: 0 0 6px rgba(0, 0, 0, 0.9);
+    }
+    .skillbar-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: var(--ink-paper-faded);
+      font-family: var(--ink-font-body);
+      opacity: 0.8;
+    }
+    .hint-icon { width: 11px; height: 11px; }
+
+    /* ---------- 4. 道具栏（右下） ---------- */
+    .hud-items {
+      bottom: var(--ink-space-5);
+      right: var(--ink-space-5);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+    .items-header { margin-bottom: 0; }
+    .items-title {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--ink-font-display);
+      font-size: 13px;
+      color: var(--ink-gold-bright);
+      font-weight: 500;
+    }
+    .items-icon { width: 14px; height: 14px; }
+    .items-column {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 6px;
+      background: linear-gradient(180deg, rgba(20, 23, 30, 0.7) 0%, rgba(14, 16, 22, 0.85) 100%);
+      border: 1px solid var(--border-neutral-l1);
+      border-radius: var(--ink-radius-md);
+    }
+    .item-slot {
+      position: relative;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--ink-radius-sm);
+      background: linear-gradient(135deg, var(--bg-base-tertiary) 0%, var(--bg-base-secondary) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 0;
+    }
+    .item-slot:hover {
+      transform: translateX(-2px);
+      box-shadow: 0 0 6px rgba(255, 255, 255, 0.1);
+    }
+    .item-slot:focus-visible {
+      outline: 2px solid var(--ink-gold-bright);
+      outline-offset: 1px;
+    }
+    .item-vermilion { border: 1px solid var(--ink-vermilion-deep); }
+    .item-gold { border: 1px solid var(--ink-gold-deep); }
+    .item-jade { border: 1px solid var(--ink-jade-primary); }
+    .item-gray { border: 1px solid var(--border-neutral-l2); }
+    .item-glyph {
+      font-family: var(--ink-font-display);
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .item-vermilion .item-glyph { color: var(--ink-vermilion-bright); }
+    .item-gold .item-glyph { color: var(--ink-gold-bright); }
+    .item-jade .item-glyph { color: var(--ink-jade-bright); }
+    .item-gray .item-glyph { color: var(--ink-paper-aged); }
+    .item-count {
+      position: absolute;
+      bottom: 1px;
+      right: 2px;
+      font-size: 9px;
+      color: var(--ink-paper-bright);
+      font-family: var(--ink-font-number);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+    }
+
+    /* ---------- 响应式 ---------- */
+    @media (max-width: 768px) {
+      .hud-buffs { display: none; }
+      .hud-combo { left: var(--ink-space-2); }
+      .hud-target { width: 280px; }
+      .target-hp-bar { width: 220px; }
+      .player-hp .ink-bar, .player-mp .ink-bar { width: 200px !important; }
+      .player-xp .ink-bar { width: 200px !important; }
+    }
+    @media (max-width: 540px) {
+      .hud-party { width: 160px; }
+      .member-hp { width: 90px; }
+      .skill-slot { width: 40px; height: 40px; }
+      .skill-glyph { font-size: 16px; }
+    }
+
+    /* ---------- 减少动画偏好 ---------- */
+    @media (prefers-reduced-motion: reduce) {
+      .party-member.member-low,
+      .ultimate-glow,
+      .combo-wrap {
+        animation: none;
+      }
+    }
+  </style>
+
+  <script>
+    if (window.lucide && typeof window.lucide.createIcons === 'function') {
+      window.lucide.createIcons();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+{
+  "root": {
+    "nodeId": "gen-project-shell",
+    "kind": "project-shell",
+    "pageIds": [
+      "page-cc-naming",
+      "page-cc-face-customize",
+      "page-loading-1",
+      "page-loading-2",
+      "page-ink-anim-ref-1",
+      "page-ink-anim-ref-2",
+      "page-chapter-transition"
+    ],
+    "output": null,
+    "sharedRegions": [],
+    "privateRegions": [
+      "all page bodies"
+    ],
+    "mutableSlots": [],
+    "status": "planned",
+    "children": [
+      {
+        "nodeId": "gen-page-cc-naming",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-cc-naming"
+        ],
+        "output": "pages/cc-naming.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "naming form"
+        ],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-cc-face-customize",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-cc-face-customize"
+        ],
+        "output": "pages/cc-face-customize.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "face customize panel"
+        ],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-loading-1",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-loading-1"
+        ],
+        "output": "pages/loading-1.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "loading screen 1"
+        ],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-loading-2",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-loading-2"
+        ],
+        "output": "pages/loading-2.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "loading screen 2"
+        ],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-ink-anim-ref-1",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-ink-anim-ref-1"
+        ],
+        "output": "pages/ink-anim-ref-1.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "ink animation 1"
+        ],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-ink-anim-ref-2",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-ink-anim-ref-2"
+        ],
+        "output": "pages/ink-anim-ref-2.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "ink animation 2"
+        ],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-chapter-transition",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-chapter-transition"
+        ],
+        "output": "pages/chapter-transition.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "chapter transition"
+        ],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      }
+    ]
+  }
+}

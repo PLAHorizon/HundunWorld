@@ -1,0 +1,724 @@
+{
+  "root": {
+    "nodeId": "gen-project-shell",
+    "kind": "project-shell",
+    "pageIds": [
+      "page-cc-naming",
+      "page-cc-face-customize",
+      "page-loading-1",
+      "page-loading-2",
+      "page-ink-anim-ref-1",
+      "page-ink-anim-ref-2",
+      "page-chapter-transition",
+      "page-combat-hud",
+      "page-guide-hud",
+      "page-element-vision",
+      "page-death-screen",
+      "page-qte",
+      "page-acupoint",
+      "page-dialogue-confirm",
+      "page-menu-char-attributes",
+      "page-menu-equipment",
+      "page-menu-appearance",
+      "page-menu-battle-prep",
+      "page-menu-sect",
+      "page-menu-personal-info",
+      "page-menu-time",
+      "page-menu-quests",
+      "page-menu-bestiary",
+      "page-menu-martial-record",
+      "page-menu-livelihood",
+      "page-menu-team",
+      "page-menu-mail",
+      "page-menu-shop",
+      "page-menu-casual-mode",
+      "page-menu-gacha",
+      "page-menu-activities",
+      "page-menu-battle-pass",
+      "page-menu-char-attributes-v2",
+      "page-shop-rare-items",
+      "page-settings",
+      "page-popup-bestiary-side",
+      "page-popup-message",
+      "page-popup-martial-detail",
+      "page-popup-guide-side",
+      "page-popup-martial-arts",
+      "page-popup-item-acquired",
+      "page-popup-skill-realization",
+      "page-popup-verification",
+      "page-reward-achievement",
+      "page-reward-teleport-unlock",
+      "page-reward-map-unlock",
+      "page-reward-level-up",
+      "page-reward-congratulations",
+      "page-reward-quest-complete",
+      "page-photo-mode",
+      "page-settings-audio",
+      "page-mini-game-complete",
+      "page-guide-action",
+      "page-guide-martial",
+      "page-multiplayer",
+      "page-combat-hud-v2"
+    ],
+    "output": "partials/project-shell.html",
+    "sharedRegions": [
+      "html-head",
+      "global-ink-background",
+      "immersive-frame",
+      "vignette-overlay",
+      "scrollbar-theme"
+    ],
+    "privateRegions": [],
+    "mutableSlots": [
+      "pageTitle",
+      "pageContent"
+    ],
+    "status": "planned",
+    "children": [
+      {
+        "nodeId": "gen-character-loading",
+        "kind": "shared-branch",
+        "branchName": "角色创建与加载",
+        "pageIds": [
+          "page-cc-naming",
+          "page-cc-face-customize",
+          "page-loading-1",
+          "page-loading-2",
+          "page-ink-anim-ref-1",
+          "page-ink-anim-ref-2",
+          "page-chapter-transition"
+        ],
+        "output": "partials/character-loading-shell.html",
+        "sharedRegions": [
+          "immersive-frame",
+          "panel-system"
+        ],
+        "privateRegions": [],
+        "mutableSlots": [
+          "pageTitle",
+          "pageContent"
+        ],
+        "status": "planned",
+        "children": [
+          {
+            "nodeId": "gen-page-cc-naming",
+            "kind": "page-leaf",
+            "pageId": "page-cc-naming",
+            "title": "创角·命名",
+            "output": "pages/cc-naming.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-cc-face-customize",
+            "kind": "page-leaf",
+            "pageId": "page-cc-face-customize",
+            "title": "创角·捏脸",
+            "output": "pages/cc-face-customize.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-loading-1",
+            "kind": "page-leaf",
+            "pageId": "page-loading-1",
+            "title": "加载·山水",
+            "output": "pages/loading-1.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-loading-2",
+            "kind": "page-leaf",
+            "pageId": "page-loading-2",
+            "title": "加载·远峰",
+            "output": "pages/loading-2.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-ink-anim-ref-1",
+            "kind": "page-leaf",
+            "pageId": "page-ink-anim-ref-1",
+            "title": "水墨分镜·晕染",
+            "output": "pages/ink-anim-ref-1.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-ink-anim-ref-2",
+            "kind": "page-leaf",
+            "pageId": "page-ink-anim-ref-2",
+            "title": "水墨分镜·笔触",
+            "output": "pages/ink-anim-ref-2.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-chapter-transition",
+            "kind": "page-leaf",
+            "pageId": "page-chapter-transition",
+            "title": "章节过场",
+            "output": "pages/chapter-transition.html",
+            "status": "planned"
+          }
+        ]
+      },
+      {
+        "nodeId": "gen-core-combat",
+        "kind": "shared-branch",
+        "branchName": "核心战斗",
+        "pageIds": [
+          "page-combat-hud",
+          "page-guide-hud",
+          "page-element-vision",
+          "page-death-screen",
+          "page-qte",
+          "page-acupoint",
+          "page-dialogue-confirm"
+        ],
+        "output": "partials/core-combat-shell.html",
+        "sharedRegions": [
+          "immersive-frame",
+          "panel-system"
+        ],
+        "privateRegions": [],
+        "mutableSlots": [
+          "pageTitle",
+          "pageContent"
+        ],
+        "status": "planned",
+        "children": [
+          {
+            "nodeId": "gen-page-combat-hud",
+            "kind": "page-leaf",
+            "pageId": "page-combat-hud",
+            "title": "战斗HUD",
+            "output": "pages/combat-hud.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-guide-hud",
+            "kind": "page-leaf",
+            "pageId": "page-guide-hud",
+            "title": "引导·HUD",
+            "output": "pages/guide-hud.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-element-vision",
+            "kind": "page-leaf",
+            "pageId": "page-element-vision",
+            "title": "元素视野",
+            "output": "pages/element-vision.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-death-screen",
+            "kind": "page-leaf",
+            "pageId": "page-death-screen",
+            "title": "阵亡",
+            "output": "pages/death-screen.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-qte",
+            "kind": "page-leaf",
+            "pageId": "page-qte",
+            "title": "QTE·千钧",
+            "output": "pages/qte.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-acupoint",
+            "kind": "page-leaf",
+            "pageId": "page-acupoint",
+            "title": "点穴·经络",
+            "output": "pages/acupoint.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-dialogue-confirm",
+            "kind": "page-leaf",
+            "pageId": "page-dialogue-confirm",
+            "title": "对话确认",
+            "output": "pages/dialogue-confirm.html",
+            "status": "planned"
+          }
+        ]
+      },
+      {
+        "nodeId": "gen-menu-character",
+        "kind": "shared-branch",
+        "branchName": "角色菜单",
+        "pageIds": [
+          "page-menu-char-attributes",
+          "page-menu-equipment",
+          "page-menu-appearance",
+          "page-menu-battle-prep",
+          "page-menu-sect",
+          "page-menu-personal-info",
+          "page-menu-time"
+        ],
+        "output": "partials/menu-character-shell.html",
+        "sharedRegions": [
+          "immersive-frame",
+          "panel-system"
+        ],
+        "privateRegions": [],
+        "mutableSlots": [
+          "pageTitle",
+          "pageContent"
+        ],
+        "status": "planned",
+        "children": [
+          {
+            "nodeId": "gen-page-menu-char-attributes",
+            "kind": "page-leaf",
+            "pageId": "page-menu-char-attributes",
+            "title": "角色属性",
+            "output": "pages/menu-char-attributes.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-menu-equipment",
+            "kind": "page-leaf",
+            "pageId": "page-menu-equipment",
+            "title": "装备",
+            "output": "pages/menu-equipment.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-menu-appearance",
+            "kind": "page-leaf",
+            "pageId": "page-menu-appearance",
+            "title": "外观",
+            "output": "pages/menu-appearance.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-menu-battle-prep",
+            "kind": "page-leaf",
+            "pageId": "page-menu-battle-prep",
+            "title": "备战",
+            "output": "pages/menu-battle-prep.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-menu-sect",
+            "kind": "page-leaf",
+            "pageId": "page-menu-sect",
+            "title": "门派",
+            "output": "pages/menu-sect.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-menu-personal-info",
+            "kind": "page-leaf",
+            "pageId": "page-menu-personal-info",
+            "title": "个人信息",
+            "output": "pages/menu-personal-info.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-menu-time",
+            "kind": "page-leaf",
+            "pageId": "page-menu-time",
+            "title": "时辰",
+            "output": "pages/menu-time.html",
+            "status": "planned"
+          }
+        ]
+      },
+      {
+        "nodeId": "gen-menu-quest",
+        "kind": "shared-branch",
+        "branchName": "任务菜单",
+        "pageIds": [
+          "page-menu-quests",
+          "page-menu-bestiary",
+          "page-menu-martial-record",
+          "page-menu-livelihood",
+          "page-menu-team",
+          "page-menu-mail",
+          "page-menu-shop"
+        ],
+        "output": "partials/menu-quest-shell.html",
+        "sharedRegions": [
+          "immersive-frame",
+          "panel-system"
+        ],
+        "privateRegions": [],
+        "mutableSlots": [
+          "pageTitle",
+          "pageContent"
+        ],
+        "status": "planned",
+        "children": [
+          {
+            "nodeId": "gen-page-menu-quests",
+            "kind": "page-leaf",
+            "pageId": "page-menu-quests",
+            "title": "任务",
+            "output": "pages/menu-quests.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-menu-bestiary",
+            "kind": "page-leaf",
+            "pageId": "page-menu-bestiary",
+            "title": "博物志",
+            "output": "pages/menu-bestiary.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-menu-martial-record",
+            "kind": "page-leaf",
+            "pageId": "page-menu-martial-record",
+            "title": "武林录",
+            "output": "pages/menu-martial-record.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-menu-livelihood",
+            "kind": "page-leaf",
+            "pageId": "page-menu-livelihood",
+            "title": "营生",
+            "output": "pages/menu-livelihood.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-menu-team",
+            "kind": "page-leaf",
+            "pageId": "page-menu-team",
+            "title": "组队",
+            "output": "pages/menu-team.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-menu-mail",
+            "kind": "page-leaf",
+            "pageId": "page-menu-mail",
+            "title": "邮箱",
+            "output": "pages/menu-mail.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-menu-shop",
+            "kind": "page-leaf",
+            "pageId": "page-menu-shop",
+            "title": "商店",
+            "output": "pages/menu-shop.html",
+            "status": "planned"
+          }
+        ]
+      },
+      {
+        "nodeId": "gen-menu-extended",
+        "kind": "shared-branch",
+        "branchName": "扩展菜单",
+        "pageIds": [
+          "page-menu-casual-mode",
+          "page-menu-gacha",
+          "page-menu-activities",
+          "page-menu-battle-pass",
+          "page-menu-char-attributes-v2",
+          "page-shop-rare-items",
+          "page-settings"
+        ],
+        "output": "partials/menu-extended-shell.html",
+        "sharedRegions": [
+          "immersive-frame",
+          "panel-system"
+        ],
+        "privateRegions": [],
+        "mutableSlots": [
+          "pageTitle",
+          "pageContent"
+        ],
+        "status": "planned",
+        "children": [
+          {
+            "nodeId": "gen-page-menu-casual-mode",
+            "kind": "page-leaf",
+            "pageId": "page-menu-casual-mode",
+            "title": "休闲模式",
+            "output": "pages/menu-casual-mode.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-menu-gacha",
+            "kind": "page-leaf",
+            "pageId": "page-menu-gacha",
+            "title": "抽卡祈愿",
+            "output": "pages/menu-gacha.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-menu-activities",
+            "kind": "page-leaf",
+            "pageId": "page-menu-activities",
+            "title": "活动",
+            "output": "pages/menu-activities.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-menu-battle-pass",
+            "kind": "page-leaf",
+            "pageId": "page-menu-battle-pass",
+            "title": "通行证",
+            "output": "pages/menu-battle-pass.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-menu-char-attributes-v2",
+            "kind": "page-leaf",
+            "pageId": "page-menu-char-attributes-v2",
+            "title": "属性面板V2",
+            "output": "pages/menu-char-attributes-v2.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-shop-rare-items",
+            "kind": "page-leaf",
+            "pageId": "page-shop-rare-items",
+            "title": "奇珍阁",
+            "output": "pages/shop-rare-items.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-settings",
+            "kind": "page-leaf",
+            "pageId": "page-settings",
+            "title": "设置",
+            "output": "pages/settings.html",
+            "status": "planned"
+          }
+        ]
+      },
+      {
+        "nodeId": "gen-popup-system",
+        "kind": "shared-branch",
+        "branchName": "弹窗系统",
+        "pageIds": [
+          "page-popup-bestiary-side",
+          "page-popup-message",
+          "page-popup-martial-detail",
+          "page-popup-guide-side",
+          "page-popup-martial-arts",
+          "page-popup-item-acquired",
+          "page-popup-skill-realization",
+          "page-popup-verification"
+        ],
+        "output": "partials/popup-system-shell.html",
+        "sharedRegions": [
+          "immersive-frame",
+          "panel-system"
+        ],
+        "privateRegions": [],
+        "mutableSlots": [
+          "pageTitle",
+          "pageContent"
+        ],
+        "status": "planned",
+        "children": [
+          {
+            "nodeId": "gen-page-popup-bestiary-side",
+            "kind": "page-leaf",
+            "pageId": "page-popup-bestiary-side",
+            "title": "博物侧弹窗",
+            "output": "pages/popup-bestiary-side.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-popup-message",
+            "kind": "page-leaf",
+            "pageId": "page-popup-message",
+            "title": "留言",
+            "output": "pages/popup-message.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-popup-martial-detail",
+            "kind": "page-leaf",
+            "pageId": "page-popup-martial-detail",
+            "title": "奇术详情",
+            "output": "pages/popup-martial-detail.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-popup-guide-side",
+            "kind": "page-leaf",
+            "pageId": "page-popup-guide-side",
+            "title": "引导侧弹窗",
+            "output": "pages/popup-guide-side.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-popup-martial-arts",
+            "kind": "page-leaf",
+            "pageId": "page-popup-martial-arts",
+            "title": "武学",
+            "output": "pages/popup-martial-arts.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-popup-item-acquired",
+            "kind": "page-leaf",
+            "pageId": "page-popup-item-acquired",
+            "title": "物品获得",
+            "output": "pages/popup-item-acquired.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-popup-skill-realization",
+            "kind": "page-leaf",
+            "pageId": "page-popup-skill-realization",
+            "title": "心法领悟",
+            "output": "pages/popup-skill-realization.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-popup-verification",
+            "kind": "page-leaf",
+            "pageId": "page-popup-verification",
+            "title": "验讫",
+            "output": "pages/popup-verification.html",
+            "status": "planned"
+          }
+        ]
+      },
+      {
+        "nodeId": "gen-reward-misc",
+        "kind": "shared-branch",
+        "branchName": "奖励与杂项",
+        "pageIds": [
+          "page-reward-achievement",
+          "page-reward-teleport-unlock",
+          "page-reward-map-unlock",
+          "page-reward-level-up",
+          "page-reward-congratulations",
+          "page-reward-quest-complete",
+          "page-photo-mode",
+          "page-settings-audio",
+          "page-mini-game-complete",
+          "page-guide-action",
+          "page-guide-martial",
+          "page-multiplayer",
+          "page-combat-hud-v2"
+        ],
+        "output": "partials/misc-system-shell.html",
+        "sharedRegions": [
+          "immersive-frame",
+          "panel-system"
+        ],
+        "privateRegions": [],
+        "mutableSlots": [
+          "pageTitle",
+          "pageContent"
+        ],
+        "status": "planned",
+        "children": [
+          {
+            "nodeId": "gen-page-reward-achievement",
+            "kind": "page-leaf",
+            "pageId": "page-reward-achievement",
+            "title": "成就解锁",
+            "output": "pages/reward-achievement.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-reward-teleport-unlock",
+            "kind": "page-leaf",
+            "pageId": "page-reward-teleport-unlock",
+            "title": "传送解锁",
+            "output": "pages/reward-teleport-unlock.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-reward-map-unlock",
+            "kind": "page-leaf",
+            "pageId": "page-reward-map-unlock",
+            "title": "地图解锁",
+            "output": "pages/reward-map-unlock.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-reward-level-up",
+            "kind": "page-leaf",
+            "pageId": "page-reward-level-up",
+            "title": "等级提升",
+            "output": "pages/reward-level-up.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-reward-congratulations",
+            "kind": "page-leaf",
+            "pageId": "page-reward-congratulations",
+            "title": "恭喜获得",
+            "output": "pages/reward-congratulations.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-reward-quest-complete",
+            "kind": "page-leaf",
+            "pageId": "page-reward-quest-complete",
+            "title": "任务完成",
+            "output": "pages/reward-quest-complete.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-photo-mode",
+            "kind": "page-leaf",
+            "pageId": "page-photo-mode",
+            "title": "拍照模式",
+            "output": "pages/photo-mode.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-settings-audio",
+            "kind": "page-leaf",
+            "pageId": "page-settings-audio",
+            "title": "音频设置",
+            "output": "pages/settings-audio.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-mini-game-complete",
+            "kind": "page-leaf",
+            "pageId": "page-mini-game-complete",
+            "title": "小游戏完成",
+            "output": "pages/mini-game-complete.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-guide-action",
+            "kind": "page-leaf",
+            "pageId": "page-guide-action",
+            "title": "引导操作",
+            "output": "pages/guide-action.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-guide-martial",
+            "kind": "page-leaf",
+            "pageId": "page-guide-martial",
+            "title": "引导奇术",
+            "output": "pages/guide-martial.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-multiplayer",
+            "kind": "page-leaf",
+            "pageId": "page-multiplayer",
+            "title": "多人模式",
+            "output": "pages/multiplayer.html",
+            "status": "planned"
+          },
+          {
+            "nodeId": "gen-page-combat-hud-v2",
+            "kind": "page-leaf",
+            "pageId": "page-combat-hud-v2",
+            "title": "战斗HUDv2",
+            "output": "pages/combat-hud-v2.html",
+            "status": "planned"
+          }
+        ]
+      }
+    ]
+  }
+}

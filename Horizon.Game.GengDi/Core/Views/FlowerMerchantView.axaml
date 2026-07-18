@@ -31,12 +31,12 @@
                     <StackPanel HorizontalAlignment="Center" Spacing="20">
                         <TextBlock Text="🏪" FontSize="56" HorizontalAlignment="Center" Opacity="0.5"/>
                         <TextBlock Text="您还不是商家" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                        <TextBlock Text="注册成为商家后，即可发布商品、管理订单和查看经营数据" FontSize="13" Foreground="#888888" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="400"/>
+                        <TextBlock Text="注册成为商家后，即可发布商品、管理订单和查看经营数据" FontSize="13" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center" TextWrapping="Wrap" MaxWidth="400"/>
                         <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
-                            <TextBlock Text="✓ 免费入驻" FontSize="12" Foreground="#4CAF50" VerticalAlignment="Center"/>
-                            <TextBlock Text="✓ 商品管理" FontSize="12" Foreground="#4CAF50" VerticalAlignment="Center"/>
-                            <TextBlock Text="✓ 订单处理" FontSize="12" Foreground="#4CAF50" VerticalAlignment="Center"/>
-                            <TextBlock Text="✓ 经营统计" FontSize="12" Foreground="#4CAF50" VerticalAlignment="Center"/>
+                            <TextBlock Text="✓ 免费入驻" FontSize="12" Foreground="{DynamicResource BattleNetPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="✓ 商品管理" FontSize="12" Foreground="{DynamicResource BattleNetPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="✓ 订单处理" FontSize="12" Foreground="{DynamicResource BattleNetPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="✓ 经营统计" FontSize="12" Foreground="{DynamicResource BattleNetPrimaryBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
                         <Button Content="立即注册"
                                 Classes="PrimaryAction"
@@ -53,17 +53,17 @@
                     <StackPanel Spacing="20">
                         <StackPanel Spacing="4" HorizontalAlignment="Center">
                             <TextBlock Text="注册商家" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                            <TextBlock Text="填写以下信息完成商家入驻" FontSize="12" Foreground="#888888" HorizontalAlignment="Center"/>
+                            <TextBlock Text="填写以下信息完成商家入驻" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                         </StackPanel>
 
                         <StackPanel Spacing="8">
-                            <TextBlock Text="店铺名称 *" FontSize="12" Foreground="#AAAAAA"/>
+                            <TextBlock Text="店铺名称 *" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             <TextBox Text="{Binding RegisterShopName}" Watermark="请输入店铺名称"
-                                     Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                     Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                         </StackPanel>
 
                         <StackPanel Spacing="8">
-                            <TextBlock Text="商户类型" FontSize="12" Foreground="#AAAAAA"/>
+                            <TextBlock Text="商户类型" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             <StackPanel Orientation="Horizontal" Spacing="12">
                                 <RadioButton Content="个人商户" IsChecked="True"
                                              GroupName="MerchantType" Padding="8 6" Click="OnRegisterTypeClick" Tag="0"/>
@@ -72,15 +72,15 @@
                         </StackPanel>
 
                         <StackPanel Spacing="8">
-                            <TextBlock Text="联系电话 *" FontSize="12" Foreground="#AAAAAA"/>
+                            <TextBlock Text="联系电话 *" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             <TextBox Text="{Binding RegisterPhone}" Watermark="请输入联系电话"
-                                     Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                     Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                         </StackPanel>
 
                         <StackPanel Spacing="8">
-                            <TextBlock Text="店铺描述" FontSize="12" Foreground="#AAAAAA"/>
+                            <TextBlock Text="店铺描述" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             <TextBox Text="{Binding RegisterDescription}" Watermark="简要描述您的店铺（选填）"
-                                     Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"
+                                     Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"
                                      Height="80" AcceptsReturn="True" TextWrapping="Wrap"/>
                         </StackPanel>
 
@@ -108,19 +108,19 @@
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <TextBlock Text="{Binding MerchantInfo.ShopName}" FontSize="18" FontWeight="SemiBold"/>
                                         <Border Background="#254CAF50" CornerRadius="4" Padding="6 2" IsVisible="{Binding MerchantInfo.IsVerified}">
-                                            <TextBlock Text="已认证" FontSize="10" Foreground="#4CAF50"/>
+                                            <TextBlock Text="已认证" FontSize="10" Foreground="{DynamicResource BattleNetPrimaryBrush}"/>
                                         </Border>
                                         <Border Background="#25FFA726" CornerRadius="4" Padding="6 2" IsVisible="{Binding !MerchantInfo.IsVerified}">
                                             <TextBlock Text="待认证" FontSize="10" Foreground="#FFA726"/>
                                         </Border>
                                         <Border Background="#2542A5F5" CornerRadius="4" Padding="6 2">
-                                            <TextBlock Text="{Binding ShopGradeDisplay}" FontSize="10" Foreground="#42A5F5"/>
+                                            <TextBlock Text="{Binding ShopGradeDisplay}" FontSize="10" Foreground="{DynamicResource BattleNetOutlineBrush}"/>
                                         </Border>
                                     </StackPanel>
-                                    <TextBlock Text="{Binding MerchantInfo.Description}" FontSize="12" Foreground="#888888" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding MerchantInfo.Description}" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" TextWrapping="Wrap"/>
                                     <StackPanel Orientation="Horizontal" Spacing="12" Margin="0 4 0 0">
-                                        <TextBlock Text="{Binding MerchantTypeDisplay, StringFormat='类型: {0}'}" FontSize="11" Foreground="#666666"/>
-                                        <TextBlock Text="{Binding MerchantInfo.ContactPhone, StringFormat='电话: {0}'}" FontSize="11" Foreground="#666666"/>
+                                        <TextBlock Text="{Binding MerchantTypeDisplay, StringFormat='类型: {0}'}" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                                        <TextBlock Text="{Binding MerchantInfo.ContactPhone, StringFormat='电话: {0}'}" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                                     </StackPanel>
                                 </StackPanel>
                                 <Button Grid.Column="2" Content="刷新" Classes="QuietAction" Padding="12 6" CornerRadius="8"
@@ -154,41 +154,41 @@
 
                         <!-- 状态消息 -->
                         <Border Classes="SurfaceCard" Padding="12 8" IsVisible="{Binding StatusMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                            <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="#42A5F5"/>
+                            <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="{DynamicResource BattleNetOutlineBrush}"/>
                         </Border>
 
                         <!-- ═══ Tab 0: 概览 ═══ -->
                         <StackPanel Spacing="16" IsVisible="{Binding ShowOverviewPanel}">
                             <!-- 统计卡片 -->
                             <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="10">
-                                <Border Classes="SurfaceCard" Padding="12" CornerRadius="10" Background="#1A1A2E">
+                                <Border Classes="SurfaceCard" Padding="12" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}">
                                     <StackPanel Spacing="4" HorizontalAlignment="Center">
-                                        <TextBlock Text="今日订单" FontSize="10" Foreground="#888888" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="{Binding TodayOrders}" FontSize="22" FontWeight="Bold" Foreground="#42A5F5" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="今日订单" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding TodayOrders}" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource BattleNetOutlineBrush}" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
-                                <Border Classes="SurfaceCard" Padding="12" CornerRadius="10" Background="#1A1A2E" Grid.Column="1">
+                                <Border Classes="SurfaceCard" Padding="12" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" Grid.Column="1">
                                     <StackPanel Spacing="4" HorizontalAlignment="Center">
-                                        <TextBlock Text="今日收入" FontSize="10" Foreground="#888888" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="{Binding TodayRevenue, StringFormat='¥{0:F0}'}" FontSize="22" FontWeight="Bold" Foreground="#66BB6A" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="今日收入" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding TodayRevenue, StringFormat='¥{0:F0}'}" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource BattleNetPrimaryBrush}" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
-                                <Border Classes="SurfaceCard" Padding="12" CornerRadius="10" Background="#1A1A2E" Grid.Column="2">
+                                <Border Classes="SurfaceCard" Padding="12" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" Grid.Column="2">
                                     <StackPanel Spacing="4" HorizontalAlignment="Center">
-                                        <TextBlock Text="待发货" FontSize="10" Foreground="#888888" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="待发货" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                         <TextBlock Text="{Binding PendingShipCount}" FontSize="22" FontWeight="Bold" Foreground="#FFA726" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
-                                <Border Classes="SurfaceCard" Padding="12" CornerRadius="10" Background="#1A1A2E" Grid.Column="3">
+                                <Border Classes="SurfaceCard" Padding="12" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" Grid.Column="3">
                                     <StackPanel Spacing="4" HorizontalAlignment="Center">
-                                        <TextBlock Text="商品总数" FontSize="10" Foreground="#888888" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="商品总数" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                         <TextBlock Text="{Binding TotalProducts}" FontSize="22" FontWeight="Bold" Foreground="#AB47BC" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
-                                <Border Classes="SurfaceCard" Padding="12" CornerRadius="10" Background="#1A1A2E" Grid.Column="4">
+                                <Border Classes="SurfaceCard" Padding="12" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" Grid.Column="4">
                                     <StackPanel Spacing="4" HorizontalAlignment="Center">
-                                        <TextBlock Text="累计收入" FontSize="10" Foreground="#888888" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="{Binding TotalRevenue, StringFormat='¥{0:F0}'}" FontSize="22" FontWeight="Bold" Foreground="#FF6B6B" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="累计收入" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding TotalRevenue, StringFormat='¥{0:F0}'}" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource LoginErrorBrush}" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
                             </Grid>
@@ -200,13 +200,13 @@
                                     <ItemsControl ItemsSource="{Binding RecentOrders}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Border Padding="8" Margin="0 0 0 4" CornerRadius="8" Background="#1A1A2E">
+                                                <Border Padding="8" Margin="0 0 0 4" CornerRadius="8" Background="{DynamicResource LoginFormBackgroundBrush}">
                                                     <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
                                                         <StackPanel Spacing="2">
                                                             <TextBlock Text="{Binding OrderNo}" FontSize="12" FontWeight="SemiBold"/>
-                                                            <TextBlock Text="{Binding CreatedAt, StringFormat='{}{0:MM-dd HH:mm}'}" FontSize="10" Foreground="#888888"/>
+                                                            <TextBlock Text="{Binding CreatedAt, StringFormat='{}{0:MM-dd HH:mm}'}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                                                         </StackPanel>
-                                                        <TextBlock Grid.Column="1" Text="{Binding TotalAmount, StringFormat='¥{0:F2}'}" FontSize="13" Foreground="#FF6B6B" VerticalAlignment="Center"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding TotalAmount, StringFormat='¥{0:F2}'}" FontSize="13" Foreground="{DynamicResource LoginErrorBrush}" VerticalAlignment="Center"/>
                                                         <Border Grid.Column="2" CornerRadius="4" Padding="6 2" Background="#25FFA726">
                                                             <TextBlock FontSize="10" Foreground="#FFA726" Text="{Binding Status}"/>
                                                         </Border>
@@ -216,7 +216,7 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
                                     <Border Padding="20" IsVisible="{Binding !HasRecentOrders}">
-                                        <TextBlock Text="暂无订单" FontSize="12" Foreground="#888888" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="暂无订单" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                     </Border>
                                 </StackPanel>
                             </Border>
@@ -228,7 +228,7 @@
                             <Border Classes="SurfaceCard" Padding="12">
                                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                                     <TextBox Text="{Binding SearchKeyword}" Watermark="搜索商品名称..."
-                                             Padding="10 8" CornerRadius="8" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                             Padding="10 8" CornerRadius="8" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                     <Button Grid.Column="1" Content="搜索" Classes="QuietAction" Padding="12 8" CornerRadius="8"
                                             Command="{Binding SearchProductsCommand}"/>
                                     <Button Grid.Column="2" Content="刷新" Classes="QuietAction" Padding="12 8" CornerRadius="8"
@@ -257,7 +257,7 @@
                                         <TextBlock Text="💡" FontSize="14" VerticalAlignment="Center"/>
                                         <TextBlock Text="智能调价建议" FontSize="13" FontWeight="SemiBold" Foreground="#FF9800" VerticalAlignment="Center"/>
                                         <Border Background="#FF9800" CornerRadius="8" Padding="6 2" IsVisible="{Binding HasPriceAdjustments}">
-                                            <TextBlock Text="{Binding PriceAdjustmentSuggestions.Count, StringFormat='{}{0}条'}" FontSize="10" Foreground="#1A1A2E" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding PriceAdjustmentSuggestions.Count, StringFormat='{}{0}条'}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" FontWeight="SemiBold"/>
                                         </Border>
                                     </StackPanel>
                                     <Button Grid.Column="1" Content="查看建议" Classes="QuietAction" Padding="12 6" CornerRadius="8" FontSize="12"
@@ -269,20 +269,20 @@
                             <ItemsControl ItemsSource="{Binding PriceAdjustmentSuggestions}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Classes="SurfaceCard" Padding="12" Margin="0 0 0 6" CornerRadius="8" Background="#1A1A2E">
+                                        <Border Classes="SurfaceCard" Padding="12" Margin="0 0 0 6" CornerRadius="8" Background="{DynamicResource LoginFormBackgroundBrush}">
                                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                                 <StackPanel Spacing="4">
                                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                                         <TextBlock Text="{Binding ProductName}" FontSize="13" FontWeight="SemiBold"/>
                                                         <Border Background="#25EF5350" CornerRadius="4" Padding="6 2">
-                                                            <TextBlock Text="{Binding ChangePercent, StringFormat='{}{0:+0.0;-0.0}%'}" FontSize="10" Foreground="#EF5350"/>
+                                                            <TextBlock Text="{Binding ChangePercent, StringFormat='{}{0:+0.0;-0.0}%'}" FontSize="10" Foreground="{DynamicResource LoginErrorBrush}"/>
                                                         </Border>
                                                     </StackPanel>
                                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <TextBlock Text="{Binding CurrentPrice, StringFormat='当前: ¥{0:F2}'}" FontSize="11" Foreground="#888888"/>
-                                                        <TextBlock Text="{Binding SuggestedPrice, StringFormat='建议: ¥{0:F2}'}" FontSize="11" Foreground="#42A5F5" FontWeight="SemiBold"/>
+                                                        <TextBlock Text="{Binding CurrentPrice, StringFormat='当前: ¥{0:F2}'}" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                                                        <TextBlock Text="{Binding SuggestedPrice, StringFormat='建议: ¥{0:F2}'}" FontSize="11" Foreground="{DynamicResource BattleNetOutlineBrush}" FontWeight="SemiBold"/>
                                                     </StackPanel>
-                                                    <TextBlock Text="{Binding Reason}" FontSize="10" Foreground="#666666" TextWrapping="Wrap" MaxWidth="400"/>
+                                                    <TextBlock Text="{Binding Reason}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" TextWrapping="Wrap" MaxWidth="400"/>
                                                 </StackPanel>
                                                 <Button Grid.Column="1" Content="调整" Classes="PrimaryAction" Padding="12 5" FontSize="11" CornerRadius="8"
                                                         Click="OnAdjustPriceClick"/>
@@ -299,36 +299,36 @@
                                         <Border Classes="SurfaceCard" Padding="16" Margin="0 0 0 8" CornerRadius="12">
                                             <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="10">
                                                 <!-- 商品编号 -->
-                                                <Border Width="40" Height="40" CornerRadius="8" Background="#3A3A4E" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding ProductCode}" FontSize="11" Foreground="#AAAAAA"
+                                                <Border Width="40" Height="40" CornerRadius="8" Background="{DynamicResource LoginFormBackgroundBrush}" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding ProductCode}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                                HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold"/>
                                                 </Border>
                                                 <!-- 商品图标 -->
-                                                <Border Grid.Column="1" Width="40" Height="40" CornerRadius="8" Background="#25FFFFFF">
+                                                <Border Grid.Column="1" Width="40" Height="40" CornerRadius="8" Background="{DynamicResource BattleNetSurfaceTintBrush}">
                                                     <TextBlock Text="🌸" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                 </Border>
                                                 <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4">
                                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                                         <TextBlock Text="{Binding ProductName}" FontSize="14" FontWeight="SemiBold"/>
                                                         <Border Background="#FF9800" CornerRadius="4" Padding="8 2" IsVisible="{Binding AuditStatus, Converter={StaticResource EqualToZeroConverter}}">
-                                                            <TextBlock Text="待审核" FontSize="10" Foreground="#FFFFFF"/>
+                                                            <TextBlock Text="待审核" FontSize="10" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                                         </Border>
-                                                        <Border Background="#4CAF50" CornerRadius="4" Padding="8 2" IsVisible="{Binding AuditStatus, Converter={StaticResource EqualToOneConverter}}">
-                                                            <TextBlock Text="已通过" FontSize="10" Foreground="#FFFFFF"/>
+                                                        <Border Background="{DynamicResource BattleNetPrimaryBrush}" CornerRadius="4" Padding="8 2" IsVisible="{Binding AuditStatus, Converter={StaticResource EqualToOneConverter}}">
+                                                            <TextBlock Text="已通过" FontSize="10" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                                         </Border>
-                                                        <Border Background="#EF5350" CornerRadius="4" Padding="8 2" IsVisible="{Binding AuditStatus, Converter={StaticResource EqualToTwoConverter}}">
-                                                            <TextBlock Text="已拒绝" FontSize="10" Foreground="#FFFFFF"/>
+                                                        <Border Background="{DynamicResource LoginErrorBrush}" CornerRadius="4" Padding="8 2" IsVisible="{Binding AuditStatus, Converter={StaticResource EqualToTwoConverter}}">
+                                                            <TextBlock Text="已拒绝" FontSize="10" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                                         </Border>
-                                                        <Border Background="#2D503E" CornerRadius="4" Padding="8 2" IsVisible="{Binding IsActive}">
-                                                            <TextBlock Text="已上架" FontSize="10" Foreground="#C8E6C9"/>
+                                                        <Border Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="4" Padding="8 2" IsVisible="{Binding IsActive}">
+                                                            <TextBlock Text="已上架" FontSize="10" Foreground="{DynamicResource BattleNetPrimaryBrush}"/>
                                                         </Border>
-                                                        <Border Background="#6B2D2D" CornerRadius="4" Padding="8 2" IsVisible="{Binding !IsActive}">
-                                                            <TextBlock Text="已下架" FontSize="10" Foreground="#E8C8C8"/>
+                                                        <Border Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="4" Padding="8 2" IsVisible="{Binding !IsActive}">
+                                                            <TextBlock Text="已下架" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                         </Border>
                                                     </StackPanel>
                                                     <StackPanel Orientation="Horizontal" Spacing="12">
-                                                        <TextBlock Text="{Binding Price, StringFormat='¥{0:F2}'}" FontSize="13" Foreground="#FF6B6B" FontWeight="SemiBold"/>
-                                                        <TextBlock Text="{Binding Stock, StringFormat='库存: {0}'}" FontSize="11" Foreground="#888888"/>
+                                                        <TextBlock Text="{Binding Price, StringFormat='¥{0:F2}'}" FontSize="13" Foreground="{DynamicResource LoginErrorBrush}" FontWeight="SemiBold"/>
+                                                        <TextBlock Text="{Binding Stock, StringFormat='库存: {0}'}" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                                                     </StackPanel>
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
@@ -345,7 +345,7 @@
                                                     </Border>
                                                     <Border Background="#1A42A5F5" CornerRadius="6">
                                                         <Button Padding="10 5" FontSize="10" CornerRadius="6"
-                                                                Foreground="#42A5F5" Background="Transparent"
+                                                                Foreground="{DynamicResource BattleNetOutlineBrush}" Background="Transparent"
                                                                 Click="OnEditProductClick">编辑</Button>
                                                     </Border>
                                                     <Border Background="#1A9C27B0" CornerRadius="6">
@@ -355,7 +355,7 @@
                                                     </Border>
                                                     <Border Background="#1A4CAF50" CornerRadius="6" IsVisible="{Binding !IsActive}">
                                                         <Button Padding="10 5" FontSize="10" CornerRadius="6"
-                                                                Foreground="#4CAF50" Background="Transparent"
+                                                                Foreground="{DynamicResource BattleNetPrimaryBrush}" Background="Transparent"
                                                                 Click="OnActivateProductClick">上架</Button>
                                                     </Border>
                                                     <Border Background="#1AFF9800" CornerRadius="6" IsVisible="{Binding IsActive}">
@@ -365,7 +365,7 @@
                                                     </Border>
                                                     <Border Background="#1AEF5350" CornerRadius="6">
                                                         <Button Padding="10 5" FontSize="10" CornerRadius="6"
-                                                                Foreground="#EF5350" Background="Transparent"
+                                                                Foreground="{DynamicResource LoginErrorBrush}" Background="Transparent"
                                                                 Click="OnDeleteProductClick">删除</Button>
                                                     </Border>
                                                 </StackPanel>
@@ -378,7 +378,7 @@
                             <Border Classes="SurfaceCard" Padding="40" IsVisible="{Binding !HasProducts}">
                                 <StackPanel HorizontalAlignment="Center" Spacing="12">
                                     <TextBlock Text="📦" FontSize="32" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="暂无商品，去发布吧" FontSize="14" Foreground="#888888" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="暂无商品，去发布吧" FontSize="14" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
@@ -390,10 +390,10 @@
                                     <TextBlock Text="发布新商品" FontSize="16" FontWeight="SemiBold"/>
 
                                     <StackPanel Spacing="8">
-                                        <TextBlock Text="花卉品种 *" FontSize="12" Foreground="#AAAAAA"/>
+                                        <TextBlock Text="花卉品种 *" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                         <ComboBox ItemsSource="{Binding SpeciesOptions}" SelectedItem="{Binding SelectedSpeciesFilter}"
                                                   DisplayMemberBinding="{Binding DisplayName}"
-                                                  Padding="12 8" CornerRadius="10" Background="#2A2A3E" Foreground="#FFFFFF"
+                                                  Padding="12 8" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" Foreground="{DynamicResource LoginFormTextBrush}"
                                                   HorizontalAlignment="Stretch"
                                                   Name="PublishSpeciesComboBox"/>
                                     </StackPanel>
@@ -403,69 +403,69 @@
                                         <StackPanel Spacing="8">
                                             <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <TextBlock Text="💡" FontSize="14" VerticalAlignment="Center"/>
-                                                <TextBlock Text="智能建议价" FontSize="13" FontWeight="SemiBold" Foreground="#42A5F5" VerticalAlignment="Center"/>
+                                                <TextBlock Text="智能建议价" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource BattleNetOutlineBrush}" VerticalAlignment="Center"/>
                                             </StackPanel>
-                                            <TextBlock Text="{Binding SuggestedPriceDisplay}" FontSize="12" Foreground="#90CAF9"/>
-                                            <TextBlock Text="{Binding SuggestedPriceRange.Reason}" FontSize="11" Foreground="#64B5F6" TextWrapping="Wrap" MaxWidth="400"/>
+                                            <TextBlock Text="{Binding SuggestedPriceDisplay}" FontSize="12" Foreground="{DynamicResource BattleNetOutlineBrush}"/>
+                                            <TextBlock Text="{Binding SuggestedPriceRange.Reason}" FontSize="11" Foreground="{DynamicResource BattleNetOutlineBrush}" TextWrapping="Wrap" MaxWidth="400"/>
                                             <Button Content="采纳建议价" Classes="PrimaryAction" Padding="16 6" CornerRadius="8" FontSize="12"
                                                     Command="{Binding AcceptSuggestedPriceCommand}"/>
                                         </StackPanel>
                                     </Border>
 
-                                    <Border Background="#1A1A2E" CornerRadius="8" Padding="12" IsVisible="{Binding IsLoadingSuggestedPrice}">
+                                    <Border Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="8" Padding="12" IsVisible="{Binding IsLoadingSuggestedPrice}">
                                         <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
                                             <ProgressBar IsIndeterminate="True" Width="100"/>
-                                            <TextBlock Text="加载建议价..." FontSize="12" Foreground="#888888" VerticalAlignment="Center"/>
+                                            <TextBlock Text="加载建议价..." FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
 
                                     <StackPanel Spacing="8">
-                                        <TextBlock Text="商品名称 *" FontSize="12" Foreground="#AAAAAA"/>
+                                        <TextBlock Text="商品名称 *" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                         <TextBox Text="{Binding NewProductName}" Watermark="请输入商品名称"
-                                                 Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                                 Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                     </StackPanel>
 
                                     <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                                         <StackPanel Spacing="8">
-                                            <TextBlock Text="价格 (¥) *" FontSize="12" Foreground="#AAAAAA"/>
+                                            <TextBlock Text="价格 (¥) *" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             <TextBox Text="{Binding NewProductPrice}" Watermark="0.00"
-                                                     Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                                     Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Spacing="8">
-                                            <TextBlock Text="库存数量 *" FontSize="12" Foreground="#AAAAAA"/>
+                                            <TextBlock Text="库存数量 *" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             <TextBox Text="{Binding NewProductStock}" Watermark="0"
-                                                     Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                                     Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                         </StackPanel>
                                     </Grid>
 
                                     <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                                         <StackPanel Spacing="8">
-                                            <TextBlock Text="计量单位" FontSize="12" Foreground="#AAAAAA"/>
+                                            <TextBlock Text="计量单位" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             <TextBox Text="{Binding NewProductUnit}" Watermark="束"
-                                                     Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                                     Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Spacing="8">
-                                            <TextBlock Text="分类" FontSize="12" Foreground="#AAAAAA"/>
+                                            <TextBlock Text="分类" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             <ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}"
                                                       DisplayMemberBinding="{Binding Name}"
-                                                      Padding="12 8" CornerRadius="10" Background="#2A2A3E" Foreground="#FFFFFF"
+                                                      Padding="12 8" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" Foreground="{DynamicResource LoginFormTextBrush}"
                                                       HorizontalAlignment="Stretch"/>
                                         </StackPanel>
                                     </Grid>
 
                                     <StackPanel Spacing="8">
-                                        <TextBlock Text="运费模板" FontSize="12" Foreground="#AAAAAA"/>
+                                        <TextBlock Text="运费模板" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                         <ComboBox ItemsSource="{Binding FreightTemplates}" SelectedItem="{Binding SelectedFreightTemplate}"
                                                   DisplayMemberBinding="{Binding Name}"
-                                                  Padding="12 8" CornerRadius="10" Background="#2A2A3E" Foreground="#FFFFFF"
+                                                  Padding="12 8" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" Foreground="{DynamicResource LoginFormTextBrush}"
                                                   HorizontalAlignment="Stretch"/>
                                     </StackPanel>
 
                                     <StackPanel Spacing="8">
-                                        <TextBlock Text="商品图片" FontSize="12" Foreground="#AAAAAA"/>
+                                        <TextBlock Text="商品图片" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                                             <TextBox Text="{Binding NewProductImages}" Watermark="图片URL，多个用逗号分隔"
-                                                     Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                                     Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                             <Button Grid.Column="1" Content="📁 本地上传" Classes="QuietAction" Padding="12 8" CornerRadius="8"
                                                     FontSize="12" Click="OnLocalImageUploadClick" />
                                             <Button Grid.Column="2" Content="🔗 在线解析" Classes="QuietAction" Padding="12 8" CornerRadius="8"
@@ -475,12 +475,12 @@
                                         <ItemsControl ItemsSource="{Binding NewProductImageList}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
-                                                    <Border Background="#2A2A3E" CornerRadius="8" Padding="8" Margin="0 0 8 8">
+                                                    <Border Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="8" Padding="8" Margin="0 0 8 8">
                                                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-                                                            <Border Width="40" Height="40" CornerRadius="6" Background="#3A3A4E">
+                                                            <Border Width="40" Height="40" CornerRadius="6" Background="{DynamicResource LoginFormBackgroundBrush}">
                                                                 <TextBlock Text="🖼" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                             </Border>
-                                                            <TextBlock Text="{Binding}" FontSize="11" Foreground="#CCCCCC"
+                                                            <TextBlock Text="{Binding}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                                        VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                                             <Button Grid.Column="2" Content="✕" Classes="QuietAction" Padding="4 2" FontSize="10" CornerRadius="4"
                                                                     Click="OnRemoveImageClick" Tag="{Binding}"/>
@@ -492,14 +492,14 @@
                                     </StackPanel>
 
                                     <StackPanel Spacing="8">
-                                        <TextBlock Text="商品描述" FontSize="12" Foreground="#AAAAAA"/>
+                                        <TextBlock Text="商品描述" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                         <TextBox Text="{Binding NewProductDescription}" Watermark="请输入商品描述"
-                                                 Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"
+                                                 Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"
                                                  Height="80" AcceptsReturn="True" TextWrapping="Wrap"/>
                                     </StackPanel>
 
                                     <!-- 阶梯价格 -->
-                                    <Border Background="#1A1A2E" CornerRadius="8" Padding="12">
+                                    <Border Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="8" Padding="12">
                                         <StackPanel Spacing="10">
                                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                                 <TextBlock Text="阶梯价格" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
@@ -510,9 +510,9 @@
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
                                                             <Grid ColumnDefinitions="*,*,*,Auto" ColumnSpacing="8" Margin="0 0 0 6">
-                                                                <TextBox Text="{Binding MinBatch}" Watermark="最小批量" Padding="8 6" CornerRadius="6" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF" FontSize="11"/>
-                                                                <TextBox Grid.Column="1" Text="{Binding MaxBatch}" Watermark="最大批量" Padding="8 6" CornerRadius="6" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF" FontSize="11"/>
-                                                                <TextBox Grid.Column="2" Text="{Binding Price}" Watermark="价格" Padding="8 6" CornerRadius="6" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF" FontSize="11"/>
+                                                                <TextBox Text="{Binding MinBatch}" Watermark="最小批量" Padding="8 6" CornerRadius="6" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}" FontSize="11"/>
+                                                                <TextBox Grid.Column="1" Text="{Binding MaxBatch}" Watermark="最大批量" Padding="8 6" CornerRadius="6" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}" FontSize="11"/>
+                                                                <TextBox Grid.Column="2" Text="{Binding Price}" Watermark="价格" Padding="8 6" CornerRadius="6" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}" FontSize="11"/>
                                                                 <Button Grid.Column="3" Content="✕" Classes="QuietAction" Padding="6 4" FontSize="11" CornerRadius="6"
                                                                         Command="{Binding $parent[ItemsControl].((vm:FlowerMerchantViewModel)DataContext).RemoveLadderPriceCommand}"
                                                                         CommandParameter="{Binding}"/>
@@ -527,27 +527,27 @@
                                     </Border>
 
                                     <!-- SKU 配置 -->
-                                    <Border Background="#1A1A2E" CornerRadius="8" Padding="12">
+                                    <Border Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="8" Padding="12">
                                         <StackPanel Spacing="10">
                                             <TextBlock Text="SKU 配置" FontSize="13" FontWeight="SemiBold"/>
                                             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
                                                 <StackPanel Spacing="4">
-                                                    <TextBlock Text="颜色" FontSize="10" Foreground="#AAAAAA"/>
+                                                    <TextBlock Text="颜色" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                     <TextBox Text="{Binding SkuColors}" Watermark="红,蓝,白"
-                                                             Padding="8 6" CornerRadius="6" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF" FontSize="11"/>
+                                                             Padding="8 6" CornerRadius="6" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}" FontSize="11"/>
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="1" Spacing="4">
-                                                    <TextBlock Text="尺寸" FontSize="10" Foreground="#AAAAAA"/>
+                                                    <TextBlock Text="尺寸" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                     <TextBox Text="{Binding SkuSizes}" Watermark="S,M,L"
-                                                             Padding="8 6" CornerRadius="6" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF" FontSize="11"/>
+                                                             Padding="8 6" CornerRadius="6" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}" FontSize="11"/>
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="2" Spacing="4">
-                                                    <TextBlock Text="版本" FontSize="10" Foreground="#AAAAAA"/>
+                                                    <TextBlock Text="版本" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                     <TextBox Text="{Binding SkuVersions}" Watermark="标准,豪华"
-                                                             Padding="8 6" CornerRadius="6" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF" FontSize="11"/>
+                                                             Padding="8 6" CornerRadius="6" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}" FontSize="11"/>
                                                 </StackPanel>
                                             </Grid>
-                                            <TextBlock Text="多个值用逗号分隔" FontSize="10" Foreground="#666666"/>
+                                            <TextBlock Text="多个值用逗号分隔" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                                         </StackPanel>
                                     </Border>
 
@@ -557,26 +557,26 @@
                                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                                     <TextBlock Text="🏷️" FontSize="14" VerticalAlignment="Center"/>
-                                                    <TextBlock Text="预售商品" FontSize="13" FontWeight="SemiBold" Foreground="#FF6B6B" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="预售商品" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource LoginErrorBrush}" VerticalAlignment="Center"/>
                                                 </StackPanel>
                                                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsPresale}"/>
                                             </Grid>
                                             <StackPanel Spacing="8" IsVisible="{Binding ShowPresaleOptions}">
                                                 <StackPanel Spacing="4">
-                                                    <TextBlock Text="关联种植批次" FontSize="10" Foreground="#AAAAAA"/>
+                                                    <TextBlock Text="关联种植批次" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                     <ComboBox ItemsSource="{Binding AvailableBatches}" SelectedItem="{Binding SelectedBatch}"
                                                               DisplayMemberBinding="{Binding BatchName}"
-                                                              Padding="10 8" CornerRadius="8" Background="#2A2A3E" Foreground="#FFFFFF"
+                                                              Padding="10 8" CornerRadius="8" Background="{DynamicResource LoginFormBackgroundBrush}" Foreground="{DynamicResource LoginFormTextBrush}"
                                                               HorizontalAlignment="Stretch"/>
                                                 </StackPanel>
                                                 <StackPanel Spacing="4">
-                                                    <TextBlock Text="预计发货日期" FontSize="10" Foreground="#AAAAAA"/>
+                                                    <TextBlock Text="预计发货日期" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                     <CalendarDatePicker SelectedDate="{Binding PresaleDeliveryDate}"
                                                                         HorizontalAlignment="Stretch"
                                                                         CornerRadius="8"/>
                                                 </StackPanel>
                                                 <Border Background="#1AFF6B6B" CornerRadius="6" Padding="8 4">
-                                                    <TextBlock Text="预售商品将在关联批次收获后自动通知买家" FontSize="10" Foreground="#FF6B6B" TextWrapping="Wrap"/>
+                                                    <TextBlock Text="预售商品将在关联批次收获后自动通知买家" FontSize="10" Foreground="{DynamicResource LoginErrorBrush}" TextWrapping="Wrap"/>
                                                 </Border>
                                             </StackPanel>
                                         </StackPanel>
@@ -633,14 +633,14 @@
                                                             <Grid ColumnDefinitions="*,Auto" Margin="0 2 0 0">
                                                                 <TextBlock Text="{Binding ProductName}" FontSize="12"/>
                                                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                                                                    <TextBlock Text="{Binding Quantity, StringFormat='x{0}'}" FontSize="11" Foreground="#888888"/>
-                                                                    <TextBlock Text="{Binding Subtotal, StringFormat='¥{0:F2}'}" FontSize="12" Foreground="#FF6B6B"/>
+                                                                    <TextBlock Text="{Binding Quantity, StringFormat='x{0}'}" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                                                                    <TextBlock Text="{Binding Subtotal, StringFormat='¥{0:F2}'}" FontSize="12" Foreground="{DynamicResource LoginErrorBrush}"/>
                                                                 </StackPanel>
                                                             </Grid>
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
-                                                <Border Height="1" Background="#10FFFFFF"/>
+                                                <Border Height="1" Background="{DynamicResource BattleNetSurfaceTintBrush}"/>
                                                 <Grid ColumnDefinitions="*,Auto">
                                                     <TextBlock Text="{Binding TotalAmount, StringFormat='合计: ¥{0:F2}'}" FontSize="13" FontWeight="SemiBold"/>
                                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
@@ -663,7 +663,7 @@
                             <Border Classes="SurfaceCard" Padding="40" IsVisible="{Binding !HasOrders}">
                                 <StackPanel HorizontalAlignment="Center" Spacing="12">
                                     <TextBlock Text="📋" FontSize="32" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="暂无订单" FontSize="14" Foreground="#888888" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="暂无订单" FontSize="14" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
@@ -689,10 +689,10 @@
                                                 <Grid ColumnDefinitions="*,Auto">
                                                     <StackPanel Spacing="4">
                                                         <TextBlock Text="{Binding RefundNo}" FontSize="13" FontWeight="SemiBold"/>
-                                                        <TextBlock Text="{Binding Reason}" FontSize="11" Foreground="#888888"/>
+                                                        <TextBlock Text="{Binding Reason}" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                                                     </StackPanel>
                                                     <Border Grid.Column="1" CornerRadius="6" Padding="8 3" Background="#25EF5350">
-                                                        <TextBlock FontSize="10" Foreground="#EF5350">
+                                                        <TextBlock FontSize="10" Foreground="{DynamicResource LoginErrorBrush}">
                                                             <TextBlock.Text>
                                                                 <MultiBinding StringFormat="{}{0}">
                                                                     <Binding Path="Status"/>
@@ -702,7 +702,7 @@
                                                     </Border>
                                                 </Grid>
                                                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                                                    <TextBlock Text="{Binding RefundAmount, StringFormat='退款: ¥{0:F2}'}" FontSize="13" Foreground="#FF6B6B" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding RefundAmount, StringFormat='退款: ¥{0:F2}'}" FontSize="13" Foreground="{DynamicResource LoginErrorBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                                     <Button Grid.Column="1" Content="同意" Classes="PrimaryAction" Padding="12 5" FontSize="11" CornerRadius="8"
                                                             Command="{Binding $parent[ItemsControl].((vm:FlowerMerchantViewModel)DataContext).ApproveRefundCommand}"
                                                             CommandParameter="{Binding Id}"/>
@@ -719,7 +719,7 @@
                             <Border Classes="SurfaceCard" Padding="40" IsVisible="{Binding !HasRefunds}">
                                 <StackPanel HorizontalAlignment="Center" Spacing="12">
                                     <TextBlock Text="💰" FontSize="32" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="暂无退款申请" FontSize="14" Foreground="#888888" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="暂无退款申请" FontSize="14" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
@@ -733,21 +733,21 @@
 
                                     <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                                         <StackPanel Spacing="8">
-                                            <TextBlock Text="银行名称" FontSize="12" Foreground="#AAAAAA"/>
+                                            <TextBlock Text="银行名称" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             <TextBox Text="{Binding SettlementBankName}" Watermark="请输入银行名称"
-                                                     Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                                     Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" Spacing="8">
-                                            <TextBlock Text="银行账号" FontSize="12" Foreground="#AAAAAA"/>
+                                            <TextBlock Text="银行账号" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                             <TextBox Text="{Binding SettlementAccountNo}" Watermark="请输入银行账号"
-                                                     Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                                     Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                         </StackPanel>
                                     </Grid>
 
                                     <StackPanel Spacing="8">
-                                        <TextBlock Text="户名" FontSize="12" Foreground="#AAAAAA"/>
+                                        <TextBlock Text="户名" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                         <TextBox Text="{Binding SettlementAccountName}" Watermark="请输入户名"
-                                                 Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                                 Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                     </StackPanel>
 
                                     <Button Content="保存结算账户" Classes="PrimaryAction" Padding="24 12" CornerRadius="10"
@@ -763,16 +763,16 @@
                                     <ItemsControl ItemsSource="{Binding SettlementBills}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Border Padding="12" Margin="0 0 0 6" CornerRadius="8" Background="#1A1A2E">
+                                                <Border Padding="12" Margin="0 0 0 6" CornerRadius="8" Background="{DynamicResource LoginFormBackgroundBrush}">
                                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                                         <StackPanel Spacing="4">
                                                             <TextBlock Text="{Binding Remark}" FontSize="12" FontWeight="SemiBold"/>
-                                                            <TextBlock Text="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="10" Foreground="#888888"/>
+                                                            <TextBlock Text="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                                                         </StackPanel>
                                                         <StackPanel Spacing="2" HorizontalAlignment="Right">
-                                                            <TextBlock Text="{Binding Amount, StringFormat='¥{0:F2}'}" FontSize="14" Foreground="#FF6B6B" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                                                            <TextBlock Text="{Binding Amount, StringFormat='¥{0:F2}'}" FontSize="14" Foreground="{DynamicResource LoginErrorBrush}" FontWeight="SemiBold" HorizontalAlignment="Right"/>
                                                             <Border CornerRadius="4" Padding="6 2" Background="#254CAF50" HorizontalAlignment="Right">
-                                                                <TextBlock FontSize="9" Foreground="#4CAF50" Text="{Binding Status}"/>
+                                                                <TextBlock FontSize="9" Foreground="{DynamicResource BattleNetPrimaryBrush}" Text="{Binding Status}"/>
                                                             </Border>
                                                         </StackPanel>
                                                     </Grid>
@@ -781,7 +781,7 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
                                     <Border Padding="20" IsVisible="{Binding !HasSettlementBills}">
-                                        <TextBlock Text="暂无结算记录" FontSize="12" Foreground="#888888" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="暂无结算记录" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                     </Border>
                                 </StackPanel>
                             </Border>
@@ -795,21 +795,21 @@
                                     <TextBlock Text="店铺设置" FontSize="16" FontWeight="SemiBold"/>
 
                                     <StackPanel Spacing="8">
-                                        <TextBlock Text="店铺名称" FontSize="12" Foreground="#AAAAAA"/>
+                                        <TextBlock Text="店铺名称" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                         <TextBox Text="{Binding EditShopName}"
-                                                 Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                                 Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                     </StackPanel>
 
                                     <StackPanel Spacing="8">
-                                        <TextBlock Text="联系电话" FontSize="12" Foreground="#AAAAAA"/>
+                                        <TextBlock Text="联系电话" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                         <TextBox Text="{Binding EditPhone}"
-                                                 Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                                 Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                     </StackPanel>
 
                                     <StackPanel Spacing="8">
-                                        <TextBlock Text="店铺描述" FontSize="12" Foreground="#AAAAAA"/>
+                                        <TextBlock Text="店铺描述" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                         <TextBox Text="{Binding EditDescription}"
-                                                 Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"
+                                                 Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"
                                                  Height="80" AcceptsReturn="True" TextWrapping="Wrap"/>
                                     </StackPanel>
 
@@ -827,17 +827,17 @@
                                     <ItemsControl ItemsSource="{Binding Shippers}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <Border Padding="12" Margin="0 0 0 6" CornerRadius="8" Background="#1A1A2E">
+                                                <Border Padding="12" Margin="0 0 0 6" CornerRadius="8" Background="{DynamicResource LoginFormBackgroundBrush}">
                                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                                         <StackPanel Spacing="4">
                                                             <StackPanel Orientation="Horizontal" Spacing="8">
                                                                 <TextBlock Text="{Binding ShipperName}" FontSize="12" FontWeight="SemiBold"/>
                                                                 <Border Background="#2542A5F5" CornerRadius="4" Padding="4 1" IsVisible="{Binding IsDefaultSendGoods}">
-                                                                    <TextBlock Text="默认" FontSize="9" Foreground="#42A5F5"/>
+                                                                    <TextBlock Text="默认" FontSize="9" Foreground="{DynamicResource BattleNetOutlineBrush}"/>
                                                                 </Border>
                                                             </StackPanel>
-                                                            <TextBlock Text="{Binding Address}" FontSize="11" Foreground="#888888"/>
-                                                            <TextBlock Text="{Binding TelPhone}" FontSize="10" Foreground="#666666"/>
+                                                            <TextBlock Text="{Binding Address}" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                                                            <TextBlock Text="{Binding TelPhone}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                                                         </StackPanel>
                                                         <Button Grid.Column="1" Content="删除" Classes="QuietAction" Padding="10 5" FontSize="10" CornerRadius="6"
                                                                 Command="{Binding $parent[ItemsControl].((vm:FlowerMerchantViewModel)DataContext).DeleteShipperCommand}"
@@ -849,35 +849,35 @@
                                     </ItemsControl>
 
                                     <Border Padding="20" IsVisible="{Binding !HasShippers}">
-                                        <TextBlock Text="暂无发货点" FontSize="12" Foreground="#888888" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="暂无发货点" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                     </Border>
 
                                     <!-- 添加发货点 -->
-                                    <Border Background="#1A1A2E" CornerRadius="8" Padding="12">
+                                    <Border Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="8" Padding="12">
                                         <StackPanel Spacing="10">
                                             <TextBlock Text="添加发货点" FontSize="12" FontWeight="SemiBold"/>
                                             <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
                                                 <StackPanel Spacing="4">
-                                                    <TextBlock Text="标签" FontSize="10" Foreground="#AAAAAA"/>
+                                                    <TextBlock Text="标签" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                     <TextBox Text="{Binding NewShipperTag}" Watermark="如：仓库A"
-                                                             Padding="8 6" CornerRadius="6" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF" FontSize="11"/>
+                                                             Padding="8 6" CornerRadius="6" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}" FontSize="11"/>
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="1" Spacing="4">
-                                                    <TextBlock Text="名称 *" FontSize="10" Foreground="#AAAAAA"/>
+                                                    <TextBlock Text="名称 *" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                     <TextBox Text="{Binding NewShipperName}" Watermark="发货点名称"
-                                                             Padding="8 6" CornerRadius="6" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF" FontSize="11"/>
+                                                             Padding="8 6" CornerRadius="6" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}" FontSize="11"/>
                                                 </StackPanel>
                                             </Grid>
                                             <StackPanel Spacing="4">
-                                                <TextBlock Text="地址 *" FontSize="10" Foreground="#AAAAAA"/>
+                                                <TextBlock Text="地址 *" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                 <TextBox Text="{Binding NewShipperAddress}" Watermark="详细地址"
-                                                         Padding="8 6" CornerRadius="6" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF" FontSize="11"/>
+                                                         Padding="8 6" CornerRadius="6" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}" FontSize="11"/>
                                             </StackPanel>
                                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                                 <StackPanel Spacing="4">
-                                                    <TextBlock Text="电话" FontSize="10" Foreground="#AAAAAA"/>
+                                                    <TextBlock Text="电话" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                     <TextBox Text="{Binding NewShipperPhone}" Watermark="联系电话"
-                                                             Padding="8 6" CornerRadius="6" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF" FontSize="11"/>
+                                                             Padding="8 6" CornerRadius="6" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}" FontSize="11"/>
                                                 </StackPanel>
                                                 <Button Grid.Column="1" Content="添加" Classes="PrimaryAction" Padding="16 8" CornerRadius="8" FontSize="12"
                                                         VerticalAlignment="Bottom"
@@ -912,19 +912,19 @@
                                                 <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold" />
                                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                                     <Border Background="#1A4CAF50" CornerRadius="4" Padding="6 2" IsVisible="{Binding IsFree}">
-                                                        <TextBlock Text="包邮" FontSize="11" Foreground="#4CAF50" />
+                                                        <TextBlock Text="包邮" FontSize="11" Foreground="{DynamicResource BattleNetPrimaryBrush}" />
                                                     </Border>
                                                     <Border Background="#1AFF9800" CornerRadius="4" Padding="6 2" IsVisible="{Binding !IsFree}">
                                                         <TextBlock Text="计费" FontSize="11" Foreground="#FF9800" />
                                                     </Border>
-                                                    <TextBlock Text="{Binding FirstPrice, StringFormat='首件 ¥{0:F2}'}" FontSize="12" Foreground="#AAAAAA"
+                                                    <TextBlock Text="{Binding FirstPrice, StringFormat='首件 ¥{0:F2}'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                                IsVisible="{Binding !IsFree}" />
-                                                    <TextBlock Text="{Binding ContinuePrice, StringFormat='续件 ¥{0:F2}'}" FontSize="12" Foreground="#AAAAAA"
+                                                    <TextBlock Text="{Binding ContinuePrice, StringFormat='续件 ¥{0:F2}'}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                                IsVisible="{Binding !IsFree}" />
                                                 </StackPanel>
                                             </StackPanel>
                                             <Button Grid.Column="1" Content="删除" FontSize="11" Padding="10 5" CornerRadius="6"
-                                                    Foreground="#EF5350" Background="Transparent"
+                                                    Foreground="{DynamicResource LoginErrorBrush}" Background="Transparent"
                                                     Click="OnDeleteFreightTemplateClick" Tag="{Binding Id}" />
                                         </Grid>
                                     </Border>
@@ -940,21 +940,21 @@
                     <StackPanel Spacing="16">
                         <TextBlock Text="新增运费模板" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                         <StackPanel Spacing="8">
-                            <TextBlock Text="模板名称 *" FontSize="12" Foreground="#AAAAAA"/>
+                            <TextBlock Text="模板名称 *" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             <TextBox Text="{Binding NewTemplateName}" Watermark="如：默认运费模板"
-                                     Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                     Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                         </StackPanel>
                         <CheckBox Content="包邮（免运费）" IsChecked="{Binding NewTemplateIsFree}" />
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="12" IsVisible="{Binding !NewTemplateIsFree}">
                             <StackPanel Spacing="8">
-                                <TextBlock Text="首件价格" FontSize="12" Foreground="#AAAAAA"/>
+                                <TextBlock Text="首件价格" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <TextBox Text="{Binding NewTemplateFirstPrice}" Watermark="0.00"
-                                         Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                         Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                             </StackPanel>
                             <StackPanel Spacing="8">
-                                <TextBlock Text="续件价格" FontSize="12" Foreground="#AAAAAA"/>
+                                <TextBlock Text="续件价格" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <TextBox Text="{Binding NewTemplateContinuePrice}" Watermark="0.00"
-                                         Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                         Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                             </StackPanel>
                         </Grid>
                         <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
@@ -974,15 +974,15 @@
                         <StackPanel Spacing="16">
                             <TextBlock Text="填写发货信息" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                             <StackPanel Spacing="8">
-                                <TextBlock Text="物流公司 *" FontSize="12" Foreground="#AAAAAA"/>
+                                <TextBlock Text="物流公司 *" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <ComboBox ItemsSource="{Binding ExpressCompanies}"
                                           SelectedItem="{Binding SelectedExpressCompany}"
-                                          Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                          Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                             </StackPanel>
                             <StackPanel Spacing="8">
-                                <TextBlock Text="运单号 *" FontSize="12" Foreground="#AAAAAA"/>
+                                <TextBlock Text="运单号 *" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <TextBox Text="{Binding ShipOrderNumber}" Watermark="请输入运单号"
-                                         Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                         Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
                                 <Button Content="取消" Classes="QuietAction" Padding="24 10" CornerRadius="10"
@@ -997,7 +997,7 @@
                 <Panel IsVisible="{Binding ShowMerchantLogisticsDialog}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ZIndex="1000">
                     <Border Background="#80000000" />
                     <Border HorizontalAlignment="Center" VerticalAlignment="Center"
-                            Background="#1E1E2E" CornerRadius="16" Padding="24" MaxWidth="480" MaxHeight="600">
+                            Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="16" Padding="24" MaxWidth="480" MaxHeight="600">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel Spacing="16">
                                 <Grid ColumnDefinitions="*,Auto">
@@ -1006,27 +1006,27 @@
                                             Command="{Binding CloseMerchantLogisticsDialogCommand}"/>
                                 </Grid>
 
-                                <Border Background="#25FFFFFF" CornerRadius="10" Padding="12">
+                                <Border Background="{DynamicResource BattleNetSurfaceTintBrush}" CornerRadius="10" Padding="12">
                                     <StackPanel Spacing="4">
-                                        <TextBlock FontSize="12" Foreground="#AAAAAA">
+                                        <TextBlock FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                                             <Run Text="快递公司："/>
-                                            <Run Text="{Binding MerchantLogisticsMapData.ExpressCompanyName}" Foreground="#FFFFFF"/>
+                                            <Run Text="{Binding MerchantLogisticsMapData.ExpressCompanyName}" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                         </TextBlock>
-                                        <TextBlock FontSize="12" Foreground="#AAAAAA">
+                                        <TextBlock FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}">
                                             <Run Text="运单号："/>
-                                            <Run Text="{Binding MerchantLogisticsMapData.ShipOrderNumber}" Foreground="#FFFFFF"/>
+                                            <Run Text="{Binding MerchantLogisticsMapData.ShipOrderNumber}" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                         </TextBlock>
                                     </StackPanel>
                                 </Border>
 
                                 <StackPanel IsVisible="{Binding IsLoadingMerchantLogistics}" HorizontalAlignment="Center" Spacing="8" Margin="0 20">
                                     <TextBlock Text="⏳" FontSize="24" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="正在查询物流信息..." FontSize="12" Foreground="#888888" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="正在查询物流信息..." FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                 </StackPanel>
 
                                 <StackPanel IsVisible="{Binding HasNoMerchantLogistics}" HorizontalAlignment="Center" Spacing="8" Margin="0 20">
                                     <TextBlock Text="📦" FontSize="24" HorizontalAlignment="Center"/>
-                                    <TextBlock Text="暂无物流信息" FontSize="12" Foreground="#888888" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="暂无物流信息" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                 </StackPanel>
 
                                 <controls:LogisticsMapView MapData="{Binding MerchantLogisticsMapData}" Height="250" IsVisible="{Binding HasMerchantLogisticsNodes}"/>
@@ -1037,15 +1037,15 @@
                                             <Grid ColumnDefinitions="Auto,12,*" Margin="0">
                                                 <StackPanel Width="20" VerticalAlignment="Stretch">
                                                     <Border Width="10" Height="10" CornerRadius="5" HorizontalAlignment="Center"
-                                                            Background="#66BB6A" Margin="0 4 0 0"/>
-                                                    <Border Width="2" Background="#3066BB6A" HorizontalAlignment="Center"
+                                                            Background="{DynamicResource BattleNetPrimaryBrush}" Margin="0 4 0 0"/>
+                                                    <Border Width="2" Background="{DynamicResource BattleNetSurfaceTintBrush}" HorizontalAlignment="Center"
                                                             Margin="0 2 0 0" VerticalAlignment="Stretch"/>
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="2" Spacing="2" Margin="0 0 0 16">
                                                     <TextBlock Text="{Binding Time, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"
-                                                               FontSize="11" Foreground="#888888"/>
+                                                               FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                                                     <TextBlock Text="{Binding Description}" FontSize="12" TextWrapping="Wrap"/>
-                                                    <TextBlock Text="{Binding Location}" FontSize="11" Foreground="#AAAAAA"/>
+                                                    <TextBlock Text="{Binding Location}" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                 </StackPanel>
                                             </Grid>
                                         </DataTemplate>
@@ -1062,25 +1062,25 @@
                     <StackPanel Spacing="16">
                         <TextBlock Text="确认调价" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                         <StackPanel Spacing="8">
-                            <TextBlock Text="商品名称" FontSize="12" Foreground="#AAAAAA"/>
+                            <TextBlock Text="商品名称" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             <TextBlock Text="{Binding SelectedPriceAdjustment.ProductName}" FontSize="14" FontWeight="SemiBold"/>
                         </StackPanel>
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                             <StackPanel Spacing="8">
-                                <TextBlock Text="当前价格" FontSize="12" Foreground="#AAAAAA"/>
-                                <TextBlock Text="{Binding SelectedPriceAdjustment.CurrentPrice, StringFormat='¥{0:F2}'}" FontSize="18" Foreground="#888888" FontWeight="SemiBold"/>
+                                <TextBlock Text="当前价格" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <TextBlock Text="{Binding SelectedPriceAdjustment.CurrentPrice, StringFormat='¥{0:F2}'}" FontSize="18" Foreground="{DynamicResource LoginFormMutedBrush}" FontWeight="SemiBold"/>
                             </StackPanel>
                             <StackPanel Spacing="8">
-                                <TextBlock Text="建议价格" FontSize="12" Foreground="#AAAAAA"/>
-                                <TextBlock Text="{Binding SelectedPriceAdjustment.SuggestedPrice, StringFormat='¥{0:F2}'}" FontSize="18" Foreground="#42A5F5" FontWeight="SemiBold"/>
+                                <TextBlock Text="建议价格" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <TextBlock Text="{Binding SelectedPriceAdjustment.SuggestedPrice, StringFormat='¥{0:F2}'}" FontSize="18" Foreground="{DynamicResource BattleNetOutlineBrush}" FontWeight="SemiBold"/>
                             </StackPanel>
                         </Grid>
                         <Border Background="#25EF5350" CornerRadius="6" Padding="8 4" HorizontalAlignment="Center">
-                            <TextBlock Text="{Binding SelectedPriceAdjustment.ChangePercent, StringFormat='价格变动: {0:+0.0;-0.0}%'}" FontSize="12" Foreground="#EF5350" HorizontalAlignment="Center"/>
+                            <TextBlock Text="{Binding SelectedPriceAdjustment.ChangePercent, StringFormat='价格变动: {0:+0.0;-0.0}%'}" FontSize="12" Foreground="{DynamicResource LoginErrorBrush}" HorizontalAlignment="Center"/>
                         </Border>
                         <StackPanel Spacing="8">
-                            <TextBlock Text="调价原因" FontSize="12" Foreground="#AAAAAA"/>
-                            <TextBlock Text="{Binding SelectedPriceAdjustment.Reason}" FontSize="12" Foreground="#CCCCCC" TextWrapping="Wrap" MaxWidth="380"/>
+                            <TextBlock Text="调价原因" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Text="{Binding SelectedPriceAdjustment.Reason}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" MaxWidth="380"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
                             <Button Content="取消" Classes="QuietAction" Padding="24 10" CornerRadius="10"
@@ -1098,7 +1098,7 @@
         <Panel IsVisible="{Binding ShowEditProductDialog}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ZIndex="1000">
             <Border Background="#80000000" Tapped="OnEditDrawerOverlayTapped" />
             <Border HorizontalAlignment="Right" VerticalAlignment="Top"
-                    Background="#1E1E2E" BorderBrush="#333333" BorderThickness="1 0 0 1"
+                    Background="{DynamicResource LoginFormBackgroundBrush}" BorderBrush="{DynamicResource LoginInfoCardBorderBrush}" BorderThickness="1 0 0 1"
                     Width="420" MaxWidth="500" MaxHeight="900"
                     CornerRadius="0 0 0 16" Margin="0 20 0 0">
                 <Border.Transitions>
@@ -1108,15 +1108,15 @@
                 </Border.Transitions>
                 <Grid RowDefinitions="Auto,*,Auto">
                     <!-- 抽屉标题栏 -->
-                    <Border Grid.Row="0" Padding="20 16" BorderBrush="#333333" BorderThickness="0 0 0 1">
+                    <Border Grid.Row="0" Padding="20 16" BorderBrush="{DynamicResource LoginInfoCardBorderBrush}" BorderThickness="0 0 0 1">
                         <Grid ColumnDefinitions="*,Auto">
                             <StackPanel Spacing="4">
-                                <TextBlock Text="编辑商品" FontSize="18" FontWeight="SemiBold" Foreground="#FFFFFF"/>
-                                <TextBlock Text="{Binding EditProductName}" FontSize="12" Foreground="#888888" TextTrimming="CharacterEllipsis" MaxWidth="300"/>
+                                <TextBlock Text="编辑商品" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource LoginFormTextBrush}"/>
+                                <TextBlock Text="{Binding EditProductName}" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" TextTrimming="CharacterEllipsis" MaxWidth="300"/>
                             </StackPanel>
                             <Button Grid.Column="1" Classes="QuietAction" Padding="8" CornerRadius="8"
                                     Click="OnCancelEditProductClick" ToolTip.Tip="关闭">
-                                <TextBlock Text="✕" FontSize="16" Foreground="#AAAAAA"/>
+                                <TextBlock Text="✕" FontSize="16" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             </Button>
                         </Grid>
                     </Border>
@@ -1125,55 +1125,55 @@
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel Spacing="16" Margin="20">
                             <StackPanel Spacing="8">
-                                <TextBlock Text="商品名称 *" FontSize="12" Foreground="#AAAAAA"/>
+                                <TextBlock Text="商品名称 *" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <TextBox Text="{Binding EditProductName}" Watermark="请输入商品名称"
-                                         Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                         Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                             </StackPanel>
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                                 <StackPanel Spacing="8">
-                                    <TextBlock Text="售价 *" FontSize="12" Foreground="#AAAAAA"/>
+                                    <TextBlock Text="售价 *" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                     <TextBox Text="{Binding EditProductPrice}" Watermark="0.00"
-                                             Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                             Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                 </StackPanel>
                                 <StackPanel Spacing="8">
-                                    <TextBlock Text="市场价" FontSize="12" Foreground="#AAAAAA"/>
+                                    <TextBlock Text="市场价" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                     <TextBox Text="{Binding EditProductMarketPrice}" Watermark="0.00"
-                                             Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                             Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                 </StackPanel>
                             </Grid>
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                                 <StackPanel Spacing="8">
-                                    <TextBlock Text="库存 *" FontSize="12" Foreground="#AAAAAA"/>
+                                    <TextBlock Text="库存 *" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                     <TextBox Text="{Binding EditProductStock}" Watermark="0"
-                                             Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                             Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                 </StackPanel>
                                 <StackPanel Spacing="8">
-                                    <TextBlock Text="单位" FontSize="12" Foreground="#AAAAAA"/>
+                                    <TextBlock Text="单位" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                     <TextBox Text="{Binding EditProductUnit}" Watermark="束"
-                                             Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                             Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                                 </StackPanel>
                             </Grid>
                             <StackPanel Spacing="8">
-                                <TextBlock Text="商品描述" FontSize="12" Foreground="#AAAAAA"/>
+                                <TextBlock Text="商品描述" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <TextBox Text="{Binding EditProductDescription}" Watermark="请输入商品描述"
-                                         Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"
+                                         Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"
                                          AcceptsReturn="True" Height="80" TextWrapping="Wrap" />
                             </StackPanel>
                             <StackPanel Spacing="8">
-                                <TextBlock Text="图片URL" FontSize="12" Foreground="#AAAAAA"/>
+                                <TextBlock Text="图片URL" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <TextBox Text="{Binding EditProductImages}" Watermark="图片URL，多个用逗号分隔"
-                                         Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"/>
+                                         Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"/>
                             </StackPanel>
 
                             <!-- SKU管理 -->
-                            <Border Height="1" Background="#333333" Margin="0 4"/>
+                            <Border Height="1" Background="{DynamicResource LoginInfoCardBorderBrush}" Margin="0 4"/>
                             <TextBlock Text="SKU管理" FontSize="13" FontWeight="SemiBold"/>
                             <Grid ColumnDefinitions="*,*,*,Auto,Auto" ColumnSpacing="6">
-                                <TextBox Text="{Binding NewSkuColor}" Watermark="颜色" Padding="8 6" CornerRadius="6" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF" FontSize="11"/>
-                                <TextBox Grid.Column="1" Text="{Binding NewSkuSize}" Watermark="尺码" Padding="8 6" CornerRadius="6" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF" FontSize="11"/>
-                                <TextBox Grid.Column="2" Text="{Binding NewSkuVersion}" Watermark="版本" Padding="8 6" CornerRadius="6" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF" FontSize="11"/>
-                                <TextBox Grid.Column="3" Text="{Binding NewSkuPrice}" Watermark="价格" Width="60" Padding="8 6" CornerRadius="6" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF" FontSize="11"/>
-                                <TextBox Grid.Column="4" Text="{Binding NewSkuStock}" Watermark="库存" Width="60" Padding="8 6" CornerRadius="6" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF" FontSize="11"/>
+                                <TextBox Text="{Binding NewSkuColor}" Watermark="颜色" Padding="8 6" CornerRadius="6" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}" FontSize="11"/>
+                                <TextBox Grid.Column="1" Text="{Binding NewSkuSize}" Watermark="尺码" Padding="8 6" CornerRadius="6" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}" FontSize="11"/>
+                                <TextBox Grid.Column="2" Text="{Binding NewSkuVersion}" Watermark="版本" Padding="8 6" CornerRadius="6" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}" FontSize="11"/>
+                                <TextBox Grid.Column="3" Text="{Binding NewSkuPrice}" Watermark="价格" Width="60" Padding="8 6" CornerRadius="6" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}" FontSize="11"/>
+                                <TextBox Grid.Column="4" Text="{Binding NewSkuStock}" Watermark="库存" Width="60" Padding="8 6" CornerRadius="6" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}" FontSize="11"/>
                             </Grid>
                             <Button Content="+ 添加SKU" Classes="QuietAction" Padding="16 6" CornerRadius="8" FontSize="12"
                                     HorizontalAlignment="Left" Click="OnAddSkuClick"/>
@@ -1181,15 +1181,15 @@
                             <ItemsControl ItemsSource="{Binding EditProductSKUs}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Background="#2A2A3E" CornerRadius="6" Padding="8 6" Margin="0 2 0 0">
+                                        <Border Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="6" Padding="8 6" Margin="0 2 0 0">
                                             <Grid ColumnDefinitions="*,Auto">
                                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                                     <TextBlock Text="{Binding DisplayName}" FontSize="12" Foreground="White" VerticalAlignment="Center"/>
-                                                    <TextBlock Text="{Binding SalePrice, StringFormat='¥{0:F2}'}" FontSize="12" Foreground="#FF6B6B" VerticalAlignment="Center"/>
-                                                    <TextBlock Text="{Binding Stock, StringFormat='库存:{0}'}" FontSize="11" Foreground="#888888" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding SalePrice, StringFormat='¥{0:F2}'}" FontSize="12" Foreground="{DynamicResource LoginErrorBrush}" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding Stock, StringFormat='库存:{0}'}" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center"/>
                                                 </StackPanel>
                                                 <Button Grid.Column="1" Content="删除" FontSize="10" Padding="8 4" CornerRadius="4"
-                                                        Foreground="#EF5350" Background="Transparent"
+                                                        Foreground="{DynamicResource LoginErrorBrush}" Background="Transparent"
                                                         Click="OnDeleteSkuClick" Tag="{Binding Id}"/>
                                             </Grid>
                                         </Border>
@@ -1200,7 +1200,7 @@
                     </ScrollViewer>
 
                     <!-- 抽屉底部操作栏 -->
-                    <Border Grid.Row="2" Padding="20 16" BorderBrush="#333333" BorderThickness="0 1 0 0">
+                    <Border Grid.Row="2" Padding="20 16" BorderBrush="{DynamicResource LoginInfoCardBorderBrush}" BorderThickness="0 1 0 0">
                         <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
                             <Button Content="取消" Classes="QuietAction" Padding="24 10" CornerRadius="10" MinWidth="80"
                                     Click="OnCancelEditProductClick"/>
@@ -1216,17 +1216,17 @@
         <Panel IsVisible="{Binding ShowAuditDialog}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ZIndex="1000">
             <Border Background="#80000000" Tapped="OnAuditOverlayTapped" />
             <Border HorizontalAlignment="Center" VerticalAlignment="Center"
-                    Background="#1E1E2E" BorderBrush="#333333" BorderThickness="1 0 0 1"
+                    Background="{DynamicResource LoginFormBackgroundBrush}" BorderBrush="{DynamicResource LoginInfoCardBorderBrush}" BorderThickness="1 0 0 1"
                     Width="420" MaxWidth="500"
                     CornerRadius="16" Margin="0 20 0 0">
                 <Grid RowDefinitions="Auto,*,Auto">
                     <!-- 对话框标题栏 -->
-                    <Border Grid.Row="0" Padding="20 16" BorderBrush="#333333" BorderThickness="0 0 0 1">
+                    <Border Grid.Row="0" Padding="20 16" BorderBrush="{DynamicResource LoginInfoCardBorderBrush}" BorderThickness="0 0 0 1">
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Text="商品审核" FontSize="18" FontWeight="SemiBold" Foreground="#FFFFFF"/>
+                            <TextBlock Text="商品审核" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource LoginFormTextBrush}"/>
                             <Button Grid.Column="1" Classes="QuietAction" Padding="8" CornerRadius="8"
                                     Click="OnCancelAuditClick" ToolTip.Tip="关闭">
-                                <TextBlock Text="✕" FontSize="16" Foreground="#AAAAAA"/>
+                                <TextBlock Text="✕" FontSize="16" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                             </Button>
                         </Grid>
                     </Border>
@@ -1235,17 +1235,17 @@
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <StackPanel Spacing="16" Margin="20">
                             <StackPanel Spacing="8">
-                                <TextBlock Text="审核结果 *" FontSize="12" Foreground="#AAAAAA"/>
+                                <TextBlock Text="审核结果 *" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <StackPanel Orientation="Horizontal" Spacing="12">
                                     <RadioButton Content="审核通过" GroupName="AuditApproved"
                                                  IsChecked="{Binding AuditApproved, Converter={StaticResource BoolToIntEqualOneConverter}}"
-                                                 Padding="16 10" CornerRadius="10" Background="#2A2A3E" Foreground="#FFFFFF"
+                                                 Padding="16 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" Foreground="{DynamicResource LoginFormTextBrush}"
                                                  FontSize="13"
                                                  Tag="1"
                                                  Click="OnAuditRadioClick"/>
                                     <RadioButton Content="审核拒绝" GroupName="AuditApproved"
                                                  IsChecked="{Binding AuditApproved, Converter={StaticResource BoolToIntEqualZeroConverter}}"
-                                                 Padding="16 10" CornerRadius="10" Background="#2A2A3E" Foreground="#FFFFFF"
+                                                 Padding="16 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" Foreground="{DynamicResource LoginFormTextBrush}"
                                                  FontSize="13"
                                                  Tag="0"
                                                  Click="OnAuditRadioClick"/>
@@ -1253,16 +1253,16 @@
                             </StackPanel>
 
                             <StackPanel Spacing="8" IsVisible="{Binding AuditApproved, Converter={StaticResource EqualToZeroConverter}}">
-                                <TextBlock Text="拒绝原因" FontSize="12" Foreground="#AAAAAA"/>
+                                <TextBlock Text="拒绝原因" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                 <TextBox Text="{Binding AuditReason}" Watermark="请输入拒绝原因"
-                                         Padding="12 10" CornerRadius="10" Background="#2A2A3E" BorderThickness="0" Foreground="#FFFFFF"
+                                         Padding="12 10" CornerRadius="10" Background="{DynamicResource LoginFormBackgroundBrush}" BorderThickness="0" Foreground="{DynamicResource LoginFormTextBrush}"
                                          AcceptsReturn="True" Height="80" TextWrapping="Wrap" />
                             </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
 
                     <!-- 对话框底部操作栏 -->
-                    <Border Grid.Row="2" Padding="20 16" BorderBrush="#333333" BorderThickness="0 1 0 0">
+                    <Border Grid.Row="2" Padding="20 16" BorderBrush="{DynamicResource LoginInfoCardBorderBrush}" BorderThickness="0 1 0 0">
                         <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
                             <Button Content="取消" Classes="QuietAction" Padding="24 10" CornerRadius="10" MinWidth="80"
                                     Click="OnCancelAuditClick"/>
@@ -1278,7 +1278,7 @@
         <Border Classes="SurfaceCard" Padding="40" IsVisible="{Binding IsLoading}" ZIndex="500">
             <StackPanel HorizontalAlignment="Center" Spacing="12">
                 <ProgressBar IsIndeterminate="True" Width="200"/>
-                <TextBlock Text="加载中..." FontSize="13" Foreground="#888888" HorizontalAlignment="Center"/>
+                <TextBlock Text="加载中..." FontSize="13" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
             </StackPanel>
         </Border>
 

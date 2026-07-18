@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>背包行囊</title>
+    <style id="theme-vars">
+/* ============================================================
+   混沌世界 HundunWorld · 水墨武侠沉浸式 UI 品牌样式
+   模式: free-explore | 主题: dark | 设备: desktop
+   仿《燕云十六声》：深墨黑 + 鎏金/古铜 + 毛笔书法 + 水墨笔触
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+
+/* ---------- 设计 Token ---------- */
+:root {
+  /* 背景层 — 深墨黑 */
+  --bg-base-default: #0E1016;
+  --bg-base-secondary: #14171E;
+  --bg-base-tertiary: #1C1F28;
+  --bg-base-elevated: #232733;
+  --ink-bg-panel: rgba(20, 23, 30, 0.85);
+  --ink-bg-panel-solid: #14171E;
+  --ink-bg-void: #0E1016;
+  --ink-bg-abyss: #0A0B10;
+  --ink-bg-scrim: rgba(8, 9, 14, 0.72);
+
+  /* 品牌主色 — 鎏金 */
+  --bg-brand: #C8A858;
+  --bg-brand-hover: #E0C880;
+  --bg-brand-active: #8A7438;
+  --bg-brand-disabled: rgba(200, 168, 88, 0.28);
+  --ink-gold-primary: #C8A858;
+  --ink-gold-bright: #E0C880;
+  --ink-gold-deep: #8A7438;
+  --ink-gold-glow: rgba(200, 168, 88, 0.4);
+
+  /* 铜色体系 — 辅助主色 */
+  --ink-bronze-primary: #B87333;
+  --ink-bronze-bright: #D4944E;
+  --ink-bronze-deep: #7A4A20;
+  --ink-bronze-glow: rgba(184, 115, 51, 0.4);
+
+  /* 辅助语义色 */
+  --ink-jade-primary: #5E8B7E;
+  --ink-jade-bright: #7EAE9E;
+  --ink-blood-primary: #B85450;
+  --ink-blood-bright: #D46862;
+
+  /* 品质色 — 游戏语义 */
+  --ink-quality-common: #8A8275;
+  --ink-quality-uncommon: #6B8E5A;
+  --ink-quality-rare: #4A7EA8;
+  --ink-quality-epic: #8B5E9E;
+  --ink-quality-legendary: #C8A858;
+
+  /* 状态色 */
+  --state-success: #6B8E5A;
+  --state-warning: #C8A858;
+  --state-error: #B85450;
+  --state-info: #4A7EA8;
+
+  /* 文字 */
+  --text-default: #F0EDE4;
+  --text-secondary: #B8B0A0;
+  --text-tertiary: #7A7468;
+  --text-disabled: #4A4640;
+  --text-brand: #E0C880;
+  --text-on-brand: #1A1408;
+
+  /* 边框 */
+  --border-neutral-l1: rgba(240, 237, 228, 0.06);
+  --border-neutral-l2: rgba(200, 168, 88, 0.15);
+  --border-neutral-l3: rgba(200, 168, 88, 0.25);
+  --ink-border-gold: rgba(200, 168, 88, 0.35);
+  --ink-border-gold-strong: rgba(200, 168, 88, 0.6);
+  --ink-border-bronze: rgba(184, 115, 51, 0.3);
+  --ink-divider: rgba(200, 168, 88, 0.12);
+
+  /* 字体 */
+  --ink-font-display: "Ma Shan Zheng", "STKaiti", "KaiTi", serif;
+  --ink-font-heading: "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+  --ink-font-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --ink-font-number: "DIN Alternate", "DIN", "Bebas Neue", monospace;
+  --font-family-heading: var(--ink-font-heading);
+  --font-family-default: var(--ink-font-body);
+
+  /* 圆角 — 古风克制 */
+  --radius-0: 0px;
+  --radius-2: 2px;
+  --radius-4: 4px;
+  --radius-8: 8px;
+  --radius-full: 999px;
+  --ink-radius-none: 0px;
+  --ink-radius-sm: 2px;
+  --ink-radius-md: 4px;
+  --ink-radius-lg: 8px;
+
+  /* 阴影 / 深度 */
+  --ink-shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --ink-shadow-soft: 0 1px 0 rgba(0, 0, 0, 0.05);
+  --ink-shadow-gold: 0 0 24px rgba(200, 168, 88, 0.2);
+  --ink-shadow-inset: inset 0 1px 0 rgba(200, 168, 88, 0.08);
+  --ink-shadow-inset-deep: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+  --ink-blur-panel: blur(8px);
+
+  /* 间距 */
+  --ink-space-1: 4px;
+  --ink-space-2: 8px;
+  --ink-space-3: 12px;
+  --ink-space-4: 16px;
+  --ink-space-5: 24px;
+  --ink-space-6: 32px;
+  --ink-space-8: 48px;
+
+  /* 控件尺寸 */
+  --ink-control-h-sm: 28px;
+  --ink-control-h-md: 36px;
+  --ink-control-h-lg: 44px;
+
+  /* Tailwind v4 语义别名 — 供 fill-html-head 生成 @theme inline 桥接（ink 前缀版） */
+  --ink-background: var(--bg-base-default);
+  --ink-foreground: var(--text-default);
+  --ink-card: var(--bg-base-secondary);
+  --ink-card-foreground: var(--text-default);
+  --ink-popover: var(--ink-bg-panel-solid);
+  --ink-popover-foreground: var(--text-default);
+  --ink-primary: var(--bg-brand);
+  --ink-primary-foreground: var(--text-on-brand);
+  --ink-secondary: var(--bg-base-tertiary);
+  --ink-secondary-foreground: var(--text-secondary);
+  --ink-muted: var(--bg-base-tertiary);
+  --ink-muted-foreground: var(--text-tertiary);
+  --ink-accent: var(--ink-bronze-primary);
+  --ink-accent-foreground: var(--text-default);
+  --ink-destructive: var(--ink-blood-primary);
+  --ink-destructive-foreground: var(--text-default);
+  --ink-border: var(--ink-border-gold);
+  --ink-input: var(--ink-border-gold);
+  --ink-ring: var(--ink-gold-primary);
+  --ink-radius-small: var(--ink-radius-sm);
+  --ink-radius-medium: var(--ink-radius-md);
+  --ink-radius-large: var(--ink-radius-lg);
+  --ink-radius-xlarge: var(--ink-radius-lg);
+}
+
+/* ---------- 基础重置 ---------- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg-base-default);
+  color: var(--text-default);
+  font-family: var(--ink-font-body);
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* 游戏沉浸根容器 */
+.ink-game-root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-base-default);
+}
+
+/* 全局水墨背景层 */
+.ink-bg-layer {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(200, 168, 88, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(184, 115, 51, 0.04) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(10, 11, 16, 0.8) 0%, transparent 60%),
+    var(--bg-base-default);
+  pointer-events: none;
+  z-index: 0;
+}
+.ink-bg-layer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+}
+
+/* 暗角晕影 */
+.ink-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.55) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ---------- 面板系统 ---------- */
+.ink-panel {
+  position: relative;
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  -webkit-backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-inset), var(--ink-shadow-soft);
+  border-radius: var(--ink-radius-md);
+}
+.ink-panel-solid {
+  background: var(--ink-bg-panel-solid);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-inset);
+  border-radius: var(--ink-radius-md);
+}
+.ink-panel-elevated {
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-panel);
+  border-radius: var(--ink-radius-md);
+}
+
+/* 水墨笔触描边 — 多层错位金线模拟飞白 */
+.ink-brush-border {
+  position: relative;
+  border: 1px solid var(--ink-border-gold);
+  box-shadow:
+    inset 0 0 0 1px rgba(200, 168, 88, 0.05),
+    0 0 0 1px rgba(200, 168, 88, 0.08),
+    0 1px 0 rgba(200, 168, 88, 0.1);
+}
+.ink-brush-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1px solid transparent;
+  border-image: linear-gradient(135deg, rgba(200, 168, 88, 0.4) 0%, rgba(200, 168, 88, 0.08) 40%, rgba(184, 115, 51, 0.3) 100%) 1;
+  pointer-events: none;
+}
+
+/* 面板四角装饰 */
+.ink-corner-deco {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--ink-gold-primary);
+  opacity: 0.7;
+}
+.ink-corner-deco.tl { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+.ink-corner-deco.tr { top: -1px; right: -1px; border-left: none; border-bottom: none; }
+.ink-corner-deco.bl { bottom: -1px; left: -1px; border-right: none; border-top: none; }
+.ink-corner-deco.br { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+/* 面板标题栏 */
+.ink-panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--ink-space-2);
+  padding: var(--ink-space-3) var(--ink-space-4);
+  border-bottom: 1px solid var(--ink-divider);
+  font-family: var(--ink-font-heading);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-brand);
+  letter-spacing: 2px;
+}
+.ink-panel-title::before {
+  content: "";
+  width: 3px;
+  height: 16px;
+  background: linear-gradient(180deg, var(--ink-gold-bright), var(--ink-gold-deep));
+  border-radius: var(--ink-radius-sm);
+}
+
+/* ---------- 排版 ---------- */
+.ink-text-display {
+  font-family: var(--ink-font-display);
+  font-size: 32px;
+  color: var(--text-brand);
+  letter-spacing: 4px;
+  line-height: 1.2;
+}
+.ink-text-heading {
+  font-family: var(--ink-font-heading);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-default);
+  letter-spacing: 1px;
+}
+.ink-text-subheading {
+  font-family: var(--ink-font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}
+.ink-text-body {
+  font-family: var(--ink-font-body);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+.ink-text-caption {
+  font-family: var(--ink-font-body);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.ink-text-number {
+  font-family: var(--ink-font-number);
+  font-weight: 700;
+  color: var(--text-brand);
+}
+
+/* ---------- 按钮 ---------- */
+.ink-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ink-space-2);
+  height: var(--ink-control-h-md);
+  padding: 0 var(--ink-space-4);
+  font-family: var(--ink-font-heading);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: var(--text-default);
+  background: var(--bg-base-tertiary);
+  border: 1px solid var(--ink-border-gold);
+  border-radius: var(--ink-radius-sm);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+.ink-btn:hover {
+  background: var(--bg-base-elevated);
+  border-color: var(--ink-border-gold-strong);
+  color: var(--text-brand);
+}
+.ink-btn:active { transform: translateY(1px); }
+.ink-btn-primary {
+  color: var(--text-on-brand);
+  background: linear-gradient(135deg, var(--ink-gold-bright), var(--ink-gold-deep));
+  border-color: var(--ink-gold-primary);
+  box-shadow: var(--ink-shadow-gold);
+}
+.ink-btn-primary:hover {
+  color: var(--text-on-brand);
+  background: linear-gradient(135deg, var(--ink-gold-primary), var(--ink-gold-deep));
+  border-color: var(--ink-gold-bright);
+}
+.ink-btn-ghost {
+  background: transparent;
+  border-color: var(--border-neutral-l2);
+  color: var(--text-secondary);
+}
+.ink-btn-ghost:hover {
+  background: rgba(200, 168, 88, 0.06);
+  border-color: var(--ink-border-gold);
+  color: var(--text-brand);
+}
+.ink-btn-sm { height: var(--ink-control-h-sm); font-size: 12px; padding: 0 var(--ink-space-3); }
+.ink-btn-lg { height: var(--ink-control-h-lg); font-size: 15px; padding: 0 var(--ink-space-5); }
+
+/* ---------- 标签 / 徽章 ---------- */
+.ink-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-family: var(--ink-font-body);
+  color: var(--text-secondary);
+  background: rgba(200, 168, 88, 0.08);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  letter-spacing: 1px;
+}
+.ink-tag-brand {
+  color: var(--text-brand);
+  background: rgba(200, 168, 88, 0.12);
+  border-color: var(--ink-border-gold);
+}
+
+/* 品质色 */
+.ink-q-common { color: var(--ink-quality-common); border-color: var(--ink-quality-common); }
+.ink-q-uncommon { color: var(--ink-quality-uncommon); border-color: var(--ink-quality-uncommon); }
+.ink-q-rare { color: var(--ink-quality-rare); border-color: var(--ink-quality-rare); }
+.ink-q-epic { color: var(--ink-quality-epic); border-color: var(--ink-quality-epic); }
+.ink-q-legendary { color: var(--ink-quality-legendary); border-color: var(--ink-quality-legendary); box-shadow: 0 0 12px rgba(200, 168, 88, 0.3); }
+
+/* ---------- 进度条 ---------- */
+.ink-bar {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  overflow: hidden;
+}
+.ink-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ink-gold-deep), var(--ink-gold-bright));
+  border-radius: var(--ink-radius-sm);
+  box-shadow: 0 0 8px rgba(200, 168, 88, 0.3);
+  transition: width 0.4s ease;
+}
+.ink-bar-fill-jade { background: linear-gradient(90deg, #3E6B5E, var(--ink-jade-bright)); box-shadow: 0 0 8px rgba(94, 139, 126, 0.3); }
+.ink-bar-fill-blood { background: linear-gradient(90deg, #8A3E3A, var(--ink-blood-bright)); box-shadow: 0 0 8px rgba(184, 84, 80, 0.3); }
+.ink-bar-thin { height: 4px; }
+
+/* 竖向属性条 */
+.ink-bar-v {
+  position: relative;
+  width: 8px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  overflow: hidden;
+  display: inline-block;
+}
+.ink-bar-v-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(0deg, var(--ink-gold-deep), var(--ink-gold-bright));
+  border-radius: var(--ink-radius-sm);
+}
+
+/* ---------- 网格格子（背包/技能槽） ---------- */
+.ink-cell {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ink-cell:hover {
+  border-color: var(--ink-border-gold-strong);
+  background: rgba(200, 168, 88, 0.08);
+}
+.ink-cell-quality { border-width: 1px; border-style: solid; }
+.ink-cell-badge {
+  position: absolute;
+  bottom: 1px;
+  right: 2px;
+  font-family: var(--ink-font-number);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-default);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+/* ---------- 列表项 ---------- */
+.ink-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--ink-space-3);
+  padding: var(--ink-space-3) var(--ink-space-4);
+  border-bottom: 1px solid var(--ink-divider);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.ink-list-item:hover { background: rgba(200, 168, 88, 0.05); }
+.ink-list-item.active {
+  background: rgba(200, 168, 88, 0.1);
+  border-left: 2px solid var(--ink-gold-primary);
+}
+
+/* ---------- 头像 / 圆点 ---------- */
+.ink-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ink-radius-md);
+  border: 1px solid var(--ink-border-gold);
+  background: var(--bg-base-tertiary);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.ink-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--ink-quality-common);
+}
+.ink-dot-online { background: var(--ink-quality-uncommon); box-shadow: 0 0 6px rgba(107, 142, 90, 0.6); }
+
+/* ---------- 分割线 ---------- */
+.ink-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ink-divider) 20%, var(--ink-divider) 80%, transparent);
+  border: none;
+}
+.ink-divider-v {
+  width: 1px;
+  align-self: stretch;
+  background: linear-gradient(180deg, transparent, var(--ink-divider) 20%, var(--ink-divider) 80%, transparent);
+}
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+::-webkit-scrollbar-thumb {
+  background: rgba(200, 168, 88, 0.25);
+  border-radius: var(--ink-radius-sm);
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(200, 168, 88, 0.45); }
+
+/* ---------- 选中态 ---------- */
+::selection { background: rgba(200, 168, 88, 0.3); color: var(--text-default); }
+
+/* ---------- 辅助 ---------- */
+.ink-flex { display: flex; }
+.ink-flex-col { display: flex; flex-direction: column; }
+.ink-items-center { align-items: center; }
+.ink-justify-between { justify-content: space-between; }
+.ink-gap-2 { gap: var(--ink-space-2); }
+.ink-gap-3 { gap: var(--ink-space-3); }
+.ink-gap-4 { gap: var(--ink-space-4); }
+.ink-flex-1 { flex: 1; }
+.ink-text-center { text-align: center; }
+.ink-text-right { text-align: right; }
+.ink-overflow-auto { overflow: auto; }
+.ink-overflow-hidden { overflow: hidden; }
+.ink-relative { position: relative; }
+.ink-absolute { position: absolute; }
+.ink-pointer { cursor: pointer; }
+
+/* 通用内容层（在背景层之上） */
+.ink-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+}
+
+/* 返回按钮 */
+.ink-back-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  border-radius: var(--ink-radius-sm);
+  color: var(--text-brand);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.ink-back-btn:hover {
+  background: rgba(200, 168, 88, 0.12);
+  border-color: var(--ink-border-gold-strong);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--ink-background);
+    --color-foreground: var(--ink-foreground);
+    --color-card: var(--ink-card);
+    --color-card-foreground: var(--ink-card-foreground);
+    --color-popover: var(--ink-popover);
+    --color-popover-foreground: var(--ink-popover-foreground);
+    --color-primary: var(--ink-primary);
+    --color-primary-foreground: var(--ink-primary-foreground);
+    --color-secondary: var(--ink-secondary);
+    --color-secondary-foreground: var(--ink-secondary-foreground);
+    --color-muted: var(--ink-muted);
+    --color-muted-foreground: var(--ink-muted-foreground);
+    --color-accent: var(--ink-accent);
+    --color-accent-foreground: var(--ink-accent-foreground);
+    --color-destructive: var(--ink-destructive);
+    --color-destructive-foreground: var(--ink-destructive-foreground);
+    --color-border: var(--ink-border);
+    --color-input: var(--ink-input);
+    --color-ring: var(--ink-ring);
+    --radius-sm: var(--ink-radius-small);
+    --radius-md: var(--ink-radius-medium);
+    --radius-lg: var(--ink-radius-large);
+    --radius-xl: var(--ink-radius-xlarge);
+  }
+  @layer base {
+    body { background: var(--ink-background); color: var(--ink-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="ink-game-root">
+    <div class="ink-bg-layer">
+        <div style="position:absolute;inset:0;background-image:url('../assets/ink-wash-bg-dark.jpg');background-size:cover;background-position:center;opacity:0.12;mix-blend-mode:overlay;pointer-events:none;"></div>
+    </div>
+    <div class="ink-vignette"></div>
+    <div class="ink-content">
+                <button class="ink-back-btn" data-dom-id="back-hud" aria-label="返回核心战斗HUD" style="width:auto;padding:0 14px;gap:6px;font-size:13px;font-family:var(--ink-font-heading);letter-spacing:2px;">
+            <i data-lucide="arrow-left" style="width:18px;height:18px;"></i>
+            <span>返回</span>
+        </button>
+
+        <div style="display:flex;flex-direction:column;width:100%;height:100%;padding:24px 24px 20px 84px;gap:16px;">
+
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+                <div style="display:flex;gap:8px;">
+                    <button class="ink-tab">道具</button>
+                    <button class="ink-tab ink-tab-active">装备</button>
+                    <button class="ink-tab">材料</button>
+                    <button class="ink-tab">任务</button>
+                </div>
+                <h1 class="ink-text-display" style="font-size:30px;letter-spacing:8px;text-wrap:balance;word-break:keep-all;">背包行囊</h1>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span class="ink-text-caption" style="color:var(--text-tertiary);letter-spacing:1px;">容量</span>
+                    <span class="ink-text-number" style="font-size:20px;color:var(--ink-gold-bright);">86</span>
+                    <span style="color:var(--text-tertiary);font-size:16px;">/</span>
+                    <span class="ink-text-number" style="font-size:16px;color:var(--text-secondary);">120</span>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:16px;flex:1;overflow:hidden;min-height:0;">
+
+                <div class="ink-panel ink-brush-border" style="position:relative;width:65%;display:flex;flex-direction:column;overflow:hidden;">
+                    <div class="ink-corner-deco tl"></div>
+                    <div class="ink-corner-deco tr"></div>
+                    <div class="ink-corner-deco bl"></div>
+                    <div class="ink-corner-deco br"></div>
+                    <div class="ink-panel-title" style="flex-shrink:0;">
+                        <span>装备栏</span>
+                        <span style="margin-left:auto;font-size:12px;color:var(--text-tertiary);font-family:var(--ink-font-body);letter-spacing:0;font-weight:400;">已持 35 件</span>
+                    </div>
+                    <div style="flex:1;overflow-y:auto;padding:16px;">
+                        <div style="display:grid;grid-template-columns:repeat(8,56px);gap:8px;justify-content:center;">
+
+                            <div class="ink-cell ink-cell-quality ink-q-legendary ink-cell-selected" title="玄铁重剑">
+                                <i data-lucide="swords"></i>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-legendary" title="龙渊古剑">
+                                <i data-lucide="swords"></i>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-epic" title="天蚕宝甲">
+                                <i data-lucide="shield"></i>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-epic" title="紫绶仙衣">
+                                <i data-lucide="shirt"></i>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-epic" title="玄武盾">
+                                <i data-lucide="shield"></i>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-epic" title="幽冥刺">
+                                <i data-lucide="swords"></i>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-rare" title="青锋剑">
+                                <i data-lucide="swords"></i>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-rare" title="寒铁枪">
+                                <i data-lucide="pickaxe"></i>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-rare" title="碧玉簪">
+                                <i data-lucide="feather"></i>
+                                <span class="ink-cell-badge">3</span>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-rare" title="蓝田玉佩">
+                                <i data-lucide="gem"></i>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-rare" title="冰魄银针">
+                                <i data-lucide="zap"></i>
+                                <span class="ink-cell-badge">50</span>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-rare" title="玄铁护腕">
+                                <i data-lucide="shield"></i>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-rare" title="青铜面甲">
+                                <i data-lucide="hard-hat"></i>
+                                <span class="ink-cell-badge">2</span>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-uncommon" title="精铁剑">
+                                <i data-lucide="swords"></i>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-uncommon" title="牛皮甲">
+                                <i data-lucide="shield"></i>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-uncommon" title="山鬼面具">
+                                <i data-lucide="theater"></i>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-uncommon" title="竹叶青">
+                                <i data-lucide="flask-conical"></i>
+                                <span class="ink-cell-badge">5</span>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-uncommon" title="粗布护腕">
+                                <i data-lucide="shield"></i>
+                                <span class="ink-cell-badge">2</span>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-uncommon" title="狼牙棒">
+                                <i data-lucide="hammer"></i>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-uncommon" title="铁头盔">
+                                <i data-lucide="hard-hat"></i>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-uncommon" title="皮靴">
+                                <i data-lucide="footprints"></i>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-uncommon" title="棉布腰带">
+                                <i data-lucide="circle"></i>
+                                <span class="ink-cell-badge">3</span>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-uncommon" title="木盾">
+                                <i data-lucide="shield"></i>
+                                <span class="ink-cell-badge">2</span>
+                            </div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-quality ink-q-common" title="粗布衣">
+                                <i data-lucide="shirt"></i>
+                                <span class="ink-cell-badge">4</span>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-common" title="草鞋">
+                                <i data-lucide="footprints"></i>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-common" title="木棍">
+                                <i data-lucide="pencil"></i>
+                                <span class="ink-cell-badge">3</span>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-common" title="破碗">
+                                <i data-lucide="coffee"></i>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-common" title="石斧">
+                                <i data-lucide="pickaxe"></i>
+                                <span class="ink-cell-badge">2</span>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-common" title="竹笠">
+                                <i data-lucide="umbrella"></i>
+                            </div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-quality ink-q-common" title="麻绳">
+                                <i data-lucide="link"></i>
+                                <span class="ink-cell-badge">10</span>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-common" title="粗瓷碗">
+                                <i data-lucide="coffee"></i>
+                                <span class="ink-cell-badge">2</span>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-common" title="铁钉">
+                                <i data-lucide="pin"></i>
+                                <span class="ink-cell-badge">20</span>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-common" title="火折子">
+                                <i data-lucide="flame"></i>
+                                <span class="ink-cell-badge">3</span>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-common" title="干粮包">
+                                <i data-lucide="package"></i>
+                                <span class="ink-cell-badge">8</span>
+                            </div>
+                            <div class="ink-cell ink-cell-quality ink-q-common" title="水囊">
+                                <i data-lucide="droplet"></i>
+                                <span class="ink-cell-badge">2</span>
+                            </div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                            <div class="ink-cell ink-cell-empty"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ink-panel-elevated ink-brush-border" style="position:relative;width:35%;display:flex;flex-direction:column;overflow:hidden;">
+                    <div class="ink-corner-deco tl"></div>
+                    <div class="ink-corner-deco tr"></div>
+                    <div class="ink-corner-deco bl"></div>
+                    <div class="ink-corner-deco br"></div>
+                    <div class="ink-panel-title" style="flex-shrink:0;">
+                        <span>装备详情</span>
+                    </div>
+                    <div style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:16px;">
+
+                        <div style="display:flex;gap:16px;align-items:flex-start;">
+                            <div class="ink-cell ink-cell-quality ink-q-legendary" style="width:56px;height:56px;flex-shrink:0;cursor:default;">
+                                <i data-lucide="swords" class="ink-detail-icon"></i>
+                            </div>
+                            <div style="flex:1;min-width:0;">
+                                <h2 style="font-family:var(--ink-font-heading);font-size:20px;font-weight:700;color:var(--ink-quality-legendary);letter-spacing:3px;margin-bottom:8px;text-wrap:balance;word-break:keep-all;">玄铁重剑</h2>
+                                <div style="display:flex;gap:8px;align-items:center;">
+                                    <span class="ink-tag ink-q-legendary" style="box-shadow:0 0 8px rgba(200,168,88,0.2);">传世</span>
+                                    <span class="ink-text-caption">武器 · 重剑</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="ink-divider">
+
+                        <div>
+                            <div class="ink-text-subheading" style="margin-bottom:8px;color:var(--text-tertiary);">物品渊源</div>
+                            <p class="ink-text-body" style="text-indent:2em;text-wrap:pretty;">玄铁所铸，重逾千斤。剑身古朴无华，隐现暗纹，握之则真气流转，挥之则风云变色。相传乃上古铸剑宗师采天外陨铁，历三载方成。剑鸣如龙吟，斩金断玉，开山裂石。</p>
+                        </div>
+
+                        <hr class="ink-divider">
+
+                        <div>
+                            <div class="ink-text-subheading" style="margin-bottom:4px;color:var(--text-tertiary);">属性数值</div>
+                            <div class="ink-list-item" style="cursor:default;justify-content:space-between;padding:7px 0;">
+                                <span class="ink-text-body" style="color:var(--text-secondary);">攻击力</span>
+                                <span class="ink-text-number" style="font-size:15px;color:var(--ink-gold-bright);">+1,280</span>
+                            </div>
+                            <div class="ink-list-item" style="cursor:default;justify-content:space-between;padding:7px 0;">
+                                <span class="ink-text-body" style="color:var(--text-secondary);">破甲值</span>
+                                <span class="ink-text-number" style="font-size:15px;color:var(--ink-gold-bright);">+360</span>
+                            </div>
+                            <div class="ink-list-item" style="cursor:default;justify-content:space-between;padding:7px 0;">
+                                <span class="ink-text-body" style="color:var(--text-secondary);">暴击率</span>
+                                <span class="ink-text-number" style="font-size:15px;color:var(--ink-gold-bright);">+15%</span>
+                            </div>
+                            <div class="ink-list-item" style="cursor:default;justify-content:space-between;padding:7px 0;">
+                                <span class="ink-text-body" style="color:var(--text-secondary);">攻击速度</span>
+                                <span class="ink-text-number" style="font-size:15px;color:var(--text-secondary);">0.8</span>
+                            </div>
+                            <div class="ink-list-item" style="cursor:default;justify-content:space-between;padding:7px 0;">
+                                <span class="ink-text-body" style="color:var(--text-secondary);">重量</span>
+                                <span class="ink-text-number" style="font-size:15px;color:var(--text-secondary);">48</span>
+                            </div>
+                            <div class="ink-list-item" style="cursor:default;flex-direction:column;align-items:stretch;gap:6px;padding:7px 0;border-bottom:none;">
+                                <div style="display:flex;justify-content:space-between;">
+                                    <span class="ink-text-body" style="color:var(--text-secondary);">耐久度</span>
+                                    <span class="ink-text-number" style="font-size:13px;color:var(--text-secondary);">320 / 500</span>
+                                </div>
+                                <div class="ink-bar ink-bar-thin">
+                                    <div class="ink-bar-fill" style="width:64%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="padding:12px 16px;border-top:1px solid var(--ink-divider);display:flex;gap:8px;flex-shrink:0;">
+                        <button class="ink-btn ink-btn-primary" style="flex:1;" data-dom-id="use-item">装备</button>
+                        <button class="ink-btn ink-btn-ghost" data-dom-id="discard-item">丢弃</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ink-panel ink-brush-border" style="position:relative;display:flex;align-items:center;padding:10px 16px;gap:0;flex-shrink:0;">
+                <div class="ink-corner-deco tl"></div>
+                <div class="ink-corner-deco tr"></div>
+                <div class="ink-corner-deco bl"></div>
+                <div class="ink-corner-deco br"></div>
+                <div class="ink-currency-item">
+                    <i data-lucide="circle-dot" style="width:20px;height:20px;color:var(--ink-quality-common);flex-shrink:0;"></i>
+                    <div style="display:flex;flex-direction:column;">
+                        <span class="ink-text-caption">铜钱</span>
+                        <span class="ink-text-number" style="font-size:16px;">12,860</span>
+                    </div>
+                </div>
+                <div class="ink-divider-v"></div>
+                <div class="ink-currency-item">
+                    <i data-lucide="hexagon" style="width:20px;height:20px;color:var(--text-secondary);flex-shrink:0;"></i>
+                    <div style="display:flex;flex-direction:column;">
+                        <span class="ink-text-caption">银两</span>
+                        <span class="ink-text-number" style="font-size:16px;">3,240</span>
+                    </div>
+                </div>
+                <div class="ink-divider-v"></div>
+                <div class="ink-currency-item">
+                    <i data-lucide="gem" style="width:20px;height:20px;color:var(--ink-gold-primary);flex-shrink:0;"></i>
+                    <div style="display:flex;flex-direction:column;">
+                        <span class="ink-text-caption">金锭</span>
+                        <span class="ink-text-number" style="font-size:16px;color:var(--ink-gold-bright);">185</span>
+                    </div>
+                </div>
+                <div class="ink-divider-v"></div>
+                <div class="ink-currency-item">
+                    <i data-lucide="award" style="width:20px;height:20px;color:var(--ink-gold-bright);flex-shrink:0;"></i>
+                    <div style="display:flex;flex-direction:column;">
+                        <span class="ink-text-caption">元宝</span>
+                        <span class="ink-text-number" style="font-size:16px;color:var(--ink-gold-bright);">42</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <style>
+.ink-tab {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 32px; padding: 0 16px;
+  font-family: var(--ink-font-heading); font-size: 13px; font-weight: 500;
+  letter-spacing: 2px; color: var(--text-secondary);
+  background: rgba(200, 168, 88, 0.05);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  cursor: pointer; user-select: none;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+.ink-tab:hover {
+  color: var(--text-brand); border-color: var(--ink-border-gold);
+  background: rgba(200, 168, 88, 0.08);
+}
+.ink-tab:focus-visible { outline: 2px solid var(--ink-gold-primary); outline-offset: 2px; }
+.ink-tab-active {
+  color: var(--text-brand);
+  background: rgba(200, 168, 88, 0.14);
+  border-color: var(--ink-border-gold);
+  box-shadow: inset 0 -2px 0 var(--ink-gold-primary);
+}
+.ink-cell-selected {
+  border-color: var(--ink-gold-bright) !important;
+  box-shadow: 0 0 14px rgba(200, 168, 88, 0.4), inset 0 0 8px rgba(200, 168, 88, 0.12) !important;
+  background: rgba(200, 168, 88, 0.12) !important;
+}
+.ink-cell.ink-cell-empty,
+.ink-cell.ink-cell-empty:hover {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border-color: var(--border-neutral-l1) !important;
+  cursor: default;
+}
+.ink-cell:focus-visible { outline: 2px solid var(--ink-gold-primary); outline-offset: 1px; }
+.ink-cell svg { width: 24px; height: 24px; stroke-width: 1.5; flex-shrink: 0; }
+.ink-detail-icon { width: 28px; height: 28px; }
+.ink-currency-item {
+  display: flex; align-items: center; gap: 10px;
+  flex: 1; justify-content: center;
+}
+.ink-btn:focus-visible { outline: 2px solid var(--ink-gold-primary); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; }
+}
+    </style>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

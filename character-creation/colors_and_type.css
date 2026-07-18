@@ -1,0 +1,111 @@
+/* ============================================================
+   HundunWorld Character Creation - Game UI Brand CSS
+   Overlay on Claude Design Library tokens.
+   Primary: Teal (青黄+青兰混合)
+   Secondary: Navy translucent (藏青半透明)
+   Muted: Ink translucent (墨色半透明)
+   Prefix: --game-
+   ============================================================ */
+
+:root {
+  /* === Game Primary (Teal: 青黄+青兰混合) === */
+  --game-primary: #2A9D8F;
+  --game-primary-light: #4ECDC4;
+  --game-primary-dark: #1B7A6E;
+  --game-primary-glow: rgba(42, 157, 143, 0.3);
+  --game-primary-rgb: 42, 157, 143;
+
+  /* === Game Secondary (Navy Translucent: 藏青半透明) === */
+  --game-secondary: rgba(25, 40, 80, 0.55);
+  --game-secondary-light: rgba(35, 55, 100, 0.4);
+  --game-secondary-solid: #1C2850;
+
+  /* === Game Muted (Ink Translucent: 墨色半透明) === */
+  --game-ink: rgba(10, 12, 18, 0.65);
+  --game-ink-light: rgba(10, 12, 18, 0.4);
+  --game-ink-subtle: rgba(10, 12, 18, 0.2);
+  --game-ink-solid: #0A0C12;
+
+  /* === Game Background System (Spring Dawn, light purple touch) === */
+  --game-bg-darkest: #0F1018;
+  --game-bg-dark: #161A24;
+  --game-bg-panel: rgba(20, 22, 30, 0.78);
+  --game-bg-panel-hover: rgba(30, 32, 44, 0.88);
+  --game-bg-fog: rgba(200, 190, 180, 0.06);
+  --game-bg-overlay: rgba(0, 0, 0, 0.4);
+  --game-bg-jade-deep: #121520;
+  --game-bg-jade-mid: #1C2230;
+  --game-bg-jade-teal: #2A9D8F;
+  --game-bg-jade-navy: #222838;
+  --game-bg-jade-fog: #D0C8C0;
+  --game-bg-jade-shimmer: rgba(42, 157, 143, 0.06);
+  --game-bg-dawn-purple: #221830;
+  --game-bg-dawn-violet: #5A4878;
+  --game-bg-dawn-pink: #C8908A;
+  --game-bg-dawn-teal: #2A9D8F;
+  --game-bg-dawn-sky: #98A8B8;
+  --game-bg-dawn-horizon: #D8C0B0;
+  --game-bg-dawn-gold: #C8A870;
+  --game-bg-dawn-warm: #E0C8A8;
+  --game-bg-dawn-sunlight: #F0DDB0;
+  --game-bg-dawn-sunray: rgba(240, 221, 176, 0.15);
+  --game-bg-dawn-sunstrong: rgba(232, 208, 160, 0.25);
+
+  /* === Game Text System === */
+  --game-text-primary: #E8ECF0;
+  --game-text-secondary: #8A95A5;
+  --game-text-accent: #2A9D8F;
+  --game-text-muted: #5A6575;
+  --game-text-disabled: #3A4452;
+  --game-text-white: #ffffff;
+  --game-text-dark: #0C1018;
+
+  /* === Game Font System === */
+  --font-game-title: "STKaiti", "KaiTi", "Noto Serif SC", "SimSun", serif;
+  --font-game-body: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+
+  /* === Game Spacing (4px grid) === */
+  --game-space-1: 4px;
+  --game-space-2: 8px;
+  --game-space-3: 12px;
+  --game-space-4: 16px;
+  --game-space-5: 20px;
+  --game-space-6: 24px;
+  --game-space-8: 32px;
+  --game-space-10: 40px;
+  --game-space-12: 48px;
+  --game-space-16: 64px;
+
+  /* === Game Radius === */
+  --game-radius-sm: 4px;
+  --game-radius-md: 8px;
+  --game-radius-lg: 12px;
+  --game-radius-full: 9999px;
+
+  /* === Game Shadow System === */
+  --game-shadow-panel: 0 4px 24px rgba(12, 16, 24, 0.5), inset 0 1px 0 rgba(42, 157, 143, 0.08);
+  --game-shadow-glow: 0 0 20px rgba(42, 157, 143, 0.2);
+  --game-shadow-button: 0 2px 8px rgba(12, 16, 24, 0.4);
+  --game-shadow-dropdown: 0 8px 32px rgba(12, 16, 24, 0.6);
+
+  /* === Game Border System === */
+  --game-border-accent: 1px solid rgba(42, 157, 143, 0.2);
+  --game-border-accent-active: 1px solid rgba(42, 157, 143, 0.5);
+  --game-border-navy: 1px solid rgba(25, 40, 80, 0.4);
+  --game-border-ink: 1px solid rgba(10, 12, 18, 0.5);
+  --game-border-subtle: 1px solid rgba(42, 157, 143, 0.08);
+
+  /* === Game Transition === */
+  --game-transition-fast: 0.15s ease;
+  --game-transition-normal: 0.3s ease;
+  --game-transition-slow: 0.5s ease;
+
+  /* === Game Control Heights === */
+  --game-height-btn: 36px;
+  --game-height-btn-lg: 44px;
+  --game-height-slider: 3px;
+  --game-height-slider-thumb: 14px;
+  --game-height-tab: 48px;
+  --game-height-topbar: 56px;
+  --game-height-bottombar: 64px;
+}

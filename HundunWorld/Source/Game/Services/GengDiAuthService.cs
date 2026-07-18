@@ -5,6 +5,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using FlaxEngine;
+using Horizon.Core.Abstract;
+using Horizon.Core.Abstract.Enums;
 using HundunWorld.Game.Network;
 
 namespace HundunWorld.Game.Services
@@ -19,6 +21,7 @@ namespace HundunWorld.Game.Services
         private static string _imAuthToken;
         private static long _expiresIn;
         private static string _passportId;
+        private static ulong _userId;
         private static readonly object _lock = new object();
 
         private static readonly HttpClient _httpClient;
@@ -53,8 +56,8 @@ namespace HundunWorld.Game.Services
                     Phone = "",
                     Email = "",
                     AppId = 1,
-                    AppType = 0,
-                    PassportType = 0,
+                    AppType = AppType.Game,
+                    PassportType = PassportType.Normal,
                     MachineId = machineId
                 };
 
@@ -110,6 +113,7 @@ namespace HundunWorld.Game.Services
                     _refreshToken = data.RefreshToken ?? string.Empty;
                     _imAuthToken = data.ImAuthToken ?? string.Empty;
                     _expiresIn = data.ExpiresIn;
+                    _userId = data.UserId;
                     _passportId = passportId.Trim();
                 }
 
@@ -122,7 +126,8 @@ namespace HundunWorld.Game.Services
                     AccessToken = data.AccessToken,
                     RefreshToken = data.RefreshToken ?? string.Empty,
                     ImAuthToken = data.ImAuthToken ?? string.Empty,
-                    ExpiresIn = data.ExpiresIn
+                    ExpiresIn = data.ExpiresIn,
+                    UserId = data.UserId
                 };
             }
             catch (HttpRequestException ex)
@@ -208,6 +213,10 @@ namespace HundunWorld.Game.Services
                     _refreshToken = envelope.Data.RefreshToken ?? _refreshToken;
                     _imAuthToken = envelope.Data.ImAuthToken ?? _imAuthToken;
                     _expiresIn = envelope.Data.ExpiresIn;
+                    if (envelope.Data.UserId != 0)
+                    {
+                        _userId = envelope.Data.UserId;
+                    }
                 }
 
                 Debug.Log("[GengDiAuth] Token刷新成功");
@@ -249,6 +258,14 @@ namespace HundunWorld.Game.Services
             lock (_lock)
             {
                 return _passportId ?? string.Empty;
+            }
+        }
+
+        public static ulong GetUserId()
+        {
+            lock (_lock)
+            {
+                return _userId;
             }
         }
 
@@ -353,6 +370,9 @@ namespace HundunWorld.Game.Services
 
             [JsonPropertyName("expiresIn")]
             public long ExpiresIn { get; set; }
+
+            [JsonPropertyName("userId")]
+            public ulong UserId { get; set; }
         }
 
     }
@@ -365,5 +385,6 @@ namespace HundunWorld.Game.Services
         public string RefreshToken { get; set; } = string.Empty;
         public string ImAuthToken { get; set; } = string.Empty;
         public long ExpiresIn { get; set; }
+        public ulong UserId { get; set; }
     }
 }

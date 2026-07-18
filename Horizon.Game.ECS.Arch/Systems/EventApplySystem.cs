@@ -15,6 +15,14 @@ namespace Horizon.Game.ECS.Arch.Systems;
 /// <remarks>
 /// 当前实现以诊断日志和组件更新为主，VFX/动画触发将通过后续 UE5 绑定完成。
 /// 系统通过查询 <see cref="NetworkIdentityComponent"/> 来匹配目标实体。
+/// <para>
+/// 交互离散事件（<c>InteractStart</c>/<c>InteractEnd</c>/<c>InteractStolen</c>）不由本系统处理：
+/// <see cref="ManagedHundunWorld.Network.NetworkRuntime.RouteEventPacketToBuffer"/> 在路由
+/// <see cref="EventPacket"/> 到 <see cref="EventReceiveBuffer"/> 的同时，将这些事件单独提取到
+/// <c>NetworkRuntime.InteractionSyncEvents</c> 队列，交由 <c>InteractionApplySystem</c> 消费，
+/// 避免与本系统争抢同一个 <see cref="EventReceiveBuffer"/>。本系统 switch 中显式列出空分支以避免
+/// 触发 <c>default</c> 警告。
+/// </para>
 /// </remarks>
 [ArchSystem(SystemGroup.NetworkReceive, order: 20)]
 public sealed class EventApplySystem : ArchSystemBase
@@ -27,6 +35,9 @@ public sealed class EventApplySystem : ArchSystemBase
 
     /// <summary>累计处理的 Death 事件数量（诊断用）。</summary>
     public int TotalDeathEvents { get; private set; }
+
+    /// <summary>累计处理的 Correction 事件数量（诊断用）。</summary>
+    public int TotalCorrectionEvents { get; private set; }
 
     /// <inheritdoc />
     public override void Update(World world, TimeSpan deltaTime)
@@ -47,6 +58,24 @@ public sealed class EventApplySystem : ArchSystemBase
 
                     case SyncEventKind.Death:
                         HandleDeath(world, syncEvent);
+                        break;
+
+                    case SyncEventKind.Correction:
+                        HandleCorrection(syncEvent);
+                        break;
+
+                    // 交互事件由 NetworkRuntime.RouteEventPacketToBuffer 单独路由到
+                    // InteractionSyncEvents 队列，交由 InteractionApplySystem 消费，不在本系统处理；
+                    // 此处显式列出空分支以避免触发下方 default 警告。
+                    case SyncEventKind.InteractStart:
+                    case SyncEventKind.InteractEnd:
+                    case SyncEventKind.InteractStolen:
+                        break;
+
+                    default:
+                        System.Diagnostics.Debug.WriteLine(
+                            $"[EventApply] Warning: unhandled SyncEventKind={syncEvent.Kind}, " +
+                            $"Source={syncEvent.SourceEntityId}, Target={syncEvent.TargetEntityId}");
                         break;
                 }
             }
@@ -122,5 +151,39 @@ public sealed class EventApplySystem : ArchSystemBase
                 world.Set(entity, ref state);
             }
         });
+    }
+
+    /// <summary>
+    /// 处理位置修正事件：从 SyncEvent.Payload 反序列化 CorrectionPacket，
+    /// 路由到 CorrectionReceiveBuffer 供 ReconciliationSystem 消费。
+    /// </summary>
+    private void HandleCorrection(SyncEvent syncEvent)
+    {
+        TotalCorrectionEvents++;
+
+        if (syncEvent.Payload == null || syncEvent.Payload.Length == 0)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                "[EventApply] Correction: Payload 为空，无法反序列化 CorrectionPacket");
+            return;
+        }
+
+        try
+        {
+            var correction = MemoryPack.MemoryPackSerializer.Deserialize<CorrectionPacket>(syncEvent.Payload);
+            if (correction != null)
+            {
+                CorrectionReceiveBuffer.Instance.Add(correction);
+                System.Diagnostics.Debug.WriteLine(
+                    $"[EventApply] Correction: EntityId={correction.EntityId}, " +
+                    $"Pos=({correction.CorrectedX:F2},{correction.CorrectedY:F2},{correction.CorrectedZ:F2}), " +
+                    $"Drift={correction.DriftMeters:F3}m, Reason={correction.Reason}");
+            }
+        }
+        catch (System.Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[EventApply] Correction 反序列化失败: {ex.Message}");
+        }
     }
 }

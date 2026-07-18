@@ -1,0 +1,2020 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>通行证 · 混沌世界</title>
+    <style id="theme-vars">
+/* ============================================================
+   混沌世界 HundunWorld · 燕云融合 UI 品牌样式
+   模式: free-explore | 主题: dark | 设备: desktop
+   融合策略：ink- 深墨黑沉浸底 + yy- 纸色面板 + 朱红战斗强调
+   仿《燕云十六声》：深墨黑 + 鎏金/古铜/朱红 + 纸色卷轴 + 毛笔书法
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+
+/* ---------- 设计 Token ---------- */
+:root {
+  /* 背景层 — 深墨黑 */
+  --bg-base-default: #0E1016;
+  --bg-base-secondary: #14171E;
+  --bg-base-tertiary: #1C1F28;
+  --bg-base-elevated: #232733;
+  --ink-bg-panel: rgba(20, 23, 30, 0.85);
+  --ink-bg-panel-solid: #14171E;
+  --ink-bg-void: #0E1016;
+  --ink-bg-abyss: #0A0B10;
+  --ink-bg-scrim: rgba(8, 9, 14, 0.72);
+
+  /* 品牌主色 — 鎏金 */
+  --bg-brand: #C8A858;
+  --bg-brand-hover: #E0C880;
+  --bg-brand-active: #8A7438;
+  --bg-brand-disabled: rgba(200, 168, 88, 0.28);
+  --ink-gold-primary: #C8A858;
+  --ink-gold-bright: #E0C880;
+  --ink-gold-deep: #8A7438;
+  --ink-gold-glow: rgba(200, 168, 88, 0.4);
+
+  /* 铜色体系 — 辅助主色 */
+  --ink-bronze-primary: #B87333;
+  --ink-bronze-bright: #D4944E;
+  --ink-bronze-deep: #7A4A20;
+  --ink-bronze-glow: rgba(184, 115, 51, 0.4);
+
+  /* 朱红系 — yy- 引入，战斗/危险/传世品质强调 */
+  --ink-vermilion-primary: #c0392b;
+  --ink-vermilion-bright: #d9504a;
+  --ink-vermilion-deep: #a93226;
+  --ink-vermilion-faded: #8b2a20;
+  --ink-vermilion-glow: rgba(192, 57, 43, 0.4);
+
+  /* 纸色系 — yy- 引入，用于浅色卷轴/对话框/信笺面板 */
+  --ink-paper-bright: #f5f0e8;
+  --ink-paper: #ebe5d8;
+  --ink-paper-aged: #d4c9b8;
+  --ink-paper-faded: #c8bba8;
+  --ink-paper-dark: #a89e8a;
+
+  /* 辅助语义色 */
+  --ink-jade-primary: #5E8B7E;
+  --ink-jade-bright: #7EAE9E;
+  --ink-blood-primary: #B85450;
+  --ink-blood-bright: #D46862;
+
+  /* 品质色 — 游戏语义（传世=朱红） */
+  --ink-quality-common: #8A8275;
+  --ink-quality-uncommon: #6B8E5A;
+  --ink-quality-rare: #4A7EA8;
+  --ink-quality-epic: #8B5E9E;
+  --ink-quality-legendary: #c0392b;
+
+  /* 状态色（错误=朱红） */
+  --state-success: #6B8E5A;
+  --state-warning: #C8A858;
+  --state-error: #c0392b;
+  --state-info: #4A7EA8;
+
+  /* 文字 */
+  --text-default: #F0EDE4;
+  --text-secondary: #B8B0A0;
+  --text-tertiary: #7A7468;
+  --text-disabled: #4A4640;
+  --text-brand: #E0C880;
+  --text-on-brand: #1A1408;
+  --text-on-paper: #2a2520;
+  --text-vermilion: #d9504a;
+
+  /* 边框 */
+  --border-neutral-l1: rgba(240, 237, 228, 0.06);
+  --border-neutral-l2: rgba(200, 168, 88, 0.15);
+  --border-neutral-l3: rgba(200, 168, 88, 0.25);
+  --ink-border-gold: rgba(200, 168, 88, 0.35);
+  --ink-border-gold-strong: rgba(200, 168, 88, 0.6);
+  --ink-border-bronze: rgba(184, 115, 51, 0.3);
+  --ink-border-vermilion: rgba(192, 57, 43, 0.35);
+  --ink-divider: rgba(200, 168, 88, 0.12);
+
+  /* 纸色面板专用 */
+  --ink-paper-panel-bg: rgba(245, 240, 232, 0.92);
+  --ink-paper-panel-border: rgba(168, 158, 138, 0.4);
+  --ink-paper-panel-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+
+  /* 字体 */
+  --ink-font-display: "Ma Shan Zheng", "STKaiti", "KaiTi", serif;
+  --ink-font-heading: "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+  --ink-font-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --ink-font-number: "DIN Alternate", "DIN", "Bebas Neue", monospace;
+  --font-family-heading: var(--ink-font-heading);
+  --font-family-default: var(--ink-font-body);
+
+  /* 圆角 — 古风克制 */
+  --radius-0: 0px;
+  --radius-2: 2px;
+  --radius-4: 4px;
+  --radius-8: 8px;
+  --radius-full: 999px;
+  --ink-radius-none: 0px;
+  --ink-radius-sm: 2px;
+  --ink-radius-md: 4px;
+  --ink-radius-lg: 8px;
+
+  /* 阴影 / 深度 */
+  --ink-shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --ink-shadow-soft: 0 1px 0 rgba(0, 0, 0, 0.05);
+  --ink-shadow-gold: 0 0 24px rgba(200, 168, 88, 0.2);
+  --ink-shadow-vermilion: 0 0 24px rgba(192, 57, 43, 0.2);
+  --ink-shadow-inset: inset 0 1px 0 rgba(200, 168, 88, 0.08);
+  --ink-shadow-inset-deep: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+  --ink-blur-panel: blur(8px);
+
+  /* 间距 */
+  --ink-space-1: 4px;
+  --ink-space-2: 8px;
+  --ink-space-3: 12px;
+  --ink-space-4: 16px;
+  --ink-space-5: 24px;
+  --ink-space-6: 32px;
+  --ink-space-8: 48px;
+
+  /* 控件尺寸 */
+  --ink-control-h-sm: 28px;
+  --ink-control-h-md: 36px;
+  --ink-control-h-lg: 44px;
+
+  /* Tailwind v4 语义别名 — 供 fill-html-head 生成 @theme inline 桥接（ink 前缀版） */
+  --ink-background: var(--bg-base-default);
+  --ink-foreground: var(--text-default);
+  --ink-card: var(--bg-base-secondary);
+  --ink-card-foreground: var(--text-default);
+  --ink-popover: var(--ink-bg-panel-solid);
+  --ink-popover-foreground: var(--text-default);
+  --ink-primary: var(--bg-brand);
+  --ink-primary-foreground: var(--text-on-brand);
+  --ink-secondary: var(--bg-base-tertiary);
+  --ink-secondary-foreground: var(--text-secondary);
+  --ink-muted: var(--bg-base-tertiary);
+  --ink-muted-foreground: var(--text-tertiary);
+  --ink-accent: var(--ink-bronze-primary);
+  --ink-accent-foreground: var(--text-default);
+  --ink-destructive: var(--ink-vermilion-primary);
+  --ink-destructive-foreground: var(--text-default);
+  --ink-border: var(--ink-border-gold);
+  --ink-input: var(--ink-border-gold);
+  --ink-ring: var(--ink-gold-primary);
+  --ink-radius-small: var(--ink-radius-sm);
+  --ink-radius-medium: var(--ink-radius-md);
+  --ink-radius-large: var(--ink-radius-lg);
+  --ink-radius-xlarge: var(--ink-radius-lg);
+}
+
+/* ---------- 基础重置 ---------- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg-base-default);
+  color: var(--text-default);
+  font-family: var(--ink-font-body);
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* 游戏沉浸根容器 */
+.ink-game-root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-base-default);
+}
+
+/* 全局水墨背景层 */
+.ink-bg-layer {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(200, 168, 88, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(184, 115, 51, 0.04) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(10, 11, 16, 0.8) 0%, transparent 60%),
+    var(--bg-base-default);
+  pointer-events: none;
+  z-index: 0;
+}
+.ink-bg-layer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+}
+
+/* 暗角晕影 */
+.ink-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.55) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ---------- 面板系统 ---------- */
+.ink-panel {
+  position: relative;
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  -webkit-backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-inset), var(--ink-shadow-soft);
+  border-radius: var(--ink-radius-md);
+}
+.ink-panel-solid {
+  background: var(--ink-bg-panel-solid);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-inset);
+  border-radius: var(--ink-radius-md);
+}
+.ink-panel-elevated {
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-panel);
+  border-radius: var(--ink-radius-md);
+}
+
+/* 纸色面板 — yy- 引入，卷轴/信笺/对话框专用 */
+.ink-paper-panel {
+  position: relative;
+  background: var(--ink-paper-panel-bg);
+  border: 1px solid var(--ink-paper-panel-border);
+  border-radius: var(--ink-radius-md);
+  box-shadow: var(--ink-paper-panel-shadow);
+  color: var(--text-on-paper);
+  overflow: hidden;
+}
+.ink-paper-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.3'/%3E%3C/svg%3E");
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+/* 水墨笔触描边 — 多层错位金线模拟飞白 */
+.ink-brush-border {
+  position: relative;
+  border: 1px solid var(--ink-border-gold);
+  box-shadow:
+    inset 0 0 0 1px rgba(200, 168, 88, 0.05),
+    0 0 0 1px rgba(200, 168, 88, 0.08),
+    0 1px 0 rgba(200, 168, 88, 0.1);
+}
+.ink-brush-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1px solid transparent;
+  border-image: linear-gradient(135deg, rgba(200, 168, 88, 0.4) 0%, rgba(200, 168, 88, 0.08) 40%, rgba(184, 115, 51, 0.3) 100%) 1;
+  pointer-events: none;
+}
+
+/* 面板四角装饰 */
+.ink-corner-deco {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--ink-gold-primary);
+  opacity: 0.7;
+}
+.ink-corner-deco.tl { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+.ink-corner-deco.tr { top: -1px; right: -1px; border-left: none; border-bottom: none; }
+.ink-corner-deco.bl { bottom: -1px; left: -1px; border-right: none; border-top: none; }
+.ink-corner-deco.br { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+/* 面板标题栏 */
+.ink-panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--ink-space-2);
+  padding: var(--ink-space-3) var(--ink-space-4);
+  border-bottom: 1px solid var(--ink-divider);
+  font-family: var(--ink-font-heading);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-brand);
+  letter-spacing: 2px;
+}
+.ink-panel-title::before {
+  content: "";
+  width: 3px;
+  height: 16px;
+  background: linear-gradient(180deg, var(--ink-gold-bright), var(--ink-gold-deep));
+  border-radius: var(--ink-radius-sm);
+}
+
+/* ---------- 排版 ---------- */
+.ink-text-display {
+  font-family: var(--ink-font-display);
+  font-size: 32px;
+  color: var(--text-brand);
+  letter-spacing: 4px;
+  line-height: 1.2;
+}
+.ink-text-heading {
+  font-family: var(--ink-font-heading);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-default);
+  letter-spacing: 1px;
+}
+.ink-text-subheading {
+  font-family: var(--ink-font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}
+.ink-text-body {
+  font-family: var(--ink-font-body);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+.ink-text-caption {
+  font-family: var(--ink-font-body);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.ink-text-number {
+  font-family: var(--ink-font-number);
+  font-weight: 700;
+  color: var(--text-brand);
+}
+
+/* 竖排标题 — yy- 引入，加载页/章节过场专用 */
+.ink-vertical-title {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-family: var(--ink-font-display);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  line-height: 2.0;
+  color: var(--text-brand);
+}
+
+/* ---------- 按钮 ---------- */
+.ink-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ink-space-2);
+  height: var(--ink-control-h-md);
+  padding: 0 var(--ink-space-4);
+  font-family: var(--ink-font-heading);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: var(--text-default);
+  background: var(--bg-base-tertiary);
+  border: 1px solid var(--ink-border-gold);
+  border-radius: var(--ink-radius-sm);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+.ink-btn:hover {
+  background: var(--bg-base-elevated);
+  border-color: var(--ink-border-gold-strong);
+  color: var(--text-brand);
+}
+.ink-btn:active { transform: translateY(1px); }
+.ink-btn-primary {
+  color: var(--text-on-brand);
+  background: linear-gradient(135deg, var(--ink-gold-bright), var(--ink-gold-deep));
+  border-color: var(--ink-gold-primary);
+  box-shadow: var(--ink-shadow-gold);
+}
+.ink-btn-primary:hover {
+  color: var(--text-on-brand);
+  background: linear-gradient(135deg, var(--ink-gold-primary), var(--ink-gold-deep));
+  border-color: var(--ink-gold-bright);
+}
+/* 朱红按钮 — 战斗/危险操作 */
+.ink-btn-vermilion {
+  color: var(--ink-paper-bright);
+  background: linear-gradient(135deg, var(--ink-vermilion-primary), var(--ink-vermilion-deep));
+  border-color: var(--ink-vermilion-deep);
+  box-shadow: var(--ink-shadow-vermilion);
+}
+.ink-btn-vermilion:hover {
+  color: var(--ink-paper-bright);
+  background: linear-gradient(135deg, var(--ink-vermilion-bright), var(--ink-vermilion-primary));
+  border-color: var(--ink-vermilion-bright);
+}
+.ink-btn-ghost {
+  background: transparent;
+  border-color: var(--border-neutral-l2);
+  color: var(--text-secondary);
+}
+.ink-btn-ghost:hover {
+  background: rgba(200, 168, 88, 0.06);
+  border-color: var(--ink-border-gold);
+  color: var(--text-brand);
+}
+.ink-btn-sm { height: var(--ink-control-h-sm); font-size: 12px; padding: 0 var(--ink-space-3); }
+.ink-btn-lg { height: var(--ink-control-h-lg); font-size: 15px; padding: 0 var(--ink-space-5); }
+
+/* ---------- 标签 / 徽章 ---------- */
+.ink-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-family: var(--ink-font-body);
+  color: var(--text-secondary);
+  background: rgba(200, 168, 88, 0.08);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  letter-spacing: 1px;
+}
+.ink-tag-brand {
+  color: var(--text-brand);
+  background: rgba(200, 168, 88, 0.12);
+  border-color: var(--ink-border-gold);
+}
+.ink-tag-vermilion {
+  color: var(--text-vermilion);
+  background: rgba(192, 57, 43, 0.12);
+  border-color: var(--ink-border-vermilion);
+}
+
+/* 品质色 */
+.ink-q-common { color: var(--ink-quality-common); border-color: var(--ink-quality-common); }
+.ink-q-uncommon { color: var(--ink-quality-uncommon); border-color: var(--ink-quality-uncommon); }
+.ink-q-rare { color: var(--ink-quality-rare); border-color: var(--ink-quality-rare); }
+.ink-q-epic { color: var(--ink-quality-epic); border-color: var(--ink-quality-epic); }
+.ink-q-legendary { color: var(--ink-quality-legendary); border-color: var(--ink-quality-legendary); box-shadow: 0 0 12px rgba(192, 57, 43, 0.3); }
+
+/* ---------- 进度条 ---------- */
+.ink-bar {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  overflow: hidden;
+}
+.ink-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ink-gold-deep), var(--ink-gold-bright));
+  border-radius: var(--ink-radius-sm);
+  box-shadow: 0 0 8px rgba(200, 168, 88, 0.3);
+  transition: width 0.4s ease;
+}
+.ink-bar-fill-jade { background: linear-gradient(90deg, #3E6B5E, var(--ink-jade-bright)); box-shadow: 0 0 8px rgba(94, 139, 126, 0.3); }
+.ink-bar-fill-blood { background: linear-gradient(90deg, #8A3E3A, var(--ink-blood-bright)); box-shadow: 0 0 8px rgba(184, 84, 80, 0.3); }
+/* 朱红进度条 — 气血/战斗 */
+.ink-bar-fill-vermilion { background: linear-gradient(90deg, var(--ink-vermilion-deep), var(--ink-vermilion-bright)); box-shadow: 0 0 8px rgba(192, 57, 43, 0.3); }
+.ink-bar-thin { height: 4px; }
+
+/* 竖向属性条 */
+.ink-bar-v {
+  position: relative;
+  width: 8px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  overflow: hidden;
+  display: inline-block;
+}
+.ink-bar-v-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(0deg, var(--ink-gold-deep), var(--ink-gold-bright));
+  border-radius: var(--ink-radius-sm);
+}
+
+/* ---------- 网格格子（背包/技能槽） ---------- */
+.ink-cell {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ink-cell:hover {
+  border-color: var(--ink-border-gold-strong);
+  background: rgba(200, 168, 88, 0.08);
+}
+.ink-cell-quality { border-width: 1px; border-style: solid; }
+.ink-cell-badge {
+  position: absolute;
+  bottom: 1px;
+  right: 2px;
+  font-family: var(--ink-font-number);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-default);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+/* ---------- 列表项 ---------- */
+.ink-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--ink-space-3);
+  padding: var(--ink-space-3) var(--ink-space-4);
+  border-bottom: 1px solid var(--ink-divider);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.ink-list-item:hover { background: rgba(200, 168, 88, 0.05); }
+.ink-list-item.active {
+  background: rgba(200, 168, 88, 0.1);
+  border-left: 2px solid var(--ink-gold-primary);
+}
+
+/* ---------- 头像 / 圆点 ---------- */
+.ink-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ink-radius-md);
+  border: 1px solid var(--ink-border-gold);
+  background: var(--bg-base-tertiary);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.ink-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--ink-quality-common);
+}
+.ink-dot-online { background: var(--ink-quality-uncommon); box-shadow: 0 0 6px rgba(107, 142, 90, 0.6); }
+
+/* ---------- 分割线 ---------- */
+.ink-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ink-divider) 20%, var(--ink-divider) 80%, transparent);
+  border: none;
+}
+.ink-divider-v {
+  width: 1px;
+  align-self: stretch;
+  background: linear-gradient(180deg, transparent, var(--ink-divider) 20%, var(--ink-divider) 80%, transparent);
+}
+
+/* ---------- 水墨晕染装饰 — yy- 引入 ---------- */
+.ink-splash { position: absolute; border-radius: 50%; filter: blur(15px); opacity: 0.3; pointer-events: none; }
+.ink-splash-1 { width: 300px; height: 300px; background: radial-gradient(circle, var(--bg-base-tertiary) 0%, transparent 70%); }
+.ink-splash-2 { width: 200px; height: 200px; background: radial-gradient(circle, var(--bg-base-elevated) 0%, transparent 70%); }
+.ink-splash-vermilion { width: 250px; height: 250px; background: radial-gradient(circle, rgba(192, 57, 43, 0.15) 0%, transparent 70%); }
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+::-webkit-scrollbar-thumb {
+  background: rgba(200, 168, 88, 0.25);
+  border-radius: var(--ink-radius-sm);
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(200, 168, 88, 0.45); }
+
+/* ---------- 选中态 ---------- */
+::selection { background: rgba(200, 168, 88, 0.3); color: var(--text-default); }
+
+/* ---------- 辅助 ---------- */
+.ink-flex { display: flex; }
+.ink-flex-col { display: flex; flex-direction: column; }
+.ink-items-center { align-items: center; }
+.ink-justify-between { justify-content: space-between; }
+.ink-gap-2 { gap: var(--ink-space-2); }
+.ink-gap-3 { gap: var(--ink-space-3); }
+.ink-gap-4 { gap: var(--ink-space-4); }
+.ink-flex-1 { flex: 1; }
+.ink-text-center { text-align: center; }
+.ink-text-right { text-align: right; }
+.ink-overflow-auto { overflow: auto; }
+.ink-overflow-hidden { overflow: hidden; }
+.ink-relative { position: relative; }
+.ink-absolute { position: absolute; }
+.ink-pointer { cursor: pointer; }
+
+/* 通用内容层（在背景层之上） */
+.ink-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+}
+
+/* 返回按钮 */
+.ink-back-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  border-radius: var(--ink-radius-sm);
+  color: var(--text-brand);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.ink-back-btn:hover {
+  background: rgba(200, 168, 88, 0.12);
+  border-color: var(--ink-border-gold-strong);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--ink-background);
+    --color-foreground: var(--ink-foreground);
+    --color-card: var(--ink-card);
+    --color-card-foreground: var(--ink-card-foreground);
+    --color-popover: var(--ink-popover);
+    --color-popover-foreground: var(--ink-popover-foreground);
+    --color-primary: var(--ink-primary);
+    --color-primary-foreground: var(--ink-primary-foreground);
+    --color-secondary: var(--ink-secondary);
+    --color-secondary-foreground: var(--ink-secondary-foreground);
+    --color-muted: var(--ink-muted);
+    --color-muted-foreground: var(--ink-muted-foreground);
+    --color-accent: var(--ink-accent);
+    --color-accent-foreground: var(--ink-accent-foreground);
+    --color-destructive: var(--ink-destructive);
+    --color-destructive-foreground: var(--ink-destructive-foreground);
+    --color-border: var(--ink-border);
+    --color-input: var(--ink-input);
+    --color-ring: var(--ink-ring);
+    --radius-sm: var(--ink-radius-small);
+    --radius-md: var(--ink-radius-medium);
+    --radius-lg: var(--ink-radius-large);
+    --radius-xl: var(--ink-radius-xlarge);
+  }
+  @layer base {
+    body { background: var(--ink-background); color: var(--ink-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+    <main>
+        <!-- ===== 游戏沉浸根容器 ===== -->
+        <div class="ink-game-root">
+            <!-- 全局水墨背景层（SVG noise + 径向渐变） -->
+            <div class="ink-bg-layer"></div>
+            <div class="ink-vignette"></div>
+
+            <div class="ink-content">
+                <!-- ===== 共享Shell容器 ===== -->
+                <div class="shell-container">
+
+                    <!-- ===== 左侧导航栏 (240px) ===== -->
+                    <aside class="left-nav">
+                        <!-- Logo区域 -->
+                        <div class="nav-logo">
+                            <div class="logo-seal">混</div>
+                            <div class="logo-text">
+                                <span class="logo-title">混沌世界</span>
+                                <span class="logo-subtitle">江湖路远</span>
+                            </div>
+                        </div>
+
+                        <hr class="ink-divider nav-divider">
+
+                        <!-- 导航菜单 -->
+                        <nav class="nav-menu">
+                            <a class="nav-item" data-page="casual">
+                                <i data-lucide="leaf" class="nav-icon"></i>
+                                <span class="nav-label">不肝</span>
+                            </a>
+                            <a class="nav-item" data-page="gacha">
+                                <i data-lucide="sparkles" class="nav-icon"></i>
+                                <span class="nav-label">抽卡</span>
+                            </a>
+                            <a class="nav-item" data-page="activities">
+                                <i data-lucide="calendar-days" class="nav-icon"></i>
+                                <span class="nav-label">活动</span>
+                            </a>
+                            <a class="nav-item active" data-page="battle-pass">
+                                <i data-lucide="scroll-text" class="nav-icon"></i>
+                                <span class="nav-label">通行证</span>
+                                <span class="nav-badge ink-tag ink-tag-vermilion">热</span>
+                            </a>
+                            <a class="nav-item" data-page="attributes" data-dom-id="nav-char-attributes-v2">
+                                <i data-lucide="user" class="nav-icon"></i>
+                                <span class="nav-label">属性</span>
+                            </a>
+                            <a class="nav-item" data-page="shop">
+                                <i data-lucide="store" class="nav-icon"></i>
+                                <span class="nav-label">奇珍阁</span>
+                            </a>
+                            <a class="nav-item" data-page="settings">
+                                <i data-lucide="settings" class="nav-icon"></i>
+                                <span class="nav-label">设置</span>
+                            </a>
+                        </nav>
+
+                        <hr class="ink-divider nav-divider">
+
+                        <!-- 底部赛季信息 -->
+                        <div class="nav-footer">
+                            <div class="season-mini">
+                                <i data-lucide="award" class="season-icon"></i>
+                                <div class="season-info-mini">
+                                    <span class="season-label">第三赛季</span>
+                                    <span class="season-name">江湖行</span>
+                                </div>
+                            </div>
+                            <div class="season-progress-mini">
+                                <div class="ink-bar">
+                                    <div class="ink-bar-fill" style="width: 46%"></div>
+                                </div>
+                                <span class="season-progress-text">Lv.23 / Lv.50</span>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <!-- ===== 顶部信息栏 (60px) ===== -->
+                    <header class="top-bar">
+                        <!-- 左侧：返回战斗 + 角色信息 -->
+                        <div class="top-bar-left">
+                            <button class="top-back-btn ink-btn ink-btn-ghost ink-btn-sm" data-dom-id="back-hud" aria-label="返回战斗">
+                                <i data-lucide="arrow-left" class="back-btn-icon"></i>
+                                <span>返回战斗</span>
+                            </button>
+                            <div class="top-bar-divider"></div>
+                            <div class="char-avatar">
+                                <span class="avatar-text">客</span>
+                                <span class="avatar-ring"></span>
+                            </div>
+                            <div class="char-info">
+                                <span class="char-name">江湖过客</span>
+                                <span class="char-level">
+                                    <i data-lucide="chevrons-up" class="level-icon"></i>
+                                    Lv. 42
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- 中间：赛季标题装饰 -->
+                        <div class="top-bar-center">
+                            <span class="top-bar-season">第三赛季 · 江湖行</span>
+                        </div>
+
+                        <!-- 右侧：货币与时间 -->
+                        <div class="top-bar-right">
+                            <div class="currency-item">
+                                <i data-lucide="coins" class="currency-icon text-gold"></i>
+                                <span class="currency-label">铜钱</span>
+                                <span class="currency-value">12,450</span>
+                            </div>
+                            <div class="currency-divider"></div>
+                            <div class="currency-item">
+                                <i data-lucide="gem" class="currency-icon text-vermilion"></i>
+                                <span class="currency-label">元宝</span>
+                                <span class="currency-value">328</span>
+                            </div>
+                            <div class="currency-divider"></div>
+                            <div class="time-display">
+                                <i data-lucide="moon" class="time-icon"></i>
+                                <span class="time-text">戌时 三刻</span>
+                            </div>
+                        </div>
+                    </header>
+
+                    <!-- ===== 右侧内容区 ===== -->
+                    <section class="right-content">
+
+                        <!-- --- 通行证头部信息 --- -->
+                        <div class="pass-header ink-panel">
+                            <span class="ink-corner-deco tl"></span>
+                            <span class="ink-corner-deco tr"></span>
+                            <span class="ink-corner-deco bl"></span>
+                            <span class="ink-corner-deco br"></span>
+                            <!-- 装饰水墨晕染 -->
+                            <div class="ink-splash ink-splash-1" style="top: -50px; right: -30px;"></div>
+                            <div class="ink-splash ink-splash-2" style="bottom: -40px; left: 20%;"></div>
+
+                            <div class="pass-header-content">
+                                <!-- 左侧：标题与赛季信息 -->
+                                <div class="pass-header-left">
+                                    <div class="pass-title-row">
+                                        <h1 class="pass-title">江湖令 · 通行证</h1>
+                                        <span class="ink-tag ink-tag-brand pass-season-badge">
+                                            <i data-lucide="award" class="badge-icon"></i>
+                                            第三赛季
+                                        </span>
+                                    </div>
+                                    <p class="pass-subtitle">江湖行 · 纵马天涯，行侠仗义</p>
+                                    <div class="pass-season-info">
+                                        <div class="season-info-item">
+                                            <i data-lucide="clock" class="season-info-icon text-vermilion"></i>
+                                            <span class="season-info-label">剩余时间</span>
+                                            <span class="season-info-value text-vermilion">28天 06:30:00</span>
+                                        </div>
+                                        <div class="season-info-item">
+                                            <i data-lucide="users" class="season-info-icon text-cyan-gray"></i>
+                                            <span class="season-info-label">参与人数</span>
+                                            <span class="season-info-value">1,284,567</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 中间：当前等级与进度 -->
+                                <div class="pass-header-center">
+                                    <div class="current-level-display">
+                                        <span class="current-level-label">当前等级</span>
+                                        <span class="current-level-number">Lv. 23</span>
+                                    </div>
+                                    <div class="progress-section">
+                                        <div class="progress-info-row">
+                                            <span class="progress-label">升级进度</span>
+                                            <span class="progress-value">EXP 1,950 / 3,000</span>
+                                        </div>
+                                        <div class="ink-bar pass-progress">
+                                            <div class="ink-bar-fill" style="width: 65%"></div>
+                                            <span class="progress-marker" style="left: 65%">65%</span>
+                                        </div>
+                                        <div class="progress-hint">
+                                            <i data-lucide="info" class="hint-icon"></i>
+                                            <span>再获得 1,050 EXP 即可升至 Lv.24</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 右侧：操作按钮 -->
+                                <div class="pass-header-right">
+                                    <button class="ink-btn ink-btn-primary pass-btn-unlock">
+                                        <i data-lucide="crown" class="btn-icon"></i>
+                                        <span>解锁至尊通行证</span>
+                                    </button>
+                                    <div class="unlock-price">
+                                        <i data-lucide="gem" class="price-icon"></i>
+                                        <span class="price-value">680 元宝</span>
+                                    </div>
+                                    <button class="ink-btn ink-btn-vermilion pass-btn-upgrade">
+                                        <i data-lucide="zap" class="btn-icon"></i>
+                                        <span>立即升级</span>
+                                    </button>
+                                    <div class="upgrade-price">
+                                        <i data-lucide="gem" class="price-icon"></i>
+                                        <span class="price-value">90 元宝 / 级</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- --- 解锁状态横幅 --- -->
+                        <div class="unlock-banner">
+                            <div class="unlock-banner-left">
+                                <i data-lucide="lock" class="unlock-icon"></i>
+                                <div class="unlock-text">
+                                    <span class="unlock-title">您尚未解锁至尊通行证</span>
+                                    <span class="unlock-desc">解锁后可领取专属奖励，包含名侠碎片、稀有装备、限定外观等</span>
+                                </div>
+                            </div>
+                            <div class="unlock-banner-right">
+                                <div class="unlock-preview-items">
+                                    <div class="preview-item q-epic" title="名侠碎片">
+                                        <i data-lucide="puzzle" class="preview-icon"></i>
+                                    </div>
+                                    <div class="preview-item q-legendary" title="限定外观">
+                                        <i data-lucide="shirt" class="preview-icon"></i>
+                                    </div>
+                                    <div class="preview-item q-rare" title="稀有装备">
+                                        <i data-lucide="sword" class="preview-icon"></i>
+                                    </div>
+                                </div>
+                                <button class="ink-btn ink-btn-primary unlock-btn">
+                                    <i data-lucide="key" class="btn-icon"></i>
+                                    <span>立即解锁</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- --- 等级轨道区域 --- -->
+                        <div class="level-track-section ink-panel">
+                            <span class="ink-corner-deco tl"></span>
+                            <span class="ink-corner-deco tr"></span>
+                            <div class="track-header">
+                                <div class="track-title-row">
+                                    <h2 class="track-title">等级轨道</h2>
+                                    <div class="track-legend">
+                                        <div class="legend-item">
+                                            <span class="legend-dot legend-gold"></span>
+                                            <span class="legend-text">至尊奖励</span>
+                                        </div>
+                                        <div class="legend-item">
+                                            <span class="legend-dot legend-gray"></span>
+                                            <span class="legend-text">免费奖励</span>
+                                        </div>
+                                        <div class="legend-item">
+                                            <span class="legend-dot legend-jade"></span>
+                                            <span class="legend-text">已领取</span>
+                                        </div>
+                                        <div class="legend-item">
+                                            <span class="legend-dot legend-glow"></span>
+                                            <span class="legend-text">可领取</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="track-nav">
+                                    <button class="track-nav-btn" id="trackPrev" aria-label="上一段">
+                                        <i data-lucide="chevron-left" class="nav-btn-icon"></i>
+                                    </button>
+                                    <span class="track-range">Lv. 20 — Lv. 29</span>
+                                    <button class="track-nav-btn" id="trackNext" aria-label="下一段">
+                                        <i data-lucide="chevron-right" class="nav-btn-icon"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <hr class="ink-divider">
+
+                            <!-- 轨道滚动容器 -->
+                            <div class="track-scroll-container">
+                                <!-- 至尊奖励轨道 (付费，上方) -->
+                                <div class="track-row track-row-paid">
+                                    <div class="track-row-label">
+                                        <i data-lucide="crown" class="row-label-icon"></i>
+                                        <span class="row-label-text">至尊</span>
+                                    </div>
+                                    <div class="track-nodes">
+                                        <!-- 连接线 -->
+                                        <div class="track-line track-line-gold"></div>
+
+                                        <!-- Lv.20 -->
+                                        <div class="level-node" data-level="20" data-track="paid" data-status="claimed">
+                                            <div class="node-level">Lv.20</div>
+                                            <div class="node-reward q-rare">
+                                                <i data-lucide="sword" class="reward-icon"></i>
+                                                <div class="node-status status-claimed">
+                                                    <i data-lucide="check" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">寒铁剑</div>
+                                        </div>
+
+                                        <!-- Lv.21 -->
+                                        <div class="level-node" data-level="21" data-track="paid" data-status="claimed">
+                                            <div class="node-level">Lv.21</div>
+                                            <div class="node-reward q-epic">
+                                                <i data-lucide="puzzle" class="reward-icon"></i>
+                                                <div class="node-status status-claimed">
+                                                    <i data-lucide="check" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">名侠碎片×3</div>
+                                        </div>
+
+                                        <!-- Lv.22 -->
+                                        <div class="level-node" data-level="22" data-track="paid" data-status="claimed">
+                                            <div class="node-level">Lv.22</div>
+                                            <div class="node-reward q-epic">
+                                                <i data-lucide="gem" class="reward-icon"></i>
+                                                <div class="node-status status-claimed">
+                                                    <i data-lucide="check" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">元宝×200</div>
+                                        </div>
+
+                                        <!-- Lv.23 (当前等级 - 可领取) -->
+                                        <div class="level-node current" data-level="23" data-track="paid" data-status="claimable">
+                                            <div class="node-level">Lv.23</div>
+                                            <div class="node-reward q-epic">
+                                                <i data-lucide="puzzle" class="reward-icon"></i>
+                                                <div class="node-badge">可领取</div>
+                                                <div class="node-status status-claimable">
+                                                    <i data-lucide="gift" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">名侠碎片×5</div>
+                                        </div>
+
+                                        <!-- Lv.24 (锁定) -->
+                                        <div class="level-node" data-level="24" data-track="paid" data-status="locked">
+                                            <div class="node-level">Lv.24</div>
+                                            <div class="node-reward q-rare">
+                                                <i data-lucide="shield" class="reward-icon"></i>
+                                                <div class="node-status status-locked">
+                                                    <i data-lucide="lock" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">玄铁护腕</div>
+                                        </div>
+
+                                        <!-- Lv.25 (锁定) -->
+                                        <div class="level-node" data-level="25" data-track="paid" data-status="locked">
+                                            <div class="node-level">Lv.25</div>
+                                            <div class="node-reward q-epic">
+                                                <i data-lucide="gem" class="reward-icon"></i>
+                                                <div class="node-status status-locked">
+                                                    <i data-lucide="lock" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">元宝×300</div>
+                                        </div>
+
+                                        <!-- Lv.26 (锁定) -->
+                                        <div class="level-node" data-level="26" data-track="paid" data-status="locked">
+                                            <div class="node-level">Lv.26</div>
+                                            <div class="node-reward q-epic">
+                                                <i data-lucide="puzzle" class="reward-icon"></i>
+                                                <div class="node-status status-locked">
+                                                    <i data-lucide="lock" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">名侠碎片×5</div>
+                                        </div>
+
+                                        <!-- Lv.27 (锁定) -->
+                                        <div class="level-node" data-level="27" data-track="paid" data-status="locked">
+                                            <div class="node-level">Lv.27</div>
+                                            <div class="node-reward q-rare">
+                                                <i data-lucide="heart-pulse" class="reward-icon"></i>
+                                                <div class="node-status status-locked">
+                                                    <i data-lucide="lock" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">九转丹×3</div>
+                                        </div>
+
+                                        <!-- Lv.28 (锁定) -->
+                                        <div class="level-node" data-level="28" data-track="paid" data-status="locked">
+                                            <div class="node-level">Lv.28</div>
+                                            <div class="node-reward q-legendary">
+                                                <i data-lucide="scroll" class="reward-icon"></i>
+                                                <div class="node-status status-locked">
+                                                    <i data-lucide="lock" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">武学残卷</div>
+                                        </div>
+
+                                        <!-- Lv.29 (锁定) -->
+                                        <div class="level-node" data-level="29" data-track="paid" data-status="locked">
+                                            <div class="node-level">Lv.29</div>
+                                            <div class="node-reward q-epic">
+                                                <i data-lucide="gem" class="reward-icon"></i>
+                                                <div class="node-status status-locked">
+                                                    <i data-lucide="lock" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">元宝×100</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 等级数字分隔行 -->
+                                <div class="track-level-numbers">
+                                    <div class="level-num-spacer"></div>
+                                    <div class="level-num-row">
+                                        <span class="level-num">20</span>
+                                        <span class="level-num">21</span>
+                                        <span class="level-num">22</span>
+                                        <span class="level-num current-num">23</span>
+                                        <span class="level-num">24</span>
+                                        <span class="level-num">25</span>
+                                        <span class="level-num">26</span>
+                                        <span class="level-num">27</span>
+                                        <span class="level-num">28</span>
+                                        <span class="level-num">29</span>
+                                    </div>
+                                </div>
+
+                                <!-- 免费奖励轨道 (下方) -->
+                                <div class="track-row track-row-free">
+                                    <div class="track-row-label">
+                                        <i data-lucide="gift" class="row-label-icon"></i>
+                                        <span class="row-label-text">免费</span>
+                                    </div>
+                                    <div class="track-nodes">
+                                        <!-- 连接线 -->
+                                        <div class="track-line track-line-gray"></div>
+
+                                        <!-- Lv.20 -->
+                                        <div class="level-node" data-level="20" data-track="free" data-status="claimed">
+                                            <div class="node-reward q-common">
+                                                <i data-lucide="coins" class="reward-icon"></i>
+                                                <div class="node-status status-claimed">
+                                                    <i data-lucide="check" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">铜钱×500</div>
+                                            <div class="node-level node-level-bottom">Lv.20</div>
+                                        </div>
+
+                                        <!-- Lv.21 -->
+                                        <div class="level-node" data-level="21" data-track="free" data-status="claimed">
+                                            <div class="node-reward q-uncommon">
+                                                <i data-lucide="heart-pulse" class="reward-icon"></i>
+                                                <div class="node-status status-claimed">
+                                                    <i data-lucide="check" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">疗伤丹×2</div>
+                                            <div class="node-level node-level-bottom">Lv.21</div>
+                                        </div>
+
+                                        <!-- Lv.22 -->
+                                        <div class="level-node" data-level="22" data-track="free" data-status="claimed">
+                                            <div class="node-reward q-common">
+                                                <i data-lucide="gem" class="reward-icon"></i>
+                                                <div class="node-status status-claimed">
+                                                    <i data-lucide="check" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">元宝×50</div>
+                                            <div class="node-level node-level-bottom">Lv.22</div>
+                                        </div>
+
+                                        <!-- Lv.23 (当前等级 - 已领取) -->
+                                        <div class="level-node current" data-level="23" data-track="free" data-status="claimed">
+                                            <div class="node-reward q-common">
+                                                <i data-lucide="coins" class="reward-icon"></i>
+                                                <div class="node-status status-claimed">
+                                                    <i data-lucide="check" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">铜钱×2000</div>
+                                            <div class="node-level node-level-bottom">Lv.23</div>
+                                        </div>
+
+                                        <!-- Lv.24 (锁定) -->
+                                        <div class="level-node" data-level="24" data-track="free" data-status="locked">
+                                            <div class="node-reward q-uncommon">
+                                                <i data-lucide="heart-pulse" class="reward-icon"></i>
+                                                <div class="node-status status-locked">
+                                                    <i data-lucide="lock" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">疗伤丹×5</div>
+                                            <div class="node-level node-level-bottom">Lv.24</div>
+                                        </div>
+
+                                        <!-- Lv.25 (锁定) -->
+                                        <div class="level-node" data-level="25" data-track="free" data-status="locked">
+                                            <div class="node-reward q-common">
+                                                <i data-lucide="gem" class="reward-icon"></i>
+                                                <div class="node-status status-locked">
+                                                    <i data-lucide="lock" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">元宝×80</div>
+                                            <div class="node-level node-level-bottom">Lv.25</div>
+                                        </div>
+
+                                        <!-- Lv.26 (锁定) -->
+                                        <div class="level-node" data-level="26" data-track="free" data-status="locked">
+                                            <div class="node-reward q-rare">
+                                                <i data-lucide="shield" class="reward-icon"></i>
+                                                <div class="node-status status-locked">
+                                                    <i data-lucide="lock" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">精铁盾</div>
+                                            <div class="node-level node-level-bottom">Lv.26</div>
+                                        </div>
+
+                                        <!-- Lv.27 (锁定) -->
+                                        <div class="level-node" data-level="27" data-track="free" data-status="locked">
+                                            <div class="node-reward q-uncommon">
+                                                <i data-lucide="heart-pulse" class="reward-icon"></i>
+                                                <div class="node-status status-locked">
+                                                    <i data-lucide="lock" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">解毒丹×3</div>
+                                            <div class="node-level node-level-bottom">Lv.27</div>
+                                        </div>
+
+                                        <!-- Lv.28 (锁定) -->
+                                        <div class="level-node" data-level="28" data-track="free" data-status="locked">
+                                            <div class="node-reward q-common">
+                                                <i data-lucide="coins" class="reward-icon"></i>
+                                                <div class="node-status status-locked">
+                                                    <i data-lucide="lock" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">铜钱×1500</div>
+                                            <div class="node-level node-level-bottom">Lv.28</div>
+                                        </div>
+
+                                        <!-- Lv.29 (锁定) -->
+                                        <div class="level-node" data-level="29" data-track="free" data-status="locked">
+                                            <div class="node-reward q-epic">
+                                                <i data-lucide="gem" class="reward-icon"></i>
+                                                <div class="node-status status-locked">
+                                                    <i data-lucide="lock" class="status-icon"></i>
+                                                </div>
+                                            </div>
+                                            <div class="node-name">元宝×100</div>
+                                            <div class="node-level node-level-bottom">Lv.29</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 轨道底部信息 -->
+                            <div class="track-footer">
+                                <div class="track-footer-item">
+                                    <i data-lucide="check-circle" class="footer-icon text-jade"></i>
+                                    <span class="footer-text">已领取: <strong>6</strong> / 10</span>
+                                </div>
+                                <div class="track-footer-item">
+                                    <i data-lucide="gift" class="footer-icon text-gold"></i>
+                                    <span class="footer-text">可领取: <strong>1</strong></span>
+                                </div>
+                                <div class="track-footer-item">
+                                    <i data-lucide="lock" class="footer-icon text-muted"></i>
+                                    <span class="footer-text">未解锁: <strong>13</strong></span>
+                                </div>
+                                <button class="ink-btn ink-btn-primary track-claim-all-btn">
+                                    <i data-lucide="check-check" class="btn-icon"></i>
+                                    <span>一键领取</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- --- 当前等级奖励详情面板 --- -->
+                        <div class="level-detail-panel ink-panel">
+                            <span class="ink-corner-deco tl"></span>
+                            <span class="ink-corner-deco tr"></span>
+                            <div class="detail-header">
+                                <div class="detail-title-row">
+                                    <h2 class="detail-title">Lv. 23 奖励详情</h2>
+                                    <span class="ink-tag ink-tag-brand detail-current-badge">当前等级</span>
+                                </div>
+                                <p class="detail-desc">完成本等级所有奖励领取后，可继续通过获取EXP提升通行证等级</p>
+                            </div>
+
+                            <hr class="ink-divider">
+
+                            <!-- 奖励卡片区域 -->
+                            <div class="reward-cards-container">
+                                <!-- 免费奖励卡片 -->
+                                <div class="reward-card reward-card-free">
+                                    <div class="reward-card-header">
+                                        <div class="reward-track-label">
+                                            <i data-lucide="gift" class="track-label-icon"></i>
+                                            <span>免费奖励</span>
+                                        </div>
+                                        <span class="ink-tag reward-status-badge">
+                                            <i data-lucide="check" class="badge-icon"></i>
+                                            已领取
+                                        </span>
+                                    </div>
+                                    <div class="reward-card-body">
+                                        <div class="reward-icon-large q-common">
+                                            <i data-lucide="coins" class="large-icon"></i>
+                                        </div>
+                                        <div class="reward-info">
+                                            <h3 class="reward-name">铜钱 × 2000</h3>
+                                            <div class="reward-attrs">
+                                                <span class="reward-attr">
+                                                    <span class="attr-label">品质:</span>
+                                                    <span class="attr-value text-muted">普通</span>
+                                                </span>
+                                                <span class="reward-attr">
+                                                    <span class="attr-label">类型:</span>
+                                                    <span class="attr-value">货币</span>
+                                                </span>
+                                            </div>
+                                            <p class="reward-desc-text">江湖通用的铜钱货币，可在各类商铺购买基础物资</p>
+                                        </div>
+                                    </div>
+                                    <div class="reward-card-footer">
+                                        <button class="ink-btn ink-btn-ghost reward-btn claimed" disabled>
+                                            <i data-lucide="check" class="btn-icon"></i>
+                                            <span>已领取</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 至尊奖励卡片 -->
+                                <div class="reward-card reward-card-paid">
+                                    <div class="reward-card-header">
+                                        <div class="reward-track-label">
+                                            <i data-lucide="crown" class="track-label-icon text-gold"></i>
+                                            <span class="text-gold">至尊奖励</span>
+                                        </div>
+                                        <span class="ink-tag ink-tag-brand reward-status-badge">
+                                            <i data-lucide="gift" class="badge-icon"></i>
+                                            可领取
+                                        </span>
+                                    </div>
+                                    <div class="reward-card-body">
+                                        <div class="reward-icon-large q-epic">
+                                            <i data-lucide="puzzle" class="large-icon"></i>
+                                            <div class="icon-glow"></div>
+                                        </div>
+                                        <div class="reward-info">
+                                            <h3 class="reward-name text-gold">名侠碎片 × 5</h3>
+                                            <div class="reward-attrs">
+                                                <span class="reward-attr">
+                                                    <span class="attr-label">品质:</span>
+                                                    <span class="attr-value text-gold">史诗</span>
+                                                </span>
+                                                <span class="reward-attr">
+                                                    <span class="attr-label">类型:</span>
+                                                    <span class="attr-value">碎片</span>
+                                                </span>
+                                            </div>
+                                            <p class="reward-desc-text">收集名侠碎片可兑换江湖名侠的专属武学残卷，集齐50枚可召唤名侠</p>
+                                        </div>
+                                    </div>
+                                    <div class="reward-card-footer">
+                                        <div class="lock-hint">
+                                            <i data-lucide="lock" class="lock-hint-icon"></i>
+                                            <span>解锁至尊通行证后可领取</span>
+                                        </div>
+                                        <button class="ink-btn ink-btn-primary reward-btn">
+                                            <i data-lucide="download" class="btn-icon"></i>
+                                            <span>领取奖励</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="ink-divider">
+
+                            <!-- 下一等级预告 -->
+                            <div class="next-level-preview">
+                                <div class="preview-header">
+                                    <div class="preview-title-row">
+                                        <h3 class="preview-title">Lv. 24 奖励预告</h3>
+                                        <span class="preview-hint">
+                                            <i data-lucide="info" class="hint-icon"></i>
+                                            <span>升至 Lv.24 后解锁</span>
+                                        </span>
+                                    </div>
+                                    <div class="preview-exp-info">
+                                        <span class="exp-label">还需EXP</span>
+                                        <span class="exp-value text-vermilion">1,050</span>
+                                    </div>
+                                </div>
+                                <div class="preview-items-grid">
+                                    <!-- 免费预告 -->
+                                    <div class="preview-reward-card">
+                                        <div class="preview-track-tag">
+                                            <i data-lucide="gift" class="tag-icon"></i>
+                                            <span>免费</span>
+                                        </div>
+                                        <div class="preview-reward-icon q-uncommon">
+                                            <i data-lucide="heart-pulse" class="preview-r-icon"></i>
+                                        </div>
+                                        <span class="preview-reward-name">疗伤丹 × 5</span>
+                                        <span class="preview-reward-quality text-jade">稀有</span>
+                                    </div>
+
+                                    <!-- 至尊预告 -->
+                                    <div class="preview-reward-card preview-reward-paid">
+                                        <div class="preview-track-tag preview-tag-gold">
+                                            <i data-lucide="crown" class="tag-icon"></i>
+                                            <span>至尊</span>
+                                        </div>
+                                        <div class="preview-reward-icon q-legendary">
+                                            <i data-lucide="shirt" class="preview-r-icon"></i>
+                                        </div>
+                                        <span class="preview-reward-name text-gold">限定外观</span>
+                                        <span class="preview-reward-quality text-vermilion">传世</span>
+                                    </div>
+
+                                    <!-- 快速获取EXP提示 -->
+                                    <div class="preview-exp-tips">
+                                        <div class="tips-header">
+                                            <i data-lucide="lightbulb" class="tips-icon text-gold"></i>
+                                            <span class="tips-title">快速获取EXP</span>
+                                        </div>
+                                        <div class="tips-list">
+                                            <div class="tip-item">
+                                                <i data-lucide="sword" class="tip-icon"></i>
+                                                <span class="tip-text">完成每日江湖历练 (+150 EXP)</span>
+                                            </div>
+                                            <div class="tip-item">
+                                                <i data-lucide="users" class="tip-icon"></i>
+                                                <span class="tip-text">参与帮派活动 (+300 EXP)</span>
+                                            </div>
+                                            <div class="tip-item">
+                                                <i data-lucide="swords" class="tip-icon"></i>
+                                                <span class="tip-text">完成擂台挑战 (+200 EXP)</span>
+                                            </div>
+                                            <div class="tip-item">
+                                                <i data-lucide="zap" class="tip-icon"></i>
+                                                <span class="tip-text">直接使用元宝升级 (+∞ EXP)</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- --- 赛季里程碑 --- -->
+                        <div class="milestone-section ink-panel">
+                            <span class="ink-corner-deco tl"></span>
+                            <span class="ink-corner-deco tr"></span>
+                            <div class="milestone-header">
+                                <h2 class="milestone-title">赛季里程碑</h2>
+                                <span class="milestone-subtitle">达到指定等级解锁专属赛季奖励</span>
+                            </div>
+                            <hr class="ink-divider">
+                            <div class="milestone-grid">
+                                <div class="milestone-card milestone-claimed">
+                                    <div class="milestone-level">Lv. 10</div>
+                                    <div class="milestone-icon q-rare">
+                                        <i data-lucide="shield" class="m-icon"></i>
+                                    </div>
+                                    <div class="milestone-name">玄铁盾</div>
+                                    <div class="milestone-status text-jade">
+                                        <i data-lucide="check-circle" class="m-status-icon"></i>
+                                        已解锁
+                                    </div>
+                                </div>
+                                <div class="milestone-card milestone-claimed">
+                                    <div class="milestone-level">Lv. 20</div>
+                                    <div class="milestone-icon q-epic">
+                                        <i data-lucide="sword" class="m-icon"></i>
+                                    </div>
+                                    <div class="milestone-name">寒铁剑</div>
+                                    <div class="milestone-status text-jade">
+                                        <i data-lucide="check-circle" class="m-status-icon"></i>
+                                        已解锁
+                                    </div>
+                                </div>
+                                <div class="milestone-card milestone-current">
+                                    <div class="milestone-level">Lv. 30</div>
+                                    <div class="milestone-icon q-epic">
+                                        <i data-lucide="horse" class="m-icon"></i>
+                                    </div>
+                                    <div class="milestone-name">追风骏马</div>
+                                    <div class="milestone-status text-gold">
+                                        <i data-lucide="clock" class="m-status-icon"></i>
+                                        进行中
+                                    </div>
+                                </div>
+                                <div class="milestone-card milestone-locked">
+                                    <div class="milestone-level">Lv. 40</div>
+                                    <div class="milestone-icon q-legendary">
+                                        <i data-lucide="shirt" class="m-icon"></i>
+                                    </div>
+                                    <div class="milestone-name">墨麟战甲</div>
+                                    <div class="milestone-status text-muted">
+                                        <i data-lucide="lock" class="m-status-icon"></i>
+                                        未解锁
+                                    </div>
+                                </div>
+                                <div class="milestone-card milestone-locked">
+                                    <div class="milestone-level">Lv. 50</div>
+                                    <div class="milestone-icon q-legendary">
+                                        <i data-lucide="crown" class="m-icon"></i>
+                                    </div>
+                                    <div class="milestone-name">赛季冠军</div>
+                                    <div class="milestone-status text-muted">
+                                        <i data-lucide="lock" class="m-status-icon"></i>
+                                        未解锁
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <style>
+        /* ===== 文字色辅助（融合token） ===== */
+        .text-gold { color: var(--text-brand); }
+        .text-vermilion { color: var(--text-vermilion); }
+        .text-jade { color: var(--ink-jade-primary); }
+        .text-cyan-gray { color: var(--state-info); }
+        .text-muted { color: var(--text-tertiary); }
+
+        /* ===== 品质色（游戏语义，传世=朱红） ===== */
+        .q-common { color: var(--ink-quality-common); border-color: var(--ink-quality-common); background: rgba(138,130,117,0.12); }
+        .q-uncommon { color: var(--ink-quality-uncommon); border-color: var(--ink-quality-uncommon); background: rgba(107,142,90,0.12); }
+        .q-rare { color: var(--ink-quality-rare); border-color: var(--ink-quality-rare); background: rgba(74,126,168,0.12); }
+        .q-epic { color: var(--ink-quality-epic); border-color: var(--ink-quality-epic); background: rgba(200,168,88,0.12); }
+        .q-legendary { color: var(--ink-quality-legendary); border-color: var(--ink-quality-legendary); background: rgba(192,57,43,0.12); box-shadow: 0 0 12px rgba(192,57,43,0.3); }
+
+        /* ===== 共享Shell布局 ===== */
+        .shell-container {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            grid-template-rows: 60px 1fr;
+            grid-template-areas:
+                "nav top"
+                "nav content";
+            height: 100vh;
+            background: var(--bg-base-secondary);
+            overflow: hidden;
+        }
+
+        /* ===== 左侧导航栏 ===== */
+        .left-nav {
+            grid-area: nav;
+            background: linear-gradient(180deg, var(--bg-base-default) 0%, var(--bg-base-secondary) 100%);
+            border-right: 1px solid var(--ink-border-gold);
+            display: flex;
+            flex-direction: column;
+            padding: var(--ink-space-4);
+            overflow-y: auto;
+        }
+        .left-nav::-webkit-scrollbar { width: 4px; }
+        .left-nav::-webkit-scrollbar-thumb { background: var(--text-tertiary); border-radius: var(--radius-full); }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: var(--ink-space-2);
+            padding: var(--ink-space-2) var(--ink-space-1);
+            margin-bottom: var(--ink-space-2);
+        }
+        .logo-seal {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--ink-vermilion-primary) 0%, var(--ink-vermilion-deep) 100%);
+            border: 1px solid var(--ink-gold-deep);
+            border-radius: var(--ink-radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--ink-font-display);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--ink-paper-bright);
+            flex-shrink: 0;
+        }
+        .logo-text { display: flex; flex-direction: column; }
+        .logo-title {
+            font-family: var(--ink-font-display);
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-brand);
+            letter-spacing: 0.05em;
+        }
+        .logo-subtitle {
+            font-family: var(--ink-font-heading);
+            font-size: 11px;
+            color: var(--ink-paper-dark);
+            letter-spacing: 0.1em;
+        }
+        .nav-divider { margin: var(--ink-space-2) 0; }
+
+        .nav-menu { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: var(--ink-space-2);
+            padding: var(--ink-space-2) var(--ink-space-4);
+            color: var(--ink-paper-aged);
+            text-decoration: none;
+            font-family: var(--ink-font-heading);
+            font-size: 15px;
+            border-left: 3px solid transparent;
+            transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .nav-item:hover { color: var(--ink-paper-bright); background: rgba(200,168,88,0.06); }
+        .nav-item.active {
+            color: var(--text-brand);
+            border-left: 3px solid var(--ink-gold-primary);
+            background: rgba(200,168,88,0.10);
+        }
+        .nav-icon { width: 18px; height: 18px; flex-shrink: 0; }
+        .nav-label { flex: 1; }
+        .nav-badge { font-size: 9px; padding: 1px 4px; }
+
+        .nav-footer { padding: var(--ink-space-2) var(--ink-space-1); }
+        .season-mini { display: flex; align-items: center; gap: var(--ink-space-2); margin-bottom: var(--ink-space-2); }
+        .season-icon { width: 20px; height: 20px; color: var(--ink-gold-primary); }
+        .season-info-mini { display: flex; flex-direction: column; }
+        .season-label { font-size: 11px; color: var(--ink-paper-dark); }
+        .season-name { font-family: var(--ink-font-heading); font-size: 13px; color: var(--ink-paper-bright); }
+        .season-progress-mini { display: flex; flex-direction: column; gap: var(--ink-space-1); }
+        .season-progress-text { font-size: 11px; color: var(--ink-paper-dark); text-align: right; }
+
+        /* ===== 顶部信息栏 ===== */
+        .top-bar {
+            grid-area: top;
+            background: linear-gradient(90deg, var(--bg-base-secondary) 0%, var(--bg-base-tertiary) 100%);
+            border-bottom: 1px solid var(--border-neutral-l1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--ink-space-5);
+            position: relative;
+        }
+        .top-bar-left { display: flex; align-items: center; gap: var(--ink-space-2); }
+        .top-back-btn { letter-spacing: 1px; }
+        .top-back-btn .back-btn-icon { width: 14px; height: 14px; }
+        .top-bar-divider { width: 1px; height: 24px; background: var(--ink-divider); margin: 0 var(--ink-space-1); }
+        .char-avatar { position: relative; width: 36px; height: 36px; }
+        .avatar-text {
+            display: flex; align-items: center; justify-content: center;
+            width: 36px; height: 36px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--ink-gold-deep);
+            background: var(--bg-base-tertiary);
+            font-family: var(--ink-font-display);
+            font-size: 16px;
+            color: var(--text-brand);
+        }
+        .avatar-ring {
+            position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
+            border: 1px solid var(--ink-gold-primary);
+            border-radius: var(--radius-full);
+            opacity: 0.5;
+        }
+        .char-info { display: flex; flex-direction: column; gap: 1px; }
+        .char-name { font-family: var(--ink-font-heading); font-size: 13px; color: var(--ink-paper-bright); }
+        .char-level { display: flex; align-items: center; gap: 2px; font-size: 11px; color: var(--ink-gold-primary); font-family: var(--ink-font-number); font-weight: 700; }
+        .level-icon { width: 12px; height: 12px; }
+        .top-bar-center { position: absolute; left: 50%; transform: translateX(-50%); }
+        .top-bar-season { font-family: var(--ink-font-heading); font-size: 13px; color: var(--ink-paper-dark); letter-spacing: 0.15em; }
+        .top-bar-right { display: flex; align-items: center; gap: var(--ink-space-4); }
+        .currency-item { display: flex; align-items: center; gap: var(--ink-space-1); }
+        .currency-icon { width: 16px; height: 16px; }
+        .currency-label { font-size: 11px; color: var(--ink-paper-dark); }
+        .currency-value { font-family: var(--ink-font-number); font-size: 13px; color: var(--ink-paper-bright); font-weight: 700; }
+        .currency-divider { width: 1px; height: 20px; background: var(--ink-divider); }
+        .time-display {
+            display: flex; align-items: center; gap: var(--ink-space-1);
+            padding: var(--ink-space-1) var(--ink-space-2);
+            background: rgba(14,16,22,0.5);
+            border-radius: var(--ink-radius-sm);
+            border: 1px solid var(--border-neutral-l1);
+        }
+        .time-icon { width: 14px; height: 14px; color: var(--state-info); }
+        .time-text { font-family: var(--ink-font-heading); font-size: 13px; color: var(--state-info); }
+
+        /* ===== 右侧内容区 ===== */
+        .right-content {
+            grid-area: content;
+            background: var(--bg-base-secondary);
+            padding: var(--ink-space-5);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: var(--ink-space-4);
+        }
+        .right-content::-webkit-scrollbar { width: 6px; }
+        .right-content::-webkit-scrollbar-thumb { background: var(--ink-divider); border-radius: var(--radius-full); }
+
+        /* ===== 通行证头部 ===== */
+        .pass-header { position: relative; padding: var(--ink-space-5); }
+        .pass-header-content {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr 0.8fr;
+            gap: var(--ink-space-5);
+            position: relative;
+            z-index: 1;
+        }
+        .pass-header-left { display: flex; flex-direction: column; gap: var(--ink-space-2); }
+        .pass-title-row { display: flex; align-items: center; gap: var(--ink-space-2); }
+        .pass-title {
+            font-family: var(--ink-font-display);
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-brand);
+            letter-spacing: 0.05em;
+            line-height: 1.2;
+        }
+        .pass-season-badge { display: inline-flex; align-items: center; gap: 4px; }
+        .badge-icon { width: 12px; height: 12px; }
+        .pass-subtitle { font-family: var(--ink-font-heading); font-size: 13px; color: var(--ink-paper-aged); letter-spacing: 1px; }
+        .pass-season-info { display: flex; flex-direction: column; gap: var(--ink-space-1); margin-top: var(--ink-space-1); }
+        .season-info-item { display: flex; align-items: center; gap: var(--ink-space-1); }
+        .season-info-icon { width: 14px; height: 14px; }
+        .season-info-label { font-size: 11px; color: var(--ink-paper-dark); }
+        .season-info-value { font-size: 12px; color: var(--ink-paper-bright); font-family: var(--ink-font-number); font-weight: 700; }
+
+        .pass-header-center { display: flex; flex-direction: column; gap: var(--ink-space-2); justify-content: center; }
+        .current-level-display { display: flex; align-items: baseline; gap: var(--ink-space-2); }
+        .current-level-label { font-size: 12px; color: var(--ink-paper-dark); }
+        .current-level-number { font-family: var(--ink-font-number); font-size: 28px; font-weight: 700; color: var(--text-brand); }
+        .progress-section { display: flex; flex-direction: column; gap: var(--ink-space-1); }
+        .progress-info-row { display: flex; justify-content: space-between; align-items: center; }
+        .progress-label { font-size: 11px; color: var(--ink-paper-dark); }
+        .progress-value { font-family: var(--ink-font-number); font-size: 12px; color: var(--ink-paper-aged); font-weight: 700; }
+        .pass-progress { height: 10px; position: relative; }
+        .progress-marker {
+            position: absolute; top: 50%; transform: translate(-50%,-50%);
+            font-size: 10px; color: var(--text-on-brand);
+            background: var(--ink-gold-primary);
+            padding: 1px 6px; border-radius: var(--ink-radius-sm);
+            font-family: var(--ink-font-number); font-weight: 700;
+            white-space: nowrap;
+        }
+        .progress-hint { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-tertiary); }
+        .hint-icon { width: 12px; height: 12px; }
+
+        .pass-header-right { display: flex; flex-direction: column; gap: var(--ink-space-1); align-items: stretch; justify-content: center; }
+        .pass-btn-unlock, .pass-btn-upgrade { width: 100%; }
+        .btn-icon { width: 14px; height: 14px; }
+        .unlock-price, .upgrade-price { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 11px; color: var(--text-tertiary); }
+        .price-icon { width: 12px; height: 12px; }
+        .price-value { font-family: var(--ink-font-number); font-weight: 700; color: var(--ink-paper-aged); }
+
+        /* ===== 解锁横幅 ===== */
+        .unlock-banner {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: var(--ink-space-4) var(--ink-space-5);
+            background: linear-gradient(90deg, rgba(200,168,88,0.06) 0%, rgba(192,57,43,0.04) 100%);
+            border: 1px solid var(--ink-border-gold);
+            border-radius: var(--ink-radius-md);
+            position: relative; overflow: hidden;
+        }
+        .unlock-banner::before {
+            content: ''; position: absolute; top: 0; left: 0;
+            width: 4px; height: 100%;
+            background: linear-gradient(180deg, var(--ink-gold-primary) 0%, var(--ink-vermilion-primary) 100%);
+        }
+        .unlock-banner-left { display: flex; align-items: center; gap: var(--ink-space-4); }
+        .unlock-icon { width: 28px; height: 28px; color: var(--ink-gold-primary); }
+        .unlock-text { display: flex; flex-direction: column; gap: 2px; }
+        .unlock-title { font-family: var(--ink-font-heading); font-size: 15px; color: var(--text-brand); font-weight: 600; }
+        .unlock-desc { font-size: 11px; color: var(--ink-paper-dark); }
+        .unlock-banner-right { display: flex; align-items: center; gap: var(--ink-space-4); }
+        .unlock-preview-items { display: flex; gap: var(--ink-space-1); }
+        .preview-item {
+            width: 36px; height: 36px;
+            border-radius: var(--ink-radius-md);
+            border: 1px solid;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0.7;
+        }
+        .preview-item .preview-icon { width: 18px; height: 18px; }
+        .unlock-btn { font-size: 13px; }
+
+        /* ===== 等级轨道区域 ===== */
+        .level-track-section { padding: var(--ink-space-4) var(--ink-space-5); }
+        .track-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--ink-space-2); }
+        .track-title-row { display: flex; align-items: center; gap: var(--ink-space-5); }
+        .track-title { font-family: var(--ink-font-heading); font-size: 18px; font-weight: 600; color: var(--ink-paper-bright); letter-spacing: 1px; }
+        .track-legend { display: flex; gap: var(--ink-space-4); }
+        .legend-item { display: flex; align-items: center; gap: 4px; }
+        .legend-dot { width: 10px; height: 10px; border-radius: var(--radius-full); }
+        .legend-gold { background: var(--ink-gold-primary); }
+        .legend-gray { background: var(--text-tertiary); }
+        .legend-jade { background: var(--ink-jade-primary); }
+        .legend-glow { background: var(--ink-gold-bright); box-shadow: 0 0 6px var(--ink-gold-primary); }
+        .legend-text { font-size: 11px; color: var(--ink-paper-dark); }
+        .track-nav { display: flex; align-items: center; gap: var(--ink-space-2); }
+        .track-nav-btn {
+            width: 28px; height: 28px;
+            background: var(--bg-base-tertiary);
+            border: 1px solid var(--border-neutral-l1);
+            border-radius: var(--ink-radius-sm);
+            color: var(--ink-paper-aged);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: color 0.15s ease, border-color 0.15s ease;
+        }
+        .track-nav-btn:hover { border-color: var(--ink-gold-primary); color: var(--text-brand); }
+        .nav-btn-icon { width: 16px; height: 16px; }
+        .track-range { font-family: var(--ink-font-number); font-size: 13px; color: var(--ink-paper-bright); min-width: 120px; text-align: center; font-weight: 700; }
+
+        .track-scroll-container { overflow-x: auto; padding: var(--ink-space-2) 0; position: relative; }
+        .track-scroll-container::-webkit-scrollbar { height: 6px; }
+        .track-scroll-container::-webkit-scrollbar-track { background: rgba(14,16,22,0.5); }
+        .track-scroll-container::-webkit-scrollbar-thumb { background: var(--ink-divider); border-radius: var(--radius-full); }
+
+        .track-row { display: flex; align-items: flex-start; min-width: max-content; position: relative; }
+        .track-row-paid { margin-bottom: var(--ink-space-1); }
+        .track-row-free { margin-top: var(--ink-space-1); }
+        .track-row-label { width: 60px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: var(--ink-space-2); flex-shrink: 0; }
+        .row-label-icon { width: 20px; height: 20px; }
+        .track-row-paid .row-label-icon { color: var(--ink-gold-primary); }
+        .track-row-free .row-label-icon { color: var(--text-tertiary); }
+        .row-label-text { font-family: var(--ink-font-heading); font-size: 11px; writing-mode: vertical-rl; letter-spacing: 0.1em; }
+        .track-row-paid .row-label-text { color: var(--ink-gold-primary); }
+        .track-row-free .row-label-text { color: var(--text-tertiary); }
+        .track-nodes { display: flex; gap: var(--ink-space-2); position: relative; padding: var(--ink-space-2); }
+        .track-line { position: absolute; top: 50%; left: var(--ink-space-2); right: var(--ink-space-2); height: 2px; transform: translateY(-50%); z-index: 0; }
+        .track-line-gold { background: linear-gradient(90deg, var(--ink-gold-deep) 0%, var(--ink-gold-primary) 50%, var(--ink-gold-deep) 100%); opacity: 0.5; }
+        .track-line-gray { background: linear-gradient(90deg, var(--bg-base-elevated) 0%, var(--text-tertiary) 50%, var(--bg-base-elevated) 100%); opacity: 0.5; }
+
+        .level-node { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 80px; position: relative; z-index: 1; cursor: pointer; transition: transform 0.15s ease; }
+        .level-node:hover { transform: translateY(-2px); }
+        .level-node.current { transform: scale(1.05); }
+        .node-level { font-family: var(--ink-font-number); font-size: 11px; color: var(--ink-paper-dark); font-weight: 700; }
+        .level-node.current .node-level { color: var(--text-brand); }
+        .node-level-bottom { order: 3; }
+        .node-reward {
+            width: 48px; height: 48px;
+            border-radius: var(--radius-full);
+            border: 2px solid;
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+            background: var(--bg-base-default);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .reward-icon { width: 24px; height: 24px; }
+        .level-node.current .node-reward { box-shadow: 0 0 12px var(--ink-gold-glow); border-color: var(--ink-gold-bright) !important; }
+        .level-node.current .node-reward::after {
+            content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px;
+            border: 1px solid var(--ink-gold-primary); border-radius: var(--radius-full);
+            opacity: 0.4; animation: inkSpread 2s ease-in-out infinite alternate;
+        }
+        @keyframes inkSpread { from { opacity: 0.2; transform: scale(1); } to { opacity: 0.5; transform: scale(1.08); } }
+        .node-name { font-size: 10px; color: var(--ink-paper-dark); text-align: center; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .level-node.current .node-name { color: var(--ink-gold-primary); }
+
+        .node-status { position: absolute; top: -4px; right: -4px; width: 18px; height: 18px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; border: 1px solid var(--bg-base-default); }
+        .status-icon { width: 12px; height: 12px; }
+        .status-claimed { background: var(--ink-jade-primary); color: var(--ink-paper-bright); }
+        .status-claimable { background: var(--ink-gold-primary); color: var(--text-on-brand); }
+        .status-locked { background: var(--bg-base-elevated); color: var(--text-tertiary); }
+        .node-badge { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); font-size: 9px; padding: 1px 6px; background: var(--ink-gold-primary); color: var(--text-on-brand); border-radius: var(--ink-radius-sm); white-space: nowrap; font-weight: 700; }
+
+        .track-level-numbers { display: flex; align-items: center; margin: var(--ink-space-1) 0; }
+        .level-num-spacer { width: 60px; flex-shrink: 0; }
+        .level-num-row { display: flex; gap: var(--ink-space-2); padding: 0 var(--ink-space-2); }
+        .level-num { width: 80px; text-align: center; font-family: var(--ink-font-number); font-size: 11px; color: var(--text-tertiary); }
+        .current-num { color: var(--text-brand); font-weight: 700; }
+
+        .track-footer { display: flex; align-items: center; gap: var(--ink-space-5); padding: var(--ink-space-2) 0 0; margin-top: var(--ink-space-2); border-top: 1px solid var(--border-neutral-l1); }
+        .track-footer-item { display: flex; align-items: center; gap: 4px; }
+        .footer-icon { width: 14px; height: 14px; }
+        .footer-text { font-size: 13px; color: var(--ink-paper-aged); }
+        .footer-text strong { color: var(--ink-paper-bright); }
+        .track-claim-all-btn { margin-left: auto; font-size: 13px; }
+
+        /* ===== 奖励详情面板 ===== */
+        .level-detail-panel { padding: var(--ink-space-5); }
+        .detail-header { display: flex; flex-direction: column; gap: var(--ink-space-1); }
+        .detail-title-row { display: flex; align-items: center; gap: var(--ink-space-2); }
+        .detail-title { font-family: var(--ink-font-heading); font-size: 22px; font-weight: 600; color: var(--ink-paper-bright); letter-spacing: 1px; }
+        .detail-current-badge { display: inline-flex; align-items: center; gap: 4px; }
+        .detail-desc { font-size: 13px; color: var(--ink-paper-dark); }
+
+        .reward-cards-container { display: grid; grid-template-columns: 1fr 1fr; gap: var(--ink-space-4); }
+        .reward-card {
+            background: rgba(14,16,22,0.5);
+            border: 1px solid var(--border-neutral-l1);
+            border-radius: var(--ink-radius-md);
+            padding: var(--ink-space-4);
+            display: flex; flex-direction: column; gap: var(--ink-space-2);
+        }
+        .reward-card-paid { border-color: var(--ink-border-gold); background: rgba(200,168,88,0.04); }
+        .reward-card-header { display: flex; justify-content: space-between; align-items: center; }
+        .reward-track-label { display: flex; align-items: center; gap: 4px; font-family: var(--ink-font-heading); font-size: 13px; color: var(--ink-paper-aged); }
+        .track-label-icon { width: 14px; height: 14px; }
+        .reward-status-badge { display: inline-flex; align-items: center; gap: 4px; }
+        .reward-card-body { display: flex; gap: var(--ink-space-4); align-items: flex-start; }
+        .reward-icon-large { width: 64px; height: 64px; border-radius: var(--ink-radius-md); border: 2px solid; display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative; }
+        .large-icon { width: 32px; height: 32px; }
+        .reward-card-paid .reward-icon-large .icon-glow { position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; border-radius: var(--ink-radius-md); background: radial-gradient(circle, var(--ink-gold-glow) 0%, transparent 70%); pointer-events: none; }
+        .reward-info { flex: 1; display: flex; flex-direction: column; gap: var(--ink-space-1); min-width: 0; }
+        .reward-name { font-family: var(--ink-font-heading); font-size: 15px; font-weight: 600; color: var(--ink-paper-bright); }
+        .reward-attrs { display: flex; gap: var(--ink-space-3); }
+        .reward-attr { display: flex; align-items: center; gap: 4px; font-size: 12px; }
+        .attr-label { color: var(--ink-paper-dark); }
+        .attr-value { color: var(--ink-paper-aged); }
+        .reward-desc-text { font-size: 12px; color: var(--text-tertiary); line-height: 1.6; }
+        .reward-card-footer { display: flex; align-items: center; justify-content: space-between; gap: var(--ink-space-2); }
+        .lock-hint { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-tertiary); }
+        .lock-hint-icon { width: 12px; height: 12px; }
+        .reward-btn.claimed { opacity: 0.5; cursor: not-allowed; }
+
+        .next-level-preview { margin-top: var(--ink-space-2); }
+        .preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--ink-space-3); }
+        .preview-title-row { display: flex; align-items: center; gap: var(--ink-space-2); }
+        .preview-title { font-family: var(--ink-font-heading); font-size: 16px; font-weight: 600; color: var(--ink-paper-bright); }
+        .preview-hint { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-tertiary); }
+        .preview-exp-info { display: flex; align-items: center; gap: 4px; }
+        .exp-label { font-size: 11px; color: var(--ink-paper-dark); }
+        .exp-value { font-family: var(--ink-font-number); font-size: 14px; font-weight: 700; }
+        .preview-items-grid { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: var(--ink-space-3); }
+        .preview-reward-card {
+            display: flex; flex-direction: column; align-items: center; gap: var(--ink-space-1);
+            padding: var(--ink-space-3);
+            background: rgba(14,16,22,0.5);
+            border: 1px solid var(--border-neutral-l1);
+            border-radius: var(--ink-radius-md);
+        }
+        .preview-reward-paid { border-color: var(--ink-border-gold); background: rgba(200,168,88,0.04); }
+        .preview-track-tag { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--ink-paper-dark); }
+        .preview-tag-gold { color: var(--text-brand); }
+        .tag-icon { width: 12px; height: 12px; }
+        .preview-reward-icon { width: 48px; height: 48px; border-radius: var(--ink-radius-md); border: 2px solid; display: flex; align-items: center; justify-content: center; }
+        .preview-r-icon { width: 24px; height: 24px; }
+        .preview-reward-name { font-family: var(--ink-font-heading); font-size: 13px; color: var(--ink-paper-bright); }
+        .preview-reward-quality { font-size: 11px; }
+
+        .preview-exp-tips {
+            padding: var(--ink-space-3);
+            background: rgba(200,168,88,0.04);
+            border: 1px solid var(--ink-border-gold);
+            border-radius: var(--ink-radius-md);
+        }
+        .tips-header { display: flex; align-items: center; gap: 4px; margin-bottom: var(--ink-space-2); }
+        .tips-icon { width: 14px; height: 14px; }
+        .tips-title { font-family: var(--ink-font-heading); font-size: 13px; font-weight: 600; color: var(--text-brand); }
+        .tips-list { display: flex; flex-direction: column; gap: var(--ink-space-1); }
+        .tip-item { display: flex; align-items: center; gap: var(--ink-space-2); font-size: 11px; color: var(--ink-paper-aged); }
+        .tip-icon { width: 12px; height: 12px; color: var(--ink-gold-primary); flex-shrink: 0; }
+
+        /* ===== 赛季里程碑 ===== */
+        .milestone-section { padding: var(--ink-space-5); }
+        .milestone-header { display: flex; align-items: baseline; gap: var(--ink-space-3); margin-bottom: var(--ink-space-2); }
+        .milestone-title { font-family: var(--ink-font-heading); font-size: 18px; font-weight: 600; color: var(--ink-paper-bright); letter-spacing: 1px; }
+        .milestone-subtitle { font-size: 12px; color: var(--ink-paper-dark); }
+        .milestone-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--ink-space-3); }
+        .milestone-card {
+            display: flex; flex-direction: column; align-items: center; gap: var(--ink-space-2);
+            padding: var(--ink-space-4) var(--ink-space-2);
+            background: rgba(14,16,22,0.5);
+            border: 1px solid var(--border-neutral-l1);
+            border-radius: var(--ink-radius-md);
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+        .milestone-claimed { border-color: var(--border-neutral-l2); }
+        .milestone-current { border-color: var(--ink-gold-primary); background: rgba(200,168,88,0.06); box-shadow: 0 0 12px var(--ink-gold-glow); }
+        .milestone-locked { opacity: 0.6; }
+        .milestone-level { font-family: var(--ink-font-number); font-size: 13px; font-weight: 700; color: var(--ink-paper-aged); }
+        .milestone-current .milestone-level { color: var(--text-brand); }
+        .milestone-icon { width: 48px; height: 48px; border-radius: var(--ink-radius-md); border: 2px solid; display: flex; align-items: center; justify-content: center; }
+        .m-icon { width: 24px; height: 24px; }
+        .milestone-name { font-family: var(--ink-font-heading); font-size: 13px; color: var(--ink-paper-bright); }
+        .milestone-status { display: flex; align-items: center; gap: 4px; font-size: 11px; }
+        .m-status-icon { width: 12px; height: 12px; }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 1024px) {
+            .pass-header-content { grid-template-columns: 1fr; gap: var(--ink-space-4); }
+            .reward-cards-container { grid-template-columns: 1fr; }
+            .preview-items-grid { grid-template-columns: 1fr; }
+            .milestone-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .shell-container { grid-template-columns: 64px 1fr; }
+            .nav-label, .logo-text, .nav-footer, .season-info-mini { display: none; }
+            .nav-item { justify-content: center; padding: var(--ink-space-2); }
+            .top-bar { padding: 0 var(--ink-space-2); }
+            .top-bar-center { display: none; }
+            .top-bar-right .currency-label { display: none; }
+            .right-content { padding: var(--ink-space-3); }
+            .milestone-grid { grid-template-columns: 1fr; }
+            .unlock-banner { flex-direction: column; gap: var(--ink-space-3); align-items: flex-start; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .level-node.current .node-reward::after { animation: none; }
+            * { transition-duration: 0.01ms !important; }
+        }
+    </style>
+
+    <script>lucide.createIcons();</script>
+</body>
+</html>

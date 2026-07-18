@@ -1,0 +1,669 @@
+{
+  "data": [
+    {
+      "id": "page-combat-hud",
+      "title": "核心战斗HUD",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/combat-hud.html",
+        "interactions": [
+          {
+            "domId": "nav-character",
+            "targetPageId": "page-character-panel"
+          },
+          {
+            "domId": "nav-skill",
+            "targetPageId": "page-skill-panel"
+          },
+          {
+            "domId": "nav-inventory",
+            "targetPageId": "page-inventory"
+          },
+          {
+            "domId": "nav-quest",
+            "targetPageId": "page-quest-log"
+          },
+          {
+            "domId": "nav-map",
+            "targetPageId": "page-world-map"
+          },
+          {
+            "domId": "nav-social",
+            "targetPageId": "page-social-guild"
+          },
+          {
+            "domId": "nav-shop",
+            "targetPageId": "page-shop"
+          },
+          {
+            "domId": "nav-compass",
+            "targetPageId": "page-compass"
+          },
+          {
+            "domId": "toggle-traditional",
+            "targetPageId": "page-combat-hud-traditional",
+            "hideEdge": true,
+            "transitionLabel": "切换传统模式"
+          },
+          {
+            "domId": "nav-enhance",
+            "targetPageId": "page-equipment-enhance",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-crafting",
+            "targetPageId": "page-crafting",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-mount",
+            "targetPageId": "page-mount-pet",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-friends",
+            "targetPageId": "page-friends",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-mail",
+            "targetPageId": "page-mail",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-leaderboard",
+            "targetPageId": "page-leaderboard",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-mentor",
+            "targetPageId": "page-mentor",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-achievement",
+            "targetPageId": "page-achievement",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-dungeon",
+            "targetPageId": "page-dungeon-entry",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-character-panel",
+      "title": "角色属性装备",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 620,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/character-panel.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-skill-panel",
+      "title": "武学心法奇术",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 620,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/skill-panel.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-inventory",
+      "title": "背包行囊",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 620,
+        "y": 754,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/inventory.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-quest-log",
+      "title": "任务日志",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 620,
+        "y": 1131,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/quest-log.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-world-map",
+      "title": "世界地图",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 620,
+        "y": 1508,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/world-map.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-social-guild",
+      "title": "社交门派",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 620,
+        "y": 1885,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/social-guild.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-shop",
+      "title": "商城商店",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 620,
+        "y": 2262,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/shop.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-compass",
+      "title": "指南针系统",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 620,
+        "y": 2639,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/compass.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-combat-hud-traditional",
+      "title": "传统模式战斗HUD",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 0,
+        "y": 3016,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/combat-hud-traditional.html",
+        "interactions": [
+          {
+            "domId": "toggle-immersive",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "切换沉浸模式"
+          },
+          {
+            "domId": "nav-character",
+            "targetPageId": "page-character-panel",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-skill",
+            "targetPageId": "page-skill-panel",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-inventory",
+            "targetPageId": "page-inventory",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-quest",
+            "targetPageId": "page-quest-log",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-map",
+            "targetPageId": "page-world-map",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-social",
+            "targetPageId": "page-social-guild",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-shop",
+            "targetPageId": "page-shop",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-compass",
+            "targetPageId": "page-compass",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-enhance",
+            "targetPageId": "page-equipment-enhance",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-crafting",
+            "targetPageId": "page-crafting",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-mount",
+            "targetPageId": "page-mount-pet",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-friends",
+            "targetPageId": "page-friends",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-mail",
+            "targetPageId": "page-mail",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-leaderboard",
+            "targetPageId": "page-leaderboard",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-mentor",
+            "targetPageId": "page-mentor",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-achievement",
+            "targetPageId": "page-achievement",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-dungeon",
+            "targetPageId": "page-dungeon-entry",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-equipment-enhance",
+      "title": "装备强化",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 620,
+        "y": 3016,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/equipment-enhance.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-crafting",
+      "title": "制造技艺",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 1240,
+        "y": 3016,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/crafting.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-mount-pet",
+      "title": "坐骑宠物",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 1860,
+        "y": 3016,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/mount-pet.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-friends",
+      "title": "好友社交",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 2480,
+        "y": 3016,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/friends.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-mail",
+      "title": "邮箱系统",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 3100,
+        "y": 3016,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/mail.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-leaderboard",
+      "title": "排行榜",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 3720,
+        "y": 3016,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/leaderboard.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-mentor",
+      "title": "师徒系统",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 4340,
+        "y": 3016,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/mentor.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-achievement",
+      "title": "成就图鉴",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 4960,
+        "y": 3016,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/achievement.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-dungeon-entry",
+      "title": "副本入口",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 5580,
+        "y": 3016,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/dungeon-entry.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "image-001",
+      "title": "水墨深色背景纹理",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 0,
+        "y": 3393
+      },
+      "devMetadata": {
+        "imageSrc": "assets/textures/ink-wash-bg-dark.jpg"
+      }
+    },
+    {
+      "id": "image-002",
+      "title": "鎏金罗盘圆环",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 620,
+        "y": 3393
+      },
+      "devMetadata": {
+        "imageSrc": "assets/ui-elements/compass-ring.jpg"
+      }
+    },
+    {
+      "id": "image-003",
+      "title": "鎏金转角纹饰",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 1240,
+        "y": 3393
+      },
+      "devMetadata": {
+        "imageSrc": "assets/borders/gold-filigree-corner.jpg"
+      }
+    },
+    {
+      "id": "image-004",
+      "title": "水墨山水地图",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 1860,
+        "y": 3393
+      },
+      "devMetadata": {
+        "imageSrc": "assets/textures/ink-wash-map.jpg"
+      }
+    },
+    {
+      "id": "image-005",
+      "title": "水墨分割线",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 2480,
+        "y": 3393
+      },
+      "devMetadata": {
+        "imageSrc": "assets/borders/ink-divider.jpg"
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "projectName": "混沌世界 - 游戏UI系统",
+    "designLibrary": {
+      "name": "TRAE Work",
+      "id": "dl_builtin_trae_work",
+      "version": null,
+      "scope": "built-in-global",
+      "path": "c:\\Users\\33011\\.trae-cn\\design_libraries\\dl_builtin_trae_work",
+      "versionSource": "metadata.json"
+    }
+  }
+}

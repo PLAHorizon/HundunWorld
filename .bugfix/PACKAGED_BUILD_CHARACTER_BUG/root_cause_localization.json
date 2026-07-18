@@ -1,0 +1,249 @@
+{
+  "issue_id": "PACKAGED_BUILD_CHARACTER_BUG",
+  "issue_description": "Flax Engine 游戏打包发布后无法生成游戏角色",
+  "localization_outcome": "confirmed",
+  "localization_method": "static",
+  "analysis_timestamp": "2026-06-18T00:24:00Z",
+  "root_causes": [
+    {
+      "id": "RC-1",
+      "severity": "critical",
+      "title": "LoadContentWithFallback 使用带 .prefab 扩展名的路径，打包后 Content.GetAssetInfo 查找失败导致 Prefab 加载返回 null",
+      "description": "LocalPlayerPrefabPath 常量值为 \"Content/Prefabs/Character/CharacterRoot.prefab\"（带 .prefab 扩展名）。LoadContentWithFallback 的第一步通过 Content.GetAssetInfo(primaryPath, out assetInfo) 将路径转为 GUID 再加载。在 Flax Engine 打包后，资源被打包进 .flaxpac 包，Content.GetAssetInfo 内部的资源索引可能不包含带扩展名的路径（Flax 内部资源路径通常不带扩展名），导致步骤1失败。步骤2使用 Content.LoadAsync<T>(primaryPath) 直接加载带扩展名路径，在打包后同样可能失败。步骤3的无扩展名回退路径逻辑虽然存在，但步骤2的 Content.LoadAsync 返回的对象非 null（异步加载返回了引用但资源尚未就绪），导致方法提前返回了一个尚未完成加载的 Prefab 引用，后续 PrefabManager.SpawnPrefab 使用该未就绪的 Prefab 时返回 null。",
+      "evidence": [
+        {
+          "file": "HundunWorld/Source/Game/HundunWorldGame.cs",
+          "line": 587,
+          "code": "private const string LocalPlayerPrefabPath = \"Content/Prefabs/Character/CharacterRoot.prefab\";",
+          "note": "路径包含 .prefab 扩展名"
+        },
+        {
+          "file": "HundunWorld/Source/Game/HundunWorldGame.cs",
+          "line": 596,
+          "code": "if (Content.GetAssetInfo(primaryPath, out var assetInfo))",
+          "note": "步骤1：使用带扩展名路径查找 AssetInfo，打包后可能失败"
+        },
+        {
+          "file": "HundunWorld/Source/Game/HundunWorldGame.cs",
+          "line": 604,
+          "code": "var directAsset = Content.LoadAsync<T>(primaryPath);",
+          "note": "步骤2：Content.LoadAsync 是异步加载，返回非 null 引用但资源可能尚未加载完成"
+        },
+        {
+          "file": "HundunWorld/Source/Game/HundunWorldGame.cs",
+          "line": 605,
+          "code": "if (directAsset != null) return directAsset;",
+          "note": "关键缺陷：异步加载返回的对象非 null 就直接返回，未等待资源实际加载完成"
+        },
+        {
+          "file": "HundunWorld/Source/Game/HundunWorldGame.cs",
+          "line": 651,
+          "code": "actor = PrefabManager.SpawnPrefab(prefab, position, Quaternion.Identity);",
+          "note": "SpawnPrefab 使用未完全加载的 Prefab 引用，返回 null"
+        }
+      ],
+      "impact_scope": [
+        "HundunWorldGame.CreateLocalPlayerActor()",
+        "HundunWorldGame.LoadContentWithFallback<T>()",
+        "FlaxActorSyncSystem.CreateRemotePlayerActor()",
+        "所有使用 LoadContentWithFallback 加载资源的场景"
+      ],
+      "fix_suggestion": "1. 将 LocalPlayerPrefabPath 改为不带扩展名的路径 \"Content/Prefabs/Character/CharacterRoot\"；2. 在 LoadContentWithFallback 中，对 Content.LoadAsync 返回的资产检查其 IsLoaded 状态，若未加载完成则等待或使用 Content.Load<T>()（同步加载）；3. 或者在步骤1失败后直接跳到步骤3的无扩展名回退路径，跳过步骤2的异步加载。"
+    },
+    {
+      "id": "RC-2",
+      "severity": "high",
+      "title": "Content.LoadAsync 异步加载时序问题：Prefab 资源未完全加载即被 SpawnPrefab 使用",
+      "description": "LoadContentWithFallback 方法使用 Content.LoadAsync<T>() 进行异步加载。LoadAsync 会立即返回一个 Asset 引用（非 null），但资源内容可能尚未从 .flaxpac 包中加载完成。在编辑器中，资源通常已缓存在内存中，LoadAsync 几乎是同步完成的；但在打包后，资源需要从 .flaxpac 包中读取，加载时间更长。方法在 LoadAsync 返回非 null 后直接返回该引用，调用方（CreateLocalPlayerActor）立即将其传给 PrefabManager.SpawnPrefab()，此时 Prefab 的内部数据可能尚未就绪，导致 SpawnPrefab 返回 null。",
+      "evidence": [
+        {
+          "file": "HundunWorld/Source/Game/HundunWorldGame.cs",
+          "line": 604,
+          "code": "var directAsset = Content.LoadAsync<T>(primaryPath);",
+          "note": "异步加载，立即返回引用"
+        },
+        {
+          "file": "HundunWorld/Source/Game/HundunWorldGame.cs",
+          "line": 605,
+          "code": "if (directAsset != null) return directAsset;",
+          "note": "未检查 IsLoaded 状态就返回"
+        },
+        {
+          "file": "HundunWorld/Source/Game/HundunWorldGame.cs",
+          "line": 644,
+          "code": "var prefab = LoadContentWithFallback<Prefab>(LocalPlayerPrefabPath);",
+          "note": "调用方获取到可能未加载完成的 Prefab"
+        },
+        {
+          "file": "HundunWorld/Source/Game/HundunWorldGame.cs",
+          "line": 651,
+          "code": "actor = PrefabManager.SpawnPrefab(prefab, position, Quaternion.Identity);",
+          "note": "SpawnPrefab 需要完全加载的 Prefab，未加载完成时返回 null"
+        },
+        {
+          "file": "HundunWorld/Source/Game/HundunWorldGame.cs",
+          "line": 653,
+          "code": "Debug.LogError($\"[HundunWorldGame] PrefabManager.SpawnPrefab 返回 null，将创建红色占位立方体作为兜底\");",
+          "note": "此错误日志在打包后应该会被触发"
+        }
+      ],
+      "impact_scope": [
+        "HundunWorldGame.CreateLocalPlayerActor()",
+        "所有通过 LoadContentWithFallback 异步加载并立即使用的资源"
+      ],
+      "fix_suggestion": "1. 在 LoadContentWithFallback 中，对 LoadAsync 返回的 Asset 检查 IsLoaded 属性，若未加载完成则使用 Content.Load<T>() 同步等待加载；2. 或者在 CreateLocalPlayerActor 中，加载 Prefab 后增加等待逻辑（轮询 IsLoaded 或使用 await）；3. 对于关键资源（如角色 Prefab），优先使用同步加载 Content.Load<T>(guid) 而非 LoadAsync。"
+    },
+    {
+      "id": "RC-3",
+      "severity": "medium",
+      "title": "Game.Build.cs 中 DLL 引用路径在打包后可能找不到，导致 HundunWorldGamePlugin 初始化失败",
+      "description": "Game.Build.cs 的 Setup 方法使用 AppDomain.CurrentDomain.BaseDirectory 来查找依赖 DLL。在编辑器中，BaseDirectory 指向编辑器安装目录，DLL 文件存在于该目录下。但在打包后的游戏中，BaseDirectory 指向游戏可执行文件所在目录（如 Output/Windows/），虽然部分 DLL 已被 Flax 打包系统复制到该目录（从打包输出可见 Horizon.Game.Message.dll、Horizon.Game.ECS.Arch.dll 等），但某些 DLL 可能未被正确复制。如果关键 DLL 缺失，HundunWorldGamePlugin.Initialize() 中的反射创建 HundunWorldGame 实例会失败，导致整个游戏逻辑（包括角色创建）无法运行。当前代码对 DLL 找不到的情况仅静默跳过（注释掉了警告日志），增加了排查难度。",
+      "evidence": [
+        {
+          "file": "HundunWorld/Source/Game/Game.Build.cs",
+          "line": 20,
+          "code": "string outputPath = AppDomain.CurrentDomain.BaseDirectory;",
+          "note": "使用 BaseDirectory 查找 DLL"
+        },
+        {
+          "file": "HundunWorld/Source/Game/Game.Build.cs",
+          "line": 51,
+          "code": "if (File.Exists(dllPath))",
+          "note": "仅在文件存在时添加引用"
+        },
+        {
+          "file": "HundunWorld/Source/Game/Game.Build.cs",
+          "line": 64,
+          "code": "//FlaxEngine.Debug.Log($\"[WARNING] DLL not found: {dll} ...",
+          "note": "DLL 找不到时警告日志被注释掉，静默跳过"
+        },
+        {
+          "file": "HundunWorld/Source/Game/HundunWorldGamePlugin.cs",
+          "line": 33,
+          "code": "var gameType = System.Type.GetType(\"HundunWorld.Game.HundunWorldGame, Game.CSharp\", false);",
+          "note": "通过反射获取类型，如果依赖 DLL 缺失，类型加载会失败"
+        },
+        {
+          "file": "HundunWorld/Source/Game/HundunWorldGamePlugin.cs",
+          "line": 56,
+          "code": "Debug.LogError(\"HundunWorldGame type not found\");",
+          "note": "类型加载失败时的错误日志"
+        }
+      ],
+      "impact_scope": [
+        "HundunWorldGamePlugin.Initialize()",
+        "HundunWorldGame 整个游戏逻辑初始化",
+        "所有依赖第三方 DLL 的功能"
+      ],
+      "fix_suggestion": "1. 取消注释 Game.Build.cs 中 DLL 找不到时的警告日志，便于排查；2. 在 HundunWorldGamePlugin.Initialize() 中增加更详细的错误日志，包括 Type.GetType 失败时列出已加载的程序集；3. 确认打包输出目录中是否包含所有必需的 DLL（特别是 TouchSocket.dll、Orleans.Serialization.dll、MemoryPack.Core.dll 等）；4. 考虑在 Build Settings 中配置 AdditionalAssetFolders 确保所有依赖被正确打包。"
+    }
+  ],
+  "secondary_factors": [
+    {
+      "id": "SF-1",
+      "severity": "low",
+      "title": "CreateFallbackCharacterActor 中使用编辑器资源路径",
+      "description": "CreateFallbackCharacterActor 方法中使用 Content.LoadAsync<Model>(\"Content/Editor/Primitives/Cube\") 加载占位立方体模型。此路径属于编辑器资源，打包后不存在于 .flaxpac 包中，导致兜底方案也失败。",
+      "evidence": [
+        {
+          "file": "HundunWorld/Source/Game/HundunWorldGame.cs",
+          "line": 699,
+          "code": "cube.Model = Content.LoadAsync<Model>(\"Content/Editor/Primitives/Cube\");",
+          "note": "编辑器资源路径，打包后不可用"
+        }
+      ]
+    },
+    {
+      "id": "SF-2",
+      "severity": "low",
+      "title": "FlaxActorSyncSystem 远程角色 SkinnedModel 加载路径带 .flax 扩展名",
+      "description": "FlaxActorSyncSystem.RemotePlayerPrefabPath 默认值为 \"Content/Character/Models/skm_uefn_mannequin.flax\"，同样存在打包后路径查找失败的问题，影响远程角色的可见性。",
+      "evidence": [
+        {
+          "file": "HundunWorld/Source/Game/FlaxActorSyncSystem.cs",
+          "line": 35,
+          "code": "public string RemotePlayerPrefabPath { get; set; } = \"Content/Character/Models/skm_uefn_mannequin.flax\";",
+          "note": "带 .flax 扩展名的路径"
+        }
+      ]
+    }
+  ],
+  "execution_flow": {
+    "description": "角色创建的完整执行流程及失败点",
+    "steps": [
+      {
+        "step": 1,
+        "description": "EnterGameHandler 收到服务端进入游戏响应",
+        "file": "HundunWorld/Source/Game/Network/MessageHandlers/EnterGameHandler.cs",
+        "line": 38,
+        "status": "正常"
+      },
+      {
+        "step": 2,
+        "description": "调用 gameInstance.RequestCreateLocalPlayerActor() 缓存角色创建请求",
+        "file": "HundunWorld/Source/Game/Network/MessageHandlers/EnterGameHandler.cs",
+        "line": 65,
+        "status": "正常"
+      },
+      {
+        "step": 3,
+        "description": "订阅 GameSceneManager.TransitionCompleted 事件",
+        "file": "HundunWorld/Source/Game/HundunWorldGame.cs",
+        "line": 535,
+        "status": "正常"
+      },
+      {
+        "step": 4,
+        "description": "场景切换到 GameWorld 完成，触发 TransitionCompleted 事件",
+        "file": "HundunWorld/Source/Game/UI/GameSceneManager.cs",
+        "line": 1031,
+        "status": "正常"
+      },
+      {
+        "step": 5,
+        "description": "OnSceneTransitionCompleted 回调执行 CreateLocalPlayerActor()",
+        "file": "HundunWorld/Source/Game/HundunWorldGame.cs",
+        "line": 581,
+        "status": "正常"
+      },
+      {
+        "step": 6,
+        "description": "LoadContentWithFallback<Prefab>(\"Content/Prefabs/Character/CharacterRoot.prefab\") 加载 Prefab",
+        "file": "HundunWorld/Source/Game/HundunWorldGame.cs",
+        "line": 644,
+        "status": "失败点",
+        "failure_reason": "步骤1 GetAssetInfo 对带扩展名路径查找失败；步骤2 LoadAsync 返回未加载完成的引用；步骤3 的无扩展名回退因步骤2已返回而未执行"
+      },
+      {
+        "step": 7,
+        "description": "PrefabManager.SpawnPrefab(prefab, ...) 使用未加载完成的 Prefab 生成 Actor",
+        "file": "HundunWorld/Source/Game/HundunWorldGame.cs",
+        "line": 651,
+        "status": "失败点",
+        "failure_reason": "Prefab 未完全加载，SpawnPrefab 返回 null"
+      },
+      {
+        "step": 8,
+        "description": "CreateFallbackCharacterActor 创建红色占位立方体",
+        "file": "HundunWorld/Source/Game/HundunWorldGame.cs",
+        "line": 660,
+        "status": "失败点",
+        "failure_reason": "使用编辑器资源路径 Content/Editor/Primitives/Cube，打包后不可用"
+      }
+    ]
+  },
+  "build_config_analysis": {
+    "character_root_prefab_in_additional_assets": true,
+    "character_root_prefab_guid": "0cebec9141fd5d5b970201964b3577ef",
+    "additional_assets": [
+      "0cebec9141fd5d5b970201964b3577ef",
+      "9c6135344289a9d4261ff882b0e00182",
+      "63f6a04b4b7cdec7c8528786ca8b0471",
+      "0cc4409e4fe03cf2ae107787f2567203"
+    ],
+    "additional_asset_folders": [
+      "C:\\Works/GitHubProjects/HundunWorld/HundunWorld/Content"
+    ],
+    "note": "CharacterRoot.prefab 已在 AdditionalAssets 中，资源本身会被打包。问题不在资源缺失，而在加载路径和异步时序。"
+  }
+}

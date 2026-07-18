@@ -78,7 +78,13 @@ namespace HundunWorld.Game.Network
                 {
                     MessageId = Guid.NewGuid().ToString(),
                     MessageType = message.Type,
-                    ServiceType = ServiceType.Game
+                    ServiceType = ServiceType.Game,
+                    GameId = _networkManager.GameId,
+                    ZoneId = _networkManager.ZoneId,
+                    ServerId = _networkManager.ServerId,
+                    UserId = _networkManager.UserId,
+                    AuthToken = _networkManager.AuthToken,
+                    MachineId = MachineIdentifier.GetMachineGuid()
                 },
                 Body = message
             };

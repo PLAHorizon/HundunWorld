@@ -1,0 +1,546 @@
+{
+  "project": {
+    "name": "燕云十六声-角色创建与加载",
+    "path": "c:\\Works\\GitHubProjects\\HundunWorld_UE5\\HundunWorld\\HundunWorld\\yy-character-loading",
+    "operation": "create",
+    "deviceType": "desktop",
+    "language": "zh-CN",
+    "dashboardMode": false,
+    "replicationMode": null,
+    "sourceUrl": null,
+    "visualSpecExcerpt": null,
+    "styleDefinitionBrief": "中国传统水墨画风格的游戏UI体系，墨黑/纸白为主色，朱红/金色/玉色为点缀。模仿燕云十六声的视觉语言：极简留白、竖排文字、水墨晕染效果、中式硬朗边框",
+    "designRead": "game-ui / cinematic / ink-wash / density-3 / motion-2",
+    "designDials": {
+      "layoutVariance": 3,
+      "motionIntensity": 2,
+      "visualDensity": 3
+    },
+    "styleContinuityAnchors": {
+      "colorSystem": {
+        "primaryColorRole": "朱红 #c0392b 用于主CTA和选中态",
+        "brandHuePolicy": "free-explore uses single primary hue (朱红); 金色/玉色仅作为品质/状态色，不作为 secondary/accent brand hue",
+        "stateColors": "--state-success(玉色), --state-warning(金色), --state-error(朱红), --state-info(青灰)"
+      },
+      "shapeSystem": "圆角最大8px，中式硬朗边缘；面板使用墨色1px边框 rgba(26,26,26,0.6)；金色边框 rgba(201,168,76,0.4) 用于重点面板",
+      "typographySystem": "标题：Noto Serif SC/KaiTi 楷体；正文：Noto Sans SC 黑体；装饰：竖排楷体 writing-mode: vertical-rl",
+      "spacingSystem": "4/8/16/24/32/48/64px 间距体系",
+      "componentLanguage": "水墨面板（纸质纹理+墨色边框）、侧滑面板（右侧滑入420px宽）、墨色进度条（渐变填充）、中式按钮（朱红主/纸色次/金色品质）、竖排标题、水墨分隔线（渐变透明）、品质标签（金/玉/朱/灰）",
+      "surfaceAndDepth": "静态表面使用边框/层叠，仅弹窗使用阴影 alpha<=0.15；水墨晕染效果通过 radial-gradient + blur 实现",
+      "imageryAndIconography": "水墨画风插图、中式纹样边框（云纹/回纹）、留白哲学；背景使用 ink-splash 晕染元素；纸质纹理通过 SVG noise filter 叠加",
+      "interactionTone": "沉稳内敛，动效克制；过渡使用水墨晕染扩散效果而非线性动画"
+    },
+    "specsConstraints": null,
+    "sharedProjectShellContract": {
+      "navigationShell": "全屏水墨背景 + 中心内容区框架，无传统导航栏",
+      "primaryColorSystem": "朱红 #c0392b 为唯一品牌主色",
+      "typographySystem": "Noto Serif SC/KaiTi 标题，Noto Sans SC 正文，STKaiti 竖排装饰",
+      "radiusScale": "2px/4px/8px/16px 圆角体系",
+      "surfaceDepthModel": "墨色面板使用1px边框+层叠，弹窗使用浮层阴影",
+      "ctaStyle": "朱红主按钮 + 纸色次按钮 + 金色品质按钮",
+      "alignmentRules": "16px基础网格，8px子网格"
+    },
+    "generationTree": {
+      "root": {
+        "nodeId": "gen-project-shell",
+        "kind": "project-shell",
+        "pageIds": [
+          "page-cc-naming",
+          "page-cc-face-customize",
+          "page-loading-1",
+          "page-loading-2",
+          "page-ink-anim-ref-1",
+          "page-ink-anim-ref-2",
+          "page-chapter-transition"
+        ],
+        "output": null,
+        "sharedRegions": [],
+        "privateRegions": [
+          "all page bodies"
+        ],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": [
+          {
+            "nodeId": "gen-page-cc-naming",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-cc-naming"
+            ],
+            "output": "pages/cc-naming.html",
+            "sharedRegions": [],
+            "privateRegions": [
+              "naming form"
+            ],
+            "mutableSlots": [],
+            "status": "planned",
+            "children": []
+          },
+          {
+            "nodeId": "gen-page-cc-face-customize",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-cc-face-customize"
+            ],
+            "output": "pages/cc-face-customize.html",
+            "sharedRegions": [],
+            "privateRegions": [
+              "face customize panel"
+            ],
+            "mutableSlots": [],
+            "status": "planned",
+            "children": []
+          },
+          {
+            "nodeId": "gen-page-loading-1",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-loading-1"
+            ],
+            "output": "pages/loading-1.html",
+            "sharedRegions": [],
+            "privateRegions": [
+              "loading screen 1"
+            ],
+            "mutableSlots": [],
+            "status": "planned",
+            "children": []
+          },
+          {
+            "nodeId": "gen-page-loading-2",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-loading-2"
+            ],
+            "output": "pages/loading-2.html",
+            "sharedRegions": [],
+            "privateRegions": [
+              "loading screen 2"
+            ],
+            "mutableSlots": [],
+            "status": "planned",
+            "children": []
+          },
+          {
+            "nodeId": "gen-page-ink-anim-ref-1",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-ink-anim-ref-1"
+            ],
+            "output": "pages/ink-anim-ref-1.html",
+            "sharedRegions": [],
+            "privateRegions": [
+              "ink animation 1"
+            ],
+            "mutableSlots": [],
+            "status": "planned",
+            "children": []
+          },
+          {
+            "nodeId": "gen-page-ink-anim-ref-2",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-ink-anim-ref-2"
+            ],
+            "output": "pages/ink-anim-ref-2.html",
+            "sharedRegions": [],
+            "privateRegions": [
+              "ink animation 2"
+            ],
+            "mutableSlots": [],
+            "status": "planned",
+            "children": []
+          },
+          {
+            "nodeId": "gen-page-chapter-transition",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-chapter-transition"
+            ],
+            "output": "pages/chapter-transition.html",
+            "sharedRegions": [],
+            "privateRegions": [
+              "chapter transition"
+            ],
+            "mutableSlots": [],
+            "status": "planned",
+            "children": []
+          }
+        ]
+      }
+    }
+  },
+  "designSource": {
+    "operatingMode": "free-explore",
+    "libraryIdentity": null,
+    "libraryPath": null,
+    "cssFilePath": "c:\\Works\\GitHubProjects\\HundunWorld_UE5\\HundunWorld\\HundunWorld\\yy-character-loading\\colors_and_type.css",
+    "brandPrefix": "color",
+    "themeMode": "dark",
+    "designDecisionSummary": "Free-explore mode with ink wash aesthetic; shared colors_and_type.css from Project 1",
+    "forbiddenInventedComponents": [
+      "layout",
+      "space"
+    ],
+    "allowedComponents": [
+      "ink-panel",
+      "ink-button",
+      "ink-progress",
+      "vertical-title",
+      "ink-divider",
+      "ink-badge",
+      "side-slide-panel",
+      "ink-input"
+    ],
+    "styleConstraints": {
+      "radiusMax": 8,
+      "spacingBase": 1,
+      "fontSizeBody": 14,
+      "fontSizeMin": 12,
+      "controlHeightDefault": 36,
+      "controlHeightLarge": 44
+    },
+    "productContext": {
+      "kitType": "game-ui-ink-wash",
+      "productType": "Game UI - Character Creation & Loading"
+    },
+    "actualTokenNameReference": [
+      {
+        "semanticPurpose": "Primary background",
+        "tokenName": "color-ink-dark"
+      },
+      {
+        "semanticPurpose": "Primary text",
+        "tokenName": "color-paper-bright"
+      },
+      {
+        "semanticPurpose": "Primary CTA",
+        "tokenName": "color-vermilion"
+      },
+      {
+        "semanticPurpose": "Quality accent",
+        "tokenName": "color-gold"
+      }
+    ]
+  },
+  "pages": [
+    {
+      "nodeId": "page-cc-naming",
+      "slug": "cc-naming",
+      "title": "创角-命名",
+      "htmlSrc": "pages/cc-naming.html",
+      "pageIndex": 1,
+      "stateGroupId": null,
+      "stateRole": null,
+      "baseStatePageId": null,
+      "sharedShellContract": [],
+      "mutableRegions": [],
+      "derivedFromHtmlSrc": null,
+      "derivationType": "original",
+      "sourcePageId": null,
+      "sourceHtmlSrc": null,
+      "pageType": "task-driven",
+      "businessScenario": "角色创建命名界面",
+      "visualNorthStar": "水墨山水背景中浮出纸色命名面板，竖排标题与输入框形成中式仪式感",
+      "compositionPattern": "Center-stage focus with ambient background",
+      "continuityAnchors": [
+        "ink-panel",
+        "vertical-title",
+        "ink-button"
+      ],
+      "libraryRestraintMode": false,
+      "componentPlan": [
+        "ink-panel",
+        "ink-input",
+        "ink-button",
+        "vertical-title"
+      ],
+      "imagePlan": [
+        "bg-cc-naming.jpg"
+      ],
+      "chartsRequired": false,
+      "miniProgramStyle": false,
+      "qualityRisks": [
+        "竖排标题与横排输入框的布局协调"
+      ]
+    },
+    {
+      "nodeId": "page-cc-face-customize",
+      "slug": "cc-face-customize",
+      "title": "创角-捏脸",
+      "htmlSrc": "pages/cc-face-customize.html",
+      "pageIndex": 2,
+      "stateGroupId": null,
+      "stateRole": null,
+      "baseStatePageId": null,
+      "sharedShellContract": [],
+      "mutableRegions": [],
+      "derivedFromHtmlSrc": null,
+      "derivationType": "original",
+      "sourcePageId": null,
+      "sourceHtmlSrc": null,
+      "pageType": "information-dense",
+      "businessScenario": "角色面部自定义界面",
+      "visualNorthStar": "左大右小双栏布局，水墨预览区搭配参数滑动条面板",
+      "compositionPattern": "Split panel with preview + controls",
+      "continuityAnchors": [
+        "ink-panel",
+        "ink-progress",
+        "ink-badge"
+      ],
+      "libraryRestraintMode": false,
+      "componentPlan": [
+        "ink-panel",
+        "ink-progress",
+        "ink-badge",
+        "ink-divider"
+      ],
+      "imagePlan": [
+        "bg-cc-preview.jpg"
+      ],
+      "chartsRequired": false,
+      "miniProgramStyle": false,
+      "qualityRisks": [
+        "参数面板密度控制"
+      ]
+    },
+    {
+      "nodeId": "page-loading-1",
+      "slug": "loading-1",
+      "title": "Loading1",
+      "htmlSrc": "pages/loading-1.html",
+      "pageIndex": 3,
+      "stateGroupId": null,
+      "stateRole": null,
+      "baseStatePageId": null,
+      "sharedShellContract": [],
+      "mutableRegions": [],
+      "derivedFromHtmlSrc": null,
+      "derivationType": "original",
+      "sourcePageId": null,
+      "sourceHtmlSrc": null,
+      "pageType": "showcase",
+      "businessScenario": "游戏加载界面1",
+      "visualNorthStar": "全屏水墨山水画沉浸式加载，底部进度条如墨笔横扫",
+      "compositionPattern": "Full-bleed ambient with bottom progress",
+      "continuityAnchors": [
+        "ink-progress",
+        "vertical-title"
+      ],
+      "libraryRestraintMode": false,
+      "componentPlan": [
+        "ink-progress",
+        "vertical-title"
+      ],
+      "imagePlan": [
+        "bg-loading-landscape.jpg"
+      ],
+      "chartsRequired": false,
+      "miniProgramStyle": false,
+      "qualityRisks": [
+        "加载动画的CSS实现"
+      ]
+    },
+    {
+      "nodeId": "page-loading-2",
+      "slug": "loading-2",
+      "title": "Loading2",
+      "htmlSrc": "pages/loading-2.html",
+      "pageIndex": 4,
+      "stateGroupId": null,
+      "stateRole": null,
+      "baseStatePageId": null,
+      "sharedShellContract": [],
+      "mutableRegions": [],
+      "derivedFromHtmlSrc": null,
+      "derivationType": "original",
+      "sourcePageId": null,
+      "sourceHtmlSrc": null,
+      "pageType": "showcase",
+      "businessScenario": "游戏加载界面2",
+      "visualNorthStar": "山水水墨背景搭配旋转墨环进度，竖排章节名如卷轴展开",
+      "compositionPattern": "Full-bleed with centered spinner",
+      "continuityAnchors": [
+        "ink-progress",
+        "vertical-title"
+      ],
+      "libraryRestraintMode": false,
+      "componentPlan": [
+        "ink-progress",
+        "vertical-title"
+      ],
+      "imagePlan": [
+        "bg-loading-mountain.jpg"
+      ],
+      "chartsRequired": false,
+      "miniProgramStyle": false,
+      "qualityRisks": [
+        "旋转墨环动画"
+      ]
+    },
+    {
+      "nodeId": "page-ink-anim-ref-1",
+      "slug": "ink-anim-ref-1",
+      "title": "水墨动画参考1",
+      "htmlSrc": "pages/ink-anim-ref-1.html",
+      "pageIndex": 5,
+      "stateGroupId": null,
+      "stateRole": null,
+      "baseStatePageId": null,
+      "sharedShellContract": [],
+      "mutableRegions": [],
+      "derivedFromHtmlSrc": null,
+      "derivationType": "original",
+      "sourcePageId": null,
+      "sourceHtmlSrc": null,
+      "pageType": "showcase",
+      "businessScenario": "水墨晕染转场动画参考",
+      "visualNorthStar": "四帧分镜展示水墨晕染：淡入→扩散→凝聚→淡出",
+      "compositionPattern": "Storyboard frames grid",
+      "continuityAnchors": [
+        "ink-panel",
+        "ink-divider"
+      ],
+      "libraryRestraintMode": false,
+      "componentPlan": [
+        "ink-panel",
+        "ink-divider"
+      ],
+      "imagePlan": [
+        "ink-anim-spread.jpg"
+      ],
+      "chartsRequired": false,
+      "miniProgramStyle": false,
+      "qualityRisks": [
+        "CSS动画分镜表现"
+      ]
+    },
+    {
+      "nodeId": "page-ink-anim-ref-2",
+      "slug": "ink-anim-ref-2",
+      "title": "水墨动画参考2",
+      "htmlSrc": "pages/ink-anim-ref-2.html",
+      "pageIndex": 6,
+      "stateGroupId": null,
+      "stateRole": null,
+      "baseStatePageId": null,
+      "sharedShellContract": [],
+      "mutableRegions": [],
+      "derivedFromHtmlSrc": null,
+      "derivationType": "original",
+      "sourcePageId": null,
+      "sourceHtmlSrc": null,
+      "pageType": "showcase",
+      "businessScenario": "水墨笔触动画参考",
+      "visualNorthStar": "四帧分镜展示水墨笔触：横扫→飞溅→消散",
+      "compositionPattern": "Storyboard frames grid",
+      "continuityAnchors": [
+        "ink-panel",
+        "ink-divider"
+      ],
+      "libraryRestraintMode": false,
+      "componentPlan": [
+        "ink-panel",
+        "ink-divider"
+      ],
+      "imagePlan": [
+        "ink-anim-brush.jpg"
+      ],
+      "chartsRequired": false,
+      "miniProgramStyle": false,
+      "qualityRisks": [
+        "CSS动画分镜表现"
+      ]
+    },
+    {
+      "nodeId": "page-chapter-transition",
+      "slug": "chapter-transition",
+      "title": "章节过场",
+      "htmlSrc": "pages/chapter-transition.html",
+      "pageIndex": 7,
+      "stateGroupId": null,
+      "stateRole": null,
+      "baseStatePageId": null,
+      "sharedShellContract": [],
+      "mutableRegions": [],
+      "derivedFromHtmlSrc": null,
+      "derivationType": "original",
+      "sourcePageId": null,
+      "sourceHtmlSrc": null,
+      "pageType": "showcase",
+      "businessScenario": "章节过渡过场动画",
+      "visualNorthStar": "电影级章节过渡：墨黑全屏 → 竖排章节名淡入 → 水墨晕染散出",
+      "compositionPattern": "Cinematic full-bleed transition",
+      "continuityAnchors": [
+        "vertical-title",
+        "ink-divider"
+      ],
+      "libraryRestraintMode": false,
+      "componentPlan": [
+        "vertical-title",
+        "ink-divider"
+      ],
+      "imagePlan": [
+        "bg-chapter-ink.jpg"
+      ],
+      "chartsRequired": false,
+      "miniProgramStyle": false,
+      "qualityRisks": [
+        "过场动画的静态展示"
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "filename": "bg-cc-naming.jpg",
+      "role": "critical-hero",
+      "owningPage": "cc-naming",
+      "semanticDescription": "水墨风格创角命名界面背景，淡墨山水远景",
+      "status": "planned"
+    },
+    {
+      "filename": "bg-cc-preview.jpg",
+      "role": "supporting-content",
+      "owningPage": "cc-face-customize",
+      "semanticDescription": "角色预览区背景，墨色渐变+纸质纹理",
+      "status": "planned"
+    },
+    {
+      "filename": "bg-loading-landscape.jpg",
+      "role": "critical-hero",
+      "owningPage": "loading-1",
+      "semanticDescription": "水墨山水画加载背景",
+      "status": "planned"
+    },
+    {
+      "filename": "bg-loading-mountain.jpg",
+      "role": "critical-hero",
+      "owningPage": "loading-2",
+      "semanticDescription": "水墨高山流水加载背景",
+      "status": "planned"
+    },
+    {
+      "filename": "ink-anim-spread.jpg",
+      "role": "supporting-content",
+      "owningPage": "ink-anim-ref-1",
+      "semanticDescription": "水墨晕染扩散效果分镜",
+      "status": "planned"
+    },
+    {
+      "filename": "ink-anim-brush.jpg",
+      "role": "supporting-content",
+      "owningPage": "ink-anim-ref-2",
+      "semanticDescription": "水墨笔触横扫效果分镜",
+      "status": "planned"
+    },
+    {
+      "filename": "bg-chapter-ink.jpg",
+      "role": "critical-hero",
+      "owningPage": "chapter-transition",
+      "semanticDescription": "深墨色章节过场背景",
+      "status": "planned"
+    }
+  ],
+  "wiringPlan": [],
+  "hiddenInteractionPlan": []
+}

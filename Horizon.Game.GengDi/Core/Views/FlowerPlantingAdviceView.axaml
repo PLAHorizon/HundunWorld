@@ -18,20 +18,20 @@
                 <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,*,*,Auto" ColumnSpacing="12" RowSpacing="12">
                     <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10">
                         <StackPanel Spacing="4">
-                            <TextBlock Text="温室环境" FontSize="11" Foreground="#888888"/>
+                            <TextBlock Text="温室环境" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                             <TextBlock Text="{Binding SensorData.Summary}" FontSize="13" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Border>
                     <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10" Grid.Column="1">
                         <StackPanel Spacing="4">
-                            <TextBlock Text="本月成本" FontSize="11" Foreground="#888888"/>
+                            <TextBlock Text="本月成本" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                             <TextBlock Text="{Binding MonthlyCost, StringFormat='¥{}{0:F0}'}" FontSize="13" FontWeight="SemiBold" Foreground="#FF7043"/>
                         </StackPanel>
                     </Border>
                     <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10" Grid.Column="2">
                         <StackPanel Spacing="4">
-                            <TextBlock Text="本月产量" FontSize="11" Foreground="#888888"/>
-                            <TextBlock Text="{Binding MonthlyYield, StringFormat='{}{0:F0} 支'}" FontSize="13" FontWeight="SemiBold" Foreground="#66BB6A"/>
+                            <TextBlock Text="本月产量" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                            <TextBlock Text="{Binding MonthlyYield, StringFormat='{}{0:F0} 支'}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource BattleNetPrimaryBrush}"/>
                         </StackPanel>
                     </Border>
                     <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -42,7 +42,7 @@
                         <Button Content="刷新" Classes="PrimaryAction" Padding="10 6" FontSize="11" CornerRadius="8"
                                 Command="{Binding RefreshCommand}"/>
                     </StackPanel>
-                    <Separator Grid.Row="1" Grid.ColumnSpan="4" Margin="0 4" Background="#1AFFFFFF"/>
+                    <Separator Grid.Row="1" Grid.ColumnSpan="4" Margin="0 4" Background="{DynamicResource BattleNetSurfaceTintBrush}"/>
                     <Grid Grid.Row="2" Grid.ColumnSpan="4" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                         <ComboBox ItemsSource="{Binding Batches}"
                                   SelectedItem="{Binding SelectedBatch}"
@@ -74,7 +74,7 @@
 
             <Border Classes="SurfaceCard" Padding="12" CornerRadius="10" IsVisible="{Binding HasError}" Background="#1AFF5252" Margin="0,0,0,0">
                 <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
-                    <TextBlock Text="{Binding ErrorMessage}" FontSize="12" Foreground="#FF5252" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding ErrorMessage}" FontSize="12" Foreground="{DynamicResource LoginErrorBrush}" VerticalAlignment="Center"/>
                     <Button Content="重试" Classes="QuietAction" Padding="8 4" FontSize="11" CornerRadius="6"
                             Command="{Binding RetryCommand}"/>
                 </StackPanel>
@@ -96,7 +96,7 @@
                                             <Ellipse Width="10" Height="10" Fill="{Binding MqttStatusDotBrush}"/>
                                             <TextBlock Text="{Binding MqttStatusText}" FontSize="12" VerticalAlignment="Center"/>
                                         </StackPanel>
-                                        <TextBlock Text="{Binding PushFrequencyText}" FontSize="11" Foreground="#888888" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding PushFrequencyText}" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center"/>
                                         <Button Content="连接MQTT" Classes="QuietAction" Padding="8 4" FontSize="10" CornerRadius="6"
                                                 Command="{Binding ConnectMqttCommand}"/>
                                         <Button Content="手动录入" Classes="QuietAction" Padding="8 4" FontSize="10" CornerRadius="6"
@@ -106,47 +106,47 @@
                                 <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="12">
                                     <Border Classes="SurfaceCard subtle" Padding="14" CornerRadius="10">
                                         <StackPanel Spacing="6" HorizontalAlignment="Center">
-                                            <TextBlock Text="温度" FontSize="11" Foreground="#888888" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="温度" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                             <TextBlock Text="{Binding SensorData.Temperature, StringFormat='{}{0:F1}℃'}"
                                                        FontSize="22" FontWeight="Bold" Foreground="#FF7043" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="{Binding SensorData.TemperatureTrend}" FontSize="10" Foreground="#888888" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.TemperatureTrend}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
                                     <Border Classes="SurfaceCard subtle" Padding="14" CornerRadius="10" Grid.Column="1">
                                         <StackPanel Spacing="6" HorizontalAlignment="Center">
-                                            <TextBlock Text="湿度" FontSize="11" Foreground="#888888" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="湿度" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                             <TextBlock Text="{Binding SensorData.Humidity, StringFormat='{}{0:F1}%'}"
-                                                       FontSize="22" FontWeight="Bold" Foreground="#42A5F5" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="{Binding SensorData.HumidityTrend}" FontSize="10" Foreground="#888888" HorizontalAlignment="Center"/>
+                                                       FontSize="22" FontWeight="Bold" Foreground="{DynamicResource BattleNetOutlineBrush}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.HumidityTrend}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
                                     <Border Classes="SurfaceCard subtle" Padding="14" CornerRadius="10" Grid.Column="2">
                                         <StackPanel Spacing="6" HorizontalAlignment="Center">
-                                            <TextBlock Text="光照" FontSize="11" Foreground="#888888" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="光照" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                             <TextBlock Text="{Binding SensorData.LightIntensity, StringFormat='{}{0:F0} lux'}"
                                                        FontSize="22" FontWeight="Bold" Foreground="#FFA726" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="{Binding SensorData.LightTrend}" FontSize="10" Foreground="#888888" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.LightTrend}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
                                     <Border Classes="SurfaceCard subtle" Padding="14" CornerRadius="10" Grid.Column="3">
                                         <StackPanel Spacing="6" HorizontalAlignment="Center">
-                                            <TextBlock Text="CO₂" FontSize="11" Foreground="#888888" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="CO₂" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                             <TextBlock Text="{Binding SensorData.Co2Concentration, StringFormat='{}{0:F0} ppm'}"
-                                                       FontSize="22" FontWeight="Bold" Foreground="#66BB6A" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="{Binding SensorData.Co2Trend}" FontSize="10" Foreground="#888888" HorizontalAlignment="Center"/>
+                                                       FontSize="22" FontWeight="Bold" Foreground="{DynamicResource BattleNetPrimaryBrush}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.Co2Trend}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
                                     <Border Classes="SurfaceCard subtle" Padding="14" CornerRadius="10" Grid.Column="4">
                                         <StackPanel Spacing="6" HorizontalAlignment="Center">
-                                            <TextBlock Text="土壤" FontSize="11" Foreground="#888888" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="土壤" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                             <TextBlock Text="{Binding SensorData.SoilMoisture, StringFormat='{}{0:F1}%'}"
                                                        FontSize="22" FontWeight="Bold" Foreground="#8D6E63" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="{Binding SensorData.SoilTrend}" FontSize="10" Foreground="#888888" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.SoilTrend}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
                                 </Grid>
                                 <Border Classes="SurfaceCard subtle" Padding="20" CornerRadius="10" IsVisible="{Binding SensorEmptyHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                    <TextBlock Text="{Binding SensorEmptyHint}" FontSize="13" Foreground="#888888" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding SensorEmptyHint}" FontSize="13" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                 </Border>
                                 <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10">
                                     <StackPanel Spacing="8">
@@ -163,7 +163,7 @@
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
-                                        <TextBlock Text="当前无异常" FontSize="12" Foreground="#888888"
+                                        <TextBlock Text="当前无异常" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}"
                                                    IsVisible="{Binding HasNoThresholdAlerts}"/>
                                     </StackPanel>
                                 </Border>
@@ -182,7 +182,7 @@
                                             Command="{Binding SetTimeRangeCommand}" CommandParameter="7d"/>
                                     <Button Content="30天" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
                                             Command="{Binding SetTimeRangeCommand}" CommandParameter="30d"/>
-                                    <TextBlock Text="{Binding CurrentTimeRangeDisplay}" FontSize="11" Foreground="#888888" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                    <TextBlock Text="{Binding CurrentTimeRangeDisplay}" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                     <Button Content="导出CSV" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
                                             Command="{Binding ExportDataCommand}"/>
                                 </StackPanel>
@@ -196,11 +196,11 @@
                                         <TextBlock Text="数据分布" FontSize="12" FontWeight="SemiBold"/>
                                         <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
                                             <StackPanel Spacing="8">
-                                                <TextBlock Text="温度区间占比" FontSize="11" Foreground="#888888" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="温度区间占比" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                                 <lvc:PieChart Series="{Binding TemperaturePieSeries}" Height="180"/>
                                             </StackPanel>
                                             <StackPanel Grid.Column="1" Spacing="8">
-                                                <TextBlock Text="光照时段分布" FontSize="11" Foreground="#888888" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="光照时段分布" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                                 <lvc:PieChart Series="{Binding LightPieSeries}" Height="180"/>
                                             </StackPanel>
                                         </Grid>
@@ -247,7 +247,7 @@
                                                     </Border>
                                                     <StackPanel Spacing="2" VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding CategoryDisplay}" FontSize="12" FontWeight="SemiBold"/>
-                                                        <TextBlock Text="{Binding CostDate, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="10" Foreground="#888888"/>
+                                                        <TextBlock Text="{Binding CostDate, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                                                     </StackPanel>
                                                     <TextBlock Grid.Column="2" Text="{Binding Amount, StringFormat='¥{}{0:F2}'}"
                                                                FontSize="13" FontWeight="SemiBold" Foreground="#FF7043" VerticalAlignment="Center"/>
@@ -295,10 +295,10 @@
                                                     </Border>
                                                     <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding SpeciesName}" FontSize="12" FontWeight="SemiBold"/>
-                                                        <TextBlock Text="{Binding HarvestDate, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="10" Foreground="#888888"/>
+                                                        <TextBlock Text="{Binding HarvestDate, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                                                     </StackPanel>
                                                     <TextBlock Grid.Column="3" Text="{Binding Quantity, StringFormat='{}{0:F0} 支'}"
-                                                               FontSize="13" FontWeight="SemiBold" Foreground="#66BB6A" VerticalAlignment="Center"/>
+                                                               FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource BattleNetPrimaryBrush}" VerticalAlignment="Center"/>
                                                     <Border Grid.Column="4" Background="{DynamicResource SubtleFillColorTertiaryBrush}"
                                                             CornerRadius="4" Padding="6 2" VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding Grade}" FontSize="10" FontWeight="SemiBold"/>
@@ -355,16 +355,16 @@
                                                                 <TextBlock Text="{Binding Source}" FontSize="9" Foreground="White"/>
                                                             </Border>
                                                         </StackPanel>
-                                                        <TextBlock Text="{Binding Content}" FontSize="12" TextWrapping="Wrap" Foreground="#666666"/>
+                                                        <TextBlock Text="{Binding Content}" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                                                         <TextBlock Text="{Binding GeneratedTime, StringFormat='生成于 {}{0:HH:mm}'}"
-                                                                   FontSize="10" Foreground="#888888"/>
+                                                                   FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                                                     </StackPanel>
                                                     <StackPanel Grid.Column="2" Spacing="4" VerticalAlignment="Center">
                                                         <Button Content="已执行" Classes="QuietAction" Padding="8 4" FontSize="10" CornerRadius="6"
                                                                 Command="{Binding $parent[UserControl].DataContext.MarkExecutedCommand}"
                                                                 CommandParameter="{Binding}"
                                                                 IsVisible="{Binding IsPending}"/>
-                                                        <TextBlock Text="已处理" FontSize="10" Foreground="#66BB6A"
+                                                        <TextBlock Text="已处理" FontSize="10" Foreground="{DynamicResource BattleNetPrimaryBrush}"
                                                                    IsVisible="{Binding IsExecuted}" HorizontalAlignment="Center"/>
                                                     </StackPanel>
                                                 </Grid>
@@ -372,12 +372,12 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <TextBlock Text="{Binding AdviceEmptyHint}" FontSize="13" Foreground="#888888" HorizontalAlignment="Center" Margin="0,16,0,0"
+                                <TextBlock Text="{Binding AdviceEmptyHint}" FontSize="13" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center" Margin="0,16,0,0"
                                            IsVisible="{Binding AdviceEmptyHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
                                 <Border Classes="SurfaceCard" Padding="24" IsVisible="{Binding IsEmptyAdvice}">
                                     <StackPanel HorizontalAlignment="Center" Spacing="8">
                                         <TextBlock Text="📋" FontSize="24" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="暂无种植建议" FontSize="13" Foreground="#888888" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="暂无种植建议" FontSize="13" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -404,7 +404,7 @@
                                                     <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
                                                         <TextBlock Text="{Binding GroupName}" FontSize="13" FontWeight="SemiBold"/>
                                                         <TextBlock Grid.Column="1" Text="{Binding DeviceCount, StringFormat='{}{0} 台设备'}"
-                                                                   FontSize="10" Foreground="#888888" VerticalAlignment="Center"/>
+                                                                   FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center"/>
                                                         <Button Grid.Column="2" Content="✏️" Classes="QuietAction" Padding="4 2" FontSize="10" CornerRadius="4"
                                                                 Command="{Binding $parent[UserControl].DataContext.RenameGroupCommand}"
                                                                 CommandParameter="{Binding}"/>
@@ -421,13 +421,13 @@
                                                                         <Ellipse Width="10" Height="10" Fill="{Binding StatusBrush}"/>
                                                                         <StackPanel Grid.Column="1" Spacing="2">
                                                                             <TextBlock Text="{Binding DeviceName}" FontSize="12" FontWeight="SemiBold"/>
-                                                                            <TextBlock Text="{Binding DeviceTypeDisplay}" FontSize="10" Foreground="#888888"/>
-                                                                            <TextBlock Text="{Binding DeviceCode, StringFormat='{}编码: {0}'}" FontSize="10" Foreground="#888888" Margin="0,2,0,0"/>
-                                                                            <TextBlock Text="{Binding Location, StringFormat='{}位置: {0}'}" FontSize="10" Foreground="#888888" Margin="0,2,0,0" IsVisible="{Binding Location, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                                                            <TextBlock Text="{Binding Protocol, StringFormat='{}协议: {0}'}" FontSize="10" Foreground="#888888" Margin="0,2,0,0"/>
+                                                                            <TextBlock Text="{Binding DeviceTypeDisplay}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                                                                            <TextBlock Text="{Binding DeviceCode, StringFormat='{}编码: {0}'}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" Margin="0,2,0,0"/>
+                                                                            <TextBlock Text="{Binding Location, StringFormat='{}位置: {0}'}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" Margin="0,2,0,0" IsVisible="{Binding Location, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                                            <TextBlock Text="{Binding Protocol, StringFormat='{}协议: {0}'}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" Margin="0,2,0,0"/>
                                                                         </StackPanel>
                                                                         <TextBlock Grid.Column="2" Text="{Binding LastSeenText}"
-                                                                                   FontSize="9" Foreground="#888888" VerticalAlignment="Center"/>
+                                                                                   FontSize="9" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center"/>
                                                                         <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="4,0">
                                                                             <TextBlock Text="{Binding BindingStatusDisplay}" Margin="0,0,8,0" VerticalAlignment="Center" />
                                                                             <Button Content="解绑" Command="{Binding $parent[UserControl].DataContext.UnbindDeviceCommand}" CommandParameter="{Binding}" Margin="0,0,4,0" FontSize="11" Padding="8,2" />
@@ -446,7 +446,7 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
 
-                                <Separator Background="#1AFFFFFF" Margin="0 4"/>
+                                <Separator Background="{DynamicResource BattleNetSurfaceTintBrush}" Margin="0 4"/>
 
                                 <TextBlock Text="远程控制" FontSize="14" FontWeight="SemiBold"/>
                                 <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10">
@@ -454,7 +454,7 @@
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <TextBlock Text="当前设备：" FontSize="12" VerticalAlignment="Center"/>
                                             <TextBlock Text="{Binding SelectedDeviceForControl.DeviceName}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                            <TextBlock Text="未选择设备" FontSize="12" Foreground="#888888" VerticalAlignment="Center"
+                                            <TextBlock Text="未选择设备" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center"
                                                        IsVisible="{Binding !HasSelectedDevice}"/>
                                         </StackPanel>
                                         <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
@@ -473,7 +473,7 @@
                                                         HorizontalAlignment="Stretch" IsVisible="{Binding IsSendingIrrigation}">
                                                     <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                                                         <ProgressBar IsIndeterminate="True" Width="60" Height="4" VerticalAlignment="Center"/>
-                                                        <TextBlock Text="发送中..." FontSize="11" Foreground="#888888" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="发送中..." FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center"/>
                                                     </StackPanel>
                                                 </Border>
                                             </StackPanel>
@@ -493,7 +493,7 @@
                                                         HorizontalAlignment="Stretch" IsVisible="{Binding IsSendingVentilation}">
                                                     <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                                                         <ProgressBar IsIndeterminate="True" Width="60" Height="4" VerticalAlignment="Center"/>
-                                                        <TextBlock Text="发送中..." FontSize="11" Foreground="#888888" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="发送中..." FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center"/>
                                                     </StackPanel>
                                                 </Border>
                                             </StackPanel>
@@ -513,17 +513,17 @@
                                                         HorizontalAlignment="Stretch" IsVisible="{Binding IsSendingLighting}">
                                                     <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                                                         <ProgressBar IsIndeterminate="True" Width="60" Height="4" VerticalAlignment="Center"/>
-                                                        <TextBlock Text="发送中..." FontSize="11" Foreground="#888888" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="发送中..." FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center"/>
                                                     </StackPanel>
                                                 </Border>
                                             </StackPanel>
                                         </Grid>
-                                        <TextBlock Text="请先选择设备并确保MQTT已连接" FontSize="11" Foreground="#888888"
+                                        <TextBlock Text="请先选择设备并确保MQTT已连接" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"
                                                    IsVisible="{Binding !CanSendCommands}" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
 
-                                <Separator Background="#1AFFFFFF" Margin="0 4"/>
+                                <Separator Background="{DynamicResource BattleNetSurfaceTintBrush}" Margin="0 4"/>
 
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                     <TextBlock Text="设备孪生" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
@@ -535,42 +535,42 @@
                                     <StackPanel Spacing="12">
                                         <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
                                             <StackPanel Spacing="8">
-                                                <TextBlock Text="期望属性 (Desired)" FontSize="12" FontWeight="SemiBold" Foreground="#42A5F5"/>
+                                                <TextBlock Text="期望属性 (Desired)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource BattleNetOutlineBrush}"/>
                                                 <ItemsControl ItemsSource="{Binding DeviceTwinDesiredProperties}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
                                                             <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" Padding="8 6" CornerRadius="6" Margin="0 0 0 4">
                                                                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                                                                    <TextBlock Text="{Binding Key}" FontSize="11" FontWeight="SemiBold" Foreground="#42A5F5" VerticalAlignment="Center"/>
+                                                                    <TextBlock Text="{Binding Key}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource BattleNetOutlineBrush}" VerticalAlignment="Center"/>
                                                                     <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="11" VerticalAlignment="Center"/>
                                                                 </Grid>
                                                             </Border>
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
-                                                <TextBlock Text="暂无期望属性" FontSize="11" Foreground="#888888"
+                                                <TextBlock Text="暂无期望属性" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"
                                                            IsVisible="{Binding HasNoDesiredProperties}"/>
                                             </StackPanel>
                                             <StackPanel Grid.Column="1" Spacing="8">
-                                                <TextBlock Text="报告属性 (Reported)" FontSize="12" FontWeight="SemiBold" Foreground="#66BB6A"/>
+                                                <TextBlock Text="报告属性 (Reported)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource BattleNetPrimaryBrush}"/>
                                                 <ItemsControl ItemsSource="{Binding DeviceTwinReportedProperties}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
                                                             <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" Padding="8 6" CornerRadius="6" Margin="0 0 0 4">
                                                                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                                                                    <TextBlock Text="{Binding Key}" FontSize="11" FontWeight="SemiBold" Foreground="#66BB6A" VerticalAlignment="Center"/>
+                                                                    <TextBlock Text="{Binding Key}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource BattleNetPrimaryBrush}" VerticalAlignment="Center"/>
                                                                     <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="11" VerticalAlignment="Center"/>
                                                                 </Grid>
                                                             </Border>
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
-                                                <TextBlock Text="暂无报告属性" FontSize="11" Foreground="#888888"
+                                                <TextBlock Text="暂无报告属性" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"
                                                            IsVisible="{Binding HasNoReportedProperties}"/>
                                             </StackPanel>
                                         </Grid>
 
-                                        <Separator Background="#1AFFFFFF" Margin="0 4"/>
+                                        <Separator Background="{DynamicResource BattleNetSurfaceTintBrush}" Margin="0 4"/>
 
                                         <StackPanel Spacing="8">
                                             <TextBlock Text="属性差异" FontSize="12" FontWeight="SemiBold" Foreground="#FFA726"/>
@@ -581,19 +581,19 @@
                                                             <Grid ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="12">
                                                                 <TextBlock Text="{Binding Key}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                                                 <StackPanel Grid.Column="1" Spacing="2">
-                                                                    <TextBlock Text="期望" FontSize="9" Foreground="#888888"/>
-                                                                    <TextBlock Text="{Binding DesiredValue}" FontSize="11" Foreground="#42A5F5"/>
+                                                                    <TextBlock Text="期望" FontSize="9" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                                                                    <TextBlock Text="{Binding DesiredValue}" FontSize="11" Foreground="{DynamicResource BattleNetOutlineBrush}"/>
                                                                 </StackPanel>
                                                                 <StackPanel Grid.Column="2" Spacing="2">
-                                                                    <TextBlock Text="报告" FontSize="9" Foreground="#888888"/>
-                                                                    <TextBlock Text="{Binding ReportedValue}" FontSize="11" Foreground="#66BB6A"/>
+                                                                    <TextBlock Text="报告" FontSize="9" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                                                                    <TextBlock Text="{Binding ReportedValue}" FontSize="11" Foreground="{DynamicResource BattleNetPrimaryBrush}"/>
                                                                 </StackPanel>
                                                             </Grid>
                                                         </Border>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
-                                            <TextBlock Text="无属性差异" FontSize="11" Foreground="#888888"
+                                            <TextBlock Text="无属性差异" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"
                                                        IsVisible="{Binding HasNoTwinDifferences}"/>
                                         </StackPanel>
                                     </StackPanel>
@@ -601,7 +601,7 @@
                                 <Border Classes="SurfaceCard" Padding="24" IsVisible="{Binding !IsDeviceTwinLoaded}">
                                     <StackPanel HorizontalAlignment="Center" Spacing="8">
                                         <TextBlock Text="📡" FontSize="24" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="选择设备后点击&#x201C;加载孪生数据&#x201D;查看设备孪生" FontSize="13" Foreground="#888888" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="选择设备后点击&#x201C;加载孪生数据&#x201D;查看设备孪生" FontSize="13" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -676,7 +676,7 @@
                                 <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}" CornerRadius="8" Padding="16">
                                     <StackPanel>
                                         <TextBlock Text="多设备对比" FontSize="16" FontWeight="Bold" Margin="0,0,0,12" />
-                                        <TextBlock Text="选择设备进行环境数据对比" FontSize="12" Foreground="#888888" Margin="0,0,0,8" />
+                                        <TextBlock Text="选择设备进行环境数据对比" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" Margin="0,0,0,8" />
                                         <ItemsControl ItemsSource="{Binding ComparisonDevices}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
@@ -694,23 +694,23 @@
                                                             <StackPanel Spacing="4">
                                                                 <TextBlock Text="{Binding DeviceId}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4"/>
                                                                 <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                                                                    <TextBlock Text="温度" FontSize="11" Foreground="#888888"/>
+                                                                    <TextBlock Text="温度" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                                                                     <TextBlock Grid.Column="1" Text="{Binding AvgTemperature, StringFormat='{}{0:F1}℃'}" FontSize="11"/>
                                                                 </Grid>
                                                                 <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                                                                    <TextBlock Text="湿度" FontSize="11" Foreground="#888888"/>
+                                                                    <TextBlock Text="湿度" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                                                                     <TextBlock Grid.Column="1" Text="{Binding AvgHumidity, StringFormat='{}{0:F1}%'}" FontSize="11"/>
                                                                 </Grid>
                                                                 <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                                                                    <TextBlock Text="光照" FontSize="11" Foreground="#888888"/>
+                                                                    <TextBlock Text="光照" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                                                                     <TextBlock Grid.Column="1" Text="{Binding AvgLightIntensity, StringFormat='{}{0:F0} lux'}" FontSize="11"/>
                                                                 </Grid>
                                                                 <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                                                                    <TextBlock Text="CO₂" FontSize="11" Foreground="#888888"/>
+                                                                    <TextBlock Text="CO₂" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                                                                     <TextBlock Grid.Column="1" Text="{Binding AvgCo2Level, StringFormat='{}{0:F0} ppm'}" FontSize="11"/>
                                                                 </Grid>
                                                                 <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                                                                    <TextBlock Text="土壤湿度" FontSize="11" Foreground="#888888"/>
+                                                                    <TextBlock Text="土壤湿度" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
                                                                     <TextBlock Grid.Column="1" Text="{Binding AvgSoilMoisture, StringFormat='{}{0:F1}%'}" FontSize="11"/>
                                                                 </Grid>
                                                             </StackPanel>
@@ -985,7 +985,7 @@
                                             <TextBlock Text="{Binding BatchLifecycle.YieldRecords.Count, StringFormat='采收记录: {}{0}条'}" FontSize="10" Foreground="#888"/>
                                         </StackPanel>
                                     </Grid>
-                                    <Border Width="2" Height="20" Background="#66BB6A" Margin="7,0,0,0"/>
+                                    <Border Width="2" Height="20" Background="{DynamicResource BattleNetPrimaryBrush}" Margin="7,0,0,0"/>
                                     <!-- 上架 -->
                                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                                         <Ellipse Width="16" Height="16" Fill="#9C27B0" VerticalAlignment="Center"/>
@@ -1027,7 +1027,7 @@
                                 <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10" Grid.Column="1">
                                     <StackPanel Spacing="4" HorizontalAlignment="Center">
                                         <TextBlock Text="总收入" FontSize="10" Foreground="#888" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="{Binding BatchProfitAnalysis.TotalRevenue, StringFormat='¥{}{0:F2}'}" FontSize="14" FontWeight="Bold" Foreground="#66BB6A" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding BatchProfitAnalysis.TotalRevenue, StringFormat='¥{}{0:F2}'}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BattleNetPrimaryBrush}" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
                                 <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10" Grid.Column="2">
@@ -1039,7 +1039,7 @@
                                 <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10" Grid.Column="3">
                                     <StackPanel Spacing="4" HorizontalAlignment="Center">
                                         <TextBlock Text="ROI" FontSize="10" Foreground="#888" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="{Binding BatchProfitAnalysis.ROI, StringFormat='{}{0:F1}%'}" FontSize="14" FontWeight="Bold" Foreground="#42A5F5" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding BatchProfitAnalysis.ROI, StringFormat='{}{0:F1}%'}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BattleNetOutlineBrush}" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
                             </Grid>

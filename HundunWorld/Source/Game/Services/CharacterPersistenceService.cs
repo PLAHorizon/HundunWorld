@@ -1,20 +1,101 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 using FlaxEngine;
+using Game.Character.Attributes;
 using Game.Database;
 using Horizon.Game.Message.Network;
 using Horizon.Game.Message.Enums;
+using HundunWorld.Game.Equipment;
 using HundunWorld.Game.UI.Authentication;
+using EquipmentSlot = HundunWorld.Game.Equipment.EquipmentSlot;
 
 namespace HundunWorld.Game.Services
 {
+    /// <summary>
+    /// 五行属性数据
+    /// </summary>
+    public class WuxingAttributes
+    {
+        /// <summary>金属性</summary>
+        public int Metal { get; set; }
+
+        /// <summary>木属性</summary>
+        public int Wood { get; set; }
+
+        /// <summary>水属性</summary>
+        public int Water { get; set; }
+
+        /// <summary>火属性</summary>
+        public int Fire { get; set; }
+
+        /// <summary>土属性</summary>
+        public int Earth { get; set; }
+    }
+
+    /// <summary>
+    /// 背包物品数据
+    /// </summary>
+    public class InventoryItemData
+    {
+        /// <summary>物品ID</summary>
+        public int ItemId { get; set; }
+
+        /// <summary>物品数量</summary>
+        public int Count { get; set; }
+    }
+
     /// <summary>
     /// 角色数据持久化服务
     /// 负责角色数据的本地存储和同步管理
     /// </summary>
     public class CharacterPersistenceService
     {
+        /// <summary>
+        /// 角色外观数据
+        /// </summary>
+        public class AppearanceData
+        {
+            public int BodyEquipmentId { get; set; }
+            public List<int> AccessoryIds { get; set; } = new List<int>();
+            public List<int> WeaponIds { get; set; } = new List<int>();
+
+            /// <summary>当前穿戴装备，键为装备槽位，值为装备ID</summary>
+            public Dictionary<EquipmentSlot, int> EquippedItems { get; set; } = new Dictionary<EquipmentSlot, int>();
+
+            /// <summary>背包物品列表</summary>
+            public List<InventoryItemData> Inventory { get; set; } = new List<InventoryItemData>();
+
+            public static AppearanceData GetDefaultAppearance() => new AppearanceData
+            {
+                BodyEquipmentId = 10001,
+                AccessoryIds = new List<int> { 30001 },
+                WeaponIds = new List<int> { 20001 },
+                EquippedItems = new Dictionary<EquipmentSlot, int>
+                {
+                    { EquipmentSlot.Body, 10001 },
+                    { EquipmentSlot.Head, 30001 },
+                    { EquipmentSlot.RightHand, 20001 }
+                },
+                Inventory = new List<InventoryItemData>
+                {
+                    new InventoryItemData { ItemId = 10001, Count = 1 },
+                    new InventoryItemData { ItemId = 20001, Count = 1 },
+                    new InventoryItemData { ItemId = 30001, Count = 1 }
+                }
+            };
+        }
+
+        /// <summary>
+        /// JSON 序列化选项，包含字段序列化以支持 EquipmentData 等字段型数据
+        /// </summary>
+        private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+        {
+            IncludeFields = true,
+            WriteIndented = false
+        };
+
         private static CharacterPersistenceService _instance;
         private object _databaseManager; // 使用object类型避免静态类型问题
         private Dictionary<ulong, DateTime> _lastSaveTimes;
@@ -85,11 +166,25 @@ namespace HundunWorld.Game.Services
         /// <summary>
         /// 保存角色完整数据（包括属性、装备、技能等）
         /// </summary>
-        public async Task<bool> SaveCharacterFullDataAsync(CharacterInfo characterInfo, Dictionary<string, object> attributes = null, 
+        public async Task<bool> SaveCharacterFullDataAsync(CharacterInfo characterInfo, Dictionary<string, object> attributes = null,
             Dictionary<string, object> equipment = null, List<string> skills = null)
         {
             try
             {
+                var existingData = await Task.Run(() => LiteDataContext.GetCharacterData(characterInfo.CharacterId));
+                var finalEquipment = equipment ?? new Dictionary<string, object>();
+
+                // 保留已存储的外观数据，避免被传入的 equipment 覆盖
+                if (existingData?.Equipment != null &&
+                    existingData.Equipment.TryGetValue("Appearance", out var appearanceValue))
+                {
+                    finalEquipment["Appearance"] = appearanceValue;
+                }
+                else if (finalEquipment.ContainsKey("Appearance"))
+                {
+                    finalEquipment.Remove("Appearance");
+                }
+
                 var localData = new LiteDataContext.CharacterLocalData
                 {
                     CharacterId = characterInfo.CharacterId,
@@ -100,7 +195,7 @@ namespace HundunWorld.Game.Services
                     PassportId = AuthenticationManager.Instance?.Passport?.PassportId ?? "",
                     GameUserId = AuthenticationManager.Instance?.Passport?.UserId ?? 0,
                     Attributes = attributes ?? new Dictionary<string, object>(),
-                    Equipment = equipment ?? new Dictionary<string, object>(),
+                    Equipment = finalEquipment,
                     Skills = skills ?? new List<string>(),
                     LastLoginTime = DateTime.Now,
                     LastSyncTime = DateTime.Now,
@@ -202,6 +297,243 @@ namespace HundunWorld.Game.Services
             {
                 Debug.LogError($"[CharacterPersistence] 更新角色属性失败: {ex.Message}");
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// 保存角色外观数据
+        /// </summary>
+        public async Task<bool> SaveAppearanceAsync(ulong characterId, AppearanceData appearance)
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(appearance, _jsonOptions);
+                var characterData = await Task.Run(() => LiteDataContext.GetCharacterData(characterId));
+
+                if (characterData == null)
+                {
+                    characterData = new LiteDataContext.CharacterLocalData
+                    {
+                        CharacterId = characterId,
+                        Equipment = new Dictionary<string, object>()
+                    };
+                }
+
+                if (characterData.Equipment == null)
+                    characterData.Equipment = new Dictionary<string, object>();
+
+                characterData.Equipment["Appearance"] = json;
+
+                bool success = await Task.Run(() =>
+                {
+                    LiteDataContext.SaveCharacterData(characterData);
+                    return true;
+                });
+
+                if (success)
+                {
+                    _lastSaveTimes[characterId] = DateTime.Now;
+                    Debug.Log($"[CharacterPersistence] 角色外观已保存: {characterId}");
+                }
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[CharacterPersistence] 保存角色外观失败: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 加载角色外观数据
+        /// </summary>
+        public async Task<AppearanceData> LoadAppearanceAsync(ulong characterId)
+        {
+            try
+            {
+                var characterData = await Task.Run(() => LiteDataContext.GetCharacterData(characterId));
+
+                if (characterData?.Equipment != null &&
+                    characterData.Equipment.TryGetValue("Appearance", out var appearanceJson) &&
+                    appearanceJson is string json)
+                {
+                    try
+                    {
+                        return JsonSerializer.Deserialize<AppearanceData>(json, _jsonOptions);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogError($"[CharacterPersistence] 反序列化角色外观失败: {ex.Message}");
+                    }
+                }
+
+                return AppearanceData.GetDefaultAppearance();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[CharacterPersistence] 加载角色外观失败: {ex.Message}");
+                return AppearanceData.GetDefaultAppearance();
+            }
+        }
+
+        /// <summary>
+        /// 保存角色属性数据
+        /// </summary>
+        /// <param name="characterId">角色ID</param>
+        /// <param name="attributes">角色属性</param>
+        public async Task<bool> SaveCharacterAttributesAsync(ulong characterId, CharacterAttributes attributes)
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(attributes, _jsonOptions);
+                var characterData = await Task.Run(() => LiteDataContext.GetCharacterData(characterId));
+
+                if (characterData == null)
+                {
+                    characterData = new LiteDataContext.CharacterLocalData
+                    {
+                        CharacterId = characterId,
+                        Attributes = new Dictionary<string, object>()
+                    };
+                }
+
+                if (characterData.Attributes == null)
+                    characterData.Attributes = new Dictionary<string, object>();
+
+                characterData.Attributes["CharacterAttributes"] = json;
+
+                bool success = await Task.Run(() =>
+                {
+                    LiteDataContext.SaveCharacterData(characterData);
+                    return true;
+                });
+
+                if (success)
+                {
+                    _lastSaveTimes[characterId] = DateTime.Now;
+                    Debug.Log($"[CharacterPersistence] 角色属性已保存: {characterId}");
+                }
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[CharacterPersistence] 保存角色属性失败: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 加载角色属性数据
+        /// </summary>
+        /// <param name="characterId">角色ID</param>
+        public async Task<CharacterAttributes> LoadCharacterAttributesAsync(ulong characterId)
+        {
+            try
+            {
+                var characterData = await Task.Run(() => LiteDataContext.GetCharacterData(characterId));
+
+                if (characterData?.Attributes != null &&
+                    characterData.Attributes.TryGetValue("CharacterAttributes", out var attributesJson) &&
+                    attributesJson is string json)
+                {
+                    try
+                    {
+                        return JsonSerializer.Deserialize<CharacterAttributes>(json, _jsonOptions);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogError($"[CharacterPersistence] 反序列化角色属性失败: {ex.Message}");
+                    }
+                }
+
+                return CharacterAttributes.GetDefault();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[CharacterPersistence] 加载角色属性失败: {ex.Message}");
+                return CharacterAttributes.GetDefault();
+            }
+        }
+
+        /// <summary>
+        /// 保存角色背包数据
+        /// </summary>
+        /// <param name="characterId">角色ID</param>
+        /// <param name="inventory">背包物品列表</param>
+        public async Task<bool> SaveInventoryAsync(ulong characterId, List<InventoryItemData> inventory)
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(inventory, _jsonOptions);
+                var characterData = await Task.Run(() => LiteDataContext.GetCharacterData(characterId));
+
+                if (characterData == null)
+                {
+                    characterData = new LiteDataContext.CharacterLocalData
+                    {
+                        CharacterId = characterId,
+                        Attributes = new Dictionary<string, object>()
+                    };
+                }
+
+                if (characterData.Attributes == null)
+                    characterData.Attributes = new Dictionary<string, object>();
+
+                characterData.Attributes["Inventory"] = json;
+
+                bool success = await Task.Run(() =>
+                {
+                    LiteDataContext.SaveCharacterData(characterData);
+                    return true;
+                });
+
+                if (success)
+                {
+                    _lastSaveTimes[characterId] = DateTime.Now;
+                    Debug.Log($"[CharacterPersistence] 角色背包已保存: {characterId}");
+                }
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[CharacterPersistence] 保存角色背包失败: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 加载角色背包数据
+        /// </summary>
+        /// <param name="characterId">角色ID</param>
+        public async Task<List<InventoryItemData>> LoadInventoryAsync(ulong characterId)
+        {
+            try
+            {
+                var characterData = await Task.Run(() => LiteDataContext.GetCharacterData(characterId));
+
+                if (characterData?.Attributes != null &&
+                    characterData.Attributes.TryGetValue("Inventory", out var inventoryJson) &&
+                    inventoryJson is string json)
+                {
+                    try
+                    {
+                        return JsonSerializer.Deserialize<List<InventoryItemData>>(json, _jsonOptions) ?? new List<InventoryItemData>();
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogError($"[CharacterPersistence] 反序列化角色背包失败: {ex.Message}");
+                    }
+                }
+
+                return new List<InventoryItemData>();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[CharacterPersistence] 加载角色背包失败: {ex.Message}");
+                return new List<InventoryItemData>();
             }
         }
 

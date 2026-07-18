@@ -1,0 +1,247 @@
+{
+  "projectName": "yy-popup-system",
+  "projectPath": "yy-popup-system",
+  "brandCssPath": "colors_and_type.css",
+  "styleContinuityAnchors": {
+    "colorSystem": "墨色系(#0d0d0d-#6a6a6a) + 纸色系(#f5f0e8-#a89e8a) + 朱红(#c0392b) + 金色(#c9a84c) + 玉色(#5e8b6e) + 青灰(#6b7b8a)",
+    "primaryBackground": "var(--color-ink-dark) #1a1a1a",
+    "primaryText": "var(--color-paper-bright) #f5f0e8",
+    "accentColor": "var(--color-vermilion) #c0392b + var(--color-gold) #c9a84c",
+    "fontFamily": "Noto Serif SC(标题/装饰) + Noto Sans SC(正文)",
+    "panelStyle": "ink-panel: 渐变背景(135deg, #2d2d2d→#1a1a1a) + 1px墨色边框 + 8px圆角 + SVG噪点纹理叠层",
+    "buttonStyle": "ink-button: 1px金色边框 + 楷体字体 + 朱红/金色/透明三种变体",
+    "dividerStyle": "ink-divider: 线性渐变(透明→墨灰→透明) 水墨分离线",
+    "badgeStyle": "ink-badge: 1px边框 + 对应品质色半透明背景",
+    "progressBarStyle": "ink-progress: 6px高度 + 线性渐变 + 朱红/金色/玉色三种变体",
+    "animationStyle": "inkFadeIn/inkSpread/inkDissolve 水墨晕染动画",
+    "textureStyle": "paper-texture: SVG分形噪点 + overlay混合模式 模拟宣纸质感",
+    "sideSlidePanelStyle": "side-slide-panel: fixed right 0, 420px宽, 渐变背景, 金色左边框, translateX动画",
+    "qualityColorSystem": "common(#a89e8a) / uncommon(#5e8b6e) / rare(#4a7c9a) / epic(#c9a84c) / legendary(#c0392b)",
+    "popupOverlayStyle": "dark-overlay: rgba(13,13,13,0.7-0.8) 全屏遮罩 + z-index 300+",
+    "centerModalStyle": "居中弹窗: ink-panel + 品质色边框 + 居中flex布局 + 阴影shadow-modal"
+  },
+  "popupSystemContract": {
+    "description": "弹窗系统页面共享暗色遮罩背景 + 弹窗内容布局",
+    "darkOverlay": {
+      "background": "rgba(13,13,13,0.8)",
+      "position": "fixed",
+      "width": "100%",
+      "height": "100%",
+      "zIndex": 300,
+      "display": "flex",
+      "alignItems": "center",
+      "justifyContent": "center"
+    },
+    "sidePanelPopups": [
+      "popup-bestiary-side.html",
+      "popup-guide-side.html"
+    ],
+    "centerModalPopups": [
+      "popup-message.html",
+      "popup-martial-arts.html",
+      "popup-martial-detail.html",
+      "popup-item-acquired.html",
+      "popup-skill-realization.html",
+      "popup-verification.html"
+    ],
+    "sidePanelStyle": "side-slide-panel class: 420px宽, 右侧固定, 渐变背景(rgba(26,26,26,0.98)到rgba(13,13,13,0.98)), 金色左边框",
+    "centerModalStyle": "ink-panel: 居中, 400-640px宽, 品质色或金色边框, shadow-modal阴影"
+  },
+  "pages": [
+    {
+      "id": "page-popup-bestiary-side",
+      "name": "博物侧弹窗",
+      "file": "popup-bestiary-side.html",
+      "order": 1,
+      "pageType": "visual-centric",
+      "description": "博物志条目详情侧弹窗，从右侧滑入。展示生物/物品的详细信息，包含插图区、名称、描述、属性、获取方式等。",
+      "backgroundImage": null,
+      "visualNorthStar": "右侧滑入面板(420px宽)，展示博物志条目详情。顶部为条目插图区(水墨风格占位)，中部为条目名称和描述，底部为属性列表和获取方式。背景为暗色遮罩。",
+      "composition": "dark-overlay(full-screen rgba(13,13,13,0.8)) + side-slide-panel(right 420px) | panel: 顶部插图区(180px) + 条目名称区 + 描述区 + 属性列表 + 获取方式 + 关闭按钮",
+      "components": [
+        "ink-panel",
+        "side-slide-panel",
+        "ink-badge",
+        "ink-divider",
+        "ink-button-secondary"
+      ],
+      "businessScenario": "玩家在博物志中点击条目，侧弹窗展示详细信息",
+      "qualityRisks": [
+        "侧弹窗动画效果要流畅",
+        "信息层次要清晰",
+        "关闭交互要直观"
+      ]
+    },
+    {
+      "id": "page-popup-message",
+      "name": "留言",
+      "file": "popup-message.html",
+      "order": 2,
+      "pageType": "visual-centric",
+      "description": "留言/书信弹窗，居中显示。展示NPC来信或系统留言，使用宣纸质感背景，竖排或横排文字。",
+      "backgroundImage": null,
+      "visualNorthStar": "居中弹窗(600px宽)，宣纸质感背景(paper-texture)。顶部为发件人信息和时间，中部为留言内容(楷体字体)，底部为操作按钮(回复/关闭)。",
+      "composition": "dark-overlay + center-modal(600px) | modal: 发件人信息栏 + 留言内容区(宣纸质感) + 操作按钮栏(回复/收藏/关闭)",
+      "components": [
+        "ink-panel",
+        "ink-button",
+        "ink-button-secondary",
+        "ink-divider",
+        "ink-badge"
+      ],
+      "businessScenario": "玩家收到NPC来信或系统留言，查看内容并选择回复",
+      "qualityRisks": [
+        "宣纸质感要自然",
+        "留言内容排版要美观",
+        "弹窗不能过大或过小"
+      ]
+    },
+    {
+      "id": "page-popup-martial-arts",
+      "name": "奇术",
+      "file": "popup-martial-arts.html",
+      "order": 3,
+      "pageType": "information-dense",
+      "description": "奇术(特殊技能)详情弹窗，居中显示。展示奇术名称、效果、消耗、冷却时间、升级路径等详细信息。",
+      "backgroundImage": null,
+      "visualNorthStar": "居中弹窗(560px宽)，展示奇术详情。顶部为奇术名称和图标，中部为效果描述和数值，底部为升级材料和按钮。",
+      "composition": "dark-overlay + center-modal(560px) | modal: 奇术图标+名称区 + 效果描述区 + 数值面板(消耗/冷却/范围) + 升级路径 + 升级按钮",
+      "components": [
+        "ink-panel",
+        "ink-badge-gold",
+        "ink-progress-bar-gold",
+        "ink-button-gold",
+        "ink-divider"
+      ],
+      "businessScenario": "玩家查看奇术详细信息，了解效果并升级",
+      "qualityRisks": [
+        "数值信息要清晰",
+        "升级路径要直观",
+        "奇术效果描述要易读"
+      ]
+    },
+    {
+      "id": "page-popup-guide-side",
+      "name": "引导侧弹窗",
+      "file": "popup-guide-side.html",
+      "order": 4,
+      "pageType": "visual-centric",
+      "description": "新手引导侧弹窗，从右侧滑入。展示引导步骤、操作提示、奖励预览等。包含进度指示和下一步按钮。",
+      "backgroundImage": null,
+      "visualNorthStar": "右侧滑入面板(420px宽)，展示新手引导内容。顶部为引导标题和步骤进度，中部为操作说明和示意图，底部为奖励预览和下一步按钮。",
+      "composition": "dark-overlay + side-slide-panel(right 420px) | panel: 引导标题+步骤进度 + 操作说明区(含示意图占位) + 奖励预览 + 上一步/下一步按钮",
+      "components": [
+        "ink-panel",
+        "side-slide-panel",
+        "ink-progress-bar-gold",
+        "ink-badge-gold",
+        "ink-button-gold",
+        "ink-button-secondary",
+        "ink-divider"
+      ],
+      "businessScenario": "新手玩家接收引导，按步骤学习游戏操作",
+      "qualityRisks": [
+        "引导步骤要清晰",
+        "进度指示要醒目",
+        "操作说明要易懂"
+      ]
+    },
+    {
+      "id": "page-popup-martial-detail",
+      "name": "武学",
+      "file": "popup-martial-detail.html",
+      "order": 5,
+      "pageType": "information-dense",
+      "description": "武学详情弹窗，居中显示。展示武学招式详情，包含招式名称、类型、伤害值、破防值、连招路径、修炼等级等。",
+      "backgroundImage": null,
+      "visualNorthStar": "居中弹窗(640px宽)，展示武学招式详情。顶部为武学名称和品质，中部为招式属性和连招表，底部为修炼按钮和材料需求。",
+      "composition": "dark-overlay + center-modal(640px) | modal: 武学名称+品质+类型 + 属性面板(伤害/破防/范围/消耗) + 连招路径图 + 修炼等级进度 + 修炼按钮",
+      "components": [
+        "ink-panel",
+        "ink-badge-vermilion",
+        "ink-badge-gold",
+        "ink-progress",
+        "ink-button-primary",
+        "ink-divider"
+      ],
+      "businessScenario": "玩家查看武学招式详情，了解属性并修炼升级",
+      "qualityRisks": [
+        "连招路径要直观",
+        "属性数值要清晰",
+        "修炼材料需求要明确"
+      ]
+    },
+    {
+      "id": "page-popup-item-acquired",
+      "name": "物品获得",
+      "file": "popup-item-acquired.html",
+      "order": 6,
+      "pageType": "visual-centric",
+      "description": "物品获得通知弹窗，居中显示。展示获得的物品图标、名称、品质、数量，带有水墨晕染动画效果。",
+      "backgroundImage": null,
+      "visualNorthStar": "居中弹窗(400px宽)，展示物品获得通知。中央为物品大图标(品质色光效)，上方为获得物品标题，下方为物品名称、品质、数量。带有水墨晕染入场动画。",
+      "composition": "dark-overlay(rgba(13,13,13,0.6)) + center-modal(400px) | modal: 获得物品标题 + 物品图标区(120px,品质色光效) + 物品名称+品质徽章 + 数量 + 确认按钮",
+      "components": [
+        "ink-panel",
+        "ink-badge-gold",
+        "ink-badge-vermilion",
+        "ink-button-secondary",
+        "ink-divider"
+      ],
+      "businessScenario": "玩家获得物品时弹出通知，确认后关闭",
+      "qualityRisks": [
+        "品质色光效要突出",
+        "入场动画要有水墨感",
+        "弹窗不能遮挡太多游戏画面"
+      ]
+    },
+    {
+      "id": "page-popup-skill-realization",
+      "name": "心法领悟",
+      "file": "popup-skill-realization.html",
+      "order": 7,
+      "pageType": "visual-centric",
+      "description": "心法领悟弹窗，居中显示。展示心法领悟成功的效果，包含心法名称、效果描述、属性变化，带有水墨晕染和金色光效动画。",
+      "backgroundImage": null,
+      "visualNorthStar": "居中弹窗(480px宽)，展示心法领悟成功。中央为心法名称(金色装饰字体)，周围有水墨晕染光效。展示领悟前后的属性变化对比。",
+      "composition": "dark-overlay(rgba(13,13,13,0.7)) + center-modal(480px) | modal: 心法领悟标题 + 心法名称(装饰字体) + 效果描述 + 属性变化对比(前到后) + 确认按钮",
+      "components": [
+        "ink-panel",
+        "ink-badge-gold",
+        "ink-progress-bar-gold",
+        "ink-button-gold",
+        "ink-divider"
+      ],
+      "businessScenario": "玩家领悟心法后弹出通知，展示效果和属性变化",
+      "qualityRisks": [
+        "领悟感要有仪式感",
+        "属性变化对比要清晰",
+        "金色光效不能过于刺眼"
+      ]
+    },
+    {
+      "id": "page-popup-verification",
+      "name": "验讫",
+      "file": "popup-verification.html",
+      "order": 8,
+      "pageType": "visual-centric",
+      "description": "验讫(确认章)弹窗，居中显示。展示任务完成或物品验证的朱红印章效果，带有印章盖落动画。",
+      "backgroundImage": null,
+      "visualNorthStar": "居中弹窗(400px宽)，展示验讫确认。中央为大号朱红印章(验讫二字)，带有印章盖落动画效果。下方为验证内容摘要和确认按钮。",
+      "composition": "dark-overlay + center-modal(400px) | modal: 验讫朱红印章区(120px,印章动画) + 验证内容摘要 + 时间戳 + 确认按钮",
+      "components": [
+        "ink-panel",
+        "ink-badge-vermilion",
+        "ink-button-secondary",
+        "ink-divider"
+      ],
+      "businessScenario": "任务完成或物品验证后弹出验讫章，确认后关闭",
+      "qualityRisks": [
+        "印章动画要逼真",
+        "朱红色要有传统印泥质感",
+        "弹窗要简洁"
+      ]
+    }
+  ],
+  "images": []
+}

@@ -1,0 +1,2711 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>不肝 · 休闲模式 — 燕云十六声</title>
+    <style id="theme-vars">
+/* === 燕云十六声 UI 体系 - 水墨设计系统 === */
+/* Brand CSS for Ink Wash (水墨) Game UI Aesthetic */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+:root {
+  /* === 墨色系 - 主色调 === */
+  --color-ink-darkest: #0d0d0d;
+  --color-ink-dark: #1a1a1a;
+  --color-ink-medium: #2d2d2d;
+  --color-ink-light: #3d3d3d;
+  --color-ink-wash: #4a4a4a;
+  --color-ink-faded: #6a6a6a;
+
+  /* === 纸色系 - 面板/文字 === */
+  --color-paper-bright: #f5f0e8;
+  --color-paper: #ebe5d8;
+  --color-paper-aged: #d4c9b8;
+  --color-paper-faded: #c8bba8;
+  --color-paper-dark: #a89e8a;
+
+  /* === 朱红系 - 强调色 === */
+  --color-vermilion: #c0392b;
+  --color-vermilion-dark: #a93226;
+  --color-vermilion-light: #d9504a;
+  --color-vermilion-faded: #8b2a20;
+
+  /* === 金色系 - 品牌色/品质 === */
+  --color-gold: #c9a84c;
+  --color-gold-bright: #d4af37;
+  --color-gold-dark: #a08838;
+  --color-gold-faded: #8a7430;
+
+  /* === 玉色系 - 状态色 === */
+  --color-jade: #5e8b6e;
+  --color-jade-dark: #4a7c59;
+  --color-jade-light: #7aa889;
+
+  /* === 青灰系 - 次级信息 === */
+  --color-cyan-gray: #6b7b8a;
+  --color-cyan-gray-dark: #5a6a78;
+  --color-cyan-gray-light: #8a9ba8;
+
+  /* === Tailwind 语义令牌映射 === */
+  --color-background: var(--color-ink-dark);
+  --color-foreground: var(--color-paper-bright);
+  --color-card: var(--color-ink-medium);
+  --color-card-foreground: var(--color-paper-bright);
+  --color-popover: var(--color-ink-dark);
+  --color-popover-foreground: var(--color-paper-bright);
+  --color-primary: var(--color-vermilion);
+  --color-primary-foreground: var(--color-paper-bright);
+  --color-secondary: var(--color-ink-light);
+  --color-secondary-foreground: var(--color-paper-bright);
+  --color-muted: var(--color-ink-light);
+  --color-muted-foreground: var(--color-paper-aged);
+  --color-accent: var(--color-gold);
+  --color-accent-foreground: var(--color-ink-dark);
+  --color-destructive: var(--color-vermilion);
+  --color-destructive-foreground: var(--color-paper-bright);
+  --color-border: var(--color-ink-wash);
+  --color-input: var(--color-ink-medium);
+  --color-ring: var(--color-gold);
+
+  /* === Tailwind 圆角令牌映射 === */
+  --color-radius-small: var(--radius-sm);
+  --color-radius-medium: var(--radius-md);
+  --color-radius-large: var(--radius-lg);
+  --color-radius-xlarge: var(--radius-xl);
+
+  /* === 语义状态色 === */
+  --state-success: var(--color-jade);
+  --state-warning: var(--color-gold);
+  --state-error: var(--color-vermilion);
+  --state-info: var(--color-cyan-gray);
+
+  /* === 品质色 === */
+  --quality-common: #a89e8a;
+  --quality-uncommon: #5e8b6e;
+  --quality-rare: #4a7c9a;
+  --quality-epic: #c9a84c;
+  --quality-legendary: #c0392b;
+
+  /* === 字体系统 === */
+  --font-display: "Noto Serif SC", "STKaiti", "KaiTi", "楷体", serif;
+  --font-body: "Noto Sans SC", "Noto Sans", "Microsoft YaHei", "微软雅黑", sans-serif;
+  --font-decorative: "STKaiti", "KaiTi", "楷体", "Noto Serif SC", serif;
+  --font-mono: "Courier New", "Consolas", monospace;
+
+  /* === 字号系统 === */
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+  --text-3xl: 36px;
+  --text-4xl: 48px;
+  --text-5xl: 64px;
+  --text-6xl: 84px;
+
+  /* === 字重系统 === */
+  --weight-light: 300;
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-bold: 700;
+  --weight-black: 900;
+
+  /* === 行高系统 === */
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+  --leading-loose: 2.0;
+
+  /* === 圆角系统 === */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* === 间距系统 === */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+
+  /* === 边框系统 === */
+  --border-width-thin: 1px;
+  --border-width-medium: 2px;
+  --border-width-thick: 3px;
+  --border-color-ink: rgba(26, 26, 26, 0.6);
+  --border-color-paper: rgba(235, 229, 216, 0.2);
+  --border-color-gold: rgba(201, 168, 76, 0.4);
+
+  /* === 阴影系统（静态阴影 alpha<=0.05，浮层阴影单独定义）=== */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.05);
+  /* === 浮层阴影（仅 modal/popover/drawer 使用）=== */
+  --shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.15);
+  --shadow-overlay: 0 0 20px rgba(13, 13, 13, 0.4);
+
+  /* === 透明度系统 === */
+  --opacity-ink-overlay: 0.85;
+  --opacity-paper-translucent: 0.92;
+  --opacity-hover: 0.85;
+  --opacity-disabled: 0.4;
+
+  /* === 过渡动画 === */
+  --transition-fast: 150ms ease-out;
+  --transition-normal: 250ms ease-out;
+  --transition-slow: 400ms ease-out;
+  --transition-ink: 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* === 基础重置 === */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--color-paper-bright);
+  background-color: var(--color-ink-dark);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* === 水墨面板组件 === */
+.ink-panel {
+  background: linear-gradient(135deg, rgba(45, 45, 45, 0.95) 0%, rgba(26, 26, 26, 0.95) 100%);
+  border: 1px solid var(--border-color-ink);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.ink-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.18 0 0 0 0 0.18 0 0 0 0 0.18 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* === 侧滑面板 === */
+.side-slide-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 420px;
+  height: 100vh;
+  background: linear-gradient(180deg, rgba(26, 26, 26, 0.98) 0%, rgba(13, 13, 13, 0.98) 100%);
+  border-left: 1px solid var(--border-color-gold);
+  padding: var(--spacing-xl);
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform var(--transition-ink);
+  z-index: 300;
+}
+
+.side-slide-panel.active {
+  transform: translateX(0);
+}
+
+/* === 中式按钮 === */
+.ink-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  border: 1px solid var(--border-color-gold);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.ink-button-primary {
+  background: linear-gradient(135deg, var(--color-vermilion) 0%, var(--color-vermilion-dark) 100%);
+  color: var(--color-paper-bright);
+  border-color: var(--color-vermilion-dark);
+}
+
+.ink-button-primary:hover {
+  background: linear-gradient(135deg, var(--color-vermilion-light) 0%, var(--color-vermilion) 100%);
+  box-shadow: 0 0 12px rgba(192, 57, 43, 0.3);
+}
+
+.ink-button-secondary {
+  background: transparent;
+  color: var(--color-paper-bright);
+  border-color: var(--border-color-ink);
+}
+
+.ink-button-secondary:hover {
+  background: rgba(235, 229, 216, 0.08);
+  border-color: var(--color-paper-faded);
+}
+
+.ink-button-gold {
+  background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-gold-dark) 100%);
+  color: var(--color-ink-dark);
+  border-color: var(--color-gold-dark);
+}
+
+.ink-button-gold:hover {
+  background: linear-gradient(135deg, var(--color-gold-bright) 0%, var(--color-gold) 100%);
+  box-shadow: 0 0 12px rgba(201, 168, 76, 0.3);
+}
+
+/* === 竖排标题 === */
+.vertical-title {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-family: var(--font-decorative);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.2em;
+  line-height: var(--leading-loose);
+}
+
+/* === 墨色进度条 === */
+.ink-progress {
+  width: 100%;
+  height: 6px;
+  background: rgba(13, 13, 13, 0.8);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  position: relative;
+}
+
+.ink-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-ink-wash) 0%, var(--color-paper-aged) 100%);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-slow);
+}
+
+.ink-progress-bar-vermilion {
+  background: linear-gradient(90deg, var(--color-vermilion-dark) 0%, var(--color-vermilion-light) 100%);
+}
+
+.ink-progress-bar-gold {
+  background: linear-gradient(90deg, var(--color-gold-dark) 0%, var(--color-gold-bright) 100%);
+}
+
+.ink-progress-bar-jade {
+  background: linear-gradient(90deg, var(--color-jade-dark) 0%, var(--color-jade-light) 100%);
+}
+
+/* === 水墨分隔线 === */
+.ink-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--color-ink-faded) 50%, transparent 100%);
+  border: none;
+  margin: var(--spacing-md) 0;
+}
+
+.ink-divider-vertical {
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(180deg, transparent 0%, var(--color-ink-faded) 50%, transparent 100%);
+  border: none;
+}
+
+/* === 标签徽章 === */
+.ink-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--spacing-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+}
+
+.ink-badge-gold {
+  color: var(--color-gold-bright);
+  border-color: var(--color-gold-dark);
+  background: rgba(201, 168, 76, 0.1);
+}
+
+.ink-badge-jade {
+  color: var(--color-jade-light);
+  border-color: var(--color-jade-dark);
+  background: rgba(94, 139, 110, 0.1);
+}
+
+.ink-badge-vermilion {
+  color: var(--color-vermilion-light);
+  border-color: var(--color-vermilion-dark);
+  background: rgba(192, 57, 43, 0.1);
+}
+
+.ink-badge-common {
+  color: var(--color-paper-dark);
+  border-color: var(--color-paper-faded);
+  background: rgba(168, 158, 138, 0.1);
+}
+
+/* === 悬浮提示 === */
+.ink-tooltip {
+  position: absolute;
+  background: rgba(13, 13, 13, 0.95);
+  border: 1px solid var(--border-color-gold);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--text-sm);
+  color: var(--color-paper-bright);
+  pointer-events: none;
+  z-index: 400;
+  box-shadow: var(--shadow-md);
+}
+
+/* === 加载画面 === */
+.ink-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--color-ink-darkest);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+
+/* === 章节过场 === */
+.chapter-transition {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--color-ink-darkest);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  animation: inkFadeIn var(--transition-ink) forwards;
+}
+
+@keyframes inkFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes inkSpread {
+  0% { transform: scale(0.8); opacity: 0; filter: blur(20px); }
+  50% { transform: scale(1.1); opacity: 0.8; filter: blur(5px); }
+  100% { transform: scale(1); opacity: 1; filter: blur(0); }
+}
+
+@keyframes inkDissolve {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; filter: blur(10px); }
+  100% { opacity: 0; filter: blur(20px); }
+}
+
+/* === 水墨晕染效果 === */
+.ink-splash {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(15px);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.ink-splash-1 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, var(--color-ink-medium) 0%, transparent 70%);
+}
+
+.ink-splash-2 {
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, var(--color-ink-wash) 0%, transparent 70%);
+}
+
+/* === 纸质纹理覆盖 === */
+.paper-texture {
+  position: relative;
+}
+
+.paper-texture::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5' result='noise'/%3E%3CfeDiffuseLighting in='noise' lighting-color='%23f5f0e8' surfaceScale='2'%3E%3CfeDistantLight azimuth='45' elevation='60'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+/* === 中式纹样边框 === */
+.pattern-border-fret {
+  border-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M0 0h40v40H0z' fill='none'/%3E%3Cpath d='M5 5h30v30H5z' fill='none' stroke='%23c9a84c' stroke-width='1' opacity='0.3'/%3E%3Cpath d='M10 10h20v20H10z' fill='none' stroke='%23c9a84c' stroke-width='0.5' opacity='0.2'/%3E%3C/svg%3E") 8 stretch;
+}
+
+/* === 通用工具类 === */
+.text-display { font-family: var(--font-display); }
+.text-body { font-family: var(--font-body); }
+.text-decorative { font-family: var(--font-decorative); }
+
+.text-ink { color: var(--color-ink-dark); }
+.text-paper { color: var(--color-paper-bright); }
+.text-vermilion { color: var(--color-vermilion); }
+.text-gold { color: var(--color-gold); }
+.text-jade { color: var(--color-jade); }
+.text-cyan-gray { color: var(--color-cyan-gray); }
+.text-muted { color: var(--color-ink-faded); }
+
+.bg-ink { background-color: var(--color-ink-dark); }
+.bg-ink-medium { background-color: var(--color-ink-medium); }
+.bg-paper { background-color: var(--color-paper); }
+.bg-vermilion { background-color: var(--color-vermilion); }
+.bg-gold { background-color: var(--color-gold); }
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.gap-sm { gap: var(--spacing-sm); }
+.gap-md { gap: var(--spacing-md); }
+.gap-lg { gap: var(--spacing-lg); }
+
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed { position: fixed; }
+
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.h-screen { height: 100vh; }
+
+.overflow-hidden { overflow: hidden; }
+.overflow-auto { overflow: auto; }
+
+.cursor-pointer { cursor: pointer; }
+
+.opacity-hover { opacity: var(--opacity-hover); }
+.opacity-disabled { opacity: var(--opacity-disabled); }
+
+.transition-normal { transition: all var(--transition-normal); }
+.transition-ink { transition: all var(--transition-ink); }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--color-background);
+    --color-foreground: var(--color-foreground);
+    --color-card: var(--color-card);
+    --color-card-foreground: var(--color-card-foreground);
+    --color-popover: var(--color-popover);
+    --color-popover-foreground: var(--color-popover-foreground);
+    --color-primary: var(--color-primary);
+    --color-primary-foreground: var(--color-primary-foreground);
+    --color-secondary: var(--color-secondary);
+    --color-secondary-foreground: var(--color-secondary-foreground);
+    --color-muted: var(--color-muted);
+    --color-muted-foreground: var(--color-muted-foreground);
+    --color-accent: var(--color-accent);
+    --color-accent-foreground: var(--color-accent-foreground);
+    --color-destructive: var(--color-destructive);
+    --color-destructive-foreground: var(--color-destructive-foreground);
+    --color-border: var(--color-border);
+    --color-input: var(--color-input);
+    --color-ring: var(--color-ring);
+    --radius-sm: var(--color-radius-small);
+    --radius-md: var(--color-radius-medium);
+    --radius-lg: var(--color-radius-large);
+    --radius-xl: var(--color-radius-xlarge);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+<main>
+  <div class="app-shell">
+
+    <!-- ========== Left Navigation (240px) ========== -->
+    <aside class="app-nav">
+      <div class="nav-splash nav-splash-1"></div>
+      <div class="nav-splash nav-splash-2"></div>
+
+      <!-- Logo -->
+      <div class="nav-logo">
+        <div class="logo-mark">
+          <i data-lucide="wind"></i>
+        </div>
+        <div class="logo-text-group">
+          <span class="logo-text">燕雲十六聲</span>
+          <span class="logo-subtitle">WHERE WINDS MEET</span>
+        </div>
+      </div>
+
+      <hr class="ink-divider nav-divider">
+
+      <!-- Nav Items -->
+      <nav class="nav-list">
+        <a class="nav-item active" data-nav-key="casual" data-dom-id="nav-casual">
+          <i data-lucide="leaf" class="nav-icon"></i>
+          <span class="nav-label">不肝</span>
+          <span class="nav-badge">6</span>
+        </a>
+        <a class="nav-item" data-nav-key="gacha" data-dom-id="nav-gacha">
+          <i data-lucide="gem" class="nav-icon"></i>
+          <span class="nav-label">抽卡</span>
+        </a>
+        <a class="nav-item" data-nav-key="activities" data-dom-id="nav-activities">
+          <i data-lucide="calendar-days" class="nav-icon"></i>
+          <span class="nav-label">活动</span>
+          <span class="nav-badge">3</span>
+        </a>
+        <a class="nav-item" data-nav-key="battlepass" data-dom-id="nav-battlepass">
+          <i data-lucide="award" class="nav-icon"></i>
+          <span class="nav-label">通行证</span>
+        </a>
+        <a class="nav-item" data-nav-key="attributes" data-dom-id="nav-attributes">
+          <i data-lucide="user" class="nav-icon"></i>
+          <span class="nav-label">属性</span>
+        </a>
+        <a class="nav-item" data-nav-key="shop" data-dom-id="nav-shop">
+          <i data-lucide="shopping-bag" class="nav-icon"></i>
+          <span class="nav-label">奇珍阁</span>
+        </a>
+        <a class="nav-item" data-nav-key="settings" data-dom-id="nav-settings">
+          <i data-lucide="settings" class="nav-icon"></i>
+          <span class="nav-label">设置</span>
+        </a>
+      </nav>
+
+      <!-- Nav Footer -->
+      <div class="nav-footer">
+        <hr class="ink-divider nav-divider">
+        <div class="nav-server">
+          <span class="server-dot"></span>
+          <i data-lucide="server" class="server-icon"></i>
+          <span class="server-name">江南 · 烟雨楼</span>
+        </div>
+        <div class="nav-version">
+          <span>v 2.4.1 · 烽火连城</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ========== Top Info Bar (60px) ========== -->
+    <header class="app-topbar">
+      <div class="topbar-left">
+        <div class="topbar-avatar">
+          <div class="avatar-circle">
+            <i data-lucide="user"></i>
+          </div>
+          <div class="avatar-ring"></div>
+        </div>
+        <div class="topbar-char-info">
+          <span class="char-name">江湖过客</span>
+          <div class="char-meta">
+            <span class="char-level">
+              <i data-lucide="star"></i> Lv. 42
+            </span>
+            <span class="char-sep">·</span>
+            <span class="char-school">无门无派</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="topbar-center">
+        <div class="vitality-display">
+          <i data-lucide="flame" class="vitality-icon"></i>
+          <span class="vitality-text">体力</span>
+          <span class="vitality-value">120<span class="vitality-max">/180</span></span>
+          <div class="vitality-bar">
+            <div class="ink-progress">
+              <div class="ink-progress-bar ink-progress-bar-gold" style="width: 66%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <div class="currency-item">
+          <div class="currency-icon-wrap copper">
+            <i data-lucide="coins"></i>
+          </div>
+          <div class="currency-info">
+            <span class="currency-amount">12,450</span>
+            <span class="currency-label">铜钱</span>
+          </div>
+        </div>
+        <div class="topbar-divider"></div>
+        <div class="currency-item">
+          <div class="currency-icon-wrap ingot">
+            <i data-lucide="gem"></i>
+          </div>
+          <div class="currency-info">
+            <span class="currency-amount">328</span>
+            <span class="currency-label">元宝</span>
+          </div>
+        </div>
+        <div class="topbar-divider"></div>
+        <div class="time-display">
+          <i data-lucide="moon"></i>
+          <div class="time-info">
+            <span class="time-period">戌时</span>
+            <span class="time-quarter">三刻</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ========== Right Content Area ========== -->
+    <section class="app-content">
+      <div class="content-bg-splash splash-1"></div>
+      <div class="content-bg-splash splash-2"></div>
+      <div class="content-bg-splash splash-3"></div>
+
+      <!-- Content Header -->
+      <div class="content-header">
+        <div class="header-titles">
+          <div class="title-row">
+            <h1 class="page-title">不肝 · 休闲模式</h1>
+            <div class="seal-mark">闲</div>
+          </div>
+          <p class="page-subtitle">轻松游玩，奖励不落</p>
+        </div>
+        <div class="header-decoration">
+          <div class="deco-stats">
+            <div class="deco-stat-item">
+              <span class="deco-stat-num">6</span>
+              <span class="deco-stat-label">今日活动</span>
+            </div>
+            <div class="deco-stat-sep"></div>
+            <div class="deco-stat-item">
+              <span class="deco-stat-num">2</span>
+              <span class="deco-stat-label">已完成</span>
+            </div>
+            <div class="deco-stat-sep"></div>
+            <div class="deco-stat-item">
+              <span class="deco-stat-num">4</span>
+              <span class="deco-stat-label">进行中</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Daily Activity Summary -->
+      <div class="daily-summary ink-panel">
+        <div class="summary-left">
+          <div class="summary-icon">
+            <i data-lucide="flame"></i>
+          </div>
+          <div class="summary-body">
+            <div class="summary-head">
+              <span class="summary-label">今日活跃度</span>
+              <span class="summary-value">
+                <span class="value-num">325</span>
+                <span class="value-max">/ 500</span>
+              </span>
+            </div>
+            <div class="summary-progress">
+              <div class="ink-progress">
+                <div class="ink-progress-bar ink-progress-bar-gold" style="width: 65%"></div>
+              </div>
+            </div>
+            <div class="summary-milestones">
+              <span class="milestone reached">
+                <i data-lucide="check"></i> 100
+              </span>
+              <span class="milestone reached">
+                <i data-lucide="check"></i> 200
+              </span>
+              <span class="milestone reached">
+                <i data-lucide="check"></i> 300
+              </span>
+              <span class="milestone">400</span>
+              <span class="milestone">500</span>
+            </div>
+          </div>
+        </div>
+        <div class="summary-stats">
+          <div class="stat-item">
+            <div class="stat-icon done">
+              <i data-lucide="check-circle-2"></i>
+            </div>
+            <div class="stat-info">
+              <span class="stat-num">2</span>
+              <span class="stat-label">已完成</span>
+            </div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon ongoing">
+              <i data-lucide="circle-dashed"></i>
+            </div>
+            <div class="stat-info">
+              <span class="stat-num">3</span>
+              <span class="stat-label">进行中</span>
+            </div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon pending">
+              <i data-lucide="clock"></i>
+            </div>
+            <div class="stat-info">
+              <span class="stat-num">1</span>
+              <span class="stat-label">待开始</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Bar -->
+      <div class="tab-bar">
+        <button class="tab-item active" data-tab-key="recommend" data-dom-id="tab-recommend">
+          <i data-lucide="sparkles"></i>
+          <span>推荐</span>
+        </button>
+        <button class="tab-item" data-tab-key="all" data-dom-id="tab-all">
+          <i data-lucide="layout-grid"></i>
+          <span>全部</span>
+        </button>
+        <button class="tab-item" data-tab-key="daily" data-dom-id="tab-daily">
+          <i data-lucide="sun"></i>
+          <span>日常</span>
+        </button>
+        <button class="tab-item" data-tab-key="weekly" data-dom-id="tab-weekly">
+          <i data-lucide="calendar"></i>
+          <span>周常</span>
+        </button>
+        <div class="tab-spacer"></div>
+        <div class="tab-filter">
+          <i data-lucide="filter"></i>
+          <span>筛选</span>
+        </div>
+      </div>
+      <hr class="ink-divider tab-divider-line">
+
+      <!-- Activity Card Grid -->
+      <div class="activity-grid">
+
+        <!-- Card 1: 每日签到 -->
+        <article class="activity-card ink-panel" data-status="ongoing" data-dom-id="card-signin">
+          <div class="card-illustration" data-illust="signin">
+            <span class="illust-char">签</span>
+            <i data-lucide="calendar-check" class="illust-icon"></i>
+          </div>
+          <div class="card-body">
+            <div class="card-header">
+              <h3 class="card-title">每日签到</h3>
+              <span class="ink-badge ink-badge-jade">
+                <i data-lucide="play" class="badge-icon"></i> 进行中
+              </span>
+            </div>
+            <p class="card-desc">签到打卡，连签7天获额外奖励</p>
+            <div class="card-progress">
+              <div class="progress-label-row">
+                <span class="progress-label">连签进度</span>
+                <span class="progress-value">6 / 7 天</span>
+              </div>
+              <div class="ink-progress">
+                <div class="ink-progress-bar ink-progress-bar-gold" style="width: 85%"></div>
+              </div>
+            </div>
+            <div class="card-footer">
+              <div class="reward-row">
+                <div class="reward-item">
+                  <div class="reward-icon" data-quality="common">
+                    <i data-lucide="coins"></i>
+                  </div>
+                  <div class="reward-text">
+                    <span class="reward-qty">×500</span>
+                    <span class="reward-name">铜钱</span>
+                  </div>
+                </div>
+                <div class="reward-item">
+                  <div class="reward-icon" data-quality="uncommon">
+                    <i data-lucide="ticket"></i>
+                  </div>
+                  <div class="reward-text">
+                    <span class="reward-qty">×1</span>
+                    <span class="reward-name">玉色签到卡</span>
+                  </div>
+                </div>
+              </div>
+              <div class="card-meta">
+                <div class="time-remaining">
+                  <i data-lucide="clock"></i>
+                  <span class="time-value">23:45:12</span>
+                </div>
+                <button class="ink-button ink-button-gold card-action-btn" data-dom-id="btn-signin">
+                  <span>前往</span>
+                  <i data-lucide="arrow-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 2: 闲庭信步 -->
+        <article class="activity-card ink-panel" data-status="ongoing" data-dom-id="card-stroll">
+          <div class="card-illustration" data-illust="stroll">
+            <span class="illust-char">步</span>
+            <i data-lucide="footprints" class="illust-icon"></i>
+          </div>
+          <div class="card-body">
+            <div class="card-header">
+              <h3 class="card-title">闲庭信步</h3>
+              <span class="ink-badge ink-badge-jade">
+                <i data-lucide="play" class="badge-icon"></i> 进行中
+              </span>
+            </div>
+            <p class="card-desc">在城镇中散步10分钟，感受江湖烟火</p>
+            <div class="card-progress">
+              <div class="progress-label-row">
+                <span class="progress-label">散步进度</span>
+                <span class="progress-value">4 / 10 分钟</span>
+              </div>
+              <div class="ink-progress">
+                <div class="ink-progress-bar ink-progress-bar-jade" style="width: 40%"></div>
+              </div>
+            </div>
+            <div class="card-footer">
+              <div class="reward-row">
+                <div class="reward-item">
+                  <div class="reward-icon" data-quality="rare">
+                    <i data-lucide="sparkles"></i>
+                  </div>
+                  <div class="reward-text">
+                    <span class="reward-qty">×2000</span>
+                    <span class="reward-name">经验</span>
+                  </div>
+                </div>
+                <div class="reward-item">
+                  <div class="reward-icon" data-quality="epic">
+                    <i data-lucide="scroll"></i>
+                  </div>
+                  <div class="reward-text">
+                    <span class="reward-qty">×1</span>
+                    <span class="reward-name">轻功残页</span>
+                  </div>
+                </div>
+              </div>
+              <div class="card-meta">
+                <div class="time-remaining unlimited">
+                  <i data-lucide="infinity"></i>
+                  <span class="time-value">无限制</span>
+                </div>
+                <button class="ink-button ink-button-gold card-action-btn" data-dom-id="btn-stroll">
+                  <span>前往</span>
+                  <i data-lucide="arrow-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 3: 品茗对弈 -->
+        <article class="activity-card ink-panel" data-status="ongoing" data-dom-id="card-chess">
+          <div class="card-illustration" data-illust="chess">
+            <span class="illust-char">弈</span>
+            <i data-lucide="grid-3x3" class="illust-icon"></i>
+          </div>
+          <div class="card-body">
+            <div class="card-header">
+              <h3 class="card-title">品茗对弈</h3>
+              <span class="ink-badge ink-badge-jade">
+                <i data-lucide="play" class="badge-icon"></i> 进行中
+              </span>
+            </div>
+            <p class="card-desc">与NPC对弈一局，以棋会友</p>
+            <div class="card-progress">
+              <div class="progress-label-row">
+                <span class="progress-label">对弈状态</span>
+                <span class="progress-value">等待对手</span>
+              </div>
+              <div class="ink-progress">
+                <div class="ink-progress-bar ink-progress-bar-jade" style="width: 15%"></div>
+              </div>
+            </div>
+            <div class="card-footer">
+              <div class="reward-row">
+                <div class="reward-item">
+                  <div class="reward-icon" data-quality="rare">
+                    <i data-lucide="book-open"></i>
+                  </div>
+                  <div class="reward-text">
+                    <span class="reward-qty">×1</span>
+                    <span class="reward-name">棋谱</span>
+                  </div>
+                </div>
+                <div class="reward-item">
+                  <div class="reward-icon" data-quality="epic">
+                    <i data-lucide="gem"></i>
+                  </div>
+                  <div class="reward-text">
+                    <span class="reward-qty">×50</span>
+                    <span class="reward-name">元宝</span>
+                  </div>
+                </div>
+              </div>
+              <div class="card-meta">
+                <div class="time-remaining">
+                  <i data-lucide="clock"></i>
+                  <span class="time-value">02:30:00</span>
+                </div>
+                <button class="ink-button ink-button-gold card-action-btn" data-dom-id="btn-chess">
+                  <span>前往</span>
+                  <i data-lucide="arrow-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 4: 听书赏曲 -->
+        <article class="activity-card ink-panel" data-status="ongoing" data-dom-id="card-music">
+          <div class="card-illustration" data-illust="music">
+            <span class="illust-char">曲</span>
+            <i data-lucide="music" class="illust-icon"></i>
+          </div>
+          <div class="card-body">
+            <div class="card-header">
+              <h3 class="card-title">听书赏曲</h3>
+              <span class="ink-badge ink-badge-jade">
+                <i data-lucide="play" class="badge-icon"></i> 进行中
+              </span>
+            </div>
+            <p class="card-desc">在茶馆听书30分钟，闲品江湖事</p>
+            <div class="card-progress">
+              <div class="progress-label-row">
+                <span class="progress-label">聆听进度</span>
+                <span class="progress-value">12 / 30 分钟</span>
+              </div>
+              <div class="ink-progress">
+                <div class="ink-progress-bar ink-progress-bar-jade" style="width: 40%"></div>
+              </div>
+            </div>
+            <div class="card-footer">
+              <div class="reward-row">
+                <div class="reward-item">
+                  <div class="reward-icon" data-quality="rare">
+                    <i data-lucide="sparkles"></i>
+                  </div>
+                  <div class="reward-text">
+                    <span class="reward-qty">×1500</span>
+                    <span class="reward-name">经验</span>
+                  </div>
+                </div>
+                <div class="reward-item">
+                  <div class="reward-icon" data-quality="common">
+                    <i data-lucide="coins"></i>
+                  </div>
+                  <div class="reward-text">
+                    <span class="reward-qty">×300</span>
+                    <span class="reward-name">铜钱</span>
+                  </div>
+                </div>
+              </div>
+              <div class="card-meta">
+                <div class="time-remaining">
+                  <i data-lucide="clock"></i>
+                  <span class="time-value">05:15:30</span>
+                </div>
+                <button class="ink-button ink-button-gold card-action-btn" data-dom-id="btn-music">
+                  <span>前往</span>
+                  <i data-lucide="arrow-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 5: 垂钓时光 -->
+        <article class="activity-card ink-panel" data-status="ongoing" data-dom-id="card-fishing">
+          <div class="card-illustration" data-illust="fishing">
+            <span class="illust-char">钓</span>
+            <i data-lucide="fish" class="illust-icon"></i>
+          </div>
+          <div class="card-body">
+            <div class="card-header">
+              <h3 class="card-title">垂钓时光</h3>
+              <span class="ink-badge ink-badge-jade">
+                <i data-lucide="play" class="badge-icon"></i> 进行中
+              </span>
+            </div>
+            <p class="card-desc">完成钓鱼3次，享受悠然午后</p>
+            <div class="card-progress">
+              <div class="progress-label-row">
+                <span class="progress-label">钓鱼进度</span>
+                <span class="progress-value">1 / 3 次</span>
+              </div>
+              <div class="ink-progress">
+                <div class="ink-progress-bar ink-progress-bar-jade" style="width: 33%"></div>
+              </div>
+            </div>
+            <div class="card-footer">
+              <div class="reward-row">
+                <div class="reward-item">
+                  <div class="reward-icon" data-quality="common">
+                    <i data-lucide="circle-dot"></i>
+                  </div>
+                  <div class="reward-text">
+                    <span class="reward-qty">×5</span>
+                    <span class="reward-name">鱼饵</span>
+                  </div>
+                </div>
+                <div class="reward-item">
+                  <div class="reward-icon" data-quality="uncommon">
+                    <i data-lucide="chef-hat"></i>
+                  </div>
+                  <div class="reward-text">
+                    <span class="reward-qty">×3</span>
+                    <span class="reward-name">烹饪材料</span>
+                  </div>
+                </div>
+              </div>
+              <div class="card-meta">
+                <div class="time-remaining">
+                  <i data-lucide="clock"></i>
+                  <span class="time-value">12:00:00</span>
+                </div>
+                <button class="ink-button ink-button-gold card-action-btn" data-dom-id="btn-fishing">
+                  <span>前往</span>
+                  <i data-lucide="arrow-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 6: 飞花令 -->
+        <article class="activity-card ink-panel" data-status="ending" data-dom-id="card-poetry">
+          <div class="card-illustration" data-illust="poetry">
+            <span class="illust-char">花</span>
+            <i data-lucide="flower-2" class="illust-icon"></i>
+          </div>
+          <div class="card-body">
+            <div class="card-header">
+              <h3 class="card-title">飞花令</h3>
+              <span class="ink-badge ink-badge-vermilion">
+                <i data-lucide="alert-circle" class="badge-icon"></i> 即将结束
+              </span>
+            </div>
+            <p class="card-desc">参与诗词小游戏，以诗会友</p>
+            <div class="card-progress">
+              <div class="progress-label-row">
+                <span class="progress-label">今日排名</span>
+                <span class="progress-value">第 8 名</span>
+              </div>
+              <div class="ink-progress">
+                <div class="ink-progress-bar ink-progress-bar-vermilion" style="width: 75%"></div>
+              </div>
+            </div>
+            <div class="card-footer">
+              <div class="reward-row">
+                <div class="reward-item">
+                  <div class="reward-icon" data-quality="rare">
+                    <i data-lucide="scroll-text"></i>
+                  </div>
+                  <div class="reward-text">
+                    <span class="reward-qty">×2</span>
+                    <span class="reward-name">诗词残卷</span>
+                  </div>
+                </div>
+                <div class="reward-item">
+                  <div class="reward-icon" data-quality="epic">
+                    <i data-lucide="gem"></i>
+                  </div>
+                  <div class="reward-text">
+                    <span class="reward-qty">×30</span>
+                    <span class="reward-name">元宝</span>
+                  </div>
+                </div>
+              </div>
+              <div class="card-meta">
+                <div class="time-remaining urgent">
+                  <i data-lucide="timer"></i>
+                  <span class="time-value">18:22:45</span>
+                </div>
+                <button class="ink-button ink-button-primary card-action-btn" data-dom-id="btn-poetry">
+                  <span>前往</span>
+                  <i data-lucide="arrow-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+      </div>
+      <!-- /Activity Card Grid -->
+
+      <!-- Bottom Reward Preview Bar -->
+      <div class="reward-preview-bar ink-panel">
+        <div class="reward-preview-header">
+          <div class="preview-title-group">
+            <i data-lucide="gift" class="preview-icon"></i>
+            <div class="preview-title-text">
+              <span class="preview-title">今日奖励总览</span>
+              <span class="preview-subtitle">完成全部活动预计可获得</span>
+            </div>
+          </div>
+          <div class="preview-summary">
+            <span class="summary-items-count">
+              <i data-lucide="package"></i> 共 8 项奖励
+            </span>
+            <button class="ink-button ink-button-secondary preview-detail-btn" data-dom-id="btn-reward-detail">
+              <i data-lucide="list"></i>
+              <span>详情</span>
+            </button>
+          </div>
+        </div>
+        <hr class="ink-divider preview-divider">
+        <div class="reward-preview-scroll no-scrollbar">
+          <div class="reward-preview-item">
+            <div class="preview-reward-icon" data-quality="common">
+              <i data-lucide="coins"></i>
+            </div>
+            <div class="preview-reward-info">
+              <span class="preview-reward-qty">×800</span>
+              <span class="preview-reward-name">铜钱</span>
+            </div>
+          </div>
+          <div class="preview-reward-sep"></div>
+          <div class="reward-preview-item">
+            <div class="preview-reward-icon" data-quality="epic">
+              <i data-lucide="gem"></i>
+            </div>
+            <div class="preview-reward-info">
+              <span class="preview-reward-qty">×80</span>
+              <span class="preview-reward-name">元宝</span>
+            </div>
+          </div>
+          <div class="preview-reward-sep"></div>
+          <div class="reward-preview-item">
+            <div class="preview-reward-icon" data-quality="rare">
+              <i data-lucide="sparkles"></i>
+            </div>
+            <div class="preview-reward-info">
+              <span class="preview-reward-qty">×3500</span>
+              <span class="preview-reward-name">经验</span>
+            </div>
+          </div>
+          <div class="preview-reward-sep"></div>
+          <div class="reward-preview-item">
+            <div class="preview-reward-icon" data-quality="uncommon">
+              <i data-lucide="ticket"></i>
+            </div>
+            <div class="preview-reward-info">
+              <span class="preview-reward-qty">×1</span>
+              <span class="preview-reward-name">玉色签到卡</span>
+            </div>
+          </div>
+          <div class="preview-reward-sep"></div>
+          <div class="reward-preview-item">
+            <div class="preview-reward-icon" data-quality="epic">
+              <i data-lucide="scroll"></i>
+            </div>
+            <div class="preview-reward-info">
+              <span class="preview-reward-qty">×1</span>
+              <span class="preview-reward-name">轻功残页</span>
+            </div>
+          </div>
+          <div class="preview-reward-sep"></div>
+          <div class="reward-preview-item">
+            <div class="preview-reward-icon" data-quality="rare">
+              <i data-lucide="book-open"></i>
+            </div>
+            <div class="preview-reward-info">
+              <span class="preview-reward-qty">×1</span>
+              <span class="preview-reward-name">棋谱</span>
+            </div>
+          </div>
+          <div class="preview-reward-sep"></div>
+          <div class="reward-preview-item">
+            <div class="preview-reward-icon" data-quality="common">
+              <i data-lucide="circle-dot"></i>
+            </div>
+            <div class="preview-reward-info">
+              <span class="preview-reward-qty">×5</span>
+              <span class="preview-reward-name">鱼饵</span>
+            </div>
+          </div>
+          <div class="preview-reward-sep"></div>
+          <div class="reward-preview-item">
+            <div class="preview-reward-icon" data-quality="uncommon">
+              <i data-lucide="chef-hat"></i>
+            </div>
+            <div class="preview-reward-info">
+              <span class="preview-reward-qty">×3</span>
+              <span class="preview-reward-name">烹饪材料</span>
+            </div>
+          </div>
+          <div class="preview-reward-sep"></div>
+          <div class="reward-preview-item">
+            <div class="preview-reward-icon" data-quality="rare">
+              <i data-lucide="scroll-text"></i>
+            </div>
+            <div class="preview-reward-info">
+              <span class="preview-reward-qty">×2</span>
+              <span class="preview-reward-name">诗词残卷</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- /Bottom Reward Preview Bar -->
+
+    </section>
+
+  </div>
+</main>
+
+<style>
+/* ================================================================
+   页面专属样式 — 不肝 · 休闲模式
+   ================================================================ */
+
+/* === App Shell 布局 === */
+.app-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  grid-template-rows: 60px 1fr;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--color-ink-dark);
+}
+
+/* === 左侧导航栏 === */
+.app-nav {
+  grid-row: 1 / 3;
+  background: linear-gradient(180deg, rgba(13,13,13,0.98) 0%, rgba(26,26,26,0.98) 100%);
+  border-right: 1px solid var(--border-color-gold);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-splash {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.nav-splash-1 {
+  width: 180px;
+  height: 180px;
+  top: -40px;
+  right: -60px;
+  background: radial-gradient(circle, rgba(201,168,76,0.06) 0%, transparent 70%);
+}
+
+.nav-splash-2 {
+  width: 140px;
+  height: 140px;
+  bottom: 80px;
+  left: -50px;
+  background: radial-gradient(circle, rgba(94,139,110,0.05) 0%, transparent 70%);
+}
+
+/* Logo 区域 */
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.logo-mark {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color-gold);
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(201,168,76,0.12) 0%, transparent 100%);
+  color: var(--color-gold-bright);
+  flex-shrink: 0;
+}
+
+.logo-mark svg {
+  width: 20px;
+  height: 20px;
+}
+
+.logo-text-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.logo-text {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-gold-bright);
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+
+.logo-subtitle {
+  font-family: var(--font-body);
+  font-size: 8px;
+  color: var(--color-ink-faded);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.nav-divider {
+  margin: 0 16px;
+  width: calc(100% - 32px);
+}
+
+/* 导航列表 */
+.nav-list {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+  overflow-y: auto;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  color: var(--color-paper-aged);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  border-left: 3px solid transparent;
+  position: relative;
+  text-decoration: none;
+}
+
+.nav-item:hover {
+  color: var(--color-paper-bright);
+  background: rgba(235,229,216,0.04);
+}
+
+.nav-item.active {
+  color: var(--color-gold-bright);
+  border-left: 3px solid var(--color-gold);
+  background: rgba(201,168,76,0.08);
+}
+
+.nav-item.active::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: var(--color-gold);
+  border-radius: var(--radius-sm);
+  opacity: 0.4;
+}
+
+.nav-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.nav-item.active .nav-icon {
+  opacity: 1;
+}
+
+.nav-label {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  flex: 1;
+}
+
+.nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  color: var(--color-paper-bright);
+  background: var(--color-vermilion);
+  border-radius: var(--radius-full);
+  font-family: var(--font-body);
+}
+
+.nav-item.active .nav-badge {
+  background: var(--color-gold-dark);
+  color: var(--color-ink-dark);
+}
+
+/* 导航底部 */
+.nav-footer {
+  padding: 0 0 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.nav-server {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 24px;
+  color: var(--color-paper-faded);
+  font-size: var(--text-xs);
+}
+
+.server-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-jade-light);
+  box-shadow: 0 0 6px rgba(122,168,137,0.5);
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+.server-icon {
+  width: 14px;
+  height: 14px;
+  opacity: 0.6;
+}
+
+.server-name {
+  font-family: var(--font-body);
+  color: var(--color-paper-aged);
+}
+
+.nav-version {
+  padding: 4px 24px;
+  font-size: var(--text-xs);
+  color: var(--color-ink-faded);
+  font-family: var(--font-mono);
+}
+
+/* === 顶部信息栏 === */
+.app-topbar {
+  background: linear-gradient(90deg, rgba(26,26,26,0.95) 0%, rgba(45,45,45,0.95) 100%);
+  border-bottom: 1px solid var(--border-color-ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  gap: 24px;
+  position: relative;
+  z-index: 10;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.topbar-avatar {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-gold-dark);
+  background: linear-gradient(135deg, var(--color-ink-medium) 0%, var(--color-ink-light) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-paper-aged);
+  overflow: hidden;
+}
+
+.avatar-circle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.avatar-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid rgba(201,168,76,0.15);
+  pointer-events: none;
+}
+
+.topbar-char-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.char-name {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  color: var(--color-paper-bright);
+  line-height: 1.2;
+}
+
+.char-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  color: var(--color-paper-faded);
+}
+
+.char-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--color-gold-bright);
+  font-weight: var(--weight-medium);
+}
+
+.char-level svg {
+  width: 10px;
+  height: 10px;
+}
+
+.char-sep {
+  color: var(--color-ink-faded);
+}
+
+.char-school {
+  color: var(--color-paper-faded);
+}
+
+/* 顶部中间体力 */
+.topbar-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.vitality-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: rgba(13,13,13,0.5);
+  border: 1px solid var(--border-color-ink);
+  border-radius: var(--radius-full);
+  max-width: 280px;
+}
+
+.vitality-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-gold);
+  flex-shrink: 0;
+}
+
+.vitality-text {
+  font-size: var(--text-xs);
+  color: var(--color-paper-faded);
+  flex-shrink: 0;
+}
+
+.vitality-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-gold-bright);
+  font-weight: var(--weight-medium);
+  flex-shrink: 0;
+}
+
+.vitality-max {
+  color: var(--color-ink-faded);
+  font-size: var(--text-xs);
+}
+
+.vitality-bar {
+  flex: 1;
+  min-width: 60px;
+}
+
+.vitality-bar .ink-progress {
+  height: 4px;
+}
+
+/* 顶部右侧 */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.currency-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.currency-icon-wrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color-ink);
+  flex-shrink: 0;
+}
+
+.currency-icon-wrap svg {
+  width: 14px;
+  height: 14px;
+}
+
+.currency-icon-wrap.copper {
+  background: rgba(168,158,138,0.12);
+  color: var(--color-paper-dark);
+  border-color: var(--color-paper-faded);
+}
+
+.currency-icon-wrap.ingot {
+  background: rgba(201,168,76,0.12);
+  color: var(--color-gold-bright);
+  border-color: var(--color-gold-dark);
+}
+
+.currency-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.currency-amount {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-paper-bright);
+  font-weight: var(--weight-medium);
+}
+
+.currency-label {
+  font-size: var(--text-xs);
+  color: var(--color-ink-faded);
+}
+
+.topbar-divider {
+  width: 1px;
+  height: 24px;
+  background: linear-gradient(180deg, transparent, var(--color-ink-faded), transparent);
+}
+
+.time-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-color-ink);
+  border-radius: var(--radius-md);
+  background: rgba(13,13,13,0.5);
+}
+
+.time-display svg {
+  width: 14px;
+  height: 14px;
+  color: var(--color-cyan-gray-light);
+}
+
+.time-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.time-period {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  color: var(--color-paper-bright);
+  font-weight: var(--weight-medium);
+}
+
+.time-quarter {
+  font-size: var(--text-xs);
+  color: var(--color-paper-faded);
+}
+
+/* === 右侧内容区 === */
+.app-content {
+  background: var(--color-ink-dark);
+  padding: 24px;
+  overflow-y: auto;
+  position: relative;
+}
+
+.content-bg-splash {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.splash-1 {
+  width: 300px;
+  height: 300px;
+  top: -100px;
+  right: 10%;
+  background: radial-gradient(circle, rgba(201,168,76,0.04) 0%, transparent 70%);
+}
+
+.splash-2 {
+  width: 200px;
+  height: 200px;
+  top: 40%;
+  left: -50px;
+  background: radial-gradient(circle, rgba(94,139,110,0.03) 0%, transparent 70%);
+}
+
+.splash-3 {
+  width: 250px;
+  height: 250px;
+  bottom: 10%;
+  right: -80px;
+  background: radial-gradient(circle, rgba(192,57,43,0.03) 0%, transparent 70%);
+}
+
+/* === 内容头部 === */
+.content-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.header-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-paper-bright);
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+
+.seal-mark {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-decorative);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-paper-bright);
+  background: var(--color-vermilion);
+  border: 2px solid var(--color-vermilion-dark);
+  border-radius: var(--radius-sm);
+  transform: rotate(-5deg);
+  box-shadow: 0 2px 8px rgba(192,57,43,0.2);
+}
+
+.page-subtitle {
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--color-paper-aged);
+  letter-spacing: 0.1em;
+}
+
+.header-decoration {
+  display: flex;
+  align-items: center;
+}
+
+.deco-stats {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 24px;
+  background: rgba(45,45,45,0.6);
+  border: 1px solid var(--border-color-ink);
+  border-radius: var(--radius-lg);
+}
+
+.deco-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.deco-stat-num {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-gold-bright);
+  line-height: 1;
+}
+
+.deco-stat-label {
+  font-size: var(--text-xs);
+  color: var(--color-paper-faded);
+}
+
+.deco-stat-sep {
+  width: 1px;
+  height: 28px;
+  background: linear-gradient(180deg, transparent, var(--color-ink-faded), transparent);
+}
+
+/* === 今日活跃度摘要 === */
+.daily-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 20px;
+  padding: 20px 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.summary-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.summary-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color-gold);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(201,168,76,0.12) 0%, transparent 100%);
+  color: var(--color-gold-bright);
+  flex-shrink: 0;
+}
+
+.summary-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.summary-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.summary-label {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  color: var(--color-paper-aged);
+  font-weight: var(--weight-medium);
+}
+
+.summary-value {
+  font-family: var(--font-mono);
+}
+
+.value-num {
+  font-size: var(--text-lg);
+  color: var(--color-gold-bright);
+  font-weight: var(--weight-bold);
+}
+
+.value-max {
+  font-size: var(--text-sm);
+  color: var(--color-ink-faded);
+}
+
+.summary-progress {
+  max-width: 320px;
+}
+
+.summary-milestones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.milestone {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--text-xs);
+  color: var(--color-ink-faded);
+  padding: 1px 8px;
+  border: 1px solid var(--border-color-ink);
+  border-radius: var(--radius-full);
+  font-family: var(--font-mono);
+}
+
+.milestone svg {
+  width: 10px;
+  height: 10px;
+}
+
+.milestone.reached {
+  color: var(--color-jade-light);
+  border-color: var(--color-jade-dark);
+  background: rgba(94,139,110,0.08);
+}
+
+.summary-stats {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-shrink: 0;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stat-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.stat-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.stat-icon.done {
+  background: rgba(94,139,110,0.12);
+  color: var(--color-jade-light);
+  border: 1px solid var(--color-jade-dark);
+}
+
+.stat-icon.ongoing {
+  background: rgba(201,168,76,0.12);
+  color: var(--color-gold-bright);
+  border: 1px solid var(--color-gold-dark);
+}
+
+.stat-icon.pending {
+  background: rgba(107,123,138,0.12);
+  color: var(--color-cyan-gray-light);
+  border: 1px solid var(--color-cyan-gray-dark);
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.stat-num {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-paper-bright);
+}
+
+.stat-label {
+  font-size: var(--text-xs);
+  color: var(--color-paper-faded);
+}
+
+/* === Tab 栏 === */
+.tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.tab-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  color: var(--color-paper-aged);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.tab-item svg {
+  width: 16px;
+  height: 16px;
+}
+
+.tab-item:hover {
+  color: var(--color-paper-bright);
+}
+
+.tab-item.active {
+  color: var(--color-gold-bright);
+  border-bottom-color: var(--color-gold);
+}
+
+.tab-spacer {
+  flex: 1;
+}
+
+.tab-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: var(--text-sm);
+  color: var(--color-paper-faded);
+  cursor: pointer;
+  border: 1px solid var(--border-color-ink);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-normal);
+}
+
+.tab-filter:hover {
+  color: var(--color-paper-bright);
+  border-color: var(--color-paper-faded);
+}
+
+.tab-filter svg {
+  width: 14px;
+  height: 14px;
+}
+
+.tab-divider-line {
+  margin: 0 0 16px;
+}
+
+/* === 活动卡片网格 === */
+.activity-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 20px;
+}
+
+/* === 活动卡片 === */
+.activity-card {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  transition: all var(--transition-normal);
+  cursor: pointer;
+}
+
+.activity-card:hover {
+  border-color: var(--border-color-gold);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.2), 0 0 0 1px rgba(201,168,76,0.1);
+  transform: translateY(-2px);
+}
+
+.activity-card[data-status="ending"] {
+  border-color: rgba(192,57,43,0.3);
+}
+
+/* 卡片插画区 */
+.card-illustration {
+  height: 100px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0 20px;
+}
+
+.card-illustration[data-illust="signin"] {
+  background: linear-gradient(135deg, rgba(201,168,76,0.12) 0%, rgba(45,45,45,0.4) 60%, rgba(26,26,26,0.6) 100%);
+}
+
+.card-illustration[data-illust="stroll"] {
+  background: linear-gradient(135deg, rgba(94,139,110,0.12) 0%, rgba(45,45,45,0.4) 60%, rgba(26,26,26,0.6) 100%);
+}
+
+.card-illustration[data-illust="chess"] {
+  background: linear-gradient(135deg, rgba(107,123,138,0.12) 0%, rgba(45,45,45,0.4) 60%, rgba(26,26,26,0.6) 100%);
+}
+
+.card-illustration[data-illust="music"] {
+  background: linear-gradient(135deg, rgba(212,175,55,0.10) 0%, rgba(45,45,45,0.4) 60%, rgba(26,26,26,0.6) 100%);
+}
+
+.card-illustration[data-illust="fishing"] {
+  background: linear-gradient(135deg, rgba(74,124,154,0.12) 0%, rgba(45,45,45,0.4) 60%, rgba(26,26,26,0.6) 100%);
+}
+
+.card-illustration[data-illust="poetry"] {
+  background: linear-gradient(135deg, rgba(192,57,43,0.12) 0%, rgba(45,45,45,0.4) 60%, rgba(26,26,26,0.6) 100%);
+}
+
+/* 插画装饰文字 */
+.illust-char {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-decorative);
+  font-size: 72px;
+  font-weight: var(--weight-black);
+  color: var(--color-paper-aged);
+  opacity: 0.1;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.illust-icon {
+  width: 32px;
+  height: 32px;
+  color: var(--color-paper-aged);
+  opacity: 0.6;
+  position: relative;
+  z-index: 1;
+}
+
+/* 卡片插画底部渐变过渡 */
+.card-illustration::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(180deg, transparent 0%, rgba(26,26,26,0.9) 100%);
+  pointer-events: none;
+}
+
+/* 卡片主体 */
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 20px 18px;
+  position: relative;
+  z-index: 1;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-gold-bright);
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+}
+
+.badge-icon {
+  width: 10px;
+  height: 10px;
+  margin-right: 2px;
+}
+
+.card-desc {
+  font-size: var(--text-sm);
+  color: var(--color-paper-aged);
+  line-height: 1.5;
+}
+
+/* 卡片进度区 */
+.card-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progress-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.progress-label {
+  font-size: var(--text-xs);
+  color: var(--color-paper-faded);
+}
+
+.progress-value {
+  font-size: var(--text-xs);
+  color: var(--color-paper-aged);
+  font-family: var(--font-mono);
+  font-weight: var(--weight-medium);
+}
+
+/* 卡片底部 */
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(74,74,74,0.4);
+}
+
+.reward-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.reward-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reward-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid;
+  flex-shrink: 0;
+  transition: all var(--transition-normal);
+}
+
+.reward-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.reward-icon[data-quality="common"] {
+  border-color: var(--quality-common);
+  background: rgba(168,158,138,0.12);
+  color: var(--quality-common);
+}
+
+.reward-icon[data-quality="uncommon"] {
+  border-color: var(--quality-uncommon);
+  background: rgba(94,139,110,0.12);
+  color: var(--quality-uncommon);
+}
+
+.reward-icon[data-quality="rare"] {
+  border-color: var(--quality-rare);
+  background: rgba(74,124,154,0.12);
+  color: var(--quality-rare);
+}
+
+.reward-icon[data-quality="epic"] {
+  border-color: var(--quality-epic);
+  background: rgba(201,168,76,0.12);
+  color: var(--quality-epic);
+}
+
+.reward-icon[data-quality="legendary"] {
+  border-color: var(--quality-legendary);
+  background: rgba(192,57,43,0.12);
+  color: var(--quality-legendary);
+}
+
+.reward-item:hover .reward-icon {
+  transform: scale(1.1);
+  box-shadow: 0 0 8px currentColor;
+}
+
+.reward-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.reward-qty {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-paper-bright);
+  font-weight: var(--weight-medium);
+}
+
+.reward-name {
+  font-size: var(--text-xs);
+  color: var(--color-paper-faded);
+}
+
+.card-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.time-remaining {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-paper-faded);
+}
+
+.time-remaining svg {
+  width: 12px;
+  height: 12px;
+}
+
+.time-value {
+  font-weight: var(--weight-medium);
+}
+
+.time-remaining.urgent {
+  color: var(--color-vermilion-light);
+}
+
+.time-remaining.urgent svg {
+  color: var(--color-vermilion-light);
+  animation: pulse-soft 1.5s ease-in-out infinite;
+}
+
+.time-remaining.unlimited {
+  color: var(--color-jade-light);
+}
+
+.card-action-btn {
+  padding: 6px 16px !important;
+  font-size: var(--text-sm) !important;
+  gap: 4px !important;
+}
+
+.card-action-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* === 底部奖励预览栏 === */
+.reward-preview-bar {
+  position: sticky;
+  bottom: 0;
+  padding: 16px 20px;
+  z-index: 5;
+  margin-top: 8px;
+}
+
+.reward-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+
+.preview-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.preview-icon {
+  width: 24px;
+  height: 24px;
+  color: var(--color-gold-bright);
+  flex-shrink: 0;
+}
+
+.preview-title-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.preview-title {
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--color-paper-bright);
+}
+
+.preview-subtitle {
+  font-size: var(--text-xs);
+  color: var(--color-paper-faded);
+}
+
+.preview-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.summary-items-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-sm);
+  color: var(--color-gold-bright);
+  font-family: var(--font-body);
+}
+
+.summary-items-count svg {
+  width: 14px;
+  height: 14px;
+}
+
+.preview-detail-btn {
+  padding: 4px 12px !important;
+  font-size: var(--text-xs) !important;
+}
+
+.preview-detail-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.preview-divider {
+  margin: 8px 0;
+}
+
+.reward-preview-scroll {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 4px 0;
+}
+
+.reward-preview-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-color-ink);
+  border-radius: var(--radius-lg);
+  background: rgba(13,13,13,0.4);
+  flex-shrink: 0;
+  transition: all var(--transition-normal);
+}
+
+.reward-preview-item:hover {
+  border-color: var(--border-color-gold);
+  background: rgba(201,168,76,0.06);
+}
+
+.preview-reward-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid;
+  flex-shrink: 0;
+}
+
+.preview-reward-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.preview-reward-icon[data-quality="common"] {
+  border-color: var(--quality-common);
+  background: rgba(168,158,138,0.12);
+  color: var(--quality-common);
+}
+
+.preview-reward-icon[data-quality="uncommon"] {
+  border-color: var(--quality-uncommon);
+  background: rgba(94,139,110,0.12);
+  color: var(--quality-uncommon);
+}
+
+.preview-reward-icon[data-quality="rare"] {
+  border-color: var(--quality-rare);
+  background: rgba(74,124,154,0.12);
+  color: var(--quality-rare);
+}
+
+.preview-reward-icon[data-quality="epic"] {
+  border-color: var(--quality-epic);
+  background: rgba(201,168,76,0.12);
+  color: var(--quality-epic);
+}
+
+.preview-reward-icon[data-quality="legendary"] {
+  border-color: var(--quality-legendary);
+  background: rgba(192,57,43,0.12);
+  color: var(--quality-legendary);
+}
+
+.preview-reward-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.preview-reward-qty {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--color-paper-bright);
+  font-weight: var(--weight-medium);
+}
+
+.preview-reward-name {
+  font-size: var(--text-xs);
+  color: var(--color-paper-faded);
+  white-space: nowrap;
+}
+
+.preview-reward-sep {
+  width: 1px;
+  height: 24px;
+  background: linear-gradient(180deg, transparent, var(--color-ink-faded), transparent);
+  flex-shrink: 0;
+}
+
+/* === 动画 === */
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* === 响应式 === */
+@media (max-width: 900px) {
+  .activity-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .daily-summary {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .summary-stats {
+    width: 100%;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .deco-stats {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-shell {
+    grid-template-columns: 60px 1fr;
+  }
+
+  .nav-logo,
+  .nav-label,
+  .nav-badge,
+  .nav-server,
+  .nav-version,
+  .nav-divider {
+    display: none;
+  }
+
+  .nav-item {
+    justify-content: center;
+    padding: 14px 8px;
+  }
+
+  .topbar-center {
+    display: none;
+  }
+
+  .currency-label {
+    display: none;
+  }
+}
+</style>
+
+<script>
+  lucide.createIcons();
+</script>
+</body>
+</html>

@@ -30,6 +30,9 @@ namespace Game.Character.Attributes
         [Tooltip("角色等级")]
         public int Level = 1;
 
+        [Tooltip("角色昵称")]
+        public string Nickname = "无名侠";
+
         [Tooltip("当前生命值")]
         public float CurrentHealth = 1000f;
 

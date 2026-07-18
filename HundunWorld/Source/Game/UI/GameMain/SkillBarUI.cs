@@ -4,6 +4,7 @@ using FlaxEngine;
 using FlaxEngine.GUI;
 using Game.Combat.Skills;
 using Game.Character.Attributes;
+using Horizon.Game.Message.Enums;
 
 namespace HundunWorld.Game.UI.GameMain
 {
@@ -74,7 +75,25 @@ namespace HundunWorld.Game.UI.GameMain
         {
             InitializeSkillBar();
             FindCharacterAttributes();
+
+            // 初始隐藏：技能栏仅在游戏世界场景可见
+            if (_skillBarPanel != null)
+                _skillBarPanel.Visible = false;
+
+            var stateManager = UIStateManager.Instance;
+            if (stateManager != null)
+            {
+                stateManager.SceneChanged += OnSceneChanged;
+                OnSceneChanged(SceneType.Start, stateManager.CurrentScene);
+            }
+
             Debug.Log("[SkillBarUI] 技能栏UI初始化完成");
+        }
+
+        private void OnSceneChanged(SceneType previousScene, SceneType newScene)
+        {
+            if (_skillBarPanel == null) return;
+            _skillBarPanel.Visible = (newScene == SceneType.GameWorld);
         }
 
         public override void OnUpdate()
@@ -84,6 +103,11 @@ namespace HundunWorld.Game.UI.GameMain
 
         public override void OnDestroy()
         {
+            var stateManager = UIStateManager.Instance;
+            if (stateManager != null)
+            {
+                stateManager.SceneChanged -= OnSceneChanged;
+            }
             CleanupSkillBar();
         }
 

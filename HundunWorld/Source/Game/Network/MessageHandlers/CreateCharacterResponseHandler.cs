@@ -47,7 +47,12 @@ namespace ManagedHundunWorld.Network.Handlers
                         
                         // 通知UI层
                          FlaxEngine.Scripting.InvokeOnUpdate(() => {
-                            // 可以在这里调用UI更新方法
+                            // 更新 UIStateManager 角色列表
+                            var stateManager = HundunWorld.Game.UI.UIStateManager.Instance;
+                            if (stateManager != null && createResponse.Character != null)
+                            {
+                                stateManager.AddCharacter(createResponse.Character);
+                            }
                             Debug.Log("[CreateCharacterResponseHandler] UI更新通知已发送");
                         });
                     }

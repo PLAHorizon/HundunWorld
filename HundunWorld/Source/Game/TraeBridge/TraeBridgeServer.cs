@@ -1,3 +1,4 @@
+#if FLAX_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -1596,3 +1597,4 @@ namespace HundunWorld.TraeBridge
         }
     }
 }
+#endif

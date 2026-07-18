@@ -1,0 +1,1694 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>捏脸 - 面部定制 | HundunWorld</title>
+    <style id="theme-vars">
+/* ============================================================
+   HundunWorld Character Creation - Game UI Brand CSS
+   Overlay on Claude Design Library tokens.
+   Primary: Teal (青黄+青兰混合)
+   Secondary: Navy translucent (藏青半透明)
+   Muted: Ink translucent (墨色半透明)
+   Prefix: --game-
+   ============================================================ */
+
+:root {
+  /* === Game Primary (Teal: 青黄+青兰混合) === */
+  --game-primary: #2A9D8F;
+  --game-primary-light: #4ECDC4;
+  --game-primary-dark: #1B7A6E;
+  --game-primary-glow: rgba(42, 157, 143, 0.3);
+  --game-primary-rgb: 42, 157, 143;
+
+  /* === Game Secondary (Navy Translucent: 藏青半透明) === */
+  --game-secondary: rgba(25, 40, 80, 0.55);
+  --game-secondary-light: rgba(35, 55, 100, 0.4);
+  --game-secondary-solid: #1C2850;
+
+  /* === Game Muted (Ink Translucent: 墨色半透明) === */
+  --game-ink: rgba(10, 12, 18, 0.65);
+  --game-ink-light: rgba(10, 12, 18, 0.4);
+  --game-ink-subtle: rgba(10, 12, 18, 0.2);
+  --game-ink-solid: #0A0C12;
+
+  /* === Game Background System (Spring Dawn, light purple touch) === */
+  --game-bg-darkest: #0F1018;
+  --game-bg-dark: #161A24;
+  --game-bg-panel: rgba(20, 22, 30, 0.78);
+  --game-bg-panel-hover: rgba(30, 32, 44, 0.88);
+  --game-bg-fog: rgba(200, 190, 180, 0.06);
+  --game-bg-overlay: rgba(0, 0, 0, 0.4);
+  --game-bg-jade-deep: #121520;
+  --game-bg-jade-mid: #1C2230;
+  --game-bg-jade-teal: #2A9D8F;
+  --game-bg-jade-navy: #222838;
+  --game-bg-jade-fog: #D0C8C0;
+  --game-bg-jade-shimmer: rgba(42, 157, 143, 0.06);
+  --game-bg-dawn-purple: #221830;
+  --game-bg-dawn-violet: #5A4878;
+  --game-bg-dawn-pink: #C8908A;
+  --game-bg-dawn-teal: #2A9D8F;
+  --game-bg-dawn-sky: #98A8B8;
+  --game-bg-dawn-horizon: #D8C0B0;
+  --game-bg-dawn-gold: #C8A870;
+  --game-bg-dawn-warm: #E0C8A8;
+  --game-bg-dawn-sunlight: #F0DDB0;
+  --game-bg-dawn-sunray: rgba(240, 221, 176, 0.15);
+  --game-bg-dawn-sunstrong: rgba(232, 208, 160, 0.25);
+
+  /* === Game Text System === */
+  --game-text-primary: #E8ECF0;
+  --game-text-secondary: #8A95A5;
+  --game-text-accent: #2A9D8F;
+  --game-text-muted: #5A6575;
+  --game-text-disabled: #3A4452;
+  --game-text-white: #ffffff;
+  --game-text-dark: #0C1018;
+
+  /* === Game Font System === */
+  --font-game-title: "STKaiti", "KaiTi", "Noto Serif SC", "SimSun", serif;
+  --font-game-body: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+
+  /* === Game Spacing (4px grid) === */
+  --game-space-1: 4px;
+  --game-space-2: 8px;
+  --game-space-3: 12px;
+  --game-space-4: 16px;
+  --game-space-5: 20px;
+  --game-space-6: 24px;
+  --game-space-8: 32px;
+  --game-space-10: 40px;
+  --game-space-12: 48px;
+  --game-space-16: 64px;
+
+  /* === Game Radius === */
+  --game-radius-sm: 4px;
+  --game-radius-md: 8px;
+  --game-radius-lg: 12px;
+  --game-radius-full: 9999px;
+
+  /* === Game Shadow System === */
+  --game-shadow-panel: 0 4px 24px rgba(12, 16, 24, 0.5), inset 0 1px 0 rgba(42, 157, 143, 0.08);
+  --game-shadow-glow: 0 0 20px rgba(42, 157, 143, 0.2);
+  --game-shadow-button: 0 2px 8px rgba(12, 16, 24, 0.4);
+  --game-shadow-dropdown: 0 8px 32px rgba(12, 16, 24, 0.6);
+
+  /* === Game Border System === */
+  --game-border-accent: 1px solid rgba(42, 157, 143, 0.2);
+  --game-border-accent-active: 1px solid rgba(42, 157, 143, 0.5);
+  --game-border-navy: 1px solid rgba(25, 40, 80, 0.4);
+  --game-border-ink: 1px solid rgba(10, 12, 18, 0.5);
+  --game-border-subtle: 1px solid rgba(42, 157, 143, 0.08);
+
+  /* === Game Transition === */
+  --game-transition-fast: 0.15s ease;
+  --game-transition-normal: 0.3s ease;
+  --game-transition-slow: 0.5s ease;
+
+  /* === Game Control Heights === */
+  --game-height-btn: 36px;
+  --game-height-btn-lg: 44px;
+  --game-height-slider: 3px;
+  --game-height-slider-thumb: 14px;
+  --game-height-tab: 48px;
+  --game-height-topbar: 56px;
+  --game-height-bottombar: 64px;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--game-primary);
+    --color-secondary: var(--game-secondary);
+  }
+  @layer base {
+    body { background: var(--game-background); color: var(--game-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+  <!-- Full-Screen Background -->
+  <div class="screen-bg" aria-hidden="true"></div>
+
+  <!-- Top Navigation Bar (56px) -->
+  <nav class="top-nav" role="navigation" aria-label="捏脸导航">
+    <div class="top-nav__tabs">
+      <div class="top-nav__tab top-nav__tab--active" data-tab="sculpt">捏脸</div>
+      <div class="top-nav__tab" data-tab="customize">面部定制</div>
+      <div class="top-nav__tab" data-tab="smart">智能捏脸</div>
+      <span class="top-nav__key-hint">E</span>
+    </div>
+    <div class="top-nav__divider"></div>
+    <div class="top-nav__style-label" id="styleLabel">
+      写实
+      <span class="top-nav__style-arrow"></span>
+    </div>
+  </nav>
+
+  <!-- Left Category Sidebar (180px, glass panel) -->
+  <aside class="sidebar" role="navigation" aria-label="面部分类">
+    <div class="sidebar__title">面部参数</div>
+    <div class="sidebar__item sidebar__item--active" data-category="face" tabindex="0">脸型</div>
+    <div class="sidebar__item" data-category="eyes" tabindex="0">眼睛</div>
+    <div class="sidebar__item" data-category="nose" tabindex="0">鼻子</div>
+    <div class="sidebar__item" data-category="mouth" tabindex="0">嘴巴</div>
+    <div class="sidebar__item" data-category="brows" tabindex="0">眉毛</div>
+    <div class="sidebar__item" data-category="ears" tabindex="0">耳朵</div>
+    <div class="sidebar__item" data-category="hair" tabindex="0">发型</div>
+    <div class="sidebar__item" data-category="skin" tabindex="0">肤色</div>
+  </aside>
+
+  <!-- Center Preview Area -->
+  <main class="preview-area" aria-label="面部预览">
+    <img class="preview-area__image" src="../assets/face-preview-male.jpg" alt="面部预览" draggable="false"
+         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+    <div class="preview-area__placeholder" style="display:none;">
+      <svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="60" cy="42" r="20"/>
+        <path d="M20 110c0-22.091 17.909-40 40-40s40 17.909 40 40"/>
+      </svg>
+      <span>面部预览</span>
+    </div>
+  </main>
+
+  <!-- Right Toolbar (56px) -->
+  <aside class="right-toolbar" role="toolbar" aria-label="工具栏">
+    <button class="right-toolbar__btn" title="万相集" aria-label="万相集">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    </button>
+    <button class="right-toolbar__btn" title="分享" aria-label="分享">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    </button>
+    <button class="right-toolbar__btn" title="服装" aria-label="服装">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46L16 2 12 5.27 8 2 3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg>
+    </button>
+    <button class="right-toolbar__btn" title="头饰" aria-label="头饰">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M12 2c3 3 3 9 0 20"/><path d="M12 2c-3 3-3 9 0 20"/><path d="M2 12h20"/></svg>
+    </button>
+    <button class="right-toolbar__btn" title="手势" aria-label="手势">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-4 0v1"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.83 0-5.35-1.74-6.36-4.38L3.07 12a2 2 0 0 1 3.86-1.06"/></svg>
+    </button>
+  </aside>
+
+  <!-- Bottom Floating Parameter Panel (glass, overlay) -->
+  <section class="param-panel" aria-label="参数调节面板">
+
+    <!-- 脸型 -->
+    <div class="param-section param-section--active" id="section-face">
+      <div class="param-panel__header">脸型</div>
+      <div class="param-grid">
+        <div class="param-row">
+          <span class="param-row__label">脸型宽度</span>
+          <div class="param-row__slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-filled" style="width:65%"></div>
+            <input type="range" min="0" max="100" value="65" data-param="faceWidth">
+          </div>
+          <span class="param-row__value">65</span>
+        </div>
+        <div class="param-row">
+          <span class="param-row__label">脸型长度</span>
+          <div class="param-row__slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-filled" style="width:72%"></div>
+            <input type="range" min="0" max="100" value="72" data-param="faceLength">
+          </div>
+          <span class="param-row__value">72</span>
+        </div>
+        <div class="param-row">
+          <span class="param-row__label">下巴角度</span>
+          <div class="param-row__slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-filled" style="width:45%"></div>
+            <input type="range" min="0" max="100" value="45" data-param="chinAngle">
+          </div>
+          <span class="param-row__value">45</span>
+        </div>
+        <div class="param-row">
+          <span class="param-row__label">颧骨高度</span>
+          <div class="param-row__slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-filled" style="width:58%"></div>
+            <input type="range" min="0" max="100" value="58" data-param="cheekHeight">
+          </div>
+          <span class="param-row__value">58</span>
+        </div>
+      </div>
+      <div class="param-grid" style="margin-top: var(--game-space-4);">
+        <div class="param-row">
+          <span class="param-row__label">脸型选择</span>
+          <div class="param-radios">
+            <div class="param-radio">
+              <input type="radio" name="faceShape" id="shape-square" value="Square">
+              <label class="param-radio__label" for="shape-square">方</label>
+            </div>
+            <div class="param-radio">
+              <input type="radio" name="faceShape" id="shape-triangle" value="Triangle">
+              <label class="param-radio__label" for="shape-triangle">三角</label>
+            </div>
+            <div class="param-radio">
+              <input type="radio" name="faceShape" id="shape-oval" value="Oval" checked>
+              <label class="param-radio__label" for="shape-oval">鹅蛋</label>
+            </div>
+            <div class="param-radio">
+              <input type="radio" name="faceShape" id="shape-heart" value="Heart">
+              <label class="param-radio__label" for="shape-heart">心</label>
+            </div>
+            <div class="param-radio">
+              <input type="radio" name="faceShape" id="shape-round" value="Round">
+              <label class="param-radio__label" for="shape-round">圆</label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 眼睛 -->
+    <div class="param-section" id="section-eyes">
+      <div class="param-panel__header">眼睛</div>
+      <div class="param-grid">
+        <div class="param-row">
+          <span class="param-row__label">眼距</span>
+          <div class="param-row__slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-filled" style="width:50%"></div>
+            <input type="range" min="0" max="100" value="50" data-param="eyeDistance">
+          </div>
+          <span class="param-row__value">50</span>
+        </div>
+        <div class="param-row">
+          <span class="param-row__label">眼角角度</span>
+          <div class="param-row__slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-filled" style="width:55%"></div>
+            <input type="range" min="0" max="100" value="55" data-param="eyeAngle">
+          </div>
+          <span class="param-row__value">55</span>
+        </div>
+        <div class="param-row">
+          <span class="param-row__label">眼睛大小</span>
+          <div class="param-row__slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-filled" style="width:60%"></div>
+            <input type="range" min="0" max="100" value="60" data-param="eyeSize">
+          </div>
+          <span class="param-row__value">60</span>
+        </div>
+        <div class="param-row">
+          <span class="param-row__label">瞳色</span>
+          <div class="param-swatches">
+            <div class="param-swatch">
+              <input type="radio" name="eyeColor" id="eye-brown" value="brown" checked>
+              <label class="param-swatch__circle" for="eye-brown" style="background:var(--game-swatch-eye-brown);"></label>
+              <span class="param-swatch__label">棕</span>
+            </div>
+            <div class="param-swatch">
+              <input type="radio" name="eyeColor" id="eye-blue" value="blue">
+              <label class="param-swatch__circle" for="eye-blue" style="background:var(--game-swatch-eye-blue);"></label>
+              <span class="param-swatch__label">蓝</span>
+            </div>
+            <div class="param-swatch">
+              <input type="radio" name="eyeColor" id="eye-black" value="black">
+              <label class="param-swatch__circle" for="eye-black" style="background:var(--game-swatch-eye-black);"></label>
+              <span class="param-swatch__label">黑</span>
+            </div>
+            <div class="param-swatch">
+              <input type="radio" name="eyeColor" id="eye-green" value="green">
+              <label class="param-swatch__circle" for="eye-green" style="background:var(--game-swatch-eye-green);"></label>
+              <span class="param-swatch__label">绿</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 鼻子 -->
+    <div class="param-section" id="section-nose">
+      <div class="param-panel__header">鼻子</div>
+      <div class="param-grid">
+        <div class="param-row">
+          <span class="param-row__label">鼻梁高度</span>
+          <div class="param-row__slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-filled" style="width:55%"></div>
+            <input type="range" min="0" max="100" value="55" data-param="noseBridge">
+          </div>
+          <span class="param-row__value">55</span>
+        </div>
+        <div class="param-row">
+          <span class="param-row__label">鼻翼宽度</span>
+          <div class="param-row__slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-filled" style="width:40%"></div>
+            <input type="range" min="0" max="100" value="40" data-param="noseWidth">
+          </div>
+          <span class="param-row__value">40</span>
+        </div>
+        <div class="param-row">
+          <span class="param-row__label">鼻尖角度</span>
+          <div class="param-row__slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-filled" style="width:50%"></div>
+            <input type="range" min="0" max="100" value="50" data-param="noseTip">
+          </div>
+          <span class="param-row__value">50</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 嘴巴 -->
+    <div class="param-section" id="section-mouth">
+      <div class="param-panel__header">嘴巴</div>
+      <div class="param-grid">
+        <div class="param-row">
+          <span class="param-row__label">嘴唇厚度</span>
+          <div class="param-row__slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-filled" style="width:45%"></div>
+            <input type="range" min="0" max="100" value="45" data-param="lipThickness">
+          </div>
+          <span class="param-row__value">45</span>
+        </div>
+        <div class="param-row">
+          <span class="param-row__label">嘴宽</span>
+          <div class="param-row__slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-filled" style="width:50%"></div>
+            <input type="range" min="0" max="100" value="50" data-param="mouthWidth">
+          </div>
+          <span class="param-row__value">50</span>
+        </div>
+        <div class="param-row">
+          <span class="param-row__label">嘴角角度</span>
+          <div class="param-row__slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-filled" style="width:55%"></div>
+            <input type="range" min="0" max="100" value="55" data-param="mouthCorner">
+          </div>
+          <span class="param-row__value">55</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 眉毛 -->
+    <div class="param-section" id="section-brows">
+      <div class="param-panel__header">眉毛</div>
+      <div class="param-grid">
+        <div class="param-row">
+          <span class="param-row__label">眉毛粗细</span>
+          <div class="param-row__slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-filled" style="width:50%"></div>
+            <input type="range" min="0" max="100" value="50" data-param="browThickness">
+          </div>
+          <span class="param-row__value">50</span>
+        </div>
+        <div class="param-row">
+          <span class="param-row__label">眉高度</span>
+          <div class="param-row__slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-filled" style="width:55%"></div>
+            <input type="range" min="0" max="100" value="55" data-param="browHeight">
+          </div>
+          <span class="param-row__value">55</span>
+        </div>
+        <div class="param-row">
+          <span class="param-row__label">眉角度</span>
+          <div class="param-row__slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-filled" style="width:45%"></div>
+            <input type="range" min="0" max="100" value="45" data-param="browAngle">
+          </div>
+          <span class="param-row__value">45</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 耳朵 -->
+    <div class="param-section" id="section-ears">
+      <div class="param-panel__header">耳朵</div>
+      <div class="param-grid">
+        <div class="param-row">
+          <span class="param-row__label">耳朵大小</span>
+          <div class="param-row__slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-filled" style="width:50%"></div>
+            <input type="range" min="0" max="100" value="50" data-param="earSize">
+          </div>
+          <span class="param-row__value">50</span>
+        </div>
+        <div class="param-row">
+          <span class="param-row__label">耳朵角度</span>
+          <div class="param-row__slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-filled" style="width:50%"></div>
+            <input type="range" min="0" max="100" value="50" data-param="earAngle">
+          </div>
+          <span class="param-row__value">50</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 发型 -->
+    <div class="param-section" id="section-hair">
+      <div class="param-panel__header">发型</div>
+      <div class="hairstyle-grid">
+        <div class="hairstyle-thumb hairstyle-thumb--selected" data-hair="0">
+          <div class="hairstyle-thumb__inner" style="background:var(--game-hair-grad-1);">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M24 4C16 4 10 10 10 18c0 4 2 6 4 8l2 2v6h16v-6l2-2c2-2 4-4 4-8 0-8-6-14-14-14z"/></svg>
+          </div>
+          <span class="hairstyle-thumb__label">束发</span>
+        </div>
+        <div class="hairstyle-thumb" data-hair="1">
+          <div class="hairstyle-thumb__inner" style="background:var(--game-hair-grad-2);">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M24 4C16 4 10 10 10 18v14c0 4 4 8 14 8s14-4 14-8V18c0-8-6-14-14-14z"/></svg>
+          </div>
+          <span class="hairstyle-thumb__label">披肩</span>
+        </div>
+        <div class="hairstyle-thumb" data-hair="2">
+          <div class="hairstyle-thumb__inner" style="background:var(--game-hair-grad-3);">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8c4-4 20-4 24 0v10c0 12-6 22-12 22S12 30 12 18V8z"/><path d="M24 4v8"/></svg>
+          </div>
+          <span class="hairstyle-thumb__label">高髻</span>
+        </div>
+        <div class="hairstyle-thumb" data-hair="3">
+          <div class="hairstyle-thumb__inner" style="background:var(--game-hair-grad-4);">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="20" r="14"/><path d="M10 20c-4 6-2 14 4 18"/></svg>
+          </div>
+          <span class="hairstyle-thumb__label">短寸</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 肤色 -->
+    <div class="param-section" id="section-skin">
+      <div class="param-panel__header">肤色</div>
+      <div class="param-grid">
+        <div class="param-row">
+          <span class="param-row__label">肤色调节</span>
+          <div class="param-row__slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-filled" style="width:50%"></div>
+            <input type="range" min="0" max="100" value="50" data-param="skinTone">
+          </div>
+          <span class="param-row__value">50</span>
+        </div>
+        <div class="param-row">
+          <span class="param-row__label">预设肤色</span>
+          <div class="param-swatches">
+            <div class="param-swatch">
+              <input type="radio" name="skinColor" id="skin-yellow" value="yellow" checked>
+              <label class="param-swatch__circle" for="skin-yellow" style="background:var(--game-swatch-skin-yellow);"></label>
+              <span class="param-swatch__label">黄</span>
+            </div>
+            <div class="param-swatch">
+              <input type="radio" name="skinColor" id="skin-white" value="white">
+              <label class="param-swatch__circle" for="skin-white" style="background:var(--game-swatch-skin-white);"></label>
+              <span class="param-swatch__label">白</span>
+            </div>
+            <div class="param-swatch">
+              <input type="radio" name="skinColor" id="skin-black" value="black">
+              <label class="param-swatch__circle" for="skin-black" style="background:var(--game-swatch-skin-black);"></label>
+              <span class="param-swatch__label">黑</span>
+            </div>
+            <div class="param-swatch">
+              <input type="radio" name="skinColor" id="skin-brown" value="brown">
+              <label class="param-swatch__circle" for="skin-brown" style="background:var(--game-swatch-skin-arabs);"></label>
+              <span class="param-swatch__label">棕</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <div id="particles"></div>
+
+  <!-- Bottom Bar (64px) -->
+  <footer class="bottom-bar">
+    <button class="bottom-bar__btn" data-dom-id="btn-back-customize">返回</button>
+    <button class="bottom-bar__btn" id="btnImport">
+      <span class="bottom-bar__key">V</span>
+      导入捏脸
+    </button>
+    <button class="bottom-bar__btn bottom-bar__btn--primary" id="btnNext" data-dom-id="btn-next-customize">
+      <span class="bottom-bar__key">Space</span>
+      下一步
+    </button>
+  </footer>
+
+  <script>
+    /* ============================================================
+       面部定制页面交互逻辑
+       ============================================================ */
+    (function () {
+      'use strict';
+
+      // === Category switching ===
+      const sidebarItems = document.querySelectorAll('.sidebar__item');
+      const paramSections = document.querySelectorAll('.param-section');
+
+      /**
+       * Map category data-key to section id
+       */
+      const categoryMap = {
+        face: 'section-face',
+        eyes: 'section-eyes',
+        nose: 'section-nose',
+        mouth: 'section-mouth',
+        brows: 'section-brows',
+        ears: 'section-ears',
+        hair: 'section-hair',
+        skin: 'section-skin'
+      };
+
+      function switchCategory(category) {
+        // Update sidebar active state
+        sidebarItems.forEach(function (item) {
+          item.classList.toggle('sidebar__item--active', item.dataset.category === category);
+        });
+
+        // Show/hide parameter sections
+        paramSections.forEach(function (section) {
+          section.classList.toggle('param-section--active', section.id === categoryMap[category]);
+        });
+      }
+
+      sidebarItems.forEach(function (item) {
+        item.addEventListener('click', function () {
+          switchCategory(item.dataset.category);
+        });
+        item.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            switchCategory(item.dataset.category);
+          }
+        });
+      });
+
+      // === Slider interactions ===
+      const sliders = document.querySelectorAll('input[type="range"]');
+
+      sliders.forEach(function (slider) {
+        updateSliderVisual(slider);
+
+        slider.addEventListener('input', function () {
+          updateSliderVisual(slider);
+        });
+      });
+
+      /**
+       * Update slider filled track and value display
+       */
+      function updateSliderVisual(slider) {
+        var pct = slider.value + '%';
+        var filled = slider.parentElement.querySelector('.slider-filled');
+        if (filled) {
+          filled.style.width = pct;
+        }
+        var valueEl = slider.closest('.param-row').querySelector('.param-row__value');
+        if (valueEl) {
+          valueEl.textContent = slider.value;
+        }
+      }
+
+      // === Hairstyle thumbnail selection ===
+      const hairThumbs = document.querySelectorAll('.hairstyle-thumb');
+
+      hairThumbs.forEach(function (thumb) {
+        thumb.addEventListener('click', function () {
+          hairThumbs.forEach(function (t) { t.classList.remove('hairstyle-thumb--selected'); });
+          thumb.classList.add('hairstyle-thumb--selected');
+        });
+      });
+
+      // === Keyboard shortcuts ===
+      document.addEventListener('keydown', function (e) {
+        // Ignore if user is interacting with an input
+        if (e.target.tagName === 'INPUT' && e.target.type !== 'radio') return;
+
+        switch (e.key.toLowerCase()) {
+          case ' ':
+            e.preventDefault();
+            document.getElementById('btnNext').click();
+            break;
+          case 'v':
+            document.getElementById('btnImport').click();
+            break;
+          case 'z':
+            toggleStyle();
+            break;
+          case 'c':
+            toggleStyle();
+            break;
+        }
+      });
+
+      // === Style toggle (Z/C) ===
+      var currentStyle = '写实';
+      var styles = ['写实', '卡通', '水墨', '韩系'];
+
+      function toggleStyle() {
+        var idx = styles.indexOf(currentStyle);
+        idx = (idx + 1) % styles.length;
+        currentStyle = styles[idx];
+        document.getElementById('styleLabel').childNodes[0].textContent = currentStyle + '\n';
+      }
+
+      // === Bottom bar button handlers ===
+      document.querySelector('[data-dom-id="btn-back-customize"]').addEventListener('click', function () {
+        console.log('[HundunWorld] 返回上一页');
+      });
+
+      document.getElementById('btnImport').addEventListener('click', function () {
+        console.log('[HundunWorld] 导入捏脸数据');
+      });
+
+      document.getElementById('btnNext').addEventListener('click', function () {
+        // Collect current parameters
+        var params = collectParams();
+        console.log('[HundunWorld] 下一步，当前参数:', params);
+      });
+
+      /**
+       * Collect all current parameter values
+       */
+      function collectParams() {
+        var result = {};
+
+        // Sliders
+        sliders.forEach(function (slider) {
+          if (slider.dataset.param) {
+            result[slider.dataset.param] = parseInt(slider.value, 10);
+          }
+        });
+
+        // Face shape radio
+        var faceShapeRadio = document.querySelector('input[name="faceShape"]:checked');
+        if (faceShapeRadio) {
+          result.faceShape = faceShapeRadio.value;
+        }
+
+        // Eye color radio
+        var eyeColorRadio = document.querySelector('input[name="eyeColor"]:checked');
+        if (eyeColorRadio) {
+          result.eyeColor = eyeColorRadio.value;
+        }
+
+        // Skin color radio
+        var skinColorRadio = document.querySelector('input[name="skinColor"]:checked');
+        if (skinColorRadio) {
+          result.skinColor = skinColorRadio.value;
+        }
+
+        // Hair style
+        var selectedHair = document.querySelector('.hairstyle-thumb--selected');
+        if (selectedHair) {
+          result.hairStyle = parseInt(selectedHair.dataset.hair, 10);
+        }
+
+        return result;
+      }
+
+      // === Log page load ===
+      console.log('[HundunWorld] 面部定制页面已加载');
+    })();
+
+    // --- Floating particles ---
+    (function() {
+      function createParticles() {
+        var container = document.getElementById('particles');
+        if (!container) return;
+        var count = 40;
+        var colors = ['', '--gold', '--warm', '--pink', '--teal', '', '--gold', '--warm', '--pink', '--violet', '--lavender', '--gold', '--warm'];
+        for (var i = 0; i < count; i++) {
+          var p = document.createElement('div');
+          p.className = 'game-particle game-particle' + colors[i % colors.length];
+          p.style.left = (5 + Math.random() * 90) + '%';
+          p.style.bottom = (5 + Math.random() * 40) + '%';
+          p.style.animationDuration = (5 + Math.random() * 10) + 's';
+          p.style.animationDelay = (Math.random() * 12) + 's';
+          p.style.width = (1 + Math.random() * 3) + 'px';
+          p.style.height = p.style.width;
+          container.appendChild(p);
+        }
+      }
+      createParticles();
+    })();
+  </script>
+
+  <style>
+    /* === Universal box-sizing & overflow control === */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    html, body {
+      overflow-x: hidden;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    /* ============================================================
+       Reset & Base
+       ============================================================ */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100dvw;
+      height: 100dvh;
+      overflow: hidden;
+      font-family: var(--font-game-body);
+      color: var(--game-text-primary);
+      background: var(--game-bg-darkest);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ============================================================
+       Full-Screen Background
+       ============================================================ */
+    .screen-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background:
+        url('../assets/wuxia-bg-atmosphere.jpg') center/cover no-repeat;
+      background-color: var(--game-bg-darkest);
+    }
+
+    /* Smooth overlay gradient for screen-bg */
+    .screen-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        160deg,
+        rgba(var(--game-bg-overlay-rgb), 0.5) 0%,
+        rgba(var(--game-bg-overlay-rgb), 0.3) 40%,
+        rgba(var(--game-bg-overlay-rgb), 0.15) 100%
+      );
+    }
+
+    /* ============================================================
+       Top Navigation Bar (56px)
+       ============================================================ */
+    .top-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--game-height-topbar);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--game-space-2);
+      background: var(--game-bg-panel);
+      border-bottom: var(--game-border-subtle);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .top-nav__tabs {
+      display: flex;
+      align-items: center;
+      gap: var(--game-space-6);
+    }
+
+    .top-nav__tab {
+      position: relative;
+      font-size: 14px;
+      color: var(--game-text-secondary);
+      cursor: pointer;
+      padding: 0 var(--game-space-2);
+      height: var(--game-height-topbar);
+      display: flex;
+      align-items: center;
+      transition: color var(--game-transition-fast);
+      user-select: none;
+    }
+
+    .top-nav__tab:hover {
+      color: var(--game-text-primary);
+    }
+
+    .top-nav__tab--active {
+      color: var(--game-primary);
+      font-weight: 500;
+    }
+
+    .top-nav__tab--active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: var(--game-space-2);
+      right: var(--game-space-2);
+      height: 2px;
+      background: var(--game-primary);
+      border-radius: 1px 1px 0 0;
+    }
+
+    .top-nav__key-hint {
+      font-size: 11px;
+      color: var(--game-text-disabled);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--game-radius-sm);
+      padding: 2px 6px;
+      margin-left: var(--game-space-1);
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+
+    .top-nav__divider {
+      width: 1px;
+      height: 24px;
+      background: var(--game-border-subtle);
+      margin: 0 var(--game-space-4);
+    }
+
+    .top-nav__style-label {
+      display: flex;
+      align-items: center;
+      gap: var(--game-space-2);
+      font-size: 13px;
+      color: var(--game-text-primary);
+      cursor: pointer;
+      padding: 6px 12px;
+      border: var(--game-border-accent);
+      border-radius: var(--game-radius-md);
+      background: rgba(var(--game-primary-rgb), 0.06);
+      transition: background var(--game-transition-fast);
+    }
+
+    .top-nav__style-label:hover {
+      background: rgba(var(--game-primary-rgb), 0.12);
+    }
+
+    .top-nav__style-arrow {
+      display: inline-block;
+      width: 0;
+      height: 0;
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid var(--game-text-secondary);
+    }
+
+    /* ============================================================
+       Left Category Sidebar (180px, glass panel)
+       ============================================================ */
+    .sidebar {
+      position: fixed;
+      top: var(--game-height-topbar);
+      left: 0;
+      bottom: var(--game-height-bottombar);
+      width: 180px;
+      z-index: 90;
+      background: var(--game-bg-panel);
+      border-right: var(--game-border-subtle);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: var(--game-space-4) 0;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--game-shadow-panel);
+    }
+
+    .sidebar__title {
+      font-size: 12px;
+      color: var(--game-text-disabled);
+      padding: 0 var(--game-space-4);
+      margin-bottom: var(--game-space-2);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .sidebar__item {
+      height: 36px;
+      display: flex;
+      align-items: center;
+      padding: 0 var(--game-space-4);
+      padding-left: calc(var(--game-space-4) - 3px);
+      font-size: 13px;
+      color: var(--game-text-secondary);
+      cursor: pointer;
+      transition: all var(--game-transition-fast);
+      border-left: 3px solid transparent;
+      user-select: none;
+    }
+
+    .sidebar__item:hover {
+      color: var(--game-text-primary);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .sidebar__item--active {
+      color: var(--game-primary);
+      background: rgba(var(--game-primary-rgb), 0.1);
+      border-left-color: var(--game-primary);
+    }
+
+    /* ============================================================
+       Center Preview Area
+       ============================================================ */
+    .preview-area {
+      position: fixed;
+      top: var(--game-height-topbar);
+      left: 180px;
+      right: 56px;
+      bottom: var(--game-height-bottombar);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .preview-area__image {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      filter: brightness(0.9) contrast(1.05);
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .preview-area__placeholder {
+      flex-direction: column;
+      gap: var(--game-space-4);
+      color: var(--game-text-disabled);
+    }
+
+    .preview-area__placeholder svg {
+      width: 120px;
+      height: 120px;
+      color: rgba(var(--game-primary-rgb), 0.15);
+    }
+
+    .preview-area__placeholder span {
+      font-size: 14px;
+    }
+
+    /* ============================================================
+       Right Toolbar (56px)
+       ============================================================ */
+    .right-toolbar {
+      position: fixed;
+      top: var(--game-height-topbar);
+      right: 0;
+      bottom: var(--game-height-bottombar);
+      width: 56px;
+      z-index: 90;
+      background: var(--game-bg-panel);
+      border-left: var(--game-border-subtle);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: var(--game-space-4) 0;
+      gap: var(--game-space-3);
+      box-shadow: var(--game-shadow-panel);
+    }
+
+    .right-toolbar__btn {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--game-radius-md);
+      cursor: pointer;
+      transition: all var(--game-transition-fast);
+      background: transparent;
+      border: none;
+      color: var(--game-text-secondary);
+    }
+
+    .right-toolbar__btn:hover {
+      background: var(--game-bg-panel-hover);
+      color: var(--game-primary);
+    }
+
+    .right-toolbar__btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* ============================================================
+       Bottom Floating Parameter Panel (glass, overlay)
+       ============================================================ */
+    .param-panel {
+      position: fixed;
+      bottom: var(--game-height-bottombar);
+      left: 180px;
+      right: 56px;
+      z-index: 80;
+      background: rgba(var(--game-bg-overlay-rgb), 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: var(--game-border-accent);
+      padding: var(--game-space-5) var(--game-space-8);
+      max-height: 320px;
+      overflow-y: auto;
+      box-shadow: 0 -4px 24px rgba(var(--game-bg-overlay-rgb), 0.4);
+    }
+
+    /* Parameter panel scrollbar */
+    .param-panel::-webkit-scrollbar {
+      width: 4px;
+    }
+    .param-panel::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .param-panel::-webkit-scrollbar-thumb {
+      background: rgba(var(--game-primary-rgb), 0.2);
+      border-radius: 2px;
+    }
+
+    .param-panel__header {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--game-primary);
+      margin-bottom: var(--game-space-4);
+      display: flex;
+      align-items: center;
+      gap: var(--game-space-3);
+    }
+
+    .param-panel__header::before {
+      content: '';
+      display: inline-block;
+      width: 3px;
+      height: 14px;
+      background: var(--game-primary);
+      border-radius: 2px;
+    }
+
+    /* ============================================================
+       Slider Grid
+       ============================================================ */
+    .param-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--game-space-4) var(--game-space-8);
+    }
+
+    .param-row {
+      display: flex;
+      align-items: center;
+      gap: var(--game-space-4);
+      height: 32px;
+    }
+
+    .param-row__label {
+      width: 120px;
+      flex-shrink: 0;
+      font-size: 13px;
+      color: var(--game-text-primary);
+      white-space: nowrap;
+    }
+
+    .param-row__slider-wrap {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .param-row__value {
+      width: 40px;
+      flex-shrink: 0;
+      text-align: right;
+      font-size: 12px;
+      color: var(--game-text-secondary);
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    }
+
+    /* ============================================================
+       Custom Range Slider
+       track 3px, filled terracotta, thumb 14px circle
+       ============================================================ */
+    .slider-track-bg {
+      position: absolute;
+      inset: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      height: var(--game-height-slider);
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 2px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .slider-filled {
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      height: var(--game-height-slider);
+      background: var(--game-primary);
+      border-radius: 2px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: var(--game-height-slider);
+      background: transparent;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+      position: relative;
+      z-index: 2;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: var(--game-height-slider-thumb);
+      height: var(--game-height-slider-thumb);
+      background: var(--game-bg-dark);
+      border: 2px solid var(--game-primary);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: box-shadow var(--game-transition-fast);
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      box-shadow: var(--game-shadow-glow);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: var(--game-height-slider-thumb);
+      height: var(--game-height-slider-thumb);
+      background: var(--game-bg-dark);
+      border: 2px solid var(--game-primary);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: box-shadow var(--game-transition-fast);
+    }
+
+    input[type="range"]::-moz-range-thumb:hover {
+      box-shadow: var(--game-shadow-glow);
+    }
+
+    input[type="range"]::-moz-range-track {
+      height: var(--game-height-slider);
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 2px;
+      border: none;
+    }
+
+    input[type="range"]:focus-visible::-webkit-slider-thumb {
+      box-shadow: var(--game-shadow-glow);
+    }
+
+    /* ============================================================
+       Radio buttons for face shape
+       ============================================================ */
+    .param-radios {
+      display: flex;
+      gap: var(--game-space-3);
+      flex: 1;
+    }
+
+    .param-radio {
+      position: relative;
+    }
+
+    .param-radio input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .param-radio__label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 32px;
+      font-size: 12px;
+      color: var(--game-text-secondary);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--game-radius-md);
+      cursor: pointer;
+      transition: all var(--game-transition-fast);
+      user-select: none;
+    }
+
+    .param-radio input[type="radio"]:checked + .param-radio__label {
+      color: var(--game-primary);
+      border-color: var(--game-primary);
+      background: rgba(var(--game-primary-rgb), 0.12);
+    }
+
+    .param-radio input[type="radio"]:focus-visible + .param-radio__label {
+      box-shadow: 0 0 0 2px rgba(var(--game-primary-rgb), 0.3);
+    }
+
+    .param-radio__label:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--game-text-primary);
+    }
+
+    /* ============================================================
+       Color Swatches
+       ============================================================ */
+    .param-swatches {
+      display: flex;
+      gap: var(--game-space-3);
+      flex: 1;
+      align-items: center;
+    }
+
+    .param-swatch {
+      position: relative;
+    }
+
+    .param-swatch input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .param-swatch__circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      transition: all var(--game-transition-fast);
+    }
+
+    .param-swatch input[type="radio"]:checked + .param-swatch__circle {
+      border-color: var(--game-primary);
+      box-shadow: 0 0 0 2px rgba(var(--game-primary-rgb), 0.3);
+    }
+
+    .param-swatch__circle:hover {
+      transform: scale(1.1);
+    }
+
+    .param-swatch__label {
+      position: absolute;
+      bottom: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: var(--game-text-disabled);
+      white-space: nowrap;
+    }
+
+    /* ============================================================
+       Hairstyle Thumbnails
+       ============================================================ */
+    .hairstyle-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--game-space-4);
+    }
+
+    .hairstyle-thumb {
+      cursor: pointer;
+      transition: all var(--game-transition-fast);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--game-space-2);
+    }
+
+    .hairstyle-thumb__inner {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      border: 2px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--game-radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--game-transition-fast);
+    }
+
+    .hairstyle-thumb__inner svg {
+      width: 36px;
+      height: 36px;
+      color: var(--game-text-muted);
+      opacity: 0.6;
+    }
+
+    .hairstyle-thumb:hover .hairstyle-thumb__inner {
+      border-color: rgba(var(--game-primary-rgb), 0.3);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .hairstyle-thumb--selected .hairstyle-thumb__inner {
+      border-color: var(--game-primary);
+      box-shadow: var(--game-shadow-glow);
+    }
+
+    .hairstyle-thumb__label {
+      font-size: 12px;
+      color: var(--game-text-disabled);
+      transition: color var(--game-transition-fast);
+    }
+
+    .hairstyle-thumb--selected .hairstyle-thumb__label {
+      color: var(--game-primary);
+    }
+
+    /* ============================================================
+       Bottom Bar (64px)
+       ============================================================ */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--game-height-bottombar);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--game-space-8);
+      background: var(--game-bg-panel);
+      border-top: var(--game-border-subtle);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .bottom-bar__btn {
+      display: flex;
+      align-items: center;
+      gap: var(--game-space-2);
+      font-size: 14px;
+      color: var(--game-text-secondary);
+      cursor: pointer;
+      padding: var(--game-space-2) var(--game-space-4);
+      border-radius: var(--game-radius-md);
+      transition: all var(--game-transition-fast);
+      user-select: none;
+      background: none;
+      border: none;
+      font-family: inherit;
+    }
+
+    .bottom-bar__btn:hover {
+      color: var(--game-text-primary);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .bottom-bar__key {
+      font-size: 12px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      color: var(--game-text-disabled);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--game-radius-sm);
+      padding: 2px 8px;
+    }
+
+    .bottom-bar__btn--primary {
+      color: var(--game-primary);
+      border: 1px solid rgba(var(--game-primary-rgb), 0.3);
+      background: rgba(var(--game-primary-rgb), 0.08);
+    }
+
+    .bottom-bar__btn--primary:hover {
+      background: rgba(var(--game-primary-rgb), 0.16);
+      color: var(--game-primary-light);
+    }
+
+    /* ============================================================
+       Param section visibility
+       ============================================================ */
+    .param-section {
+      display: none;
+    }
+
+    .param-section--active {
+      display: block;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    /* === Floating particles === */
+    .game-particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: var(--game-primary);
+      border-radius: var(--game-radius-full);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 1;
+      animation: particleFloat linear infinite;
+    }
+    .game-particle--violet { background: var(--game-bg-dawn-violet); }
+    .game-particle--pink { background: var(--game-bg-dawn-pink); }
+    .game-particle--teal { background: var(--game-bg-dawn-teal); }
+    .game-particle--lavender { background: var(--game-bg-dawn-horizon); }
+
+    @keyframes particleFloat {
+      0% { opacity: 0; transform: translateY(0) scale(1); }
+      15% { opacity: 0.7; }
+      85% { opacity: 0.4; }
+      100% { opacity: 0; transform: translateY(-80px) scale(0.5); }
+    }
+
+    /* === Sunlight direction overlay (upper-right) === */
+    .sunlight-overlay {
+      position: fixed;
+      top: -20%;
+      right: -15%;
+      width: 70%;
+      height: 70%;
+      background: radial-gradient(ellipse at top right, var(--game-bg-dawn-sunstrong) 0%, var(--game-bg-dawn-sunray) 30%, transparent 70%);
+      pointer-events: none;
+      z-index: 2;
+      mix-blend-mode: screen;
+    }
+
+    /* ============================================================
+       Animations
+       ============================================================ */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ============================================================
+       Responsive Media Queries
+       ============================================================ */
+
+    /* --- Tablet (768px - 1199px) --- */
+    @media (max-width: 1199px) {
+      .sidebar {
+        width: 150px;
+      }
+
+      .preview-area {
+        left: 150px;
+      }
+
+      .param-panel {
+        left: 150px;
+      }
+
+      .right-toolbar {
+        width: 48px;
+      }
+
+      .right-toolbar__btn {
+        width: 36px;
+        height: 36px;
+      }
+
+      .right-toolbar__btn svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .preview-area {
+        right: 48px;
+      }
+
+      .param-panel {
+        right: 48px;
+        padding: var(--game-space-4) var(--game-space-6);
+      }
+
+      .param-grid {
+        gap: var(--game-space-3) var(--game-space-6);
+      }
+    }
+
+    /* --- Mobile (<768px) --- */
+    @media (max-width: 767px) {
+      /* Top nav: reduce height */
+      .top-nav {
+        height: 48px;
+      }
+
+      .top-nav__tab {
+        height: 48px;
+        font-size: 12px;
+      }
+
+      .top-nav__style-label {
+        font-size: 12px;
+        padding: 4px 8px;
+      }
+
+      /* Sidebar: horizontal scrollable category bar */
+      .sidebar {
+        position: fixed;
+        top: 48px;
+        left: 0;
+        right: 0;
+        bottom: auto;
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
+        border-right: none;
+        border-bottom: var(--game-border-subtle);
+        padding: var(--game-space-2) var(--game-space-3);
+        gap: var(--game-space-2);
+        z-index: 91;
+      }
+
+      .sidebar::-webkit-scrollbar {
+        display: none;
+      }
+      .sidebar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      .sidebar__title {
+        display: none;
+      }
+
+      .sidebar__item {
+        height: auto;
+        padding: var(--game-space-1) var(--game-space-3);
+        padding-left: var(--game-space-3);
+        border-left: none;
+        border-bottom: 2px solid transparent;
+        white-space: nowrap;
+        font-size: 12px;
+        border-radius: var(--game-radius-sm);
+      }
+
+      .sidebar__item--active {
+        border-left-color: transparent;
+        border-bottom-color: var(--game-primary);
+        background: rgba(var(--game-primary-rgb), 0.1);
+      }
+
+      /* Right toolbar: hidden */
+      .right-toolbar {
+        display: none;
+      }
+
+      /* Preview: fill remaining space between category bar and parameter panel */
+      .preview-area {
+        top: calc(48px + 40px); /* top-nav(48) + sidebar-bar(~40) */
+        left: 0;
+        right: 0;
+        bottom: var(--game-height-bottombar);
+      }
+
+      /* Parameter panel: full width, limited height, scrollable */
+      .param-panel {
+        left: 0;
+        right: 0;
+        max-height: 35vh;
+        padding: var(--game-space-3) var(--game-space-4);
+      }
+
+      /* Param grid: single column */
+      .param-grid {
+        grid-template-columns: 1fr;
+        gap: var(--game-space-2) var(--game-space-4);
+      }
+
+      /* Truncate long slider labels */
+      .param-row__label {
+        width: 80px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* Bottom bar: simplify */
+      .bottom-bar__key {
+        display: none;
+      }
+
+      .bottom-bar {
+        height: 52px;
+        gap: var(--game-space-4);
+      }
+
+      .bottom-bar__btn {
+        font-size: 13px;
+        padding: var(--game-space-2) var(--game-space-3);
+      }
+
+      /* Hairstyle grid: 2 columns */
+      .hairstyle-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* === Responsive: Small phone / narrow window (< 480px) === */
+    @media (max-width: 479px) {
+      .bottom-bar {
+        padding: 0 8px;
+        gap: 8px;
+      }
+      .bottom-bar__btn--primary {
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+      .bottom-bar__btn {
+        font-size: 11px;
+        padding: 4px 8px;
+      }
+    }
+  </style>
+</body>
+</html>

@@ -1,0 +1,40 @@
+{
+  "data": [
+    {
+      "id": "page-login",
+      "title": "登录",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1783659266000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/login.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "image-001",
+      "title": "水墨山水云雾背景",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1783659266000,
+      "canvasData": {
+        "x": 0,
+        "y": 602
+      },
+      "devMetadata": {
+        "imageSrc": "assets/login-bg.jpg"
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "mobile",
+    "projectName": "混沌世界登录界面",
+    "designLibrary": null
+  }
+}

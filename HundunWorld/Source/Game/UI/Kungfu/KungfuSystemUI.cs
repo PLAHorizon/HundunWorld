@@ -57,7 +57,23 @@ namespace HundunWorld.Game.UI.Kungfu
         
         public KungfuSystemUI()
         {
-            CreateCanvas();
+            // 不自动创建Canvas，延迟到 Show() 调用时才创建
+            // 避免在RootScene加载时创建全屏黑色Canvas遮挡3D场景
+        }
+        
+        /// <summary>
+        /// 显示功法系统UI面板（按需创建）
+        /// </summary>
+        public void Show()
+        {
+            if (_canvas == null)
+            {
+                CreateCanvas();
+            }
+            else
+            {
+                _canvas.GUI.Visible = true;
+            }
         }
         
         private void CreateCanvas()
@@ -627,8 +643,22 @@ namespace HundunWorld.Game.UI.Kungfu
         
         public void Close()
         {
-            UICanvas.Destroy(_canvas);
-            Actor.Destroy(_canvas.Parent);
+            if (_canvas?.GUI != null)
+                _canvas.GUI.Visible = false;
+        }
+        
+        /// <summary>
+        /// 销毁功法系统UI（完全清理）
+        /// </summary>
+        public void Destroy()
+        {
+            if (_canvas != null)
+            {
+                UICanvas.Destroy(_canvas);
+                if (_canvas.Parent != null)
+                    Actor.Destroy(_canvas.Parent);
+                _canvas = null;
+            }
             Dispose();
         }
     }

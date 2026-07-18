@@ -1,0 +1,1812 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>属性面板V2 - 角色属性</title>
+    <style id="theme-vars">
+/* === 燕云十六声 UI 体系 - 水墨设计系统 === */
+/* Brand CSS for Ink Wash (水墨) Game UI Aesthetic */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+:root {
+  /* === 墨色系 - 主色调 === */
+  --color-ink-darkest: #0d0d0d;
+  --color-ink-dark: #1a1a1a;
+  --color-ink-medium: #2d2d2d;
+  --color-ink-light: #3d3d3d;
+  --color-ink-wash: #4a4a4a;
+  --color-ink-faded: #6a6a6a;
+
+  /* === 纸色系 - 面板/文字 === */
+  --color-paper-bright: #f5f0e8;
+  --color-paper: #ebe5d8;
+  --color-paper-aged: #d4c9b8;
+  --color-paper-faded: #c8bba8;
+  --color-paper-dark: #a89e8a;
+
+  /* === 朱红系 - 强调色 === */
+  --color-vermilion: #c0392b;
+  --color-vermilion-dark: #a93226;
+  --color-vermilion-light: #d9504a;
+  --color-vermilion-faded: #8b2a20;
+
+  /* === 金色系 - 品牌色/品质 === */
+  --color-gold: #c9a84c;
+  --color-gold-bright: #d4af37;
+  --color-gold-dark: #a08838;
+  --color-gold-faded: #8a7430;
+
+  /* === 玉色系 - 状态色 === */
+  --color-jade: #5e8b6e;
+  --color-jade-dark: #4a7c59;
+  --color-jade-light: #7aa889;
+
+  /* === 青灰系 - 次级信息 === */
+  --color-cyan-gray: #6b7b8a;
+  --color-cyan-gray-dark: #5a6a78;
+  --color-cyan-gray-light: #8a9ba8;
+
+  /* === Tailwind 语义令牌映射 === */
+  --color-background: var(--color-ink-dark);
+  --color-foreground: var(--color-paper-bright);
+  --color-card: var(--color-ink-medium);
+  --color-card-foreground: var(--color-paper-bright);
+  --color-popover: var(--color-ink-dark);
+  --color-popover-foreground: var(--color-paper-bright);
+  --color-primary: var(--color-vermilion);
+  --color-primary-foreground: var(--color-paper-bright);
+  --color-secondary: var(--color-ink-light);
+  --color-secondary-foreground: var(--color-paper-bright);
+  --color-muted: var(--color-ink-light);
+  --color-muted-foreground: var(--color-paper-aged);
+  --color-accent: var(--color-gold);
+  --color-accent-foreground: var(--color-ink-dark);
+  --color-destructive: var(--color-vermilion);
+  --color-destructive-foreground: var(--color-paper-bright);
+  --color-border: var(--color-ink-wash);
+  --color-input: var(--color-ink-medium);
+  --color-ring: var(--color-gold);
+
+  /* === Tailwind 圆角令牌映射 === */
+  --color-radius-small: var(--radius-sm);
+  --color-radius-medium: var(--radius-md);
+  --color-radius-large: var(--radius-lg);
+  --color-radius-xlarge: var(--radius-xl);
+
+  /* === 语义状态色 === */
+  --state-success: var(--color-jade);
+  --state-warning: var(--color-gold);
+  --state-error: var(--color-vermilion);
+  --state-info: var(--color-cyan-gray);
+
+  /* === 品质色 === */
+  --quality-common: #a89e8a;
+  --quality-uncommon: #5e8b6e;
+  --quality-rare: #4a7c9a;
+  --quality-epic: #c9a84c;
+  --quality-legendary: #c0392b;
+
+  /* === 字体系统 === */
+  --font-display: "Noto Serif SC", "STKaiti", "KaiTi", "楷体", serif;
+  --font-body: "Noto Sans SC", "Noto Sans", "Microsoft YaHei", "微软雅黑", sans-serif;
+  --font-decorative: "STKaiti", "KaiTi", "楷体", "Noto Serif SC", serif;
+  --font-mono: "Courier New", "Consolas", monospace;
+
+  /* === 字号系统 === */
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+  --text-3xl: 36px;
+  --text-4xl: 48px;
+  --text-5xl: 64px;
+  --text-6xl: 84px;
+
+  /* === 字重系统 === */
+  --weight-light: 300;
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-bold: 700;
+  --weight-black: 900;
+
+  /* === 行高系统 === */
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+  --leading-loose: 2.0;
+
+  /* === 圆角系统 === */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* === 间距系统 === */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+
+  /* === 边框系统 === */
+  --border-width-thin: 1px;
+  --border-width-medium: 2px;
+  --border-width-thick: 3px;
+  --border-color-ink: rgba(26, 26, 26, 0.6);
+  --border-color-paper: rgba(235, 229, 216, 0.2);
+  --border-color-gold: rgba(201, 168, 76, 0.4);
+
+  /* === 阴影系统（静态阴影 alpha<=0.05，浮层阴影单独定义）=== */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.05);
+  /* === 浮层阴影（仅 modal/popover/drawer 使用）=== */
+  --shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.15);
+  --shadow-overlay: 0 0 20px rgba(13, 13, 13, 0.4);
+
+  /* === 透明度系统 === */
+  --opacity-ink-overlay: 0.85;
+  --opacity-paper-translucent: 0.92;
+  --opacity-hover: 0.85;
+  --opacity-disabled: 0.4;
+
+  /* === 过渡动画 === */
+  --transition-fast: 150ms ease-out;
+  --transition-normal: 250ms ease-out;
+  --transition-slow: 400ms ease-out;
+  --transition-ink: 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* === 基础重置 === */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--color-paper-bright);
+  background-color: var(--color-ink-dark);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* === 水墨面板组件 === */
+.ink-panel {
+  background: linear-gradient(135deg, rgba(45, 45, 45, 0.95) 0%, rgba(26, 26, 26, 0.95) 100%);
+  border: 1px solid var(--border-color-ink);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.ink-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.18 0 0 0 0 0.18 0 0 0 0 0.18 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* === 侧滑面板 === */
+.side-slide-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 420px;
+  height: 100vh;
+  background: linear-gradient(180deg, rgba(26, 26, 26, 0.98) 0%, rgba(13, 13, 13, 0.98) 100%);
+  border-left: 1px solid var(--border-color-gold);
+  padding: var(--spacing-xl);
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform var(--transition-ink);
+  z-index: 300;
+}
+
+.side-slide-panel.active {
+  transform: translateX(0);
+}
+
+/* === 中式按钮 === */
+.ink-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  border: 1px solid var(--border-color-gold);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.ink-button-primary {
+  background: linear-gradient(135deg, var(--color-vermilion) 0%, var(--color-vermilion-dark) 100%);
+  color: var(--color-paper-bright);
+  border-color: var(--color-vermilion-dark);
+}
+
+.ink-button-primary:hover {
+  background: linear-gradient(135deg, var(--color-vermilion-light) 0%, var(--color-vermilion) 100%);
+  box-shadow: 0 0 12px rgba(192, 57, 43, 0.3);
+}
+
+.ink-button-secondary {
+  background: transparent;
+  color: var(--color-paper-bright);
+  border-color: var(--border-color-ink);
+}
+
+.ink-button-secondary:hover {
+  background: rgba(235, 229, 216, 0.08);
+  border-color: var(--color-paper-faded);
+}
+
+.ink-button-gold {
+  background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-gold-dark) 100%);
+  color: var(--color-ink-dark);
+  border-color: var(--color-gold-dark);
+}
+
+.ink-button-gold:hover {
+  background: linear-gradient(135deg, var(--color-gold-bright) 0%, var(--color-gold) 100%);
+  box-shadow: 0 0 12px rgba(201, 168, 76, 0.3);
+}
+
+/* === 竖排标题 === */
+.vertical-title {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-family: var(--font-decorative);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.2em;
+  line-height: var(--leading-loose);
+}
+
+/* === 墨色进度条 === */
+.ink-progress {
+  width: 100%;
+  height: 6px;
+  background: rgba(13, 13, 13, 0.8);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  position: relative;
+}
+
+.ink-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-ink-wash) 0%, var(--color-paper-aged) 100%);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-slow);
+}
+
+.ink-progress-bar-vermilion {
+  background: linear-gradient(90deg, var(--color-vermilion-dark) 0%, var(--color-vermilion-light) 100%);
+}
+
+.ink-progress-bar-gold {
+  background: linear-gradient(90deg, var(--color-gold-dark) 0%, var(--color-gold-bright) 100%);
+}
+
+.ink-progress-bar-jade {
+  background: linear-gradient(90deg, var(--color-jade-dark) 0%, var(--color-jade-light) 100%);
+}
+
+/* === 水墨分隔线 === */
+.ink-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--color-ink-faded) 50%, transparent 100%);
+  border: none;
+  margin: var(--spacing-md) 0;
+}
+
+.ink-divider-vertical {
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(180deg, transparent 0%, var(--color-ink-faded) 50%, transparent 100%);
+  border: none;
+}
+
+/* === 标签徽章 === */
+.ink-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--spacing-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+}
+
+.ink-badge-gold {
+  color: var(--color-gold-bright);
+  border-color: var(--color-gold-dark);
+  background: rgba(201, 168, 76, 0.1);
+}
+
+.ink-badge-jade {
+  color: var(--color-jade-light);
+  border-color: var(--color-jade-dark);
+  background: rgba(94, 139, 110, 0.1);
+}
+
+.ink-badge-vermilion {
+  color: var(--color-vermilion-light);
+  border-color: var(--color-vermilion-dark);
+  background: rgba(192, 57, 43, 0.1);
+}
+
+.ink-badge-common {
+  color: var(--color-paper-dark);
+  border-color: var(--color-paper-faded);
+  background: rgba(168, 158, 138, 0.1);
+}
+
+/* === 悬浮提示 === */
+.ink-tooltip {
+  position: absolute;
+  background: rgba(13, 13, 13, 0.95);
+  border: 1px solid var(--border-color-gold);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--text-sm);
+  color: var(--color-paper-bright);
+  pointer-events: none;
+  z-index: 400;
+  box-shadow: var(--shadow-md);
+}
+
+/* === 加载画面 === */
+.ink-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--color-ink-darkest);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+
+/* === 章节过场 === */
+.chapter-transition {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--color-ink-darkest);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  animation: inkFadeIn var(--transition-ink) forwards;
+}
+
+@keyframes inkFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes inkSpread {
+  0% { transform: scale(0.8); opacity: 0; filter: blur(20px); }
+  50% { transform: scale(1.1); opacity: 0.8; filter: blur(5px); }
+  100% { transform: scale(1); opacity: 1; filter: blur(0); }
+}
+
+@keyframes inkDissolve {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; filter: blur(10px); }
+  100% { opacity: 0; filter: blur(20px); }
+}
+
+/* === 水墨晕染效果 === */
+.ink-splash {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(15px);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.ink-splash-1 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, var(--color-ink-medium) 0%, transparent 70%);
+}
+
+.ink-splash-2 {
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, var(--color-ink-wash) 0%, transparent 70%);
+}
+
+/* === 纸质纹理覆盖 === */
+.paper-texture {
+  position: relative;
+}
+
+.paper-texture::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5' result='noise'/%3E%3CfeDiffuseLighting in='noise' lighting-color='%23f5f0e8' surfaceScale='2'%3E%3CfeDistantLight azimuth='45' elevation='60'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+/* === 中式纹样边框 === */
+.pattern-border-fret {
+  border-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M0 0h40v40H0z' fill='none'/%3E%3Cpath d='M5 5h30v30H5z' fill='none' stroke='%23c9a84c' stroke-width='1' opacity='0.3'/%3E%3Cpath d='M10 10h20v20H10z' fill='none' stroke='%23c9a84c' stroke-width='0.5' opacity='0.2'/%3E%3C/svg%3E") 8 stretch;
+}
+
+/* === 通用工具类 === */
+.text-display { font-family: var(--font-display); }
+.text-body { font-family: var(--font-body); }
+.text-decorative { font-family: var(--font-decorative); }
+
+.text-ink { color: var(--color-ink-dark); }
+.text-paper { color: var(--color-paper-bright); }
+.text-vermilion { color: var(--color-vermilion); }
+.text-gold { color: var(--color-gold); }
+.text-jade { color: var(--color-jade); }
+.text-cyan-gray { color: var(--color-cyan-gray); }
+.text-muted { color: var(--color-ink-faded); }
+
+.bg-ink { background-color: var(--color-ink-dark); }
+.bg-ink-medium { background-color: var(--color-ink-medium); }
+.bg-paper { background-color: var(--color-paper); }
+.bg-vermilion { background-color: var(--color-vermilion); }
+.bg-gold { background-color: var(--color-gold); }
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.gap-sm { gap: var(--spacing-sm); }
+.gap-md { gap: var(--spacing-md); }
+.gap-lg { gap: var(--spacing-lg); }
+
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed { position: fixed; }
+
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.h-screen { height: 100vh; }
+
+.overflow-hidden { overflow: hidden; }
+.overflow-auto { overflow: auto; }
+
+.cursor-pointer { cursor: pointer; }
+
+.opacity-hover { opacity: var(--opacity-hover); }
+.opacity-disabled { opacity: var(--opacity-disabled); }
+
+.transition-normal { transition: all var(--transition-normal); }
+.transition-ink { transition: all var(--transition-ink); }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--color-background);
+    --color-foreground: var(--color-foreground);
+    --color-card: var(--color-card);
+    --color-card-foreground: var(--color-card-foreground);
+    --color-popover: var(--color-popover);
+    --color-popover-foreground: var(--color-popover-foreground);
+    --color-primary: var(--color-primary);
+    --color-primary-foreground: var(--color-primary-foreground);
+    --color-secondary: var(--color-secondary);
+    --color-secondary-foreground: var(--color-secondary-foreground);
+    --color-muted: var(--color-muted);
+    --color-muted-foreground: var(--color-muted-foreground);
+    --color-accent: var(--color-accent);
+    --color-accent-foreground: var(--color-accent-foreground);
+    --color-destructive: var(--color-destructive);
+    --color-destructive-foreground: var(--color-destructive-foreground);
+    --color-border: var(--color-border);
+    --color-input: var(--color-input);
+    --color-ring: var(--color-ring);
+    --radius-sm: var(--color-radius-small);
+    --radius-md: var(--color-radius-medium);
+    --radius-lg: var(--color-radius-large);
+    --radius-xl: var(--color-radius-xlarge);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="attr-v2-body">
+    <main class="attr-v2-page">
+
+        <!-- ========================================
+             顶部导航栏 (Top Bar)
+             ======================================== -->
+        <header class="top-bar">
+            <div class="top-bar-left">
+                <button class="top-bar-btn" aria-label="返回">
+                    <i data-lucide="arrow-left" class="icon-sm"></i>
+                </button>
+                <h1 class="top-bar-title">角色属性</h1>
+                <span class="top-bar-separator"></span>
+                <span class="top-bar-subtitle text-decorative">属性面板</span>
+            </div>
+            <div class="top-bar-right">
+                <button class="ink-button ink-button-secondary top-bar-action-btn">
+                    <i data-lucide="scroll-text" class="icon-sm"></i>
+                    <span>详细属性</span>
+                </button>
+                <button class="top-bar-btn" aria-label="分享">
+                    <i data-lucide="share-2" class="icon-sm"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- ========================================
+             左侧 - 角色预览区 (Character Preview)
+             ======================================== -->
+        <section class="char-preview-area" aria-label="角色预览">
+            <!-- 背景图层 -->
+            <div class="char-preview-bg"></div>
+            <div class="char-preview-overlay"></div>
+
+            <!-- 水墨晕染装饰 -->
+            <div class="ink-splash ink-splash-1 char-splash-tl"></div>
+            <div class="ink-splash ink-splash-2 char-splash-br"></div>
+            <div class="ink-splash ink-splash-1 char-splash-bl"></div>
+
+            <!-- 角色信息区域 -->
+            <div class="char-info-container">
+                <!-- 角色名称与等级 -->
+                <div class="char-name-section">
+                    <h2 class="char-name">江湖过客</h2>
+                    <div class="char-level-row">
+                        <span class="char-level-label">Lv.</span>
+                        <span class="char-level-value">42</span>
+                    </div>
+                </div>
+
+                <!-- 门派徽章 -->
+                <div class="char-sect-row">
+                    <span class="ink-badge ink-badge-gold char-sect-badge">
+                        <i data-lucide="swords" class="icon-xs"></i>
+                        青城派 · 内门弟子
+                    </span>
+                </div>
+
+                <!-- 角色称号 -->
+                <div class="char-title-section">
+                    <div class="char-title-line"></div>
+                    <div class="char-title-text">
+                        <i data-lucide="sparkles" class="icon-sm char-title-icon"></i>
+                        <span class="char-title-name">剑胆琴心</span>
+                        <i data-lucide="sparkles" class="icon-sm char-title-icon"></i>
+                    </div>
+                    <div class="char-title-line"></div>
+                </div>
+            </div>
+
+            <!-- 底部装饰 - 门派标识 -->
+            <div class="char-sect-emblem">
+                <i data-lucide="mountain-snow" class="icon-md"></i>
+                <span class="char-sect-emblem-text text-decorative">青城</span>
+            </div>
+        </section>
+
+        <!-- ========================================
+             右侧 - 属性面板 (Attributes Panel)
+             ======================================== -->
+        <section class="attr-panel-area" aria-label="角色属性面板">
+            <div class="attr-panel-scroll">
+
+                <!-- ====== 战力区 (Combat Power) ====== -->
+                <div class="attr-section combat-power-section">
+                    <div class="combat-power-label-row">
+                        <span class="combat-power-label">战力</span>
+                        <span class="ink-badge ink-badge-gold">江湖一流</span>
+                    </div>
+                    <div class="combat-power-value-row">
+                        <span class="combat-power-value">52,840</span>
+                        <i data-lucide="trending-up" class="icon-sm combat-power-trend"></i>
+                        <span class="combat-power-delta">+320</span>
+                    </div>
+                    <div class="combat-power-bar">
+                        <div class="ink-progress">
+                            <div class="ink-progress-bar ink-progress-bar-gold" style="width: 72%"></div>
+                        </div>
+                        <div class="combat-power-bar-labels">
+                            <span class="combat-power-bar-current">当前</span>
+                            <span class="combat-power-bar-next">下一阶 · 绝世高手</span>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="ink-divider">
+
+                <!-- ====== 基础属性 (Base Attributes) ====== -->
+                <div class="attr-section">
+                    <div class="attr-section-header">
+                        <h3 class="attr-section-title">
+                            <i data-lucide="heart-pulse" class="icon-sm"></i>
+                            基础属性
+                        </h3>
+                        <span class="attr-section-hint">核心战斗数值</span>
+                    </div>
+                    <div class="attr-grid attr-grid-2col">
+                        <!-- 气血 -->
+                        <div class="attr-card">
+                            <div class="attr-card-top">
+                                <div class="attr-icon attr-icon-jade">
+                                    <i data-lucide="heart" class="icon-sm"></i>
+                                </div>
+                                <span class="attr-label">气血</span>
+                            </div>
+                            <div class="attr-card-bottom">
+                                <span class="attr-value">12,450</span>
+                                <span class="attr-trend attr-trend-up">+12</span>
+                            </div>
+                        </div>
+                        <!-- 攻击 -->
+                        <div class="attr-card">
+                            <div class="attr-card-top">
+                                <div class="attr-icon attr-icon-vermilion">
+                                    <i data-lucide="sword" class="icon-sm"></i>
+                                </div>
+                                <span class="attr-label">攻击</span>
+                            </div>
+                            <div class="attr-card-bottom">
+                                <span class="attr-value">3,280</span>
+                                <span class="attr-trend attr-trend-up">+12</span>
+                            </div>
+                        </div>
+                        <!-- 防御 -->
+                        <div class="attr-card">
+                            <div class="attr-card-top">
+                                <div class="attr-icon attr-icon-cyan">
+                                    <i data-lucide="shield" class="icon-sm"></i>
+                                </div>
+                                <span class="attr-label">防御</span>
+                            </div>
+                            <div class="attr-card-bottom">
+                                <span class="attr-value">2,150</span>
+                                <span class="attr-trend attr-trend-up">+12</span>
+                            </div>
+                        </div>
+                        <!-- 暴击 -->
+                        <div class="attr-card">
+                            <div class="attr-card-top">
+                                <div class="attr-icon attr-icon-gold">
+                                    <i data-lucide="target" class="icon-sm"></i>
+                                </div>
+                                <span class="attr-label">暴击</span>
+                            </div>
+                            <div class="attr-card-bottom">
+                                <span class="attr-value">28.5<span class="attr-unit">%</span></span>
+                                <span class="attr-trend attr-trend-up">+1.2%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="ink-divider">
+
+                <!-- ====== 进阶属性 (Advanced Attributes) ====== -->
+                <div class="attr-section">
+                    <div class="attr-section-header">
+                        <h3 class="attr-section-title">
+                            <i data-lucide="gauge" class="icon-sm"></i>
+                            进阶属性
+                        </h3>
+                        <span class="attr-section-hint">精细化战斗数值</span>
+                    </div>
+                    <div class="attr-grid attr-grid-2col">
+                        <!-- 穿透 -->
+                        <div class="attr-adv-item">
+                            <div class="attr-adv-top">
+                                <i data-lucide="zap" class="icon-xs attr-adv-icon"></i>
+                                <span class="attr-adv-label">穿透</span>
+                            </div>
+                            <span class="attr-adv-value">1,580</span>
+                        </div>
+                        <!-- 格挡 -->
+                        <div class="attr-adv-item">
+                            <div class="attr-adv-top">
+                                <i data-lucide="shield-half" class="icon-xs attr-adv-icon"></i>
+                                <span class="attr-adv-label">格挡</span>
+                            </div>
+                            <span class="attr-adv-value">1,240</span>
+                        </div>
+                        <!-- 闪避 -->
+                        <div class="attr-adv-item">
+                            <div class="attr-adv-top">
+                                <i data-lucide="wind" class="icon-xs attr-adv-icon"></i>
+                                <span class="attr-adv-label">闪避</span>
+                            </div>
+                            <span class="attr-adv-value">18.2<span class="attr-unit">%</span></span>
+                        </div>
+                        <!-- 命中 -->
+                        <div class="attr-adv-item">
+                            <div class="attr-adv-top">
+                                <i data-lucide="crosshair" class="icon-xs attr-adv-icon"></i>
+                                <span class="attr-adv-label">命中</span>
+                            </div>
+                            <span class="attr-adv-value">95.8<span class="attr-unit">%</span></span>
+                        </div>
+                        <!-- 暴伤 -->
+                        <div class="attr-adv-item">
+                            <div class="attr-adv-top">
+                                <i data-lucide="flame" class="icon-xs attr-adv-icon"></i>
+                                <span class="attr-adv-label">暴伤</span>
+                            </div>
+                            <span class="attr-adv-value">156<span class="attr-unit">%</span></span>
+                        </div>
+                        <!-- 韧性 -->
+                        <div class="attr-adv-item">
+                            <div class="attr-adv-top">
+                                <i data-lucide="anchor" class="icon-xs attr-adv-icon"></i>
+                                <span class="attr-adv-label">韧性</span>
+                            </div>
+                            <span class="attr-adv-value">85</span>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="ink-divider">
+
+                <!-- ====== 装备摘要 (Equipment Summary) ====== -->
+                <div class="attr-section">
+                    <div class="attr-section-header">
+                        <h3 class="attr-section-title text-gold">装备摘要</h3>
+                        <span class="attr-section-hint">已装备 6 件</span>
+                    </div>
+                    <div class="equipment-grid">
+                        <!-- 武器 - 青锋剑 (传说) -->
+                        <div class="equip-slot">
+                            <div class="equip-slot-icon equip-quality-legendary">
+                                <i data-lucide="sword" class="icon-md"></i>
+                                <span class="equip-enhance">+12</span>
+                            </div>
+                            <span class="equip-name">青锋剑</span>
+                            <span class="equip-type">武器</span>
+                        </div>
+                        <!-- 头盔 - 玄铁盔 (史诗) -->
+                        <div class="equip-slot">
+                            <div class="equip-slot-icon equip-quality-epic">
+                                <i data-lucide="hard-hat" class="icon-md"></i>
+                                <span class="equip-enhance">+10</span>
+                            </div>
+                            <span class="equip-name">玄铁盔</span>
+                            <span class="equip-type">头盔</span>
+                        </div>
+                        <!-- 护甲 - 云锦袍 (史诗) -->
+                        <div class="equip-slot">
+                            <div class="equip-slot-icon equip-quality-epic">
+                                <i data-lucide="shirt" class="icon-md"></i>
+                                <span class="equip-enhance">+11</span>
+                            </div>
+                            <span class="equip-name">云锦袍</span>
+                            <span class="equip-type">护甲</span>
+                        </div>
+                        <!-- 鞋子 - 踏风靴 (史诗) -->
+                        <div class="equip-slot">
+                            <div class="equip-slot-icon equip-quality-epic">
+                                <i data-lucide="footprints" class="icon-md"></i>
+                                <span class="equip-enhance">+9</span>
+                            </div>
+                            <span class="equip-name">踏风靴</span>
+                            <span class="equip-type">鞋子</span>
+                        </div>
+                        <!-- 饰品1 - 玉佩 (史诗) -->
+                        <div class="equip-slot">
+                            <div class="equip-slot-icon equip-quality-epic">
+                                <i data-lucide="gem" class="icon-md"></i>
+                                <span class="equip-enhance">+8</span>
+                            </div>
+                            <span class="equip-name">玉佩</span>
+                            <span class="equip-type">饰品</span>
+                        </div>
+                        <!-- 饰品2 - 龙纹戒 (史诗) -->
+                        <div class="equip-slot">
+                            <div class="equip-slot-icon equip-quality-epic">
+                                <i data-lucide="circle-dot" class="icon-md"></i>
+                                <span class="equip-enhance">+10</span>
+                            </div>
+                            <span class="equip-name">龙纹戒</span>
+                            <span class="equip-type">饰品</span>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="ink-divider">
+
+                <!-- ====== 武学摘要 (Martial Arts Summary) ====== -->
+                <div class="attr-section martial-arts-section">
+                    <div class="attr-section-header">
+                        <h3 class="attr-section-title text-gold">武学摘要</h3>
+                        <span class="attr-section-hint">已装备 3 门武学</span>
+                    </div>
+                    <div class="martial-arts-list">
+                        <!-- 武学1 - 青莲剑歌 (传说) -->
+                        <article class="martial-art-card martial-art-legendary">
+                            <div class="martial-art-icon-wrap">
+                                <i data-lucide="sword" class="icon-md"></i>
+                            </div>
+                            <div class="martial-art-info">
+                                <div class="martial-art-name-row">
+                                    <span class="martial-art-name">青莲剑歌</span>
+                                    <span class="ink-badge ink-badge-vermilion">传说</span>
+                                </div>
+                                <div class="martial-art-meta">
+                                    <span class="martial-art-type">
+                                        <i data-lucide="swords" class="icon-xs"></i>
+                                        剑法
+                                    </span>
+                                    <span class="martial-art-level">
+                                        <i data-lucide="star" class="icon-xs"></i>
+                                        Lv. 15
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="martial-art-power">
+                                <span class="martial-art-power-value">8,520</span>
+                                <span class="martial-art-power-label">威力</span>
+                            </div>
+                        </article>
+
+                        <!-- 武学2 - 凌波微步 (史诗) -->
+                        <article class="martial-art-card martial-art-epic">
+                            <div class="martial-art-icon-wrap">
+                                <i data-lucide="wind" class="icon-md"></i>
+                            </div>
+                            <div class="martial-art-info">
+                                <div class="martial-art-name-row">
+                                    <span class="martial-art-name">凌波微步</span>
+                                    <span class="ink-badge ink-badge-gold">史诗</span>
+                                </div>
+                                <div class="martial-art-meta">
+                                    <span class="martial-art-type">
+                                        <i data-lucide="footprints" class="icon-xs"></i>
+                                        轻功
+                                    </span>
+                                    <span class="martial-art-level">
+                                        <i data-lucide="star" class="icon-xs"></i>
+                                        Lv. 12
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="martial-art-power">
+                                <span class="martial-art-power-value">6,180</span>
+                                <span class="martial-art-power-label">威力</span>
+                            </div>
+                        </article>
+
+                        <!-- 武学3 - 紫霞神功 (史诗) -->
+                        <article class="martial-art-card martial-art-epic">
+                            <div class="martial-art-icon-wrap">
+                                <i data-lucide="flame" class="icon-md"></i>
+                            </div>
+                            <div class="martial-art-info">
+                                <div class="martial-art-name-row">
+                                    <span class="martial-art-name">紫霞神功</span>
+                                    <span class="ink-badge ink-badge-gold">史诗</span>
+                                </div>
+                                <div class="martial-art-meta">
+                                    <span class="martial-art-type">
+                                        <i data-lucide="sparkles" class="icon-xs"></i>
+                                        内功
+                                    </span>
+                                    <span class="martial-art-level">
+                                        <i data-lucide="star" class="icon-xs"></i>
+                                        Lv. 10
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="martial-art-power">
+                                <span class="martial-art-power-value">5,340</span>
+                                <span class="martial-art-power-label">威力</span>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+
+                <!-- 底部留白 (为底部操作栏腾出空间) -->
+                <div class="attr-panel-spacer"></div>
+            </div>
+        </section>
+
+        <!-- ========================================
+             底部操作栏 (Bottom Action Bar)
+             ======================================== -->
+        <footer class="bottom-bar">
+            <button class="ink-button ink-button-secondary bottom-action-btn">
+                <i data-lucide="list" class="icon-sm"></i>
+                <span>详细属性</span>
+            </button>
+            <button class="ink-button ink-button-secondary bottom-action-btn">
+                <i data-lucide="backpack" class="icon-sm"></i>
+                <span>装备详情</span>
+            </button>
+            <button class="ink-button ink-button-secondary bottom-action-btn">
+                <i data-lucide="book-open" class="icon-sm"></i>
+                <span>武学详情</span>
+            </button>
+        </footer>
+
+    </main>
+
+    <!-- ========================================
+         页面专属样式 (Page-Specific Styles)
+         ======================================== -->
+    <style>
+        /* ===== 图标尺寸 ===== */
+        .icon-xs { width: 12px; height: 12px; }
+        .icon-sm { width: 16px; height: 16px; }
+        .icon-md { width: 22px; height: 22px; }
+        .icon-lg { width: 28px; height: 28px; }
+
+        [data-lucide] { stroke-width: 1.5; }
+
+        /* ===== 页面主体 ===== */
+        .attr-v2-body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--color-ink-darkest);
+            overflow: hidden;
+            font-family: var(--font-body);
+            color: var(--color-paper-bright);
+        }
+
+        .attr-v2-page {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: var(--color-ink-darkest);
+        }
+
+        /* ========================================
+           顶部导航栏 (Top Bar)
+           ======================================== */
+        .top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--spacing-xl);
+            background: linear-gradient(90deg,
+                rgba(13, 13, 13, 0.98) 0%,
+                rgba(26, 26, 26, 0.95) 50%,
+                rgba(13, 13, 13, 0.98) 100%);
+            border-bottom: 1px solid var(--border-color-ink);
+            z-index: 100;
+            backdrop-filter: blur(8px);
+        }
+
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .top-bar-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background: transparent;
+            border: 1px solid var(--border-color-ink);
+            border-radius: var(--radius-sm);
+            color: var(--color-paper-bright);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+
+        .top-bar-btn:hover {
+            background: rgba(235, 229, 216, 0.08);
+            border-color: var(--color-paper-faded);
+        }
+
+        .top-bar-title {
+            font-family: var(--font-display);
+            font-size: 20px;
+            font-weight: var(--weight-bold);
+            color: var(--color-paper-bright);
+            letter-spacing: 0.05em;
+            margin: 0;
+        }
+
+        .top-bar-separator {
+            width: 1px;
+            height: 20px;
+            background: var(--color-ink-wash);
+        }
+
+        .top-bar-subtitle {
+            font-size: var(--text-sm);
+            color: var(--color-paper-aged);
+        }
+
+        .top-bar-action-btn {
+            padding: var(--spacing-xs) var(--spacing-md);
+            font-size: var(--text-sm);
+        }
+
+        /* ========================================
+           左侧角色预览区 (Character Preview)
+           ======================================== */
+        .char-preview-area {
+            position: absolute;
+            left: 0;
+            top: 60px;
+            bottom: 0;
+            width: 50%;
+            overflow: hidden;
+        }
+
+        .char-preview-bg {
+            position: absolute;
+            inset: 0;
+            background: url('../assets/bg-char-preview-v2.jpg') no-repeat center center;
+            background-size: cover;
+        }
+
+        .char-preview-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg,
+                rgba(13, 13, 13, 0.5) 0%,
+                rgba(13, 13, 13, 0.3) 50%,
+                rgba(13, 13, 13, 0.6) 100%);
+        }
+
+        /* 水墨晕染装饰 */
+        .char-splash-tl {
+            top: -80px;
+            left: -60px;
+        }
+
+        .char-splash-br {
+            bottom: -50px;
+            right: -40px;
+            opacity: 0.2;
+        }
+
+        .char-splash-bl {
+            bottom: 20%;
+            left: -80px;
+            opacity: 0.15;
+        }
+
+        /* 角色信息容器 */
+        .char-info-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-lg);
+            z-index: 10;
+            text-align: center;
+        }
+
+        .char-name-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .char-name {
+            font-family: var(--font-display);
+            font-size: 36px;
+            font-weight: var(--weight-bold);
+            color: var(--color-paper-bright);
+            letter-spacing: 0.15em;
+            margin: 0;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+        }
+
+        .char-level-row {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .char-level-label {
+            font-family: var(--font-display);
+            font-size: var(--text-lg);
+            color: var(--color-gold-dark);
+        }
+
+        .char-level-value {
+            font-family: var(--font-display);
+            font-size: var(--text-2xl);
+            font-weight: var(--weight-bold);
+            color: var(--color-gold-bright);
+            text-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
+        }
+
+        /* 门派徽章 */
+        .char-sect-row {
+            display: flex;
+            justify-content: center;
+        }
+
+        .char-sect-badge {
+            font-size: var(--text-sm);
+            padding: 4px var(--spacing-md);
+            letter-spacing: 0.1em;
+        }
+
+        .char-sect-badge .icon-xs {
+            margin-right: 4px;
+        }
+
+        /* 角色称号 */
+        .char-title-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-md);
+        }
+
+        .char-title-line {
+            width: 120px;
+            height: 1px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                var(--color-gold) 50%,
+                transparent 100%);
+        }
+
+        .char-title-text {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .char-title-icon {
+            color: var(--color-gold);
+            opacity: 0.7;
+        }
+
+        .char-title-name {
+            font-family: var(--font-decorative);
+            font-size: 24px;
+            font-weight: var(--weight-bold);
+            color: var(--color-gold-bright);
+            letter-spacing: 0.3em;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+        }
+
+        /* 门派标识 */
+        .char-sect-emblem {
+            position: absolute;
+            bottom: var(--spacing-2xl);
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-xs);
+            color: var(--color-paper-dark);
+            opacity: 0.5;
+            z-index: 10;
+        }
+
+        .char-sect-emblem-text {
+            font-size: var(--text-sm);
+            letter-spacing: 0.4em;
+        }
+
+        /* ========================================
+           右侧属性面板 (Attributes Panel)
+           ======================================== */
+        .attr-panel-area {
+            position: absolute;
+            right: 0;
+            top: 60px;
+            bottom: 0;
+            width: 50%;
+            background: linear-gradient(180deg,
+                rgba(26, 26, 26, 0.98) 0%,
+                rgba(13, 13, 13, 0.98) 100%);
+            border-left: 1px solid var(--border-color-ink);
+        }
+
+        .attr-panel-scroll {
+            height: 100%;
+            overflow-y: auto;
+            padding: var(--spacing-xl) var(--spacing-xl) 0 var(--spacing-xl);
+            scrollbar-width: thin;
+            scrollbar-color: var(--color-ink-wash) transparent;
+        }
+
+        .attr-panel-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .attr-panel-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .attr-panel-scroll::-webkit-scrollbar-thumb {
+            background: var(--color-ink-wash);
+            border-radius: var(--radius-full);
+        }
+
+        .attr-panel-scroll::-webkit-scrollbar-thumb:hover {
+            background: var(--color-ink-faded);
+        }
+
+        .attr-panel-spacer {
+            height: 80px;
+            flex-shrink: 0;
+        }
+
+        /* ===== 属性分区通用 ===== */
+        .attr-section {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .attr-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .attr-section-title {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: var(--weight-bold);
+            color: var(--color-paper-bright);
+            margin: 0;
+        }
+
+        .attr-section-hint {
+            font-size: var(--text-xs);
+            color: var(--color-ink-faded);
+        }
+
+        /* ===== 战力区 ===== */
+        .combat-power-section {
+            padding: var(--spacing-md) 0;
+        }
+
+        .combat-power-label-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .combat-power-label {
+            font-size: 13px;
+            color: var(--color-paper-aged);
+            letter-spacing: 0.1em;
+        }
+
+        .combat-power-value-row {
+            display: flex;
+            align-items: baseline;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .combat-power-value {
+            font-family: var(--font-display);
+            font-size: 48px;
+            font-weight: var(--weight-black);
+            color: var(--color-gold-bright);
+            line-height: 1;
+            text-shadow: 0 0 16px rgba(212, 175, 55, 0.2);
+        }
+
+        .combat-power-trend {
+            color: var(--color-jade-light);
+        }
+
+        .combat-power-delta {
+            font-size: var(--text-sm);
+            color: var(--color-jade-light);
+            font-weight: var(--weight-medium);
+        }
+
+        .combat-power-bar {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+
+        .combat-power-bar-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: var(--text-xs);
+            color: var(--color-ink-faded);
+        }
+
+        .combat-power-bar-current {
+            color: var(--color-paper-aged);
+        }
+
+        .combat-power-bar-next {
+            color: var(--color-gold-dark);
+        }
+
+        /* ===== 属性网格 ===== */
+        .attr-grid {
+            display: grid;
+            gap: var(--spacing-sm);
+        }
+
+        .attr-grid-2col {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        /* ===== 基础属性卡片 ===== */
+        .attr-card {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md);
+            background: linear-gradient(135deg,
+                rgba(45, 45, 45, 0.6) 0%,
+                rgba(26, 26, 26, 0.6) 100%);
+            border: 1px solid var(--border-color-ink);
+            border-radius: var(--radius-md);
+            transition: all var(--transition-normal);
+        }
+
+        .attr-card:hover {
+            border-color: var(--border-color-gold);
+            background: linear-gradient(135deg,
+                rgba(58, 58, 58, 0.7) 0%,
+                rgba(34, 34, 34, 0.7) 100%);
+        }
+
+        .attr-card-top {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .attr-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: var(--radius-sm);
+            border: 1px solid;
+        }
+
+        .attr-icon-jade {
+            color: var(--color-jade-light);
+            border-color: var(--color-jade-dark);
+            background: rgba(94, 139, 110, 0.1);
+        }
+
+        .attr-icon-vermilion {
+            color: var(--color-vermilion-light);
+            border-color: var(--color-vermilion-dark);
+            background: rgba(192, 57, 43, 0.1);
+        }
+
+        .attr-icon-cyan {
+            color: var(--color-cyan-gray-light);
+            border-color: var(--color-cyan-gray-dark);
+            background: rgba(107, 123, 138, 0.1);
+        }
+
+        .attr-icon-gold {
+            color: var(--color-gold-bright);
+            border-color: var(--color-gold-dark);
+            background: rgba(201, 168, 76, 0.1);
+        }
+
+        .attr-label {
+            font-size: var(--text-sm);
+            color: var(--color-paper-aged);
+            letter-spacing: 0.05em;
+        }
+
+        .attr-card-bottom {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+        }
+
+        .attr-value {
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: var(--weight-bold);
+            color: var(--color-paper-bright);
+        }
+
+        .attr-unit {
+            font-size: var(--text-sm);
+            color: var(--color-paper-aged);
+            font-weight: var(--weight-normal);
+        }
+
+        .attr-trend {
+            font-size: var(--text-xs);
+            font-weight: var(--weight-medium);
+            padding: 1px var(--spacing-xs);
+            border-radius: var(--radius-sm);
+        }
+
+        .attr-trend-up {
+            color: var(--color-jade-light);
+            background: rgba(94, 139, 110, 0.15);
+        }
+
+        /* ===== 进阶属性 ===== */
+        .attr-adv-item {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-sm) var(--spacing-md);
+            background: rgba(26, 26, 26, 0.4);
+            border-left: 2px solid var(--color-ink-wash);
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            transition: all var(--transition-normal);
+        }
+
+        .attr-adv-item:hover {
+            border-left-color: var(--color-gold);
+            background: rgba(45, 45, 45, 0.5);
+        }
+
+        .attr-adv-top {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .attr-adv-icon {
+            color: var(--color-ink-faded);
+        }
+
+        .attr-adv-label {
+            font-size: var(--text-sm);
+            color: var(--color-paper-aged);
+        }
+
+        .attr-adv-value {
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: var(--weight-medium);
+            color: var(--color-paper-bright);
+        }
+
+        /* ===== 装备摘要 ===== */
+        .equipment-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: var(--spacing-sm);
+        }
+
+        .equip-slot {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .equip-slot-icon {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            background: rgba(13, 13, 13, 0.8);
+            border: 2px solid;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+
+        .equip-slot-icon:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .equip-quality-common {
+            border-color: var(--quality-common);
+            color: var(--quality-common);
+        }
+
+        .equip-quality-uncommon {
+            border-color: var(--quality-uncommon);
+            color: var(--quality-uncommon);
+        }
+
+        .equip-quality-rare {
+            border-color: var(--quality-rare);
+            color: var(--quality-rare);
+        }
+
+        .equip-quality-epic {
+            border-color: var(--quality-epic);
+            color: var(--quality-epic);
+            box-shadow: inset 0 0 8px rgba(201, 168, 76, 0.1);
+        }
+
+        .equip-quality-legendary {
+            border-color: var(--quality-legendary);
+            color: var(--quality-legendary);
+            box-shadow: inset 0 0 10px rgba(192, 57, 43, 0.15);
+        }
+
+        .equip-enhance {
+            position: absolute;
+            bottom: -6px;
+            right: -4px;
+            font-family: var(--font-display);
+            font-size: 10px;
+            font-weight: var(--weight-bold);
+            color: var(--color-gold-bright);
+            background: var(--color-ink-darkest);
+            padding: 1px 4px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--color-gold-dark);
+            line-height: 1;
+        }
+
+        .equip-name {
+            font-size: var(--text-xs);
+            color: var(--color-paper-bright);
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .equip-type {
+            font-size: 10px;
+            color: var(--color-ink-faded);
+        }
+
+        /* ===== 武学摘要 ===== */
+        .martial-arts-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .martial-art-card {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: linear-gradient(135deg,
+                rgba(45, 45, 45, 0.6) 0%,
+                rgba(26, 26, 26, 0.6) 100%);
+            border: 1px solid var(--border-color-ink);
+            border-left: 3px solid;
+            border-radius: var(--radius-md);
+            transition: all var(--transition-normal);
+            cursor: pointer;
+        }
+
+        .martial-art-card:hover {
+            background: linear-gradient(135deg,
+                rgba(58, 58, 58, 0.7) 0%,
+                rgba(34, 34, 34, 0.7) 100%);
+            transform: translateX(2px);
+        }
+
+        .martial-art-legendary {
+            border-left-color: var(--quality-legendary);
+        }
+
+        .martial-art-epic {
+            border-left-color: var(--quality-epic);
+        }
+
+        .martial-art-icon-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            background: rgba(13, 13, 13, 0.8);
+            border: 1px solid var(--border-color-ink);
+            border-radius: var(--radius-sm);
+            color: var(--color-gold);
+            flex-shrink: 0;
+        }
+
+        .martial-art-legendary .martial-art-icon-wrap {
+            color: var(--color-vermilion-light);
+            border-color: var(--color-vermilion-dark);
+        }
+
+        .martial-art-epic .martial-art-icon-wrap {
+            color: var(--color-gold-bright);
+            border-color: var(--color-gold-dark);
+        }
+
+        .martial-art-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+            min-width: 0;
+        }
+
+        .martial-art-name-row {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .martial-art-name {
+            font-family: var(--font-display);
+            font-size: var(--text-base);
+            font-weight: var(--weight-bold);
+            color: var(--color-paper-bright);
+        }
+
+        .martial-art-meta {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .martial-art-type,
+        .martial-art-level {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: var(--text-xs);
+            color: var(--color-paper-aged);
+        }
+
+        .martial-art-type .icon-xs {
+            color: var(--color-cyan-gray-light);
+        }
+
+        .martial-art-level .icon-xs {
+            color: var(--color-gold);
+        }
+
+        .martial-art-power {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+
+        .martial-art-power-value {
+            font-family: var(--font-display);
+            font-size: var(--text-lg);
+            font-weight: var(--weight-bold);
+            color: var(--color-gold-bright);
+        }
+
+        .martial-art-power-label {
+            font-size: 10px;
+            color: var(--color-ink-faded);
+        }
+
+        /* ===== 底部操作栏 (Bottom Action Bar) ===== */
+        .bottom-bar {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 50%;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 0 var(--spacing-xl);
+            background: linear-gradient(180deg,
+                rgba(26, 26, 26, 0.95) 0%,
+                rgba(13, 13, 13, 0.98) 100%);
+            border-top: 1px solid var(--border-color-ink);
+            z-index: 50;
+            backdrop-filter: blur(8px);
+        }
+
+        .bottom-action-btn {
+            flex: 1;
+            max-width: 140px;
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-size: var(--text-sm);
+        }
+
+        /* ===== 响应式微调 ===== */
+        @media (max-width: 900px) {
+            .equipment-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: var(--spacing-md);
+            }
+
+            .char-name {
+                font-size: 28px;
+            }
+
+            .combat-power-value {
+                font-size: 36px;
+            }
+        }
+    </style>
+
+    <script>
+        // 初始化 Lucide 图标
+        if (typeof lucide !== 'undefined' && lucide.createIcons) {
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

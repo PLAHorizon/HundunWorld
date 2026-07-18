@@ -105,6 +105,12 @@ public sealed class ZoneShardAoi
     }
 
     /// <summary>
+    /// 返回当前所有已订阅的 sessionId 只读视图（跨所有 chunk）。调用方不得修改。
+    /// 用于实体位置未知时的回退广播（P8-8.2）。
+    /// </summary>
+    public IReadOnlyCollection<long> GetAllSubscribers() => _sessionToChunks.Keys;
+
+    /// <summary>
     /// 返回会话当前订阅的所有 chunk 的只读视图；未注册则返回空。
     /// </summary>
     public IReadOnlyCollection<ulong> GetSubscriptions(long sessionId)

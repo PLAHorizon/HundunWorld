@@ -351,7 +351,7 @@
                                                                     <Button Content="删除"
                                                                             Command="{Binding $parent[UserControl].DataContext.RemoveFriendCommand}"
                                                                             CommandParameter="{Binding Id}"
-                                                                            Background="#E53935"
+                                                                            Background="{DynamicResource LoginErrorBrush}"
                                                                             Foreground="White"
                                                                             FontWeight="SemiBold"
                                                                             Padding="10 6"
@@ -514,7 +514,7 @@
                                                     <Button Content="{Binding RemoveGroupActionText}"
                                                             Command="{Binding $parent[UserControl].DataContext.RemoveGroupCommand}"
                                                             CommandParameter="{Binding Id}"
-                                                            Background="#E53935"
+                                                            Background="{DynamicResource LoginErrorBrush}"
                                                             Foreground="White"
                                                             FontWeight="SemiBold"
                                                             Padding="10 6"
@@ -809,7 +809,7 @@
                                                                               Height="14"
                                                                               HorizontalAlignment="Center"
                                                                               VerticalAlignment="Center"
-                                                                              Foreground="#E0E0E0" />
+                                                                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                                                 </Button>
                                                                 <Button ToolTip.Tip="复制"
                                                                         Background="{DynamicResource SubtleFillColorTertiaryBrush}"
@@ -825,7 +825,7 @@
                                                                               Height="14"
                                                                               HorizontalAlignment="Center"
                                                                               VerticalAlignment="Center"
-                                                                              Foreground="#E0E0E0" />
+                                                                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                                                 </Button>
                                                                 <Button ToolTip.Tip="保存"
                                                                         Background="{DynamicResource SubtleFillColorTertiaryBrush}"
@@ -841,7 +841,7 @@
                                                                               Height="14"
                                                                               HorizontalAlignment="Center"
                                                                               VerticalAlignment="Center"
-                                                                              Foreground="#E0E0E0" />
+                                                                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                                                 </Button>
                                                             </StackPanel>
                                                         </StackPanel>

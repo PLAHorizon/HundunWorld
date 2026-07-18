@@ -1,0 +1,580 @@
+{
+  "project": {
+    "name": "燕云十六声-核心菜单-任务与探索",
+    "path": "c:\\Works\\GitHubProjects\\HundunWorld_UE5\\HundunWorld\\HundunWorld\\yy-menu-quest",
+    "operation": "create",
+    "deviceType": "desktop",
+    "language": "zh-CN",
+    "dashboardMode": false,
+    "replicationMode": null,
+    "sourceUrl": null,
+    "visualSpecExcerpt": null,
+    "styleDefinitionBrief": "中国传统水墨画风格的游戏UI体系，墨黑/纸白为主色，朱红/金色/玉色为点缀",
+    "designRead": "game-ui / ink-wash / menu / density-3 / motion-2",
+    "designDials": {
+      "layoutVariance": 3,
+      "motionIntensity": 2,
+      "visualDensity": 3
+    },
+    "styleContinuityAnchors": {
+      "colorSystem": {
+        "primaryColorRole": "朱红 #c0392b 用于主CTA和选中态",
+        "brandHuePolicy": "free-explore uses single primary hue (朱红); 金色/玉色仅作为品质/状态色",
+        "stateColors": "--state-success(玉色), --state-warning(金色), --state-error(朱红), --state-info(青灰)"
+      },
+      "shapeSystem": "圆角最大8px，中式硬朗边缘；面板使用墨色1px边框",
+      "typographySystem": "标题：Noto Serif SC/KaiTi 楷体；正文：Noto Sans SC 黑体；装饰：竖排楷体 writing-mode: vertical-rl",
+      "spacingSystem": "4/8/16/24/32/48/64px 间距体系",
+      "componentLanguage": "水墨面板、侧滑面板、墨色进度条、中式按钮、竖排标题、水墨分隔线、品质标签",
+      "surfaceAndDepth": "静态表面使用边框/层叠，仅弹窗使用阴影 alpha<=0.15",
+      "imageryAndIconography": "水墨画风插图、中式纹样边框、留白哲学",
+      "interactionTone": "沉稳内敛，动效克制"
+    },
+    "specsConstraints": null,
+    "sharedProjectShellContract": {
+      "navigationShell": "左侧菜单导航栏（240px宽）+ 右侧内容面板 + 顶部角色信息条",
+      "primaryColorSystem": "朱红 #c0392b 为唯一品牌主色",
+      "typographySystem": "Noto Serif SC/KaiTi 标题，Noto Sans SC 正文",
+      "radiusScale": "2px/4px/8px/16px 圆角体系",
+      "surfaceDepthModel": "墨色面板使用1px边框+层叠",
+      "ctaStyle": "朱红主按钮 + 纸色次按钮 + 金色品质按钮",
+      "alignmentRules": "16px基础网格"
+    },
+    "generationTree": {
+      "root": {
+        "nodeId": "gen-project-shell",
+        "kind": "project-shell",
+        "pageIds": [
+          "page-menu-quests",
+          "page-menu-bestiary",
+          "page-menu-martial-record",
+          "page-menu-livelihood",
+          "page-menu-team",
+          "page-menu-mail",
+          "page-menu-shop"
+        ],
+        "output": "partials/project-shell.html",
+        "sharedRegions": [
+          "left navigation sidebar",
+          "top character info bar"
+        ],
+        "privateRegions": [],
+        "mutableSlots": [
+          "activeNavItem",
+          "pageTitle"
+        ],
+        "status": "planned",
+        "children": [
+          {
+            "nodeId": "gen-page-menu-quests",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-menu-quests"
+            ],
+            "output": "pages/menu-quests.html",
+            "sharedRegions": [],
+            "privateRegions": [
+              "page body content"
+            ],
+            "mutableSlots": [
+              "activeNavItem",
+              "pageTitle"
+            ],
+            "status": "planned",
+            "children": []
+          },
+          {
+            "nodeId": "gen-page-menu-bestiary",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-menu-bestiary"
+            ],
+            "output": "pages/menu-bestiary.html",
+            "sharedRegions": [],
+            "privateRegions": [
+              "page body content"
+            ],
+            "mutableSlots": [
+              "activeNavItem",
+              "pageTitle"
+            ],
+            "status": "planned",
+            "children": []
+          },
+          {
+            "nodeId": "gen-page-menu-martial-record",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-menu-martial-record"
+            ],
+            "output": "pages/menu-martial-record.html",
+            "sharedRegions": [],
+            "privateRegions": [
+              "page body content"
+            ],
+            "mutableSlots": [
+              "activeNavItem",
+              "pageTitle"
+            ],
+            "status": "planned",
+            "children": []
+          },
+          {
+            "nodeId": "gen-page-menu-livelihood",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-menu-livelihood"
+            ],
+            "output": "pages/menu-livelihood.html",
+            "sharedRegions": [],
+            "privateRegions": [
+              "page body content"
+            ],
+            "mutableSlots": [
+              "activeNavItem",
+              "pageTitle"
+            ],
+            "status": "planned",
+            "children": []
+          },
+          {
+            "nodeId": "gen-page-menu-team",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-menu-team"
+            ],
+            "output": "pages/menu-team.html",
+            "sharedRegions": [],
+            "privateRegions": [
+              "page body content"
+            ],
+            "mutableSlots": [
+              "activeNavItem",
+              "pageTitle"
+            ],
+            "status": "planned",
+            "children": []
+          },
+          {
+            "nodeId": "gen-page-menu-mail",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-menu-mail"
+            ],
+            "output": "pages/menu-mail.html",
+            "sharedRegions": [],
+            "privateRegions": [
+              "page body content"
+            ],
+            "mutableSlots": [
+              "activeNavItem",
+              "pageTitle"
+            ],
+            "status": "planned",
+            "children": []
+          },
+          {
+            "nodeId": "gen-page-menu-shop",
+            "kind": "page-leaf",
+            "pageIds": [
+              "page-menu-shop"
+            ],
+            "output": "pages/menu-shop.html",
+            "sharedRegions": [],
+            "privateRegions": [
+              "page body content"
+            ],
+            "mutableSlots": [
+              "activeNavItem",
+              "pageTitle"
+            ],
+            "status": "planned",
+            "children": []
+          }
+        ]
+      }
+    }
+  },
+  "designSource": {
+    "operatingMode": "free-explore",
+    "libraryIdentity": null,
+    "libraryPath": null,
+    "cssFilePath": "c:\\Works\\GitHubProjects\\HundunWorld_UE5\\HundunWorld\\HundunWorld\\yy-menu-quest\\colors_and_type.css",
+    "brandPrefix": "color",
+    "themeMode": "dark",
+    "designDecisionSummary": "Free-explore mode with ink wash aesthetic; shared colors_and_type.css",
+    "forbiddenInventedComponents": [
+      "layout",
+      "space"
+    ],
+    "allowedComponents": [
+      "ink-panel",
+      "ink-button",
+      "ink-progress",
+      "vertical-title",
+      "ink-divider",
+      "ink-badge",
+      "side-slide-panel"
+    ],
+    "styleConstraints": {
+      "radiusMax": 8,
+      "spacingBase": 1,
+      "fontSizeBody": 14,
+      "fontSizeMin": 12,
+      "controlHeightDefault": 36,
+      "controlHeightLarge": 44
+    },
+    "productContext": {
+      "kitType": "game-ui-ink-wash",
+      "productType": "Game UI - Quest & Exploration Menu"
+    },
+    "actualTokenNameReference": [
+      {
+        "semanticPurpose": "Primary background",
+        "tokenName": "color-ink-dark"
+      },
+      {
+        "semanticPurpose": "Primary text",
+        "tokenName": "color-paper-bright"
+      },
+      {
+        "semanticPurpose": "Primary CTA",
+        "tokenName": "color-vermilion"
+      },
+      {
+        "semanticPurpose": "Quality accent",
+        "tokenName": "color-gold"
+      }
+    ]
+  },
+  "pages": [
+    {
+      "nodeId": "page-menu-quests",
+      "slug": "menu-quests",
+      "title": "菜单-任务",
+      "htmlSrc": "pages/menu-quests.html",
+      "pageIndex": 1,
+      "stateGroupId": null,
+      "stateRole": null,
+      "baseStatePageId": null,
+      "sharedShellContract": [
+        "left navigation sidebar",
+        "top character info bar"
+      ],
+      "mutableRegions": [
+        "page body content"
+      ],
+      "derivedFromHtmlSrc": null,
+      "derivationType": "original",
+      "sourcePageId": null,
+      "sourceHtmlSrc": null,
+      "pageType": "information-dense",
+      "businessScenario": "任务管理界面",
+      "visualNorthStar": "水墨卷轴风格任务列表搭配详情面板",
+      "compositionPattern": "List + detail with scroll aesthetic",
+      "continuityAnchors": [
+        "ink-panel",
+        "left navigation sidebar",
+        "top character info bar"
+      ],
+      "libraryRestraintMode": false,
+      "componentPlan": [
+        "ink-panel",
+        "ink-badge",
+        "ink-divider",
+        "ink-progress"
+      ],
+      "imagePlan": [],
+      "chartsRequired": false,
+      "miniProgramStyle": false,
+      "qualityRisks": [
+        "任务列表密度"
+      ]
+    },
+    {
+      "nodeId": "page-menu-bestiary",
+      "slug": "menu-bestiary",
+      "title": "菜单-博物志",
+      "htmlSrc": "pages/menu-bestiary.html",
+      "pageIndex": 2,
+      "stateGroupId": null,
+      "stateRole": null,
+      "baseStatePageId": null,
+      "sharedShellContract": [
+        "left navigation sidebar",
+        "top character info bar"
+      ],
+      "mutableRegions": [
+        "page body content"
+      ],
+      "derivedFromHtmlSrc": null,
+      "derivationType": "original",
+      "sourcePageId": null,
+      "sourceHtmlSrc": null,
+      "pageType": "information-dense",
+      "businessScenario": "博物志收集界面",
+      "visualNorthStar": "收集品网格卡片搭配水墨插图详情",
+      "compositionPattern": "Card grid + detail preview",
+      "continuityAnchors": [
+        "ink-panel",
+        "left navigation sidebar",
+        "top character info bar"
+      ],
+      "libraryRestraintMode": false,
+      "componentPlan": [
+        "ink-panel",
+        "ink-badge",
+        "ink-divider"
+      ],
+      "imagePlan": [
+        "bg-bestiary-illust.jpg"
+      ],
+      "chartsRequired": false,
+      "miniProgramStyle": false,
+      "qualityRisks": [
+        "卡片网格密度"
+      ]
+    },
+    {
+      "nodeId": "page-menu-martial-record",
+      "slug": "menu-martial-record",
+      "title": "菜单-武林录",
+      "htmlSrc": "pages/menu-martial-record.html",
+      "pageIndex": 3,
+      "stateGroupId": null,
+      "stateRole": null,
+      "baseStatePageId": null,
+      "sharedShellContract": [
+        "left navigation sidebar",
+        "top character info bar"
+      ],
+      "mutableRegions": [
+        "page body content"
+      ],
+      "derivedFromHtmlSrc": null,
+      "derivationType": "original",
+      "sourcePageId": null,
+      "sourceHtmlSrc": null,
+      "pageType": "information-dense",
+      "businessScenario": "武林录探索界面",
+      "visualNorthStar": "水墨地图搭配探索度进度和区域成就",
+      "compositionPattern": "Map + achievement panel",
+      "continuityAnchors": [
+        "ink-panel",
+        "left navigation sidebar",
+        "top character info bar"
+      ],
+      "libraryRestraintMode": false,
+      "componentPlan": [
+        "ink-panel",
+        "ink-progress",
+        "ink-badge",
+        "ink-divider"
+      ],
+      "imagePlan": [
+        "bg-map-ink.jpg"
+      ],
+      "chartsRequired": false,
+      "miniProgramStyle": false,
+      "qualityRisks": [
+        "地图展示方式"
+      ]
+    },
+    {
+      "nodeId": "page-menu-livelihood",
+      "slug": "menu-livelihood",
+      "title": "菜单-营生",
+      "htmlSrc": "pages/menu-livelihood.html",
+      "pageIndex": 4,
+      "stateGroupId": null,
+      "stateRole": null,
+      "baseStatePageId": null,
+      "sharedShellContract": [
+        "left navigation sidebar",
+        "top character info bar"
+      ],
+      "mutableRegions": [
+        "page body content"
+      ],
+      "derivedFromHtmlSrc": null,
+      "derivationType": "original",
+      "sourcePageId": null,
+      "sourceHtmlSrc": null,
+      "pageType": "information-dense",
+      "businessScenario": "营生技能界面",
+      "visualNorthStar": "营生技能列表搭配等级进度和配方产出",
+      "compositionPattern": "Skill list + recipe panel",
+      "continuityAnchors": [
+        "ink-panel",
+        "left navigation sidebar",
+        "top character info bar"
+      ],
+      "libraryRestraintMode": false,
+      "componentPlan": [
+        "ink-panel",
+        "ink-progress",
+        "ink-badge"
+      ],
+      "imagePlan": [],
+      "chartsRequired": false,
+      "miniProgramStyle": false,
+      "qualityRisks": [
+        "配方信息密度"
+      ]
+    },
+    {
+      "nodeId": "page-menu-team",
+      "slug": "menu-team",
+      "title": "菜单-组队",
+      "htmlSrc": "pages/menu-team.html",
+      "pageIndex": 5,
+      "stateGroupId": null,
+      "stateRole": null,
+      "baseStatePageId": null,
+      "sharedShellContract": [
+        "left navigation sidebar",
+        "top character info bar"
+      ],
+      "mutableRegions": [
+        "page body content"
+      ],
+      "derivedFromHtmlSrc": null,
+      "derivationType": "original",
+      "sourcePageId": null,
+      "sourceHtmlSrc": null,
+      "pageType": "information-dense",
+      "businessScenario": "组队管理界面",
+      "visualNorthStar": "队伍成员列表搭配邀请搜索和队伍设置",
+      "compositionPattern": "Member list + action panel",
+      "continuityAnchors": [
+        "ink-panel",
+        "left navigation sidebar",
+        "top character info bar"
+      ],
+      "libraryRestraintMode": false,
+      "componentPlan": [
+        "ink-panel",
+        "ink-badge",
+        "ink-button"
+      ],
+      "imagePlan": [],
+      "chartsRequired": false,
+      "miniProgramStyle": false,
+      "qualityRisks": [
+        "成员信息展示"
+      ]
+    },
+    {
+      "nodeId": "page-menu-mail",
+      "slug": "menu-mail",
+      "title": "菜单-邮箱",
+      "htmlSrc": "pages/menu-mail.html",
+      "pageIndex": 6,
+      "stateGroupId": null,
+      "stateRole": null,
+      "baseStatePageId": null,
+      "sharedShellContract": [
+        "left navigation sidebar",
+        "top character info bar"
+      ],
+      "mutableRegions": [
+        "page body content"
+      ],
+      "derivedFromHtmlSrc": null,
+      "derivationType": "original",
+      "sourcePageId": null,
+      "sourceHtmlSrc": null,
+      "pageType": "information-dense",
+      "businessScenario": "邮箱管理界面",
+      "visualNorthStar": "信笺纸质感邮件列表搭配内容阅读和附件领取",
+      "compositionPattern": "Mail list + letter reader",
+      "continuityAnchors": [
+        "ink-panel",
+        "left navigation sidebar",
+        "top character info bar"
+      ],
+      "libraryRestraintMode": false,
+      "componentPlan": [
+        "ink-panel",
+        "ink-badge",
+        "ink-button",
+        "ink-divider"
+      ],
+      "imagePlan": [
+        "bg-letter-paper.jpg"
+      ],
+      "chartsRequired": false,
+      "miniProgramStyle": false,
+      "qualityRisks": [
+        "信笺风格实现"
+      ]
+    },
+    {
+      "nodeId": "page-menu-shop",
+      "slug": "menu-shop",
+      "title": "菜单-商店",
+      "htmlSrc": "pages/menu-shop.html",
+      "pageIndex": 7,
+      "stateGroupId": null,
+      "stateRole": null,
+      "baseStatePageId": null,
+      "sharedShellContract": [
+        "left navigation sidebar",
+        "top character info bar"
+      ],
+      "mutableRegions": [
+        "page body content"
+      ],
+      "derivedFromHtmlSrc": null,
+      "derivationType": "original",
+      "sourcePageId": null,
+      "sourceHtmlSrc": null,
+      "pageType": "information-dense",
+      "businessScenario": "商店购物界面",
+      "visualNorthStar": "商品分类网格搭配购买确认面板",
+      "compositionPattern": "Category tabs + product grid",
+      "continuityAnchors": [
+        "ink-panel",
+        "left navigation sidebar",
+        "top character info bar"
+      ],
+      "libraryRestraintMode": false,
+      "componentPlan": [
+        "ink-panel",
+        "ink-badge",
+        "ink-button"
+      ],
+      "imagePlan": [],
+      "chartsRequired": false,
+      "miniProgramStyle": false,
+      "qualityRisks": [
+        "商品网格密度"
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "filename": "bg-bestiary-illust.jpg",
+      "role": "supporting-content",
+      "owningPage": "menu-bestiary",
+      "semanticDescription": "水墨博物志收集品插图",
+      "status": "generated"
+    },
+    {
+      "filename": "bg-map-ink.jpg",
+      "role": "supporting-content",
+      "owningPage": "menu-martial-record",
+      "semanticDescription": "水墨风格游戏世界地图",
+      "status": "generated"
+    },
+    {
+      "filename": "bg-letter-paper.jpg",
+      "role": "supporting-content",
+      "owningPage": "menu-mail",
+      "semanticDescription": "旧信笺纸质纹理背景",
+      "status": "generated"
+    }
+  ],
+  "wiringPlan": [],
+  "hiddenInteractionPlan": []
+}

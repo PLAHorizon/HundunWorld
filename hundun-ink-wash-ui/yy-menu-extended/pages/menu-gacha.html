@@ -1,0 +1,2248 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>祈愿 - 燕云十六声</title>
+    <style id="theme-vars">
+/* === 燕云十六声 UI 体系 - 水墨设计系统 === */
+/* Brand CSS for Ink Wash (水墨) Game UI Aesthetic */
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+:root {
+  /* === 墨色系 - 主色调 === */
+  --color-ink-darkest: #0d0d0d;
+  --color-ink-dark: #1a1a1a;
+  --color-ink-medium: #2d2d2d;
+  --color-ink-light: #3d3d3d;
+  --color-ink-wash: #4a4a4a;
+  --color-ink-faded: #6a6a6a;
+
+  /* === 纸色系 - 面板/文字 === */
+  --color-paper-bright: #f5f0e8;
+  --color-paper: #ebe5d8;
+  --color-paper-aged: #d4c9b8;
+  --color-paper-faded: #c8bba8;
+  --color-paper-dark: #a89e8a;
+
+  /* === 朱红系 - 强调色 === */
+  --color-vermilion: #c0392b;
+  --color-vermilion-dark: #a93226;
+  --color-vermilion-light: #d9504a;
+  --color-vermilion-faded: #8b2a20;
+
+  /* === 金色系 - 品牌色/品质 === */
+  --color-gold: #c9a84c;
+  --color-gold-bright: #d4af37;
+  --color-gold-dark: #a08838;
+  --color-gold-faded: #8a7430;
+
+  /* === 玉色系 - 状态色 === */
+  --color-jade: #5e8b6e;
+  --color-jade-dark: #4a7c59;
+  --color-jade-light: #7aa889;
+
+  /* === 青灰系 - 次级信息 === */
+  --color-cyan-gray: #6b7b8a;
+  --color-cyan-gray-dark: #5a6a78;
+  --color-cyan-gray-light: #8a9ba8;
+
+  /* === Tailwind 语义令牌映射 === */
+  --color-background: var(--color-ink-dark);
+  --color-foreground: var(--color-paper-bright);
+  --color-card: var(--color-ink-medium);
+  --color-card-foreground: var(--color-paper-bright);
+  --color-popover: var(--color-ink-dark);
+  --color-popover-foreground: var(--color-paper-bright);
+  --color-primary: var(--color-vermilion);
+  --color-primary-foreground: var(--color-paper-bright);
+  --color-secondary: var(--color-ink-light);
+  --color-secondary-foreground: var(--color-paper-bright);
+  --color-muted: var(--color-ink-light);
+  --color-muted-foreground: var(--color-paper-aged);
+  --color-accent: var(--color-gold);
+  --color-accent-foreground: var(--color-ink-dark);
+  --color-destructive: var(--color-vermilion);
+  --color-destructive-foreground: var(--color-paper-bright);
+  --color-border: var(--color-ink-wash);
+  --color-input: var(--color-ink-medium);
+  --color-ring: var(--color-gold);
+
+  /* === Tailwind 圆角令牌映射 === */
+  --color-radius-small: var(--radius-sm);
+  --color-radius-medium: var(--radius-md);
+  --color-radius-large: var(--radius-lg);
+  --color-radius-xlarge: var(--radius-xl);
+
+  /* === 语义状态色 === */
+  --state-success: var(--color-jade);
+  --state-warning: var(--color-gold);
+  --state-error: var(--color-vermilion);
+  --state-info: var(--color-cyan-gray);
+
+  /* === 品质色 === */
+  --quality-common: #a89e8a;
+  --quality-uncommon: #5e8b6e;
+  --quality-rare: #4a7c9a;
+  --quality-epic: #c9a84c;
+  --quality-legendary: #c0392b;
+
+  /* === 字体系统 === */
+  --font-display: "Noto Serif SC", "STKaiti", "KaiTi", "楷体", serif;
+  --font-body: "Noto Sans SC", "Noto Sans", "Microsoft YaHei", "微软雅黑", sans-serif;
+  --font-decorative: "STKaiti", "KaiTi", "楷体", "Noto Serif SC", serif;
+  --font-mono: "Courier New", "Consolas", monospace;
+
+  /* === 字号系统 === */
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+  --text-3xl: 36px;
+  --text-4xl: 48px;
+  --text-5xl: 64px;
+  --text-6xl: 84px;
+
+  /* === 字重系统 === */
+  --weight-light: 300;
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-bold: 700;
+  --weight-black: 900;
+
+  /* === 行高系统 === */
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.75;
+  --leading-loose: 2.0;
+
+  /* === 圆角系统 === */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* === 间距系统 === */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+
+  /* === 边框系统 === */
+  --border-width-thin: 1px;
+  --border-width-medium: 2px;
+  --border-width-thick: 3px;
+  --border-color-ink: rgba(26, 26, 26, 0.6);
+  --border-color-paper: rgba(235, 229, 216, 0.2);
+  --border-color-gold: rgba(201, 168, 76, 0.4);
+
+  /* === 阴影系统（静态阴影 alpha<=0.05，浮层阴影单独定义）=== */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.05);
+  /* === 浮层阴影（仅 modal/popover/drawer 使用）=== */
+  --shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.15);
+  --shadow-overlay: 0 0 20px rgba(13, 13, 13, 0.4);
+
+  /* === 透明度系统 === */
+  --opacity-ink-overlay: 0.85;
+  --opacity-paper-translucent: 0.92;
+  --opacity-hover: 0.85;
+  --opacity-disabled: 0.4;
+
+  /* === 过渡动画 === */
+  --transition-fast: 150ms ease-out;
+  --transition-normal: 250ms ease-out;
+  --transition-slow: 400ms ease-out;
+  --transition-ink: 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* === 基础重置 === */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--color-paper-bright);
+  background-color: var(--color-ink-dark);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* === 水墨面板组件 === */
+.ink-panel {
+  background: linear-gradient(135deg, rgba(45, 45, 45, 0.95) 0%, rgba(26, 26, 26, 0.95) 100%);
+  border: 1px solid var(--border-color-ink);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.ink-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.18 0 0 0 0 0.18 0 0 0 0 0.18 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* === 侧滑面板 === */
+.side-slide-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 420px;
+  height: 100vh;
+  background: linear-gradient(180deg, rgba(26, 26, 26, 0.98) 0%, rgba(13, 13, 13, 0.98) 100%);
+  border-left: 1px solid var(--border-color-gold);
+  padding: var(--spacing-xl);
+  overflow-y: auto;
+  transform: translateX(100%);
+  transition: transform var(--transition-ink);
+  z-index: 300;
+}
+
+.side-slide-panel.active {
+  transform: translateX(0);
+}
+
+/* === 中式按钮 === */
+.ink-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  font-family: var(--font-display);
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  border: 1px solid var(--border-color-gold);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.ink-button-primary {
+  background: linear-gradient(135deg, var(--color-vermilion) 0%, var(--color-vermilion-dark) 100%);
+  color: var(--color-paper-bright);
+  border-color: var(--color-vermilion-dark);
+}
+
+.ink-button-primary:hover {
+  background: linear-gradient(135deg, var(--color-vermilion-light) 0%, var(--color-vermilion) 100%);
+  box-shadow: 0 0 12px rgba(192, 57, 43, 0.3);
+}
+
+.ink-button-secondary {
+  background: transparent;
+  color: var(--color-paper-bright);
+  border-color: var(--border-color-ink);
+}
+
+.ink-button-secondary:hover {
+  background: rgba(235, 229, 216, 0.08);
+  border-color: var(--color-paper-faded);
+}
+
+.ink-button-gold {
+  background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-gold-dark) 100%);
+  color: var(--color-ink-dark);
+  border-color: var(--color-gold-dark);
+}
+
+.ink-button-gold:hover {
+  background: linear-gradient(135deg, var(--color-gold-bright) 0%, var(--color-gold) 100%);
+  box-shadow: 0 0 12px rgba(201, 168, 76, 0.3);
+}
+
+/* === 竖排标题 === */
+.vertical-title {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-family: var(--font-decorative);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.2em;
+  line-height: var(--leading-loose);
+}
+
+/* === 墨色进度条 === */
+.ink-progress {
+  width: 100%;
+  height: 6px;
+  background: rgba(13, 13, 13, 0.8);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  position: relative;
+}
+
+.ink-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-ink-wash) 0%, var(--color-paper-aged) 100%);
+  border-radius: var(--radius-full);
+  transition: width var(--transition-slow);
+}
+
+.ink-progress-bar-vermilion {
+  background: linear-gradient(90deg, var(--color-vermilion-dark) 0%, var(--color-vermilion-light) 100%);
+}
+
+.ink-progress-bar-gold {
+  background: linear-gradient(90deg, var(--color-gold-dark) 0%, var(--color-gold-bright) 100%);
+}
+
+.ink-progress-bar-jade {
+  background: linear-gradient(90deg, var(--color-jade-dark) 0%, var(--color-jade-light) 100%);
+}
+
+/* === 水墨分隔线 === */
+.ink-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--color-ink-faded) 50%, transparent 100%);
+  border: none;
+  margin: var(--spacing-md) 0;
+}
+
+.ink-divider-vertical {
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(180deg, transparent 0%, var(--color-ink-faded) 50%, transparent 100%);
+  border: none;
+}
+
+/* === 标签徽章 === */
+.ink-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--spacing-sm);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+}
+
+.ink-badge-gold {
+  color: var(--color-gold-bright);
+  border-color: var(--color-gold-dark);
+  background: rgba(201, 168, 76, 0.1);
+}
+
+.ink-badge-jade {
+  color: var(--color-jade-light);
+  border-color: var(--color-jade-dark);
+  background: rgba(94, 139, 110, 0.1);
+}
+
+.ink-badge-vermilion {
+  color: var(--color-vermilion-light);
+  border-color: var(--color-vermilion-dark);
+  background: rgba(192, 57, 43, 0.1);
+}
+
+.ink-badge-common {
+  color: var(--color-paper-dark);
+  border-color: var(--color-paper-faded);
+  background: rgba(168, 158, 138, 0.1);
+}
+
+/* === 悬浮提示 === */
+.ink-tooltip {
+  position: absolute;
+  background: rgba(13, 13, 13, 0.95);
+  border: 1px solid var(--border-color-gold);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--text-sm);
+  color: var(--color-paper-bright);
+  pointer-events: none;
+  z-index: 400;
+  box-shadow: var(--shadow-md);
+}
+
+/* === 加载画面 === */
+.ink-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--color-ink-darkest);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+
+/* === 章节过场 === */
+.chapter-transition {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--color-ink-darkest);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  animation: inkFadeIn var(--transition-ink) forwards;
+}
+
+@keyframes inkFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes inkSpread {
+  0% { transform: scale(0.8); opacity: 0; filter: blur(20px); }
+  50% { transform: scale(1.1); opacity: 0.8; filter: blur(5px); }
+  100% { transform: scale(1); opacity: 1; filter: blur(0); }
+}
+
+@keyframes inkDissolve {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; filter: blur(10px); }
+  100% { opacity: 0; filter: blur(20px); }
+}
+
+/* === 水墨晕染效果 === */
+.ink-splash {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(15px);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.ink-splash-1 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, var(--color-ink-medium) 0%, transparent 70%);
+}
+
+.ink-splash-2 {
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, var(--color-ink-wash) 0%, transparent 70%);
+}
+
+/* === 纸质纹理覆盖 === */
+.paper-texture {
+  position: relative;
+}
+
+.paper-texture::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5' result='noise'/%3E%3CfeDiffuseLighting in='noise' lighting-color='%23f5f0e8' surfaceScale='2'%3E%3CfeDistantLight azimuth='45' elevation='60'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  mix-blend-mode: overlay;
+}
+
+/* === 中式纹样边框 === */
+.pattern-border-fret {
+  border-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M0 0h40v40H0z' fill='none'/%3E%3Cpath d='M5 5h30v30H5z' fill='none' stroke='%23c9a84c' stroke-width='1' opacity='0.3'/%3E%3Cpath d='M10 10h20v20H10z' fill='none' stroke='%23c9a84c' stroke-width='0.5' opacity='0.2'/%3E%3C/svg%3E") 8 stretch;
+}
+
+/* === 通用工具类 === */
+.text-display { font-family: var(--font-display); }
+.text-body { font-family: var(--font-body); }
+.text-decorative { font-family: var(--font-decorative); }
+
+.text-ink { color: var(--color-ink-dark); }
+.text-paper { color: var(--color-paper-bright); }
+.text-vermilion { color: var(--color-vermilion); }
+.text-gold { color: var(--color-gold); }
+.text-jade { color: var(--color-jade); }
+.text-cyan-gray { color: var(--color-cyan-gray); }
+.text-muted { color: var(--color-ink-faded); }
+
+.bg-ink { background-color: var(--color-ink-dark); }
+.bg-ink-medium { background-color: var(--color-ink-medium); }
+.bg-paper { background-color: var(--color-paper); }
+.bg-vermilion { background-color: var(--color-vermilion); }
+.bg-gold { background-color: var(--color-gold); }
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.gap-sm { gap: var(--spacing-sm); }
+.gap-md { gap: var(--spacing-md); }
+.gap-lg { gap: var(--spacing-lg); }
+
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed { position: fixed; }
+
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.h-screen { height: 100vh; }
+
+.overflow-hidden { overflow: hidden; }
+.overflow-auto { overflow: auto; }
+
+.cursor-pointer { cursor: pointer; }
+
+.opacity-hover { opacity: var(--opacity-hover); }
+.opacity-disabled { opacity: var(--opacity-disabled); }
+
+.transition-normal { transition: all var(--transition-normal); }
+.transition-ink { transition: all var(--transition-ink); }
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--color-background);
+    --color-foreground: var(--color-foreground);
+    --color-card: var(--color-card);
+    --color-card-foreground: var(--color-card-foreground);
+    --color-popover: var(--color-popover);
+    --color-popover-foreground: var(--color-popover-foreground);
+    --color-primary: var(--color-primary);
+    --color-primary-foreground: var(--color-primary-foreground);
+    --color-secondary: var(--color-secondary);
+    --color-secondary-foreground: var(--color-secondary-foreground);
+    --color-muted: var(--color-muted);
+    --color-muted-foreground: var(--color-muted-foreground);
+    --color-accent: var(--color-accent);
+    --color-accent-foreground: var(--color-accent-foreground);
+    --color-destructive: var(--color-destructive);
+    --color-destructive-foreground: var(--color-destructive-foreground);
+    --color-border: var(--color-border);
+    --color-input: var(--color-input);
+    --color-ring: var(--color-ring);
+    --radius-sm: var(--color-radius-small);
+    --radius-md: var(--color-radius-medium);
+    --radius-lg: var(--color-radius-large);
+    --radius-xl: var(--color-radius-xlarge);
+  }
+  @layer base {
+    body { background: var(--color-background); color: var(--color-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="gacha-body">
+    <main class="gacha-page">
+
+        <!-- ============================================================
+             1. 背景层 — 全屏金色水墨光效背景 + 暗色遮罩
+        ============================================================ -->
+        <div class="gacha-bg-layer" aria-hidden="true"></div>
+        <div class="gacha-bg-overlay" aria-hidden="true"></div>
+
+        <!-- 水墨晕染装饰 -->
+        <div class="ink-splash ink-splash-gacha ink-splash-1" aria-hidden="true"></div>
+        <div class="ink-splash ink-splash-gacha ink-splash-2" aria-hidden="true"></div>
+        <div class="ink-splash ink-splash-gacha ink-splash-gold" aria-hidden="true"></div>
+
+        <!-- 金色粒子装饰 -->
+        <div class="gacha-particles" aria-hidden="true">
+            <span class="particle particle-1"></span>
+            <span class="particle particle-2"></span>
+            <span class="particle particle-3"></span>
+            <span class="particle particle-4"></span>
+            <span class="particle particle-5"></span>
+            <span class="particle particle-6"></span>
+        </div>
+
+        <!-- ============================================================
+             2. 顶部栏 — 返回按钮 + 祈愿标题 + 货币余额
+        ============================================================ -->
+        <header class="gacha-topbar">
+            <div class="topbar-left">
+                <button class="topbar-back-btn" type="button" aria-label="返回">
+                    <i data-lucide="arrow-left" class="icon-sm"></i>
+                </button>
+                <div class="topbar-title-group">
+                    <h1 class="gacha-title">祈愿</h1>
+                    <span class="gacha-title-en">Wishing Ceremony</span>
+                </div>
+                <div class="topbar-divider"></div>
+                <span class="topbar-pool-name">名侠祈愿 · 青莲剑仙</span>
+            </div>
+
+            <div class="topbar-right">
+                <!-- 元宝余额 -->
+                <div class="currency-display currency-yuanbao">
+                    <span class="currency-icon currency-icon-gold">
+                        <i data-lucide="circle" class="icon-xs"></i>
+                    </span>
+                    <div class="currency-info">
+                        <span class="currency-label">元宝</span>
+                        <span class="currency-value">328</span>
+                    </div>
+                    <button class="currency-add-btn" type="button" aria-label="充值">
+                        <i data-lucide="plus" class="icon-xs"></i>
+                    </button>
+                </div>
+
+                <div class="topbar-currency-divider"></div>
+
+                <!-- 命星余额 -->
+                <div class="currency-display currency-mingxing">
+                    <span class="currency-icon currency-icon-star">
+                        <i data-lucide="star" class="icon-xs"></i>
+                    </span>
+                    <div class="currency-info">
+                        <span class="currency-label">命星</span>
+                        <span class="currency-value">5</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ============================================================
+             3. 左侧卡池选择器 — 竖排卡池标签
+        ============================================================ -->
+        <nav class="pool-selector" aria-label="卡池选择">
+            <div class="pool-selector-header">
+                <i data-lucide="layers" class="icon-sm"></i>
+                <span class="pool-selector-title">卡池列表</span>
+            </div>
+
+            <div class="pool-tabs">
+                <!-- 名侠祈愿 (active) -->
+                <button class="pool-tab pool-tab-active" type="button" data-pool="hero">
+                    <div class="pool-tab-content">
+                        <span class="pool-tab-name">名侠祈愿</span>
+                        <span class="pool-tab-desc">限定名侠 · 概率UP</span>
+                    </div>
+                    <div class="pool-tab-indicator"></div>
+                </button>
+
+                <!-- 武器祈愿 -->
+                <button class="pool-tab" type="button" data-pool="weapon">
+                    <div class="pool-tab-content">
+                        <span class="pool-tab-name">武器祈愿</span>
+                        <span class="pool-tab-desc">限定神兵 · 概率UP</span>
+                    </div>
+                    <div class="pool-tab-indicator"></div>
+                </button>
+
+                <!-- 常驻祈愿 -->
+                <button class="pool-tab" type="button" data-pool="permanent">
+                    <div class="pool-tab-content">
+                        <span class="pool-tab-name">常驻祈愿</span>
+                        <span class="pool-tab-desc">名侠神兵 · 常驻开放</span>
+                    </div>
+                    <div class="pool-tab-indicator"></div>
+                </button>
+
+                <!-- 新手祈愿 -->
+                <button class="pool-tab" type="button" data-pool="novice">
+                    <div class="pool-tab-content">
+                        <span class="pool-tab-name">新手祈愿</span>
+                        <span class="pool-tab-desc">新手限定 · 首抽折扣</span>
+                    </div>
+                    <span class="ink-badge ink-badge-jade pool-tab-badge">新手</span>
+                    <div class="pool-tab-indicator"></div>
+                </button>
+            </div>
+
+            <!-- 卡池倒计时 -->
+            <div class="pool-countdown">
+                <div class="pool-countdown-header">
+                    <i data-lucide="clock" class="icon-xs"></i>
+                    <span class="pool-countdown-label">卡池剩余</span>
+                </div>
+                <div class="pool-countdown-time">
+                    <span class="countdown-num">12</span>
+                    <span class="countdown-unit">天</span>
+                    <span class="countdown-num">07</span>
+                    <span class="countdown-unit">时</span>
+                    <span class="countdown-num">23</span>
+                    <span class="countdown-unit">分</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- ============================================================
+             4. 中央展示区 — 角色立绘 + 卡池信息 + 保底计数
+        ============================================================ -->
+        <section class="center-stage">
+
+            <!-- 保底计数器 (中央展示区左上角) -->
+            <div class="pity-counter-panel">
+                <div class="pity-counter-header">
+                    <i data-lucide="shield" class="icon-xs"></i>
+                    <span class="pity-counter-title">保底计数</span>
+                </div>
+
+                <!-- 大保底 -->
+                <div class="pity-item pity-item-great">
+                    <div class="pity-item-row">
+                        <span class="pity-item-label">大保底</span>
+                        <span class="pity-item-value">
+                            <span class="pity-current">0</span>
+                            <span class="pity-separator">/</span>
+                            <span class="pity-total">90</span>
+                        </span>
+                    </div>
+                    <div class="ink-progress pity-progress">
+                        <div class="ink-progress-bar ink-progress-bar-vermilion" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- 小保底 -->
+                <div class="pity-item pity-item-small">
+                    <div class="pity-item-row">
+                        <span class="pity-item-label">小保底</span>
+                        <span class="pity-item-value">
+                            <span class="pity-current">47</span>
+                            <span class="pity-separator">/</span>
+                            <span class="pity-total">90</span>
+                        </span>
+                    </div>
+                    <div class="ink-progress pity-progress">
+                        <div class="ink-progress-bar ink-progress-bar-gold" style="width: 52.2%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 角色展示框 -->
+            <div class="character-showcase">
+                <!-- 金色边框光效 -->
+                <div class="showcase-glow-ring" aria-hidden="true"></div>
+                <div class="showcase-glow-ring showcase-glow-ring-2" aria-hidden="true"></div>
+
+                <!-- 展示框内部 -->
+                <div class="showcase-inner">
+                    <!-- 角色占位区域 -->
+                    <div class="character-placeholder">
+                        <div class="character-silhouette" aria-hidden="true"></div>
+                        <div class="character-name-display">
+                            <span class="character-name-prefix">名侠</span>
+                            <span class="character-name-dot">·</span>
+                            <span class="character-name-main">李白</span>
+                        </div>
+                        <div class="character-title-text">青莲剑仙</div>
+                    </div>
+
+                    <!-- 装饰性竖排文字 -->
+                    <div class="showcase-vertical-text" aria-hidden="true">
+                        <span>天</span>
+                        <span>生</span>
+                        <span>我</span>
+                        <span>材</span>
+                    </div>
+                </div>
+
+                <!-- 展示框底部信息 -->
+                <div class="showcase-footer">
+                    <div class="showcase-footer-left">
+                        <h2 class="showcase-pool-name">青莲剑仙</h2>
+                        <p class="showcase-pool-desc">概率UP · 限定名侠</p>
+                    </div>
+                    <div class="showcase-footer-right">
+                        <span class="ink-badge ink-badge-gold showcase-up-badge">
+                            <i data-lucide="trending-up" class="icon-xs"></i>
+                            UP
+                        </span>
+                        <span class="ink-badge ink-badge-vermilion showcase-quality-badge">
+                            <i data-lucide="flame" class="icon-xs"></i>
+                            传说
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 卡池概率概览 (中央展示区右侧) -->
+            <div class="pool-overview-panel">
+                <div class="pool-overview-header">
+                    <i data-lucide="bar-chart-3" class="icon-sm"></i>
+                    <span class="pool-overview-title">概率概览</span>
+                </div>
+
+                <div class="pool-overview-list">
+                    <div class="overview-item overview-legendary">
+                        <span class="overview-quality-dot quality-dot-legendary"></span>
+                        <span class="overview-quality-name">传说名侠</span>
+                        <span class="overview-quality-rate">1.20%</span>
+                    </div>
+                    <div class="overview-item overview-epic">
+                        <span class="overview-quality-dot quality-dot-epic"></span>
+                        <span class="overview-quality-name">史诗名侠</span>
+                        <span class="overview-quality-rate">8.80%</span>
+                    </div>
+                    <div class="overview-item overview-rare">
+                        <span class="overview-quality-dot quality-dot-rare"></span>
+                        <span class="overview-quality-name">稀有名侠</span>
+                        <span class="overview-quality-rate">30.00%</span>
+                    </div>
+                    <div class="overview-item overview-uncommon">
+                        <span class="overview-quality-dot quality-dot-uncommon"></span>
+                        <span class="overview-quality-name">精良名侠</span>
+                        <span class="overview-quality-rate">60.00%</span>
+                    </div>
+                </div>
+
+                <hr class="ink-divider pool-overview-divider">
+
+                <div class="pool-overview-guarantee">
+                    <div class="guarantee-item">
+                        <i data-lucide="check-circle" class="icon-xs"></i>
+                        <span>90抽必得传说名侠</span>
+                    </div>
+                    <div class="guarantee-item">
+                        <i data-lucide="check-circle" class="icon-xs"></i>
+                        <span>10抽必得精良以上</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================
+             5. 底部抽卡区 — 单抽/十连按钮 + 抽卡进度
+        ============================================================ -->
+        <footer class="draw-area">
+            <!-- 抽卡按钮组 -->
+            <div class="draw-buttons">
+                <!-- 祈愿一次 -->
+                <button class="ink-button ink-button-secondary draw-btn draw-btn-single" type="button">
+                    <div class="draw-btn-content">
+                        <div class="draw-btn-icon">
+                            <i data-lucide="sparkle" class="icon-sm"></i>
+                        </div>
+                        <div class="draw-btn-text">
+                            <span class="draw-btn-label">祈愿一次</span>
+                            <span class="draw-btn-cost">
+                                <i data-lucide="circle" class="icon-xs"></i>
+                                元宝 × 160
+                            </span>
+                        </div>
+                    </div>
+                </button>
+
+                <!-- 祈愿十次 -->
+                <button class="ink-button ink-button-gold draw-btn draw-btn-ten" type="button">
+                    <div class="draw-btn-content">
+                        <div class="draw-btn-icon">
+                            <i data-lucide="sparkles" class="icon-sm"></i>
+                        </div>
+                        <div class="draw-btn-text">
+                            <span class="draw-btn-label">祈愿十次</span>
+                            <span class="draw-btn-cost">
+                                <i data-lucide="circle" class="icon-xs"></i>
+                                元宝 × 1600
+                            </span>
+                        </div>
+                    </div>
+                    <span class="ink-badge ink-badge-vermilion draw-btn-save-badge">
+                        节省160元宝
+                    </span>
+                </button>
+            </div>
+
+            <!-- 抽卡进度信息 -->
+            <div class="draw-progress-section">
+                <div class="draw-progress-info">
+                    <span class="draw-progress-text">
+                        <i data-lucide="hash" class="icon-xs"></i>
+                        已祈愿 <span class="draw-progress-count">47</span> 次
+                    </span>
+                    <span class="draw-progress-pity">
+                        距离保底还有 <span class="draw-progress-remaining">3</span> 次
+                    </span>
+                </div>
+                <div class="ink-progress draw-progress-bar-container">
+                    <div class="ink-progress-bar ink-progress-bar-gold draw-progress-bar" style="width: 94%;"></div>
+                </div>
+            </div>
+        </footer>
+
+        <!-- ============================================================
+             6. 右下角链接 — 祈愿记录 / 概率公示 / 详情规则
+        ============================================================ -->
+        <nav class="gacha-links" aria-label="抽卡相关">
+            <button class="gacha-link-btn" type="button">
+                <i data-lucide="scroll-text" class="icon-sm"></i>
+                <span class="gacha-link-text">祈愿记录</span>
+            </button>
+            <button class="gacha-link-btn" type="button">
+                <i data-lucide="info" class="icon-sm"></i>
+                <span class="gacha-link-text">概率公示</span>
+            </button>
+            <button class="gacha-link-btn" type="button">
+                <i data-lucide="book-open" class="icon-sm"></i>
+                <span class="gacha-link-text">详情规则</span>
+            </button>
+        </nav>
+
+        <!-- ============================================================
+             7. 左下角装饰 — 当前UP名侠列表预览
+        ============================================================ -->
+        <aside class="up-preview-panel">
+            <div class="up-preview-header">
+                <i data-lucide="award" class="icon-sm"></i>
+                <span class="up-preview-title">UP名侠</span>
+            </div>
+            <div class="up-preview-list">
+                <div class="up-preview-item quality-legendary">
+                    <div class="up-preview-avatar">
+                        <span class="up-preview-char">李</span>
+                    </div>
+                    <div class="up-preview-info">
+                        <span class="up-preview-name">李白</span>
+                        <span class="up-preview-tag">青莲剑仙</span>
+                    </div>
+                    <span class="ink-badge ink-badge-vermilion up-preview-rate">UP</span>
+                </div>
+                <div class="up-preview-item quality-epic">
+                    <div class="up-preview-avatar">
+                        <span class="up-preview-char">杜</span>
+                    </div>
+                    <div class="up-preview-info">
+                        <span class="up-preview-name">杜甫</span>
+                        <span class="up-preview-tag">诗圣</span>
+                    </div>
+                    <span class="ink-badge ink-badge-gold up-preview-rate">UP</span>
+                </div>
+                <div class="up-preview-item quality-epic">
+                    <div class="up-preview-avatar">
+                        <span class="up-preview-char">王</span>
+                    </div>
+                    <div class="up-preview-info">
+                        <span class="up-preview-name">王维</span>
+                        <span class="up-preview-tag">诗佛</span>
+                    </div>
+                    <span class="ink-badge ink-badge-gold up-preview-rate">UP</span>
+                </div>
+            </div>
+        </aside>
+
+    </main>
+
+    <!-- ============================================================
+         页面专属样式
+    ============================================================ -->
+    <style>
+        /* === 图标尺寸 === */
+        .icon-xs { width: 14px; height: 14px; }
+        .icon-sm { width: 18px; height: 18px; }
+        .icon-md { width: 22px; height: 22px; }
+
+        /* === 全屏祈愿页面基础 === */
+        .gacha-body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: var(--color-ink-darkest);
+        }
+
+        .gacha-page {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            min-height: 700px;
+            overflow: hidden;
+            font-family: var(--font-body);
+            color: var(--color-paper-bright);
+        }
+
+        /* === 1. 背景层 === */
+        .gacha-bg-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('../assets/bg-gacha-glow.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: 0;
+        }
+
+        .gacha-bg-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(13, 13, 13, 0.6);
+            background: linear-gradient(180deg,
+                rgba(13, 13, 13, 0.7) 0%,
+                rgba(13, 13, 13, 0.5) 40%,
+                rgba(13, 13, 13, 0.65) 70%,
+                rgba(13, 13, 13, 0.85) 100%);
+            z-index: 1;
+        }
+
+        /* === 水墨晕染装饰 === */
+        .ink-splash-gacha {
+            position: absolute;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .ink-splash-gacha.ink-splash-1 {
+            top: 10%;
+            left: 15%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle,
+                rgba(201, 168, 76, 0.08) 0%,
+                transparent 70%);
+            filter: blur(30px);
+            opacity: 0.6;
+        }
+
+        .ink-splash-gacha.ink-splash-2 {
+            bottom: 15%;
+            right: 10%;
+            width: 350px;
+            height: 350px;
+            background: radial-gradient(circle,
+                rgba(192, 57, 43, 0.06) 0%,
+                transparent 70%);
+            filter: blur(25px);
+            opacity: 0.5;
+        }
+
+        .ink-splash-gacha.ink-splash-gold {
+            top: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle,
+                rgba(201, 168, 76, 0.06) 0%,
+                rgba(201, 168, 76, 0.02) 40%,
+                transparent 70%);
+            filter: blur(40px);
+            opacity: 0.7;
+        }
+
+        /* === 金色粒子 === */
+        .gacha-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--color-gold-bright);
+            box-shadow: 0 0 6px rgba(212, 175, 55, 0.6);
+            opacity: 0.4;
+        }
+
+        .particle-1 { top: 20%; left: 30%; animation: particleFloat 6s ease-in-out infinite; }
+        .particle-2 { top: 35%; left: 70%; animation: particleFloat 8s ease-in-out infinite 1s; }
+        .particle-3 { top: 60%; left: 25%; animation: particleFloat 7s ease-in-out infinite 2s; }
+        .particle-4 { top: 50%; left: 75%; animation: particleFloat 9s ease-in-out infinite 0.5s; }
+        .particle-5 { top: 25%; left: 55%; animation: particleFloat 10s ease-in-out infinite 3s; }
+        .particle-6 { top: 70%; left: 50%; animation: particleFloat 5s ease-in-out infinite 1.5s; }
+
+        @keyframes particleFloat {
+            0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
+            50% { transform: translateY(-30px) scale(1.5); opacity: 0.6; }
+        }
+
+        /* === 2. 顶部栏 === */
+        .gacha-topbar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--spacing-xl);
+            background: linear-gradient(180deg,
+                rgba(13, 13, 13, 0.9) 0%,
+                rgba(26, 26, 26, 0.7) 70%,
+                transparent 100%);
+            border-bottom: 1px solid var(--border-color-ink);
+            z-index: 50;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .topbar-back-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background: rgba(45, 45, 45, 0.6);
+            border: 1px solid var(--border-color-ink);
+            border-radius: var(--radius-md);
+            color: var(--color-paper-aged);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+
+        .topbar-back-btn:hover {
+            background: rgba(201, 168, 76, 0.1);
+            border-color: var(--border-color-gold);
+            color: var(--color-gold-bright);
+        }
+
+        .topbar-title-group {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.1;
+        }
+
+        .gacha-title {
+            font-family: var(--font-display);
+            font-size: var(--text-2xl);
+            font-weight: var(--weight-bold);
+            color: var(--color-gold-bright);
+            letter-spacing: 0.15em;
+            text-shadow: 0 0 12px rgba(201, 168, 76, 0.3);
+        }
+
+        .gacha-title-en {
+            font-family: var(--font-body);
+            font-size: var(--text-xs);
+            color: var(--color-ink-faded);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+
+        .topbar-divider {
+            width: 1px;
+            height: 28px;
+            background: linear-gradient(180deg,
+                transparent 0%,
+                var(--color-ink-faded) 50%,
+                transparent 100%);
+        }
+
+        .topbar-pool-name {
+            font-family: var(--font-display);
+            font-size: var(--text-base);
+            color: var(--color-paper-aged);
+            letter-spacing: 0.1em;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .currency-display {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: 6px var(--spacing-md);
+            background: rgba(45, 45, 45, 0.7);
+            border: 1px solid var(--border-color-ink);
+            border-radius: var(--radius-lg);
+            transition: all var(--transition-normal);
+        }
+
+        .currency-display:hover {
+            border-color: var(--border-color-gold);
+            background: rgba(45, 45, 45, 0.85);
+        }
+
+        .currency-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .currency-icon-gold {
+            background: radial-gradient(circle,
+                var(--color-gold-bright) 0%,
+                var(--color-gold-dark) 100%);
+            color: var(--color-ink-dark);
+            box-shadow: 0 0 8px rgba(201, 168, 76, 0.3);
+        }
+
+        .currency-icon-star {
+            background: radial-gradient(circle,
+                var(--color-vermilion-light) 0%,
+                var(--color-vermilion-dark) 100%);
+            color: var(--color-paper-bright);
+            box-shadow: 0 0 8px rgba(192, 57, 43, 0.3);
+        }
+
+        .currency-info {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+            min-width: 50px;
+        }
+
+        .currency-label {
+            font-size: var(--text-xs);
+            color: var(--color-paper-faded);
+            letter-spacing: 0.05em;
+        }
+
+        .currency-value {
+            font-family: var(--font-display);
+            font-size: var(--text-lg);
+            font-weight: var(--weight-bold);
+            color: var(--color-paper-bright);
+        }
+
+        .currency-add-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            background: rgba(201, 168, 76, 0.15);
+            border: 1px solid var(--border-color-gold);
+            border-radius: 50%;
+            color: var(--color-gold-bright);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .currency-add-btn:hover {
+            background: rgba(201, 168, 76, 0.3);
+            transform: scale(1.1);
+        }
+
+        .topbar-currency-divider {
+            width: 1px;
+            height: 32px;
+            background: var(--color-ink-light);
+        }
+
+        /* === 3. 左侧卡池选择器 === */
+        .pool-selector {
+            position: absolute;
+            top: 60px;
+            left: 0;
+            width: 200px;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            padding: var(--spacing-lg) var(--spacing-md);
+            background: linear-gradient(90deg,
+                rgba(13, 13, 13, 0.85) 0%,
+                rgba(26, 26, 26, 0.5) 80%,
+                transparent 100%);
+            border-right: 1px solid var(--border-color-ink);
+            z-index: 40;
+        }
+
+        .pool-selector-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+            color: var(--color-paper-faded);
+        }
+
+        .pool-selector-title {
+            font-family: var(--font-display);
+            font-size: var(--text-sm);
+            letter-spacing: 0.15em;
+        }
+
+        .pool-tabs {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+            flex: 1;
+        }
+
+        .pool-tab {
+            position: relative;
+            display: flex;
+            align-items: center;
+            padding: var(--spacing-md) var(--spacing-md);
+            background: transparent;
+            border: none;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            text-align: left;
+        }
+
+        .pool-tab:hover {
+            background: rgba(235, 229, 216, 0.04);
+        }
+
+        .pool-tab-active {
+            background: rgba(201, 168, 76, 0.08);
+            border-left-color: var(--color-gold);
+        }
+
+        .pool-tab-active:hover {
+            background: rgba(201, 168, 76, 0.12);
+        }
+
+        .pool-tab-content {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+        }
+
+        .pool-tab-name {
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: var(--weight-medium);
+            color: var(--color-paper-dark);
+            letter-spacing: 0.08em;
+            transition: color var(--transition-normal);
+        }
+
+        .pool-tab:hover .pool-tab-name {
+            color: var(--color-paper-aged);
+        }
+
+        .pool-tab-active .pool-tab-name {
+            color: var(--color-gold-bright);
+            text-shadow: 0 0 8px rgba(201, 168, 76, 0.2);
+        }
+
+        .pool-tab-desc {
+            font-size: var(--text-xs);
+            color: var(--color-ink-faded);
+            letter-spacing: 0.03em;
+        }
+
+        .pool-tab-active .pool-tab-desc {
+            color: var(--color-paper-faded);
+        }
+
+        .pool-tab-badge {
+            margin-left: var(--spacing-sm);
+            flex-shrink: 0;
+        }
+
+        .pool-tab-indicator {
+            position: absolute;
+            right: var(--spacing-sm);
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: transparent;
+            transition: all var(--transition-normal);
+        }
+
+        .pool-tab-active .pool-tab-indicator {
+            background: var(--color-gold-bright);
+            box-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
+        }
+
+        /* === 卡池倒计时 === */
+        .pool-countdown {
+            margin-top: var(--spacing-lg);
+            padding: var(--spacing-md);
+            background: rgba(13, 13, 13, 0.6);
+            border: 1px solid var(--border-color-ink);
+            border-radius: var(--radius-md);
+        }
+
+        .pool-countdown-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            margin-bottom: var(--spacing-sm);
+            color: var(--color-paper-faded);
+        }
+
+        .pool-countdown-label {
+            font-size: var(--text-xs);
+            letter-spacing: 0.1em;
+        }
+
+        .pool-countdown-time {
+            display: flex;
+            align-items: baseline;
+            gap: 2px;
+            justify-content: center;
+        }
+
+        .countdown-num {
+            font-family: var(--font-display);
+            font-size: var(--text-lg);
+            font-weight: var(--weight-bold);
+            color: var(--color-gold-bright);
+        }
+
+        .countdown-unit {
+            font-size: var(--text-xs);
+            color: var(--color-paper-faded);
+            margin-right: 4px;
+        }
+
+        /* === 4. 中央展示区 === */
+        .center-stage {
+            position: absolute;
+            top: 60px;
+            left: 200px;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        /* === 保底计数器面板 === */
+        .pity-counter-panel {
+            position: absolute;
+            top: var(--spacing-xl);
+            left: var(--spacing-xl);
+            width: 200px;
+            padding: var(--spacing-md);
+            background: rgba(13, 13, 13, 0.75);
+            border: 1px solid var(--border-color-ink);
+            border-radius: var(--radius-lg);
+            backdrop-filter: blur(8px);
+        }
+
+        .pity-counter-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            margin-bottom: var(--spacing-md);
+            color: var(--color-paper-faded);
+        }
+
+        .pity-counter-title {
+            font-family: var(--font-display);
+            font-size: var(--text-sm);
+            letter-spacing: 0.1em;
+        }
+
+        .pity-item {
+            margin-bottom: var(--spacing-md);
+        }
+
+        .pity-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .pity-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 6px;
+        }
+
+        .pity-item-label {
+            font-size: var(--text-sm);
+            color: var(--color-paper-aged);
+            letter-spacing: 0.05em;
+        }
+
+        .pity-item-great .pity-item-label {
+            color: var(--color-vermilion-light);
+        }
+
+        .pity-item-small .pity-item-label {
+            color: var(--color-gold-bright);
+        }
+
+        .pity-item-value {
+            font-family: var(--font-display);
+            font-size: var(--text-base);
+        }
+
+        .pity-current {
+            font-weight: var(--weight-bold);
+            color: var(--color-paper-bright);
+        }
+
+        .pity-item-great .pity-current {
+            color: var(--color-vermilion-light);
+        }
+
+        .pity-item-small .pity-current {
+            color: var(--color-gold-bright);
+        }
+
+        .pity-separator {
+            color: var(--color-ink-faded);
+            margin: 0 2px;
+        }
+
+        .pity-total {
+            color: var(--color-ink-faded);
+            font-size: var(--text-sm);
+        }
+
+        .pity-progress {
+            height: 4px;
+        }
+
+        /* === 角色展示框 === */
+        .character-showcase {
+            position: relative;
+            width: 400px;
+            height: 500px;
+            border: 2px solid var(--color-gold);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 0 30px rgba(201, 168, 76, 0.3),
+                        0 0 60px rgba(201, 168, 76, 0.1),
+                        inset 0 0 20px rgba(13, 13, 13, 0.5);
+            overflow: hidden;
+            animation: showcasePulse 4s ease-in-out infinite;
+        }
+
+        @keyframes showcasePulse {
+            0%, 100% {
+                box-shadow: 0 0 30px rgba(201, 168, 76, 0.3),
+                            0 0 60px rgba(201, 168, 76, 0.1),
+                            inset 0 0 20px rgba(13, 13, 13, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(201, 168, 76, 0.45),
+                            0 0 80px rgba(201, 168, 76, 0.15),
+                            inset 0 0 20px rgba(13, 13, 13, 0.5);
+            }
+        }
+
+        /* === 展示框光效环 === */
+        .showcase-glow-ring {
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: var(--radius-lg);
+            background: linear-gradient(135deg,
+                transparent 0%,
+                rgba(212, 175, 55, 0.15) 30%,
+                transparent 50%,
+                rgba(212, 175, 55, 0.15) 70%,
+                transparent 100%);
+            pointer-events: none;
+            animation: glowRotate 8s linear infinite;
+        }
+
+        .showcase-glow-ring-2 {
+            background: linear-gradient(225deg,
+                transparent 0%,
+                rgba(192, 57, 43, 0.08) 30%,
+                transparent 50%,
+                rgba(212, 175, 55, 0.1) 70%,
+                transparent 100%);
+            animation: glowRotate 12s linear infinite reverse;
+        }
+
+        @keyframes glowRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* === 展示框内部 === */
+        .showcase-inner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(180deg,
+                rgba(26, 26, 26, 0.9) 0%,
+                rgba(13, 13, 13, 0.95) 50%,
+                rgba(45, 45, 45, 0.85) 100%);
+        }
+
+        .character-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-lg);
+            z-index: 2;
+        }
+
+        .character-silhouette {
+            width: 180px;
+            height: 240px;
+            background: radial-gradient(ellipse at center,
+                rgba(201, 168, 76, 0.08) 0%,
+                transparent 70%);
+            border-radius: 50% 50% 30% 30%;
+            position: relative;
+        }
+
+        .character-silhouette::before {
+            content: '';
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 120px;
+            background: linear-gradient(180deg,
+                rgba(201, 168, 76, 0.06) 0%,
+                transparent 100%);
+            border-radius: 40% 40% 10% 10%;
+        }
+
+        .character-name-display {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .character-name-prefix {
+            font-family: var(--font-display);
+            font-size: var(--text-lg);
+            color: var(--color-paper-faded);
+            letter-spacing: 0.2em;
+        }
+
+        .character-name-dot {
+            font-family: var(--font-display);
+            font-size: var(--text-lg);
+            color: var(--color-gold-dark);
+        }
+
+        .character-name-main {
+            font-family: var(--font-display);
+            font-size: 48px;
+            font-weight: var(--weight-black);
+            color: var(--color-gold-bright);
+            letter-spacing: 0.1em;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.4),
+                         0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .character-title-text {
+            font-family: var(--font-decorative);
+            font-size: var(--text-xl);
+            color: var(--color-paper-aged);
+            letter-spacing: 0.3em;
+            margin-top: var(--spacing-xs);
+        }
+
+        /* === 装饰性竖排文字 === */
+        .showcase-vertical-text {
+            position: absolute;
+            top: var(--spacing-lg);
+            right: var(--spacing-md);
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+            font-family: var(--font-decorative);
+            font-size: var(--text-sm);
+            color: rgba(201, 168, 76, 0.15);
+            letter-spacing: 0.3em;
+            writing-mode: vertical-rl;
+        }
+
+        /* === 展示框底部信息 === */
+        .showcase-footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            padding: var(--spacing-md) var(--spacing-lg);
+            background: linear-gradient(180deg,
+                transparent 0%,
+                rgba(13, 13, 13, 0.8) 50%,
+                rgba(13, 13, 13, 0.95) 100%);
+            z-index: 3;
+        }
+
+        .showcase-footer-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .showcase-pool-name {
+            font-family: var(--font-display);
+            font-size: var(--text-xl);
+            font-weight: var(--weight-bold);
+            color: var(--color-paper-bright);
+            letter-spacing: 0.1em;
+        }
+
+        .showcase-pool-desc {
+            font-size: var(--text-sm);
+            color: var(--color-paper-faded);
+            letter-spacing: 0.05em;
+        }
+
+        .showcase-footer-right {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+            align-items: flex-end;
+        }
+
+        .showcase-up-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            font-weight: var(--weight-bold);
+            letter-spacing: 0.1em;
+        }
+
+        .showcase-quality-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            letter-spacing: 0.05em;
+        }
+
+        /* === 概率概览面板 === */
+        .pool-overview-panel {
+            position: absolute;
+            top: var(--spacing-xl);
+            right: var(--spacing-xl);
+            width: 220px;
+            padding: var(--spacing-md);
+            background: rgba(13, 13, 13, 0.75);
+            border: 1px solid var(--border-color-ink);
+            border-radius: var(--radius-lg);
+            backdrop-filter: blur(8px);
+        }
+
+        .pool-overview-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+            color: var(--color-paper-faded);
+        }
+
+        .pool-overview-title {
+            font-family: var(--font-display);
+            font-size: var(--text-sm);
+            letter-spacing: 0.1em;
+        }
+
+        .pool-overview-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .overview-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .overview-quality-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .quality-dot-legendary { background: var(--quality-legendary); box-shadow: 0 0 6px rgba(192, 57, 43, 0.4); }
+        .quality-dot-epic { background: var(--quality-epic); box-shadow: 0 0 6px rgba(201, 168, 76, 0.4); }
+        .quality-dot-rare { background: var(--quality-rare); box-shadow: 0 0 6px rgba(74, 124, 154, 0.4); }
+        .quality-dot-uncommon { background: var(--quality-uncommon); }
+
+        .overview-quality-name {
+            flex: 1;
+            font-size: var(--text-sm);
+            color: var(--color-paper-aged);
+        }
+
+        .overview-quality-rate {
+            font-family: var(--font-display);
+            font-size: var(--text-sm);
+            font-weight: var(--weight-medium);
+            color: var(--color-paper-bright);
+        }
+
+        .overview-legendary .overview-quality-rate { color: var(--color-vermilion-light); }
+        .overview-epic .overview-quality-rate { color: var(--color-gold-bright); }
+
+        .pool-overview-divider {
+            margin: var(--spacing-md) 0;
+        }
+
+        .pool-overview-guarantee {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .guarantee-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            font-size: var(--text-xs);
+            color: var(--color-paper-faded);
+        }
+
+        .guarantee-item i {
+            color: var(--color-jade-light);
+        }
+
+        /* === 5. 底部抽卡区 === */
+        .draw-area {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-md);
+            z-index: 30;
+        }
+
+        .draw-buttons {
+            display: flex;
+            gap: var(--spacing-lg);
+            align-items: flex-end;
+        }
+
+        .draw-btn {
+            position: relative;
+            width: 200px;
+            height: 64px;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-md);
+        }
+
+        .draw-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .draw-btn-content {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            width: 100%;
+            height: 100%;
+        }
+
+        .draw-btn-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .draw-btn-single .draw-btn-icon {
+            background: rgba(235, 229, 216, 0.1);
+            color: var(--color-paper-aged);
+        }
+
+        .draw-btn-ten .draw-btn-icon {
+            background: rgba(13, 13, 13, 0.2);
+            color: var(--color-ink-dark);
+        }
+
+        .draw-btn-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            text-align: left;
+        }
+
+        .draw-btn-label {
+            font-family: var(--font-display);
+            font-size: var(--text-lg);
+            font-weight: var(--weight-bold);
+            letter-spacing: 0.1em;
+        }
+
+        .draw-btn-cost {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            font-size: var(--text-xs);
+            letter-spacing: 0.05em;
+        }
+
+        .draw-btn-single .draw-btn-cost {
+            color: var(--color-paper-faded);
+        }
+
+        .draw-btn-ten .draw-btn-cost {
+            color: rgba(13, 13, 13, 0.7);
+        }
+
+        .draw-btn-save-badge {
+            position: absolute;
+            top: -10px;
+            right: -8px;
+            font-size: 10px;
+            padding: 2px 6px;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        /* === 抽卡进度 === */
+        .draw-progress-section {
+            width: 440px;
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+
+        .draw-progress-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: var(--text-sm);
+        }
+
+        .draw-progress-text {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--color-paper-aged);
+        }
+
+        .draw-progress-count {
+            font-family: var(--font-display);
+            font-weight: var(--weight-bold);
+            color: var(--color-gold-bright);
+        }
+
+        .draw-progress-pity {
+            color: var(--color-paper-faded);
+        }
+
+        .draw-progress-remaining {
+            font-family: var(--font-display);
+            font-weight: var(--weight-bold);
+            color: var(--color-vermilion-light);
+        }
+
+        .draw-progress-bar-container {
+            height: 6px;
+        }
+
+        .draw-progress-bar {
+            position: relative;
+        }
+
+        .draw-progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 8px;
+            height: 100%;
+            background: var(--color-gold-bright);
+            border-radius: var(--radius-full);
+            box-shadow: 0 0 8px rgba(212, 175, 55, 0.6);
+        }
+
+        /* === 6. 右下角链接 === */
+        .gacha-links {
+            position: absolute;
+            bottom: var(--spacing-xl);
+            right: var(--spacing-xl);
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+            z-index: 30;
+        }
+
+        .gacha-link-btn {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: 8px var(--spacing-md);
+            background: rgba(13, 13, 13, 0.7);
+            border: 1px solid var(--border-color-ink);
+            border-radius: var(--radius-md);
+            color: var(--color-paper-aged);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            backdrop-filter: blur(6px);
+        }
+
+        .gacha-link-btn:hover {
+            background: rgba(201, 168, 76, 0.1);
+            border-color: var(--border-color-gold);
+            color: var(--color-gold-bright);
+            transform: translateX(-4px);
+        }
+
+        .gacha-link-text {
+            font-family: var(--font-display);
+            font-size: var(--text-sm);
+            letter-spacing: 0.1em;
+        }
+
+        /* === 7. 左下角UP名侠预览 === */
+        .up-preview-panel {
+            position: absolute;
+            bottom: var(--spacing-xl);
+            left: 220px;
+            width: 220px;
+            padding: var(--spacing-md);
+            background: rgba(13, 13, 13, 0.75);
+            border: 1px solid var(--border-color-ink);
+            border-radius: var(--radius-lg);
+            backdrop-filter: blur(8px);
+            z-index: 30;
+        }
+
+        .up-preview-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
+            color: var(--color-paper-faded);
+        }
+
+        .up-preview-title {
+            font-family: var(--font-display);
+            font-size: var(--text-sm);
+            letter-spacing: 0.1em;
+        }
+
+        .up-preview-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .up-preview-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: 6px var(--spacing-sm);
+            background: rgba(45, 45, 45, 0.5);
+            border: 1px solid var(--border-color-ink);
+            border-radius: var(--radius-md);
+            transition: all var(--transition-normal);
+        }
+
+        .up-preview-item:hover {
+            background: rgba(45, 45, 45, 0.8);
+            border-color: var(--border-color-gold);
+        }
+
+        .up-preview-item.quality-legendary {
+            border-left: 3px solid var(--quality-legendary);
+        }
+
+        .up-preview-item.quality-epic {
+            border-left: 3px solid var(--quality-epic);
+        }
+
+        .up-preview-avatar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg,
+                var(--color-ink-medium) 0%,
+                var(--color-ink-dark) 100%);
+            border: 1px solid var(--border-color-ink);
+            flex-shrink: 0;
+        }
+
+        .up-preview-char {
+            font-family: var(--font-display);
+            font-size: var(--text-lg);
+            font-weight: var(--weight-bold);
+            color: var(--color-gold-bright);
+        }
+
+        .up-preview-info {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .up-preview-name {
+            font-family: var(--font-display);
+            font-size: var(--text-sm);
+            font-weight: var(--weight-medium);
+            color: var(--color-paper-bright);
+        }
+
+        .up-preview-tag {
+            font-size: var(--text-xs);
+            color: var(--color-ink-faded);
+        }
+
+        .up-preview-rate {
+            font-size: 10px;
+            padding: 1px 4px;
+            flex-shrink: 0;
+        }
+
+        /* === 响应式适配 === */
+        @media (max-width: 1200px) {
+            .pool-overview-panel {
+                display: none;
+            }
+            .up-preview-panel {
+                display: none;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .pool-selector {
+                width: 160px;
+            }
+            .center-stage {
+                left: 160px;
+            }
+            .up-preview-panel {
+                left: 180px;
+            }
+            .character-showcase {
+                width: 320px;
+                height: 400px;
+            }
+            .character-name-main {
+                font-size: 36px;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .pool-selector {
+                width: 120px;
+                padding: var(--spacing-md) var(--spacing-sm);
+            }
+            .center-stage {
+                left: 120px;
+            }
+            .pity-counter-panel {
+                width: 160px;
+                padding: var(--spacing-sm);
+            }
+            .character-showcase {
+                width: 260px;
+                height: 340px;
+            }
+            .character-name-main {
+                font-size: 28px;
+            }
+            .draw-buttons {
+                flex-direction: column;
+                gap: var(--spacing-sm);
+            }
+            .draw-btn {
+                width: 180px;
+                height: 52px;
+            }
+            .draw-progress-section {
+                width: 280px;
+            }
+            .gacha-links {
+                bottom: var(--spacing-md);
+                right: var(--spacing-sm);
+            }
+            .gacha-link-text {
+                display: none;
+            }
+            .gacha-link-btn {
+                padding: 8px;
+            }
+            .up-preview-panel {
+                display: none;
+            }
+        }
+
+        /* === 减少动画偏好 === */
+        @media (prefers-reduced-motion: reduce) {
+            .character-showcase,
+            .showcase-glow-ring,
+            .showcase-glow-ring-2,
+            .particle {
+                animation: none;
+            }
+            * {
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+
+    <!-- Lucide 图标初始化 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
+        });
+        // 确保在脚本延迟加载时也能初始化
+        window.addEventListener('load', function() {
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
+        });
+    </script>
+</body>
+</html>

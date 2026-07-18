@@ -89,6 +89,13 @@ public sealed class PlayerSessionState
         BaselineVersion = baselineVersion;
         WorldPatchVersion = worldPatchVersion;
         LastAppliedDiffSeq = lastAppliedDiffSeq;
+
+        // 握手表示新会话开始：重置输入去重与缓冲状态，
+        // 避免客户端重新登录后 ClientTick 从 0 重置时，所有新输入被误判为重复包而拒绝。
+        // 同时清空旧会话残留输入，确保 BuildInputAck 返回的 LastProcessedClientTick 不会回显旧值。
+        LastAcceptedClientTick = 0;
+        LastProcessedClientTick = 0;
+        _inputBuffer.Clear();
         return true;
     }
 

@@ -28,6 +28,13 @@ namespace Horizon.Game.Core.Interfaces
         Task<bool> ReleaseAsync(long characterId);
 
         /// <summary>
+        /// 刷新角色指纹的过期时间（用于心跳保持在线状态）
+        /// </summary>
+        /// <param name="characterId">角色 ID</param>
+        /// <returns>true 表示刷新成功</returns>
+        Task<bool> RefreshAsync(long characterId);
+
+        /// <summary>
         /// 释放指定连接 ID 关联的所有角色指纹
         /// （用于客户端断线时清理）
         /// </summary>

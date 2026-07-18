@@ -35,7 +35,7 @@
                                             <TextBlock Text="·" FontSize="9" Foreground="#FFFFFF33" />
                                             <TextBlock Text="{Binding TimeText}" FontSize="9" Foreground="#FFFFFF55" />
                                             <Border Background="#1A7AA9FF" CornerRadius="4" Padding="4 1" Margin="4 0 0 0">
-                                                <TextBlock Text="{Binding Category}" FontSize="8" Foreground="#7AA9FF" />
+                                                <TextBlock Text="{Binding Category}" FontSize="8" Foreground="{DynamicResource BattleNetOutlineBrush}" />
                                             </Border>
                                         </StackPanel>
                                         <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="Medium"

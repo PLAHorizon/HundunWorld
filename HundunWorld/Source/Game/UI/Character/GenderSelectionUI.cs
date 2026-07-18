@@ -100,6 +100,7 @@ namespace HundunWorld.Game.UI.Character
         private BodySlider _sliderBody;
         private BodySlider _sliderHead;
         private BodySlider _activeSlider;
+        private BodySlider _hoveredSlider;
         private Float2 _sliderDragStart;
         #endregion
 
@@ -214,7 +215,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Size = new Float2(300, 25),
                 Location = new Float2(-40, 62),
-                BackgroundColor = new Color(205f / 255f, 165f / 255f, 85f / 255f, 0.08f)
+                BackgroundColor = ChineseClassicalTheme.SecondaryColorWithAlpha(0.08f)
             };
             _genderSelector.AddChild(_maleGlowPanel);
 
@@ -232,7 +233,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Size = new Float2(2, 30),
                 Location = new Float2(240, 35),
-                BackgroundColor = new Color(212f / 255f, 175f / 255f, 55f / 255f, 0.5f)
+                BackgroundColor = ChineseClassicalTheme.SecondaryColorWithAlpha(0.5f)
             };
             _genderSelector.AddChild(_separatorLine);
             _separatorOriginalSize = _separatorLine.Size;
@@ -257,7 +258,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Size = new Float2(100, 3),
                 Location = new Float2(245, 80),
-                BackgroundColor = new Color(205f / 255f, 165f / 255f, 85f / 255f, 0f)
+                BackgroundColor = ChineseClassicalTheme.SecondaryColorWithAlpha(0f)
             };
             _genderSelector.AddChild(_femaleBrushLine);
 
@@ -266,7 +267,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Size = new Float2(140, 20),
                 Location = new Float2(235, 74),
-                BackgroundColor = new Color(205f / 255f, 165f / 255f, 85f / 255f, 0f)
+                BackgroundColor = ChineseClassicalTheme.SecondaryColorWithAlpha(0f)
             };
             _genderSelector.AddChild(_femaleGlowPanel);
 
@@ -337,7 +338,7 @@ namespace HundunWorld.Game.UI.Character
                 Parent = _paramPanelBackdrop,
                 Location = new Float2(30, 42),
                 Size = new Float2(200, 2),
-                BackgroundColor = new Color(205f / 255f, 165f / 255f, 85f / 255f, 0.5f)
+                BackgroundColor = ChineseClassicalTheme.SecondaryColorWithAlpha(0.5f)
             };
 
             // 三个体型参数滑块（初始值为男性默认）
@@ -404,7 +405,7 @@ namespace HundunWorld.Game.UI.Character
                 Parent = slider.Panel,
                 Location = new Float2(30, 28),
                 Size = new Float2(trackW * defaultValue, trackH),
-                BackgroundColor = new Color(205f / 255f, 165f / 255f, 85f / 255f, 0.9f)
+                BackgroundColor = ChineseClassicalTheme.SecondaryColorWithAlpha(0.9f)
             };
 
             // 滑动手柄（金色圆形效果）
@@ -577,7 +578,7 @@ namespace HundunWorld.Game.UI.Character
         }
 
         /// <summary>
-        /// 滑块拖拽过程中更新数值
+        /// 滑块拖拽过程中更新数值 + 手柄hover放大效果
         /// </summary>
         public override void OnMouseMove(Float2 location)
         {
@@ -585,6 +586,19 @@ namespace HundunWorld.Game.UI.Character
             if (_activeSlider != null)
             {
                 UpdateSliderFromMouseLocal(_activeSlider, location);
+            }
+            else
+            {
+                // 手柄 hover 放大: 14px -> 18px
+                var hovered = HitTestSlider(location);
+                if (hovered != _hoveredSlider)
+                {
+                    if (_hoveredSlider?.Handle != null)
+                        _hoveredSlider.Handle.Size = new Float2(14, 14);
+                    _hoveredSlider = hovered;
+                    if (_hoveredSlider?.Handle != null)
+                        _hoveredSlider.Handle.Size = new Float2(18, 18);
+                }
             }
         }
 
@@ -638,10 +652,10 @@ namespace HundunWorld.Game.UI.Character
             Color gold = ChineseClassicalTheme.SecondaryColor;
             Color dimmedText = new Color(1, 1, 1, 0.35f);
             Color dimmedIndicator = new Color(1, 1, 1, 0.15f);
-            Color goldBrush = new Color(205f / 255f, 165f / 255f, 85f / 255f, 1f);
-            Color dimmedBrush = new Color(205f / 255f, 165f / 255f, 85f / 255f, 0f);
-            Color goldGlow = new Color(205f / 255f, 165f / 255f, 85f / 255f, 0.10f);
-            Color noGlow = new Color(205f / 255f, 165f / 255f, 85f / 255f, 0f);
+            Color goldBrush = ChineseClassicalTheme.SecondaryColor;
+            Color dimmedBrush = ChineseClassicalTheme.SecondaryColorWithAlpha(0f);
+            Color goldGlow = ChineseClassicalTheme.SecondaryColorWithAlpha(0.10f);
+            Color noGlow = ChineseClassicalTheme.SecondaryColorWithAlpha(0f);
 
             if (SelectedGender == 0)
             {

@@ -7,10 +7,12 @@ using Horizon.Game.GengDi.Core.Services;
 
 namespace Horizon.Game.GengDi.Core.ViewModels
 {
-    public class FlowerDataScreenViewModel : ViewModelBase, IDisposable
+    public class FlowerDataScreenViewModel : ViewModelBase, IDisposable, ICancelableViewModel
     {
         private readonly FlowerMarketService _marketService = new();
         private System.Threading.Timer? _autoRefreshTimer;
+        /// <summary>导航离开后被置为 true，阻止后续 LoadDataAsync 设置属性触发 PropertyChanged。</summary>
+        private volatile bool _isCancelled;
 
         private decimal _todayTradeAmount;
         private int _tradeCount;
@@ -116,6 +118,9 @@ namespace Horizon.Game.GengDi.Core.ViewModels
 
         private async Task LoadDataAsync()
         {
+            if (_isCancelled) return;
+
+            DiagLog.Log("[FlowerDataScreenVM] LoadDataAsync START");
             IsLoading = true;
             try
             {
@@ -124,7 +129,20 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 var supplyDemandTask = _marketService.GetSupplyDemandDataAsync();
                 var transactionsTask = _marketService.GetRecentTransactionsAsync();
 
-                await Task.WhenAll(statsTask, regionalTask, supplyDemandTask, transactionsTask).ConfigureAwait(false);
+                DiagLog.Log("[FlowerDataScreenVM] before Task.WhenAll");
+                // 关键修复：移除 ConfigureAwait(false)，让 await 之后在 UI 线程继续。
+                // 原实现中属性设置在后台线程，触发 PropertyChanged 与 Avalonia 绑定系统交互，
+                // 当 UI 线程正被新页面 DataContext 赋值占用时，会导致同步阻塞死锁。
+                // 回到 UI 线程后，属性设置会异步排队，不会与 DataContext 赋值竞争。
+                await Task.WhenAll(statsTask, regionalTask, supplyDemandTask, transactionsTask);
+
+                if (_isCancelled)
+                {
+                    DiagLog.Log("[FlowerDataScreenVM] LoadDataAsync cancelled after WhenAll");
+                    return;
+                }
+
+                DiagLog.Log("[FlowerDataScreenVM] after Task.WhenAll, setting properties on UI thread");
 
                 var stats = statsTask.Result;
                 if (stats != null)
@@ -173,10 +191,28 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                         }));
                 }
             }
+            catch (Exception ex)
+            {
+                DiagLog.Log($"[FlowerDataScreenVM] LoadDataAsync error: {ex.Message}");
+            }
             finally
             {
-                IsLoading = false;
+                if (!_isCancelled)
+                    IsLoading = false;
+                DiagLog.Log("[FlowerDataScreenVM] LoadDataAsync END");
             }
+        }
+
+        /// <summary>
+        /// 取消后台数据加载并停止自动刷新 Timer。
+        /// 页面切换时由 MainViewModel 调用，防止 Timer 回调在新页面绑定初始化期间
+        /// 从后台线程触发 PropertyChanged 与 UI 线程竞争。
+        /// </summary>
+        public void Cancel()
+        {
+            _isCancelled = true;
+            _autoRefreshTimer?.Dispose();
+            _autoRefreshTimer = null;
         }
 
         private async Task RefreshAsync()

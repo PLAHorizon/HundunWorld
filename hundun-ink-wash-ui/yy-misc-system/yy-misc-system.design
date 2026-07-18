@@ -1,0 +1,157 @@
+{
+  "name": "燕云十六声UI - 拍照引导与设置",
+  "id": "yy-misc-system",
+  "version": "1.0.0",
+  "scope": "project",
+  "path": "yy-misc-system",
+  "versionSource": "manual",
+  "data": [
+    {
+      "id": "page-photo-mode",
+      "type": "page",
+      "title": "拍照模式",
+      "version": 1,
+      "createdAt": 1783730753947,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/photo-mode.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-settings-audio",
+      "type": "page",
+      "title": "音频设置",
+      "version": 1,
+      "createdAt": 1783730753947,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 1400,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/settings-audio.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-mini-game-complete",
+      "type": "page",
+      "title": "小游戏完成",
+      "version": 1,
+      "createdAt": 1783730753947,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 900,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/mini-game-complete.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-guide-action",
+      "type": "page",
+      "title": "引导操作",
+      "version": 1,
+      "createdAt": 1783730753947,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 1400,
+        "y": 900,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/guide-action.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-guide-martial",
+      "type": "page",
+      "title": "引导奇术",
+      "version": 1,
+      "createdAt": 1783730753947,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 1800,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/guide-martial.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-multiplayer",
+      "type": "page",
+      "title": "多人模式",
+      "version": 1,
+      "createdAt": 1783730753947,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 1400,
+        "y": 1800,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/multiplayer.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-combat-hud-v2",
+      "type": "page",
+      "title": "战斗HUDv2",
+      "version": 1,
+      "createdAt": 1783730753947,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 2700,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/combat-hud-v2.html",
+        "interactions": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,133 @@
+{
+  "projectName": "燕云十六声-核心战斗体验",
+  "projectId": "yy-core-combat",
+  "device": "desktop",
+  "designSource": {
+    "mode": "free-explore",
+    "libraryIdentity": null
+  },
+  "styleContinuityAnchors": {
+    "colorSystem": "墨黑/纸白主色，朱红/金色/玉色点缀；无 secondary/accent 色相。主背景 #1a1a1a 墨黑，面板 #2d2d2d 中墨，文字 #f5f0e8 纸白。强调色 #c0392b 朱红，品牌色 #c9a84c 金色，状态色 #5e8b6e 玉色",
+    "shapeSystem": "圆角最大 8px，中式硬朗边缘；面板使用墨色 1px 边框 rgba(26,26,26,0.6)；金色边框 rgba(201,168,76,0.4) 用于重点面板",
+    "typographySystem": "标题：Noto Serif SC/KaiTi 楷体；正文：Noto Sans SC 黑体；装饰：竖排楷体 writing-mode: vertical-rl",
+    "componentLanguage": "水墨面板（纸质纹理+墨色边框）、侧滑面板（右侧滑入420px宽）、墨色进度条（渐变填充）、中式按钮（朱红主/纸色次/金色品质）、竖排标题、水墨分隔线（渐变透明）、品质标签（金/玉/朱/灰）",
+    "surfaceAndDepth": "静态表面使用边框/层叠，仅弹窗使用阴影 alpha<=0.15；水墨晕染效果通过 radial-gradient + blur 实现",
+    "imageryAndIconography": "水墨画风插图、中式纹样边框（云纹/回纹）、留白哲学；背景使用 ink-splash 晕染元素；纸质纹理通过 SVG noise filter 叠加"
+  },
+  "brandCssPath": "colors_and_type.css",
+  "pagePlan": [
+    {
+      "id": "page-combat-hud",
+      "name": "战斗HUD",
+      "htmlFile": "pages/combat-hud.html",
+      "pageType": "showcase",
+      "density": "showcase",
+      "description": "极简战斗HUD：左下角墨色血条/体力条、右下角技能图标、顶部最小化任务提示、无活动跑马灯",
+      "images": ["bg-ink-wash-scene.jpg"]
+    },
+    {
+      "id": "page-guide-hud",
+      "name": "引导-HUD",
+      "htmlFile": "pages/guide-hud.html",
+      "pageType": "information-dense",
+      "density": "information-dense",
+      "description": "HUD新手引导覆盖层：高亮元素 + 水墨箭头指引 + 竖排提示文字",
+      "images": ["bg-ink-wash-scene.jpg"]
+    },
+    {
+      "id": "page-element-vision",
+      "name": "元素视野",
+      "htmlFile": "pages/element-vision.html",
+      "pageType": "showcase",
+      "density": "showcase",
+      "description": "全屏墨色滤镜效果，敌人/物品以水墨轮廓高亮，环境去饱和",
+      "images": ["bg-element-vision.jpg"]
+    },
+    {
+      "id": "page-death-screen",
+      "name": "阵亡",
+      "htmlFile": "pages/death-screen.html",
+      "pageType": "task-driven",
+      "density": "task-driven",
+      "description": "水墨晕染全屏渐黑，中心竖排殒命文字，复活选项按钮",
+      "images": ["bg-ink-wash-death.jpg"]
+    },
+    {
+      "id": "page-qte",
+      "name": "QTE",
+      "htmlFile": "pages/qte.html",
+      "pageType": "task-driven",
+      "density": "task-driven",
+      "description": "屏幕中心大型水墨笔触QTE提示，按键图标融入墨色圆环",
+      "images": ["ink-brush-stroke.png"]
+    },
+    {
+      "id": "page-acupoint",
+      "name": "点穴",
+      "htmlFile": "pages/acupoint.html",
+      "pageType": "information-dense",
+      "density": "information-dense",
+      "description": "人体经络穴位图选界面，水墨人体轮廓 + 穴位光点标记",
+      "images": ["bg-meridian-diagram.png"]
+    },
+    {
+      "id": "page-dialogue-confirm",
+      "name": "对话确认",
+      "htmlFile": "pages/dialogue-confirm.html",
+      "pageType": "task-driven",
+      "density": "task-driven",
+      "description": "底部水墨对话框，竖排NPC名称，选项列表带墨色悬停效果",
+      "images": ["bg-ink-wash-scene.jpg"]
+    }
+  ],
+  "imagePlan": [
+    {
+      "id": "img-bg-scene",
+      "fileName": "bg-ink-wash-scene.jpg",
+      "prompt": "Game UI background: Chinese ink wash painting style dark misty mountain landscape, atmospheric fog, muted earth tones with ink black silhouettes, cinematic wide shot, no characters, suitable as game HUD background overlay",
+      "size": "landscape_16_9",
+      "usedBy": ["page-combat-hud", "page-guide-hud", "page-dialogue-confirm"]
+    },
+    {
+      "id": "img-bg-element-vision",
+      "fileName": "bg-element-vision.jpg",
+      "prompt": "Game UI background: Chinese ink wash painting style landscape with desaturated environment, glowing ink outline highlights on objects and enemies, dark monochrome filter effect, mystical element vision mode",
+      "size": "landscape_16_9",
+      "usedBy": ["page-element-vision"]
+    },
+    {
+      "id": "img-bg-death",
+      "fileName": "bg-ink-wash-death.jpg",
+      "prompt": "Game UI background: Dark ink wash painting, heavy black ink spreading and dissolving on wet paper, very dark and moody, minimal light, death and defeat atmosphere, Chinese painting style",
+      "size": "landscape_16_9",
+      "usedBy": ["page-death-screen"]
+    },
+    {
+      "id": "img-ink-brush",
+      "fileName": "ink-brush-stroke.png",
+      "prompt": "Single bold Chinese calligraphy ink brush stroke on transparent background, dynamic sweeping motion, black ink with ink splatter, artistic martial arts QTE prompt visual element",
+      "size": "square",
+      "usedBy": ["page-qte"]
+    },
+    {
+      "id": "img-meridian",
+      "fileName": "bg-meridian-diagram.png",
+      "prompt": "Traditional Chinese medicine meridian diagram in ink wash painting style, human body silhouette with glowing acupoint dots, meridian lines flowing through body, dark background with gold and jade colored points, martial arts acupoint pressure point map",
+      "size": "portrait_4_3",
+      "usedBy": ["page-acupoint"]
+    }
+  ],
+  "componentPlan": [
+    { "name": "ink-panel", "cssClass": ".ink-panel", "description": "水墨面板：纸质纹理背景 + 墨色边框" },
+    { "name": "ink-button-primary", "cssClass": ".ink-button.ink-button-primary", "description": "朱红主按钮" },
+    { "name": "ink-button-secondary", "cssClass": ".ink-button.ink-button-secondary", "description": "纸色次按钮" },
+    { "name": "ink-progress", "cssClass": ".ink-progress", "description": "墨色进度条" },
+    { "name": "ink-divider", "cssClass": ".ink-divider", "description": "水墨分隔线" },
+    { "name": "ink-badge", "cssClass": ".ink-badge", "description": "品质标签徽章" },
+    { "name": "vertical-title", "cssClass": ".vertical-title", "description": "竖排楷体装饰标题" },
+    { "name": "ink-splash", "cssClass": ".ink-splash", "description": "水墨晕染装饰元素" },
+    { "name": "side-slide-panel", "cssClass": ".side-slide-panel", "description": "侧滑面板" }
+  ],
+  "visibleWiringPlan": [],
+  "hiddenInteractionPlan": []
+}

@@ -20,13 +20,13 @@
                       ColumnSpacing="16">
                     <Border Classes="SurfaceCard" Padding="20">
                         <StackPanel HorizontalAlignment="Center">
-                            <TextBlock Text="当前均价" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                            <TextBlock Text="当前均价" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
                             <TextBlock Text="{Binding CurrentPrice}" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Border>
                     <Border Grid.Column="1" Classes="SurfaceCard" Padding="20">
                         <StackPanel HorizontalAlignment="Center">
-                            <TextBlock Text="涨跌幅" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                            <TextBlock Text="涨跌幅" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
                                 <TextBlock Text="{Binding PriceChangeDirection}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
                                 <TextBlock Text="{Binding PriceChange}" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -35,13 +35,13 @@
                     </Border>
                     <Border Grid.Column="2" Classes="SurfaceCard" Padding="20">
                         <StackPanel HorizontalAlignment="Center">
-                            <TextBlock Text="成交情况" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                            <TextBlock Text="成交情况" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
                             <TextBlock Text="{Binding VolumeInfo}" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
                     <Border Grid.Column="3" Classes="SurfaceCard" Padding="20">
                         <StackPanel HorizontalAlignment="Center">
-                            <TextBlock Text="预测置信度" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                            <TextBlock Text="预测置信度" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
                             <TextBlock Text="{Binding ForecastConfidence}" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Border>
@@ -86,7 +86,7 @@
                             <TextBlock Grid.Column="1"
                                        Text="{Binding SpeciesName, StringFormat='{}{0} 日K线'}"
                                        FontSize="12"
-                                       Foreground="#888888"
+                                       Foreground="{DynamicResource LoginFormMutedBrush}"
                                        VerticalAlignment="Center" />
                         </Grid>
                         <lvc:CartesianChart Series="{Binding CandlestickSeries}"
@@ -110,16 +110,16 @@
                                         Command="{Binding $parent[UserControl].DataContext.NavigateToPlantingAdviceCommand}" />
                                 <StackPanel Orientation="Horizontal" Spacing="16">
                                     <StackPanel Orientation="Horizontal" Spacing="4">
-                                        <Border Width="16" Height="3" Background="#42A5F5" CornerRadius="1" VerticalAlignment="Center" />
-                                        <TextBlock Text="历史" FontSize="11" Foreground="#888888" VerticalAlignment="Center" />
+                                        <Border Width="16" Height="3" Background="{DynamicResource BattleNetOutlineBrush}" CornerRadius="1" VerticalAlignment="Center" />
+                                        <TextBlock Text="历史" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center" />
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" Spacing="4">
                                         <Border Width="16" Height="3" Background="#FFA726" CornerRadius="1" VerticalAlignment="Center" />
-                                        <TextBlock Text="预测" FontSize="11" Foreground="#888888" VerticalAlignment="Center" />
+                                        <TextBlock Text="预测" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center" />
                                     </StackPanel>
                                     <StackPanel Orientation="Horizontal" Spacing="4">
                                         <Border Width="16" Height="3" Background="#66BB6A40" CornerRadius="1" VerticalAlignment="Center" />
-                                        <TextBlock Text="区间" FontSize="11" Foreground="#888888" VerticalAlignment="Center" />
+                                        <TextBlock Text="区间" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center" />
                                     </StackPanel>
                                 </StackPanel>
                             </StackPanel>
@@ -152,7 +152,7 @@
                                         <Grid ColumnDefinitions="Auto,*,Auto">
                                             <Border Width="48" Height="48"
                                                     CornerRadius="8"
-                                                    Background="#25FFFFFF"
+                                                    Background="{DynamicResource BattleNetSurfaceTintBrush}"
                                                     VerticalAlignment="Center">
                                                 <TextBlock Text="🌸"
                                                            FontSize="20"
@@ -168,7 +168,7 @@
                                                            FontWeight="SemiBold" />
                                                 <TextBlock Text="{Binding MerchantName}"
                                                            FontSize="11"
-                                                           Foreground="#888888" />
+                                                           Foreground="{DynamicResource LoginFormMutedBrush}" />
                                             </StackPanel>
                                             <StackPanel Grid.Column="2"
                                                         VerticalAlignment="Center"
@@ -176,10 +176,10 @@
                                                 <TextBlock Text="{Binding Price, StringFormat='¥{0:F2}'}"
                                                            FontSize="16"
                                                            FontWeight="SemiBold"
-                                                           Foreground="#FF6B6B" />
+                                                           Foreground="{DynamicResource LoginErrorBrush}" />
                                                 <TextBlock Text="{Binding Stock, StringFormat='库存 {0}'}"
                                                            FontSize="11"
-                                                           Foreground="#888888"
+                                                           Foreground="{DynamicResource LoginFormMutedBrush}"
                                                            HorizontalAlignment="Right" />
                                             </StackPanel>
                                         </Grid>
@@ -198,7 +198,7 @@
                         <ProgressBar IsIndeterminate="True" Height="4" />
                         <TextBlock Text="加载行情数据中..."
                                    FontSize="13"
-                                   Foreground="#888888"
+                                   Foreground="{DynamicResource LoginFormMutedBrush}"
                                    HorizontalAlignment="Center" />
                     </StackPanel>
                 </Border>
@@ -213,7 +213,7 @@
                                    HorizontalAlignment="Center" />
                         <TextBlock Text="暂无行情数据"
                                    FontSize="14"
-                                   Foreground="#888888"
+                                   Foreground="{DynamicResource LoginFormMutedBrush}"
                                    HorizontalAlignment="Center" />
                     </StackPanel>
                 </Border>

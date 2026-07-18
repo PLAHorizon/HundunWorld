@@ -1,0 +1,136 @@
+{
+  "name": "燕云十六声UI - 获得与奖励",
+  "id": "yy-reward-system",
+  "version": "1.0.0",
+  "scope": "project",
+  "path": "yy-reward-system",
+  "versionSource": "manual",
+  "data": [
+    {
+      "id": "page-reward-achievement",
+      "type": "page",
+      "title": "成就解锁",
+      "version": 1,
+      "createdAt": 1783730358120,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/reward-achievement.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-reward-teleport-unlock",
+      "type": "page",
+      "title": "传送解锁",
+      "version": 1,
+      "createdAt": 1783730358120,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 1400,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/reward-teleport-unlock.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-reward-map-unlock",
+      "type": "page",
+      "title": "地图解锁",
+      "version": 1,
+      "createdAt": 1783730358120,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 900,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/reward-map-unlock.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-reward-level-up",
+      "type": "page",
+      "title": "等级提升",
+      "version": 1,
+      "createdAt": 1783730358120,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 1400,
+        "y": 900,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/reward-level-up.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-reward-congratulations",
+      "type": "page",
+      "title": "恭喜获得",
+      "version": 1,
+      "createdAt": 1783730358120,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 1800,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/reward-congratulations.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-reward-quest-complete",
+      "type": "page",
+      "title": "任务完成",
+      "version": 1,
+      "createdAt": 1783730358120,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 1400,
+        "y": 1800,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/reward-quest-complete.html",
+        "interactions": []
+      }
+    }
+  ]
+}

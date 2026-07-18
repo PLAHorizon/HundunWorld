@@ -2,7 +2,6 @@ using Arch.Core;
 using FlaxEngine;
 using HundunWorld.Game.Network;
 using Horizon.Game.Message.Network;
-using Horizon.Game.Message.Sync;
 using System;
 using System.Threading.Tasks;
 
@@ -95,38 +94,19 @@ namespace HundunWorld.Game.Worlds
         /// <param name="newPosition">新位置</param>
         private async Task SendPositionUpdateToServerAsync(Vector3 newPosition)
         {
-            if (!_networkManager.CanSendMessage())
+            if (!_networkManager.CanSendMessage() || !_networkManager.IsSyncHandshakeComplete)
                 return;
 
-            var inputPacket = new InputPacket
+            var moveRequest = new MoveRequest
             {
-                ClientTick = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                InputBits = 0,
-                MoveX = newPosition.X,
-                MoveY = newPosition.Z,
-                LookYaw = 0f,
-                LookPitch = 0f,
+                CharacterId = _playerId,
+                TargetX = newPosition.X,
+                TargetY = newPosition.Y,
+                TargetZ = newPosition.Z,
+                Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
             };
 
-            SyncPacketCodec.Encode(inputPacket, out var frame, out var frameLength);
-            try
-            {
-                var payload = new byte[frameLength];
-                System.Buffer.BlockCopy(frame, 0, payload, 0, frameLength);
-
-                var syncFrame = new SyncFrameMessage
-                {
-                    Frame = payload,
-                    PacketKind = (byte)inputPacket.Kind,
-                    ProtocolVersion = inputPacket.ProtocolVersion,
-                };
-
-                await _networkManager.SendAsync(syncFrame);
-            }
-            finally
-            {
-                SyncPacketCodec.ReturnFrame(frame);
-            }
+            await _networkManager.SendMessageAsync(moveRequest);
         }
 
         /// <summary>

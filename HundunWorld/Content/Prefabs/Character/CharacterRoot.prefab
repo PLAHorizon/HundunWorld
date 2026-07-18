@@ -1,7 +1,7 @@
 {
 	"ID": "0cebec9141fd5d5b970201964b3577ef",
 	"TypeName": "FlaxEngine.Prefab",
-	"EngineBuild": 6806,
+	"EngineBuild": 6913,
 	"Data": [
 	{
 		"ID": "dd0db16a49ae6f0c671a95ace472df12",
@@ -51,7 +51,10 @@
 		"ID": "12626f4f4a396d38f67ea2b32a6eee88",
 		"TypeName": "HundunWorld.Game.PlayerController",
 		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
-		"V": {}
+		"V": {
+	"MoveSpeed": 100.0,
+	"JumpForce": 120.0
+}
 	},
 	{
 		"ID": "9e31e4dd4468decb8c864880a73eb093",

@@ -1,0 +1,154 @@
+{
+  "root": {
+    "nodeId": "gen-project-shell",
+    "kind": "project-shell",
+    "pageIds": [
+      "page-menu-char-attributes",
+      "page-menu-equipment",
+      "page-menu-appearance",
+      "page-menu-battle-prep",
+      "page-menu-sect",
+      "page-menu-personal-info",
+      "page-menu-time"
+    ],
+    "output": "partials/project-shell.html",
+    "sharedRegions": [
+      "left navigation sidebar",
+      "top character info bar"
+    ],
+    "privateRegions": [],
+    "mutableSlots": [
+      "activeNavItem",
+      "pageTitle"
+    ],
+    "status": "planned",
+    "children": [
+      {
+        "nodeId": "gen-page-menu-char-attributes",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-menu-char-attributes"
+        ],
+        "output": "pages/menu-char-attributes.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "page body content"
+        ],
+        "mutableSlots": [
+          "activeNavItem",
+          "pageTitle"
+        ],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-menu-equipment",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-menu-equipment"
+        ],
+        "output": "pages/menu-equipment.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "page body content"
+        ],
+        "mutableSlots": [
+          "activeNavItem",
+          "pageTitle"
+        ],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-menu-appearance",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-menu-appearance"
+        ],
+        "output": "pages/menu-appearance.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "page body content"
+        ],
+        "mutableSlots": [
+          "activeNavItem",
+          "pageTitle"
+        ],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-menu-battle-prep",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-menu-battle-prep"
+        ],
+        "output": "pages/menu-battle-prep.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "page body content"
+        ],
+        "mutableSlots": [
+          "activeNavItem",
+          "pageTitle"
+        ],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-menu-sect",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-menu-sect"
+        ],
+        "output": "pages/menu-sect.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "page body content"
+        ],
+        "mutableSlots": [
+          "activeNavItem",
+          "pageTitle"
+        ],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-menu-personal-info",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-menu-personal-info"
+        ],
+        "output": "pages/menu-personal-info.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "page body content"
+        ],
+        "mutableSlots": [
+          "activeNavItem",
+          "pageTitle"
+        ],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-menu-time",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-menu-time"
+        ],
+        "output": "pages/menu-time.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "page body content"
+        ],
+        "mutableSlots": [
+          "activeNavItem",
+          "pageTitle"
+        ],
+        "status": "planned",
+        "children": []
+      }
+    ]
+  }
+}

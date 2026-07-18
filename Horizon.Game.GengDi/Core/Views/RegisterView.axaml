@@ -8,15 +8,79 @@
 		<vm:RegisterViewModel />
 	</UserControl.DataContext>
 
-	<Grid ColumnDefinitions="*,460"
-		  ColumnSpacing="24"
-		  Margin="32">
+	<UserControl.Styles>
+		<!-- 登录输入框样式 -->
+		<Style Selector="Border.LoginInputBox">
+			<Setter Property="Background" Value="{DynamicResource LoginInputBackgroundBrush}" />
+			<Setter Property="CornerRadius" Value="12" />
+			<Setter Property="BorderBrush" Value="{DynamicResource LoginInputBorderBrush}" />
+			<Setter Property="BorderThickness" Value="1" />
+			<Setter Property="Padding" Value="12,12,12,12" />
+		</Style>
+		<Style Selector="Border.LoginInputBox TextBox">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="BorderThickness" Value="0" />
+			<Setter Property="Foreground" Value="{DynamicResource LoginFormTextBrush}" />
+			<Setter Property="FontSize" Value="14" />
+			<Setter Property="FontWeight" Value="Normal" />
+		</Style>
+
+		<!-- 登录按钮样式 -->
+		<Style Selector="Button.LoginPrimary">
+			<Setter Property="Background" Value="{DynamicResource BattleNetPrimaryBrush}" />
+			<Setter Property="Foreground" Value="White" />
+			<Setter Property="CornerRadius" Value="12" />
+			<Setter Property="Height" Value="48" />
+			<Setter Property="FontSize" Value="14" />
+			<Setter Property="FontWeight" Value="SemiBold" />
+			<Setter Property="HorizontalAlignment" Value="Stretch" />
+		</Style>
+		<Style Selector="Button.LoginPrimary:pointerover">
+			<Setter Property="Background" Value="{DynamicResource BattleNetPrimaryHoverBrush}" />
+		</Style>
+		<Style Selector="Button.LoginPrimary:pressed">
+			<Setter Property="Background" Value="{DynamicResource BattleNetPrimaryPressedBrush}" />
+		</Style>
+
+		<Style Selector="Button.LoginSecondary">
+			<Setter Property="Background" Value="Transparent" />
+			<Setter Property="Foreground" Value="{DynamicResource LoginFormSubtitleBrush}" />
+			<Setter Property="CornerRadius" Value="12" />
+			<Setter Property="Height" Value="48" />
+			<Setter Property="FontSize" Value="14" />
+			<Setter Property="FontWeight" Value="Medium" />
+			<Setter Property="BorderBrush" Value="{DynamicResource BattleNetOutlineBrush}" />
+			<Setter Property="BorderThickness" Value="1" />
+			<Setter Property="HorizontalAlignment" Value="Stretch" />
+		</Style>
+		<Style Selector="Button.LoginSecondary:pointerover">
+			<Setter Property="BorderBrush" Value="{DynamicResource BattleNetPrimaryBrush}" />
+			<Setter Property="Foreground" Value="{DynamicResource LoginInfoCardTitleBrush}" />
+		</Style>
+
+		<!-- 标签样式 -->
+		<Style Selector="TextBlock.LoginLabel">
+			<Setter Property="FontSize" Value="14" />
+			<Setter Property="FontWeight" Value="Medium" />
+			<Setter Property="Foreground" Value="{DynamicResource LoginFormTitleBrush}" />
+			<Setter Property="Margin" Value="0,0,0,8" />
+		</Style>
+	</UserControl.Styles>
+
+	<Grid ColumnDefinitions="*,440"
+		  Margin="0">
+		<!-- ==================== LEFT: Hero Area ==================== -->
 		<Border Grid.Column="0"
 				Background="{DynamicResource BattleNetHeroBackgroundBrush}"
-				CornerRadius="24"
-				Padding="36">
+				CornerRadius="0"
+				Padding="64,48,64,48"
+				ClipToBounds="True">
 			<Panel>
-				<Canvas ClipToBounds="True">
+				<!-- Hero 覆盖渐变层 -->
+				<Border Background="{DynamicResource LoginHeroOverlayBrush}" />
+
+				<!-- 装饰圆圈浮动效果 -->
+				<Canvas ClipToBounds="True" Opacity="0.4">
 					<Ellipse Width="280" Height="280"
 							 Canvas.Left="-60" Canvas.Top="-40"
 							 Fill="{DynamicResource LoginDecorCircleBrush}" />
@@ -27,79 +91,149 @@
 							 Canvas.Left="200" Canvas.Top="180"
 							 Fill="{DynamicResource LoginDecorCircleBrush}" />
 				</Canvas>
-			<StackPanel Spacing="16">
-				<Border Width="72"
-						Height="72"
-						CornerRadius="36"
-						Background="{DynamicResource AccentFillColorDefaultBrush}">
-					<Viewbox Margin="18">
-						<ui:IconSourceElement IconSource="{StaticResource BrandIcon}" />
-					</Viewbox>
-				</Border>
-				<TextBlock Text="创建新账户"
-						   Theme="{StaticResource DisplayTextBlockStyle}"
-						   FontSize="36"
-						   Foreground="{DynamicResource LoginTitleGradientBrush}" />
-				<TextBlock Text="注册完成后即可进入统一重构后的客户端界面。输入项、按钮和间距都遵循与主应用一致的 FluentAvalonia 风格。"
-						   Classes="SupportingText"
-						   Foreground="#D9F3FF"
-						   MaxWidth="520"
-						   Opacity="0"
-						   x:Name="RegisterSubtitleText" />
-			</StackPanel>
+
+				<StackPanel HorizontalAlignment="Center"
+							VerticalAlignment="Center"
+							Spacing="16">
+					<!-- Logo: 白鸽图标圆 -->
+					<Border Width="72"
+							Height="72"
+							CornerRadius="36"
+							Background="{DynamicResource BattleNetPrimaryBrush}"
+							HorizontalAlignment="Center">
+						<Image Source="/Assets/Images/white-dove.jpg"
+							   Stretch="UniformToFill"
+							   ClipToBounds="True"
+							   Margin="9" />
+					</Border>
+					<TextBlock Text="元阳游戏方舟"
+							   FontSize="36"
+							   FontWeight="Bold"
+							   HorizontalAlignment="Center"
+							   Foreground="{DynamicResource LoginTitleGradientBrush}" />
+					<TextBlock Text="创建新账户，开启游戏之旅"
+							   FontSize="16"
+							   FontWeight="Light"
+							   Foreground="{DynamicResource LoginFormSubtitleBrush}"
+							   HorizontalAlignment="Center"
+							   LetterSpacing="2"
+							   Opacity="0"
+							   x:Name="RegisterSubtitleText" />
+				</StackPanel>
 			</Panel>
 		</Border>
 
+		<!-- ==================== RIGHT: Register Form ==================== -->
 		<Border Grid.Column="1"
-				Classes="SurfaceCard">
-			<StackPanel Spacing="16">
+				Background="{DynamicResource LoginFormBackgroundBrush}"
+				Padding="48,0">
+			<StackPanel VerticalAlignment="Center"
+						Spacing="20"
+						MaxWidth="360"
+						HorizontalAlignment="Stretch">
+
+				<!-- 标题区 -->
 				<TextBlock Text="注册"
-						   Theme="{StaticResource TitleTextBlockStyle}"
-						   FontSize="30" />
-				<TextBlock Text="填写基本信息创建账户。"
-						   Classes="SupportingText" />
-
-				<StackPanel Spacing="6">
-					<TextBlock Text="用户名"
-							   Classes="PageEyebrow" />
-					<TextBox Text="{Binding Username}"
-							 Watermark="请输入用户名" />
-				</StackPanel>
-
-				<StackPanel Spacing="6">
-					<TextBlock Text="邮箱"
-							   Classes="PageEyebrow" />
-					<TextBox Text="{Binding Email}"
-							 Watermark="请输入邮箱" />
-				</StackPanel>
-
-				<StackPanel Spacing="6">
-					<TextBlock Text="密码"
-							   Classes="PageEyebrow" />
-					<TextBox Text="{Binding Password}"
-							 PasswordChar="*"
-							 Watermark="请输入密码" />
-				</StackPanel>
-
-				<StackPanel Spacing="6">
-					<TextBlock Text="确认密码"
-							   Classes="PageEyebrow" />
-					<TextBox Text="{Binding ConfirmPassword}"
-							 PasswordChar="*"
-							 Watermark="请再次输入密码" />
-				</StackPanel>
-
-				<TextBlock Text="{Binding ErrorMessage}"
-						   Foreground="IndianRed"
+						   FontSize="30"
+						   FontWeight="Bold"
+						   Foreground="{DynamicResource LoginFormTitleBrush}" />
+				<TextBlock Text="填写基本信息创建账户"
+						   FontSize="14"
+						   Foreground="{DynamicResource LoginFormSubtitleBrush}"
 						   TextWrapping="Wrap" />
 
-				<StackPanel Orientation="Horizontal"
-							Spacing="10">
+				<!-- 用户名 -->
+				<StackPanel Spacing="8">
+					<TextBlock Text="用户名" Classes="LoginLabel" />
+					<Border Classes="LoginInputBox">
+						<Grid ColumnDefinitions="Auto,*">
+							<Viewbox Grid.Column="0"
+						  Width="18" Height="18"
+						  Margin="0,0,10,0"
+						  VerticalAlignment="Center">
+						  <ui:IconSourceElement IconSource="{StaticResource LoginUserIcon}"
+							Foreground="{DynamicResource LoginFormMutedBrush}" />
+						</Viewbox>
+							<TextBox Grid.Column="1"
+									 Text="{Binding Username}"
+									 Watermark="请输入用户名" />
+						</Grid>
+					</Border>
+				</StackPanel>
+
+				<!-- 邮箱 -->
+				<StackPanel Spacing="8">
+					<TextBlock Text="邮箱" Classes="LoginLabel" />
+					<Border Classes="LoginInputBox">
+						<Grid ColumnDefinitions="Auto,*">
+							<Viewbox Grid.Column="0"
+						  Width="18" Height="18"
+						  Margin="0,0,10,0"
+						  VerticalAlignment="Center">
+						  <ui:IconSourceElement IconSource="{StaticResource LoginUserIcon}"
+							Foreground="{DynamicResource LoginFormMutedBrush}" />
+						</Viewbox>
+							<TextBox Grid.Column="1"
+									 Text="{Binding Email}"
+									 Watermark="请输入邮箱" />
+						</Grid>
+					</Border>
+				</StackPanel>
+
+				<!-- 密码 -->
+				<StackPanel Spacing="8">
+					<TextBlock Text="密码" Classes="LoginLabel" />
+					<Border Classes="LoginInputBox">
+						<Grid ColumnDefinitions="Auto,*">
+							<Viewbox Grid.Column="0"
+						  Width="18" Height="18"
+						  Margin="0,0,10,0"
+						  VerticalAlignment="Center">
+						  <ui:IconSourceElement IconSource="{StaticResource LoginLockIcon}"
+							Foreground="{DynamicResource LoginFormMutedBrush}" />
+						</Viewbox>
+							<TextBox Grid.Column="1"
+									 Text="{Binding Password}"
+									 PasswordChar="*"
+									 Watermark="请输入密码" />
+						</Grid>
+					</Border>
+				</StackPanel>
+
+				<!-- 确认密码 -->
+				<StackPanel Spacing="8">
+					<TextBlock Text="确认密码" Classes="LoginLabel" />
+					<Border Classes="LoginInputBox">
+						<Grid ColumnDefinitions="Auto,*">
+							<Viewbox Grid.Column="0"
+						  Width="18" Height="18"
+						  Margin="0,0,10,0"
+						  VerticalAlignment="Center">
+						  <ui:IconSourceElement IconSource="{StaticResource LoginLockIcon}"
+							Foreground="{DynamicResource LoginFormMutedBrush}" />
+						</Viewbox>
+							<TextBox Grid.Column="1"
+									 Text="{Binding ConfirmPassword}"
+									 PasswordChar="*"
+									 Watermark="请再次输入密码" />
+						</Grid>
+					</Border>
+				</StackPanel>
+
+				<!-- 错误信息 -->
+				<TextBlock Text="{Binding ErrorMessage}"
+						   Foreground="{DynamicResource LoginErrorBrush}"
+						   FontSize="13"
+						   TextWrapping="Wrap"
+						   IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+				<!-- 按钮区（全宽堆叠） -->
+				<StackPanel Spacing="16">
 					<Button Content="注册"
-							Classes="PrimaryAction"
+							Classes="LoginPrimary"
 							Command="{Binding RegisterCommand}" />
 					<Button Content="返回登录"
-							Classes="QuietAction"
+							Classes="LoginSecondary"
 							Command="{Binding NavigateToLoginCommand}" />
 				</StackPanel>
 			</StackPanel>

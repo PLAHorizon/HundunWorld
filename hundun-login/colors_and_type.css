@@ -1,0 +1,140 @@
+/* ============================================
+   混沌世界登录界面 — 品牌 CSS
+   水墨写意融合风格 · 青灰 + 水墨青绿
+   Free Explore Mode · Light Only
+   ============================================ */
+
+:root {
+  /* ---- 品牌主色相：水墨青绿 (seedColor: #4A7C7E) ---- */
+  --hd-primary-50: #EEF4F4;
+  --hd-primary-100: #D6E5E5;
+  --hd-primary-200: #ADCCCC;
+  --hd-primary-300: #84B3B4;
+  --hd-primary-400: #5F9496;
+  --hd-primary-500: #4A7C7E;
+  --hd-primary-600: #3A6567;
+  --hd-primary-700: #2D4E50;
+  --hd-primary-800: #1F3839;
+  --hd-primary-900: #122324;
+
+  /* ---- 中性系统：青灰 (slate blue-gray) ---- */
+  --hd-ink-900: #1C2128;
+  --hd-ink-800: #2A323D;
+  --hd-ink-700: #3A4654;
+  --hd-ink-600: #4A5664;
+  --hd-ink-500: #5C6878;
+  --hd-ink-400: #7A8593;
+  --hd-ink-300: #A8B0BC;
+  --hd-ink-200: #CDD3DB;
+  --hd-ink-100: #E5E9ED;
+  --hd-ink-50: #F2F4F6;
+  --hd-paper: #F5F6F4;
+
+  /* ---- 语义状态色 (仅状态语义，非身份/分类) ---- */
+  --state-error: #B85450;
+  --state-success: #5E8B5E;
+  --state-warning: #C49B5E;
+  --state-info: #4A7C7E;
+
+  /* ---- 圆角系统 (克制雅致，最大12px) ---- */
+  --hd-radius-sm: 4px;
+  --hd-radius-md: 8px;
+  --hd-radius-lg: 12px;
+  --hd-radius-full: 9999px;
+
+  /* ---- 字体系统 ---- */
+  --hd-font-display: "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+  --hd-font-body: "Noto Sans SC", "PingFang SC", system-ui, -apple-system, sans-serif;
+
+  /* ---- 间距系统 ---- */
+  --hd-space-xs: 4px;
+  --hd-space-sm: 8px;
+  --hd-space-md: 16px;
+  --hd-space-lg: 24px;
+  --hd-space-xl: 32px;
+  --hd-space-2xl: 48px;
+  --hd-space-3xl: 64px;
+
+  /* ---- 语义别名 (Tailwind @theme 桥接) ---- */
+  --hd-background: var(--hd-paper);
+  --hd-foreground: var(--hd-ink-700);
+  --hd-primary: var(--hd-primary-500);
+  --hd-primary-foreground: #ffffff;
+  --hd-card: var(--hd-paper);
+  --hd-card-foreground: var(--hd-ink-700);
+  --hd-border: var(--hd-ink-200);
+  --hd-input: var(--hd-ink-200);
+  --hd-ring: var(--hd-primary-400);
+  --hd-muted: var(--hd-ink-50);
+  --hd-muted-foreground: var(--hd-ink-500);
+  --hd-radius-small: var(--hd-radius-sm);
+  --hd-radius-medium: var(--hd-radius-md);
+  --hd-radius-large: var(--hd-radius-lg);
+}
+
+/* ============================================
+   排版工具类
+   ============================================ */
+
+.hd-display {
+  font-family: var(--hd-font-display);
+  font-size: 48px;
+  line-height: 56px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+.hd-heading-lg {
+  font-family: var(--hd-font-display);
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.hd-heading-md {
+  font-family: var(--hd-font-display);
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.hd-body-lg {
+  font-family: var(--hd-font-body);
+  font-size: 16px;
+  line-height: 26px;
+  font-weight: 400;
+}
+
+.hd-body {
+  font-family: var(--hd-font-body);
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 400;
+}
+
+.hd-body-sm {
+  font-family: var(--hd-font-body);
+  font-size: 12px;
+  line-height: 18px;
+  font-weight: 400;
+}
+
+/* ============================================
+   基础重置
+   ============================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--hd-font-body);
+  background-color: var(--hd-paper);
+  color: var(--hd-ink-700);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

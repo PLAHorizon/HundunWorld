@@ -87,8 +87,8 @@ public class AuthenticationController : Script
     private void InitializeManagers()
     {
         var cons = (Actor.Parent.Parent.As<UICanvas>().GUI.Children[0] as CanvasScaler).Children;
-        _loginPanel = cons[0] as LoginPanel;
-        _registerPanel = cons[1] as RegisterPanel;
+        _loginPanel = cons[1] as LoginPanel;
+        _registerPanel = cons[2] as RegisterPanel;
         _stateManager = HundunWorld.Game.UI.UIStateManager.Instance;
         _authManager = AuthenticationManager.Instance;
         _animationManager = UIAnimationManager.Instance;

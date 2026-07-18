@@ -953,6 +953,36 @@ namespace Horizon.Orleans.Grains
 
             if (gameUser == null)
             {
+                // 精确匹配不到时，查找同 PassportId 下已有的有效 GameUser 并复用。
+                // 同一 PassportId 在不同 AppType/AppId 下会创建不同的 User 记录（不同 Guid），
+                // 导致 GameUserId 不同。若不复用，会创建新的 Game_HunduShijie_User 记录（新 user_id），
+                // 使角色数据（按 user_id 关联）与新登录的 user_id 脱节，用户将看不到原有角色。
+                var samePassportUsers = await _userdataContext.QueryAsync(
+                    m => m.PassportId == user.PassportId && m.IsValid);
+                var passportUserIds = samePassportUsers.Select(u => u.Id).ToList();
+
+                if (passportUserIds.Count > 0)
+                {
+                    var existingGameUser = await _gameUserContext.QueryFirstOrDefaultAsync(
+                        m => passportUserIds.Contains(m.GameUserId) &&
+                             m.GameId == (int)loginDto.AppId &&
+                             m.IsValid && !m.IsDeleted);
+
+                    if (existingGameUser != null)
+                    {
+                        // 复用已有的 GameUser，将 GameUserId 指向当前 user.Id，
+                        // 保证后续角色查询（按 GameUser.Id/user_id）能命中原有角色数据。
+                        existingGameUser.GameUserId = user.Id;
+                        existingGameUser.LastLoginTime = DateTime.Now;
+                        await _gameUserContext.UpdateAsync(existingGameUser, existingGameUser.Id);
+
+                        _logger.LogInformation(
+                            "复用同 PassportId 下已有的游戏账户: PassportId={PassportId}, GameUserId={GameUserId}, OriginalGameUserId={OriginalGameUserId}",
+                            loginDto.PassportId, existingGameUser.Id, user.Id);
+                        return existingGameUser;
+                    }
+                }
+
                 gameUser = await _gameUserContext.AddAsync(new UserEntity
                 {
                     GameUserId = user.Id,

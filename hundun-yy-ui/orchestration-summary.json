@@ -1,0 +1,1856 @@
+{
+  "project": {
+    "name": "混沌世界·燕云融合UI",
+    "path": "c:\\Works\\GitHubProjects\\HundunWorld\\hundun-yy-ui",
+    "operation": "create",
+    "deviceType": "desktop",
+    "language": "zh-CN",
+    "dashboardMode": false,
+    "replicationMode": null,
+    "visualSpecExcerpt": "仿燕云十六声全UI系统：ink-深墨黑#0E1016沉浸底+yy-纸色#f5f0e8卷轴面板+鎏金#C8A858主CTA+朱红#c0392b战斗传世强调，Ma Shan Zheng书法大标题+Noto Serif SC宋体，水墨笔触金线描边面板，四角金角装饰，max圆角8px",
+    "styleDefinitionBrief": "燕云融合水墨武侠：ink-深墨黑全屏背景+水墨晕染纹理，鎏金#C8A858主CTA+朱红#c0392b战斗传世强调，纸色#f5f0e8卷轴信笺面板与深底形成水墨纸面对比，Ma Shan Zheng毛笔书法大标题，古风克制圆角(max8px)，极简沉浸式HUD",
+    "styleContinuityAnchors": {
+      "colorSystem": "鎏金#C8A858主CTA+选中态+面板标题强调；朱红#c0392b战斗操作+危险提示+传世品质+气血条；纸色#f5f0e8卷轴信笺面板与深底形成水墨纸面对比；品质色凡/良/珍/史/传五级，传世=朱红",
+      "shapeSystem": "古风硬朗克制：圆角max8px，面板4px，按钮2px，血条999px；金线描边+四角L型金角装饰；水墨笔触边框多层box-shadow错位模拟飞白；纸色面板用纸纹SVG overlay",
+      "typographySystem": "Ma Shan Zheng毛笔书法仅用于页面大标题/品牌字/页名(32px)；Noto Serif SC宋体用于面板标题/副标题(14-18px,weight600)；Noto Sans SC黑体用于UI正文(13px)；DIN等宽用于数值；标题字间距1-4px",
+      "spacingSystem": "4/8/12/16/24/32/48px阶梯；面板内边距16px；列表项内边距12px 16px；控件高度28/36/44px",
+      "componentLanguage": "ink-panel半透明毛玻璃面板+金线描边；ink-paper-panel纸色卷轴面板；ink-btn金线描边按钮(主/幽灵/朱红)；ink-cell品质色边框格子；ink-bar金/朱红渐变进度条；ink-vertical-title竖排书法标题；ink-splash水墨晕染装饰；统一data-dom-id导航",
+      "surfaceAndDepth": "静态面板以金线描边+背景层级分层为主,shadow alpha<=0.05；浮动层(弹窗/抽屉)用ink-shadow-panel深elevation+毛玻璃；金光晕仅限传世品质与关键CTA；朱红光晕仅限战斗操作",
+      "imageryAndIconography": "水墨晕染深色背景纹理(SVG noise+径向渐变)；远山雾霭/古建亭台/人物剪影水墨画风；功能图标复用671个SVG图标集；金菱形界碑标记；纸色面板用纸纹SVG overlay",
+      "interactionTone": "沉静厚重，hover态金线增强+微亮，选中态左侧金竖线+背景微金；朱红用于战斗反馈与危险提示；过渡0.15-0.4s ease；无弹跳/无跑马灯"
+    },
+    "sharedProjectShellContract": {
+      "navigationShell": "各系统面板左上角ink-back-btn返回战斗HUD；战斗HUD底部8入口系统导航栏；菜单页面共享侧边栏+顶栏壳；面板间不共享header/sidebar，各自独立全屏布局",
+      "primaryColorSystem": "鎏金#C8A858为主CTA+选中态，朱红#c0392b为战斗/危险/传世，古铜#B87333为辅；品质色五级；状态色四类",
+      "typographySystem": "Ma Shan Zheng大标题+Noto Serif SC宋体副标题+Noto Sans SC黑体正文+DIN数值；标题字间距1-4px",
+      "radiusScale": "none0/sm2/md4/lg8/full999；max8px古风克制",
+      "ctaStyle": "ink-btn-primary金渐变+金光晕(主操作)；ink-btn-vermilion朱红渐变(战斗操作)；ink-btn金线描边(次操作)；ink-btn-ghost透明(辅助)；高度36px"
+    },
+    "generationTree": {
+      "root": {
+        "nodeId": "gen-project-shell",
+        "kind": "project-shell",
+        "pageIds": [
+          "page-cc-naming",
+          "page-cc-face-customize",
+          "page-loading-1",
+          "page-loading-2",
+          "page-ink-anim-ref-1",
+          "page-ink-anim-ref-2",
+          "page-chapter-transition",
+          "page-combat-hud",
+          "page-guide-hud",
+          "page-element-vision",
+          "page-death-screen",
+          "page-qte",
+          "page-acupoint",
+          "page-dialogue-confirm",
+          "page-menu-char-attributes",
+          "page-menu-equipment",
+          "page-menu-appearance",
+          "page-menu-battle-prep",
+          "page-menu-sect",
+          "page-menu-personal-info",
+          "page-menu-time",
+          "page-menu-quests",
+          "page-menu-bestiary",
+          "page-menu-martial-record",
+          "page-menu-livelihood",
+          "page-menu-team",
+          "page-menu-mail",
+          "page-menu-shop",
+          "page-menu-casual-mode",
+          "page-menu-gacha",
+          "page-menu-activities",
+          "page-menu-battle-pass",
+          "page-menu-char-attributes-v2",
+          "page-shop-rare-items",
+          "page-settings",
+          "page-popup-bestiary-side",
+          "page-popup-message",
+          "page-popup-martial-detail",
+          "page-popup-guide-side",
+          "page-popup-martial-arts",
+          "page-popup-item-acquired",
+          "page-popup-skill-realization",
+          "page-popup-verification",
+          "page-reward-achievement",
+          "page-reward-teleport-unlock",
+          "page-reward-map-unlock",
+          "page-reward-level-up",
+          "page-reward-congratulations",
+          "page-reward-quest-complete",
+          "page-photo-mode",
+          "page-settings-audio",
+          "page-mini-game-complete",
+          "page-guide-action",
+          "page-guide-martial",
+          "page-multiplayer",
+          "page-combat-hud-v2"
+        ],
+        "output": "partials/project-shell.html",
+        "sharedRegions": [
+          "html-head",
+          "global-ink-background",
+          "immersive-frame",
+          "vignette-overlay",
+          "scrollbar-theme"
+        ],
+        "privateRegions": [],
+        "mutableSlots": [
+          "pageTitle",
+          "pageContent"
+        ],
+        "status": "planned",
+        "children": [
+          {
+            "nodeId": "gen-character-loading",
+            "kind": "shared-branch",
+            "branchName": "角色创建与加载",
+            "pageIds": [
+              "page-cc-naming",
+              "page-cc-face-customize",
+              "page-loading-1",
+              "page-loading-2",
+              "page-ink-anim-ref-1",
+              "page-ink-anim-ref-2",
+              "page-chapter-transition"
+            ],
+            "output": "partials/character-loading-shell.html",
+            "sharedRegions": [
+              "immersive-frame",
+              "panel-system"
+            ],
+            "privateRegions": [],
+            "mutableSlots": [
+              "pageTitle",
+              "pageContent"
+            ],
+            "status": "planned",
+            "children": [
+              {
+                "nodeId": "gen-page-cc-naming",
+                "kind": "page-leaf",
+                "pageId": "page-cc-naming",
+                "title": "创角·命名",
+                "output": "pages/cc-naming.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-cc-face-customize",
+                "kind": "page-leaf",
+                "pageId": "page-cc-face-customize",
+                "title": "创角·捏脸",
+                "output": "pages/cc-face-customize.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-loading-1",
+                "kind": "page-leaf",
+                "pageId": "page-loading-1",
+                "title": "加载·山水",
+                "output": "pages/loading-1.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-loading-2",
+                "kind": "page-leaf",
+                "pageId": "page-loading-2",
+                "title": "加载·远峰",
+                "output": "pages/loading-2.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-ink-anim-ref-1",
+                "kind": "page-leaf",
+                "pageId": "page-ink-anim-ref-1",
+                "title": "水墨分镜·晕染",
+                "output": "pages/ink-anim-ref-1.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-ink-anim-ref-2",
+                "kind": "page-leaf",
+                "pageId": "page-ink-anim-ref-2",
+                "title": "水墨分镜·笔触",
+                "output": "pages/ink-anim-ref-2.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-chapter-transition",
+                "kind": "page-leaf",
+                "pageId": "page-chapter-transition",
+                "title": "章节过场",
+                "output": "pages/chapter-transition.html",
+                "status": "planned"
+              }
+            ]
+          },
+          {
+            "nodeId": "gen-core-combat",
+            "kind": "shared-branch",
+            "branchName": "核心战斗",
+            "pageIds": [
+              "page-combat-hud",
+              "page-guide-hud",
+              "page-element-vision",
+              "page-death-screen",
+              "page-qte",
+              "page-acupoint",
+              "page-dialogue-confirm"
+            ],
+            "output": "partials/core-combat-shell.html",
+            "sharedRegions": [
+              "immersive-frame",
+              "panel-system"
+            ],
+            "privateRegions": [],
+            "mutableSlots": [
+              "pageTitle",
+              "pageContent"
+            ],
+            "status": "planned",
+            "children": [
+              {
+                "nodeId": "gen-page-combat-hud",
+                "kind": "page-leaf",
+                "pageId": "page-combat-hud",
+                "title": "战斗HUD",
+                "output": "pages/combat-hud.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-guide-hud",
+                "kind": "page-leaf",
+                "pageId": "page-guide-hud",
+                "title": "引导·HUD",
+                "output": "pages/guide-hud.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-element-vision",
+                "kind": "page-leaf",
+                "pageId": "page-element-vision",
+                "title": "元素视野",
+                "output": "pages/element-vision.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-death-screen",
+                "kind": "page-leaf",
+                "pageId": "page-death-screen",
+                "title": "阵亡",
+                "output": "pages/death-screen.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-qte",
+                "kind": "page-leaf",
+                "pageId": "page-qte",
+                "title": "QTE·千钧",
+                "output": "pages/qte.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-acupoint",
+                "kind": "page-leaf",
+                "pageId": "page-acupoint",
+                "title": "点穴·经络",
+                "output": "pages/acupoint.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-dialogue-confirm",
+                "kind": "page-leaf",
+                "pageId": "page-dialogue-confirm",
+                "title": "对话确认",
+                "output": "pages/dialogue-confirm.html",
+                "status": "planned"
+              }
+            ]
+          },
+          {
+            "nodeId": "gen-menu-character",
+            "kind": "shared-branch",
+            "branchName": "角色菜单",
+            "pageIds": [
+              "page-menu-char-attributes",
+              "page-menu-equipment",
+              "page-menu-appearance",
+              "page-menu-battle-prep",
+              "page-menu-sect",
+              "page-menu-personal-info",
+              "page-menu-time"
+            ],
+            "output": "partials/menu-character-shell.html",
+            "sharedRegions": [
+              "immersive-frame",
+              "panel-system"
+            ],
+            "privateRegions": [],
+            "mutableSlots": [
+              "pageTitle",
+              "pageContent"
+            ],
+            "status": "planned",
+            "children": [
+              {
+                "nodeId": "gen-page-menu-char-attributes",
+                "kind": "page-leaf",
+                "pageId": "page-menu-char-attributes",
+                "title": "角色属性",
+                "output": "pages/menu-char-attributes.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-menu-equipment",
+                "kind": "page-leaf",
+                "pageId": "page-menu-equipment",
+                "title": "装备",
+                "output": "pages/menu-equipment.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-menu-appearance",
+                "kind": "page-leaf",
+                "pageId": "page-menu-appearance",
+                "title": "外观",
+                "output": "pages/menu-appearance.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-menu-battle-prep",
+                "kind": "page-leaf",
+                "pageId": "page-menu-battle-prep",
+                "title": "备战",
+                "output": "pages/menu-battle-prep.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-menu-sect",
+                "kind": "page-leaf",
+                "pageId": "page-menu-sect",
+                "title": "门派",
+                "output": "pages/menu-sect.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-menu-personal-info",
+                "kind": "page-leaf",
+                "pageId": "page-menu-personal-info",
+                "title": "个人信息",
+                "output": "pages/menu-personal-info.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-menu-time",
+                "kind": "page-leaf",
+                "pageId": "page-menu-time",
+                "title": "时辰",
+                "output": "pages/menu-time.html",
+                "status": "planned"
+              }
+            ]
+          },
+          {
+            "nodeId": "gen-menu-quest",
+            "kind": "shared-branch",
+            "branchName": "任务菜单",
+            "pageIds": [
+              "page-menu-quests",
+              "page-menu-bestiary",
+              "page-menu-martial-record",
+              "page-menu-livelihood",
+              "page-menu-team",
+              "page-menu-mail",
+              "page-menu-shop"
+            ],
+            "output": "partials/menu-quest-shell.html",
+            "sharedRegions": [
+              "immersive-frame",
+              "panel-system"
+            ],
+            "privateRegions": [],
+            "mutableSlots": [
+              "pageTitle",
+              "pageContent"
+            ],
+            "status": "planned",
+            "children": [
+              {
+                "nodeId": "gen-page-menu-quests",
+                "kind": "page-leaf",
+                "pageId": "page-menu-quests",
+                "title": "任务",
+                "output": "pages/menu-quests.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-menu-bestiary",
+                "kind": "page-leaf",
+                "pageId": "page-menu-bestiary",
+                "title": "博物志",
+                "output": "pages/menu-bestiary.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-menu-martial-record",
+                "kind": "page-leaf",
+                "pageId": "page-menu-martial-record",
+                "title": "武林录",
+                "output": "pages/menu-martial-record.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-menu-livelihood",
+                "kind": "page-leaf",
+                "pageId": "page-menu-livelihood",
+                "title": "营生",
+                "output": "pages/menu-livelihood.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-menu-team",
+                "kind": "page-leaf",
+                "pageId": "page-menu-team",
+                "title": "组队",
+                "output": "pages/menu-team.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-menu-mail",
+                "kind": "page-leaf",
+                "pageId": "page-menu-mail",
+                "title": "邮箱",
+                "output": "pages/menu-mail.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-menu-shop",
+                "kind": "page-leaf",
+                "pageId": "page-menu-shop",
+                "title": "商店",
+                "output": "pages/menu-shop.html",
+                "status": "planned"
+              }
+            ]
+          },
+          {
+            "nodeId": "gen-menu-extended",
+            "kind": "shared-branch",
+            "branchName": "扩展菜单",
+            "pageIds": [
+              "page-menu-casual-mode",
+              "page-menu-gacha",
+              "page-menu-activities",
+              "page-menu-battle-pass",
+              "page-menu-char-attributes-v2",
+              "page-shop-rare-items",
+              "page-settings"
+            ],
+            "output": "partials/menu-extended-shell.html",
+            "sharedRegions": [
+              "immersive-frame",
+              "panel-system"
+            ],
+            "privateRegions": [],
+            "mutableSlots": [
+              "pageTitle",
+              "pageContent"
+            ],
+            "status": "planned",
+            "children": [
+              {
+                "nodeId": "gen-page-menu-casual-mode",
+                "kind": "page-leaf",
+                "pageId": "page-menu-casual-mode",
+                "title": "休闲模式",
+                "output": "pages/menu-casual-mode.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-menu-gacha",
+                "kind": "page-leaf",
+                "pageId": "page-menu-gacha",
+                "title": "抽卡祈愿",
+                "output": "pages/menu-gacha.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-menu-activities",
+                "kind": "page-leaf",
+                "pageId": "page-menu-activities",
+                "title": "活动",
+                "output": "pages/menu-activities.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-menu-battle-pass",
+                "kind": "page-leaf",
+                "pageId": "page-menu-battle-pass",
+                "title": "通行证",
+                "output": "pages/menu-battle-pass.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-menu-char-attributes-v2",
+                "kind": "page-leaf",
+                "pageId": "page-menu-char-attributes-v2",
+                "title": "属性面板V2",
+                "output": "pages/menu-char-attributes-v2.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-shop-rare-items",
+                "kind": "page-leaf",
+                "pageId": "page-shop-rare-items",
+                "title": "奇珍阁",
+                "output": "pages/shop-rare-items.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-settings",
+                "kind": "page-leaf",
+                "pageId": "page-settings",
+                "title": "设置",
+                "output": "pages/settings.html",
+                "status": "planned"
+              }
+            ]
+          },
+          {
+            "nodeId": "gen-popup-system",
+            "kind": "shared-branch",
+            "branchName": "弹窗系统",
+            "pageIds": [
+              "page-popup-bestiary-side",
+              "page-popup-message",
+              "page-popup-martial-detail",
+              "page-popup-guide-side",
+              "page-popup-martial-arts",
+              "page-popup-item-acquired",
+              "page-popup-skill-realization",
+              "page-popup-verification"
+            ],
+            "output": "partials/popup-system-shell.html",
+            "sharedRegions": [
+              "immersive-frame",
+              "panel-system"
+            ],
+            "privateRegions": [],
+            "mutableSlots": [
+              "pageTitle",
+              "pageContent"
+            ],
+            "status": "planned",
+            "children": [
+              {
+                "nodeId": "gen-page-popup-bestiary-side",
+                "kind": "page-leaf",
+                "pageId": "page-popup-bestiary-side",
+                "title": "博物侧弹窗",
+                "output": "pages/popup-bestiary-side.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-popup-message",
+                "kind": "page-leaf",
+                "pageId": "page-popup-message",
+                "title": "留言",
+                "output": "pages/popup-message.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-popup-martial-detail",
+                "kind": "page-leaf",
+                "pageId": "page-popup-martial-detail",
+                "title": "奇术详情",
+                "output": "pages/popup-martial-detail.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-popup-guide-side",
+                "kind": "page-leaf",
+                "pageId": "page-popup-guide-side",
+                "title": "引导侧弹窗",
+                "output": "pages/popup-guide-side.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-popup-martial-arts",
+                "kind": "page-leaf",
+                "pageId": "page-popup-martial-arts",
+                "title": "武学",
+                "output": "pages/popup-martial-arts.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-popup-item-acquired",
+                "kind": "page-leaf",
+                "pageId": "page-popup-item-acquired",
+                "title": "物品获得",
+                "output": "pages/popup-item-acquired.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-popup-skill-realization",
+                "kind": "page-leaf",
+                "pageId": "page-popup-skill-realization",
+                "title": "心法领悟",
+                "output": "pages/popup-skill-realization.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-popup-verification",
+                "kind": "page-leaf",
+                "pageId": "page-popup-verification",
+                "title": "验讫",
+                "output": "pages/popup-verification.html",
+                "status": "planned"
+              }
+            ]
+          },
+          {
+            "nodeId": "gen-reward-misc",
+            "kind": "shared-branch",
+            "branchName": "奖励与杂项",
+            "pageIds": [
+              "page-reward-achievement",
+              "page-reward-teleport-unlock",
+              "page-reward-map-unlock",
+              "page-reward-level-up",
+              "page-reward-congratulations",
+              "page-reward-quest-complete",
+              "page-photo-mode",
+              "page-settings-audio",
+              "page-mini-game-complete",
+              "page-guide-action",
+              "page-guide-martial",
+              "page-multiplayer",
+              "page-combat-hud-v2"
+            ],
+            "output": "partials/misc-system-shell.html",
+            "sharedRegions": [
+              "immersive-frame",
+              "panel-system"
+            ],
+            "privateRegions": [],
+            "mutableSlots": [
+              "pageTitle",
+              "pageContent"
+            ],
+            "status": "planned",
+            "children": [
+              {
+                "nodeId": "gen-page-reward-achievement",
+                "kind": "page-leaf",
+                "pageId": "page-reward-achievement",
+                "title": "成就解锁",
+                "output": "pages/reward-achievement.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-reward-teleport-unlock",
+                "kind": "page-leaf",
+                "pageId": "page-reward-teleport-unlock",
+                "title": "传送解锁",
+                "output": "pages/reward-teleport-unlock.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-reward-map-unlock",
+                "kind": "page-leaf",
+                "pageId": "page-reward-map-unlock",
+                "title": "地图解锁",
+                "output": "pages/reward-map-unlock.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-reward-level-up",
+                "kind": "page-leaf",
+                "pageId": "page-reward-level-up",
+                "title": "等级提升",
+                "output": "pages/reward-level-up.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-reward-congratulations",
+                "kind": "page-leaf",
+                "pageId": "page-reward-congratulations",
+                "title": "恭喜获得",
+                "output": "pages/reward-congratulations.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-reward-quest-complete",
+                "kind": "page-leaf",
+                "pageId": "page-reward-quest-complete",
+                "title": "任务完成",
+                "output": "pages/reward-quest-complete.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-photo-mode",
+                "kind": "page-leaf",
+                "pageId": "page-photo-mode",
+                "title": "拍照模式",
+                "output": "pages/photo-mode.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-settings-audio",
+                "kind": "page-leaf",
+                "pageId": "page-settings-audio",
+                "title": "音频设置",
+                "output": "pages/settings-audio.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-mini-game-complete",
+                "kind": "page-leaf",
+                "pageId": "page-mini-game-complete",
+                "title": "小游戏完成",
+                "output": "pages/mini-game-complete.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-guide-action",
+                "kind": "page-leaf",
+                "pageId": "page-guide-action",
+                "title": "引导操作",
+                "output": "pages/guide-action.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-guide-martial",
+                "kind": "page-leaf",
+                "pageId": "page-guide-martial",
+                "title": "引导奇术",
+                "output": "pages/guide-martial.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-multiplayer",
+                "kind": "page-leaf",
+                "pageId": "page-multiplayer",
+                "title": "多人模式",
+                "output": "pages/multiplayer.html",
+                "status": "planned"
+              },
+              {
+                "nodeId": "gen-page-combat-hud-v2",
+                "kind": "page-leaf",
+                "pageId": "page-combat-hud-v2",
+                "title": "战斗HUDv2",
+                "output": "pages/combat-hud-v2.html",
+                "status": "planned"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "designSource": {
+    "operatingMode": "free-explore",
+    "libraryIdentity": null,
+    "libraryPath": null,
+    "cssFilePath": "c:\\Works\\GitHubProjects\\HundunWorld\\hundun-yy-ui\\colors_and_type.css",
+    "brandPrefix": "ink",
+    "themeMode": "dark",
+    "designDecisionSummary": "融合ink-深墨黑沉浸底+鎏金主色+Ma Shan Zheng书法与yy-纸色面板+朱红战斗强调",
+    "styleConstraints": {
+      "radiusMax": 8,
+      "spacingBase": 4,
+      "fontSizeBody": 13,
+      "fontSizeMin": 11,
+      "controlHeightDefault": 36,
+      "controlHeightLarge": 44
+    },
+    "productContext": {
+      "kitType": "game-ui-immersive",
+      "productType": "武侠开放世界MMORPG"
+    }
+  },
+  "pages": [
+    {
+      "pageId": "page-cc-naming",
+      "title": "创角·命名",
+      "htmlSrc": "pages/cc-naming.html",
+      "batch": 1
+    },
+    {
+      "pageId": "page-cc-face-customize",
+      "title": "创角·捏脸",
+      "htmlSrc": "pages/cc-face-customize.html",
+      "batch": 1
+    },
+    {
+      "pageId": "page-loading-1",
+      "title": "加载·山水",
+      "htmlSrc": "pages/loading-1.html",
+      "batch": 1
+    },
+    {
+      "pageId": "page-loading-2",
+      "title": "加载·远峰",
+      "htmlSrc": "pages/loading-2.html",
+      "batch": 1
+    },
+    {
+      "pageId": "page-ink-anim-ref-1",
+      "title": "水墨分镜·晕染",
+      "htmlSrc": "pages/ink-anim-ref-1.html",
+      "batch": 1
+    },
+    {
+      "pageId": "page-ink-anim-ref-2",
+      "title": "水墨分镜·笔触",
+      "htmlSrc": "pages/ink-anim-ref-2.html",
+      "batch": 1
+    },
+    {
+      "pageId": "page-chapter-transition",
+      "title": "章节过场",
+      "htmlSrc": "pages/chapter-transition.html",
+      "batch": 1
+    },
+    {
+      "pageId": "page-combat-hud",
+      "title": "战斗HUD",
+      "htmlSrc": "pages/combat-hud.html",
+      "batch": 2
+    },
+    {
+      "pageId": "page-guide-hud",
+      "title": "引导·HUD",
+      "htmlSrc": "pages/guide-hud.html",
+      "batch": 2
+    },
+    {
+      "pageId": "page-element-vision",
+      "title": "元素视野",
+      "htmlSrc": "pages/element-vision.html",
+      "batch": 2
+    },
+    {
+      "pageId": "page-death-screen",
+      "title": "阵亡",
+      "htmlSrc": "pages/death-screen.html",
+      "batch": 2
+    },
+    {
+      "pageId": "page-qte",
+      "title": "QTE·千钧",
+      "htmlSrc": "pages/qte.html",
+      "batch": 2
+    },
+    {
+      "pageId": "page-acupoint",
+      "title": "点穴·经络",
+      "htmlSrc": "pages/acupoint.html",
+      "batch": 2
+    },
+    {
+      "pageId": "page-dialogue-confirm",
+      "title": "对话确认",
+      "htmlSrc": "pages/dialogue-confirm.html",
+      "batch": 2
+    },
+    {
+      "pageId": "page-menu-char-attributes",
+      "title": "角色属性",
+      "htmlSrc": "pages/menu-char-attributes.html",
+      "batch": 3
+    },
+    {
+      "pageId": "page-menu-equipment",
+      "title": "装备",
+      "htmlSrc": "pages/menu-equipment.html",
+      "batch": 3
+    },
+    {
+      "pageId": "page-menu-appearance",
+      "title": "外观",
+      "htmlSrc": "pages/menu-appearance.html",
+      "batch": 3
+    },
+    {
+      "pageId": "page-menu-battle-prep",
+      "title": "备战",
+      "htmlSrc": "pages/menu-battle-prep.html",
+      "batch": 3
+    },
+    {
+      "pageId": "page-menu-sect",
+      "title": "门派",
+      "htmlSrc": "pages/menu-sect.html",
+      "batch": 3
+    },
+    {
+      "pageId": "page-menu-personal-info",
+      "title": "个人信息",
+      "htmlSrc": "pages/menu-personal-info.html",
+      "batch": 3
+    },
+    {
+      "pageId": "page-menu-time",
+      "title": "时辰",
+      "htmlSrc": "pages/menu-time.html",
+      "batch": 3
+    },
+    {
+      "pageId": "page-menu-quests",
+      "title": "任务",
+      "htmlSrc": "pages/menu-quests.html",
+      "batch": 4
+    },
+    {
+      "pageId": "page-menu-bestiary",
+      "title": "博物志",
+      "htmlSrc": "pages/menu-bestiary.html",
+      "batch": 4
+    },
+    {
+      "pageId": "page-menu-martial-record",
+      "title": "武林录",
+      "htmlSrc": "pages/menu-martial-record.html",
+      "batch": 4
+    },
+    {
+      "pageId": "page-menu-livelihood",
+      "title": "营生",
+      "htmlSrc": "pages/menu-livelihood.html",
+      "batch": 4
+    },
+    {
+      "pageId": "page-menu-team",
+      "title": "组队",
+      "htmlSrc": "pages/menu-team.html",
+      "batch": 4
+    },
+    {
+      "pageId": "page-menu-mail",
+      "title": "邮箱",
+      "htmlSrc": "pages/menu-mail.html",
+      "batch": 4
+    },
+    {
+      "pageId": "page-menu-shop",
+      "title": "商店",
+      "htmlSrc": "pages/menu-shop.html",
+      "batch": 4
+    },
+    {
+      "pageId": "page-menu-casual-mode",
+      "title": "休闲模式",
+      "htmlSrc": "pages/menu-casual-mode.html",
+      "batch": 5
+    },
+    {
+      "pageId": "page-menu-gacha",
+      "title": "抽卡祈愿",
+      "htmlSrc": "pages/menu-gacha.html",
+      "batch": 5
+    },
+    {
+      "pageId": "page-menu-activities",
+      "title": "活动",
+      "htmlSrc": "pages/menu-activities.html",
+      "batch": 5
+    },
+    {
+      "pageId": "page-menu-battle-pass",
+      "title": "通行证",
+      "htmlSrc": "pages/menu-battle-pass.html",
+      "batch": 5
+    },
+    {
+      "pageId": "page-menu-char-attributes-v2",
+      "title": "属性面板V2",
+      "htmlSrc": "pages/menu-char-attributes-v2.html",
+      "batch": 5
+    },
+    {
+      "pageId": "page-shop-rare-items",
+      "title": "奇珍阁",
+      "htmlSrc": "pages/shop-rare-items.html",
+      "batch": 5
+    },
+    {
+      "pageId": "page-settings",
+      "title": "设置",
+      "htmlSrc": "pages/settings.html",
+      "batch": 5
+    },
+    {
+      "pageId": "page-popup-bestiary-side",
+      "title": "博物侧弹窗",
+      "htmlSrc": "pages/popup-bestiary-side.html",
+      "batch": 6
+    },
+    {
+      "pageId": "page-popup-message",
+      "title": "留言",
+      "htmlSrc": "pages/popup-message.html",
+      "batch": 6
+    },
+    {
+      "pageId": "page-popup-martial-detail",
+      "title": "奇术详情",
+      "htmlSrc": "pages/popup-martial-detail.html",
+      "batch": 6
+    },
+    {
+      "pageId": "page-popup-guide-side",
+      "title": "引导侧弹窗",
+      "htmlSrc": "pages/popup-guide-side.html",
+      "batch": 6
+    },
+    {
+      "pageId": "page-popup-martial-arts",
+      "title": "武学",
+      "htmlSrc": "pages/popup-martial-arts.html",
+      "batch": 6
+    },
+    {
+      "pageId": "page-popup-item-acquired",
+      "title": "物品获得",
+      "htmlSrc": "pages/popup-item-acquired.html",
+      "batch": 6
+    },
+    {
+      "pageId": "page-popup-skill-realization",
+      "title": "心法领悟",
+      "htmlSrc": "pages/popup-skill-realization.html",
+      "batch": 6
+    },
+    {
+      "pageId": "page-popup-verification",
+      "title": "验讫",
+      "htmlSrc": "pages/popup-verification.html",
+      "batch": 6
+    },
+    {
+      "pageId": "page-reward-achievement",
+      "title": "成就解锁",
+      "htmlSrc": "pages/reward-achievement.html",
+      "batch": 7
+    },
+    {
+      "pageId": "page-reward-teleport-unlock",
+      "title": "传送解锁",
+      "htmlSrc": "pages/reward-teleport-unlock.html",
+      "batch": 7
+    },
+    {
+      "pageId": "page-reward-map-unlock",
+      "title": "地图解锁",
+      "htmlSrc": "pages/reward-map-unlock.html",
+      "batch": 7
+    },
+    {
+      "pageId": "page-reward-level-up",
+      "title": "等级提升",
+      "htmlSrc": "pages/reward-level-up.html",
+      "batch": 7
+    },
+    {
+      "pageId": "page-reward-congratulations",
+      "title": "恭喜获得",
+      "htmlSrc": "pages/reward-congratulations.html",
+      "batch": 7
+    },
+    {
+      "pageId": "page-reward-quest-complete",
+      "title": "任务完成",
+      "htmlSrc": "pages/reward-quest-complete.html",
+      "batch": 7
+    },
+    {
+      "pageId": "page-photo-mode",
+      "title": "拍照模式",
+      "htmlSrc": "pages/photo-mode.html",
+      "batch": 7
+    },
+    {
+      "pageId": "page-settings-audio",
+      "title": "音频设置",
+      "htmlSrc": "pages/settings-audio.html",
+      "batch": 7
+    },
+    {
+      "pageId": "page-mini-game-complete",
+      "title": "小游戏完成",
+      "htmlSrc": "pages/mini-game-complete.html",
+      "batch": 7
+    },
+    {
+      "pageId": "page-guide-action",
+      "title": "引导操作",
+      "htmlSrc": "pages/guide-action.html",
+      "batch": 7
+    },
+    {
+      "pageId": "page-guide-martial",
+      "title": "引导奇术",
+      "htmlSrc": "pages/guide-martial.html",
+      "batch": 7
+    },
+    {
+      "pageId": "page-multiplayer",
+      "title": "多人模式",
+      "htmlSrc": "pages/multiplayer.html",
+      "batch": 7
+    },
+    {
+      "pageId": "page-combat-hud-v2",
+      "title": "战斗HUDv2",
+      "htmlSrc": "pages/combat-hud-v2.html",
+      "batch": 7
+    }
+  ],
+  "assets": [
+    {
+      "id": "image-001",
+      "title": "创角命名背景",
+      "imageSrc": "assets/bg-cc-naming.jpg"
+    },
+    {
+      "id": "image-002",
+      "title": "角色预览背景",
+      "imageSrc": "assets/bg-cc-preview.jpg"
+    },
+    {
+      "id": "image-003",
+      "title": "加载山水背景",
+      "imageSrc": "assets/bg-loading-landscape.jpg"
+    },
+    {
+      "id": "image-004",
+      "title": "加载远峰背景",
+      "imageSrc": "assets/bg-loading-mountain.jpg"
+    },
+    {
+      "id": "image-005",
+      "title": "水墨晕染分镜",
+      "imageSrc": "assets/ink-anim-spread.jpg"
+    },
+    {
+      "id": "image-006",
+      "title": "水墨笔触分镜",
+      "imageSrc": "assets/ink-anim-brush.jpg"
+    },
+    {
+      "id": "image-007",
+      "title": "章节过场背景",
+      "imageSrc": "assets/bg-chapter-ink.jpg"
+    },
+    {
+      "id": "image-008",
+      "title": "水墨山色战场",
+      "imageSrc": "assets/bg-ink-wash-scene.jpg"
+    },
+    {
+      "id": "image-009",
+      "title": "元素视野背景",
+      "imageSrc": "assets/bg-element-vision.jpg"
+    },
+    {
+      "id": "image-010",
+      "title": "阵亡水墨背景",
+      "imageSrc": "assets/bg-ink-wash-death.jpg"
+    },
+    {
+      "id": "image-011",
+      "title": "水墨笔触",
+      "imageSrc": "assets/ink-brush-stroke.jpg"
+    },
+    {
+      "id": "image-012",
+      "title": "经络穴位图",
+      "imageSrc": "assets/bg-meridian-diagram.jpg"
+    },
+    {
+      "id": "image-013",
+      "title": "角色预览",
+      "imageSrc": "assets/bg-char-preview.jpg"
+    },
+    {
+      "id": "image-014",
+      "title": "门派徽章",
+      "imageSrc": "assets/bg-sect-emblem.jpg"
+    },
+    {
+      "id": "image-015",
+      "title": "博物志插画",
+      "imageSrc": "assets/bg-bestiary-illust.jpg"
+    },
+    {
+      "id": "image-016",
+      "title": "信笺纸张",
+      "imageSrc": "assets/bg-letter-paper.jpg"
+    },
+    {
+      "id": "image-017",
+      "title": "水墨地图",
+      "imageSrc": "assets/bg-map-ink.jpg"
+    },
+    {
+      "id": "image-018",
+      "title": "抽卡光效",
+      "imageSrc": "assets/bg-gacha-glow.jpg"
+    },
+    {
+      "id": "image-019",
+      "title": "属性面板V2预览",
+      "imageSrc": "assets/bg-char-preview-v2.jpg"
+    }
+  ],
+  "wiringPlan": [
+    {
+      "source": "page-cc-naming",
+      "target": "page-cc-face-customize",
+      "domId": "cta-next",
+      "label": "下一步"
+    },
+    {
+      "source": "page-cc-face-customize",
+      "target": "page-loading-1",
+      "domId": "cta-enter-game",
+      "label": "踏入江湖"
+    },
+    {
+      "source": "page-loading-1",
+      "target": "page-loading-2",
+      "domId": "auto-advance",
+      "label": "继续加载"
+    },
+    {
+      "source": "page-loading-2",
+      "target": "page-chapter-transition",
+      "domId": "auto-advance",
+      "label": "继续"
+    },
+    {
+      "source": "page-chapter-transition",
+      "target": "page-combat-hud",
+      "domId": "cta-enter-world",
+      "label": "进入世界"
+    },
+    {
+      "source": "page-combat-hud",
+      "target": "page-guide-hud",
+      "domId": "link-guide-hud",
+      "label": "引导"
+    },
+    {
+      "source": "page-combat-hud",
+      "target": "page-menu-char-attributes",
+      "domId": "nav-character",
+      "label": "角色属性"
+    },
+    {
+      "source": "page-guide-hud",
+      "target": "page-element-vision",
+      "domId": "link-element-vision",
+      "label": "元素视野"
+    },
+    {
+      "source": "page-element-vision",
+      "target": "page-death-screen",
+      "domId": "link-death-screen",
+      "label": "阵亡"
+    },
+    {
+      "source": "page-death-screen",
+      "target": "page-qte",
+      "domId": "link-qte",
+      "label": "QTE"
+    },
+    {
+      "source": "page-qte",
+      "target": "page-acupoint",
+      "domId": "link-acupoint",
+      "label": "点穴"
+    },
+    {
+      "source": "page-acupoint",
+      "target": "page-dialogue-confirm",
+      "domId": "link-dialogue-confirm",
+      "label": "对话确认"
+    },
+    {
+      "source": "page-menu-char-attributes",
+      "target": "page-menu-equipment",
+      "domId": "nav-equipment",
+      "label": "装备"
+    },
+    {
+      "source": "page-menu-equipment",
+      "target": "page-menu-appearance",
+      "domId": "nav-appearance",
+      "label": "外观"
+    },
+    {
+      "source": "page-menu-appearance",
+      "target": "page-menu-battle-prep",
+      "domId": "nav-battle-prep",
+      "label": "备战"
+    },
+    {
+      "source": "page-menu-battle-prep",
+      "target": "page-menu-sect",
+      "domId": "nav-sect",
+      "label": "门派"
+    },
+    {
+      "source": "page-menu-sect",
+      "target": "page-menu-personal-info",
+      "domId": "nav-personal-info",
+      "label": "个人信息"
+    },
+    {
+      "source": "page-menu-personal-info",
+      "target": "page-menu-time",
+      "domId": "nav-time",
+      "label": "时辰"
+    },
+    {
+      "source": "page-menu-time",
+      "target": "page-menu-quests",
+      "domId": "shortcut-quests",
+      "label": "任务"
+    },
+    {
+      "source": "page-menu-quests",
+      "target": "page-menu-bestiary",
+      "domId": "nav-bestiary",
+      "label": "博物志"
+    },
+    {
+      "source": "page-menu-bestiary",
+      "target": "page-menu-martial-record",
+      "domId": "nav-martial-record",
+      "label": "武林录"
+    },
+    {
+      "source": "page-menu-martial-record",
+      "target": "page-menu-livelihood",
+      "domId": "nav-livelihood",
+      "label": "营生"
+    },
+    {
+      "source": "page-menu-livelihood",
+      "target": "page-menu-team",
+      "domId": "nav-team",
+      "label": "组队"
+    },
+    {
+      "source": "page-menu-team",
+      "target": "page-menu-mail",
+      "domId": "nav-mail",
+      "label": "邮箱"
+    },
+    {
+      "source": "page-menu-mail",
+      "target": "page-menu-shop",
+      "domId": "nav-shop",
+      "label": "商店"
+    },
+    {
+      "source": "page-menu-shop",
+      "target": "page-menu-casual-mode",
+      "domId": "shortcut-casual-mode",
+      "label": "休闲模式"
+    },
+    {
+      "source": "page-menu-casual-mode",
+      "target": "page-menu-gacha",
+      "domId": "nav-gacha",
+      "label": "抽卡祈愿"
+    },
+    {
+      "source": "page-menu-gacha",
+      "target": "page-menu-activities",
+      "domId": "nav-activities",
+      "label": "活动"
+    },
+    {
+      "source": "page-menu-activities",
+      "target": "page-menu-battle-pass",
+      "domId": "nav-battle-pass",
+      "label": "通行证"
+    },
+    {
+      "source": "page-menu-battle-pass",
+      "target": "page-menu-char-attributes-v2",
+      "domId": "nav-char-attributes-v2",
+      "label": "属性V2"
+    },
+    {
+      "source": "page-menu-char-attributes-v2",
+      "target": "page-shop-rare-items",
+      "domId": "nav-shop-rare-items",
+      "label": "奇珍阁"
+    },
+    {
+      "source": "page-shop-rare-items",
+      "target": "page-settings",
+      "domId": "nav-settings",
+      "label": "设置"
+    },
+    {
+      "source": "page-settings",
+      "target": "page-popup-bestiary-side",
+      "domId": "shortcut-popup-bestiary",
+      "label": "博物弹窗"
+    },
+    {
+      "source": "page-popup-bestiary-side",
+      "target": "page-popup-message",
+      "domId": "link-popup-message",
+      "label": "留言"
+    },
+    {
+      "source": "page-popup-message",
+      "target": "page-popup-martial-detail",
+      "domId": "link-popup-martial-detail",
+      "label": "奇术"
+    },
+    {
+      "source": "page-popup-martial-detail",
+      "target": "page-popup-guide-side",
+      "domId": "link-popup-guide-side",
+      "label": "引导"
+    },
+    {
+      "source": "page-popup-guide-side",
+      "target": "page-popup-martial-arts",
+      "domId": "link-popup-martial-arts",
+      "label": "武学"
+    },
+    {
+      "source": "page-popup-martial-arts",
+      "target": "page-popup-item-acquired",
+      "domId": "link-popup-item-acquired",
+      "label": "物品获得"
+    },
+    {
+      "source": "page-popup-item-acquired",
+      "target": "page-popup-skill-realization",
+      "domId": "link-popup-skill-realization",
+      "label": "心法领悟"
+    },
+    {
+      "source": "page-popup-skill-realization",
+      "target": "page-popup-verification",
+      "domId": "link-popup-verification",
+      "label": "验讫"
+    },
+    {
+      "source": "page-popup-verification",
+      "target": "page-reward-achievement",
+      "domId": "shortcut-reward-achievement",
+      "label": "成就解锁"
+    },
+    {
+      "source": "page-reward-achievement",
+      "target": "page-reward-teleport-unlock",
+      "domId": "link-reward-teleport",
+      "label": "传送解锁"
+    },
+    {
+      "source": "page-reward-teleport-unlock",
+      "target": "page-reward-map-unlock",
+      "domId": "link-reward-map",
+      "label": "地图解锁"
+    },
+    {
+      "source": "page-reward-map-unlock",
+      "target": "page-reward-level-up",
+      "domId": "link-reward-level-up",
+      "label": "等级提升"
+    },
+    {
+      "source": "page-reward-level-up",
+      "target": "page-reward-congratulations",
+      "domId": "link-reward-congratulations",
+      "label": "恭喜获得"
+    },
+    {
+      "source": "page-reward-congratulations",
+      "target": "page-reward-quest-complete",
+      "domId": "link-reward-quest-complete",
+      "label": "任务完成"
+    },
+    {
+      "source": "page-reward-quest-complete",
+      "target": "page-photo-mode",
+      "domId": "shortcut-photo-mode",
+      "label": "拍照模式"
+    },
+    {
+      "source": "page-photo-mode",
+      "target": "page-settings-audio",
+      "domId": "link-settings-audio",
+      "label": "音频设置"
+    },
+    {
+      "source": "page-settings-audio",
+      "target": "page-mini-game-complete",
+      "domId": "link-mini-game-complete",
+      "label": "小游戏完成"
+    },
+    {
+      "source": "page-mini-game-complete",
+      "target": "page-guide-action",
+      "domId": "link-guide-action",
+      "label": "引导操作"
+    },
+    {
+      "source": "page-guide-action",
+      "target": "page-guide-martial",
+      "domId": "link-guide-martial",
+      "label": "引导奇术"
+    },
+    {
+      "source": "page-guide-martial",
+      "target": "page-multiplayer",
+      "domId": "link-multiplayer",
+      "label": "多人模式"
+    },
+    {
+      "source": "page-multiplayer",
+      "target": "page-combat-hud-v2",
+      "domId": "link-combat-hud-v2",
+      "label": "战斗HUDv2"
+    }
+  ],
+  "hiddenInteractionPlan": [
+    {
+      "source": "page-combat-hud",
+      "target": "page-menu-quests",
+      "domId": "nav-quests",
+      "label": "任务"
+    },
+    {
+      "source": "page-combat-hud",
+      "target": "page-menu-casual-mode",
+      "domId": "nav-casual",
+      "label": "休闲"
+    },
+    {
+      "source": "page-combat-hud",
+      "target": "page-popup-bestiary-side",
+      "domId": "nav-bestiary-popup",
+      "label": "博物"
+    },
+    {
+      "source": "page-combat-hud",
+      "target": "page-reward-achievement",
+      "domId": "nav-reward",
+      "label": "成就"
+    },
+    {
+      "source": "page-combat-hud",
+      "target": "page-photo-mode",
+      "domId": "nav-photo",
+      "label": "拍照"
+    },
+    {
+      "source": "page-combat-hud",
+      "target": "page-settings",
+      "domId": "nav-settings",
+      "label": "设置"
+    },
+    {
+      "source": "page-guide-hud",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-element-vision",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-death-screen",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-qte",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-acupoint",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-dialogue-confirm",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-menu-char-attributes",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-menu-equipment",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-menu-appearance",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-menu-battle-prep",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-menu-sect",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-menu-personal-info",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-menu-time",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-menu-quests",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-menu-bestiary",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-menu-martial-record",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-menu-livelihood",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-menu-team",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-menu-mail",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-menu-shop",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-menu-casual-mode",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-menu-gacha",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-menu-activities",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-menu-battle-pass",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-menu-char-attributes-v2",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-shop-rare-items",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-settings",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-popup-bestiary-side",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-popup-message",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-popup-martial-detail",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-popup-guide-side",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-popup-martial-arts",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-popup-item-acquired",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-popup-skill-realization",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-popup-verification",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-reward-achievement",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-reward-teleport-unlock",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-reward-map-unlock",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-reward-level-up",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-reward-congratulations",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-reward-quest-complete",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-photo-mode",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-settings-audio",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-mini-game-complete",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-guide-action",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-guide-martial",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-multiplayer",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    },
+    {
+      "source": "page-combat-hud-v2",
+      "target": "page-combat-hud",
+      "domId": "back-hud",
+      "label": "返回主界面"
+    }
+  ]
+}

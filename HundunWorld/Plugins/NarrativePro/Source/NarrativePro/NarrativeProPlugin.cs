@@ -126,8 +126,10 @@ namespace NarrativePro
         private NarrativePro.Network.NarrativeSyncManager GetNarrativeSyncManager()
         {
             if (ActiveTalesComponent == null) return null;
-            // NarrativeSyncManager 由外部设置，这里通过静态访问或未来扩展获取
-            return null; // TODO: 当 NarrativeSyncManager 实例化后，在此返回引用
+            // TODO [需接入 NarrativeSyncManager 实例化系统]: NarrativeSyncManager 由外部业务层创建并注入，
+            // 此处当前返回 null。接入时应在 ActiveTalesComponent 上挂载/查询 NarrativeSyncManager 引用，
+            // 或通过专门的 Singleton/Service Locator 模式获取运行时实例。
+            return null;
         }
 
         /// <summary>

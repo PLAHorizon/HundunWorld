@@ -81,6 +81,9 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             ToggleNewsDetailCommand = new SimpleRelayCommand(OpenNewsDetailDrawer);
             CloseNewsDetailCommand = new SimpleRelayCommand(() => { IsNewsDetailOpen = false; _activeDrawer = DrawerType.None; });
             CloseCityPickerCommand = new SimpleRelayCommand(() => { IsCityPickerOpen = false; CitySearchText = string.Empty; });
+            NavigateToGamesCommand = new SimpleRelayCommand(OnNavigateToGames);
+            NavigateToNewsCommand = new SimpleRelayCommand(OnNavigateToNews);
+            NavigateToSocialCommand = new SimpleRelayCommand(OnNavigateToSocial);
 
             _filteredCities = CitySearchService.SearchCitiesAsync("").Result;
             UpdateSelectedCityName();
@@ -171,6 +174,9 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         }
 
         public ICommand CloseCityPickerCommand { get; }
+        public ICommand NavigateToGamesCommand { get; }
+        public ICommand NavigateToNewsCommand { get; }
+        public ICommand NavigateToSocialCommand { get; }
 
         public bool IsWeatherNewsExpanded
         {
@@ -949,6 +955,21 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             {
                 IsSearchingCities = false;
             }
+        }
+
+        private void OnNavigateToGames()
+        {
+            // TODO: Navigate to games page
+        }
+
+        private void OnNavigateToNews()
+        {
+            // TODO: Navigate to news page
+        }
+
+        private void OnNavigateToSocial()
+        {
+            // TODO: Navigate to social page
         }
 
         private void UpdateSelectedCityName()

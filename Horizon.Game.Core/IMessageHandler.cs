@@ -84,6 +84,14 @@ public abstract class MessageHandlerBase : IMessageHandler
                 return (IsSuccess, null);
             }
 
+            // 发送前检查连接是否仍在线：客户端可能在我们处理消息期间断开
+            if (!client.Online)
+            {
+                Logger.LogWarning("客户端已离线，跳过响应发送。Type={MessageType}, MsgId={MessageId}",
+                    message.Header.MessageType, message.Header.MessageId);
+                return (false, null);
+            }
+
             PrepareResponsePacket(tem, message);
             var buff = _adapter.PackPacket(tem);
             await client.SendAsync(buff);
@@ -91,28 +99,13 @@ public abstract class MessageHandlerBase : IMessageHandler
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex,
-                "处理消息失败。ServiceType={ServiceType}, MessageType={MessageType}, MessageId={MessageId}",
-                ServiceType,
-                message.Header.MessageType,
-                message.Header.MessageId);
+            // 发送失败通常意味着客户端已断开，不再重试发送错误响应
+            // 主动关闭连接以触发 OnClientDisconnected → PlayerDespawnScheduler 链路
+            Logger.LogWarning("消息处理失败，客户端可能已断开。Type={MessageType}, MsgId={MessageId}, Error={Error}",
+                message.Header.MessageType, message.Header.MessageId, ex.GetType().Name);
 
-            try
-            {
-                var errorPacket = CreateUnhandledErrorResponse(message, ex);
-                var errorBuffer = _adapter.PackPacket(errorPacket);
-                await client.SendAsync(errorBuffer);
-                return (false, errorPacket.Body);
-            }
-            catch (Exception responseEx)
-            {
-                Logger.LogError(responseEx,
-                    "发送异常回退响应失败。ServiceType={ServiceType}, MessageType={MessageType}, MessageId={MessageId}",
-                    ServiceType,
-                    message.Header.MessageType,
-                    message.Header.MessageId);
-                return (false, null);
-            }
+            try { await client.CloseAsync("消息处理异常"); } catch { /* 忽略关闭失败 */ }
+            return (false, null);
         }
     }
 
@@ -124,6 +117,7 @@ public abstract class MessageHandlerBase : IMessageHandler
         responsePacket.Header.UserId = request.Header.UserId;
         responsePacket.Header.AuthToken = request.Header.AuthToken;
         responsePacket.Header.MachineId = request.Header.MachineId;
+        responsePacket.Header.CharacterId = request.Header.CharacterId;
         responsePacket.Header.IsResponse = true;
         responsePacket.Header.ResponseToMessageId = request.Header.MessageId;
         responsePacket.Header.RequireResponse = false;

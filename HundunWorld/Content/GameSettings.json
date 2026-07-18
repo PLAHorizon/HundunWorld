@@ -1,14 +1,14 @@
 {
 	"ID": "9eba3d2a4cee4c099117f49c5dffc171",
 	"TypeName": "FlaxEditor.Content.Settings.GameSettings",
-	"EngineBuild": 6806,
+	"EngineBuild": 6913,
 	"Data": {
 	"ProductName": "混沌世界",
 	"CompanyName": "成阳网络",
 	"CopyrightNotice": null,
 	"Version": "0.0.1",
 	"Icon": "cbeb294d403a0d42df67938f20213eb6",
-	"FirstScene": "dc72848f4b0f90ee2df186a728f14858",
+	"FirstScene": "b3a1f0d24e5c6a8790d1e2f3a4b5c6d7",
 	"NoSplashScreen": false,
 	"SplashScreen": "cbeb294d403a0d42df67938f20213eb6",
 	"Time": "9acd18b0496064d35799f390d3a2b374",
@@ -22,7 +22,7 @@
 	"Localization": "02a07c924ca454f1e18be5aec50301ca",
 	"GameCooking": "2364031e4e327637c1ad88b415fa756e",
 	"Streaming": "032ffca740c9d866409f84b148390543",
-	"CustomSettings": null,
+	"CustomSettings": {},
 	"WindowsPlatform": "79ac390447f4263e30f56e9190a70dbc",
 	"UWPPlatform": "8660bbf44f1ea61cb9bc4580b3631973",
 	"LinuxPlatform": "1bf4eedd41508974d6646e8faa55420a",
@@ -33,6 +33,7 @@
 	"SwitchPlatform": null,
 	"PS5Platform": null,
 	"MacPlatform": "c781c32b43f9bdfa520340a7b52ee615",
-	"iOSPlatform": "ae21da2b4ef20d43222715a13e3bd70a"
+	"iOSPlatform": "ae21da2b4ef20d43222715a13e3bd70a",
+	"WebPlatform": null
 }
 }

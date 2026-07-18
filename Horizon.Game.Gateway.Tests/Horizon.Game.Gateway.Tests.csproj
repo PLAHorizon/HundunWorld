@@ -29,6 +29,7 @@
     <ProjectReference Include="..\Horizon.Core.Abstract\Horizon.Core.Abstract.csproj" />
     <ProjectReference Include="..\Horizon.Entities\Horizon.Entities.csproj" />
     <ProjectReference Include="..\Horizon.Game.Core\Horizon.Game.Core.csproj" />
+    <ProjectReference Include="..\Horizon.Game.ECS.Arch\Horizon.Game.ECS.Arch.csproj" />
     <ProjectReference Include="..\Horizon.Game.Gateway\Horizon.Game.Gateway.csproj" />
     <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
     <ProjectReference Include="..\Horizon.Model\Horizon.Model.csproj" />
@@ -37,6 +38,12 @@
     <ProjectReference Include="..\Horizon.Orleans.Silo\Horizon.Orleans.Silo.csproj" />
     <ProjectReference Include="..\Horizon.Share\Horizon.Share.csproj" />
   </ItemGroup>
+
+  <!--
+    Task E.3/E.4：ManagedHundunWorld 纯 C# 文件已从 UE5 项目中移除，
+    相关的 JitterBuffer.cs 和 ReconnectService.cs 文件不再存在，
+    因此移除 Compile Include 引用。
+  -->
 
   <ItemGroup>
     <Using Include="Xunit" />

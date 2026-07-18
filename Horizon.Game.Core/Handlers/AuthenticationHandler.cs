@@ -104,121 +104,36 @@ namespace Horizon.Game.Core.Handlers
         }
 
         /// <summary>
-        /// 处理登录请求
+        /// 处理登录请求（已废弃，登录流程已迁移至 WebApi /Account/signin）
+        /// 保留此处理器用于向客户端返回明确的错误提示，引导其使用 WebApi 登录流程。
         /// </summary>
         private async Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> HandleLoginRequestAsync(HorizonMessagePacket message)
         {
             try
             {
-                var loginRequest = MemoryPackSerializer.Deserialize<LoginRequest>(message.RawData);
-                if (loginRequest == null)
+                // 尝试反序列化以记录请求信息（不阻塞错误响应）
+                try
                 {
-                    Logger.LogError("无法反序列化登录请求消息");
-                    return (false, CreateErrorResponse(message, "登录请求格式错误"));
-                }
-
-                Logger.LogInformation("处理用户登录请求: {AccountName}", loginRequest.AccountName);
-
-                // 1. 安全验证
-                var securityValidation = await ValidateLoginSecurity(loginRequest);
-                if (!securityValidation.IsSuccess)
-                {
-                    return securityValidation;
-                }
-
-                // 2. 输入验证
-                var inputValidation = ValidateLoginInput(loginRequest);
-                if (!inputValidation.IsSuccess)
-                {
-                    return inputValidation;
-                }
-
-                // 3. 创建LoginDto
-                var loginDto = new LoginDto
-                {
-                    PassportId = loginRequest.AccountName,
-                    Password = loginRequest.Password,
-                    AppId = message.Header.GameId,
-                    AppType = AppType.Game,
-                    PassportType = PassportType.Normal
-                };
-
-                // 4. 调用PassportGrain进行认证
-                var passportGrain = _clusterClient.GetGrain<IPassportGrain>(Guid.NewGuid());
-                var authResult = await passportGrain.AuthenticationAsync(loginDto);
-
-                if (authResult == null)
-                {
-                    Logger.LogWarning("用户认证失败: {AccountName}", loginRequest.AccountName);
-                    
-                    // 记录失败的登录尝试
-                    _securityManager.RecordFailedLoginAttempt(loginRequest.AccountName, ""); // IP信息可以从连接中获取
-                    
-                    var errorResponse = new LoginResponse
+                    var loginRequest = MemoryPackSerializer.Deserialize<LoginRequest>(message.RawData);
+                    if (loginRequest != null)
                     {
-                        IsSuccess = false,
-                        Message = "用户名或密码错误",
-                        Code = 1002
-                    };
-                    return (true, CreateHorizonMessage(errorResponse));
-                }
-
-                // 5. 获取角色列表
-                var characterGrain = _clusterClient.GetGrain<ICharacterGrain>(0);
-                var gameQueryDto = new Share.Dtos.Games.GameQueryDto
-                {
-                    GameUserId = (long)authResult.UserId,
-                    GameId = (int)message.Header.GameId
-                };
-                var characters = await characterGrain.GetAllCharactersAsync(gameQueryDto);
-
-                // 6. 生成并存储会话令牌
-                var sessionToken = _securityManager.GenerateSessionToken();
-                await _securityManager.StoreSessionTokenAsync(sessionToken, authResult.UserId.ToString());
-
-                // 7. 生成用户鉴权令牌（包含登录时间、机器ID与PassportId的加密数据）
-                var authToken = "";
-                if (_authTokenProvider != null)
-                {
-                    try
-                    {
-                        var machineId = message.Header.MachineId ?? "";
-                        authToken = _authTokenProvider.GenerateToken(authResult.PassportId, machineId);
-                        Logger.LogInformation("已为用户生成鉴权令牌: {PassportId}, MachineId: {MachineId}", 
-                            authResult.PassportId, machineId);
-}
-                    catch (Exception ex)
-                    {
-                        Logger.LogError(ex, "生成鉴权令牌失败: {PassportId}", authResult.PassportId);
-                        return (true, CreateHorizonMessage(new LoginResponse
-                        {
-                            IsSuccess = false,
-                            Message = "鉴权令牌生成失败，请重新登录",
-                            Code = 1008
-                        }));
+                        Logger.LogWarning("收到 TCP 登录请求（已废弃）: {AccountName}, 提示客户端使用 WebApi 登录", loginRequest.AccountName);
                     }
                 }
-
-                // 8. 清除失败的登录尝试记录
-                _securityManager.ClearLoginAttempts(loginRequest.AccountName, "");
-
-                // 9. 构建成功响应
-                var successResponse = new LoginResponse
+                catch (Exception deserializeEx)
                 {
-                    IsSuccess = true,
-                    Message = "登录成功",
-                    PassportId = authResult.PassportId,
-                    UserId = (ulong)authResult.UserId,
-                    SessionToken = sessionToken,
-                    AuthToken = authToken,
-                    Characters = characters,
-                    Code = 0
+                    Logger.LogWarning(deserializeEx, "TCP 登录请求反序列化失败（预期行为，客户端应走 WebApi）");
+                }
+
+                // 返回错误响应，引导客户端使用 WebApi 登录
+                var errorResponse = new LoginResponse
+                {
+                    IsSuccess = false,
+                    Message = "登录流程已迁移至 WebApi，请通过 HTTP POST /Account/signin 接口登录，并将返回的 ImAuthToken 写入 HorizonGame.ini 后使用启动器配置登录",
+                    Code = 1009
                 };
 
-                Logger.LogInformation("用户登录成功: {AccountName}, UserId: {UserId}, 角色数量: {CharacterCount}", 
-                    loginRequest.AccountName, authResult.UserId, characters.Count);
-
-                return (true, CreateHorizonMessage(successResponse));
+                return (true, CreateHorizonMessage(errorResponse));
             }
             catch (Exception ex)
             {
@@ -440,151 +355,32 @@ namespace Horizon.Game.Core.Handlers
             }
         }
 
+        /// <summary>
+        /// 处理 Token 登录请求（已废弃，登录流程已迁移至 WebApi /Account/signin）
+        /// 保留此处理器用于向客户端返回明确的错误提示，引导其使用 WebApi 登录流程。
+        /// </summary>
         private async Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> HandleTokenLoginRequestAsync(HorizonMessagePacket message)
         {
             try
             {
-                var tokenLoginRequest =message.Body as  TokenLoginRequest;
-                if (tokenLoginRequest == null)
+                Logger.LogWarning("收到 TCP Token 登录请求（已废弃），提示客户端使用 WebApi 登录");
+
+                // 返回错误响应，引导客户端使用 WebApi 登录
+                var errorResponse = new TokenLoginResponse
                 {
-                    Logger.LogError("无法反序列化Token登录请求消息");
-                    return (true, CreateHorizonMessage(new TokenLoginResponse
-                    {
-                        IsSuccess = false,
-                        Message = "Token登录请求格式错误"
-                    }));
-                }
-
-                Logger.LogInformation("处理Token登录请求: PassportId={PassportId}", tokenLoginRequest.PassportId);
-
-                if (string.IsNullOrWhiteSpace(tokenLoginRequest.AuthToken))
-                {
-                    Logger.LogWarning("Token登录请求中AuthToken为空: PassportId={PassportId}", tokenLoginRequest.PassportId);
-                    return (true, CreateHorizonMessage(new TokenLoginResponse
-                    {
-                        IsSuccess = false,
-                        Message = "AuthToken不能为空"
-                    }));
-                }
-
-                if (_authTokenProvider == null)
-                {
-                    Logger.LogWarning("AuthTokenProvider未配置，无法验证Token");
-                    return (true, CreateHorizonMessage(new TokenLoginResponse
-                    {
-                        IsSuccess = false,
-                        Message = "服务端Token验证服务不可用"
-                    }));
-                }
-
-                // TokenLogin 使用跳过有效期检查的验证，允许过期令牌解密出身份信息后签发新令牌
-                var validationResult = _authTokenProvider.ValidateTokenWithoutExpiryCheck(
-                    tokenLoginRequest.AuthToken,
-                    tokenLoginRequest.PassportId,
-                    tokenLoginRequest.MachineId);
-
-                if (!validationResult.IsValid)
-                {
-                    Logger.LogWarning("Token验证失败: PassportId={PassportId}, 原因={Reason}",
-                        tokenLoginRequest.PassportId, validationResult.ErrorMessage);
-                    return (true, CreateHorizonMessage(new TokenLoginResponse
-                    {
-                        IsSuccess = false,
-                        Message = validationResult.ErrorMessage ?? "Token验证失败"
-                    }));
-                }
-
-                var tokenData = validationResult.TokenData;
-
-                var passportGrain = _clusterClient.GetGrain<IPassportGrain>(Guid.NewGuid());
-                var grainValidation = await passportGrain.ValidateUserAuthTokenAsync(
-                    tokenData.PassportId, tokenData.LoginTime, null);
-
-                if (!grainValidation)
-                {
-                    Logger.LogInformation("Token Grain层二次验证失败（可能会话已过期），尝试重建会话: PassportId={PassportId}", tokenData.PassportId);
-
-                    var sessionEnsured = await passportGrain.EnsureUserSessionAsync(
-                        tokenData.PassportId, tokenLoginRequest.MachineId);
-                    if (!sessionEnsured)
-                    {
-                        Logger.LogWarning("重建会话失败: PassportId={PassportId}", tokenData.PassportId);
-                        return (true, CreateHorizonMessage(new TokenLoginResponse
-                        {
-                            IsSuccess = false,
-                            Message = "Token验证失败，请重新登录"
-                        }));
-                    }
-                }
-
-                var gameUserId = await passportGrain.BuildGameUserAsync(
-                    tokenData.PassportId,
-                    (int)message.Header.GameId,
-                    areaId: 1,
-                    serverId: 1);
-
-                if (gameUserId <= 0)
-                {
-                    Logger.LogWarning("Token登录构建游戏用户失败: PassportId={PassportId}", tokenData.PassportId);
-                    return (true, CreateHorizonMessage(new TokenLoginResponse
-                    {
-                        IsSuccess = false,
-                        Message = "游戏用户信息获取失败"
-                    }));
-                }
-
-                var characterGrain = _clusterClient.GetGrain<ICharacterGrain>(0);
-                var gameQueryDto = new Share.Dtos.Games.GameQueryDto
-                {
-                    GameUserId = gameUserId,
-                    GameId = (int)message.Header.GameId
-                };
-                var characters = await characterGrain.GetAllCharactersAsync(gameQueryDto);
-
-                var sessionToken = _securityManager.GenerateSessionToken();
-                await _securityManager.StoreSessionTokenAsync(sessionToken, gameUserId.ToString());
-
-                var newAuthToken = "";
-                try
-                {
-                    var machineId = tokenLoginRequest.MachineId ?? "";
-                    newAuthToken = _authTokenProvider.GenerateToken(tokenData.PassportId, machineId);
-                    Logger.LogInformation("Token登录已刷新鉴权令牌: PassportId={PassportId}", tokenData.PassportId);
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogError(ex, "Token登录刷新鉴权令牌失败: PassportId={PassportId}", tokenData.PassportId);
-                    return (true, CreateHorizonMessage(new TokenLoginResponse
-                    {
-                        IsSuccess = false,
-                        Message = "鉴权令牌生成失败，请重新登录"
-                    }));
-                }
-
-                _securityManager.ClearLoginAttempts(tokenData.PassportId, "");
-
-                var successResponse = new TokenLoginResponse
-                {
-                    IsSuccess = true,
-                    Message = "Token登录成功",
-                    PassportId = tokenData.PassportId,
-                    UserId = (ulong)gameUserId,
-                    SessionToken = sessionToken,
-                    AuthToken = newAuthToken
+                    IsSuccess = false,
+                    Message = "Token 登录流程已迁移至 WebApi，请通过 HTTP POST /Account/signin 接口登录获取新的 ImAuthToken"
                 };
 
-                Logger.LogInformation("Token登录成功: PassportId={PassportId}, GameUserId={GameUserId}, 角色数量={CharacterCount}",
-                    tokenData.PassportId, gameUserId, characters.Count);
-
-                return (true, CreateHorizonMessage(successResponse));
+                return (true, CreateHorizonMessage(errorResponse));
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "处理Token登录请求时发生异常");
+                Logger.LogError(ex, "处理 Token 登录请求时发生异常");
                 return (true, CreateHorizonMessage(new TokenLoginResponse
                 {
                     IsSuccess = false,
-                    Message = "Token登录处理异常"
+                    Message = "Token 登录处理异常"
                 }));
             }
         }
@@ -607,94 +403,6 @@ namespace Horizon.Game.Core.Handlers
         }
 
         #region 安全验证辅助方法
-
-        /// <summary>
-        /// 验证登录安全性
-        /// </summary>
-        private async Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> ValidateLoginSecurity(LoginRequest loginRequest)
-        {
-            try
-            {
-                // 检查登录尝试频率
-                if (!_securityManager.CheckLoginAttempts(loginRequest.AccountName, "")) // IP信息可以从连接中获取
-                {
-                    Logger.LogWarning("登录尝试过于频繁: {AccountName}", loginRequest.AccountName);
-                    var errorResponse = new AuthenticationError
-                    {
-                        ErrorCode = 1005,
-                        ErrorMessage = "登录尝试过于频繁，请稍后再试",
-                        RetryAfterSeconds = 300, // 5分钟后重试
-                        RequiresReconnect = false
-                    };
-                    return (true, CreateHorizonMessage(errorResponse));
-                }
-
-                // 检查客户端版本
-                var versionValidation = _validator.ValidateClientVersion(loginRequest.ClientVersion);
-                if (!versionValidation.IsValid)
-                {
-                    Logger.LogWarning("客户端版本验证失败: {ClientVersion}, 错误: {Error}", 
-                        loginRequest.ClientVersion, versionValidation.ErrorMessage);
-                    var errorResponse = new AuthenticationError
-                    {
-                        ErrorCode = 1006,
-                        ErrorMessage = versionValidation.ErrorMessage,
-                        RequiresReconnect = true
-                    };
-                    return (true, CreateHorizonMessage(errorResponse));
-                }
-
-                return (true, null);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "验证登录安全性时发生异常");
-                return (true, null); // 异常时允许通过
-            }
-        }
-
-        /// <summary>
-        /// 验证登录输入
-        /// </summary>
-        private (bool IsSuccess, HorizonMessagePacket MessagePacket) ValidateLoginInput(LoginRequest loginRequest)
-        {
-            try
-            {
-                // 验证账户名
-                var accountValidation = _validator.ValidateAccountName(loginRequest.AccountName);
-                if (!accountValidation.IsValid)
-                {
-                    Logger.LogWarning("账户名验证失败: {AccountName}, 错误: {Error}", 
-                        loginRequest.AccountName, accountValidation.ErrorMessage);
-                    var errorResponse = new LoginResponse
-                    {
-                        IsSuccess = false,
-                        Message = accountValidation.ErrorMessage,
-                        Code = 1001
-                    };
-                    return (true, CreateHorizonMessage(errorResponse));
-                }
-
-                // 验证密码格式（不验证具体内容）
-                if (string.IsNullOrWhiteSpace(loginRequest.Password))
-                {
-                    var errorResponse = new LoginResponse
-                    {
-                        IsSuccess = false,
-                        Message = "密码不能为空",
-                        Code = 1002
-                    };
-                    return (true, CreateHorizonMessage(errorResponse));
-                }
-
-                return (true, null);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError(ex, "验证登录输入时发生异常");
-                return (true, null); // 异常时允许通过
-            }
-        }
 
         /// <summary>
         /// 验证注册输入

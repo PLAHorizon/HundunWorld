@@ -91,7 +91,7 @@ namespace HundunWorld.Game.UI
         #region 配置
 
         [Serialize]
-        public bool EnableTransitionEffect = true;
+        public bool EnableTransitionEffect = false;
 
         #endregion
 
@@ -242,7 +242,7 @@ namespace HundunWorld.Game.UI
                 {
                     Debug.LogWarning($"[GameSceneManager] 看门狗: 发现残留过渡场景 {scene.Name}，强制卸载");
                     DestroyAllSceneActors(scene);
-                    Level.UnloadSceneAsync(scene);
+                    SafeUnloadScene(scene);
                     _transitionScene = null;
                 }
             }
@@ -281,7 +281,7 @@ namespace HundunWorld.Game.UI
                                 if (s != null && IsTransitionScene(s))
                                 {
                                     Debug.Log($"[GameSceneManager] 执行过渡场景卸载(重试): {s.Name}");
-                                    Level.UnloadSceneAsync(s);
+                                    SafeUnloadScene(s);
                                     break;
                                 }
                             }
@@ -334,7 +334,7 @@ namespace HundunWorld.Game.UI
                     
                     Debug.LogWarning($"[GameSceneManager] CleanupStaleTransitionScene 发现残留过渡场景: {scene.Name}，强制卸载");
                     LogSceneList("CleanupStaleTransitionScene发现残留");
-                    Level.UnloadSceneAsync(scene);
+                    SafeUnloadScene(scene);
                     
                     // 等待一帧后再次检查，如果还在则重试（最多重试5次）
                     _staleTransitionRetryCount = 0;
@@ -369,7 +369,7 @@ namespace HundunWorld.Game.UI
                     if (scene != null && IsTransitionScene(scene))
                     {
                         Debug.LogWarning($"[GameSceneManager] 超时后强制卸载过渡场景: {scene.Name}");
-                        Level.UnloadSceneAsync(scene);
+                        SafeUnloadScene(scene);
                         break;
                     }
                 }
@@ -779,7 +779,7 @@ namespace HundunWorld.Game.UI
                 Debug.Log($"[GameSceneManager] 卸载旧场景: {_currentSubScene.Name}");
                 var sceneToUnload = _currentSubScene;
                 _currentSubScene = null;
-                Level.UnloadSceneAsync(sceneToUnload);
+                SafeUnloadScene(sceneToUnload);
             }
             else if (_currentSubScene == _rootScene)
             {
@@ -950,7 +950,7 @@ namespace HundunWorld.Game.UI
                 // 设置等待标志，由 OnSceneUnloaded 回调触发 Step7
                 _waitingForTransitionUnload = true;
                 _unloadTimeoutTimer = 0f;
-                Level.UnloadSceneAsync(sceneToUnload);
+                SafeUnloadScene(sceneToUnload);
             }
             else
             {
@@ -1053,7 +1053,7 @@ namespace HundunWorld.Game.UI
                     
                     // 立即卸载场景（不延迟）
                     Debug.Log($"[GameSceneManager] ForceCleanup: 卸载过渡场景 {scene.Name}");
-                    Level.UnloadSceneAsync(scene);
+                    SafeUnloadScene(scene);
                     _transitionScene = null;
                 }
             }
@@ -1134,6 +1134,28 @@ namespace HundunWorld.Game.UI
         }
 
         /// <summary>
+        /// 修复：安全的场景卸载方法。统一防御 RootScene 被误卸载。
+        /// 所有需要卸载场景的地方都应调用此方法，而不是直接调用 Level.UnloadSceneAsync。
+        /// </summary>
+        private void SafeUnloadScene(FlaxEngine.Scene scene)
+        {
+            if (scene == null)
+            {
+                Debug.LogWarning("[GameSceneManager] SafeUnloadScene: 场景为 null，跳过卸载");
+                return;
+            }
+
+            if (scene == _rootScene)
+            {
+                Debug.LogError($"[GameSceneManager] SafeUnloadScene: 拒绝卸载 RootScene！scene.Name={scene.Name}, 调用栈:\n{System.Environment.StackTrace}");
+                return;
+            }
+
+            Debug.Log($"[GameSceneManager] SafeUnloadScene: 卸载场景 {scene.Name}");
+            Level.UnloadSceneAsync(scene);
+        }
+
+        /// <summary>
         /// 直接加载目标场景（无过渡效果）
         /// </summary>
         private void DirectLoadTargetScene()
@@ -1145,7 +1167,7 @@ namespace HundunWorld.Game.UI
             {
                 var sceneToUnload = _currentSubScene;
                 _currentSubScene = null;
-                Level.UnloadSceneAsync(sceneToUnload);
+                SafeUnloadScene(sceneToUnload);
             }
 
             if (_pendingTargetPath == RootScenePath)
@@ -1154,7 +1176,7 @@ namespace HundunWorld.Game.UI
             }
             else
             {
-                var sceneAsset = Content.Load<SceneAsset>(_pendingTargetPath);
+                var sceneAsset = HundunWorld.Game.HundunWorldGame.LoadContentWithFallback<SceneAsset>(_pendingTargetPath);
                 if (sceneAsset != null)
                 {
                     _targetSceneId = sceneAsset.ID;
@@ -1166,7 +1188,7 @@ namespace HundunWorld.Game.UI
                 }
                 else
                 {
-                    HandleTransitionError("无法加载目标场景");
+                    HandleTransitionError($"无法加载目标场景: {_pendingTargetPath}");
                 }
             }
         }
@@ -1181,7 +1203,7 @@ namespace HundunWorld.Game.UI
             // 清理过渡场景
             if (_transitionScene != null)
             {
-                Level.UnloadSceneAsync(_transitionScene);
+                SafeUnloadScene(_transitionScene);
                 _transitionScene = null;
             }
 
@@ -1278,12 +1300,31 @@ namespace HundunWorld.Game.UI
         {
             if (scene == _rootScene)
             {
-                Debug.LogError("[GameSceneManager] 严重错误：尝试卸载 RootScene！RootScene 在整个游戏生命周期中绝不能被卸载");
+                // 修复：记录调用栈，帮助定位谁触发了 RootScene 卸载
+                Debug.LogError($"[GameSceneManager] 严重错误：尝试卸载 RootScene！RootScene 在整个游戏生命周期中绝不能被卸载。调用栈:\n{System.Environment.StackTrace}");
             }
         }
 
         private void OnSceneUnloaded(FlaxEngine.Scene scene, Guid sceneId)
         {
+            // 修复：RootScene 检查提前，确保重新加载逻辑一定被执行，避免被前面的 return 或异常跳过
+            if (scene == _rootScene)
+            {
+                Debug.LogError("[GameSceneManager] 严重错误：RootScene 被卸载！尝试重新加载...");
+                _rootScene = null;
+                var rootSceneAsset = HundunWorld.Game.HundunWorldGame.LoadContentWithFallback<SceneAsset>(RootScenePath);
+                if (rootSceneAsset != null)
+                {
+                    Debug.Log($"[GameSceneManager] 重新加载 RootScene, ID: {rootSceneAsset.ID}");
+                    Task.Factory.StartNew(async()=> Level.LoadSceneAsync(rootSceneAsset.ID));
+                }
+                else
+                {
+                    Debug.LogError($"[GameSceneManager] 无法重新加载 RootScene: 资源加载失败, Path={RootScenePath}");
+                }
+                return;
+            }
+
             Debug.Log($"[GameSceneManager] 场景已卸载: {scene?.Name ?? "null"}, 当前状态: {_transitionState}");
             LogSceneList($"OnSceneUnloaded后:{scene?.Name}");
 
@@ -1312,17 +1353,6 @@ namespace HundunWorld.Game.UI
                 _unloadTimeoutTimer = 0f;
                 Debug.Log($"[GameSceneManager] 过渡场景卸载完成，进入 Step7");
                 Scripting.InvokeOnUpdate(Step7_FadeInTarget);
-            }
-
-            if (scene == _rootScene)
-            {
-                Debug.LogError("[GameSceneManager] 严重错误：RootScene 被卸载！尝试重新加载...");
-                _rootScene = null;
-                var rootSceneAsset = Content.Load<SceneAsset>(RootScenePath);
-                if (rootSceneAsset != null)
-                {
-                    Task.Factory.StartNew(async()=> Level.LoadSceneAsync(rootSceneAsset.ID));
-                }
             }
         }
 
@@ -1358,7 +1388,7 @@ namespace HundunWorld.Game.UI
 
             if (_transitionScene != null)
             {
-                Level.UnloadSceneAsync(_transitionScene);
+                SafeUnloadScene(_transitionScene);
                 _transitionScene = null;
             }
 
@@ -1369,13 +1399,13 @@ namespace HundunWorld.Game.UI
                 if (scene != null && IsTransitionScene(scene))
                 {
                     Debug.Log($"[GameSceneManager] Reset: 卸载残留过渡场景 {scene.Name}");
-                    Level.UnloadSceneAsync(scene);
+                    SafeUnloadScene(scene);
                 }
             }
 
             if (_currentSubScene != null && _currentSubScene != _rootScene)
             {
-                Level.UnloadSceneAsync(_currentSubScene);
+                SafeUnloadScene(_currentSubScene);
                 _currentSubScene = null;
             }
 

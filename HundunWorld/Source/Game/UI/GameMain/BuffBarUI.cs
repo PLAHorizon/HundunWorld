@@ -189,11 +189,11 @@ namespace HundunWorld.Game.UI.GameMain
 
         /// <summary>
         /// 获取Buff图标路径
+        /// Flax 资源路径不带文件扩展名（.png/.jpg 等），由 Content 系统自动解析
         /// </summary>
         private string GetBuffIconPath(int buffId)
         {
-            // TODO: 根据实际资源路径配置
-            return $"Game/UI/Icons/Buffs/Buff_{buffId}.png";
+            return $"Content/Textures/UI/Icons/Buffs/Buff_{buffId}";
         }
 
         /// <summary>
@@ -319,15 +319,14 @@ namespace HundunWorld.Game.UI.GameMain
             {
                 base.OnMouseEnter(location);
 
-                // 显示Tooltip
+                // 显示Tooltip：Flax GUI 控件通过 Tooltip 属性显示提示
                 if (_data != null)
                 {
                     string tooltip = $"{_data.Name}\n剩余时间: {_data.RemainingTime:F1}秒";
                     if (_data.Stacks > 1)
                         tooltip += $"\n层数: {_data.Stacks}";
-                    
-                    // TODO: 集成Tooltip系统
-                    Debug.Log($"[BuffIcon] Tooltip: {tooltip}");
+
+                    TooltipText = tooltip;
                 }
             }
         }

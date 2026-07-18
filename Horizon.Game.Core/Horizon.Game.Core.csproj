@@ -1,10 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
   <ItemGroup>
@@ -47,5 +48,29 @@
   <ItemGroup>
     <Folder Include="Common\" />
   </ItemGroup>
+
+  <!-- 编译后将客户端需要的依赖复制到 Flax Tools 目录 -->
+  <Target Name="CopyToFlax" AfterTargets="Build">
+    <PropertyGroup>
+      <FlaxToolsDir>C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools</FlaxToolsDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- 主程序集 -->
+      <FlaxFilesToCopy Include="$(TargetDir)$(AssemblyName).dll" />
+      <FlaxFilesToCopy Include="$(TargetDir)$(AssemblyName).xml" />
+      <FlaxFilesToCopy Include="$(TargetDir)$(AssemblyName).pdb" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
+      <!-- 项目引用与运行时依赖 -->
+      <FlaxFilesToCopy Include="$(TargetDir)*.dll" Exclude="$(TargetDir)Microsoft.CodeAnalysis*.dll" />
+    </ItemGroup>
+
+    <Message Text="正在复制 Horizon.Game.Core 及依赖到 Flax 目录..." Importance="high" />
+
+    <Copy SourceFiles="@(FlaxFilesToCopy)" DestinationFolder="$(FlaxToolsDir)" SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true" Retries="3" RetryDelayMilliseconds="1000" ContinueOnError="WarnAndContinue">
+      <Output TaskParameter="CopiedFiles" ItemName="SuccessfullyCopiedFiles" />
+    </Copy>
+
+    <Message Text="成功复制文件: @(SuccessfullyCopiedFiles)" Importance="high" />
+  </Target>
 
 </Project>

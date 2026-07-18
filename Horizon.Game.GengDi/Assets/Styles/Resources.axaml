@@ -5,12 +5,14 @@
 
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Default">
+            <!-- Hero 背景：深蓝 → 军绿 → 暖金渐变，营造更贴近设计稿的“起航”氛围 -->
             <LinearGradientBrush x:Key="BattleNetHeroBackgroundBrush"
                                  StartPoint="0,0"
                                  EndPoint="1,1">
-                <GradientStop Color="#FF0E2340" Offset="0" />
-                <GradientStop Color="#FF123A6B" Offset="0.55" />
-                <GradientStop Color="#FF0E5A7E" Offset="1" />
+                <GradientStop Color="#FF071826" Offset="0" />
+                <GradientStop Color="#FF163A5C" Offset="0.45" />
+                <GradientStop Color="#FF37563A" Offset="0.8" />
+                <GradientStop Color="#FF8E5B2C" Offset="1" />
             </LinearGradientBrush>
 
             <SolidColorBrush x:Key="BattleNetSurfaceTintBrush" Color="#1400AEFF" />
@@ -79,22 +81,59 @@
             <SolidColorBrush x:Key="MusicPlayerBackgroundBrush" Color="#F0F4F8" />
             <SolidColorBrush x:Key="MusicPlayerControlBarBrush" Color="#E0E8F0" />
 
+            <!-- 标题渐变：白 → 蓝 → 绿，贴近设计稿的清爽主色 -->
             <LinearGradientBrush x:Key="LoginTitleGradientBrush"
                                  StartPoint="0,0"
                                  EndPoint="1,0">
                 <GradientStop Color="#FFFFFFFF" Offset="0" />
-                <GradientStop Color="#FF90CAF9" Offset="1" />
+                <GradientStop Color="#FF4A90D9" Offset="0.55" />
+                <GradientStop Color="#FF5C7A3A" Offset="1" />
             </LinearGradientBrush>
-            <SolidColorBrush x:Key="LoginDecorCircleBrush" Color="#1AFFFFFF" />
+
+            <!-- 装饰圆圈（军绿透明） -->
+            <SolidColorBrush x:Key="LoginDecorCircleBrush" Color="#155C7A3A" />
+
+            <!-- Hero 覆盖渐变（顶透明 → 暖色底部光晕） -->
+            <LinearGradientBrush x:Key="LoginHeroOverlayBrush"
+                                 StartPoint="0,0"
+                                 EndPoint="0,1">
+                <GradientStop Color="#1A071826" Offset="0" />
+                <GradientStop Color="#33071826" Offset="0.35" />
+                <GradientStop Color="#4C112C1F" Offset="0.7" />
+                <GradientStop Color="#7A3E2B19" Offset="1" />
+            </LinearGradientBrush>
+
+            <!-- 登录页信息卡片（深色毛玻璃风格） -->
+            <SolidColorBrush x:Key="LoginInfoCardBackgroundBrush" Color="#BF18283A" />
+            <SolidColorBrush x:Key="LoginInfoCardTitleBrush" Color="#FFEEDFC8" />
+            <SolidColorBrush x:Key="LoginInfoCardTextBrush" Color="#FF8BA4BC" />
+            <SolidColorBrush x:Key="LoginInfoCardLoadingBrush" Color="#FF9CB8D0" />
+            <SolidColorBrush x:Key="LoginInfoCardBorderBrush" Color="#2D4B62" />
+            <SolidColorBrush x:Key="LoginInfoCardIconBgBrush" Color="#4F7A3E" />
+
+            <!-- 输入框背景（深色半透明） -->
+            <SolidColorBrush x:Key="LoginInputBackgroundBrush" Color="#0A1420" />
+            <SolidColorBrush x:Key="LoginInputBorderBrush" Color="#355768" />
+            <SolidColorBrush x:Key="LoginInputFocusBorderBrush" Color="#B67B3C" />
+
+            <!-- Logo 阴影 -->
+            <SolidColorBrush x:Key="LoginLogoShadowBrush" Color="#595C7A3A" />
+
+            <!-- 右侧面板（深色卡片背景） -->
+            <SolidColorBrush x:Key="LoginFormBackgroundBrush" Color="#0E1A2B" />
+            <SolidColorBrush x:Key="LoginFormTitleBrush" Color="#F4E7D0" />
+            <SolidColorBrush x:Key="LoginFormSubtitleBrush" Color="#8FA7BD" />
+            <SolidColorBrush x:Key="LoginFormTextBrush" Color="#F7FAFD" />
+            <SolidColorBrush x:Key="LoginFormMutedBrush" Color="#678298" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
             <LinearGradientBrush x:Key="BattleNetHeroBackgroundBrush"
                                  StartPoint="0,0"
                                  EndPoint="1,1">
-                <GradientStop Color="#FF071423" Offset="0" />
-                <GradientStop Color="#FF0B2340" Offset="0.45" />
-                <GradientStop Color="#FF0A4670" Offset="1" />
+                <GradientStop Color="#FF071826" Offset="0" />
+                <GradientStop Color="#FF0C2D48" Offset="0.45" />
+                <GradientStop Color="#FF163A5C" Offset="1" />
             </LinearGradientBrush>
 
             <SolidColorBrush x:Key="BattleNetSurfaceTintBrush" Color="#1F00AEFF" />
@@ -163,13 +202,50 @@
             <SolidColorBrush x:Key="MusicPlayerBackgroundBrush" Color="#0F1722" />
             <SolidColorBrush x:Key="MusicPlayerControlBarBrush" Color="#1A2535" />
 
+            <!-- 标题渐变：白 → 蓝 → 绿 -->
             <LinearGradientBrush x:Key="LoginTitleGradientBrush"
                                  StartPoint="0,0"
                                  EndPoint="1,0">
                 <GradientStop Color="#FFFFFFFF" Offset="0" />
-                <GradientStop Color="#FF64B5F6" Offset="1" />
+                <GradientStop Color="#FF4A90D9" Offset="0.55" />
+                <GradientStop Color="#FF5C7A3A" Offset="1" />
             </LinearGradientBrush>
-            <SolidColorBrush x:Key="LoginDecorCircleBrush" Color="#15FFFFFF" />
+
+            <!-- 装饰圆圈 -->
+            <SolidColorBrush x:Key="LoginDecorCircleBrush" Color="#155C7A3A" />
+
+            <!-- Hero 覆盖渐变 -->
+            <LinearGradientBrush x:Key="LoginHeroOverlayBrush"
+                                 StartPoint="0,0"
+                                 EndPoint="0,1">
+                <GradientStop Color="#26071826" Offset="0" />
+                <GradientStop Color="#00071826" Offset="0.3" />
+                <GradientStop Color="#00071826" Offset="0.6" />
+                <GradientStop Color="#33071826" Offset="1" />
+            </LinearGradientBrush>
+
+            <!-- 登录页信息卡片（深色毛玻璃风格） -->
+            <SolidColorBrush x:Key="LoginInfoCardBackgroundBrush" Color="#BF18283A" />
+            <SolidColorBrush x:Key="LoginInfoCardTitleBrush" Color="#FFEEDFC8" />
+            <SolidColorBrush x:Key="LoginInfoCardTextBrush" Color="#FF8BA4BC" />
+            <SolidColorBrush x:Key="LoginInfoCardLoadingBrush" Color="#FF9CB8D0" />
+            <SolidColorBrush x:Key="LoginInfoCardBorderBrush" Color="#2D4B62" />
+            <SolidColorBrush x:Key="LoginInfoCardIconBgBrush" Color="#4F7A3E" />
+
+            <!-- 输入框背景（深色半透明） -->
+            <SolidColorBrush x:Key="LoginInputBackgroundBrush" Color="#0A1420" />
+            <SolidColorBrush x:Key="LoginInputBorderBrush" Color="#355768" />
+            <SolidColorBrush x:Key="LoginInputFocusBorderBrush" Color="#B67B3C" />
+
+            <!-- Logo 阴影 -->
+            <SolidColorBrush x:Key="LoginLogoShadowBrush" Color="#595C7A3A" />
+
+            <!-- 右侧面板（深色卡片背景） -->
+            <SolidColorBrush x:Key="LoginFormBackgroundBrush" Color="#0E1A2B" />
+            <SolidColorBrush x:Key="LoginFormTitleBrush" Color="#F4E7D0" />
+            <SolidColorBrush x:Key="LoginFormSubtitleBrush" Color="#8FA7BD" />
+            <SolidColorBrush x:Key="LoginFormTextBrush" Color="#F7FAFD" />
+            <SolidColorBrush x:Key="LoginFormMutedBrush" Color="#678298" />
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="{x:Static sty:FluentAvaloniaTheme.HighContrastTheme}">
@@ -216,7 +292,31 @@
             <SolidColorBrush x:Key="SubNavItemSelectedBorderBrush" Color="#00AEFF" />
 
             <SolidColorBrush x:Key="LoginTitleGradientBrush" Color="#FFFFFF" />
-            <SolidColorBrush x:Key="LoginDecorCircleBrush" Color="#333333" />
+            <SolidColorBrush x:Key="LoginDecorCircleBrush" Color="#155C7A3A" />
+
+            <SolidColorBrush x:Key="LoginHeroOverlayBrush" Color="#00000000" />
+
+            <!-- 登录页信息卡片（高对比度） -->
+            <SolidColorBrush x:Key="LoginInfoCardBackgroundBrush" Color="#2A2A2A" />
+            <SolidColorBrush x:Key="LoginInfoCardTitleBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="LoginInfoCardTextBrush" Color="#C0C0C0" />
+            <SolidColorBrush x:Key="LoginInfoCardLoadingBrush" Color="#808080" />
+            <SolidColorBrush x:Key="LoginInfoCardBorderBrush" Color="#404040" />
+            <SolidColorBrush x:Key="LoginInfoCardIconBgBrush" Color="#333333" />
+
+            <!-- 输入框 -->
+            <SolidColorBrush x:Key="LoginInputBackgroundBrush" Color="#1A1A1A" />
+            <SolidColorBrush x:Key="LoginInputBorderBrush" Color="#404040" />
+            <SolidColorBrush x:Key="LoginInputFocusBorderBrush" Color="#00AEFF" />
+
+            <SolidColorBrush x:Key="LoginLogoShadowBrush" Color="#00000000" />
+
+            <!-- 右侧面板 -->
+            <SolidColorBrush x:Key="LoginFormBackgroundBrush" Color="#071826" />
+            <SolidColorBrush x:Key="LoginFormTitleBrush" Color="#E8F0F8" />
+            <SolidColorBrush x:Key="LoginFormSubtitleBrush" Color="#8BA4BC" />
+            <SolidColorBrush x:Key="LoginFormTextBrush" Color="#EAF2FA" />
+            <SolidColorBrush x:Key="LoginFormMutedBrush" Color="#6B8DA8" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
@@ -224,10 +324,12 @@
     <Thickness x:Key="SampleAppPageMargin">24,24,24,0</Thickness>
     <CornerRadius x:Key="HorizonLargeCornerRadius">16</CornerRadius>
 
-    <SolidColorBrush x:Key="BattleNetPrimaryBrush" Color="#FF00AEFF" />
-    <SolidColorBrush x:Key="BattleNetPrimaryHoverBrush" Color="#FF33C1FF" />
-    <SolidColorBrush x:Key="BattleNetPrimaryPressedBrush" Color="#FF0080CC" />
-    <SolidColorBrush x:Key="BattleNetOutlineBrush" Color="#FF29527D" />
+    <SolidColorBrush x:Key="LoginErrorBrush" Color="#FFEF4444" />
+
+    <SolidColorBrush x:Key="BattleNetPrimaryBrush" Color="#FF5C7A3A" />
+    <SolidColorBrush x:Key="BattleNetPrimaryHoverBrush" Color="#FF6E8E4A" />
+    <SolidColorBrush x:Key="BattleNetPrimaryPressedBrush" Color="#FF4A6430" />
+    <SolidColorBrush x:Key="BattleNetOutlineBrush" Color="#FF4A90D9" />
 
     <ui:SymbolIconSource x:Key="HomeIcon" Symbol="Home" />
     <ui:SymbolIconSource x:Key="GamesIcon" Symbol="Library" />
@@ -242,6 +344,13 @@
     <ui:SymbolIconSource x:Key="LightThemeIcon" Symbol="WeatherSunny" />
     <ui:SymbolIconSource x:Key="SecurityIcon" Symbol="ProtectedDocument" />
     <ui:SymbolIconSource x:Key="BrandIcon" Symbol="Globe" />
+    <ui:SymbolIconSource x:Key="LoginWeatherIcon" Symbol="WeatherSunny" />
+    <ui:SymbolIconSource x:Key="LoginFlowerIcon" Symbol="Favorite" />
+    <ui:SymbolIconSource x:Key="LoginGameIcon" Symbol="Games" />
+    <ui:SymbolIconSource x:Key="LoginUserIcon" Symbol="Contact" />
+    <ui:SymbolIconSource x:Key="LoginLockIcon" Symbol="Permissions" />
+    <ui:SymbolIconSource x:Key="LoginEyeOffIcon" Symbol="HideBcc" />
+    <ui:SymbolIconSource x:Key="LoginArrowIcon" Symbol="Forward" />
     <ui:SymbolIconSource x:Key="MusicIcon" Symbol="Audio" />
     <ui:SymbolIconSource x:Key="MusicInfoIcon" Symbol="MusicInfo" />
 </ResourceDictionary>

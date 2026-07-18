@@ -39,33 +39,39 @@ namespace HundunWorld.Game.UI.Authentication
             InitializeLayout();
             
             InitializeUI();
-            HundunWorldGame.Instance.NetworkManager.ConnectionStatusChanged += OnConnectionStatusChanged;
+
+            var networkManager = HundunWorldGame.Instance?.NetworkManager;
+            if (networkManager != null)
+            {
+                networkManager.ConnectionStatusChanged += OnConnectionStatusChanged;
+            }
         }
+
         private void OnConnectionStatusChanged(ConnectionStatus obj)
         {
-
+            // 按钮始终保持可点击，由 AuthenticationManager 内部处理重连。
             switch (obj)
             {
                 case ConnectionStatus.Disconnected:
-                    SetStatus("连接已断开", color: Color.Yellow);
-                    DisableButtons();
+                    SetStatus("连接已断开，点击注册将尝试重连", color: Color.Yellow);
+                    EnableButtons();
                     break;
                 case ConnectionStatus.Connecting:
-                    SetStatus("正在连接中....", color: Color.Yellow);
-                    DisableButtons();
+                    SetStatus("正在连接服务器...", color: Color.Yellow);
+                    EnableButtons();
                     break;
                 case ConnectionStatus.Connected:
-                    SetStatus($"{(!string.IsNullOrWhiteSpace(PasswordInput.Text) && !string.IsNullOrWhiteSpace(UsernameInput.Text) ? "" : "请入账号密码登录")}", color: Color.Green);
+                    SetStatus("已连接服务器，请输入注册信息", color: Color.Green);
                     EnableButtons();
                     break;
                 case ConnectionStatus.Reconnecting:
-                    SetStatus("正在重连....", color: Color.Yellow);
-                    DisableButtons();
+                    SetStatus("正在重连服务器...", color: Color.Yellow);
+                    EnableButtons();
                     break;
                 case ConnectionStatus.Failed:
                 case ConnectionStatus.Error:
-                    SetStatus("网络连接失败，请检查网络", color: Color.DarkRed);
-                    DisableButtons();
+                    SetStatus("网络连接失败，点击注册将尝试重连", color: Color.DarkRed);
+                    EnableButtons();
                     break;
                 case ConnectionStatus.Unknown:
                 case ConnectionStatus.GatewaySwitching:
@@ -427,6 +433,7 @@ namespace HundunWorld.Game.UI.Authentication
 
         /// <summary>
         /// 检查并更新按钮状态（在按钮创建后调用）
+        /// 修复：默认启用按钮，由业务层处理连接，避免网络未就绪时按钮无响应。
         /// </summary>
         private void CheckAndUpdateButtonState()
         {
@@ -437,13 +444,15 @@ namespace HundunWorld.Game.UI.Authentication
                 FlaxEngine.Debug.Log($"[RegisterPanel] 检查网络状态: {status}");
                 if (status == Horizon.Game.Message.Enums.ConnectionStatus.Connected)
                 {
-                    EnableButtons();
+                    SetStatus("已连接服务器，请输入注册信息", Color.Green);
                 }
                 else
                 {
-                    DisableButtons();
+                    SetStatus($"网络状态: {status}，点击注册将尝试连接", Color.Yellow);
                 }
             }
+
+            EnableButtons();
         }
 
         /// <summary>
@@ -451,12 +460,25 @@ namespace HundunWorld.Game.UI.Authentication
         /// </summary>
         public override void OnDestroy()
         {
+            // 取消网络状态监听，防止内存泄漏和重复回调
+            var networkManager = HundunWorldGame.Instance?.NetworkManager;
+            if (networkManager != null)
+            {
+                networkManager.ConnectionStatusChanged -= OnConnectionStatusChanged;
+            }
+
+            // 取消按钮原生事件订阅
+            if (RegisterButton != null)
+                RegisterButton.ButtonClicked -= OnRegisterButtonClicked;
+            if (SwitchToLoginButton != null)
+                SwitchToLoginButton.ButtonClicked -= OnSwitchToLoginClicked;
+            if (SendVerificationCodeButton != null)
+                SendVerificationCodeButton.ButtonClicked -= OnSendVerificationCodeClicked;
+
             // 清理自定义事件委托，断开外部订阅者的引用
             RegisterButtonClicked = null;
             SwitchToLoginClicked = null;
             SendVerificationCodeClicked = null;
-
-            
         }
 
         /// <summary>

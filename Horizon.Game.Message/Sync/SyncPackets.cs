@@ -17,8 +17,21 @@ public static class SyncProtocolVersion
     ///   v2 = P1-a 扩展：新增 <see cref="WorldChunkDiffPacket"/> / <see cref="WorldPatchManifestPacket"/> /
     ///        <see cref="InputAckPacket"/> / <see cref="ReconnectResumePacket"/>，并在 <see cref="HandshakePacket"/>
     ///        与 <see cref="SnapshotPacket"/> 上引入版本向量字段；旧客户端首次握手会被服务器拒绝（不兼容）。
+    ///   v3 = 修复服务端握手响应类型：服务端 <c>SyncPacketHandler.HandleHandshakeAsync</c> 改为返回
+    ///        <see cref="HandshakePacket"/>（回显 LocalCharacterId / InitialClientTick），使客户端
+    ///        <c>SyncPacketMessageHandler.HandshakeReceived</c> 事件能正确触发。
+    ///   v4 = 修复 SyncPacketHandler 单例下 _characterId 被多连接共享覆盖的 bug：
+    ///        <see cref="InputPacket"/> 新增 <see cref="InputPacket.CharacterId"/> 字段，
+    ///        服务端直接从输入包读取角色 ID，不再依赖握手时缓存的实例字段。
+    ///   v5 = 阶段 B/C/D 同步协议扩展：
+    ///        新增 <see cref="MovementStateAuthComponent"/>/<see cref="AnimationStateAuthComponent"/>/
+    ///        <see cref="SceneObjectSyncPacket"/>，
+    ///        <see cref="InputPacket"/> 引入冗余重传（客户端未确认队列 + 落后 5 tick 触发重传），
+    ///        服务端 <c>SyncPacketHandler</c> 引入 per-characterId 去重（基于 ClientTick 序号），
+    ///        <see cref="SnapshotPacket"/> 支持增量压缩（BaselineTick 非 0 时为 delta 帧）。
+    ///        握手阶段严格拒绝协议版本不匹配的客户端。
     /// </summary>
-    public const int Current = 2;
+    public const int Current = 5;
 }
 
 /// <summary>
@@ -39,6 +52,12 @@ public enum SyncPacketKind : byte
     InputAck = 7,
     /// <summary>P6-b：客户端断线重连时的 resume 握手（携带 lastApplied tick / diff seq / patch version）。</summary>
     ReconnectResume = 8,
+    /// <summary>阶段 1：NarrativePro 交互槽状态同步（服务器→客户端，按交互槽推送占用/进行中/结束/被抢占等状态）。</summary>
+    InteractionSync = 9,
+    /// <summary>阶段 C：场景对象状态同步（服务器→客户端，按对象推送开启/激活/锁定/重置/冷却/归属/可选 Transform）。</summary>
+    SceneObjectSync = 10,
+    /// <summary>多玩家 AOI：动态 chunk 订阅变更（服务器→客户端，下发本次新增/移除的 chunk key 集合）。</summary>
+    SubscriptionUpdate = 11,
 }
 
 /// <summary>
@@ -59,6 +78,15 @@ public enum SyncPacketKind : byte
 [MemoryPackUnion(5, typeof(WorldPatchManifestPacket))]
 [MemoryPackUnion(6, typeof(InputAckPacket))]
 [MemoryPackUnion(7, typeof(ReconnectResumePacket))]
+// 注意：union tag 8 对应 SyncPacketKind.InteractionSync=9（枚举中 Unknown=0 占位导致偏移 1）。
+// MemoryPack 要求 tag 从 0 起连续递增，不可跳号，因此这里显式写 8 而非 (byte)SyncPacketKind.InteractionSync(=9)。
+[MemoryPackUnion(8, typeof(InteractionSyncPacket))]
+// 注意：union tag 9 对应 SyncPacketKind.SceneObjectSync=10（枚举中 Unknown=0 占位导致偏移 1）。
+// 紧跟 InteractionSyncPacket 的 tag 8，保持 0..9 连续递增。
+[MemoryPackUnion(9, typeof(SceneObjectSyncPacket))]
+// 注意：union tag 10 对应 SyncPacketKind.SubscriptionUpdate=11（枚举中 Unknown=0 占位导致偏移 1）。
+// 紧跟 SceneObjectSyncPacket 的 tag 9，保持 0..10 连续递增。
+[MemoryPackUnion(10, typeof(SubscriptionUpdatePacket))]
 public abstract partial class SyncPacket
 {
     /// <summary>包种类（冗余字段，便于不解码 union 时也能识别）。</summary>
@@ -88,6 +116,21 @@ public sealed partial class HandshakePacket : SyncPacket
     [MemoryPackOrder(3)]
     [Id(1)]
     public long InitialClientTick { get; set; }
+
+    /// <summary>客户端初始位置 X（服务器创建实体时复用，避免落地修正抖动）。</summary>
+    [MemoryPackOrder(4)]
+    [Id(2)]
+    public float InitialX { get; set; }
+
+    /// <summary>客户端初始位置 Y。</summary>
+    [MemoryPackOrder(5)]
+    [Id(3)]
+    public float InitialY { get; set; }
+
+    /// <summary>客户端初始位置 Z。</summary>
+    [MemoryPackOrder(6)]
+    [Id(4)]
+    public float InitialZ { get; set; }
 
     public HandshakePacket() { Kind = SyncPacketKind.Handshake; }
 }
@@ -156,6 +199,30 @@ public sealed partial class InputPacket : SyncPacket
     [Id(5)]
     public float MoveY { get; set; }
 
+    /// <summary>
+    /// 发送该输入的本地玩家角色 ID（与 <see cref="HandshakePacket.LocalCharacterId"/> 同义）。
+    /// 服务端 <c>SyncPacketHandler</c> 为单例，无法安全地在实例字段中缓存每连接的 characterId，
+    /// 因此由客户端在每个 InputPacket 中显式携带，服务端直接读取以路由输入到对应 grain。
+    /// </summary>
+    [MemoryPackOrder(8)]
+    [Id(6)]
+    public ulong CharacterId { get; set; }
+
+    /// <summary>客户端预测的本 tick 结束位置 X（米）。服务端 MovementValidator 据此做权威校验。</summary>
+    [MemoryPackOrder(9)]
+    [Id(7)]
+    public float PredictedEndX { get; set; }
+
+    /// <summary>客户端预测的本 tick 结束位置 Y（米）。</summary>
+    [MemoryPackOrder(10)]
+    [Id(8)]
+    public float PredictedEndY { get; set; }
+
+    /// <summary>客户端预测的本 tick 结束位置 Z（米）。</summary>
+    [MemoryPackOrder(11)]
+    [Id(9)]
+    public float PredictedEndZ { get; set; }
+
     public InputPacket() { Kind = SyncPacketKind.Input; }
 }
 
@@ -200,6 +267,12 @@ public partial struct EntityDelta
 
     /// <summary>状态（变更时携带）。</summary>
     [MemoryPackOrder(4)] [Id(4)] public EntityStateAuthComponent? State;
+
+    /// <summary>移动状态（MovementMode + 水平速度 + 落地标志，10Hz 心跳 + 变化触发）。</summary>
+    [MemoryPackOrder(5)] [Id(5)] public MovementStateAuthComponent? MovementState;
+
+    /// <summary>动画状态（仅 Montage 触发/结束事件时携带，循环动画由客户端根据 MovementState 驱动）。</summary>
+    [MemoryPackOrder(6)] [Id(6)] public AnimationStateAuthComponent? AnimationState;
 }
 
 /// <summary>实体增量种类。</summary>
@@ -225,6 +298,14 @@ public enum SyncEventKind : ushort
     Vfx = 4,
     Sfx = 5,
     Pickup = 6,
+    /// <summary>阶段 1：交互开始（玩家占用交互槽）。</summary>
+    InteractStart = 7,
+    /// <summary>阶段 1：交互结束（正常完成或主动取消）。</summary>
+    InteractEnd = 8,
+    /// <summary>阶段 1：交互被抢占（槽位被更高优先级的交互者夺走）。</summary>
+    InteractStolen = 9,
+    /// <summary>位置修正事件：Payload 为序列化的 CorrectionPacket，客户端 EventApplySystem 提取后路由到 CorrectionReceiveBuffer。</summary>
+    Correction = 10,
 }
 
 /// <summary>
@@ -255,9 +336,28 @@ public partial struct SyncEvent
 
 // ---------------------------------------------------------------------------
 // P1-a：以下四类包属于"补齐服务器响应 + 大世界同步基础设施"的最小协议扩展。
-// 它们的运行时处理（grain、Gateway 路由、客户端 system）由后续 PR 实装；
-// 本文件只承担 wire-protocol 形态，使所有上层模块基于稳定的 schema 并行开发。
+// 它们的运行时处理（grain、Gateway 路由、客户端 system）已由 InteractionApplySystem、SyncPacketHandler 等模块实装；
+// 本文件承担 wire-protocol 形态定义，运行时处理由上层模块（InteractionApplySystem / SyncPacketHandler 等）落地。
 // ---------------------------------------------------------------------------
+
+/// <summary>
+/// <see cref="WorldChunkDiffPacket.Payload"/> 的内部载荷类型标识（P8-8.3）。
+/// 由于 <see cref="WorldChunkDiffPacket.Payload"/> 被复用于承载多种序列化包，
+/// 客户端需依赖本字段决定如何反序列化，避免类型歧义。
+/// </summary>
+public enum WorldChunkDiffPayloadType : byte
+{
+    /// <summary>Payload 为 <see cref="EntityDelta"/>[]（快照/生命周期 delta）。</summary>
+    EntityDelta = 0,
+    /// <summary>Payload 为 <see cref="InteractionSyncPacket"/>（交互槽状态同步）。</summary>
+    InteractionSync = 1,
+    /// <summary>Payload 为 <see cref="EventPacket"/>（离散事件，含包裹了 CorrectionPacket 的事件）。</summary>
+    Event = 2,
+    /// <summary>Payload 为直接嵌入的位移校正包（CorrectionPacket，预留）。</summary>
+    Correction = 3,
+    /// <summary>Task C.4：Payload 为 <see cref="SceneObjectSyncPacket"/>（场景对象状态同步）。</summary>
+    SceneObjectSync = 4,
+}
 
 /// <summary>
 /// 服务器→客户端：世界 voxel/prefab diff 数据流（P3-b）。
@@ -306,6 +406,14 @@ public sealed partial class WorldChunkDiffPacket : SyncPacket
     [MemoryPackOrder(8)]
     [Id(6)]
     public bool PayloadCompressed { get; set; }
+
+    /// <summary>
+    /// <see cref="Payload"/> 的内部载荷类型（P8-8.3）。
+    /// 客户端据此决定如何反序列化 <see cref="Payload"/>，消除多类型复用同一字段的歧义。
+    /// </summary>
+    [MemoryPackOrder(9)]
+    [Id(7)]
+    public WorldChunkDiffPayloadType PayloadType { get; set; }
 
     public WorldChunkDiffPacket() { Kind = SyncPacketKind.WorldChunkDiff; }
 }
@@ -408,4 +516,154 @@ public sealed partial class ReconnectResumePacket : SyncPacket
     public int WorldPatchVersion { get; set; }
 
     public ReconnectResumePacket() { Kind = SyncPacketKind.ReconnectResume; }
+}
+
+// ---------------------------------------------------------------------------
+// 阶段 1：NarrativePro 交互槽状态同步协议扩展。
+// 承担 wire-protocol 形态定义，运行时处理（grain / Gateway 路由 / 客户端 system）已由 InteractionApplySystem、SyncPacketHandler 等实装。
+// ---------------------------------------------------------------------------
+
+/// <summary>
+/// 服务器→客户端：交互槽状态同步（阶段 1）。
+/// 用于 NarrativePro 交互槽的占用/进行中/结束/被抢占等状态推送，
+/// 与 <see cref="SnapshotPacket"/> 解耦走独立通道，避免高频交互状态污染 baseline/delta 流。
+/// </summary>
+[MemoryPackable(SerializeLayout.Explicit)]
+[GenerateSerializer]
+public sealed partial class InteractionSyncPacket : SyncPacket
+{
+    /// <summary>交互槽索引（同一 InteractableId 下可有多个槽位）。</summary>
+    [MemoryPackOrder(2)]
+    [Id(0)]
+    public int SlotIdx { get; set; }
+
+    /// <summary>可交互对象的 NetworkId。</summary>
+    [MemoryPackOrder(3)]
+    [Id(1)]
+    public long InteractableId { get; set; }
+
+    /// <summary>交互者（玩家）的 NetworkId。</summary>
+    [MemoryPackOrder(4)]
+    [Id(2)]
+    public long InteractorId { get; set; }
+
+    /// <summary>交互状态位标志（占用/进行中/结束/被抢占等）。</summary>
+    [MemoryPackOrder(5)]
+    [Id(3)]
+    public byte StateBits { get; set; }
+
+    /// <summary>本包对应的服务器 tick。</summary>
+    [MemoryPackOrder(6)]
+    [Id(4)]
+    public long ServerTick { get; set; }
+
+    public InteractionSyncPacket() { Kind = SyncPacketKind.InteractionSync; }
+}
+
+// ---------------------------------------------------------------------------
+// 阶段 C：场景对象状态同步协议扩展。
+// 承担 wire-protocol 形态定义，运行时处理（grain / Gateway 路由 / 客户端 system）由上层模块落地。
+// ---------------------------------------------------------------------------
+
+/// <summary>
+/// 服务器→客户端：场景对象状态同步（阶段 C）。
+/// 用于宝箱/开关/门/拉杆/传送门等场景对象的开启/激活/锁定/重置/冷却/归属等状态推送，
+/// 与 <see cref="SnapshotPacket"/> 解耦走独立通道，避免高频场景对象状态污染 baseline/delta 流。
+/// 可选承载 <see cref="TransformX/Y/Z"/> 与 <see cref="TransformPitch/Yaw/Roll"/>，
+/// 由 <see cref="HasTransform"/> 标记是否有效（仅可移动场景对象需要）。
+/// </summary>
+[MemoryPackable(SerializeLayout.Explicit)]
+[GenerateSerializer]
+public sealed partial class SceneObjectSyncPacket : SyncPacket
+{
+    /// <summary>场景对象的全局唯一 ID。</summary>
+    [MemoryPackOrder(2)]
+    [Id(0)]
+    public ulong ObjectId { get; set; }
+
+    /// <summary>状态位掩码（Opened/Activated/Locked/Reset，参考 <see cref="SceneObjectStateBits"/>）。</summary>
+    [MemoryPackOrder(3)]
+    [Id(1)]
+    public uint StateBits { get; set; }
+
+    /// <summary>冷却结束的服务器 tick（0 表示无冷却）。</summary>
+    [MemoryPackOrder(4)]
+    [Id(2)]
+    public long CooldownEndTick { get; set; }
+
+    /// <summary>当前归属角色 ID（0 表示无归属）。</summary>
+    [MemoryPackOrder(5)]
+    [Id(3)]
+    public ulong OwnerCharacterId { get; set; }
+
+    /// <summary>标记 <see cref="TransformX/Y/Z"/> 与 <see cref="TransformPitch/Yaw/Roll"/> 是否有效。</summary>
+    [MemoryPackOrder(6)]
+    [Id(4)]
+    public bool HasTransform { get; set; }
+
+    /// <summary>可选 Transform - X 坐标（仅 <see cref="HasTransform"/> 为 true 时有效）。</summary>
+    [MemoryPackOrder(7)]
+    [Id(5)]
+    public float TransformX { get; set; }
+
+    /// <summary>可选 Transform - Y 坐标。</summary>
+    [MemoryPackOrder(8)]
+    [Id(6)]
+    public float TransformY { get; set; }
+
+    /// <summary>可选 Transform - Z 坐标。</summary>
+    [MemoryPackOrder(9)]
+    [Id(7)]
+    public float TransformZ { get; set; }
+
+    /// <summary>可选 Transform - Pitch（弧度）。</summary>
+    [MemoryPackOrder(10)]
+    [Id(8)]
+    public float TransformPitch { get; set; }
+
+    /// <summary>可选 Transform - Yaw（弧度）。</summary>
+    [MemoryPackOrder(11)]
+    [Id(9)]
+    public float TransformYaw { get; set; }
+
+    /// <summary>可选 Transform - Roll（弧度）。</summary>
+    [MemoryPackOrder(12)]
+    [Id(10)]
+    public float TransformRoll { get; set; }
+
+    /// <summary>本包对应的服务器 tick。</summary>
+    [MemoryPackOrder(13)]
+    [Id(11)]
+    public long ServerTick { get; set; }
+
+    public SceneObjectSyncPacket() { Kind = SyncPacketKind.SceneObjectSync; }
+}
+
+// ---------------------------------------------------------------------------
+// 多玩家 AOI 与动态 Chunk 订阅：协议包定义。
+// 承担 wire-protocol 形态定义，运行时处理（grain / Gateway 路由 / 客户端 system）由上层模块落地。
+// ---------------------------------------------------------------------------
+
+/// <summary>
+/// 服务器→客户端：动态 chunk 订阅变更（多玩家 AOI）。
+/// 当玩家跨越 chunk 边界导致 AOI 窗口滚动时，服务器下发本包通知客户端
+/// 新增订阅（<see cref="AddedChunks"/>）与移除订阅（<see cref="RemovedChunks"/>）的 chunk key 集合。
+/// 客户端据此拉起/卸载对应的 chunk 流接收与实体兴趣管理。
+/// 与 <see cref="SnapshotPacket"/> 解耦走独立通道，避免 AOI 边界变更与 baseline/delta 帧产生耦合。
+/// </summary>
+[MemoryPackable(SerializeLayout.Explicit)]
+[GenerateSerializer]
+public sealed partial class SubscriptionUpdatePacket : SyncPacket
+{
+    /// <summary>本次新增订阅的 chunk key 集合（客户端应开始接收这些 chunk 的 WorldChunkDiff 流并预加载）。</summary>
+    [MemoryPackOrder(2)]
+    [Id(0)]
+    public ulong[] AddedChunks { get; set; } = Array.Empty<ulong>();
+
+    /// <summary>本次移除订阅的 chunk key 集合（客户端应停止接收并释放这些 chunk 的本地缓存）。</summary>
+    [MemoryPackOrder(3)]
+    [Id(1)]
+    public ulong[] RemovedChunks { get; set; } = Array.Empty<ulong>();
+
+    public SubscriptionUpdatePacket() { Kind = SyncPacketKind.SubscriptionUpdate; }
 }

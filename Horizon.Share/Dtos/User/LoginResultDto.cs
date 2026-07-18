@@ -1,4 +1,4 @@
-﻿using Orleans;
+using Orleans;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -36,6 +36,11 @@ namespace Horizon.Share.Dtos.User
         /// IM网关鉴权令牌（AES-256-CBC加密，用于IM Gateway身份验证）
         /// </summary>
         [Id(4)] public string ImAuthToken { get; set; }
+
+        /// <summary>
+        /// 用户ID（用于角色列表请求等后续操作）
+        /// </summary>
+        [Id(5)] public ulong UserId { get; set; }
 
     }
 }

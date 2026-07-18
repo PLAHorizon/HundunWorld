@@ -40,6 +40,39 @@ namespace Horizon.Game.Gateway.Services
         IGameConnection? GetConnectionByUserId(long userId);
 
         /// <summary>
+        /// 根据角色ID获取连接（fanout 推送使用 characterId 作为 sessionId）。
+        /// </summary>
+        /// <param name="characterId">角色ID</param>
+        IGameConnection? GetConnectionByCharacterId(long characterId);
+
+        /// <summary>
+        /// 注册角色ID与连接的映射（角色进入游戏成功后调用）。
+        /// </summary>
+        /// <param name="characterId">角色ID</param>
+        /// <param name="connection">游戏连接</param>
+        void RegisterCharacter(long characterId, IGameConnection connection);
+
+        /// <summary>
+        /// 注销角色ID与连接的映射（连接断开或切换角色时调用）。
+        /// </summary>
+        /// <param name="characterId">角色ID</param>
+        void UnregisterCharacter(long characterId);
+
+        /// <summary>
+        /// 根据连接ID反查该连接绑定的所有角色ID。
+        /// 用于客户端断连时获取需要延迟 Despawn 的角色列表。
+        /// </summary>
+        /// <param name="connectionId">连接ID</param>
+        /// <returns>该连接绑定的所有角色ID（通常为 0 或 1 个）。</returns>
+        IReadOnlyList<long> GetCharacterIdsByConnection(string connectionId);
+
+        /// <summary>
+        /// 获取所有已注册的 characterId（用于实体租约续约）。
+        /// </summary>
+        /// <returns>当前所有在线角色的 characterId 列表。</returns>
+        IReadOnlyList<long> GetAllCharacterIds();
+
+        /// <summary>
         /// 广播消息给所有连接
         /// </summary>
         /// <param name="message">消息</param>

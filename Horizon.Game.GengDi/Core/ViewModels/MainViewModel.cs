@@ -280,14 +280,50 @@ namespace Horizon.Game.GengDi.Core.ViewModels
 
         public bool NavigateTo(string tag)
         {
+            DiagLog.Log($"[MainVM] NavigateTo START tag={tag}");
             if (!_viewFactories.TryGetValue(tag, out var factory))
             {
+                DiagLog.Log($"[MainVM] NavigateTo tag not found: {tag}");
                 return false;
             }
 
+            // 关键修复：取消前一页面 ViewModel 的后台任务。
+            CancelPreviousViewViewModel();
+
             CurrentNavigationTag = tag;
+
+            // 关键修复：先将 CurrentView 置 null，让旧 View 从可视化树分离并解绑，
+            // 再创建新 View。原实现直接 CurrentView = factory()，旧 View 的绑定仍活跃，
+            // 若旧 VM 的后台线程在此期间触发 PropertyChanged，绑定更新会与新 View 的
+            // DataContext 绑定初始化在 UI 线程上竞争，导致死锁。先置 null 可确保旧 View
+            // 的绑定在新 View 创建前已被断开。
+            DiagLog.Log($"[MainVM] before null old view, old={CurrentView?.GetType().Name}");
+            CurrentView = null;
+
+            DiagLog.Log($"[MainVM] before factory() tag={tag}");
             CurrentView = factory();
+            DiagLog.Log($"[MainVM] after factory() tag={tag}, CurrentView={CurrentView?.GetType().Name}");
             return true;
+        }
+
+        /// <summary>
+        /// 取消前一页面 ViewModel 的后台任务（如果其实现了 ICancelableViewModel）。
+        /// 该方法非阻塞且吞掉异常，确保导航流程不会因取消失败而中断。
+        /// </summary>
+        private void CancelPreviousViewViewModel()
+        {
+            try
+            {
+                if (CurrentView?.DataContext is ICancelableViewModel cancellable)
+                {
+                    DiagLog.Log($"[MainVM] Cancel previous VM: {cancellable.GetType().Name}");
+                    cancellable.Cancel();
+                }
+            }
+            catch (Exception ex)
+            {
+                DiagLog.Log($"[MainVM] CancelPreviousViewViewModel error: {ex.Message}");
+            }
         }
 
         public NavigationSearchItem FindSearchItem(string query)

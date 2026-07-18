@@ -1,4 +1,7 @@
+using System;
 using FlaxEngine;
+using Arch.Core;
+using Horizon.Game.ECS.Arch.Components;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 using Horizon.Game.Message.Sync;
@@ -131,6 +134,10 @@ namespace HundunWorld.Game
         private float _inputSendAccumulator = 0f;
         private const float InputSendInterval = 1f / 60f;
 
+        /// <summary>Arch ECS 中本地玩家实体的缓存引用。</summary>
+        private Entity _localPlayerEntity;
+        private bool _localPlayerEntityFound = false;
+
         /// <summary>
         /// 最大预测缓冲大小
         /// </summary>
@@ -154,7 +161,17 @@ namespace HundunWorld.Game
         /// 是否正在跑步
         /// </summary>
         private bool _isRunning = false;
-        AnimGraphParameter IsWalking { get; set; }
+
+        /// <summary>
+        /// 动画参数：是否行走（IsWalking）。
+        /// 由于打包构建中角色资源可能尚未加载，延迟初始化直到 AnimatedModel 资源就绪。
+        /// </summary>
+        private AnimGraphParameter _isWalkingParam;
+
+        /// <summary>
+        /// 动画参数是否已完成初始化。
+        /// </summary>
+        private bool _animationParamsInitialized;
 
         /// <summary>
         /// 是否正在蹲伏
@@ -317,8 +334,63 @@ namespace HundunWorld.Game
 
             // 初始化移动缓冲
             _movementBuffer = new Queue<Vector3>();
-            IsWalking = Actor.GetChild<AnimatedModel>().GetParameter("IsWalking");
-            IsWalking.Value = _isRunning;
+
+            // 尝试初始化动画参数；若资源尚未加载，将在 OnUpdate 中重试
+            TryInitializeAnimationParameters();
+        }
+
+        /// <summary>
+        /// 安全初始化动画参数。仅在 AnimatedModel 的 SkinnedModel 与 AnimationGraph 都已加载时执行，
+        /// 避免在打包构建中资源未就绪时调用 GetParameter 触发引擎断言。
+        /// </summary>
+        /// <returns>是否成功初始化</returns>
+        private bool TryInitializeAnimationParameters()
+        {
+            if (_animationParamsInitialized)
+                return true;
+
+            var animatedModel = Actor.GetChild<AnimatedModel>();
+            if (animatedModel == null)
+            {
+                Debug.LogWarning("[PlayerController] 未找到 AnimatedModel 子 Actor，动画参数初始化跳过");
+                return false;
+            }
+
+            // 安全校验：SkinnedModel 与 AnimationGraph 必须都已加载
+            if (animatedModel.SkinnedModel == null || !animatedModel.SkinnedModel.IsLoaded
+                || animatedModel.AnimationGraph == null || !animatedModel.AnimationGraph.IsLoaded)
+            {
+                Debug.Log("[PlayerController] AnimatedModel 资源尚未加载，延迟初始化动画参数");
+                return false;
+            }
+
+            try
+            {
+                _isWalkingParam = animatedModel.GetParameter("IsWalking");
+                if (_isWalkingParam != null)
+                {
+                    _isWalkingParam.Value = _isRunning;
+                }
+                _animationParamsInitialized = true;
+                Debug.Log("[PlayerController] 动画参数初始化完成");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[PlayerController] 初始化动画参数失败，将在下一帧重试: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 安全设置 IsWalking 参数值。
+        /// </summary>
+        private void SetIsWalking(bool value)
+        {
+            if (_isWalkingParam != null)
+            {
+                _isWalkingParam.Value = value;
+            }
         }
 
         public override void OnUpdate()
@@ -327,6 +399,12 @@ namespace HundunWorld.Game
             if (!EnableInput)
             {
                 return;
+            }
+
+            // 资源未就绪时，每帧尝试初始化动画参数
+            if (!_animationParamsInitialized)
+            {
+                TryInitializeAnimationParameters();
             }
 
             // 更新状态时间
@@ -350,18 +428,132 @@ namespace HundunWorld.Game
             // 更新移动预测缓冲
             UpdateMovementBuffer();
 
-            // 构建并发送输入同步包
-            _inputSendAccumulator += Time.DeltaTime;
-            if (_inputSendAccumulator >= InputSendInterval)
+            // 将输入写入 ECS 管线（供 InputSendSystem 打包发送）
+            bool ecsInputSent = WriteInputToEcs();
+
+            // 备用路径：仅当 ECS 管线不可用时直接发送
+            if (!ecsInputSent)
             {
-                _inputSendAccumulator -= InputSendInterval;
-                BuildAndSendInputPacket();
+                _inputSendAccumulator += Time.DeltaTime;
+                if (_inputSendAccumulator >= InputSendInterval)
+                {
+                    _inputSendAccumulator -= InputSendInterval;
+                    BuildAndSendInputPacket();
+                }
+            }
+            else
+            {
+                _inputSendAccumulator = 0f;
             }
         }
 
         #endregion
 
         #region 输入同步包发送
+
+        /// <summary>
+        /// 查找 Arch World 中本地玩家实体（IsLocalPlayer=true）。
+        /// </summary>
+        private bool TryFindLocalPlayerEntity()
+        {
+            if (_localPlayerEntityFound) return true;
+
+            var archWorld = HundunWorldGame.Instance?.ArchWorld;
+            if (archWorld == null) return false;
+
+            var query = new QueryDescription()
+                .WithAll<NetworkIdentityComponent, PlayerInputComponent, PredictedTransformComponent>();
+
+            archWorld.Query(in query, (Entity entity, ref NetworkIdentityComponent netId) =>
+            {
+                if (netId.IsLocalPlayer)
+                {
+                    _localPlayerEntity = entity;
+                    _localPlayerEntityFound = true;
+                }
+            });
+
+            return _localPlayerEntityFound;
+        }
+
+        /// <summary>
+        /// 将当前帧的输入数据写入 Arch World 中本地玩家实体的 PlayerInputComponent，
+        /// 供 InputSendSystem 在 NetworkSend 阶段打包发送到服务端。
+        /// </summary>
+        private bool WriteInputToEcs()
+        {
+            if (!TryFindLocalPlayerEntity()) return false;
+
+            var archWorld = HundunWorldGame.Instance?.ArchWorld;
+            if (archWorld == null || !archWorld.IsAlive(_localPlayerEntity))
+            {
+                _localPlayerEntityFound = false;
+                return false;
+            }
+
+            try
+            {
+                ref var input = ref archWorld.Get<PlayerInputComponent>(_localPlayerEntity);
+                input.MoveX = _moveDirection.X;
+                input.MoveY = _moveDirection.Z;
+
+                // 获取视角朝向（含 Camera 缺失降级逻辑）
+                TryGetLookYawPitch(out float lookYaw, out float lookPitch);
+                input.LookYaw = lookYaw;
+                input.LookPitch = lookPitch;
+
+                byte inputBits = _inputManager != null ? _inputManager.GetCurrentInputBits() : (byte)0;
+                if (_qinggongSystem != null)
+                {
+                    inputBits |= (byte)_qinggongSystem.GetQinggongInputBits();
+                }
+                input.InputBits = inputBits;
+
+                // [修复] ClientTick 由 LocalSimulationSystem（FixedUpdate）统一递增，
+                // 避免 OnUpdate 渲染帧率与 FixedUpdate 60Hz 不一致导致 tick 漂移。
+                // 此处仅写入输入数据，不修改 predicted.ClientTick。
+            }
+            catch
+            {
+                _localPlayerEntityFound = false;
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 尝试获取视角朝向（Yaw/Pitch，弧度）。
+        /// 优先使用已配置的 <see cref="Camera"/>；若未配置则尝试自动查找主相机并缓存；
+        /// 若仍找不到则降级使用 <see cref="Actor.Orientation"/> 的 Yaw，避免 LookYaw 永远为 0
+        /// 导致服务端 entity.Yaw 不更新、远程角色朝向不变的问题。
+        /// </summary>
+        /// <param name="yaw">输出的水平视角（弧度）</param>
+        /// <param name="pitch">输出的俯仰视角（弧度）</param>
+        private void TryGetLookYawPitch(out float yaw, out float pitch)
+        {
+            if (Camera != null)
+            {
+                yaw = Camera.Yaw * Mathf.DegreesToRadians;
+                pitch = Camera.Pitch * Mathf.DegreesToRadians;
+                return;
+            }
+
+            // Camera 未配置，尝试自动查找主相机
+            var mainCamera = FlaxEngine.Camera.MainCamera?.GetScript<ThirdPersonCamera>();
+            if (mainCamera != null)
+            {
+                Camera = mainCamera; // 缓存以避免下次再查找
+                yaw = Camera.Yaw * Mathf.DegreesToRadians;
+                pitch = Camera.Pitch * Mathf.DegreesToRadians;
+                return;
+            }
+
+            // 降级：使用 Actor.Orientation 的 Yaw 作为 LookYaw 来源
+            FlaxEngine.Debug.LogWarning("[PlayerController] Camera 未配置，使用 Actor.Orientation.Yaw 作为降级");
+            yaw = Actor.Orientation.EulerAngles.Y * Mathf.DegreesToRadians;
+            pitch = 0f;
+        }
 
         private void BuildAndSendInputPacket()
         {
@@ -376,13 +568,12 @@ namespace HundunWorld.Game
             float moveX = _moveDirection.X;
             float moveY = _moveDirection.Z;
 
-            float lookYaw = 0f;
-            float lookPitch = 0f;
-            if (Camera != null)
-            {
-                lookYaw = Camera.Yaw * Mathf.DegreesToRadians;
-                lookPitch = Camera.Pitch * Mathf.DegreesToRadians;
-            }
+            // 获取视角朝向（含 Camera 缺失降级逻辑）
+            TryGetLookYawPitch(out float lookYaw, out float lookPitch);
+
+            // [修复] 设置 CharacterId：服务端 SyncPacketHandler 为单例，不能在实例字段中缓存 characterId，
+            // 要求客户端在每个 InputPacket 中显式携带，否则 characterId==0 时服务端会拒绝该输入包。
+            var characterId = HundunWorldGame.Instance?.PlayerId ?? 0;
 
             var inputPacket = new InputPacket
             {
@@ -392,6 +583,7 @@ namespace HundunWorld.Game
                 LookPitch = lookPitch,
                 MoveX = moveX,
                 MoveY = moveY,
+                CharacterId = characterId,
             };
 
             SyncPacketCodec.Encode(inputPacket, out var frame, out var frameLength);
@@ -408,7 +600,7 @@ namespace HundunWorld.Game
                 };
 
                 var networkManager = HundunWorldGame.Instance?.NetworkManager;
-                if (networkManager != null && networkManager.CanSendMessage())
+                if (networkManager != null && networkManager.CanSendMessage() && networkManager.IsSyncHandshakeComplete)
                 {
                     _ = networkManager.SendAsync(syncFrame);
                 }
@@ -428,7 +620,8 @@ namespace HundunWorld.Game
         /// </summary>
         private void HandleCharacterMovement()
         {
-            IsWalking.Value = false;
+            
+            SetIsWalking(false);
             // 获取输入方向
             Vector3 inputDirection = GetInputDirection();
 
@@ -654,8 +847,8 @@ namespace HundunWorld.Game
             Actor.Position += totalMovement;
             var raw = Vector3.Zero;
             Vector3.Distance(ref raw, ref totalMovement, out float d);
-            if (d > 0)
-                IsWalking.Value = true;
+            if (d > 0 )
+                SetIsWalking(true);
             // 检查地面状态
             CheckGroundStatus();
         }

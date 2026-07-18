@@ -104,15 +104,16 @@ namespace HundunWorld.Game.Rendering.Atmospheric
                 // 设置为子Actor
                 _shadowModel.Parent = Actor;
 
-                // 加载内置圆柱模型作为阴影圆盘
-                var model = Content.LoadAsync<Model>("Content/Editor/Primitives/Cylinder");
+                // 尝试加载项目自带的圆柱模型
+                // 注意：如果 Content/Models/Cylinder.flax 不存在，阴影圆盘将不可见（次要功能，不影响游戏）
+                var model = Content.LoadAsync<Model>("Content/Models/Cylinder.flax");
                 if (model != null)
                 {
                     _shadowModel.Model = model;
                 }
                 else
                 {
-                    Debug.LogWarning("[GroundShadowPlane] 无法加载内置圆柱模型，阴影可能不可见");
+                    Debug.LogWarning("[GroundShadowPlane] 无法加载圆柱模型 Content/Models/Cylinder.flax，阴影圆盘不可见（次要功能，不影响游戏）");
                 }
 
                 // 极扁缩放形成圆盘：Y极小，X/Z匹配阴影半径

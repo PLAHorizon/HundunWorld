@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>验讫</title>
+    <style id="theme-vars">
+/* ============================================================
+   混沌世界 HundunWorld · 燕云融合 UI 品牌样式
+   模式: free-explore | 主题: dark | 设备: desktop
+   融合策略：ink- 深墨黑沉浸底 + yy- 纸色面板 + 朱红战斗强调
+   仿《燕云十六声》：深墨黑 + 鎏金/古铜/朱红 + 纸色卷轴 + 毛笔书法
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+
+/* ---------- 设计 Token ---------- */
+:root {
+  /* 背景层 — 深墨黑 */
+  --bg-base-default: #0E1016;
+  --bg-base-secondary: #14171E;
+  --bg-base-tertiary: #1C1F28;
+  --bg-base-elevated: #232733;
+  --ink-bg-panel: rgba(20, 23, 30, 0.85);
+  --ink-bg-panel-solid: #14171E;
+  --ink-bg-void: #0E1016;
+  --ink-bg-abyss: #0A0B10;
+  --ink-bg-scrim: rgba(8, 9, 14, 0.72);
+
+  /* 品牌主色 — 鎏金 */
+  --bg-brand: #C8A858;
+  --bg-brand-hover: #E0C880;
+  --bg-brand-active: #8A7438;
+  --bg-brand-disabled: rgba(200, 168, 88, 0.28);
+  --ink-gold-primary: #C8A858;
+  --ink-gold-bright: #E0C880;
+  --ink-gold-deep: #8A7438;
+  --ink-gold-glow: rgba(200, 168, 88, 0.4);
+
+  /* 铜色体系 — 辅助主色 */
+  --ink-bronze-primary: #B87333;
+  --ink-bronze-bright: #D4944E;
+  --ink-bronze-deep: #7A4A20;
+  --ink-bronze-glow: rgba(184, 115, 51, 0.4);
+
+  /* 朱红系 — yy- 引入，战斗/危险/传世品质强调 */
+  --ink-vermilion-primary: #c0392b;
+  --ink-vermilion-bright: #d9504a;
+  --ink-vermilion-deep: #a93226;
+  --ink-vermilion-faded: #8b2a20;
+  --ink-vermilion-glow: rgba(192, 57, 43, 0.4);
+
+  /* 纸色系 — yy- 引入，用于浅色卷轴/对话框/信笺面板 */
+  --ink-paper-bright: #f5f0e8;
+  --ink-paper: #ebe5d8;
+  --ink-paper-aged: #d4c9b8;
+  --ink-paper-faded: #c8bba8;
+  --ink-paper-dark: #a89e8a;
+
+  /* 辅助语义色 */
+  --ink-jade-primary: #5E8B7E;
+  --ink-jade-bright: #7EAE9E;
+  --ink-blood-primary: #B85450;
+  --ink-blood-bright: #D46862;
+
+  /* 品质色 — 游戏语义（传世=朱红） */
+  --ink-quality-common: #8A8275;
+  --ink-quality-uncommon: #6B8E5A;
+  --ink-quality-rare: #4A7EA8;
+  --ink-quality-epic: #8B5E9E;
+  --ink-quality-legendary: #c0392b;
+
+  /* 状态色（错误=朱红） */
+  --state-success: #6B8E5A;
+  --state-warning: #C8A858;
+  --state-error: #c0392b;
+  --state-info: #4A7EA8;
+
+  /* 文字 */
+  --text-default: #F0EDE4;
+  --text-secondary: #B8B0A0;
+  --text-tertiary: #7A7468;
+  --text-disabled: #4A4640;
+  --text-brand: #E0C880;
+  --text-on-brand: #1A1408;
+  --text-on-paper: #2a2520;
+  --text-vermilion: #d9504a;
+
+  /* 边框 */
+  --border-neutral-l1: rgba(240, 237, 228, 0.06);
+  --border-neutral-l2: rgba(200, 168, 88, 0.15);
+  --border-neutral-l3: rgba(200, 168, 88, 0.25);
+  --ink-border-gold: rgba(200, 168, 88, 0.35);
+  --ink-border-gold-strong: rgba(200, 168, 88, 0.6);
+  --ink-border-bronze: rgba(184, 115, 51, 0.3);
+  --ink-border-vermilion: rgba(192, 57, 43, 0.35);
+  --ink-divider: rgba(200, 168, 88, 0.12);
+
+  /* 纸色面板专用 */
+  --ink-paper-panel-bg: rgba(245, 240, 232, 0.92);
+  --ink-paper-panel-border: rgba(168, 158, 138, 0.4);
+  --ink-paper-panel-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+
+  /* 字体 */
+  --ink-font-display: "Ma Shan Zheng", "STKaiti", "KaiTi", serif;
+  --ink-font-heading: "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+  --ink-font-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --ink-font-number: "DIN Alternate", "DIN", "Bebas Neue", monospace;
+  --font-family-heading: var(--ink-font-heading);
+  --font-family-default: var(--ink-font-body);
+
+  /* 圆角 — 古风克制 */
+  --radius-0: 0px;
+  --radius-2: 2px;
+  --radius-4: 4px;
+  --radius-8: 8px;
+  --radius-full: 999px;
+  --ink-radius-none: 0px;
+  --ink-radius-sm: 2px;
+  --ink-radius-md: 4px;
+  --ink-radius-lg: 8px;
+
+  /* 阴影 / 深度 */
+  --ink-shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --ink-shadow-soft: 0 1px 0 rgba(0, 0, 0, 0.05);
+  --ink-shadow-gold: 0 0 24px rgba(200, 168, 88, 0.2);
+  --ink-shadow-vermilion: 0 0 24px rgba(192, 57, 43, 0.2);
+  --ink-shadow-inset: inset 0 1px 0 rgba(200, 168, 88, 0.08);
+  --ink-shadow-inset-deep: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+  --ink-blur-panel: blur(8px);
+
+  /* 间距 */
+  --ink-space-1: 4px;
+  --ink-space-2: 8px;
+  --ink-space-3: 12px;
+  --ink-space-4: 16px;
+  --ink-space-5: 24px;
+  --ink-space-6: 32px;
+  --ink-space-8: 48px;
+
+  /* 控件尺寸 */
+  --ink-control-h-sm: 28px;
+  --ink-control-h-md: 36px;
+  --ink-control-h-lg: 44px;
+
+  /* Tailwind v4 语义别名 — 供 fill-html-head 生成 @theme inline 桥接（ink 前缀版） */
+  --ink-background: var(--bg-base-default);
+  --ink-foreground: var(--text-default);
+  --ink-card: var(--bg-base-secondary);
+  --ink-card-foreground: var(--text-default);
+  --ink-popover: var(--ink-bg-panel-solid);
+  --ink-popover-foreground: var(--text-default);
+  --ink-primary: var(--bg-brand);
+  --ink-primary-foreground: var(--text-on-brand);
+  --ink-secondary: var(--bg-base-tertiary);
+  --ink-secondary-foreground: var(--text-secondary);
+  --ink-muted: var(--bg-base-tertiary);
+  --ink-muted-foreground: var(--text-tertiary);
+  --ink-accent: var(--ink-bronze-primary);
+  --ink-accent-foreground: var(--text-default);
+  --ink-destructive: var(--ink-vermilion-primary);
+  --ink-destructive-foreground: var(--text-default);
+  --ink-border: var(--ink-border-gold);
+  --ink-input: var(--ink-border-gold);
+  --ink-ring: var(--ink-gold-primary);
+  --ink-radius-small: var(--ink-radius-sm);
+  --ink-radius-medium: var(--ink-radius-md);
+  --ink-radius-large: var(--ink-radius-lg);
+  --ink-radius-xlarge: var(--ink-radius-lg);
+}
+
+/* ---------- 基础重置 ---------- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg-base-default);
+  color: var(--text-default);
+  font-family: var(--ink-font-body);
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* 游戏沉浸根容器 */
+.ink-game-root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-base-default);
+}
+
+/* 全局水墨背景层 */
+.ink-bg-layer {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(200, 168, 88, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(184, 115, 51, 0.04) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(10, 11, 16, 0.8) 0%, transparent 60%),
+    var(--bg-base-default);
+  pointer-events: none;
+  z-index: 0;
+}
+.ink-bg-layer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+}
+
+/* 暗角晕影 */
+.ink-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.55) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ---------- 面板系统 ---------- */
+.ink-panel {
+  position: relative;
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  -webkit-backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-inset), var(--ink-shadow-soft);
+  border-radius: var(--ink-radius-md);
+}
+.ink-panel-solid {
+  background: var(--ink-bg-panel-solid);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-inset);
+  border-radius: var(--ink-radius-md);
+}
+.ink-panel-elevated {
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-panel);
+  border-radius: var(--ink-radius-md);
+}
+
+/* 纸色面板 — yy- 引入，卷轴/信笺/对话框专用 */
+.ink-paper-panel {
+  position: relative;
+  background: var(--ink-paper-panel-bg);
+  border: 1px solid var(--ink-paper-panel-border);
+  border-radius: var(--ink-radius-md);
+  box-shadow: var(--ink-paper-panel-shadow);
+  color: var(--text-on-paper);
+  overflow: hidden;
+}
+.ink-paper-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.3'/%3E%3C/svg%3E");
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+/* 水墨笔触描边 — 多层错位金线模拟飞白 */
+.ink-brush-border {
+  position: relative;
+  border: 1px solid var(--ink-border-gold);
+  box-shadow:
+    inset 0 0 0 1px rgba(200, 168, 88, 0.05),
+    0 0 0 1px rgba(200, 168, 88, 0.08),
+    0 1px 0 rgba(200, 168, 88, 0.1);
+}
+.ink-brush-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1px solid transparent;
+  border-image: linear-gradient(135deg, rgba(200, 168, 88, 0.4) 0%, rgba(200, 168, 88, 0.08) 40%, rgba(184, 115, 51, 0.3) 100%) 1;
+  pointer-events: none;
+}
+
+/* 面板四角装饰 */
+.ink-corner-deco {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--ink-gold-primary);
+  opacity: 0.7;
+}
+.ink-corner-deco.tl { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+.ink-corner-deco.tr { top: -1px; right: -1px; border-left: none; border-bottom: none; }
+.ink-corner-deco.bl { bottom: -1px; left: -1px; border-right: none; border-top: none; }
+.ink-corner-deco.br { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+/* 面板标题栏 */
+.ink-panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--ink-space-2);
+  padding: var(--ink-space-3) var(--ink-space-4);
+  border-bottom: 1px solid var(--ink-divider);
+  font-family: var(--ink-font-heading);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-brand);
+  letter-spacing: 2px;
+}
+.ink-panel-title::before {
+  content: "";
+  width: 3px;
+  height: 16px;
+  background: linear-gradient(180deg, var(--ink-gold-bright), var(--ink-gold-deep));
+  border-radius: var(--ink-radius-sm);
+}
+
+/* ---------- 排版 ---------- */
+.ink-text-display {
+  font-family: var(--ink-font-display);
+  font-size: 32px;
+  color: var(--text-brand);
+  letter-spacing: 4px;
+  line-height: 1.2;
+}
+.ink-text-heading {
+  font-family: var(--ink-font-heading);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-default);
+  letter-spacing: 1px;
+}
+.ink-text-subheading {
+  font-family: var(--ink-font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}
+.ink-text-body {
+  font-family: var(--ink-font-body);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+.ink-text-caption {
+  font-family: var(--ink-font-body);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.ink-text-number {
+  font-family: var(--ink-font-number);
+  font-weight: 700;
+  color: var(--text-brand);
+}
+
+/* 竖排标题 — yy- 引入，加载页/章节过场专用 */
+.ink-vertical-title {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-family: var(--ink-font-display);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  line-height: 2.0;
+  color: var(--text-brand);
+}
+
+/* ---------- 按钮 ---------- */
+.ink-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ink-space-2);
+  height: var(--ink-control-h-md);
+  padding: 0 var(--ink-space-4);
+  font-family: var(--ink-font-heading);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: var(--text-default);
+  background: var(--bg-base-tertiary);
+  border: 1px solid var(--ink-border-gold);
+  border-radius: var(--ink-radius-sm);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+.ink-btn:hover {
+  background: var(--bg-base-elevated);
+  border-color: var(--ink-border-gold-strong);
+  color: var(--text-brand);
+}
+.ink-btn:active { transform: translateY(1px); }
+.ink-btn-primary {
+  color: var(--text-on-brand);
+  background: linear-gradient(135deg, var(--ink-gold-bright), var(--ink-gold-deep));
+  border-color: var(--ink-gold-primary);
+  box-shadow: var(--ink-shadow-gold);
+}
+.ink-btn-primary:hover {
+  color: var(--text-on-brand);
+  background: linear-gradient(135deg, var(--ink-gold-primary), var(--ink-gold-deep));
+  border-color: var(--ink-gold-bright);
+}
+/* 朱红按钮 — 战斗/危险操作 */
+.ink-btn-vermilion {
+  color: var(--ink-paper-bright);
+  background: linear-gradient(135deg, var(--ink-vermilion-primary), var(--ink-vermilion-deep));
+  border-color: var(--ink-vermilion-deep);
+  box-shadow: var(--ink-shadow-vermilion);
+}
+.ink-btn-vermilion:hover {
+  color: var(--ink-paper-bright);
+  background: linear-gradient(135deg, var(--ink-vermilion-bright), var(--ink-vermilion-primary));
+  border-color: var(--ink-vermilion-bright);
+}
+.ink-btn-ghost {
+  background: transparent;
+  border-color: var(--border-neutral-l2);
+  color: var(--text-secondary);
+}
+.ink-btn-ghost:hover {
+  background: rgba(200, 168, 88, 0.06);
+  border-color: var(--ink-border-gold);
+  color: var(--text-brand);
+}
+.ink-btn-sm { height: var(--ink-control-h-sm); font-size: 12px; padding: 0 var(--ink-space-3); }
+.ink-btn-lg { height: var(--ink-control-h-lg); font-size: 15px; padding: 0 var(--ink-space-5); }
+
+/* ---------- 标签 / 徽章 ---------- */
+.ink-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-family: var(--ink-font-body);
+  color: var(--text-secondary);
+  background: rgba(200, 168, 88, 0.08);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  letter-spacing: 1px;
+}
+.ink-tag-brand {
+  color: var(--text-brand);
+  background: rgba(200, 168, 88, 0.12);
+  border-color: var(--ink-border-gold);
+}
+.ink-tag-vermilion {
+  color: var(--text-vermilion);
+  background: rgba(192, 57, 43, 0.12);
+  border-color: var(--ink-border-vermilion);
+}
+
+/* 品质色 */
+.ink-q-common { color: var(--ink-quality-common); border-color: var(--ink-quality-common); }
+.ink-q-uncommon { color: var(--ink-quality-uncommon); border-color: var(--ink-quality-uncommon); }
+.ink-q-rare { color: var(--ink-quality-rare); border-color: var(--ink-quality-rare); }
+.ink-q-epic { color: var(--ink-quality-epic); border-color: var(--ink-quality-epic); }
+.ink-q-legendary { color: var(--ink-quality-legendary); border-color: var(--ink-quality-legendary); box-shadow: 0 0 12px rgba(192, 57, 43, 0.3); }
+
+/* ---------- 进度条 ---------- */
+.ink-bar {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  overflow: hidden;
+}
+.ink-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ink-gold-deep), var(--ink-gold-bright));
+  border-radius: var(--ink-radius-sm);
+  box-shadow: 0 0 8px rgba(200, 168, 88, 0.3);
+  transition: width 0.4s ease;
+}
+.ink-bar-fill-jade { background: linear-gradient(90deg, #3E6B5E, var(--ink-jade-bright)); box-shadow: 0 0 8px rgba(94, 139, 126, 0.3); }
+.ink-bar-fill-blood { background: linear-gradient(90deg, #8A3E3A, var(--ink-blood-bright)); box-shadow: 0 0 8px rgba(184, 84, 80, 0.3); }
+/* 朱红进度条 — 气血/战斗 */
+.ink-bar-fill-vermilion { background: linear-gradient(90deg, var(--ink-vermilion-deep), var(--ink-vermilion-bright)); box-shadow: 0 0 8px rgba(192, 57, 43, 0.3); }
+.ink-bar-thin { height: 4px; }
+
+/* 竖向属性条 */
+.ink-bar-v {
+  position: relative;
+  width: 8px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  overflow: hidden;
+  display: inline-block;
+}
+.ink-bar-v-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(0deg, var(--ink-gold-deep), var(--ink-gold-bright));
+  border-radius: var(--ink-radius-sm);
+}
+
+/* ---------- 网格格子（背包/技能槽） ---------- */
+.ink-cell {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ink-cell:hover {
+  border-color: var(--ink-border-gold-strong);
+  background: rgba(200, 168, 88, 0.08);
+}
+.ink-cell-quality { border-width: 1px; border-style: solid; }
+.ink-cell-badge {
+  position: absolute;
+  bottom: 1px;
+  right: 2px;
+  font-family: var(--ink-font-number);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-default);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+/* ---------- 列表项 ---------- */
+.ink-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--ink-space-3);
+  padding: var(--ink-space-3) var(--ink-space-4);
+  border-bottom: 1px solid var(--ink-divider);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.ink-list-item:hover { background: rgba(200, 168, 88, 0.05); }
+.ink-list-item.active {
+  background: rgba(200, 168, 88, 0.1);
+  border-left: 2px solid var(--ink-gold-primary);
+}
+
+/* ---------- 头像 / 圆点 ---------- */
+.ink-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ink-radius-md);
+  border: 1px solid var(--ink-border-gold);
+  background: var(--bg-base-tertiary);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.ink-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--ink-quality-common);
+}
+.ink-dot-online { background: var(--ink-quality-uncommon); box-shadow: 0 0 6px rgba(107, 142, 90, 0.6); }
+
+/* ---------- 分割线 ---------- */
+.ink-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ink-divider) 20%, var(--ink-divider) 80%, transparent);
+  border: none;
+}
+.ink-divider-v {
+  width: 1px;
+  align-self: stretch;
+  background: linear-gradient(180deg, transparent, var(--ink-divider) 20%, var(--ink-divider) 80%, transparent);
+}
+
+/* ---------- 水墨晕染装饰 — yy- 引入 ---------- */
+.ink-splash { position: absolute; border-radius: 50%; filter: blur(15px); opacity: 0.3; pointer-events: none; }
+.ink-splash-1 { width: 300px; height: 300px; background: radial-gradient(circle, var(--bg-base-tertiary) 0%, transparent 70%); }
+.ink-splash-2 { width: 200px; height: 200px; background: radial-gradient(circle, var(--bg-base-elevated) 0%, transparent 70%); }
+.ink-splash-vermilion { width: 250px; height: 250px; background: radial-gradient(circle, rgba(192, 57, 43, 0.15) 0%, transparent 70%); }
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+::-webkit-scrollbar-thumb {
+  background: rgba(200, 168, 88, 0.25);
+  border-radius: var(--ink-radius-sm);
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(200, 168, 88, 0.45); }
+
+/* ---------- 选中态 ---------- */
+::selection { background: rgba(200, 168, 88, 0.3); color: var(--text-default); }
+
+/* ---------- 辅助 ---------- */
+.ink-flex { display: flex; }
+.ink-flex-col { display: flex; flex-direction: column; }
+.ink-items-center { align-items: center; }
+.ink-justify-between { justify-content: space-between; }
+.ink-gap-2 { gap: var(--ink-space-2); }
+.ink-gap-3 { gap: var(--ink-space-3); }
+.ink-gap-4 { gap: var(--ink-space-4); }
+.ink-flex-1 { flex: 1; }
+.ink-text-center { text-align: center; }
+.ink-text-right { text-align: right; }
+.ink-overflow-auto { overflow: auto; }
+.ink-overflow-hidden { overflow: hidden; }
+.ink-relative { position: relative; }
+.ink-absolute { position: absolute; }
+.ink-pointer { cursor: pointer; }
+
+/* 通用内容层（在背景层之上） */
+.ink-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+}
+
+/* 返回按钮 */
+.ink-back-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  border-radius: var(--ink-radius-sm);
+  color: var(--text-brand);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.ink-back-btn:hover {
+  background: rgba(200, 168, 88, 0.12);
+  border-color: var(--ink-border-gold-strong);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--ink-background);
+    --color-foreground: var(--ink-foreground);
+    --color-card: var(--ink-card);
+    --color-card-foreground: var(--ink-card-foreground);
+    --color-popover: var(--ink-popover);
+    --color-popover-foreground: var(--ink-popover-foreground);
+    --color-primary: var(--ink-primary);
+    --color-primary-foreground: var(--ink-primary-foreground);
+    --color-secondary: var(--ink-secondary);
+    --color-secondary-foreground: var(--ink-secondary-foreground);
+    --color-muted: var(--ink-muted);
+    --color-muted-foreground: var(--ink-muted-foreground);
+    --color-accent: var(--ink-accent);
+    --color-accent-foreground: var(--ink-accent-foreground);
+    --color-destructive: var(--ink-destructive);
+    --color-destructive-foreground: var(--ink-destructive-foreground);
+    --color-border: var(--ink-border);
+    --color-input: var(--ink-input);
+    --color-ring: var(--ink-ring);
+    --radius-sm: var(--ink-radius-small);
+    --radius-md: var(--ink-radius-medium);
+    --radius-lg: var(--ink-radius-large);
+    --radius-xl: var(--ink-radius-xlarge);
+  }
+  @layer base {
+    body { background: var(--ink-background); color: var(--ink-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+<main class="popup-verification-page">
+  <!-- Dark Overlay (scrim) -->
+  <div class="dark-overlay" id="verificationOverlay">
+
+    <!-- Modal Panel (dark frosted floating layer) -->
+    <div class="verification-modal ink-panel" id="verificationModal">
+
+      <!-- Decorative ink splashes -->
+      <div class="ink-splash ink-splash-1" style="top:-80px; left:-80px; opacity:0.12;"></div>
+      <div class="ink-splash ink-splash-2" style="bottom:-60px; right:-40px; opacity:0.10;"></div>
+
+      <!-- Corner ornaments (gold L-corners) -->
+      <span class="corner-ornament corner-tl"></span>
+      <span class="corner-ornament corner-tr"></span>
+      <span class="corner-ornament corner-bl"></span>
+      <span class="corner-ornament corner-br"></span>
+
+      <!-- Top decorative band -->
+      <div class="modal-top-band">
+        <span class="band-line"></span>
+        <i data-lucide="shield-check" class="band-icon"></i>
+        <span class="band-line"></span>
+      </div>
+
+      <!-- a. Seal Stamp Area -->
+      <section class="seal-stamp-area" aria-label="验讫印章">
+        <!-- Ink splatter dots around the seal -->
+        <div class="ink-splatter" aria-hidden="true">
+          <span class="splatter-dot dot-1"></span>
+          <span class="splatter-dot dot-2"></span>
+          <span class="splatter-dot dot-3"></span>
+          <span class="splatter-dot dot-4"></span>
+          <span class="splatter-dot dot-5"></span>
+          <span class="splatter-dot dot-6"></span>
+          <span class="splatter-dot dot-7"></span>
+          <span class="splatter-dot dot-8"></span>
+          <span class="splatter-dot dot-9"></span>
+          <span class="splatter-dot dot-10"></span>
+        </div>
+
+        <!-- Seal stamp glow -->
+        <div class="seal-glow" aria-hidden="true"></div>
+
+        <!-- Main seal stamp -->
+        <div class="seal-stamp" id="sealStamp">
+          <!-- Outer ring -->
+          <div class="seal-outer-ring" aria-hidden="true"></div>
+          <!-- Inner content -->
+          <div class="seal-inner">
+            <div class="seal-text-vertical">
+              <span class="seal-char seal-char-top">验</span>
+              <span class="seal-char seal-char-bottom">讫</span>
+            </div>
+          </div>
+          <!-- Noise texture overlay for ink feel -->
+          <div class="seal-noise-overlay" aria-hidden="true"></div>
+          <!-- Ink bleed edges -->
+          <div class="seal-ink-bleed" aria-hidden="true"></div>
+        </div>
+
+        <!-- Seal shadow echo -->
+        <div class="seal-shadow-echo" aria-hidden="true"></div>
+      </section>
+
+      <!-- b. Verification Title -->
+      <header class="verification-title-section">
+        <h2 class="verification-title">任务验证完成</h2>
+        <p class="verification-subtitle">官方验讫 · 已备案存档</p>
+      </header>
+
+      <!-- c. Ink Divider (short, centered) -->
+      <hr class="ink-divider ink-divider-short">
+
+      <!-- d. Verification Content Summary (paper inset — ink-on-paper contrast) -->
+      <section class="verification-summary-section ink-paper-panel" aria-label="验证内容摘要">
+        <div class="summary-subtitle">
+          <i data-lucide="scroll-text" class="summary-subtitle-icon"></i>
+          <span>验证内容</span>
+        </div>
+
+        <div class="summary-list">
+          <div class="summary-item">
+            <span class="summary-label">
+              <i data-lucide="flag" class="summary-label-icon"></i>
+              任务名称
+            </span>
+            <span class="summary-value">昆仑山异兽调查</span>
+          </div>
+
+          <div class="summary-item">
+            <span class="summary-label">
+              <i data-lucide="clock" class="summary-label-icon"></i>
+              完成时间
+            </span>
+            <span class="summary-value">2026.07.11 戌时</span>
+          </div>
+
+          <div class="summary-item">
+            <span class="summary-label">
+              <i data-lucide="hash" class="summary-label-icon"></i>
+              验证编号
+            </span>
+            <span class="summary-value mono-text">YY-2026-0711-0342</span>
+          </div>
+
+          <div class="summary-item">
+            <span class="summary-label">
+              <i data-lucide="check-circle" class="summary-label-icon"></i>
+              验证状态
+            </span>
+            <span class="summary-value">
+              <span class="status-badge status-jade">
+                <i data-lucide="check" class="status-badge-icon"></i>
+                已通过
+              </span>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- e. Timestamp -->
+      <div class="timestamp-section">
+        <i data-lucide="calendar-clock" class="timestamp-icon"></i>
+        <span class="timestamp-text">验讫时间：2026年7月11日 戌时三刻</span>
+      </div>
+
+      <!-- f. Ink Divider (short, centered) -->
+      <hr class="ink-divider ink-divider-short">
+
+      <!-- g. Confirm + Achievement Reward shortcut -->
+      <footer class="confirm-section">
+        <button class="ink-btn ink-btn-ghost confirm-btn" id="confirmBtn" type="button" data-dom-id="back-hud">
+          <i data-lucide="check" class="btn-icon"></i>
+          <span>确认</span>
+        </button>
+        <p class="confirm-note">
+          <i data-lucide="archive" class="note-icon"></i>
+          此验证已记录入册
+        </p>
+        <a class="reward-link" data-dom-id="shortcut-reward-achievement" href="javascript:void(0);" role="button">
+          <i data-lucide="award" class="reward-link-icon"></i>
+          <span>查看成就奖励</span>
+          <i data-lucide="chevron-right" class="reward-link-arrow"></i>
+        </a>
+      </footer>
+
+      <!-- Bottom decorative band -->
+      <div class="modal-bottom-band">
+        <span class="band-line"></span>
+        <span class="band-dot"></span>
+        <span class="band-line"></span>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<style>
+  /* === Page Layout === */
+  .popup-verification-page {
+    min-height: 100vh;
+  }
+
+  /* === Dark Overlay (scrim) === */
+  .dark-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--ink-bg-scrim);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    animation: overlayFadeIn 0.3s ease-out forwards;
+    padding: var(--ink-space-4);
+  }
+
+  @keyframes overlayFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes overlayFadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+
+  /* === Modal Panel (dark frosted floating layer) === */
+  .verification-modal {
+    width: 400px;
+    max-width: 100%;
+    border-radius: var(--ink-radius-lg);
+    box-shadow: var(--ink-shadow-panel), 0 0 40px rgba(192, 57, 43, 0.1);
+    padding: var(--ink-space-6) var(--ink-space-5);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--ink-space-4);
+    animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  @keyframes modalSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes modalSlideOut {
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-10px) scale(0.96);
+    }
+  }
+
+  /* === Corner Ornaments (gold L-corners) === */
+  .corner-ornament {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .corner-ornament::before,
+  .corner-ornament::after {
+    content: '';
+    position: absolute;
+    background: var(--ink-gold-primary);
+    opacity: 0.6;
+  }
+
+  .corner-ornament::before {
+    width: 100%;
+    height: 1px;
+  }
+
+  .corner-ornament::after {
+    width: 1px;
+    height: 100%;
+  }
+
+  .corner-tl { top: 8px; left: 8px; }
+  .corner-tl::before { top: 0; left: 0; }
+  .corner-tl::after { top: 0; left: 0; }
+
+  .corner-tr { top: 8px; right: 8px; }
+  .corner-tr::before { top: 0; right: 0; }
+  .corner-tr::after { top: 0; right: 0; }
+
+  .corner-bl { bottom: 8px; left: 8px; }
+  .corner-bl::before { bottom: 0; left: 0; }
+  .corner-bl::after { bottom: 0; left: 0; }
+
+  .corner-br { bottom: 8px; right: 8px; }
+  .corner-br::before { bottom: 0; right: 0; }
+  .corner-br::after { bottom: 0; right: 0; }
+
+  /* === Top / Bottom Decorative Bands === */
+  .modal-top-band,
+  .modal-bottom-band {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--ink-space-2);
+    width: 100%;
+    opacity: 0.7;
+  }
+
+  .modal-top-band {
+    margin-bottom: var(--ink-space-1);
+  }
+
+  .modal-bottom-band {
+    margin-top: var(--ink-space-1);
+  }
+
+  .band-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--ink-gold-deep) 50%, transparent 100%);
+    max-width: 120px;
+  }
+
+  .band-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--ink-gold-primary);
+  }
+
+  .band-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--ink-gold-deep);
+  }
+
+  /* === Seal Stamp Area === */
+  .seal-stamp-area {
+    height: 180px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin: var(--ink-space-2) 0;
+  }
+
+  /* === Seal Glow === */
+  .seal-glow {
+    position: absolute;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(192, 57, 43, 0.28) 0%, rgba(192, 57, 43, 0.08) 50%, transparent 70%);
+    filter: blur(12px);
+    animation: glowPulse 2s ease-in-out 0.5s infinite alternate;
+  }
+
+  @keyframes glowPulse {
+    from { opacity: 0.6; transform: scale(1); }
+    to { opacity: 1; transform: scale(1.1); }
+  }
+
+  /* === Main Seal Stamp === */
+  .seal-stamp {
+    width: 120px;
+    height: 120px;
+    position: relative;
+    border-radius: 48%;
+    background: radial-gradient(circle at 40% 35%,
+      rgba(217, 80, 74, 0.92) 0%,
+      rgba(192, 57, 43, 0.9) 40%,
+      rgba(169, 50, 38, 0.85) 100%);
+    border: 4px solid var(--ink-vermilion-deep);
+    box-shadow:
+      0 0 20px rgba(192, 57, 43, 0.3),
+      inset 0 0 10px rgba(139, 42, 32, 0.3),
+      inset 0 2px 4px rgba(255, 255, 255, 0.08),
+      0 4px 12px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: rotate(-5deg);
+    z-index: 2;
+    animation: stampDown 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  @keyframes stampDown {
+    0% {
+      transform: scale(2) rotate(-15deg);
+      opacity: 0;
+      filter: blur(4px);
+    }
+    50% {
+      transform: scale(1.2) rotate(-8deg);
+      opacity: 0.8;
+      filter: blur(1px);
+    }
+    70% {
+      transform: scale(0.95) rotate(-4deg);
+      opacity: 1;
+      filter: blur(0);
+    }
+    100% {
+      transform: scale(1) rotate(-5deg);
+      opacity: 1;
+      filter: blur(0);
+    }
+  }
+
+  /* === Seal Outer Ring === */
+  .seal-outer-ring {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    border: 1.5px solid rgba(245, 240, 232, 0.35);
+    border-radius: 46%;
+    pointer-events: none;
+  }
+
+  /* === Seal Inner Content === */
+  .seal-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    z-index: 2;
+  }
+
+  .seal-text-vertical {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    line-height: 1;
+  }
+
+  .seal-char {
+    font-family: var(--ink-font-heading);
+    font-size: 42px;
+    font-weight: 900;
+    color: var(--ink-paper-bright);
+    text-shadow:
+      0 1px 2px rgba(139, 42, 32, 0.4),
+      0 0 8px rgba(245, 240, 232, 0.15);
+    letter-spacing: 0;
+  }
+
+  /* === Seal Noise Overlay === */
+  .seal-noise-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 48%;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='sn'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.15 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23sn)'/%3E%3C/svg%3E");
+    opacity: 0.6;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  /* === Seal Ink Bleed === */
+  .seal-ink-bleed {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 49%;
+    background: radial-gradient(ellipse at 30% 70%, rgba(139, 42, 32, 0.3) 0%, transparent 40%),
+                radial-gradient(ellipse at 70% 30%, rgba(169, 50, 38, 0.2) 0%, transparent 35%),
+                radial-gradient(ellipse at 80% 80%, rgba(192, 57, 43, 0.15) 0%, transparent 30%);
+    pointer-events: none;
+    z-index: 1;
+    filter: blur(2px);
+  }
+
+  /* === Seal Shadow Echo === */
+  .seal-shadow-echo {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    border-radius: 48%;
+    background: rgba(192, 57, 43, 0.1);
+    transform: rotate(-5deg) translate(3px, 5px);
+    filter: blur(6px);
+    z-index: 1;
+    animation: shadowEcho 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.05s forwards;
+    opacity: 0;
+  }
+
+  @keyframes shadowEcho {
+    0% { opacity: 0; transform: rotate(-5deg) translate(0, 0) scale(0.8); }
+    100% { opacity: 1; transform: rotate(-5deg) translate(3px, 5px) scale(1); }
+  }
+
+  /* === Ink Splatter Dots === */
+  .ink-splatter {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .splatter-dot {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--ink-vermilion-primary);
+    opacity: 0;
+  }
+
+  .dot-1 { width: 5px; height: 5px; top: 15%; left: 20%; animation: splatterAppear 0.3s ease-out 0.45s forwards; }
+  .dot-2 { width: 3px; height: 3px; top: 25%; right: 18%; animation: splatterAppear 0.3s ease-out 0.5s forwards; }
+  .dot-3 { width: 4px; height: 4px; bottom: 20%; left: 15%; animation: splatterAppear 0.3s ease-out 0.48s forwards; }
+  .dot-4 { width: 2px; height: 2px; bottom: 30%; right: 22%; animation: splatterAppear 0.3s ease-out 0.52s forwards; }
+  .dot-5 { width: 3px; height: 3px; top: 10%; left: 45%; animation: splatterAppear 0.3s ease-out 0.46s forwards; }
+  .dot-6 { width: 4px; height: 4px; bottom: 12%; left: 50%; animation: splatterAppear 0.3s ease-out 0.5s forwards; }
+  .dot-7 { width: 2px; height: 2px; top: 40%; left: 8%; animation: splatterAppear 0.3s ease-out 0.54s forwards; }
+  .dot-8 { width: 3px; height: 3px; top: 45%; right: 8%; animation: splatterAppear 0.3s ease-out 0.48s forwards; }
+  .dot-9 { width: 2px; height: 2px; top: 8%; right: 35%; animation: splatterAppear 0.3s ease-out 0.5s forwards; }
+  .dot-10 { width: 4px; height: 4px; bottom: 8%; right: 40%; animation: splatterAppear 0.3s ease-out 0.52s forwards; }
+
+  @keyframes splatterAppear {
+    0% { opacity: 0; transform: scale(0); }
+    60% { opacity: 0.7; transform: scale(1.3); }
+    100% { opacity: 0.55; transform: scale(1); }
+  }
+
+  /* === Verification Title === */
+  .verification-title-section {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .verification-title {
+    font-family: var(--ink-font-heading);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ink-gold-bright);
+    letter-spacing: 0.15em;
+    margin: 0;
+  }
+
+  .verification-subtitle {
+    font-family: var(--ink-font-body);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    letter-spacing: 0.1em;
+  }
+
+  /* === Short Ink Divider (gold rule) === */
+  .ink-divider-short {
+    width: 200px;
+    max-width: 100%;
+    margin: var(--ink-space-2) 0;
+    background: linear-gradient(90deg, transparent 0%, var(--ink-gold-deep) 50%, transparent 100%);
+  }
+
+  /* === Verification Content Summary (paper inset) === */
+  .verification-summary-section {
+    width: 100%;
+    padding: var(--ink-space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ink-space-2);
+  }
+
+  .summary-subtitle {
+    display: flex;
+    align-items: center;
+    gap: var(--ink-space-2);
+    font-family: var(--ink-font-heading);
+    font-size: 13px;
+    color: var(--ink-paper-dark);
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding-bottom: var(--ink-space-2);
+    border-bottom: 1px solid var(--ink-paper-panel-border);
+  }
+
+  .summary-subtitle-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--ink-gold-deep);
+  }
+
+  .summary-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .summary-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ink-space-2);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .summary-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--ink-paper-dark);
+    font-family: var(--ink-font-body);
+    flex-shrink: 0;
+  }
+
+  .summary-label-icon {
+    width: 13px;
+    height: 13px;
+    color: var(--ink-paper-aged);
+  }
+
+  .summary-value {
+    color: var(--text-on-paper);
+    font-family: var(--ink-font-body);
+    font-weight: 500;
+    text-align: right;
+  }
+
+  .mono-text {
+    font-family: var(--ink-font-number);
+    font-size: 12px;
+    letter-spacing: 0.05em;
+  }
+
+  /* === Status Badge === */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px var(--ink-space-2);
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--ink-font-body);
+    border-radius: var(--ink-radius-sm);
+    border: 1px solid;
+  }
+
+  .status-jade {
+    color: var(--state-success);
+    border-color: var(--state-success);
+    background: rgba(107, 142, 90, 0.15);
+  }
+
+  .status-badge-icon {
+    width: 11px;
+    height: 11px;
+  }
+
+  /* === Timestamp === */
+  .timestamp-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .timestamp-icon {
+    width: 12px;
+    height: 12px;
+    color: var(--text-tertiary);
+  }
+
+  .timestamp-text {
+    font-family: var(--ink-font-number);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    letter-spacing: 0.03em;
+  }
+
+  /* === Confirm Section === */
+  .confirm-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--ink-space-2);
+    width: 100%;
+    padding-top: var(--ink-space-1);
+  }
+
+  .confirm-btn {
+    width: 160px;
+    height: var(--ink-control-h-md);
+    padding: 0 var(--ink-space-5);
+    font-family: var(--ink-font-heading);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+  }
+
+  .confirm-btn:focus-visible {
+    outline: 2px solid var(--ink-gold-primary);
+    outline-offset: 2px;
+  }
+
+  .confirm-btn:active {
+    transform: scale(0.97);
+  }
+
+  .btn-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .confirm-note {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--ink-font-body);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    letter-spacing: 0.05em;
+  }
+
+  .note-icon {
+    width: 11px;
+    height: 11px;
+    color: var(--text-tertiary);
+  }
+
+  /* === Achievement Reward shortcut (visible exit) === */
+  .reward-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: var(--ink-space-1);
+    font-family: var(--ink-font-heading);
+    font-size: 12px;
+    color: var(--ink-gold-bright);
+    letter-spacing: 1px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.18s ease;
+  }
+
+  .reward-link:hover {
+    color: var(--ink-gold-primary);
+  }
+
+  .reward-link:focus-visible {
+    outline: 2px solid var(--ink-gold-primary);
+    outline-offset: 2px;
+    border-radius: var(--ink-radius-sm);
+  }
+
+  .reward-link-icon,
+  .reward-link-arrow {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* === Responsive === */
+  @media (max-width: 440px) {
+    .verification-modal {
+      width: 100%;
+      padding: var(--ink-space-5) var(--ink-space-4);
+    }
+
+    .ink-divider-short {
+      width: 160px;
+    }
+
+    .seal-stamp-area {
+      height: 160px;
+    }
+
+    .seal-stamp,
+    .seal-shadow-echo,
+    .seal-glow {
+      width: 100px;
+      height: 100px;
+    }
+
+    .seal-char {
+      font-size: 36px;
+    }
+
+    .summary-item {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+  }
+
+  /* === Reduced Motion === */
+  @media (prefers-reduced-motion: reduce) {
+    .dark-overlay,
+    .verification-modal,
+    .seal-stamp,
+    .seal-glow,
+    .seal-shadow-echo,
+    .splatter-dot {
+      animation: none !important;
+      transition: none !important;
+    }
+
+    .seal-stamp {
+      transform: rotate(-5deg);
+      opacity: 1;
+    }
+
+    .seal-glow {
+      opacity: 0.8;
+    }
+
+    .splatter-dot {
+      opacity: 0.5;
+    }
+
+    .seal-shadow-echo {
+      opacity: 1;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // Initialize Lucide icons
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+
+    var overlay = document.getElementById('verificationOverlay');
+    var modal = document.getElementById('verificationModal');
+    var confirmBtn = document.getElementById('confirmBtn');
+    var sealStamp = document.getElementById('sealStamp');
+
+    // Replay seal stamp animation on click
+    if (sealStamp) {
+      sealStamp.addEventListener('click', function () {
+        sealStamp.style.animation = 'none';
+        void sealStamp.offsetWidth; // trigger reflow
+        sealStamp.style.animation = 'stampDown 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards';
+      });
+    }
+
+    // Close modal function
+    function closeModal() {
+      modal.style.animation = 'modalSlideOut 0.3s ease-out forwards';
+      overlay.style.animation = 'overlayFadeOut 0.3s ease-out forwards';
+      setTimeout(function () {
+        overlay.style.display = 'none';
+      }, 300);
+    }
+
+    // Confirm button closes the modal (returns to battle HUD)
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', closeModal);
+    }
+
+    // Click outside modal to close
+    if (overlay) {
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) {
+          closeModal();
+        }
+      });
+    }
+
+    // ESC key to close
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    });
+  });
+</script>
+</body>
+</html>

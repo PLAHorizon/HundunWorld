@@ -106,8 +106,15 @@ namespace Horizon.Game.Gateway.Configuration
         /// <summary>
         /// 灰度开关（P6-a）：启用后，网关将把出站 <c>SyncPacket</c> 路由到新版
         /// <c>SyncDispatcher</c>（走 ZoneShard→Session fanout 路径），而不是直接广播到 AOI 旧流。
-        /// 默认 <c>false</c>；在可控节点（单集群、低 CCU 区）先打开，观察指标稳定后再全量切换。
+        /// 默认 <c>true</c>；新版 fanout 链路已稳定，作为默认同步路径。
         /// </summary>
-        public bool UseSyncPacketDispatch { get; set; } = false;
+        public bool UseSyncPacketDispatch { get; set; } = true;
+
+        /// <summary>
+        /// Task 18：SyncDispatcher 工作线程数，默认 1（串行）。调高可并行处理 fanout 事件。
+        /// 多 worker 模式下 Channel 多读保证每个事件只被一个 worker 取走，无丢失无重复。
+        /// </summary>
+        [Range(1, 64)]
+        public int MaxDispatcherWorkers { get; set; } = 1;
     }
 }

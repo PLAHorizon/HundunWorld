@@ -23,9 +23,9 @@
                                  Watermark="搜索花卉品种、商品... (Ctrl+K)"
                                  Padding="12 10"
                                  CornerRadius="10"
-                                 Background="#2A2A3E"
+                                 Background="{DynamicResource LoginInputBackgroundBrush}"
                                  BorderThickness="0"
-                                 Foreground="#FFFFFF" />
+                                 Foreground="{DynamicResource LoginFormTextBrush}" />
                         <Button Grid.Column="1"
                                 Content="搜索"
                                 Classes="PrimaryAction"
@@ -83,7 +83,7 @@
                                     Tapped="OnProductTapped">
                                 <StackPanel Spacing="0">
                                     <Border Height="200"
-                                            Background="#25FFFFFF">
+                                            Background="{DynamicResource BattleNetSurfaceTintBrush}">
                                         <Grid>
                                             <TextBlock Text="🌸"
                                                        FontSize="56"
@@ -91,7 +91,7 @@
                                                        VerticalAlignment="Center" />
                                             <StackPanel HorizontalAlignment="Right" VerticalAlignment="Top" Margin="8">
                                                 <Border Background="#80000000" CornerRadius="6" Padding="6 3" Margin="0 0 0 4">
-                                                    <TextBlock Text="{Binding SpeciesName}" FontSize="10" Foreground="#FFFFFF" />
+                                                    <TextBlock Text="{Binding SpeciesName}" FontSize="10" Foreground="{DynamicResource LoginFormTextBrush}" />
                                                 </Border>
                                                 <Border Background="#80000000" CornerRadius="6" Padding="6 3">
                                                     <TextBlock Text="{Binding ForecastTrend}" FontSize="14" FontWeight="Bold"
@@ -109,12 +109,12 @@
                                                        MaxLines="2"
                                                        VerticalAlignment="Center" />
                                             <Border Grid.Column="1"
-                                                    Background="#FF6B6B"
+                                                    Background="{DynamicResource LoginErrorBrush}"
                                                     CornerRadius="4"
                                                     Padding="6 2"
                                                     VerticalAlignment="Center"
                                                     IsVisible="{Binding IsPresale}">
-                                                <TextBlock Text="预售" FontSize="10" Foreground="#FFFFFF" FontWeight="SemiBold" />
+                                                <TextBlock Text="预售" FontSize="10" Foreground="{DynamicResource LoginFormTextBrush}" FontWeight="SemiBold" />
                                             </Border>
                                         </Grid>
                                         <TextBlock Text="{Binding PresaleDeliveryDateText}"
@@ -123,17 +123,17 @@
                                                    IsVisible="{Binding IsPresale}" />
                                         <TextBlock Text="{Binding MerchantName}"
                                                    FontSize="11"
-                                                   Foreground="#888888" />
+                                                   Foreground="{DynamicResource LoginFormMutedBrush}" />
                                         <Grid ColumnDefinitions="*,Auto">
                                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding Price, StringFormat='¥{0:F2}'}"
                                                            FontSize="20"
                                                            FontWeight="SemiBold"
-                                                           Foreground="#FF6B6B"
+                                                           Foreground="{DynamicResource LoginErrorBrush}"
                                                            VerticalAlignment="Center" />
                                                 <TextBlock Text="{Binding LadderPriceHint}"
                                                            FontSize="10"
-                                                           Foreground="#C8E6C9"
+                                                           Foreground="{DynamicResource BattleNetPrimaryBrush}"
                                                            VerticalAlignment="Center"
                                                            IsVisible="{Binding LadderPriceHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                             </StackPanel>
@@ -148,7 +148,7 @@
                                         </Grid>
                                         <TextBlock Text="{Binding Stock, StringFormat='库存 {0} 件'}"
                                                    FontSize="10"
-                                                   Foreground="#666666" />
+                                                   Foreground="{DynamicResource LoginFormMutedBrush}" />
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
@@ -209,7 +209,7 @@
                 <Border Classes="SurfaceCard" Padding="40" IsVisible="{Binding IsEmpty}">
                     <StackPanel HorizontalAlignment="Center" Spacing="12">
                         <TextBlock Text="🛒" FontSize="32" HorizontalAlignment="Center" />
-                        <TextBlock Text="暂无商品" FontSize="14" Foreground="#888888" HorizontalAlignment="Center" />
+                        <TextBlock Text="暂无商品" FontSize="14" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center" />
                     </StackPanel>
                 </Border>
 

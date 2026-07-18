@@ -30,6 +30,55 @@ namespace HundunWorld.Game.UI
         public static FontReference TitleFont => SetFont("Content/Fonts/Source_Han_Serif_SC_Light_Light.flax", 20);
         public static FontReference DefaultFont => SetFont("Content/Fonts/Source_Han_Serif_SC_Light_Light.flax", 12);
 
+        // 缓存已加载的字体资产，避免每次创建控件都重复加载
+        private static FontAsset _cachedChineseFontAsset;
+
+        /// <summary>
+        /// 当前中文字体资产。优先使用缓存；若缓存为空则尝试加载并等待完成。
+        /// </summary>
+        public static FontAsset ChineseFontAsset
+        {
+            get
+            {
+                if (_cachedChineseFontAsset != null && _cachedChineseFontAsset.IsLoaded)
+                    return _cachedChineseFontAsset;
+
+                _cachedChineseFontAsset = LoadChineseFontAsset();
+                return _cachedChineseFontAsset;
+            }
+        }
+
+        /// <summary>
+        /// 加载中文字体资产。打包构建中路径可能失效，因此同时尝试带扩展名和不带扩展名的路径，
+        /// 并在加载失败时输出明确日志。
+        /// </summary>
+        private static FontAsset LoadChineseFontAsset()
+        {
+            const string fontPath = "Content/Fonts/Source_Han_Serif_SC_Light_Light.flax";
+            try
+            {
+                var font = HundunWorld.Game.HundunWorldGame.LoadContentWithFallback<FontAsset>(fontPath);
+                if (font != null && !font.IsLoaded)
+                {
+                    font.WaitForLoaded(10000.0);
+                }
+
+                if (font != null && font.IsLoaded)
+                {
+                    FlaxEngine.Debug.Log($"[UIHelper] 中文字体加载成功: {font.Path}");
+                    return font;
+                }
+
+                FlaxEngine.Debug.LogWarning($"[UIHelper] 中文字体加载失败或未完成: {fontPath}，将使用默认字体（可能导致中文显示为方块）");
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[UIHelper] 加载中文字体异常: {ex.Message}");
+            }
+
+            return null;
+        }
+
         /// <summary>
         /// 设置字体
         /// </summary>
@@ -38,7 +87,76 @@ namespace HundunWorld.Game.UI
         /// <returns></returns>
         public static FontReference SetFont(string fontPath = "Content/Fonts/Source_Han_Serif_SC_Light_Light.flax", float size = 12)
         {
-            return new FontReference(Content.LoadAsync<FontAsset>(fontPath), size);
+            var font = HundunWorld.Game.HundunWorldGame.LoadContentWithFallback<FontAsset>(fontPath);
+            if (font != null && !font.IsLoaded)
+            {
+                font.WaitForLoaded(10000.0);
+            }
+
+            if (font == null || !font.IsLoaded)
+            {
+                FlaxEngine.Debug.LogWarning($"[UIHelper] SetFont 无法加载字体: {fontPath}，回退到中文字体缓存");
+                font = ChineseFontAsset;
+            }
+
+            return new FontReference(font, size);
+        }
+
+        /// <summary>
+        /// 为控件设置中文字体。对 Label、Button、TextBox 等文本控件生效。
+        /// 保留控件原有字体大小，仅替换字体资产为支持中文的字体。
+        /// </summary>
+        public static void ApplyChineseFont(Control control, float size = 12)
+        {
+            if (control == null) return;
+
+            var font = ChineseFontAsset;
+            if (font == null)
+            {
+                // 字体加载失败时保留原字体，避免 null 引用
+                FlaxEngine.Debug.LogWarning("[UIHelper] ApplyChineseFont: 中文字体不可用");
+                return;
+            }
+
+            switch (control)
+            {
+                // Button 继承自 Label，必须先匹配更具体的类型
+                case Button button:
+                {
+                    float targetSize = button.Font != null ? button.Font.Size : size;
+                    button.Font = new FontReference(font, targetSize);
+                    break;
+                }
+                case TextBox textBox:
+                {
+                    float targetSize = textBox.Font != null ? textBox.Font.Size : size;
+                    textBox.Font = new FontReference(font, targetSize);
+                    break;
+                }
+                case Label label:
+                {
+                    float targetSize = label.Font != null ? label.Font.Size : size;
+                    label.Font = new FontReference(font, targetSize);
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 为面板中的所有子文本控件递归设置中文字体。
+        /// </summary>
+        public static void ApplyChineseFontRecursive(ContainerControl container, float size = 12)
+        {
+            if (container == null) return;
+
+            foreach (var child in container.Children)
+            {
+                ApplyChineseFont(child, size);
+                if (child is ContainerControl childContainer)
+                {
+                    ApplyChineseFontRecursive(childContainer, size);
+                }
+            }
         }
 
         /// <summary>
@@ -216,32 +334,37 @@ namespace HundunWorld.Game.UI
 
             try
             {
-                // 尝试加载纹理
-                var texture = Content.LoadAsync<Texture>(path);
-                if (texture != null && texture.IsLoaded)
+                // 尝试加载纹理（带扩展名/无扩展名回退）
+                var texture = HundunWorld.Game.HundunWorldGame.LoadContentWithFallback<Texture>(path);
+                if (texture != null)
                 {
-                    image.Brush = new TextureBrush(texture); // 直接设置Texture属性
-                }
-                else
-                {
-                    // 等待异步加载完成
-                    texture.WaitForLoaded();
+                    // 等待异步加载完成（LoadContentWithFallback 内部已等待，但防御性检查）
+                    if (!texture.IsLoaded)
+                    {
+                        texture.WaitForLoaded(10000.0);
+                    }
+
                     if (texture.IsLoaded)
                     {
                         image.Brush = new TextureBrush(texture);
+                        image.Size = size == 0 ? new Float2(texture.Width, texture.Height) : new Float2(size);
                     }
                     else
                     {
-                        FlaxEngine.Debug.LogWarning($"无法加载纹理: {path}");
-                        // 保持默认状态
+                        FlaxEngine.Debug.LogWarning($"[UIHelper] 纹理加载未完成: {path}");
+                        image.Size = size > 0 ? new Float2(size) : new Float2(64, 64);
                     }
                 }
-                image.Size = size == 0 ? new Float2(texture.Width, texture.Height) : new Float2(size);
+                else
+                {
+                    FlaxEngine.Debug.LogWarning($"[UIHelper] 无法加载纹理（资源为null）: {path}");
+                    image.Size = size > 0 ? new Float2(size) : new Float2(64, 64);
+                }
             }
             catch (Exception ex)
             {
                 FlaxEngine.Debug.LogError($"加载纹理时出错: {ex.Message}");
-                // 保持默认状态
+                image.Size = size > 0 ? new Float2(size) : new Float2(64, 64);
             }
 
             return image;

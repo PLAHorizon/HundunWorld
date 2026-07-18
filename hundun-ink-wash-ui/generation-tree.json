@@ -1,0 +1,123 @@
+{
+  "root": {
+    "nodeId": "gen-project-shell",
+    "kind": "project-shell",
+    "pageIds": [
+      "page-combat-hud",
+      "page-character-panel",
+      "page-skill-panel",
+      "page-inventory",
+      "page-quest-log",
+      "page-world-map",
+      "page-social-guild",
+      "page-shop",
+      "page-npc-dialog"
+    ],
+    "output": "partials/project-shell.html",
+    "sharedRegions": ["html-head", "global-ink-background", "immersive-frame", "vignette-overlay", "scrollbar-theme"],
+    "privateRegions": [],
+    "mutableSlots": ["pageTitle", "pageContent"],
+    "status": "generated",
+    "children": [
+      {
+        "nodeId": "gen-page-combat-hud",
+        "kind": "page-leaf",
+        "pageIds": ["page-combat-hud"],
+        "output": "pages/combat-hud.html",
+        "sharedRegions": [],
+        "privateRegions": ["combat-hud 四角分布布局：左上血气条、右下技能槽、右上任务追踪、左下小地图、底部系统导航栏"],
+        "mutableSlots": ["pageTitle", "pageContent"],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-character-panel",
+        "kind": "page-leaf",
+        "pageIds": ["page-character-panel"],
+        "output": "pages/character-panel.html",
+        "sharedRegions": [],
+        "privateRegions": ["character-panel 三栏布局：左立绘+中五维属性+右装备槽调律定音叠音"],
+        "mutableSlots": ["pageTitle", "pageContent"],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-skill-panel",
+        "kind": "page-leaf",
+        "pageIds": ["page-skill-panel"],
+        "output": "pages/skill-panel.html",
+        "sharedRegions": [],
+        "privateRegions": ["skill-panel 武学/心法/奇术三标签+左列表右详情双栏+天赋树连线"],
+        "mutableSlots": ["pageTitle", "pageContent"],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-inventory",
+        "kind": "page-leaf",
+        "pageIds": ["page-inventory"],
+        "output": "pages/inventory.html",
+        "sharedRegions": [],
+        "privateRegions": ["inventory 4类背包切换+8列品质色格子网格+右栏物品详情+底部货币栏"],
+        "mutableSlots": ["pageTitle", "pageContent"],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-quest-log",
+        "kind": "page-leaf",
+        "pageIds": ["page-quest-log"],
+        "output": "pages/quest-log.html",
+        "sharedRegions": [],
+        "privateRegions": ["quest-log 5类任务折叠列表+右栏水墨纸卷描述+目标进度+奖励预览"],
+        "mutableSlots": ["pageTitle", "pageContent"],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-world-map",
+        "kind": "page-leaf",
+        "pageIds": ["page-world-map"],
+        "output": "pages/world-map.html",
+        "sharedRegions": [],
+        "privateRegions": ["world-map 水墨山水画大地图+左筛选+右上区域信息+下方搜索+金菱形界碑"],
+        "mutableSlots": ["pageTitle", "pageContent"],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-social-guild",
+        "kind": "page-leaf",
+        "pageIds": ["page-social-guild"],
+        "output": "pages/social-guild.html",
+        "sharedRegions": [],
+        "privateRegions": ["social-guild 好友/门派/帮会三标签+左列表右详情+在线状态+聊天频道"],
+        "mutableSlots": ["pageTitle", "pageContent"],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-shop",
+        "kind": "page-leaf",
+        "pageIds": ["page-shop"],
+        "output": "pages/shop.html",
+        "sharedRegions": [],
+        "privateRegions": ["shop 商品4列网格+购物车双栏+品质色商品卡+货币余额+购买确认"],
+        "mutableSlots": ["pageTitle", "pageContent"],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-npc-dialog",
+        "kind": "page-leaf",
+        "pageIds": ["page-npc-dialog"],
+        "output": "pages/npc-dialog.html",
+        "sharedRegions": [],
+        "privateRegions": ["npc-dialog 全屏沉浸对话+底部水墨卷轴对话框+分支选项+左NPC立绘好感度"],
+        "mutableSlots": ["pageTitle", "pageContent"],
+        "status": "planned",
+        "children": []
+      }
+    ]
+  }
+}

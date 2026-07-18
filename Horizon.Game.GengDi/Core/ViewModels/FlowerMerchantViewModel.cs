@@ -1,14 +1,16 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Avalonia.Threading;
 using Horizon.Game.GengDi.Core.Controls;
 using Horizon.Game.GengDi.Core.Services;
 
 namespace Horizon.Game.GengDi.Core.ViewModels
 {
-    public class FlowerMerchantViewModel : ViewModelBase
+    public class FlowerMerchantViewModel : ViewModelBase, ICancelableViewModel
     {
         private readonly FlowerMerchantService _merchantService;
         private readonly FlowerShopService _shopService;
@@ -43,6 +45,13 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private long _merchantId;
         private int _currentTab;
         private string _statusMessage = "";
+
+        /// <summary>
+        /// 用于取消所有后台初始化任务的 CTS。
+        /// 页面切换时由 MainViewModel 调用 Cancel() 触发取消，
+        /// 避免后台任务在 UI 线程被占用时排队等待而导致死锁。
+        /// </summary>
+        private CancellationTokenSource _cts = new CancellationTokenSource();
 
         private int _todayOrders;
         private decimal _todayRevenue;
@@ -894,6 +903,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
 
         public FlowerMerchantViewModel(long merchantId)
         {
+            DiagLog.Log($"[FlowerMerchantVM] ctor START");
             _merchantId = merchantId;
             _merchantService = new FlowerMerchantService();
             _shopService = new FlowerShopService();
@@ -901,6 +911,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             _marketService = new FlowerMarketService();
             _iotService = new FlowerIoTService();
             _subscriptionService = new FlowerSubscriptionService();
+            DiagLog.Log("[FlowerMerchantVM] services created");
 
             LoadMerchantCommand = new AsyncCommand(LoadMerchantAsync);
             SwitchTabCommand = new RelayCommand<int>(t => CurrentTab = t);
@@ -942,22 +953,94 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 _speciesLookup.GetAllSpecies()
                     .Select(kv => new SpeciesFilterItem { SpeciesId = kv.Key, DisplayName = kv.Value })
             );
+            DiagLog.Log($"[FlowerMerchantVM] SpeciesOptions count={SpeciesOptions.Count}");
 
+            // 关键修复：原实现在构造函数中 fire-and-forget 启动 InitializeAsync。
+            // 这导致 DataContext 赋值触发绑定初始化期间，后台线程已完成 HTTP 请求并尝试
+            // InvokeAsync 回 UI 线程，与绑定初始化竞争。现将启动推迟到 View 的 Loaded 事件，
+            // 由 StartInitialization() 显式调用，确保绑定初始化完成后再开始后台加载。
+            DiagLog.Log("[FlowerMerchantVM] ctor done (InitializeAsync deferred to StartInitialization)");
+        }
+
+        /// <summary>
+        /// 启动后台初始化任务。应由 FlowerMerchantView 的 Loaded 事件调用，
+        /// 确保 DataContext 绑定初始化已完成，避免后台线程与绑定初始化在 UI 线程上竞争。
+        /// 多次调用安全：仅第一次调用生效。
+        /// </summary>
+        public void StartInitialization()
+        {
+            if (_initialized) return;
+            _initialized = true;
+            DiagLog.Log("[FlowerMerchantVM] StartInitialization -> InitializeAsync fire-and-forget");
             _ = InitializeAsync();
+        }
+        private volatile bool _initialized;
+
+        private async Task RunOnUiThreadAsync(Action action)
+        {
+            if (_cts.IsCancellationRequested)
+                return;
+
+            if (Dispatcher.UIThread.CheckAccess())
+            {
+                if (!_cts.IsCancellationRequested)
+                    action();
+                return;
+            }
+
+            await Dispatcher.UIThread.InvokeAsync(action);
+        }
+
+        /// <summary>
+        /// 取消所有后台初始化任务。页面切换时由 MainViewModel 调用。
+        /// 实现语义：触发 CTS 取消后，未完成的 RunOnUiThreadAsync 调度将被跳过，
+        /// 避免后台线程在 UI 线程被占用时排队等待而导致死锁。
+        /// </summary>
+        public void Cancel()
+        {
+            DiagLog.Log("[FlowerMerchantVM] Cancel() called");
+            try
+            {
+                _cts?.Cancel();
+            }
+            catch (ObjectDisposedException) { }
         }
 
         private async Task InitializeAsync()
         {
+            DiagLog.Log($"[FlowerMerchantVM] InitializeAsync START");
             IsLoading = true;
             try
             {
+                DiagLog.Log("[FlowerMerchantVM] before GetMyMerchantAsync");
                 var info = await _merchantService.GetMyMerchantAsync().ConfigureAwait(false);
+                DiagLog.Log($"[FlowerMerchantVM] after GetMyMerchantAsync info={info != null}");
+
+                if (_cts.IsCancellationRequested)
+                {
+                    DiagLog.Log("[FlowerMerchantVM] InitializeAsync cancelled after GetMyMerchantAsync");
+                    return;
+                }
+
                 if (info != null)
                 {
                     _merchantId = info.MerchantId;
-                    MerchantInfo = info;
-                    IsRegistered = true;
-                    UpdateStatistics();
+                    DiagLog.Log("[FlowerMerchantVM] before RunOnUiThreadAsync(set MerchantInfo)");
+                    await RunOnUiThreadAsync(() =>
+                    {
+                        MerchantInfo = info;
+                        IsRegistered = true;
+                        UpdateStatistics();
+                    });
+                    DiagLog.Log("[FlowerMerchantVM] after RunOnUiThreadAsync(set MerchantInfo)");
+
+                    if (_cts.IsCancellationRequested)
+                    {
+                        DiagLog.Log("[FlowerMerchantVM] InitializeAsync cancelled before Task.WhenAll");
+                        return;
+                    }
+
+                    DiagLog.Log("[FlowerMerchantVM] before Task.WhenAll(7 loads)");
                     await Task.WhenAll(
                         LoadProductsAsync(),
                         LoadOrdersAsync(),
@@ -967,23 +1050,32 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                         LoadShippersAsync(),
                         LoadSettlementAsync()
                     );
-                    UpdateRecentOrders();
+                    DiagLog.Log("[FlowerMerchantVM] after Task.WhenAll(7 loads)");
+
+                    await RunOnUiThreadAsync(UpdateRecentOrders);
+                    DiagLog.Log("[FlowerMerchantVM] after UpdateRecentOrders");
                 }
                 else
                 {
-                    IsRegistered = false;
+                    await RunOnUiThreadAsync(() => IsRegistered = false);
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                DiagLog.Log("[FlowerMerchantVM] InitializeAsync cancelled by CTS");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[FlowerMerchant] 初始化失败: {ex.Message}");
-                ToastService.Instance.Error($"连接服务器失败: {ex.Message}");
-                IsRegistered = false;
+                DiagLog.Log($"[FlowerMerchant] 初始化失败: {ex}");
+                await RunOnUiThreadAsync(() => ToastService.Instance.Error($"连接服务器失败: {ex.Message}"));
+
+                await RunOnUiThreadAsync(() => IsRegistered = false);
             }
             finally
             {
-                IsLoading = false;
+                await RunOnUiThreadAsync(() => IsLoading = false);
             }
+            DiagLog.Log("[FlowerMerchantVM] InitializeAsync END");
         }
 
         private void UpdateRegisterFormVisibility()
@@ -1012,9 +1104,13 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 if (info != null)
                 {
                     _merchantId = info.MerchantId;
-                    MerchantInfo = info;
-                    IsRegistered = true;
-                    UpdateStatistics();
+                    await RunOnUiThreadAsync(() =>
+                    {
+                        MerchantInfo = info;
+                        IsRegistered = true;
+                        UpdateStatistics();
+                    });
+
                     await Task.WhenAll(
                         LoadProductsAsync(),
                         LoadOrdersAsync(),
@@ -1024,15 +1120,16 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                         LoadShippersAsync(),
                         LoadSettlementAsync()
                     );
-                    UpdateRecentOrders();
+
+                    await RunOnUiThreadAsync(UpdateRecentOrders);
                 }
                 else
                 {
-                    IsRegistered = false;
+                    await RunOnUiThreadAsync(() => IsRegistered = false);
                 }
             }
             catch { }
-            finally { IsLoading = false; }
+            finally { await RunOnUiThreadAsync(() => IsLoading = false); }
         }
 
         private async Task LoadProductsAsync()
@@ -1049,21 +1146,27 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 var products = await _shopService.GetMerchantProductsAsync(_merchantId).ConfigureAwait(false);
                 var count = products?.Count ?? 0;
                 Console.WriteLine($"[FlowerMerchant] GetMerchantProductsAsync returned: {count} products");
-                Products = products != null
+                var orderedProducts = products != null
                     ? new ObservableCollection<RelatedProduct>(products.OrderBy(p => p.SortOrder))
                     : new ObservableCollection<RelatedProduct>();
-                ReassignProductCodes();
-                TotalProducts = _products.Count;
-                PendingShipCount = _orders.Count(o => o.Status == 1);
-                OnPropertyChanged(nameof(HasProducts));
-                UpdateStatistics();
+
+                await RunOnUiThreadAsync(() =>
+                {
+                    Products = orderedProducts;
+                    ReassignProductCodes();
+                    TotalProducts = _products.Count;
+                    PendingShipCount = _orders.Count(o => o.Status == 1);
+                    OnPropertyChanged(nameof(HasProducts));
+                    UpdateStatistics();
+                });
+
                 Console.WriteLine($"[FlowerMerchant] LoadProductsAsync complete. HasProducts={HasProducts}, TotalProducts={TotalProducts}");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[FlowerMerchant] 加载商品失败: {ex.Message}");
                 Console.WriteLine($"[FlowerMerchant] 堆栈: {ex.StackTrace}");
-                ToastService.Instance.Error($"加载商品失败: {ex.Message}");
+                await RunOnUiThreadAsync(() => ToastService.Instance.Error($"加载商品失败: {ex.Message}"));
             }
         }
 
@@ -1075,15 +1178,20 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 int? statusFilter = _orderStatusFilter >= 0 ? _orderStatusFilter : null;
                 var orders = await _orderService.GetMerchantOrdersByStatusAsync(
                     _merchantId, statusFilter).ConfigureAwait(false);
-                Orders = orders != null
+                var orderCollection = orders != null
                     ? new ObservableCollection<OrderDisplay>(orders)
                     : new ObservableCollection<OrderDisplay>();
-                TodayOrders = _orders.Count(o => o.CreatedAt.Date == DateTime.Today);
-                TodayRevenue = _orders.Where(o => o.CreatedAt.Date == DateTime.Today).Sum(o => o.TotalAmount);
-                TotalRevenue = _orders.Where(o => o.Status >= 1 && o.Status <= 4).Sum(o => o.TotalAmount);
-                OnPropertyChanged(nameof(HasOrders));
-                UpdateRecentOrders();
-                UpdateStatistics();
+
+                await RunOnUiThreadAsync(() =>
+                {
+                    Orders = orderCollection;
+                    TodayOrders = _orders.Count(o => o.CreatedAt.Date == DateTime.Today);
+                    TodayRevenue = _orders.Where(o => o.CreatedAt.Date == DateTime.Today).Sum(o => o.TotalAmount);
+                    TotalRevenue = _orders.Where(o => o.Status >= 1 && o.Status <= 4).Sum(o => o.TotalAmount);
+                    OnPropertyChanged(nameof(HasOrders));
+                    UpdateRecentOrders();
+                    UpdateStatistics();
+                });
             }
             catch { }
         }
@@ -1096,10 +1204,15 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 int? statusFilter = _refundStatusFilter >= 0 ? _refundStatusFilter : null;
                 var refunds = await _orderService.GetMerchantRefundsAsync(
                     _merchantId, statusFilter).ConfigureAwait(false);
-                Refunds = refunds != null
+                var refundCollection = refunds != null
                     ? new ObservableCollection<RefundInfo>(refunds)
                     : new ObservableCollection<RefundInfo>();
-                OnPropertyChanged(nameof(HasRefunds));
+
+                await RunOnUiThreadAsync(() =>
+                {
+                    Refunds = refundCollection;
+                    OnPropertyChanged(nameof(HasRefunds));
+                });
             }
             catch { }
         }
@@ -1109,9 +1222,11 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             try
             {
                 var categories = await _shopService.GetCategoriesAsync().ConfigureAwait(false);
-                Categories = categories != null
+                var categoryCollection = categories != null
                     ? new ObservableCollection<CategoryInfo>(categories)
                     : new ObservableCollection<CategoryInfo>();
+
+                await RunOnUiThreadAsync(() => Categories = categoryCollection);
             }
             catch { }
         }
@@ -1122,9 +1237,11 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             try
             {
                 var templates = await _shopService.GetFreightTemplatesAsync(_merchantId).ConfigureAwait(false);
-                FreightTemplates = templates != null
+                var templateCollection = templates != null
                     ? new ObservableCollection<FreightTemplateInfo>(templates)
                     : new ObservableCollection<FreightTemplateInfo>();
+
+                await RunOnUiThreadAsync(() => FreightTemplates = templateCollection);
             }
             catch { }
         }
@@ -1190,10 +1307,15 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             try
             {
                 var shippers = await _merchantService.GetShippersAsync(_merchantId).ConfigureAwait(false);
-                Shippers = shippers != null
+                var shipperCollection = shippers != null
                     ? new ObservableCollection<ShipperInfo>(shippers)
                     : new ObservableCollection<ShipperInfo>();
-                OnPropertyChanged(nameof(HasShippers));
+
+                await RunOnUiThreadAsync(() =>
+                {
+                    Shippers = shipperCollection;
+                    OnPropertyChanged(nameof(HasShippers));
+                });
             }
             catch { }
         }
@@ -1204,18 +1326,23 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             try
             {
                 var account = await _merchantService.GetSettlementAccountAsync(_merchantId).ConfigureAwait(false);
-                if (account != null)
-                {
-                    SettlementBankName = account.BankName;
-                    SettlementAccountNo = account.AccountNo;
-                    SettlementAccountName = account.AccountName;
-                }
-
                 var bills = await _merchantService.GetSettlementBillsAsync(_merchantId).ConfigureAwait(false);
-                SettlementBills = bills != null
+                var billCollection = bills != null
                     ? new ObservableCollection<SettlementBillInfo>(bills)
                     : new ObservableCollection<SettlementBillInfo>();
-                OnPropertyChanged(nameof(HasSettlementBills));
+
+                await RunOnUiThreadAsync(() =>
+                {
+                    if (account != null)
+                    {
+                        SettlementBankName = account.BankName;
+                        SettlementAccountNo = account.AccountNo;
+                        SettlementAccountName = account.AccountName;
+                    }
+
+                    SettlementBills = billCollection;
+                    OnPropertyChanged(nameof(HasSettlementBills));
+                });
             }
             catch { }
         }

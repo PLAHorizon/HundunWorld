@@ -1,0 +1,386 @@
+[00:00:023] Flax.Build 1.0.0
+[00:00:025]   Arguments: -build -buildtargets=GameEditorTarget -configuration=Development -platform=Windows -arch=x64 -log -logfile=BuildValidateLog .txt -binaries=Binaries\BuildValidate
+[00:00:025]   Workspace: C:\Works\GitHubProjects\HundunWorld\HundunWorld
+[00:00:025]   Engine: C:\Program Files (x86)\Flax\Flax_1.12
+[00:00:025]   .NET 10.0.9
+[00:00:084] Loading project file from "C:\Works\GitHubProjects\HundunWorld\HundunWorld\HundunWorld.flaxproj"...
+[00:00:200] Loading project file from "C:\Program Files (x86)\Flax\Flax_1.12\Flax.flaxproj"...
+[00:00:207] Loaded project Flax, version 1.12.6913
+[00:00:207] Loading project file from "C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\Narrative\Narrative.flaxproj"...
+[00:00:208] Loaded project Narrative, version 1.0
+[00:00:208] Loading project file from "C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\NarrativePro.flaxproj"...
+[00:00:209] Loaded project NarrativePro, version 1.0
+[00:00:209] Loaded project HundunWorld, version 1.0
+[00:00:351] Engine build version: 1.12.6913
+[00:00:481] Building targets...
+[00:00:573] Found Android SDK at C:\Program Files (x86)\Android\android-sdk
+[00:00:577] Missing Linux Toolchain. Cannot build for Linux platform.
+[00:00:597] Found Windows SDK v10_0_22621_0 at C:\Program Files (x86)\Windows Kits\10\
+[00:00:597] Found Windows SDK v10_0_26100_0 at C:\Program Files (x86)\Windows Kits\10\
+[00:00:641] Unknown Visual Studio installation. Display name: SQL Server Management Studio 22
+[00:00:653] Found VisualStudio2026 at C:\Program Files\Microsoft Visual Studio\18\Enterprise
+[00:00:665] Found Windows toolset v142 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.29.30133
+[00:00:665] Found Windows toolset v143 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.38.33130
+[00:00:665] Found Windows toolset v144 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.44.35207
+[00:00:665] Found Windows toolset v145 at C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231
+[00:00:676] Missing Emscripten SDK. Cannot build for Web platform.
+[00:00:715] Building target GameEditorTarget in Development for Windows x64
+[00:00:741] Using Windows Toolset v145, 14.51.36231 (C:\Program Files (x86)\Windows Kits\10\)
+[00:00:741] Using Windows SDK 10.0.26100.0 (C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\bin\Hostx64\x64)
+[00:00:757] Building referenced target Flax
+[00:00:786] Missing VULKAN_SDK environment variable. Cannot build Vulkan.
+[00:00:786] Building for Windows without Vulkan rendering backend (Vulkan SDK is missing)
+[00:00:801] Parsing API bindings for Profiler (FlaxEngine)
+[00:01:167] Parsing API bindings for Platform (FlaxEngine)
+[00:01:860] Parsing API bindings for Core (FlaxEngine)
+[00:06:204] Parsing API bindings for Debug (FlaxEngine)
+[00:06:496] Parsing API bindings for Physics (FlaxEngine)
+[00:07:164] Parsing API bindings for AudioTool (FlaxEngine)
+[00:07:175] Parsing API bindings for TextureTool (FlaxEngine)
+[00:07:203] Parsing API bindings for ModelTool (FlaxEngine)
+[00:07:424] Found the following .NET SDK versions: 10.0.301, 9.0.316, 8.0.423
+[00:07:426] Found the following .NET runtime versions: 10.0.9, 9.0.18, 9.0.17, 8.0.29, 8.0.28
+[00:07:458] Using .NET SDK 10.0.301, runtime 10.0.9 (C:\Program Files\dotnet)
+[00:07:469]   - Host Runtime for Windows x64
+[00:07:469]   - Host Runtime for Windows x86
+[00:07:469]   - Host Runtime for Windows ARM64
+[00:07:469]   - Host Runtime for Android ARM
+[00:07:469]   - Host Runtime for Android ARM64
+[00:07:469]   - Host Runtime for iOS ARM
+[00:07:469]   - Host Runtime for iOS ARM64
+[00:07:476] Parsing API bindings for ShaderCompilerD3D (FlaxEngine)
+[00:07:479] Parsing API bindings for ShaderCompilerDX (FlaxEngine)
+[00:07:485] Parsing API bindings for Graphics (FlaxEngine)
+[00:08:508] Parsing API bindings for Utilities (FlaxEngine)
+[00:08:543] Parsing API bindings for Particles (FlaxEngine)
+[00:08:602] Parsing API bindings for Visject (FlaxEngine)
+[00:08:621] Parsing API bindings for ContentImporters (FlaxEngine)
+[00:08:623] Parsing API bindings for ContentExporters (FlaxEngine)
+[00:08:625] Parsing API bindings for Content (FlaxEngine)
+[00:08:876] Parsing API bindings for Renderer (FlaxEngine)
+[00:09:046] Parsing API bindings for Scripting (FlaxEngine)
+[00:09:267] Parsing API bindings for Serialization (FlaxEngine)
+[00:09:284] Parsing API bindings for CSG (FlaxEngine)
+[00:09:287] Parsing API bindings for Level (FlaxEngine)
+[00:10:339] Parsing API bindings for Navigation (FlaxEngine)
+[00:10:419] Parsing API bindings for AI (FlaxEngine)
+[00:10:535] Parsing API bindings for Animations (FlaxEngine)
+[00:11:119] Parsing API bindings for Audio (FlaxEngine)
+[00:11:184] Parsing API bindings for Video (FlaxEngine)
+[00:11:207] Parsing API bindings for Foliage (FlaxEngine)
+[00:11:256] Parsing API bindings for Render2D (FlaxEngine)
+[00:11:389] Parsing API bindings for Input (FlaxEngine)
+[00:11:536] Parsing API bindings for Networking (FlaxEngine)
+[00:11:634] Parsing API bindings for Streaming (FlaxEngine)
+[00:11:651] Parsing API bindings for Terrain (FlaxEngine)
+[00:11:754] Parsing API bindings for Threading (FlaxEngine)
+[00:11:770] Parsing API bindings for Localization (FlaxEngine)
+[00:11:799] Parsing API bindings for UI (FlaxEngine)
+[00:11:826] Parsing API bindings for Online (FlaxEngine)
+[00:11:857] Parsing API bindings for Engine (FlaxEngine)
+[00:11:924] Using Dotnet runtime versions range 10-12 for Game Cooker
+[00:11:936] Parsing API bindings for Editor (FlaxEngine)
+[00:11:981] Building module tracy
+[00:11:991] Building module Profiler
+[00:11:992] Building module Platform
+[00:11:992] Building module fmt
+[00:11:992] Building module Core
+[00:11:992] Building module Debug
+[00:11:992] Building module Main
+[00:11:992] Building module PhysX
+[00:11:992] Building module NvCloth
+[00:11:992] Building module Physics
+[00:11:992] Building module lz4
+[00:11:992] Building module minimp3
+[00:11:992] Building module ogg
+[00:11:992] Building module vorbis
+[00:11:992] Building module AudioTool
+[00:11:992] Building module DirectXTex
+[00:11:992] Building module tinyexr
+[00:11:992] Building module astc
+[00:11:992] Building module basis_universal
+[00:11:992] Building module TextureTool
+[00:11:992] Building module assimp
+[00:11:992] Building module OpenFBX
+[00:11:992] Building module DirectXMesh
+[00:11:992] Building module UVAtlas
+[00:11:992] Building module meshoptimizer
+[00:11:992] Building module MikkTSpace
+[00:11:992] Building module ModelTool
+[00:11:992] Building module GraphicsDeviceNull
+[00:11:993] Building module nvapi
+[00:11:993] Building module AGS
+[00:11:993] Building module GraphicsDeviceDX11
+[00:11:993] Building module GraphicsDeviceDX12
+[00:11:993] Building module ShaderCompilerD3D
+[00:11:993] Building module ShaderCompilerDX
+[00:11:993] Building module glslang
+[00:11:993] Building module spirv-tools
+[00:11:993] Building module ShaderCompilerVulkan
+[00:11:993] Building module ShaderCompilerWebGPU
+[00:11:993] Building module ShadersCompilation
+[00:11:993] Building module Graphics
+[00:11:993] Building module Utilities
+[00:11:993] Building module Particles
+[00:11:993] Building module Visject
+[00:11:993] Building module MaterialGenerator
+[00:11:994] Building module ContentImporters
+[00:11:994] Building module ContentExporters
+[00:11:994] Building module Content
+[00:11:996] Building module Renderer
+[00:11:996] Building module nethost
+[00:11:996] Building module Scripting
+[00:11:996] Building module rapidjson
+[00:11:996] Building module Serialization
+[00:11:996] Building module CSG
+[00:11:997] Building module Level
+[00:11:997] Building module recastnavigation
+[00:11:998] Building module Navigation
+[00:11:998] Building module AI
+[00:11:998] Building module Animations
+[00:11:998] Building module Audio
+[00:11:998] Building module Video
+[00:11:998] Building module Foliage
+[00:11:998] Building module freetype
+[00:11:999] Building module msdfgen
+[00:11:999] Building module Render2D
+[00:11:999] Building module Input
+[00:11:999] Building module Networking
+[00:11:999] Building module Streaming
+[00:11:999] Building module Terrain
+[00:11:999] Building module Threading
+[00:11:999] Building module Localization
+[00:11:999] Building module UI
+[00:11:999] Building module Online
+[00:11:999] Building module Engine
+[00:12:000] Building module pugixml
+[00:12:000] Building module curl
+[00:12:000] Building module ShadowsOfMordor
+[00:12:001] Building module Editor
+[00:12:012] Skipping build for target FlaxEditor
+[00:12:013] Building referenced target Narrative
+[00:12:138] Using Dotnet runtime versions range 10-12 for Game Cooker
+[00:12:146] Generating binary module bindings for Narrative
+[00:12:172] Skipped saving file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\Narrative\Source\Narrative.Gen.cs
+[00:12:173] Generating binary module bindings for NarrativeEditor
+[00:12:173] Skipped saving file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\Narrative\Source\NarrativeEditor.Gen.cs
+[00:12:174] Building module Narrative
+[00:12:174] Building module NarrativeEditor
+[00:12:202] Saved file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\Narrative\Cache/Intermediate\NarrativeEditorTarget\Windows\x64\Development\Narrative.CSharp.response
+[00:12:216] Saved file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\Narrative\Cache/Intermediate\NarrativeEditorTarget\Windows\x64\Development\NarrativeEditor.CSharp.response
+[00:12:265] Saved file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\Narrative\Binaries\BuildValidate\NarrativeEditorTarget\Windows\x64\Development\NarrativeEditorTarget.Build.json
+[00:12:314] Found 19 valid and 2 invalid actions in Task Graph cache
+[00:12:317] 
+[00:12:317] Total 4 tasks
+[00:12:320] Executing 4 tasks using 4 threads
+[00:12:332] Compiling C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\Narrative\Binaries\BuildValidate\NarrativeEditorTarget\Windows\x64\Development\Narrative.CSharp.dll
+[00:12:527] C:\Program Files (x86)\Flax\Flax_1.12\Source\Platforms\DotNet\Newtonsoft.Json.dll
+[00:12:540] ������ 1 ���ļ�
+[00:12:541] C:\Program Files (x86)\Flax\Flax_1.12\Source\Platforms\DotNet\Newtonsoft.Json.xml
+[00:12:555] ������ 1 ���ļ�
+[00:13:088] Compiling C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\Narrative\Binaries\BuildValidate\NarrativeEditorTarget\Windows\x64\Development\NarrativeEditor.CSharp.dll
+[00:13:768] Done!
+[00:13:783] Building referenced target NarrativePro
+[00:13:873] Using Dotnet runtime versions range 10-12 for Game Cooker
+[00:13:877] Generating binary module bindings for NarrativePro
+[00:13:878] Skipped saving file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro.Gen.cs
+[00:13:878] Generating binary module bindings for NarrativeProEditor
+[00:13:878] Skipped saving file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativeProEditor.Gen.cs
+[00:13:879] Building module NarrativePro
+[00:13:879] Building module NarrativeProEditor
+[00:13:886] Saved file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Cache/Intermediate\NarrativeProEditorTarget\Windows\x64\Development\NarrativePro.CSharp.response
+[00:13:891] Saved file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Cache/Intermediate\NarrativeProEditorTarget\Windows\x64\Development\NarrativeProEditor.CSharp.response
+[00:13:894] Saved file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Binaries\BuildValidate\NarrativeProEditorTarget\Windows\x64\Development\NarrativeProEditorTarget.Build.json
+[00:13:977] Found 8 valid and 2 invalid actions in Task Graph cache
+[00:13:977] 
+[00:13:977] Total 4 tasks
+[00:13:977] Executing 4 tasks using 4 threads
+[00:13:981] Compiling C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Binaries\BuildValidate\NarrativeProEditorTarget\Windows\x64\Development\NarrativePro.CSharp.dll
+[00:14:173] C:\Program Files (x86)\Flax\Flax_1.12\Source\Platforms\DotNet\Newtonsoft.Json.dll
+[00:14:178] C:\Program Files (x86)\Flax\Flax_1.12\Source\Platforms\DotNet\Newtonsoft.Json.xml
+[00:14:203] ������ 1 ���ļ�
+[00:14:203] ������ 1 ���ļ�
+[00:17:729] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\Interaction\PlayerInteractionComponent.cs(96,23,96,36): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+[00:17:730] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\Interaction\PlayerInteractionComponent.cs(101,23,101,43): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+[00:17:730] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\GAS\NarrativeCombatAbility.cs(130,31,130,46): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+[00:17:730] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\Character\NarrativeCharacterMovement.cs(130,29,130,41): warning CS0067: The event 'NarrativeCharacterMovement.OnEnterCover' is never used
+[00:17:730] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\Tales\Quest\Quest.cs(31,36,31,50): warning CS0067: The event 'Quest.QuestRestarted' is never used
+[00:17:730] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\Tales\Quest\Quest.cs(30,36,30,50): warning CS0067: The event 'Quest.QuestForgotten' is never used
+[00:17:730] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\GAS\NarrativeAbilitySystemComponent.cs(21,118,21,122): warning CS1573: Parameter 'spec' has no matching param tag in the XML comment for 'OnHealedByDelegate' (but other parameters do)
+[00:17:749] Compiling C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Binaries\BuildValidate\NarrativeProEditorTarget\Windows\x64\Development\NarrativeProEditor.CSharp.dll
+[00:18:426] Done!
+[00:18:493] Generating binary module bindings for Game
+[00:18:493] Skipped saving file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game.Gen.cs
+[00:18:493] Building module Game
+[00:18:501] Saved file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Cache/Intermediate\GameEditorTarget\Windows\x64\Development\Game.CSharp.response
+[00:18:512] Saved file to C:\Works\GitHubProjects\HundunWorld\HundunWorld\Binaries\BuildValidate\GameEditorTarget\Windows\x64\Development\GameEditorTarget.Build.json
+[00:18:590] Found 113 valid and 1 invalid actions in Task Graph cache
+[00:18:590] 
+[00:18:590] Total 34 tasks
+[00:18:590] Executing 34 tasks using 16 threads
+[00:18:591] Compiling C:\Works\GitHubProjects\HundunWorld\HundunWorld\Binaries\BuildValidate\GameEditorTarget\Windows\x64\Development\Game.CSharp.dll
+[00:18:809] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\LiteDB.dll
+[00:18:816] ������ 1 ���ļ�
+[00:18:856] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Orleans.Serialization.Abstractions.dll
+[00:18:858] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\CommunityToolkit.HighPerformance.dll
+[00:18:878] ������ 1 ���ļ�
+[00:18:878] ������ 1 ���ļ�
+[00:18:901] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Arch.LowLevel.dll
+[00:18:923] ������ 1 ���ļ�
+[00:18:948] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Schedulers.dll
+[00:18:951] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Collections.Pooled.dll
+[00:18:960] ������ 1 ���ļ�
+[00:18:985] ������ 1 ���ļ�
+[00:18:989] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\K4os.Compression.LZ4.dll
+[00:19:026] ������ 1 ���ļ�
+[00:19:060] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\TouchSocket.dll
+[00:19:085] ������ 1 ���ļ�
+[00:19:167] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\TouchSocket.Core.dll
+[00:19:167] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.DependencyModel.dll
+[00:19:168] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\System.IO.Hashing.dll
+[00:19:168] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Primitives.dll
+[00:19:168] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Orleans.Serialization.dll
+[00:19:168] ������ 1 ���ļ�
+[00:19:168] ������ 1 ���ļ�
+[00:19:178] ������ 1 ���ļ�
+[00:19:179] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\MemoryPack.Core.dll
+[00:19:185] ������ 1 ���ļ�
+[00:19:186] ������ 1 ���ļ�
+[00:19:269] ������ 1 ���ļ�
+[00:19:353] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.DotNet.PlatformAbstractions.dll
+[00:19:354] ������ 1 ���ļ�
+[00:19:354] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Arch.dll
+[00:19:354] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Options.dll
+[00:19:354] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Message.dll
+[00:19:354] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Message.pdb
+[00:19:354] ������ 1 ���ļ�
+[00:19:354] ������ 1 ���ļ�
+[00:19:356] ������ 1 ���ļ�
+[00:19:356] ������ 1 ���ļ�
+[00:19:364] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.dll
+[00:19:386] ������ 1 ���ļ�
+[00:19:470] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Message.xml
+[00:19:470] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.pdb
+[00:19:470] ������ 1 ���ļ�
+[00:19:470] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.Arch.dll
+[00:19:470] ������ 1 ���ļ�
+[00:19:471] ������ 1 ���ļ�
+[00:19:471] C:\Program Files (x86)\Flax\Flax_1.12\Source\Platforms\DotNet\Newtonsoft.Json.dll
+[00:19:507] ������ 1 ���ļ�
+[00:19:512] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Core.dll
+[00:19:539] ������ 1 ���ļ�
+[00:19:547] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.Arch.pdb
+[00:19:548] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.Arch.xml
+[00:19:570] ������ 1 ���ļ�
+[00:19:582] ������ 1 ���ļ�
+[00:19:583] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.xml
+[00:19:589] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.DependencyInjection.Abstractions.dll
+[00:19:604] ������ 1 ���ļ�
+[00:19:604] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.ObjectPool.dll
+[00:19:605] ������ 1 ���ļ�
+[00:19:608] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Core.pdb
+[00:19:609] C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Core.Abstract.dll
+[00:19:629] C:\Program Files (x86)\Flax\Flax_1.12\Source\Platforms\DotNet\Newtonsoft.Json.xml
+[00:19:636] ������ 1 ���ļ�
+[00:19:637] ������ 1 ���ļ�
+[00:19:640] ������ 1 ���ļ�
+[00:19:650] ������ 1 ���ļ�
+[00:25:409] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkSkillSlotGrid.cs(274,22,274,34): warning CS0108: 'InkSkillSlotGrid.UpdateBounds()' hides inherited member 'Control.UpdateBounds()'. Use the new keyword if hiding was intended.
+[00:25:409] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\WaterSkills.cs(381,59,381,74): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+[00:25:409] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\WaterSkills.cs(402,71,402,86): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+[00:25:410] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\MetalSkills.cs(111,60,111,75): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+[00:25:410] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(361,30,361,31): warning CS0168: The variable 'e' is declared but never used
+[00:25:410] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\FireSkills.cs(329,61,329,76): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+[00:25:410] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\FireSkills.cs(351,73,351,88): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+[00:25:410] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\FireSkills.cs(184,82,184,97): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+[00:25:410] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\EarthSkills.cs(586,82,586,97): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+[00:25:410] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Audio\GameAudioManager.cs(305,63,305,92): warning CS0618: 'AudioSource.IsActuallyPlayingSth' is obsolete: 'Use IsActuallyPlaying instead.'
+[00:25:410] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Audio\GameAudioManager.cs(315,45,315,78): warning CS0618: 'AudioSource.IsActuallyPlayingSth' is obsolete: 'Use IsActuallyPlaying instead.'
+[00:25:411] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Audio\GameAudioManager.cs(331,45,331,78): warning CS0618: 'AudioSource.IsActuallyPlayingSth' is obsolete: 'Use IsActuallyPlaying instead.'
+[00:25:411] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\AOEIndicatorSystem.cs(187,33,187,48): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+[00:25:411] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\TargetSelectionSystem.cs(326,17,326,26): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+[00:25:411] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\TargetSelectionSystem.cs(326,41,326,50): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+[00:25:411] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\TargetSelectionSystem.cs(326,67,326,76): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+[00:25:411] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\AOEIndicatorSystem.cs(232,33,232,48): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+[00:25:412] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\AOEIndicatorSystem.cs(259,33,259,48): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+[00:25:412] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\HundunWorldGame.cs(711,23,711,31): warning CS0219: The variable 'AxisBias' is assigned but its value is never used
+[00:25:412] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\HundunWorldGame.cs(1128,18,1128,30): warning CS0219: The variable 'typeMismatch' is assigned but its value is never used
+[00:25:412] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Character\CharacterCreationPanel.cs(159,19,159,26): warning CS0219: The variable 'spacing' is assigned but its value is never used
+[00:25:412] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(2694,42,2694,59): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+[00:25:412] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(2851,21,2851,35): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+[00:25:412] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(2882,21,2882,35): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+[00:25:412] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(2886,26,2886,40): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+[00:25:412] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(2912,49,2912,66): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+[00:25:412] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(2927,21,2927,30): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+[00:25:412] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(3001,31,3001,48): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+[00:25:412] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(3045,27,3045,44): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+[00:25:413] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\GameMain\GameMainUI.cs(522,25,522,38): warning CS0219: The variable 'minimapHeight' is assigned but its value is never used
+[00:25:413] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\GameMain\GameMainUI.cs(523,25,523,36): warning CS0219: The variable 'rightMargin' is assigned but its value is never used
+[00:25:413] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\GameMain\GameMainUI.cs(524,25,524,34): warning CS0219: The variable 'topMargin' is assigned but its value is never used
+[00:25:413] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\GameMain\GameMainUI.cs(705,25,705,41): warning CS0219: The variable 'menuBottomMargin' is assigned but its value is never used
+[00:25:413] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Kungfu\KungfuSystemUI.cs(202,19,202,33): warning CS0219: The variable 'sectionSpacing' is assigned but its value is never used
+[00:25:413] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Rendering\CharacterAppearancePreviewController.cs(160,23,160,40): warning CS0649: Field 'CharacterAppearancePreviewController._previewCharacter' is never assigned to, and will always have its default value null
+[00:25:413] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Network\Sync\AoiManager.cs(178,23,178,42): warning CS0169: The field 'AoiManager._lastSpeedCheckTime' is never used
+[00:25:413] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\MetaHuman\PresetManagerPanel.cs(14,37,14,58): warning CS0067: The event 'PresetManagerPanel.OnQuickPresetSelected' is never used
+[00:25:413] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Performance\MemoryOptimizationManager.cs(32,49,32,62): warning CS0649: Field 'MemoryOptimizationManager._cleanupTimer' is never assigned to, and will always have its default value null
+[00:25:413] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Character\GenderSelectionUI.cs(64,23,64,40): warning CS0169: The field 'GenderSelectionUI._selectorBackdrop' is never used
+[00:25:414] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Services\CharacterPersistenceService.cs(100,24,100,40): warning CS0169: The field 'CharacterPersistenceService._databaseManager' is never used
+[00:25:414] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Character\GenderSelectionUI.cs(65,23,65,34): warning CS0169: The field 'GenderSelectionUI._titleLabel' is never used
+[00:25:414] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Character\IntegratedCharacterCreationUI.cs(19,44,19,62): warning CS0067: The event 'IntegratedCharacterCreationUI.OnCharacterCreated' is never used
+[00:25:414] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(853,22,853,33): warning CS0649: Field 'ThirdPersonCamera._isInCombat' is never assigned to, and will always have its default value false
+[00:25:414] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\GameMain\GuildManagementUI.cs(37,44,37,58): warning CS0067: The event 'GuildManagementUI.OnDemoteMember' is never used
+[00:25:414] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\UISceneManager.cs(16,32,16,45): warning CS0649: Field 'UISceneManager._stateManager' is never assigned to, and will always have its default value null
+[00:25:414] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Performance\MemoryOptimizationManager.cs(33,49,33,66): warning CS0649: Field 'MemoryOptimizationManager._memoryCheckTimer' is never assigned to, and will always have its default value null
+[00:25:414] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Performance\RenderingOptimizer.cs(94,26,94,39): warning CS0649: Field 'RenderingOptimizer.ParticleEmitterEntry.SpawnDistance' is never assigned to, and will always have its default value 0
+[00:25:414] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Components\FloatingParticles.cs(133,23,133,40): warning CS0169: The field 'FloatingParticles._spawnAccumulator' is never used
+[00:25:414] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\GameMain\TeamInviteUI.cs(52,29,52,40): warning CS0067: The event 'TeamInviteUI.OnLeaveTeam' is never used
+[00:25:415] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Authentication\AuthenticationUI.cs(46,22,46,35): warning CS0414: The field 'AuthenticationUI._isFirstLogin' is assigned but its value is never used
+[00:25:415] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Worlds\EntitySynchronizationManager.cs(30,23,30,41): warning CS0414: The field 'EntitySynchronizationManager._lastStateSyncTime' is assigned but its value is never used
+[00:25:415] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\CharacterPreview3D.cs(104,22,104,34): warning CS0414: The field 'CharacterPreview3D._initialized' is assigned but its value is never used
+[00:25:415] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Worlds\EntitySynchronizationManager.cs(29,23,29,44): warning CS0414: The field 'EntitySynchronizationManager._lastPositionSyncTime' is assigned but its value is never used
+[00:25:415] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ECSUpdateDriver.cs(19,22,19,43): warning CS0414: The field 'ECSUpdateDriver._actorSyncInitialized' is assigned but its value is never used
+[00:25:415] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\FireSkills.cs(572,22,572,32): warning CS0414: The field 'FengHuangNiePan.isReviving' is assigned but its value is never used
+[00:25:415] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(903,22,903,39): warning CS0414: The field 'ThirdPersonCamera._isGroundDetected' is assigned but its value is never used
+[00:25:415] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Network\NetworkManager.cs(39,31,39,45): warning CS0414: The field 'NetworkManager._isInitialized' is assigned but its value is never used
+[00:25:415] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\HundunWorldGame.cs(762,27,762,88): warning CS1574: XML comment has cref attribute 'HandleSpawn' that could not be resolved
+[00:25:415] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\CharacterPreview3D.cs(140,27,140,40): warning CS1574: XML comment has cref attribute 'RenderTexture' that could not be resolved
+[00:25:415] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkBackpackGrid.cs(166,34,166,54): warning CS0419: Ambiguous reference in cref attribute: 'Content.LoadAsync{T}'. Assuming 'FlaxEngine.Content.LoadAsync<T>(System.Guid)', but could have also matched other overloads including 'FlaxEngine.Content.LoadAsync<T>(string)'.
+[00:25:415] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkDialClock.cs(146,29,146,46): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.DrawLine'. Assuming 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, float)', but could have also matched other overloads including 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, FlaxEngine.Color, float)'.
+[00:25:415] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkEquipmentSlot.cs(110,48,110,61): warning CS1574: XML comment has cref attribute 'PointToScreen' that could not be resolved
+[00:25:415] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkMeridianDiagram.cs(161,29,161,46): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.DrawLine'. Assuming 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, float)', but could have also matched other overloads including 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, FlaxEngine.Color, float)'.
+[00:25:416] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkMinimap.cs(317,29,317,46): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.DrawLine'. Assuming 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, float)', but could have also matched other overloads including 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, FlaxEngine.Color, float)'.
+[00:25:416] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkSkillSlotGrid.cs(205,35,205,57): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.FillTriangles'. Assuming 'FlaxEngine.Render2D.FillTriangles(FlaxEngine.Float2[], FlaxEngine.Color)', but could have also matched other overloads including 'FlaxEngine.Render2D.FillTriangles(FlaxEngine.Float2[], FlaxEngine.Color[], bool)'.
+[00:25:416] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkSkillSlotGrid.cs(247,29,247,46): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.DrawLine'. Assuming 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, float)', but could have also matched other overloads including 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, FlaxEngine.Color, float)'.
+[00:25:416] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Combat\QtePage.cs(525,29,525,46): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.DrawLine'. Assuming 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, float)', but could have also matched other overloads including 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, FlaxEngine.Color, float)'.
+[00:25:416] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Combat\QtePage.cs(549,29,549,46): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.DrawLine'. Assuming 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, float)', but could have also matched other overloads including 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, FlaxEngine.Color, float)'.
+[00:25:416] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Reward\RewardLevelUpPage.cs(663,49,663,60): warning CS0419: Ambiguous reference in cref attribute: 'Mathf.Clamp'. Assuming 'FlaxEngine.Mathf.Clamp(long, long, long)', but could have also matched other overloads including 'FlaxEngine.Mathf.Clamp(ulong, ulong, ulong)'.
+[00:25:416] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\RewardPages.cs(421,49,421,60): warning CS0419: Ambiguous reference in cref attribute: 'Mathf.Clamp'. Assuming 'FlaxEngine.Mathf.Clamp(long, long, long)', but could have also matched other overloads including 'FlaxEngine.Mathf.Clamp(ulong, ulong, ulong)'.
+[00:25:416] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\SettingsPage.cs(538,30,538,68): warning CS1574: XML comment has cref attribute 'MasterVolume' that could not be resolved
+[00:25:416] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\SettingsPage.cs(559,30,559,65): warning CS1574: XML comment has cref attribute 'SfxVolume' that could not be resolved
+[00:25:416] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Layout\ResponsiveLayoutCalculator.cs(89,26,89,36): warning CS1572: XML comment has a param tag for 'targetSize', but there is no parameter by that name
+[00:25:416] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\EarthSkills.cs(11,5,11,6): warning CS1587: XML comment is not placed on a valid language element
+[00:25:416] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\FireSkills.cs(11,5,11,6): warning CS1587: XML comment is not placed on a valid language element
+[00:25:417] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\WaterSkills.cs(11,5,11,6): warning CS1587: XML comment is not placed on a valid language element
+[00:25:417] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\WoodSkills.cs(11,5,11,6): warning CS1587: XML comment is not placed on a valid language element
+[00:25:417] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(245,65,245,81): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Where_<T>(LiteDatabaseKind, Func<T, bool>)' (but other parameters do)
+[00:25:417] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(255,57,255,73): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Add<T>(LiteDatabaseKind, T)' (but other parameters do)
+[00:25:417] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(267,56,267,72): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.AddRange<T>(LiteDatabaseKind, IEnumerable<T>, bool)' (but other parameters do)
+[00:25:417] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(290,55,290,71): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Remove<T>(LiteDatabaseKind, BsonValue)' (but other parameters do)
+[00:25:417] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(298,26,298,32): warning CS1572: XML comment has a param tag for 'models', but there is no parameter by that name
+[00:25:417] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(301,58,301,74): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Removes<T, K>(LiteDatabaseKind, IEnumerable<BsonValue>, bool)' (but other parameters do)
+[00:25:417] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(301,99,301,102): warning CS1573: Parameter 'ids' has no matching param tag in the XML comment for 'LiteDataContext.Removes<T, K>(LiteDatabaseKind, IEnumerable<BsonValue>, bool)' (but other parameters do)
+[00:25:417] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(301,38,301,39): warning CS1712: Type parameter 'K' has no matching typeparam tag in the XML comment on 'LiteDataContext.Removes<T, K>(LiteDatabaseKind, IEnumerable<BsonValue>, bool)' (but other type parameters do)
+[00:25:417] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(323,58,323,74): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Upsert<T, K>(LiteDatabaseKind, K, T)' (but other parameters do)
+[00:25:417] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(323,38,323,39): warning CS1712: Type parameter 'K' has no matching typeparam tag in the XML comment on 'LiteDataContext.Upsert<T, K>(LiteDatabaseKind, K, T)' (but other type parameters do)
+[00:25:418] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(334,55,334,71): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Update<T>(LiteDatabaseKind, T)' (but other parameters do)
+[00:25:418] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(345,58,345,74): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Updates<T, K>(LiteDatabaseKind, IEnumerable<T>, bool)' (but other parameters do)
+[00:25:418] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(345,38,345,39): warning CS1712: Type parameter 'K' has no matching typeparam tag in the XML comment on 'LiteDataContext.Updates<T, K>(LiteDatabaseKind, IEnumerable<T>, bool)' (but other type parameters do)
+[00:25:418] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(382,59,382,75): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.DeletedMany<T>(LiteDatabaseKind, Expression<Func<T, bool>>)' (but other parameters do)
+[00:25:418] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(410,57,410,73): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Where<T>(LiteDatabaseKind, Expression<Func<T, bool>>)' (but other parameters do)
+[00:25:418] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(421,60,421,76): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.FirstOrDefault<T>(LiteDatabaseKind, Expression<Func<T, bool>>)' (but other parameters do)
+[00:25:418] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Authentication\AuthenticationController.cs(353,78,353,88): warning CS1573: Parameter 'isRegisted' has no matching param tag in the XML comment for 'AuthenticationController.PerformSwitchToLogin(string, string, bool)' (but other parameters do)
+[00:25:418] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Authentication\AuthenticationController.cs(391,87,391,97): warning CS1573: Parameter 'isRegisted' has no matching param tag in the XML comment for 'AuthenticationController.ShowLoginPanelWithCredentials(string, string, bool)' (but other parameters do)
+[00:25:418] C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Controllers\UISwitchController.cs(241,103,241,117): warning CS1573: Parameter 'transitionType' has no matching param tag in the XML comment for 'UISwitchController.RequestSceneSwitchAsync(SceneType, TransitionType, Dictionary<string, object>, bool)' (but other parameters do)
+[00:25:436] Done!
+[00:25:454] Total time: 00:00:25.5098980
+[00:25:454] End.

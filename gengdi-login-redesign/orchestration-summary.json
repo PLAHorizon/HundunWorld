@@ -1,0 +1,34 @@
+{
+  "project": {
+    "name": "GengDi 登录页重设计",
+    "path": "c:\\Works\\GitHubProjects\\HundunWorld_UE5\\HundunWorld\\gengdi-login-redesign",
+    "operation": "create",
+    "deviceType": "desktop",
+    "language": "zh-CN",
+    "designRead": "desktop app login / gamer / warm organic human / medium density / avoid cold blue tech"
+  },
+  "designSource": {
+    "operatingMode": "library-bound",
+    "libraryIdentity": {
+      "name": "Claude",
+      "id": "dl_builtin_claude",
+      "version": null,
+      "scope": "built-in-global",
+      "path": "c:\\Users\\33011\\.trae-cn\\design_libraries\\dl_builtin_claude",
+      "versionSource": "metadata.json"
+    },
+    "brandPrefix": "claude",
+    "cssFilePath": "c:\\Users\\33011\\.trae-cn\\design_libraries\\dl_builtin_claude\\css\\colors_and_type.css"
+  },
+  "pages": [
+    {
+      "nodeId": "page-login",
+      "slug": "login",
+      "title": "登录页 - 暖色方案",
+      "htmlSrc": "pages/login.html",
+      "pageIndex": 1,
+      "pageType": "task-driven",
+      "businessScenario": "用户登录入口，展示品牌信息和实时数据卡片"
+    }
+  ]
+}

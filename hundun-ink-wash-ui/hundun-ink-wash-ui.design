@@ -1,0 +1,328 @@
+{
+  "data": [
+    {
+      "id": "page-combat-hud",
+      "title": "核心战斗HUD",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784074800000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/combat-hud.html",
+        "interactions": [
+          {
+            "domId": "nav-character",
+            "targetPageId": "page-character-panel",
+            "transitionLabel": "查看角色"
+          },
+          {
+            "domId": "nav-skill",
+            "targetPageId": "page-skill-panel",
+            "hideEdge": true,
+            "transitionLabel": "武学心法"
+          },
+          {
+            "domId": "nav-inventory",
+            "targetPageId": "page-inventory",
+            "hideEdge": true,
+            "transitionLabel": "背包行囊"
+          },
+          {
+            "domId": "nav-quest",
+            "targetPageId": "page-quest-log",
+            "hideEdge": true,
+            "transitionLabel": "任务日志"
+          },
+          {
+            "domId": "nav-map",
+            "targetPageId": "page-world-map",
+            "hideEdge": true,
+            "transitionLabel": "世界地图"
+          },
+          {
+            "domId": "nav-social",
+            "targetPageId": "page-social-guild",
+            "hideEdge": true,
+            "transitionLabel": "社交门派"
+          },
+          {
+            "domId": "nav-shop",
+            "targetPageId": "page-shop",
+            "hideEdge": true,
+            "transitionLabel": "商城商店"
+          },
+          {
+            "domId": "nav-dialog",
+            "targetPageId": "page-npc-dialog",
+            "hideEdge": true,
+            "transitionLabel": "NPC对话"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-character-panel",
+      "title": "角色属性装备",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784074800000,
+      "canvasData": {
+        "x": 620,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/character-panel.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-skill-panel",
+      "title": "武学心法奇术",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784074800000,
+      "canvasData": {
+        "x": 0,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/skill-panel.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-inventory",
+      "title": "背包行囊",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784074800000,
+      "canvasData": {
+        "x": 620,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/inventory.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-quest-log",
+      "title": "任务日志",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784074800000,
+      "canvasData": {
+        "x": 1240,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/quest-log.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-world-map",
+      "title": "世界地图",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784074800000,
+      "canvasData": {
+        "x": 1860,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/world-map.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-social-guild",
+      "title": "社交门派",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784074800000,
+      "canvasData": {
+        "x": 2480,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/social-guild.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-shop",
+      "title": "商城商店",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784074800000,
+      "canvasData": {
+        "x": 3100,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/shop.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-npc-dialog",
+      "title": "NPC对话交互",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1784074800000,
+      "canvasData": {
+        "x": 3720,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/npc-dialog.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true,
+            "transitionLabel": "返回主界面"
+          }
+        ]
+      }
+    },
+    {
+      "id": "image-001",
+      "title": "浓墨晕染深色背景纹理",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784074900000,
+      "canvasData": {
+        "x": 0,
+        "y": 754
+      },
+      "devMetadata": {
+        "imageSrc": "assets/ink-wash-bg-dark.jpg"
+      }
+    },
+    {
+      "id": "image-002",
+      "title": "水墨山水画世界地图底图",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784074900000,
+      "canvasData": {
+        "x": 620,
+        "y": 754
+      },
+      "devMetadata": {
+        "imageSrc": "assets/ink-wash-map.jpg"
+      }
+    },
+    {
+      "id": "image-003",
+      "title": "水墨人物立绘剪影",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784074900000,
+      "canvasData": {
+        "x": 1240,
+        "y": 754
+      },
+      "devMetadata": {
+        "imageSrc": "assets/character-silhouette.jpg"
+      }
+    },
+    {
+      "id": "image-004",
+      "title": "水墨远山雾霭氛围背景",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784074900000,
+      "canvasData": {
+        "x": 1860,
+        "y": 754
+      },
+      "devMetadata": {
+        "imageSrc": "assets/ink-mountain-mist.jpg"
+      }
+    },
+    {
+      "id": "image-005",
+      "title": "古建亭台水墨剪影",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784074900000,
+      "canvasData": {
+        "x": 2480,
+        "y": 754
+      },
+      "devMetadata": {
+        "imageSrc": "assets/ancient-pavilion.jpg"
+      }
+    },
+    {
+      "id": "image-006",
+      "title": "NPC水墨半身立绘",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1784074900000,
+      "canvasData": {
+        "x": 3100,
+        "y": 754
+      },
+      "devMetadata": {
+        "imageSrc": "assets/npc-portrait.jpg"
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "projectName": "混沌世界·水墨武侠沉浸UI",
+    "designLibrary": null
+  }
+}

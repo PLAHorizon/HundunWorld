@@ -9,6 +9,7 @@ using Game.Game.Network;
 using Horizon.Game.Message;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
+using Horizon.Game.Message.Sync;
 using HundunWorld.Game.Services;
 using TouchSocket.Core;
 using TouchSocket.Sockets;
@@ -37,10 +38,27 @@ namespace HundunWorld.Game.Network
         private GatewayInfo _currentGateway;
         private volatile bool _isInitialized = false;
         private volatile bool _isDisposing = false;
+        private volatile bool _syncHandshakeComplete = false;
+        private long _syncClientTick = 0;
+
+        // 同步握手重试状态：记录上次发送的参数与时间，用于丢包或响应未达时重发。
+        private long _lastHandshakeSentTicks = 0;
+        private ulong _lastHandshakeCharacterId;
+        private float _lastHandshakeX;
+        private float _lastHandshakeY;
+        private float _lastHandshakeZ;
+        private static readonly TimeSpan HandshakeRetryInterval = TimeSpan.FromSeconds(3);
+        private static readonly TimeSpan HandshakeTimeout = TimeSpan.FromSeconds(15);
+
         private UnhandledExceptionEventHandler _unhandledExceptionHandler;
         List<GatewayInfo> _gatewayList = new List<GatewayInfo>();
         private readonly List<IMessageHandler> _registeredHandlers = new List<IMessageHandler>();
         public ConnectionStatus ConnectionStatus => _connectionStatus;
+
+        /// <summary>
+        /// 同步握手是否已完成（握手完成后才能发送 InputPacket）
+        /// </summary>
+        public bool IsSyncHandshakeComplete => _syncHandshakeComplete;
         
         /// <summary>
         /// 游戏ID
@@ -61,6 +79,13 @@ namespace HundunWorld.Game.Network
         /// 用户ID
         /// </summary>
         public ulong UserId { get; set; }
+
+        /// <summary>
+        /// 当前角色ID（玩家选角进入游戏后设置）。
+        /// 用于在消息头 MessageHeader.CharacterId 中携带，服务端依赖此字段路由
+        /// SubscriptionUpdatePacket 等不携带 CharacterId 的同步包。
+        /// </summary>
+        public ulong CharacterId { get; set; }
         
         /// <summary>
         /// 用户鉴权令牌
@@ -69,6 +94,12 @@ namespace HundunWorld.Game.Network
 
         public event Action<ConnectionStatus> ConnectionStatusChanged;
         public event Action<string> ConnectionError;
+        
+        /// <summary>
+        /// [修复] 消息处理器注册完成事件：AddAllMessageHandlers() 执行完毕后触发，
+        /// 供 HundunWorldGame 立即订阅 SyncPacketMessageHandler 事件，避免轮询重试的时序竞争。
+        /// </summary>
+        public event Action HandlersRegistered;
         
         /// <summary>
         /// 鉴权令牌过期事件，触发时通知上层需要重新登录
@@ -250,11 +281,10 @@ namespace HundunWorld.Game.Network
                 EnhancedLogging.LogInfo("[ConnectAsync] 客户端设置完成，开始连接");
                 await _client.ConnectAsync(_connectionCts.Token);
                 EnhancedLogging.LogInfo("[ConnectAsync] 连接完成");
-                Scripting.InvokeOnUpdate(() =>
-                {
-                    if (_client.Online)
-                        UpdateConnectionStatus(ConnectionStatus.Connected);
-                });
+                // UpdateConnectionStatus 内部已直接更新 _connectionStatus 字段，
+                // 并将事件通知调度到主线程，无需外层再包 InvokeOnUpdate，避免状态更新延迟导致 SendMessageAsync 拒绝发送
+                if (_client.Online)
+                    UpdateConnectionStatus(ConnectionStatus.Connected);
                 _reconnectionManager.CurrentState = _client.Online? ReconnectionManager.ReconnectState.Connected:ReconnectionManager.ReconnectState.Failed;
                 return true;
             }
@@ -536,13 +566,24 @@ namespace HundunWorld.Game.Network
         /// </summary>
         public void AddAllMessageHandlers()
         {
-            // 扫描所有已加载的程序集
-            var handlerTypes = Assembly.GetExecutingAssembly()
-                  .GetTypes()
+            // 扫描当前类型所在程序集（比 GetExecutingAssembly 更稳健，避免内联/委托导致程序集引用错误）
+            Type[] handlerTypes;
+            try
+            {
+                handlerTypes = typeof(NetworkManager).Assembly.GetTypes();
+            }
+            catch (System.Reflection.ReflectionTypeLoadException ex)
+            {
+                // 打包后可能因依赖缺失导致部分类型加载失败，使用已成功加载的类型
+                handlerTypes = ex.Types.Where(t => t != null).ToArray();
+                Debug.LogWarning($"[NetworkManager] 程序集扫描部分类型加载失败，已加载 {handlerTypes.Length} 个类型，失败 {ex.LoaderExceptions?.Length ?? 0} 个");
+            }
+
+            var handlerTypeList = handlerTypes
                   .Where(type => type.IsClass && !type.IsAbstract && typeof(IMessageHandler).IsAssignableFrom(type))
                   .ToList();
 
-            foreach (var handlerType in handlerTypes)
+            foreach (var handlerType in handlerTypeList)
             {
                 IMessageHandler handlerInstance = null;
                 try
@@ -579,7 +620,10 @@ namespace HundunWorld.Game.Network
 
 
             // 输出调试信息
-            Debug.Log($"[DEBUG] 自动注册了 {handlerTypes.Count} 个消息处理器:");
+            Debug.Log($"[DEBUG] 自动注册了 {handlerTypes.Count()} 个消息处理器:");
+
+            // [修复] 通知订阅者消息处理器已注册完成，避免 HundunWorldGame 轮询重试
+            HandlersRegistered?.Invoke();
         }
 
 
@@ -706,7 +750,7 @@ namespace HundunWorld.Game.Network
 
         /// <summary>
         /// 尝试自动刷新鉴权令牌
-        /// 流程：刷新HTTP令牌获取新ImAuthToken → 发送TokenLoginRequest → 服务端签发新AuthToken → 更新本地AuthToken → 恢复心跳
+        /// 流程：刷新HTTP令牌获取新ImAuthToken → 服务端已废弃TokenLoginRequest，新ImAuthToken直接作为AuthToken → 更新本地AuthToken → 恢复心跳
         /// </summary>
         private async Task TryRefreshAuthTokenAsync()
         {
@@ -734,6 +778,7 @@ namespace HundunWorld.Game.Network
 
                 var newImAuthToken = GengDiAuthService.GetImAuthToken();
                 var passportId = GengDiAuthService.GetPassportId();
+                var newUserId = GengDiAuthService.GetUserId();
 
                 if (string.IsNullOrEmpty(newImAuthToken) || string.IsNullOrEmpty(passportId))
                 {
@@ -743,64 +788,14 @@ namespace HundunWorld.Game.Network
                     return;
                 }
 
-                // 3. 构建TokenLoginRequest发送消息包
-                // 服务端TokenLogin路径使用ValidateTokenWithoutExpiryCheck，允许过期令牌解密出身份信息后签发新令牌
-                var tokenLoginRequest = new TokenLoginRequest
-                {
-                    AuthToken = newImAuthToken,
-                    PassportId = passportId,
-                    UserId = (long)UserId,
-                    MachineId = MachineIdentifier.GetMachineGuid()
-                };
+                // 3. 服务端已废弃 TCP TokenLoginRequest，新的 ImAuthToken 直接作为 AuthToken 使用
+                AuthToken = newImAuthToken;
+                UserId = newUserId;
+                EnhancedLogging.LogInfo($"[TokenRefresh] 已更新本地鉴权令牌: UserId={newUserId}");
 
-                var messagePacket = new HorizonMessagePacket
-                {
-                    Header = new MessageHeader
-                    {
-                        MessageId = Guid.NewGuid().ToString(),
-                        MessageType = MessageType.TokenLoginRequest,
-                        ServiceType = ServiceType.Account,
-                        GameId = GameId,
-                        ZoneId = ZoneId,
-                        ServerId = ServerId,
-                        UserId = UserId,
-                        AuthToken = newImAuthToken,
-                        MachineId = MachineIdentifier.GetMachineGuid(),
-                        Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-                    },
-                    ServiceType = ServiceType.Account,
-                    Body = tokenLoginRequest
-                };
-
-                EnhancedLogging.LogInfo("[TokenRefresh] 发送TokenLogin请求以获取新的鉴权令牌");
-
-                // 4. 发送TokenLogin请求
-                // 响应将由LoginResponseHandler处理，其中会调用AuthenticationManager.HandleLoginResponse
-                // 自动更新NetworkManager.AuthToken
-                var sent = await SendMessageAsync(messagePacket);
-                if (sent)
-                {
-                    EnhancedLogging.LogInfo("[TokenRefresh] TokenLogin请求已发送，等待服务端响应后自动恢复心跳");
-                    // 延迟恢复心跳，给服务端处理TokenLogin响应的时间
-                    // LoginResponseHandler处理TokenLoginResponse时会自动更新NetworkManager.AuthToken
-                    await Task.Delay(5000);
-                    if (!string.IsNullOrEmpty(AuthToken))
-                    {
-                        _heartbeatManager?.StartHeartbeat();
-                        EnhancedLogging.LogInfo("[TokenRefresh] 令牌刷新完成，心跳已恢复");
-                    }
-                    else
-                    {
-                        EnhancedLogging.LogWarning("[TokenRefresh] 等待响应后AuthToken仍为空，心跳将在下次连接时恢复");
-                        AuthTokenExpired?.Invoke();
-                    }
-                }
-                else
-                {
-                    EnhancedLogging.LogWarning("[TokenRefresh] TokenLogin请求发送失败，恢复心跳");
-                    _heartbeatManager?.StartHeartbeat();
-                    AuthTokenExpired?.Invoke();
-                }
+                // 4. 恢复心跳，新的请求将使用更新后的 AuthToken
+                _heartbeatManager?.StartHeartbeat();
+                EnhancedLogging.LogInfo("[TokenRefresh] 令牌刷新完成，心跳已恢复");
             }
             catch (Exception ex)
             {
@@ -926,6 +921,172 @@ namespace HundunWorld.Game.Network
         public bool CanSendMessage()
         {
             return _client != null && _client.Online && _connectionStatus == ConnectionStatus.Connected;
+        }
+
+        /// <summary>
+        /// 发送同步握手包到服务器（进入游戏世界时必须调用）
+        /// 握手完成后，服务器才会接受 InputPacket
+        /// </summary>
+        /// <param name="characterId">角色ID</param>
+        /// <param name="initialX">实体初始位置 X（来自 EnterGameResponse.CharacterInfo.Position.X）</param>
+        /// <param name="initialY">实体初始位置 Y（来自 EnterGameResponse.CharacterInfo.Position.Y）</param>
+        /// <param name="initialZ">实体初始位置 Z（来自 EnterGameResponse.CharacterInfo.Position.Z）</param>
+        public async Task SendSyncHandshakeAsync(ulong characterId, float initialX, float initialY, float initialZ)
+        {
+            if (!CanSendMessage())
+            {
+                FlaxEngine.Debug.LogWarning("[NetworkManager] 无法发送同步握手：网络未连接");
+                return;
+            }
+
+            // 跨线程保护：_syncClientTick 可能被 ResetSyncHandshake（主线程/重连流程）并发重置，
+            // 使用 Interlocked.Exchange 写入保证可见性。局部变量 clientTick 用于后续构造握手包，
+            // 避免在对象初始化器中重复调用 Interlocked.Read。
+            var clientTick = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            Interlocked.Exchange(ref _syncClientTick, clientTick);
+
+            // 记录握手参数与时间，供后续重试使用。
+            _lastHandshakeCharacterId = characterId;
+            _lastHandshakeX = initialX;
+            _lastHandshakeY = initialY;
+            _lastHandshakeZ = initialZ;
+            Interlocked.Exchange(ref _lastHandshakeSentTicks, DateTimeOffset.UtcNow.Ticks);
+
+            var handshake = new HandshakePacket
+            {
+                LocalCharacterId = characterId,
+                InitialClientTick = clientTick,
+                InitialX = initialX,
+                InitialY = initialY,
+                InitialZ = initialZ,
+            };
+
+            SyncPacketCodec.Encode(handshake, out var frame, out var frameLength);
+            try
+            {
+                var payload = new byte[frameLength];
+                System.Buffer.BlockCopy(frame, 0, payload, 0, frameLength);
+
+                var syncFrame = new SyncFrameMessage
+                {
+                    Frame = payload,
+                    PacketKind = (byte)handshake.Kind,
+                    ProtocolVersion = handshake.ProtocolVersion,
+                };
+
+                await SendAsync(syncFrame);
+
+                // [修复] 移除提前标记握手完成：发送握手包后不应立即标记完成，
+                // 必须等待服务端返回 HandshakePacket 响应后才由 MarkSyncHandshakeComplete() 标记完成。
+                // 旧代码在此处设置 _syncHandshakeComplete = true，导致握手尚未被服务端确认就认为已完成。
+                // 跨线程读取 _syncClientTick：可能被 ResetSyncHandshake 并发重置，使用 Interlocked.Read 保证读到一致值。
+                FlaxEngine.Debug.Log($"[NetworkManager] 同步握手已发送: CharacterId={characterId}, ClientTick={Interlocked.Read(ref _syncClientTick)}");
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[NetworkManager] 同步握手发送失败: {ex.Message}");
+            }
+            finally
+            {
+                SyncPacketCodec.ReturnFrame(frame);
+            }
+        }
+
+        /// <summary>
+        /// 如果同步握手尚未完成且距上次发送已超过重试间隔，则重新发送上一次握手包。
+        /// 由 ECSUpdateDriver 每帧调用，用于在响应丢失时自动恢复。
+        /// </summary>
+        /// <returns>true 表示已触发重试发送；false 表示无需重试。</returns>
+        public async Task<bool> TryEnsureSyncHandshakeAsync()
+        {
+            if (_syncHandshakeComplete)
+                return false;
+
+            var lastSentTicks = Interlocked.Read(ref _lastHandshakeSentTicks);
+            if (lastSentTicks == 0)
+            {
+                // 尚未发送过握手，无参数可重试。
+                return false;
+            }
+
+            var elapsed = TimeSpan.FromTicks(DateTimeOffset.UtcNow.Ticks - lastSentTicks);
+            if (elapsed < HandshakeRetryInterval)
+                return false;
+
+            // 超过全局超时仍未完成：不再重试，避免无限发送。
+            if (elapsed > HandshakeTimeout)
+            {
+                FlaxEngine.Debug.LogError($"[NetworkManager] 同步握手超时 ({elapsed.TotalSeconds:F1}s)，停止重试。请检查服务端是否正常响应。");
+                return false;
+            }
+
+            FlaxEngine.Debug.LogWarning($"[NetworkManager] 同步握手未完成，距上次发送 {elapsed.TotalSeconds:F1}s，尝试重发握手包...");
+            await SendSyncHandshakeAsync(_lastHandshakeCharacterId, _lastHandshakeX, _lastHandshakeY, _lastHandshakeZ);
+            return true;
+        }
+
+        /// <summary>
+        /// 发送 AOI 订阅更新包到服务器（本地玩家跨 chunk 边界时调用）
+        /// </summary>
+        /// <param name="addedChunks">新增订阅的 chunk key 集合</param>
+        /// <param name="removedChunks">移除订阅的 chunk key 集合</param>
+        public async Task SendSubscriptionUpdateAsync(ulong[] addedChunks, ulong[] removedChunks)
+        {
+            if (!CanSendMessage() || !IsSyncHandshakeComplete)
+                return;
+
+            if ((addedChunks == null || addedChunks.Length == 0) && (removedChunks == null || removedChunks.Length == 0))
+                return;
+
+            var packet = new SubscriptionUpdatePacket
+            {
+                AddedChunks = addedChunks ?? Array.Empty<ulong>(),
+                RemovedChunks = removedChunks ?? Array.Empty<ulong>(),
+            };
+
+            SyncPacketCodec.Encode(packet, out var frame, out var frameLength);
+            try
+            {
+                var payload = new byte[frameLength];
+                System.Buffer.BlockCopy(frame, 0, payload, 0, frameLength);
+
+                var syncFrame = new SyncFrameMessage
+                {
+                    Frame = payload,
+                    PacketKind = (byte)packet.Kind,
+                    ProtocolVersion = packet.ProtocolVersion,
+                };
+
+                await SendAsync(syncFrame);
+                FlaxEngine.Debug.Log($"[NetworkManager] AOI 订阅更新已发送: Added={packet.AddedChunks.Length}, Removed={packet.RemovedChunks.Length}");
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[NetworkManager] AOI 订阅更新发送失败: {ex.Message}");
+            }
+            finally
+            {
+                SyncPacketCodec.ReturnFrame(frame);
+            }
+        }
+
+        /// <summary>
+        /// 标记同步握手为已完成（由收到服务端 HandshakePacket 响应时调用）。
+        /// </summary>
+        public void MarkSyncHandshakeComplete()
+        {
+            _syncHandshakeComplete = true;
+            Debug.Log("[NetworkManager] 同步握手已确认完成");
+        }
+
+        /// <summary>
+        /// 重置同步握手状态（断线重连时调用）
+        /// </summary>
+        public void ResetSyncHandshake()
+        {
+            _syncHandshakeComplete = false;
+            // 跨线程保护：与 SendSyncHandshakeAsync 的写入并发，使用 Interlocked.Exchange 保证原子性。
+            Interlocked.Exchange(ref _syncClientTick, 0);
         }
 
         #endregion

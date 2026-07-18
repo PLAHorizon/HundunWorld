@@ -18,8 +18,8 @@
              战网风格标题栏：品牌 Logo + 水平导航 + 右侧工具区（搜索/通知/用户）
              ══════════════════════════════════════════════════════════════════ -->
         <Border Name="TitleBarHost"
-                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
-                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                Background="{DynamicResource TitleBarBackgroundBrush}"
+                BorderBrush="{DynamicResource TitleBarBorderBrush}"
                 BorderThickness="0 0 0 1">
             <Grid ColumnDefinitions="Auto,*,Auto" MinHeight="48">
                 <!-- 左：品牌 Logo + 主导航项 -->
@@ -36,7 +36,7 @@
                             Command="{Binding NavigateToHomeCommand}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <Border Width="26" Height="26" CornerRadius="13"
-                                    Background="{DynamicResource AccentFillColorSecondaryBrush}">
+                                    Background="{DynamicResource BattleNetPrimaryBrush}">
                                 <Viewbox Margin="5">
                                     <ui:IconSourceElement IconSource="{StaticResource BrandIcon}" />
                                 </Viewbox>
@@ -226,8 +226,8 @@
         <Grid Grid.Row="1" RowDefinitions="Auto,*">
             <!-- 副导航条：当前页上下文切换栏 -->
             <Border Grid.Row="0"
-                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    Background="{DynamicResource SubNavBarBackgroundBrush}"
+                    BorderBrush="{DynamicResource TitleBarBorderBrush}"
                     BorderThickness="0 0 0 1"
                     Padding="16 0"
                     MinHeight="42">
@@ -251,7 +251,7 @@
                             Tag="Settings"
                             Content="设置"
                             Command="{Binding NavigateToSettingsCommand}" />
-                    <Border Width="1" Height="20" Margin="8 0"
+                    <Border Width="1" Height="20" Margin="12 0"
                             Background="{DynamicResource TitleBarDividerBrush}" />
                     <Button Classes="SubNavItem"
                             Tag="MusicDiscover"
@@ -269,7 +269,7 @@
                             Tag="MusicStory"
                             Content="背后故事"
                             Command="{Binding NavigateToMusicStoryCommand}" />-->
-                    <Border Width="1" Height="20" Margin="8 0"
+                    <Border Width="1" Height="20" Margin="12 0"
                             Background="{DynamicResource TitleBarDividerBrush}" />
                     <Button Classes="SubNavItem"
                             Tag="FlowerDashboard"
@@ -303,7 +303,7 @@
                             Tag="FlowerDataScreen"
                             Content="数据大屏"
                             Command="{Binding NavigateToFlowerDataScreenCommand}" />
-                    <Border Width="1" Height="20" Margin="8 0"
+                    <Border Width="1" Height="20" Margin="12 0"
                             Background="{DynamicResource TitleBarDividerBrush}" />
                     <Button Classes="SubNavItem"
                             Tag="FlowerMerchant"

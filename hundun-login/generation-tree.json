@@ -1,0 +1,25 @@
+{
+  "root": {
+    "nodeId": "gen-project-shell",
+    "kind": "project-shell",
+    "pageIds": ["page-login"],
+    "output": "partials/project-shell.html",
+    "sharedRegions": ["全屏背景容器", "水墨氛围遮罩层", "品牌标题区骨架", "辅助层骨架", "全局水墨氛围"],
+    "privateRegions": [],
+    "mutableSlots": ["pageTitle", "pageContent"],
+    "status": "generated",
+    "children": [
+      {
+        "nodeId": "gen-page-login",
+        "kind": "page-leaf",
+        "pageIds": ["page-login"],
+        "output": "pages/login.html",
+        "sharedRegions": [],
+        "privateRegions": ["登录表单卡片", "记住密码/自动登录", "注册找回入口"],
+        "mutableSlots": ["pageTitle", "pageContent"],
+        "status": "generated",
+        "children": []
+      }
+    ]
+  }
+}

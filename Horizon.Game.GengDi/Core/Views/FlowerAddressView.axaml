@@ -78,12 +78,12 @@
                                     <StackPanel Spacing="4">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <TextBlock Text="{Binding ShipTo}" FontSize="14" FontWeight="SemiBold" />
-                                            <TextBlock Text="{Binding Phone}" FontSize="13" Foreground="#888888" VerticalAlignment="Center" />
-                                            <Border Background="#FF6B6B" CornerRadius="4" Padding="6 2" IsVisible="{Binding IsDefault}">
+                                            <TextBlock Text="{Binding Phone}" FontSize="13" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center" />
+                                            <Border Background="{DynamicResource LoginErrorBrush}" CornerRadius="4" Padding="6 2" IsVisible="{Binding IsDefault}">
                                                 <TextBlock Text="默认" FontSize="11" Foreground="White" />
                                             </Border>
                                         </StackPanel>
-                                        <TextBlock Text="{Binding FullAddress}" FontSize="13" Foreground="#AAAAAA" />
+                                        <TextBlock Text="{Binding FullAddress}" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                         <Button Content="编辑" Classes="QuietAction" Padding="12 6" CornerRadius="6"
@@ -105,8 +105,8 @@
                         IsVisible="{Binding !HasAddresses}">
                     <StackPanel HorizontalAlignment="Center" Spacing="8">
                         <TextBlock Text="📍" FontSize="32" HorizontalAlignment="Center" />
-                        <TextBlock Text="暂无收货地址" FontSize="14" Foreground="#888888" HorizontalAlignment="Center" />
-                        <TextBlock Text="点击上方新增地址按钮添加" FontSize="12" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                        <TextBlock Text="暂无收货地址" FontSize="14" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center" />
+                        <TextBlock Text="点击上方新增地址按钮添加" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
                     </StackPanel>
                 </Border>
             </StackPanel>

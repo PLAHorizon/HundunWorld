@@ -78,7 +78,7 @@ namespace ManagedHundunWorld.Network.Handlers
                                 UserId = loginResponse.UserId,
                                 ServerId = 1 // 默认服务器ID
                             };
-                            
+
                             var messagePacket = new HorizonMessagePacket
                             {
                                 Header = new MessageHeader
@@ -94,7 +94,7 @@ namespace ManagedHundunWorld.Network.Handlers
                                     MachineId = MachineIdentifier.GetMachineGuid()
                                 },
                                 ServiceType = ServiceType.Game,
-                                Body = new CharacterListRequest { UserId = loginResponse.UserId }
+                                Body = characterListRequest
                             };
 
                             _ = Task.Run(async () =>
@@ -233,7 +233,7 @@ namespace ManagedHundunWorld.Network.Handlers
                                 UserId = tokenLoginResponse.UserId,
                                 ServerId = 1
                             };
-                            
+
                             var messagePacket = new HorizonMessagePacket
                             {
                                 Header = new MessageHeader
@@ -249,7 +249,7 @@ namespace ManagedHundunWorld.Network.Handlers
                                     MachineId = MachineIdentifier.GetMachineGuid()
                                 },
                                 ServiceType = ServiceType.Game,
-                                Body = new CharacterListRequest { UserId = tokenLoginResponse.UserId }
+                                Body = characterListRequest
                             };
 
                             _ = Task.Run(async () =>

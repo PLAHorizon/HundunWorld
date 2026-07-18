@@ -1,0 +1,2308 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动 — 混沌世界</title>
+    <style id="theme-vars">
+/* ============================================================
+   混沌世界 HundunWorld · 燕云融合 UI 品牌样式
+   模式: free-explore | 主题: dark | 设备: desktop
+   融合策略：ink- 深墨黑沉浸底 + yy- 纸色面板 + 朱红战斗强调
+   仿《燕云十六声》：深墨黑 + 鎏金/古铜/朱红 + 纸色卷轴 + 毛笔书法
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+
+/* ---------- 设计 Token ---------- */
+:root {
+  /* 背景层 — 深墨黑 */
+  --bg-base-default: #0E1016;
+  --bg-base-secondary: #14171E;
+  --bg-base-tertiary: #1C1F28;
+  --bg-base-elevated: #232733;
+  --ink-bg-panel: rgba(20, 23, 30, 0.85);
+  --ink-bg-panel-solid: #14171E;
+  --ink-bg-void: #0E1016;
+  --ink-bg-abyss: #0A0B10;
+  --ink-bg-scrim: rgba(8, 9, 14, 0.72);
+
+  /* 品牌主色 — 鎏金 */
+  --bg-brand: #C8A858;
+  --bg-brand-hover: #E0C880;
+  --bg-brand-active: #8A7438;
+  --bg-brand-disabled: rgba(200, 168, 88, 0.28);
+  --ink-gold-primary: #C8A858;
+  --ink-gold-bright: #E0C880;
+  --ink-gold-deep: #8A7438;
+  --ink-gold-glow: rgba(200, 168, 88, 0.4);
+
+  /* 铜色体系 — 辅助主色 */
+  --ink-bronze-primary: #B87333;
+  --ink-bronze-bright: #D4944E;
+  --ink-bronze-deep: #7A4A20;
+  --ink-bronze-glow: rgba(184, 115, 51, 0.4);
+
+  /* 朱红系 — yy- 引入，战斗/危险/传世品质强调 */
+  --ink-vermilion-primary: #c0392b;
+  --ink-vermilion-bright: #d9504a;
+  --ink-vermilion-deep: #a93226;
+  --ink-vermilion-faded: #8b2a20;
+  --ink-vermilion-glow: rgba(192, 57, 43, 0.4);
+
+  /* 纸色系 — yy- 引入，用于浅色卷轴/对话框/信笺面板 */
+  --ink-paper-bright: #f5f0e8;
+  --ink-paper: #ebe5d8;
+  --ink-paper-aged: #d4c9b8;
+  --ink-paper-faded: #c8bba8;
+  --ink-paper-dark: #a89e8a;
+
+  /* 辅助语义色 */
+  --ink-jade-primary: #5E8B7E;
+  --ink-jade-bright: #7EAE9E;
+  --ink-blood-primary: #B85450;
+  --ink-blood-bright: #D46862;
+
+  /* 品质色 — 游戏语义（传世=朱红） */
+  --ink-quality-common: #8A8275;
+  --ink-quality-uncommon: #6B8E5A;
+  --ink-quality-rare: #4A7EA8;
+  --ink-quality-epic: #8B5E9E;
+  --ink-quality-legendary: #c0392b;
+
+  /* 状态色（错误=朱红） */
+  --state-success: #6B8E5A;
+  --state-warning: #C8A858;
+  --state-error: #c0392b;
+  --state-info: #4A7EA8;
+
+  /* 文字 */
+  --text-default: #F0EDE4;
+  --text-secondary: #B8B0A0;
+  --text-tertiary: #7A7468;
+  --text-disabled: #4A4640;
+  --text-brand: #E0C880;
+  --text-on-brand: #1A1408;
+  --text-on-paper: #2a2520;
+  --text-vermilion: #d9504a;
+
+  /* 边框 */
+  --border-neutral-l1: rgba(240, 237, 228, 0.06);
+  --border-neutral-l2: rgba(200, 168, 88, 0.15);
+  --border-neutral-l3: rgba(200, 168, 88, 0.25);
+  --ink-border-gold: rgba(200, 168, 88, 0.35);
+  --ink-border-gold-strong: rgba(200, 168, 88, 0.6);
+  --ink-border-bronze: rgba(184, 115, 51, 0.3);
+  --ink-border-vermilion: rgba(192, 57, 43, 0.35);
+  --ink-divider: rgba(200, 168, 88, 0.12);
+
+  /* 纸色面板专用 */
+  --ink-paper-panel-bg: rgba(245, 240, 232, 0.92);
+  --ink-paper-panel-border: rgba(168, 158, 138, 0.4);
+  --ink-paper-panel-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+
+  /* 字体 */
+  --ink-font-display: "Ma Shan Zheng", "STKaiti", "KaiTi", serif;
+  --ink-font-heading: "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+  --ink-font-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --ink-font-number: "DIN Alternate", "DIN", "Bebas Neue", monospace;
+  --font-family-heading: var(--ink-font-heading);
+  --font-family-default: var(--ink-font-body);
+
+  /* 圆角 — 古风克制 */
+  --radius-0: 0px;
+  --radius-2: 2px;
+  --radius-4: 4px;
+  --radius-8: 8px;
+  --radius-full: 999px;
+  --ink-radius-none: 0px;
+  --ink-radius-sm: 2px;
+  --ink-radius-md: 4px;
+  --ink-radius-lg: 8px;
+
+  /* 阴影 / 深度 */
+  --ink-shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --ink-shadow-soft: 0 1px 0 rgba(0, 0, 0, 0.05);
+  --ink-shadow-gold: 0 0 24px rgba(200, 168, 88, 0.2);
+  --ink-shadow-vermilion: 0 0 24px rgba(192, 57, 43, 0.2);
+  --ink-shadow-inset: inset 0 1px 0 rgba(200, 168, 88, 0.08);
+  --ink-shadow-inset-deep: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+  --ink-blur-panel: blur(8px);
+
+  /* 间距 */
+  --ink-space-1: 4px;
+  --ink-space-2: 8px;
+  --ink-space-3: 12px;
+  --ink-space-4: 16px;
+  --ink-space-5: 24px;
+  --ink-space-6: 32px;
+  --ink-space-8: 48px;
+
+  /* 控件尺寸 */
+  --ink-control-h-sm: 28px;
+  --ink-control-h-md: 36px;
+  --ink-control-h-lg: 44px;
+
+  /* Tailwind v4 语义别名 — 供 fill-html-head 生成 @theme inline 桥接（ink 前缀版） */
+  --ink-background: var(--bg-base-default);
+  --ink-foreground: var(--text-default);
+  --ink-card: var(--bg-base-secondary);
+  --ink-card-foreground: var(--text-default);
+  --ink-popover: var(--ink-bg-panel-solid);
+  --ink-popover-foreground: var(--text-default);
+  --ink-primary: var(--bg-brand);
+  --ink-primary-foreground: var(--text-on-brand);
+  --ink-secondary: var(--bg-base-tertiary);
+  --ink-secondary-foreground: var(--text-secondary);
+  --ink-muted: var(--bg-base-tertiary);
+  --ink-muted-foreground: var(--text-tertiary);
+  --ink-accent: var(--ink-bronze-primary);
+  --ink-accent-foreground: var(--text-default);
+  --ink-destructive: var(--ink-vermilion-primary);
+  --ink-destructive-foreground: var(--text-default);
+  --ink-border: var(--ink-border-gold);
+  --ink-input: var(--ink-border-gold);
+  --ink-ring: var(--ink-gold-primary);
+  --ink-radius-small: var(--ink-radius-sm);
+  --ink-radius-medium: var(--ink-radius-md);
+  --ink-radius-large: var(--ink-radius-lg);
+  --ink-radius-xlarge: var(--ink-radius-lg);
+}
+
+/* ---------- 基础重置 ---------- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg-base-default);
+  color: var(--text-default);
+  font-family: var(--ink-font-body);
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* 游戏沉浸根容器 */
+.ink-game-root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-base-default);
+}
+
+/* 全局水墨背景层 */
+.ink-bg-layer {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(200, 168, 88, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(184, 115, 51, 0.04) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(10, 11, 16, 0.8) 0%, transparent 60%),
+    var(--bg-base-default);
+  pointer-events: none;
+  z-index: 0;
+}
+.ink-bg-layer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+}
+
+/* 暗角晕影 */
+.ink-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.55) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ---------- 面板系统 ---------- */
+.ink-panel {
+  position: relative;
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  -webkit-backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-inset), var(--ink-shadow-soft);
+  border-radius: var(--ink-radius-md);
+}
+.ink-panel-solid {
+  background: var(--ink-bg-panel-solid);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-inset);
+  border-radius: var(--ink-radius-md);
+}
+.ink-panel-elevated {
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-panel);
+  border-radius: var(--ink-radius-md);
+}
+
+/* 纸色面板 — yy- 引入，卷轴/信笺/对话框专用 */
+.ink-paper-panel {
+  position: relative;
+  background: var(--ink-paper-panel-bg);
+  border: 1px solid var(--ink-paper-panel-border);
+  border-radius: var(--ink-radius-md);
+  box-shadow: var(--ink-paper-panel-shadow);
+  color: var(--text-on-paper);
+  overflow: hidden;
+}
+.ink-paper-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.3'/%3E%3C/svg%3E");
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+/* 水墨笔触描边 — 多层错位金线模拟飞白 */
+.ink-brush-border {
+  position: relative;
+  border: 1px solid var(--ink-border-gold);
+  box-shadow:
+    inset 0 0 0 1px rgba(200, 168, 88, 0.05),
+    0 0 0 1px rgba(200, 168, 88, 0.08),
+    0 1px 0 rgba(200, 168, 88, 0.1);
+}
+.ink-brush-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1px solid transparent;
+  border-image: linear-gradient(135deg, rgba(200, 168, 88, 0.4) 0%, rgba(200, 168, 88, 0.08) 40%, rgba(184, 115, 51, 0.3) 100%) 1;
+  pointer-events: none;
+}
+
+/* 面板四角装饰 */
+.ink-corner-deco {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--ink-gold-primary);
+  opacity: 0.7;
+}
+.ink-corner-deco.tl { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+.ink-corner-deco.tr { top: -1px; right: -1px; border-left: none; border-bottom: none; }
+.ink-corner-deco.bl { bottom: -1px; left: -1px; border-right: none; border-top: none; }
+.ink-corner-deco.br { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+/* 面板标题栏 */
+.ink-panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--ink-space-2);
+  padding: var(--ink-space-3) var(--ink-space-4);
+  border-bottom: 1px solid var(--ink-divider);
+  font-family: var(--ink-font-heading);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-brand);
+  letter-spacing: 2px;
+}
+.ink-panel-title::before {
+  content: "";
+  width: 3px;
+  height: 16px;
+  background: linear-gradient(180deg, var(--ink-gold-bright), var(--ink-gold-deep));
+  border-radius: var(--ink-radius-sm);
+}
+
+/* ---------- 排版 ---------- */
+.ink-text-display {
+  font-family: var(--ink-font-display);
+  font-size: 32px;
+  color: var(--text-brand);
+  letter-spacing: 4px;
+  line-height: 1.2;
+}
+.ink-text-heading {
+  font-family: var(--ink-font-heading);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-default);
+  letter-spacing: 1px;
+}
+.ink-text-subheading {
+  font-family: var(--ink-font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}
+.ink-text-body {
+  font-family: var(--ink-font-body);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+.ink-text-caption {
+  font-family: var(--ink-font-body);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.ink-text-number {
+  font-family: var(--ink-font-number);
+  font-weight: 700;
+  color: var(--text-brand);
+}
+
+/* 竖排标题 — yy- 引入，加载页/章节过场专用 */
+.ink-vertical-title {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-family: var(--ink-font-display);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  line-height: 2.0;
+  color: var(--text-brand);
+}
+
+/* ---------- 按钮 ---------- */
+.ink-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ink-space-2);
+  height: var(--ink-control-h-md);
+  padding: 0 var(--ink-space-4);
+  font-family: var(--ink-font-heading);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: var(--text-default);
+  background: var(--bg-base-tertiary);
+  border: 1px solid var(--ink-border-gold);
+  border-radius: var(--ink-radius-sm);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+.ink-btn:hover {
+  background: var(--bg-base-elevated);
+  border-color: var(--ink-border-gold-strong);
+  color: var(--text-brand);
+}
+.ink-btn:active { transform: translateY(1px); }
+.ink-btn-primary {
+  color: var(--text-on-brand);
+  background: linear-gradient(135deg, var(--ink-gold-bright), var(--ink-gold-deep));
+  border-color: var(--ink-gold-primary);
+  box-shadow: var(--ink-shadow-gold);
+}
+.ink-btn-primary:hover {
+  color: var(--text-on-brand);
+  background: linear-gradient(135deg, var(--ink-gold-primary), var(--ink-gold-deep));
+  border-color: var(--ink-gold-bright);
+}
+/* 朱红按钮 — 战斗/危险操作 */
+.ink-btn-vermilion {
+  color: var(--ink-paper-bright);
+  background: linear-gradient(135deg, var(--ink-vermilion-primary), var(--ink-vermilion-deep));
+  border-color: var(--ink-vermilion-deep);
+  box-shadow: var(--ink-shadow-vermilion);
+}
+.ink-btn-vermilion:hover {
+  color: var(--ink-paper-bright);
+  background: linear-gradient(135deg, var(--ink-vermilion-bright), var(--ink-vermilion-primary));
+  border-color: var(--ink-vermilion-bright);
+}
+.ink-btn-ghost {
+  background: transparent;
+  border-color: var(--border-neutral-l2);
+  color: var(--text-secondary);
+}
+.ink-btn-ghost:hover {
+  background: rgba(200, 168, 88, 0.06);
+  border-color: var(--ink-border-gold);
+  color: var(--text-brand);
+}
+.ink-btn-sm { height: var(--ink-control-h-sm); font-size: 12px; padding: 0 var(--ink-space-3); }
+.ink-btn-lg { height: var(--ink-control-h-lg); font-size: 15px; padding: 0 var(--ink-space-5); }
+
+/* ---------- 标签 / 徽章 ---------- */
+.ink-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-family: var(--ink-font-body);
+  color: var(--text-secondary);
+  background: rgba(200, 168, 88, 0.08);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  letter-spacing: 1px;
+}
+.ink-tag-brand {
+  color: var(--text-brand);
+  background: rgba(200, 168, 88, 0.12);
+  border-color: var(--ink-border-gold);
+}
+.ink-tag-vermilion {
+  color: var(--text-vermilion);
+  background: rgba(192, 57, 43, 0.12);
+  border-color: var(--ink-border-vermilion);
+}
+
+/* 品质色 */
+.ink-q-common { color: var(--ink-quality-common); border-color: var(--ink-quality-common); }
+.ink-q-uncommon { color: var(--ink-quality-uncommon); border-color: var(--ink-quality-uncommon); }
+.ink-q-rare { color: var(--ink-quality-rare); border-color: var(--ink-quality-rare); }
+.ink-q-epic { color: var(--ink-quality-epic); border-color: var(--ink-quality-epic); }
+.ink-q-legendary { color: var(--ink-quality-legendary); border-color: var(--ink-quality-legendary); box-shadow: 0 0 12px rgba(192, 57, 43, 0.3); }
+
+/* ---------- 进度条 ---------- */
+.ink-bar {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  overflow: hidden;
+}
+.ink-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ink-gold-deep), var(--ink-gold-bright));
+  border-radius: var(--ink-radius-sm);
+  box-shadow: 0 0 8px rgba(200, 168, 88, 0.3);
+  transition: width 0.4s ease;
+}
+.ink-bar-fill-jade { background: linear-gradient(90deg, #3E6B5E, var(--ink-jade-bright)); box-shadow: 0 0 8px rgba(94, 139, 126, 0.3); }
+.ink-bar-fill-blood { background: linear-gradient(90deg, #8A3E3A, var(--ink-blood-bright)); box-shadow: 0 0 8px rgba(184, 84, 80, 0.3); }
+/* 朱红进度条 — 气血/战斗 */
+.ink-bar-fill-vermilion { background: linear-gradient(90deg, var(--ink-vermilion-deep), var(--ink-vermilion-bright)); box-shadow: 0 0 8px rgba(192, 57, 43, 0.3); }
+.ink-bar-thin { height: 4px; }
+
+/* 竖向属性条 */
+.ink-bar-v {
+  position: relative;
+  width: 8px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  overflow: hidden;
+  display: inline-block;
+}
+.ink-bar-v-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(0deg, var(--ink-gold-deep), var(--ink-gold-bright));
+  border-radius: var(--ink-radius-sm);
+}
+
+/* ---------- 网格格子（背包/技能槽） ---------- */
+.ink-cell {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ink-cell:hover {
+  border-color: var(--ink-border-gold-strong);
+  background: rgba(200, 168, 88, 0.08);
+}
+.ink-cell-quality { border-width: 1px; border-style: solid; }
+.ink-cell-badge {
+  position: absolute;
+  bottom: 1px;
+  right: 2px;
+  font-family: var(--ink-font-number);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-default);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+/* ---------- 列表项 ---------- */
+.ink-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--ink-space-3);
+  padding: var(--ink-space-3) var(--ink-space-4);
+  border-bottom: 1px solid var(--ink-divider);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.ink-list-item:hover { background: rgba(200, 168, 88, 0.05); }
+.ink-list-item.active {
+  background: rgba(200, 168, 88, 0.1);
+  border-left: 2px solid var(--ink-gold-primary);
+}
+
+/* ---------- 头像 / 圆点 ---------- */
+.ink-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ink-radius-md);
+  border: 1px solid var(--ink-border-gold);
+  background: var(--bg-base-tertiary);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.ink-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--ink-quality-common);
+}
+.ink-dot-online { background: var(--ink-quality-uncommon); box-shadow: 0 0 6px rgba(107, 142, 90, 0.6); }
+
+/* ---------- 分割线 ---------- */
+.ink-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ink-divider) 20%, var(--ink-divider) 80%, transparent);
+  border: none;
+}
+.ink-divider-v {
+  width: 1px;
+  align-self: stretch;
+  background: linear-gradient(180deg, transparent, var(--ink-divider) 20%, var(--ink-divider) 80%, transparent);
+}
+
+/* ---------- 水墨晕染装饰 — yy- 引入 ---------- */
+.ink-splash { position: absolute; border-radius: 50%; filter: blur(15px); opacity: 0.3; pointer-events: none; }
+.ink-splash-1 { width: 300px; height: 300px; background: radial-gradient(circle, var(--bg-base-tertiary) 0%, transparent 70%); }
+.ink-splash-2 { width: 200px; height: 200px; background: radial-gradient(circle, var(--bg-base-elevated) 0%, transparent 70%); }
+.ink-splash-vermilion { width: 250px; height: 250px; background: radial-gradient(circle, rgba(192, 57, 43, 0.15) 0%, transparent 70%); }
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+::-webkit-scrollbar-thumb {
+  background: rgba(200, 168, 88, 0.25);
+  border-radius: var(--ink-radius-sm);
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(200, 168, 88, 0.45); }
+
+/* ---------- 选中态 ---------- */
+::selection { background: rgba(200, 168, 88, 0.3); color: var(--text-default); }
+
+/* ---------- 辅助 ---------- */
+.ink-flex { display: flex; }
+.ink-flex-col { display: flex; flex-direction: column; }
+.ink-items-center { align-items: center; }
+.ink-justify-between { justify-content: space-between; }
+.ink-gap-2 { gap: var(--ink-space-2); }
+.ink-gap-3 { gap: var(--ink-space-3); }
+.ink-gap-4 { gap: var(--ink-space-4); }
+.ink-flex-1 { flex: 1; }
+.ink-text-center { text-align: center; }
+.ink-text-right { text-align: right; }
+.ink-overflow-auto { overflow: auto; }
+.ink-overflow-hidden { overflow: hidden; }
+.ink-relative { position: relative; }
+.ink-absolute { position: absolute; }
+.ink-pointer { cursor: pointer; }
+
+/* 通用内容层（在背景层之上） */
+.ink-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+}
+
+/* 返回按钮 */
+.ink-back-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  border-radius: var(--ink-radius-sm);
+  color: var(--text-brand);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.ink-back-btn:hover {
+  background: rgba(200, 168, 88, 0.12);
+  border-color: var(--ink-border-gold-strong);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--ink-background);
+    --color-foreground: var(--ink-foreground);
+    --color-card: var(--ink-card);
+    --color-card-foreground: var(--ink-card-foreground);
+    --color-popover: var(--ink-popover);
+    --color-popover-foreground: var(--ink-popover-foreground);
+    --color-primary: var(--ink-primary);
+    --color-primary-foreground: var(--ink-primary-foreground);
+    --color-secondary: var(--ink-secondary);
+    --color-secondary-foreground: var(--ink-secondary-foreground);
+    --color-muted: var(--ink-muted);
+    --color-muted-foreground: var(--ink-muted-foreground);
+    --color-accent: var(--ink-accent);
+    --color-accent-foreground: var(--ink-accent-foreground);
+    --color-destructive: var(--ink-destructive);
+    --color-destructive-foreground: var(--ink-destructive-foreground);
+    --color-border: var(--ink-border);
+    --color-input: var(--ink-input);
+    --color-ring: var(--ink-ring);
+    --radius-sm: var(--ink-radius-small);
+    --radius-md: var(--ink-radius-medium);
+    --radius-lg: var(--ink-radius-large);
+    --radius-xl: var(--ink-radius-xlarge);
+  }
+  @layer base {
+    body { background: var(--ink-background); color: var(--ink-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- 水墨背景层 -->
+    <div class="ink-bg-layer"></div>
+    <div class="ink-vignette"></div>
+
+    <!-- ====================================
+         左侧导航 (240px)
+         ==================================== -->
+    <aside class="left-nav">
+      <div class="nav-logo">
+        <div class="nav-logo-text">混沌世界</div>
+        <div class="nav-logo-sub">HUNDUN WORLD</div>
+      </div>
+      <ul class="nav-list">
+        <li class="nav-item">
+          <span class="nav-item-icon"><i data-lucide="leaf"></i></span>
+          <span>不肝</span>
+        </li>
+        <li class="nav-item">
+          <span class="nav-item-icon"><i data-lucide="sparkles"></i></span>
+          <span>抽卡</span>
+        </li>
+        <li class="nav-item active">
+          <span class="nav-item-icon"><i data-lucide="swords"></i></span>
+          <span>活动</span>
+        </li>
+        <li class="nav-item" data-dom-id="nav-battle-pass">
+          <span class="nav-item-icon"><i data-lucide="scroll-text"></i></span>
+          <span>战令</span>
+        </li>
+        <li class="nav-item">
+          <span class="nav-item-icon"><i data-lucide="bar-chart-3"></i></span>
+          <span>属性</span>
+        </li>
+        <li class="nav-item">
+          <span class="nav-item-icon"><i data-lucide="gem"></i></span>
+          <span>奇珍阁</span>
+        </li>
+        <li class="nav-item">
+          <span class="nav-item-icon"><i data-lucide="settings"></i></span>
+          <span>设置</span>
+        </li>
+      </ul>
+      <div class="nav-footer">
+        <div class="nav-footer-text">v2.0.1 · 江湖公测</div>
+      </div>
+    </aside>
+
+    <!-- ====================================
+         主区域
+         ==================================== -->
+    <div class="main-area">
+      <!-- 顶部信息栏 (60px) -->
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <button class="back-btn" data-dom-id="back-hud" aria-label="返回战斗">
+            <i data-lucide="arrow-left"></i>
+          </button>
+          <div class="avatar">
+            <i data-lucide="user"></i>
+          </div>
+          <div class="player-info">
+            <div class="player-name">江湖过客</div>
+            <div class="player-level">Lv. 42</div>
+          </div>
+        </div>
+        <div class="top-bar-right">
+          <div class="currency-item">
+            <span class="currency-icon currency-coin"><i data-lucide="circle-dollar-sign"></i></span>
+            <span class="currency-label">铜钱</span>
+            <span class="currency-value">12,450</span>
+          </div>
+          <div class="currency-item">
+            <span class="currency-icon currency-ingot"><i data-lucide="gem"></i></span>
+            <span class="currency-label">元宝</span>
+            <span class="currency-value">328</span>
+          </div>
+          <div class="time-display">
+            <i data-lucide="clock"></i>
+            <span>戌时 三刻</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- 内容区域 -->
+      <main class="content-area">
+        <!-- ====================================
+             精选活动横幅
+             ==================================== -->
+        <section class="featured-banner ink-panel ink-brush-border">
+          <div class="banner-splash-1"></div>
+          <div class="banner-splash-2"></div>
+          <div class="banner-decoration">武</div>
+          <div class="banner-content">
+            <div class="banner-label">精选活动 · FEATURED</div>
+            <h1 class="banner-title">江湖盛会</h1>
+            <div class="banner-subtitle">限时活动 · 武林大会</div>
+            <div class="banner-countdown">
+              <span class="countdown-label">剩余</span>
+              <span class="countdown-timer">
+                <span class="count-days">3天</span> 14:23:08
+              </span>
+            </div>
+          </div>
+          <div class="banner-action">
+            <button class="ink-btn ink-btn-primary ink-btn-lg">
+              <i data-lucide="zap" style="width:16px;height:16px;"></i>
+              立即参与
+            </button>
+          </div>
+        </section>
+
+        <!-- ====================================
+             内容分栏：活动列表 + 详情面板
+             ==================================== -->
+        <div class="content-split">
+          <!-- 左栏：活动列表 -->
+          <div class="activity-list-column">
+            <div class="activity-list-panel ink-panel">
+              <span class="ink-corner-deco tl"></span>
+              <span class="ink-corner-deco tr"></span>
+              <span class="ink-corner-deco bl"></span>
+              <span class="ink-corner-deco br"></span>
+              <!-- 标签栏 -->
+              <nav class="tab-bar">
+                <div class="tab-item active">
+                  全部<span class="tab-count">6</span>
+                </div>
+                <div class="tab-item">
+                  进行中<span class="tab-count">4</span>
+                </div>
+                <div class="tab-item">
+                  即将开始<span class="tab-count">1</span>
+                </div>
+                <div class="tab-item">
+                  已结束<span class="tab-count">1</span>
+                </div>
+              </nav>
+
+              <!-- 活动条目 -->
+              <div class="activity-list">
+                <!-- 条目1：武林大会 (选中) -->
+                <div class="activity-entry selected">
+                  <div class="activity-icon-box icon-sword">
+                    <i data-lucide="swords"></i>
+                  </div>
+                  <div class="activity-entry-body">
+                    <div class="activity-entry-header">
+                      <span class="activity-name">武林大会</span>
+                      <span class="ink-tag ink-tag-jade">进行中</span>
+                    </div>
+                    <div class="activity-time">
+                      <i data-lucide="clock"></i>
+                      <span>3天剩余</span>
+                    </div>
+                    <div class="activity-entry-footer">
+                      <div class="activity-progress-wrap">
+                        <div class="ink-bar ink-bar-thin">
+                          <div class="ink-bar-fill" style="width: 60%;"></div>
+                        </div>
+                        <div class="activity-progress-label">
+                          <span>参与进度</span>
+                          <span class="progress-value">60%</span>
+                        </div>
+                      </div>
+                      <div class="activity-rewards">
+                        <div class="reward-icon epic"><i data-lucide="gem"></i></div>
+                        <div class="reward-icon rare"><i data-lucide="scroll"></i></div>
+                        <div class="reward-icon legendary"><i data-lucide="crown"></i></div>
+                        <span class="reward-more">+2</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="activity-entry-arrow">
+                    <i data-lucide="chevron-right"></i>
+                  </div>
+                </div>
+
+                <!-- 条目2：灯会寻宝 -->
+                <div class="activity-entry">
+                  <div class="activity-icon-box icon-lamp">
+                    <i data-lucide="lamp"></i>
+                  </div>
+                  <div class="activity-entry-body">
+                    <div class="activity-entry-header">
+                      <span class="activity-name">灯会寻宝</span>
+                      <span class="ink-tag ink-tag-jade">进行中</span>
+                    </div>
+                    <div class="activity-time">
+                      <i data-lucide="clock"></i>
+                      <span>5天剩余</span>
+                    </div>
+                    <div class="activity-entry-footer">
+                      <div class="activity-progress-wrap">
+                        <div class="ink-bar ink-bar-thin">
+                          <div class="ink-bar-fill ink-bar-fill-jade" style="width: 35%;"></div>
+                        </div>
+                        <div class="activity-progress-label">
+                          <span>参与进度</span>
+                          <span class="progress-value">35%</span>
+                        </div>
+                      </div>
+                      <div class="activity-rewards">
+                        <div class="reward-icon uncommon"><i data-lucide="gift"></i></div>
+                        <div class="reward-icon epic"><i data-lucide="gem"></i></div>
+                        <span class="reward-more">+1</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="activity-entry-arrow">
+                    <i data-lucide="chevron-right"></i>
+                  </div>
+                </div>
+
+                <!-- 条目3：诗词大会 -->
+                <div class="activity-entry">
+                  <div class="activity-icon-box icon-book">
+                    <i data-lucide="book-open"></i>
+                  </div>
+                  <div class="activity-entry-body">
+                    <div class="activity-entry-header">
+                      <span class="activity-name">诗词大会</span>
+                      <span class="ink-tag ink-tag-brand">即将开始</span>
+                    </div>
+                    <div class="activity-time">
+                      <i data-lucide="hourglass"></i>
+                      <span>1天后开始</span>
+                    </div>
+                    <div class="activity-entry-footer">
+                      <div class="activity-progress-wrap">
+                        <div class="ink-bar ink-bar-thin">
+                          <div class="ink-bar-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="activity-progress-label">
+                          <span>未开始</span>
+                          <span class="progress-value">—</span>
+                        </div>
+                      </div>
+                      <div class="activity-rewards">
+                        <div class="reward-icon rare"><i data-lucide="scroll"></i></div>
+                        <div class="reward-icon epic"><i data-lucide="book-marked"></i></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="activity-entry-arrow">
+                    <i data-lucide="chevron-right"></i>
+                  </div>
+                </div>
+
+                <!-- 条目4：帮派攻防 -->
+                <div class="activity-entry">
+                  <div class="activity-icon-box icon-shield">
+                    <i data-lucide="shield"></i>
+                  </div>
+                  <div class="activity-entry-body">
+                    <div class="activity-entry-header">
+                      <span class="activity-name">帮派攻防</span>
+                      <span class="ink-tag ink-tag-jade">进行中</span>
+                    </div>
+                    <div class="activity-time urgent">
+                      <i data-lucide="timer"></i>
+                      <span>12小时剩余</span>
+                    </div>
+                    <div class="activity-entry-footer">
+                      <div class="activity-progress-wrap">
+                        <div class="ink-bar ink-bar-thin">
+                          <div class="ink-bar-fill ink-bar-fill-vermilion" style="width: 80%;"></div>
+                        </div>
+                        <div class="activity-progress-label">
+                          <span>参与进度</span>
+                          <span class="progress-value">80%</span>
+                        </div>
+                      </div>
+                      <div class="activity-rewards">
+                        <div class="reward-icon uncommon"><i data-lucide="shield-half"></i></div>
+                        <div class="reward-icon epic"><i data-lucide="trophy"></i></div>
+                        <span class="reward-more">+3</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="activity-entry-arrow">
+                    <i data-lucide="chevron-right"></i>
+                  </div>
+                </div>
+
+                <!-- 条目5：寻宝奇缘 -->
+                <div class="activity-entry">
+                  <div class="activity-icon-box icon-treasure">
+                    <i data-lucide="treasure-chest"></i>
+                  </div>
+                  <div class="activity-entry-body">
+                    <div class="activity-entry-header">
+                      <span class="activity-name">寻宝奇缘</span>
+                      <span class="ink-tag ink-tag-jade">进行中</span>
+                    </div>
+                    <div class="activity-time">
+                      <i data-lucide="clock"></i>
+                      <span>6天剩余</span>
+                    </div>
+                    <div class="activity-entry-footer">
+                      <div class="activity-progress-wrap">
+                        <div class="ink-bar ink-bar-thin">
+                          <div class="ink-bar-fill ink-bar-fill-jade" style="width: 15%;"></div>
+                        </div>
+                        <div class="activity-progress-label">
+                          <span>参与进度</span>
+                          <span class="progress-value">15%</span>
+                        </div>
+                      </div>
+                      <div class="activity-rewards">
+                        <div class="reward-icon common"><i data-lucide="coins"></i></div>
+                        <div class="reward-icon rare"><i data-lucide="key"></i></div>
+                        <span class="reward-more">+2</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="activity-entry-arrow">
+                    <i data-lucide="chevron-right"></i>
+                  </div>
+                </div>
+
+                <!-- 条目6：江湖悬赏 (已结束) -->
+                <div class="activity-entry ended">
+                  <div class="activity-icon-box icon-badge">
+                    <i data-lucide="medal"></i>
+                  </div>
+                  <div class="activity-entry-body">
+                    <div class="activity-entry-header">
+                      <span class="activity-name">江湖悬赏</span>
+                      <span class="ink-tag ink-tag-common">已结束</span>
+                    </div>
+                    <div class="activity-time">
+                      <i data-lucide="check-circle-2"></i>
+                      <span>已结束</span>
+                    </div>
+                    <div class="activity-entry-footer">
+                      <div class="activity-progress-wrap">
+                        <div class="ink-bar ink-bar-thin">
+                          <div class="ink-bar-fill" style="width: 100%;"></div>
+                        </div>
+                        <div class="activity-progress-label">
+                          <span>已完成</span>
+                          <span class="progress-value">100%</span>
+                        </div>
+                      </div>
+                      <div class="activity-rewards">
+                        <div class="reward-icon common"><i data-lucide="coins"></i></div>
+                        <div class="reward-icon uncommon"><i data-lucide="gift"></i></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="activity-entry-arrow">
+                    <i data-lucide="chevron-right"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右栏：活动详情面板 -->
+          <div class="detail-panel-column">
+            <div class="detail-panel ink-panel ink-brush-border">
+              <span class="ink-corner-deco tl"></span>
+              <span class="ink-corner-deco tr"></span>
+              <span class="ink-corner-deco bl"></span>
+              <span class="ink-corner-deco br"></span>
+              <div class="detail-panel-splash"></div>
+              <div class="detail-panel-content">
+                <!-- 标题 -->
+                <div class="detail-header">
+                  <div class="detail-title-wrap">
+                    <h2 class="detail-title">武林大会</h2>
+                    <div class="detail-badges">
+                      <span class="ink-tag ink-tag-vermilion">限时</span>
+                      <span class="ink-tag ink-tag-brand">PVP</span>
+                    </div>
+                  </div>
+                  <div class="detail-close">
+                    <i data-lucide="x"></i>
+                  </div>
+                </div>
+
+                <hr class="ink-divider">
+
+                <!-- 时间 -->
+                <div class="detail-section">
+                  <div class="detail-section-label">活动时间</div>
+                  <div class="detail-time">
+                    <i data-lucide="calendar-days"></i>
+                    <span>2026.07.08 — 2026.07.15</span>
+                  </div>
+                </div>
+
+                <!-- 简介 -->
+                <div class="detail-section">
+                  <div class="detail-section-label">活动简介</div>
+                  <p class="detail-description">
+                    江湖各路豪杰齐聚一堂，比武论剑，争夺武林盟主之位。每日参与可获得丰厚奖励，排名前列者更可得绝世武学秘籍与稀有装备。此乃江湖一年一度之盛事，切莫错过。
+                  </p>
+                </div>
+
+                <!-- 参与条件 -->
+                <div class="detail-section">
+                  <div class="detail-section-label">参与条件</div>
+                  <div class="detail-requirements">
+                    <span class="requirement-tag met">
+                      <i data-lucide="check"></i>
+                      等级 ≥ 30
+                    </span>
+                    <span class="requirement-tag met">
+                      <i data-lucide="check"></i>
+                      战力 ≥ 15000
+                    </span>
+                  </div>
+                </div>
+
+                <!-- 奖励 -->
+                <div class="detail-section">
+                  <div class="detail-section-label">活动奖励</div>
+                  <div class="detail-reward-list">
+                    <div class="detail-reward-item">
+                      <div class="detail-reward-icon epic">
+                        <i data-lucide="gem"></i>
+                      </div>
+                      <div class="detail-reward-info">
+                        <span class="detail-reward-name epic">元宝</span>
+                        <span class="detail-reward-qty">数量 <span class="qty-num">×500</span></span>
+                      </div>
+                    </div>
+                    <div class="detail-reward-item">
+                      <div class="detail-reward-icon legendary">
+                        <i data-lucide="scroll"></i>
+                      </div>
+                      <div class="detail-reward-info">
+                        <span class="detail-reward-name legendary">武林秘籍</span>
+                        <span class="detail-reward-qty">数量 <span class="qty-num">×1</span></span>
+                      </div>
+                    </div>
+                    <div class="detail-reward-item">
+                      <div class="detail-reward-icon common">
+                        <i data-lucide="coins"></i>
+                      </div>
+                      <div class="detail-reward-info">
+                        <span class="detail-reward-name common">铜钱</span>
+                        <span class="detail-reward-qty">数量 <span class="qty-num">×5000</span></span>
+                      </div>
+                    </div>
+                    <div class="detail-reward-item">
+                      <div class="detail-reward-icon rare">
+                        <i data-lucide="shield-half"></i>
+                      </div>
+                      <div class="detail-reward-info">
+                        <span class="detail-reward-name rare">稀有装备</span>
+                        <span class="detail-reward-qty">数量 <span class="qty-num">×1</span></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 底部操作 -->
+                <div class="detail-footer">
+                  <button class="ink-btn ink-btn-vermilion ink-btn-lg detail-participate-btn">
+                    <i data-lucide="swords" style="width:18px;height:18px;"></i>
+                    参与活动
+                  </button>
+                  <a class="detail-rules-link">
+                    <i data-lucide="file-text"></i>
+                    <span>查看规则</span>
+                    <i data-lucide="chevron-right" style="width:12px;height:12px;"></i>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // 初始化 Lucide 图标
+    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+      lucide.createIcons();
+    }
+
+    // 标签栏切换
+    document.querySelectorAll('.tab-item').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.tab-item').forEach(function(t) {
+          t.classList.remove('active');
+        });
+        this.classList.add('active');
+      });
+    });
+
+    // 活动条目选择
+    document.querySelectorAll('.activity-entry').forEach(function(entry) {
+      entry.addEventListener('click', function() {
+        document.querySelectorAll('.activity-entry').forEach(function(e) {
+          e.classList.remove('selected');
+        });
+        this.classList.add('selected');
+      });
+    });
+
+    // 倒计时模拟（仅视觉效果）
+    (function() {
+      var timerEl = document.querySelector('.countdown-timer');
+      if (!timerEl) return;
+      var totalSeconds = 3 * 86400 + 14 * 3600 + 23 * 60 + 8;
+      setInterval(function() {
+        if (totalSeconds <= 0) return;
+        totalSeconds--;
+        var days = Math.floor(totalSeconds / 86400);
+        var hours = Math.floor((totalSeconds % 86400) / 3600);
+        var mins = Math.floor((totalSeconds % 3600) / 60);
+        var secs = totalSeconds % 60;
+        var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+        timerEl.innerHTML = '<span class="count-days">' + days + '天</span> ' +
+          pad(hours) + ':' + pad(mins) + ':' + pad(secs);
+      }, 1000);
+    })();
+  </script>
+
+  <style>
+    /* ========================================
+       活动 — 页面专属样式
+       融合UI · 混沌世界
+       ======================================== */
+
+    /* === 应用骨架 === */
+    .app-shell {
+      position: relative;
+      display: flex;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--bg-base-default);
+    }
+
+    /* === 左侧导航 (240px) === */
+    .left-nav {
+      position: relative;
+      z-index: 10;
+      width: 240px;
+      min-width: 240px;
+      height: 100vh;
+      background: linear-gradient(180deg, var(--bg-base-default) 0%, var(--bg-base-secondary) 100%);
+      border-right: 1px solid var(--ink-border-gold);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .left-nav::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+      opacity: 0.03;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+    }
+
+    .nav-logo {
+      padding: var(--ink-space-6) var(--ink-space-5);
+      text-align: center;
+      border-bottom: 1px solid var(--ink-divider);
+      position: relative;
+    }
+
+    .nav-logo-text {
+      font-family: var(--ink-font-display);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--ink-gold-bright);
+      letter-spacing: 0.15em;
+      text-shadow: 0 0 8px var(--ink-gold-glow);
+    }
+
+    .nav-logo-sub {
+      font-family: var(--ink-font-body);
+      font-size: 11px;
+      color: var(--ink-paper-dark);
+      letter-spacing: 0.3em;
+      margin-top: var(--ink-space-1);
+    }
+
+    .nav-list {
+      flex: 1;
+      list-style: none;
+      padding: var(--ink-space-4) 0;
+      position: relative;
+      overflow-y: auto;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--ink-space-4);
+      padding: var(--ink-space-4) var(--ink-space-6);
+      font-family: var(--ink-font-heading);
+      font-size: 15px;
+      color: var(--ink-paper-aged);
+      cursor: pointer;
+      transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+      border-left: 3px solid transparent;
+      position: relative;
+    }
+
+    .nav-item:hover {
+      color: var(--ink-paper-bright);
+      background: rgba(200, 168, 88, 0.05);
+    }
+
+    .nav-item.active {
+      color: var(--ink-gold-bright);
+      border-left: 3px solid var(--ink-gold-primary);
+      background: rgba(200, 168, 88, 0.08);
+    }
+
+    .nav-item-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .nav-item-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 1.5;
+    }
+
+    .nav-footer {
+      padding: var(--ink-space-5);
+      border-top: 1px solid var(--border-neutral-l1);
+      position: relative;
+    }
+
+    .nav-footer-text {
+      font-family: var(--ink-font-body);
+      font-size: 11px;
+      color: var(--text-tertiary);
+      text-align: center;
+      letter-spacing: 0.1em;
+    }
+
+    /* === 主区域 === */
+    .main-area {
+      position: relative;
+      z-index: 5;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* === 顶部信息栏 (60px) === */
+    .top-bar {
+      height: 60px;
+      min-height: 60px;
+      background: var(--ink-bg-panel);
+      backdrop-filter: var(--ink-blur-panel);
+      -webkit-backdrop-filter: var(--ink-blur-panel);
+      border-bottom: 1px solid var(--ink-divider);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--ink-space-5);
+      position: relative;
+      z-index: 5;
+    }
+
+    .top-bar-left {
+      display: flex;
+      align-items: center;
+      gap: var(--ink-space-4);
+    }
+
+    .back-btn {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-base-tertiary);
+      border: 1px solid var(--ink-border-gold);
+      border-radius: var(--ink-radius-sm);
+      color: var(--text-brand);
+      cursor: pointer;
+      transition: background 0.18s ease, border-color 0.18s ease;
+      flex-shrink: 0;
+    }
+
+    .back-btn:hover {
+      background: rgba(200, 168, 88, 0.12);
+      border-color: var(--ink-border-gold-strong);
+    }
+
+    .back-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--ink-radius-md);
+      border: 2px solid var(--ink-gold-primary);
+      background: linear-gradient(135deg, var(--bg-base-tertiary) 0%, var(--bg-base-elevated) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .avatar svg {
+      width: 22px;
+      height: 22px;
+      color: var(--ink-gold-primary);
+    }
+
+    .player-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .player-name {
+      font-family: var(--ink-font-heading);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-default);
+      line-height: 1.2;
+    }
+
+    .player-level {
+      font-family: var(--ink-font-number);
+      font-size: 11px;
+      color: var(--ink-gold-primary);
+      line-height: 1.2;
+    }
+
+    .top-bar-right {
+      display: flex;
+      align-items: center;
+      gap: var(--ink-space-5);
+    }
+
+    .currency-item {
+      display: flex;
+      align-items: center;
+      gap: var(--ink-space-2);
+      font-family: var(--ink-font-body);
+      font-size: 13px;
+      color: var(--ink-paper-aged);
+    }
+
+    .currency-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .currency-icon svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .currency-coin { color: var(--ink-gold-primary); }
+    .currency-ingot { color: var(--ink-vermilion-bright); }
+
+    .currency-label {
+      color: var(--text-tertiary);
+    }
+
+    .currency-value {
+      font-family: var(--ink-font-number);
+      font-weight: 700;
+      color: var(--text-default);
+    }
+
+    .time-display {
+      display: flex;
+      align-items: center;
+      gap: var(--ink-space-2);
+      font-family: var(--ink-font-heading);
+      font-size: 13px;
+      color: var(--state-info);
+      padding-left: var(--ink-space-5);
+      border-left: 1px solid var(--ink-divider);
+    }
+
+    .time-display svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* === 内容区域 === */
+    .content-area {
+      flex: 1;
+      background: var(--bg-base-default);
+      padding: var(--ink-space-5);
+      overflow-y: auto;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* === 精选活动横幅 === */
+    .featured-banner {
+      width: 100%;
+      min-height: 160px;
+      padding: var(--ink-space-6) var(--ink-space-8);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      overflow: hidden;
+      margin-bottom: var(--ink-space-5);
+    }
+
+    .banner-splash-1 {
+      position: absolute;
+      top: -60px;
+      right: 20%;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(200, 168, 88, 0.12) 0%, transparent 70%);
+      filter: blur(30px);
+      pointer-events: none;
+    }
+
+    .banner-splash-2 {
+      position: absolute;
+      bottom: -80px;
+      left: 10%;
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(192, 57, 43, 0.08) 0%, transparent 70%);
+      filter: blur(25px);
+      pointer-events: none;
+    }
+
+    .banner-decoration {
+      position: absolute;
+      top: 50%;
+      right: 40%;
+      transform: translateY(-50%);
+      font-family: var(--ink-font-display);
+      font-size: 120px;
+      color: rgba(200, 168, 88, 0.05);
+      font-weight: 900;
+      pointer-events: none;
+      line-height: 1;
+    }
+
+    .banner-content {
+      display: flex;
+      flex-direction: column;
+      gap: var(--ink-space-2);
+      position: relative;
+      z-index: 2;
+    }
+
+    .banner-label {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--ink-space-2);
+      font-family: var(--ink-font-body);
+      font-size: 11px;
+      color: var(--ink-gold-primary);
+      letter-spacing: 0.2em;
+    }
+
+    .banner-label::before {
+      content: '';
+      width: 24px;
+      height: 1px;
+      background: var(--ink-gold-primary);
+    }
+
+    .banner-title {
+      font-family: var(--ink-font-display);
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--ink-gold-bright);
+      letter-spacing: 0.1em;
+      line-height: 1.2;
+      text-shadow: 0 0 16px var(--ink-gold-glow);
+      text-wrap: balance;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+
+    .banner-subtitle {
+      font-family: var(--ink-font-body);
+      font-size: 13px;
+      color: var(--ink-paper-aged);
+      letter-spacing: 0.1em;
+    }
+
+    .banner-countdown {
+      display: flex;
+      align-items: center;
+      gap: var(--ink-space-2);
+      margin-top: var(--ink-space-1);
+    }
+
+    .countdown-label {
+      font-family: var(--ink-font-body);
+      font-size: 11px;
+      color: var(--ink-paper-dark);
+    }
+
+    .countdown-timer {
+      font-family: var(--ink-font-number);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink-vermilion-bright);
+      letter-spacing: 0.05em;
+    }
+
+    .countdown-timer .count-days {
+      color: var(--ink-vermilion-primary);
+      font-size: 18px;
+    }
+
+    .banner-action {
+      position: relative;
+      z-index: 2;
+      flex-shrink: 0;
+    }
+
+    /* === 内容分栏 === */
+    .content-split {
+      display: flex;
+      gap: var(--ink-space-5);
+      align-items: flex-start;
+    }
+
+    .activity-list-column {
+      flex: 0 0 60%;
+      max-width: 60%;
+    }
+
+    .detail-panel-column {
+      flex: 0 0 calc(40% - var(--ink-space-5));
+      max-width: calc(40% - var(--ink-space-5));
+      position: sticky;
+      top: 0;
+    }
+
+    /* === 活动列表面板 === */
+    .activity-list-panel {
+      overflow: hidden;
+    }
+
+    /* 标签栏 */
+    .tab-bar {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 0 var(--ink-space-5);
+      border-bottom: 1px solid var(--ink-divider);
+      position: relative;
+      z-index: 1;
+    }
+
+    .tab-item {
+      padding: var(--ink-space-4) var(--ink-space-5);
+      font-family: var(--ink-font-heading);
+      font-size: 13px;
+      color: var(--ink-paper-dark);
+      cursor: pointer;
+      transition: color 0.18s ease, border-color 0.18s ease;
+      border-bottom: 2px solid transparent;
+      position: relative;
+      white-space: nowrap;
+    }
+
+    .tab-item:hover {
+      color: var(--ink-paper-bright);
+    }
+
+    .tab-item.active {
+      color: var(--ink-gold-bright);
+      border-bottom: 2px solid var(--ink-gold-primary);
+    }
+
+    .tab-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      font-size: 10px;
+      font-family: var(--ink-font-body);
+      color: var(--ink-paper-dark);
+      background: rgba(168, 158, 138, 0.15);
+      border-radius: var(--radius-full);
+      margin-left: var(--ink-space-1);
+    }
+
+    .tab-item.active .tab-count {
+      color: var(--ink-gold-bright);
+      background: rgba(200, 168, 88, 0.15);
+    }
+
+    /* 活动条目列表 */
+    .activity-list {
+      padding: var(--ink-space-2);
+      position: relative;
+      z-index: 1;
+      max-height: 560px;
+      overflow-y: auto;
+    }
+
+    .activity-entry {
+      display: flex;
+      align-items: center;
+      gap: var(--ink-space-4);
+      padding: var(--ink-space-3) var(--ink-space-4);
+      border-radius: var(--ink-radius-md);
+      cursor: pointer;
+      transition: background 0.18s ease, border-color 0.18s ease;
+      border: 1px solid transparent;
+      margin-bottom: var(--ink-space-1);
+      position: relative;
+    }
+
+    .activity-entry:hover {
+      background: rgba(200, 168, 88, 0.05);
+      border-color: var(--border-neutral-l1);
+    }
+
+    .activity-entry.selected {
+      background: rgba(200, 168, 88, 0.08);
+      border-color: var(--ink-border-gold);
+    }
+
+    .activity-entry.ended {
+      opacity: 0.55;
+    }
+
+    .activity-icon-box {
+      width: 48px;
+      height: 48px;
+      min-width: 48px;
+      border-radius: var(--ink-radius-md);
+      background: linear-gradient(135deg, var(--bg-base-tertiary) 0%, var(--bg-base-secondary) 100%);
+      border: 1px solid var(--ink-border-gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .activity-icon-box svg {
+      width: 24px;
+      height: 24px;
+      stroke-width: 1.5;
+    }
+
+    .activity-icon-box.icon-sword svg { color: var(--ink-vermilion-bright); }
+    .activity-icon-box.icon-lamp svg { color: var(--ink-gold-bright); }
+    .activity-icon-box.icon-book svg { color: var(--state-info); }
+    .activity-icon-box.icon-shield svg { color: var(--ink-jade-bright); }
+    .activity-icon-box.icon-treasure svg { color: var(--ink-gold-primary); }
+    .activity-icon-box.icon-badge svg { color: var(--ink-paper-dark); }
+
+    .activity-entry-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .activity-entry-header {
+      display: flex;
+      align-items: center;
+      gap: var(--ink-space-2);
+    }
+
+    .activity-name {
+      font-family: var(--ink-font-heading);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ink-paper-bright);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .activity-entry.ended .activity-name {
+      color: var(--ink-paper-dark);
+    }
+
+    .activity-time {
+      font-family: var(--ink-font-body);
+      font-size: 11px;
+      color: var(--ink-paper-dark);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .activity-time svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .activity-time.urgent {
+      color: var(--ink-vermilion-bright);
+    }
+
+    .activity-entry-footer {
+      display: flex;
+      align-items: center;
+      gap: var(--ink-space-4);
+    }
+
+    .activity-progress-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .activity-progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--ink-font-body);
+      font-size: 10px;
+      color: var(--text-tertiary);
+    }
+
+    .activity-progress-label .progress-value {
+      color: var(--ink-paper-aged);
+      font-family: var(--ink-font-number);
+    }
+
+    .activity-rewards {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .reward-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: var(--ink-radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid;
+      position: relative;
+    }
+
+    .reward-icon svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .reward-icon.common {
+      border-color: var(--ink-quality-common);
+      background: rgba(138, 130, 117, 0.1);
+    }
+    .reward-icon.common svg { color: var(--ink-quality-common); }
+
+    .reward-icon.uncommon {
+      border-color: var(--ink-quality-uncommon);
+      background: rgba(107, 142, 90, 0.1);
+    }
+    .reward-icon.uncommon svg { color: var(--ink-quality-uncommon); }
+
+    .reward-icon.rare {
+      border-color: var(--ink-quality-rare);
+      background: rgba(74, 126, 168, 0.1);
+    }
+    .reward-icon.rare svg { color: var(--ink-quality-rare); }
+
+    .reward-icon.epic {
+      border-color: var(--ink-quality-epic);
+      background: rgba(139, 94, 158, 0.1);
+    }
+    .reward-icon.epic svg { color: var(--ink-quality-epic); }
+
+    .reward-icon.legendary {
+      border-color: var(--ink-quality-legendary);
+      background: rgba(192, 57, 43, 0.1);
+    }
+    .reward-icon.legendary svg { color: var(--ink-quality-legendary); }
+
+    .reward-more {
+      font-family: var(--ink-font-body);
+      font-size: 10px;
+      color: var(--text-tertiary);
+      margin-left: 2px;
+    }
+
+    .activity-entry-arrow {
+      flex-shrink: 0;
+      color: var(--text-tertiary);
+      display: flex;
+      align-items: center;
+    }
+
+    .activity-entry-arrow svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .activity-entry.selected .activity-entry-arrow {
+      color: var(--ink-gold-primary);
+    }
+
+    /* 已结束状态进度条 */
+    .activity-entry.ended .ink-bar-fill {
+      background: var(--text-tertiary);
+      box-shadow: none;
+    }
+
+    /* === 详情面板 === */
+    .detail-panel {
+      overflow: hidden;
+    }
+
+    .detail-panel-splash {
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(192, 57, 43, 0.08) 0%, transparent 70%);
+      filter: blur(20px);
+      pointer-events: none;
+    }
+
+    .detail-panel-content {
+      position: relative;
+      z-index: 1;
+      padding: var(--ink-space-5);
+    }
+
+    .detail-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: var(--ink-space-4);
+    }
+
+    .detail-title-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: var(--ink-space-2);
+    }
+
+    .detail-title {
+      font-family: var(--ink-font-heading);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--ink-gold-bright);
+      letter-spacing: 0.08em;
+      line-height: 1.2;
+      text-wrap: balance;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+
+    .detail-badges {
+      display: flex;
+      align-items: center;
+      gap: var(--ink-space-2);
+    }
+
+    .detail-close {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--ink-radius-sm);
+      cursor: pointer;
+      color: var(--ink-paper-dark);
+      transition: color 0.18s ease, background 0.18s ease;
+    }
+
+    .detail-close:hover {
+      color: var(--ink-paper-bright);
+      background: rgba(200, 168, 88, 0.08);
+    }
+
+    .detail-close svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .detail-section {
+      margin-bottom: var(--ink-space-4);
+    }
+
+    .detail-section-label {
+      font-family: var(--ink-font-body);
+      font-size: 11px;
+      color: var(--ink-gold-primary);
+      letter-spacing: 0.15em;
+      margin-bottom: var(--ink-space-2);
+      display: flex;
+      align-items: center;
+      gap: var(--ink-space-2);
+    }
+
+    .detail-section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--ink-divider) 0%, transparent 100%);
+    }
+
+    .detail-time {
+      display: flex;
+      align-items: center;
+      gap: var(--ink-space-2);
+      font-family: var(--ink-font-number);
+      font-size: 13px;
+      color: var(--ink-paper-aged);
+    }
+
+    .detail-time svg {
+      width: 16px;
+      height: 16px;
+      color: var(--state-info);
+    }
+
+    .detail-description {
+      font-family: var(--ink-font-body);
+      font-size: 13px;
+      line-height: 1.75;
+      color: var(--ink-paper-aged);
+      text-align: justify;
+    }
+
+    .detail-requirements {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--ink-space-2);
+    }
+
+    .requirement-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px var(--ink-space-2);
+      font-family: var(--ink-font-body);
+      font-size: 11px;
+      color: var(--ink-paper-aged);
+      background: rgba(14, 16, 22, 0.6);
+      border: 1px solid var(--border-neutral-l1);
+      border-radius: var(--ink-radius-sm);
+    }
+
+    .requirement-tag svg {
+      width: 12px;
+      height: 12px;
+      color: var(--state-info);
+    }
+
+    .requirement-tag.met {
+      color: var(--ink-jade-bright);
+      border-color: var(--ink-jade-primary);
+    }
+
+    .requirement-tag.met svg {
+      color: var(--ink-jade-bright);
+    }
+
+    /* 详情奖励列表 */
+    .detail-reward-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--ink-space-2);
+    }
+
+    .detail-reward-item {
+      display: flex;
+      align-items: center;
+      gap: var(--ink-space-2);
+      padding: var(--ink-space-2);
+      background: rgba(14, 16, 22, 0.5);
+      border: 1px solid var(--border-neutral-l1);
+      border-radius: var(--ink-radius-sm);
+      transition: border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .detail-reward-item:hover {
+      border-color: var(--ink-border-gold);
+      background: rgba(14, 16, 22, 0.7);
+    }
+
+    .detail-reward-icon {
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      border-radius: var(--ink-radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid;
+      position: relative;
+    }
+
+    .detail-reward-icon svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .detail-reward-icon.common {
+      border-color: var(--ink-quality-common);
+      background: rgba(138, 130, 117, 0.1);
+    }
+    .detail-reward-icon.common svg { color: var(--ink-quality-common); }
+
+    .detail-reward-icon.uncommon {
+      border-color: var(--ink-quality-uncommon);
+      background: rgba(107, 142, 90, 0.1);
+    }
+    .detail-reward-icon.uncommon svg { color: var(--ink-quality-uncommon); }
+
+    .detail-reward-icon.rare {
+      border-color: var(--ink-quality-rare);
+      background: rgba(74, 126, 168, 0.1);
+    }
+    .detail-reward-icon.rare svg { color: var(--ink-quality-rare); }
+
+    .detail-reward-icon.epic {
+      border-color: var(--ink-quality-epic);
+      background: rgba(139, 94, 158, 0.1);
+    }
+    .detail-reward-icon.epic svg { color: var(--ink-quality-epic); }
+
+    .detail-reward-icon.legendary {
+      border-color: var(--ink-quality-legendary);
+      background: rgba(192, 57, 43, 0.1);
+      box-shadow: 0 0 8px rgba(192, 57, 43, 0.2);
+    }
+    .detail-reward-icon.legendary svg { color: var(--ink-quality-legendary); }
+
+    .detail-reward-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .detail-reward-name {
+      font-family: var(--ink-font-heading);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .detail-reward-name.common { color: var(--ink-quality-common); }
+    .detail-reward-name.uncommon { color: var(--ink-quality-uncommon); }
+    .detail-reward-name.rare { color: var(--ink-quality-rare); }
+    .detail-reward-name.epic { color: var(--ink-quality-epic); }
+    .detail-reward-name.legendary { color: var(--ink-quality-legendary); }
+
+    .detail-reward-qty {
+      font-family: var(--ink-font-body);
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    .detail-reward-qty .qty-num {
+      color: var(--ink-paper-aged);
+      font-family: var(--ink-font-number);
+      font-weight: 700;
+    }
+
+    /* 详情底部操作 */
+    .detail-footer {
+      margin-top: var(--ink-space-5);
+      display: flex;
+      flex-direction: column;
+      gap: var(--ink-space-3);
+    }
+
+    .detail-participate-btn {
+      width: 100%;
+    }
+
+    .detail-rules-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--ink-space-1);
+      font-family: var(--ink-font-body);
+      font-size: 13px;
+      color: var(--state-info);
+      cursor: pointer;
+      transition: color 0.18s ease;
+      text-decoration: none;
+    }
+
+    .detail-rules-link:hover {
+      color: var(--ink-gold-primary);
+    }
+
+    .detail-rules-link svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* === 页面专属标签变体 === */
+    .ink-tag-jade {
+      color: var(--ink-jade-bright);
+      background: rgba(94, 139, 126, 0.12);
+      border-color: var(--ink-jade-primary);
+    }
+
+    .ink-tag-common {
+      color: var(--ink-paper-dark);
+      background: rgba(168, 158, 138, 0.1);
+      border-color: var(--ink-paper-faded);
+    }
+
+    /* === 响应式 === */
+    @media (max-width: 1100px) {
+      .content-split {
+        flex-direction: column;
+      }
+      .activity-list-column,
+      .detail-panel-column {
+        flex: 1;
+        max-width: 100%;
+      }
+      .detail-panel-column {
+        position: static;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .left-nav {
+        width: 64px;
+        min-width: 64px;
+      }
+      .nav-logo-text,
+      .nav-logo-sub,
+      .nav-item span:not(.nav-item-icon),
+      .nav-footer-text {
+        display: none;
+      }
+      .nav-item {
+        justify-content: center;
+        padding: var(--ink-space-4) 0;
+      }
+      .top-bar-right {
+        gap: var(--ink-space-3);
+      }
+      .currency-label {
+        display: none;
+      }
+      .featured-banner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--ink-space-4);
+        padding: var(--ink-space-5);
+      }
+      .banner-action {
+        width: 100%;
+      }
+      .banner-action .ink-btn {
+        width: 100%;
+      }
+      .content-area {
+        padding: var(--ink-space-3);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</body>
+</html>

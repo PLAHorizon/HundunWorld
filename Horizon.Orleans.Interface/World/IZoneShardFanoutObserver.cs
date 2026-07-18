@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Horizon.Game.Message.Sync;
 using Orleans;
@@ -16,6 +17,8 @@ namespace Horizon.Orleans.Interface.World;
 ///   <item>契约放在 Orleans.Interface 下，grain 与 gateway 共享同一份 proxy 代码。</item>
 ///   <item>回调是 void-ish（返回 Task）并由 grain 在单条 await 尾部触发，调用方（grain）不阻塞主循环；
 ///         grain 侧已在 <see cref="IMUserGrain"/> 中验证该模式：观察者异常会被吞并记日志，不影响主流程。</item>
+///   <item>Task 14：<paramref name="sessionIds"/> 改为 <see cref="IReadOnlyCollection{T}"/> 接口，
+///         允许调用方直接传递 AOI 内部 HashSet 视图，避免热路径 <c>ToArray()</c> 分配。</item>
 /// </list>
 /// </remarks>
 public interface IZoneShardFanoutObserver : IGrainObserver
@@ -25,5 +28,5 @@ public interface IZoneShardFanoutObserver : IGrainObserver
     /// </summary>
     /// <param name="diff">待广播的 <see cref="WorldChunkDiffPacket"/>（gateway 按需序列化）。</param>
     /// <param name="sessionIds">订阅了 <paramref name="diff"/>.<see cref="WorldChunkDiffPacket.ChunkMortonKey"/> 的 session 列表。</param>
-    Task OnChunkDiffAsync(WorldChunkDiffPacket diff, long[] sessionIds);
+    Task OnChunkDiffAsync(WorldChunkDiffPacket diff, IReadOnlyCollection<long> sessionIds);
 }

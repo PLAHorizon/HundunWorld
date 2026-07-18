@@ -1,0 +1,72 @@
+{
+  "root": {
+    "id": "project-shell",
+    "type": "project-shell",
+    "children": [
+      {
+        "id": "page-leaf-page-popup-bestiary-side",
+        "type": "page-leaf",
+        "pageId": "page-popup-bestiary-side",
+        "pageFile": "popup-bestiary-side.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-popup-message",
+        "type": "page-leaf",
+        "pageId": "page-popup-message",
+        "pageFile": "popup-message.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-popup-martial-arts",
+        "type": "page-leaf",
+        "pageId": "page-popup-martial-arts",
+        "pageFile": "popup-martial-arts.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-popup-guide-side",
+        "type": "page-leaf",
+        "pageId": "page-popup-guide-side",
+        "pageFile": "popup-guide-side.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-popup-martial-detail",
+        "type": "page-leaf",
+        "pageId": "page-popup-martial-detail",
+        "pageFile": "popup-martial-detail.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-popup-item-acquired",
+        "type": "page-leaf",
+        "pageId": "page-popup-item-acquired",
+        "pageFile": "popup-item-acquired.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-popup-skill-realization",
+        "type": "page-leaf",
+        "pageId": "page-popup-skill-realization",
+        "pageFile": "popup-skill-realization.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-popup-verification",
+        "type": "page-leaf",
+        "pageId": "page-popup-verification",
+        "pageFile": "popup-verification.html",
+        "dependencies": [],
+        "status": "pending"
+      }
+    ]
+  }
+}

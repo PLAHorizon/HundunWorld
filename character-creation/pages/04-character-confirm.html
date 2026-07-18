@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>角色确认 - HundunWorld</title>
+    <style id="theme-vars">
+/* ============================================================
+   HundunWorld Character Creation - Game UI Brand CSS
+   Overlay on Claude Design Library tokens.
+   Primary: Teal (青黄+青兰混合)
+   Secondary: Navy translucent (藏青半透明)
+   Muted: Ink translucent (墨色半透明)
+   Prefix: --game-
+   ============================================================ */
+
+:root {
+  /* === Game Primary (Teal: 青黄+青兰混合) === */
+  --game-primary: #2A9D8F;
+  --game-primary-light: #4ECDC4;
+  --game-primary-dark: #1B7A6E;
+  --game-primary-glow: rgba(42, 157, 143, 0.3);
+  --game-primary-rgb: 42, 157, 143;
+
+  /* === Game Secondary (Navy Translucent: 藏青半透明) === */
+  --game-secondary: rgba(25, 40, 80, 0.55);
+  --game-secondary-light: rgba(35, 55, 100, 0.4);
+  --game-secondary-solid: #1C2850;
+
+  /* === Game Muted (Ink Translucent: 墨色半透明) === */
+  --game-ink: rgba(10, 12, 18, 0.65);
+  --game-ink-light: rgba(10, 12, 18, 0.4);
+  --game-ink-subtle: rgba(10, 12, 18, 0.2);
+  --game-ink-solid: #0A0C12;
+
+  /* === Game Background System (Spring Dawn, light purple touch) === */
+  --game-bg-darkest: #0F1018;
+  --game-bg-dark: #161A24;
+  --game-bg-panel: rgba(20, 22, 30, 0.78);
+  --game-bg-panel-hover: rgba(30, 32, 44, 0.88);
+  --game-bg-fog: rgba(200, 190, 180, 0.06);
+  --game-bg-overlay: rgba(0, 0, 0, 0.4);
+  --game-bg-jade-deep: #121520;
+  --game-bg-jade-mid: #1C2230;
+  --game-bg-jade-teal: #2A9D8F;
+  --game-bg-jade-navy: #222838;
+  --game-bg-jade-fog: #D0C8C0;
+  --game-bg-jade-shimmer: rgba(42, 157, 143, 0.06);
+  --game-bg-dawn-purple: #221830;
+  --game-bg-dawn-violet: #5A4878;
+  --game-bg-dawn-pink: #C8908A;
+  --game-bg-dawn-teal: #2A9D8F;
+  --game-bg-dawn-sky: #98A8B8;
+  --game-bg-dawn-horizon: #D8C0B0;
+  --game-bg-dawn-gold: #C8A870;
+  --game-bg-dawn-warm: #E0C8A8;
+  --game-bg-dawn-sunlight: #F0DDB0;
+  --game-bg-dawn-sunray: rgba(240, 221, 176, 0.15);
+  --game-bg-dawn-sunstrong: rgba(232, 208, 160, 0.25);
+
+  /* === Game Text System === */
+  --game-text-primary: #E8ECF0;
+  --game-text-secondary: #8A95A5;
+  --game-text-accent: #2A9D8F;
+  --game-text-muted: #5A6575;
+  --game-text-disabled: #3A4452;
+  --game-text-white: #ffffff;
+  --game-text-dark: #0C1018;
+
+  /* === Game Font System === */
+  --font-game-title: "STKaiti", "KaiTi", "Noto Serif SC", "SimSun", serif;
+  --font-game-body: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+
+  /* === Game Spacing (4px grid) === */
+  --game-space-1: 4px;
+  --game-space-2: 8px;
+  --game-space-3: 12px;
+  --game-space-4: 16px;
+  --game-space-5: 20px;
+  --game-space-6: 24px;
+  --game-space-8: 32px;
+  --game-space-10: 40px;
+  --game-space-12: 48px;
+  --game-space-16: 64px;
+
+  /* === Game Radius === */
+  --game-radius-sm: 4px;
+  --game-radius-md: 8px;
+  --game-radius-lg: 12px;
+  --game-radius-full: 9999px;
+
+  /* === Game Shadow System === */
+  --game-shadow-panel: 0 4px 24px rgba(12, 16, 24, 0.5), inset 0 1px 0 rgba(42, 157, 143, 0.08);
+  --game-shadow-glow: 0 0 20px rgba(42, 157, 143, 0.2);
+  --game-shadow-button: 0 2px 8px rgba(12, 16, 24, 0.4);
+  --game-shadow-dropdown: 0 8px 32px rgba(12, 16, 24, 0.6);
+
+  /* === Game Border System === */
+  --game-border-accent: 1px solid rgba(42, 157, 143, 0.2);
+  --game-border-accent-active: 1px solid rgba(42, 157, 143, 0.5);
+  --game-border-navy: 1px solid rgba(25, 40, 80, 0.4);
+  --game-border-ink: 1px solid rgba(10, 12, 18, 0.5);
+  --game-border-subtle: 1px solid rgba(42, 157, 143, 0.08);
+
+  /* === Game Transition === */
+  --game-transition-fast: 0.15s ease;
+  --game-transition-normal: 0.3s ease;
+  --game-transition-slow: 0.5s ease;
+
+  /* === Game Control Heights === */
+  --game-height-btn: 36px;
+  --game-height-btn-lg: 44px;
+  --game-height-slider: 3px;
+  --game-height-slider-thumb: 14px;
+  --game-height-tab: 48px;
+  --game-height-topbar: 56px;
+  --game-height-bottombar: 64px;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--game-primary);
+    --color-secondary: var(--game-secondary);
+  }
+  @layer base {
+    body { background: var(--game-background); color: var(--game-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+  <main class="scene" role="main" aria-label="角色确认页面">
+    <!-- Background image layer -->
+    <div class="scene-bg" aria-hidden="true"></div>
+
+    <!-- Warm vignette overlay -->
+    <div class="scene-vignette" aria-hidden="true"></div>
+
+    <!-- Character display area -->
+    <div class="character-stage">
+      <!-- Full-body character image -->
+      <div class="character-image-wrap">
+        <img
+          class="character-image"
+          src="../assets/male-warrior-silhouette.jpg"
+          alt="角色全身像"
+          draggable="false"
+        />
+        <div class="character-shadow" aria-hidden="true"></div>
+      </div>
+
+      <!-- Name and job info (above character, top 30%) -->
+      <div class="character-info">
+        <h1 class="character-name">剑影无痕</h1>
+        <div class="character-meta">
+          <span class="job-badge">剑客</span>
+          <span class="character-level">Lv.1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom action bar (80px, glass) -->
+    <nav class="bottom-bar" role="navigation" aria-label="操作栏">
+      <button
+        class="btn-ghost"
+        type="button"
+        data-dom-id="btn-back-confirm"
+        aria-label="返回修改角色信息"
+      >返回修改</button>
+      <button
+        class="btn-primary"
+        type="button"
+        data-dom-id="btn-enter-game"
+        aria-label="确认并进入游戏"
+      >确认进入游戏</button>
+    </nav>
+
+    <div id="particles"></div>
+  </main>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var btnBack = document.querySelector('[data-dom-id="btn-back-confirm"]');
+      var btnEnter = document.querySelector('[data-dom-id="btn-enter-game"]');
+
+      // Space key triggers CTA animation
+      document.addEventListener('keydown', function (e) {
+        if (e.code === 'Space' && document.activeElement === document.body) {
+          e.preventDefault();
+          btnEnter.focus();
+          btnEnter.classList.add('btn-primary--pulse');
+          btnEnter.addEventListener('animationend', function handler() {
+            btnEnter.classList.remove('btn-primary--pulse');
+            btnEnter.removeEventListener('animationend', handler);
+          });
+        }
+      });
+
+      // Log clicks for prototype integration
+      btnBack.addEventListener('click', function () {
+        console.log('[UI] 返回修改 clicked');
+      });
+
+      btnEnter.addEventListener('click', function () {
+        console.log('[UI] 确认进入游戏 clicked');
+      });
+    })();
+
+    // --- Floating particles ---
+    (function() {
+      function createParticles() {
+        var container = document.getElementById('particles');
+        if (!container) return;
+        var count = 40;
+        var colors = ['', '--gold', '--warm', '--pink', '--teal', '', '--gold', '--warm', '--pink', '--violet', '--lavender', '--gold', '--warm'];
+        for (var i = 0; i < count; i++) {
+          var p = document.createElement('div');
+          p.className = 'game-particle game-particle' + colors[i % colors.length];
+          p.style.left = (5 + Math.random() * 90) + '%';
+          p.style.bottom = (5 + Math.random() * 40) + '%';
+          p.style.animationDuration = (5 + Math.random() * 10) + 's';
+          p.style.animationDelay = (Math.random() * 12) + 's';
+          p.style.width = (1 + Math.random() * 3) + 'px';
+          p.style.height = p.style.width;
+          container.appendChild(p);
+        }
+      }
+      createParticles();
+    })();
+  </script>
+
+    <style>
+    /* === Universal box-sizing & overflow control === */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    html, body {
+      overflow-x: hidden;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    /* === Reset & Base === */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--game-bg-darkest);
+      font-family: var(--font-game-body);
+      color: var(--game-text-primary);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* === Full-screen Scene === */
+    .scene {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      margin: 0 auto;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* === Background: smooth gradient + atmosphere image === */
+    .scene-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background:
+        url('../assets/wuxia-bg-atmosphere.jpg') center/cover no-repeat;
+      background-color: var(--game-bg-darkest);
+    }
+
+    .scene-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url('../assets/wuxia-bg-atmosphere.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0.3;
+      mix-blend-mode: luminosity;
+    }
+
+    /* === Warm vignette overlay === */
+    .scene-vignette {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background: radial-gradient(
+        ellipse at 45% 50%,
+        transparent 40%,
+        rgba(var(--game-bg-overlay-rgb), 0.35) 70%,
+        rgba(var(--game-bg-overlay-rgb), 0.55) 100%
+      );
+      mask-image: radial-gradient(ellipse at 35% 50%, black 0%, rgba(0,0,0,0.5) 85%);
+      -webkit-mask-image: radial-gradient(ellipse at 35% 50%, black 0%, rgba(0,0,0,0.5) 85%);
+      pointer-events: none;
+    }
+
+    /* === Character Area === */
+    .character-stage {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100%;
+      width: 100%;
+      padding-top: 12vh;
+    }
+
+    /* Character full-body image - centered, fade-in from below */
+    .character-image-wrap {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1;
+      opacity: 0;
+      animation: characterEnter 0.8s ease forwards;
+      animation-delay: 0.2s;
+    }
+
+    .character-image {
+      display: block;
+      max-height: 75vh;
+      max-width: 40vw;
+      width: auto;
+      height: 75vh;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 32px rgba(0, 0, 0, 0.6));
+    }
+
+    /* Ground shadow ellipse under character */
+    .character-shadow {
+      position: absolute;
+      bottom: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 24px;
+      background: radial-gradient(
+        ellipse at center,
+        rgba(0, 0, 0, 0.45) 0%,
+        transparent 70%
+      );
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    /* === Name & Info (above character, top 30% area) === */
+    .character-info {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 6vh;
+    }
+
+    .character-name {
+      font-family: var(--font-game-title);
+      font-size: 28px;
+      color: var(--game-primary);
+      letter-spacing: 4px;
+      text-shadow: 0 0 20px var(--game-primary-glow);
+      margin-bottom: var(--game-space-3);
+      animation: breatheGlow 3s ease-in-out infinite;
+    }
+
+    .character-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--game-space-3);
+    }
+
+    /* Pill badge for job class (terracotta border, transparent fill) */
+    .job-badge {
+      font-size: 12px;
+      color: var(--game-primary);
+      border: var(--game-border-accent);
+      border-radius: var(--game-radius-full);
+      padding: var(--game-space-1) var(--game-space-4);
+      background: transparent;
+      line-height: 1.5;
+      white-space: nowrap;
+    }
+
+    .character-level {
+      font-size: 13px;
+      color: var(--game-text-secondary);
+      letter-spacing: 1px;
+    }
+
+    /* === Bottom Bar (80px, glass) === */
+    .bottom-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 10;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--game-space-16);
+      background: var(--game-bg-panel);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: var(--game-border-accent);
+      box-shadow: var(--game-shadow-panel);
+    }
+
+    /* Ghost button (back) */
+    .btn-ghost {
+      font-family: var(--font-game-body);
+      font-size: 15px;
+      color: var(--game-text-secondary);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: var(--game-space-2) var(--game-space-4);
+      transition: color var(--game-transition-normal);
+      letter-spacing: 1px;
+      outline: none;
+    }
+
+    .btn-ghost:hover,
+    .btn-ghost:focus-visible {
+      color: var(--game-primary);
+    }
+
+    /* Primary CTA button (terracotta gradient, dark text) */
+    .btn-primary {
+      font-family: var(--font-game-body);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--game-text-dark);
+      background: linear-gradient(135deg, var(--game-primary), var(--game-primary-light));
+      border: none;
+      border-radius: var(--game-radius-sm);
+      box-shadow: var(--game-shadow-glow);
+      cursor: pointer;
+      padding: 0 var(--game-space-10);
+      height: 44px;
+      letter-spacing: 2px;
+      transition: transform var(--game-transition-normal), box-shadow var(--game-transition-normal);
+      outline: none;
+    }
+
+    .btn-primary:hover,
+    .btn-primary:focus-visible {
+      transform: scale(1.02);
+      box-shadow:
+        0 0 24px var(--game-primary-glow),
+        0 0 48px rgba(var(--game-primary-rgb), 0.15);
+    }
+
+    .btn-primary:active {
+      transform: scale(0.98);
+      box-shadow: var(--game-shadow-glow);
+    }
+
+    /* === Floating particles === */
+    .game-particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: var(--game-primary);
+      border-radius: var(--game-radius-full);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 1;
+      animation: particleFloat linear infinite;
+    }
+    .game-particle--violet { background: var(--game-bg-dawn-violet); }
+    .game-particle--pink { background: var(--game-bg-dawn-pink); }
+    .game-particle--teal { background: var(--game-bg-dawn-teal); }
+    .game-particle--lavender { background: var(--game-bg-dawn-horizon); }
+  .game-particle--gold { background: var(--game-bg-dawn-gold); }
+  .game-particle--warm { background: var(--game-bg-dawn-warm); }
+
+    @keyframes particleFloat {
+      0% { opacity: 0; transform: translateY(0) scale(1); }
+      15% { opacity: 0.7; }
+      85% { opacity: 0.4; }
+      100% { opacity: 0; transform: translateY(-80px) scale(0.5); }
+    }
+
+    /* === Keyframes === */
+    @keyframes characterEnter {
+      from {
+        opacity: 0;
+        transform: translate(-50%, calc(-50% + 20px));
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+      }
+    }
+
+    @keyframes breatheGlow {
+      0%, 100% {
+        text-shadow: 0 0 20px var(--game-primary-glow);
+      }
+      50% {
+        text-shadow: 0 0 32px rgba(var(--game-primary-rgb), 0.55), 0 0 8px rgba(var(--game-primary-rgb), 0.2);
+      }
+    }
+
+    /* === Responsive: Tablet (768px - 1199px) === */
+    @media (max-width: 1199px) and (min-width: 768px) {
+      .character-image {
+        max-height: 60vh;
+        height: 60vh;
+      }
+      .character-name {
+        font-size: 22px;
+      }
+      .bottom-bar {
+        padding: 0 var(--game-space-8);
+      }
+    }
+
+    /* === Responsive: Mobile (<768px) === */
+    @media (max-width: 767px) {
+      .character-image {
+        max-height: 50vh;
+        max-width: 80dvw;
+        height: 50vh;
+        filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.4));
+      }
+      .character-name {
+        font-size: 20px;
+        letter-spacing: 2px;
+      }
+      .job-badge {
+        font-size: 11px;
+        padding: 3px 12px;
+      }
+      .bottom-bar {
+        height: auto;
+        flex-direction: column;
+        padding: var(--game-space-3) var(--game-space-6);
+        gap: var(--game-space-3);
+      }
+      .btn-primary {
+        width: calc(100% - 24px);
+        order: 2;
+      }
+      .btn-ghost {
+        order: 1;
+        font-size: 13px;
+      }
+      .scene-vignette {
+        background: radial-gradient(
+          ellipse at center,
+          transparent 55%,
+          rgba(var(--game-bg-overlay-rgb), 0.4) 85%,
+          rgba(var(--game-bg-overlay-rgb), 0.65) 100%
+        );
+      }
+      .character-shadow {
+        width: 120px;
+        height: 16px;
+      }
+      @keyframes characterEnter {
+        from {
+          opacity: 0;
+          transform: translate(-50%, calc(-50% + 10px));
+        }
+        to {
+          opacity: 1;
+          transform: translate(-50%, -50%);
+        }
+      }
+    }
+
+    /* === Responsive: Small phone / narrow window (< 480px) === */
+    @media (max-width: 479px) {
+      .bottom-bar {
+        padding: 0 8px;
+        gap: 8px;
+      }
+      .btn-primary {
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+      .btn-ghost {
+        font-size: 11px;
+        padding: 4px 8px;
+      }
+    }
+    </style>
+</body>
+</html>

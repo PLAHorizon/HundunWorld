@@ -1,0 +1,56 @@
+{
+  "root": {
+    "id": "project-shell",
+    "type": "project-shell",
+    "children": [
+      {
+        "id": "page-leaf-page-reward-achievement",
+        "type": "page-leaf",
+        "pageId": "page-reward-achievement",
+        "pageFile": "reward-achievement.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-reward-teleport-unlock",
+        "type": "page-leaf",
+        "pageId": "page-reward-teleport-unlock",
+        "pageFile": "reward-teleport-unlock.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-reward-map-unlock",
+        "type": "page-leaf",
+        "pageId": "page-reward-map-unlock",
+        "pageFile": "reward-map-unlock.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-reward-level-up",
+        "type": "page-leaf",
+        "pageId": "page-reward-level-up",
+        "pageFile": "reward-level-up.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-reward-congratulations",
+        "type": "page-leaf",
+        "pageId": "page-reward-congratulations",
+        "pageFile": "reward-congratulations.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-reward-quest-complete",
+        "type": "page-leaf",
+        "pageId": "page-reward-quest-complete",
+        "pageFile": "reward-quest-complete.html",
+        "dependencies": [],
+        "status": "pending"
+      }
+    ]
+  }
+}

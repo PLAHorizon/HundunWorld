@@ -198,12 +198,16 @@ namespace Game.Combat.Skills
                 var animGraph = AnimatedModel.AnimationGraph;
                 if (animGraph != null)
                 {
-                    // 设置动画参数（需要根据实际动画图配置）
+                    // 设置动画参数（Flax API: AnimatedModel.GetParameter(name).Value = value）
                     try
                     {
-                        // TODO: 根据Flax Engine实际API调整
-                        // 可能的API: animGraph.Parameters.SetTrigger("TriggerCast");
-                        Debug.Log($"触发动画图参数 TriggerCast (占位实现)");
+                        var param = AnimatedModel.GetParameter("TriggerCast");
+                        if (param != null)
+                        {
+                            param.Value = true;
+                        }
+                        if (ShowDebug)
+                            Debug.Log("触发动画图参数 TriggerCast");
                     }
                     catch (Exception ex)
                     {

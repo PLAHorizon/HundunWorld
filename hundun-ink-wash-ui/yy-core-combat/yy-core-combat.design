@@ -1,0 +1,196 @@
+{
+  "data": [
+    {
+      "id": "page-combat-hud",
+      "type": "page",
+      "name": "战斗HUD",
+      "title": "战斗HUD",
+      "version": 1,
+      "createdAt": 1783721439,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/combat-hud.html"
+      }
+    },
+    {
+      "id": "page-guide-hud",
+      "type": "page",
+      "name": "引导-HUD",
+      "title": "引导-HUD",
+      "version": 1,
+      "createdAt": 1783721439,
+      "canvasData": {
+        "x": 620,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/guide-hud.html"
+      }
+    },
+    {
+      "id": "page-element-vision",
+      "type": "page",
+      "name": "元素视野",
+      "title": "元素视野",
+      "version": 1,
+      "createdAt": 1783721439,
+      "canvasData": {
+        "x": 1240,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/element-vision.html"
+      }
+    },
+    {
+      "id": "page-death-screen",
+      "type": "page",
+      "name": "阵亡",
+      "title": "阵亡",
+      "version": 1,
+      "createdAt": 1783721439,
+      "canvasData": {
+        "x": 1860,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/death-screen.html"
+      }
+    },
+    {
+      "id": "page-qte",
+      "type": "page",
+      "name": "QTE",
+      "title": "QTE",
+      "version": 1,
+      "createdAt": 1783721439,
+      "canvasData": {
+        "x": 2480,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/qte.html"
+      }
+    },
+    {
+      "id": "page-acupoint",
+      "type": "page",
+      "name": "点穴",
+      "title": "点穴",
+      "version": 1,
+      "createdAt": 1783721439,
+      "canvasData": {
+        "x": 3100,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/acupoint.html"
+      }
+    },
+    {
+      "id": "page-dialogue-confirm",
+      "type": "page",
+      "name": "对话确认",
+      "title": "对话确认",
+      "version": 1,
+      "createdAt": 1783721439,
+      "canvasData": {
+        "x": 3720,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/dialogue-confirm.html"
+      }
+    },
+    {
+      "id": "image-001",
+      "type": "image",
+      "name": "水墨山水背景",
+      "title": "水墨山水背景",
+      "version": 1,
+      "createdAt": 1783721439,
+      "canvasData": {
+        "x": 0,
+        "y": 377
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-ink-wash-scene.jpg"
+      }
+    },
+    {
+      "id": "image-002",
+      "type": "image",
+      "name": "元素视野背景",
+      "title": "元素视野背景",
+      "version": 1,
+      "createdAt": 1783721439,
+      "canvasData": {
+        "x": 620,
+        "y": 377
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-element-vision.jpg"
+      }
+    },
+    {
+      "id": "image-003",
+      "type": "image",
+      "name": "阵亡水墨背景",
+      "title": "阵亡水墨背景",
+      "version": 1,
+      "createdAt": 1783721439,
+      "canvasData": {
+        "x": 1240,
+        "y": 377
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-ink-wash-death.jpg"
+      }
+    },
+    {
+      "id": "image-004",
+      "type": "image",
+      "name": "水墨笔触",
+      "title": "水墨笔触",
+      "version": 1,
+      "createdAt": 1783721439,
+      "canvasData": {
+        "x": 1860,
+        "y": 377
+      },
+      "devMetadata": {
+        "imageSrc": "assets/ink-brush-stroke.jpg"
+      }
+    },
+    {
+      "id": "image-005",
+      "type": "image",
+      "name": "经络穴位图",
+      "title": "经络穴位图",
+      "version": 1,
+      "createdAt": 1783721439,
+      "canvasData": {
+        "x": 2480,
+        "y": 377
+      },
+      "devMetadata": {
+        "imageSrc": "assets/bg-meridian-diagram.jpg"
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "projectName": "燕云十六声-核心战斗体验"
+  }
+}

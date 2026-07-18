@@ -184,7 +184,7 @@ namespace Horizon.Game.Gateway.Tests
             var state = new SkillState();
             var skill = new SkillInfo { SkillId = 1, Cooldown = 3000 }; // 3秒冷却
             state.LearnedSkills[1] = skill;
-            state.SkillCooldowns[1] = DateTime.UtcNow.AddMilliseconds(-500); // 0.5秒前施放
+            state.SkillCooldowns[1] = DateTime.Now.AddMilliseconds(-500); // 0.5秒前施放
 
             // 应该仍在冷却中
             Assert.False(CombatCalculator.IsSkillReady(state.SkillCooldowns[1], skill.Cooldown));

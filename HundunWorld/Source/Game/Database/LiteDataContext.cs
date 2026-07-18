@@ -383,7 +383,7 @@ namespace Game.Database
         {
             // 由于LiteDB API变更，使用Find + Delete的方式替代DeleteMany
             var collection = _databaseKind[liteDatabaseKind].GetCollection<T>();
-            var items = collection.Find(predicate);
+            var items = collection.FindAll().Where(predicate.Compile());
             int count = 0;
             foreach (var item in items)
             {
@@ -420,7 +420,7 @@ namespace Game.Database
         /// <returns>如果查询结果为空则返回 null</returns>
         public static T FirstOrDefault<T>(LiteDatabaseKind liteDatabaseKind, Expression<Func<T, bool>> predicate)
         {
-            return _databaseKind[liteDatabaseKind].GetCollection<T>().Find(predicate).FirstOrDefault();
+            return _databaseKind[liteDatabaseKind].GetCollection<T>().FindAll().FirstOrDefault(predicate.Compile());
         }
         #endregion
         /// <summary>
@@ -509,7 +509,7 @@ namespace Game.Database
             try
             {
                 var collection = _configDatabase.GetCollection<GameConfig>();
-                var existing = collection.Find(x => x.Key == key && x.Category == category).FirstOrDefault();
+                var existing = collection.FindAll().FirstOrDefault(x => x.Key == key && x.Category == category);
 
                 if (existing != null)
                 {
@@ -547,7 +547,7 @@ namespace Game.Database
             try
             {
                 var collection = _configDatabase.GetCollection<GameConfig>();
-                var config = collection.Find(x => x.Key == key && x.Category == category).FirstOrDefault();
+                var config = collection.FindAll().FirstOrDefault(x => x.Key == key && x.Category == category);
                 return config?.Value ?? defaultValue;
             }
             catch (Exception ex)
@@ -567,7 +567,7 @@ namespace Game.Database
             try
             {
                 var collection = _configDatabase.GetCollection<GameConfig>();
-                var configs = collection.Find(x => x.Category == category);
+                var configs = collection.FindAll().Where(x => x.Category == category);
                 return configs.ToDictionary(c => c.Key, c => c.Value);
             }
             catch (Exception ex)
@@ -589,7 +589,7 @@ namespace Game.Database
             try
             {
                 var collection = _gameDatabase.GetCollection<CharacterLocalData>();
-                var existing = collection.Find(x => x.CharacterId == characterData.CharacterId).FirstOrDefault();
+                var existing = collection.FindAll().FirstOrDefault(x => x.CharacterId == characterData.CharacterId);
 
                 if (existing != null)
                 {
@@ -621,7 +621,7 @@ namespace Game.Database
             try
             {
                 var collection = _gameDatabase.GetCollection<CharacterLocalData>();
-                return collection.Find(x => x.CharacterId == characterId).FirstOrDefault();
+                return collection.FindAll().FirstOrDefault(x => x.CharacterId == characterId);
             }
             catch (Exception ex)
             {
@@ -680,7 +680,7 @@ namespace Game.Database
             try
             {
                 var collection = _configDatabase.GetCollection<UserPreferences>();
-                var existing = collection.Find(x => x.UserId == preferences.UserId).FirstOrDefault();
+                var existing = collection.FindAll().FirstOrDefault(x => x.UserId == preferences.UserId);
 
                 if (existing != null)
                 {
@@ -713,7 +713,7 @@ namespace Game.Database
             try
             {
                 var collection = _configDatabase.GetCollection<UserPreferences>();
-                return collection.Find(x => x.UserId == userId).FirstOrDefault();
+                return collection.FindAll().FirstOrDefault(x => x.UserId == userId);
             }
             catch (Exception ex)
             {
@@ -734,7 +734,7 @@ namespace Game.Database
             try
             {
                 var collection = _cacheDatabase.GetCollection<CacheData>();
-                var existing = collection.Find(x => x.Key == key).FirstOrDefault();
+                var existing = collection.FindAll().FirstOrDefault(x => x.Key == key);
                 var expiresAt = expiration.HasValue ? DateTime.Now.Add(expiration.Value) : DateTime.Now.AddDays(30);
 
                 if (existing != null)
@@ -773,7 +773,7 @@ namespace Game.Database
             try
             {
                 var collection = _cacheDatabase.GetCollection<CacheData>();
-                var cache = collection.Find(x => x.Key == key).FirstOrDefault();
+                var cache = collection.FindAll().FirstOrDefault(x => x.Key == key);
 
                 if (cache == null || cache.ExpiresAt < DateTime.Now)
                 {

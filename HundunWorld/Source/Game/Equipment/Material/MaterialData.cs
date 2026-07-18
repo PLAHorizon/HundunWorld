@@ -103,7 +103,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Basic,
             MaxStack = 999,
             SellPrice = 1,
-            IconPath = "Content/Icons/Materials/IronOre"
+            IconPath = "Content/Icons/Materials/IronOre.flax"
         };
 
         /// <summary>
@@ -118,7 +118,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Basic,
             MaxStack = 999,
             SellPrice = 1,
-            IconPath = "Content/Icons/Materials/GreenBamboo"
+            IconPath = "Content/Icons/Materials/GreenBamboo.flax"
         };
 
         /// <summary>
@@ -133,7 +133,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Basic,
             MaxStack = 999,
             SellPrice = 1,
-            IconPath = "Content/Icons/Materials/ColdSpringWater"
+            IconPath = "Content/Icons/Materials/ColdSpringWater.flax"
         };
 
         /// <summary>
@@ -148,7 +148,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Basic,
             MaxStack = 999,
             SellPrice = 1,
-            IconPath = "Content/Icons/Materials/FlameGrass"
+            IconPath = "Content/Icons/Materials/FlameGrass.flax"
         };
 
         /// <summary>
@@ -163,7 +163,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Basic,
             MaxStack = 999,
             SellPrice = 1,
-            IconPath = "Content/Icons/Materials/YellowEarth"
+            IconPath = "Content/Icons/Materials/YellowEarth.flax"
         };
 
         /// <summary>
@@ -178,7 +178,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Intermediate,
             MaxStack = 999,
             SellPrice = 10,
-            IconPath = "Content/Icons/Materials/RefinedIron"
+            IconPath = "Content/Icons/Materials/RefinedIron.flax"
         };
 
         /// <summary>
@@ -193,7 +193,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Intermediate,
             MaxStack = 999,
             SellPrice = 10,
-            IconPath = "Content/Icons/Materials/PurpleSandalwood"
+            IconPath = "Content/Icons/Materials/PurpleSandalwood.flax"
         };
 
         /// <summary>
@@ -208,7 +208,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Intermediate,
             MaxStack = 999,
             SellPrice = 10,
-            IconPath = "Content/Icons/Materials/SpiritDew"
+            IconPath = "Content/Icons/Materials/SpiritDew.flax"
         };
 
         /// <summary>
@@ -223,7 +223,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Intermediate,
             MaxStack = 999,
             SellPrice = 10,
-            IconPath = "Content/Icons/Materials/SolarFlameFlower"
+            IconPath = "Content/Icons/Materials/SolarFlameFlower.flax"
         };
 
         /// <summary>
@@ -238,7 +238,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Intermediate,
             MaxStack = 999,
             SellPrice = 10,
-            IconPath = "Content/Icons/Materials/Obsidian"
+            IconPath = "Content/Icons/Materials/Obsidian.flax"
         };
 
         /// <summary>
@@ -253,7 +253,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Advanced,
             MaxStack = 999,
             SellPrice = 100,
-            IconPath = "Content/Icons/Materials/DarksteelEssence"
+            IconPath = "Content/Icons/Materials/DarksteelEssence.flax"
         };
 
         /// <summary>
@@ -268,7 +268,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Advanced,
             MaxStack = 999,
             SellPrice = 100,
-            IconPath = "Content/Icons/Materials/MillenniumGinseng"
+            IconPath = "Content/Icons/Materials/MillenniumGinseng.flax"
         };
 
         /// <summary>
@@ -283,7 +283,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Advanced,
             MaxStack = 999,
             SellPrice = 100,
-            IconPath = "Content/Icons/Materials/IceCrystalMarrow"
+            IconPath = "Content/Icons/Materials/IceCrystalMarrow.flax"
         };
 
         /// <summary>
@@ -298,7 +298,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Advanced,
             MaxStack = 999,
             SellPrice = 100,
-            IconPath = "Content/Icons/Materials/NetherflameCrystal"
+            IconPath = "Content/Icons/Materials/NetherflameCrystal.flax"
         };
 
         /// <summary>
@@ -313,7 +313,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Advanced,
             MaxStack = 999,
             SellPrice = 100,
-            IconPath = "Content/Icons/Materials/EarthVeinSpiritSoil"
+            IconPath = "Content/Icons/Materials/EarthVeinSpiritSoil.flax"
         };
 
         /// <summary>
@@ -328,7 +328,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Immortal,
             MaxStack = 999,
             SellPrice = 1000,
-            IconPath = "Content/Icons/Materials/StellarMeteorite"
+            IconPath = "Content/Icons/Materials/StellarMeteorite.flax"
         };
 
         /// <summary>
@@ -343,7 +343,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Immortal,
             MaxStack = 999,
             SellPrice = 1000,
-            IconPath = "Content/Icons/Materials/ImmortalWood"
+            IconPath = "Content/Icons/Materials/ImmortalWood.flax"
         };
 
         /// <summary>
@@ -358,7 +358,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Immortal,
             MaxStack = 999,
             SellPrice = 1000,
-            IconPath = "Content/Icons/Materials/CelestialDew"
+            IconPath = "Content/Icons/Materials/CelestialDew.flax"
         };
 
         /// <summary>
@@ -373,7 +373,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Immortal,
             MaxStack = 999,
             SellPrice = 1000,
-            IconPath = "Content/Icons/Materials/SolarTrueFire"
+            IconPath = "Content/Icons/Materials/SolarTrueFire.flax"
         };
 
         /// <summary>
@@ -388,7 +388,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Immortal,
             MaxStack = 999,
             SellPrice = 1000,
-            IconPath = "Content/Icons/Materials/ChaosPrimordialSoil"
+            IconPath = "Content/Icons/Materials/ChaosPrimordialSoil.flax"
         };
 
         /// <summary>
@@ -403,7 +403,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Divine,
             MaxStack = 999,
             SellPrice = 10000,
-            IconPath = "Content/Icons/Materials/VoidDivineMetal"
+            IconPath = "Content/Icons/Materials/VoidDivineMetal.flax"
         };
 
         /// <summary>
@@ -418,7 +418,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Divine,
             MaxStack = 999,
             SellPrice = 10000,
-            IconPath = "Content/Icons/Materials/CreationDivineWood"
+            IconPath = "Content/Icons/Materials/CreationDivineWood.flax"
         };
 
         /// <summary>
@@ -433,7 +433,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Divine,
             MaxStack = 999,
             SellPrice = 10000,
-            IconPath = "Content/Icons/Materials/TimeSpring"
+            IconPath = "Content/Icons/Materials/TimeSpring.flax"
         };
 
         /// <summary>
@@ -448,7 +448,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Divine,
             MaxStack = 999,
             SellPrice = 10000,
-            IconPath = "Content/Icons/Materials/ChaosSacredFire"
+            IconPath = "Content/Icons/Materials/ChaosSacredFire.flax"
         };
 
         /// <summary>
@@ -463,7 +463,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Divine,
             MaxStack = 999,
             SellPrice = 10000,
-            IconPath = "Content/Icons/Materials/HeavenEarthPrimordialSoil"
+            IconPath = "Content/Icons/Materials/HeavenEarthPrimordialSoil.flax"
         };
 
         #region 特殊材料和装饰性材料
@@ -480,7 +480,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Divine,
             MaxStack = 99,
             SellPrice = 50000,
-            IconPath = "Content/Icons/Materials/DragonScale"
+            IconPath = "Content/Icons/Materials/DragonScale.flax"
         };
 
         /// <summary>
@@ -495,7 +495,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Divine,
             MaxStack = 99,
             SellPrice = 50000,
-            IconPath = "Content/Icons/Materials/PhoenixFeather"
+            IconPath = "Content/Icons/Materials/PhoenixFeather.flax"
         };
 
         /// <summary>
@@ -510,7 +510,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Divine,
             MaxStack = 99,
             SellPrice = 50000,
-            IconPath = "Content/Icons/Materials/QilinHorn"
+            IconPath = "Content/Icons/Materials/QilinHorn.flax"
         };
 
         /// <summary>
@@ -525,7 +525,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Advanced,
             MaxStack = 999,
             SellPrice = 500,
-            IconPath = "Content/Icons/Materials/NightPearl"
+            IconPath = "Content/Icons/Materials/NightPearl.flax"
         };
 
         /// <summary>
@@ -540,7 +540,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Intermediate,
             MaxStack = 999,
             SellPrice = 50,
-            IconPath = "Content/Icons/Materials/JadeRoughStone"
+            IconPath = "Content/Icons/Materials/JadeRoughStone.flax"
         };
 
         #endregion
@@ -559,7 +559,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Intermediate,
             MaxStack = 999,
             SellPrice = 20,
-            IconPath = "Content/Icons/Materials/EnhancementStone"
+            IconPath = "Content/Icons/Materials/EnhancementStone.flax"
         };
 
         /// <summary>
@@ -574,7 +574,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Advanced,
             MaxStack = 999,
             SellPrice = 200,
-            IconPath = "Content/Icons/Materials/AdvancedEnhancementStone"
+            IconPath = "Content/Icons/Materials/AdvancedEnhancementStone.flax"
         };
 
         /// <summary>
@@ -589,7 +589,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Intermediate,
             MaxStack = 999,
             SellPrice = 50,
-            IconPath = "Content/Icons/Materials/RubyFragment"
+            IconPath = "Content/Icons/Materials/RubyFragment.flax"
         };
 
         /// <summary>
@@ -604,7 +604,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Intermediate,
             MaxStack = 999,
             SellPrice = 50,
-            IconPath = "Content/Icons/Materials/SapphireFragment"
+            IconPath = "Content/Icons/Materials/SapphireFragment.flax"
         };
 
         /// <summary>
@@ -619,7 +619,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Intermediate,
             MaxStack = 999,
             SellPrice = 50,
-            IconPath = "Content/Icons/Materials/EmeraldFragment"
+            IconPath = "Content/Icons/Materials/EmeraldFragment.flax"
         };
 
         /// <summary>
@@ -634,7 +634,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Intermediate,
             MaxStack = 999,
             SellPrice = 50,
-            IconPath = "Content/Icons/Materials/TopazFragment"
+            IconPath = "Content/Icons/Materials/TopazFragment.flax"
         };
 
         /// <summary>
@@ -649,7 +649,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Intermediate,
             MaxStack = 999,
             SellPrice = 50,
-            IconPath = "Content/Icons/Materials/DiamondFragment"
+            IconPath = "Content/Icons/Materials/DiamondFragment.flax"
         };
 
         #endregion
@@ -668,7 +668,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Intermediate,
             MaxStack = 999,
             SellPrice = 30,
-            IconPath = "Content/Icons/Materials/SpiritGatheringGrass"
+            IconPath = "Content/Icons/Materials/SpiritGatheringGrass.flax"
         };
 
         /// <summary>
@@ -683,7 +683,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Advanced,
             MaxStack = 999,
             SellPrice = 150,
-            IconPath = "Content/Icons/Materials/MindFocusFlower"
+            IconPath = "Content/Icons/Materials/MindFocusFlower.flax"
         };
 
         /// <summary>
@@ -698,7 +698,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Advanced,
             MaxStack = 99,
             SellPrice = 500,
-            IconPath = "Content/Icons/Materials/AncientScroll"
+            IconPath = "Content/Icons/Materials/AncientScroll.flax"
         };
 
         /// <summary>
@@ -713,7 +713,7 @@ namespace Game.Equipment.Material
             Tier = MaterialTier.Immortal,
             MaxStack = 1,
             SellPrice = 5000,
-            IconPath = "Content/Icons/Materials/MysticKey"
+            IconPath = "Content/Icons/Materials/MysticKey.flax"
         };
 
         #endregion

@@ -20,6 +20,7 @@ namespace Horizon.Game.Gateway.Services
         
         private readonly ConcurrentDictionary<string, IGameConnection> _connections = new();
         private readonly ConcurrentDictionary<long, string> _userConnections = new();
+        private readonly ConcurrentDictionary<long, string> _characterConnections = new();
         
         private readonly ConnectionManagerStatistics _statistics = new();
         private readonly NetworkStatistics _networkStatistics = new();
@@ -54,8 +55,9 @@ namespace Horizon.Game.Gateway.Services
 
                 if (_connections.TryAdd(connection.ConnectionId, connection))
                 {
-                    // 注册连接关闭事件
-                    connection.Closed += OnConnectionClosed;
+                    // 注：连接关闭事件由 GameNetworkServer 统一订阅处理，
+                    // 确保先读取 characterId 映射并调度 Despawn，再清理 ConnectionManager 内部映射。
+                    // 这里不再订阅 Closed 事件，避免竞争导致 GetCharacterIdsByConnection 返回空。
                     
                     lock (_statsLock)
                     {
@@ -95,8 +97,10 @@ namespace Horizon.Game.Gateway.Services
                         _userConnections.TryRemove(connection.UserId.Value, out _);
                     }
 
-                    // 取消注册事件
-                    connection.Closed -= OnConnectionClosed;
+                    // 清理该连接关联的所有角色映射（characterId → connectionId）
+                    CleanupCharacterMappings(connectionId);
+
+                    // GameNetworkServer 统一处理 Closed 事件，这里无需取消注册
 
                     lock (_statsLock)
                     {
@@ -150,6 +154,69 @@ namespace Horizon.Game.Gateway.Services
                 return GetConnection(connectionId);
             }
             return null;
+        }
+
+        /// <summary>
+        /// 根据角色ID获取连接（fanout 推送使用 characterId 作为 sessionId）
+        /// </summary>
+        public IGameConnection? GetConnectionByCharacterId(long characterId)
+        {
+            if (_characterConnections.TryGetValue(characterId, out var connectionId))
+            {
+                return GetConnection(connectionId);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// 注册角色ID与连接的映射（角色进入游戏成功后调用）
+        /// </summary>
+        public void RegisterCharacter(long characterId, IGameConnection connection)
+        {
+            if (connection is null) throw new ArgumentNullException(nameof(connection));
+            _characterConnections[characterId] = connection.ConnectionId;
+            _logger.LogInformation("已注册角色映射: CharacterId={CharacterId}, ConnectionId={ConnectionId}",
+                characterId, connection.ConnectionId);
+        }
+
+        /// <summary>
+        /// 注销角色ID与连接的映射（连接断开或切换角色时调用）
+        /// </summary>
+        public void UnregisterCharacter(long characterId)
+        {
+            if (_characterConnections.TryRemove(characterId, out _))
+            {
+                _logger.LogDebug("已注销角色映射: CharacterId={CharacterId}", characterId);
+            }
+        }
+
+        /// <summary>
+        /// 根据连接ID反查该连接绑定的所有角色ID。
+        /// 用于客户端断连时获取需要延迟 Despawn 的角色列表。
+        /// 单连接通常只绑定一个角色，但遍历保证完整性。
+        /// </summary>
+        public IReadOnlyList<long> GetCharacterIdsByConnection(string connectionId)
+        {
+            if (string.IsNullOrEmpty(connectionId)) return Array.Empty<long>();
+
+            var result = new List<long>();
+            foreach (var kv in _characterConnections)
+            {
+                if (kv.Value == connectionId)
+                {
+                    result.Add(kv.Key);
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 获取所有已注册的 characterId（用于实体租约续约）。
+        /// </summary>
+        public IReadOnlyList<long> GetAllCharacterIds()
+        {
+            // 直接返回 keys 的快照，避免迭代期间被修改
+            return _characterConnections.Keys.ToArray();
         }
 
         /// <summary>
@@ -356,7 +423,10 @@ namespace Horizon.Game.Gateway.Services
         }
 
         /// <summary>
-        /// 清理超时连接
+        /// 清理超时连接。<br/>
+        /// 仅调用 <see cref="IGameConnection.CloseAsync"/> 触发 Closed 事件，
+        /// 由 <see cref="GameNetworkServer.OnClientDisconnected"/> 统一处理后续清理（反查 characterId、调度 Despawn、移除映射），
+        /// 避免在此处直接 <see cref="RemoveConnectionAsync"/> 导致竞态（先于 Closed 回调清理映射，使 Despawn 反查为空）。
         /// </summary>
         public async Task CleanupTimeoutConnectionsAsync()
         {
@@ -374,11 +444,22 @@ namespace Horizon.Game.Gateway.Services
 
             foreach (var connection in timeoutConnections)
             {
-                _logger.LogInformation("清理超时连接: {ConnectionId}, 最后活跃时间: {LastActiveTime}", 
+                _logger.LogInformation("清理超时连接: {ConnectionId}, 最后活跃时间: {LastActiveTime}",
                     connection.ConnectionId, connection.LastActiveTime);
-                
-                await connection.CloseAsync("连接超时");
-                await RemoveConnectionAsync(connection.ConnectionId);
+
+                // 仅 CloseAsync 触发 Closed 事件，不直接 RemoveConnectionAsync。
+                // GameNetworkServer.OnClientDisconnected 会在 Closed 回调中执行完整的清理链：
+                // 反查 characterId → 调度 Despawn → RemoveConnectionAsync。
+                try
+                {
+                    await connection.CloseAsync("连接超时");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "关闭超时连接失败: {ConnectionId}", connection.ConnectionId);
+                    // CloseAsync 失败时直接移除，避免连接泄漏（此路径下连接已无法正常触发 Closed 事件）
+                    await RemoveConnectionAsync(connection.ConnectionId);
+                }
             }
 
             if (timeoutConnections.Count > 0)
@@ -415,18 +496,23 @@ namespace Horizon.Game.Gateway.Services
         }
 
         /// <summary>
-        /// 连接关闭事件处理
+        /// 清理指定连接关联的所有角色映射（断连时调用）
         /// </summary>
-        private async void OnConnectionClosed(object? sender, ConnectionClosedEventArgs e)
+        private void CleanupCharacterMappings(string connectionId)
         {
-            try
+            // 遍历清理所有指向该 connectionId 的角色映射
+            // 单连接通常只绑定一个角色，但遍历保证一致性
+            var keysToRemove = new List<long>();
+            foreach (var kv in _characterConnections)
             {
-                await RemoveConnectionAsync(e.ConnectionId);
-                _logger.LogInformation("连接已关闭: {ConnectionId}, 原因: {Reason}", e.ConnectionId, e.Reason);
+                if (kv.Value == connectionId)
+                {
+                    keysToRemove.Add(kv.Key);
+                }
             }
-            catch (Exception ex)
+            foreach (var key in keysToRemove)
             {
-                _logger.LogError(ex, "处理连接关闭事件时发生错误: {ConnectionId}", e.ConnectionId);
+                _characterConnections.TryRemove(key, out _);
             }
         }
 

@@ -1,7 +1,7 @@
 {
 	"ID": "b3a1f0d24e5c6a8790d1e2f3a4b5c6d7",
 	"TypeName": "FlaxEngine.SceneAsset",
-	"EngineBuild": 6806,
+	"EngineBuild": 6913,
 	"Data": [
 		{
 			"ID": "b3a1f0d24e5c6a8790d1e2f3a4b5c6d7",
@@ -47,8 +47,8 @@
 			"TypeName": "HundunWorld.Game.GameStartup",
 			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
 			"V": {
-				"LoginScene": "dc72848f4b0f90ee2df186a728f14858"
-			}
+	"LoginScene": "dc72848f4b0f90ee2df186a728f14858"
+}
 		},
 		{
 			"ID": "f6a7b889d0e1f23456789abcdef01234",
@@ -60,7 +60,8 @@
 			"ID": "a7b8c990e1f2a3456789abcdef012345",
 			"TypeName": "HundunWorld.Game.UI.GameMain.GameMainUI",
 			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
-			"V": {}
+			"V": {},
+			"Enabled": false
 		},
 		{
 			"ID": "b8c9d001f2a3b456789abcdef0123456",
@@ -71,6 +72,18 @@
 		{
 			"ID": "c9d0e112a3b4c56789abcdef01234567",
 			"TypeName": "HundunWorld.Game.UI.SceneTransitionEffect",
+			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
+			"V": {}
+		},
+		{
+			"ID": "e1f2a334c5d6e789abcdef0123456789",
+			"TypeName": "HundunWorld.Game.ECSUpdateDriver",
+			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
+			"V": {}
+		},
+		{
+			"ID": "89a4e022482baffdc7792790907ebe16",
+			"TypeName": "HundunWorld.Game.UI.MainUIManager",
 			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
 			"V": {}
 		},
@@ -86,12 +99,6 @@
 					"Z": -300.0
 				}
 			}
-		},
-		{
-			"ID": "e1f2a334c5d6e789abcdef0123456789",
-			"TypeName": "HundunWorld.Game.ECSUpdateDriver",
-			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
-			"V": {}
 		}
 	]
 }

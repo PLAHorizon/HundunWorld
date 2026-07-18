@@ -1,0 +1,133 @@
+{
+  "projectName": "yy-reward-system",
+  "projectPath": "yy-reward-system",
+  "brandCssPath": "colors_and_type.css",
+  "styleContinuityAnchors": {
+    "colorSystem": "墨色系(#0d0d0d-#6a6a6a) + 纸色系(#f5f0e8-#a89e8a) + 朱红(#c0392b) + 金色(#c9a84c) + 玉色(#5e8b6e) + 青灰(#6b7b8a)",
+    "primaryBackground": "var(--color-ink-dark) #1a1a1a",
+    "primaryText": "var(--color-paper-bright) #f5f0e8",
+    "accentColor": "var(--color-vermilion) #c0392b + var(--color-gold) #c9a84c",
+    "fontFamily": "Noto Serif SC(标题/装饰) + Noto Sans SC(正文)",
+    "panelStyle": "ink-panel: 渐变背景(135deg, #2d2d2d→#1a1a1a) + 1px墨色边框 + 8px圆角 + SVG噪点纹理叠层",
+    "buttonStyle": "ink-button: 1px金色边框 + 楷体字体 + 朱红/金色/透明三种变体",
+    "animationStyle": "inkFadeIn/inkSpread/inkDissolve 水墨晕染动画",
+    "qualityColorSystem": "common(#a89e8a) / uncommon(#5e8b6e) / rare(#4a7c9a) / epic(#c9a84c) / legendary(#c0392b)",
+    "popupOverlayStyle": "dark-overlay: rgba(13,13,13,0.6-0.7) 全屏遮罩 + z-index 300+",
+    "centerModalStyle": "居中弹窗: ink-panel + 品质色边框 + 居中flex布局 + 阴影shadow-modal"
+  },
+  "rewardSystemContract": {
+    "description": "获得与奖励页面共享暗色遮罩 + 庆祝弹窗布局",
+    "darkOverlay": "rgba(13,13,13,0.6-0.7), flex center, z-index 300",
+    "centerModalStyle": "ink-panel: 居中, 440-560px宽, 金色/品质色边框, shadow-modal阴影, 入场动画inkSpread",
+    "animationEffects": "inkSpread入场 + 金色/品质色光效 + 粒子效果 + 属性变化递增动画"
+  },
+  "pages": [
+    {
+      "id": "page-reward-achievement",
+      "name": "成就解锁",
+      "file": "reward-achievement.html",
+      "order": 1,
+      "pageType": "visual-centric",
+      "description": "成就解锁通知弹窗，居中显示。展示成就图标、名称、描述、奖励，带有金色光效和水墨晕染动画。",
+      "backgroundImage": null,
+      "visualNorthStar": "居中弹窗(480px)，金色光效边框。中央为成就大图标(金色光效)，上方为'成就解锁'标题，下方为成就名称、描述、奖励列表。带有inkSpread入场动画和金色粒子效果。",
+      "composition": "dark-overlay(rgba(13,13,13,0.7)) + center-modal(480px) | modal: '成就解锁'标题 + 成就图标区(100px,金色光效) + 成就名称+稀有度 + 描述 + 奖励列表 + 确认按钮",
+      "components": [
+        "ink-panel",
+        "ink-badge-gold",
+        "ink-button-gold",
+        "ink-divider"
+      ]
+    },
+    {
+      "id": "page-reward-teleport-unlock",
+      "name": "传送解锁",
+      "file": "reward-teleport-unlock.html",
+      "order": 2,
+      "pageType": "visual-centric",
+      "description": "传送点解锁通知弹窗，居中显示。展示传送点名称、位置描述、地图缩略图占位，带有玉色光效动画。",
+      "backgroundImage": null,
+      "visualNorthStar": "居中弹窗(440px)，玉色光效边框。中央为传送点图标(玉色光效)，上方为'传送点已解锁'标题，下方为传送点名称、位置、地图缩略图占位。",
+      "composition": "dark-overlay(rgba(13,13,13,0.6)) + center-modal(440px) | modal: '传送点已解锁'标题 + 传送图标区(80px,玉色光效) + 传送点名称+位置 + 地图缩略图占位 + 确认按钮",
+      "components": [
+        "ink-panel",
+        "ink-badge-jade",
+        "ink-button-secondary",
+        "ink-divider"
+      ]
+    },
+    {
+      "id": "page-reward-map-unlock",
+      "name": "地图解锁",
+      "file": "reward-map-unlock.html",
+      "order": 3,
+      "pageType": "visual-centric",
+      "description": "地图区域解锁通知弹窗，居中显示。展示新解锁的区域名称、区域描述、区域预览图占位，带有水墨晕染展开动画。",
+      "backgroundImage": null,
+      "visualNorthStar": "居中弹窗(520px)，水墨晕染边框。中央为区域名称(装饰字体)，上方为'新区域解锁'标题，下方为区域描述、区域预览图占位(水墨风格)、探索奖励列表。",
+      "composition": "dark-overlay(rgba(13,13,13,0.7)) + center-modal(520px) | modal: '新区域解锁'标题 + 区域名(装饰字体) + 区域描述 + 区域预览图占位(120px) + 探索奖励列表 + 确认按钮",
+      "components": [
+        "ink-panel",
+        "ink-badge-gold",
+        "ink-button-gold",
+        "ink-divider"
+      ]
+    },
+    {
+      "id": "page-reward-level-up",
+      "name": "等级提升",
+      "file": "reward-level-up.html",
+      "order": 4,
+      "pageType": "visual-centric",
+      "description": "等级提升通知弹窗，居中显示。展示新等级数字、属性变化、解锁内容，带有金色光效和数字跳动动画。",
+      "backgroundImage": null,
+      "visualNorthStar": "居中弹窗(440px)，金色光效边框。中央为大号等级数字(48px金色)，上方为'等级提升'标题，下方为属性变化和解锁内容列表。",
+      "composition": "dark-overlay(rgba(13,13,13,0.6)) + center-modal(440px) | modal: '等级提升'标题 + 大号Lv.数字(48px,金色) + 属性变化列表 + 解锁内容 + 确认按钮",
+      "components": [
+        "ink-panel",
+        "ink-progress-bar-gold",
+        "ink-badge-gold",
+        "ink-button-gold",
+        "ink-divider"
+      ]
+    },
+    {
+      "id": "page-reward-congratulations",
+      "name": "恭喜获得",
+      "file": "reward-congratulations.html",
+      "order": 5,
+      "pageType": "visual-centric",
+      "description": "恭喜获得奖励弹窗，居中显示。展示多个获得物品的列表，带有水墨晕染入场动画和品质色光效。比物品获得弹窗更隆重。",
+      "backgroundImage": null,
+      "visualNorthStar": "居中弹窗(560px)，金色边框。上方为'恭喜获得'标题，中央为多物品展示网格(2列,每个物品有品质色光效)，底部为全部领取按钮。",
+      "composition": "dark-overlay(rgba(13,13,13,0.7)) + center-modal(560px) | modal: '恭喜获得'标题 + 物品展示网格(2列x3行,品质色边框) + 物品名称+品质+数量 + 全部领取按钮",
+      "components": [
+        "ink-panel",
+        "ink-badge-gold",
+        "ink-badge-vermilion",
+        "ink-button-gold",
+        "ink-divider"
+      ]
+    },
+    {
+      "id": "page-reward-quest-complete",
+      "name": "任务完成",
+      "file": "reward-quest-complete.html",
+      "order": 6,
+      "pageType": "visual-centric",
+      "description": "任务完成通知弹窗，居中显示。展示任务名称、完成评价、获得奖励列表、经验值获得，带有水墨印章效果。",
+      "backgroundImage": null,
+      "visualNorthStar": "居中弹窗(500px)，金色边框。上方为'任务完成'标题+朱红印章，中央为任务名称和完成评价(S/A/B级)，下方为奖励列表和经验值进度条。",
+      "composition": "dark-overlay(rgba(13,13,13,0.7)) + center-modal(500px) | modal: '任务完成'标题+朱红印章 + 任务名称 + 完成评价(S级) + 奖励列表 + 经验值进度条 + 确认按钮",
+      "components": [
+        "ink-panel",
+        "ink-badge-vermilion",
+        "ink-badge-gold",
+        "ink-progress-bar-gold",
+        "ink-button-gold",
+        "ink-divider"
+      ]
+    }
+  ],
+  "images": []
+}

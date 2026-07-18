@@ -25,6 +25,8 @@ using System.Threading.Tasks;
 using TouchSocket.Core;
 using TouchSocket.Sockets;
 using GatewayOptions = Orleans.Configuration.GatewayOptions;
+using Horizon.Orleans.Grains.World;
+using Horizon.Orleans.Interface.World;
 
 namespace Horizon.Game.Gateway
 {
@@ -44,6 +46,12 @@ namespace Horizon.Game.Gateway
         {
             // 确保控制台能正确输出简体中文
             Console.OutputEncoding = System.Text.Encoding.UTF8;
+
+            // 强制加载 grain 实现程序集，确保 Orleans 10 运行时在初始化 IClusterClient 之前
+            // 能扫描到 [assembly: ApplicationPartAttribute] 标记并发现 ZoneShardGrain 实现。
+            // .NET 默认按需加载程序集，若不强制加载，GetGrain<IZoneShardGrain> 会报
+            // "Could not find an implementation"。
+            _ = typeof(Horizon.Orleans.Grains.World.ZoneShardGrain).Assembly;
 
             try
             {
@@ -239,13 +247,16 @@ namespace Horizon.Game.Gateway
                     services.AddAllMessageHandlers(Assembly.GetAssembly(typeof(MessageHandlerBase)));
                     // 注册网络服务
                     services.AddSingleton<ITcpService, TcpService>();
+                    services.AddSingleton<PlayerDespawnScheduler>();
                     services.AddSingleton<GameNetworkServer>();
 
                     // P6 运行时连线：ZoneShard fanout → GatewaySyncDispatcher → IGameConnection。
                     services.AddSingleton<Services.GatewayZoneShardFanoutSource>();
                     services.AddSingleton<Horizon.Orleans.Interface.World.IZoneShardFanoutObserver>(sp => sp.GetRequiredService<Services.GatewayZoneShardFanoutSource>());
                     services.AddSingleton<Horizon.Game.Core.Sim.Server.IZoneShardFanoutSource>(sp => sp.GetRequiredService<Services.GatewayZoneShardFanoutSource>());
-                    services.AddSingleton<Horizon.Game.Core.Sim.Server.ISessionRegistry, Services.ConnectionManagerSessionRegistry>();
+                    services.AddSingleton<Horizon.Game.Core.Sim.Server.ISessionRegistry>(sp => new Services.ConnectionManagerSessionRegistry(
+                        sp.GetRequiredService<Services.IConnectionManager>(),
+                        sp.GetService<ILogger<Services.ConnectionManagerSessionRegistry>>()));
                     services.AddSingleton<Horizon.Game.Core.Sim.Server.IClientPacketSink, Services.GameConnectionPacketSink>();
                     services.AddSingleton(sp => new Horizon.Game.Core.Sim.Server.GatewaySyncDispatcher(
                         sp.GetRequiredService<Horizon.Game.Core.Sim.Server.IZoneShardFanoutSource>(),
@@ -253,6 +264,18 @@ namespace Horizon.Game.Gateway
                         sp.GetRequiredService<Horizon.Game.Core.Sim.Server.IClientPacketSink>(),
                         logger: sp.GetRequiredService<ILogger<Horizon.Game.Core.Sim.Server.GatewaySyncDispatcher>>(),
                         enabled: sp.GetRequiredService<IOptions<Configuration.GatewayOptions>>().Value.UseSyncPacketDispatch));
+
+                    // Task C.5.6：注册场景对象持久化存储到 DI（Singleton，复用 Game 库连接字符串）。
+                    services.AddSingleton<Horizon.Game.Core.Persistence.ISceneObjectPersistenceStore>(sp =>
+                    {
+                        var config = sp.GetRequiredService<IConfiguration>();
+                        var logger = sp.GetService<ILogger<Horizon.Game.Core.Persistence.SqlServerSceneObjectPersistenceStore>>();
+                        // 优先使用 DatabaseOptions:Game，回退到 ClusteringSiloOptions:SqlServer（同一 SqlServer 实例）。
+                        var connStr = config.GetSection("DatabaseOptions:Game")["ConnectionString"]
+                                      ?? config.GetSection("ClusteringSiloOptions:SqlServer")["ConnectionString"]
+                                      ?? "Data Source=.;Initial Catalog=Game;Integrated Security=True;Encrypt=True;TrustServerCertificate=True;";
+                        return new Horizon.Game.Core.Persistence.SqlServerSceneObjectPersistenceStore(connStr, logger);
+                    });
 
                     // 注册后台服务
                     services.AddHostedService<GatewayHostedService>();

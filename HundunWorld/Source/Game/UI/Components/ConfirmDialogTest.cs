@@ -16,9 +16,11 @@ namespace HundunWorld.Game.UI.Components
         public override void OnStart()
         {
             FlaxEngine.Debug.Log("ConfirmDialog测试开始...");
-            
+
             // 延迟创建测试对话框，确保UI系统完全初始化
-            Task.Delay(1000).ContinueWith(_ => TestDialogDisplay());
+            // 必须在主线程执行 UI 操作
+            Task.Delay(1000).ContinueWith(_ =>
+                FlaxEngine.Scripting.InvokeOnUpdate(TestDialogDisplay));
         }
         
         private void TestDialogDisplay()
@@ -39,8 +41,9 @@ namespace HundunWorld.Game.UI.Components
                 
                 FlaxEngine.Debug.Log("测试对话框创建完成");
                 
-                // 检查组件状态
-                Task.Delay(500).ContinueWith(_ => CheckDialogStatus());
+                // 检查组件状态（必须在主线程执行 UI 操作）
+                Task.Delay(500).ContinueWith(_ =>
+                    FlaxEngine.Scripting.InvokeOnUpdate(CheckDialogStatus));
                 
             }
             catch (Exception ex)

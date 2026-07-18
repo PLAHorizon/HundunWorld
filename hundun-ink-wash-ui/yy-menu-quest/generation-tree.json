@@ -1,0 +1,154 @@
+{
+  "root": {
+    "nodeId": "gen-project-shell",
+    "kind": "project-shell",
+    "pageIds": [
+      "page-menu-quests",
+      "page-menu-bestiary",
+      "page-menu-martial-record",
+      "page-menu-livelihood",
+      "page-menu-team",
+      "page-menu-mail",
+      "page-menu-shop"
+    ],
+    "output": "partials/project-shell.html",
+    "sharedRegions": [
+      "left navigation sidebar",
+      "top character info bar"
+    ],
+    "privateRegions": [],
+    "mutableSlots": [
+      "activeNavItem",
+      "pageTitle"
+    ],
+    "status": "planned",
+    "children": [
+      {
+        "nodeId": "gen-page-menu-quests",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-menu-quests"
+        ],
+        "output": "pages/menu-quests.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "page body content"
+        ],
+        "mutableSlots": [
+          "activeNavItem",
+          "pageTitle"
+        ],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-menu-bestiary",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-menu-bestiary"
+        ],
+        "output": "pages/menu-bestiary.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "page body content"
+        ],
+        "mutableSlots": [
+          "activeNavItem",
+          "pageTitle"
+        ],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-menu-martial-record",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-menu-martial-record"
+        ],
+        "output": "pages/menu-martial-record.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "page body content"
+        ],
+        "mutableSlots": [
+          "activeNavItem",
+          "pageTitle"
+        ],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-menu-livelihood",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-menu-livelihood"
+        ],
+        "output": "pages/menu-livelihood.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "page body content"
+        ],
+        "mutableSlots": [
+          "activeNavItem",
+          "pageTitle"
+        ],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-menu-team",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-menu-team"
+        ],
+        "output": "pages/menu-team.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "page body content"
+        ],
+        "mutableSlots": [
+          "activeNavItem",
+          "pageTitle"
+        ],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-menu-mail",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-menu-mail"
+        ],
+        "output": "pages/menu-mail.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "page body content"
+        ],
+        "mutableSlots": [
+          "activeNavItem",
+          "pageTitle"
+        ],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-menu-shop",
+        "kind": "page-leaf",
+        "pageIds": [
+          "page-menu-shop"
+        ],
+        "output": "pages/menu-shop.html",
+        "sharedRegions": [],
+        "privateRegions": [
+          "page body content"
+        ],
+        "mutableSlots": [
+          "activeNavItem",
+          "pageTitle"
+        ],
+        "status": "planned",
+        "children": []
+      }
+    ]
+  }
+}

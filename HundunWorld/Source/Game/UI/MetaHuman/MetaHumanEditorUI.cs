@@ -251,8 +251,17 @@ namespace HundunWorld.UI.MetaHuman
             // 尝试加载角色模型
             string modelPath = "Content/Character/Models/skm_uefn_mannequin.flax";
 
-            // 使用同步加载，利用引擎内部缓存避免 registry 冲突
+            // 使用同步加载，利用引擎内部缓存避免 registry 冲突（带扩展名/无扩展名回退）
             var content = FlaxEngine.Content.Load(modelPath);
+            if (content == null)
+            {
+                var extension = System.IO.Path.GetExtension(modelPath);
+                if (!string.IsNullOrEmpty(extension))
+                {
+                    var fallbackPath = modelPath.Substring(0, modelPath.Length - extension.Length).Replace('\\', '/');
+                    content = FlaxEngine.Content.Load(fallbackPath);
+                }
+            }
             if (content != null)
             {
                 if (content is FlaxEngine.Prefab playerPrefab && playerPrefab.IsLoaded)

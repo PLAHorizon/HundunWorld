@@ -5,7 +5,7 @@
              xmlns:converters="using:Horizon.Game.GengDi.Tools.ExcelProcessor.Converters"
              x:Class="Horizon.Game.GengDi.Tools.ExcelProcessor.Views.ExcelProcessorView"
              x:DataType="vm:ExcelProcessorViewModel"
-             Background="{DynamicResource BattleNetBackgroundBrush}">
+             Background="{DynamicResource BattleNetHeroBackgroundBrush}">
 
     <UserControl.Resources>
         <converters:ProcessingButtonTextConverter x:Key="ProcessingButtonTextConverter" />
@@ -17,7 +17,7 @@
         <!-- Header 区域 -->
         <Border DockPanel.Dock="Top"
                 Padding="24 20 24 16"
-                Background="{DynamicResource BattleNetHeaderBackgroundBrush}">
+                Background="{DynamicResource PageHeaderBackgroundBrush}">
             <StackPanel Orientation="Horizontal" Spacing="12">
                 <TextBlock Text="📊" FontSize="28" VerticalAlignment="Center" />
                 <StackPanel>

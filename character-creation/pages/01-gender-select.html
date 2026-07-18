@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>混沌世界 - 性别选择与角色全览</title>
+    <style id="theme-vars">
+/* ============================================================
+   HundunWorld Character Creation - Game UI Brand CSS
+   Overlay on Claude Design Library tokens.
+   Primary: Teal (青黄+青兰混合)
+   Secondary: Navy translucent (藏青半透明)
+   Muted: Ink translucent (墨色半透明)
+   Prefix: --game-
+   ============================================================ */
+
+:root {
+  /* === Game Primary (Teal: 青黄+青兰混合) === */
+  --game-primary: #2A9D8F;
+  --game-primary-light: #4ECDC4;
+  --game-primary-dark: #1B7A6E;
+  --game-primary-glow: rgba(42, 157, 143, 0.3);
+  --game-primary-rgb: 42, 157, 143;
+
+  /* === Game Secondary (Navy Translucent: 藏青半透明) === */
+  --game-secondary: rgba(25, 40, 80, 0.55);
+  --game-secondary-light: rgba(35, 55, 100, 0.4);
+  --game-secondary-solid: #1C2850;
+
+  /* === Game Muted (Ink Translucent: 墨色半透明) === */
+  --game-ink: rgba(10, 12, 18, 0.65);
+  --game-ink-light: rgba(10, 12, 18, 0.4);
+  --game-ink-subtle: rgba(10, 12, 18, 0.2);
+  --game-ink-solid: #0A0C12;
+
+  /* === Game Background System (Spring Dawn, light purple touch) === */
+  --game-bg-darkest: #0F1018;
+  --game-bg-dark: #161A24;
+  --game-bg-panel: rgba(20, 22, 30, 0.78);
+  --game-bg-panel-hover: rgba(30, 32, 44, 0.88);
+  --game-bg-fog: rgba(200, 190, 180, 0.06);
+  --game-bg-overlay: rgba(0, 0, 0, 0.4);
+  --game-bg-jade-deep: #121520;
+  --game-bg-jade-mid: #1C2230;
+  --game-bg-jade-teal: #2A9D8F;
+  --game-bg-jade-navy: #222838;
+  --game-bg-jade-fog: #D0C8C0;
+  --game-bg-jade-shimmer: rgba(42, 157, 143, 0.06);
+  --game-bg-dawn-purple: #221830;
+  --game-bg-dawn-violet: #5A4878;
+  --game-bg-dawn-pink: #C8908A;
+  --game-bg-dawn-teal: #2A9D8F;
+  --game-bg-dawn-sky: #98A8B8;
+  --game-bg-dawn-horizon: #D8C0B0;
+  --game-bg-dawn-gold: #C8A870;
+  --game-bg-dawn-warm: #E0C8A8;
+  --game-bg-dawn-sunlight: #F0DDB0;
+  --game-bg-dawn-sunray: rgba(240, 221, 176, 0.15);
+  --game-bg-dawn-sunstrong: rgba(232, 208, 160, 0.25);
+
+  /* === Game Text System === */
+  --game-text-primary: #E8ECF0;
+  --game-text-secondary: #8A95A5;
+  --game-text-accent: #2A9D8F;
+  --game-text-muted: #5A6575;
+  --game-text-disabled: #3A4452;
+  --game-text-white: #ffffff;
+  --game-text-dark: #0C1018;
+
+  /* === Game Font System === */
+  --font-game-title: "STKaiti", "KaiTi", "Noto Serif SC", "SimSun", serif;
+  --font-game-body: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", SimHei, Arial, Helvetica, sans-serif;
+
+  /* === Game Spacing (4px grid) === */
+  --game-space-1: 4px;
+  --game-space-2: 8px;
+  --game-space-3: 12px;
+  --game-space-4: 16px;
+  --game-space-5: 20px;
+  --game-space-6: 24px;
+  --game-space-8: 32px;
+  --game-space-10: 40px;
+  --game-space-12: 48px;
+  --game-space-16: 64px;
+
+  /* === Game Radius === */
+  --game-radius-sm: 4px;
+  --game-radius-md: 8px;
+  --game-radius-lg: 12px;
+  --game-radius-full: 9999px;
+
+  /* === Game Shadow System === */
+  --game-shadow-panel: 0 4px 24px rgba(12, 16, 24, 0.5), inset 0 1px 0 rgba(42, 157, 143, 0.08);
+  --game-shadow-glow: 0 0 20px rgba(42, 157, 143, 0.2);
+  --game-shadow-button: 0 2px 8px rgba(12, 16, 24, 0.4);
+  --game-shadow-dropdown: 0 8px 32px rgba(12, 16, 24, 0.6);
+
+  /* === Game Border System === */
+  --game-border-accent: 1px solid rgba(42, 157, 143, 0.2);
+  --game-border-accent-active: 1px solid rgba(42, 157, 143, 0.5);
+  --game-border-navy: 1px solid rgba(25, 40, 80, 0.4);
+  --game-border-ink: 1px solid rgba(10, 12, 18, 0.5);
+  --game-border-subtle: 1px solid rgba(42, 157, 143, 0.08);
+
+  /* === Game Transition === */
+  --game-transition-fast: 0.15s ease;
+  --game-transition-normal: 0.3s ease;
+  --game-transition-slow: 0.5s ease;
+
+  /* === Game Control Heights === */
+  --game-height-btn: 36px;
+  --game-height-btn-lg: 44px;
+  --game-height-slider: 3px;
+  --game-height-slider-thumb: 14px;
+  --game-height-tab: 48px;
+  --game-height-topbar: 56px;
+  --game-height-bottombar: 64px;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-primary: var(--game-primary);
+    --color-secondary: var(--game-secondary);
+  }
+  @layer base {
+    body { background: var(--game-background); color: var(--game-text-primary); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body>
+  <div class="game-screen" id="gameScreen">
+
+    <!-- Background layers -->
+    <div class="game-bg"></div>
+
+    <!-- Corner decorations -->
+    <div class="game-corner-decor top-left"></div>
+    <div class="game-corner-decor top-right"></div>
+    <div class="game-corner-decor bottom-left"></div>
+    <div class="game-corner-decor bottom-right"></div>
+
+    <!-- Floating particles -->
+    <div id="particles"></div>
+
+    <!-- Top-left character info -->
+    <div class="game-top-info">
+      <span class="info-label">Character ID</span>
+      <span class="info-value">ID: 0126998214</span>
+    </div>
+
+    <!-- Page title watermark -->
+    <div class="game-page-title">性别选择与角色全览</div>
+
+    <!-- Main content -->
+    <main class="game-main">
+
+      <!-- Left: Gender Toggle (~40%) -->
+      <section class="game-gender-toggle" aria-label="性别选择">
+        <div class="game-gender-label">选择性别</div>
+        <div class="game-gender-options">
+          <button
+            class="game-gender-item active"
+            data-gender="male"
+            id="genderMale"
+            aria-pressed="true"
+            tabindex="0"
+          >男</button>
+          <div class="game-gender-separator"></div>
+          <button
+            class="game-gender-item"
+            data-gender="female"
+            id="genderFemale"
+            aria-pressed="false"
+            tabindex="0"
+          >女</button>
+        </div>
+      </section>
+
+      <!-- Right: Character Preview (~60%) -->
+      <section class="game-character-preview" aria-label="角色预览">
+        <div class="character-glow"></div>
+        <div class="character-image-wrapper">
+          <img
+            class="character-image"
+            id="characterImage"
+            src="../assets/male-warrior-silhouette.jpg"
+            alt="角色全身预览"
+            draggable="false"
+          >
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Step indicator -->
+    <nav class="game-step-indicator" aria-label="创建步骤">
+      <div class="step-dot active" title="第一步：性别选择"></div>
+      <div class="step-dot" title="第二步：外形定制"></div>
+      <div class="step-dot" title="第三步：属性分配"></div>
+      <div class="step-dot" title="第四步：命名确认"></div>
+    </nav>
+
+    <!-- Bottom action bar -->
+    <footer class="game-bottom-bar">
+      <button class="game-btn-ghost" id="btnBack" aria-label="返回上一步">
+        <span class="btn-icon">&#8592;</span>
+        <span>返回</span>
+      </button>
+      <button class="game-btn-primary" id="btnNext" data-dom-id="btn-next-gender" aria-label="下一步">
+        <span>下一步</span>
+        <span class="btn-shortcut">Space</span>
+      </button>
+    </footer>
+
+  </div>
+
+  <style>
+  /* ============================================================
+     HundunWorld - 性别选择与角色全览
+     Self-contained game UI page using Claude Design Library tokens.
+     All colors reference --game-* CSS variables.
+     ============================================================ */
+
+  /* === Universal box-sizing & overflow control === */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+  html, body {
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* === Reset & Base === */
+  *, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: var(--game-bg-darkest);
+    font-family: var(--font-game-body);
+    color: var(--game-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    user-select: none;
+  }
+
+  /* === Full-screen game container === */
+  .game-screen {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* === Background layers === */
+  .game-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background:
+      url('../assets/wuxia-bg-atmosphere.jpg') center/cover no-repeat;
+    background-color: var(--game-bg-darkest);
+  }
+
+  /* Background atmosphere overlay (smooth darkening gradient) */
+  .game-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(var(--game-bg-overlay-rgb), 0.7) 0%,
+      rgba(var(--game-bg-overlay-rgb), 0.4) 50%,
+      rgba(var(--game-bg-overlay-rgb), 0.2) 100%
+    );
+  }
+
+  /* Vignette overlay for cinematic depth */
+  .game-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: radial-gradient(
+      ellipse at 55% 50%,
+      transparent 30%,
+      rgba(var(--game-bg-overlay-rgb), 0.5) 70%,
+      rgba(var(--game-bg-overlay-rgb), 0.3) 100%
+    );
+    mask-image: radial-gradient(ellipse at 40% 50%, black 0%, rgba(0,0,0,0.6) 80%);
+    -webkit-mask-image: radial-gradient(ellipse at 40% 50%, black 0%, rgba(0,0,0,0.6) 80%);
+    pointer-events: none;
+  }
+
+  /* === Top-left info area === */
+  .game-top-info {
+    position: absolute;
+    top: var(--game-space-8);
+    left: 40px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: var(--game-space-2);
+  }
+
+  .game-top-info .info-label {
+    font-family: var(--font-game-body);
+    font-size: 12px;
+    color: var(--game-text-secondary);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+
+  .game-top-info .info-value {
+    font-family: var(--font-game-title);
+    font-size: 20px;
+    color: var(--game-text-secondary);
+    letter-spacing: 1px;
+  }
+
+  /* === Page title watermark === */
+  .game-page-title {
+    position: absolute;
+    top: var(--game-space-8);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    font-family: var(--font-game-title);
+    font-size: 18px;
+    color: var(--game-text-secondary);
+    letter-spacing: 12px;
+    opacity: 0.5;
+    white-space: nowrap;
+  }
+
+  /* === Main content area (asymmetric split) === */
+  .game-main {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    padding-bottom: var(--game-height-bottombar);
+  }
+
+  /* === Left panel - Gender Toggle (~40%) === */
+  .game-gender-toggle {
+    position: absolute;
+    left: 20%;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: var(--game-space-8);
+    z-index: 5;
+  }
+
+  .game-gender-label {
+    font-family: var(--font-game-title);
+    font-size: 14px;
+    color: var(--game-text-secondary);
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    opacity: 0.6;
+    margin-bottom: var(--game-space-6);
+  }
+
+  .game-gender-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--game-space-6);
+    align-items: center;
+  }
+
+  /* Gender toggle buttons */
+  .game-gender-item {
+    font-family: var(--font-game-title);
+    font-size: 24px;
+    color: var(--game-text-secondary);
+    cursor: pointer;
+    padding: var(--game-space-3) var(--game-space-8);
+    border: none;
+    background: transparent;
+    position: relative;
+    transition: color var(--game-transition-normal), text-shadow var(--game-transition-normal);
+    letter-spacing: 8px;
+    line-height: 1;
+  }
+
+  /* Animated underline on hover/active */
+  .game-gender-item::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 2px;
+    background: var(--game-primary);
+    transition: width var(--game-transition-normal);
+    box-shadow: var(--game-shadow-glow);
+  }
+
+  .game-gender-item:hover {
+    color: var(--game-text-primary);
+  }
+
+  /* Active (selected) gender */
+  .game-gender-item.active {
+    font-size: 24px;
+    font-family: var(--font-game-title);
+    color: var(--game-primary);
+  }
+
+  .game-gender-item.active::after {
+    width: 100%;
+    height: 2px;
+  }
+
+  /* Glow behind active underline */
+  .game-gender-item.active::before {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    height: 2px;
+    background: var(--game-primary);
+    filter: blur(6px);
+    opacity: 0.5;
+    z-index: -1;
+  }
+
+  /* Decorative separator between genders */
+  .game-gender-separator {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, transparent, var(--game-text-secondary), transparent);
+    opacity: 0.3;
+    margin: var(--game-space-2) 0;
+  }
+
+  /* === Right panel - Character Preview (~60%) === */
+  .game-character-preview {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 60%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    overflow: hidden;
+  }
+
+  .game-character-preview .character-image-wrapper {
+    position: relative;
+    width: 70%;
+    height: 85%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .game-character-preview .character-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: opacity 0.4s ease;
+    filter: drop-shadow(0 0 40px rgba(var(--game-primary-rgb), 0.15));
+  }
+
+  .game-character-preview .character-image.fading-out {
+    opacity: 0;
+  }
+
+  /* Atmospheric light behind character */
+  .game-character-preview .character-glow {
+    position: absolute;
+    width: 300px;
+    height: 500px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(
+      ellipse,
+      rgba(var(--game-primary-rgb), 0.08) 0%,
+      transparent 70%
+    );
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* === Step indicator === */
+  .game-step-indicator {
+    position: absolute;
+    bottom: calc(var(--game-height-bottombar) + var(--game-space-6));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    display: flex;
+    gap: var(--game-space-3);
+    align-items: center;
+  }
+
+  .step-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--game-radius-full);
+    background: var(--game-text-disabled);
+    transition: background var(--game-transition-normal), box-shadow var(--game-transition-normal);
+  }
+
+  .step-dot.active {
+    background: var(--game-primary);
+    box-shadow: 0 0 8px rgba(var(--game-primary-rgb), 0.4);
+    width: 24px;
+    border-radius: var(--game-radius-full);
+  }
+
+  /* === Bottom bar (fixed) === */
+  .game-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--game-height-bottombar);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px;
+    background: linear-gradient(
+      to top,
+      rgba(var(--game-bg-overlay-rgb), 0.85) 0%,
+      rgba(var(--game-bg-overlay-rgb), 0.4) 60%,
+      transparent 100%
+    );
+  }
+
+  .game-bottom-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 40px;
+    right: 40px;
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      rgba(var(--game-primary-rgb), 0.15),
+      transparent
+    );
+  }
+
+  /* === Ghost button (transparent, hover terracotta) === */
+  .game-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--game-space-2);
+    padding: var(--game-space-3) var(--game-space-6);
+    font-family: var(--font-game-body);
+    font-size: 14px;
+    color: var(--game-text-secondary);
+    background: transparent;
+    border: var(--game-border-subtle);
+    border-radius: var(--game-radius-sm);
+    cursor: pointer;
+    transition: color var(--game-transition-fast), border-color var(--game-transition-fast), background var(--game-transition-fast);
+    letter-spacing: 2px;
+    min-width: 100px;
+    justify-content: center;
+  }
+
+  .game-btn-ghost .btn-icon {
+    font-size: 16px;
+    transition: transform var(--game-transition-fast);
+  }
+
+  .game-btn-ghost:hover {
+    color: var(--game-primary);
+    border-color: rgba(var(--game-primary-rgb), 0.3);
+    background: rgba(var(--game-primary-rgb), 0.06);
+  }
+
+  .game-btn-ghost:hover .btn-icon {
+    transform: translateX(-3px);
+  }
+
+  /* === Primary button (terracotta, from Claude brand) === */
+  .game-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--game-space-3);
+    padding: var(--game-space-3) var(--game-space-10);
+    font-family: var(--font-game-title);
+    font-size: 16px;
+    color: var(--game-text-dark);
+    background: linear-gradient(135deg, var(--game-primary) 0%, var(--game-primary-dark) 100%);
+    border: none;
+    border-radius: var(--game-radius-sm);
+    cursor: pointer;
+    letter-spacing: 4px;
+    box-shadow: var(--game-shadow-button), 0 0 16px rgba(var(--game-primary-rgb), 0.2);
+    transition: transform var(--game-transition-fast), box-shadow var(--game-transition-fast), filter var(--game-transition-fast);
+    position: relative;
+    overflow: hidden;
+    min-width: 180px;
+    justify-content: center;
+  }
+
+  .game-btn-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .game-btn-primary:hover {
+    box-shadow: var(--game-shadow-button), 0 0 24px rgba(var(--game-primary-rgb), 0.35);
+    filter: brightness(1.08);
+  }
+
+  .game-btn-primary:active {
+    transform: scale(0.97);
+  }
+
+  .game-btn-primary .btn-shortcut {
+    font-family: var(--font-game-body);
+    font-size: 11px;
+    color: var(--game-text-dark);
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 3px;
+    padding: 1px 6px;
+    margin-left: var(--game-space-2);
+    letter-spacing: 1px;
+    opacity: 0.45;
+  }
+
+  /* Pulse animation for Space key feedback */
+  .game-btn-primary.pulse {
+    animation: btnPulse 0.35s ease;
+  }
+
+  @keyframes btnPulse {
+    0% {
+      box-shadow: var(--game-shadow-button), 0 0 16px rgba(var(--game-primary-rgb), 0.2);
+      transform: scale(1);
+    }
+    40% {
+      box-shadow: var(--game-shadow-button), 0 0 40px rgba(var(--game-primary-rgb), 0.5);
+      transform: scale(1.04);
+    }
+    100% {
+      box-shadow: var(--game-shadow-button), 0 0 16px rgba(var(--game-primary-rgb), 0.2);
+      transform: scale(1);
+    }
+  }
+
+  /* === Corner decorative elements === */
+  .game-corner-decor {
+    position: absolute;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .game-corner-decor.top-left {
+    top: var(--game-space-4);
+    left: var(--game-space-4);
+    width: var(--game-space-12);
+    height: var(--game-space-12);
+    border-top: 1px solid rgba(var(--game-primary-rgb), 0.15);
+    border-left: 1px solid rgba(var(--game-primary-rgb), 0.15);
+  }
+
+  .game-corner-decor.top-right {
+    top: var(--game-space-4);
+    right: var(--game-space-4);
+    width: var(--game-space-12);
+    height: var(--game-space-12);
+    border-top: 1px solid rgba(var(--game-primary-rgb), 0.15);
+    border-right: 1px solid rgba(var(--game-primary-rgb), 0.15);
+  }
+
+  .game-corner-decor.bottom-left {
+    bottom: calc(var(--game-height-bottombar) + var(--game-space-4));
+    left: var(--game-space-4);
+    width: var(--game-space-12);
+    height: var(--game-space-12);
+    border-bottom: 1px solid rgba(var(--game-primary-rgb), 0.15);
+    border-left: 1px solid rgba(var(--game-primary-rgb), 0.15);
+  }
+
+  .game-corner-decor.bottom-right {
+    bottom: calc(var(--game-height-bottombar) + var(--game-space-4));
+    right: var(--game-space-4);
+    width: var(--game-space-12);
+    height: var(--game-space-12);
+    border-bottom: 1px solid rgba(var(--game-primary-rgb), 0.15);
+    border-right: 1px solid rgba(var(--game-primary-rgb), 0.15);
+  }
+
+  /* === Floating particles (decorative) === */
+  .game-particle {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: var(--game-primary);
+    border-radius: var(--game-radius-full);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1;
+    animation: particleFloat linear infinite;
+  }
+  .game-particle--violet { background: var(--game-bg-dawn-violet); }
+  .game-particle--pink { background: var(--game-bg-dawn-pink); }
+  .game-particle--teal { background: var(--game-bg-dawn-teal); }
+  .game-particle--lavender { background: var(--game-bg-dawn-horizon); }
+
+  @keyframes particleFloat {
+    0% {
+      opacity: 0;
+      transform: translateY(0) scale(1);
+    }
+    10% {
+      opacity: 0.6;
+    }
+    90% {
+      opacity: 0.3;
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-300px) scale(0.3);
+    }
+  }
+
+  /* === Responsive: Tablet (768px - 1199px) === */
+  @media (max-width: 1199px) {
+    .game-gender-toggle {
+      transform: scale(0.85) translateY(-50%);
+    }
+    .game-character-preview img {
+      max-width: 50vw;
+    }
+    .game-btn-primary {
+      padding: var(--game-space-2) var(--game-space-4);
+      font-size: 13px;
+    }
+    .game-bottom-bar {
+      padding: 0 var(--game-space-5);
+    }
+  }
+
+  /* === Responsive: Mobile (< 768px) === */
+  @media (max-width: 767px) {
+    .game-gender-toggle {
+      flex-direction: row;
+      left: 50%;
+      top: 15%;
+      transform: translate(-50%, -50%);
+      gap: 24px;
+    }
+    .game-character-preview {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      right: auto;
+      width: 80vw;
+      text-align: center;
+    }
+    .game-character-preview img {
+      max-width: 60dvw;
+      max-height: 45vh;
+      object-fit: contain;
+    }
+    .game-bottom-bar {
+      flex-direction: row;
+      justify-content: space-between;
+      padding: 0 var(--game-space-3);
+      height: 56px;
+    }
+    .game-btn-primary .btn-shortcut {
+      display: none;
+    }
+    .game-top-info {
+      font-size: 10px;
+      top: var(--game-space-2);
+      left: var(--game-space-3);
+    }
+    .game-step-indicator {
+      display: none;
+    }
+    .game-corner-decor {
+      display: none;
+    }
+    .game-page-title {
+      font-size: 14px;
+      letter-spacing: 6px;
+    }
+  }
+
+  /* === Responsive: Small phone / narrow window (< 480px) === */
+  @media (max-width: 479px) {
+    .game-bottom-bar {
+      padding: 0 8px;
+      gap: 8px;
+    }
+    .game-btn-primary {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+    .game-btn-ghost {
+      font-size: 11px;
+      padding: 4px 8px;
+    }
+  }
+  </style>
+
+  <script>
+  /* ============================================================
+     性别选择与角色全览 - 交互逻辑
+     Pure JS, no dependencies.
+     ============================================================ */
+  (function () {
+    'use strict';
+
+    // --- Element references ---
+    var genderMale   = document.getElementById('genderMale');
+    var genderFemale = document.getElementById('genderFemale');
+    var charImage    = document.getElementById('characterImage');
+    var btnNext      = document.getElementById('btnNext');
+    var btnBack      = document.getElementById('btnBack');
+
+    // --- Image paths ---
+    var IMAGE_MAP = {
+      male:   '../assets/male-warrior-silhouette.jpg',
+      female: '../assets/female-warrior-silhouette.jpg'
+    };
+
+    var currentGender = 'male';
+
+    /**
+     * 切换性别选项并更新角色预览图
+     * @param {'male'|'female'} gender
+     */
+    function switchGender(gender) {
+      if (gender === currentGender) return;
+      currentGender = gender;
+
+      // 更新按钮状态
+      genderMale.classList.toggle('active', gender === 'male');
+      genderFemale.classList.toggle('active', gender === 'female');
+      genderMale.setAttribute('aria-pressed', String(gender === 'male'));
+      genderFemale.setAttribute('aria-pressed', String(gender === 'female'));
+
+      // 淡出当前图片
+      charImage.classList.add('fading-out');
+
+      // 等待淡出完成后切换图片源并淡入
+      setTimeout(function () {
+        charImage.src = IMAGE_MAP[gender];
+        charImage.alt = gender === 'male' ? '男性角色全身预览' : '女性角色全身预览';
+        // 强制重绘后移除 fading-out
+        void charImage.offsetWidth;
+        charImage.classList.remove('fading-out');
+      }, 400);
+    }
+
+    // --- Event: Gender click ---
+    genderMale.addEventListener('click', function () {
+      switchGender('male');
+    });
+    genderFemale.addEventListener('click', function () {
+      switchGender('female');
+    });
+
+    // --- Event: Space key -> next button pulse ---
+    document.addEventListener('keydown', function (e) {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        btnNext.classList.remove('pulse');
+        void btnNext.offsetWidth; // force reflow
+        btnNext.classList.add('pulse');
+        btnNext.focus();
+      }
+    });
+
+    // --- Event: Next button click ---
+    btnNext.addEventListener('click', function () {
+      btnNext.classList.remove('pulse');
+      void btnNext.offsetWidth;
+      btnNext.classList.add('pulse');
+    });
+
+    // Remove pulse class after animation ends
+    btnNext.addEventListener('animationend', function () {
+      btnNext.classList.remove('pulse');
+    });
+
+    // --- Decorative floating particles ---
+    function createParticles() {
+      var container = document.getElementById('particles');
+      var count = 45;
+      var colors = ['', '--gold', '--warm', '--pink', '--teal', '', '--gold', '--warm', '--pink', '--violet', '--lavender', '--gold', '--warm'];
+      for (var i = 0; i < count; i++) {
+        var p = document.createElement('div');
+        p.className = 'game-particle game-particle' + colors[i % colors.length];
+        p.style.left = (5 + Math.random() * 90) + '%';
+        p.style.bottom = (5 + Math.random() * 40) + '%';
+        p.style.animationDuration = (5 + Math.random() * 10) + 's';
+        p.style.animationDelay = (Math.random() * 12) + 's';
+        p.style.width = (1 + Math.random() * 3) + 'px';
+        p.style.height = p.style.width;
+        container.appendChild(p);
+      }
+    }
+
+    createParticles();
+
+  })();
+  </script>
+</body>
+</html>

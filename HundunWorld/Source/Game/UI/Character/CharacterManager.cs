@@ -10,6 +10,9 @@ using HundunWorld.Game;
 using HundunWorld.Game.UI;
 using HundunWorld.Game.UI.Events;
 using HundunWorld.Game.UI.Controllers;
+using HundunWorld.Game.Network;
+using HundunWorld.Game.Services;
+using HundunWorld.Game.Equipment;
 
 namespace Game.UI.Character
 {
@@ -40,7 +43,7 @@ namespace Game.UI.Character
         }
 
         // 核心管理器
-        private UIStateManager _stateManager;
+        private HundunWorld.Game.UI.UIStateManager _stateManager;
         private UIEventBus _eventBus;
         private ErrorHandler _errorHandler;
         private UISwitchController _switchController;
@@ -69,7 +72,7 @@ namespace Game.UI.Character
         /// </summary>
         private void InitializeManager()
         {
-            _stateManager = UIStateManager.Instance;
+            _stateManager = HundunWorld.Game.UI.UIStateManager.Instance;
             _eventBus = UIEventBus.Instance;
             _errorHandler = ErrorHandler.Instance;
             _switchController = UISwitchController.Instance;
@@ -217,47 +220,75 @@ namespace Game.UI.Character
             {
                 _stateManager.SetLoadingState(true);
 
-                // 发送进入游戏请求
+                // 1. 发送进入游戏请求（通知服务器）
                 var enterGameRequest = new EnterGameRequest
                 {
                     CharacterId = _selectedCharacter.CharacterId,
                     ClientVersion = "1.0.0"
                 };
                 
+                var networkManager = HundunWorldGame.Instance.NetworkManager;
                 var messagePacket = new HorizonMessagePacket
                 {
                     Header = new MessageHeader
                     {
                         MessageId = Guid.NewGuid().ToString(),
                         MessageType = MessageType.EnterGame,
-                        Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                        Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                        GameId = networkManager?.GameId ?? 1,
+                        ZoneId = networkManager?.ZoneId ?? 1,
+                        ServerId = networkManager?.ServerId ?? 1,
+                        UserId = networkManager?.UserId ?? 0,
+                        AuthToken = networkManager?.AuthToken ?? "",
+                        MachineId = MachineIdentifier.GetMachineGuid()
                     },
                     ServiceType = ServiceType.Game,
                     Body = enterGameRequest
                 };
 
-                var success = await HundunWorldGame.Instance.NetworkManager.SendMessageAsync(messagePacket);
-
-                if (success)
+                // 发送消息（fire-and-forget，不阻塞场景切换）
+                bool sendSuccess = false;
+                try
                 {
-                    // 切换到游戏场景
-                    var switchResult = _switchController.RequestSceneSwitch(SceneType.GameWorld);
-                    if (switchResult.IsSuccess)
+                    sendSuccess = await HundunWorldGame.Instance.NetworkManager.SendMessageAsync(messagePacket);
+                    FlaxEngine.Debug.Log($"[CharacterManager] 进入游戏消息发送: {(sendSuccess ? "成功" : "失败，继续场景切换")}");
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogWarning($"[CharacterManager] 发送进入游戏消息异常: {ex.Message}，继续场景切换");
+                }
+
+                // 2. 更新状态管理器：选中角色 + 设置场景为 GameWorld
+                var currentState = _stateManager.GetCurrentState();
+                currentState.SelectedCharacter = _selectedCharacter;
+                currentState.IncrementVersion();
+
+                // 3. 直接通过 GameSceneManager 加载 World.scene（带淡入淡出过渡）
+                var sceneManager = GameSceneManager.Instance ?? GameSceneManager.GetOrCreate();
+                if (sceneManager != null)
+                {
+                    bool transitionStarted = sceneManager.TransitionTo(SceneType.GameWorld);
+                    FlaxEngine.Debug.Log($"[CharacterManager] GameSceneManager.TransitionTo(GameWorld) 结果: {transitionStarted}");
+                    
+                    if (!transitionStarted)
                     {
-                        FlaxEngine.Debug.Log($"成功进入游戏: {_selectedCharacter.CharacterName}");
-                        return true;
-                    }
-                    else
-                    {
-                        _errorHandler.HandleError(UIErrorType.Transition, "切换到游戏场景失败", null, "enter_game_transition");
+                        _errorHandler.HandleError(UIErrorType.Transition, "启动场景切换失败", null, "enter_game_transition");
                         return false;
                     }
                 }
                 else
                 {
-                    _errorHandler.HandleError(UIErrorType.Network, "进入游戏请求失败", null, "enter_game_request");
+                    FlaxEngine.Debug.LogError("[CharacterManager] GameSceneManager 不可用");
+                    _errorHandler.HandleError(UIErrorType.System, "场景管理器不可用", null, "enter_game_no_manager");
                     return false;
                 }
+
+                FlaxEngine.Debug.Log($"成功进入游戏: {_selectedCharacter.CharacterName}");
+
+                // 订阅场景切换完成事件，切换后检查角色是否已生成
+                sceneManager.TransitionCompleted += OnGameWorldTransitionCompleted;
+
+                return true;
             }
             catch (Exception ex)
             {
@@ -268,6 +299,40 @@ namespace Game.UI.Character
             {
                 _isEnteringGame = false;
                 _stateManager.SetLoadingState(false);
+            }
+        }
+
+        /// <summary>
+        /// 场景切换到 GameWorld 完成后的回调：检查本地玩家是否已生成
+        /// </summary>
+        private void OnGameWorldTransitionCompleted(SceneType previousScene, SceneType targetScene)
+        {
+            if (targetScene != SceneType.GameWorld) return;
+
+            // 取消订阅（一次性）
+            var sceneManager = GameSceneManager.Instance;
+            if (sceneManager != null)
+            {
+                sceneManager.TransitionCompleted -= OnGameWorldTransitionCompleted;
+            }
+
+            FlaxEngine.Debug.Log("[CharacterManager] 场景已切换到 GameWorld，检查本地玩家是否已生成");
+
+            // 检查本地玩家 Actor 是否已生成
+            var game = HundunWorldGame.Instance;
+            if (game == null)
+            {
+                FlaxEngine.Debug.LogWarning("[CharacterManager] HundunWorldGame.Instance 为空，无法检查本地玩家");
+                return;
+            }
+
+            if (game.LocalPlayerActor == null)
+            {
+                FlaxEngine.Debug.Log("[CharacterManager] 本地玩家尚未生成，等待网络响应或 WorldSceneInitializer 兜底");
+            }
+            else
+            {
+                FlaxEngine.Debug.Log($"[CharacterManager] 本地玩家已生成: {game.LocalPlayerActor.Name}");
             }
         }
 
@@ -319,13 +384,20 @@ namespace Game.UI.Character
                     ServerId = 1
                 };
                 
+                var networkManager = HundunWorldGame.Instance.NetworkManager;
                 var createMessagePacket = new HorizonMessagePacket
                 {
                     Header = new MessageHeader
                     {
                         MessageId = Guid.NewGuid().ToString(),
                         MessageType = MessageType.CreateCharacter,
-                        Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                        Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                        GameId = networkManager?.GameId ?? 1,
+                        ZoneId = networkManager?.ZoneId ?? 1,
+                        ServerId = networkManager?.ServerId ?? 1,
+                        UserId = networkManager?.UserId ?? 0,
+                        AuthToken = networkManager?.AuthToken ?? "",
+                        MachineId = MachineIdentifier.GetMachineGuid()
                     },
                     ServiceType = ServiceType.Game,
                     Body = createCharacterRequest
@@ -392,6 +464,9 @@ namespace Game.UI.Character
 
                         FlaxEngine.Debug.Log($"角色创建成功: {response.Character.CharacterName}");
 
+                        // 保存默认外观数据
+                        _ = SaveDefaultAppearanceAsync(response.Character.CharacterId);
+
                         // 自动切换回角色选择界面
                         if (_switchController != null)
                         {
@@ -414,6 +489,30 @@ namespace Game.UI.Character
             {
                 FlaxEngine.Debug.LogError($"[CharacterManager] 处理角色创建响应异常: {ex.Message}\n{ex.StackTrace}");
                 _errorHandler?.HandleError(UIErrorType.System, $"处理角色创建响应失败: {ex.Message}", ex, "create_character_response");
+            }
+        }
+
+        /// <summary>
+        /// 保存角色默认外观数据
+        /// </summary>
+        /// <param name="characterId">角色ID</param>
+        private async Task SaveDefaultAppearanceAsync(ulong characterId)
+        {
+            try
+            {
+                var appearance = new CharacterPersistenceService.AppearanceData
+                {
+                    BodyEquipmentId = EquipmentDatabase.DefaultBodyId,
+                    AccessoryIds = new System.Collections.Generic.List<int> { EquipmentDatabase.DefaultHeadScarfId },
+                    WeaponIds = new System.Collections.Generic.List<int> { EquipmentDatabase.DefaultLongswordId }
+                };
+
+                await CharacterPersistenceService.Instance.SaveAppearanceAsync(characterId, appearance);
+                FlaxEngine.Debug.Log($"[CharacterManager] 已保存角色默认外观: CharacterId={characterId}");
+            }
+            catch (System.Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[CharacterManager] 保存角色默认外观失败: {ex.Message}");
             }
         }
 
@@ -456,13 +555,20 @@ namespace Game.UI.Character
                     UserId = currentState.UserSession.UserId
                 };
                 
+                var networkManager = HundunWorldGame.Instance.NetworkManager;
                 var deleteMessagePacket = new HorizonMessagePacket
                 {
                     Header = new MessageHeader
                     {
                         MessageId = Guid.NewGuid().ToString(),
                         MessageType = MessageType.CharacterDelete,
-                        Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                        Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                        GameId = networkManager?.GameId ?? 1,
+                        ZoneId = networkManager?.ZoneId ?? 1,
+                        ServerId = networkManager?.ServerId ?? 1,
+                        UserId = networkManager?.UserId ?? 0,
+                        AuthToken = networkManager?.AuthToken ?? "",
+                        MachineId = MachineIdentifier.GetMachineGuid()
                     },
                     ServiceType = ServiceType.Game,
                     Body = deleteCharacterRequest

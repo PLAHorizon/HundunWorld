@@ -4,8 +4,8 @@
              xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
              x:Class="Horizon.Game.GengDi.Core.Views.FlowerWorkbenchView"
              x:DataType="vm:FlowerWorkbenchViewModel"
-             Background="#1E1E2E"
-             Foreground="#FFFFFF">
+             Background="{DynamicResource LoginFormBackgroundBrush}"
+             Foreground="{DynamicResource LoginFormTextBrush}">
 
     <controls:GalleryPage Title="花卉工作台"
                           Subtitle="Horizon.Game.GengDi.FlowerWorkbench"
@@ -16,9 +16,9 @@
                       HorizontalScrollBarVisibility="Disabled">
             <StackPanel Spacing="16" Margin="0 0 0 24">
 
-                <Border Classes="SurfaceCard" Padding="12 8" Background="#252536">
+                <Border Classes="SurfaceCard" Padding="12 8" Background="{DynamicResource LoginFormBackgroundBrush}">
                     <Grid ColumnDefinitions="Auto,*,Auto">
-                        <TextBlock Text="角色" FontSize="12" Foreground="#AAAAAA" VerticalAlignment="Center" />
+                        <TextBlock Text="角色" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
                             <Button Content="种植户" Classes="QuietAction" Padding="10 4" FontSize="12"
                                     Command="{Binding RefreshCommand}"
@@ -37,7 +37,7 @@
                       ColumnSpacing="16"
                       RowSpacing="16">
 
-                    <Border Classes="SurfaceCard" Padding="20" Background="#252536"
+                    <Border Classes="SurfaceCard" Padding="20" Background="{DynamicResource LoginFormBackgroundBrush}"
                             IsVisible="{Binding ShowForecastQuadrant}"
                             PointerPressed="ForecastQuadrant_Click">
                         <StackPanel Spacing="12">
@@ -54,12 +54,12 @@
                             </Grid>
                             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
                                 <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Text="今日均价" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="今日均价" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
                                     <TextBlock Text="{Binding ForecastAvgPrice, StringFormat='¥{0:F2}'}"
                                                FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-                                    <TextBlock Text="涨跌幅" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="涨跌幅" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="2">
                                         <TextBlock Text="{Binding ForecastPriceChangeDirection}" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
                                         <TextBlock Text="{Binding ForecastPriceChangePercent, StringFormat='{}{0:F2}%'}"
@@ -68,12 +68,12 @@
                                     </StackPanel>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                                    <TextBlock Text="预警数" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="预警数" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
                                     <TextBlock Text="{Binding ForecastAlertCount}" FontSize="22" FontWeight="SemiBold"
                                                Foreground="#FFA726" HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Grid>
-                            <Border Height="1" Background="#20FFFFFF" />
+                            <Border Height="1" Background="{DynamicResource BattleNetSurfaceTintBrush}" />
                             <ItemsControl ItemsSource="{Binding SpeciesPriceRanking}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
@@ -96,7 +96,7 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Grid.Column="1" Classes="SurfaceCard" Padding="20" Background="#252536"
+                    <Border Grid.Column="1" Classes="SurfaceCard" Padding="20" Background="{DynamicResource LoginFormBackgroundBrush}"
                             IsVisible="{Binding ShowPlantingQuadrant}"
                             PointerPressed="PlantingQuadrant_Click">
                         <StackPanel Spacing="12">
@@ -108,27 +108,27 @@
                                 <Border Grid.Column="1" Background="#1A66BB6A" CornerRadius="4" Padding="6 2"
                                         IsVisible="{Binding PlantingSensorAlerts, Converter={x:Static ObjectConverters.IsNotNull}}">
                                     <TextBlock Text="{Binding PlantingSensorAlerts, StringFormat='{}{0} 项异常'}"
-                                               FontSize="10" Foreground="#66BB6A" FontWeight="SemiBold" />
+                                               FontSize="10" Foreground="{DynamicResource BattleNetPrimaryBrush}" FontWeight="SemiBold" />
                                 </Border>
                             </Grid>
                             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
                                 <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Text="活跃批次" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="活跃批次" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
                                     <TextBlock Text="{Binding PlantingActiveBatches}" FontSize="22" FontWeight="SemiBold"
-                                               Foreground="#42A5F5" HorizontalAlignment="Center" />
+                                               Foreground="{DynamicResource BattleNetOutlineBrush}" HorizontalAlignment="Center" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-                                    <TextBlock Text="待处理建议" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="待处理建议" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
                                     <TextBlock Text="{Binding PlantingPendingAdvice}" FontSize="22" FontWeight="SemiBold"
                                                Foreground="#FFA726" HorizontalAlignment="Center" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                                    <TextBlock Text="传感器异常" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="传感器异常" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
                                     <TextBlock Text="{Binding PlantingSensorAlerts}" FontSize="22" FontWeight="SemiBold"
-                                               Foreground="#EF5350" HorizontalAlignment="Center" />
+                                               Foreground="{DynamicResource LoginErrorBrush}" HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Grid>
-                            <Border Height="1" Background="#20FFFFFF" />
+                            <Border Height="1" Background="{DynamicResource BattleNetSurfaceTintBrush}" />
                             <ItemsControl ItemsSource="{Binding ActiveBatchList}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
@@ -148,7 +148,7 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Grid.Row="1" Classes="SurfaceCard" Padding="20" Background="#252536"
+                    <Border Grid.Row="1" Classes="SurfaceCard" Padding="20" Background="{DynamicResource LoginFormBackgroundBrush}"
                             IsVisible="{Binding ShowHarvestQuadrant}"
                             PointerPressed="HarvestQuadrant_Click">
                         <StackPanel Spacing="12">
@@ -165,29 +165,29 @@
                             </Grid>
                             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
                                 <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Text="待采收批次" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="待采收批次" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
                                     <TextBlock Text="{Binding HarvestPendingBatches}" FontSize="22" FontWeight="SemiBold"
                                                Foreground="#FFA726" HorizontalAlignment="Center" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-                                    <TextBlock Text="7日采收量" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="7日采收量" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
                                     <TextBlock Text="{Binding HarvestSevenDayVolume, StringFormat='{}{0:F0}'}"
                                                FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                                    <TextBlock Text="待上架" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="待上架" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
                                     <TextBlock Text="{Binding HarvestPendingListings}" FontSize="22" FontWeight="SemiBold"
-                                               Foreground="#42A5F5" HorizontalAlignment="Center" />
+                                               Foreground="{DynamicResource BattleNetOutlineBrush}" HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Grid>
-                            <Border Height="1" Background="#20FFFFFF" />
+                            <Border Height="1" Background="{DynamicResource BattleNetSurfaceTintBrush}" />
                             <ItemsControl ItemsSource="{Binding PendingHarvestList}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0 4">
                                             <TextBlock Text="{Binding SpeciesName}" FontSize="13" VerticalAlignment="Center" />
                                             <TextBlock Grid.Column="1" Text="{Binding ExpectedDateDisplay}" FontSize="11"
-                                                       Foreground="#AAAAAA" VerticalAlignment="Center" />
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
@@ -195,7 +195,7 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Grid.Row="1" Grid.Column="1" Classes="SurfaceCard" Padding="20" Background="#252536"
+                    <Border Grid.Row="1" Grid.Column="1" Classes="SurfaceCard" Padding="20" Background="{DynamicResource LoginFormBackgroundBrush}"
                             IsVisible="{Binding ShowSalesQuadrant}"
                             PointerPressed="SalesQuadrant_Click">
                         <StackPanel Spacing="12">
@@ -207,32 +207,32 @@
                                 <Border Grid.Column="1" Background="#1AEF5350" CornerRadius="4" Padding="6 2"
                                         IsVisible="{Binding SalesStockAlerts, Converter={x:Static ObjectConverters.IsNotNull}}">
                                     <TextBlock Text="{Binding SalesStockAlerts, StringFormat='{}{0} 库存预警'}"
-                                               FontSize="10" Foreground="#EF5350" FontWeight="SemiBold" />
+                                               FontSize="10" Foreground="{DynamicResource LoginErrorBrush}" FontWeight="SemiBold" />
                                 </Border>
                             </Grid>
                             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
                                 <StackPanel HorizontalAlignment="Center">
-                                    <TextBlock Text="待发货" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="待发货" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
                                     <TextBlock Text="{Binding SalesPendingShipments}" FontSize="22" FontWeight="SemiBold"
                                                Foreground="#FFA726" HorizontalAlignment="Center" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-                                    <TextBlock Text="今日营收" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="今日营收" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
                                     <TextBlock Text="{Binding SalesTodayRevenue, StringFormat='¥{0:F0}'}"
-                                               FontSize="22" FontWeight="SemiBold" Foreground="#26A69A" HorizontalAlignment="Center" />
+                                               FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource BattleNetPrimaryBrush}" HorizontalAlignment="Center" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                                    <TextBlock Text="库存预警" FontSize="11" Foreground="#AAAAAA" HorizontalAlignment="Center" />
+                                    <TextBlock Text="库存预警" FontSize="11" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
                                     <TextBlock Text="{Binding SalesStockAlerts}" FontSize="22" FontWeight="SemiBold"
-                                               Foreground="#EF5350" HorizontalAlignment="Center" />
+                                               Foreground="{DynamicResource LoginErrorBrush}" HorizontalAlignment="Center" />
                                 </StackPanel>
                             </Grid>
-                            <Border Height="1" Background="#20FFFFFF" />
+                            <Border Height="1" Background="{DynamicResource BattleNetSurfaceTintBrush}" />
                             <ItemsControl ItemsSource="{Binding PendingShipList}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0 4">
-                                            <TextBlock Text="{Binding OrderNo}" FontSize="12" Foreground="#AAAAAA" VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding OrderNo}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
                                             <TextBlock Grid.Column="1" Text="{Binding TotalAmount, StringFormat='¥{0:F2}'}"
                                                        FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
                                         </Grid>
@@ -244,9 +244,9 @@
 
                 </Grid>
 
-                <Border Classes="SurfaceCard" Padding="16 12" Background="#252536">
+                <Border Classes="SurfaceCard" Padding="16 12" Background="{DynamicResource LoginFormBackgroundBrush}">
                     <StackPanel Spacing="8">
-                        <TextBlock Text="快捷操作" FontSize="14" FontWeight="SemiBold" Foreground="#AAAAAA" />
+                        <TextBlock Text="快捷操作" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
                         <StackPanel Orientation="Horizontal" Spacing="12">
                             <Button Classes="QuietAction" Padding="16 8" FontSize="13"
                                     Command="{Binding QuickRecordHarvestCommand}">
@@ -280,10 +280,10 @@
                     </StackPanel>
                 </Border>
 
-                <Border Classes="SurfaceCard" Padding="40" Background="#252536" IsVisible="{Binding IsLoading}">
+                <Border Classes="SurfaceCard" Padding="40" Background="{DynamicResource LoginFormBackgroundBrush}" IsVisible="{Binding IsLoading}">
                     <StackPanel HorizontalAlignment="Center" Spacing="12">
                         <ProgressBar IsIndeterminate="True" Height="4" />
-                        <TextBlock Text="加载工作台数据中..." FontSize="13" Foreground="#888888" HorizontalAlignment="Center" />
+                        <TextBlock Text="加载工作台数据中..." FontSize="13" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center" />
                     </StackPanel>
                 </Border>
 

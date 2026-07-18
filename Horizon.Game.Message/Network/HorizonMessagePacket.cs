@@ -281,7 +281,7 @@ namespace Horizon.Game.Message.Network
             // 完整协议头为 8 字节：[0-3] 载荷长度, [4] 消息类型, [5] 压缩标志, [6-7] 校验和
             if (header.Length < 8)
             {
-                System.Diagnostics.Debug.WriteLine($"HorizonMessageInfo.OnParsingHeader: header too short, length={header.Length}");
+                Console.WriteLine($"HorizonMessageInfo.OnParsingHeader: header too short, length={header.Length}");
                 return false;
             }
 
@@ -292,7 +292,7 @@ namespace Horizon.Game.Message.Network
                 var bodyLength = BitConverter.ToInt32(header);
                 if (bodyLength <= 0 || bodyLength > MaxLength)
                 {
-                    System.Diagnostics.Debug.WriteLine($"HorizonMessageInfo.OnParsingHeader: invalid bodyLength={bodyLength}, MaxLength={MaxLength}");
+                    Console.WriteLine($"HorizonMessageInfo.OnParsingHeader: invalid bodyLength={bodyLength}, MaxLength={MaxLength}");
                     return false;
                 }
 
@@ -303,7 +303,7 @@ namespace Horizon.Game.Message.Network
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"HorizonMessageInfo.OnParsingHeader: exception={ex.Message}");
+                Console.WriteLine($"HorizonMessageInfo.OnParsingHeader: exception={ex.Message}");
                 return false;
             }
         }
@@ -312,7 +312,7 @@ namespace Horizon.Game.Message.Network
         {
             if (body.Length != BodyLength)
             {
-                System.Diagnostics.Debug.WriteLine($"HorizonMessageInfo.OnParsingBody: body length mismatch, expected={BodyLength}, actual={body.Length}");
+                Console.WriteLine($"HorizonMessageInfo.OnParsingBody: body length mismatch, expected={BodyLength}, actual={body.Length}");
                 return false;
             }
 
@@ -322,7 +322,7 @@ namespace Horizon.Game.Message.Network
                 var actualChecksum = CalculateChecksum(body);
                 if (actualChecksum != _expectedChecksum)
                 {
-                    System.Diagnostics.Debug.WriteLine($"HorizonMessageInfo.OnParsingBody: checksum mismatch, expected={_expectedChecksum}, actual={actualChecksum}");
+                    Console.WriteLine($"HorizonMessageInfo.OnParsingBody: checksum mismatch, expected={_expectedChecksum}, actual={actualChecksum}");
                     return false;
                 }
 
@@ -332,14 +332,14 @@ namespace Horizon.Game.Message.Network
 
                 if (finalBody.Length > MaxLength)
                 {
-                    System.Diagnostics.Debug.WriteLine($"HorizonMessageInfo.OnParsingBody: decompressed size exceeds limit, size={finalBody.Length}, MaxLength={MaxLength}");
+                    Console.WriteLine($"HorizonMessageInfo.OnParsingBody: decompressed size exceeds limit, size={finalBody.Length}, MaxLength={MaxLength}");
                     return false;
                 }
 
                 Packet = MemoryPackSerializer.Deserialize<HorizonMessagePacket>(finalBody);
                 if (Packet == null)
                 {
-                    System.Diagnostics.Debug.WriteLine("HorizonMessageInfo.OnParsingBody: MemoryPack deserialization returned null");
+                    Console.WriteLine("HorizonMessageInfo.OnParsingBody: MemoryPack deserialization returned null");
                     return false;
                 }
 
@@ -348,7 +348,7 @@ namespace Horizon.Game.Message.Network
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"HorizonMessageInfo.OnParsingBody: exception={ex.Message}");
+                Console.WriteLine($"HorizonMessageInfo.OnParsingBody: exception={ex.Message}");
                 return false;
             }
         }

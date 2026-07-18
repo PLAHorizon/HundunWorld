@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -106,6 +107,33 @@ namespace Horizon.WebApi.Controllers
                 var machineId = dto.MachineId ?? string.Empty;
                 var imAuthToken = TryGenerateImAuthToken(dto.PassportId, machineId);
 
+                // 获取用户ID（用于后续角色列表等操作）
+                ulong userId = 0;
+                try
+                {
+                    var orleansClient = await OrleansConnectClient();
+                    var passportGrain = orleansClient.GetGrain<IPassportGrain>(Guid.NewGuid());
+                    var passportInfo = await passportGrain.AuthenticationAsync(new LoginDto
+                    {
+                        PassportId = dto.PassportId,
+                        Password = Convert.ToBase64String(Encoding.UTF8.GetBytes(dto.Password ?? string.Empty)),
+                        AppId = dto.AppId,
+                        AppType = dto.AppType,
+                        PassportType = dto.PassportType,
+                        VerifyCode = dto.VerifyCode ?? string.Empty,
+                        Phone = dto.Phone ?? string.Empty,
+                        Email = dto.Email ?? string.Empty,
+                    });
+                    if (passportInfo != null)
+                    {
+                        userId = (ulong)passportInfo.UserId;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "登录时获取UserId失败: PassportId={PassportId}", dto.PassportId);
+                }
+
                 result.Data = new LoginResultDto
                 {
                     AccessToken = tokenResponse.AccessToken,
@@ -113,7 +141,7 @@ namespace Horizon.WebApi.Controllers
                     ExpiresIn = tokenResponse.ExpiresIn,
                     ExpiresTime = DateTime.Now.AddSeconds(tokenResponse.ExpiresIn),
                     ImAuthToken = imAuthToken,
-
+                    UserId = userId,
                 };
                 result.IsSuccess = true;
             }
@@ -252,7 +280,8 @@ namespace Horizon.WebApi.Controllers
                     RefreshToken = tokenResponse.RefreshToken,
                     ExpiresIn = tokenResponse.ExpiresIn,
                     ExpiresTime = DateTime.Now.AddSeconds(tokenResponse.ExpiresIn),
-                    ImAuthToken = regImAuthToken
+                    ImAuthToken = regImAuthToken,
+                    UserId = (ulong)passportInfoDto.UserId
                 };
                 result.IsSuccess = true;
             }

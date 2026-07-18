@@ -29,6 +29,15 @@ public struct InterpolatedTransformComponent
     /// <summary>目标位置 Z（米），由快照更新写入。</summary>
     public float TargetZ;
 
+    /// <summary>插值起始位置 X。</summary>
+    public float StartX;
+
+    /// <summary>插值起始位置 Y。</summary>
+    public float StartY;
+
+    /// <summary>插值起始位置 Z。</summary>
+    public float StartZ;
+
     /// <summary>插值系数（0..1），0 表示位于旧位置，1 表示到达目标位置。</summary>
     public float Alpha;
 

@@ -66,6 +66,15 @@ namespace Horizon.Game.Gateway.Configuration
         public int KeepAliveTimeout { get; set; } = 5000;
 
         /// <summary>
+        /// 连接空闲超时时间（秒）。<br/>
+        /// 当连接超过此时间未收到任何数据（含心跳）时，判定为客户端非正常断开并主动清理。<br/>
+        /// 这是检测客户端非正常断开（关进程/断网）的最可靠机制，不依赖 TCP KeepAlive 和 TouchSocket Online 属性。<br/>
+        /// 客户端心跳间隔约 20 秒，建议设置为心跳间隔的 3 倍（默认 60 秒）。
+        /// </summary>
+        [Range(10, 600)]
+        public int IdleTimeoutSeconds { get; set; } = 60;
+
+        /// <summary>
         /// 是否启用SSL/TLS
         /// </summary>
         public bool EnableSsl { get; set; } = false;

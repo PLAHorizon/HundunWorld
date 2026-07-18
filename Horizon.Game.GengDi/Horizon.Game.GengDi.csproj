@@ -86,7 +86,7 @@
     <PackageReference Include="NAudio" Version="2.3.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     
-    <PackageReference Include="LiteDB" Version="5.0.17" />
+    <PackageReference Include="LiteDB" Version="5.0.21" />
     <PackageReference Include="MiniExcel" Version="1.33.0" />
     <PackageReference Include="System.Drawing.Common" Version="10.0.0-rc.2.25502.107" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" Version="2.0.0-rc5.4" />

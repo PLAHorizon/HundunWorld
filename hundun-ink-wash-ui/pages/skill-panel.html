@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>武学心法</title>
+    <style id="theme-vars">
+/* ============================================================
+   混沌世界 HundunWorld · 水墨武侠沉浸式 UI 品牌样式
+   模式: free-explore | 主题: dark | 设备: desktop
+   仿《燕云十六声》：深墨黑 + 鎏金/古铜 + 毛笔书法 + 水墨笔触
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+
+/* ---------- 设计 Token ---------- */
+:root {
+  /* 背景层 — 深墨黑 */
+  --bg-base-default: #0E1016;
+  --bg-base-secondary: #14171E;
+  --bg-base-tertiary: #1C1F28;
+  --bg-base-elevated: #232733;
+  --ink-bg-panel: rgba(20, 23, 30, 0.85);
+  --ink-bg-panel-solid: #14171E;
+  --ink-bg-void: #0E1016;
+  --ink-bg-abyss: #0A0B10;
+  --ink-bg-scrim: rgba(8, 9, 14, 0.72);
+
+  /* 品牌主色 — 鎏金 */
+  --bg-brand: #C8A858;
+  --bg-brand-hover: #E0C880;
+  --bg-brand-active: #8A7438;
+  --bg-brand-disabled: rgba(200, 168, 88, 0.28);
+  --ink-gold-primary: #C8A858;
+  --ink-gold-bright: #E0C880;
+  --ink-gold-deep: #8A7438;
+  --ink-gold-glow: rgba(200, 168, 88, 0.4);
+
+  /* 铜色体系 — 辅助主色 */
+  --ink-bronze-primary: #B87333;
+  --ink-bronze-bright: #D4944E;
+  --ink-bronze-deep: #7A4A20;
+  --ink-bronze-glow: rgba(184, 115, 51, 0.4);
+
+  /* 辅助语义色 */
+  --ink-jade-primary: #5E8B7E;
+  --ink-jade-bright: #7EAE9E;
+  --ink-blood-primary: #B85450;
+  --ink-blood-bright: #D46862;
+
+  /* 品质色 — 游戏语义 */
+  --ink-quality-common: #8A8275;
+  --ink-quality-uncommon: #6B8E5A;
+  --ink-quality-rare: #4A7EA8;
+  --ink-quality-epic: #8B5E9E;
+  --ink-quality-legendary: #C8A858;
+
+  /* 状态色 */
+  --state-success: #6B8E5A;
+  --state-warning: #C8A858;
+  --state-error: #B85450;
+  --state-info: #4A7EA8;
+
+  /* 文字 */
+  --text-default: #F0EDE4;
+  --text-secondary: #B8B0A0;
+  --text-tertiary: #7A7468;
+  --text-disabled: #4A4640;
+  --text-brand: #E0C880;
+  --text-on-brand: #1A1408;
+
+  /* 边框 */
+  --border-neutral-l1: rgba(240, 237, 228, 0.06);
+  --border-neutral-l2: rgba(200, 168, 88, 0.15);
+  --border-neutral-l3: rgba(200, 168, 88, 0.25);
+  --ink-border-gold: rgba(200, 168, 88, 0.35);
+  --ink-border-gold-strong: rgba(200, 168, 88, 0.6);
+  --ink-border-bronze: rgba(184, 115, 51, 0.3);
+  --ink-divider: rgba(200, 168, 88, 0.12);
+
+  /* 字体 */
+  --ink-font-display: "Ma Shan Zheng", "STKaiti", "KaiTi", serif;
+  --ink-font-heading: "Noto Serif SC", "Source Han Serif SC", "SimSun", serif;
+  --ink-font-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --ink-font-number: "DIN Alternate", "DIN", "Bebas Neue", monospace;
+  --font-family-heading: var(--ink-font-heading);
+  --font-family-default: var(--ink-font-body);
+
+  /* 圆角 — 古风克制 */
+  --radius-0: 0px;
+  --radius-2: 2px;
+  --radius-4: 4px;
+  --radius-8: 8px;
+  --radius-full: 999px;
+  --ink-radius-none: 0px;
+  --ink-radius-sm: 2px;
+  --ink-radius-md: 4px;
+  --ink-radius-lg: 8px;
+
+  /* 阴影 / 深度 */
+  --ink-shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  --ink-shadow-soft: 0 1px 0 rgba(0, 0, 0, 0.05);
+  --ink-shadow-gold: 0 0 24px rgba(200, 168, 88, 0.2);
+  --ink-shadow-inset: inset 0 1px 0 rgba(200, 168, 88, 0.08);
+  --ink-shadow-inset-deep: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+  --ink-blur-panel: blur(8px);
+
+  /* 间距 */
+  --ink-space-1: 4px;
+  --ink-space-2: 8px;
+  --ink-space-3: 12px;
+  --ink-space-4: 16px;
+  --ink-space-5: 24px;
+  --ink-space-6: 32px;
+  --ink-space-8: 48px;
+
+  /* 控件尺寸 */
+  --ink-control-h-sm: 28px;
+  --ink-control-h-md: 36px;
+  --ink-control-h-lg: 44px;
+
+  /* Tailwind v4 语义别名 — 供 fill-html-head 生成 @theme inline 桥接（ink 前缀版） */
+  --ink-background: var(--bg-base-default);
+  --ink-foreground: var(--text-default);
+  --ink-card: var(--bg-base-secondary);
+  --ink-card-foreground: var(--text-default);
+  --ink-popover: var(--ink-bg-panel-solid);
+  --ink-popover-foreground: var(--text-default);
+  --ink-primary: var(--bg-brand);
+  --ink-primary-foreground: var(--text-on-brand);
+  --ink-secondary: var(--bg-base-tertiary);
+  --ink-secondary-foreground: var(--text-secondary);
+  --ink-muted: var(--bg-base-tertiary);
+  --ink-muted-foreground: var(--text-tertiary);
+  --ink-accent: var(--ink-bronze-primary);
+  --ink-accent-foreground: var(--text-default);
+  --ink-destructive: var(--ink-blood-primary);
+  --ink-destructive-foreground: var(--text-default);
+  --ink-border: var(--ink-border-gold);
+  --ink-input: var(--ink-border-gold);
+  --ink-ring: var(--ink-gold-primary);
+  --ink-radius-small: var(--ink-radius-sm);
+  --ink-radius-medium: var(--ink-radius-md);
+  --ink-radius-large: var(--ink-radius-lg);
+  --ink-radius-xlarge: var(--ink-radius-lg);
+}
+
+/* ---------- 基础重置 ---------- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--bg-base-default);
+  color: var(--text-default);
+  font-family: var(--ink-font-body);
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* 游戏沉浸根容器 */
+.ink-game-root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-base-default);
+}
+
+/* 全局水墨背景层 */
+.ink-bg-layer {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(200, 168, 88, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(184, 115, 51, 0.04) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 100%, rgba(10, 11, 16, 0.8) 0%, transparent 60%),
+    var(--bg-base-default);
+  pointer-events: none;
+  z-index: 0;
+}
+.ink-bg-layer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+}
+
+/* 暗角晕影 */
+.ink-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.55) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ---------- 面板系统 ---------- */
+.ink-panel {
+  position: relative;
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  -webkit-backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-inset), var(--ink-shadow-soft);
+  border-radius: var(--ink-radius-md);
+}
+.ink-panel-solid {
+  background: var(--ink-bg-panel-solid);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-inset);
+  border-radius: var(--ink-radius-md);
+}
+.ink-panel-elevated {
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  box-shadow: var(--ink-shadow-panel);
+  border-radius: var(--ink-radius-md);
+}
+
+/* 水墨笔触描边 — 多层错位金线模拟飞白 */
+.ink-brush-border {
+  position: relative;
+  border: 1px solid var(--ink-border-gold);
+  box-shadow:
+    inset 0 0 0 1px rgba(200, 168, 88, 0.05),
+    0 0 0 1px rgba(200, 168, 88, 0.08),
+    0 1px 0 rgba(200, 168, 88, 0.1);
+}
+.ink-brush-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1px solid transparent;
+  border-image: linear-gradient(135deg, rgba(200, 168, 88, 0.4) 0%, rgba(200, 168, 88, 0.08) 40%, rgba(184, 115, 51, 0.3) 100%) 1;
+  pointer-events: none;
+}
+
+/* 面板四角装饰 */
+.ink-corner-deco {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--ink-gold-primary);
+  opacity: 0.7;
+}
+.ink-corner-deco.tl { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+.ink-corner-deco.tr { top: -1px; right: -1px; border-left: none; border-bottom: none; }
+.ink-corner-deco.bl { bottom: -1px; left: -1px; border-right: none; border-top: none; }
+.ink-corner-deco.br { bottom: -1px; right: -1px; border-left: none; border-top: none; }
+
+/* 面板标题栏 */
+.ink-panel-title {
+  display: flex;
+  align-items: center;
+  gap: var(--ink-space-2);
+  padding: var(--ink-space-3) var(--ink-space-4);
+  border-bottom: 1px solid var(--ink-divider);
+  font-family: var(--ink-font-heading);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-brand);
+  letter-spacing: 2px;
+}
+.ink-panel-title::before {
+  content: "";
+  width: 3px;
+  height: 16px;
+  background: linear-gradient(180deg, var(--ink-gold-bright), var(--ink-gold-deep));
+  border-radius: var(--ink-radius-sm);
+}
+
+/* ---------- 排版 ---------- */
+.ink-text-display {
+  font-family: var(--ink-font-display);
+  font-size: 32px;
+  color: var(--text-brand);
+  letter-spacing: 4px;
+  line-height: 1.2;
+}
+.ink-text-heading {
+  font-family: var(--ink-font-heading);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-default);
+  letter-spacing: 1px;
+}
+.ink-text-subheading {
+  font-family: var(--ink-font-heading);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}
+.ink-text-body {
+  font-family: var(--ink-font-body);
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+.ink-text-caption {
+  font-family: var(--ink-font-body);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+.ink-text-number {
+  font-family: var(--ink-font-number);
+  font-weight: 700;
+  color: var(--text-brand);
+}
+
+/* ---------- 按钮 ---------- */
+.ink-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ink-space-2);
+  height: var(--ink-control-h-md);
+  padding: 0 var(--ink-space-4);
+  font-family: var(--ink-font-heading);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: var(--text-default);
+  background: var(--bg-base-tertiary);
+  border: 1px solid var(--ink-border-gold);
+  border-radius: var(--ink-radius-sm);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+.ink-btn:hover {
+  background: var(--bg-base-elevated);
+  border-color: var(--ink-border-gold-strong);
+  color: var(--text-brand);
+}
+.ink-btn:active { transform: translateY(1px); }
+.ink-btn-primary {
+  color: var(--text-on-brand);
+  background: linear-gradient(135deg, var(--ink-gold-bright), var(--ink-gold-deep));
+  border-color: var(--ink-gold-primary);
+  box-shadow: var(--ink-shadow-gold);
+}
+.ink-btn-primary:hover {
+  color: var(--text-on-brand);
+  background: linear-gradient(135deg, var(--ink-gold-primary), var(--ink-gold-deep));
+  border-color: var(--ink-gold-bright);
+}
+.ink-btn-ghost {
+  background: transparent;
+  border-color: var(--border-neutral-l2);
+  color: var(--text-secondary);
+}
+.ink-btn-ghost:hover {
+  background: rgba(200, 168, 88, 0.06);
+  border-color: var(--ink-border-gold);
+  color: var(--text-brand);
+}
+.ink-btn-sm { height: var(--ink-control-h-sm); font-size: 12px; padding: 0 var(--ink-space-3); }
+.ink-btn-lg { height: var(--ink-control-h-lg); font-size: 15px; padding: 0 var(--ink-space-5); }
+
+/* ---------- 标签 / 徽章 ---------- */
+.ink-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-family: var(--ink-font-body);
+  color: var(--text-secondary);
+  background: rgba(200, 168, 88, 0.08);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  letter-spacing: 1px;
+}
+.ink-tag-brand {
+  color: var(--text-brand);
+  background: rgba(200, 168, 88, 0.12);
+  border-color: var(--ink-border-gold);
+}
+
+/* 品质色 */
+.ink-q-common { color: var(--ink-quality-common); border-color: var(--ink-quality-common); }
+.ink-q-uncommon { color: var(--ink-quality-uncommon); border-color: var(--ink-quality-uncommon); }
+.ink-q-rare { color: var(--ink-quality-rare); border-color: var(--ink-quality-rare); }
+.ink-q-epic { color: var(--ink-quality-epic); border-color: var(--ink-quality-epic); }
+.ink-q-legendary { color: var(--ink-quality-legendary); border-color: var(--ink-quality-legendary); box-shadow: 0 0 12px rgba(200, 168, 88, 0.3); }
+
+/* ---------- 进度条 ---------- */
+.ink-bar {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  overflow: hidden;
+}
+.ink-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ink-gold-deep), var(--ink-gold-bright));
+  border-radius: var(--ink-radius-sm);
+  box-shadow: 0 0 8px rgba(200, 168, 88, 0.3);
+  transition: width 0.4s ease;
+}
+.ink-bar-fill-jade { background: linear-gradient(90deg, #3E6B5E, var(--ink-jade-bright)); box-shadow: 0 0 8px rgba(94, 139, 126, 0.3); }
+.ink-bar-fill-blood { background: linear-gradient(90deg, #8A3E3A, var(--ink-blood-bright)); box-shadow: 0 0 8px rgba(184, 84, 80, 0.3); }
+.ink-bar-thin { height: 4px; }
+
+/* 竖向属性条 */
+.ink-bar-v {
+  position: relative;
+  width: 8px;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  overflow: hidden;
+  display: inline-block;
+}
+.ink-bar-v-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(0deg, var(--ink-gold-deep), var(--ink-gold-bright));
+  border-radius: var(--ink-radius-sm);
+}
+
+/* ---------- 网格格子（背包/技能槽） ---------- */
+.ink-cell {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-neutral-l2);
+  border-radius: var(--ink-radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.ink-cell:hover {
+  border-color: var(--ink-border-gold-strong);
+  background: rgba(200, 168, 88, 0.08);
+}
+.ink-cell-quality { border-width: 1px; border-style: solid; }
+.ink-cell-badge {
+  position: absolute;
+  bottom: 1px;
+  right: 2px;
+  font-family: var(--ink-font-number);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-default);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+}
+
+/* ---------- 列表项 ---------- */
+.ink-list-item {
+  display: flex;
+  align-items: center;
+  gap: var(--ink-space-3);
+  padding: var(--ink-space-3) var(--ink-space-4);
+  border-bottom: 1px solid var(--ink-divider);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.ink-list-item:hover { background: rgba(200, 168, 88, 0.05); }
+.ink-list-item.active {
+  background: rgba(200, 168, 88, 0.1);
+  border-left: 2px solid var(--ink-gold-primary);
+}
+
+/* ---------- 头像 / 圆点 ---------- */
+.ink-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ink-radius-md);
+  border: 1px solid var(--ink-border-gold);
+  background: var(--bg-base-tertiary);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.ink-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--ink-quality-common);
+}
+.ink-dot-online { background: var(--ink-quality-uncommon); box-shadow: 0 0 6px rgba(107, 142, 90, 0.6); }
+
+/* ---------- 分割线 ---------- */
+.ink-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--ink-divider) 20%, var(--ink-divider) 80%, transparent);
+  border: none;
+}
+.ink-divider-v {
+  width: 1px;
+  align-self: stretch;
+  background: linear-gradient(180deg, transparent, var(--ink-divider) 20%, var(--ink-divider) 80%, transparent);
+}
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+::-webkit-scrollbar-thumb {
+  background: rgba(200, 168, 88, 0.25);
+  border-radius: var(--ink-radius-sm);
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(200, 168, 88, 0.45); }
+
+/* ---------- 选中态 ---------- */
+::selection { background: rgba(200, 168, 88, 0.3); color: var(--text-default); }
+
+/* ---------- 辅助 ---------- */
+.ink-flex { display: flex; }
+.ink-flex-col { display: flex; flex-direction: column; }
+.ink-items-center { align-items: center; }
+.ink-justify-between { justify-content: space-between; }
+.ink-gap-2 { gap: var(--ink-space-2); }
+.ink-gap-3 { gap: var(--ink-space-3); }
+.ink-gap-4 { gap: var(--ink-space-4); }
+.ink-flex-1 { flex: 1; }
+.ink-text-center { text-align: center; }
+.ink-text-right { text-align: right; }
+.ink-overflow-auto { overflow: auto; }
+.ink-overflow-hidden { overflow: hidden; }
+.ink-relative { position: relative; }
+.ink-absolute { position: absolute; }
+.ink-pointer { cursor: pointer; }
+
+/* 通用内容层（在背景层之上） */
+.ink-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+}
+
+/* 返回按钮 */
+.ink-back-btn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--ink-bg-panel);
+  backdrop-filter: var(--ink-blur-panel);
+  border: 1px solid var(--ink-border-gold);
+  border-radius: var(--ink-radius-sm);
+  color: var(--text-brand);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.ink-back-btn:hover {
+  background: rgba(200, 168, 88, 0.12);
+  border-color: var(--ink-border-gold-strong);
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--ink-background);
+    --color-foreground: var(--ink-foreground);
+    --color-card: var(--ink-card);
+    --color-card-foreground: var(--ink-card-foreground);
+    --color-popover: var(--ink-popover);
+    --color-popover-foreground: var(--ink-popover-foreground);
+    --color-primary: var(--ink-primary);
+    --color-primary-foreground: var(--ink-primary-foreground);
+    --color-secondary: var(--ink-secondary);
+    --color-secondary-foreground: var(--ink-secondary-foreground);
+    --color-muted: var(--ink-muted);
+    --color-muted-foreground: var(--ink-muted-foreground);
+    --color-accent: var(--ink-accent);
+    --color-accent-foreground: var(--ink-accent-foreground);
+    --color-destructive: var(--ink-destructive);
+    --color-destructive-foreground: var(--ink-destructive-foreground);
+    --color-border: var(--ink-border);
+    --color-input: var(--ink-input);
+    --color-ring: var(--ink-ring);
+    --radius-sm: var(--ink-radius-small);
+    --radius-md: var(--ink-radius-medium);
+    --radius-lg: var(--ink-radius-large);
+    --radius-xl: var(--ink-radius-xlarge);
+  }
+  @layer base {
+    body { background: var(--ink-background); color: var(--ink-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="ink-game-root">
+    <div class="ink-bg-layer">
+        <div style="position:absolute;inset:0;background-image:url('../assets/ink-wash-bg-dark.jpg');background-size:cover;background-position:center;opacity:0.12;mix-blend-mode:overlay;pointer-events:none;"></div>
+    </div>
+    <div class="ink-vignette"></div>
+    <div class="ink-content">
+        <style>
+          /* ===== 武学心法页 — 页面私有样式（free-explore，置于 body 内） ===== */
+          .skill-shell {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            padding: 18px 28px 22px;
+          }
+          /* 返回按钮放宽以容纳“返回”文字 */
+          .ink-back-btn { width: auto; min-width: 40px; padding: 0 14px; gap: 6px; font-family: var(--ink-font-heading); font-size: 13px; letter-spacing: 1px; }
+          .ink-back-btn svg { width: 16px; height: 16px; stroke-width: 1.5; }
+
+          /* 顶部标题栏 + 三标签 */
+          .skill-title-bar {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            height: 56px;
+            flex-shrink: 0;
+            gap: 24px;
+          }
+          .skill-title {
+            font-family: var(--ink-font-display);
+            font-size: 30px;
+            color: var(--text-brand);
+            letter-spacing: 10px;
+            padding-left: 10px;
+            text-shadow: 0 0 18px color-mix(in srgb, var(--ink-gold-primary) 35%, transparent);
+            line-height: 1.2;
+            text-wrap: balance;
+          }
+          .skill-tabs {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+          }
+          .skill-tab {
+            position: relative;
+            padding: 8px 22px 12px;
+            font-family: var(--ink-font-heading);
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            color: var(--text-tertiary);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: color 0.18s ease;
+          }
+          .skill-tab:hover { color: var(--text-secondary); }
+          .skill-tab:focus-visible { outline: 2px solid var(--ink-border-gold-strong); outline-offset: -2px; border-radius: var(--ink-radius-sm); }
+          .skill-tab.is-active { color: var(--text-brand); }
+          .skill-tab.is-active::after {
+            content: "";
+            position: absolute;
+            left: 22px;
+            right: 22px;
+            bottom: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--ink-gold-deep), var(--ink-gold-bright), var(--ink-gold-deep));
+            box-shadow: 0 0 8px color-mix(in srgb, var(--ink-gold-primary) 50%, transparent);
+            border-radius: var(--ink-radius-sm);
+          }
+
+          /* 双栏栅格 */
+          .skill-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 35fr 65fr;
+            gap: 16px;
+            margin-top: 12px;
+            min-height: 0;
+          }
+
+          /* ===== 左栏 · 技能列表 ===== */
+          .skill-list-panel { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+          .skill-list-scroll { flex: 1; overflow-y: auto; min-height: 0; }
+          .skill-list-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--ink-space-3) var(--ink-space-4);
+            border-bottom: 1px solid var(--ink-divider);
+          }
+          .skill-list-header .list-count {
+            font-family: var(--ink-font-number);
+            font-size: 12px;
+            color: var(--text-tertiary);
+            letter-spacing: 1px;
+          }
+          .skill-list-header .list-count .num { color: var(--text-brand); font-size: 14px; }
+          .skill-icon-cell {
+            width: 38px;
+            height: 38px;
+            flex-shrink: 0;
+          }
+          .skill-icon-cell svg { width: 18px; height: 18px; stroke-width: 1.5; }
+          .skill-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+          .skill-name {
+            font-family: var(--ink-font-heading);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-default);
+            letter-spacing: 1px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .skill-meta { font-size: 11px; color: var(--text-tertiary); letter-spacing: 0.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+          .skill-meta .lv { color: var(--text-secondary); }
+          .skill-q-tag {
+            flex-shrink: 0;
+            height: 20px;
+            padding: 0 7px;
+            font-family: var(--ink-font-heading);
+            font-weight: 600;
+            background: rgba(0, 0, 0, 0.32);
+            border: 1px solid;
+            border-radius: var(--ink-radius-sm);
+            display: inline-flex;
+            align-items: center;
+            letter-spacing: 1px;
+          }
+          .skill-q-tag.q-common { color: var(--ink-quality-common); border-color: color-mix(in srgb, var(--ink-quality-common) 45%, transparent); }
+          .skill-q-tag.q-uncommon { color: var(--ink-quality-uncommon); border-color: color-mix(in srgb, var(--ink-quality-uncommon) 45%, transparent); }
+          .skill-q-tag.q-rare { color: var(--ink-quality-rare); border-color: color-mix(in srgb, var(--ink-quality-rare) 45%, transparent); }
+          .skill-q-tag.q-epic { color: var(--ink-quality-epic); border-color: color-mix(in srgb, var(--ink-quality-epic) 45%, transparent); }
+          .skill-q-tag.q-legendary { color: var(--ink-quality-legendary); border-color: var(--ink-quality-legendary); box-shadow: 0 0 10px color-mix(in srgb, var(--ink-quality-legendary) 30%, transparent); }
+
+          /* ===== 右栏 · 技能详情 ===== */
+          .skill-detail-panel {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+          }
+          .skill-detail-bg {
+            position: absolute;
+            inset: 0;
+            background-image: url('../assets/ink-mountain-mist.jpg');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.18;
+            pointer-events: none;
+            filter: grayscale(0.35) brightness(0.7) contrast(1.05);
+            z-index: 0;
+          }
+          .skill-detail-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            padding: 18px 22px 16px;
+            overflow-y: auto;
+          }
+          .detail-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+          }
+          .detail-name {
+            font-family: var(--ink-font-display);
+            font-size: 34px;
+            color: var(--text-brand);
+            letter-spacing: 6px;
+            line-height: 1.2;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+            text-wrap: balance;
+            word-break: keep-all;
+          }
+          .detail-tags {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+            padding-top: 10px;
+          }
+          .detail-stat-row {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.28);
+            border: 1px solid var(--ink-divider);
+            border-radius: var(--ink-radius-sm);
+          }
+          .detail-stat { display: flex; align-items: baseline; gap: 5px; min-width: 0; }
+          .detail-stat .s-label { font-size: 11px; color: var(--text-tertiary); letter-spacing: 1px; }
+          .detail-stat .s-val { font-family: var(--ink-font-number); font-size: 15px; font-weight: 700; color: var(--text-default); white-space: nowrap; }
+          .detail-stat .s-val.up { color: var(--state-success); }
+
+          .section-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+            font-family: var(--ink-font-heading);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-brand);
+            letter-spacing: 2px;
+          }
+          .section-label::before {
+            content: "";
+            width: 3px;
+            height: 13px;
+            background: linear-gradient(180deg, var(--ink-gold-bright), var(--ink-gold-deep));
+            border-radius: var(--ink-radius-sm);
+          }
+          .section-label .label-sub { font-size: 11px; color: var(--text-tertiary); font-weight: 400; letter-spacing: 1px; }
+
+          .detail-desc { margin-top: 8px; }
+          .detail-desc .ink-text-body { font-size: 13px; color: var(--text-secondary); }
+
+          /* 天赋树 */
+          .talent-tree-wrap {
+            position: relative;
+            margin-top: 8px;
+            padding: 6px 0 0;
+          }
+          .talent-tree-wrap svg { width: 100%; height: auto; display: block; }
+          .talent-tree-wrap .tl-line-lit { stroke: var(--ink-gold-primary); stroke-width: 2; opacity: 0.75; }
+          .talent-tree-wrap .tl-line-unlit { stroke: var(--ink-border-gold); stroke-width: 1.5; stroke-dasharray: 5 4; opacity: 0.55; }
+          .talent-tree-wrap .tl-glow { fill: var(--ink-gold-primary); }
+          .talent-tree-wrap .tl-glow-soft { fill: var(--ink-gold-primary); opacity: 0.16; }
+          .talent-tree-wrap .tl-glow-strong { fill: var(--ink-gold-primary); opacity: 0.2; }
+          .talent-tree-wrap .tl-node-lit { fill: var(--ink-gold-bright); stroke: var(--ink-gold-deep); stroke-width: 1.5; }
+          .talent-tree-wrap .tl-node-unlit { fill: rgba(14, 16, 22, 0.8); stroke: var(--text-tertiary); stroke-width: 1.2; stroke-dasharray: 3 3; }
+          .talent-tree-wrap text { font-family: var(--ink-font-heading); font-size: 11px; letter-spacing: 1px; }
+          .talent-tree-wrap .tl-text-lit { fill: var(--text-secondary); font-weight: 600; }
+          .talent-tree-wrap .tl-text-unlit { fill: var(--text-tertiary); }
+          .talent-tree-wrap .tl-text-brand { fill: var(--text-brand); font-weight: 600; }
+          .talent-legend {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-top: 6px;
+            padding: 0 4px;
+            font-size: 11px;
+            color: var(--text-tertiary);
+            letter-spacing: 1px;
+          }
+          .talent-legend .lg-item { display: inline-flex; align-items: center; gap: 6px; }
+          .talent-legend .lg-dot {
+            width: 10px; height: 10px; border-radius: var(--radius-full);
+            display: inline-block;
+          }
+          .talent-legend .lg-dot.lit { background: var(--ink-gold-bright); box-shadow: 0 0 6px color-mix(in srgb, var(--ink-gold-primary) 55%, transparent); }
+          .talent-legend .lg-dot.unlit { background: transparent; border: 1px dashed var(--text-tertiary); }
+
+          /* 心法搭配 */
+          .scroll-slots-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 8px;
+          }
+          .scroll-cell {
+            position: relative;
+            width: 54px;
+            height: 54px;
+            flex-shrink: 0;
+            flex-direction: column;
+            justify-content: center;
+          }
+          .scroll-cell svg { width: 22px; height: 22px; stroke-width: 1.5; }
+          .scroll-cell .sc-name {
+            position: absolute;
+            bottom: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: var(--text-tertiary);
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+          }
+          .scroll-cell.empty svg { color: var(--text-disabled); }
+          .scroll-slots-row { padding-bottom: 20px; }
+
+          /* 响应式：移动端纵向堆叠并可滚动 */
+          @media (max-width: 1023px) {
+            .skill-shell { overflow-y: auto; height: 100%; padding: 16px; }
+            .skill-grid { grid-template-columns: 1fr; }
+            .skill-list-panel { max-height: 360px; }
+            .skill-title-bar { flex-direction: column; align-items: flex-start; gap: 8px; height: auto; }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            * { transition-duration: 0.01ms !important; }
+            .detail-name, .skill-title { text-shadow: none; }
+          }
+        </style>
+
+        <button class="ink-back-btn" data-dom-id="back-hud" aria-label="返回主界面">
+            <i data-lucide="arrow-left"></i><span>返回</span>
+        </button>
+
+        <div class="skill-shell">
+            <!-- 顶部：毛笔书法标题 + 武学/心法/奇术三标签 -->
+            <header class="skill-title-bar">
+                <h1 class="skill-title" style="text-wrap: balance; word-break: keep-all; overflow-wrap: break-word;">武学心法</h1>
+                <nav class="skill-tabs" role="tablist" aria-label="武学系统切换">
+                    <button class="skill-tab is-active" data-dom-id="tab-martial" role="tab" aria-selected="true">武学</button>
+                    <button class="skill-tab" data-dom-id="tab-mental" role="tab" aria-selected="false">心法</button>
+                    <button class="skill-tab" data-dom-id="tab-esoteric" role="tab" aria-selected="false">奇术</button>
+                </nav>
+            </header>
+
+            <!-- 双栏：左技能列表 35% · 右详情天赋树 65% -->
+            <div class="skill-grid">
+                <!-- ========== 左栏 · 技能列表 ========== -->
+                <section class="ink-panel skill-list-panel">
+                    <span class="ink-corner-deco tl"></span>
+                    <span class="ink-corner-deco tr"></span>
+                    <span class="ink-corner-deco bl"></span>
+                    <span class="ink-corner-deco br"></span>
+                    <div class="skill-list-header">
+                        <div class="ink-panel-title" style="border-bottom: none; padding: 0;">武学招式</div>
+                        <span class="list-count">已习<span class="num">10</span> / 12</span>
+                    </div>
+                    <div class="skill-list-scroll">
+                        <div class="ink-list-item active" data-dom-id="skill-row-1">
+                            <div class="skill-icon-cell ink-cell ink-cell-quality ink-q-legendary"><i data-lucide="sword"></i></div>
+                            <div class="skill-info">
+                                <span class="skill-name">破军剑诀</span>
+                                <span class="skill-meta"><span class="lv">Lv.12</span> · 外功·剑法</span>
+                            </div>
+                            <span class="skill-q-tag q-legendary">传</span>
+                        </div>
+                        <div class="ink-list-item" data-dom-id="skill-row-2">
+                            <div class="skill-icon-cell ink-cell ink-cell-quality ink-q-epic"><i data-lucide="droplet"></i></div>
+                            <div class="skill-info">
+                                <span class="skill-name">凝血神功</span>
+                                <span class="skill-meta"><span class="lv">Lv.9</span> · 内功·阴寒</span>
+                            </div>
+                            <span class="skill-q-tag q-epic">史</span>
+                        </div>
+                        <div class="ink-list-item" data-dom-id="skill-row-3">
+                            <div class="skill-icon-cell ink-cell ink-cell-quality ink-q-rare"><i data-lucide="wind"></i></div>
+                            <div class="skill-info">
+                                <span class="skill-name">落英剑法</span>
+                                <span class="skill-meta"><span class="lv">Lv.7</span> · 外功·剑法</span>
+                            </div>
+                            <span class="skill-q-tag q-rare">珍</span>
+                        </div>
+                        <div class="ink-list-item" data-dom-id="skill-row-4">
+                            <div class="skill-icon-cell ink-cell ink-cell-quality ink-q-rare"><i data-lucide="snowflake"></i></div>
+                            <div class="skill-info">
+                                <span class="skill-name">寒冰真气</span>
+                                <span class="skill-meta"><span class="lv">Lv.6</span> · 内功·阴寒</span>
+                            </div>
+                            <span class="skill-q-tag q-rare">珍</span>
+                        </div>
+                        <div class="ink-list-item" data-dom-id="skill-row-5">
+                            <div class="skill-icon-cell ink-cell ink-cell-quality ink-q-uncommon"><i data-lucide="hand"></i></div>
+                            <div class="skill-info">
+                                <span class="skill-name">罗汉拳法</span>
+                                <span class="skill-meta"><span class="lv">Lv.8</span> · 外功·拳掌</span>
+                            </div>
+                            <span class="skill-q-tag q-uncommon">良</span>
+                        </div>
+                        <div class="ink-list-item" data-dom-id="skill-row-6">
+                            <div class="skill-icon-cell ink-cell ink-cell-quality ink-q-epic"><i data-lucide="circle"></i></div>
+                            <div class="skill-info">
+                                <span class="skill-name">太极剑意</span>
+                                <span class="skill-meta"><span class="lv">Lv.5</span> · 内功·阴阳</span>
+                            </div>
+                            <span class="skill-q-tag q-epic">史</span>
+                        </div>
+                        <div class="ink-list-item" data-dom-id="skill-row-7">
+                            <div class="skill-icon-cell ink-cell ink-cell-quality ink-q-uncommon"><i data-lucide="flame"></i></div>
+                            <div class="skill-info">
+                                <span class="skill-name">燎原枪法</span>
+                                <span class="skill-meta"><span class="lv">Lv.6</span> · 外功·长兵</span>
+                            </div>
+                            <span class="skill-q-tag q-uncommon">良</span>
+                        </div>
+                        <div class="ink-list-item" data-dom-id="skill-row-8">
+                            <div class="skill-icon-cell ink-cell ink-cell-quality ink-q-common"><i data-lucide="footprints"></i></div>
+                            <div class="skill-info">
+                                <span class="skill-name">疾风步</span>
+                                <span class="skill-meta"><span class="lv">Lv.4</span> · 轻功·身法</span>
+                            </div>
+                            <span class="skill-q-tag q-common">凡</span>
+                        </div>
+                        <div class="ink-list-item" data-dom-id="skill-row-9">
+                            <div class="skill-icon-cell ink-cell ink-cell-quality ink-q-rare"><i data-lucide="shield"></i></div>
+                            <div class="skill-info">
+                                <span class="skill-name">金刚不坏</span>
+                                <span class="skill-meta"><span class="lv">Lv.3</span> · 外功·防御</span>
+                            </div>
+                            <span class="skill-q-tag q-rare">珍</span>
+                        </div>
+                        <div class="ink-list-item" data-dom-id="skill-row-10">
+                            <div class="skill-icon-cell ink-cell ink-cell-quality ink-q-uncommon"><i data-lucide="feather"></i></div>
+                            <div class="skill-info">
+                                <span class="skill-name">流云剑式</span>
+                                <span class="skill-meta"><span class="lv">Lv.5</span> · 外功·剑法</span>
+                            </div>
+                            <span class="skill-q-tag q-uncommon">良</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========== 右栏 · 技能详情 + 天赋树 + 心法搭配 ========== -->
+                <section class="ink-panel skill-detail-panel">
+                    <span class="ink-corner-deco tl"></span>
+                    <span class="ink-corner-deco tr"></span>
+                    <span class="ink-corner-deco bl"></span>
+                    <span class="ink-corner-deco br"></span>
+                    <div class="skill-detail-bg" role="img" aria-label="水墨远山雾霭氛围"></div>
+
+                    <div class="skill-detail-content">
+                        <!-- 顶部：技能大名 + 品质标签 + 类型 -->
+                        <div class="detail-header">
+                            <h2 class="detail-name">破军剑诀</h2>
+                            <div class="detail-tags">
+                                <span class="skill-q-tag q-legendary">传世</span>
+                                <span class="ink-tag ink-tag-brand">外功·剑法</span>
+                            </div>
+                        </div>
+
+                        <!-- 关键属性 -->
+                        <div class="detail-stat-row">
+                            <div class="detail-stat"><span class="s-label">等级</span><span class="s-val">12</span></div>
+                            <div class="detail-stat"><span class="s-label">攻击</span><span class="s-val up">+1,840</span></div>
+                            <div class="detail-stat"><span class="s-label">会心</span><span class="s-val">+8.4%</span></div>
+                            <div class="detail-stat"><span class="s-label">消耗</span><span class="s-val">真气 320</span></div>
+                            <div class="detail-stat"><span class="s-label">冷却</span><span class="s-val">12s</span></div>
+                        </div>
+
+                        <!-- 招式描述 -->
+                        <div class="section-label">招式描述<span class="label-sub">· 破军七式</span></div>
+                        <div class="detail-desc">
+                            <p class="ink-text-body">剑起如惊鸿掠影，势若破军临阵。第一式「长驱」凝剑气于锋尖，破甲而入；第二式「横戈」以剑为枪横扫千军，荡开近身之敌；待真气运至七转，剑意凝结成星，引动「破军」杀伐之气，一剑既出，七式连环，刀枪剑戟皆不能挡。习至大成者，剑出有破阵之音，伤敌于无形。</p>
+                        </div>
+
+                        <!-- 天赋树节点连线图 -->
+                        <div class="section-label">天赋根脉<span class="label-sub">· 已点亮 5 / 7</span></div>
+                        <div class="talent-tree-wrap">
+                            <svg viewBox="0 0 460 286" preserveAspectRatio="xMidYMid meet" role="img" aria-label="破军剑诀天赋树节点连线图">
+                                <!-- 连线：金线实线为已点亮路径，虚线为未点亮 -->
+                                <line class="tl-line-lit" x1="230" y1="44" x2="120" y2="112"/>
+                                <line class="tl-line-lit" x1="230" y1="44" x2="340" y2="112"/>
+                                <line class="tl-line-unlit" x1="120" y1="112" x2="60" y2="184"/>
+                                <line class="tl-line-lit" x1="340" y1="112" x2="280" y2="184"/>
+                                <line class="tl-line-unlit" x1="340" y1="112" x2="400" y2="184"/>
+                                <line class="tl-line-lit" x1="280" y1="184" x2="280" y2="252"/>
+
+                                <!-- N1 根节点（已点亮） -->
+                                <circle class="tl-glow-soft" cx="230" cy="44" r="20"/>
+                                <circle class="tl-node-lit" cx="230" cy="44" r="13"/>
+                                <text class="tl-text-lit" x="230" y="78" text-anchor="middle">破军根基</text>
+
+                                <!-- N2（已点亮） -->
+                                <circle class="tl-glow-soft" cx="120" cy="112" r="18"/>
+                                <circle class="tl-node-lit" cx="120" cy="112" r="12"/>
+                                <text class="tl-text-lit" x="120" y="146" text-anchor="middle">剑气纵横</text>
+
+                                <!-- N3（已点亮） -->
+                                <circle class="tl-glow-soft" cx="340" cy="112" r="18"/>
+                                <circle class="tl-node-lit" cx="340" cy="112" r="12"/>
+                                <text class="tl-text-lit" x="340" y="146" text-anchor="middle">锋芒初现</text>
+
+                                <!-- N4（未点亮） -->
+                                <circle class="tl-node-unlit" cx="60" cy="184" r="12"/>
+                                <text class="tl-text-unlit" x="60" y="218" text-anchor="middle">寒星点点</text>
+
+                                <!-- N5（已点亮） -->
+                                <circle class="tl-glow-soft" cx="280" cy="184" r="18"/>
+                                <circle class="tl-node-lit" cx="280" cy="184" r="12"/>
+                                <text class="tl-text-lit" x="280" y="218" text-anchor="middle">剑破苍穹</text>
+
+                                <!-- N6（未点亮） -->
+                                <circle class="tl-node-unlit" cx="400" cy="184" r="12"/>
+                                <text class="tl-text-unlit" x="400" y="218" text-anchor="middle">凝剑归宗</text>
+
+                                <!-- N7（已点亮·终式） -->
+                                <circle class="tl-glow-strong" cx="280" cy="252" r="20"/>
+                                <circle class="tl-node-lit" cx="280" cy="252" r="13"/>
+                                <text class="tl-text-brand" x="280" y="280" text-anchor="middle">一剑破万法</text>
+                            </svg>
+                            <div class="talent-legend">
+                                <span class="lg-item"><span class="lg-dot lit"></span>已点亮</span>
+                                <span class="lg-item"><span class="lg-dot unlit"></span>未点亮</span>
+                            </div>
+                        </div>
+
+                        <!-- 心法搭配槽 -->
+                        <div class="section-label">心法搭配<span class="label-sub">· 已装备 1 / 3</span></div>
+                        <div class="scroll-slots-row">
+                            <div class="ink-cell ink-cell-quality ink-q-epic scroll-cell" data-dom-id="scroll-slot-1" aria-label="已装备心法 凝血神功">
+                                <i data-lucide="droplet"></i>
+                                <span class="sc-name">凝血神功</span>
+                            </div>
+                            <div class="ink-cell scroll-cell empty" data-dom-id="scroll-slot-2" aria-label="空心法槽">
+                                <i data-lucide="plus"></i>
+                            </div>
+                            <div class="ink-cell scroll-cell empty" data-dom-id="scroll-slot-3" aria-label="空心法槽">
+                                <i data-lucide="plus"></i>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

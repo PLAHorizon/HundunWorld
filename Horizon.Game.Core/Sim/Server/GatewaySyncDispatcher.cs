@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ namespace Horizon.Game.Core.Sim.Server;
 /// <list type="number">
 ///   <item>从 <see cref="IZoneShardFanoutSource"/>（对应 <c>IZoneShardGrain</c> 的订阅推送）拉取事件；</item>
 ///   <item>按 AOI Interest Set 查询 <see cref="ISessionRegistry"/>，把事件转发到每个相关玩家会话。</item>
+///   <item>Task D.4：per-session 带宽预算守门，超阈值时降低该 session 的快照频率。</item>
 /// </list>
 /// </summary>
 /// <remarks>
@@ -32,17 +34,47 @@ public sealed class GatewaySyncDispatcher
     private long _totalDispatchedCount;
     private long _totalFailedCount;
 
+    // Task 15：多 worker 并发安全计数器（替代原 { get; private set; } 自增属性）
+    private long _processedEventCount;
+    private long _deliveredPacketCount;
+    private long _droppedOfflineCount;
+
+    // 包丢弃告警限频（每 10 秒最多一次）
+    private DateTime _lastDropWarnUtc = DateTime.MinValue;
+    private static readonly TimeSpan DropWarnInterval = TimeSpan.FromSeconds(10);
+
+    // 诊断：前 5 次分派无条件输出详情
+    private int _dispatchDiagCount;
+
+    // Task D.4：per-session 带宽跟踪器。key = sessionId。
+    private readonly ConcurrentDictionary<long, SessionBandwidthTracker> _bandwidthTrackers = new();
+
+    /// <summary>Task D.4：带宽阈值（kbps），默认 100kbps（MMORPG 工业标准）。</summary>
+    public double BandwidthThresholdKbps { get; set; } = 100.0;
+
+    /// <summary>Task D.4：正常快照频率（Hz），默认 20Hz。</summary>
+    public int NormalSnapshotHz { get; set; } = 20;
+
+    /// <summary>Task D.4：限流快照频率（Hz），默认 10Hz（超阈值时降频）。</summary>
+    public int ThrottledSnapshotHz { get; set; } = 10;
+
+    /// <summary>Task D.4：带宽恢复判定秒数（连续 N 秒低于阈值后回升频率），默认 3 秒。</summary>
+    public int RecoverySeconds { get; set; } = 3;
+
     /// <summary>灰度开关；false 时 <see cref="RunOnceAsync"/> 直接 no-op，保持旧路径。</summary>
     public bool Enabled { get; set; } = true;
 
+    /// <summary>Task 15：单次 Dispatch 内 Parallel.ForEach 的并行度，默认为处理器数。</summary>
+    public int MaxDispatchParallelism { get; set; } = Environment.ProcessorCount;
+
     /// <summary>累计处理的 fanout 事件数。</summary>
-    public long ProcessedEventCount { get; private set; }
+    public long ProcessedEventCount => Interlocked.Read(ref _processedEventCount);
 
     /// <summary>累计下发到客户端的包数。</summary>
-    public long DeliveredPacketCount { get; private set; }
+    public long DeliveredPacketCount => Interlocked.Read(ref _deliveredPacketCount);
 
     /// <summary>因 session 下线/不在线而丢弃的包数。</summary>
-    public long DroppedOfflineCount { get; private set; }
+    public long DroppedOfflineCount => Interlocked.Read(ref _droppedOfflineCount);
 
     public long TotalDispatchedCount => Interlocked.Read(ref _totalDispatchedCount);
 
@@ -88,7 +120,7 @@ public sealed class GatewaySyncDispatcher
             if (evt is null) break;
             Dispatch(evt);
             processed++;
-            ProcessedEventCount++;
+            Interlocked.Increment(ref _processedEventCount);
         }
         return processed;
     }
@@ -101,27 +133,69 @@ public sealed class GatewaySyncDispatcher
 
         var sessionCount = evt.TargetSessionIds.Count;
 
+        // 诊断：前 5 次无条件输出，确认转发链路联通
+        _dispatchDiagCount++;
+        if (_dispatchDiagCount <= 5)
+        {
+            _logger?.LogWarning(
+                "[GatewaySyncDispatcher 诊断#{N}] 分派事件。PacketKind={PacketKind}, SessionCount={SessionCount}, Sessions=[{Sessions}], Delivered={Delivered}, DroppedOffline={Dropped}",
+                _dispatchDiagCount, evt.Packet.Kind, sessionCount,
+                string.Join(",", evt.TargetSessionIds), DeliveredPacketCount, DroppedOfflineCount);
+        }
+        else if (ProcessedEventCount % 60 == 0)
+        {
+            _logger?.LogInformation(
+                "GatewaySyncDispatcher：分派事件。PacketKind={PacketKind}, SessionCount={SessionCount}, Delivered={Delivered}, DroppedOffline={Dropped}",
+                evt.Packet.Kind, sessionCount, DeliveredPacketCount, DroppedOfflineCount);
+        }
+
         try
         {
+            // Task 15：一次编码 wireBytes，所有 session 复用（避免每 session 重复 SyncPacketCodec.Encode + PackMessage）
+            var wireBytes = _sink.Encode(evt.Packet, out var wireLength);
+
             if (evt.Packet is SnapshotPacket snapshot)
             {
                 _logger?.LogInformation(
-                    "GatewaySyncDispatcher 分派快照：目标会话数={SessionCount}，快照大小={DeltaCount}",
-                    sessionCount, snapshot.Deltas?.Length ?? 0);
+                    "GatewaySyncDispatcher 分派快照：目标会话数={SessionCount}，快照大小={DeltaCount}，wireBytes={WireLength}",
+                    sessionCount, snapshot.Deltas?.Length ?? 0, wireLength);
             }
 
-            foreach (var sessionId in evt.TargetSessionIds)
+            // Task D.4：预估本包字节数，用于 per-session 带宽计数。
+            var estimatedBytes = EstimatePacketSizeBytes(evt.Packet);
+
+            // Task 15.3：并行分批分发。多 worker 并发调用 Dispatch 时，各 worker 内部又并行分发，
+            // 互不冲突（计数器均用 Interlocked，_registry/_sink 线程安全）。
+            var dop = Math.Max(1, MaxDispatchParallelism);
+            Parallel.ForEach(evt.TargetSessionIds, new ParallelOptions { MaxDegreeOfParallelism = dop }, sessionId =>
             {
                 if (_registry.TryGetEndpoint(sessionId, out var endpoint) && endpoint is not null)
                 {
-                    _sink.Send(endpoint, evt.Packet);
-                    DeliveredPacketCount++;
+                    _sink.Send(endpoint, wireBytes, wireLength);
+                    Interlocked.Increment(ref _deliveredPacketCount);
+                    // 诊断：前 5 次输出 endpoint 命中详情
+                    if (_dispatchDiagCount <= 5)
+                    {
+                        _logger?.LogWarning(
+                            "[GatewaySyncDispatcher 诊断#{N}] 已下发到 session={SessionId}, Delivered={Delivered}",
+                            _dispatchDiagCount, sessionId, DeliveredPacketCount);
+                    }
+                    // Task D.4：累计该 session 的下发字节数，并按需触发限流/恢复。
+                    RecordSend(sessionId, estimatedBytes);
                 }
                 else
                 {
-                    DroppedOfflineCount++;
+                    Interlocked.Increment(ref _droppedOfflineCount);
+                    // 诊断：前 5 次输出 endpoint 未命中详情
+                    if (_dispatchDiagCount <= 5)
+                    {
+                        _logger?.LogWarning(
+                            "[GatewaySyncDispatcher 诊断#{N}] endpoint 未命中，丢弃。SessionId={SessionId}, DroppedOffline={Dropped}",
+                            _dispatchDiagCount, sessionId, DroppedOfflineCount);
+                    }
+                    LogDropWarn(sessionId);
                 }
-            }
+            });
 
             Interlocked.Increment(ref _totalDispatchedCount);
         }
@@ -131,13 +205,220 @@ public sealed class GatewaySyncDispatcher
             _logger?.LogError(ex, "GatewaySyncDispatcher 分派失败：目标会话数={SessionCount}", sessionCount);
         }
     }
+
+    // ── Task D.4：带宽预算守门 ──────────────────────────────────────────────
+
+    /// <summary>
+    /// Task D.4：记录一次下发到 session 的字节数，并更新该 session 的带宽/频率状态。
+    /// </summary>
+    public void RecordSend(long sessionId, int bytes)
+    {
+        if (bytes <= 0) return;
+        var tracker = _bandwidthTrackers.GetOrAdd(sessionId, _ => new SessionBandwidthTracker());
+        tracker.RecordBytes(bytes, DateTime.UtcNow, this);
+    }
+
+    /// <summary>
+    /// Task D.4：查询指定 session 当前的快照频率（Hz）。
+    /// 超阈值时返回 <see cref="ThrottledSnapshotHz"/>（10Hz），否则返回 <see cref="NormalSnapshotHz"/>（20Hz）。
+    /// 供快照生成器（ZoneShardGrain）按 session 调整推送节奏。
+    /// </summary>
+    public int GetSessionSnapshotHz(long sessionId)
+    {
+        if (_bandwidthTrackers.TryGetValue(sessionId, out var tracker))
+        {
+            return tracker.CurrentSnapshotHz;
+        }
+        return NormalSnapshotHz;
+    }
+
+    /// <summary>
+    /// Task D.4：获取各 session 当前带宽快照（sessionId → kbps）。
+    /// 用于监控面板/Prometheus 指标导出。
+    /// </summary>
+    public IReadOnlyDictionary<long, double> GetBandwidthSnapshot()
+    {
+        var result = new Dictionary<long, double>(_bandwidthTrackers.Count);
+        foreach (var kv in _bandwidthTrackers)
+        {
+            result[kv.Key] = kv.Value.CurrentBandwidthKbps;
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Task D.4：预估一个 SyncPacket 序列化后的字节数。
+    /// 不做真实序列化，按包类型给出保守上界估计，供带宽预算计数使用。
+    /// </summary>
+    private static int EstimatePacketSizeBytes(SyncPacket packet)
+    {
+        // 帧头 + SyncPacket 基类（Kind + ProtocolVersion）开销。
+        const int HeaderOverhead = 16;
+
+        switch (packet)
+        {
+            case SnapshotPacket snapshot:
+                // 每个 EntityDelta 约 80 字节（Identity + Transform + State 保守估计）。
+                var deltaCount = snapshot.Deltas?.Length ?? 0;
+                return HeaderOverhead + 24 + deltaCount * 80;
+            case WorldChunkDiffPacket diff:
+                return HeaderOverhead + 40 + (diff.Payload?.Length ?? 0);
+            case EventPacket evt:
+                return HeaderOverhead + 16 + (evt.Events?.Length ?? 0) * 32;
+            case InputAckPacket:
+                return HeaderOverhead + 24;
+            case InputPacket:
+                return HeaderOverhead + 40;
+            case InteractionSyncPacket:
+                return HeaderOverhead + 40;
+            case SceneObjectSyncPacket:
+                return HeaderOverhead + 80;
+            default:
+                return HeaderOverhead + 64;
+        }
+    }
+
+    /// <summary>
+    /// 限频输出"包因 session 离线被丢弃"警告（每 10 秒最多一次），避免刷屏。
+    /// </summary>
+    /// <param name="sessionId">丢失的 sessionId（实际为 characterId）。</param>
+    private void LogDropWarn(long sessionId)
+    {
+        var now = DateTime.UtcNow;
+        if (now - _lastDropWarnUtc < DropWarnInterval)
+            return;
+
+        _lastDropWarnUtc = now;
+        _logger?.LogWarning(
+            "[GatewaySyncDispatcher] Packet dropped: session offline (sessionId={SessionId}, totalDropped={Count})",
+            sessionId,
+            DroppedOfflineCount);
+    }
+
+    // ── Task D.4：per-session 带宽跟踪器 ───────────────────────────────────
+
+    /// <summary>
+    /// Task D.4：单个 session 的带宽跟踪器。
+    /// <para>
+    /// 维护 1 秒滚动窗口内的下发字节数，计算平均带宽（kbps）；
+    /// 超过 <see cref="GatewaySyncDispatcher.BandwidthThresholdKbps"/> 时降低快照频率，
+    /// 连续 <see cref="GatewaySyncDispatcher.RecoverySeconds"/> 秒低于阈值后回升。
+    /// </para>
+    /// </summary>
+    public sealed class SessionBandwidthTracker
+    {
+        // Task 17：lock-free 化——移除 _lock，使用 Interlocked + Volatile。
+        // 当前 1 秒窗口内累计字节数。
+        private long _bytesInCurrentWindow;
+        // 当前窗口起始时间（UTC ticks）。
+        private long _windowStartTicks = DateTime.UtcNow.Ticks;
+        // 最近完成窗口的平均带宽（kbps）。
+        private double _currentBandwidthKbps;
+        // 当前快照频率（Hz）：正常 20，限流 10。
+        private int _currentSnapshotHz = 20;
+        // 连续低于阈值的秒数（用于恢复判定）——仅由 CAS 成功的单线程读写，无需 Interlocked。
+        private int _consecutiveUnderThresholdSeconds;
+        // 是否已对本次超阈值事件记录过告警（避免 spam）——同上，单线程读写。
+        private bool _overThresholdWarned;
+
+        /// <summary>当前带宽（kbps，最近完成窗口的平均值）。</summary>
+        public double CurrentBandwidthKbps => Volatile.Read(ref _currentBandwidthKbps);
+
+        /// <summary>当前快照频率（Hz）。超阈值时为 10，正常为 20。</summary>
+        public int CurrentSnapshotHz => Volatile.Read(ref _currentSnapshotHz);
+
+        /// <summary>
+        /// 记录一次下发的字节数，并在窗口滚动时更新带宽/频率状态。
+        /// Task 17：lock-free 实现，使用 Interlocked.Add 累计字节，CompareExchange 自旋滚动窗口。
+        /// </summary>
+        /// <param name="bytes">本次下发字节数。</param>
+        /// <param name="nowUtc">当前 UTC 时间。</param>
+        /// <param name="owner">所属 dispatcher（用于读取阈值配置与写日志）。</param>
+        public void RecordBytes(long bytes, DateTime nowUtc, GatewaySyncDispatcher owner)
+        {
+            if (bytes <= 0) return;
+            Interlocked.Add(ref _bytesInCurrentWindow, bytes);
+
+            // 检查窗口是否需要滚动
+            var nowTicks = nowUtc.Ticks;
+            var windowStart = Interlocked.Read(ref _windowStartTicks);
+            var elapsedTicks = nowTicks - windowStart;
+            if (elapsedTicks < TimeSpan.FromSeconds(1).Ticks) return;
+
+            // 尝试 CAS 滚动窗口：只有一个线程能成功，由它负责计算带宽并重置
+            if (Interlocked.CompareExchange(ref _windowStartTicks, nowTicks, windowStart) != windowStart)
+            {
+                // 其他线程已滚动，本线程的 bytes 已被计入，直接返回
+                return;
+            }
+
+            // 本线程负责滚动窗口：读取并重置 bytes
+            var bytesInWindow = Interlocked.Exchange(ref _bytesInCurrentWindow, 0);
+            // kbps = bytes * 8 / 1024 / 秒数（二进制 kilobits-per-second）。
+            // 注：此处采用 kbps 以匹配 100kbps 阈值（≈12.5KB/s，MMORPG 工业标准）。
+            var seconds = (double)elapsedTicks / TimeSpan.TicksPerSecond;
+            var kbps = (bytesInWindow * 8.0) / 1024.0 / seconds;
+
+            UpdateThrottleState(kbps, owner);
+        }
+
+        /// <summary>
+        /// 根据当前带宽更新限流状态（仅由 CAS 成功的单线程调用，内部字段无需 Interlocked，
+        /// 但 <see cref="_currentBandwidthKbps"/> / <see cref="_currentSnapshotHz"/> 会被其他线程读取，故用 Volatile.Write）：
+        /// <list type="bullet">
+        ///   <item>超阈值 → 降到 <see cref="GatewaySyncDispatcher.ThrottledSnapshotHz"/>，告警一次。</item>
+        ///   <item>连续 RecoverySeconds 秒低于阈值 → 回升到 <see cref="GatewaySyncDispatcher.NormalSnapshotHz"/>。</item>
+        /// </list>
+        /// </summary>
+        private void UpdateThrottleState(double kbps, GatewaySyncDispatcher owner)
+        {
+            Volatile.Write(ref _currentBandwidthKbps, kbps);
+
+            var threshold = owner.BandwidthThresholdKbps;
+
+            if (kbps > threshold)
+            {
+                _consecutiveUnderThresholdSeconds = 0;
+
+                if (_currentSnapshotHz != owner.ThrottledSnapshotHz)
+                {
+                    Volatile.Write(ref _currentSnapshotHz, owner.ThrottledSnapshotHz);
+                }
+
+                // 超阈值时仅记录一次 Warning，避免每秒 spam。
+                if (!_overThresholdWarned)
+                {
+                    _overThresholdWarned = true;
+                    owner._logger?.LogWarning(
+                        "[GatewaySyncDispatcher] 带宽超阈值限流：bandwidth={BandwidthKbps:F2}kbps > threshold={ThresholdKbps:F2}kbps，" +
+                        "快照频率降为 {ThrottledHz}Hz",
+                        kbps, threshold, owner.ThrottledSnapshotHz);
+                }
+            }
+            else
+            {
+                _consecutiveUnderThresholdSeconds++;
+
+                // 连续 RecoverySeconds 秒低于阈值 → 回升频率。
+                if (_consecutiveUnderThresholdSeconds >= owner.RecoverySeconds
+                    && _currentSnapshotHz != owner.NormalSnapshotHz)
+                {
+                    Volatile.Write(ref _currentSnapshotHz, owner.NormalSnapshotHz);
+                    _overThresholdWarned = false;
+                    owner._logger?.LogInformation(
+                        "[GatewaySyncDispatcher] 带宽恢复回升：连续 {Seconds} 秒低于阈值，快照频率回升为 {NormalHz}Hz",
+                        _consecutiveUnderThresholdSeconds, owner.NormalSnapshotHz);
+                }
+            }
+        }
+    }
 }
 
 /// <summary>Zone Shard 推送的事件：一个 <see cref="SyncPacket"/> + 应当接收该包的 session 列表。</summary>
 public sealed class FanoutEvent
 {
     public SyncPacket Packet { get; init; } = null!;
-    public IReadOnlyList<long> TargetSessionIds { get; init; } = Array.Empty<long>();
+    public IReadOnlyCollection<long> TargetSessionIds { get; init; } = Array.Empty<long>();
 }
 
 /// <summary>Zone Shard 的 fanout 来源。</summary>
@@ -157,4 +438,16 @@ public interface ISessionRegistry
 public interface IClientPacketSink
 {
     void Send(object endpoint, SyncPacket packet);
+
+    /// <summary>
+    /// Task 16：使用预编码的 wireBytes 直接发送，避免每 session 重复编码。
+    /// dispatcher 在并行分发前一次性编码，所有 session 复用同一份字节数组。
+    /// </summary>
+    void Send(object endpoint, byte[] wireBytes, int length);
+
+    /// <summary>
+    /// Task 15：一次性编码 SyncPacket 为 wireBytes，供所有 session 复用。
+    /// 返回的 byte[] 长度通过 <paramref name="length"/> 输出。
+    /// </summary>
+    byte[] Encode(SyncPacket packet, out int length);
 }

@@ -30,6 +30,16 @@ namespace HundunWorld.Game.UI.Character
         private string _characterName = "";
         private int _selectedProfession = 0;
         private CharacterPreviewPanel _previewPanel;
+        private int _hoveredProfession = -1;
+
+        // 入场动画状态
+        private bool _isAnimating = false;
+        private float _animProgress = 0f;
+        private const float AnimDuration = 0.25f;
+
+        // 验证反馈
+        private Label _validationLabel;
+        private float _validationTimer = 0f;
 
         // 职业列表
         private static readonly string[] Professions = { "剑客", "刀客", "医师", "琴师", "游侠", "隐士" };
@@ -86,6 +96,53 @@ namespace HundunWorld.Game.UI.Character
             {
                 _uiCreated = true;
                 CreateUI();
+            }
+
+            // 入场动画: 从下方滑入
+            if (_isAnimating && _centerPanel != null)
+            {
+                _animProgress += deltaTime / AnimDuration;
+                if (_animProgress >= 1f)
+                {
+                    _animProgress = 1f;
+                    _isAnimating = false;
+                }
+                float ease = 1f - (1f - _animProgress) * (1f - _animProgress); // easeOut
+                float targetY = (Parent.Height - _centerPanel.Height) / 2f;
+                _centerPanel.Location = new Float2(_centerPanel.Location.X, targetY + (1f - ease) * 30f);
+            }
+
+            // 职业按钮 hover 检测 (Label 不支持 hover 事件)
+            if (_professionButtons != null && Visible)
+            {
+                int newHovered = -1;
+                if (_professionContainer != null)
+                {
+                    for (int i = 0; i < _professionButtons.Length; i++)
+                    {
+                        if (_professionButtons[i] != null && _professionButtons[i].IsMouseOver)
+                        {
+                            newHovered = i;
+                            break;
+                        }
+                    }
+                }
+                if (newHovered != _hoveredProfession)
+                {
+                    _hoveredProfession = newHovered;
+                    UpdateProfessionVisuals();
+                }
+            }
+
+            // 验证提示自动消失
+            if (_validationTimer > 0)
+            {
+                _validationTimer -= deltaTime;
+                if (_validationTimer <= 0 && _validationLabel != null)
+                {
+                    _validationLabel.Visible = false;
+                    _nameUnderline.BackgroundColor = ChineseClassicalTheme.SecondaryColor;
+                }
             }
         }
         #endregion
@@ -219,6 +276,21 @@ namespace HundunWorld.Game.UI.Character
             };
             _nameUnderline.Location = new Float2(0, 64);
             _nameUnderline.Size = new Float2(panelW - 80, 1.5f);
+
+            // 验证错误提示（初始隐藏）
+            _validationLabel = new Label
+            {
+                Parent = _nameInputContainer,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Text = "",
+                TextColor = new Color(0.9f, 0.3f, 0.3f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                Font = UIHelper.SetFont(size: 12),
+                Visible = false
+            };
+            _validationLabel.Location = new Float2(0, 67);
+            _validationLabel.Size = new Float2(panelW - 80, 18);
         }
 
         private void CreateProfessionSelector(float panelW)
@@ -321,19 +393,37 @@ namespace HundunWorld.Game.UI.Character
         #endregion
 
         #region Input Handling
+        private void ShowValidationError(string message)
+        {
+            if (_nameUnderline != null)
+                _nameUnderline.BackgroundColor = new Color(0.9f, 0.3f, 0.3f);
+            if (_validationLabel != null)
+            {
+                _validationLabel.Text = message;
+                _validationLabel.Visible = true;
+            }
+            _validationTimer = 2.5f;
+        }
+
         private void OnConfirmClicked()
         {
             string name = _nameTextBox?.Text?.Trim();
 
             if (string.IsNullOrEmpty(name))
             {
-                Debug.LogWarning("[NamingCompleteUI] 角色名称不能为空");
+                ShowValidationError("角色名称不能为空");
                 return;
             }
 
-            if (name.Length < 2 || name.Length > 6)
+            if (name.Length < 2)
             {
-                Debug.LogWarning("[NamingCompleteUI] 角色名称需为2-6字");
+                ShowValidationError("角色名称至少需要2个字");
+                return;
+            }
+
+            if (name.Length > 6)
+            {
+                ShowValidationError("角色名称不能超过6个字");
                 return;
             }
 
@@ -373,6 +463,7 @@ namespace HundunWorld.Game.UI.Character
 
             Color gold = ChineseClassicalTheme.SecondaryColor;
             Color goldBg = new Color(gold.R, gold.G, gold.B, 0.2f);
+            Color hoverBg = new Color(0.12f, 0.13f, 0.18f, 0.85f);
             Color normalText = new Color(0.8f, 0.8f, 0.85f);
             Color normalBg = new Color(0.08f, 0.09f, 0.12f, 0.8f);
 
@@ -384,6 +475,11 @@ namespace HundunWorld.Game.UI.Character
                 {
                     _professionButtons[i].TextColor = gold;
                     _professionButtons[i].BackgroundColor = goldBg;
+                }
+                else if (i == _hoveredProfession)
+                {
+                    _professionButtons[i].TextColor = new Color(0.9f, 0.9f, 0.95f);
+                    _professionButtons[i].BackgroundColor = hoverBg;
                 }
                 else
                 {
@@ -398,6 +494,12 @@ namespace HundunWorld.Game.UI.Character
         public void Show()
         {
             Visible = true;
+            _isAnimating = true;
+            _animProgress = 0f;
+            // 重置验证状态
+            if (_validationLabel != null) _validationLabel.Visible = false;
+            if (_nameUnderline != null) _nameUnderline.BackgroundColor = ChineseClassicalTheme.SecondaryColor;
+            _validationTimer = 0f;
         }
 
         public void Hide()

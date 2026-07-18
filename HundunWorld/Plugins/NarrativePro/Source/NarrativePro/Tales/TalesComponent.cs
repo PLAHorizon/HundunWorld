@@ -142,7 +142,7 @@ namespace NarrativePro.Tales
             return _questList.Where(q => q.QuestCompletion == EQuestCompletion.Started).ToList();
         }
 
-        public bool BeginDialogue(string dialogueClassId, DialoguePlayParams playParams = null)
+        public virtual bool BeginDialogue(string dialogueClassId, DialoguePlayParams playParams = null)
         {
             if (IsInDialogue)
             {
@@ -184,6 +184,23 @@ namespace NarrativePro.Tales
             return _currentDialogue;
         }
 
+        /// <summary>获取拥有此组件的 Pawn（UE5 APawn）。Flax 中默认返回挂载此 Script 的 Actor。</summary>
+        public virtual Actor GetOwningPawn()
+        {
+            return Actor;
+        }
+
+        /// <summary>获取拥有此组件的 Controller（UE5 APlayerController）。Flax 中无 PlayerController 概念，默认返回 null。</summary>
+        public virtual Actor GetOwningController()
+        {
+            return null;
+        }
+
+        public virtual void SelectDialogueOption(DialogueNode_Player option, Actor selector = null)
+        {
+            TrySelectDialogueOption(option);
+        }
+
         public void TrySelectDialogueOption(DialogueNode_Player option)
         {
             if (_currentDialogue == null) return;
@@ -203,7 +220,11 @@ namespace NarrativePro.Tales
             return true;
         }
 
-        private void ExitDialogue(EExitDialogueReason reason)
+        /// <summary>
+        /// 退出当前对话。protected virtual 以便 NarrativePartyComponent 等子类重写以同步给队伍成员。
+        /// 子类应在调用 base.ExitDialogue 后执行自己的同步逻辑。
+        /// </summary>
+        protected virtual void ExitDialogue(EExitDialogueReason reason)
         {
             if (_currentDialogue == null) return;
 

@@ -1,0 +1,176 @@
+{
+  "data": [
+    {
+      "id": "page-popup-bestiary-side",
+      "type": "page",
+      "title": "博物侧弹窗",
+      "version": 1,
+      "createdAt": 1783729779411,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/popup-bestiary-side.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-popup-message",
+      "type": "page",
+      "title": "留言",
+      "version": 1,
+      "createdAt": 1783729779411,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 620,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/popup-message.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-popup-martial-arts",
+      "type": "page",
+      "title": "奇术",
+      "version": 1,
+      "createdAt": 1783729779411,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 1240,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/popup-martial-arts.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-popup-guide-side",
+      "type": "page",
+      "title": "引导侧弹窗",
+      "version": 1,
+      "createdAt": 1783729779411,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 1860,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/popup-guide-side.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-popup-martial-detail",
+      "type": "page",
+      "title": "武学",
+      "version": 1,
+      "createdAt": 1783729779411,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 2480,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/popup-martial-detail.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-popup-item-acquired",
+      "type": "page",
+      "title": "物品获得",
+      "version": 1,
+      "createdAt": 1783729779411,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 3100,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/popup-item-acquired.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-popup-skill-realization",
+      "type": "page",
+      "title": "心法领悟",
+      "version": 1,
+      "createdAt": 1783729779411,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 3720,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/popup-skill-realization.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-popup-verification",
+      "type": "page",
+      "title": "验讫",
+      "version": 1,
+      "createdAt": 1783729779411,
+      "config": {
+        "deviceType": "desktop",
+        "width": 1920,
+        "height": 1080
+      },
+      "canvasData": {
+        "x": 4340,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/popup-verification.html",
+        "interactions": []
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop"
+  }
+}

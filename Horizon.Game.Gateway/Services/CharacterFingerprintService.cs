@@ -13,7 +13,7 @@ namespace Horizon.Game.Gateway.Services
         private readonly Lazy<RedisCache> _redisCacheLazy;
         private readonly ILogger<CharacterFingerprintService> _logger;
         private readonly string _gatewayId;
-        private readonly TimeSpan _fingerprintExpiry = TimeSpan.FromHours(24);
+        private readonly TimeSpan _fingerprintExpiry = TimeSpan.FromMinutes(5);
         private const int MaxRetryAttempts = 3;
         private static readonly TimeSpan RetryDelay = TimeSpan.FromMilliseconds(300);
         private static readonly TimeSpan LockTimeout = TimeSpan.FromSeconds(5);
@@ -64,12 +64,25 @@ namespace Horizon.Game.Gateway.Services
                     if (!string.IsNullOrEmpty(existing))
                     {
                         var existingFingerprint = JsonSerializer.Deserialize<CharacterFingerprint>(existing);
-                        if (existingFingerprint != null && existingFingerprint.ConnectionId != connectionId)
+                        if (existingFingerprint != null)
                         {
-                            _logger.LogWarning(
-                                "角色 {CharacterId} 已被另一会话占用: Gateway={GatewayId}, Connection={ConnectionId}",
-                                characterId, existingFingerprint.GatewayId, existingFingerprint.ConnectionId);
-                            return false;
+                            // 检查指纹是否已过期（超过5分钟）
+                            var createdAt = DateTimeOffset.FromUnixTimeMilliseconds(existingFingerprint.CreatedAt);
+                            var age = DateTimeOffset.UtcNow - createdAt;
+                            if (age > _fingerprintExpiry)
+                            {
+                                _logger.LogWarning(
+                                    "角色 {CharacterId} 的指纹已过期({Age}秒)，允许新连接抢占",
+                                    characterId, age.TotalSeconds);
+                                // 过期的指纹可以被抢占，继续执行创建新指纹的逻辑
+                            }
+                            else if (existingFingerprint.ConnectionId != connectionId)
+                            {
+                                _logger.LogWarning(
+                                    "角色 {CharacterId} 已被另一会话占用: Gateway={GatewayId}, Connection={ConnectionId}",
+                                    characterId, existingFingerprint.GatewayId, existingFingerprint.ConnectionId);
+                                return false;
+                            }
                         }
                     }
 
@@ -104,6 +117,55 @@ namespace Horizon.Game.Gateway.Services
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "创建角色指纹失败，已达最大重试次数: CharacterId={CharacterId}", characterId);
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
+        public async Task<bool> RefreshAsync(long characterId)
+        {
+            var fingerprintKey = GetFingerprintKey(characterId);
+
+            for (int attempt = 1; attempt <= MaxRetryAttempts; attempt++)
+            {
+                try
+                {
+                    var existing = await RedisCache.GetAsync(fingerprintKey);
+                    if (string.IsNullOrEmpty(existing))
+                    {
+                        _logger.LogWarning("刷新角色指纹失败: 指纹不存在 CharacterId={CharacterId}", characterId);
+                        return false;
+                    }
+
+                    var fingerprint = JsonSerializer.Deserialize<CharacterFingerprint>(existing);
+                    if (fingerprint == null)
+                    {
+                        _logger.LogWarning("刷新角色指纹失败: 指纹反序列化失败 CharacterId={CharacterId}", characterId);
+                        return false;
+                    }
+
+                    fingerprint.CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                    var json = JsonSerializer.Serialize(fingerprint);
+                    await RedisCache.SetAsync(fingerprintKey, json, _fingerprintExpiry);
+
+                    _logger.LogDebug("角色指纹已刷新: CharacterId={CharacterId}", characterId);
+                    return true;
+                }
+                catch (RedisConnectionException ex)
+                {
+                    _logger.LogWarning(ex, "Redis 不可用，跳过刷新角色指纹: CharacterId={CharacterId}", characterId);
+                    return false;
+                }
+                catch (Exception ex) when (attempt < MaxRetryAttempts)
+                {
+                    _logger.LogWarning(ex, "刷新角色指纹失败，第 {Attempt} 次重试: CharacterId={CharacterId}", attempt, characterId);
+                    await Task.Delay(RetryDelay);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "刷新角色指纹失败，已达最大重试次数: CharacterId={CharacterId}", characterId);
                     return false;
                 }
             }

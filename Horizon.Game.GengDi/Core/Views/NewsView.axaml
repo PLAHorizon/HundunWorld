@@ -5,27 +5,27 @@
              xmlns:models="using:Horizon.Game.GengDi.Models"
              x:Class="Horizon.Game.GengDi.Core.Views.NewsView"
              x:DataType="vm:NewsViewModel"
-             Background="{DynamicResource BattleNetBackgroundBrush}">
+             Background="{DynamicResource BattleNetHeroBackgroundBrush}">
 
     <!-- 主内容区域 -->
     <Grid RowDefinitions="Auto,*">
 
         <!-- Header 区域 -->
         <Border Padding="24 20 24 16"
-                Background="{DynamicResource BattleNetHeaderBackgroundBrush}">
+                Background="{DynamicResource PageHeaderBackgroundBrush}">
             <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Orientation="Horizontal" Spacing="12">
                     <PathIcon Data="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"
                               Width="28" Height="28"
-                              Foreground="#00AEFF" />
+                              Foreground="{DynamicResource BattleNetOutlineBrush}" />
                     <StackPanel>
                         <TextBlock Text="新闻与活动"
                                    FontSize="22"
                                    FontWeight="SemiBold"
-                                   Foreground="#FFFFFF" />
+                                   Foreground="{DynamicResource LoginFormTextBrush}" />
                         <TextBlock Text="获取最新的游戏资讯、版本公告和社区活动"
                                    FontSize="13"
-                                   Foreground="#A0A0A0"
+                                   Foreground="{DynamicResource LoginFormSubtitleBrush}"
                                    Margin="0 2 0 0" />
                     </StackPanel>
                 </StackPanel>
@@ -60,18 +60,18 @@
               Margin="16 0 16 16">
 
             <!-- 左侧：新闻列表 -->
-            <Border Background="#1A1A1A"
+            <Border Background="{DynamicResource LoginFormBackgroundBrush}"
                     CornerRadius="12"
-                    BorderBrush="#2A2A2A"
+                    BorderBrush="{DynamicResource LoginInfoCardBorderBrush}"
                     BorderThickness="1">
                 <Grid RowDefinitions="Auto,*">
                     <Border Padding="16 12"
-                            BorderBrush="#2A2A2A"
+                            BorderBrush="{DynamicResource LoginInfoCardBorderBrush}"
                             BorderThickness="0 0 0 1">
                         <TextBlock Text="新闻列表"
                                    FontSize="13"
                                    FontWeight="SemiBold"
-                                   Foreground="#FFFFFF" />
+                                   Foreground="{DynamicResource LoginFormTextBrush}" />
                     </Border>
 
                     <ScrollViewer Grid.Row="1"
@@ -92,21 +92,21 @@
                                                        FontWeight="SemiBold"
                                                        TextWrapping="Wrap"
                                                        MaxLines="2"
-                                                       Foreground="#FFFFFF" />
+                                                       Foreground="{DynamicResource LoginFormTextBrush}" />
                                             <Grid ColumnDefinitions="Auto,*">
-                                                <Border Background="#00AEFF15"
+                                                <Border Background="{DynamicResource BattleNetSurfaceTintBrush}"
                                                         CornerRadius="4"
                                                         Padding="8 3"
                                                         HorizontalAlignment="Left">
                                                     <TextBlock Text="{Binding Category}"
                                                                FontSize="10"
                                                                FontWeight="SemiBold"
-                                                               Foreground="#00AEFF" />
+                                                               Foreground="{DynamicResource BattleNetOutlineBrush}" />
                                                 </Border>
                                                 <TextBlock Grid.Column="1"
                                                            Text="{Binding PublishDate, StringFormat='{}{0:MM-dd}'}"
                                                            FontSize="11"
-                                                           Foreground="#666666"
+                                                           Foreground="{DynamicResource LoginFormMutedBrush}"
                                                            HorizontalAlignment="Right" />
                                             </Grid>
                                         </StackPanel>
@@ -119,9 +119,9 @@
             </Border>
 
             <!-- 右侧：新闻详情 -->
-            <Border Background="#1A1A1A"
+            <Border Background="{DynamicResource LoginFormBackgroundBrush}"
                     CornerRadius="12"
-                    BorderBrush="#2A2A2A"
+                    BorderBrush="{DynamicResource LoginInfoCardBorderBrush}"
                     BorderThickness="1"
                     Padding="24">
                 <Grid>
@@ -133,37 +133,37 @@
                                        FontSize="22"
                                        FontWeight="SemiBold"
                                        TextWrapping="Wrap"
-                                       Foreground="#FFFFFF" />
+                                       Foreground="{DynamicResource LoginFormTextBrush}" />
                             <StackPanel Orientation="Horizontal" Spacing="16">
-                                <Border Background="#00AEFF15"
+                                <Border Background="{DynamicResource BattleNetSurfaceTintBrush}"
                                         CornerRadius="999"
                                         Padding="10 5">
                                     <TextBlock Text="{Binding SelectedNews.Category}"
                                                FontSize="11"
                                                FontWeight="SemiBold"
-                                               Foreground="#00AEFF" />
+                                               Foreground="{DynamicResource BattleNetOutlineBrush}" />
                                 </Border>
                                 <TextBlock Text="{Binding SelectedNews.PublishDate, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"
                                            FontSize="12"
-                                           Foreground="#666666"
+                                           Foreground="{DynamicResource LoginFormMutedBrush}"
                                            VerticalAlignment="Center" />
                                 <TextBlock Text="{Binding SelectedNews.Author}"
                                            FontSize="12"
-                                           Foreground="#666666"
+                                           Foreground="{DynamicResource LoginFormMutedBrush}"
                                            VerticalAlignment="Center" />
                             </StackPanel>
                         </StackPanel>
 
-                        <Border Background="#0DFFFFFF"
+                        <Border Background="{DynamicResource BattleNetSurfaceTintBrush}"
                                 CornerRadius="10"
                                 Padding="20"
-                                BorderBrush="#2A2A2A"
+                                BorderBrush="{DynamicResource LoginInfoCardBorderBrush}"
                                 BorderThickness="1">
                             <TextBlock Text="{Binding SelectedNews.Content}"
                                        TextWrapping="Wrap"
                                        LineHeight="24"
                                        FontSize="14"
-                                       Foreground="#CCCCCC" />
+                                       Foreground="{DynamicResource LoginFormTextBrush}" />
                         </Border>
                     </StackPanel>
 
@@ -175,11 +175,11 @@
                         <Border Width="80"
                                 Height="80"
                                 CornerRadius="40"
-                                Background="#0DFFFFFF"
+                                Background="{DynamicResource BattleNetSurfaceTintBrush}"
                                 HorizontalAlignment="Center">
                             <Viewbox Width="36" Height="36">
                                 <PathIcon Data="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"
-                                        Foreground="#666666"
+                                        Foreground="{DynamicResource LoginFormMutedBrush}"
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center" />
                             </Viewbox>
@@ -188,11 +188,11 @@
                                    FontSize="15"
                                    FontWeight="SemiBold"
                                    HorizontalAlignment="Center"
-                                   Foreground="#FFFFFF" />
+                                   Foreground="{DynamicResource LoginFormTextBrush}" />
                         <TextBlock Text="从左侧列表中选择感兴趣的新闻"
                                    FontSize="12"
                                    HorizontalAlignment="Center"
-                                   Foreground="#666666" />
+                                   Foreground="{DynamicResource LoginFormMutedBrush}" />
                     </StackPanel>
                 </Grid>
             </Border>

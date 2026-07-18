@@ -1823,39 +1823,42 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             });
         }
 
-        private void OnContactOnlineStatusReceived(object? sender, IMContactOnlineStatusMessage message)
+        private async void OnContactOnlineStatusReceived(object? sender, IMContactOnlineStatusMessage message)
         {
-            Dispatcher.UIThread.Invoke(() => HandleContactOnlineStatus(message));
+            // 关键修复：原实现使用 Dispatcher.UIThread.Invoke（同步阻塞）。
+            // 当 UI 线程被其它页面（如 FlowerMerchant）的 DataContext 绑定初始化占用时，
+            // 同步 Invoke 会死锁。改为 InvokeAsync 后，回调仅排队等待，不阻塞后台 IM 线程。
+            await Dispatcher.UIThread.InvokeAsync(() => HandleContactOnlineStatus(message));
         }
 
-        private void OnContactProfileUpdateReceived(object? sender, IMContactProfileUpdateMessage message)
+        private async void OnContactProfileUpdateReceived(object? sender, IMContactProfileUpdateMessage message)
         {
-            Dispatcher.UIThread.Invoke(() => HandleContactProfileUpdate(message));
+            await Dispatcher.UIThread.InvokeAsync(() => HandleContactProfileUpdate(message));
         }
 
-        private void OnGroupInviteReceived(object? sender, IMGroupInviteNotify notify)
+        private async void OnGroupInviteReceived(object? sender, IMGroupInviteNotify notify)
         {
-            Dispatcher.UIThread.Invoke(() => HandleGroupInviteNotify(notify));
+            await Dispatcher.UIThread.InvokeAsync(() => HandleGroupInviteNotify(notify));
         }
 
-        private void OnGroupJoinApplyReceived(object? sender, IMGroupJoinApplyNotify notify)
+        private async void OnGroupJoinApplyReceived(object? sender, IMGroupJoinApplyNotify notify)
         {
-            Dispatcher.UIThread.Invoke(() => HandleGroupJoinApplyNotify(notify));
+            await Dispatcher.UIThread.InvokeAsync(() => HandleGroupJoinApplyNotify(notify));
         }
 
-        private void OnGroupInviteApprovalReceived(object? sender, IMGroupInviteApprovalNotify notify)
+        private async void OnGroupInviteApprovalReceived(object? sender, IMGroupInviteApprovalNotify notify)
         {
-            Dispatcher.UIThread.Invoke(() => HandleGroupInviteApprovalNotify(notify));
+            await Dispatcher.UIThread.InvokeAsync(() => HandleGroupInviteApprovalNotify(notify));
         }
 
-        private void OnGroupInviteResultReceived(object? sender, IMGroupInviteResultNotify notify)
+        private async void OnGroupInviteResultReceived(object? sender, IMGroupInviteResultNotify notify)
         {
-            Dispatcher.UIThread.Invoke(() => HandleGroupInviteResultNotify(notify));
+            await Dispatcher.UIThread.InvokeAsync(() => HandleGroupInviteResultNotify(notify));
         }
 
-        private void OnGroupDisbandReceived(object? sender, IMGroupDisbandNotify notify)
+        private async void OnGroupDisbandReceived(object? sender, IMGroupDisbandNotify notify)
         {
-            Dispatcher.UIThread.Invoke(() => HandleGroupDisbandNotify(notify));
+            await Dispatcher.UIThread.InvokeAsync(() => HandleGroupDisbandNotify(notify));
         }
 
         private const int MaxImageAttachmentCount = 9;

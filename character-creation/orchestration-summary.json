@@ -1,0 +1,115 @@
+{
+  "project": {
+    "name": "character-creation",
+    "operation": "create",
+    "deviceType": "desktop",
+    "operatingMode": "library-bound",
+    "designRead": "game-ui / gamer / wuxia-fantasy / showcase / avoid-generic-blue",
+    "designDials": {
+      "layoutVariance": 3,
+      "motionIntensity": 2,
+      "visualDensity": 3
+    },
+    "styleContinuityAnchors": {
+      "colorSystem": "Claude warm terracotta primary #d97757 on dark warm backgrounds (#1a1915), warm white text #faf9f5, jade spring-green accents",
+      "shapeSystem": "8px radius panels, 4px radius buttons, warm border accents from Claude border tokens",
+      "typographySystem": "title: STKaiti/KaiTi serif; body: Claude text-900 #faf9f5 with warm tones",
+      "spacingSystem": "4px grid, generous whitespace, 240px left panel, 56px right toolbar",
+      "componentLanguage": "semi-transparent glass panels, terracotta-accent sliders, tab underline indicators",
+      "surfaceAndDepth": "backdrop-filter blur panels, warm shadows, Claude card #2c2c2b layered backgrounds",
+      "interactionTone": "subtle hover transitions, smooth opacity fades, warm glow focus states"
+    }
+  },
+  "designSource": {
+    "operatingMode": "library-bound",
+    "libraryIdentity": {
+      "name": "Claude",
+      "id": "dl_builtin_claude",
+      "version": "",
+      "scope": "built-in-global",
+      "path": "c:\\Users\\33011\\.trae-cn\\design_libraries\\dl_builtin_claude",
+      "versionSource": "metadata.json"
+    },
+    "brandPrefix": "game",
+    "cssPath": "colors_and_type.css",
+    "designDecisionSummary": "Claude warm terracotta theme overlaying Claude dark tokens. Full-screen immersive game layout (no TopNav/Sidebar). Semi-transparent panels with backdrop-filter blur. KaiTi serif titles, Claude warm body text. Spring jade green accents for wuxia fantasy. 1920x1080 desktop baseline, responsive to mobile.",
+    "styleConstraints": {
+      "radiusMax": 12,
+      "spacingBase": 4,
+      "fontBody": "PingFang SC",
+      "controlHeightDefault": 36
+    },
+    "iconAssets": null
+  },
+  "pages": [
+    {
+      "nodeId": "page-gender-select",
+      "title": "性别选择与角色全览",
+      "htmlSrc": "pages/01-gender-select.html",
+      "pageType": "showcase",
+      "visualNorthStar": "Full-screen character showcase with gender toggle left, golden underline selected state, misty mountain gradient background, dark atmospheric palette with gold accents",
+      "compositionPattern": "asymmetric-split: left-panel-40 gender toggle + right-area-60 character preview",
+      "continuityAnchors": {
+        "sharedShell": "full-screen dark gradient bg, bottom action bar with ghost-return-left and primary-next-right, top-left character ID, no traditional page skeleton"
+      },
+      "componentPlan": [],
+      "imagePlan": [],
+      "chartsRequired": false
+    },
+    {
+      "nodeId": "page-face-style",
+      "title": "捏脸 - 风格选择",
+      "htmlSrc": "pages/02-face-style.html",
+      "pageType": "task-driven",
+      "visualNorthStar": "Three-column face customization: left style panel (240px) with preset thumbnails, center large face preview, right icon toolbar (56px), semi-transparent top navigation bar with tabs",
+      "compositionPattern": "three-column: left-panel-240 + center-flex + right-toolbar-56",
+      "continuityAnchors": {
+        "sharedShell": "same bottom action bar, same dark gradient bg, same top navigation bar structure, same right toolbar icons"
+      },
+      "componentPlan": [],
+      "imagePlan": [],
+      "chartsRequired": false
+    },
+    {
+      "nodeId": "page-face-customize",
+      "title": "捏脸 - 面部定制",
+      "htmlSrc": "pages/03-face-customize.html",
+      "pageType": "task-driven",
+      "visualNorthStar": "Face customization with left category sidebar (180px), center face preview with real-time parameter updates, bottom floating slider panel with gold-accent sliders",
+      "compositionPattern": "two-column: left-sidebar-180 + center-flex, bottom-overlay-panel for sliders",
+      "continuityAnchors": {
+        "sharedShell": "same top nav, same bottom action bar, same bg, same right toolbar, same panel glass style"
+      },
+      "componentPlan": [],
+      "imagePlan": [],
+      "chartsRequired": false
+    },
+    {
+      "nodeId": "page-character-confirm",
+      "title": "角色确认",
+      "htmlSrc": "pages/04-character-confirm.html",
+      "pageType": "showcase",
+      "visualNorthStar": "Dramatic full-screen character reveal with centered full-body pose, golden character name in KaiTi font above, job class tag, prominent golden CTA button",
+      "compositionPattern": "centered-hero: full-body character center, bottom action bar, minimal UI overlay",
+      "continuityAnchors": {
+        "sharedShell": "same dark gradient bg, same bottom bar pattern, same ghost button style for return"
+      },
+      "componentPlan": [],
+      "imagePlan": [],
+      "chartsRequired": false
+    }
+  ],
+  "assets": [],
+  "wiringPlan": [
+    { "sourcePageId": "page-gender-select", "targetPageId": "page-face-style", "label": "下一步" },
+    { "sourcePageId": "page-face-style", "targetPageId": "page-face-customize", "label": "面部定制" },
+    { "sourcePageId": "page-face-customize", "targetPageId": "page-character-confirm", "label": "下一步" },
+    { "sourcePageId": "page-face-style", "targetPageId": "page-character-confirm", "label": "下一步" }
+  ],
+  "hiddenInteractionPlan": [
+    { "domId": "btn-back-gender", "targetPageId": "page-gender-select", "hideEdge": true, "label": "返回" },
+    { "domId": "btn-back-face", "targetPageId": "page-gender-select", "hideEdge": true, "label": "返回" },
+    { "domId": "btn-back-customize", "targetPageId": "page-face-style", "hideEdge": true, "label": "返回" },
+    { "domId": "btn-back-confirm", "targetPageId": "page-face-customize", "hideEdge": true, "label": "返回修改" }
+  ]
+}

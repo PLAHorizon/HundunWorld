@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using Game.Equipment.Material;
+using HundunWorld.Game.Equipment;
+using HundunWorld.Game.Services;
 
 namespace HundunWorld.Game.UI.GameMain
 {
@@ -11,10 +13,10 @@ namespace HundunWorld.Game.UI.GameMain
     /// </summary>
     public class InventorySlot
     {
-        public int SlotIndex;                // 槽位索引
-        public MaterialData Material;        // 材料数据
-        public int Count;                    // 数量
-        public bool IsLocked;                // 是否锁定
+        public int SlotIndex;
+        public MaterialData Material;
+        public int Count;
+        public bool IsLocked;
     }
 
     /// <summary>
@@ -24,30 +26,16 @@ namespace HundunWorld.Game.UI.GameMain
     /// </summary>
     public class InventoryUI : Script
     {
-        #region 配置参数
-
-        [Header("背包配置")]
-        [Tooltip("背包槽位列数")]
         public int ColumnCount = 8;
-
-        [Tooltip("背包槽位行数")]
         public int RowCount = 6;
-
-        [Tooltip("槽位大小")]
         public float SlotSize = 50f;
-
-        [Tooltip("槽位间距")]
         public float SlotSpacing = 4f;
-
-        [Tooltip("背包窗口宽度")]
         public float WindowWidth = 500f;
-
-        [Tooltip("背包窗口高度")]
         public float WindowHeight = 450f;
 
-        #endregion
-
-        #region UI组件
+        private const float EmbeddedSlotSize = 44f;
+        private const float EmbeddedSpacing = 5f;
+        private const int EmbeddedColumns = 4;
 
         private Panel _inventoryWindow;
         private Panel _titleBar;
@@ -63,23 +51,12 @@ namespace HundunWorld.Game.UI.GameMain
 
         private bool _isVisible = false;
         private int _playerGold = 1000;
-
-        // 排序和过滤状态
         private string _currentFilter = "全部";
         private int _selectedSlotIndex = -1;
-
-        // 拖拽状态
         private bool _isDragging = false;
         private int _dragSourceSlotIndex = -1;
         private Panel _dragGhost;
 
-        #endregion
-
-        #region 槽位UI类
-
-        /// <summary>
-        /// 槽位UI组件
-        /// </summary>
         private class SlotUI
         {
             public Panel SlotPanel;
@@ -91,9 +68,6 @@ namespace HundunWorld.Game.UI.GameMain
             public bool IsSelected;
         }
 
-        /// <summary>
-        /// 自定义槽位面板，用于处理鼠标点击和拖拽事件
-        /// </summary>
         private class SlotPanel : Panel
         {
             public Action<int> SlotClicked;
@@ -143,7 +117,6 @@ namespace HundunWorld.Game.UI.GameMain
                         SlotDragEnded?.Invoke(SlotIndex);
                     }
                 }
-                
                 return base.OnMouseUp(location, button);
             }
 
@@ -153,26 +126,36 @@ namespace HundunWorld.Game.UI.GameMain
                 {
                     SlotDoubleClicked?.Invoke(SlotIndex);
                 }
-                
                 return base.OnMouseDoubleClick(location, button);
             }
         }
 
-        #endregion
+        private class EmbeddedSlotPanel : Panel
+        {
+            public int SlotIndex;
+            public int ItemId;
+            public Action<int> SlotClicked;
 
-        #region 生命周期
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && IsMouseOver)
+                {
+                    SlotClicked?.Invoke(ItemId);
+                }
+                return base.OnMouseUp(location, button);
+            }
+        }
 
         public override void OnStart()
         {
             InitializeInventoryUI();
             InitializeInventoryData();
-            HideInventory();  // 默认隐藏
+            HideInventory();
             Debug.Log("[InventoryUI] 背包UI初始化完成");
         }
 
         public override void OnUpdate()
         {
-            // 快捷键切换背包显示
             if (Input.GetKeyDown(KeyboardKeys.B) || Input.GetKeyDown(KeyboardKeys.I))
             {
                 ToggleInventory();
@@ -184,16 +167,8 @@ namespace HundunWorld.Game.UI.GameMain
             CleanupInventory();
         }
 
-        #endregion
-
-        #region 初始化
-
-        /// <summary>
-        /// 初始化背包UI
-        /// </summary>
         private void InitializeInventoryUI()
         {
-            // 创建背包窗口
             _inventoryWindow = new Panel
             {
                 AnchorPreset = AnchorPresets.MiddleCenter,
@@ -202,7 +177,6 @@ namespace HundunWorld.Game.UI.GameMain
                 BackgroundColor = new Color(0.1f, 0.1f, 0.15f, 0.95f)
             };
 
-            // 添加到GUI
             var canvas = Actor.GetScript<UICanvas>();
             if (canvas?.GUI != null)
             {
@@ -220,9 +194,6 @@ namespace HundunWorld.Game.UI.GameMain
             CreateInfoPanel();
         }
 
-        /// <summary>
-        /// 创建标题栏
-        /// </summary>
         private void CreateTitleBar()
         {
             _titleBar = new Panel
@@ -232,19 +203,16 @@ namespace HundunWorld.Game.UI.GameMain
             };
             _inventoryWindow.AddChild(_titleBar);
 
-            // 标题文本
             _titleLabel = new Label
             {
                 Bounds = new Rectangle(10, 8, 200, 24),
                 Text = "背包",
                 TextColor = new Color(0.9f, 0.8f, 0.5f),
-                TextColorHighlighted = new Color(0.9f, 0.8f, 0.5f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center
             };
             _titleBar.AddChild(_titleLabel);
 
-            // 关闭按钮
             _closeButton = new Button
             {
                 Bounds = new Rectangle(WindowWidth - 35, 5, 30, 30),
@@ -256,9 +224,6 @@ namespace HundunWorld.Game.UI.GameMain
             _titleBar.AddChild(_closeButton);
         }
 
-        /// <summary>
-        /// 创建过滤面板
-        /// </summary>
         private void CreateFilterPanel()
         {
             _filterPanel = new Panel
@@ -268,13 +233,11 @@ namespace HundunWorld.Game.UI.GameMain
             };
             _inventoryWindow.AddChild(_filterPanel);
 
-            // 过滤按钮组
             CreateFilterButton("全部", 10, null);
             CreateFilterButton("材料", 70, MaterialTier.Basic);
             CreateFilterButton("装备", 130, null);
             CreateFilterButton("消耗品", 190, null);
 
-            // 排序按钮
             var sortBtn = new Button
             {
                 Bounds = new Rectangle(WindowWidth - 120, 5, 50, 25),
@@ -285,7 +248,6 @@ namespace HundunWorld.Game.UI.GameMain
             sortBtn.ButtonClicked += (btn) => SortInventory();
             _filterPanel.AddChild(sortBtn);
 
-            // 搜索按钮
             var searchBtn = new Button
             {
                 Bounds = new Rectangle(WindowWidth - 65, 5, 50, 25),
@@ -293,16 +255,10 @@ namespace HundunWorld.Game.UI.GameMain
                 TextColor = Color.White,
                 BackgroundColor = new Color(0.2f, 0.2f, 0.3f, 0.8f)
             };
-            searchBtn.ButtonClicked += (btn) =>
-            {
-                Debug.Log("[InventoryUI] 搜索功能触发");
-            };
+            searchBtn.ButtonClicked += (btn) => { Debug.Log("[InventoryUI] 搜索功能触发"); };
             _filterPanel.AddChild(searchBtn);
         }
 
-        /// <summary>
-        /// 创建过滤按钮
-        /// </summary>
         private void CreateFilterButton(string text, float xPos, MaterialTier? filterTier)
         {
             var filterBtn = new Button
@@ -321,12 +277,9 @@ namespace HundunWorld.Game.UI.GameMain
             _filterPanel.AddChild(filterBtn);
         }
 
-        /// <summary>
-        /// 创建槽位容器
-        /// </summary>
         private void CreateSlotsContainer()
         {
-            float containerHeight = WindowHeight - 40 - 35 - 40;  // 减去标题栏、过滤栏和信息栏
+            float containerHeight = WindowHeight - 40 - 35 - 40;
 
             _slotsContainer = new Panel
             {
@@ -335,7 +288,6 @@ namespace HundunWorld.Game.UI.GameMain
             };
             _inventoryWindow.AddChild(_slotsContainer);
 
-            // 创建槽位
             int totalSlots = ColumnCount * RowCount;
             for (int i = 0; i < totalSlots; i++)
             {
@@ -343,9 +295,6 @@ namespace HundunWorld.Game.UI.GameMain
             }
         }
 
-        /// <summary>
-        /// 创建单个槽位
-        /// </summary>
         private void CreateSlot(int index)
         {
             int row = index / ColumnCount;
@@ -359,35 +308,21 @@ namespace HundunWorld.Game.UI.GameMain
                 SlotIndex = index
             };
 
-            // 槽位面板
             var slotPanel = new SlotPanel
             {
                 SlotIndex = index,
                 Bounds = new Rectangle(xPos, yPos, SlotSize, SlotSize),
                 BackgroundColor = new Color(0.15f, 0.15f, 0.2f, 0.9f)
             };
-            
-            // 设置事件处理
-            slotPanel.SlotClicked = (slotIndex) => {
-                OnSlotClick(slotIndex);
-            };
-            
-            slotPanel.SlotDoubleClicked = (slotIndex) => {
-                OnSlotDoubleClick(slotIndex);
-            };
 
-            slotPanel.SlotDragStarted = (slotIndex) => {
-                OnSlotDragStart(slotIndex);
-            };
+            slotPanel.SlotClicked = (slotIndex) => OnSlotClick(slotIndex);
+            slotPanel.SlotDoubleClicked = (slotIndex) => OnSlotDoubleClick(slotIndex);
+            slotPanel.SlotDragStarted = (slotIndex) => OnSlotDragStart(slotIndex);
+            slotPanel.SlotDragEnded = (slotIndex) => OnSlotDragEnd(slotIndex);
 
-            slotPanel.SlotDragEnded = (slotIndex) => {
-                OnSlotDragEnd(slotIndex);
-            };
-            
             slotUI.SlotPanel = slotPanel;
             _slotsContainer.AddChild(slotPanel);
 
-            // 品质边框
             slotUI.QualityBorder = new Panel
             {
                 AnchorPreset = AnchorPresets.StretchAll,
@@ -396,30 +331,26 @@ namespace HundunWorld.Game.UI.GameMain
             };
             slotUI.SlotPanel.AddChild(slotUI.QualityBorder);
 
-            // 图标
             slotUI.IconImage = new Image
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = new Margin(4, 4, 4, 4),
                 Brush = new TextureBrush(),
                 KeepAspectRatio = true,
-                Color = Color.Gray  // 空槽位显示灰色
+                Color = Color.Gray
             };
             slotUI.SlotPanel.AddChild(slotUI.IconImage);
 
-            // 数量标签
             slotUI.CountLabel = new Label
             {
                 Bounds = new Rectangle(2, SlotSize - 18, SlotSize - 4, 16),
                 Text = "",
                 TextColor = Color.White,
-                TextColorHighlighted = Color.White,
                 HorizontalAlignment = TextAlignment.Far,
                 VerticalAlignment = TextAlignment.Far
             };
             slotUI.SlotPanel.AddChild(slotUI.CountLabel);
 
-            // 选中遮罩
             slotUI.SelectedOverlay = new Panel
             {
                 AnchorPreset = AnchorPresets.StretchAll,
@@ -432,9 +363,6 @@ namespace HundunWorld.Game.UI.GameMain
             _slotUIs.Add(slotUI);
         }
 
-        /// <summary>
-        /// 创建信息面板
-        /// </summary>
         private void CreateInfoPanel()
         {
             float yPos = WindowHeight - 40;
@@ -446,32 +374,25 @@ namespace HundunWorld.Game.UI.GameMain
             };
             _inventoryWindow.AddChild(infoPanel);
 
-            // 金币显示
             _goldLabel = new Label
             {
                 Bounds = new Rectangle(10, 10, 150, 20),
                 Text = "金币: 1000",
                 TextColor = new Color(1.0f, 0.9f, 0.3f),
-                TextColorHighlighted = new Color(1.0f, 0.9f, 0.3f),
                 HorizontalAlignment = TextAlignment.Near
             };
             infoPanel.AddChild(_goldLabel);
 
-            // 容量显示
             _capacityLabel = new Label
             {
                 Bounds = new Rectangle(WindowWidth - 160, 10, 150, 20),
                 Text = "容量: 0/48",
                 TextColor = Color.LightGray,
-                TextColorHighlighted = Color.LightGray,
                 HorizontalAlignment = TextAlignment.Far
             };
             infoPanel.AddChild(_capacityLabel);
         }
 
-        /// <summary>
-        /// 初始化背包数据
-        /// </summary>
         private void InitializeInventoryData()
         {
             int totalSlots = ColumnCount * RowCount;
@@ -485,56 +406,30 @@ namespace HundunWorld.Game.UI.GameMain
                     IsLocked = false
                 });
             }
-
-            // 添加一些测试材料
             AddTestMaterials();
         }
 
-        /// <summary>
-        /// 添加测试材料
-        /// </summary>
         private void AddTestMaterials()
         {
-            // 铁矿石
             var ironOre = MaterialDatabase.GetMaterial(10001);
-            if (ironOre != null)
-            {
-                AddMaterial(ironOre, 25);
-            }
+            if (ironOre != null) AddMaterial(ironOre, 25);
 
-            // 青竹
             var bamboo = MaterialDatabase.GetMaterial(10002);
-            if (bamboo != null)
-            {
-                AddMaterial(bamboo, 18);
-            }
+            if (bamboo != null) AddMaterial(bamboo, 18);
 
-            // 寒泉水
             var water = MaterialDatabase.GetMaterial(10003);
-            if (water != null)
-            {
-                AddMaterial(water, 10);
-            }
+            if (water != null) AddMaterial(water, 10);
 
             UpdateAllSlots();
         }
 
-        #endregion
-
-        #region 背包逻辑
-
-        /// <summary>
-        /// 添加材料到背包
-        /// </summary>
         public bool AddMaterial(MaterialData material, int count)
         {
             if (material == null || count <= 0) return false;
 
-            // 查找是否已有该材料
             var existingSlot = _inventorySlots.Find(s => s.Material?.MaterialId == material.MaterialId);
             if (existingSlot != null)
             {
-                // 堆叠
                 int newCount = existingSlot.Count + count;
                 if (newCount <= material.MaxStack)
                 {
@@ -545,29 +440,24 @@ namespace HundunWorld.Game.UI.GameMain
                 }
                 else
                 {
-                    // 超过堆叠上限，需要新槽位
                     int remaining = newCount - material.MaxStack;
                     existingSlot.Count = material.MaxStack;
                     UpdateSlot(existingSlot.SlotIndex);
-                    return AddMaterial(material, remaining);  // 递归添加剩余部分
+                    return AddMaterial(material, remaining);
                 }
             }
 
-            // 查找空槽位
             var emptySlot = _inventorySlots.Find(s => s.Material == null);
             if (emptySlot != null)
             {
                 emptySlot.Material = material;
                 emptySlot.Count = Mathf.Min(count, material.MaxStack);
                 UpdateSlot(emptySlot.SlotIndex);
-                
+
                 Debug.Log($"[InventoryUI] 添加材料: {material.MaterialName} × {count}（新槽位）");
 
-                // 如果超过堆叠上限，递归添加剩余部分
                 if (count > material.MaxStack)
-                {
                     return AddMaterial(material, count - material.MaxStack);
-                }
 
                 return true;
             }
@@ -576,13 +466,9 @@ namespace HundunWorld.Game.UI.GameMain
             return false;
         }
 
-        /// <summary>
-        /// 移除材料
-        /// </summary>
         public bool RemoveMaterial(int materialId, int count)
         {
             int remaining = count;
-
             foreach (var slot in _inventorySlots)
             {
                 if (slot.Material?.MaterialId == materialId && slot.Count > 0)
@@ -606,34 +492,21 @@ namespace HundunWorld.Game.UI.GameMain
                     }
                 }
             }
-
             Debug.LogWarning($"[InventoryUI] 材料不足，无法移除: ID {materialId} × {count}");
             return false;
         }
 
-        /// <summary>
-        /// 获取材料数量
-        /// </summary>
         public int GetMaterialCount(int materialId)
         {
             int total = 0;
             foreach (var slot in _inventorySlots)
             {
                 if (slot.Material?.MaterialId == materialId)
-                {
                     total += slot.Count;
-                }
             }
             return total;
         }
 
-        #endregion
-
-        #region UI更新
-
-        /// <summary>
-        /// 更新槽位显示
-        /// </summary>
         private void UpdateSlot(int slotIndex)
         {
             if (slotIndex < 0 || slotIndex >= _slotUIs.Count) return;
@@ -643,14 +516,10 @@ namespace HundunWorld.Game.UI.GameMain
 
             if (slotData.Material != null && slotData.Count > 0)
             {
-                // 显示材料
                 slotUI.IconImage.Color = slotData.Material.GetElementColor();
                 slotUI.CountLabel.Text = slotData.Count.ToString();
-                
-                // 品质边框颜色
                 slotUI.QualityBorder.BackgroundColor = slotData.Material.GetQualityColor();
 
-                // 加载物品图标纹理
                 var iconPath = slotData.Material.IconPath;
                 if (!string.IsNullOrEmpty(iconPath))
                 {
@@ -664,7 +533,6 @@ namespace HundunWorld.Game.UI.GameMain
             }
             else
             {
-                // 空槽位
                 slotUI.IconImage.Color = Color.Gray;
                 slotUI.CountLabel.Text = "";
                 slotUI.QualityBorder.BackgroundColor = Color.Transparent;
@@ -673,9 +541,6 @@ namespace HundunWorld.Game.UI.GameMain
             UpdateCapacityLabel();
         }
 
-        /// <summary>
-        /// 更新所有槽位
-        /// </summary>
         private void UpdateAllSlots()
         {
             for (int i = 0; i < _inventorySlots.Count; i++)
@@ -684,9 +549,6 @@ namespace HundunWorld.Game.UI.GameMain
             }
         }
 
-        /// <summary>
-        /// 更新容量标签
-        /// </summary>
         private void UpdateCapacityLabel()
         {
             int usedSlots = _inventorySlots.FindAll(s => s.Material != null).Count;
@@ -694,21 +556,11 @@ namespace HundunWorld.Game.UI.GameMain
             _capacityLabel.Text = $"容量: {usedSlots}/{totalSlots}";
         }
 
-        /// <summary>
-        /// 更新金币显示
-        /// </summary>
         private void UpdateGoldLabel()
         {
             _goldLabel.Text = $"金币: {_playerGold}";
         }
 
-        #endregion
-
-        #region 事件处理
-
-        /// <summary>
-        /// 槽位双击事件
-        /// </summary>
         private void OnSlotDoubleClick(int slotIndex)
         {
             var slot = _inventorySlots[slotIndex];
@@ -718,19 +570,14 @@ namespace HundunWorld.Game.UI.GameMain
             }
         }
 
-        /// <summary>
-        /// 槽位单击选中
-        /// </summary>
         private void OnSlotClick(int slotIndex)
         {
-            // 取消之前的选中
             if (_selectedSlotIndex >= 0 && _selectedSlotIndex < _slotUIs.Count)
             {
                 _slotUIs[_selectedSlotIndex].SelectedOverlay.Visible = false;
                 _slotUIs[_selectedSlotIndex].IsSelected = false;
             }
 
-            // 选中当前槽位
             if (slotIndex >= 0 && slotIndex < _slotUIs.Count)
             {
                 var slotData = _inventorySlots[slotIndex];
@@ -748,9 +595,6 @@ namespace HundunWorld.Game.UI.GameMain
             }
         }
 
-        /// <summary>
-        /// 应用物品过滤
-        /// </summary>
         private void ApplyFilter(string filterType)
         {
             for (int i = 0; i < _inventorySlots.Count && i < _slotUIs.Count; i++)
@@ -775,12 +619,8 @@ namespace HundunWorld.Game.UI.GameMain
             Debug.Log($"[InventoryUI] 已应用过滤器: {filterType}");
         }
 
-        /// <summary>
-        /// 排序背包物品（按名称排序，空槽位移到末尾）
-        /// </summary>
         private void SortInventory()
         {
-            // 分离非空和空槽位（单次遍历）
             var filledSlots = new List<InventorySlot>();
             var emptySlots = new List<InventorySlot>();
             foreach (var slot in _inventorySlots)
@@ -791,7 +631,6 @@ namespace HundunWorld.Game.UI.GameMain
                     emptySlots.Add(slot);
             }
 
-            // 按材料名称排序
             filledSlots.Sort((a, b) =>
             {
                 int nameCompare = string.Compare(a.Material.MaterialName, b.Material.MaterialName, StringComparison.CurrentCulture);
@@ -799,7 +638,6 @@ namespace HundunWorld.Game.UI.GameMain
                 return b.Count.CompareTo(a.Count);
             });
 
-            // 重建槽位列表
             _inventorySlots.Clear();
             int slotIndex = 0;
             foreach (var slot in filledSlots)
@@ -817,13 +655,6 @@ namespace HundunWorld.Game.UI.GameMain
             Debug.Log("[InventoryUI] 背包物品已排序");
         }
 
-        #endregion
-
-        #region 拖拽操作
-
-        /// <summary>
-        /// 开始拖拽物品
-        /// </summary>
         private void OnSlotDragStart(int slotIndex)
         {
             if (slotIndex < 0 || slotIndex >= _inventorySlots.Count) return;
@@ -834,7 +665,6 @@ namespace HundunWorld.Game.UI.GameMain
             _isDragging = true;
             _dragSourceSlotIndex = slotIndex;
 
-            // 创建拖拽幽灵图标并添加到背包窗口
             _dragGhost = new Panel
             {
                 Size = new Float2(SlotSize, SlotSize),
@@ -851,22 +681,15 @@ namespace HundunWorld.Game.UI.GameMain
             };
             _dragGhost.AddChild(ghostIcon);
 
-            // 将幽灵图标添加到背包窗口上层
             _inventoryWindow.AddChild(_dragGhost);
 
-            // 初始位置设为源槽位位置
             var sourceUI = _slotUIs[slotIndex];
             _dragGhost.Location = sourceUI.SlotPanel.Location;
-
-            // 高亮源槽位
             _slotUIs[slotIndex].SelectedOverlay.Visible = true;
 
             Debug.Log($"[InventoryUI] 开始拖拽: 槽位 {slotIndex}, 物品 {slot.Material.MaterialName}");
         }
 
-        /// <summary>
-        /// 拖拽结束（释放到目标槽位）
-        /// </summary>
         private void OnSlotDragEnd(int targetSlotIndex)
         {
             if (!_isDragging || _dragSourceSlotIndex < 0) return;
@@ -887,12 +710,10 @@ namespace HundunWorld.Game.UI.GameMain
                 return;
             }
 
-            // 判断操作类型：如果目标有相同物品则合并，否则交换
             if (targetSlot.Material != null &&
                 sourceSlot.Material != null &&
                 targetSlot.Material.MaterialName == sourceSlot.Material.MaterialName)
             {
-                // 合并相同物品
                 targetSlot.Count += sourceSlot.Count;
                 sourceSlot.Material = null;
                 sourceSlot.Count = 0;
@@ -900,20 +721,15 @@ namespace HundunWorld.Game.UI.GameMain
             }
             else
             {
-                // 交换两个槽位
                 SwapSlots(_dragSourceSlotIndex, targetSlotIndex);
                 Debug.Log($"[InventoryUI] 物品交换: 槽位 {_dragSourceSlotIndex} ↔ {targetSlotIndex}");
             }
 
-            // 更新显示
             UpdateSlot(_dragSourceSlotIndex);
             UpdateSlot(targetSlotIndex);
             CancelDrag();
         }
 
-        /// <summary>
-        /// 交换两个槽位的物品
-        /// </summary>
         private void SwapSlots(int sourceIndex, int targetIndex)
         {
             var tempMaterial = _inventorySlots[sourceIndex].Material;
@@ -926,9 +742,6 @@ namespace HundunWorld.Game.UI.GameMain
             _inventorySlots[targetIndex].Count = tempCount;
         }
 
-        /// <summary>
-        /// 取消拖拽操作
-        /// </summary>
         private void CancelDrag()
         {
             if (_dragSourceSlotIndex >= 0 && _dragSourceSlotIndex < _slotUIs.Count)
@@ -939,9 +752,7 @@ namespace HundunWorld.Game.UI.GameMain
             if (_dragGhost != null)
             {
                 if (_dragGhost.Parent != null)
-                {
                     _dragGhost.Parent.RemoveChild(_dragGhost);
-                }
                 _dragGhost.Dispose();
                 _dragGhost = null;
             }
@@ -950,13 +761,6 @@ namespace HundunWorld.Game.UI.GameMain
             _dragSourceSlotIndex = -1;
         }
 
-        #endregion
-
-        #region 批量操作
-
-        /// <summary>
-        /// 批量出售物品（出售所有选中类型的物品）
-        /// </summary>
         public int BatchSellByFilter(string filterType)
         {
             int soldCount = 0;
@@ -982,35 +786,23 @@ namespace HundunWorld.Game.UI.GameMain
                 UpdateCapacityLabel();
                 Debug.Log($"[InventoryUI] 批量出售完成: 售出 {soldCount} 件物品");
             }
-
             return soldCount;
         }
 
-        /// <summary>
-        /// 批量整理背包（合并同类物品 + 排序）
-        /// </summary>
         public void BatchOrganize()
         {
-            // 先合并同类物品
             MergeSameItems();
-            // 再排序
             SortInventory();
             Debug.Log("[InventoryUI] 背包批量整理完成");
         }
 
-        /// <summary>
-        /// 合并相同物品
-        /// </summary>
         private void MergeSameItems()
         {
             var materialGroups = new Dictionary<string, List<int>>();
-
-            // 按材料名分组
             for (int i = 0; i < _inventorySlots.Count; i++)
             {
                 var slot = _inventorySlots[i];
                 if (slot.Material == null) continue;
-
                 if (!materialGroups.ContainsKey(slot.Material.MaterialName))
                 {
                     materialGroups[slot.Material.MaterialName] = new List<int>();
@@ -1018,11 +810,9 @@ namespace HundunWorld.Game.UI.GameMain
                 materialGroups[slot.Material.MaterialName].Add(i);
             }
 
-            // 合并同类物品
             foreach (var group in materialGroups)
             {
                 if (group.Value.Count <= 1) continue;
-
                 int primaryIndex = group.Value[0];
                 for (int i = 1; i < group.Value.Count; i++)
                 {
@@ -1034,28 +824,12 @@ namespace HundunWorld.Game.UI.GameMain
             }
         }
 
-        #endregion
-
-        #region 显示/隐藏
-
-        /// <summary>
-        /// 切换背包显示
-        /// </summary>
         public void ToggleInventory()
         {
-            if (_isVisible)
-            {
-                HideInventory();
-            }
-            else
-            {
-                ShowInventory();
-            }
+            if (_isVisible) HideInventory();
+            else ShowInventory();
         }
 
-        /// <summary>
-        /// 显示背包
-        /// </summary>
         public void ShowInventory()
         {
             _inventoryWindow.Visible = true;
@@ -1065,9 +839,6 @@ namespace HundunWorld.Game.UI.GameMain
             Debug.Log("[InventoryUI] 显示背包");
         }
 
-        /// <summary>
-        /// 隐藏背包
-        /// </summary>
         public void HideInventory()
         {
             _inventoryWindow.Visible = false;
@@ -1075,18 +846,134 @@ namespace HundunWorld.Game.UI.GameMain
             Debug.Log("[InventoryUI] 隐藏背包");
         }
 
-        /// <summary>
-        /// 是否可见
-        /// </summary>
         public bool IsVisible => _isVisible;
 
-        #endregion
+        public void ClearEmbeddedPanel(Panel container)
+        {
+            if (container == null) return;
+            while (container.HasChildren)
+            {
+                container.RemoveChild(container.Children[0]);
+            }
+            container.ViewOffset = Float2.Zero;
+        }
 
-        #region 清理
+        public void PopulateEmbeddedPanel(Panel container, List<InventoryItemData> items, Action<int> onItemClick)
+        {
+            ClearEmbeddedPanel(container);
+            if (container == null) return;
 
-        /// <summary>
-        /// 清理背包UI
-        /// </summary>
+            container.ScrollBars = ScrollBars.Vertical;
+            container.ClipChildren = true;
+
+            var displayItems = items ?? new List<InventoryItemData>();
+            int slotCount = Mathf.Max(displayItems.Count, EmbeddedColumns * 2);
+            float slotTotal = EmbeddedSlotSize + EmbeddedSpacing;
+
+            for (int i = 0; i < slotCount; i++)
+            {
+                var item = i < displayItems.Count ? displayItems[i] : null;
+                int row = i / EmbeddedColumns;
+                int col = i % EmbeddedColumns;
+                float xPos = col * slotTotal + EmbeddedSpacing;
+                float yPos = row * slotTotal + EmbeddedSpacing;
+
+                // === 1. 外层金属边框 ===
+                var slotPanel = new EmbeddedSlotPanel
+                {
+                    SlotIndex = i,
+                    ItemId = item?.ItemId ?? 0,
+                    Bounds = new Rectangle(xPos, yPos, EmbeddedSlotSize, EmbeddedSlotSize),
+                    BackgroundColor = HundunWorld.Game.UI.StyleSystem.ChineseClassicalTheme.MetalBorderColor
+                };
+                slotPanel.SlotClicked = (itemId) => onItemClick?.Invoke(itemId);
+                container.AddChild(slotPanel);
+
+                // === 2. 内层凹陷石质背景 ===
+                var insetBg = new Panel
+                {
+                    Bounds = new Rectangle(2f, 2f, EmbeddedSlotSize - 4f, EmbeddedSlotSize - 4f),
+                    BackgroundColor = HundunWorld.Game.UI.StyleSystem.ChineseClassicalTheme.DarkStoneInsetColor
+                };
+                slotPanel.AddChild(insetBg);
+
+                // === 3. 顶部金线（模拟金属反光） ===
+                insetBg.AddChild(new Panel
+                {
+                    Bounds = new Rectangle(0, 0, EmbeddedSlotSize - 4f, 1f),
+                    BackgroundColor = HundunWorld.Game.UI.StyleSystem.ChineseClassicalTheme.MetalBorderSoftHighlightColor
+                });
+
+                // === 4. 尝试加载图标 ===
+                bool hasIcon = false;
+                if (item != null)
+                {
+                    try
+                    {
+                        var equipment = EquipmentDatabase.GetEquipment(item.ItemId);
+                        if (equipment != null && !string.IsNullOrEmpty(equipment.IconPath))
+                        {
+                            var texture = Content.Load<Texture>(equipment.IconPath);
+                            if (texture != null)
+                            {
+                                var iconImage = new Image
+                                {
+                                    Bounds = new Rectangle(4f, 4f, EmbeddedSlotSize - 8f, EmbeddedSlotSize - 8f),
+                                    Brush = new TextureBrush(texture),
+                                    KeepAspectRatio = true,
+                                    Color = Color.White
+                                };
+                                slotPanel.AddChild(iconImage);
+                                hasIcon = true;
+                            }
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // 图标加载失败回退到占位文字
+                    }
+                }
+
+                // === 5. 占位文字 ===
+                if (!hasIcon)
+                {
+                    string placeholderText = item != null ? "物" : "空";
+                    var placeholder = new Label
+                    {
+                        Bounds = new Rectangle(2f, 2f, EmbeddedSlotSize - 4f, EmbeddedSlotSize - 4f),
+                        Text = placeholderText,
+                        Font = UIHelper.SetFont(size: Mathf.Max(10f, EmbeddedSlotSize * 0.35f)),
+                        TextColor = HundunWorld.Game.UI.StyleSystem.ChineseClassicalTheme.WowHintTextColor,
+                        HorizontalAlignment = TextAlignment.Center,
+                        VerticalAlignment = TextAlignment.Center
+                    };
+                    slotPanel.AddChild(placeholder);
+                }
+
+                // === 6. 物品数量标签（数量 > 1 时显示） ===
+                if (item != null && item.Count > 1)
+                {
+                    var countBg = new Panel
+                    {
+                        Bounds = new Rectangle(EmbeddedSlotSize - 22f, EmbeddedSlotSize - 14f, 18f, 10f),
+                        BackgroundColor = HundunWorld.Game.UI.StyleSystem.ChineseClassicalTheme.DarkStoneBackgroundColor
+                    };
+                    slotPanel.AddChild(countBg);
+
+                    var countLabel = new Label
+                    {
+                        Bounds = new Rectangle(EmbeddedSlotSize - 22f, EmbeddedSlotSize - 14f, 18f, 10f),
+                        Text = item.Count.ToString(),
+                        Font = UIHelper.SetFont(size: 9),
+                        TextColor = HundunWorld.Game.UI.StyleSystem.ChineseClassicalTheme.WowNumberTextColor,
+                        HorizontalAlignment = TextAlignment.Center,
+                        VerticalAlignment = TextAlignment.Center
+                    };
+                    slotPanel.AddChild(countLabel);
+                }
+            }
+        }
+
         private void CleanupInventory()
         {
             if (_inventoryWindow != null && _inventoryWindow.Parent != null)
@@ -1094,11 +981,8 @@ namespace HundunWorld.Game.UI.GameMain
                 _inventoryWindow.Parent.RemoveChild(_inventoryWindow);
                 _inventoryWindow.Dispose();
             }
-
             _slotUIs.Clear();
             _inventorySlots.Clear();
         }
-
-        #endregion
     }
 }

@@ -1,0 +1,64 @@
+{
+  "root": {
+    "id": "project-shell",
+    "type": "project-shell",
+    "children": [
+      {
+        "id": "page-leaf-page-menu-casual-mode",
+        "type": "page-leaf",
+        "pageId": "page-menu-casual-mode",
+        "pageFile": "menu-casual-mode.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-menu-gacha",
+        "type": "page-leaf",
+        "pageId": "page-menu-gacha",
+        "pageFile": "menu-gacha.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-menu-activities",
+        "type": "page-leaf",
+        "pageId": "page-menu-activities",
+        "pageFile": "menu-activities.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-menu-battle-pass",
+        "type": "page-leaf",
+        "pageId": "page-menu-battle-pass",
+        "pageFile": "menu-battle-pass.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-menu-char-attributes-v2",
+        "type": "page-leaf",
+        "pageId": "page-menu-char-attributes-v2",
+        "pageFile": "menu-char-attributes-v2.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-shop-rare-items",
+        "type": "page-leaf",
+        "pageId": "page-shop-rare-items",
+        "pageFile": "shop-rare-items.html",
+        "dependencies": [],
+        "status": "pending"
+      },
+      {
+        "id": "page-leaf-page-settings",
+        "type": "page-leaf",
+        "pageId": "page-settings",
+        "pageFile": "settings.html",
+        "dependencies": [],
+        "status": "pending"
+      }
+    ]
+  }
+}

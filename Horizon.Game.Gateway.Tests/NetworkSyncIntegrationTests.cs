@@ -1,12 +1,20 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using Horizon.Game.Core;
+using Horizon.Game.Core.Handlers;
 using Horizon.Game.Core.Sim;
+using Horizon.Game.Core.World;
 using Horizon.Game.Message.Sync;
 using Horizon.Game.Message.Sync.Server;
 using Horizon.Orleans.Grains.World;
+using Horizon.Orleans.Interface.World;
+using MemoryPack;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Orleans;
+using Orleans.Runtime;
 
 namespace Horizon.Game.Gateway.Tests;
 
@@ -17,6 +25,31 @@ namespace Horizon.Game.Gateway.Tests;
 public class NetworkSyncIntegrationTests
 {
     private const float Dt = 1f / 60f;
+
+    private static readonly MethodInfo? HandleReconnectAsyncMethod =
+        typeof(SyncPacketHandler).GetMethod("HandleReconnectAsync", BindingFlags.NonPublic | BindingFlags.Instance);
+
+    /// <summary>
+    /// 创建 ZoneShardGrain 测试实例，注入 mock IGrainContext 使 GetPrimaryKeyLong() 可用。
+    /// <para>
+    /// ZoneShardGrain 直接 new 时 GrainContext 为 null，导致 LogNoObserverWarn 等日志路径中
+    /// 调用 GetPrimaryKeyLong() 抛 NullReferenceException。通过反射注入 mock IGrainContext 修复。
+    /// </para>
+    /// </summary>
+    private static ZoneShardGrain CreateGrain()
+    {
+        var mockLogger = new Mock<ILogger<ZoneShardGrain>>();
+        var grain = new ZoneShardGrain(mockLogger.Object);
+
+        var grainId = GrainId.Create(GrainType.Create("ZoneShard"), "1");
+        var mockContext = new Mock<IGrainContext>();
+        mockContext.SetupGet(c => c.GrainId).Returns(grainId);
+
+        var contextField = typeof(Grain).GetField("<GrainContext>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance);
+        contextField?.SetValue(grain, mockContext.Object);
+
+        return grain;
+    }
 
     /// <summary>
     /// 握手流程测试：创建 PlayerSessionState 并调用 ApplyHandshake，验证状态更新。
@@ -224,10 +257,12 @@ public class NetworkSyncIntegrationTests
 
         var confirmedTick = ack.LastProcessedClientTick;
 
-        var replayX = serverX;
-        var replayY = serverY;
-        var replayZ = serverZ;
-        var replayVz = serverVz;
+        // 客户端回卷：从同一起点重放已发送的输入，验证 MovementFormula 确定性
+        // （服务端权威位置 == 客户端从同一起点重放的位置）。
+        var replayX = 0f;
+        var replayY = 0f;
+        var replayZ = 0f;
+        var replayVz = 0f;
 
         foreach (var (_, moveX, moveY) in sentInputs)
         {
@@ -337,14 +372,94 @@ public class NetworkSyncIntegrationTests
         Assert.Equal(ResumeDecision.ForceReLogin, decision);
     }
 
+    [Fact]
+    public async Task ReconnectHandler_UsesAuthoritativeDiffLogHead()
+    {
+        var clusterClient = new Mock<IClusterClient>();
+        var sessionGrain = new Mock<IPlayerSessionGrain>();
+        var diffLog = new Mock<IWorldDiffLogGrain>();
+        var resume = new ReconnectResumePacket
+        {
+            LocalCharacterId = 1,
+            LastAppliedDiffSeq = 95,
+            BaselineVersion = 1,
+            WorldPatchVersion = 1,
+        };
+
+        clusterClient
+            .Setup(client => client.GetGrain<IPlayerSessionGrain>(1, It.IsAny<string>()))
+            .Returns(sessionGrain.Object);
+        clusterClient
+            .Setup(client => client.GetGrain<IWorldDiffLogGrain>("global", It.IsAny<string>()))
+            .Returns(diffLog.Object);
+        diffLog
+            .Setup(log => log.GetStatsAsync())
+            .ReturnsAsync(new WorldDiffLogStats(111, 1, 110));
+        sessionGrain
+            .Setup(session => session.ResumeAsync(resume, 110, 1))
+            .ReturnsAsync(ResumeDecision.ResumeIncremental);
+
+        var handler = new SyncPacketHandler(
+            new Mock<ILogger<MessageHandlerBase>>().Object,
+            clusterClient.Object,
+            new HorizonMessageAdapter());
+
+        var task = (Task<SyncPacket>)HandleReconnectAsyncMethod!.Invoke(handler, new object[] { resume })!;
+        await task;
+
+        sessionGrain.Verify(session => session.ResumeAsync(resume, 110, 1), Times.Once);
+    }
+
+    [Fact]
+    public async Task EnterWorld_TwoSessionsReceiveEachOthersEcsSpawn()
+    {
+        var grain = CreateGrain();
+        var observer = new CapturingFanoutObserver();
+        var interest = WorldCoord.GetChunksInView(0f, 0f, 0f, radius: 1).ToArray();
+        await grain.SubscribeFanoutAsync(Guid.NewGuid(), observer);
+
+        await grain.EnterWorldAsync(1001, 1001, 0f, 0f, 0f, interest);
+        observer.ReceivedDiffs.Clear();
+
+        await grain.EnterWorldAsync(2002, 2002, 0f, 0f, 0f, interest);
+
+        Assert.Contains(observer.ReceivedDiffs, received =>
+            received.SessionIds.Contains(1001L)
+            && ContainsSpawnForEntity(received.Diff, 2002));
+        Assert.Contains(observer.ReceivedDiffs, received =>
+            received.SessionIds.Contains(2002L)
+            && ContainsSpawnForEntity(received.Diff, 1001));
+    }
+
+    private static bool ContainsSpawnForEntity(WorldChunkDiffPacket diff, ulong entityId)
+    {
+        if (diff.PayloadType != WorldChunkDiffPayloadType.EntityDelta)
+        {
+            return false;
+        }
+
+        var deltas = MemoryPackSerializer.Deserialize<EntityDelta[]>(diff.Payload);
+        return deltas?.Any(delta => delta.EntityId == entityId && delta.Kind == EntityDeltaKind.Spawn) == true;
+    }
+
+    private sealed class CapturingFanoutObserver : IZoneShardFanoutObserver
+    {
+        public List<(WorldChunkDiffPacket Diff, IReadOnlyCollection<long> SessionIds)> ReceivedDiffs { get; } = new();
+
+        public Task OnChunkDiffAsync(WorldChunkDiffPacket diff, IReadOnlyCollection<long> sessionIds)
+        {
+            ReceivedDiffs.Add((diff, sessionIds));
+            return Task.CompletedTask;
+        }
+    }
+
     /// <summary>
     /// ZoneShardGrain TickAsync 集成测试：注册实体并提交输入后调用 TickAsync，验证处理实体数大于 0。
     /// </summary>
     [Fact]
     public async Task ZoneShardGrain_TickAsync_WithValidInputs_ProcessesEntities()
     {
-        var mockLogger = new Mock<ILogger<ZoneShardGrain>>();
-        var grain = new ZoneShardGrain(mockLogger.Object);
+        var grain = CreateGrain();
 
         const ulong entityId = 1001;
         await grain.RegisterEntityAsync(entityId, initialX: 0, initialY: 0, initialZ: 0);
@@ -376,8 +491,7 @@ public class NetworkSyncIntegrationTests
     [Fact]
     public async Task ZoneShardGrain_TickAsync_NoInputs_ReturnsZeroProcessed()
     {
-        var mockLogger = new Mock<ILogger<ZoneShardGrain>>();
-        var grain = new ZoneShardGrain(mockLogger.Object);
+        var grain = CreateGrain();
 
         await grain.RegisterEntityAsync(entityId: 1, 0, 0, 0);
 
@@ -392,8 +506,7 @@ public class NetworkSyncIntegrationTests
     [Fact]
     public async Task ZoneShardGrain_TickAsync_AfterUnregister_ProcessesZeroEntities()
     {
-        var mockLogger = new Mock<ILogger<ZoneShardGrain>>();
-        var grain = new ZoneShardGrain(mockLogger.Object);
+        var grain = CreateGrain();
 
         const ulong entityId = 2001;
         await grain.RegisterEntityAsync(entityId, 0, 0, 0);
@@ -414,8 +527,7 @@ public class NetworkSyncIntegrationTests
     [Fact]
     public async Task EndToEnd_EntityRegistrationInputTick_PositionUpdatesCorrectly()
     {
-        var mockLogger = new Mock<ILogger<ZoneShardGrain>>();
-        var grain = new ZoneShardGrain(mockLogger.Object);
+        var grain = CreateGrain();
 
         const ulong entityId = 3001;
         const float initialX = 10, initialY = 20, initialZ = 0;
