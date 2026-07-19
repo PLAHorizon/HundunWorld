@@ -65,6 +65,14 @@ namespace HundunWorld.Game
         private float _pendingRequestTime;
         private ulong _pendingLocalPlayerCharacterId;
         private float _pendingLocalPlayerX, _pendingLocalPlayerY, _pendingLocalPlayerZ;
+
+        // 待回填的本地玩家属性（来自 EnterGameResponse.CharacterInfo）。
+        // RequestCreateLocalPlayerActor 可能为异步（等待场景切换），LocalPlayerActor 此时未创建，
+        // 故需先缓存属性，待 CreateLocalPlayerActor 完成后再回填到 CharacterAttributesComponent。
+        private bool _hasPendingLocalPlayerAttributes;
+        private string _pendingLocalPlayerNickname;
+        private int _pendingLocalPlayerLevel;
+        private CharacterStage _pendingLocalPlayerStage;
         private static HundunWorldGame _instance;
         public static HundunWorldGame Instance
         {
@@ -619,6 +627,22 @@ namespace HundunWorld.Game
                         // Flax 为 Y-up → Flax 世界 (x, 0, y) 处射线，命中点的 Flax.Y 即 ECS.Z。
                         localSimSystem.GroundHeightSampler = SampleGroundHeightEcs;
                         Debug.Log("[HundunWorldGame] 已注入 LocalSimulationSystem.GroundHeightSampler");
+
+                        // 同时注入 ReconciliationSystem.GroundHeightSampler：
+                        // 回滚重播时也需要应用地面约束，否则从服务端权威位置重放的预测位置
+                        // 会穿透 Terrain，导致下一次 correction 触发循环。
+                        var reconciliationSystem = _archWorldHost.GetSystems(Horizon.Game.ECS.Arch.Core.SystemGroup.FixedUpdate)
+                            .OfType<Horizon.Game.ECS.Arch.Systems.ReconciliationSystem>()
+                            .FirstOrDefault();
+                        if (reconciliationSystem != null)
+                        {
+                            reconciliationSystem.GroundHeightSampler = SampleGroundHeightEcs;
+                            Debug.Log("[HundunWorldGame] 已注入 ReconciliationSystem.GroundHeightSampler");
+                        }
+                        else
+                        {
+                            Debug.LogWarning("[HundunWorldGame] ReconciliationSystem 未找到，回滚重播时无地面约束");
+                        }
                     }
                     else
                     {
@@ -820,6 +844,18 @@ namespace HundunWorld.Game
                 return;
             }
 
+            // 初始位置对齐地面：防止开局 pred.Z 低于 Terrain，第一帧重力下落就穿透。
+            // 坐标转换：initialX/Y/Z 为 Flax Y-up（X=左右, Y=上下, Z=前后），
+            // SampleGroundHeightEcs 接受 ECS Z-up（x=左右, y=前后），返回 ECS.Z（= Flax.Y 上下）。
+            // 因此传入 (initialX, initialZ)，返回值 groundZ 是 ECS 上下高度。
+            var groundEcsZ = SampleGroundHeightEcs(initialX, initialZ);
+            // 若采样失败（NaN），兜底用 initialY（Flax 上下）作为初始高度
+            var finalEcsZ = float.IsNaN(groundEcsZ) ? initialY : groundEcsZ;
+            if (!float.IsNaN(groundEcsZ) && MathF.Abs(groundEcsZ - initialY) > 0.01f)
+            {
+                Debug.Log($"[HundunWorldGame] 初始位置对齐地面: initialY={initialY:F3} → groundZ={groundEcsZ:F3} (ECS.Z)");
+            }
+
             var entity = _archWorld.Create();
 
             var netId = new NetworkIdentityComponent
@@ -832,7 +868,7 @@ namespace HundunWorld.Game
             var authTransform = new Horizon.Game.Message.Sync.Components.AuthTransformComponent
             {
                 X = initialX,
-                Y = initialY,
+                Y = finalEcsZ,
                 Z = initialZ,
                 Pitch = 0f,
                 Yaw = 0f,
@@ -854,9 +890,14 @@ namespace HundunWorld.Game
 
             var predicted = new Horizon.Game.ECS.Arch.Components.PredictedTransformComponent
             {
+                // initialX/Y/Z 来自握手（Flax Y-up：X=左右, Y=上下, Z=前后），与 AuthTransformComponent 同坐标系；
+                // PredictedTransformComponent 供 MovementFormula 使用，必须为 ECS Z-up（X=左右, Y=前后, Z=上下）。
+                // 因此 Y/Z 交换：Y(前后) ← initialZ, Z(上下) ← initialY，
+                // 与 SnapshotApplySystem.HandleSpawn 的本地玩家分支保持一致。
+                // 修复：Z 用 finalEcsZ（已对齐地面），防止开局穿透。
                 X = initialX,
-                Y = initialY,
-                Z = initialZ,
+                Y = initialZ,
+                Z = finalEcsZ,
                 Vz = 0f,
                 Yaw = 0f,
                 Pitch = 0f,
@@ -865,7 +906,7 @@ namespace HundunWorld.Game
             };
             _archWorld.Add(entity, predicted);
 
-            Debug.Log($"[HundunWorldGame] 已创建本地玩家 ECS 实体: CharacterId={characterId}, Pos=({initialX},{initialY},{initialZ}), Entity={entity}");
+            Debug.Log($"[HundunWorldGame] 已创建本地玩家 ECS 实体: CharacterId={characterId}, Pos=({initialX},{initialY},{initialZ}), GroundAlignedZ={finalEcsZ:F3}, Entity={entity}");
         }
 
         /// <summary>
@@ -936,6 +977,46 @@ namespace HundunWorld.Game
                 Debug.Log("[HundunWorldGame] 订阅后发现场景切换已完成，立即创建本地玩家 Actor");
                 _hasPendingLocalPlayerActorRequest = false;
                 CreateLocalPlayerActor(characterId, x, y, z);
+            }
+        }
+
+        /// <summary>
+        /// 应用本地玩家角色属性到 CharacterAttributesComponent。
+        /// 由 EnterGameHandler 在收到 EnterGameResponse 后调用，用于回填服务端返回的角色名/等级/成长阶段。
+        /// 处理两种时序：
+        /// 1) 若 LocalPlayerActor 已创建（同步路径），立即回填到 CharacterAttributesComponent；
+        /// 2) 若 LocalPlayerActor 未创建（异步路径，等待场景切换），先缓存属性，
+        ///    待 CreateLocalPlayerActor 完成创建并挂载 CharacterAttributesComponent 后自动应用。
+        /// </summary>
+        /// <param name="nickname">角色昵称（来自服务端 CharacterInfo.CharacterName，可为 null）</param>
+        /// <param name="level">角色等级（来自服务端 CharacterInfo.Level）</param>
+        /// <param name="stage">成长阶段（由客户端按 Level 推算）</param>
+        public void ApplyLocalPlayerAttributes(string nickname, int level, CharacterStage stage)
+        {
+            if (_localPlayerActor != null)
+            {
+                var attrComp = _localPlayerActor.GetScript<CharacterAttributesComponent>();
+                if (attrComp != null)
+                {
+                    attrComp.Nickname = nickname ?? attrComp.Nickname;
+                    attrComp.Level = level;
+                    attrComp.CurrentStage = stage;
+                    Debug.Log($"[HundunWorldGame] 已回填本地玩家属性: Nickname={attrComp.Nickname}, Level={attrComp.Level}, Stage={attrComp.CurrentStage}");
+                }
+                else
+                {
+                    Debug.LogWarning("[HundunWorldGame] LocalPlayerActor 已创建但未挂载 CharacterAttributesComponent，回填失败");
+                }
+                _hasPendingLocalPlayerAttributes = false;
+            }
+            else
+            {
+                // LocalPlayerActor 尚未创建（RequestCreateLocalPlayerActor 走了异步路径），缓存待应用
+                _hasPendingLocalPlayerAttributes = true;
+                _pendingLocalPlayerNickname = nickname;
+                _pendingLocalPlayerLevel = level;
+                _pendingLocalPlayerStage = stage;
+                Debug.Log($"[HundunWorldGame] LocalPlayerActor 尚未创建，缓存待应用属性: Nickname={nickname}, Level={level}, Stage={stage}");
             }
         }
 
@@ -1441,6 +1522,17 @@ namespace HundunWorld.Game
                 Debug.Log($"[HundunWorldGame] LocalPlayerActor 缺少 CharacterAttributesComponent，已自动添加");
             }
             Debug.Log($"[HundunWorldGame] 已确保 LocalPlayerActor 挂载 CharacterAttributesComponent: Level={attrComp.Level}, Nickname={attrComp.Nickname}, Stage={attrComp.CurrentStage}");
+
+            // 应用缓存的本地玩家属性（来自 EnterGameResponse，由 ApplyLocalPlayerAttributes 在异步路径下缓存）。
+            // 同步路径下 ApplyLocalPlayerAttributes 已直接回填，此处仅处理异步路径。
+            if (_hasPendingLocalPlayerAttributes)
+            {
+                attrComp.Nickname = _pendingLocalPlayerNickname ?? attrComp.Nickname;
+                attrComp.Level = _pendingLocalPlayerLevel;
+                attrComp.CurrentStage = _pendingLocalPlayerStage;
+                _hasPendingLocalPlayerAttributes = false;
+                Debug.Log($"[HundunWorldGame] 已应用缓存的本地玩家属性: Nickname={attrComp.Nickname}, Level={attrComp.Level}, Stage={attrComp.CurrentStage}");
+            }
 
             // 挂载 LocalPlayerActorSyncSystem：从 ECS PredictedTransformComponent 读取位置/朝向应用到 Actor。
             // [重构背景] PlayerController 不再直接修改 Actor.Position/Orientation，

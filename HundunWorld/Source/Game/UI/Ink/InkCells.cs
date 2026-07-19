@@ -11,8 +11,8 @@ namespace HundunWorld.Game.UI.Ink
     /// </summary>
     public class InkCell : ContainerControl
     {
-        /// <summary>格子背景色（rgba(0,0,0,0.35)）</summary>
-        private static readonly Color CellBackground = new Color(0f, 0f, 0f, 0.35f);
+        /// <summary>格子背景色（rgba(0,0,0,0.20)）— 降低透明度以减轻场景遮挡</summary>
+        private static readonly Color CellBackground = new Color(0f, 0f, 0f, 0.20f);
 
         /// <summary>格子默认尺寸</summary>
         private const float DefaultSize = 56f;

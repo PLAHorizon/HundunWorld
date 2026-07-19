@@ -813,10 +813,24 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                     this.GetPrimaryKeyLong(), entityId);
             }
 
+            // 修复 BUG（角色离线应立即从服务端下线）：
+            // 原实现在广播失败时保留实体并过期租约，等待孤儿清理定时器重试广播 Despawn。
+            // 这导致角色实体在 _simulatedEntities 中残留最多 100 秒（10 次 × 10 秒），
+            // 与"立即从服务端下线"的需求矛盾，且会引发以下问题：
+            //   1) 实体残留期间，TickAsync 仍会为该实体生成 Update delta，其他客户端持续看到该角色
+            //   2) AOI session 已被 RemoveSessionAsync 清理，但实体仍在 _simulatedEntities 中，状态不一致
+            //   3) CharacterGrain.GoOfflineAsync 已被调用并持久化 IsOnline=false，但实体仍在 ZoneShard 中，
+            //      外部观察"服务端已下线但实体仍在"，造成混乱
+            // 新方案：无论广播是否成功，都立即从 _simulatedEntities 移除实体。
+            //   - 广播成功：其他客户端立即收到 Despawn delta，角色模型被销毁
+            //   - 广播失败（无 fanout observer 或无其他在线玩家）：服务端立即下线，
+            //     其他客户端可能暂时看不到 Despawn delta，但客户端有超时清理机制兜底
+            //     （SnapshotApplySystem 会在实体长时间无更新时自动清理）
+            // 同时保留失败计数器用于诊断，但不再用于决定是否移除实体。
+            _simulatedEntities.Remove(entityId);
+
             if (broadcastOk)
             {
-                // 广播成功（至少有一个 fanout observer），安全移除实体。
-                _simulatedEntities.Remove(entityId);
                 _entityFailedDespawnAttempts.Remove(entityId);
                 _logger.LogInformation(
                     "ZoneShard {ShardId}: 注销实体 {EntityId}（Despawn 已广播）。",
@@ -824,37 +838,15 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             }
             else
             {
-                // 广播失败（无 fanout observer，订阅链路断开）：
-                // 保留实体在 _simulatedEntities 中，但立即过期租约，
-                // 让孤儿清理定时器（10 秒间隔）在 fanout 订阅恢复后重新调用本方法重试广播 Despawn。
-                // 这与 SyncDispatcherHostedService 的定期重新订阅机制配合，确保 Despawn 最终送达。
-                //
-                // 修复 BUG：增加失败计数，超过 MaxFailedDespawnAttempts（10 次）后强制移除实体，
-                // 即使无法广播 Despawn delta。这是兜底机制，防止 fanout 订阅永久断开时实体永久残留。
+                // 广播失败：记录错误日志，但实体已移除（立即从服务端下线）
                 _entityFailedDespawnAttempts.TryGetValue(entityId, out var failedAttempts);
                 failedAttempts++;
                 _entityFailedDespawnAttempts[entityId] = failedAttempts;
 
-                if (failedAttempts >= MaxFailedDespawnAttempts)
-                {
-                    // 超过最大重试次数，强制移除实体（即使无法广播 Despawn）。
-                    // 此时其他客户端可能仍能看到该角色，但服务端资源已释放。
-                    _simulatedEntities.Remove(entityId);
-                    _entityFailedDespawnAttempts.Remove(entityId);
-                    _logger.LogError(
-                        "ZoneShard {ShardId}: 实体 {EntityId} Despawn 广播连续失败 {Attempts} 次（已达上限 {Max}），" +
-                        "强制移除实体（可能存在客户端残留，但服务端资源已释放）。",
-                        this.GetPrimaryKeyLong(), entityId, failedAttempts, MaxFailedDespawnAttempts);
-                }
-                else
-                {
-                    leaving.LeaseExpiry = DateTime.UtcNow.AddSeconds(-1); // 立即过期
-                    _simulatedEntities[entityId] = leaving; // struct 赋值回字典
-                    _logger.LogWarning(
-                        "ZoneShard {ShardId}: 实体 {EntityId} Despawn 广播失败（无 fanout observer，第 {Attempt}/{Max} 次），" +
-                        "保留实体并立即过期租约，等待孤儿清理重试。",
-                        this.GetPrimaryKeyLong(), entityId, failedAttempts, MaxFailedDespawnAttempts);
-                }
+                _logger.LogError(
+                    "ZoneShard {ShardId}: 实体 {EntityId} Despawn 广播失败（累计 {Attempts} 次），" +
+                    "实体已立即从服务端移除（其他客户端可能暂时残留角色模型，由客户端超时清理机制兜底）。",
+                    this.GetPrimaryKeyLong(), entityId, failedAttempts);
             }
         }
         else
@@ -999,26 +991,34 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     /// <param name="kind">delta 种类（Spawn/Despawn）。</param>
     /// <param name="includeNewSession">是否给触发方 session 补发全场已存在实体的 Spawn（仅 Spawn 时有意义）。</param>
     /// <returns>
-    /// true 表示已存在 fanout observer（无论 AOI 过滤后是否有受众，Despawn 走全广播路径已推送）；
-    /// false 表示无 fanout observer（订阅断开），调用方应保留实体等待孤儿清理重试。
+    /// true 表示实体应从 _simulatedEntities 移除（服务端立即下线）：
+    ///   - Despawn 场景：无论是否成功广播，都返回 true，确保角色立即从服务端下线
+    ///   - Spawn 场景：仅当存在 fanout observer 时返回 true
+    /// false 表示实体不应被移除（仅 Spawn 场景：无 fanout observer 时不创建实体）。
     /// </returns>
     private async Task<bool> BroadcastEntityLifecycleAsync(ulong entityId, float x, float y, float z, EntityDeltaKind kind, bool includeNewSession)
     {
         if (_fanoutObservers.Count == 0)
         {
-            // Despawn 丢失是严重问题：会导致其他客户端离线角色永久残留。
-            // 提升日志级别为 Error，并记录 entityId 便于诊断。
+            // 修复 BUG（角色离线应立即从服务端下线）：
+            // 原实现在无 fanout observer 时返回 false，导致 Despawn 时实体被保留等待重试，
+            // 角色在服务端残留。这与"立即从服务端下线"的需求矛盾。
+            // 新方案：
+            //   - Despawn：返回 true，让实体立即从 _simulatedEntities 移除（服务端立即下线）
+            //     其他客户端可能暂时残留角色模型，由客户端超时清理机制兜底
+            //   - Spawn：返回 false，不创建实体（Spawn 需要确认 fanout 订阅链路正常）
             if (kind == EntityDeltaKind.Despawn)
             {
                 _logger.LogError(
-                    "ZoneShard {ShardId}: Despawn delta 丢失（无 fanout observer）！实体 {EntityId} Despawn 未广播，其他客户端可能看到角色残留。",
+                    "ZoneShard {ShardId}: Despawn delta 未广播（无 fanout observer）！实体 {EntityId} 仍立即从服务端移除（其他客户端可能暂时残留角色模型）。",
                     this.GetPrimaryKeyLong(), entityId);
+                return true;
             }
             else
             {
                 LogNoObserverWarn("BroadcastEntityLifecycle");
+                return false;
             }
-            return false;
         }
 
         // 1) 给触发方 session 之外的所有订阅者广播触发实体的 Spawn/Despawn。
@@ -1073,18 +1073,20 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                 string.Join(",", allSubscribersBeforeFilter), string.Join(",", allOtherSessionIds),
                 _fanoutObservers.Count);
 
-            // 关键修复：Despawn 必须实际送达至少一个其他客户端，才能认为广播成功。
-            // 若当前无其他在线 session（allOtherSessionIds.Length == 0），返回 false 让调用方
-            // 保留实体并过期租约，由孤儿清理定时器在后续有其他玩家上线或订阅恢复后重试广播。
-            // 原实现只要存在 fanout observer 就返回 true，导致无受众时实体被移除但 Despawn
-            // delta 从未发出，其他客户端看到离线角色永久残留。
+            // 修复 BUG（角色离线应立即从服务端下线）：
+            // 原实现在无其他在线玩家时返回 false，导致实体被保留等待重试，角色在服务端残留。
+            // 这与"立即从服务端下线"的需求矛盾。
+            // 新方案：无其他在线玩家时返回 true（不需要广播，但实体应立即移除）。
+            //   - 当前无其他在线玩家 → 不需要广播 Despawn delta
+            //   - 实体应立即从 _simulatedEntities 移除（由 UnregisterEntityAsync 处理）
+            //   - 后续有其他玩家上线时，他们不会看到该离线角色（因为实体已移除，不会收到 Spawn delta）
             if (kind == EntityDeltaKind.Despawn && allOtherSessionIds.Length == 0)
             {
-                _logger.LogError(
-                    "ZoneShard {ShardId}: [Despawn BUG 修复] Despawn 全广播目标为空！EntityId={EntityId}, " +
-                    "AllSubscribersCount={AllSubsCount}。保留实体并过期租约，等待孤儿清理重试。",
-                    this.GetPrimaryKeyLong(), entityId, allSubscribersBeforeFilter.Count);
-                return false;
+                _logger.LogInformation(
+                    "ZoneShard {ShardId}: [Despawn] 全广播目标为空（当前无其他在线玩家），" +
+                    "EntityId={EntityId} 实体将立即移除（无需广播 Despawn delta）。",
+                    this.GetPrimaryKeyLong(), entityId);
+                return true;
             }
 
             if (allOtherSessionIds.Length > 0)
@@ -1364,7 +1366,12 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             ulong? chunkKey = null;
             if (delta.Transform is { } t)
             {
-                chunkKey = WorldCoord.ToChunkMortonKey(t.X, t.Y, t.Z);
+                // delta.Transform 是 AuthTransformComponent，使用 Flax Y-up 坐标系（X=左右, Y=上下, Z=前后）。
+                // AOI 订阅侧（SyncPacketHandler.HandleHandshakeAsync）使用 ECS Z-up 坐标系（X=左右, Y=前后, Z=上下），
+                // WorldCoord.ToChunkMortonKey 不做坐标系转换，因此这里必须把 Flax Y-up 还原为 ECS Z-up（Y/Z 互换），
+                // 否则 Morton 编码与订阅侧不一致，GetSubscribers 始终返回空，Update delta 全部被静默丢弃，
+                // 导致"远程角色 Spawn 能看到但移动/旋转/跳跃不同步"。
+                chunkKey = WorldCoord.ToChunkMortonKey(t.X, t.Z, t.Y);
             }
             else
             {

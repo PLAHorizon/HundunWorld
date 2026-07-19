@@ -31,4 +31,12 @@ public struct PlayerInputComponent
 
     /// <summary>输入位掩码：移动方向、跳跃、技能 1..N。</summary>
     public uint InputBits;
+
+    /// <summary>
+    /// 本帧目标最大水平移动速度（米/秒）。由 PlayerController.WriteInputToEcs 根据 MoveSpeed
+    /// 及当前状态（Run/Sprint/Crouch 倍数）计算后写入。LocalSimulationSystem 据此调用
+    /// MovementFormula.Step，InputSendSystem 打包到 InputPacket.MaxSpeed 上送服务端。
+    /// 取值 &lt;= 0 时由 MovementFormula 内部兜底为 DefaultMaxSpeed（向后兼容）。
+    /// </summary>
+    public float MaxSpeed;
 }

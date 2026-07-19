@@ -5,6 +5,18 @@ using HundunWorld.Game.UI.StyleSystem;
 namespace HundunWorld.Game.UI.Ink
 {
     /// <summary>
+    /// 水墨面板变体。
+    /// </summary>
+    public enum InkPanelVariant
+    {
+        /// <summary>默认变体 — rgba(20,23,30,0.85) 85% 不透明背景</summary>
+        Default = 0,
+
+        /// <summary>轻量变体 — rgba(20,23,30,0.50) 50% 不透明背景,供战斗 HUD 等需要场景透出的场景使用</summary>
+        Lightweight = 1,
+    }
+
+    /// <summary>
     /// 半透明毛玻璃金线描边面板。
     /// 对应 CSS <c>.ink-panel</c>：半透明背景（Panel）+ 金色描边（BorderGold）。
     /// 通过基类 <see cref="ContainerControl"/> 的 BackgroundColor/BorderColor/BorderThickness
@@ -18,13 +30,53 @@ namespace HundunWorld.Game.UI.Ink
         /// <summary>边框厚度</summary>
         private float _borderThickness = 1f;
 
+        /// <summary>面板变体</summary>
+        private InkPanelVariant _variant = InkPanelVariant.Default;
+
+        /// <summary>
+        /// 面板变体。设置时根据变体更新背景色透明度。
+        /// Default = rgba(20,23,30,0.85),Lightweight = rgba(20,23,30,0.50)。
+        /// 边框保持 1px BorderGold 不变。
+        /// </summary>
+        public InkPanelVariant Variant
+        {
+            get => _variant;
+            set
+            {
+                _variant = value;
+                ApplyVariant();
+            }
+        }
+
         /// <summary>
         /// 构造函数：应用水墨面板默认样式。
         /// </summary>
         public InkPanel()
         {
-            BackgroundColor = InkWashTheme.Panel;
+            ApplyVariant();
             ClipChildren = true;
+        }
+
+        /// <summary>
+        /// 根据当前变体应用背景色。
+        /// </summary>
+        private void ApplyVariant()
+        {
+            switch (_variant)
+            {
+                case InkPanelVariant.Lightweight:
+                    // Lightweight:50% 不透明,场景半透可见
+                    BackgroundColor = new Color(
+                        InkWashTheme.Panel.R,
+                        InkWashTheme.Panel.G,
+                        InkWashTheme.Panel.B,
+                        0.50f);
+                    break;
+                default:
+                    // Default:85% 不透明(原状)
+                    BackgroundColor = InkWashTheme.Panel;
+                    break;
+            }
         }
 
         /// <inheritdoc />

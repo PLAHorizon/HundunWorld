@@ -186,8 +186,8 @@ public class SnapshotDeltaEncodingTests
         Assert.True(countAfterFull >= 2, "全量快照应包含所有实体");
 
         // 为实体 3001 提交输入使其移动（位置变化 > 0.01）。
-        // reportedEndX=0.1f 与权威回放一致（MaxSpeed=6m/s × 1/60s = 0.1m），
-        // clientSpeed=0.1/(1/60)=6m/s < HardSpeedCap=20，不触发 SpeedHack correction。
+        // InputPacket.MaxSpeed 未填（默认 0），服务端兜底用 DefaultMaxSpeed=6 m/s，
+        // reportedEndX=0.1f 与权威回放一致（6 m/s × 1/60s = 0.1m），不触发 correction。
         var input = new InputPacket { ClientTick = 1, MoveX = 1.0f, MoveY = 0 };
         await grain.SubmitInputAsync(entityId: 3001, input,
             reportedEndX: 0.1f, reportedEndY: 0, reportedEndZ: initialZ);

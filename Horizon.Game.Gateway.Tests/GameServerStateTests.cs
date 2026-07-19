@@ -65,7 +65,7 @@ namespace Horizon.Game.Gateway.Tests
         public void GameServerState_PlayerOnline_IncrementsCount()
         {
             var state = new GameServerState();
-            state.OnlinePlayers.Add(Guid.NewGuid());
+            state.OnlinePlayers.Add(1001L);
             Assert.Single(state.OnlinePlayers);
         }
 
@@ -73,9 +73,9 @@ namespace Horizon.Game.Gateway.Tests
         public void GameServerState_MultiplePlayersOnline_TracksAll()
         {
             var state = new GameServerState();
-            for (int i = 0; i < 10; i++)
+            for (long i = 1; i <= 10; i++)
             {
-                state.OnlinePlayers.Add(Guid.NewGuid());
+                state.OnlinePlayers.Add(1000L + i);
             }
             Assert.Equal(10, state.OnlinePlayers.Count);
         }
@@ -84,9 +84,9 @@ namespace Horizon.Game.Gateway.Tests
         public void GameServerState_DuplicatePlayerOnline_Ignored()
         {
             var state = new GameServerState();
-            var playerId = Guid.NewGuid();
-            state.OnlinePlayers.Add(playerId);
-            state.OnlinePlayers.Add(playerId); // duplicate
+            long characterId = 1001L;
+            state.OnlinePlayers.Add(characterId);
+            state.OnlinePlayers.Add(characterId); // duplicate
             Assert.Single(state.OnlinePlayers);
         }
 
@@ -94,8 +94,8 @@ namespace Horizon.Game.Gateway.Tests
         public void GameServerState_PlayerOffline_DecreasesCount()
         {
             var state = new GameServerState();
-            var player1 = Guid.NewGuid();
-            var player2 = Guid.NewGuid();
+            long player1 = 1001L;
+            long player2 = 1002L;
             state.OnlinePlayers.Add(player1);
             state.OnlinePlayers.Add(player2);
             state.OnlinePlayers.Remove(player1);
@@ -107,9 +107,9 @@ namespace Horizon.Game.Gateway.Tests
         public void GameServerState_PlayerCapacityCheck_WorksCorrectly()
         {
             var state = new GameServerState { MaxOnlineCount = 3 };
-            state.OnlinePlayers.Add(Guid.NewGuid());
-            state.OnlinePlayers.Add(Guid.NewGuid());
-            state.OnlinePlayers.Add(Guid.NewGuid());
+            state.OnlinePlayers.Add(1001L);
+            state.OnlinePlayers.Add(1002L);
+            state.OnlinePlayers.Add(1003L);
             Assert.Equal(state.MaxOnlineCount, state.OnlinePlayers.Count);
         }
 

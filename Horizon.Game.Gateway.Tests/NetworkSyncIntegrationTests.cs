@@ -185,7 +185,8 @@ public class NetworkSyncIntegrationTests
     }
 
     /// <summary>
-    /// 速度挂检测测试：输入导致客户端速度超过硬性上限，应标记为 SpeedHackSuspected。
+    /// 速度挂检测测试：客户端 InputPacket.MaxSpeed 超过硬性上限，应标记为 SpeedHackSuspected。
+    /// v6 协议：MaxSpeed 是合法字段，主判定为 input.MaxSpeed > HardSpeedCap。
     /// </summary>
     [Fact]
     public void MovementValidation_SpeedHackDetection_FlagsSpeedHack()
@@ -199,14 +200,16 @@ public class NetworkSyncIntegrationTests
         });
 
         var startPos = new WorldPosition(0, 0, 0);
-        var farDistance = MovementValidator.DefaultHardSpeedCap * Dt * 3 + 5f;
-        var clientEnd = new WorldPosition(farDistance, 0, 0);
+        // clientEnd 与 startPos 重合，避免触发 PredictionDrift；
+        // 速度判定完全由 input.MaxSpeed > HardSpeedCap 主导。
+        var clientEnd = new WorldPosition(0, 0, 0);
 
         var inputs = new InputPacket[]
         {
-            new() { ClientTick = 1, MoveX = 0, MoveY = 0 },
-            new() { ClientTick = 2, MoveX = 0, MoveY = 0 },
-            new() { ClientTick = 3, MoveX = 0, MoveY = 0 },
+            // MaxSpeed 显式超过 HardSpeedCap（200 m/s），触发 SpeedHackSuspected 主判定
+            new() { ClientTick = 1, MoveX = 0, MoveY = 0, MaxSpeed = MovementValidator.DefaultHardSpeedCap + 50f },
+            new() { ClientTick = 2, MoveX = 0, MoveY = 0, MaxSpeed = MovementValidator.DefaultHardSpeedCap + 50f },
+            new() { ClientTick = 3, MoveX = 0, MoveY = 0, MaxSpeed = MovementValidator.DefaultHardSpeedCap + 50f },
         };
 
         var result = validator.Validate(entityId: 1, startPos, 0, inputs, clientEnd, serverTick: 10);

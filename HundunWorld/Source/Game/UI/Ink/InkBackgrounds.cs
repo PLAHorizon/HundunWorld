@@ -105,6 +105,18 @@ namespace HundunWorld.Game.UI.Ink
         private static readonly Color Transparent = new Color(0f, 0f, 0f, 0f);
 
         /// <summary>
+        /// Scrim 半透明遮罩 alpha 值（默认 0.72）。
+        /// 控制 Draw 中第②步全屏暗色遮罩的不透明度，值越小越透出 3D 场景。
+        /// </summary>
+        public float ScrimOpacity { get; set; } = 0.72f;
+
+        /// <summary>
+        /// 是否绘制 BaseDefault 不透明底色（默认 false）。
+        /// 仅加载页等需要纯黑底色的场景设为 true；常规菜单场景设为 false 以透出 3D 场景。
+        /// </summary>
+        public bool DrawBaseFill { get; set; } = false;
+
+        /// <summary>
         /// 构造函数：初始化为透明、不裁剪子控件的全屏背景层。
         /// </summary>
         public InkBackgroundLayer()
@@ -120,20 +132,27 @@ namespace HundunWorld.Game.UI.Ink
             if (!Visible || Width <= 0f || Height <= 0f)
                 return;
 
-            // 1. 填充底色 — 深墨黑
-            Render2D.FillRectangle(new Rectangle(0, 0, Width, Height), InkWashTheme.BaseDefault);
+            // 1. 可选：填充 BaseDefault 不透明底色（加载页等纯黑场景才启用）
+            if (DrawBaseFill)
+            {
+                Render2D.FillRectangle(new Rectangle(0, 0, Width, Height), InkWashTheme.BaseDefault);
+            }
 
-            // 2. 鎏金径向渐变 — 左上角 (20%, 30%)，半径 50%
+            // 2. Scrim 全屏半透明遮罩 — rgba(8, 9, 14, ScrimOpacity)
+            var scrimColor = new Color(8f / 255f, 9f / 255f, 14f / 255f, ScrimOpacity);
+            Render2D.FillRectangle(new Rectangle(0, 0, Width, Height), scrimColor);
+
+            // 3. 鎏金径向渐变 — 左上角 (20%, 30%)，半径 50%
             var goldCenter = new Float2(Width * 0.2f, Height * 0.3f);
             float goldRadius = Mathf.Min(Width, Height) * 0.5f;
             InkRenderHelper.FillRadialGradient(goldCenter, goldRadius, GoldTint, Transparent);
 
-            // 3. 古铜径向渐变 — 右下角 (80%, 70%)，半径 55%
+            // 4. 古铜径向渐变 — 右下角 (80%, 70%)，半径 55%
             var bronzeCenter = new Float2(Width * 0.8f, Height * 0.7f);
             float bronzeRadius = Mathf.Min(Width, Height) * 0.55f;
             InkRenderHelper.FillRadialGradient(bronzeCenter, bronzeRadius, BronzeTint, Transparent);
 
-            // 4. 深墨黑径向渐变 — 底部中心 (50%, 100%)，半径 60%
+            // 5. 深墨黑径向渐变 — 底部中心 (50%, 100%)，半径 60%
             var abyssCenter = new Float2(Width * 0.5f, Height);
             float abyssRadius = Mathf.Min(Width, Height) * 0.6f;
             InkRenderHelper.FillRadialGradient(abyssCenter, abyssRadius, AbyssTint, Transparent);
@@ -149,11 +168,14 @@ namespace HundunWorld.Game.UI.Ink
     /// </summary>
     public class InkVignette : ContainerControl
     {
-        /// <summary>晕影边缘色（半透明黑）</summary>
-        private static readonly Color VignetteEdge = new Color(0f, 0f, 0f, 0.55f);
-
         /// <summary>晕影中心色（完全透明）</summary>
         private static readonly Color VignetteCenter = new Color(0f, 0f, 0f, 0f);
+
+        /// <summary>
+        /// 晕影边缘 alpha 值（默认 0.30，从原静态值 0.55 减弱）。
+        /// 控制 Draw 中径向渐变边缘的不透明度。
+        /// </summary>
+        public float EdgeOpacity { get; set; } = 0.30f;
 
         /// <summary>
         /// 构造函数：初始化为透明、不裁剪的晕影层。
@@ -174,7 +196,8 @@ namespace HundunWorld.Game.UI.Ink
 
             var center = new Float2(Width * 0.5f, Height * 0.5f);
             float radius = Mathf.Max(Width, Height) * 0.6f;
-            InkRenderHelper.FillRadialGradient(center, radius, VignetteCenter, VignetteEdge, 20);
+            var edgeColor = new Color(0f, 0f, 0f, EdgeOpacity);
+            InkRenderHelper.FillRadialGradient(center, radius, VignetteCenter, edgeColor, 20);
         }
     }
 
@@ -213,7 +236,7 @@ namespace HundunWorld.Game.UI.Ink
         private InkSplashVariant _variant = InkSplashVariant.Normal;
 
         /// <summary>整体不透明度（对应 CSS opacity: 0.3）</summary>
-        private float _opacity = 0.3f;
+        private float _opacity = 0.15f;
 
         /// <summary>
         /// 晕染变体。设置时同步更新控件尺寸与颜色参数。

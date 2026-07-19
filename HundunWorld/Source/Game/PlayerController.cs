@@ -563,6 +563,15 @@ namespace HundunWorld.Game
                 input.JumpPressedThisFrame = jumpPressedThisFrame;
                 _prevJumpPressed = jumpPressedRaw;
 
+                // [MoveSpeed 链路修复] 计算当帧目标最大水平速度并写入 PlayerInputComponent.MaxSpeed。
+                // 原实现只写归一化方向 MoveX/MoveY，LocalSimulationSystem 与服务端 MovementValidator
+                // 都固定用 MovementFormula.DefaultMaxSpeed=6 m/s 推进，导致 PlayerController.MoveSpeed
+                // （含 Run/Sprint/Crouch 倍数）完全不生效。
+                // 这里复用 CalculateTargetSpeed 的状态机逻辑（Run/Sprint/Crouch/Slide/AirControl），
+                // 但跳过其内部 Lerp 平滑（_currentVelocity），直接输出目标速度，
+                // 让 ECS 端按精确速度推进，避免客户端预测与服务端权威因平滑差异产生 correction。
+                input.MaxSpeed = ComputeCurrentMaxSpeed();
+
                 // [修复] ClientTick 由 LocalSimulationSystem（FixedUpdate）统一递增，
                 // 避免 OnUpdate 渲染帧率与 FixedUpdate 60Hz 不一致导致 tick 漂移。
                 // 此处仅写入输入数据，不修改 predicted.ClientTick。
@@ -776,6 +785,19 @@ namespace HundunWorld.Game
             if (inputDirection.LengthSquared <= 0.001f && !_isSliding)
                 return 0f;
 
+            return ComputeCurrentMaxSpeed();
+        }
+
+        /// <summary>
+        /// [MoveSpeed 链路修复] 计算当前状态下的目标最大水平移动速度（米/秒），
+        /// 不依赖 inputDirection（即使无输入也返回当前状态的速度上限）。
+        /// 供 PlayerInputComponent.MaxSpeed 使用，由 LocalSimulationSystem 与服务端 MovementValidator
+        /// 共同调用 MovementFormula.Step 时传入，保证两端按同一速度推进。
+        /// 状态机逻辑与 CalculateTargetSpeed 一致，但跳过"无输入返回 0"分支：
+        /// 静止时仍返回速度上限，由 MoveX/MoveY=0 自然保证不产生位移。
+        /// </summary>
+        private float ComputeCurrentMaxSpeed()
+        {
             float baseSpeed = MoveSpeed;
 
             // 根据状态调整速度

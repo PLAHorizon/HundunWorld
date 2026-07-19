@@ -204,6 +204,43 @@ namespace Horizon.Game.Gateway.Services
                         "角色 {CharacterId} 直接清理 Redis fingerprint 失败（依赖 TTL 5min 兜底过期）",
                         characterId);
                 }
+
+                // 5) 兜底：直接更新 GameServerGrain 持久化在线角色列表（修复严重 BUG 的核心兜底点）。
+                //    GoOfflineAsync 内部已调用 PlayerOfflineAsync，但若 grain 调用失败、超时、
+                //    或 CharacterGrain 因 State 异常提前 return false 而未真正调用 PlayerOfflineAsync，
+                //    持久化在线列表 OnlinePlayers 仍会残留该 characterId，导致角色离线后持久化
+                //    在线信息未被更新、角色永久残留服务端。这里直接调用 GameServerGrain 双保险。
+                //    默认服务器 ID = 1；调用失败不影响其他清理流程。
+                try
+                {
+                    var gameServerGrain = _clusterClient.GetGrain<IGameServerGrain>(1L);
+                    await gameServerGrain.PlayerOfflineAsync(characterId).ConfigureAwait(false);
+                }
+                catch (Exception gameServerEx)
+                {
+                    _logger.LogWarning(gameServerEx,
+                        "角色 {CharacterId} 兜底调用 GameServerGrain.PlayerOfflineAsync 失败（依赖 Monitor 兜底）",
+                        characterId);
+                }
+
+                // 6) 清理 ConnectionManager 中的角色映射，消除僵尸映射残留窗口。
+                //    修复 BUG：DespawnImmediatelyAsync 不清理 _characterConnections 映射，
+                //    会导致 GetConnectionByCharacterId 仍返回旧 conn（即使角色已下线）。
+                //    CharacterPresenceMonitor 的二次确认（conn==null || !conn.IsConnected）
+                //    会误判为"连接仍在线"，导致计数器持续累计或重复 Despawn。
+                //    虽然 GameNetworkServer 的 60 秒空闲超时会兜底清理连接，但此期间
+                //    Monitor 会持续误判。这里主动调用 UnregisterCharacter 清理映射，
+                //    确保 ConnectionManager 状态与 CharacterGrain/Redis 一致。
+                try
+                {
+                    _connectionManager.UnregisterCharacter(characterId);
+                }
+                catch (Exception connEx)
+                {
+                    _logger.LogWarning(connEx,
+                        "角色 {CharacterId} 清理 ConnectionManager 角色映射失败（依赖 60s 空闲超时兜底）",
+                        characterId);
+                }
             }
 
             _logger.LogInformation(
@@ -360,6 +397,34 @@ namespace Horizon.Game.Gateway.Services
                 {
                     _logger.LogWarning(fpEx,
                         "角色 {CharacterId} 直接清理 Redis fingerprint 失败（依赖 TTL 5min 兜底过期）",
+                        characterId);
+                }
+
+                // 5) 兜底：直接更新 GameServerGrain 持久化在线角色列表（与 DespawnImmediatelyAsync 一致）。
+                //    即使 GoOfflineAsync 调用失败、超时或返回 false，也确保持久化 OnlinePlayers 列表
+                //    中该 characterId 被移除，避免角色离线后持久化在线信息未更新、角色永久残留服务端。
+                try
+                {
+                    var gameServerGrain = _clusterClient.GetGrain<IGameServerGrain>(1L);
+                    await gameServerGrain.PlayerOfflineAsync(characterId).ConfigureAwait(false);
+                }
+                catch (Exception gameServerEx)
+                {
+                    _logger.LogWarning(gameServerEx,
+                        "角色 {CharacterId} 兜底调用 GameServerGrain.PlayerOfflineAsync 失败（依赖 Monitor 兜底）",
+                        characterId);
+                }
+
+                // 6) 清理 ConnectionManager 中的角色映射（与 DespawnImmediatelyAsync 一致）。
+                //    消除僵尸映射残留窗口，避免 CharacterPresenceMonitor 二次确认误判。
+                try
+                {
+                    _connectionManager.UnregisterCharacter(characterId);
+                }
+                catch (Exception connEx)
+                {
+                    _logger.LogWarning(connEx,
+                        "角色 {CharacterId} 清理 ConnectionManager 角色映射失败（依赖 60s 空闲超时兜底）",
                         characterId);
                 }
             }

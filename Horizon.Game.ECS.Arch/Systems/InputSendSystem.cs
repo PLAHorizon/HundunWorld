@@ -189,6 +189,7 @@ public sealed class InputSendSystem : ArchSystemBase
                 PredictedEndX = pred.X,
                 PredictedEndY = pred.Y,
                 PredictedEndZ = pred.Z,
+                MaxSpeed = input.MaxSpeed,
             };
 
             InputSendQueue.Instance.Enqueue(packet);

@@ -31,6 +31,16 @@ public sealed class ReconciliationSystem : ArchSystemBase
     /// <summary>累计修正次数（诊断用）。</summary>
     public int TotalCorrectionsApplied { get; private set; }
 
+    /// <summary>
+    /// 地面高度采样委托：与 <see cref="LocalSimulationSystem.GroundHeightSampler"/> 语义一致。
+    /// <para>
+    /// 回滚重播时同样需要应用地面约束：否则从服务端权威位置重放未确认输入时，
+    /// <see cref="MovementFormula.Step"/> 计算出的 Z 会穿透 Terrain，导致下一次 correction
+    /// 触发循环。委托为 null 时跳过约束（保持原行为，仅在未注入时使用）。
+    /// </para>
+    /// </summary>
+    public Func<float, float, float>? GroundHeightSampler { get; set; }
+
     /// <inheritdoc />
     public override void Update(World world, TimeSpan deltaTime)
     {
@@ -102,16 +112,93 @@ public sealed class ReconciliationSystem : ArchSystemBase
                 // 从修正后的权威位置重放所有未确认输入。
                 // 已确认输入已被 ProcessInputAck 清理，GetFromTick(0) 返回的是服务端尚未确认的输入，
                 // 这些输入对应的预测移动在吸附后失效，必须从权威位置重新应用。
+                // [MoveSpeed 链路修复] 重放时必须用 historyInput.MaxSpeed（与服务端权威回放一致），
+                // 否则重放会用 DefaultMaxSpeed=6 m/s 推进，与客户端原始预测速度不一致，
+                // 导致 reconciliation 后位置再次漂移触发 correction。
+                // [跳跃逻辑对齐] 重放必须复刻 LocalSimulationSystem 的跳跃逻辑：
+                //   - InputBits bit0=1 等价 JumpPressedThisFrame=true（PlayerController 已做边沿触发）
+                //   - 轻功（InputBits bit3=1）支持三段跳：jumpCount 1→5.5f / 2→4.5f / 3→3.5f
+                //   - 非轻功固定 5.5f，且 jumpCount=1
+                //   - 落地时（地面约束触发或 groundedEpsilon 判定）重置 jumpCount
+                // 否则重放结果与原始预测不一致，导致下一次 FixedUpdate 后再次触发 correction 循环。
                 var unconfirmedInputs = InputHistoryBuffer.Instance.GetFromTick(0);
+                var sampler = GroundHeightSampler;
+                int jumpCount = 0;
+                bool isGrounded = true;
+                const float groundedEpsilon = 0.001f;
+                const int maxQinggongJumps = 3;
+                const int maxNormalJumps = 1;
                 foreach (var historyInput in unconfirmedInputs)
                 {
-                    var jumpImpulse = ((historyInput.InputBits & 0x1) != 0) ? 5.5f : 0f;
+                    var isQinggongJump = (historyInput.InputBits & (1u << 3)) != 0;
+                    var isJumpPressed = (historyInput.InputBits & 0x1) != 0;
 
+                    float jumpImpulse;
+                    if (isJumpPressed)
+                    {
+                        if (isGrounded)
+                            jumpCount = 0;
+
+                        if (isQinggongJump)
+                        {
+                            jumpCount++;
+                            jumpImpulse = jumpCount switch
+                            {
+                                1 => 5.5f,
+                                2 => 4.5f,
+                                3 => 3.5f,
+                                _ => 0f
+                            };
+                            if (jumpCount > maxQinggongJumps)
+                                jumpImpulse = 0f;
+                        }
+                        else
+                        {
+                            jumpCount = 1;
+                            jumpImpulse = 5.5f;
+                        }
+                    }
+                    else
+                    {
+                        jumpImpulse = 0f;
+                        if (!isQinggongJump)
+                            jumpCount = 0;
+                    }
+
+                    var prevZ = pred.Z;
                     var (nx, ny, nz, nvz) = MovementFormula.Step(
                         pred.X, pred.Y, pred.Z, pred.Vz,
                         historyInput.MoveX, historyInput.MoveY, jumpImpulse,
                         1f / 60f,
-                        maxSpeed: 0f);
+                        maxSpeed: historyInput.MaxSpeed);
+
+                    // 地面碰撞检测：与 LocalSimulationSystem 一致，重放时也应用地面约束。
+                    // 防止从服务端权威位置重放的预测位置穿透 Terrain。
+                    if (sampler != null)
+                    {
+                        var groundZ = sampler(nx, ny);
+                        if (!float.IsNaN(groundZ) && nz < groundZ)
+                        {
+                            nz = groundZ;
+                            nvz = 0f;
+                            isGrounded = true;
+                            jumpCount = 0;
+                        }
+                        else
+                        {
+                            var dz = MathF.Abs(nz - prevZ);
+                            isGrounded = dz < groundedEpsilon && nvz <= 0f;
+                            if (isGrounded)
+                                jumpCount = 0;
+                        }
+                    }
+                    else
+                    {
+                        var dz = MathF.Abs(nz - prevZ);
+                        isGrounded = dz < groundedEpsilon && nvz <= 0f;
+                        if (isGrounded)
+                            jumpCount = 0;
+                    }
 
                     pred.X = nx;
                     pred.Y = ny;

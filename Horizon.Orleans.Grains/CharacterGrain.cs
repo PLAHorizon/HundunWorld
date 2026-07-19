@@ -287,15 +287,11 @@ namespace Horizon.Orleans.Grains
                 _isOnline = true;
                 _characterState.State.CharacterInfo.LastLoginTime = DateTime.Now;
 
-                // 4. 在数据库中更新最后登录时间
-                await UpdateCharacterLastLoginTime(_characterState.State.CharacterInfo.CharacterId);
-
-                // 5. 保存 grain 状态（仅持久化 CharacterInfo 等业务数据，IsOnline 不再持久化）
-                await _characterState.WriteStateAsync();
-
-                // 6. 设置 Redis presence key（权威在线状态，TTL 90 秒）
-                // gatewayId/connectionId 此处传空字符串，由 Gateway 侧在连接建立时更新真实值。
-                // 如果 Redis 不可用，SetOnlineAsync 内部降级返回 false，不影响进入游戏流程。
+                // 4. 优先设置 Redis presence key（权威在线状态，TTL 90 秒）
+                //    放在 WriteStateAsync 之前：即使后续业务数据持久化失败，Redis 在线状态已设置，
+                //    避免角色"进入游戏但 IsOnlineAsync 返回 false"的不一致状态。
+                //    gatewayId/connectionId 此处传空字符串，由 Gateway 侧在连接建立时更新真实值。
+                //    如果 Redis 不可用，SetOnlineAsync 内部降级返回 false，不影响进入游戏流程。
                 var presenceSet = await _presenceStore.SetOnlineAsync((long)CharacterId, string.Empty, string.Empty);
                 if (!presenceSet)
                 {
@@ -303,6 +299,29 @@ namespace Horizon.Orleans.Grains
                         "角色 {CharacterId} Redis presence 设置失败（Redis 可能不可用），仅使用内存状态。",
                         CharacterId);
                 }
+
+                // 4.5 同步更新 GameServerGrain 持久化在线角色列表（修复严重 BUG 的核心修复点）。
+                //     原代码 GameServerState.OnlinePlayers 虽被 [PersistentState] 自动持久化，
+                //     但业务层从未调用 PlayerOnlineAsync 维护此列表，导致角色离线后持久化在线信息
+                //     一直未更新、角色永久残留服务端。此处显式调用以建立持久化在线列表的写入路径。
+                //     默认服务器 ID = 1；调用失败不应阻断进入游戏主流程，仅记录告警。
+                try
+                {
+                    var gameServerGrain = GrainFactory.GetGrain<IGameServerGrain>(1L);
+                    await gameServerGrain.PlayerOnlineAsync((long)CharacterId);
+                }
+                catch (Exception gameServerEx)
+                {
+                    _logger.LogWarning(gameServerEx,
+                        "更新 GameServerGrain 在线列表失败（不影响进入游戏流程）: CharacterId={CharacterId}",
+                        CharacterId);
+                }
+
+                // 5. 在数据库中更新最后登录时间
+                await UpdateCharacterLastLoginTime(_characterState.State.CharacterInfo.CharacterId);
+
+                // 6. 保存 grain 状态（仅持久化 CharacterInfo 等业务数据，IsOnline 不再持久化）
+                await _characterState.WriteStateAsync();
 
                 _logger.LogInformation("角色成功进入游戏: {CharacterName} (ID: {CharacterId})",
                     _characterState.State.CharacterInfo.CharacterName,
@@ -364,29 +383,58 @@ namespace Horizon.Orleans.Grains
 
         public async Task<bool> GoOfflineAsync()
         {
-            if (_characterState.State.CharacterInfo == null) return false;
-
-            // 关键修复：IsOnline 不再持久化，只更新内存缓存。
-            // 权威在线状态由 Redis presence key 管理，离线后立即清理 Redis presence key。
+            // 关键修复（严重 BUG 根因）：原实现在 CharacterInfo == null 时直接 return false，
+            // 导致 Redis presence key / fingerprint key 不被清理、DeactivateOnIdle 不被调用，
+            // 角色离线后仍以"在线"状态残留服务端长达 presence TTL（90 秒）甚至更久。
+            //
+            // 正确行为：无论 CharacterInfo 是否加载，都必须清理 Redis 权威在线状态，
+            // 并标记 grain 停用。CharacterInfo == null 时仅跳过业务数据持久化。
             _isOnline = false;
 
-            // 清理 Redis presence key（权威在线状态）
-            // 即使 Redis 不可用，SetOfflineAsync 内部降级返回 false，不影响 grain 下线流程。
-            var presenceCleared = await _presenceStore.SetOfflineAsync((long)CharacterId);
-            if (!presenceCleared)
+            var hasCharacterInfo = _characterState.State?.CharacterInfo != null;
+            var characterName = _characterState.State?.CharacterInfo?.CharacterName ?? "<未加载>";
+
+            // 1) 清理 Redis presence key（权威在线状态，最高优先级）
+            //    即使 Redis 不可用，SetOfflineAsync 内部降级返回 false，不影响后续清理步骤。
+            try
             {
-                _logger.LogWarning(
-                    "角色 {CharacterId} Redis presence 清理失败（Redis 可能不可用），仅使用内存状态。",
+                var presenceCleared = await _presenceStore.SetOfflineAsync((long)CharacterId);
+                if (!presenceCleared)
+                {
+                    _logger.LogWarning(
+                        "角色 {CharacterId} Redis presence 清理失败（Redis 可能不可用），依赖 Monitor 兜底。",
+                        CharacterId);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "角色 {CharacterId} Redis presence 清理异常，依赖 Monitor 兜底。",
                     CharacterId);
             }
 
-            // 修复 BUG：清理 Redis fingerprint key（character:fingerprint:{id}，TTL 5min）。
-            // fingerprint 是网关侧防止同一角色重复登录的锁，离线时必须立即清理，
-            // 否则角色离线后 Redis 中仍残留 fingerprint key 长达 5 分钟，
-            // 外部观察"角色在线信息未及时更新"，且会导致角色重新上线时被指纹拦截（误判已在线）。
-            // 原实现只在网关侧 PlayerDespawnScheduler 清理 fingerprint，但 Silo 端的
-            // ZoneShardGrain.TryGoOfflineAsync 兜底路径不经过 PlayerDespawnScheduler，
-            // 因此 GoOfflineAsync 本身必须清理 fingerprint。
+            // 1.5) 立即更新 GameServerGrain 持久化在线列表（修复严重 BUG 的核心修复点）。
+            //      原代码 GameServerState.OnlinePlayers 由 [PersistentState] 自动持久化，
+            //      但业务层从未调用 PlayerOfflineAsync，导致角色离线后持久化在线信息从未被更新、
+            //      角色永久残留服务端。此处显式调用，确保"角色离线后立即更新持久信息"。
+            //      调用失败不应阻断后续清理（fingerprint、WriteState），仅记录告警，
+            //      兜底由 PlayerDespawnScheduler.DespawnImmediatelyAsync 与 CharacterPresenceMonitor 完成。
+            try
+            {
+                var gameServerGrain = GrainFactory.GetGrain<IGameServerGrain>(1L);
+                await gameServerGrain.PlayerOfflineAsync((long)CharacterId);
+            }
+            catch (Exception gameServerEx)
+            {
+                _logger.LogWarning(gameServerEx,
+                    "更新 GameServerGrain 在线列表失败（不影响后续离线清理流程）: CharacterId={CharacterId}",
+                    CharacterId);
+            }
+
+            // 2) 清理 Redis fingerprint key（character:fingerprint:{id}，TTL 5min）。
+            //    fingerprint 是网关侧防止同一角色重复登录的锁，离线时必须立即清理，
+            //    否则角色离线后 Redis 中仍残留 fingerprint key 长达 5 分钟，
+            //    外部观察"角色在线信息未及时更新"，且会导致角色重新上线时被指纹拦截（误判已在线）。
             try
             {
                 await _fingerprintService.ReleaseAsync((long)CharacterId);
@@ -398,12 +446,31 @@ namespace Horizon.Orleans.Grains
                     CharacterId);
             }
 
-            // 持久化 CharacterInfo 等业务数据（不含 IsOnline）
-            await _characterState.WriteStateAsync();
+            // 3) 持久化 CharacterInfo 等业务数据（不含 IsOnline，IsOnline 已从 CharacterState 移除）。
+            //    仅在 CharacterInfo 已加载时执行，避免持久化空状态覆盖已有数据。
+            if (hasCharacterInfo)
+            {
+                try
+                {
+                    await _characterState.WriteStateAsync();
+                }
+                catch (Exception stateEx)
+                {
+                    _logger.LogWarning(stateEx,
+                        "角色 {CharacterId} 持久化业务数据失败（不影响在线状态清理）",
+                        CharacterId);
+                }
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "角色 {CharacterId} GoOfflineAsync 时 CharacterInfo 为 null，跳过业务数据持久化（仍已清理 Redis 在线状态）",
+                    CharacterId);
+            }
 
-            _logger.LogInformation("角色 '{CharacterName}'（{CharacterId}）已下线。", _characterState.State.CharacterInfo.CharacterName, CharacterId);
+            _logger.LogInformation("角色 '{CharacterName}'（{CharacterId}）已下线。", characterName, CharacterId);
 
-            // Deactivate the grain to conserve resources
+            // 4) 标记 grain 停用以释放资源（必须执行，否则 grain 保持激活态）
             DeactivateOnIdle();
 
             return true;

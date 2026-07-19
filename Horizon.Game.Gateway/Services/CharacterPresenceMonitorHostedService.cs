@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Horizon.Game.Core.Sim.Server;
@@ -8,21 +9,27 @@ using Microsoft.Extensions.Logging;
 namespace Horizon.Game.Gateway.Services
 {
     /// <summary>
-    /// 角色在线状态监控后台服务（双轨制架构的清理兜底）。<br/>
-    /// 每 10 秒扫描 Redis presence 中过期的心跳 key（超过 90 秒未心跳），
-    /// 对每个过期角色二次确认 <see cref="IConnectionManager"/> 中连接确实已断开后，
-    /// 调用 <see cref="PlayerDespawnScheduler.DespawnImmediatelyAsync"/> 触发 Despawn + GoOfflineAsync。<br/>
+    /// 角色在线状态监控后台服务（双轨制架构的修复兜底）。<br/>
+    /// 每 10 秒扫描 Redis presence 中 TTL 过低的 key（TTL &lt; 30 秒），
+    /// 对每个角色进行二次确认：<br/>
+    /// - 若 <see cref="IConnectionManager"/> 中连接仍在线 → 刷新 presence（修复），跳过 Despawn<br/>
+    /// - 若连接已断开 → 调用 <see cref="PlayerDespawnScheduler.DespawnImmediatelyAsync"/> 触发 Despawn<br/>
     /// <para>
-    /// <b>设计目的</b>：弥补 ConnectionManager 的 KeepAlive 在极端场景下未能及时触发清理的缺陷，
-    /// 例如：<br/>
-    /// - 服务器进程崩溃后重启，原连接的 KeepAlive 已失效，但 Redis presence key 因 TTL 未过期仍残留<br/>
-    /// - 网络抖动导致 KeepAlive 误判，但客户端实际已断线<br/>
-    /// - GameNetworkServer.CleanupConnectionAsync 异常未完成 Despawn<br/>
-    /// 该服务作为最终兜底，确保过期的在线状态一定被清理。
+    /// <b>设计目的</b>：作为 Redis presence 的修复机制，而非断线检测机制。
+    /// 断线检测由 <see cref="GameNetworkServer.CheckDisconnectedConnections"/>（每 5 秒，
+    /// TCP Online 判定 + 空闲超时 60 秒）和租约续约机制（每 20 秒，90 秒租约）负责。<br/>
+    /// 本服务仅在 Redis 异常导致 presence TTL 下降时修复 presence，避免误判。
     /// </para>
     /// <para>
     /// <b>降级策略</b>：Redis 不可用时 <see cref="ICharacterPresenceStore.GetExpiredCharactersAsync"/>
-    /// 返回空列表，服务空转，不影响主业务。ConnectionManager 的 KeepAlive 仍作为主清理机制。
+    /// 返回空列表，服务空转，不影响主业务。
+    /// </para>
+    /// <para>
+    /// <b>版本历史</b>：此版本恢复为简单修复机制（参考 2269294 版本的稳定实现）。
+    /// 之前的复杂版本（阶段 1/阶段 2、_staleHeartbeatCounts 计数器）在修复"网关运行时
+    /// 离线角色无法正常离线"BUG 时引入了新问题：对正常在线角色的误判 Despawn。
+    /// 该 BUG 的根因已在 <see cref="RedisCharacterPresenceStore.GetExpiredCharactersAsync"/>
+    /// 中通过 TTL 检测（而非 lastHeartbeat 比较）解决，Monitor 不需要复杂逻辑。
     /// </para>
     /// </summary>
     public class CharacterPresenceMonitorHostedService : BackgroundService
@@ -53,7 +60,7 @@ namespace Horizon.Game.Gateway.Services
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation(
-                "CharacterPresenceMonitorHostedService 启动，扫描间隔 {Interval}s，心跳超时 {Timeout}s",
+                "CharacterPresenceMonitorHostedService 启动（修复模式），扫描间隔 {Interval}s，心跳超时 {Timeout}s",
                 ScanIntervalSeconds, HeartbeatTimeout.TotalSeconds);
 
             // 启动延迟，避免与 Silo 初始化竞争
@@ -67,7 +74,6 @@ namespace Horizon.Game.Gateway.Services
                 }
                 catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
                 {
-                    // 正常关闭
                     break;
                 }
                 catch (Exception ex)
@@ -89,15 +95,25 @@ namespace Horizon.Game.Gateway.Services
         }
 
         /// <summary>
-        /// 扫描过期 presence 并清理。<br/>
-        /// 对每个过期角色进行二次确认（ConnectionManager 中连接确实不在线）后触发 Despawn。
+        /// 扫描过期 presence 并修复/清理。<br/>
+        /// 对每个 TTL 过低的角色进行二次确认后决定修复还是 Despawn。
         /// </summary>
+        /// <remarks>
+        /// <b>核心设计原则（参考 2269294 稳定版本）</b>：<br/>
+        /// 本服务是 <b>修复机制</b>，不是检测机制。断线检测由 CheckDisconnectedConnections
+        /// （每 5 秒，TCP Online + 空闲超时 60 秒）负责。<br/>
+        /// - 若连接仍在线（conn.IsConnected=true）→ 刷新 presence（修复），跳过 Despawn<br/>
+        /// - 若连接已断开（conn==null 或 !conn.IsConnected）→ 触发 Despawn<br/>
+        /// 僵尸连接（TCP 半关闭导致 conn.IsConnected=true 但客户端实际已断线）由
+        /// CheckDisconnectedConnections 的空闲超时检测（LastActiveTime > 60 秒）兜底清理。
+        /// </remarks>
         private async Task ScanAndCleanupExpiredAsync(CancellationToken stoppingToken)
         {
             var expiredCharacters = await _presenceStore.GetExpiredCharactersAsync(HeartbeatTimeout).ConfigureAwait(false);
+
             if (expiredCharacters.Count == 0) return;
 
-            _logger.LogWarning("检测到 {Count} 个心跳过期的角色，开始清理", expiredCharacters.Count);
+            _logger.LogWarning("检测到 {Count} 个 TTL 过低的角色，开始修复/清理", expiredCharacters.Count);
 
             foreach (var (characterId, lastHeartbeat) in expiredCharacters)
             {
@@ -105,31 +121,30 @@ namespace Horizon.Game.Gateway.Services
 
                 try
                 {
-                    // 二次确认：ConnectionManager 中该角色的连接是否真的不在线。
-                    // 防止误清理"心跳过期但连接实际仍活跃"的角色（例如心跳延迟但 TCP 未断）。
                     var conn = _connectionManager.GetConnectionByCharacterId(characterId);
                     if (conn != null && conn.IsConnected)
                     {
-                        // 连接仍在线，但 presence key 过期 —— 可能是心跳处理逻辑异常，刷新 presence 并跳过 Despawn
+                        // 连接仍在线 → 修复 presence（刷新 TTL + lastHeartbeat）
+                        // 不触发 Despawn：真正的断线检测由 CheckDisconnectedConnections 负责
                         _logger.LogWarning(
-                            "角色 {CharacterId} presence 过期但 ConnectionManager 显示仍在线，刷新 presence 并跳过 Despawn（lastHeartbeat={LastHeartbeat}）",
+                            "角色 {CharacterId} presence TTL 过低但连接仍在线，刷新 presence 并跳过 Despawn（lastHeartbeat={LastHeartbeat}）",
                             characterId, lastHeartbeat.ToString("yyyy-MM-dd HH:mm:ss"));
                         await _presenceStore.RefreshHeartbeatAsync(characterId).ConfigureAwait(false);
                         continue;
                     }
 
+                    // 连接已断开 → 触发 Despawn
                     var offlineSince = DateTime.UtcNow - lastHeartbeat;
                     _logger.LogWarning(
-                        "角色 {CharacterId} 心跳过期 {Seconds:F1}s，触发 DespawnImmediatelyAsync",
+                        "角色 {CharacterId} presence TTL 过低且连接已断开（{Seconds:F1}s），触发 DespawnImmediatelyAsync",
                         characterId, offlineSince.TotalSeconds);
 
-                    // 同步执行 Despawn（内部会调用 GoOfflineAsync 清理 Redis presence + grain 状态）
                     await _despawnScheduler.DespawnImmediatelyAsync(characterId).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex,
-                        "清理过期角色 {CharacterId} 时发生异常，将继续处理下一个", characterId);
+                        "修复/清理角色 {CharacterId} 时发生异常，将继续处理下一个", characterId);
                 }
             }
         }

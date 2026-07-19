@@ -30,8 +30,39 @@ namespace Horizon.Orleans.Grains
         {
             _logger.LogInformation("GameServerGrain {GrainKey} activating.", this.GetPrimaryKeyLong());
 
-            if (_serverState.State.OnlinePlayers == null)
-                _serverState.State.OnlinePlayers = new HashSet<Guid>();
+            // 修复 BUG：CustomGrainStorageSerializer 反序列化失败时返回 default(T) = null，
+            // 导致 _serverState.State == null，后续访问 .OnlinePlayers 抛 NRE，grain 激活失败。
+            // 一旦 grain 激活失败，所有 PlayerOnlineAsync/PlayerOfflineAsync 调用都会失败，
+            // OnlinePlayers 永远不被修改，Redis 中残留旧数据，角色"无法正常离线"。
+            // 参考 CharacterGrain.OnActivateAsync 的 State == null 检查逻辑。
+            if (_serverState.State == null)
+            {
+                _logger.LogError(
+                    "GameServerGrain {GrainKey} 激活时 State 为 null（持久化反序列化失败或新部署未初始化），" +
+                    "初始化为默认实例并持久化覆盖可能损坏的旧数据",
+                    this.GetPrimaryKeyLong());
+                _serverState.State = new GameServerState();
+                _serverState.State.OnlinePlayers = new HashSet<long>();
+                await _serverState.WriteStateAsync();
+            }
+            else if (_serverState.State.OnlinePlayers == null)
+            {
+                // 兜底初始化：旧版本持久化数据中 OnlinePlayers 可能缺失（或为 null）。
+                // 修复 BUG：原实现只重置内存字段而不调用 WriteStateAsync，导致 Redis 中仍残留
+                // 旧的 OnlinePlayers 数据。PlayerOfflineAsync 的 Remove 会失败（幂等返回 true 不持久化），
+                // 形成"OnlinePlayers 永远残留 stale characterId"的死锁。
+                _logger.LogWarning(
+                    "GameServerGrain {GrainKey} 激活时 OnlinePlayers 为 null，已兜底初始化为空集合并持久化覆盖旧数据",
+                    this.GetPrimaryKeyLong());
+                _serverState.State.OnlinePlayers = new HashSet<long>();
+                await _serverState.WriteStateAsync();
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "GameServerGrain {GrainKey} 激活时持久化在线列表大小: OnlineCount={OnlineCount}",
+                    this.GetPrimaryKeyLong(), _serverState.State.OnlinePlayers.Count);
+            }
 
             await base.OnActivateAsync(cancellationToken);
         }
@@ -204,66 +235,90 @@ namespace Horizon.Orleans.Grains
             }
         }
 
-        public async Task<bool> PlayerOnlineAsync(Guid playerId)
+        public async Task<bool> PlayerOnlineAsync(long characterId)
         {
+            // 防御性校验：拒绝非法 characterId（防止 0 或负数污染 OnlinePlayers）
+            if (characterId <= 0)
+            {
+                _logger.LogWarning("拒绝非法角色 ID 上线: CharacterId={CharacterId}", characterId);
+                return false;
+            }
+
             try
             {
                 var state = _serverState.State;
 
                 if (state.Status == (int)ServerStatus.Maintenance)
                 {
-                    _logger.LogWarning("服务器维护中，无法登录: PlayerId={PlayerId}", playerId);
+                    _logger.LogWarning("服务器维护中，无法登录: CharacterId={CharacterId}", characterId);
                     return false;
                 }
 
                 if (state.OnlinePlayers.Count >= state.MaxOnlineCount)
                 {
-                    _logger.LogWarning("服务器已满: PlayerId={PlayerId}", playerId);
+                    _logger.LogWarning("服务器已满: CharacterId={CharacterId}, OnlineCount={OnlineCount}, MaxOnlineCount={MaxOnlineCount}",
+                        characterId, state.OnlinePlayers.Count, state.MaxOnlineCount);
                     return false;
                 }
 
-                if (!state.OnlinePlayers.Add(playerId))
+                if (!state.OnlinePlayers.Add(characterId))
                 {
-                    _logger.LogDebug("玩家已在线: PlayerId={PlayerId}", playerId);
+                    // 幂等：角色已在在线列表中，直接返回成功
+                    _logger.LogDebug("角色已在持久化在线列表中（幂等上线）: CharacterId={CharacterId}, OnlineCount={OnlineCount}",
+                        characterId, state.OnlinePlayers.Count);
+                    return true;
+                }
+
+                var previousOnlineCount = state.OnlinePlayers.Count - 1;
+                state.LastUpdateTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                await _serverState.WriteStateAsync();
+
+                _logger.LogInformation(
+                    "角色上线已持久化: CharacterId={CharacterId}, PreviousOnlineCount={PreviousOnlineCount}, OnlineCount={OnlineCount}, MaxOnlineCount={MaxOnlineCount}",
+                    characterId, previousOnlineCount, state.OnlinePlayers.Count, state.MaxOnlineCount);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "角色上线失败: CharacterId={CharacterId}", characterId);
+                throw;
+            }
+        }
+
+        public async Task<bool> PlayerOfflineAsync(long characterId)
+        {
+            // 防御性校验：拒绝非法 characterId
+            if (characterId <= 0)
+            {
+                _logger.LogWarning("拒绝非法角色 ID 下线: CharacterId={CharacterId}", characterId);
+                return false;
+            }
+
+            try
+            {
+                var state = _serverState.State;
+
+                if (!state.OnlinePlayers.Remove(characterId))
+                {
+                    // 幂等：角色已不在持久化在线列表中。
+                    // 返回 true（最终状态一致），避免兜底调用方（DespawnScheduler/Monitor）
+                    // 因重复调用而误判失败、触发不必要的重试或告警。
+                    _logger.LogDebug("角色未在持久化在线列表中（幂等下线）: CharacterId={CharacterId}, OnlineCount={OnlineCount}",
+                        characterId, state.OnlinePlayers.Count);
                     return true;
                 }
 
                 state.LastUpdateTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 await _serverState.WriteStateAsync();
 
-                _logger.LogDebug("玩家上线: PlayerId={PlayerId}, OnlineCount={OnlineCount}",
-                    playerId, state.OnlinePlayers.Count);
+                _logger.LogInformation(
+                    "角色下线已持久化: CharacterId={CharacterId}, OnlineCount={OnlineCount}, MaxOnlineCount={MaxOnlineCount}",
+                    characterId, state.OnlinePlayers.Count, state.MaxOnlineCount);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "玩家上线失败: PlayerId={PlayerId}", playerId);
-                throw;
-            }
-        }
-
-        public async Task<bool> PlayerOfflineAsync(Guid playerId)
-        {
-            try
-            {
-                var state = _serverState.State;
-
-                if (!state.OnlinePlayers.Remove(playerId))
-                {
-                    _logger.LogDebug("玩家未在线: PlayerId={PlayerId}", playerId);
-                    return false;
-                }
-
-                state.LastUpdateTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-                await _serverState.WriteStateAsync();
-
-                _logger.LogDebug("玩家下线: PlayerId={PlayerId}, OnlineCount={OnlineCount}",
-                    playerId, state.OnlinePlayers.Count);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "玩家下线失败: PlayerId={PlayerId}", playerId);
+                _logger.LogError(ex, "角色下线失败: CharacterId={CharacterId}", characterId);
                 throw;
             }
         }

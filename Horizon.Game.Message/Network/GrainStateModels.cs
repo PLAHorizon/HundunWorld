@@ -1085,11 +1085,16 @@ namespace Horizon.Game.Message.Network
         public long LastUpdateTime { get; set; }
 
         /// <summary>
-        /// 在线玩家ID集合
+        /// 在线角色ID集合（持久化）。<br/>
+        /// 修复 BUG（角色离线后未能从服务端移除）：原字段类型为 HashSet&lt;Guid&gt;，
+        /// 但业务层从未调用 PlayerOnlineAsync/PlayerOfflineAsync 维护此列表，
+        /// 导致角色离线后持久化在线信息未更新、角色永久残留。<br/>
+        /// 现改为 HashSet&lt;long&gt; 存储 characterId，由 CharacterGrain.EnterGameAsync
+        /// 和 GoOfflineAsync 维护，PlayerDespawnScheduler 兜底调用，确保离线立即移除。
         /// </summary>
         [MemoryPackOrder(10)]
         [Id(10)]
-        public HashSet<Guid> OnlinePlayers { get; set; } = new();
+        public HashSet<long> OnlinePlayers { get; set; } = new();
     }
 
     #endregion

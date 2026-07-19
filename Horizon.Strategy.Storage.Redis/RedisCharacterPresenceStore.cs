@@ -246,7 +246,20 @@ namespace Horizon.Strategy.Storage.Redis
             {
                 var endpoints = _redisConnection.GetEndPoints();
                 var pattern = KeyPrefix + "*";
-                var thresholdTicks = DateTime.UtcNow.Subtract(heartbeatTimeout).Ticks;
+
+                // 修复核心 BUG：原实现使用 lastHeartbeat 字段判断过期，但 RefreshHeartbeatAsync 同时刷新
+                // lastHeartbeat 字段和 TTL（90 秒），导致两者永远同步。当 key 存在时 lastHeartbeat < now - 90s
+                // 永远为 false，GetExpiredCharactersAsync 永远返回空列表，CharacterPresenceMonitorHostedService
+                // 从未触发清理 —— 这是"网关运行时离线角色无法正常离线"BUG 的深层根因。
+                //
+                // 修复方案：使用 TTL 剩余时间（KeyTimeToLiveAsync）判断过期。
+                // - TTL 默认 90 秒，心跳间隔 30 秒，正常客户端每 30 秒刷新一次 TTL
+                // - 如果 TTL 剩余 < 30 秒，说明已超过 60 秒未心跳（90 - 30 = 60），客户端可能已断线
+                // - 30 秒阈值 = 扫描间隔 10 秒 × MaxStaleHeartbeatCount 3，确保有足够时间累计 count 并强制 Despawn
+                // - 总清理时长 = 60 秒（等 TTL 降到 30）+ 30 秒（累计 count）= 90 秒，与原 heartbeatTimeout 语义一致
+                var staleTtlThreshold = TimeSpan.FromSeconds(30);
+
+                var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
 
                 foreach (var endpoint in endpoints)
                 {
@@ -257,18 +270,21 @@ namespace Horizon.Strategy.Storage.Redis
                     {
                         if (!TryParseCharacterId(redisKey, out var characterId)) continue;
 
-                        // 检查 TTL，已过期的不会出现在扫描结果中，但仍可能因时钟漂移残留极短时间
-                        // 重点检查 lastHeartbeat 字段是否超过阈值
-                        var database = await _redisConnection.GetDatabaseAsync(_defaultDb);
-                        var lastHeartbeatValue = await database.HashGetAsync(redisKey, FieldLastHeartbeat);
-                        if (!lastHeartbeatValue.HasValue) continue;
+                        // 使用 TTL 剩余时间判断过期（修复核心 BUG）
+                        var ttl = await database.KeyTimeToLiveAsync(redisKey);
+                        if (!ttl.HasValue) continue; // key 不存在或永不过期，跳过
+                        if (ttl.Value > staleTtlThreshold) continue; // TTL 仍充足，未过期
 
-                        // RedisValue 隐式转换为 string/ReadOnlySpan<byte> 会导致 TryParse 二义性，显式 ToString
-                        if (!long.TryParse(lastHeartbeatValue.ToString(), NumberStyles.None, CultureInfo.InvariantCulture, out var lastHeartbeatTicks)) continue;
-                        if (lastHeartbeatTicks < thresholdTicks)
+                        // 获取 lastHeartbeat 字段用于日志（不再用于判断过期）
+                        var lastHeartbeatValue = await database.HashGetAsync(redisKey, FieldLastHeartbeat);
+                        DateTime lastHeartbeat = DateTime.UtcNow - heartbeatTimeout; // 兜底默认值
+                        if (lastHeartbeatValue.HasValue &&
+                            long.TryParse(lastHeartbeatValue.ToString(), NumberStyles.None, CultureInfo.InvariantCulture, out var lastHeartbeatTicks))
                         {
-                            result.Add((characterId, new DateTime(lastHeartbeatTicks, DateTimeKind.Utc)));
+                            lastHeartbeat = new DateTime(lastHeartbeatTicks, DateTimeKind.Utc);
                         }
+
+                        result.Add((characterId, lastHeartbeat));
                     }
                 }
 

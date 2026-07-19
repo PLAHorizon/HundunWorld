@@ -30,8 +30,12 @@ public static class SyncProtocolVersion
     ///        服务端 <c>SyncPacketHandler</c> 引入 per-characterId 去重（基于 ClientTick 序号），
     ///        <see cref="SnapshotPacket"/> 支持增量压缩（BaselineTick 非 0 时为 delta 帧）。
     ///        握手阶段严格拒绝协议版本不匹配的客户端。
+    ///   v6 = <see cref="InputPacket"/> 新增 <see cref="InputPacket.MaxSpeed"/> 字段：
+    ///        客户端每帧把当帧目标速度（含 Run/Sprint/Crouch 倍数）随输入上送，服务端权威回放
+    ///        与客户端本地预测都用此值调用 <c>MovementFormula.Step</c>。修复"PlayerController.MoveSpeed
+    ///        未进入网络同步链路，链路两端固定用 DefaultMaxSpeed=6 m/s 推进"的问题。
     /// </summary>
-    public const int Current = 5;
+    public const int Current = 6;
 }
 
 /// <summary>
@@ -222,6 +226,22 @@ public sealed partial class InputPacket : SyncPacket
     [MemoryPackOrder(11)]
     [Id(9)]
     public float PredictedEndZ { get; set; }
+
+    /// <summary>
+    /// 本帧目标最大水平移动速度（米/秒）。由客户端根据 PlayerController.MoveSpeed 及当前状态
+    /// （Run/Sprint/Crouch 倍数）计算后随输入上送，服务端权威回放与客户端本地预测都用此值
+    /// 调用 <c>MovementFormula.Step</c>，保证两端按同一速度推进。
+    /// <para>
+    /// 取值约定：
+    /// <list type="bullet">
+    ///   <item>&gt; 0：使用客户端指定的速度（服务端会按 <c>HardSpeedCap</c> 上限校验防作弊）。</item>
+    ///   <item>&lt;= 0：服务端兜底使用 <c>MovementFormula.DefaultMaxSpeed</c>（向后兼容旧客户端）。</item>
+    /// </list>
+    /// </para>
+    /// </summary>
+    [MemoryPackOrder(12)]
+    [Id(10)]
+    public float MaxSpeed { get; set; }
 
     public InputPacket() { Kind = SyncPacketKind.Input; }
 }

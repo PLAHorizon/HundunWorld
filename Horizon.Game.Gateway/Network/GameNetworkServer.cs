@@ -65,7 +65,7 @@ namespace Horizon.Game.Gateway.Network
             _adapter = adapter;
             _authTokenProvider = authTokenProvider;
             _fingerprintService = fingerprintService;
-            _despawnScheduler = despawnScheduler;
+            _despawnScheduler = despawnScheduler ?? throw new ArgumentNullException(nameof(despawnScheduler));
             _presenceStore = presenceStore ?? throw new ArgumentNullException(nameof(presenceStore));
         }
 
@@ -391,12 +391,22 @@ namespace Horizon.Game.Gateway.Network
                 var idleTimeout = TimeSpan.FromSeconds(_networkOptions.CurrentValue.IdleTimeoutSeconds);
                 var now = DateTime.UtcNow;
 
+                // 修复 BUG：原实现串行 await CleanupConnectionAsync，单个连接的 DespawnImmediatelyAsync
+                // 阻塞（grain 调用超时 30 秒）会导致后续连接检测延迟，最坏情况下 N 个断线连接
+                // 需要 N × 30 秒才能全部清理，期间这些连接的角色在 silo 端仍被 RenewAllLeasesAsync 续约
+                // （因为 RenewAllLeasesAsync 通过 ConnectionManager.GetAllCharacterIds 获取列表，只要连接
+                // 还在管理器中就会续约），导致"网关运行时离线角色无法正常离线"。
+                // 修复：先收集所有需要清理的连接，然后并行执行 CleanupConnectionAsync，互不阻塞。
+                // 线程安全：CleanupConnectionAsync 内部所有操作（RemoveConnectionAsync、DespawnImmediatelyAsync）
+                // 都按 connectionId/characterId 独立操作，不依赖全局状态，并行执行安全。
+                var connectionsToCleanup = new List<(string ConnectionId, string Source)>();
+
                 foreach (var connection in _connectionManager.GetAllConnections())
                 {
                     // 检测 1：TouchSocket Online 属性判定（依赖 TCP 层检测，可能不及时）
                     if (!connection.IsConnected)
                     {
-                        await CleanupConnectionAsync(connection.ConnectionId, source: "Online=false");
+                        connectionsToCleanup.Add((connection.ConnectionId, "Online=false"));
                         continue;
                     }
 
@@ -409,8 +419,18 @@ namespace Horizon.Game.Gateway.Network
                         _logger.LogWarning(
                             "连接 {Id} 空闲超时（{Seconds:F0}秒无数据），判定为离线并清理。LastActive={LastActive:O}, Remote={Remote}",
                             connection.ConnectionId, idleDuration.TotalSeconds, connection.LastActiveTime, connection.RemoteAddress);
-                        await CleanupConnectionAsync(connection.ConnectionId, source: "空闲超时");
+                        connectionsToCleanup.Add((connection.ConnectionId, "空闲超时"));
                     }
+                }
+
+                if (connectionsToCleanup.Count > 0)
+                {
+                    var cleanupTasks = new List<Task>(connectionsToCleanup.Count);
+                    foreach (var (connectionId, source) in connectionsToCleanup)
+                    {
+                        cleanupTasks.Add(CleanupConnectionAsync(connectionId, source));
+                    }
+                    await Task.WhenAll(cleanupTasks);
                 }
             }
             catch (Exception ex)

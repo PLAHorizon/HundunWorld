@@ -145,7 +145,7 @@ public sealed class LocalSimulationSystem : ArchSystemBase
                 pred.X, pred.Y, pred.Z, pred.Vz,
                 input.MoveX, input.MoveY, jumpImpulse,
                 FixedDtSeconds,
-                maxSpeed: 0f);
+                maxSpeed: input.MaxSpeed);
 
             // 地面碰撞检测：采样 (nx, ny) 处的地面 ECS.Z 高度，
             // 若新位置低于地面则吸附到地面并清零垂直速度，防止角色穿透 Terrain。

@@ -335,6 +335,7 @@
     <Compile Include="Game\HundunWorldGamePlugin.cs" />
     <Compile Include="Game\InputConfigurationManager.cs" />
     <Compile Include="Game\InputManager.cs" />
+    <Compile Include="Game\LocalPlayerActorSyncSystem.cs" />
     <Compile Include="Game\Modules\BaseModule.cs" />
     <Compile Include="Game\Modules\ChatModule.cs" />
     <Compile Include="Game\Modules\IGameModule.cs" />

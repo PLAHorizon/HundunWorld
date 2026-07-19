@@ -654,22 +654,23 @@ namespace HundunWorld.Game.UI.Ink.Pages
         /// </summary>
         private void BuildSplashDecorations()
         {
+            // 三个 splash 显式降低不透明度（0.15f），使装饰更轻盈，不依赖 InkSplash 默认值
             _splash1 = new InkSplash
             {
                 Variant = InkSplashVariant.Normal,
-                Opacity = 0.18f,
+                Opacity = 0.15f,
                 AutoFocus = false,
             };
             _splash2 = new InkSplash
             {
                 Variant = InkSplashVariant.Vermilion,
-                Opacity = 0.22f,
+                Opacity = 0.15f,
                 AutoFocus = false,
             };
             _splash3 = new InkSplash
             {
                 Variant = InkSplashVariant.Elevated,
-                Opacity = 0.20f,
+                Opacity = 0.15f,
                 AutoFocus = false,
             };
             AddChild(_splash1);

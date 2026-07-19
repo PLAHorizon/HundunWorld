@@ -297,7 +297,13 @@ namespace Horizon.Game.Gateway.Services
         public async Task SendMessageAsync(byte[] message)
         {
             await Connection.SendAsync(message);
-            LastActiveTime = DateTime.UtcNow;
+            // 修复 BUG：移除 SendMessageAsync 中的 LastActiveTime 更新（与 GameConnection.SendAsync 修复一致）。
+            // LastActiveTime 应该只在接收客户端数据时更新（GameNetworkServer.OnDataReceived），
+            // 准确反映客户端的活跃状态。发送数据时也更新会导致：
+            // 1) TCP 半关闭时服务器发送数据可能成功（TCP 缓冲区未满），LastActiveTime 被错误更新，
+            //    CheckDisconnectedConnections 的空闲超时检测无法检测到客户端断线
+            // 2) CharacterPresenceMonitorHostedService 检查 LastActiveTime 时误判为在线，
+            //    导致 Redis 异常时无法清理僵尸连接，引发"角色被误判离线"BUG
         }
 
         public async Task CloseAsync(string reason = "")

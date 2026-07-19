@@ -25,8 +25,10 @@ namespace Horizon.Game.Gateway.Handlers
     /// 4. 返回 <see cref="HeartbeatResponse"/>（ServerTime + Latency）<br/>
     /// </para>
     /// <para>
-    /// <b>降级策略</b>：Redis 不可用时 <see cref="ICharacterPresenceStore.RefreshHeartbeatAsync"/> 返回 false，
-    /// 但心跳响应仍正常返回（不影响客户端体验），仅记录警告日志。ConnectionManager 的 KeepAlive 仍作为兜底。
+    /// <b>降级策略</b>：<see cref="ICharacterPresenceStore.RefreshHeartbeatAsync"/> 返回 false 有两种情况：<br/>
+    /// 1. <c>presence key</c> 不存在（角色已通过 <c>GoOfflineAsync</c> 正确下线）—— 不重建 presence，避免已下线角色在 Redis 中"复活"；<br/>
+    /// 2. Redis 不可用（连接故障降级）—— 通过 <see cref="IConnectionManager.GetConnectionByCharacterId"/> 二次确认连接仍存活后，重建 presence 作为兜底。<br/>
+    /// 心跳响应始终正常返回（不影响客户端体验）。
     /// </para>
     /// <para>
     /// <b>TODO（安全级别心跳）</b>：角色处于交易、支付等高安全级别环节时，心跳需提升为每 5 秒检活，
@@ -104,14 +106,32 @@ namespace Horizon.Game.Gateway.Handlers
                     var refreshed = await _presenceStore.RefreshHeartbeatAsync(characterId).ConfigureAwait(false);
                     if (!refreshed)
                     {
-                        // presence key 不存在或 Redis 不可用 —— 可能是角色未通过 EnterGameAsync 上线，
-                        // 或 Redis 故障。尝试重新设置 presence（兜底）
-                        Logger.LogWarning(
-                            "角色 {CharacterId} 心跳续期失败（presence key 不存在或 Redis 不可用），尝试重新设置 presence",
-                            characterId);
-                        // 尝试重新设置 presence（可能角色上线时 Redis 不可用）
-                        var connectionId = _gameClient?.Id ?? string.Empty;
-                        await _presenceStore.SetOnlineAsync(characterId, "gateway", connectionId).ConfigureAwait(false);
+                        // RefreshHeartbeatAsync 返回 false 有两种情况：
+                        //   a) presence key 不存在（角色已通过 GoOfflineAsync 正确下线）—— 不应重建 presence
+                        //   b) Redis 不可用（连接故障降级）—— 可重建 presence 作为兜底
+                        // 修复 BUG（角色离线后 Redis 中仍残留在线信息）：
+                        // 原实现盲目调用 SetOnlineAsync 重建 presence key，导致已下线角色在 Redis 中"复活"。
+                        // 现采用与 CharacterPresenceMonitorHostedService 一致的二次确认模式：
+                        // 仅当 ConnectionManager 中该角色仍绑定活动连接时，才判定为 Redis 故障降级并重建 presence。
+                        var activeConnection = _connectionManager.GetConnectionByCharacterId(characterId);
+                        if (activeConnection != null && activeConnection.IsConnected)
+                        {
+                            // 连接仍存活 → 判定为 Redis 故障降级，重建 presence key 作为兜底
+                            Logger.LogWarning(
+                                "角色 {CharacterId} 心跳续期失败（Redis 不可用），但连接仍存活，重建 presence 作为兜底",
+                                characterId);
+                            await _presenceStore
+                                .SetOnlineAsync(characterId, "gateway", activeConnection.ConnectionId)
+                                .ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            // 连接已断开或未注册 → 判定为角色已正确下线后的残留心跳，不重建 presence key
+                            // 否则会让已下线角色在 Redis 中"复活"（用户反复报告的 BUG 根因）
+                            Logger.LogWarning(
+                                "角色 {CharacterId} 心跳续期失败且无活动连接，判定为已下线后的残留心跳，不重建 presence key",
+                                characterId);
+                        }
                     }
                     else
                     {

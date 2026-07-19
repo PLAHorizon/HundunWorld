@@ -1,3 +1,4 @@
+using Game.Character.Attributes;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 using HundunWorld.Game.Network.Handlers;
@@ -63,6 +64,29 @@ namespace ManagedHundunWorld.Network.Handlers
                                 // 缓存本地玩家 Actor 创建请求，待场景切换到 GameWorld 完成后再创建。
                                 // 若在场景切换前创建，Actor 会被旧场景卸载时销毁。
                                 gameInstance.RequestCreateLocalPlayerActor(response.CharacterInfo.CharacterId, initX, initY, initZ);
+
+                                // 回填角色属性组件（供主UI与角色属性页绑定使用）。
+                                // 注意：RequestCreateLocalPlayerActor 可能为异步（场景切换中），LocalPlayerActor 可能尚未创建，
+                                // ApplyLocalPlayerAttributes 会处理两种情况：已创建则立即回填，未创建则缓存待 Actor 创建后回填。
+                                try
+                                {
+                                    if (response?.CharacterInfo != null)
+                                    {
+                                        var nickname = response.CharacterInfo.CharacterName;
+                                        var level = response.CharacterInfo.Level;
+                                        var stage = DeriveStageFromLevel(level);
+                                        gameInstance.ApplyLocalPlayerAttributes(nickname, level, stage);
+                                        FlaxEngine.Debug.Log($"[EnterGameHandler] 已请求回填角色属性: Nickname={nickname}, Level={level}, Stage={stage}");
+                                    }
+                                    else
+                                    {
+                                        FlaxEngine.Debug.LogWarning("[EnterGameHandler] 回填失败: response.CharacterInfo 为 null");
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    FlaxEngine.Debug.LogError($"[EnterGameHandler] 回填角色属性失败: {ex.Message}");
+                                }
                             }
 
                             FlaxEngine.Debug.Log($"角色 [{response.CharacterInfo?.CharacterName}] 成功进入游戏世界");
@@ -137,6 +161,22 @@ namespace ManagedHundunWorld.Network.Handlers
             }
 
             await Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// 根据角色等级推算成长阶段。
+        /// 规则：Level 1-49 → 武侠(Wuxia)，Level 50-149 → 仙侠(Xianxia)，Level 150+ → 玄幻(Xuanhuan)。
+        /// 服务端协议暂无 Stage 字段，客户端按 Level 推算。
+        /// </summary>
+        /// <param name="level">角色等级</param>
+        /// <returns>对应的成长阶段枚举</returns>
+        private static CharacterStage DeriveStageFromLevel(int level)
+        {
+            if (level < 50)
+                return CharacterStage.Wuxia;
+            if (level < 150)
+                return CharacterStage.Xianxia;
+            return CharacterStage.Xuanhuan;
         }
     }
 }

@@ -23,14 +23,22 @@ public sealed class MovementValidator
     /// <summary>默认位置偏差阈值（米）：超过此值下发 correction。</summary>
     public const float DefaultPositionEpsilon = 0.5f;
 
-    /// <summary>默认速度硬性上限（米/秒）：客户端速度超此值立即判异常。</summary>
-    public const float DefaultHardSpeedCap = 20f;
+    /// <summary>
+    /// 默认速度硬性上限（米/秒）：客户端 <see cref="InputPacket.MaxSpeed"/> 超此值立即判异常。
+    /// v6 协议后 MaxSpeed 是合法字段（携带客户端配置的目标速度），此上限用于反作弊，
+    /// 取值需容纳合理游戏速度（坐骑/轻功/技能加速等），默认 200 m/s（720 km/h）。
+    /// </summary>
+    public const float DefaultHardSpeedCap = 200f;
 
     /// <summary>配置项。</summary>
     public sealed class Options
     {
         public float PositionEpsilon { get; set; } = DefaultPositionEpsilon;
         public float HardSpeedCap { get; set; } = DefaultHardSpeedCap;
+        /// <summary>
+        /// 兜底最大速度：当 <see cref="InputPacket.MaxSpeed"/> &lt;= 0 时（旧客户端未填充）使用。
+        /// v6 协议前等价于"全局固定速度上限"，v6 后仅作向后兼容兜底。
+        /// </summary>
         public float MaxSpeed { get; set; } = MovementFormula.DefaultMaxSpeed;
         public float TickDtSeconds { get; set; } = 1f / 60f;
         public int MaxJumpCount { get; set; } = 2;
@@ -45,6 +53,21 @@ public sealed class MovementValidator
         if (_options.TickDtSeconds <= 0f)
             throw new ArgumentOutOfRangeException(nameof(options), "TickDtSeconds 必须为正数。");
     }
+
+    /// <summary>
+    /// 地面高度采样委托：给定 ECS 世界坐标 (x, y)（Z-up 坐标系，x=左右, y=前后），
+    /// 返回该位置的地面 ECS.Z 高度（米）；返回 <see cref="float.NaN"/> 表示采样失败（无地面）。
+    /// <para>
+    /// 与 <see cref="Horizon.Game.ECS.Arch.Systems.LocalSimulationSystem.GroundHeightSampler"/> 语义一致，
+    /// 确保服务端权威回放与客户端预测应用相同的地面约束，避免服务端位置穿透 Terrain
+    /// 后通过 <see cref="CorrectionPacket"/> 把客户端拉到地下。
+    /// </para>
+    /// <para>
+    /// 服务端通常没有 FlaxEngine.Physics，需要由调用方提供基于世界数据（heightmap / chunk geometry）
+    /// 的采样实现。若委托为 null（未注入），本类保持原行为（仅自由运动 + 重力，不做地面约束）。
+    /// </para>
+    /// </summary>
+    public Func<float, float, float>? GroundHeightSampler { get; set; }
 
     /// <summary>
     /// 按输入序列回放：从 <paramref name="start"/> 出发，依次套用每个 <see cref="InputPacket"/>，
@@ -66,8 +89,12 @@ public sealed class MovementValidator
         long serverTick)
     {
         // 1) 权威回放
+        // v6 协议：每个 InputPacket 携带当帧 MaxSpeed，服务端按客户端指定的速度回放，
+        // 保证两端按同一速度推进。MaxSpeed <= 0 时兜底使用 _options.MaxSpeed（向后兼容旧客户端）。
+        // 同时记录每帧 MaxSpeed 用于反作弊判定（HardSpeedCap 校验）。
         float x = start.X, y = start.Y, z = start.Z, vz = startVz;
         float maxObservedSpeed = 0f;
+        float maxInputMaxSpeed = 0f;
         int jumpCount = 0;
         bool isGrounded = true;
         const float groundedEpsilon = 0.001f;
@@ -76,6 +103,10 @@ public sealed class MovementValidator
         {
             var input = inputs[i];
             if (input is null) continue;
+
+            // 解析本帧 MaxSpeed：> 0 用客户端值，否则兜底 Options.MaxSpeed
+            var frameMaxSpeed = input.MaxSpeed > 0f ? input.MaxSpeed : _options.MaxSpeed;
+            if (frameMaxSpeed > maxInputMaxSpeed) maxInputMaxSpeed = frameMaxSpeed;
 
             var prevZ = z;
             var isQinggongJump = (input.InputBits & (1u << 3)) != 0;
@@ -109,12 +140,58 @@ public sealed class MovementValidator
             var (nx, ny, nz, nvz) = MovementFormula.Step(
                 x, y, z, vz,
                 input.MoveX, input.MoveY, jumpImpulse,
-                _options.TickDtSeconds, _options.MaxSpeed);
+                _options.TickDtSeconds, frameMaxSpeed);
 
-            var dz = MathF.Abs(nz - prevZ);
-            isGrounded = dz < groundedEpsilon && nvz <= 0f;
-            if (isGrounded)
-                jumpCount = 0;
+            // 地面碰撞检测：采样 (nx, ny) 处的地面 ECS.Z 高度，
+            // 若新位置低于地面则吸附到地面并清零垂直速度，防止权威位置穿透 Terrain。
+            // 与 LocalSimulationSystem / ReconciliationSystem 应用相同约束，保证 C/S 一致。
+            // GroundHeightSampler 为 null（服务端未注入 heightmap / 物理采样器）时，
+            // 退化为"信任客户端的地面约束"：用本帧 InputPacket.PredictedEndZ 作为参考地面 Z。
+            // 客户端 LocalSimulationSystem 在每帧 Step 后用 GroundHeightSampler 约束过 Z，
+            // PredictedEndZ 即约束后的 Z。如果服务端权威回放 Z 低于 PredictedEndZ（差距 > 0.05m），
+            // 说明客户端落地（采样到地形高度），服务端也用相同地面 Z 做约束，避免 C/S 漂移触发 correction 风暴。
+            // 反作弊保障：
+            //   1) 10m 上限：客户端不能把自己拉到离地 >10m 的位置（dz > 10m 视为异常，不 clamp，drift 会兜底）。
+            //   2) PositionEpsilon：客户端伪造 PredictedEndZ 后，若 drift > 0.5m 仍触发 CorrectionPacket。
+            var sampler = GroundHeightSampler;
+            if (sampler != null)
+            {
+                var groundZ = sampler(nx, ny);
+                if (!float.IsNaN(groundZ) && nz < groundZ)
+                {
+                    nz = groundZ;
+                    nvz = 0f;
+                    isGrounded = true;
+                    jumpCount = 0;
+                }
+                else
+                {
+                    var dz = MathF.Abs(nz - prevZ);
+                    isGrounded = dz < groundedEpsilon && nvz <= 0f;
+                    if (isGrounded)
+                        jumpCount = 0;
+                }
+            }
+            else
+            {
+                // 服务端未注入 GroundHeightSampler：用客户端上报的 PredictedEndZ 作为参考地面 Z。
+                var predictedZ = input.PredictedEndZ;
+                var dzPred = predictedZ - nz;
+                if (dzPred > 0.05f && dzPred < 10f)
+                {
+                    nz = predictedZ;
+                    nvz = 0f;
+                    isGrounded = true;
+                    jumpCount = 0;
+                }
+                else
+                {
+                    var dz = MathF.Abs(nz - prevZ);
+                    isGrounded = dz < groundedEpsilon && nvz <= 0f;
+                    if (isGrounded)
+                        jumpCount = 0;
+                }
+            }
 
             var dx = nx - x; var dy = ny - y;
             var speed = MathF.Sqrt(dx * dx + dy * dy) / _options.TickDtSeconds;
@@ -125,13 +202,20 @@ public sealed class MovementValidator
 
         var authoritativeEnd = new WorldPosition(x, y, z);
 
-        // 2) 客户端硬性速度上限：把客户端自报的"首末位移 / 总时间"算下来，超限直接标异常。
-        var totalDt = _options.TickDtSeconds * MathF.Max(1, inputs.Length);
-        var clientDistance = MovementFormula.Distance3D(
-            start.X, start.Y, start.Z,
-            clientEnd.X, clientEnd.Y, clientEnd.Z);
-        var clientSpeed = clientDistance / totalDt;
-        var hardCapViolated = clientSpeed > _options.HardSpeedCap;
+        // 2) 客户端硬性速度上限（反作弊）：
+        //    主判定：input.MaxSpeed 上限校验（v6 协议字段），超 HardSpeedCap 判 SpeedHackSuspected。
+        //    辅助判定：客户端自报"首末位移速度"超 maxInputMaxSpeed * 1.5（容差 50%）也判异常，
+        //    防止客户端伪造 PredictedEnd 绕过位置校验。
+        var hardCapViolated = maxInputMaxSpeed > _options.HardSpeedCap;
+        if (!hardCapViolated && maxInputMaxSpeed > 0f)
+        {
+            var totalDt = _options.TickDtSeconds * MathF.Max(1, inputs.Length);
+            var clientDistance = MovementFormula.Distance3D(
+                start.X, start.Y, start.Z,
+                clientEnd.X, clientEnd.Y, clientEnd.Z);
+            var clientSpeed = clientDistance / totalDt;
+            hardCapViolated = clientSpeed > maxInputMaxSpeed * 1.5f;
+        }
 
         // 3) 位置偏差
         var drift = MovementFormula.Distance3D(

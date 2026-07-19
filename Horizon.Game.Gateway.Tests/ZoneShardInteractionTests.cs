@@ -268,17 +268,20 @@ public class ZoneShardInteractionTests
 
         // 实体 22 必须已从服务端移除
         var entitiesField = typeof(ZoneShardGrain).GetField("_simulatedEntities", BindingFlags.NonPublic | BindingFlags.Instance);
-        var entities = (System.Collections.Generic.Dictionary<ulong, object>)entitiesField!.GetValue(grain)!;
-        Assert.DoesNotContain(22UL, entities.Keys);
-        Assert.Contains(23UL, entities.Keys);
+        var entities = (System.Collections.IDictionary)entitiesField!.GetValue(grain)!;
+        Assert.False(entities.Contains(22UL));
+        Assert.True(entities.Contains(23UL));
     }
 
     /// <summary>
     /// 修复验证：Despawn 无其他在线玩家时，不应广播 Despawn（没有受众），
-    /// 应保留实体并过期租约，等待孤儿清理重试。避免误以为广播成功而提前移除实体。
+    /// 但实体应立即从服务端移除（不再保留等待重试）。
+    /// 修复 BUG（角色离线应立即从服务端下线）：
+    /// 原实现保留实体并过期租约，等待孤儿清理重试，导致角色在服务端残留。
+    /// 新实现：无论广播是否成功，都立即从 _simulatedEntities 移除实体。
     /// </summary>
     [Fact]
-    public async Task UnregisterEntityAsync_WithoutOtherSubscribers_KeepsEntityForRetry()
+    public async Task UnregisterEntityAsync_WithoutOtherSubscribers_RemovesEntityImmediately()
     {
         var grain = CreateGrain();
         var observer = new FakeFanoutObserver();
@@ -302,16 +305,10 @@ public class ZoneShardInteractionTests
             .ToList();
         Assert.Empty(despawnDiffs);
 
-        // 实体应被保留（等待孤儿清理重试）
+        // 实体应已被立即移除（不再保留等待重试）
         var entitiesField = typeof(ZoneShardGrain).GetField("_simulatedEntities", BindingFlags.NonPublic | BindingFlags.Instance);
-        var entities = (System.Collections.Generic.Dictionary<ulong, object>)entitiesField!.GetValue(grain)!;
-        Assert.Contains(22UL, entities.Keys);
-
-        // 租约应立即过期（负数或过去时间）
-        var entityValue = entities[22UL];
-        var leaseField = entityValue.GetType().GetField("LeaseExpiry");
-        var leaseExpiry = (DateTime)leaseField!.GetValue(entityValue)!;
-        Assert.True(leaseExpiry < DateTime.UtcNow, "LeaseExpiry 应已过期，等待孤儿清理重试");
+        var entities = (System.Collections.IDictionary)entitiesField!.GetValue(grain)!;
+        Assert.False(entities.Contains(22UL));
     }
 
     // ===== Fake fanout observer：捕获收到的 diff 与 sessionIds =====

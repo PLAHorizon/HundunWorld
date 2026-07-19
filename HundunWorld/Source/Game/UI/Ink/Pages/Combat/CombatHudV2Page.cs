@@ -71,6 +71,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         /// <summary>玩家 HP/MP/XP 条高度</summary>
         private const float PlayerBarHeight = 12f;
 
+        /// <summary>玩家 HP/MP 条高度（数值叠加显示，比 XP 条更高以容纳文字）</summary>
+        private const float PlayerHpMpBarHeight = 18f;
+
         /// <summary>道具栏格子尺寸（正方形）</summary>
         private const float ItemCellSize = 56f;
 
@@ -143,6 +146,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         /// <summary>玩家体魄数值标签</summary>
         private Label _xpLabel;
 
+        /// <summary>玩家等级与阶段标签（头像正下方，格式 "Lv.42 · 武侠"）</summary>
+        private Label _levelStageLabel;
+
         // ===================================================================
         // mock 数据
         // =======================================================================
@@ -203,6 +209,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
 
         /// <summary>玩家最大体魄值（mock）</summary>
         private int _mockXpMax = 100;
+
+        /// <summary>玩家等级（mock，未绑定时显示）</summary>
+        private int _mockLevel = 42;
+
+        /// <summary>玩家成长阶段（mock，未绑定时显示）</summary>
+        private CharacterStage _mockStage = CharacterStage.Wuxia;
 
         // ===================================================================
         // 屏幕尺寸缓存与数据绑定
@@ -321,6 +333,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             {
                 var card = new InkPanel
                 {
+                    Variant = InkPanelVariant.Lightweight,
                     AnchorPreset = AnchorPresets.TopLeft,
                     Location = new Float2(0f, i * (PartyCardHeight + PartyCardGap)),
                     Size = new Float2(PartyCardWidth, PartyCardHeight),
@@ -427,6 +440,20 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             _avatarButton.ButtonClicked += OnAvatarButtonClicked;
             _playerStats.AddChild(_avatarButton);
 
+            // 等级与阶段标签：头像正下方，与头像同宽
+            _levelStageLabel = new Label
+            {
+                Text = $"Lv.{_mockLevel} · {StageToDisplayName(_mockStage)}",
+                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 11f),
+                TextColor = InkWashTheme.TextBrand,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, 62f),
+                Size = new Float2(AvatarSize, 18f),
+            };
+            _playerStats.AddChild(_levelStageLabel);
+
             // 竖排角色名
             _playerNameLabel = new InkVerticalTitle
             {
@@ -444,22 +471,22 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 FillVariant = InkBarFillVariant.Vermilion,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(110f, 8f),
-                Size = new Float2(PlayerBarWidth, PlayerBarHeight),
+                Size = new Float2(PlayerBarWidth, PlayerHpMpBarHeight),
                 Value = _mockHpRatio,
             };
             _playerStats.AddChild(_hpBar);
 
-            // 气血数值标签
+            // 气血数值标签（与 HP 条同位置同尺寸，居中叠加显示）
             _hpLabel = new Label
             {
                 Text = $"{_mockHpCurrent}/{_mockHpMax}",
                 Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 11f),
-                TextColor = InkWashTheme.TextBrand,
-                HorizontalAlignment = TextAlignment.Near,
+                TextColor = InkWashTheme.Paper,
+                HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(110f, 22f),
-                Size = new Float2(PlayerBarWidth, 16f),
+                Location = new Float2(110f, 8f),
+                Size = new Float2(PlayerBarWidth, PlayerHpMpBarHeight),
             };
             _playerStats.AddChild(_hpLabel);
 
@@ -468,23 +495,23 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             {
                 FillVariant = InkBarFillVariant.Gold,
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(110f, 44f),
-                Size = new Float2(PlayerBarWidth, PlayerBarHeight),
+                Location = new Float2(110f, 32f),
+                Size = new Float2(PlayerBarWidth, PlayerHpMpBarHeight),
                 Value = _mockMpRatio,
             };
             _playerStats.AddChild(_mpBar);
 
-            // 内力数值标签
+            // 内力数值标签（与 MP 条同位置同尺寸，居中叠加显示）
             _mpLabel = new Label
             {
                 Text = $"{_mockMpCurrent}/{_mockMpMax}",
                 Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 11f),
-                TextColor = InkWashTheme.TextBrand,
-                HorizontalAlignment = TextAlignment.Near,
+                TextColor = InkWashTheme.Paper,
+                HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(110f, 58f),
-                Size = new Float2(PlayerBarWidth, 16f),
+                Location = new Float2(110f, 32f),
+                Size = new Float2(PlayerBarWidth, PlayerHpMpBarHeight),
             };
             _playerStats.AddChild(_mpLabel);
 
@@ -493,7 +520,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             {
                 FillVariant = InkBarFillVariant.Jade,
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(110f, 80f),
+                Location = new Float2(110f, 56f),
                 Size = new Float2(PlayerBarWidth, PlayerBarHeight),
                 Value = _mockXpRatio,
             };
@@ -508,7 +535,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(110f, 94f),
+                Location = new Float2(110f, 70f),
                 Size = new Float2(PlayerBarWidth, 16f),
             };
             _playerStats.AddChild(_xpLabel);
@@ -654,6 +681,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         public void BindCharacter(CharacterAttributesComponent component)
         {
             _boundCharacter = component;
+            // 绑定瞬间立即刷新身份信息（角色名/等级/阶段），避免等下一帧 Update
+            RefreshPlayerIdentity();
         }
 
         // ===================================================================
@@ -675,6 +704,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         {
             if (_boundCharacter == null)
                 return;
+
+            // 刷新角色名/等级/阶段（每帧同步，防止运行时改名）
+            RefreshPlayerIdentity();
 
             // 气血（HP）= CurrentHealth / MaxHealth
             float hpRatio = _boundCharacter.MaxHealth > 0f
@@ -703,6 +735,49 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 _xpBar.Value = xpRatio;
             if (_xpLabel != null)
                 _xpLabel.Text = $"{(int)_boundCharacter.CurrentStamina}/{(int)_boundCharacter.MaxStamina}";
+        }
+
+        /// <summary>
+        /// 将成长阶段枚举转换为中文显示名。
+        /// </summary>
+        /// <param name="stage">成长阶段枚举</param>
+        /// <returns>中文显示名（武侠/仙侠/玄幻）</returns>
+        private static string StageToDisplayName(CharacterStage stage)
+        {
+            switch (stage)
+            {
+                case CharacterStage.Wuxia:
+                    return "武侠";
+                case CharacterStage.Xianxia:
+                    return "仙侠";
+                case CharacterStage.Xuanhuan:
+                    return "玄幻";
+                default:
+                    return "武侠";
+            }
+        }
+
+        /// <summary>
+        /// 刷新玩家身份信息（角色名、等级、阶段）。
+        /// 由 <see cref="BindCharacter"/> 立即调用，并由 <see cref="RefreshBoundData"/> 每帧调用以保持同步。
+        /// 未绑定时保留 mock 数据，不覆盖。
+        /// </summary>
+        private void RefreshPlayerIdentity()
+        {
+            if (_boundCharacter == null)
+                return;
+
+            // 角色名：Nickname 非空才覆盖
+            if (_playerNameLabel != null && !string.IsNullOrEmpty(_boundCharacter.Nickname))
+            {
+                _playerNameLabel.Text = _boundCharacter.Nickname;
+            }
+
+            // 等级与阶段标签
+            if (_levelStageLabel != null)
+            {
+                _levelStageLabel.Text = $"Lv.{_boundCharacter.Level} · {StageToDisplayName(_boundCharacter.CurrentStage)}";
+            }
         }
 
         // ===================================================================
