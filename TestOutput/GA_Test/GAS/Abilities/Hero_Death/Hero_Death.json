@@ -1,0 +1,15 @@
+{
+  "className": "Hero_Death",
+  "parentClass": "Class'/Script/Engine.Blueprint'",
+  "inputId": "0",
+  "abilityTags": [],
+  "cancelAbilitiesWithTag": [],
+  "blockAbilitiesWithTag": [],
+  "activationOwnedTags": [],
+  "activationRequiredTags": [],
+  "activationBlockedTags": [],
+  "instancingPolicy": "InstancedPerActor",
+  "netExecutionPolicy": "LocalPredicted",
+  "replicationPolicy": "Minimal",
+  "triggers": []
+}

@@ -17,7 +17,8 @@ namespace HundunWorld.Game.UI.Components
         }
 
         private InkDecorationType _decorationType = InkDecorationType.VerticalDivider;
-        private Color _inkColor = new Color(1.0f, 0.9f, 0.6f, 0.4f);
+        // 默认装饰色：鎏金辉光（出处：--ink-gold-glow rgba(200,168,88,0.4)）
+        private Color _inkColor = UIStyleTokens.GoldGlow;
         private float _lineThickness = 2.0f;
         private float _fadeLength = 0.3f;
         private float _brushWidth = 4.0f;

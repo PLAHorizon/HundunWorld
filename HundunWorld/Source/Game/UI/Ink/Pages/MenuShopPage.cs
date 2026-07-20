@@ -1,232 +1,60 @@
-using System;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
 using HundunWorld.Game.UI.StyleSystem;
+using System;
+using HundunWorld.Game.UI;
 
 namespace HundunWorld.Game.UI.Ink.Pages
 {
-    /// <summary>
-    /// 商店菜单页面。
-    /// 承载 4 个子区域：
-    /// <list type="bullet">
-    ///   <item>SubTask 9.1 顶部标题栏（<see cref="InkPanelTitle"/>，文本"商店"）</item>
-    ///   <item>SubTask 9.2 左侧分类侧边栏（<see cref="InkPanel"/> + 4 个 <see cref="InkListItem"/>）</item>
-    ///   <item>SubTask 9.3 中间商品格子网格（<see cref="InkPanel"/> + 8 个 <see cref="InkCell"/>）</item>
-    ///   <item>SubTask 9.4 右侧商品详情（<see cref="InkPaperPanel"/> + 商品名/品质/属性/价格/购买按钮）</item>
-    /// </list>
-    /// 返回按钮由 <see cref="InkPageShell"/> 自动添加的 InkBackButton 承载，本页面不自建。
-    /// 全部数据为 mock，通过 <see cref="RefreshLayout"/> 支持屏幕尺寸变化。
-    /// </summary>
     public class MenuShopPage : ContainerControl, IInkPage
     {
-        // ===================================================================
-        // 布局常量
-        // =======================================================================
+        private const float LeftNavWidth = 240f;
+        private const float TopBarHeight = 60f;
+        private const float ConfirmPanelWidth = 300f;
 
-        /// <summary>顶部标题栏高度（像素）</summary>
-        private const float TitleHeight = 48f;
+        private InkPanelSolid _leftNavPanel;
+        private InkPanelSolid _topBarPanel;
+        private InkPanel _contentPanel;
+        private InkPaperPanel _confirmPanel;
 
-        /// <summary>内容区顶部 Y 坐标（标题栏下方留白）</summary>
-        private const float ContentTop = 80f;
+        private InkTextBlock _navVerticalTitle;
+        private InkTextBlock _topBarName;
+        private InkTag _topBarLevel;
+        private InkTextBlock _topBarSect;
+        private InkTextBlock _topBarCopper;
+        private InkTextBlock _topBarSilver;
 
-        /// <summary>内容区底部留白（像素）</summary>
-        private const float ContentBottomMargin = 80f;
+        private InkTextBlock _pageTitle;
+        private TabButton[] _tabButtons;
+        private ShopCard[] _shopCards;
 
-        // --- 左侧分类侧边栏 ---
+        private InkTextBlock _confirmTitle;
+        private InkTag _confirmQualityTag;
+        private InkTextBlock[] _confirmItems;
+        private InkTextBlock _confirmPrice;
+        private InkTextBlock _confirmQty;
+        private InkTextBlock _confirmTotal;
+        private InkTextBlock _confirmBalance;
+        private InkButton _confirmButton;
+        private InkButton _cancelButton;
 
-        /// <summary>左侧分类面板 X 坐标</summary>
-        private const float LeftPanelX = 40f;
+        private int _selectedTab = 0;
+        private int _selectedCard = 0;
+        private int _buyQty = 1;
 
-        /// <summary>左侧分类面板宽度</summary>
-        private const float LeftPanelWidth = 180f;
-
-        /// <summary>分类列表项高度（像素）</summary>
-        private const float CategoryItemHeight = 48f;
-
-        /// <summary>分类名 Label 左边距</summary>
-        private const float CategoryLabelLeftMargin = 16f;
-
-        // --- 中间商品网格 ---
-
-        /// <summary>中间商品网格面板 X 坐标</summary>
-        private const float MiddlePanelX = 240f;
-
-        /// <summary>
-        /// 中间面板宽度公式中扣除的右侧常量（= 右侧面板右偏移 320 + 间距 40）。
-        /// 中间面板宽度 = screenWidth - <see cref="MiddlePanelX"/> - 此值。
-        /// </summary>
-        private const float MiddlePanelRightReserve = 360f;
-
-        /// <summary>商品格子尺寸（正方形）</summary>
-        private const float CellSize = 64f;
-
-        /// <summary>商品格子间距</summary>
-        private const float CellGap = 12f;
-
-        /// <summary>商品网格列数</summary>
-        private const int CellColumnCount = 4;
-
-        /// <summary>商品网格行数</summary>
-        private const int CellRowCount = 2;
-
-        /// <summary>商品网格顶部内边距</summary>
-        private const float GridTopPadding = 20f;
-
-        // --- 右侧商品详情 ---
-
-        /// <summary>右侧详情面板 X 坐标偏移（screenWidth - 320 中的 320）</summary>
-        private const float RightPanelRightOffset = 320f;
-
-        /// <summary>右侧详情面板宽度</summary>
-        private const float RightPanelWidth = 280f;
-
-        /// <summary>商品名 X 坐标（面板内局部坐标）</summary>
-        private const float DetailNameX = 20f;
-
-        /// <summary>商品名 Y 坐标（面板内局部坐标）</summary>
-        private const float DetailNameY = 20f;
-
-        /// <summary>商品名文本宽度</summary>
-        private const float DetailNameWidth = 240f;
-
-        /// <summary>商品名文本高度</summary>
-        private const float DetailNameHeight = 28f;
-
-        /// <summary>商品品质标签 X 坐标</summary>
-        private const float DetailTagX = 20f;
-
-        /// <summary>商品品质标签 Y 坐标</summary>
-        private const float DetailTagY = 56f;
-
-        /// <summary>商品品质标签宽度</summary>
-        private const float DetailTagWidth = 60f;
-
-        /// <summary>商品品质标签高度</summary>
-        private const float DetailTagHeight = 24f;
-
-        /// <summary>商品属性 X 坐标</summary>
-        private const float DetailAttrX = 20f;
-
-        /// <summary>商品属性 Y 坐标</summary>
-        private const float DetailAttrY = 96f;
-
-        /// <summary>商品属性文本宽度</summary>
-        private const float DetailAttrWidth = 240f;
-
-        /// <summary>商品属性文本高度</summary>
-        private const float DetailAttrHeight = 96f;
-
-        /// <summary>商品价格 X 坐标</summary>
-        private const float DetailPriceX = 20f;
-
-        /// <summary>
-        /// 商品价格 Y 坐标（Y = screenHeight - 280）。
-        /// 在 <see cref="ApplyLayout"/> 中根据当前屏幕高度计算实际局部 Y。
-        /// </summary>
-        private const float DetailPriceYFromScreenBottom = 280f;
-
-        /// <summary>商品价格文本宽度</summary>
-        private const float DetailPriceWidth = 240f;
-
-        /// <summary>商品价格文本高度</summary>
-        private const float DetailPriceHeight = 28f;
-
-        /// <summary>购买按钮 X 坐标</summary>
-        private const float DetailButtonX = 40f;
-
-        /// <summary>
-        /// 购买按钮 Y 坐标（Y = screenHeight - 200）。
-        /// 在 <see cref="ApplyLayout"/> 中根据当前屏幕高度计算实际局部 Y。
-        /// </summary>
-        private const float DetailButtonYFromScreenBottom = 200f;
-
-        /// <summary>购买按钮宽度</summary>
-        private const float DetailButtonWidth = 200f;
-
-        /// <summary>购买按钮高度</summary>
-        private const float DetailButtonHeight = 44f;
-
-        // ===================================================================
-        // 子控件引用
-        // =======================================================================
-
-        /// <summary>顶部标题栏</summary>
-        private InkPanelTitle _title;
-
-        /// <summary>左侧分类面板</summary>
-        private InkPanel _leftPanel;
-
-        /// <summary>中间商品网格面板</summary>
-        private InkPanel _middlePanel;
-
-        /// <summary>右侧商品详情面板</summary>
-        private InkPaperPanel _rightPanel;
-
-        /// <summary>商品价格文本（Y 坐标随屏幕高度变化，需在布局中更新）</summary>
-        private InkTextBlock _priceText;
-
-        /// <summary>购买按钮（Y 坐标随屏幕高度变化，需在布局中更新）</summary>
-        private InkButton _purchaseButton;
-
-        /// <summary>分类列表项集合（用于切换 active 态）</summary>
-        private CategoryItem[] _categoryItems;
-
-        /// <summary>商品格子数组（8 个 InkCell，用于布局时重新居中定位）</summary>
-        private InkCell[] _cells;
-
-        /// <summary>商品数据数组（与 <see cref="_cells"/> 一一对应）</summary>
-        private ShopItem[] _shopItems;
-
-        /// <summary>当前选中的商品索引（-1 = 未选中）</summary>
-        private int _selectedItemIndex = -1;
-
-        /// <summary>mock 金币余额（初始 1000 两）</summary>
-        private int _goldBalance = 1000;
-
-        /// <summary>金币余额标签（显示在标题栏右侧）</summary>
-        private Label _goldLabel;
-
-        /// <summary>商品名文本（右侧详情面板，动态更新）</summary>
-        private InkTextBlock _detailNameText;
-
-        /// <summary>商品品质标签（右侧详情面板，动态更新）</summary>
-        private InkTag _detailQualityTag;
-
-        /// <summary>商品属性文本（右侧详情面板，动态更新）</summary>
-        private InkTextBlock _detailAttrText;
-
-        /// <summary>余额不足警告文本（朱红色，默认隐藏）</summary>
-        private InkTextBlock _warningText;
-
-        // ===================================================================
-        // 屏幕尺寸缓存
-        // =======================================================================
-
-        /// <summary>当前屏幕尺寸缓存，用于布局计算</summary>
         private Float2 _screenSize;
 
-        // ===================================================================
-        // 构造函数
-        // =======================================================================
-
-        /// <summary>
-        /// 构造函数：初始化全部 4 个子区域，使用 mock 数据填充。
-        /// 构造时读取 <see cref="FlaxEngine.Screen.Size"/> 计算布局，
-        /// 屏幕尺寸未就绪时使用 1920x1080 兜底。
-        /// </summary>
         public MenuShopPage()
         {
-            // 1. 读取屏幕尺寸
             _screenSize = FlaxEngine.Screen.Size;
             if (_screenSize.X <= 0f || _screenSize.Y <= 0f)
             {
                 _screenSize = new Float2(1920f, 1080f);
             }
 
-            // 2. 外壳：全屏拉伸 + 透明背景 + 不裁剪子控件
             AnchorPreset = AnchorPresets.StretchAll;
-            BackgroundColor = Color.Transparent;
+            BackgroundColor = new Color(InkWashTheme.BaseDefault.R, InkWashTheme.BaseDefault.G, InkWashTheme.BaseDefault.B, 0.55f);
             ClipChildren = false;
             AutoFocus = false;
             Location = Float2.Zero;
@@ -234,16 +62,13 @@ namespace HundunWorld.Game.UI.Ink.Pages
 
             try
             {
-                BuildTitle();
-                _categoryItems = BuildLeftCategories();
-                _cells = BuildMiddleGrid();
-                BuildRightDetail();
+                BuildLeftNavigation();
+                BuildTopBar();
+                BuildContent();
+                BuildConfirmPanel();
 
-                // 应用初始布局（基于屏幕尺寸计算所有子控件位置与尺寸）
                 ApplyLayout();
-
-                // 应用初始分类过滤（默认仅显示"兵器"分类商品）
-                FilterShopItemsByCategory(0);
+                SelectCard(_selectedCard);
             }
             catch (Exception ex)
             {
@@ -251,558 +76,673 @@ namespace HundunWorld.Game.UI.Ink.Pages
             }
         }
 
-        // ===================================================================
-        // SubTask 构造方法
-        // =======================================================================
-
-        /// <summary>
-        /// SubTask 9.1：顶部标题栏。
-        /// <see cref="InkPanelTitle"/> 文本"商店"，位置 (0, 0)，宽度铺满，高度 48。
-        /// 返回按钮由 <see cref="InkPageShell"/> 自动添加，本页面不自建。
-        /// </summary>
-        private void BuildTitle()
+        private void BuildLeftNavigation()
         {
-            _title = new InkPanelTitle
+            _leftNavPanel = new InkPanelSolid
             {
-                Title = "商店",
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = Float2.Zero,
-                Height = TitleHeight,
             };
-            AddChild(_title);
+            AddChild(_leftNavPanel);
 
-            // 金币余额标签（标题栏右侧，mock 初始 1000 两）
-            _goldLabel = new Label
+            InkPanel brandPanel = new InkPanel
             {
-                Text = $"银两：{_goldBalance}",
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 14f),
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, 0f),
+                Size = new Float2(LeftNavWidth, 60f),
+                BackgroundColor = Color.Transparent,
+            };
+            _leftNavPanel.AddChild(brandPanel);
+
+            InkTextBlock brandText = new InkTextBlock(InkTextStyle.Display)
+            {
+                Text = "混沌世界",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(12f, 14f),
+                Size = new Float2(LeftNavWidth - 24f, 32f),
+                HorizontalAlignment = TextAlignment.Center,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 22f),
                 TextColor = InkWashTheme.GoldPrimary,
-                HorizontalAlignment = TextAlignment.Far,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(_screenSize.X - 220f, 0f),
-                Size = new Float2(200f, TitleHeight),
             };
-            AddChild(_goldLabel);
-        }
+            brandPanel.AddChild(brandText);
 
-        /// <summary>
-        /// SubTask 9.2：左侧分类侧边栏。
-        /// <see cref="InkPanel"/> 容器位置 (40, 80)，尺寸 (180, screenHeight - 160)。
-        /// 内含 4 个 <see cref="InkListItem"/>（垂直排列，每项高度 48）：
-        /// 兵器（active 态）/防具/丹药/材料。点击切换 active 态（mock 行为）。
-        /// </summary>
-        /// <returns>分类列表项数组</returns>
-        private CategoryItem[] BuildLeftCategories()
-        {
-            _leftPanel = new InkPanel
+            string[] navItems = { "任务", "博物志", "武林录", "营生", "组队", "邮箱", "商店", "", "休闲模式", "", "角色", "装备", "", "设置" };
+            bool[] navActive = { false, false, false, false, false, false, true, false, false, false, false, false, false, false };
+
+            for (int i = 0; i < navItems.Length; i++)
             {
-                AnchorPreset = AnchorPresets.TopLeft,
-            };
-            AddChild(_leftPanel);
+                if (string.IsNullOrEmpty(navItems[i]))
+                    continue;
 
-            // mock 数据：分类名、是否默认 active
-            var categories = new[]
-            {
-                (name: "兵器", active: true),
-                (name: "防具", active: false),
-                (name: "丹药", active: false),
-                (name: "材料", active: false),
-            };
-
-            var items = new CategoryItem[categories.Length];
-            for (int i = 0; i < categories.Length; i++)
-            {
-                var cat = categories[i];
-                int index = i; // 闭包捕获，确保点击回调获取正确索引
-
-                var item = new CategoryItem
+                var item = new InkListItem
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(0f, i * CategoryItemHeight),
-                    Size = new Float2(LeftPanelWidth, CategoryItemHeight),
-                    Active = cat.active,
+                    Location = new Float2(0f, 60f + i * 32f),
+                    Size = new Float2(LeftNavWidth, 32f),
+                    Active = navActive[i],
                 };
 
-                // 分类名 Label：Heading 字体 14px，垂直居中，左边距 16
-                var nameLabel = new Label
+                var label = new InkTextBlock(InkTextStyle.Body)
                 {
-                    Text = cat.name,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 14f),
-                    TextColor = InkWashTheme.TextDefault,
-                    HorizontalAlignment = TextAlignment.Near,
-                    VerticalAlignment = TextAlignment.Center,
+                    Text = navItems[i],
                     AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(CategoryLabelLeftMargin, 0f),
-                    Size = new Float2(LeftPanelWidth - CategoryLabelLeftMargin, CategoryItemHeight),
+                    Location = new Float2(24f, 0f),
+                    Size = new Float2(LeftNavWidth - 24f, 32f),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
+                    TextColor = navActive[i] ? InkWashTheme.GoldPrimary : InkWashTheme.TextSecondary,
                 };
-                item.AddChild(nameLabel);
-
-                item.Clicked += () => OnCategoryClicked(index);
-                _leftPanel.AddChild(item);
-                items[i] = item;
+                item.AddChild(label);
+                _leftNavPanel.AddChild(item);
             }
-
-            return items;
         }
 
-        /// <summary>
-        /// SubTask 9.3：中间商品格子网格。
-        /// <see cref="InkPanel"/> 容器位置 (240, 80)，尺寸 (screenWidth - 240 - 320 - 40, screenHeight - 160)。
-        /// 内含 8 个 <see cref="InkCell"/>（4 列 2 行，64x64，间距 12），品质色：
-        /// Legendary ×2、Epic ×2、Rare ×2、Uncommon ×2。
-        /// 每个 <see cref="InkCell"/> 右下角 Badge 显示价格徽章（mock 文本"100两"/"50两"等）。
-        /// </summary>
-        /// <returns>商品格子数组</returns>
-        private InkCell[] BuildMiddleGrid()
+        private void BuildTopBar()
         {
-            _middlePanel = new InkPanel
+            _topBarPanel = new InkPanelSolid
             {
                 AnchorPreset = AnchorPresets.TopLeft,
             };
-            AddChild(_middlePanel);
+            AddChild(_topBarPanel);
 
-            // mock 商品数据：名称、品质、价格、分类、属性描述
-            _shopItems = new[]
-            {
-                new ShopItem("玄铁剑", InkWashTheme.InkQuality.Legendary, 100, "兵器", "攻击+120\n会心+15\n耐久 200/200"),
-                new ShopItem("青龙偃月", InkWashTheme.InkQuality.Legendary, 120, "兵器", "攻击+150\n暴击+20\n耐久 180/180"),
-                new ShopItem("玄武甲", InkWashTheme.InkQuality.Epic, 80, "防具", "防御+80\n气血+200\n耐久 150/150"),
-                new ShopItem("金丝软甲", InkWashTheme.InkQuality.Epic, 75, "防具", "防御+60\n身法+10\n耐久 120/120"),
-                new ShopItem("回春丹", InkWashTheme.InkQuality.Rare, 50, "丹药", "恢复气血 500\n冷却 30秒"),
-                new ShopItem("培元丹", InkWashTheme.InkQuality.Rare, 60, "丹药", "恢复内力 300\n冷却 45秒"),
-                new ShopItem("寒铁矿", InkWashTheme.InkQuality.Uncommon, 30, "材料", "锻造材料\n可用于强化兵器"),
-                new ShopItem("灵草", InkWashTheme.InkQuality.Uncommon, 25, "材料", "炼丹材料\n可用于炼制丹药"),
-            };
-
-            var cellControls = new InkCell[_shopItems.Length];
-            // 网格宽度 = 4*64 + 3*12 = 292；初始 startX 占位，ApplyLayout 中根据面板宽度居中
-            float gridStartX = 0f;
-
-            for (int i = 0; i < _shopItems.Length; i++)
-            {
-                int col = i % CellColumnCount;
-                int row = i / CellColumnCount;
-
-                var cell = new InkCell
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(
-                        gridStartX + col * (CellSize + CellGap),
-                        GridTopPadding + row * (CellSize + CellGap)),
-                    Size = new Float2(CellSize, CellSize),
-                    Quality = _shopItems[i].Quality,
-                    Badge = $"{_shopItems[i].Price}两",
-                };
-                _middlePanel.AddChild(cell);
-                cellControls[i] = cell;
-            }
-
-            return cellControls;
-        }
-
-        /// <summary>
-        /// SubTask 9.4：右侧商品详情。
-        /// <see cref="InkPaperPanel"/> 容器位置 (screenWidth - 320, 80)，尺寸 (280, screenHeight - 160)。
-        /// 内含：商品名（"玄铁剑" Heading）、商品品质（"传世" Tag Brand）、商品属性（Body 多行）、
-        /// 价格（"100两" Number）、"购买"按钮（Primary Lg，点击触发 <see cref="PurchaseClicked"/>）。
-        /// </summary>
-        private void BuildRightDetail()
-        {
-            _rightPanel = new InkPaperPanel
+            InkPanel avatarPanel = new InkPanel
             {
                 AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(LeftNavWidth + 24f, 15f),
+                Size = new Float2(32f, 32f),
+                BackgroundColor = UIStyleTokens.BloodDeep,
             };
-            AddChild(_rightPanel);
+            _topBarPanel.AddChild(avatarPanel);
 
-            // 1. 商品名：Heading 样式，位置 (20, 20)
-            _detailNameText = new InkTextBlock(InkTextStyle.Heading)
+            _topBarName = new InkTextBlock(InkTextStyle.Heading)
             {
-                Text = "玄铁剑",
+                Text = "无名侠",
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(DetailNameX, DetailNameY),
-                Size = new Float2(DetailNameWidth, DetailNameHeight),
+                Location = new Float2(LeftNavWidth + 64f, 18f),
+                Size = new Float2(100f, 24f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 15f),
+                TextColor = InkWashTheme.PaperBright,
             };
-            _rightPanel.AddChild(_detailNameText);
+            _topBarPanel.AddChild(_topBarName);
 
-            // 2. 商品品质：Tag Brand 变体，位置 (20, 56)
-            _detailQualityTag = new InkTag
+            _topBarLevel = new InkTag
             {
                 TagVariant = InkTagVariant.Brand,
+                Text = "Lv.42",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(LeftNavWidth + 170f, 20f),
+                Size = new Float2(56f, 22f),
+            };
+            _topBarPanel.AddChild(_topBarLevel);
+
+            _topBarSect = new InkTextBlock(InkTextStyle.Body)
+            {
+                Text = "逍遥派",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(LeftNavWidth + 234f, 22f),
+                Size = new Float2(80f, 18f),
+                TextColor = InkWashTheme.GoldPrimary,
+            };
+            _topBarPanel.AddChild(_topBarSect);
+
+            _topBarCopper = new InkTextBlock(InkTextStyle.Number)
+            {
+                Text = "12,450",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(_screenSize.X - 220f, 20f),
+                Size = new Float2(80f, 20f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
+                TextColor = InkWashTheme.PaperBright,
+            };
+            _topBarPanel.AddChild(_topBarCopper);
+
+            InkTextBlock copperLabel = new InkTextBlock(InkTextStyle.Caption)
+            {
+                Text = "铜钱",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(_screenSize.X - 280f, 22f),
+                Size = new Float2(50f, 16f),
+                TextColor = InkWashTheme.PaperAged,
+            };
+            _topBarPanel.AddChild(copperLabel);
+
+            _topBarSilver = new InkTextBlock(InkTextStyle.Number)
+            {
+                Text = "328",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(_screenSize.X - 100f, 20f),
+                Size = new Float2(60f, 20f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
+                TextColor = InkWashTheme.GoldBright,
+            };
+            _topBarPanel.AddChild(_topBarSilver);
+
+            InkTextBlock silverLabel = new InkTextBlock(InkTextStyle.Caption)
+            {
+                Text = "银两",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(_screenSize.X - 150f, 22f),
+                Size = new Float2(40f, 16f),
+                TextColor = InkWashTheme.GoldPrimary,
+            };
+            _topBarPanel.AddChild(silverLabel);
+        }
+
+        private void BuildContent()
+        {
+            _contentPanel = new InkPanel
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+            };
+            AddChild(_contentPanel);
+
+            InkPanel titlePanel = new InkPanel
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, 0f),
+                Size = new Float2(1f, 60f),
+                BackgroundColor = Color.Transparent,
+            };
+            _contentPanel.AddChild(titlePanel);
+
+            _navVerticalTitle = new InkTextBlock(InkTextStyle.Display)
+            {
+                Text = "市集",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, 0f),
+                Size = new Float2(40f, 60f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 26f),
+                TextColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.85f),
+            };
+            titlePanel.AddChild(_navVerticalTitle);
+
+            _pageTitle = new InkTextBlock(InkTextStyle.Display)
+            {
+                Text = "商店",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(50f, 8f),
+                Size = new Float2(200f, 44f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 32f),
+                TextColor = InkWashTheme.TextBrand,
+            };
+            titlePanel.AddChild(_pageTitle);
+
+            InkPanel tabsPanel = new InkPanel
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(1f - 400f, 12f),
+                Size = new Float2(400f, 36f),
+                BackgroundColor = InkWashTheme.BaseTertiary,
+            };
+            titlePanel.AddChild(tabsPanel);
+
+            string[] tabs = { "推荐", "装备", "消耗品", "材料", "外观", "礼包" };
+            _tabButtons = new TabButton[6];
+            float tabWidth = 400f / 6f;
+            for (int i = 0; i < tabs.Length; i++)
+            {
+                var tab = new TabButton(tabs[i], i)
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(i * tabWidth, 0f),
+                    Size = new Float2(tabWidth, 36f),
+                    Active = (i == 0),
+                };
+                tab.Clicked += OnTabClicked;
+                _tabButtons[i] = tab;
+                tabsPanel.AddChild(tab);
+            }
+
+            var items = new[]
+            {
+                (name: "新手大礼包", quality: InkWashTheme.InkQuality.Legendary, price: 328, currency: "银两", tag: "传世"),
+                (name: "神秘宝箱", quality: InkWashTheme.InkQuality.Epic, price: 200, currency: "银两", tag: "史"),
+                (name: "精良装备箱", quality: InkWashTheme.InkQuality.Rare, price: 80, currency: "银两", tag: "珍"),
+                (name: "精良武器", quality: InkWashTheme.InkQuality.Uncommon, price: 50, currency: "银两", tag: "良"),
+                (name: "经验丹×10", quality: InkWashTheme.InkQuality.Uncommon, price: 20, currency: "银两", tag: "良"),
+                (name: "染色剂套装", quality: InkWashTheme.InkQuality.Rare, price: 120, currency: "银两", tag: "珍"),
+                (name: "修复锤×5", quality: InkWashTheme.InkQuality.Common, price: 500, currency: "铜钱", tag: "凡"),
+                (name: "回城符×3", quality: InkWashTheme.InkQuality.Common, price: 300, currency: "铜钱", tag: "凡"),
+                (name: "体力丹×5", quality: InkWashTheme.InkQuality.Common, price: 200, currency: "铜钱", tag: "凡"),
+            };
+
+            _shopCards = new ShopCard[9];
+            for (int i = 0; i < items.Length; i++)
+            {
+                var item = items[i];
+                var card = new ShopCard(item.name, item.quality, item.price, item.currency, item.tag, i)
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(0f, 80f + i * 100f),
+                    Size = new Float2(1f, 96f),
+                    Selected = (i == _selectedCard),
+                };
+                card.Clicked += OnCardClicked;
+                _shopCards[i] = card;
+                _contentPanel.AddChild(card);
+            }
+        }
+
+        private void BuildConfirmPanel()
+        {
+            _confirmPanel = new InkPaperPanel
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+            };
+            AddChild(_confirmPanel);
+
+            InkCornerDeco corners = new InkCornerDeco
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = Float2.Zero,
+                Size = new Float2(ConfirmPanelWidth, 500f),
+            };
+            _confirmPanel.AddChild(corners);
+
+            InkPanel contentPanel = new InkPanel
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(20f, 20f),
+                Size = new Float2(ConfirmPanelWidth - 40f, 460f),
+            };
+            _confirmPanel.AddChild(contentPanel);
+
+            InkPanel titleRow = new InkPanel
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, 0f),
+                Size = new Float2(1f, 32f),
+            };
+            contentPanel.AddChild(titleRow);
+
+            _confirmTitle = new InkTextBlock(InkTextStyle.Heading)
+            {
+                Text = "新手大礼包",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, 0f),
+                Size = new Float2(1f - 60f, 32f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 17f),
+                TextColor = InkWashTheme.TextOnPaper,
+            };
+            titleRow.AddChild(_confirmTitle);
+
+            _confirmQualityTag = new InkTag
+            {
+                TagVariant = InkTagVariant.Default,
                 Text = "传世",
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(DetailTagX, DetailTagY),
-                Size = new Float2(DetailTagWidth, DetailTagHeight),
+                Location = new Float2(1f - 56f, 4f),
+                Size = new Float2(52f, 24f),
             };
-            _rightPanel.AddChild(_detailQualityTag);
+            titleRow.AddChild(_confirmQualityTag);
 
-            // 3. 商品属性：Body 样式，位置 (20, 96)
-            _detailAttrText = new InkTextBlock(InkTextStyle.Body)
+            InkTextBlock itemsLabel = new InkTextBlock(InkTextStyle.Caption)
             {
-                Text = "攻击+120\n会心+15\n耐久 200/200",
+                Text = "礼包内容",
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(DetailAttrX, DetailAttrY),
-                Size = new Float2(DetailAttrWidth, DetailAttrHeight),
-                VerticalAlignment = TextAlignment.Near,
+                Location = new Float2(0f, 40f),
+                Size = new Float2(1f, 18f),
+                TextColor = InkWashTheme.TextOnPaper,
             };
-            _rightPanel.AddChild(_detailAttrText);
+            contentPanel.AddChild(itemsLabel);
 
-            // 4. 价格：Number 样式，位置 (20, screenHeight - 280)
-            _priceText = new InkTextBlock(InkTextStyle.Number)
+            string[] itemNames = { "经验丹", "修复锤", "回城符", "体力丹", "银两" };
+            string[] itemCounts = { "×10", "×5", "×3", "×5", "×500" };
+            _confirmItems = new InkTextBlock[10];
+            for (int i = 0; i < itemNames.Length; i++)
             {
-                Text = "100两",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(DetailPriceX, _screenSize.Y - DetailPriceYFromScreenBottom),
-                Size = new Float2(DetailPriceWidth, DetailPriceHeight),
-            };
-            _rightPanel.AddChild(_priceText);
+                InkPanel itemRow = new InkPanel
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(0f, 64f + i * 24f),
+                    Size = new Float2(1f, 22f),
+                };
+                contentPanel.AddChild(itemRow);
 
-            // 5. 余额不足警告：朱红色 Caption 文本，默认隐藏，位置与价格同列上方
-            _warningText = new InkTextBlock(InkTextStyle.Caption)
+                _confirmItems[i * 2] = new InkTextBlock(InkTextStyle.Body)
+                {
+                    Text = itemNames[i],
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(0f, 0f),
+                    Size = new Float2(1f - 60f, 22f),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
+                    TextColor = InkWashTheme.TextOnPaper,
+                };
+                itemRow.AddChild(_confirmItems[i * 2]);
+
+                _confirmItems[i * 2 + 1] = new InkTextBlock(InkTextStyle.Number)
+                {
+                    Text = itemCounts[i],
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(1f - 56f, 0f),
+                    Size = new Float2(52f, 22f),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
+                    TextColor = InkWashTheme.TextOnPaper,
+                };
+                itemRow.AddChild(_confirmItems[i * 2 + 1]);
+            }
+
+            InkDivider divider = new InkDivider
             {
-                Text = "银两不足",
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(DetailPriceX, _screenSize.Y - DetailPriceYFromScreenBottom - 24f),
-                Size = new Float2(DetailPriceWidth, 20f),
-                TextColor = InkWashTheme.VermilionPrimary,
-                Visible = false,
+                Location = new Float2(0f, 180f),
+                Size = new Float2(1f, 1f),
             };
-            _rightPanel.AddChild(_warningText);
+            contentPanel.AddChild(divider);
 
-            // 6. "购买"按钮：Primary Lg，位置 (40, screenHeight - 200)，尺寸 (200, 44)
-            _purchaseButton = new InkButton
+            InkPanel priceRow = new InkPanel
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, 192f),
+                Size = new Float2(1f, 24f),
+            };
+            contentPanel.AddChild(priceRow);
+
+            InkTextBlock priceLabel = new InkTextBlock(InkTextStyle.Body)
+            {
+                Text = "单价",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, 0f),
+                Size = new Float2(60f, 24f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
+                TextColor = InkWashTheme.TextOnPaper,
+            };
+            priceRow.AddChild(priceLabel);
+
+            _confirmPrice = new InkTextBlock(InkTextStyle.Number)
+            {
+                Text = "328 银两",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(1f - 80f, 0f),
+                Size = new Float2(76f, 24f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
+                TextColor = InkWashTheme.GoldPrimary,
+            };
+            priceRow.AddChild(_confirmPrice);
+
+            InkPanel qtyRow = new InkPanel
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, 224f),
+                Size = new Float2(1f, 32f),
+            };
+            contentPanel.AddChild(qtyRow);
+
+            InkTextBlock qtyLabel = new InkTextBlock(InkTextStyle.Body)
+            {
+                Text = "数量",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, 4f),
+                Size = new Float2(60f, 24f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
+                TextColor = InkWashTheme.TextOnPaper,
+            };
+            qtyRow.AddChild(qtyLabel);
+
+            InkButton qtyDecBtn = new InkButton
+            {
+                Variant = InkButtonVariant.Default,
+                Text = "-",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(1f - 100f, 4f),
+                Size = new Float2(32f, 28f),
+            };
+            qtyDecBtn.ButtonClicked += (b) => { if (_buyQty > 1) { _buyQty--; UpdateConfirmPanel(); } };
+            qtyRow.AddChild(qtyDecBtn);
+
+            _confirmQty = new InkTextBlock(InkTextStyle.Number)
+            {
+                Text = "1",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(1f - 64f, 4f),
+                Size = new Float2(28f, 28f),
+                HorizontalAlignment = TextAlignment.Center,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 14f),
+                TextColor = InkWashTheme.TextOnPaper,
+            };
+            qtyRow.AddChild(_confirmQty);
+
+            InkButton qtyIncBtn = new InkButton
+            {
+                Variant = InkButtonVariant.Default,
+                Text = "+",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(1f - 32f, 4f),
+                Size = new Float2(28f, 28f),
+            };
+            qtyIncBtn.ButtonClicked += (b) => { if (_buyQty < 10) { _buyQty++; UpdateConfirmPanel(); } };
+            qtyRow.AddChild(qtyIncBtn);
+
+            InkPanel totalPanel = new InkPanel
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, 264f),
+                Size = new Float2(1f, 40f),
+                BackgroundColor = UIStyleTokens.WithAlpha(UIStyleTokens.BloodPrimary, 0.08f),
+            };
+            contentPanel.AddChild(totalPanel);
+
+            InkTextBlock totalLabel = new InkTextBlock(InkTextStyle.Body)
+            {
+                Text = "总价",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(12f, 8f),
+                Size = new Float2(60f, 24f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
+                TextColor = InkWashTheme.TextOnPaper,
+            };
+            totalPanel.AddChild(totalLabel);
+
+            _confirmTotal = new InkTextBlock(InkTextStyle.Number)
+            {
+                Text = "328 银两",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(1f - 80f, 6f),
+                Size = new Float2(76f, 28f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 18f),
+                TextColor = InkWashTheme.GoldPrimary,
+            };
+            totalPanel.AddChild(_confirmTotal);
+
+            InkPanel balanceRow = new InkPanel
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, 312f),
+                Size = new Float2(1f, 24f),
+            };
+            contentPanel.AddChild(balanceRow);
+
+            InkTextBlock balanceLabel = new InkTextBlock(InkTextStyle.Caption)
+            {
+                Text = "当前银两",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, 0f),
+                Size = new Float2(80f, 24f),
+                TextColor = InkWashTheme.TextOnPaper,
+            };
+            balanceRow.AddChild(balanceLabel);
+
+            _confirmBalance = new InkTextBlock(InkTextStyle.Number)
+            {
+                Text = "328（刚好够）",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(1f - 100f, 0f),
+                Size = new Float2(96f, 24f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
+                TextColor = InkWashTheme.TextOnPaper,
+            };
+            balanceRow.AddChild(_confirmBalance);
+
+            InkPanel buttonPanel = new InkPanel
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, 344f),
+                Size = new Float2(1f, 44f),
+            };
+            contentPanel.AddChild(buttonPanel);
+
+            _confirmButton = new InkButton
             {
                 Variant = InkButtonVariant.Primary,
-                ButtonSize = InkButtonSize.Lg,
-                Text = "购买",
+                Text = "确认购买",
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(DetailButtonX, _screenSize.Y - DetailButtonYFromScreenBottom),
-                Size = new Float2(DetailButtonWidth, DetailButtonHeight),
+                Location = new Float2(0f, 0f),
+                Size = new Float2(1f - 72f, 44f),
             };
-            _purchaseButton.ButtonClicked += OnPurchaseButtonClicked;
-            _rightPanel.AddChild(_purchaseButton);
+            buttonPanel.AddChild(_confirmButton);
 
-            // 默认选中第一个商品
-            SelectItem(0);
+            _cancelButton = new InkButton
+            {
+                Variant = InkButtonVariant.Default,
+                Text = "取消",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(1f - 64f, 0f),
+                Size = new Float2(60f, 44f),
+            };
+            buttonPanel.AddChild(_cancelButton);
         }
 
-        // ===================================================================
-        // 事件处理
-        // =======================================================================
-
-        /// <summary>
-        /// 购买按钮点击事件。点击"购买"按钮时触发，由外部订阅执行实际购买逻辑。
-        /// </summary>
-        public event Action PurchaseClicked;
-
-        /// <summary>
-        /// 购买按钮点击处理：检查选中商品与金币余额，
-        /// 余额足够时扣减金币并标记售罄，余额不足时显示朱红警告。
-        /// </summary>
-        /// <param name="button">触发事件的按钮（未使用）</param>
-        private void OnPurchaseButtonClicked(Button button)
+        private void OnTabClicked(int index)
         {
-            if (_selectedItemIndex < 0 || _shopItems == null || _selectedItemIndex >= _shopItems.Length)
-                return;
-
-            var item = _shopItems[_selectedItemIndex];
-            if (item == null || item.SoldOut)
-                return;
-
-            // 隐藏警告文本（每次点击先重置）
-            if (_warningText != null)
-                _warningText.Visible = false;
-
-            if (_goldBalance < item.Price)
+            _selectedTab = index;
+            for (int i = 0; i < _tabButtons.Length; i++)
             {
-                // 余额不足：显示朱红警告
-                if (_warningText != null)
-                    _warningText.Visible = true;
-                return;
-            }
-
-            // 扣减金币并标记售罄
-            _goldBalance -= item.Price;
-            item.SoldOut = true;
-            UpdateGoldLabel();
-
-            // 更新格子徽章为"售罄"
-            if (_cells != null && _selectedItemIndex < _cells.Length && _cells[_selectedItemIndex] != null)
-            {
-                _cells[_selectedItemIndex].Badge = "售罄";
-            }
-
-            // 更新购买按钮文本
-            if (_purchaseButton != null)
-                _purchaseButton.Text = "已售罄";
-
-            try
-            {
-                PurchaseClicked?.Invoke();
-            }
-            catch (Exception ex)
-            {
-                FlaxEngine.Debug.LogError(
-                    $"[MenuShopPage] PurchaseClicked 触发失败: {ex.Message}");
+                _tabButtons[i].Active = (i == index);
             }
         }
 
-        /// <summary>
-        /// 分类项点击处理：切换 active 态并按分类过滤商品格子。
-        /// </summary>
-        /// <param name="index">点击的分类项索引</param>
-        private void OnCategoryClicked(int index)
+        private void OnCardClicked(int index)
         {
-            if (_categoryItems == null)
-                return;
+            SelectCard(index);
+        }
 
-            for (int i = 0; i < _categoryItems.Length; i++)
+        private void SelectCard(int index)
+        {
+            _selectedCard = index;
+            for (int i = 0; i < _shopCards.Length; i++)
             {
-                if (_categoryItems[i] != null)
-                    _categoryItems[i].Active = (i == index);
+                _shopCards[i].Selected = (i == index);
             }
 
-            FilterShopItemsByCategory(index);
+            var items = new[]
+            {
+                (name: "新手大礼包", quality: InkWashTheme.InkQuality.Legendary, price: 328, currency: "银两", tag: "传世"),
+                (name: "神秘宝箱", quality: InkWashTheme.InkQuality.Epic, price: 200, currency: "银两", tag: "史"),
+                (name: "精良装备箱", quality: InkWashTheme.InkQuality.Rare, price: 80, currency: "银两", tag: "珍"),
+                (name: "精良武器", quality: InkWashTheme.InkQuality.Uncommon, price: 50, currency: "银两", tag: "良"),
+                (name: "经验丹×10", quality: InkWashTheme.InkQuality.Uncommon, price: 20, currency: "银两", tag: "良"),
+                (name: "染色剂套装", quality: InkWashTheme.InkQuality.Rare, price: 120, currency: "银两", tag: "珍"),
+                (name: "修复锤×5", quality: InkWashTheme.InkQuality.Common, price: 500, currency: "铜钱", tag: "凡"),
+                (name: "回城符×3", quality: InkWashTheme.InkQuality.Common, price: 300, currency: "铜钱", tag: "凡"),
+                (name: "体力丹×5", quality: InkWashTheme.InkQuality.Common, price: 200, currency: "铜钱", tag: "凡"),
+            };
+
+            var item = items[index];
+            _confirmTitle.Text = item.name;
+            _confirmQualityTag.Text = item.tag;
+            _confirmPrice.Text = $"{item.price} {item.currency}";
+            _buyQty = 1;
+            UpdateConfirmPanel();
         }
 
-        /// <summary>
-        /// 按分类过滤商品格子：隐藏不匹配项，将匹配项重新紧凑排列。
-        /// </summary>
-        /// <param name="categoryIndex">分类索引（0=兵器，1=防具，2=丹药，3=材料）</param>
-        private void FilterShopItemsByCategory(int categoryIndex)
+        private void UpdateConfirmPanel()
         {
-            string[] categoryNames = { "兵器", "防具", "丹药", "材料" };
-            if (categoryIndex < 0 || categoryIndex >= categoryNames.Length)
-                return;
-            if (_shopItems == null || _cells == null || _middlePanel == null)
-                return;
-
-            string selectedName = categoryNames[categoryIndex];
-            float gridWidth = CellColumnCount * CellSize + (CellColumnCount - 1) * CellGap;
-            float gridStartX = (_middlePanel.Width - gridWidth) * 0.5f;
-
-            int visibleIndex = 0;
-            for (int i = 0; i < _shopItems.Length; i++)
+            var items = new[]
             {
-                if (_cells[i] == null)
-                    continue;
-                bool match = _shopItems[i].Category == selectedName;
-                _cells[i].Visible = match;
-                if (match)
-                {
-                    int col = visibleIndex % CellColumnCount;
-                    int row = visibleIndex / CellColumnCount;
-                    _cells[i].Location = new Float2(
-                        gridStartX + col * (CellSize + CellGap),
-                        GridTopPadding + row * (CellSize + CellGap));
-                    visibleIndex++;
-                }
+                (price: 328, currency: "银两"),
+                (price: 200, currency: "银两"),
+                (price: 80, currency: "银两"),
+                (price: 50, currency: "银两"),
+                (price: 20, currency: "银两"),
+                (price: 120, currency: "银两"),
+                (price: 500, currency: "铜钱"),
+                (price: 300, currency: "铜钱"),
+                (price: 200, currency: "铜钱"),
+            };
+
+            var item = items[_selectedCard];
+            int total = item.price * _buyQty;
+            _confirmQty.Text = _buyQty.ToString();
+            _confirmTotal.Text = $"{total} {item.currency}";
+
+            int balance = item.currency == "银两" ? 328 : 12450;
+            string status = total <= balance ? "（刚好够）" : "（不足）";
+            _confirmBalance.Text = $"{balance}{status}";
+            if (total > balance)
+            {
+                _confirmBalance.TextColor = InkWashTheme.BloodBright;
             }
-        }
-
-        /// <summary>
-        /// 选中指定商品并更新右侧详情面板。
-        /// </summary>
-        /// <param name="index">商品索引</param>
-        private void SelectItem(int index)
-        {
-            if (_shopItems == null || index < 0 || index >= _shopItems.Length)
-                return;
-
-            _selectedItemIndex = index;
-            var item = _shopItems[index];
-
-            if (_detailNameText != null)
-                _detailNameText.Text = item.Name;
-
-            if (_detailQualityTag != null)
-                _detailQualityTag.Text = GetQualityDisplayName(item.Quality);
-
-            if (_detailAttrText != null)
-                _detailAttrText.Text = item.Attrs;
-
-            if (_priceText != null)
-                _priceText.Text = item.SoldOut ? "已售罄" : $"{item.Price}两";
-
-            if (_purchaseButton != null)
-                _purchaseButton.Text = item.SoldOut ? "已售罄" : "购买";
-
-            if (_warningText != null)
-                _warningText.Visible = false;
-        }
-
-        /// <summary>
-        /// 品质枚举转显示名。
-        /// </summary>
-        private static string GetQualityDisplayName(InkWashTheme.InkQuality quality)
-        {
-            switch (quality)
+            else
             {
-                case InkWashTheme.InkQuality.Legendary: return "传世";
-                case InkWashTheme.InkQuality.Epic: return "史诗";
-                case InkWashTheme.InkQuality.Rare: return "稀有";
-                case InkWashTheme.InkQuality.Uncommon: return "精良";
-                default: return "普通";
+                _confirmBalance.TextColor = InkWashTheme.TextOnPaper;
             }
         }
 
-        /// <summary>
-        /// 更新金币余额标签文本。
-        /// </summary>
-        private void UpdateGoldLabel()
-        {
-            if (_goldLabel != null)
-                _goldLabel.Text = $"银两：{_goldBalance}";
-        }
-
-        /// <summary>
-        /// 鼠标按下事件处理：先交由基类路由子控件，
-        /// 若子控件未处理，则检测是否命中中间面板的商品格子，执行选中。
-        /// </summary>
-        /// <param name="location">相对于本控件的鼠标坐标</param>
-        /// <param name="button">鼠标按键</param>
-        /// <returns>是否处理了该事件</returns>
-        public override bool OnMouseDown(Float2 location, MouseButton button)
-        {
-            bool handled = base.OnMouseDown(location, button);
-            if (handled)
-                return true;
-
-            // 商品格子命中检测
-            if (_middlePanel != null && _cells != null && _shopItems != null)
-            {
-                Float2 middleLocal = location - _middlePanel.Location;
-                if (middleLocal.X >= 0f && middleLocal.X < _middlePanel.Width &&
-                    middleLocal.Y >= 0f && middleLocal.Y < _middlePanel.Height)
-                {
-                    for (int i = 0; i < _cells.Length; i++)
-                    {
-                        if (_cells[i] == null || !_cells[i].Visible)
-                            continue;
-                        Float2 cellLocal = middleLocal - _cells[i].Location;
-                        if (cellLocal.X >= 0f && cellLocal.X < _cells[i].Width &&
-                            cellLocal.Y >= 0f && cellLocal.Y < _cells[i].Height)
-                        {
-                            SelectItem(i);
-                            return true;
-                        }
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        // ===================================================================
-        // 布局计算
-        // =======================================================================
-
-        /// <summary>
-        /// 根据当前 <see cref="_screenSize"/> 重新计算所有子控件的位置与尺寸。
-        /// 由构造函数与 <see cref="RefreshLayout"/> 调用。
-        /// </summary>
         private void ApplyLayout()
         {
             float sw = _screenSize.X;
             float sh = _screenSize.Y;
 
-            // SubTask 9.1 标题栏：位置 (0, 0)，宽度铺满，高度 48
-            if (_title != null)
+            if (_leftNavPanel != null)
             {
-                _title.Location = Float2.Zero;
-                _title.Size = new Float2(sw, TitleHeight);
+                _leftNavPanel.Location = new Float2(0f, 0f);
+                _leftNavPanel.Size = new Float2(LeftNavWidth, sh);
             }
 
-            // SubTask 9.2 左侧分类面板：(40, 80)，尺寸 (180, sh - 160)
-            if (_leftPanel != null)
+            if (_topBarPanel != null)
             {
-                _leftPanel.Location = new Float2(LeftPanelX, ContentTop);
-                _leftPanel.Size = new Float2(LeftPanelWidth, sh - ContentTop - ContentBottomMargin);
+                _topBarPanel.Location = new Float2(LeftNavWidth, 0f);
+                _topBarPanel.Size = new Float2(sw - LeftNavWidth, TopBarHeight);
             }
 
-            // SubTask 9.3 中间商品网格面板：(240, 80)，尺寸 (sw - 240 - 320 - 40, sh - 160)
-            if (_middlePanel != null)
+            if (_topBarCopper != null)
             {
-                float middleWidth = sw - MiddlePanelX - MiddlePanelRightReserve;
-                _middlePanel.Location = new Float2(MiddlePanelX, ContentTop);
-                _middlePanel.Size = new Float2(middleWidth, sh - ContentTop - ContentBottomMargin);
+                _topBarCopper.Location = new Float2(sw - 220f, 20f);
+            }
+            if (_topBarSilver != null)
+            {
+                _topBarSilver.Location = new Float2(sw - 100f, 20f);
+            }
 
-                // 重新居中商品网格内的 8 个 InkCell
-                if (_cells != null)
+            float contentWidth = sw - LeftNavWidth - ConfirmPanelWidth - 24f;
+            if (_contentPanel != null)
+            {
+                _contentPanel.Location = new Float2(LeftNavWidth + 24f, TopBarHeight + 16f);
+                _contentPanel.Size = new Float2(contentWidth, sh - TopBarHeight - 80f);
+            }
+
+            if (_shopCards != null)
+            {
+                int cols = sw >= 1400 ? 3 : sw >= 1000 ? 2 : 1;
+                float cardWidth = (contentWidth - (cols - 1) * 16f) / cols;
+                float cardHeight = 96f;
+
+                for (int i = 0; i < _shopCards.Length; i++)
                 {
-                    float gridWidth = CellColumnCount * CellSize + (CellColumnCount - 1) * CellGap;
-                    float gridStartX = (_middlePanel.Width - gridWidth) * 0.5f;
-                    for (int i = 0; i < _cells.Length; i++)
-                    {
-                        if (_cells[i] == null)
-                            continue;
-                        int col = i % CellColumnCount;
-                        int row = i / CellColumnCount;
-                        _cells[i].Location = new Float2(
-                            gridStartX + col * (CellSize + CellGap),
-                            GridTopPadding + row * (CellSize + CellGap));
-                    }
+                    int col = i % cols;
+                    int row = i / cols;
+                    _shopCards[i].Location = new Float2(col * (cardWidth + 16f), 80f + row * (cardHeight + 16f));
+                    _shopCards[i].Size = new Float2(cardWidth, cardHeight);
                 }
             }
 
-            // SubTask 9.4 右侧详情面板：(sw - 320, 80)，尺寸 (280, sh - 160)
-            if (_rightPanel != null)
+            if (_confirmPanel != null)
             {
-                _rightPanel.Location = new Float2(sw - RightPanelRightOffset, ContentTop);
-                _rightPanel.Size = new Float2(RightPanelWidth, sh - ContentTop - ContentBottomMargin);
-            }
-
-            // 价格文本：Y = screenHeight - 280（面板内局部坐标）
-            if (_priceText != null)
-            {
-                _priceText.Location = new Float2(
-                    DetailPriceX,
-                    sh - DetailPriceYFromScreenBottom);
-            }
-
-            // 购买按钮：Y = screenHeight - 200（面板内局部坐标）
-            if (_purchaseButton != null)
-            {
-                _purchaseButton.Location = new Float2(
-                    DetailButtonX,
-                    sh - DetailButtonYFromScreenBottom);
-            }
-
-            // 金币余额标签：标题栏右侧（X = sw - 220，Y = 0）
-            if (_goldLabel != null)
-            {
-                _goldLabel.Location = new Float2(sw - 220f, 0f);
-                _goldLabel.Size = new Float2(200f, TitleHeight);
-            }
-
-            // 余额不足警告文本：与价格同列上方（Y = sh - 280 - 24，面板内局部坐标）
-            if (_warningText != null)
-            {
-                _warningText.Location = new Float2(
-                    DetailPriceX,
-                    sh - DetailPriceYFromScreenBottom - 24f);
+                _confirmPanel.Location = new Float2(sw - ConfirmPanelWidth - 24f, TopBarHeight + 16f);
+                _confirmPanel.Size = new Float2(ConfirmPanelWidth, 500f);
             }
         }
 
-        /// <summary>
-        /// 在屏幕尺寸变化时重新布局所有子控件。
-        /// 外部（如 <see cref="InkPageShell"/> 或屏幕大小变更监听器）应调用此方法。
-        /// </summary>
         public void RefreshLayout()
         {
-            // 优先使用控件实际尺寸（已由 InkPageShell.LoadPage 的 StretchAll 锚点填充父容器）
             float w = Width;
             float h = Height;
             if (w <= 0f || h <= 0f)
             {
-                // 控件尚未布局，回退到屏幕尺寸
                 var screen = FlaxEngine.Screen.Size;
                 w = screen.X;
                 h = screen.Y;
             }
             if (w <= 0f || h <= 0f)
             {
-                // 仍然为 0，使用 1920x1080 兜底
                 w = 1920f;
                 h = 1080f;
             }
@@ -810,102 +750,222 @@ namespace HundunWorld.Game.UI.Ink.Pages
             ApplyLayout();
         }
 
-        // ===================================================================
-        // 嵌套类
-        // =======================================================================
-
-        /// <summary>
-        /// 可点击分类列表项。
-        /// 继承 <see cref="InkListItem"/>，添加 <see cref="Clicked"/> 事件，
-        /// 通过覆写 <see cref="OnMouseDown"/>/<see cref="OnMouseUp"/> 处理点击判定。
-        /// 用于商店左侧分类切换 active 态。
-        /// </summary>
-        private class CategoryItem : InkListItem
+        private class TabButton : ContainerControl
         {
-            /// <summary>鼠标是否按下（用于点击释放判定）</summary>
-            private bool _isMouseDown;
+            private string _text;
+            private int _index;
+            private bool _active;
+            private InkTextBlock _label;
 
-            /// <summary>
-            /// 点击事件。鼠标左键在控件范围内按下并释放时触发。
-            /// </summary>
-            public event Action Clicked;
+            public event Action<int> Clicked;
 
-            /// <summary>
-            /// 构造函数：初始化可点击分类项。
-            /// </summary>
-            public CategoryItem()
+            public bool Active
             {
-                // 默认高度由外部 Size 设置，此处不覆盖 InkListItem 的默认值
+                get => _active;
+                set
+                {
+                    _active = value;
+                    if (_label != null)
+                    {
+                        _label.TextColor = _active ? InkWashTheme.TextOnBrand : InkWashTheme.TextSecondary;
+                    }
+                    if (_active)
+                    {
+                        BackgroundColor = new Color(InkWashTheme.GoldBright.R, InkWashTheme.GoldBright.G, InkWashTheme.GoldBright.B, 1f);
+                    }
+                    else
+                    {
+                        BackgroundColor = Color.Transparent;
+                    }
+                }
             }
 
-            /// <inheritdoc />
+            public TabButton(string text, int index)
+            {
+                _text = text;
+                _index = index;
+                ClipChildren = false;
+
+                _label = new InkTextBlock(InkTextStyle.Body)
+                {
+                    Text = text,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = Float2.Zero,
+                    Size = new Float2(1f, 36f),
+                    HorizontalAlignment = TextAlignment.Center,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
+                    TextColor = InkWashTheme.TextSecondary,
+                };
+                AddChild(_label);
+            }
+
             public override bool OnMouseDown(Float2 location, MouseButton button)
             {
                 base.OnMouseDown(location, button);
                 if (button == MouseButton.Left)
-                    _isMouseDown = true;
-                return true;
-            }
-
-            /// <inheritdoc />
-            public override bool OnMouseUp(Float2 location, MouseButton button)
-            {
-                base.OnMouseUp(location, button);
-                if (button == MouseButton.Left && _isMouseDown)
                 {
-                    _isMouseDown = false;
-                    // 判定释放点是否仍在项范围内
-                    if (location.X >= 0f && location.X <= Width &&
-                        location.Y >= 0f && location.Y <= Height)
-                    {
-                        Clicked?.Invoke();
-                    }
+                    Clicked?.Invoke(_index);
                 }
                 return true;
             }
         }
 
-        /// <summary>
-        /// 商店商品数据（mock）。
-        /// 承载商品名/品质/价格/分类/属性描述/售罄状态，
-        /// 与 <see cref="MenuShopPage._cells"/> 数组一一对应。
-        /// </summary>
-        private class ShopItem
+        private class ShopCard : ContainerControl
         {
-            /// <summary>商品名称</summary>
-            public string Name;
+            private string _name;
+            private InkWashTheme.InkQuality _quality;
+            private int _price;
+            private string _currency;
+            private string _tag;
+            private int _index;
+            private bool _selected;
+            private InkPanel _qualityPanel;
+            private InkTextBlock _nameLabel;
+            private InkTag _qualityTag;
+            private InkTextBlock _priceLabel;
+            private InkButton _buyButton;
+            private Color _borderColor = InkWashTheme.BorderGold;
+            private float _borderThickness = 1f;
 
-            /// <summary>商品品质（用于 <see cref="InkCell.Quality"/> 与品质标签显示）</summary>
-            public InkWashTheme.InkQuality Quality;
+            public event Action<int> Clicked;
 
-            /// <summary>商品价格（单位：两）</summary>
-            public int Price;
-
-            /// <summary>商品所属分类名（与左侧分类侧边栏一致：兵器/防具/丹药/材料）</summary>
-            public string Category;
-
-            /// <summary>商品属性描述（多行文本，显示在右侧详情面板）</summary>
-            public string Attrs;
-
-            /// <summary>是否已售罄</summary>
-            public bool SoldOut;
-
-            /// <summary>
-            /// 构造函数：初始化商品数据。
-            /// </summary>
-            /// <param name="name">商品名称</param>
-            /// <param name="quality">商品品质</param>
-            /// <param name="price">商品价格（两）</param>
-            /// <param name="category">分类名</param>
-            /// <param name="attrs">属性描述</param>
-            public ShopItem(string name, InkWashTheme.InkQuality quality, int price, string category, string attrs)
+            public bool Selected
             {
-                Name = name;
-                Quality = quality;
-                Price = price;
-                Category = category;
-                Attrs = attrs;
-                SoldOut = false;
+                get => _selected;
+                set
+                {
+                    _selected = value;
+                    if (_selected)
+                    {
+                        BackgroundColor = new Color(InkWashTheme.VermilionPrimary.R, InkWashTheme.VermilionPrimary.G, InkWashTheme.VermilionPrimary.B, 0.08f);
+                        _borderColor = InkWashTheme.VermilionPrimary;
+                    }
+                    else
+                    {
+                        BackgroundColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.04f);
+                        _borderColor = InkWashTheme.BorderGold;
+                    }
+                }
+            }
+
+            public ShopCard(string name, InkWashTheme.InkQuality quality, int price, string currency, string tag, int index)
+            {
+                _name = name;
+                _quality = quality;
+                _price = price;
+                _currency = currency;
+                _tag = tag;
+                _index = index;
+                ClipChildren = false;
+
+                _qualityPanel = new InkPanel
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(0f, 0f),
+                    Size = new Float2(1f, 80f),
+                };
+                AddChild(_qualityPanel);
+
+                Color qualityColor = GetQualityColor(quality);
+                _qualityPanel.BackgroundColor = new Color(qualityColor.R, qualityColor.G, qualityColor.B, 0.12f);
+
+                InkTextBlock iconText = new InkTextBlock(InkTextStyle.Display)
+                {
+                    Text = GetIconText(quality),
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(16f, 16f),
+                    Size = new Float2(48f, 48f),
+                    HorizontalAlignment = TextAlignment.Center,
+                    VerticalAlignment = TextAlignment.Center,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 32f),
+                    TextColor = qualityColor,
+                };
+                _qualityPanel.AddChild(iconText);
+
+                InkPanel bottomPanel = new InkPanel
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(0f, 80f),
+                    Size = new Float2(1f, 16f),
+                };
+                AddChild(bottomPanel);
+
+                _nameLabel = new InkTextBlock(InkTextStyle.Body)
+                {
+                    Text = name,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(8f, 0f),
+                    Size = new Float2(1f - 140f, 16f),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
+                    TextColor = InkWashTheme.PaperBright,
+                };
+                bottomPanel.AddChild(_nameLabel);
+
+                _qualityTag = new InkTag
+                {
+                    TagVariant = InkTagVariant.Default,
+                    Text = tag,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(1f - 128f, 0f),
+                    Size = new Float2(44f, 16f),
+                };
+                _qualityTag.TextColor = qualityColor;
+                bottomPanel.AddChild(_qualityTag);
+
+                _priceLabel = new InkTextBlock(InkTextStyle.Number)
+                {
+                    Text = $"{price} {currency}",
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(1f - 80f, 0f),
+                    Size = new Float2(72f, 16f),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
+                    TextColor = currency == "银两" ? InkWashTheme.GoldBright : InkWashTheme.PaperBright,
+                };
+                bottomPanel.AddChild(_priceLabel);
+            }
+
+            private static Color GetQualityColor(InkWashTheme.InkQuality quality)
+            {
+                // 按设计方案 §4.1 品质色阶：Legendary=#C8A858(鎏金)、Epic=#8B5E9E、Rare=#4A7EA8、Uncommon=#6B8E5A、Common=#8A8275
+                switch (quality)
+                {
+                    case InkWashTheme.InkQuality.Legendary: return InkWashTheme.QualityLegendary;
+                    case InkWashTheme.InkQuality.Epic: return InkWashTheme.QualityEpic;
+                    case InkWashTheme.InkQuality.Rare: return InkWashTheme.QualityRare;
+                    case InkWashTheme.InkQuality.Uncommon: return InkWashTheme.QualityUncommon;
+                    default: return InkWashTheme.QualityCommon;
+                }
+            }
+
+            private static string GetIconText(InkWashTheme.InkQuality quality)
+            {
+                switch (quality)
+                {
+                    case InkWashTheme.InkQuality.Legendary: return "礼";
+                    case InkWashTheme.InkQuality.Epic: return "宝";
+                    case InkWashTheme.InkQuality.Rare: return "箱";
+                    case InkWashTheme.InkQuality.Uncommon: return "武";
+                    default: return "物";
+                }
+            }
+
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                base.OnMouseDown(location, button);
+                if (button == MouseButton.Left)
+                {
+                    Clicked?.Invoke(_index);
+                }
+                return true;
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+                if (Width > 0f && Height > 0f && _borderThickness > 0f && _borderColor.A > 0f)
+                {
+                    Render2D.DrawRectangle(new Rectangle(0, 0, Width, Height), _borderColor, _borderThickness);
+                }
             }
         }
     }

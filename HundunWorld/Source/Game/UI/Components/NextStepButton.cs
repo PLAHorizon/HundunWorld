@@ -21,12 +21,12 @@ namespace HundunWorld.Game.UI.Components
         private bool _isPressed = false;
 
         // 背景色（按交互状态）— 暗金棕黄色调，匹配参考图
-        private static readonly Color NormalColor = new Color(180f / 255f, 150f / 255f, 60f / 255f, 0.9f);
-        private static readonly Color HoverColor = new Color(200f / 255f, 170f / 255f, 80f / 255f, 0.95f);
-        private static readonly Color PressColor = new Color(150f / 255f, 125f / 255f, 40f / 255f, 1.0f);
+        private static readonly Color NormalColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.9f);
+        private static readonly Color HoverColor = new Color(InkWashTheme.GoldBright.R, InkWashTheme.GoldBright.G, InkWashTheme.GoldBright.B, 0.95f);
+        private static readonly Color PressColor = InkWashTheme.GoldDeep;
         private static readonly Color DisabledColor = new Color(80f / 255f, 80f / 255f, 80f / 255f, 0.5f);
         // 金色外发光颜色 (暗金棕黄)
-        private static readonly Color GlowColor = new Color(180f / 255f, 150f / 255f, 60f / 255f, 0.25f);
+        private static readonly Color GlowColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.25f);
 
         /// <summary>
         /// 鼠标进入按钮时触发
@@ -168,8 +168,8 @@ namespace HundunWorld.Game.UI.Components
                 Text = "Space",
                 Size = new Float2(55, 28),
                 Location = new Float2(12, 11),
-                BackgroundColor = new Color(0.15f, 0.15f, 0.15f, 0.9f),
-                TextColor = Color.White,
+                BackgroundColor = new Color(InkWashTheme.BaseDefault.R, InkWashTheme.BaseDefault.G, InkWashTheme.BaseDefault.B, 0.9f),
+                TextColor = InkWashTheme.TextDefault,
                 Font = UIHelper.SetFont(size: 12),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center
@@ -182,8 +182,8 @@ namespace HundunWorld.Game.UI.Components
                 Text = "下一步",
                 Size = new Float2(90, 28),
                 Location = new Float2(95, 11),
-                TextColor = Color.Black,
-                Font = UIHelper.SetFont(size: 16),
+                TextColor = InkWashTheme.TextInverse,
+                Font = UIHelper.SetFont(size: 14),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center
             };
@@ -272,8 +272,8 @@ namespace HundunWorld.Game.UI.Components
             if (_spaceKeyLabel != null && _nextLabel != null)
             {
                 float alpha = enabled ? 1.0f : 0.4f;
-                _spaceKeyLabel.TextColor = new Color(Color.White.R, Color.White.G, Color.White.B, alpha);
-                _nextLabel.TextColor = new Color(Color.Black.R, Color.Black.G, Color.Black.B, alpha);
+                _spaceKeyLabel.TextColor = new Color(InkWashTheme.TextDefault.R, InkWashTheme.TextDefault.G, InkWashTheme.TextDefault.B, alpha);
+                _nextLabel.TextColor = new Color(InkWashTheme.TextInverse.R, InkWashTheme.TextInverse.G, InkWashTheme.TextInverse.B, alpha);
             }
         }
     }

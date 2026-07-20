@@ -13,7 +13,7 @@ namespace HundunWorld.Game.UI.Components
         /// <summary>
         /// 圆角半径（当前版本使用纯色矩形，圆角效果待实现）
         /// </summary>
-        public float CornerRadius { get; set; } = 10.0f;
+        public float CornerRadius { get; set; } = UIStyleTokens.RadiusCard;
 
         /// <summary>
         /// 构造函数：默认裁剪子控件，防止内容溢出面板边界

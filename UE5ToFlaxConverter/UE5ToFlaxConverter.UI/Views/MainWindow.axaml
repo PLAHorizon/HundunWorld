@@ -1,0 +1,226 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:UE5ToFlaxConverter.UI.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1440" d:DesignHeight="900"
+        x:Class="UE5ToFlaxConverter.UI.Views.MainWindow"
+        Title="UE5 → Flax Engine 资源转换工具"
+        Width="1440" Height="900"
+        MinWidth="1120" MinHeight="760"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource HeroBackgroundBrush}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- ===== 标题栏 ===== -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource TitleBarBackgroundBrush}"
+                BorderBrush="{DynamicResource TitleBarBorderBrush}"
+                BorderThickness="0,0,0,1"
+                Height="48">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <!-- 左侧：Logo + 标题 -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="16,0,0,0" Spacing="12" VerticalAlignment="Center">
+                    <Border Width="26" Height="26" CornerRadius="13"
+                            Background="{DynamicResource HorizonPrimaryBrush}"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="U2F" FontSize="9" FontWeight="Bold"
+                                   Foreground="White"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Text="UE5 → Flax 转换器"
+                               FontSize="14" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TitleBarTextBrush}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+                <!-- 中间：状态指示 -->
+                <TextBlock Grid.Column="1"
+                           Text="{Binding StatusText}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TitleBarTextSecondaryBrush}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+                <!-- 右侧：版本号 -->
+                <TextBlock Grid.Column="2"
+                           Text="v1.0"
+                           FontSize="11"
+                           Foreground="{DynamicResource TitleBarTextSecondaryBrush}"
+                           Margin="0,0,16,0"
+                           VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+
+        <!-- ===== 主内容区 ===== -->
+        <Grid Grid.Row="1" RowDefinitions="Auto,Auto,*,Auto" Margin="16,12,16,8">
+
+            <!-- 配置区卡片 -->
+            <Border Grid.Row="0" Classes="Card" Margin="0,0,0,12">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto" RowDefinitions="Auto,Auto,Auto" Margin="4">
+
+                    <!-- 第 1 行：UE5 路径 -->
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="UE5 Content" Classes="Label" Margin="0,0,12,0" />
+                    <TextBox   Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="5"
+                               Text="{Binding Ue5ContentPath}"
+                               Watermark="D:\UE5Project\Content"
+                               Margin="0,0,8,8" />
+                    <Button    Grid.Row="0" Grid.Column="6"
+                               Content="浏览..."
+                               Classes="Secondary"
+                               Command="{Binding BrowseUe5Command}"
+                               Margin="0,0,0,8" />
+
+                    <!-- 第 2 行：输出路径 -->
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="输出目录" Classes="Label" Margin="0,0,12,0" />
+                    <TextBox   Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="5"
+                               Text="{Binding OutputPath}"
+                               Watermark=".\_conversion_preview"
+                               Margin="0,0,8,8" />
+                    <Button    Grid.Row="1" Grid.Column="6"
+                               Content="浏览..."
+                               Classes="Secondary"
+                               Command="{Binding BrowseOutputCommand}"
+                               Margin="0,0,0,8" />
+
+                    <!-- 第 3 行：Profile + 过滤 -->
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Profile" Classes="Label" Margin="0,0,12,0" />
+                    <ComboBox  Grid.Row="2" Grid.Column="1"
+                               ItemsSource="{Binding Profiles}"
+                               SelectedItem="{Binding Profile}"
+                               MinWidth="180"
+                               Margin="0,0,16,0" />
+                    <TextBlock Grid.Row="2" Grid.Column="2" Text="过滤" Classes="Label" Margin="0,0,12,0" />
+                    <TextBox   Grid.Row="2" Grid.Column="3" Grid.ColumnSpan="3"
+                               Text="{Binding Filter}"
+                               Watermark="GA_*.uasset (可选)"
+                               Margin="0,0,8,0" />
+                </Grid>
+            </Border>
+
+            <!-- 操作按钮 + 进度 -->
+            <Grid Grid.Row="1" ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="0,0,0,12">
+                <Button Grid.Column="0"
+                        Content="扫描资源"
+                        Classes="Primary"
+                        Command="{Binding ScanCommand}"
+                        IsEnabled="{Binding !IsScanning}"
+                        Margin="0,0,8,0" />
+                <Button Grid.Column="1"
+                        Content="开始转换"
+                        Classes="Accent"
+                        Command="{Binding ConvertCommand}"
+                        IsEnabled="{Binding !IsConverting}"
+                        Margin="0,0,16,0" />
+                <TextBlock Grid.Column="2"
+                           Text="{Binding StatusText}"
+                           FontSize="12"
+                           Foreground="{DynamicResource BnetTextSecondaryBrush}"
+                           VerticalAlignment="Center"
+                           Margin="0,0,16,0" />
+                <TextBlock Grid.Column="4"
+                           Text="{Binding ProgressText}"
+                           FontSize="12"
+                           Foreground="{DynamicResource BnetBlueBrush}"
+                           VerticalAlignment="Center" />
+            </Grid>
+
+            <!-- 资源列表卡片 -->
+            <Border Grid.Row="2" Classes="Card" Padding="0" Margin="0,0,0,12">
+                <Grid RowDefinitions="Auto,*">
+                    <!-- 列表头部 -->
+                    <Border Grid.Row="0"
+                            Background="{DynamicResource BnetHeaderBgBrush}"
+                            BorderBrush="{DynamicResource BnetDividerBrush}"
+                            BorderThickness="0,0,0,1"
+                            Padding="16,10">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                            <TextBlock Grid.Column="0"
+                                       Text="资源列表"
+                                       Classes="SectionHeader"
+                                       Margin="0" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding AssetsCountText}"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource BnetTextMutedBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2"
+                                       Text="双击单元格可编辑选择"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource BnetTextMutedBrush}"
+                                       VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+                    <!-- DataGrid -->
+                    <DataGrid Grid.Row="1"
+                              ItemsSource="{Binding Assets}"
+                              AutoGenerateColumns="False"
+                              CanUserSortColumns="True"
+                              IsReadOnly="False"
+                              Background="Transparent"
+                              BorderThickness="0">
+                        <DataGrid.Columns>
+                            <DataGridCheckBoxColumn Header="选" Binding="{Binding IsSelected}" Width="40" />
+                            <DataGridTextColumn Header="资源名" Binding="{Binding AssetName}" Width="240" IsReadOnly="True" />
+                            <DataGridTextColumn Header="类型" Binding="{Binding Type}" Width="160" IsReadOnly="True" />
+                            <DataGridTextColumn Header="UE 类" Binding="{Binding UEClass}" Width="160" IsReadOnly="True" />
+                            <DataGridTextColumn Header="路径" Binding="{Binding SourcePath}" Width="*" IsReadOnly="True" />
+                            <DataGridTextColumn Header="大小" Binding="{Binding FileSizeBytes}" Width="100" IsReadOnly="True" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+
+            <!-- 进度条 -->
+            <ProgressBar Grid.Row="3"
+                         Value="{Binding Progress}"
+                         Maximum="100"
+                         IsEnabled="{Binding IsConverting}"
+                         Margin="0,0,0,0" />
+        </Grid>
+
+        <!-- ===== 底部日志面板 ===== -->
+        <Border Grid.Row="2"
+                Background="{DynamicResource BnetHeaderBgBrush}"
+                BorderBrush="{DynamicResource BnetBorderBrush}"
+                BorderThickness="0,1,0,0"
+                Height="180">
+            <Grid RowDefinitions="Auto,*">
+                <!-- 日志头 -->
+                <Border Grid.Row="0"
+                        BorderBrush="{DynamicResource BnetDividerBrush}"
+                        BorderThickness="0,0,0,1"
+                        Padding="16,8">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <TextBlock Grid.Column="0"
+                                   Text="日志输出"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource BnetTextSecondaryBrush}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2"
+                                   Text="{Binding LogCountText}"
+                                   FontSize="11"
+                                   Foreground="{DynamicResource BnetTextMutedBrush}"
+                                   VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+                <!-- 日志内容 -->
+                <ScrollViewer Grid.Row="1" Padding="16,4,16,8">
+                    <ItemsControl ItemsSource="{Binding Logs}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"
+                                           FontFamily="Cascadia Code,Consolas,Menlo,monospace"
+                                           FontSize="12"
+                                           Foreground="{DynamicResource BnetTextSecondaryBrush}"
+                                           TextWrapping="Wrap" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

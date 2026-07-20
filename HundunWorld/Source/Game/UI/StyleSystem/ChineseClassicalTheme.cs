@@ -112,25 +112,25 @@ namespace HundunWorld.Game.UI.StyleSystem
 
         #endregion
 
-        #region 魔兽世界风格 - 品质色常量
+        #region 品质色阶 — 统一为设计规范 5 阶（ui-design-guidelines.md §1.3 / --ink-quality-*）
 
-        /// <summary>普通品质（灰）</summary>
-        public static readonly Color QualityCommon = new Color(0.75f, 0.75f, 0.75f, 1.0f);
+        /// <summary>普通品质（灰白 #8A8275）</summary>
+        public static readonly Color QualityCommon = UIStyleTokens.QualityCommon;
 
-        /// <summary>优秀品质（绿）</summary>
-        public static readonly Color QualityUncommon = new Color(0.18f, 0.90f, 0.18f, 1.0f);
+        /// <summary>优秀品质（青绿 #6B8E5A）</summary>
+        public static readonly Color QualityUncommon = UIStyleTokens.QualityUncommon;
 
-        /// <summary>精良品质（蓝）</summary>
-        public static readonly Color QualityRare = new Color(0.30f, 0.55f, 1.0f, 1.0f);
+        /// <summary>稀有品质（蓝紫 #4A7EA8）</summary>
+        public static readonly Color QualityRare = UIStyleTokens.QualityRare;
 
-        /// <summary>史诗品质（紫）</summary>
-        public static readonly Color QualityEpic = new Color(0.78f, 0.28f, 0.98f, 1.0f);
+        /// <summary>史诗品质（紫 #8B5E9E）</summary>
+        public static readonly Color QualityEpic = UIStyleTokens.QualityEpic;
 
-        /// <summary>传说品质（橙）</summary>
-        public static readonly Color QualityLegendary = new Color(1.0f, 0.62f, 0.12f, 1.0f);
+        /// <summary>传说品质（赤金 #C8A858，复用鎏金主色）</summary>
+        public static readonly Color QualityLegendary = UIStyleTokens.QualityLegendary;
 
-        /// <summary>神器品质（红）</summary>
-        public static readonly Color QualityArtifact = new Color(1.0f, 0.18f, 0.18f, 1.0f);
+        /// <summary>神器品质（血色 #B85450，设计品质色阶之外的第 6 档，沿用危险色）</summary>
+        public static readonly Color QualityArtifact = UIStyleTokens.BloodPrimary;
 
         /// <summary>
         /// 根据品质等级获取颜色（0=灰, 1=绿, 2=蓝, 3=紫, 4=橙, 5=红）
@@ -169,22 +169,22 @@ namespace HundunWorld.Game.UI.StyleSystem
 
         #endregion
 
-        #region 魔兽世界风格 - 五行元素颜色
+        #region 五行元素颜色 — 统一为设计规范五行色（ui-design-guidelines.md §1.4 / --ink-element-*）
 
-        /// <summary>金元素色</summary>
-        public static readonly Color ElementMetalColor = new Color(1.0f, 0.82f, 0.36f, 1.0f);
+        /// <summary>金元素色（白 #D4C4A0）</summary>
+        public static readonly Color ElementMetalColor = UIStyleTokens.ElementMetal;
 
-        /// <summary>木元素色</summary>
-        public static readonly Color ElementWoodColor = new Color(0.18f, 0.78f, 0.18f, 1.0f);
+        /// <summary>木元素色（青 #6B8E5A）</summary>
+        public static readonly Color ElementWoodColor = UIStyleTokens.ElementWood;
 
-        /// <summary>水元素色</summary>
-        public static readonly Color ElementWaterColor = new Color(0.28f, 0.62f, 1.0f, 1.0f);
+        /// <summary>水元素色（黑 #4A6E8A）</summary>
+        public static readonly Color ElementWaterColor = UIStyleTokens.ElementWater;
 
-        /// <summary>火元素色</summary>
-        public static readonly Color ElementFireColor = new Color(1.0f, 0.28f, 0.12f, 1.0f);
+        /// <summary>火元素色（红 #B85638）</summary>
+        public static readonly Color ElementFireColor = UIStyleTokens.ElementFire;
 
-        /// <summary>土元素色</summary>
-        public static readonly Color ElementEarthColor = new Color(0.82f, 0.55f, 0.26f, 1.0f);
+        /// <summary>土元素色（黄 #8A7B5A）</summary>
+        public static readonly Color ElementEarthColor = UIStyleTokens.ElementEarth;
 
         #endregion
 
@@ -278,6 +278,9 @@ namespace HundunWorld.Game.UI.StyleSystem
 
         #region 视觉层次设计
 
+        // 视觉层次样式统一映射到设计 Token（出处：game-ui-system/colors_and_type.css --ink-* 系列，
+        // ds-btn §4.1 变体规范）。仅改视觉数值，层次语义保持不变。
+
         public static void ApplyVisualHierarchy(Control control, VisualHierarchy hierarchy)
         {
             switch (hierarchy)
@@ -301,12 +304,13 @@ namespace HundunWorld.Game.UI.StyleSystem
         {
             if (control is Button button)
             {
-                button.BackgroundColor = SecondaryColor;
-                button.TextColor = Color.Black;
+                // ds-btn--brand/primary：鎏金底 + 墨黑反白字（--ink-gold-primary / --ink-text-inverse）
+                button.BackgroundColor = UIStyleTokens.GoldPrimary;
+                button.TextColor = UIStyleTokens.TextInverse;
             }
             else if (control is Label label)
             {
-                label.TextColor = SecondaryColor;
+                label.TextColor = UIStyleTokens.TextGold; // --ink-text-gold
             }
         }
 
@@ -314,12 +318,13 @@ namespace HundunWorld.Game.UI.StyleSystem
         {
             if (control is Button button)
             {
-                button.BackgroundColor = PrimaryColor;
-                button.TextColor = TextColor;
+                // 次操作：水墨青底 + 反白字（--ink-jade-primary / --ink-text-inverse）
+                button.BackgroundColor = UIStyleTokens.JadePrimary;
+                button.TextColor = UIStyleTokens.TextInverse;
             }
             else if (control is Label label)
             {
-                label.TextColor = PrimaryColor;
+                label.TextColor = UIStyleTokens.JadePrimary;
             }
         }
 
@@ -327,12 +332,13 @@ namespace HundunWorld.Game.UI.StyleSystem
         {
             if (control is TextBox textBox)
             {
-                textBox.BackgroundColor = InputColor;
-                textBox.TextColor = TextColor;
+                // ds-input 默认态：墨水深背景 + 主文本（--ink-bg-ink / --ink-text-primary）
+                textBox.BackgroundColor = UIStyleTokens.BgInk;
+                textBox.TextColor = UIStyleTokens.TextPrimary;
             }
             else if (control is Panel panel)
             {
-                panel.BackgroundColor = PanelColor;
+                panel.BackgroundColor = UIStyleTokens.BgInk;
             }
         }
 
@@ -340,7 +346,8 @@ namespace HundunWorld.Game.UI.StyleSystem
         {
             if (control is Label label)
             {
-                label.TextColor = new Color(TextColor.R, TextColor.G, TextColor.B, 0.7f);
+                // 辅助文本：宣纸白 0.7 透明度（--ink-text-primary 派生）
+                label.TextColor = new Color(UIStyleTokens.TextPrimary.R, UIStyleTokens.TextPrimary.G, UIStyleTokens.TextPrimary.B, 0.7f);
             }
         }
 
@@ -350,16 +357,17 @@ namespace HundunWorld.Game.UI.StyleSystem
 
         public static void ApplyChineseBorder(Panel panel, ChineseBorderStyle borderStyle)
         {
+            // 边框风格仅改背景层次，统一映射设计 Token 墨色背景（--ink-bg-*）
             switch (borderStyle)
             {
                 case ChineseBorderStyle.Elegant:
-                    panel.BackgroundColor = PanelColor;
+                    panel.BackgroundColor = UIStyleTokens.BgInk;
                     break;
                 case ChineseBorderStyle.Traditional:
-                    panel.BackgroundColor = new Color(PanelColor.R * 0.9f, PanelColor.G * 0.9f, PanelColor.B * 0.9f, PanelColor.A);
+                    panel.BackgroundColor = UIStyleTokens.BgVoid;
                     break;
                 case ChineseBorderStyle.Ornate:
-                    panel.BackgroundColor = new Color(PanelColor.R * 1.1f, PanelColor.G * 1.1f, PanelColor.B * 1.1f, PanelColor.A);
+                    panel.BackgroundColor = UIStyleTokens.BgElevated;
                     break;
             }
         }
@@ -369,13 +377,13 @@ namespace HundunWorld.Game.UI.StyleSystem
             switch (borderStyle)
             {
                 case ChineseBorderStyle.Elegant:
-                    panel.BackgroundColor = PanelColor;
+                    panel.BackgroundColor = UIStyleTokens.BgInk;
                     break;
                 case ChineseBorderStyle.Traditional:
-                    panel.BackgroundColor = new Color(PanelColor.R * 0.9f, PanelColor.G * 0.9f, PanelColor.B * 0.9f, PanelColor.A);
+                    panel.BackgroundColor = UIStyleTokens.BgVoid;
                     break;
                 case ChineseBorderStyle.Ornate:
-                    panel.BackgroundColor = new Color(PanelColor.R * 1.1f, PanelColor.G * 1.1f, PanelColor.B * 1.1f, PanelColor.A);
+                    panel.BackgroundColor = UIStyleTokens.BgElevated;
                     break;
             }
         }

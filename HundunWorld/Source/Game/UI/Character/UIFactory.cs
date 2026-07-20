@@ -18,12 +18,12 @@ namespace HundunWorld.Game.UI.Character
     /// </summary>
     public class UIFactory
     {
-        // 颜色常量
-        private static readonly Color GoldColor = ChineseClassicalTheme.SecondaryColor;
-        private static readonly Color GoldHighlightBg = ChineseClassicalTheme.SecondaryColorWithAlpha(0.25f);
-        private static readonly Color SelPanelBg = new Color(0.05f, 0.06f, 0.10f, 0.85f);
-        private static readonly Color SelBarBg = new Color(0.05f, 0.06f, 0.10f, 0.92f);
-        private static readonly Color CharItemBg = new Color(0.12f, 0.13f, 0.18f, 0.90f);
+        // 颜色常量 — 统一引用设计 Token（出处：game-ui-system/colors_and_type.css --ink-*）
+        private static readonly Color GoldColor = UIStyleTokens.GoldPrimary;
+        private static readonly Color GoldHighlightBg = UIStyleTokens.Gold(0.25f);
+        private static readonly Color SelPanelBg = UIStyleTokens.BgPanel;
+        private static readonly Color SelBarBg = UIStyleTokens.WithAlpha(UIStyleTokens.BgAbyss, 0.92f);
+        private static readonly Color CharItemBg = UIStyleTokens.WithAlpha(UIStyleTokens.BgElevated, 0.90f);
 
         private static readonly string[] ProfessionNames = { "剑客", "刀客", "枪客", "弓手", "法师", "道士", "刺客", "医师" };
         private static readonly string[] StepNames = { "选择性别", "选择面容", "精细捏脸", "命名完成" };
@@ -165,14 +165,14 @@ namespace HundunWorld.Game.UI.Character
                 Parent = gui,
                 Location = new Float2(0, 0),
                 Size = new Float2(W, 80),
-                BackgroundColor = new Color(0.02f, 0.02f, 0.04f, 0.5f)
+                BackgroundColor = UIStyleTokens.WithAlpha(UIStyleTokens.BgAbyss, 0.5f)
             };
             var bottomVignette = new Panel
             {
                 Parent = gui,
                 Location = new Float2(0, H - 60),
                 Size = new Float2(W, 60),
-                BackgroundColor = new Color(0.02f, 0.02f, 0.04f, 0.4f)
+                BackgroundColor = UIStyleTokens.WithAlpha(UIStyleTokens.BgAbyss, 0.4f)
             };
         }
 
@@ -235,10 +235,10 @@ namespace HundunWorld.Game.UI.Character
                 Parent = components.LeftPanel,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Text = "暂无角色,请创建新角色",
-                TextColor = new Color(0.7f, 0.7f, 0.75f),
+                TextColor = UIStyleTokens.TextSecondary,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
-                Font = UIHelper.SetFont(size: 16)
+                Font = UIHelper.SetFont(size: 14)
             };
             components.HintLabel.Location = new Float2(0, components.LeftPanel.Height / 2 - 20);
             components.HintLabel.Size = new Float2(components.LeftPanel.Width, 40);
@@ -276,8 +276,8 @@ namespace HundunWorld.Game.UI.Character
                 Parent = components.BottomBar,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Text = "返回登录",
-                BackgroundColor = new Color(0.12f, 0.13f, 0.16f, 1.0f),
-                TextColor = new Color(0.75f, 0.75f, 0.80f),
+                BackgroundColor = UIStyleTokens.BgElevated,
+                TextColor = UIStyleTokens.TextSecondary,
                 Font = UIHelper.SetFont(size: 18)
             };
             components.BackBtn.Location = new Float2(startX, btnY);
@@ -288,8 +288,8 @@ namespace HundunWorld.Game.UI.Character
                 Parent = components.BottomBar,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Text = "创建新角色",
-                BackgroundColor = new Color(0.15f, 0.15f, 0.18f, 1.0f),
-                TextColor = new Color(0.90f, 0.90f, 0.95f),
+                BackgroundColor = UIStyleTokens.BgPaper,
+                TextColor = UIStyleTokens.TextPrimary,
                 Font = UIHelper.SetFont(size: 18)
             };
             components.CreateBtn.Location = new Float2(startX + btnWidth + btnSpacing, btnY);
@@ -301,7 +301,7 @@ namespace HundunWorld.Game.UI.Character
                 AnchorPreset = AnchorPresets.TopLeft,
                 Text = "进入游戏",
                 BackgroundColor = GoldColor,
-                TextColor = new Color(0.10f, 0.08f, 0.05f, 1.0f),
+                TextColor = UIStyleTokens.TextInverse,
                 Font = UIHelper.SetFont(size: 18)
             };
             components.EnterBtn.Location = new Float2(startX + 2 * (btnWidth + btnSpacing), btnY);
@@ -390,7 +390,7 @@ namespace HundunWorld.Game.UI.Character
                     AnchorPreset = AnchorPresets.TopLeft,
                     Location = new Float2(dotX, indicatorY),
                     Size = new Float2(dotSize, dotSize),
-                    BackgroundColor = (i == 0) ? GoldColor : new Color(0.3f, 0.3f, 0.35f, 0.6f)
+                    BackgroundColor = (i == 0) ? GoldColor : UIStyleTokens.TextDisabled
                 };
 
                 if (i < TotalSteps - 1)
@@ -401,7 +401,7 @@ namespace HundunWorld.Game.UI.Character
                         AnchorPreset = AnchorPresets.TopLeft,
                         Location = new Float2(dotX + dotSize, indicatorY + dotSize / 2f - 1),
                         Size = new Float2(lineW, 2),
-                        BackgroundColor = new Color(0.25f, 0.25f, 0.3f, 0.5f)
+                        BackgroundColor = UIStyleTokens.Divider
                     };
                 }
             }
@@ -413,7 +413,7 @@ namespace HundunWorld.Game.UI.Character
                 Location = new Float2(startX - 10, indicatorY + dotSize + 6),
                 Size = new Float2(totalW + 20, 20),
                 Font = UIHelper.SetFont(size: 12),
-                TextColor = new Color(1, 1, 1, 0.5f),
+                TextColor = UIStyleTokens.WithAlpha(UIStyleTokens.TextPrimary, 0.5f),
                 Text = StepNames[0],
                 HorizontalAlignment = TextAlignment.Center
             };
@@ -428,7 +428,7 @@ namespace HundunWorld.Game.UI.Character
             bool isSelected, Action<Horizon.Game.Message.Network.CharacterInfo> onClick)
         {
             Color normalBg = isSelected ? GoldHighlightBg : CharItemBg;
-            Color hoverBg = isSelected ? GoldHighlightBg : new Color(0.16f, 0.17f, 0.22f, 0.95f);
+            Color hoverBg = isSelected ? GoldHighlightBg : UIStyleTokens.BgHover;
 
             var itemPanel = new HoverPanel
             {
@@ -446,9 +446,9 @@ namespace HundunWorld.Game.UI.Character
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(10, 8),
                 Size = new Float2(listWidth - 20, 28),
-                TextColor = new Color(1.0f, 0.95f, 0.8f),
+                TextColor = UIStyleTokens.TextPrimary,
                 HorizontalAlignment = TextAlignment.Near,
-                Font = UIHelper.SetFont(size: 20)
+                Font = UIHelper.SetFont(size: 18)
             };
 
             // 职业名
@@ -461,7 +461,7 @@ namespace HundunWorld.Game.UI.Character
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(10, 38),
                 Size = new Float2(listWidth - 20, 20),
-                TextColor = new Color(0.65f, 0.65f, 0.7f),
+                TextColor = UIStyleTokens.TextMuted,
                 HorizontalAlignment = TextAlignment.Near,
                 Font = UIHelper.SetFont(size: 14)
             };
@@ -474,9 +474,9 @@ namespace HundunWorld.Game.UI.Character
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(10, 58),
                 Size = new Float2(100, 18),
-                TextColor = ChineseClassicalTheme.SecondaryColorWithAlpha(0.8f),
+                TextColor = UIStyleTokens.Gold(0.8f),
                 HorizontalAlignment = TextAlignment.Near,
-                Font = UIHelper.SetFont(size: 13)
+                Font = UIHelper.SetFont(size: 12)
             };
 
             // 鼠标点击选中

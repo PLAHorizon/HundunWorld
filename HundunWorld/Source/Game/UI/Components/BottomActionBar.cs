@@ -13,7 +13,8 @@ namespace HundunWorld.Game.UI.Components
     {
         public event Action<string> OnButtonClicked; // button name
 
-        private static readonly Color BarBackgroundColor = new Color(0.05f, 0.05f, 0.08f, 0.95f);
+        // 栏背景：深渊墨黑 0.95（出处：--ink-bg-abyss）
+        private static readonly Color BarBackgroundColor = UIStyleTokens.WithAlpha(UIStyleTokens.BgAbyss, 0.95f);
         private static readonly float BarHeight = 64f;
         private static readonly float ButtonWidth = 150f;
         private static readonly float ButtonHeight = 46f;
@@ -91,8 +92,8 @@ namespace HundunWorld.Game.UI.Components
             }
         }
 
-        // 金色外发光颜色 (RGB 212,175,55)
-        private static readonly Color AccentGlowColor = new Color(212f / 255f, 175f / 255f, 55f / 255f, 0.3f);
+        // 金色外发光颜色（出处：--ink-shadow-gold rgba(200,168,88,0.2) 附近取值）
+        private static readonly Color AccentGlowColor = UIStyleTokens.Gold(0.3f);
 
         private Button CreateStyledButton(string text, ButtonStyle style)
         {
@@ -100,20 +101,20 @@ namespace HundunWorld.Game.UI.Components
 
             switch (style)
             {
-                case ButtonStyle.Accent:
-                    bgColor = new Color(212f / 255f, 175f / 255f, 55f / 255f, 0.9f);
-                    textColor = new Color(1.0f, 0.95f, 0.8f);
-                    borderColor = new Color(212f / 255f, 175f / 255f, 55f / 255f, 0.8f);
+                case ButtonStyle.Accent: // 鎏金强调（--ink-gold-primary 系列）
+                    bgColor = UIStyleTokens.Gold(0.9f);
+                    textColor = UIStyleTokens.TextPrimary;
+                    borderColor = UIStyleTokens.Gold(0.8f);
                     break;
-                case ButtonStyle.Ghost:
-                    bgColor = new Color(0.1f, 0.1f, 0.12f, 0.6f);
-                    textColor = new Color(0.7f, 0.7f, 0.75f);
-                    borderColor = new Color(0.4f, 0.4f, 0.45f, 0.5f);
+                case ButtonStyle.Ghost: // 幽灵按钮（ds-btn--ghost：透明底 + 次文本）
+                    bgColor = UIStyleTokens.BgMist;
+                    textColor = UIStyleTokens.TextSecondary;
+                    borderColor = UIStyleTokens.BorderFaint;
                     break;
-                default:
-                    bgColor = new Color(0.12f, 0.12f, 0.15f, 0.8f);
-                    textColor = new Color(0.85f, 0.85f, 0.9f);
-                    borderColor = new Color(0.5f, 0.5f, 0.55f, 0.5f);
+                default: // 默认按钮（墨水面板底 + 主文本 + 金色描边）
+                    bgColor = UIStyleTokens.InkPanel(0.8f);
+                    textColor = UIStyleTokens.TextPrimary;
+                    borderColor = UIStyleTokens.BorderGold;
                     break;
             }
 

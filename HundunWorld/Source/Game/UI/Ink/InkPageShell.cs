@@ -8,14 +8,17 @@ namespace HundunWorld.Game.UI.Ink
 {
     /// <summary>
     /// 水墨页面外壳。
-    /// 作为所有页面的统一挂载基础设施，承载四层子控件：
+    /// 作为所有页面的统一挂载基础设施，承载五层子控件：
     /// <list type="bullet">
     ///   <item>背景层（<see cref="InkBackgroundLayer"/>，z-index 0，不接收鼠标事件）</item>
     ///   <item>暗角晕影层（<see cref="InkVignette"/>，z-index 1，不接收鼠标事件）</item>
     ///   <item>内容层（<see cref="ContainerControl"/>，z-index 2，页面挂载点）</item>
+    ///   <item>粒子动效层（<see cref="InkParticleSystem"/>，z-index 5，全屏覆盖层，不接收鼠标事件）</item>
     ///   <item>返回按钮（<see cref="InkBackButton"/>，z-index 10，左上角，仅非战斗 HUD 页面显示）</item>
     /// </list>
     /// 子控件按添加顺序确定 z-index（后添加者在上层）。
+    /// 粒子层位于内容层之上、返回按钮之下，既能在所有页面之上播放粒子动效，
+    /// 又不会拦截按钮交互（<see cref="InkParticleSystem.Enabled"/>=false）。
     /// </summary>
     public class InkPageShell : ContainerControl
     {
@@ -31,6 +34,9 @@ namespace HundunWorld.Game.UI.Ink
         /// <summary>内容层（z-index 2，页面挂载点）</summary>
         private readonly ContainerControl _contentLayer;
 
+        /// <summary>粒子动效层（z-index 5，全屏覆盖层，不接收鼠标事件）</summary>
+        private readonly InkParticleSystem _particleSystem;
+
         /// <summary>左上角返回按钮（z-index 10，最顶层）</summary>
         private readonly InkBackButton _backButton;
 
@@ -41,6 +47,14 @@ namespace HundunWorld.Game.UI.Ink
         /// 内容层引用，供 <see cref="InkPageRouter"/> 挂载页面。
         /// </summary>
         public ContainerControl ContentLayer => _contentLayer;
+
+        /// <summary>
+        /// 粒子动效系统引用。
+        /// 供 <see cref="MainUIManager"/> 在初始化时调用
+        /// <see cref="InkParticleSystem.Initialize(InkPageRouter)"/> 订阅 PanelShow 事件，
+        /// 以及供按钮等交互元素调用 <see cref="InkParticleSystem.EmitGoldBurst"/> 反馈。
+        /// </summary>
+        public InkParticleSystem ParticleSystem => _particleSystem;
 
         /// <summary>
         /// 返回按钮点击事件。
@@ -105,7 +119,19 @@ namespace HundunWorld.Game.UI.Ink
                 };
                 AddChild(_contentLayer);
 
-                // 4. 返回按钮（z-index 10，最顶层，初始隐藏）
+                // 4. 粒子动效层（z-index 5，全屏覆盖层，不接收鼠标事件）
+                //    位于内容层之上、返回按钮之下，播放金粉/涟漪/萤光/环境微粒。
+                //    Enabled=false 防止拦截鼠标，Draw 仍会被引擎调用进行自定义渲染。
+                //    Visible 默认 true，由 InkPageRouter 在导航时通过粒子系统自动触发涟漪。
+                _particleSystem = new InkParticleSystem
+                {
+                    AnchorPreset = AnchorPresets.StretchAll,
+                    Offsets = Margin.Zero,
+                    Visible = true,
+                };
+                AddChild(_particleSystem);
+
+                // 5. 返回按钮（z-index 10，最顶层，初始隐藏）
                 _backButton = new InkBackButton
                 {
                     AnchorPreset = AnchorPresets.TopLeft,

@@ -2,6 +2,7 @@ using System;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using Horizon.Game.Message.Enums;
+using HundunWorld.Game.UI.StyleSystem;
 
 namespace HundunWorld.Game.UI
 {
@@ -28,9 +29,9 @@ namespace HundunWorld.Game.UI
         [Serialize]
         public float FadeInDuration = 0.3f;
 
-        /// <summary>遮罩颜色</summary>
+        /// <summary>遮罩颜色（墨黑底色，对应 --ink-bg-void）</summary>
         [Serialize]
-        public Color MaskColor = Color.Black;
+        public Color MaskColor = InkWashTheme.BaseDefault;
 
         /// <summary>是否在加载时显示提示</summary>
         [Serialize]
@@ -154,8 +155,8 @@ namespace HundunWorld.Game.UI
                 _loadingLabel = new Label
                 {
                     Text = LoadingText,
-                    TextColor = Color.White,
-                    TextColorHighlighted = Color.White,
+                    TextColor = InkWashTheme.TextDefault,
+                    TextColorHighlighted = InkWashTheme.TextDefault,
                     HorizontalAlignment = TextAlignment.Center,
                     VerticalAlignment = TextAlignment.Center,
                     AnchorPreset = AnchorPresets.MiddleCenter,

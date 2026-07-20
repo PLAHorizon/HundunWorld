@@ -25,10 +25,10 @@ namespace HundunWorld.Game.UI.Character
         #region Constants
         private static readonly string[] ProfessionNames = { "剑客", "刀客", "枪客", "弓手", "法师", "道士", "刺客", "医师" };
 
-        // 古典金色 RGB(212,175,55)
-        private static readonly Color GoldColor = new Color(212f / 255f, 175f / 255f, 55f / 255f, 1f);
-        // 25% 透明金色（用于选中态背景）
-        private static readonly Color GoldHighlightColor = new Color(212f / 255f, 175f / 255f, 55f / 255f, 0.25f);
+        // 鎏金主色（出处：--ink-gold-primary #C8A858）
+        private static readonly Color GoldColor = UIStyleTokens.GoldPrimary;
+        // 25% 透明金色（用于选中态背景，--ink-border-gold 同透明度）
+        private static readonly Color GoldHighlightColor = UIStyleTokens.Gold(0.25f);
 
         // 角色卡片尺寸与间距
         private const float CharacterItemHeight = 100f;
@@ -114,7 +114,7 @@ namespace HundunWorld.Game.UI.Character
                 AnchorPreset = AnchorPresets.VerticalStretchLeft,
                 Offsets = new Margin(30, 0, 30, 80),
                 Width = 320,
-                BackgroundColor = new Color(0.08f, 0.08f, 0.10f, 0.9f)
+                BackgroundColor = UIStyleTokens.WithAlpha(UIStyleTokens.BgInk, 0.9f)
             };
 
             // 标题区域
@@ -154,7 +154,7 @@ namespace HundunWorld.Game.UI.Character
                 Text = "暂无角色，请创建新角色",
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
-                TextColor = new Color(0.6f, 0.6f, 0.65f),
+                TextColor = UIStyleTokens.TextSecondary,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center
             };
@@ -456,7 +456,7 @@ namespace HundunWorld.Game.UI.Character
                 Offsets = new Margin(5, 5, 0, CharacterItemHeight),
                 BackgroundColor = isSelected
                     ? GoldHighlightColor
-                    : new Color(0.08f, 0.08f, 0.1f, 0.7f)
+                    : UIStyleTokens.InkPanel(0.7f)
             };
 
             var professionIndex = (int)character.Profession;
@@ -470,7 +470,7 @@ namespace HundunWorld.Game.UI.Character
                 Text = character.CharacterName,
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 Offsets = new Margin(15, 100, 12, 38),
-                TextColor = new Color(1.0f, 0.95f, 0.8f),
+                TextColor = UIStyleTokens.TextPrimary,
                 HorizontalAlignment = TextAlignment.Near
             };
 
@@ -480,7 +480,7 @@ namespace HundunWorld.Game.UI.Character
                 Text = $"职业: {professionName}",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Offsets = new Margin(15, 120, 40, 62),
-                TextColor = new Color(0.7f, 0.7f, 0.75f)
+                TextColor = UIStyleTokens.TextSecondary
             };
 
             var levelLabel = new Label
@@ -489,7 +489,7 @@ namespace HundunWorld.Game.UI.Character
                 Text = $"Lv.{character.Level}",
                 AnchorPreset = AnchorPresets.TopLeft,
                 Offsets = new Margin(120, 220, 40, 62),
-                TextColor = new Color(212f / 255f, 175f / 255f, 55f / 255f, 0.8f)
+                TextColor = UIStyleTokens.Gold(0.8f)
             };
 
             var enterButton = UIHelper.CreatePrimaryButton("进入");

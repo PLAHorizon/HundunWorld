@@ -1,0 +1,11 @@
+{
+  "AssetName": "NS_CharacterPortalDissolve",
+  "SourcePath": "NS_CharacterPortalDissolve.uasset",
+  "EmitterGuid": "611fb3d828824eb4ac882cbe2534dea8",
+  "SystemGuid": "be80f8144b4f49fcb7e6c81d3a6dbfa8",
+  "PrefabGuid": "7b362e70f83f4852acb525bb186b1adb",
+  "EmitterFlaxPath": "Particles/NS_CharacterPortalDissolve/NS_CharacterPortalDissolve_Emitter.flax",
+  "SystemFlaxPath": "Particles/NS_CharacterPortalDissolve/NS_CharacterPortalDissolve_System.flax",
+  "PrefabFlaxPath": "Particles/NS_CharacterPortalDissolve/NS_CharacterPortalDissolve.prefab",
+  "Emitters": []
+}

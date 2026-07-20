@@ -1,0 +1,119 @@
+{
+  "generatedAt": "2026-07-20T06:29:29.0066655Z",
+  "totalElapsed": 0.1518502,
+  "totalAssets": 4,
+  "success": 0,
+  "partialSuccess": 4,
+  "failed": 0,
+  "skipped": 0,
+  "totalFiles": 10,
+  "pendingManualSteps": [
+    "将 AbilityWithWidget.cs 复制到 HundunWorld/Plugins/NarrativePro/Source/NarrativePro/GAS/Abilities/",
+    "通过 AbilityConfiguration.cs 注册 AbilityWithWidget 到 ASC",
+    "将 Hero_Death.cs 复制到 HundunWorld/Plugins/NarrativePro/Source/NarrativePro/GAS/Abilities/",
+    "通过 AbilityConfiguration.cs 注册 Hero_Death 到 ASC",
+    "将 Hero_Heal.cs 复制到 HundunWorld/Plugins/NarrativePro/Source/NarrativePro/GAS/Abilities/",
+    "通过 AbilityConfiguration.cs 注册 Hero_Heal 到 ASC",
+    "将 Hero_Jump.cs 复制到 HundunWorld/Plugins/NarrativePro/Source/NarrativePro/GAS/Abilities/",
+    "通过 AbilityConfiguration.cs 注册 Hero_Jump 到 ASC",
+    "在 Flax Editor 中打开项目，通过 Tools > Scripts 加载 UE5AssetImporter.cs，执行 ImportAll() 方法自动导入所有 FBX 为 .flax 资源"
+  ],
+  "assets": [
+    {
+      "source": "GA_AbilityWithWidget.uasset",
+      "target": "c:\\Works\\GitHubProjects\\HundunWorld\\TestOutput\\GA_Test\\GAS\\Abilities\\AbilityWithWidget",
+      "status": "PartialSuccess",
+      "elapsedMs": 135.0525,
+      "messages": [
+        {
+          "Severity": 0,
+          "Text": "读取 GAS: GA_AbilityWithWidget"
+        },
+        {
+          "Severity": 0,
+          "Text": "Ability: tags=0, triggers=0"
+        },
+        {
+          "Severity": 1,
+          "Text": "待手动完成: 将 AbilityWithWidget.cs 复制到 HundunWorld/Plugins/NarrativePro/Source/NarrativePro/GAS/Abilities/"
+        },
+        {
+          "Severity": 1,
+          "Text": "待手动完成: 通过 AbilityConfiguration.cs 注册 AbilityWithWidget 到 ASC"
+        }
+      ]
+    },
+    {
+      "source": "GA_Hero_Death.uasset",
+      "target": "c:\\Works\\GitHubProjects\\HundunWorld\\TestOutput\\GA_Test\\GAS\\Abilities\\Hero_Death",
+      "status": "PartialSuccess",
+      "elapsedMs": 4.8918,
+      "messages": [
+        {
+          "Severity": 0,
+          "Text": "读取 GAS: GA_Hero_Death"
+        },
+        {
+          "Severity": 0,
+          "Text": "Ability: tags=0, triggers=0"
+        },
+        {
+          "Severity": 1,
+          "Text": "待手动完成: 将 Hero_Death.cs 复制到 HundunWorld/Plugins/NarrativePro/Source/NarrativePro/GAS/Abilities/"
+        },
+        {
+          "Severity": 1,
+          "Text": "待手动完成: 通过 AbilityConfiguration.cs 注册 Hero_Death 到 ASC"
+        }
+      ]
+    },
+    {
+      "source": "GA_Hero_Heal.uasset",
+      "target": "c:\\Works\\GitHubProjects\\HundunWorld\\TestOutput\\GA_Test\\GAS\\Abilities\\Hero_Heal",
+      "status": "PartialSuccess",
+      "elapsedMs": 3.9379,
+      "messages": [
+        {
+          "Severity": 0,
+          "Text": "读取 GAS: GA_Hero_Heal"
+        },
+        {
+          "Severity": 0,
+          "Text": "Ability: tags=0, triggers=0"
+        },
+        {
+          "Severity": 1,
+          "Text": "待手动完成: 将 Hero_Heal.cs 复制到 HundunWorld/Plugins/NarrativePro/Source/NarrativePro/GAS/Abilities/"
+        },
+        {
+          "Severity": 1,
+          "Text": "待手动完成: 通过 AbilityConfiguration.cs 注册 Hero_Heal 到 ASC"
+        }
+      ]
+    },
+    {
+      "source": "GA_Hero_Jump.uasset",
+      "target": "c:\\Works\\GitHubProjects\\HundunWorld\\TestOutput\\GA_Test\\GAS\\Abilities\\Hero_Jump",
+      "status": "PartialSuccess",
+      "elapsedMs": 3.8428,
+      "messages": [
+        {
+          "Severity": 0,
+          "Text": "读取 GAS: GA_Hero_Jump"
+        },
+        {
+          "Severity": 0,
+          "Text": "Ability: tags=0, triggers=0"
+        },
+        {
+          "Severity": 1,
+          "Text": "待手动完成: 将 Hero_Jump.cs 复制到 HundunWorld/Plugins/NarrativePro/Source/NarrativePro/GAS/Abilities/"
+        },
+        {
+          "Severity": 1,
+          "Text": "待手动完成: 通过 AbilityConfiguration.cs 注册 Hero_Jump 到 ASC"
+        }
+      ]
+    }
+  ]
+}

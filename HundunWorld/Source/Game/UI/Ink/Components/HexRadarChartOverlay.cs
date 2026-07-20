@@ -203,8 +203,8 @@ namespace HundunWorld.Game.UI.Ink.Components
                 }
 
                 // === 11. 顶点标签框 ===
-                Font wuxingFont = UIHelper.SetFont(size: 9)?.GetFont();
-                Font keyAttrFont = UIHelper.SetFont(size: 7)?.GetFont();
+                Font wuxingFont = UIHelper.SetFont(size: 10)?.GetFont();
+                Font keyAttrFont = UIHelper.SetFont(size: 10)?.GetFont();
                 for (int i = 0; i < SideCount; i++)
                 {
                     if (wuxingFont != null)

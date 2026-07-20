@@ -220,7 +220,7 @@ namespace HundunWorld.Game.UI.GameMain
                     TextColor = new Color(0.8f, 0.8f, 0.8f),
                     Bounds = new Rectangle(padding, y, colWidth, 24),
                     HorizontalAlignment = TextAlignment.Center,
-                    Font = UIHelper.SetFont(size: 13)
+                    Font = UIHelper.SetFont(size: 12)
                 };
                 container.AddChild(currentTitle);
 
@@ -230,7 +230,7 @@ namespace HundunWorld.Game.UI.GameMain
                     TextColor = ChineseClassicalTheme.SecondaryColor,
                     Bounds = new Rectangle(padding + colWidth + padding, y, colWidth, 24),
                     HorizontalAlignment = TextAlignment.Center,
-                    Font = UIHelper.SetFont(size: 13)
+                    Font = UIHelper.SetFont(size: 12)
                 };
                 container.AddChild(selectedTitle);
                 y += 30;

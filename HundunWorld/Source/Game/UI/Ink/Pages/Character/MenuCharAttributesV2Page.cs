@@ -13,21 +13,20 @@ using HundunWorld.Game.Services;
 namespace HundunWorld.Game.UI.Ink.Pages.Character
 {
     /// <summary>
-    /// 角色属性菜单 V3 页面（三栏布局美化版）。
-    /// 基于 HTML 原型 <c>menu-char-attributes-v2.html</c> 与用户需求重构，
-    /// 采用"顶部导航 + 左侧属性 + 中间 3D 预览 + 右侧装备 + 底部操作栏"结构。
-    /// <list type="bullet">
-    ///   <item>左侧 <see cref="_leftPanel"/>：战力区 → 基础属性卡片（2×3） → 进阶属性 → 六边形雷达图 → 武学摘要卡片</item>
-    ///   <item>中间 <see cref="_centerPanel"/>：水墨氛围装饰 + <see cref="CharacterPreview3D"/> + 角色名/等级/门派/称号/阶段</item>
-    ///   <item>右侧 <see cref="_rightPanel"/>：15 装备槽（5 行 3 列人体拓扑）+ <see cref="InkBackpackGrid"/></item>
-    ///   <item>装备双击切换（卸下/装备/交换）+ <see cref="RecalculateAttributes"/> 实时刷新</item>
-    ///   <item><see cref="InkAttributeTooltip"/> 绑定到基础属性、进阶属性、装备槽、背包格子、雷达图顶点、阶段标签</item>
-    ///   <item><see cref="BindCharacter"/> 数据绑定 + 阶段标签（武侠/仙侠/玄幻）</item>
-    /// </list>
-    /// 基础属性绑定 <see cref="CharacterAttributesComponent"/>，null 时回退 mock 数据。
-    /// 通过 <see cref="RefreshLayout"/> 支持屏幕尺寸变化。
-    /// 导航跳转通过 <see cref="NavigationRequested"/> 事件通知外部路由器。
-    /// </summary>
+/// 角色属性菜单 V2 页面（两栏布局，对齐 HTML 原型）。
+/// 基于 HTML 原型 <c>menu-char-attributes-v2.html</c> 实现，
+/// 采用"顶部导航 + 左侧角色预览 + 右侧属性面板 + 底部操作栏"结构。
+/// <list type="bullet">
+///   <item>左侧 <see cref="_previewPanel"/>：背景图 + 水墨晕染 + 角色名/等级/门派徽章/称号/门派标识</item>
+///   <item>右侧 <see cref="_attrPanel"/>：战力区 → 基础属性卡片（2×2） → 进阶属性（2×3） → 装备摘要 → 武学摘要</item>
+///   <item>装备摘要显示已装备的6件装备（图标+名称+类型+强化等级）</item>
+///   <item><see cref="InkAttributeTooltip"/> 绑定到基础属性、进阶属性、装备槽</item>
+///   <item><see cref="BindCharacter"/> 数据绑定</item>
+/// </list>
+/// 基础属性绑定 <see cref="CharacterAttributesComponent"/>，null 时回退 mock 数据。
+/// 通过 <see cref="RefreshLayout"/> 支持屏幕尺寸变化。
+/// 导航跳转通过 <see cref="NavigationRequested"/> 事件通知外部路由器。
+/// </summary>
     public class MenuCharAttributesV2Page : ContainerControl, IInkPage
     {
         // ===================================================================
@@ -46,29 +45,20 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         /// <summary>内容区底部留白（= 底部操作栏高度）</summary>
         private const float ContentBottomReserve = BottomBarHeight;
 
-        /// <summary>三栏之间以及两侧的外边距</summary>
-        private const float PanelGap = 20f;
-
-        /// <summary>左侧面板宽度占比（战力/角色信息/基础/进阶/雷达）</summary>
-        private const float LeftPanelWidthRatio = 0.32f;
-
-        /// <summary>中间面板宽度占比（3D预览/装备区）</summary>
-        private const float CenterPanelWidthRatio = 0.44f;
-
-        /// <summary>右侧面板宽度占比（背包/武学摘要）</summary>
-        private const float RightPanelWidthRatio = 0.24f;
+        /// <summary>左右面板宽度各占 50%</summary>
+        private const float PanelWidthRatio = 0.5f;
 
         /// <summary>属性面板内边距</summary>
-        private const float PanelPadding = 20f;
+        private const float PanelPadding = 24f;
 
         /// <summary>顶部导航栏内边距</summary>
-        private const float TopBarPadding = 20f;
+        private const float TopBarPadding = 24f;
 
         /// <summary>顶部返回按钮尺寸</summary>
         private const float TopBackButtonSize = 36f;
 
         /// <summary>顶部栏元素间距</summary>
-        private const float TopBarItemGap = 12f;
+        private const float TopBarItemGap = 16f;
 
         /// <summary>底部操作栏按钮宽度</summary>
         private const float BottomButtonWidth = 140f;
@@ -86,10 +76,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         private const float TitleBarToTextGap = 8f;
 
         /// <summary>分区间距</summary>
-        private const float SectionGap = 20f;
+        private const float SectionGap = 16f;
 
-        /// <summary>基础属性项数量（气血/体魄/内力/身法/根骨/悟性）</summary>
-        private const int BasicAttrCount = 6;
+        /// <summary>基础属性项数量（气血/攻击/防御/暴击）</summary>
+        private const int BasicAttrCount = 4;
 
         /// <summary>基础属性卡片列数</summary>
         private const int BasicAttrColumns = 2;
@@ -98,16 +88,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         private const float BasicAttrCardHeight = 76f;
 
         /// <summary>基础属性卡片横向间距</summary>
-        private const float BasicAttrCardGapX = 10f;
+        private const float BasicAttrCardGapX = 8f;
 
         /// <summary>基础属性卡片纵向间距</summary>
-        private const float BasicAttrCardGapY = 10f;
+        private const float BasicAttrCardGapY = 8f;
 
         /// <summary>基础属性图标尺寸</summary>
         private const float BasicAttrIconSize = 28f;
 
-        /// <summary>进阶属性项数量（暴击/抗暴/命中/闪避）</summary>
-        private const int AdvancedAttrCount = 4;
+        /// <summary>进阶属性项数量（穿透/格挡/闪避/命中/暴伤/韧性）</summary>
+        private const int AdvancedAttrCount = 6;
 
         /// <summary>进阶属性列数</summary>
         private const int AdvancedAttrColumns = 2;
@@ -118,51 +108,17 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         /// <summary>进阶属性列间距</summary>
         private const float AdvancedAttrColumnGap = 14f;
 
-        /// <summary>装备槽位数量</summary>
-        private const int EquipmentSlotCount = 15;
+        /// <summary>装备摘要项数量</summary>
+        private const int EquipmentSummaryCount = 6;
 
-        /// <summary>装备槽列数</summary>
-        private const int EquipmentSlotColumns = 3;
+        /// <summary>装备摘要图标尺寸</summary>
+        private const float EquipmentSummaryIconSize = 48f;
 
-        /// <summary>装备槽尺寸</summary>
-        private const float EquipmentSlotSize = 52f;
+        /// <summary>装备摘要列数</summary>
+        private const int EquipmentSummaryColumns = 6;
 
-        /// <summary>装备槽间距</summary>
-        private const float EquipmentSlotGap = 12f;
-
-        /// <summary>纸娃娃区域宽度（像素）</summary>
-        private const float PaperDollWidth = 290f;
-
-        /// <summary>纸娃娃区域高度（像素）</summary>
-        private const float PaperDollHeight = 490f;
-
-        /// <summary>
-        /// 纸娃娃区域内装备槽相对位置（归一化 0-1），顺序与 <see cref="DisplayedSlots"/> 一致。
-        /// </summary>
-        private static readonly Float2[] EquipmentSlotPositions =
-        {
-            new Float2(0.50f, 0.06f), // Head
-            new Float2(0.50f, 0.14f), // Neck
-            new Float2(0.72f, 0.04f), // Face
-            new Float2(0.16f, 0.18f), // Shoulder
-            new Float2(0.50f, 0.28f), // Body
-            new Float2(0.84f, 0.18f), // Back
-            new Float2(0.88f, 0.32f), // RightHand
-            new Float2(0.50f, 0.46f), // Waist
-            new Float2(0.12f, 0.32f), // LeftHand
-            new Float2(0.92f, 0.44f), // RightWrist
-            new Float2(0.50f, 0.64f), // Legs
-            new Float2(0.08f, 0.44f), // LeftWrist
-            new Float2(0.85f, 0.56f), // RightRing
-            new Float2(0.50f, 0.82f), // Feet
-            new Float2(0.15f, 0.56f), // LeftRing
-        };
-
-        /// <summary>背包格子区高度</summary>
-        private const float BackpackHeight = 132f;
-
-        /// <summary>背包列数</summary>
-        private const int BackpackColumns = 6;
+        /// <summary>装备摘要间距</summary>
+        private const float EquipmentSummaryGap = 8f;
 
         /// <summary>武学摘要项数量</summary>
         private const int MartialArtsCount = 3;
@@ -171,19 +127,40 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         private const float MartialArtsCardHeight = 72f;
 
         /// <summary>武学摘要卡片间距</summary>
-        private const float MartialArtsCardGap = 10f;
-
-        /// <summary>3D 预览控件宽度</summary>
-        private const float Preview3DWidth = 400f;
-
-        /// <summary>3D 预览控件高度</summary>
-        private const float Preview3DHeight = 480f;
-
-        /// <summary>雷达图尺寸</summary>
-        private const float RadarChartSize = 360f;
+        private const float MartialArtsCardGap = 8f;
 
         /// <summary>Tooltip 自动隐藏延时（秒）</summary>
         private const float TooltipHideDelay = 0.5f;
+
+        /// <summary>装备槽数量</summary>
+        private const int EquipmentSlotCount = 10;
+
+        /// <summary>装备槽尺寸</summary>
+        private const float EquipmentSlotSize = 56f;
+
+        /// <summary>背包高度</summary>
+        private const float BackpackHeight = 240f;
+
+        /// <summary>3D预览宽度</summary>
+        private const float Preview3DWidth = 400f;
+
+        /// <summary>3D预览高度</summary>
+        private const float Preview3DHeight = 500f;
+
+        /// <summary>雷达图尺寸</summary>
+        private const float RadarChartSize = 200f;
+
+        /// <summary>背包列数</summary>
+        private const int BackpackColumns = 4;
+
+        /// <summary>面板间距</summary>
+        private const float PanelGap = 12f;
+
+        /// <summary>纸娃娃宽度</summary>
+        private const float PaperDollWidth = 280f;
+
+        /// <summary>纸娃娃高度</summary>
+        private const float PaperDollHeight = 420f;
 
         // ===================================================================
         // 子控件引用 — 全局氛围层
@@ -218,17 +195,60 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         private InkButton[] _topRightButtons;
 
         // ===================================================================
-        // 子控件引用 — 左侧属性面板
+        // 子控件引用 — 左侧角色预览面板
         // ===================================================================
 
-        /// <summary>左侧属性面板</summary>
-        private GradientBarPanel _leftPanel;
+        /// <summary>左侧角色预览面板</summary>
+        private InkPanel _previewPanel;
 
-        /// <summary>左侧面板顶部春色晕染装饰（柔化整体色调，呼应春色生机）</summary>
-        private InkSplash _leftSpringSplash;
+        /// <summary>左侧面板背景图层（背景图 + 渐变遮罩）</summary>
+        private PreviewBackgroundLayer _previewBgLayer;
 
-        /// <summary>左侧面板战力区金色辉光装饰（强化战力区视觉焦点）</summary>
-        private InkSplash _leftGoldGlow;
+        /// <summary>左侧面板水墨晕染装饰（左上）</summary>
+        private InkSplash _previewSplashTL;
+
+        /// <summary>左侧面板水墨晕染装饰（右下）</summary>
+        private InkSplash _previewSplashBR;
+
+        /// <summary>左侧面板水墨晕染装饰（左下）</summary>
+        private InkSplash _previewSplashBL;
+
+        /// <summary>预览区角色名 Label（带 text-shadow）</summary>
+        private ShadowedNameLabel _previewNameLabel;
+
+        /// <summary>预览区等级容器（"Lv." + 数值 两段式）</summary>
+        private ContainerControl _previewLevelContainer;
+
+        /// <summary>预览区等级前缀 "Lv." Label</summary>
+        private Label _previewLevelPrefixLabel;
+
+        /// <summary>预览区等级数值 Label（带金色辉光）</summary>
+        private GlowLevelLabel _previewLevelValueLabel;
+
+        /// <summary>预览区门派徽章 InkTag</summary>
+        private InkTag _previewSectLabel;
+
+        /// <summary>预览区称号区域容器</summary>
+        private ContainerControl _previewTitleContainer;
+
+        /// <summary>称号左侧装饰线（渐变）</summary>
+        private GradientLine _titleLineLeft;
+
+        /// <summary>称号右侧装饰线（渐变）</summary>
+        private GradientLine _titleLineRight;
+
+        /// <summary>预览区称号 Label</summary>
+        private Label _previewTitleLabel;
+
+        /// <summary>底部门派标识 Label</summary>
+        private Label _sectEmblemLabel;
+
+        // ===================================================================
+        // 子控件引用 — 右侧属性面板
+        // ===================================================================
+
+        /// <summary>右侧属性面板</summary>
+        private GradientBarPanel _attrPanel;
 
         /// <summary>战力区标题</summary>
         private Label _combatPowerTitleLabel;
@@ -260,19 +280,25 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         /// <summary>基础属性分区标题装饰竖线</summary>
         private ContainerControl _basicAttrTitleBar;
 
-        /// <summary>6 个基础属性卡片背景</summary>
+        /// <summary>基础属性分区提示文字</summary>
+        private Label _basicAttrHintLabel;
+
+        /// <summary>4 个基础属性卡片背景</summary>
         private ContainerControl[] _basicAttrCards;
 
-        /// <summary>6 个基础属性图标 Label（用 Unicode 符号代替图标）</summary>
+        /// <summary>4 个基础属性图标 Label</summary>
         private Label[] _basicAttrIcons;
 
-        /// <summary>6 个基础属性名 Label（支持悬停）</summary>
+        /// <summary>4 个基础属性名 Label（支持悬停）</summary>
         private HoverableLabel[] _basicAttrNameLabels;
 
-        /// <summary>6 个基础属性数值 Label</summary>
+        /// <summary>4 个基础属性数值 Label</summary>
         private Label[] _basicAttrValueLabels;
 
-        /// <summary>6 个基础属性趋势 Label</summary>
+        /// <summary>4 个基础属性单位 Label</summary>
+        private Label[] _basicAttrUnitLabels;
+
+        /// <summary>4 个基础属性趋势 Label</summary>
         private Label[] _basicAttrTrendLabels;
 
         /// <summary>进阶属性分区标题</summary>
@@ -281,35 +307,53 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         /// <summary>进阶属性分区标题装饰竖线</summary>
         private ContainerControl _advancedAttrTitleBar;
 
-        /// <summary>4 个进阶属性项背景</summary>
+        /// <summary>进阶属性分区提示文字</summary>
+        private Label _advancedAttrHintLabel;
+
+        /// <summary>6 个进阶属性项背景</summary>
         private ContainerControl[] _advancedAttrCards;
 
-        /// <summary>4 个进阶属性名 Label（支持悬停）</summary>
+        /// <summary>6 个进阶属性名 Label（支持悬停）</summary>
         private HoverableLabel[] _advancedAttrNameLabels;
 
-        /// <summary>4 个进阶属性数值 Label</summary>
+        /// <summary>6 个进阶属性数值 Label</summary>
         private Label[] _advancedAttrValueLabels;
 
-        /// <summary>4 个进阶属性图标 Label（✦◈◉∽）</summary>
+        /// <summary>6 个进阶属性图标 Label</summary>
         private Label[] _advancedAttrIcons;
 
-        /// <summary>4 个进阶属性卡片左侧金色装饰竖线</summary>
-        private ContainerControl[] _advancedAttrLeftBars;
+        /// <summary>装备摘要分区标题</summary>
+        private Label _equipmentTitleLabel;
 
-        /// <summary>雷达图分区标题</summary>
-        private Label _radarTitleLabel;
+        /// <summary>装备摘要分区标题装饰竖线</summary>
+        private ContainerControl _equipmentTitleBar;
 
-        /// <summary>雷达图分区标题装饰竖线</summary>
-        private ContainerControl _radarTitleBar;
+        /// <summary>装备摘要分区提示文字</summary>
+        private Label _equipmentHintLabel;
 
-        /// <summary>六边形雷达图叠加控件</summary>
-        private HexRadarChartOverlay _radarChart;
+        /// <summary>6 个装备摘要卡片背景</summary>
+        private ContainerControl[] _equipmentSummaryCards;
+
+        /// <summary>6 个装备摘要图标 Label</summary>
+        private Label[] _equipmentSummaryIcons;
+
+        /// <summary>6 个装备摘要名称 Label</summary>
+        private Label[] _equipmentSummaryNameLabels;
+
+        /// <summary>6 个装备摘要类型 Label</summary>
+        private Label[] _equipmentSummaryTypeLabels;
+
+        /// <summary>6 个装备摘要强化等级 Label</summary>
+        private Label[] _equipmentSummaryEnhanceLabels;
 
         /// <summary>武学摘要分区标题</summary>
         private Label _martialArtsTitleLabel;
 
         /// <summary>武学摘要分区标题装饰竖线</summary>
         private ContainerControl _martialArtsTitleBar;
+
+        /// <summary>武学摘要分区提示文字</summary>
+        private Label _martialArtsHintLabel;
 
         /// <summary>3 个武学摘要卡片背景</summary>
         private ContainerControl[] _martialArtsCards;
@@ -323,16 +367,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         /// <summary>3 个武学摘要品质标签</summary>
         private InkTag[] _martialArtsQualityTags;
 
-        /// <summary>3 个武学摘要元信息类型图标 Label（⚡）</summary>
+        /// <summary>3 个武学摘要元信息类型图标 Label</summary>
         private Label[] _martialArtsMetaTypeIcons;
 
         /// <summary>3 个武学摘要元信息类型文本 Label</summary>
         private Label[] _martialArtsMetaTypeTexts;
 
-        /// <summary>3 个武学摘要元信息等级图标 Label（★）</summary>
+        /// <summary>3 个武学摘要元信息等级图标 Label</summary>
         private Label[] _martialArtsMetaLevelIcons;
 
-        /// <summary>3 个武学摘要元信息等级文本 Label（Lv.xxx）</summary>
+        /// <summary>3 个武学摘要元信息等级文本 Label</summary>
         private Label[] _martialArtsMetaLevelTexts;
 
         /// <summary>3 个武学摘要威力数值 Label</summary>
@@ -341,21 +385,35 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         /// <summary>3 个武学摘要威力标签 Label</summary>
         private Label[] _martialArtsPowerLabelLabels;
 
-        /// <summary>3 个武学摘要卡片左侧品质色装饰竖线</summary>
+        /// <summary>属性面板滚动容器</summary>
+        private ContainerControl _attrPanelScroll;
+
+        /// <summary>战力阶段标签</summary>
+        private HoverableInkTag _stageTag;
+
+        /// <summary>雷达图控件</summary>
+        private HexRadarChartOverlay _radarChart;
+
+        /// <summary>装备槽数组</summary>
+        private InkEquipmentSlot[] _equipmentSlots;
+
+        /// <summary>背包网格</summary>
+        private InkBackpackGrid _backpackGrid;
+
+        /// <summary>武学摘要左侧装饰条</summary>
         private ContainerControl[] _martialArtsLeftBars;
 
-        // ===================================================================
-        // 子控件引用 — 中间预览面板
-        // ===================================================================
+        /// <summary>3D角色预览</summary>
+        private CharacterPreview3D _preview3D;
 
-        /// <summary>中间预览面板</summary>
-        private InkPanel _centerPanel;
-
-        /// <summary>中间面板背景图层（背景图 + 渐变遮罩）</summary>
+        /// <summary>中间面板背景层</summary>
         private PreviewBackgroundLayer _centerBgLayer;
 
         /// <summary>中间面板水墨晕染装饰（左上）</summary>
         private InkSplash _centerSplashTL;
+
+        /// <summary>中间面板水墨晕染装饰（右上）</summary>
+        private InkSplash _centerSplashTR;
 
         /// <summary>中间面板水墨晕染装饰（右下）</summary>
         private InkSplash _centerSplashBR;
@@ -363,81 +421,29 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         /// <summary>中间面板水墨晕染装饰（左下）</summary>
         private InkSplash _centerSplashBL;
 
-        /// <summary>中间面板春色晕染装饰（右上）</summary>
-        private InkSplash _centerSplashTR;
-
-        /// <summary>3D 角色预览控件</summary>
-        private CharacterPreview3D _preview3D;
-
-        /// <summary>预览区角色名 Label（带 text-shadow）</summary>
-        private ShadowedNameLabel _previewNameLabel;
-
-        /// <summary>预览区等级容器（"Lv." + 数值 两段式）</summary>
-        private ContainerControl _previewLevelContainer;
-
-        /// <summary>预览区等级前缀 "Lv." Label</summary>
-        private Label _previewLevelPrefixLabel;
-
-        /// <summary>预览区等级数值 Label（带金色辉光）</summary>
-        private GlowLevelLabel _previewLevelValueLabel;
-
-        /// <summary>预览区门派徽章 InkTag</summary>
-        private InkTag _previewSectLabel;
-
-        /// <summary>预览区称号区域容器</summary>
-        private ContainerControl _previewTitleContainer;
-
-        /// <summary>称号左侧装饰线（渐变）</summary>
-        private GradientLine _titleLineLeft;
-
-        /// <summary>称号右侧装饰线（渐变）</summary>
-        private GradientLine _titleLineRight;
-
-        /// <summary>预览区称号 Label</summary>
-        private Label _previewTitleLabel;
-
-        /// <summary>预览区阶段标签（武侠/仙侠/玄幻，支持悬停显示阶段描述）</summary>
-        private HoverableInkTag _stageTag;
-
-        /// <summary>底部门派标识 Label</summary>
-        private Label _sectEmblemLabel;
-
-        // ===================================================================
-        // 子控件引用 — 右侧装备面板
-        // ===================================================================
-
-        /// <summary>右侧装备面板</summary>
-        private GradientBarPanel _rightPanel;
-
-        /// <summary>右侧面板顶部春色晕染装饰（与左侧呼应，强化春色氛围）</summary>
+        /// <summary>右侧面板水墨装饰</summary>
         private InkSplash _rightSpringSplash;
 
-        /// <summary>右侧面板武学区金色辉光装饰（柔化武学卡片视觉）</summary>
-        private InkSplash _rightGoldGlow;
+        /// <summary>右侧面板金色辉光</summary>
+        private ContainerControl _rightGoldGlow;
 
-        /// <summary>纸娃娃人体轮廓背景</summary>
-        private PaperDollBackground _paperDollBackground;
-
-        /// <summary>装备槽分区标题</summary>
-        private Label _equipmentTitleLabel;
-
-        /// <summary>装备槽分区标题装饰竖线</summary>
-        private ContainerControl _equipmentTitleBar;
-
-        /// <summary>15 个装备槽控件</summary>
-        private InkEquipmentSlot[] _equipmentSlots;
-
-        /// <summary>背包装备数量提示 Label</summary>
-        private Label _equipmentHintLabel;
-
-        /// <summary>背包分区标题</summary>
+        /// <summary>背包标题Label</summary>
         private Label _backpackTitleLabel;
 
-        /// <summary>背包分区标题装饰竖线</summary>
+        /// <summary>背包标题装饰条</summary>
         private ContainerControl _backpackTitleBar;
 
-        /// <summary>背包格子网格控件</summary>
-        private InkBackpackGrid _backpackGrid;
+        /// <summary>纸娃娃背景</summary>
+        private ContainerControl _paperDollBackground;
+
+        /// <summary>右侧面板</summary>
+        private InkPanel _rightPanel;
+
+        /// <summary>中间面板</summary>
+        private InkPanel _centerPanel;
+
+        /// <summary>左侧面板</summary>
+        private InkPanel _leftPanel;
 
         // ===================================================================
         // 子控件引用 — 顶层 Tooltip
@@ -523,62 +529,59 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             ("紫霞神功", InkWashTheme.InkQuality.Epic, "内功", 10, 5340),
         };
 
-        /// <summary>mock 进阶属性名（暴击/抗暴/命中/闪避）</summary>
-        private string[] _mockAdvancedAttrNames = { "暴击", "抗暴", "命中", "闪避" };
+        /// <summary>进阶属性名（穿透/格挡/闪避/命中/暴伤/韧性）</summary>
+        private static readonly string[] AdvancedAttrNames = { "穿透", "格挡", "闪避", "命中", "暴伤", "韧性" };
 
-        /// <summary>mock 进阶属性百分比（0-1）</summary>
-        private float[] _mockAdvancedAttrValues = { 0.285f, 0.15f, 0.958f, 0.182f };
+        /// <summary>进阶属性数值</summary>
+        private static readonly float[] AdvancedAttrValues = { 1580f, 1240f, 18.2f, 95.8f, 156f, 85f };
 
-        /// <summary>mock 进阶属性 InkBar 变体</summary>
-        private InkBarFillVariant[] _mockAdvancedAttrVariants =
-        {
-            InkBarFillVariant.Vermilion,
-            InkBarFillVariant.Jade,
-            InkBarFillVariant.Gold,
-            InkBarFillVariant.Jade
-        };
+        /// <summary>进阶属性是否为百分比</summary>
+        private static readonly bool[] AdvancedAttrIsPercent = { false, false, true, true, true, false };
 
-        /// <summary>基础属性名</summary>
-        private static readonly string[] BasicAttrNames = { "气血", "体魄", "内力", "身法", "根骨", "悟性" };
+        /// <summary>进阶属性 mock 数值（用于雷达图和 tooltip）</summary>
+        private float[] _mockAdvancedAttrValues = { 0.35f, 0.28f, 0.92f, 0.18f, 1.56f, 0.85f };
+
+        /// <summary>进阶属性 mock 名称（用于 tooltip）</summary>
+        private string[] _mockAdvancedAttrNames = { "暴击", "抗暴", "命中", "闪避", "暴伤", "韧性" };
+
+        /// <summary>进阶属性图标 Unicode 符号</summary>
+        private static readonly string[] AdvancedAttrIcons = { "\u26A1", "\u26E9", "\u26A1", "\u26E9", "\u2665", "\u2693" };
+
+        /// <summary>基础属性名（气血/攻击/防御/暴击）</summary>
+        private static readonly string[] BasicAttrNames = { "气血", "攻击", "防御", "暴击" };
 
         /// <summary>基础属性说明</summary>
         private static readonly string[] BasicAttrDescriptions =
         {
             "角色生命值上限，决定可承受的伤害量",
-            "影响防御力与生命恢复速率",
-            "角色法力值上限，决定可施展的武学次数",
-            "影响闪避与移动速度",
-            "影响生命值成长与抗性",
-            "影响武学修炼速度与效果"
+            "角色攻击力，影响造成的伤害值",
+            "角色防御力，减少受到的伤害",
+            "攻击触发暴击的概率，造成额外伤害"
         };
 
         /// <summary>基础属性图标 Unicode 符号</summary>
-        private static readonly string[] BasicAttrIconSymbols = { "\u2764", "\u2694", "\u2726", "\u2606", "\u2724", "\u273F" };
+        private static readonly string[] BasicAttrIconSymbols = { "\u2764", "\u2694", "\u26E9", "\u2605" };
 
-        /// <summary>基础属性图标颜色（五行分色：气血/体魄=翡翠，内力/根骨=青，身法=朱红，悟性=金）</summary>
+        /// <summary>基础属性图标颜色（气血=翡翠，攻击=血色，防御=青色，暴击=金色）</summary>
         private static readonly Color[] BasicAttrIconColors =
         {
             InkWashTheme.JadeBright,        // 气血 — 翡翠
-            InkWashTheme.JadeBright,        // 体魄 — 翡翠
-            InkWashTheme.Info,              // 内力 — 青色
-            InkWashTheme.VermilionBright,   // 身法 — 朱红
-            InkWashTheme.Info,              // 根骨 — 青色
-            InkWashTheme.GoldBright,        // 悟性 — 金色
+            InkWashTheme.BloodBright,       // 攻击 — 血色（设计方案朱砂系仅用于战斗/危险）
+            InkWashTheme.Info,              // 防御 — 青色
+            InkWashTheme.GoldBright,        // 暴击 — 金色
         };
 
-        /// <summary>基础属性图标边框色（五行分色，与图标文字色配套）</summary>
+        /// <summary>基础属性图标边框色</summary>
         private static readonly Color[] BasicAttrIconBorderColors =
         {
             InkWashTheme.JadePrimary,       // 气血 — 翡翠边框
-            InkWashTheme.JadePrimary,       // 体魄 — 翡翠边框
-            InkWashTheme.Info,              // 内力 — 青色边框
-            InkWashTheme.VermilionDeep,     // 身法 — 朱红边框
-            InkWashTheme.Info,              // 根骨 — 青色边框
-            InkWashTheme.GoldDeep,          // 悟性 — 金色边框
+            InkWashTheme.BloodDeep,         // 攻击 — 血色边框
+            InkWashTheme.Info,              // 防御 — 青色边框
+            InkWashTheme.GoldDeep,          // 暴击 — 金色边框
         };
 
-        /// <summary>基础属性在 EquipmentData.BaseStats 中的键名</summary>
-        private static readonly string[] BasicAttrStatKeys = { "HP", "Defense", "MP", "Agility", "Constitution", "Intelligence" };
+        /// <summary>基础属性是否为百分比</summary>
+        private static readonly bool[] BasicAttrIsPercent = { false, false, false, true };
 
         /// <summary>战力阶段标签文本</summary>
         private static readonly string[] CombatPowerStageNames = { "初入江湖", "江湖二流", "江湖一流", "绝世高手", "一代宗师", "武林神话" };
@@ -661,13 +664,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             {
                 BuildAtmosphere();
                 BuildTopBar();
-                BuildLeftPanel();
-                BuildCenterPanel();
-                BuildRightPanel();
+                BuildPreviewPanel();
+                BuildAttributePanel();
                 BuildBottomBar();
                 BuildTooltip();
 
-                InitializeMockEquipment();
                 ApplyLayout();
                 RefreshAllData();
             }
@@ -785,51 +786,154 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         }
 
         // ===================================================================
-        // 构建方法 — 左侧属性面板
+        // 构建方法 — 左侧角色预览面板
         // ===================================================================
 
         /// <summary>
-        /// 左侧属性面板：战力区 → 基础属性 → 进阶属性 → 雷达图 → 武学摘要。
+        /// 左侧角色预览面板：背景图 + 水墨晕染 + 角色名/等级/门派徽章/称号/门派标识。
         /// </summary>
-        private void BuildLeftPanel()
+        private void BuildPreviewPanel()
         {
-            _leftPanel = new GradientBarPanel
+            _previewPanel = new InkPanel
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                GradientDirection = GradientBarPanel.GradientDirectionKind.Vertical,
-                GradientColors = new[]
-                {
-                    WithAlpha(InkWashTheme.BaseSecondary, 0.98f),
-                    WithAlpha(InkWashTheme.BaseDefault, 0.98f),
-                },
-                BorderSide = GradientBarPanel.BorderSideKind.Left,
-                BorderColor = InkWashTheme.BorderGold,
-                ClipChildren = false, // 允许春色晕染略微溢出，营造柔和氛围
+                BackgroundColor = InkWashTheme.BaseSecondary,
             };
-            AddChild(_leftPanel);
+            AddChild(_previewPanel);
 
-            // 春色晕染：位于面板顶部偏右，柔化整体色调，呼应春色生机
-            _leftSpringSplash = new InkSplash
+            _previewBgLayer = new PreviewBackgroundLayer
             {
-                Variant = InkSplashVariant.Spring,
-                Opacity = 0.45f,
-                AnchorPreset = AnchorPresets.TopLeft,
+                AnchorPreset = AnchorPresets.StretchAll,
             };
-            _leftPanel.AddChild(_leftSpringSplash);
+            _previewPanel.AddChild(_previewBgLayer);
 
-            // 金色辉光：位于战力区附近，强化战力区视觉焦点
-            _leftGoldGlow = new InkSplash
+            _previewSplashTL = new InkSplash
             {
                 Variant = InkSplashVariant.Normal,
                 Opacity = 0.18f,
                 AnchorPreset = AnchorPresets.TopLeft,
             };
-            _leftPanel.AddChild(_leftGoldGlow);
+            _previewPanel.AddChild(_previewSplashTL);
 
-            BuildCombatPowerSection();
-            BuildBasicAttributes();
-            BuildAdvancedAttributes();
-            BuildRadarChart();
+            _previewSplashBR = new InkSplash
+            {
+                Variant = InkSplashVariant.Elevated,
+                Opacity = 0.15f,
+                AnchorPreset = AnchorPresets.BottomRight,
+            };
+            _previewPanel.AddChild(_previewSplashBR);
+
+            _previewSplashBL = new InkSplash
+            {
+                Variant = InkSplashVariant.Normal,
+                Opacity = 0.10f,
+                AnchorPreset = AnchorPresets.BottomLeft,
+            };
+            _previewPanel.AddChild(_previewSplashBL);
+
+            BuildPreviewCharacterInfo();
+        }
+
+        /// <summary>构建角色预览区信息。</summary>
+        private void BuildPreviewCharacterInfo()
+        {
+            _previewNameLabel = new ShadowedNameLabel
+            {
+                Text = _mockName,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 32f),
+                TextColor = InkWashTheme.PaperBright,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+            };
+            _previewPanel.AddChild(_previewNameLabel);
+
+            _previewLevelContainer = new ContainerControl
+            {
+                BackgroundColor = Color.Transparent,
+                AnchorPreset = AnchorPresets.TopLeft,
+            };
+            _previewPanel.AddChild(_previewLevelContainer);
+
+            _previewLevelPrefixLabel = new Label
+            {
+                Text = "Lv.",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 18f),
+                TextColor = InkWashTheme.GoldDeep,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+            };
+            _previewLevelContainer.AddChild(_previewLevelPrefixLabel);
+
+            _previewLevelValueLabel = new GlowLevelLabel
+            {
+                Text = _mockLevel.ToString(),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 28f),
+                TextColor = InkWashTheme.GoldBright,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+            };
+            _previewLevelContainer.AddChild(_previewLevelValueLabel);
+
+            _previewSectLabel = new InkTag
+            {
+                Text = $"\u2694 {_mockSect} · 内门弟子",
+                TagVariant = InkTagVariant.Brand,
+                AnchorPreset = AnchorPresets.TopLeft,
+            };
+            _previewPanel.AddChild(_previewSectLabel);
+
+            _previewTitleContainer = new ContainerControl
+            {
+                BackgroundColor = Color.Transparent,
+                AnchorPreset = AnchorPresets.TopLeft,
+                ClipChildren = false,
+            };
+            _previewPanel.AddChild(_previewTitleContainer);
+
+            _titleLineLeft = new GradientLine
+            {
+                Direction = GradientLine.GradientDirectionKind.Horizontal,
+                StartColor = Color.Transparent,
+                MidColor = InkWashTheme.GoldPrimary,
+                EndColor = Color.Transparent,
+                AnchorPreset = AnchorPresets.TopLeft,
+            };
+            _previewTitleContainer.AddChild(_titleLineLeft);
+
+            _previewTitleLabel = new Label
+            {
+                Text = _mockTitle,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 24f),
+                TextColor = InkWashTheme.GoldBright,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+            };
+            _previewTitleContainer.AddChild(_previewTitleLabel);
+
+            _titleLineRight = new GradientLine
+            {
+                Direction = GradientLine.GradientDirectionKind.Horizontal,
+                StartColor = Color.Transparent,
+                MidColor = InkWashTheme.GoldPrimary,
+                EndColor = Color.Transparent,
+                AnchorPreset = AnchorPresets.TopLeft,
+            };
+            _previewTitleContainer.AddChild(_titleLineRight);
+
+            _sectEmblemLabel = new Label
+            {
+                Text = "\u26F0 青城",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f),
+                TextColor = WithAlpha(InkWashTheme.PaperDark, 0.5f),
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+            };
+            _previewPanel.AddChild(_sectEmblemLabel);
         }
 
         /// <summary>构建战力区。</summary>
@@ -837,15 +941,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         {
             _combatPowerTitleLabel = new Label
             {
-                // 字间距简化：在字符间加空格近似 0.1em letter-spacing
-                Text = "战 力",
+                Text = "战力",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
                 TextColor = InkWashTheme.PaperAged,
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
                 AnchorPreset = AnchorPresets.TopLeft,
             };
-            _leftPanel.AddChild(_combatPowerTitleLabel);
+            _attrPanelScroll.AddChild(_combatPowerTitleLabel);
 
             _combatPowerStageTag = new InkTag
             {
@@ -853,9 +956,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 TagVariant = InkTagVariant.Brand,
                 AnchorPreset = AnchorPresets.TopRight,
             };
-            _leftPanel.AddChild(_combatPowerStageTag);
+            _attrPanelScroll.AddChild(_combatPowerStageTag);
 
-            // 战力数值使用 GlowLabel，叠加金色辉光阴影强化视觉焦点
             _combatPowerValue = new GlowLabel
             {
                 Text = "0",
@@ -865,7 +967,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 VerticalAlignment = TextAlignment.Center,
                 AnchorPreset = AnchorPresets.TopLeft,
             };
-            _leftPanel.AddChild(_combatPowerValue);
+            _attrPanelScroll.AddChild(_combatPowerValue);
 
             _combatPowerTrendLabel = new Label
             {
@@ -876,7 +978,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 VerticalAlignment = TextAlignment.Center,
                 AnchorPreset = AnchorPresets.TopLeft,
             };
-            _leftPanel.AddChild(_combatPowerTrendLabel);
+            _attrPanelScroll.AddChild(_combatPowerTrendLabel);
 
             _combatPowerDeltaLabel = new Label
             {
@@ -887,7 +989,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 VerticalAlignment = TextAlignment.Center,
                 AnchorPreset = AnchorPresets.TopLeft,
             };
-            _leftPanel.AddChild(_combatPowerDeltaLabel);
+            _attrPanelScroll.AddChild(_combatPowerDeltaLabel);
 
             _combatPowerBar = new InkBar
             {
@@ -896,7 +998,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 Height = 8f,
                 Value = 0.72f,
             };
-            _leftPanel.AddChild(_combatPowerBar);
+            _attrPanelScroll.AddChild(_combatPowerBar);
 
             _combatPowerBarCurrentLabel = new Label
             {
@@ -907,7 +1009,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 VerticalAlignment = TextAlignment.Center,
                 AnchorPreset = AnchorPresets.TopLeft,
             };
-            _leftPanel.AddChild(_combatPowerBarCurrentLabel);
+            _attrPanelScroll.AddChild(_combatPowerBarCurrentLabel);
 
             _combatPowerBarNextLabel = new Label
             {
@@ -918,14 +1020,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 VerticalAlignment = TextAlignment.Center,
                 AnchorPreset = AnchorPresets.TopLeft,
             };
-            _leftPanel.AddChild(_combatPowerBarNextLabel);
+            _attrPanelScroll.AddChild(_combatPowerBarNextLabel);
         }
 
-        /// <summary>构建基础属性 6 项卡片（2 列 3 行）。</summary>
+        /// <summary>构建基础属性 4 项卡片（2 列 2 行）。</summary>
         private void BuildBasicAttributes()
         {
             _basicAttrTitleBar = CreateTitleBar();
-            _leftPanel.AddChild(_basicAttrTitleBar);
+            _attrPanelScroll.AddChild(_basicAttrTitleBar);
 
             _basicAttrTitleLabel = new Label
             {
@@ -936,25 +1038,35 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 VerticalAlignment = TextAlignment.Center,
                 AnchorPreset = AnchorPresets.TopLeft,
             };
-            _leftPanel.AddChild(_basicAttrTitleLabel);
+            _attrPanelScroll.AddChild(_basicAttrTitleLabel);
+
+            _basicAttrHintLabel = new Label
+            {
+                Text = "核心战斗数值",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.TextTertiary,
+                HorizontalAlignment = TextAlignment.Far,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+            };
+            _attrPanelScroll.AddChild(_basicAttrHintLabel);
 
             _basicAttrCards = new ContainerControl[BasicAttrCount];
             _basicAttrIcons = new Label[BasicAttrCount];
             _basicAttrNameLabels = new HoverableLabel[BasicAttrCount];
             _basicAttrValueLabels = new Label[BasicAttrCount];
+            _basicAttrUnitLabels = new Label[BasicAttrCount];
             _basicAttrTrendLabels = new Label[BasicAttrCount];
 
             for (int i = 0; i < BasicAttrCount; i++)
             {
-                // 基础属性卡片：自定义对角线渐变背景 + hover 反馈
                 var card = new BasicAttrCard
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
                 };
-                _leftPanel.AddChild(card);
+                _attrPanelScroll.AddChild(card);
                 _basicAttrCards[i] = card;
 
-                // 图标容器：28×28px，1px 描边，按五行分色
                 var icon = new BorderedIcon
                 {
                     Text = BasicAttrIconSymbols[i],
@@ -1001,9 +1113,21 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 card.AddChild(valueLabel);
                 _basicAttrValueLabels[i] = valueLabel;
 
+                var unitLabel = new Label
+                {
+                    Text = BasicAttrIsPercent[i] ? "%" : "",
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
+                    TextColor = InkWashTheme.TextTertiary,
+                    HorizontalAlignment = TextAlignment.Near,
+                    VerticalAlignment = TextAlignment.Center,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                };
+                card.AddChild(unitLabel);
+                _basicAttrUnitLabels[i] = unitLabel;
+
                 var trendLabel = new Label
                 {
-                    Text = "+12",
+                    Text = BasicAttrIsPercent[i] ? "+1.2%" : "+12",
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                     TextColor = InkWashTheme.JadeBright,
                     HorizontalAlignment = TextAlignment.Far,
@@ -1020,11 +1144,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             }
         }
 
-        /// <summary>构建进阶属性 4 项。</summary>
+        /// <summary>构建进阶属性 6 项（2 列 3 行）。</summary>
         private void BuildAdvancedAttributes()
         {
             _advancedAttrTitleBar = CreateTitleBar();
-            _leftPanel.AddChild(_advancedAttrTitleBar);
+            _attrPanelScroll.AddChild(_advancedAttrTitleBar);
 
             _advancedAttrTitleLabel = new Label
             {
@@ -1035,31 +1159,36 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 VerticalAlignment = TextAlignment.Center,
                 AnchorPreset = AnchorPresets.TopLeft,
             };
-            _leftPanel.AddChild(_advancedAttrTitleLabel);
+            _attrPanelScroll.AddChild(_advancedAttrTitleLabel);
+
+            _advancedAttrHintLabel = new Label
+            {
+                Text = "精细化战斗数值",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.TextTertiary,
+                HorizontalAlignment = TextAlignment.Far,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+            };
+            _attrPanelScroll.AddChild(_advancedAttrHintLabel);
 
             _advancedAttrCards = new ContainerControl[AdvancedAttrCount];
             _advancedAttrNameLabels = new HoverableLabel[AdvancedAttrCount];
             _advancedAttrValueLabels = new Label[AdvancedAttrCount];
             _advancedAttrIcons = new Label[AdvancedAttrCount];
-            _advancedAttrLeftBars = new ContainerControl[AdvancedAttrCount];
-
-            // 进阶属性图标：暴击✦ / 抗暴◈ / 命中◉ / 闪避∽
-            string[] attrIcons = { "\u2726", "\u25C8", "\u25C9", "\u223D" };
 
             for (int i = 0; i < AdvancedAttrCount; i++)
             {
-                // 进阶属性行：2px 左边框强调 + hover 背景提亮
                 var card = new AdvancedAttrRow
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
                 };
-                _leftPanel.AddChild(card);
+                _attrPanelScroll.AddChild(card);
                 _advancedAttrCards[i] = card;
 
-                // 进阶属性图标（12×12，TextTertiary 色）
                 var iconLabel = new Label
                 {
-                    Text = i < attrIcons.Length ? attrIcons[i] : "\u25C8",
+                    Text = AdvancedAttrIcons[i],
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
                     TextColor = InkWashTheme.TextTertiary,
                     HorizontalAlignment = TextAlignment.Center,
@@ -1071,7 +1200,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
 
                 var nameLabel = new HoverableLabel
                 {
-                    Text = _mockAdvancedAttrNames[i],
+                    Text = AdvancedAttrNames[i],
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
                     TextColor = InkWashTheme.PaperAged,
                     HorizontalAlignment = TextAlignment.Near,
@@ -1084,9 +1213,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 card.AddChild(nameLabel);
                 _advancedAttrNameLabels[i] = nameLabel;
 
+                string valueText = AdvancedAttrIsPercent[i]
+                    ? $"{AdvancedAttrValues[i]}"
+                    : $"{(int)AdvancedAttrValues[i]}";
                 var valueLabel = new Label
                 {
-                    Text = $"{(int)(_mockAdvancedAttrValues[i] * 100f)}%",
+                    Text = valueText,
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 16f),
                     TextColor = InkWashTheme.PaperBright,
                     HorizontalAlignment = TextAlignment.Far,
@@ -1098,40 +1230,113 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             }
         }
 
-        /// <summary>构建六边形雷达图叠加控件。</summary>
-        private void BuildRadarChart()
+        /// <summary>构建装备摘要（6 件装备，水平排列）。</summary>
+        private void BuildEquipmentSummary()
         {
-            _radarTitleBar = CreateTitleBar();
-            _leftPanel.AddChild(_radarTitleBar);
+            _equipmentTitleBar = CreateTitleBar();
+            _attrPanelScroll.AddChild(_equipmentTitleBar);
 
-            _radarTitleLabel = new Label
+            _equipmentTitleLabel = new Label
             {
-                Text = "五行雷达",
+                Text = "装备摘要",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 16f),
                 TextColor = InkWashTheme.GoldBright,
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
                 AnchorPreset = AnchorPresets.TopLeft,
             };
-            _leftPanel.AddChild(_radarTitleLabel);
+            _attrPanelScroll.AddChild(_equipmentTitleLabel);
 
-            _radarChart = new HexRadarChartOverlay
+            _equipmentHintLabel = new Label
             {
+                Text = "已装备 6 件",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.TextTertiary,
+                HorizontalAlignment = TextAlignment.Far,
+                VerticalAlignment = TextAlignment.Center,
                 AnchorPreset = AnchorPresets.TopLeft,
-                Size = new Float2(RadarChartSize, RadarChartSize),
-                MaxValue = 200f,
             };
-            _leftPanel.AddChild(_radarChart);
+            _attrPanelScroll.AddChild(_equipmentHintLabel);
 
-            _radarChart.AttributeTooltipRequested += OnRadarChartTooltipRequested;
-            _radarChart.TooltipEnded += OnAttributeHoverEnded;
+            _equipmentSummaryCards = new ContainerControl[EquipmentSummaryCount];
+            _equipmentSummaryIcons = new Label[EquipmentSummaryCount];
+            _equipmentSummaryNameLabels = new Label[EquipmentSummaryCount];
+            _equipmentSummaryTypeLabels = new Label[EquipmentSummaryCount];
+            _equipmentSummaryEnhanceLabels = new Label[EquipmentSummaryCount];
+
+            string[] equipNames = { "青锋剑", "玄铁盔", "云锦袍", "踏风靴", "玉佩", "龙纹戒" };
+            string[] equipTypes = { "武器", "头盔", "护甲", "鞋子", "饰品", "饰品" };
+            string[] equipIcons = { "\u2694", "\u26D1", "\u2705", "\u26C4", "\u25C6", "\u26AB" };
+            int[] equipEnhance = { 12, 10, 11, 9, 8, 10 };
+
+            for (int i = 0; i < EquipmentSummaryCount; i++)
+            {
+                var card = new ContainerControl
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    BackgroundColor = new Color(InkWashTheme.BaseDefault.R, InkWashTheme.BaseDefault.G, InkWashTheme.BaseDefault.B, 0.9f),
+                };
+                _attrPanelScroll.AddChild(card);
+                _equipmentSummaryCards[i] = card;
+
+                var icon = new BorderedIcon
+                {
+                    Text = equipIcons[i],
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 20f),
+                    TextColor = i == 0 ? InkWashTheme.BloodBright : InkWashTheme.GoldBright,
+                    HorizontalAlignment = TextAlignment.Center,
+                    VerticalAlignment = TextAlignment.Center,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    BackgroundColor = Color.Transparent,
+                    IconBorderColor = i == 0 ? InkWashTheme.BloodDeep : InkWashTheme.GoldDeep,
+                    IconBorderThickness = 1f,
+                };
+                card.AddChild(icon);
+                _equipmentSummaryIcons[i] = icon;
+
+                var nameLabel = new Label
+                {
+                    Text = equipNames[i],
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 12f),
+                    TextColor = InkWashTheme.PaperBright,
+                    HorizontalAlignment = TextAlignment.Center,
+                    VerticalAlignment = TextAlignment.Center,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                };
+                card.AddChild(nameLabel);
+                _equipmentSummaryNameLabels[i] = nameLabel;
+
+                var typeLabel = new Label
+                {
+                    Text = equipTypes[i],
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
+                    TextColor = InkWashTheme.TextTertiary,
+                    HorizontalAlignment = TextAlignment.Center,
+                    VerticalAlignment = TextAlignment.Center,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                };
+                card.AddChild(typeLabel);
+                _equipmentSummaryTypeLabels[i] = typeLabel;
+
+                var enhanceLabel = new Label
+                {
+                    Text = $"+{equipEnhance[i]}",
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
+                    TextColor = InkWashTheme.GoldBright,
+                    HorizontalAlignment = TextAlignment.Center,
+                    VerticalAlignment = TextAlignment.Center,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                };
+                card.AddChild(enhanceLabel);
+                _equipmentSummaryEnhanceLabels[i] = enhanceLabel;
+            }
         }
 
         /// <summary>构建武学摘要 3 项卡片。</summary>
         private void BuildMartialArtsSummary()
         {
             _martialArtsTitleBar = CreateTitleBar();
-            _leftPanel.AddChild(_martialArtsTitleBar);
+            _attrPanelScroll.AddChild(_martialArtsTitleBar);
 
             _martialArtsTitleLabel = new Label
             {
@@ -1142,7 +1347,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 VerticalAlignment = TextAlignment.Center,
                 AnchorPreset = AnchorPresets.TopLeft,
             };
-            _leftPanel.AddChild(_martialArtsTitleLabel);
+            _attrPanelScroll.AddChild(_martialArtsTitleLabel);
+
+            _martialArtsHintLabel = new Label
+            {
+                Text = "已装备 3 门武学",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.TextTertiary,
+                HorizontalAlignment = TextAlignment.Far,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+            };
+            _attrPanelScroll.AddChild(_martialArtsHintLabel);
 
             _martialArtsCards = new ContainerControl[MartialArtsCount];
             _martialArtsIcons = new Label[MartialArtsCount];
@@ -1154,16 +1370,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             _martialArtsMetaLevelTexts = new Label[MartialArtsCount];
             _martialArtsPowerLabels = new Label[MartialArtsCount];
             _martialArtsPowerLabelLabels = new Label[MartialArtsCount];
-            _martialArtsLeftBars = new ContainerControl[MartialArtsCount];
 
             for (int i = 0; i < MartialArtsCount; i++)
             {
-                // 武学卡片：对角线渐变背景 + hover 右移 2px + 渐变提亮
                 var card = new MartialArtCard
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
                 };
-                _rightPanel.AddChild(card);
+                _attrPanelScroll.AddChild(card);
                 _martialArtsCards[i] = card;
 
                 // 武学图标容器：42×42px，按品质分色描边与文字
@@ -1173,7 +1387,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 20f),
                     TextColor = _mockMartialArts[i].quality switch
                     {
-                        InkWashTheme.InkQuality.Legendary => InkWashTheme.VermilionBright,
+                        InkWashTheme.InkQuality.Legendary => InkWashTheme.QualityLegendary,
                         InkWashTheme.InkQuality.Epic => InkWashTheme.GoldBright,
                         _ => InkWashTheme.GoldPrimary,
                     },
@@ -1187,7 +1401,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                         0.9f),
                     IconBorderColor = _mockMartialArts[i].quality switch
                     {
-                        InkWashTheme.InkQuality.Legendary => InkWashTheme.VermilionDeep,
+                        InkWashTheme.InkQuality.Legendary => InkWashTheme.GoldDeep,
                         InkWashTheme.InkQuality.Epic => InkWashTheme.GoldDeep,
                         _ => InkWashTheme.BorderNeutralL2,
                     },
@@ -1476,15 +1690,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         }
 
         // ===================================================================
-        // 构建方法 — 右侧装备面板
+        // 构建方法 — 右侧属性面板
         // ===================================================================
 
         /// <summary>
-        /// 右侧装备面板：15 装备槽 → 背包 → 提示。
+        /// 右侧属性面板：战力区 → 基础属性卡片（2×2） → 进阶属性（2×3） → 装备摘要 → 武学摘要。
         /// </summary>
-        private void BuildRightPanel()
+        private void BuildAttributePanel()
         {
-            _rightPanel = new GradientBarPanel
+            _attrPanel = new GradientBarPanel
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 GradientDirection = GradientBarPanel.GradientDirectionKind.Vertical,
@@ -1495,30 +1709,20 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 },
                 BorderSide = GradientBarPanel.BorderSideKind.Left,
                 BorderColor = InkWashTheme.BorderGold,
-                ClipChildren = false, // 允许春色晕染略微溢出，营造柔和氛围
             };
-            AddChild(_rightPanel);
+            AddChild(_attrPanel);
 
-            // 春色晕染：位于面板顶部偏左，与左侧面板呼应，强化春色氛围
-            _rightSpringSplash = new InkSplash
+            _attrPanelScroll = new ContainerControl
             {
-                Variant = InkSplashVariant.Spring,
-                Opacity = 0.45f,
                 AnchorPreset = AnchorPresets.TopLeft,
+                ClipChildren = true,
             };
-            _rightPanel.AddChild(_rightSpringSplash);
+            _attrPanel.AddChild(_attrPanelScroll);
 
-            // 金色辉光：位于武学摘要区附近，柔化武学卡片视觉
-            _rightGoldGlow = new InkSplash
-            {
-                Variant = InkSplashVariant.Normal,
-                Opacity = 0.15f,
-                AnchorPreset = AnchorPresets.TopLeft,
-            };
-            _rightPanel.AddChild(_rightGoldGlow);
-
-            BuildEquipmentSlots();
-            BuildBackpackGrid();
+            BuildCombatPowerSection();
+            BuildBasicAttributes();
+            BuildAdvancedAttributes();
+            BuildEquipmentSummary();
             BuildMartialArtsSummary();
         }
 
@@ -1700,44 +1904,37 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             }
             LayoutTopBar(sw);
 
-            // 三栏面板：扣除两侧与中间间隙后按占比分配
-            float availableW = sw - PanelGap * 4f;
-            float leftW = availableW * LeftPanelWidthRatio;
-            float centerW = availableW * CenterPanelWidthRatio;
-            float rightW = availableW * RightPanelWidthRatio;
+            // 两栏面板：各占 50%，中间留间隙
+            float panelW = (sw - PanelGap) * PanelWidthRatio;
+            float previewX = PanelGap * 0.5f;
+            float attrX = previewX + panelW + PanelGap;
 
-            float leftX = PanelGap;
-            float centerX = leftX + leftW + PanelGap;
-            float rightX = centerX + centerW + PanelGap;
-
-            if (_leftPanel != null)
+            if (_previewPanel != null)
             {
-                _leftPanel.Location = new Float2(leftX, ContentTop);
-                _leftPanel.Size = new Float2(leftW, contentH);
+                _previewPanel.Location = new Float2(previewX, ContentTop);
+                _previewPanel.Size = new Float2(panelW, contentH);
             }
-            LayoutLeftPanel(leftW, contentH);
+            LayoutPreviewPanel(panelW, contentH);
 
-            if (_centerPanel != null)
+            if (_attrPanel != null)
             {
-                _centerPanel.Location = new Float2(centerX, ContentTop);
-                _centerPanel.Size = new Float2(centerW, contentH);
+                _attrPanel.Location = new Float2(attrX, ContentTop);
+                _attrPanel.Size = new Float2(panelW, contentH);
             }
-            LayoutCenterPanel(centerW, contentH);
-
-            if (_rightPanel != null)
+            if (_attrPanelScroll != null)
             {
-                _rightPanel.Location = new Float2(rightX, ContentTop);
-                _rightPanel.Size = new Float2(rightW, contentH);
+                _attrPanelScroll.Location = new Float2(PanelPadding, PanelPadding);
+                _attrPanelScroll.Size = new Float2(panelW - PanelPadding * 2f, contentH - PanelPadding * 2f);
             }
-            LayoutRightPanel(rightW, contentH);
+            LayoutAttributePanel(panelW, contentH);
 
-            // 底部操作栏：X 起点对齐右面板，宽度等于右面板宽度（不再占全屏）
+            // 底部操作栏：X 起点对齐属性面板，宽度等于属性面板宽度
             if (_bottomBar != null)
             {
-                _bottomBar.Location = new Float2(rightX, sh - BottomBarHeight);
-                _bottomBar.Size = new Float2(rightW, BottomBarHeight);
+                _bottomBar.Location = new Float2(attrX, sh - BottomBarHeight);
+                _bottomBar.Size = new Float2(panelW, BottomBarHeight);
             }
-            LayoutBottomBar(rightW);
+            LayoutBottomBar(panelW);
         }
 
         /// <summary>布局顶部导航栏内部元素。</summary>
@@ -1785,25 +1982,21 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             }
         }
 
-        /// <summary>布局左侧属性面板内部子控件（从上到下）。</summary>
-        private void LayoutLeftPanel(float panelWidth, float panelHeight)
+        /// <summary>布局左侧角色预览面板内部子控件。</summary>
+        private void LayoutPreviewPanel(float panelWidth, float panelHeight)
         {
             float contentWidth = panelWidth - PanelPadding * 2f;
             float y = PanelPadding;
 
-            // 春色晕染：位于面板顶部偏右，部分溢出顶部与右侧，柔化色调
-            if (_leftSpringSplash != null)
-            {
-                _leftSpringSplash.Location = new Float2(panelWidth * 0.55f, -110f);
-            }
+            // 水墨晕染装饰
+            if (_previewSplashTL != null)
+                _previewSplashTL.Location = new Float2(-70f, -90f);
+            if (_previewSplashBR != null)
+                _previewSplashBR.Location = new Float2(panelWidth - _previewSplashBR.Width + 40f, panelHeight - _previewSplashBR.Height + 50f);
+            if (_previewSplashBL != null)
+                _previewSplashBL.Location = new Float2(-90f, panelHeight * 0.55f);
 
-            // 金色辉光：位于战力区附近（左上偏内），强化战力视觉焦点
-            if (_leftGoldGlow != null)
-            {
-                _leftGoldGlow.Location = new Float2(-60f, -70f);
-            }
-
-            // 1. 角色信息区（从原 LayoutCenterPanel 迁移）
+            // 角色信息区
             if (_previewNameLabel != null)
             {
                 _previewNameLabel.Location = new Float2(PanelPadding, y);
@@ -1813,7 +2006,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
 
             if (_previewLevelContainer != null)
             {
-                // 等级两段式容器：水平排列 "Lv." 前缀 + 数值
                 float levelW = 100f;
                 _previewLevelContainer.Location = new Float2((panelWidth - levelW) * 0.5f, y);
                 _previewLevelContainer.Size = new Float2(levelW, 22f);
@@ -1846,7 +2038,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             float titleCenterX = contentWidth * 0.5f;
             if (_titleLineLeft != null)
             {
-                // 左侧装饰线：右边缘距称号文字 10f，宽度 120f
                 _titleLineLeft.Location = new Float2(titleCenterX - 90f - 120f, 26f * 0.5f - 1f);
                 _titleLineLeft.Size = new Float2(120f, 2f);
             }
@@ -1857,42 +2048,61 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             }
             if (_titleLineRight != null)
             {
-                // 右侧装饰线：左边缘距称号文字 10f，宽度 120f（对称渐变）
                 _titleLineRight.Location = new Float2(titleCenterX + 90f, 26f * 0.5f - 1f);
                 _titleLineRight.Size = new Float2(120f, 2f);
             }
             y += 26f + 6f;
 
-            if (_stageTag != null)
-            {
-                _stageTag.Location = new Float2((panelWidth - 90f) * 0.5f, y);
-                _stageTag.Size = new Float2(90f, 22f);
-            }
-            y += 22f + 6f;
-
             if (_sectEmblemLabel != null)
             {
-                _sectEmblemLabel.Location = new Float2((panelWidth - 80f) * 0.5f, y);
+                _sectEmblemLabel.Location = new Float2((panelWidth - 80f) * 0.5f, panelHeight - 30f);
                 _sectEmblemLabel.Size = new Float2(80f, 20f);
             }
-            y += 20f + SectionGap;
+        }
 
-            // 2. 战力区
-            y = LayoutCombatPowerSection(PanelPadding, y, contentWidth);
+        /// <summary>布局右侧属性面板内部子控件。</summary>
+        private void LayoutAttributePanel(float panelWidth, float panelHeight)
+        {
+            float contentWidth = panelWidth - PanelPadding * 2f;
+            float y = 0f;
 
-            // 3. 基础属性区
-            y = LayoutSectionTitle(_basicAttrTitleLabel, _basicAttrTitleBar, PanelPadding, y, contentWidth);
-            y = LayoutBasicAttributes(PanelPadding, y, contentWidth);
+            y = LayoutCombatPowerSection(0f, y, contentWidth);
 
-            // 4. 进阶属性区
             y += SectionGap;
-            y = LayoutSectionTitle(_advancedAttrTitleLabel, _advancedAttrTitleBar, PanelPadding, y, contentWidth);
-            y = LayoutAdvancedAttributes(PanelPadding, y, contentWidth);
+            y = LayoutSectionTitle(_basicAttrTitleLabel, _basicAttrTitleBar, 0f, y, contentWidth);
+            if (_basicAttrHintLabel != null)
+            {
+                _basicAttrHintLabel.Location = new Float2(contentWidth - 80f, y - SectionTitleHeight);
+                _basicAttrHintLabel.Size = new Float2(80f, SectionTitleHeight);
+            }
+            y = LayoutBasicAttributes(0f, y, contentWidth);
 
-            // 5. 雷达图区
             y += SectionGap;
-            y = LayoutSectionTitle(_radarTitleLabel, _radarTitleBar, PanelPadding, y, contentWidth);
-            y = LayoutRadarChart(PanelPadding, y, contentWidth);
+            y = LayoutSectionTitle(_advancedAttrTitleLabel, _advancedAttrTitleBar, 0f, y, contentWidth);
+            if (_advancedAttrHintLabel != null)
+            {
+                _advancedAttrHintLabel.Location = new Float2(contentWidth - 100f, y - SectionTitleHeight);
+                _advancedAttrHintLabel.Size = new Float2(100f, SectionTitleHeight);
+            }
+            y = LayoutAdvancedAttributes(0f, y, contentWidth);
+
+            y += SectionGap;
+            y = LayoutSectionTitle(_equipmentTitleLabel, _equipmentTitleBar, 0f, y, contentWidth);
+            if (_equipmentHintLabel != null)
+            {
+                _equipmentHintLabel.Location = new Float2(contentWidth - 70f, y - SectionTitleHeight);
+                _equipmentHintLabel.Size = new Float2(70f, SectionTitleHeight);
+            }
+            y = LayoutEquipmentSummary(0f, y, contentWidth);
+
+            y += SectionGap;
+            y = LayoutSectionTitle(_martialArtsTitleLabel, _martialArtsTitleBar, 0f, y, contentWidth);
+            if (_martialArtsHintLabel != null)
+            {
+                _martialArtsHintLabel.Location = new Float2(contentWidth - 80f, y - SectionTitleHeight);
+                _martialArtsHintLabel.Size = new Float2(80f, SectionTitleHeight);
+            }
+            y = LayoutMartialArtsSummary(0f, y, contentWidth);
         }
 
         /// <summary>布局战力区。</summary>
@@ -2065,7 +2275,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             return y + SectionTitleHeight;
         }
 
-        /// <summary>布局基础属性区 2×3 卡片。</summary>
+        /// <summary>布局基础属性区 2×2 卡片。</summary>
         private float LayoutBasicAttributes(float x, float y, float width)
         {
             float cardW = (width - BasicAttrCardGapX) * 0.5f;
@@ -2083,7 +2293,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                     _basicAttrCards[i].Size = new Float2(cardW, BasicAttrCardHeight);
                 }
 
-                // 卡片内部布局
                 float iconX = 12f;
                 float iconY = (BasicAttrCardHeight - BasicAttrIconSize) * 0.5f;
                 if (_basicAttrIcons[i] != null)
@@ -2102,7 +2311,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 if (_basicAttrValueLabels[i] != null)
                 {
                     _basicAttrValueLabels[i].Location = new Float2(textX, 32f);
-                    _basicAttrValueLabels[i].Size = new Float2(cardW - textX - 50f, 22f);
+                    _basicAttrValueLabels[i].Size = new Float2(cardW - textX - 60f, 22f);
+                }
+
+                if (_basicAttrUnitLabels[i] != null)
+                {
+                    _basicAttrUnitLabels[i].Location = new Float2(textX + cardW - textX - 60f + 50f, 34f);
+                    _basicAttrUnitLabels[i].Size = new Float2(20f, 18f);
                 }
 
                 if (_basicAttrTrendLabels[i] != null)
@@ -2168,6 +2383,50 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 _radarChart.Size = new Float2(RadarChartSize, RadarChartSize);
             }
             return y + RadarChartSize;
+        }
+
+        /// <summary>布局装备摘要区（6 个装备槽水平排列）。</summary>
+        private float LayoutEquipmentSummary(float x, float y, float width)
+        {
+            float slotW = (width - EquipmentSummaryGap * (EquipmentSummaryColumns - 1)) / EquipmentSummaryColumns;
+
+            for (int i = 0; i < EquipmentSummaryCount; i++)
+            {
+                float slotX = x + i * (slotW + EquipmentSummaryGap);
+                float slotY = y;
+
+                if (_equipmentSummaryCards[i] != null)
+                {
+                    _equipmentSummaryCards[i].Location = new Float2(slotX, slotY);
+                    _equipmentSummaryCards[i].Size = new Float2(slotW, EquipmentSummaryIconSize + 30f);
+                }
+
+                if (_equipmentSummaryIcons[i] != null)
+                {
+                    _equipmentSummaryIcons[i].Location = new Float2(2f, 2f);
+                    _equipmentSummaryIcons[i].Size = new Float2(EquipmentSummaryIconSize - 4f, EquipmentSummaryIconSize - 4f);
+                }
+
+                if (_equipmentSummaryNameLabels[i] != null)
+                {
+                    _equipmentSummaryNameLabels[i].Location = new Float2(0f, EquipmentSummaryIconSize + 4f);
+                    _equipmentSummaryNameLabels[i].Size = new Float2(slotW, 14f);
+                }
+
+                if (_equipmentSummaryTypeLabels[i] != null)
+                {
+                    _equipmentSummaryTypeLabels[i].Location = new Float2(0f, EquipmentSummaryIconSize + 18f);
+                    _equipmentSummaryTypeLabels[i].Size = new Float2(slotW, 12f);
+                }
+
+                if (_equipmentSummaryEnhanceLabels[i] != null)
+                {
+                    _equipmentSummaryEnhanceLabels[i].Location = new Float2(slotW - 24f, 4f);
+                    _equipmentSummaryEnhanceLabels[i].Size = new Float2(20f, 14f);
+                }
+            }
+
+            return y + EquipmentSummaryIconSize + 30f;
         }
 
         /// <summary>布局装备槽区（纸娃娃人体环绕布局）。</summary>
@@ -2403,7 +2662,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             }
         }
 
-        /// <summary>刷新全部数据（属性、装备、背包、雷达图、战力）。</summary>
+        /// <summary>刷新全部数据（属性、装备、武学、战力）。</summary>
         private void RefreshAllData()
         {
             RecalculateAttributes();
@@ -2809,11 +3068,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                     : CharacterAttributes.GetDefault();
 
                 _basicAttrBaseValues[0] = attr.HP;
-                _basicAttrBaseValues[1] = attr.Defense;
-                _basicAttrBaseValues[2] = attr.MP;
-                _basicAttrBaseValues[3] = attr.Agility;
-                _basicAttrBaseValues[4] = attr.Constitution;
-                _basicAttrBaseValues[5] = attr.Intelligence;
+                _basicAttrBaseValues[1] = attr.Attack;
+                _basicAttrBaseValues[2] = attr.Defense;
+                _basicAttrBaseValues[3] = 15f;
 
                 for (int i = 0; i < BasicAttrCount; i++)
                 {
@@ -2826,14 +3083,14 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                     if (equipment?.BaseStats == null)
                         continue;
 
-                    for (int i = 0; i < BasicAttrCount; i++)
-                    {
-                        string key = BasicAttrStatKeys[i];
-                        if (equipment.BaseStats.ContainsKey(key))
-                        {
-                            _basicAttrBonusValues[i] += equipment.BaseStats[key];
-                        }
-                    }
+                    if (equipment.BaseStats.ContainsKey("HP"))
+                        _basicAttrBonusValues[0] += equipment.BaseStats["HP"];
+                    if (equipment.BaseStats.ContainsKey("Attack"))
+                        _basicAttrBonusValues[1] += equipment.BaseStats["Attack"];
+                    if (equipment.BaseStats.ContainsKey("Defense"))
+                        _basicAttrBonusValues[2] += equipment.BaseStats["Defense"];
+                    if (equipment.BaseStats.ContainsKey("CritRate"))
+                        _basicAttrBonusValues[3] += equipment.BaseStats["CritRate"];
                 }
 
                 for (int i = 0; i < BasicAttrCount; i++)
@@ -2841,32 +3098,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                     _basicAttrTotalValues[i] = _basicAttrBaseValues[i] + _basicAttrBonusValues[i];
                 }
 
-                _wuxingTotalValues[0] = attr.Metal;
-                _wuxingTotalValues[1] = attr.Wood;
-                _wuxingTotalValues[2] = attr.Water;
-                _wuxingTotalValues[3] = attr.Fire;
-                _wuxingTotalValues[4] = attr.Earth;
-
-                foreach (var kvp in _equippedItems)
-                {
-                    EquipmentData equipment = kvp.Value;
-                    if (equipment?.WuxingBonus == null)
-                        continue;
-
-                    if (equipment.WuxingBonus.ContainsKey(WuxingElement.Metal))
-                        _wuxingTotalValues[0] += equipment.WuxingBonus[WuxingElement.Metal];
-                    if (equipment.WuxingBonus.ContainsKey(WuxingElement.Wood))
-                        _wuxingTotalValues[1] += equipment.WuxingBonus[WuxingElement.Wood];
-                    if (equipment.WuxingBonus.ContainsKey(WuxingElement.Water))
-                        _wuxingTotalValues[2] += equipment.WuxingBonus[WuxingElement.Water];
-                    if (equipment.WuxingBonus.ContainsKey(WuxingElement.Fire))
-                        _wuxingTotalValues[3] += equipment.WuxingBonus[WuxingElement.Fire];
-                    if (equipment.WuxingBonus.ContainsKey(WuxingElement.Earth))
-                        _wuxingTotalValues[4] += equipment.WuxingBonus[WuxingElement.Earth];
-                }
-
                 RefreshBasicAttributes();
-                RefreshRadarChart();
                 RefreshCombatPower();
             }
             catch (Exception ex)
@@ -2875,7 +3107,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             }
         }
 
-        /// <summary>刷新基础属性 6 项的数值 Label。</summary>
+        /// <summary>刷新基础属性 4 项的数值 Label。</summary>
         private void RefreshBasicAttributes()
         {
             if (_basicAttrValueLabels == null)
@@ -2885,7 +3117,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             {
                 float total = _basicAttrTotalValues[i];
                 if (_basicAttrValueLabels[i] != null)
-                    _basicAttrValueLabels[i].Text = $"{(int)total}";
+                {
+                    _basicAttrValueLabels[i].Text = BasicAttrIsPercent[i]
+                        ? $"{total:F1}"
+                        : $"{(int)total}";
+                }
             }
         }
 
@@ -2927,7 +3163,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             }
         }
 
-        /// <summary>刷新进阶属性 4 项 mock。</summary>
+        /// <summary>刷新进阶属性 6 项。</summary>
         private void RefreshAdvancedAttributes()
         {
             if (_advancedAttrValueLabels == null)
@@ -2936,7 +3172,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             for (int i = 0; i < AdvancedAttrCount; i++)
             {
                 if (i < _advancedAttrValueLabels.Length && _advancedAttrValueLabels[i] != null)
-                    _advancedAttrValueLabels[i].Text = $"{(int)(_mockAdvancedAttrValues[i] * 100f)}%";
+                {
+                    string valueText = AdvancedAttrIsPercent[i]
+                        ? $"{AdvancedAttrValues[i]}"
+                        : $"{(int)AdvancedAttrValues[i]}";
+                    _advancedAttrValueLabels[i].Text = valueText;
+                }
             }
         }
 
@@ -3443,12 +3684,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             };
         }
 
-        /// <summary>获取品质对应标签变体。</summary>
+        /// <summary>获取品质对应标签变体（设计方案 §4.1 Legendary=鎏金，非朱红）。</summary>
         private static InkTagVariant QualityTagVariant(InkWashTheme.InkQuality quality)
         {
             return quality switch
             {
-                InkWashTheme.InkQuality.Legendary => InkTagVariant.Vermilion,
+                InkWashTheme.InkQuality.Legendary => InkTagVariant.Brand,
                 InkWashTheme.InkQuality.Epic => InkTagVariant.Brand,
                 _ => InkTagVariant.Default
             };
@@ -3820,7 +4061,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         private class GlowLabel : Label
         {
             /// <summary>辉光颜色（半透明金色，对应 CSS text-shadow 色）</summary>
-            public Color GlowColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.2f);
+            public Color GlowColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.2f);
 
             /// <summary>辉光偏移半径（像素），越大越模糊</summary>
             public float GlowRadius = 2f;
@@ -4107,7 +4348,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
         private class GlowLevelLabel : Label
         {
             /// <summary>辉光颜色（半透明金色）</summary>
-            private static readonly Color GlowColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.3f);
+            private static readonly Color GlowColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.3f);
 
             /// <summary>8 方向 4px 偏移量</summary>
             private static readonly Float2[] GlowOffsets =
@@ -4167,8 +4408,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             /// <summary>起始色（通常透明）</summary>
             public Color StartColor = Color.Transparent;
 
-            /// <summary>中段主色（不透明）</summary>
-            public Color MidColor = Color.White;
+            /// <summary>中段主色（不透明，默认鎏金主色）</summary>
+            public Color MidColor = InkWashTheme.GoldPrimary;
 
             /// <summary>结束色（通常透明）</summary>
             public Color EndColor = Color.Transparent;

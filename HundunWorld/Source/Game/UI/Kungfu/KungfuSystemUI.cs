@@ -334,7 +334,7 @@ namespace HundunWorld.Game.UI.Kungfu
                 Parent = gunFaItem,
                 Location = new Float2(12, 12),
                 Size = new Float2(40, 40),
-                BackgroundColor = new Color(0.1f, 0.1f, 0.4f, 0.8f)
+                BackgroundColor = UIStyleTokens.WithAlpha(UIStyleTokens.ElementWater, 0.8f) // 枪法图标 水行色（--ink-element-water）
             };
             
             var gunFaTextPanel = new Panel
@@ -386,7 +386,7 @@ namespace HundunWorld.Game.UI.Kungfu
                 Parent = jianFaItem,
                 Location = new Float2(12, 12),
                 Size = new Float2(40, 40),
-                BackgroundColor = new Color(0.4f, 0.1f, 0.1f, 0.8f)
+                BackgroundColor = UIStyleTokens.WithAlpha(UIStyleTokens.ElementFire, 0.8f) // 剑法图标 火行色（--ink-element-fire）
             };
             
             var jianFaTextPanel = new Panel

@@ -963,7 +963,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(AttrHorizontalPadding, startY),
                 Size = new Float2(RightColumnWidth - AttrHorizontalPadding * 2f, CompareCardHeight),
-                BackgroundColor = new Color(28f / 255f, 31f / 255f, 40f / 255f, 0.4f),
+                BackgroundColor = new Color(InkWashTheme.BaseTertiary.R, InkWashTheme.BaseTertiary.G, InkWashTheme.BaseTertiary.B, 0.4f),
             };
             _rightPanel.AddChild(currentCard);
 
@@ -1052,7 +1052,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
             _swapButton = new InkButton
             {
                 Text = "更换装备",
-                Variant = InkButtonVariant.Vermilion,
+                // 设计方案：朱红仅限战斗/危险/扣减场景；更换装备为常规操作，用Primary
+                Variant = InkButtonVariant.Primary,
                 ButtonSize = InkButtonSize.Md,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(AttrHorizontalPadding, startY),
@@ -1499,7 +1500,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 // 地面阴影
                 InkRenderHelper.FillCircle(
                     new Float2(cx, 340f * sy),
-                    60f * sx, new Color(10f / 255f, 11f / 255f, 16f / 255f, 0.4f));
+                    60f * sx, new Color(InkWashTheme.Abyss.R, InkWashTheme.Abyss.G, InkWashTheme.Abyss.B, 0.4f));
 
                 // 头部（椭圆近似为圆）
                 InkRenderHelper.FillCircle(

@@ -1,0 +1,35 @@
+{
+  "ID": "36d5bee99e9749e5a0143b8eeb48e7bf",
+  "TypeName": "FlaxEngine.Prefab",
+  "EngineBuild": 6705,
+  "Data": [
+    {
+      "ID": "63245e2878b84b29986e76fb99568255",
+      "TypeName": "FlaxEngine.EmptyActor",
+      "ParentID": "00000000000000000000000000000000",
+      "Name": "NS_ElectricMovement",
+      "Transform": {
+        "Translation": {
+          "X": 0,
+          "Y": 0,
+          "Z": 0
+        }
+      }
+    },
+    {
+      "ID": "869f1452a546438ea8dce2cb0f82f2ce",
+      "TypeName": "FlaxEngine.ParticleEffect",
+      "ParentID": "63245e2878b84b29986e76fb99568255",
+      "Name": "NS_ElectricMovement_Effect",
+      "Transform": {
+        "Translation": {
+          "X": 0,
+          "Y": 0,
+          "Z": 0
+        }
+      },
+      "ParticleSystem": "97cd9f20499e45569b87a22a7d7b3d8f",
+      "IsPlaying": true
+    }
+  ]
+}

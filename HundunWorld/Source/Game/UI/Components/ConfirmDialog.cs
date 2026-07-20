@@ -130,7 +130,7 @@ namespace HundunWorld.Game.UI.Components
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
-                BackgroundColor = new Color(0, 0, 0, 0.5f),
+                BackgroundColor = UIStyleTokens.Scrim, // 墨黑遮罩 rgba(14,16,22,0.8)（ds-dialog §4.7）
                 Visible = false
             };
 
@@ -143,8 +143,8 @@ namespace HundunWorld.Game.UI.Components
                 AnchorPreset = AnchorPresets.MiddleCenter,
                 Pivot = new Float2(0.5f, 0.5f),
                 Location = Float2.Zero,
-                BackgroundColor = ChineseClassicalTheme.PanelColor,
-                CornerRadius = 10f
+                BackgroundColor = UIStyleTokens.BgInk, // 对话框背景 墨水深背景（ds-dialog §4.7 --ink-bg-ink）
+                CornerRadius = UIStyleTokens.RadiusCard // 12px 圆角（ds-dialog §4.7）
             };
             
             FlaxEngine.Debug.Log($"对话框面板创建完成 - Size: {_dialogPanel.Size}, AnchorPreset: {_dialogPanel.AnchorPreset}");
@@ -179,7 +179,7 @@ namespace HundunWorld.Game.UI.Components
             _dialogPanel.AddChild(_iconImage);
 
             // 消息区域 - 自适应高度，使用中式样式
-            _messageLabel = UIHelper.CreateLabel("确定要执行此操作吗？", ChineseClassicalTheme.TextColor);
+            _messageLabel = UIHelper.CreateLabel("确定要执行此操作吗？", UIStyleTokens.TextSecondary);
             _messageLabel.Location = new Float2(30, 100);
             _messageLabel.Size = new Float2(_dialogPanel.Width - 60, 50);
             _messageLabel.HorizontalAlignment = TextAlignment.Center;
@@ -202,10 +202,10 @@ namespace HundunWorld.Game.UI.Components
             {
                 Size = new Float2(_dialogPanel.Width, 55),
                 Location = new Float2(0, _dialogPanel.Height - 55),
-                BackgroundColor = new Color(0.1f, 0.1f, 0.1f, 0.3f),
+                BackgroundColor = UIStyleTokens.BgOverlay3, // 按钮区淡金叠层（--bg-overlay-l3）
                 Visible = true,
                 Enabled = true,
-                CornerRadius = 10f
+                CornerRadius = UIStyleTokens.RadiusCard
             };
 
             // 创建按钮 - 居中排列
@@ -376,10 +376,11 @@ namespace HundunWorld.Game.UI.Components
                     var star = new Panel
                     {
                         Size = new Float2(starSize, starSize),
+                        // 金粉微粒（出处：--ink-gold-bright 亮金，金粉粒子规范 §3.1）
                         BackgroundColor = new Color(
-                            1.0f, // 金色 R
-                            0.84f, // 金色 G
-                            0.0f,  // 金色 B
+                            UIStyleTokens.GoldBright.R,
+                            UIStyleTokens.GoldBright.G,
+                            UIStyleTokens.GoldBright.B,
                             alpha
                         ),
                         Location = new Float2(
@@ -431,9 +432,9 @@ namespace HundunWorld.Game.UI.Components
                     {
                         Size = new Float2(1.5f, 1.5f),
                         BackgroundColor = new Color(
-                            ChineseClassicalTheme.SecondaryColor.R,
-                            ChineseClassicalTheme.SecondaryColor.G, 
-                            ChineseClassicalTheme.SecondaryColor.B,
+                            UIStyleTokens.GoldPrimary.R,
+                            UIStyleTokens.GoldPrimary.G,
+                            UIStyleTokens.GoldPrimary.B,
                             0.4f + (i % 3) * 0.2f // 不同透明度
                         ),
                         Location = new Float2(
@@ -562,17 +563,17 @@ namespace HundunWorld.Game.UI.Components
             // 应用对话框主体样式
             UIHelper.ApplyDialogStyle(_dialogPanel);
             
-            // 应用标题样式
+            // 应用标题样式（鎏金标题，出处：--ink-text-gold）
             if (_titleLabel != null)
             {
-                _titleLabel.TextColor = ChineseClassicalTheme.SecondaryColor; // 古典金
+                _titleLabel.TextColor = UIStyleTokens.TextGold;
                 ChineseClassicalTheme.ApplyVisualHierarchy(_titleLabel, VisualHierarchy.Primary);
             }
             
-            // 应用消息标签样式
+            // 应用消息标签样式（对话框正文 次文本色，ds-dialog §4.7）
             if (_messageLabel != null)
             {
-                _messageLabel.TextColor = ChineseClassicalTheme.TextColor; // 清雅白
+                _messageLabel.TextColor = UIStyleTokens.TextSecondary;
                 ChineseClassicalTheme.ApplyVisualHierarchy(_messageLabel, VisualHierarchy.Auxiliary);
             }
             

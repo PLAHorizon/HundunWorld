@@ -131,7 +131,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Text = "创建新角色",
                 Bounds = new Rectangle(0, 20, Width, 40),
-                TextColor = Color.White,
+                TextColor = UIStyleTokens.TextPrimary,
                 HorizontalAlignment = TextAlignment.Center,
                 Font = new FontReference(FlaxEngine.Content.LoadAsyncInternal<FontAsset>(@"Fonts\Arial"), 24)
             };
@@ -141,7 +141,7 @@ namespace HundunWorld.Game.UI.Character
             _contentPanel = new Panel
             {
                 Bounds = new Rectangle(20, 80, Width - 40, Height - 140),
-                BackgroundColor = new Color(0.25f, 0.25f, 0.3f, 0.7f)
+                BackgroundColor = UIStyleTokens.InkPanel(0.7f)
             };
             AddChild(_contentPanel);
             
@@ -163,7 +163,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Text = "角色名称:",
                 Bounds = new Rectangle(20, yPos, labelWidth, 25),
-                TextColor = Color.White
+                TextColor = UIStyleTokens.TextPrimary
             };
             _contentPanel.AddChild(nameLabel);
             
@@ -182,7 +182,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Text = "性别:",
                 Bounds = new Rectangle(20, yPos, labelWidth, 25),
-                TextColor = Color.White
+                TextColor = UIStyleTokens.TextPrimary
             };
             _contentPanel.AddChild(genderLabel);
             
@@ -201,7 +201,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Text = "职业:",
                 Bounds = new Rectangle(20, yPos, labelWidth, 25),
-                TextColor = Color.White
+                TextColor = UIStyleTokens.TextPrimary
             };
             _contentPanel.AddChild(classLabel);
             
@@ -221,7 +221,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Text = "外观:",
                 Bounds = new Rectangle(20, yPos, labelWidth, 25),
-                TextColor = Color.White
+                TextColor = UIStyleTokens.TextPrimary
             };
             _contentPanel.AddChild(appearanceLabel);
             
@@ -251,7 +251,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Bounds = new Rectangle(Width - 220, 20, 200, 300),
                 Brush = new SpriteBrush(), // 移除null参数
-                BackgroundColor = new Color(0.3f, 0.3f, 0.35f, 0.8f)
+                BackgroundColor = UIStyleTokens.WithAlpha(UIStyleTokens.BgElevated, 0.8f)
             };
             _contentPanel.AddChild(_previewImage);
             
@@ -260,7 +260,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Text = "预览角色",
                 Bounds = new Rectangle(Width - 220, 330, 200, 25),
-                TextColor = Color.White,
+                TextColor = UIStyleTokens.TextPrimary,
                 HorizontalAlignment = TextAlignment.Center
             };
             _contentPanel.AddChild(_previewName);
@@ -277,7 +277,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Text = "随机生成",
                 Bounds = new Rectangle(20, Height - 55, buttonWidth, buttonHeight),
-                BackgroundColor = Color.Orange * 0.7f
+                BackgroundColor = UIStyleTokens.StatusAlert * 0.7f // 提醒色（--status-alert-default）
             };
             _randomizeButton.ButtonClicked += OnRandomizeClicked;  // 使用ButtonClicked而不是Clicked
             AddChild(_randomizeButton);
@@ -287,7 +287,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Text = "取消",
                 Bounds = new Rectangle(Width - buttonWidth * 2 - spacing, Height - 55, buttonWidth, buttonHeight),
-                BackgroundColor = Color.Gray * 0.7f
+                BackgroundColor = UIStyleTokens.TextMuted * 0.7f // 次操作灰（--ink-text-muted）
             };
             _cancelButton.ButtonClicked += OnCancelClicked;  // 使用ButtonClicked而不是Clicked
             AddChild(_cancelButton);
@@ -297,7 +297,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Text = "创建角色",
                 Bounds = new Rectangle(Width - buttonWidth, Height - 55, buttonWidth, buttonHeight),
-                BackgroundColor = Color.Green * 0.7f
+                BackgroundColor = UIStyleTokens.StatusSuccess * 0.7f // 成功色（--status-success-default）
             };
             _createButton.ButtonClicked += OnCreateClicked;  // 使用ButtonClicked而不是Clicked
             AddChild(_createButton);
@@ -503,7 +503,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Text = "属性分配",
                 Bounds = new Rectangle(0, 0, Width, 25),
-                TextColor = Color.Yellow,
+                TextColor = UIStyleTokens.TextGold,
                 HorizontalAlignment = TextAlignment.Center
             };
             AddChild(titleLabel);
@@ -513,7 +513,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Text = $"剩余点数: {_remainingPoints}",
                 Bounds = new Rectangle(0, 30, Width, 20),
-                TextColor = Color.White,
+                TextColor = UIStyleTokens.TextPrimary,
                 HorizontalAlignment = TextAlignment.Center
             };
             AddChild(_pointsLabel);
@@ -538,7 +538,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Text = attributeName,
                 Bounds = new Rectangle(0, yPos, 60, 25),
-                TextColor = Color.White
+                TextColor = UIStyleTokens.TextPrimary
             };
             AddChild(nameLabel);
             
@@ -547,7 +547,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Text = "-",
                 Bounds = new Rectangle(70, yPos, 30, 25),
-                BackgroundColor = Color.Red * 0.5f
+                BackgroundColor = UIStyleTokens.BloodPrimary * 0.5f // 血色 危险操作（--ink-blood-primary）
             };
             decreaseBtn.Tag = attributeName;
             decreaseBtn.ButtonClicked += (btn) => OnDecreaseAttribute(attributeName);
@@ -559,7 +559,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Text = _attributes[attributeName].ToString(),
                 Bounds = new Rectangle(110, yPos, 30, 25),
-                TextColor = Color.White,
+                TextColor = UIStyleTokens.TextPrimary,
                 HorizontalAlignment = TextAlignment.Center
             };
             AddChild(valueLabel);
@@ -570,7 +570,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Text = "+",
                 Bounds = new Rectangle(150, yPos, 30, 25),
-                BackgroundColor = Color.Green * 0.5f
+                BackgroundColor = UIStyleTokens.JadePrimary * 0.5f // 水墨青 正向操作（--ink-jade-primary）
             };
             increaseBtn.Tag = attributeName;
             increaseBtn.ButtonClicked += (btn) => OnIncreaseAttribute(attributeName);

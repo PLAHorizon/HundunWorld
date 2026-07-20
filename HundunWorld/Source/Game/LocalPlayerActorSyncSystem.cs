@@ -3,6 +3,7 @@ using Arch.Core;
 using FlaxEngine;
 using Horizon.Game.ECS.Arch.Components;
 using Horizon.Game.Message.Sync.Components;
+using HundunWorld.Game.Character;
 // 消除 PredictedTransformComponent 命名空间歧义：
 // ECS.Arch.Components.PredictedTransformComponent 是客户端本地预测组件（LocalSimulationSystem 操作），
 // Message.Sync.Components.PredictedTransformComponent 是网络序列化版本。
@@ -39,13 +40,13 @@ namespace HundunWorld.Game
         private Entity _localPlayerEntity;
         private bool _localPlayerEntityFound;
 
-        /// <summary>本地玩家 AnimatedModel 缓存（用于设置动画参数）。</summary>
+        /// <summary>本地玩家 AnimatedModel 缓存（用于设置动画参数，回退方案）。</summary>
         private AnimatedModel? _animatedModel;
 
-        /// <summary>IsWalking 动画参数句柄。</summary>
-        private AnimGraphParameter _isWalkingParam;
+        /// <summary>角色动画控制器引用。</summary>
+        private CharacterAnimationController _animationController;
 
-        /// <summary>动画参数是否已初始化（资源未加载时延迟初始化）。</summary>
+        /// <summary>动画参数是否已初始化（资源未加载时延迟初始化，回退方案用）。</summary>
         private bool _animationParamsInitialized;
 
         /// <summary>上一帧的 MovementMode（变化检测，避免每帧设置参数）。</summary>
@@ -70,7 +71,10 @@ namespace HundunWorld.Game
             // 查找 AnimatedModel 子 Actor（角色 Prefab 层级中）
             _animatedModel = FindAnimatedModel(Actor);
 
-            Debug.Log($"[LocalPlayerActorSyncSystem] 初始化完成。AnimatedModel={_animatedModel != null}");
+            // 查找角色动画控制器
+            _animationController = Actor.GetScript<CharacterAnimationController>();
+
+            Debug.Log($"[LocalPlayerActorSyncSystem] 初始化完成。AnimatedModel={_animatedModel != null}, AnimationController={_animationController != null}");
         }
 
         public override void OnUpdate()
@@ -160,9 +164,7 @@ namespace HundunWorld.Game
         }
 
         /// <summary>
-        /// 安全初始化动画参数。仅在 AnimatedModel 的 SkinnedModel 与 AnimationGraph 都已加载时执行，
-        /// 避免在打包构建中资源未就绪时调用 GetParameter 触发引擎断言。
-        /// 参考 PlayerController.TryInitializeAnimationParameters 实现。
+        /// 安全检查动画资源是否已加载（回退方案用）。仅在 AnimatedModel 的 SkinnedModel 与 AnimationGraph 都已加载时返回 true。
         /// </summary>
         private bool TryInitializeAnimationParameters()
         {
@@ -180,47 +182,63 @@ namespace HundunWorld.Game
                 return false;
             }
 
-            try
-            {
-                _isWalkingParam = _animatedModel.GetParameter("IsWalking");
-                _animationParamsInitialized = true;
-                Debug.Log("[LocalPlayerActorSyncSystem] 动画参数初始化完成");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[LocalPlayerActorSyncSystem] 初始化动画参数失败，将在下一帧重试: {ex.Message}");
-                return false;
-            }
+            _animationParamsInitialized = true;
+            Debug.Log("[LocalPlayerActorSyncSystem] 动画资源检查完成");
+            return true;
         }
 
         /// <summary>
-        /// 从 MovementStateAuthComponent 读取移动模式，按映射表设置 IsWalking 动画参数。
-        /// 本期仅 IsWalking 单参数；Walk/Run/Crouch → true，Jump/Fall/Swim → false。
+        /// 从 MovementStateAuthComponent 读取移动模式，通过 CharacterAnimationController 设置动画状态。
+        /// 支持 Idle/Walk/Run/Crouch/Jump/Fall/Death 等状态。
         /// </summary>
         private void ApplyAnimationState()
         {
-            if (!_animationParamsInitialized || _animatedModel == null) return;
             if (!_archWorld!.Has<MovementStateAuthComponent>(_localPlayerEntity)) return;
 
             ref var movement = ref _archWorld.Get<MovementStateAuthComponent>(_localPlayerEntity);
             var mode = movement.MovementMode;
 
-            // 变化检测：仅在模式变化或落地状态变化时更新参数
-            if (mode == _lastMovementMode && movement.IsGrounded == _lastIsGrounded) return;
-
-            _lastMovementMode = mode;
-            _lastIsGrounded = movement.IsGrounded;
-
-            // 映射表：Walk/Run/Crouch → IsWalking=true，Jump/Fall/Swim → IsWalking=false
-            // 后续可拆分为 IsRunning/IsJumping/IsFalling 等参数（待 AnimationGraph 资源扩展）
-            bool isWalking = mode == MovementMode.Walk
-                          || mode == MovementMode.Run
-                          || mode == MovementMode.Crouch;
-
-            if (_isWalkingParam != null)
+            // 使用 CharacterAnimationController 设置动画状态
+            if (_animationController != null)
             {
-                _isWalkingParam.Value = isWalking;
+                // 设置移动速度参数（用于动画混合）- 每帧更新，不受变化检测限制
+                if (_archWorld.Has<PlayerInputComponent>(_localPlayerEntity))
+                {
+                    ref var input = ref _archWorld.Get<PlayerInputComponent>(_localPlayerEntity);
+                    _animationController.SetMoveSpeed(input.MaxSpeed);
+                }
+
+                // 变化检测：仅在模式变化或落地状态变化时更新动画状态参数
+                if (mode != _lastMovementMode || movement.IsGrounded != _lastIsGrounded)
+                {
+                    _lastMovementMode = mode;
+                    _lastIsGrounded = movement.IsGrounded;
+
+                    var animState = mode switch
+                    {
+                        MovementMode.Walk => CharacterAnimationState.Walk,
+                        MovementMode.Run => CharacterAnimationState.Run,
+                        MovementMode.Crouch => CharacterAnimationState.Crouch,
+                        MovementMode.Jump => CharacterAnimationState.Jump,
+                        MovementMode.Fall => CharacterAnimationState.Fall,
+                        _ => CharacterAnimationState.Idle
+                    };
+
+                    _animationController.SetAnimationState(animState);
+                }
+            }
+            else if (_animatedModel != null)
+            {
+                // 回退：直接设置 IsWalking 参数
+                bool isWalking = mode == MovementMode.Walk
+                              || mode == MovementMode.Run
+                              || mode == MovementMode.Crouch;
+
+                var isWalkingParam = _animatedModel.GetParameter("IsWalking");
+                if (isWalkingParam != null)
+                {
+                    isWalkingParam.Value = isWalking;
+                }
             }
         }
 

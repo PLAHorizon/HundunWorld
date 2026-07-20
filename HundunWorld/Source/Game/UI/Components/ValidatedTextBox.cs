@@ -87,7 +87,7 @@ namespace HundunWorld.Game.UI.Components
                 TextColor = new Color(0.9f, 0.3f, 0.3f),
                 HorizontalAlignment = TextAlignment.Near,
                 Visible = false,
-                Font = UIHelper.SetFont(size: 9),
+                Font = UIHelper.SetFont(size: 10),
             };
 
             // 默认高度：仅输入框高度

@@ -1,0 +1,11 @@
+{
+  "AssetName": "NS_WallPortalEnter",
+  "SourcePath": "NS_WallPortalEnter.uasset",
+  "EmitterGuid": "ad47f0b425f74185b9c0018c05613a21",
+  "SystemGuid": "cca13300587246c089e349023d2b3d83",
+  "PrefabGuid": "e7f412acea2e49e7bbc46bfb235dab70",
+  "EmitterFlaxPath": "Particles/NS_WallPortalEnter/NS_WallPortalEnter_Emitter.flax",
+  "SystemFlaxPath": "Particles/NS_WallPortalEnter/NS_WallPortalEnter_System.flax",
+  "PrefabFlaxPath": "Particles/NS_WallPortalEnter/NS_WallPortalEnter.prefab",
+  "Emitters": []
+}

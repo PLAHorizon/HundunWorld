@@ -1,0 +1,9 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="UE5ToFlaxConverter.UI.App"
+             RequestedThemeVariant="Dark">
+    <Application.Styles>
+        <FluentTheme />
+        <StyleInclude Source="avares://UE5ToFlaxConverter.UI/Assets/Styles/BattleNetStyles.axaml" />
+    </Application.Styles>
+</Application>

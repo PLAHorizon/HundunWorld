@@ -1,0 +1,342 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Styles.Resources>
+        <!-- ===== 战网核心色系（对齐 Horizon.Game.GengDi） ===== -->
+        <Color x:Key="BnetDarkBg">#141826</Color>
+        <Color x:Key="BnetPanelBg">#20293C</Color>
+        <Color x:Key="BnetSidebarBg">#171E33</Color>
+        <Color x:Key="BnetCardBg">#232A3F</Color>
+        <Color x:Key="BnetCardHoverBg">#2D3753</Color>
+        <Color x:Key="BnetHeaderBg">#10131D</Color>
+
+        <Color x:Key="BnetBlue">#7AA9FF</Color>
+        <Color x:Key="BnetBlueDark">#5E85D8</Color>
+        <Color x:Key="BnetBlueLight">#A1C7FF</Color>
+        <Color x:Key="BnetBlueGlow">#4C6FB8</Color>
+        <Color x:Key="BnetBlueMuted">#2F446B</Color>
+
+        <Color x:Key="BnetTextPrimary">#FFFFFF</Color>
+        <Color x:Key="BnetTextSecondary">#A8A9C4</Color>
+        <Color x:Key="BnetTextMuted">#6F7594</Color>
+        <Color x:Key="BnetTextHighlight">#7AA9FF</Color>
+
+        <Color x:Key="BnetBorder">#383F5B</Color>
+        <Color x:Key="BnetBorderLight">#49546E</Color>
+        <Color x:Key="BnetDivider">#1F263E</Color>
+
+        <Color x:Key="BnetGreen">#5FD19B</Color>
+        <Color x:Key="BnetYellow">#F1C96C</Color>
+        <Color x:Key="BnetRed">#F26E7D</Color>
+        <Color x:Key="BnetOrange">#FFAA6C</Color>
+
+        <!-- Horizon 品牌军绿（主操作色） -->
+        <Color x:Key="HorizonPrimary">#5C7A3A</Color>
+        <Color x:Key="HorizonPrimaryHover">#6E8E4A</Color>
+        <Color x:Key="HorizonPrimaryPressed">#4A6430</Color>
+
+        <!-- ===== 画刷 ===== -->
+        <SolidColorBrush x:Key="BnetDarkBgBrush" Color="{StaticResource BnetDarkBg}" />
+        <SolidColorBrush x:Key="BnetPanelBgBrush" Color="{StaticResource BnetPanelBg}" />
+        <SolidColorBrush x:Key="BnetSidebarBgBrush" Color="{StaticResource BnetSidebarBg}" />
+        <SolidColorBrush x:Key="BnetCardBgBrush" Color="{StaticResource BnetCardBg}" />
+        <SolidColorBrush x:Key="BnetCardHoverBgBrush" Color="{StaticResource BnetCardHoverBg}" />
+        <SolidColorBrush x:Key="BnetHeaderBgBrush" Color="{StaticResource BnetHeaderBg}" />
+
+        <SolidColorBrush x:Key="BnetBlueBrush" Color="{StaticResource BnetBlue}" />
+        <SolidColorBrush x:Key="BnetBlueDarkBrush" Color="{StaticResource BnetBlueDark}" />
+        <SolidColorBrush x:Key="BnetBlueLightBrush" Color="{StaticResource BnetBlueLight}" />
+        <SolidColorBrush x:Key="BnetBlueGlowBrush" Color="{StaticResource BnetBlueGlow}" />
+        <SolidColorBrush x:Key="BnetBlueMutedBrush" Color="{StaticResource BnetBlueMuted}" />
+
+        <SolidColorBrush x:Key="BnetTextPrimaryBrush" Color="{StaticResource BnetTextPrimary}" />
+        <SolidColorBrush x:Key="BnetTextSecondaryBrush" Color="{StaticResource BnetTextSecondary}" />
+        <SolidColorBrush x:Key="BnetTextMutedBrush" Color="{StaticResource BnetTextMuted}" />
+        <SolidColorBrush x:Key="BnetTextHighlightBrush" Color="{StaticResource BnetTextHighlight}" />
+
+        <SolidColorBrush x:Key="BnetBorderBrush" Color="{StaticResource BnetBorder}" />
+        <SolidColorBrush x:Key="BnetBorderLightBrush" Color="{StaticResource BnetBorderLight}" />
+        <SolidColorBrush x:Key="BnetDividerBrush" Color="{StaticResource BnetDivider}" />
+
+        <SolidColorBrush x:Key="BnetGreenBrush" Color="{StaticResource BnetGreen}" />
+        <SolidColorBrush x:Key="BnetYellowBrush" Color="{StaticResource BnetYellow}" />
+        <SolidColorBrush x:Key="BnetRedBrush" Color="{StaticResource BnetRed}" />
+        <SolidColorBrush x:Key="BnetOrangeBrush" Color="{StaticResource BnetOrange}" />
+
+        <SolidColorBrush x:Key="HorizonPrimaryBrush" Color="{StaticResource HorizonPrimary}" />
+        <SolidColorBrush x:Key="HorizonPrimaryHoverBrush" Color="{StaticResource HorizonPrimaryHover}" />
+        <SolidColorBrush x:Key="HorizonPrimaryPressedBrush" Color="{StaticResource HorizonPrimaryPressed}" />
+
+        <!-- Hero 渐变背景（Dark 主题，对齐 GengDi Dark Hero） -->
+        <LinearGradientBrush x:Key="HeroBackgroundBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+            <GradientStop Offset="0.0" Color="#FF071826" />
+            <GradientStop Offset="0.45" Color="#FF0C2D48" />
+            <GradientStop Offset="1.0" Color="#FF163A5C" />
+        </LinearGradientBrush>
+
+        <!-- 标题栏渐变（对齐 GengDi Dark 主题标题栏） -->
+        <LinearGradientBrush x:Key="TitleBarBackgroundBrush" StartPoint="0%,0%" EndPoint="100%,0%">
+            <GradientStop Offset="0.0" Color="#883A5273" />
+            <GradientStop Offset="0.5" Color="#775A799C" />
+            <GradientStop Offset="1.0" Color="#664E7BAF" />
+        </LinearGradientBrush>
+        <SolidColorBrush x:Key="TitleBarBorderBrush" Color="#88D0D8E0" />
+        <SolidColorBrush x:Key="TitleBarTextBrush" Color="#E8EDF5" />
+        <SolidColorBrush x:Key="TitleBarTextSecondaryBrush" Color="#A8B5C8" />
+
+        <!-- 副导航条 -->
+        <SolidColorBrush x:Key="SubNavBarBackgroundBrush" Color="#05080F" />
+        <SolidColorBrush x:Key="SubNavItemSelectedBrush" Color="#FF00AEFF" />
+
+        <!-- 圆角常量 -->
+        <CornerRadius x:Key="CardCornerRadius">8</CornerRadius>
+        <CornerRadius x:Key="InputCornerRadius">6</CornerRadius>
+        <CornerRadius x:Key="ButtonCornerRadius">6</CornerRadius>
+        <CornerRadius x:Key="LargeCornerRadius">12</CornerRadius>
+    </Styles.Resources>
+
+    <!-- ===== 窗口基础样式 ===== -->
+    <Style Selector="Window">
+        <Setter Property="Background" Value="{DynamicResource BnetDarkBgBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource BnetTextPrimaryBrush}" />
+        <Setter Property="FontFamily" Value="Segoe UI, Microsoft YaHei UI, sans-serif" />
+        <Setter Property="FontSize" Value="14" />
+    </Style>
+
+    <!-- ===== TextBlock 样式类 ===== -->
+    <Style Selector="TextBlock.Title">
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource BnetTextPrimaryBrush}" />
+        <Setter Property="Margin" Value="0,0,0,16" />
+    </Style>
+
+    <Style Selector="TextBlock.Subtitle">
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource BnetTextSecondaryBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.SectionHeader">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="Foreground" Value="{DynamicResource BnetTextSecondaryBrush}" />
+        <Setter Property="Margin" Value="0,0,0,8" />
+    </Style>
+
+    <Style Selector="TextBlock.Label">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Foreground" Value="{DynamicResource BnetTextSecondaryBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- ===== Border 卡片样式 ===== -->
+    <Style Selector="Border.Card">
+        <Setter Property="Background" Value="{DynamicResource BnetCardBgBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BnetBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource CardCornerRadius}" />
+        <Setter Property="Padding" Value="16" />
+    </Style>
+
+    <Style Selector="Border.Panel">
+        <Setter Property="Background" Value="{DynamicResource BnetPanelBgBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BnetBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource CardCornerRadius}" />
+        <Setter Property="Padding" Value="16" />
+    </Style>
+
+    <!-- ===== Button 样式 ===== -->
+    <!-- 主操作按钮（Horizon 军绿色） -->
+    <Style Selector="Button.Primary">
+        <Setter Property="Background" Value="{DynamicResource HorizonPrimaryBrush}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Padding" Value="24,10" />
+        <Setter Property="CornerRadius" Value="{StaticResource ButtonCornerRadius}" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.Primary:pointerover">
+        <Setter Property="Background" Value="{DynamicResource HorizonPrimaryHoverBrush}" />
+    </Style>
+    <Style Selector="Button.Primary:pressed">
+        <Setter Property="Background" Value="{DynamicResource HorizonPrimaryPressedBrush}" />
+    </Style>
+
+    <!-- 强调按钮（战网蓝） -->
+    <Style Selector="Button.Accent">
+        <Setter Property="Background" Value="{DynamicResource BnetBlueBrush}" />
+        <Setter Property="Foreground" Value="White" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="Padding" Value="24,10" />
+        <Setter Property="CornerRadius" Value="{StaticResource ButtonCornerRadius}" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.Accent:pointerover">
+        <Setter Property="Background" Value="{DynamicResource BnetBlueLightBrush}" />
+    </Style>
+    <Style Selector="Button.Accent:pressed">
+        <Setter Property="Background" Value="{DynamicResource BnetBlueDarkBrush}" />
+    </Style>
+
+    <!-- 次要按钮（描边） -->
+    <Style Selector="Button.Secondary">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource BnetTextPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BnetBorderLightBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Padding" Value="20,9" />
+        <Setter Property="CornerRadius" Value="{StaticResource ButtonCornerRadius}" />
+    </Style>
+    <Style Selector="Button.Secondary:pointerover">
+        <Setter Property="Background" Value="{DynamicResource BnetCardHoverBgBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BnetBlueBrush}" />
+    </Style>
+
+    <!-- ===== TextBox 样式 ===== -->
+    <Style Selector="TextBox">
+        <Setter Property="Background" Value="{DynamicResource BnetSidebarBgBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource BnetTextPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BnetBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource InputCornerRadius}" />
+        <Setter Property="Padding" Value="10,8" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="CaretBrush" Value="{DynamicResource BnetBlueBrush}" />
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="{DynamicResource BnetBlueBrush}" />
+    </Style>
+    <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="{DynamicResource BnetBorderLightBrush}" />
+    </Style>
+
+    <!-- TextBox 水印颜色 -->
+    <Style Selector="TextBox /template/ TextBlock[Name=PART_Watermark]">
+        <Setter Property="Foreground" Value="{DynamicResource BnetTextMutedBrush}" />
+    </Style>
+
+    <!-- ===== ComboBox 样式 ===== -->
+    <Style Selector="ComboBox">
+        <Setter Property="Background" Value="{DynamicResource BnetSidebarBgBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource BnetTextPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BnetBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource InputCornerRadius}" />
+        <Setter Property="Padding" Value="10,8" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="ComboBox:focus /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="{DynamicResource BnetBlueBrush}" />
+    </Style>
+
+    <!-- ComboBox 下拉项 -->
+    <Style Selector="ComboBoxItem">
+        <Setter Property="Foreground" Value="{DynamicResource BnetTextPrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource BnetSidebarBgBrush}" />
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="ComboBoxItem:pointerover">
+        <Setter Property="Background" Value="{DynamicResource BnetCardHoverBgBrush}" />
+    </Style>
+    <Style Selector="ComboBoxItem:selected">
+        <Setter Property="Background" Value="{DynamicResource BnetBlueMutedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource BnetBlueLightBrush}" />
+    </Style>
+
+    <!-- ===== ProgressBar 样式 ===== -->
+    <Style Selector="ProgressBar">
+        <Setter Property="Foreground" Value="{DynamicResource BnetBlueBrush}" />
+        <Setter Property="Background" Value="{DynamicResource BnetSidebarBgBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BnetBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Height" Value="18" />
+    </Style>
+
+    <!-- ===== DataGrid 样式 ===== -->
+    <Style Selector="DataGrid">
+        <Setter Property="Background" Value="{DynamicResource BnetPanelBgBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource BnetTextPrimaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BnetBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="RowBackground" Value="{DynamicResource BnetPanelBgBrush}" />
+        <Setter Property="HeadersVisibility" Value="Column" />
+        <Setter Property="GridLinesVisibility" Value="Horizontal" />
+        <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource BnetDividerBrush}" />
+        <Setter Property="VerticalGridLinesBrush" Value="{DynamicResource BnetDividerBrush}" />
+        <Setter Property="ColumnHeaderHeight" Value="36" />
+        <Setter Property="RowHeight" Value="32" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+
+    <!-- DataGrid 列头 -->
+    <Style Selector="DataGridColumnHeader">
+        <Setter Property="Background" Value="{DynamicResource BnetHeaderBgBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource BnetTextSecondaryBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BnetDividerBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,1,1" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="DataGridColumnHeader:pointerover">
+        <Setter Property="Background" Value="{DynamicResource BnetCardHoverBgBrush}" />
+    </Style>
+
+    <!-- DataGrid 行 -->
+    <Style Selector="DataGridRow">
+        <Setter Property="Background" Value="{DynamicResource BnetPanelBgBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource BnetTextPrimaryBrush}" />
+    </Style>
+    <Style Selector="DataGridRow:pointerover">
+        <Setter Property="Background" Value="{DynamicResource BnetCardHoverBgBrush}" />
+    </Style>
+    <Style Selector="DataGridRow:selected">
+        <Setter Property="Background" Value="{DynamicResource BnetBlueMutedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource BnetTextPrimaryBrush}" />
+    </Style>
+
+    <!-- DataGrid 单元格 -->
+    <Style Selector="DataGridCell">
+        <Setter Property="BorderBrush" Value="{DynamicResource BnetDividerBrush}" />
+        <Setter Property="Padding" Value="12,0" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="DataGridCell:focus">
+        <Setter Property="BorderBrush" Value="{DynamicResource BnetBlueBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <!-- ===== ScrollBar 样式 ===== -->
+    <Style Selector="ScrollBar:vertical">
+        <Setter Property="Width" Value="10" />
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ScrollBar:horizontal">
+        <Setter Property="Height" Value="10" />
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ScrollBar Thumb">
+        <Setter Property="Background" Value="{DynamicResource BnetBorderLightBrush}" />
+        <Setter Property="CornerRadius" Value="5" />
+        <Setter Property="Margin" Value="2" />
+    </Style>
+    <Style Selector="ScrollBar Thumb:pointerover">
+        <Setter Property="Background" Value="{DynamicResource BnetBlueBrush}" />
+    </Style>
+
+    <!-- ===== CheckBox 样式 ===== -->
+    <Style Selector="CheckBox">
+        <Setter Property="Foreground" Value="{DynamicResource BnetTextPrimaryBrush}" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+
+</Styles>

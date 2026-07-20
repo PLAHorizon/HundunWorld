@@ -147,7 +147,7 @@ namespace HundunWorld.Game.UI.Character
                 Location = new Float2(300, 5),
                 Size = new Float2(160, 35),
                 Font = UIHelper.SetFont(size: 22),
-                TextColor = new Color(1, 1, 1, 0.4f),
+                TextColor = UIStyleTokens.WithAlpha(UIStyleTokens.TextPrimary, 0.4f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center
             };
@@ -178,7 +178,7 @@ namespace HundunWorld.Game.UI.Character
                 Text = "Z 风雅",
                 Location = new Float2(180, 2),
                 Size = new Float2(100, 28),
-                Font = UIHelper.SetFont(size: 20),
+                Font = UIHelper.SetFont(size: 18),
                 TextColor = ChineseClassicalTheme.SecondaryColor,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center
@@ -198,8 +198,8 @@ namespace HundunWorld.Game.UI.Character
                 Text = "C 写实",
                 Location = new Float2(300, 2),
                 Size = new Float2(100, 28),
-                Font = UIHelper.SetFont(size: 20),
-                TextColor = new Color(1, 1, 1, 0.4f),
+                Font = UIHelper.SetFont(size: 18),
+                TextColor = UIStyleTokens.WithAlpha(UIStyleTokens.TextPrimary, 0.4f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center
             };
@@ -258,8 +258,8 @@ namespace HundunWorld.Game.UI.Character
                 Text = "更多面容 \u25BC",
                 Location = new Float2(10, morePresetsY),
                 Size = new Float2(140, 44),
-                BackgroundColor = new Color(0.12f, 0.12f, 0.15f, 0.8f),
-                TextColor = new Color(0.85f, 0.85f, 0.9f),
+                BackgroundColor = UIStyleTokens.InkPanel(0.8f),
+                TextColor = UIStyleTokens.TextPrimary,
                 BorderColor = ChineseClassicalTheme.BorderColor,
                 BorderThickness = 1.5f,
                 Font = UIHelper.SetFont(size: 18)
@@ -282,8 +282,8 @@ namespace HundunWorld.Game.UI.Character
 
         #region CreateUI - Right Icons
         private static readonly Color ThumbSelectedBorder = ChineseClassicalTheme.SecondaryColor;
-        private static readonly Color ThumbNormalBg = new Color(0.08f, 0.08f, 0.12f, 0.85f);
-        private static readonly Color ThumbLabelColor = new Color(0.85f, 0.85f, 0.9f, 0.9f);
+        private static readonly Color ThumbNormalBg = UIStyleTokens.BgPanel;
+        private static readonly Color ThumbLabelColor = UIStyleTokens.WithAlpha(UIStyleTokens.TextPrimary, 0.9f);
         private const float ThumbSize = 56f;
         private const float ThumbSpacing = 6f;
         private const float SmallThumbSize = 48f;
@@ -404,7 +404,7 @@ namespace HundunWorld.Game.UI.Character
                 Parent = container,
                 Location = new Float2(0, 0),
                 Size = new Float2(size, size),
-                BackgroundColor = isSelected ? ChineseClassicalTheme.SecondaryColorWithAlpha(0.25f) : new Color(0, 0, 0, 0.4f)
+                BackgroundColor = isSelected ? UIStyleTokens.Gold(0.25f) : UIStyleTokens.WithAlpha(UIStyleTokens.BgAbyss, 0.4f)
             };
 
             var label = new Label
@@ -413,7 +413,7 @@ namespace HundunWorld.Game.UI.Character
                 Text = text,
                 Location = new Float2(0, 0),
                 Size = new Float2(size, size),
-                TextColor = Color.White,
+                TextColor = UIStyleTokens.TextPrimary,
                 Font = UIHelper.SetFont(size: 12),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center
@@ -442,8 +442,8 @@ namespace HundunWorld.Game.UI.Character
                 Text = "鼠标 返回",
                 Location = new Float2(0, 8),
                 Size = new Float2(140, 44),
-                BackgroundColor = new Color(0.1f, 0.1f, 0.12f, 0.4f),
-                TextColor = new Color(0.7f, 0.7f, 0.75f),
+                BackgroundColor = UIStyleTokens.WithAlpha(UIStyleTokens.BgInk, 0.4f),
+                TextColor = UIStyleTokens.TextSecondary,
                 Font = UIHelper.SetFont(size: 18),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center
@@ -456,8 +456,8 @@ namespace HundunWorld.Game.UI.Character
                 Text = "V 导入捏脸",
                 Location = new Float2(160, 8),
                 Size = new Float2(140, 44),
-                BackgroundColor = new Color(0.12f, 0.12f, 0.15f, 0.4f),
-                TextColor = new Color(0.85f, 0.85f, 0.9f),
+                BackgroundColor = UIStyleTokens.WithAlpha(UIStyleTokens.BgElevated, 0.4f),
+                TextColor = UIStyleTokens.TextPrimary,
                 Font = UIHelper.SetFont(size: 18),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center
@@ -550,13 +550,13 @@ namespace HundunWorld.Game.UI.Character
             {
                 _mainTab1.TextColor = _selectedMainTab == 0
                     ? ChineseClassicalTheme.SecondaryColor
-                    : new Color(1, 1, 1, 0.4f);
+                    : UIStyleTokens.WithAlpha(UIStyleTokens.TextPrimary, 0.4f);
             }
             if (_mainTab2 != null)
             {
                 _mainTab2.TextColor = _selectedMainTab == 1
                     ? ChineseClassicalTheme.SecondaryColor
-                    : new Color(1, 1, 1, 0.4f);
+                    : UIStyleTokens.WithAlpha(UIStyleTokens.TextPrimary, 0.4f);
             }
             if (_mainTab1Underline != null)
                 _mainTab1Underline.BackgroundColor = _selectedMainTab == 0 ? goldUnderline : dimmedUnderline;
@@ -579,13 +579,13 @@ namespace HundunWorld.Game.UI.Character
             {
                 _subTab1.TextColor = _selectedSubTab == 0
                     ? ChineseClassicalTheme.SecondaryColor
-                    : new Color(1, 1, 1, 0.4f);
+                    : UIStyleTokens.WithAlpha(UIStyleTokens.TextPrimary, 0.4f);
             }
             if (_subTab2 != null)
             {
                 _subTab2.TextColor = _selectedSubTab == 1
                     ? ChineseClassicalTheme.SecondaryColor
-                    : new Color(1, 1, 1, 0.4f);
+                    : UIStyleTokens.WithAlpha(UIStyleTokens.TextPrimary, 0.4f);
             }
             if (_subTab1Underline != null)
                 _subTab1Underline.BackgroundColor = _selectedSubTab == 0 ? goldUnderline : dimmedUnderline;

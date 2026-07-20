@@ -1,0 +1,126 @@
+{
+  "$schema": "ue52flax-mapping-v1",
+  "version": "0.1.0",
+  "description": "UE5 → Flax Engine 资源映射规则配置。基于 HundunWorld 项目 project_memory.md 中积累的映射规则。",
+  "typeMapping": {
+    "UStaticMesh": "FlaxEngine.Model",
+    "USkeletalMesh": "FlaxEngine.SkinnedModel",
+    "UAnimSequence": "FlaxEngine.Animation",
+    "UAnimMontage": "FlaxEngine.Animation + JsonAsset",
+    "UAnimBlueprint": "FlaxEngine.AnimGraph",
+    "UBlendSpace": "FlaxEngine.AnimGraph",
+    "UMaterial": "FlaxEngine.Material",
+    "UTexture2D": "FlaxEngine.Texture",
+    "UNiagaraSystem": "FlaxEngine.ParticleSystem",
+    "UNiagaraEmitter": "FlaxEngine.ParticleEmitter",
+    "UParticleSystem": "FlaxEngine.ParticleSystem",
+    "UGameplayAbility": "NarrativeGameplayAbility",
+    "UGameplayEffect": "GameplayEffect",
+    "UAttributeSet": "NarrativeAttributeSetBase"
+  },
+  "coordinateSystem": {
+    "ue5ZUp": true,
+    "flaxYUp": true,
+    "mapXToX": true,
+    "mapYToZ": true,
+    "mapZToY": true,
+    "note": "UE5 Z(上下)→Flax Y(上下)；UE5 Y(前后)→Flax Z(前后)"
+  },
+  "materialPropertyMapping": {
+    "BaseColor": "BaseColor",
+    "Metallic": "Metalness",
+    "Roughness": "Roughness",
+    "EmissiveColor": "Emissive",
+    "Normal": "Normal",
+    "Opacity": "Opacity",
+    "OpacityMask": "OpacityMask",
+    "AmbientOcclusion": "AmbientOcclusion"
+  },
+  "blendModeMapping": {
+    "BLEND_Opaque": "Opaque",
+    "BLEND_Masked": "Masked",
+    "BLEND_Translucent": "Transparent",
+    "BLEND_Additive": "Additive",
+    "BLEND_Modulate": "Modulate"
+  },
+  "shadingModelMapping": {
+    "MSM_Unlit": "Unlit",
+    "MSM_DefaultLit": "DefaultLit",
+    "MSM_Subsurface": "Subsurface",
+    "MSM_Cloth": "Cloth",
+    "MSM_Hair": "Hair",
+    "MSM_Eye": "Eye"
+  },
+  "gasPolicy": {
+    "instancingPolicy": {
+      "NonInstanced": "NonInstanced",
+      "InstancedPerActor": "InstancedPerActor",
+      "InstancedPerExecution": "InstancedPerExecution"
+    },
+    "netExecutionPolicy": {
+      "LocalPredicted": "LocalPredicted",
+      "ServerInitiated": "ServerInitiated",
+      "ServerOnly": "ServerOnly"
+    },
+    "durationPolicy": {
+      "Instant": "Instant",
+      "HasDuration": "HasDuration",
+      "Infinite": "Infinite"
+    },
+    "modifierOp": {
+      "Add": "Add",
+      "Multiply": "Multiply",
+      "Divide": "Divide",
+      "Override": "Override"
+    }
+  },
+  "particleModuleMapping": {
+    "Engine.SpawnRate": "SpawnRate",
+    "Engine.Lifetime": "Lifetime",
+    "Engine.InitialColor": "Color",
+    "Engine.InitialPosition": "Position",
+    "Engine.InitialVelocity": "Velocity",
+    "Engine.InitialSize": "Size",
+    "Engine.GravityForce": "Gravity",
+    "Engine.SpriteRenderer": "SpriteRenderer",
+    "Engine.MeshRenderer": "MeshRenderer",
+    "Engine.RibbonRenderer": "RibbonRenderer",
+    "Engine.LightRenderer": "LightRenderer",
+    "UParticleModuleSpawn": "SpawnRate",
+    "UParticleModuleLifetime": "Lifetime",
+    "UParticleModuleLocation": "Position",
+    "UParticleModuleVelocity": "Velocity",
+    "UParticleModuleSize": "Size",
+    "UParticleModuleGravity": "Gravity",
+    "UParticleModuleColor": "UpdateColor",
+    "UParticleModuleSizeScale": "UpdateSize"
+  },
+  "outputProfiles": {
+    "preview": {
+      "description": "预览模式：输出到独立目录，由用户审核后再复制",
+      "rootPath": "./_conversion_preview",
+      "directoryLayout": "MirrorSource",
+      "generateReport": true,
+      "generateImportScript": true
+    },
+    "apply": {
+      "description": "应用模式：直接写入 HundunWorld Flax 项目 Content 目录",
+      "rootPath": "c:\\Works\\GitHubProjects\\HundunWorld\\HundunWorld\\Content",
+      "directoryLayout": "ByAssetType",
+      "generateReport": true,
+      "generateImportScript": false,
+      "backupExisting": true,
+      "backupFolder": "./_backup/{timestamp}"
+    }
+  },
+  "gameplayTagRoots": [
+    "Ability.",
+    "State.",
+    "Event.",
+    "Effect.",
+    "Item.",
+    "Character.",
+    "Dialogue.",
+    "Quest."
+  ]
+}

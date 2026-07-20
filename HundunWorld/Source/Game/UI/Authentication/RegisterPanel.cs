@@ -34,7 +34,7 @@ namespace HundunWorld.Game.UI.Authentication
             
         public RegisterPanel()
         {
-            CornerRadius = 15f; // 设置较大的圆角
+            CornerRadius = UIStyleTokens.RadiusCard; // 卡片圆角 12px（ds-card §4.2）
             // 同步初始化布局
             InitializeLayout();
             
@@ -53,24 +53,24 @@ namespace HundunWorld.Game.UI.Authentication
             switch (obj)
             {
                 case ConnectionStatus.Disconnected:
-                    SetStatus("连接已断开，点击注册将尝试重连", color: Color.Yellow);
+                    SetStatus("连接已断开，点击注册将尝试重连", color: UIStyleTokens.StatusAlert);
                     EnableButtons();
                     break;
                 case ConnectionStatus.Connecting:
-                    SetStatus("正在连接服务器...", color: Color.Yellow);
+                    SetStatus("正在连接服务器...", color: UIStyleTokens.StatusAlert);
                     EnableButtons();
                     break;
                 case ConnectionStatus.Connected:
-                    SetStatus("已连接服务器，请输入注册信息", color: Color.Green);
+                    SetStatus("已连接服务器，请输入注册信息", color: UIStyleTokens.StatusSuccess);
                     EnableButtons();
                     break;
                 case ConnectionStatus.Reconnecting:
-                    SetStatus("正在重连服务器...", color: Color.Yellow);
+                    SetStatus("正在重连服务器...", color: UIStyleTokens.StatusAlert);
                     EnableButtons();
                     break;
                 case ConnectionStatus.Failed:
                 case ConnectionStatus.Error:
-                    SetStatus("网络连接失败，点击注册将尝试重连", color: Color.DarkRed);
+                    SetStatus("网络连接失败，点击注册将尝试重连", color: UIStyleTokens.StatusError);
                     EnableButtons();
                     break;
                 case ConnectionStatus.Unknown:
@@ -266,8 +266,8 @@ namespace HundunWorld.Game.UI.Authentication
             RegisterButton = UIHelper.CreatePrimaryButton("注册");
             RegisterButton.Location = new Float2(buttonX, currentY);
             RegisterButton.Size = new Float2(buttonWidth, 40);
-            RegisterButton.BackgroundColorHighlighted = ChineseClassicalTheme.SuccessColor;
-            RegisterButton.BorderColorHighlighted = ChineseClassicalTheme.InputBackgroundColor;
+            RegisterButton.BackgroundColorHighlighted = UIStyleTokens.GoldBright;
+            RegisterButton.BorderColorHighlighted = UIStyleTokens.BorderGoldBright;
             RegisterButton.ButtonClicked += OnRegisterButtonClicked;
             // 不在这里设置禁用，由AuthenticationUI统一管理
             AddChild(RegisterButton);
@@ -285,7 +285,7 @@ namespace HundunWorld.Game.UI.Authentication
             currentY += 45;
 
             // 状态标签 - 居中显示
-            StatusLabel = UIHelper.CreateLabel("请输入注册信息", Color.Yellow);
+            StatusLabel = UIHelper.CreateLabel("请输入注册信息", UIStyleTokens.StatusAlert);
             StatusLabel.Location = new Float2(0, currentY);
             StatusLabel.Size = new Float2(totalWidth, 20);
             StatusLabel.HorizontalAlignment = TextAlignment.Center;
@@ -363,7 +363,7 @@ namespace HundunWorld.Game.UI.Authentication
             EmailInput.Text = string.Empty;
             PhoneInput.Text = string.Empty;
             VerificationCodeInput.Text = string.Empty;
-            SetStatus("请输入注册信息", Color.Yellow);
+            SetStatus("请输入注册信息", UIStyleTokens.StatusAlert);
         }
 
         /// <summary>
@@ -408,7 +408,7 @@ namespace HundunWorld.Game.UI.Authentication
             {
                 SendVerificationCodeButton.Enabled = true;
             }
-            SetStatus("已连接服务器，请输入注册信息", Color.Green);
+            SetStatus("已连接服务器，请输入注册信息", UIStyleTokens.StatusSuccess);
         }
 
         /// <summary>
@@ -428,7 +428,7 @@ namespace HundunWorld.Game.UI.Authentication
             {
                 SendVerificationCodeButton.Enabled = false;
             }
-            SetStatus("正在连接服务器...", Color.Yellow);
+            SetStatus("正在连接服务器...", UIStyleTokens.StatusAlert);
         }
 
         /// <summary>
@@ -444,11 +444,11 @@ namespace HundunWorld.Game.UI.Authentication
                 FlaxEngine.Debug.Log($"[RegisterPanel] 检查网络状态: {status}");
                 if (status == Horizon.Game.Message.Enums.ConnectionStatus.Connected)
                 {
-                    SetStatus("已连接服务器，请输入注册信息", Color.Green);
+                    SetStatus("已连接服务器，请输入注册信息", UIStyleTokens.StatusSuccess);
                 }
                 else
                 {
-                    SetStatus($"网络状态: {status}，点击注册将尝试连接", Color.Yellow);
+                    SetStatus($"网络状态: {status}，点击注册将尝试连接", UIStyleTokens.StatusAlert);
                 }
             }
 

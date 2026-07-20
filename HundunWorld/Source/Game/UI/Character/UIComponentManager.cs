@@ -164,10 +164,10 @@ namespace HundunWorld.Game.UI.Character
             }
 
             Color gold = GoldColor;
-            Color dimDot = new Color(0.3f, 0.3f, 0.35f, 0.6f);
+            Color dimDot = UIStyleTokens.TextDisabled;
             Color doneDot = new Color(gold.R * 0.7f, gold.G * 0.7f, gold.B * 0.7f, 0.8f);
             Color doneLine = new Color(gold.R * 0.5f, gold.G * 0.5f, gold.B * 0.5f, 0.4f);
-            Color pendingLine = new Color(0.25f, 0.25f, 0.3f, 0.5f);
+            Color pendingLine = UIStyleTokens.Divider;
 
             for (int i = 0; i < TotalSteps; i++)
             {
@@ -240,8 +240,8 @@ namespace HundunWorld.Game.UI.Character
         {
             if (_isCreationMode) return;
 
-            UpdateButtonHover(_selectionUI.BackBtn, new Color(0.12f, 0.13f, 0.16f, 1.0f), new Color(0.18f, 0.19f, 0.22f, 1.0f));
-            UpdateButtonHover(_selectionUI.CreateBtn, new Color(0.15f, 0.15f, 0.18f, 1.0f), new Color(0.22f, 0.22f, 0.26f, 1.0f));
+            UpdateButtonHover(_selectionUI.BackBtn, UIStyleTokens.BgElevated, UIStyleTokens.BgPaper);
+            UpdateButtonHover(_selectionUI.CreateBtn, UIStyleTokens.BgPaper, UIStyleTokens.BgHover);
             if (_selectionUI.EnterBtn != null)
                 UpdateButtonHover(_selectionUI.EnterBtn, GoldColor, new Color(GoldColor.R * 1.15f, GoldColor.G * 1.15f, GoldColor.B * 1.15f, 1f));
         }

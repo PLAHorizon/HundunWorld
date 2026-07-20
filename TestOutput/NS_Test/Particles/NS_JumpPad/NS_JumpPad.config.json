@@ -1,0 +1,11 @@
+{
+  "AssetName": "NS_JumpPad",
+  "SourcePath": "NS_JumpPad.uasset",
+  "EmitterGuid": "b69616235d3e48f49bf4cb79670b6ecb",
+  "SystemGuid": "a6f3a8edda154aa9a5c2256c0a9e615a",
+  "PrefabGuid": "279f56a1fc554474b1144566bc74200a",
+  "EmitterFlaxPath": "Particles/NS_JumpPad/NS_JumpPad_Emitter.flax",
+  "SystemFlaxPath": "Particles/NS_JumpPad/NS_JumpPad_System.flax",
+  "PrefabFlaxPath": "Particles/NS_JumpPad/NS_JumpPad.prefab",
+  "Emitters": []
+}

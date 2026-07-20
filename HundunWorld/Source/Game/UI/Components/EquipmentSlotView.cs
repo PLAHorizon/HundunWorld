@@ -160,7 +160,7 @@ namespace HundunWorld.Game.UI.Components
                 Bounds = new Rectangle(0, 0, ilvlBoxW, ilvlBoxH),
                 Text = string.Empty,
                 TextColor = ChineseClassicalTheme.WowNumberTextColor,
-                Font = UIHelper.SetFont(size: 9),
+                Font = UIHelper.SetFont(size: 10),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
                 Parent = _itemLevelBg

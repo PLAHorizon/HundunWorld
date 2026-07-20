@@ -141,7 +141,7 @@ namespace HundunWorld.Game.UI.Character
                 if (_validationTimer <= 0 && _validationLabel != null)
                 {
                     _validationLabel.Visible = false;
-                    _nameUnderline.BackgroundColor = ChineseClassicalTheme.SecondaryColor;
+                    _nameUnderline.BackgroundColor = UIStyleTokens.GoldPrimary;
                 }
             }
         }
@@ -163,7 +163,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Parent = this,
                 AnchorPreset = AnchorPresets.TopLeft,
-                BackgroundColor = new Color(0.04f, 0.05f, 0.08f, 0.85f)
+                BackgroundColor = UIStyleTokens.BgPanel
             };
             _centerPanel.Location = new Float2(panelX, panelY);
             _centerPanel.Size = new Float2(panelW, panelH);
@@ -173,7 +173,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Parent = _centerPanel,
                 AnchorPreset = AnchorPresets.TopLeft,
-                BackgroundColor = ChineseClassicalTheme.SecondaryColor
+                BackgroundColor = UIStyleTokens.GoldPrimary
             };
             _topDecorLine.Location = new Float2(panelW * 0.15f, 0);
             _topDecorLine.Size = new Float2(panelW * 0.7f, 2);
@@ -184,7 +184,7 @@ namespace HundunWorld.Game.UI.Character
                 Parent = _centerPanel,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Text = "赐名立命",
-                TextColor = ChineseClassicalTheme.SecondaryColor,
+                TextColor = UIStyleTokens.TextGold,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
                 Font = UIHelper.SetFont(size: 28)
@@ -198,7 +198,7 @@ namespace HundunWorld.Game.UI.Character
                 Parent = _centerPanel,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Text = "行走江湖,当有名号",
-                TextColor = new Color(0.7f, 0.7f, 0.75f, 0.8f),
+                TextColor = UIStyleTokens.WithAlpha(UIStyleTokens.TextSecondary, 0.8f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
                 Font = UIHelper.SetFont(size: 14)
@@ -217,9 +217,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Parent = _centerPanel,
                 AnchorPreset = AnchorPresets.TopLeft,
-                BackgroundColor = new Color(ChineseClassicalTheme.SecondaryColor.R,
-                    ChineseClassicalTheme.SecondaryColor.G,
-                    ChineseClassicalTheme.SecondaryColor.B, 0.3f)
+                BackgroundColor = UIStyleTokens.Gold(0.3f)
             };
             _bottomDecorLine.Location = new Float2(panelW * 0.15f, panelH - 80);
             _bottomDecorLine.Size = new Float2(panelW * 0.7f, 1);
@@ -244,7 +242,7 @@ namespace HundunWorld.Game.UI.Character
                 Parent = _nameInputContainer,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Text = "角色名称",
-                TextColor = new Color(0.6f, 0.6f, 0.65f),
+                TextColor = UIStyleTokens.TextSecondary,
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
                 Font = UIHelper.SetFont(size: 14)
@@ -259,7 +257,7 @@ namespace HundunWorld.Game.UI.Character
                 Text = "",
                 WatermarkText = "请输入角色名称（2-6字）",
                 BackgroundColor = Color.Transparent,
-                TextColor = ChineseClassicalTheme.TextColor,
+                TextColor = UIStyleTokens.TextPrimary,
                 Font = UIHelper.SetFont(size: 22),
                 BorderColor = Color.Transparent,
                 BorderThickness = 0f
@@ -272,7 +270,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Parent = _nameInputContainer,
                 AnchorPreset = AnchorPresets.TopLeft,
-                BackgroundColor = ChineseClassicalTheme.SecondaryColor
+                BackgroundColor = UIStyleTokens.GoldPrimary
             };
             _nameUnderline.Location = new Float2(0, 64);
             _nameUnderline.Size = new Float2(panelW - 80, 1.5f);
@@ -283,7 +281,7 @@ namespace HundunWorld.Game.UI.Character
                 Parent = _nameInputContainer,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Text = "",
-                TextColor = new Color(0.9f, 0.3f, 0.3f),
+                TextColor = UIStyleTokens.TextBlood, // 血色强调（--ink-text-blood）
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
                 Font = UIHelper.SetFont(size: 12),
@@ -309,7 +307,7 @@ namespace HundunWorld.Game.UI.Character
                 Parent = _professionContainer,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Text = "选择职业",
-                TextColor = new Color(0.6f, 0.6f, 0.65f),
+                TextColor = UIStyleTokens.TextSecondary,
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
                 Font = UIHelper.SetFont(size: 14)
@@ -339,9 +337,9 @@ namespace HundunWorld.Game.UI.Character
                     Text = Professions[i],
                     HorizontalAlignment = TextAlignment.Center,
                     VerticalAlignment = TextAlignment.Center,
-                    Font = UIHelper.SetFont(size: 16),
-                    BackgroundColor = new Color(0.08f, 0.09f, 0.12f, 0.8f),
-                    TextColor = new Color(0.8f, 0.8f, 0.85f)
+                    Font = UIHelper.SetFont(size: 14),
+                    BackgroundColor = UIStyleTokens.InkPanel(0.8f),
+                    TextColor = UIStyleTokens.TextPrimary
                 };
                 btn.Location = new Float2(x, y);
                 btn.Size = new Float2(btnW, btnH);
@@ -368,9 +366,9 @@ namespace HundunWorld.Game.UI.Character
                 Parent = _centerPanel,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Text = "返回上一步",
-                BackgroundColor = new Color(0.10f, 0.10f, 0.12f, 0.8f),
+                BackgroundColor = UIStyleTokens.WithAlpha(UIStyleTokens.BgElevated, 0.8f),
                 TextColor = new Color(0.7f, 0.7f, 0.75f),
-                Font = UIHelper.SetFont(size: 16)
+                Font = UIHelper.SetFont(size: 14)
             };
             _backButton.Location = new Float2(startX, btnY);
             _backButton.Size = new Float2(btnW, btnH);
@@ -382,9 +380,9 @@ namespace HundunWorld.Game.UI.Character
                 Parent = _centerPanel,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Text = "确认创建",
-                BackgroundColor = ChineseClassicalTheme.SecondaryColor,
-                TextColor = new Color(0.08f, 0.06f, 0.04f, 1.0f),
-                Font = UIHelper.SetFont(size: 16)
+                BackgroundColor = UIStyleTokens.GoldPrimary,
+                TextColor = UIStyleTokens.TextInverse,
+                Font = UIHelper.SetFont(size: 14)
             };
             _confirmButton.Location = new Float2(startX + btnW + spacing, btnY);
             _confirmButton.Size = new Float2(btnW, btnH);
@@ -396,7 +394,7 @@ namespace HundunWorld.Game.UI.Character
         private void ShowValidationError(string message)
         {
             if (_nameUnderline != null)
-                _nameUnderline.BackgroundColor = new Color(0.9f, 0.3f, 0.3f);
+                _nameUnderline.BackgroundColor = UIStyleTokens.BloodPrimary;
             if (_validationLabel != null)
             {
                 _validationLabel.Text = message;
@@ -461,11 +459,11 @@ namespace HundunWorld.Game.UI.Character
         {
             if (_professionButtons == null) return;
 
-            Color gold = ChineseClassicalTheme.SecondaryColor;
+            Color gold = UIStyleTokens.GoldPrimary;
             Color goldBg = new Color(gold.R, gold.G, gold.B, 0.2f);
-            Color hoverBg = new Color(0.12f, 0.13f, 0.18f, 0.85f);
-            Color normalText = new Color(0.8f, 0.8f, 0.85f);
-            Color normalBg = new Color(0.08f, 0.09f, 0.12f, 0.8f);
+            Color hoverBg = UIStyleTokens.BgHover;
+            Color normalText = UIStyleTokens.TextPrimary;
+            Color normalBg = UIStyleTokens.InkPanel(0.8f);
 
             for (int i = 0; i < _professionButtons.Length; i++)
             {
@@ -478,7 +476,7 @@ namespace HundunWorld.Game.UI.Character
                 }
                 else if (i == _hoveredProfession)
                 {
-                    _professionButtons[i].TextColor = new Color(0.9f, 0.9f, 0.95f);
+                    _professionButtons[i].TextColor = UIStyleTokens.TextPrimary;
                     _professionButtons[i].BackgroundColor = hoverBg;
                 }
                 else
@@ -498,7 +496,7 @@ namespace HundunWorld.Game.UI.Character
             _animProgress = 0f;
             // 重置验证状态
             if (_validationLabel != null) _validationLabel.Visible = false;
-            if (_nameUnderline != null) _nameUnderline.BackgroundColor = ChineseClassicalTheme.SecondaryColor;
+            if (_nameUnderline != null) _nameUnderline.BackgroundColor = UIStyleTokens.GoldPrimary;
             _validationTimer = 0f;
         }
 

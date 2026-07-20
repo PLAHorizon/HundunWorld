@@ -30,8 +30,8 @@ namespace HundunWorld.Game.UI.Authentication
         public bool IsInitialized => _isInitialized;
         public LoginPanel()
         {
-            BackgroundColor = ChineseClassicalTheme.AccentColor;
-            CornerRadius = 15f; // 设置较大的圆角
+            BackgroundColor = UIStyleTokens.BgPanel; // 墨水深背景面板（--ink-bg-panel）
+            CornerRadius = UIStyleTokens.RadiusCard; // 卡片圆角 12px（ds-card §4.2）
     
             // 同步初始化布局
             InitializeLayout();
@@ -53,24 +53,24 @@ namespace HundunWorld.Game.UI.Authentication
             switch (obj)
             {
                 case ConnectionStatus.Disconnected:
-                    SetStatus("连接已断开，点击登录将尝试重连", color: Color.Yellow);
+                    SetStatus("连接已断开，点击登录将尝试重连", color: UIStyleTokens.StatusAlert);
                     EnableButtons();
                     break;
                 case ConnectionStatus.Connecting:
-                    SetStatus("正在连接服务器...", color: Color.Yellow);
+                    SetStatus("正在连接服务器...", color: UIStyleTokens.StatusAlert);
                     EnableButtons();
                     break;
                 case ConnectionStatus.Connected:
-                    SetStatus($"{(!string.IsNullOrWhiteSpace(PasswordInput.Text) && !string.IsNullOrWhiteSpace(UsernameInput.Text) ? "" : "请输入账号密码登录")}", color: Color.Green);
+                    SetStatus($"{(!string.IsNullOrWhiteSpace(PasswordInput.Text) && !string.IsNullOrWhiteSpace(UsernameInput.Text) ? "" : "请输入账号密码登录")}", color: UIStyleTokens.StatusSuccess);
                     EnableButtons();
                     break;
                 case ConnectionStatus.Reconnecting:
-                    SetStatus("正在重连服务器...", color: Color.Yellow);
+                    SetStatus("正在重连服务器...", color: UIStyleTokens.StatusAlert);
                     EnableButtons();
                     break;
                 case ConnectionStatus.Failed:
                 case ConnectionStatus.Error:
-                    SetStatus("网络连接失败，点击登录将尝试重连", color: Color.DarkRed);
+                    SetStatus("网络连接失败，点击登录将尝试重连", color: UIStyleTokens.StatusError);
                     EnableButtons();
                     break;
                 case ConnectionStatus.Unknown:
@@ -132,7 +132,7 @@ namespace HundunWorld.Game.UI.Authentication
             var usernameLabel = UIHelper.CreateLabel("用户名:");
             usernameLabel.Location = new Float2(leftMargin-10, currentY);
             usernameLabel.Size = new Float2(20, 30);
-            usernameLabel.TextColor = ChineseClassicalTheme.TextColor;
+            usernameLabel.TextColor = UIStyleTokens.TextPrimary;
             ChineseClassicalTheme.ApplyVisualHierarchy(usernameLabel, VisualHierarchy.Auxiliary);
             AddChild(usernameLabel);
 
@@ -140,8 +140,8 @@ namespace HundunWorld.Game.UI.Authentication
             UsernameInput = ValidatedTextBox.CreateUsernameInput();
             UsernameInput.Location = new Float2(leftMargin + 46, currentY);
             UsernameInput.Size = inputSize;
-            UsernameInput.BackgroundColor = ChineseClassicalTheme.InputColor;
-            UsernameInput.TextColor = ChineseClassicalTheme.TextColor;
+            UsernameInput.BackgroundColor = UIStyleTokens.BgInk;
+            UsernameInput.TextColor = UIStyleTokens.TextPrimary;
             UsernameInput.Text = _passortInfo?.PassportId;
             ChineseClassicalTheme.ApplyVisualHierarchy(UsernameInput, VisualHierarchy.Tertiary);
             AddChild(UsernameInput);
@@ -152,7 +152,7 @@ namespace HundunWorld.Game.UI.Authentication
             var passwordLabel = UIHelper.CreateLabel("密  码:");
             passwordLabel.Location = new Float2(leftMargin-10, currentY);
             passwordLabel.Size = new Float2(20, 30);
-            passwordLabel.TextColor = ChineseClassicalTheme.TextColor;
+            passwordLabel.TextColor = UIStyleTokens.TextPrimary;
             ChineseClassicalTheme.ApplyVisualHierarchy(passwordLabel, VisualHierarchy.Auxiliary);
             AddChild(passwordLabel);
 
@@ -160,8 +160,8 @@ namespace HundunWorld.Game.UI.Authentication
             PasswordInput = ValidatedTextBox.CreatePasswordInput();
             PasswordInput.Location = new Float2(leftMargin + 46, currentY);
             PasswordInput.Size = inputSize;
-            PasswordInput.BackgroundColor = ChineseClassicalTheme.InputColor;
-            PasswordInput.TextColor = ChineseClassicalTheme.TextColor;
+            PasswordInput.BackgroundColor = UIStyleTokens.BgInk;
+            PasswordInput.TextColor = UIStyleTokens.TextPrimary;
             PasswordInput.Text = _passortInfo?.RememberPassword ?? false ? _passortInfo.Password : "";
             ChineseClassicalTheme.ApplyVisualHierarchy(PasswordInput, VisualHierarchy.Tertiary);
             AddChild(PasswordInput);
@@ -188,7 +188,7 @@ namespace HundunWorld.Game.UI.Authentication
             var rememberLabel = UIHelper.CreateLabel("记住密码");
             rememberLabel.Location = new Float2(inputSize.X * 0.25f - 40, 2);
             rememberLabel.Size = new Float2(100, 25);
-            rememberLabel.TextColor = ChineseClassicalTheme.TextColor;
+            rememberLabel.TextColor = UIStyleTokens.TextPrimary;
             ChineseClassicalTheme.ApplyVisualHierarchy(rememberLabel, VisualHierarchy.Auxiliary);
 
             rememberContainer.AddChild(RememberPasswordCheckBox);
@@ -204,10 +204,10 @@ namespace HundunWorld.Game.UI.Authentication
             LoginButton = UIHelper.CreatePrimaryButton("登录");
             LoginButton.Location = new Float2(buttonX - 130, currentY);
             LoginButton.Size = new Float2(primaryButtonSize.X + 120, primaryButtonSize.Y);
-            LoginButton.BackgroundColor = ChineseClassicalTheme.SecondaryColor; // 古典金色
-            LoginButton.BackgroundColorHighlighted = ChineseClassicalTheme.SuccessColor;
-            LoginButton.BorderColorHighlighted = ChineseClassicalTheme.InputBackgroundColor;
-            LoginButton.TextColor = Color.Black;
+            LoginButton.BackgroundColor = UIStyleTokens.GoldPrimary; // 古典金色
+            LoginButton.BackgroundColorHighlighted = UIStyleTokens.GoldBright;
+            LoginButton.BorderColorHighlighted = UIStyleTokens.BorderGoldBright;
+            LoginButton.TextColor = UIStyleTokens.TextInverse;
             LoginButton.ButtonClicked += OnLoginButtonClicked;
             // 不在这里设置禁用，由AuthenticationUI统一管理
             ChineseClassicalTheme.ApplyVisualHierarchy(LoginButton, VisualHierarchy.Primary);
@@ -222,8 +222,8 @@ namespace HundunWorld.Game.UI.Authentication
             SwitchToRegisterButton = UIHelper.CreateSecondaryButton("没有账户？注册");
             SwitchToRegisterButton.Location = new Float2(secondaryButtonX + 160, currentY);
             SwitchToRegisterButton.Size = new Float2(120, secondaryButtonSize.Y);
-            SwitchToRegisterButton.BackgroundColor = ChineseClassicalTheme.BackgroundColor; // 墨青色
-            SwitchToRegisterButton.TextColor = ChineseClassicalTheme.TextColor;
+            SwitchToRegisterButton.BackgroundColor = UIStyleTokens.BgMist; // 次按钮 金色薄雾底（ds-btn--secondary）
+            SwitchToRegisterButton.TextColor = UIStyleTokens.TextPrimary;
             SwitchToRegisterButton.ButtonClicked += OnSwitchToRegisterClicked;
             // 不在这里设置禁用，由AuthenticationUI统一管理
             ChineseClassicalTheme.ApplyVisualHierarchy(SwitchToRegisterButton, VisualHierarchy.Secondary);
@@ -233,11 +233,11 @@ namespace HundunWorld.Game.UI.Authentication
             currentY += secondaryButtonSize.Y + spacing;
 
             // 状态标签 - 居中显示并使用中式样式
-            StatusLabel = UIHelper.CreateLabel("请输入账户信息", ChineseClassicalTheme.SecondaryColor);
+            StatusLabel = UIHelper.CreateLabel("请输入账户信息", UIStyleTokens.GoldPrimary);
             StatusLabel.Location = new Float2(leftMargin, currentY);
             StatusLabel.Size = new Float2(inputSize.X, 30);
             StatusLabel.HorizontalAlignment = TextAlignment.Center;
-            StatusLabel.TextColor = ChineseClassicalTheme.SecondaryColor;
+            StatusLabel.TextColor = UIStyleTokens.GoldPrimary;
             ChineseClassicalTheme.ApplyVisualHierarchy(StatusLabel, VisualHierarchy.Auxiliary);
             AddChild(StatusLabel);
 
@@ -317,7 +317,7 @@ namespace HundunWorld.Game.UI.Authentication
             UsernameInput.Text = string.Empty;
             PasswordInput.Text = string.Empty;
             RememberPasswordCheckBox.Checked = false;
-            SetStatus("请输入账户信息", Color.Yellow);
+            SetStatus("请输入账户信息", UIStyleTokens.StatusAlert);
         }
 
         /// <summary>
@@ -351,7 +351,7 @@ namespace HundunWorld.Game.UI.Authentication
                 FlaxEngine.Debug.LogWarning("[LoginPanel.EnableButtons] SwitchToRegisterButton为null，无法启用");
             }
             
-            SetStatus("已连接服务器，请输入账户信息", Color.Green);
+            SetStatus("已连接服务器，请输入账户信息", UIStyleTokens.StatusSuccess);
         }
 
         /// <summary>
@@ -383,7 +383,7 @@ namespace HundunWorld.Game.UI.Authentication
                 FlaxEngine.Debug.LogWarning("[LoginPanel.DisableButtons] SwitchToRegisterButton为null，无法禁用");
             }
             
-            SetStatus("正在连接服务器...", Color.Yellow);
+            SetStatus("正在连接服务器...", UIStyleTokens.StatusAlert);
         }
 
         /// <summary>
@@ -399,11 +399,11 @@ namespace HundunWorld.Game.UI.Authentication
                 FlaxEngine.Debug.Log($"[LoginPanel] 检查网络状态: {status}");
                 if (status == Horizon.Game.Message.Enums.ConnectionStatus.Connected)
                 {
-                    SetStatus("已连接服务器，请输入账户信息", Color.Green);
+                    SetStatus("已连接服务器，请输入账户信息", UIStyleTokens.StatusSuccess);
                 }
                 else
                 {
-                    SetStatus($"网络状态: {status}，点击登录将尝试连接", Color.Yellow);
+                    SetStatus($"网络状态: {status}，点击登录将尝试连接", UIStyleTokens.StatusAlert);
                 }
             }
 

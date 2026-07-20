@@ -1,0 +1,11 @@
+{
+  "AssetName": "NS_CharacterSpawnIn2",
+  "SourcePath": "NS_CharacterSpawnIn2.uasset",
+  "EmitterGuid": "02af6f3f7fde4c00b2f8c3c6677345cc",
+  "SystemGuid": "ac7e2e6fdbfc4a8dabf2df1b0f31c879",
+  "PrefabGuid": "3988b21eddf94f94be29ec8112c5528a",
+  "EmitterFlaxPath": "Particles/NS_CharacterSpawnIn2/NS_CharacterSpawnIn2_Emitter.flax",
+  "SystemFlaxPath": "Particles/NS_CharacterSpawnIn2/NS_CharacterSpawnIn2_System.flax",
+  "PrefabFlaxPath": "Particles/NS_CharacterSpawnIn2/NS_CharacterSpawnIn2.prefab",
+  "Emitters": []
+}

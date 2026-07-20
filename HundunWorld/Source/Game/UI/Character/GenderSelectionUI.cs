@@ -195,7 +195,7 @@ namespace HundunWorld.Game.UI.Character
                 Text = "男",
                 Size = new Float2(110, 75),
                 Location = new Float2(0, 0),
-                Font = UIHelper.SetFont(size: 56),
+                Font = UIHelper.SetFont(size: 32),
                 TextColor = ChineseClassicalTheme.SecondaryColor,
                 HorizontalAlignment = TextAlignment.Center
             };
@@ -247,8 +247,8 @@ namespace HundunWorld.Game.UI.Character
                 Text = "女",
                 Size = new Float2(70, 45),
                 Location = new Float2(260, 35),
-                Font = UIHelper.SetFont(size: 30),
-                TextColor = new Color(1, 1, 1, 0.30f),
+                Font = UIHelper.SetFont(size: 28),
+                TextColor = UIStyleTokens.TextDisabled,
                 HorizontalAlignment = TextAlignment.Center
             };
             _genderSelector.AddChild(_femaleLabel);
@@ -276,7 +276,7 @@ namespace HundunWorld.Game.UI.Character
             {
                 Size = new Float2(3, 18),
                 Location = new Float2(330, 45),
-                BackgroundColor = new Color(1, 1, 1, 0.10f)
+                BackgroundColor = UIStyleTokens.BgMist
             };
             _genderSelector.AddChild(_femaleIndicator);
         }
@@ -317,7 +317,7 @@ namespace HundunWorld.Game.UI.Character
                 Parent = this,
                 Location = new Float2(W - 300, 120),
                 Size = new Float2(260, 320),
-                BackgroundColor = new Color(0.02f, 0.02f, 0.04f, 0.40f)
+                BackgroundColor = UIStyleTokens.WithAlpha(UIStyleTokens.BgAbyss, 0.40f)
             };
 
             // 面板标题
@@ -328,7 +328,7 @@ namespace HundunWorld.Game.UI.Character
                 Location = new Float2(0, 12),
                 Size = new Float2(260, 28),
                 Font = UIHelper.SetFont(size: 18),
-                TextColor = new Color(1, 1, 1, 0.6f),
+                TextColor = UIStyleTokens.TextSecondary,
                 HorizontalAlignment = TextAlignment.Center
             };
 
@@ -374,7 +374,7 @@ namespace HundunWorld.Game.UI.Character
                 Location = new Float2(25, 0),
                 Size = new Float2(120, 22),
                 Font = UIHelper.SetFont(size: 14),
-                TextColor = new Color(1, 1, 1, 0.75f),
+                TextColor = UIStyleTokens.TextPrimary,
                 HorizontalAlignment = TextAlignment.Near
             };
 
@@ -396,7 +396,7 @@ namespace HundunWorld.Game.UI.Character
                 Parent = slider.Panel,
                 Location = new Float2(30, 28),
                 Size = new Float2(trackW, trackH),
-                BackgroundColor = new Color(0.25f, 0.25f, 0.28f, 0.8f)
+                BackgroundColor = UIStyleTokens.WithAlpha(UIStyleTokens.BgElevated, 0.8f) // 滑轨轨道（--ink-bg-elevated）
             };
 
             // 滑轨填充（金色）
@@ -405,7 +405,7 @@ namespace HundunWorld.Game.UI.Character
                 Parent = slider.Panel,
                 Location = new Float2(30, 28),
                 Size = new Float2(trackW * defaultValue, trackH),
-                BackgroundColor = ChineseClassicalTheme.SecondaryColorWithAlpha(0.9f)
+                BackgroundColor = UIStyleTokens.Gold(0.9f) // 滑轨填充 鎏金（--ink-gold-primary）
             };
 
             // 滑动手柄（金色圆形效果）
@@ -414,7 +414,7 @@ namespace HundunWorld.Game.UI.Character
                 Parent = slider.Panel,
                 Location = new Float2(30 + trackW * defaultValue - 7, 22),
                 Size = new Float2(14, 14),
-                BackgroundColor = new Color(225f / 255f, 185f / 255f, 75f / 255f, 1f)
+                BackgroundColor = UIStyleTokens.GoldBright // 滑动手柄 亮金（--ink-gold-bright）
             };
 
             return slider;
@@ -650,8 +650,8 @@ namespace HundunWorld.Game.UI.Character
                 return;
 
             Color gold = ChineseClassicalTheme.SecondaryColor;
-            Color dimmedText = new Color(1, 1, 1, 0.35f);
-            Color dimmedIndicator = new Color(1, 1, 1, 0.15f);
+            Color dimmedText = UIStyleTokens.TextDisabled;
+            Color dimmedIndicator = UIStyleTokens.GoldFaint;
             Color goldBrush = ChineseClassicalTheme.SecondaryColor;
             Color dimmedBrush = ChineseClassicalTheme.SecondaryColorWithAlpha(0f);
             Color goldGlow = ChineseClassicalTheme.SecondaryColorWithAlpha(0.10f);
@@ -661,14 +661,14 @@ namespace HundunWorld.Game.UI.Character
             {
                 // 男性选中
                 _maleLabel.TextColor = gold;
-                _maleLabel.Font = UIHelper.SetFont(size: 56);
+                _maleLabel.Font = UIHelper.SetFont(size: 32);
                 _maleIndicator.BackgroundColor = gold;
                 _maleBrushLine.BackgroundColor = goldBrush;
                 _maleBrushLine.Size = new Float2(260, 5);
                 _maleGlowPanel.BackgroundColor = goldGlow;
                 // 女性未选中
                 _femaleLabel.TextColor = dimmedText;
-                _femaleLabel.Font = UIHelper.SetFont(size: 30);
+                _femaleLabel.Font = UIHelper.SetFont(size: 28);
                 _femaleIndicator.BackgroundColor = dimmedIndicator;
                 _femaleBrushLine.BackgroundColor = dimmedBrush;
                 _femaleBrushLine.Size = new Float2(100, 3);
@@ -678,14 +678,14 @@ namespace HundunWorld.Game.UI.Character
             {
                 // 男性未选中
                 _maleLabel.TextColor = dimmedText;
-                _maleLabel.Font = UIHelper.SetFont(size: 30);
+                _maleLabel.Font = UIHelper.SetFont(size: 28);
                 _maleIndicator.BackgroundColor = dimmedIndicator;
                 _maleBrushLine.BackgroundColor = dimmedBrush;
                 _maleBrushLine.Size = new Float2(100, 3);
                 _maleGlowPanel.BackgroundColor = noGlow;
                 // 女性选中
                 _femaleLabel.TextColor = gold;
-                _femaleLabel.Font = UIHelper.SetFont(size: 56);
+                _femaleLabel.Font = UIHelper.SetFont(size: 32);
                 _femaleIndicator.BackgroundColor = gold;
                 _femaleBrushLine.BackgroundColor = goldBrush;
                 _femaleBrushLine.Size = new Float2(260, 5);

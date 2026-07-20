@@ -7,18 +7,19 @@ namespace HundunWorld.Game.UI.StyleSystem
     {
         public static class Colors
         {
-            public static readonly Color BackgroundPrimary = new Color(0.047f, 0.047f, 0.047f);
-            public static readonly Color BackgroundSecondary = new Color(0.102f, 0.102f, 0.102f);
-            public static readonly Color Accent = new Color(0.831f, 0.686f, 0.216f);
-            public static readonly Color TextPrimary = Color.White;
-            public static readonly Color TextSecondary = new Color(0.702f, 0.702f, 0.702f);
-            public static readonly Color Border = new Color(0.235f, 0.235f, 0.235f);
-            public static readonly Color Divider = new Color(0.165f, 0.165f, 0.165f);
-            public static readonly Color ButtonBackground = new Color(0.165f, 0.165f, 0.165f);
-            public static readonly Color ProgressBackground = new Color(0.2f, 0.2f, 0.2f);
-            public static readonly Color Success = new Color(0.153f, 0.682f, 0.376f);
-            public static readonly Color Error = new Color(0.753f, 0.224f, 0.169f);
-            public static readonly Color Overlay = new Color(0, 0, 0, 0.7f);
+            // 统一映射设计 Token（出处：game-ui-system/colors_and_type.css --ink-* 水墨古风）
+            public static readonly Color BackgroundPrimary = UIStyleTokens.BgVoid; // --ink-bg-void
+            public static readonly Color BackgroundSecondary = UIStyleTokens.BgInk; // --ink-bg-ink
+            public static readonly Color Accent = UIStyleTokens.GoldPrimary; // --ink-gold-primary
+            public static readonly Color TextPrimary = UIStyleTokens.TextPrimary; // --ink-text-primary（禁纯白）
+            public static readonly Color TextSecondary = UIStyleTokens.TextSecondary; // --ink-text-secondary
+            public static readonly Color Border = UIStyleTokens.BorderGold; // --ink-border-gold
+            public static readonly Color Divider = UIStyleTokens.Divider; // --ink-divider
+            public static readonly Color ButtonBackground = UIStyleTokens.BgElevated; // --ink-bg-elevated
+            public static readonly Color ProgressBackground = UIStyleTokens.BgElevated; // 进度条轨道（ds-progress §4.6）
+            public static readonly Color Success = UIStyleTokens.StatusSuccess; // --status-success-default
+            public static readonly Color Error = UIStyleTokens.StatusError; // --status-error-default
+            public static readonly Color Overlay = UIStyleTokens.Scrim; // 墨黑遮罩
         }
         
         public static class Sizes

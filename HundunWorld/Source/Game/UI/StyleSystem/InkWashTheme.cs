@@ -23,8 +23,8 @@ namespace HundunWorld.Game.UI.StyleSystem
         /// <summary>三级背景色 #1C1F28</summary>
         public static readonly Color BaseTertiary = new Color(28f / 255f, 31f / 255f, 40f / 255f, 1f);
 
-        /// <summary>抬升背景色 #232733</summary>
-        public static readonly Color BaseElevated = new Color(35f / 255f, 39f / 255f, 51f / 255f, 1f);
+        /// <summary>抬升背景色 #1A1D26（按新设计方案 game-ui-system 修正）</summary>
+        public static readonly Color BaseElevated = new Color(26f / 255f, 29f / 255f, 38f / 255f, 1f);
 
         /// <summary>面板背景色 rgba(20,23,30,0.85)</summary>
         public static readonly Color Panel = new Color(20f / 255f, 23f / 255f, 30f / 255f, 0.85f);
@@ -40,6 +40,12 @@ namespace HundunWorld.Game.UI.StyleSystem
 
         /// <summary>遮罩色 rgba(8,9,14,0.72)</summary>
         public static readonly Color Scrim = new Color(8f / 255f, 9f / 255f, 14f / 255f, 0.72f);
+
+        /// <summary>金雾叠加层 rgba(200,168,88,0.04) — 对应 --ink-bg-mist</summary>
+        public static readonly Color BgMist = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.04f);
+
+        /// <summary>金色悬停高亮底 rgba(200,168,88,0.08) — 对应 --ink-bg-hover</summary>
+        public static readonly Color BgHover = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.08f);
 
         #endregion
 
@@ -128,19 +134,41 @@ namespace HundunWorld.Game.UI.StyleSystem
 
         #endregion
 
-        #region 辅助语义色
+        #region 春青系 — 主色品牌色（新设计方案 game-ui-system 核心）
 
-        /// <summary>翡翠主色 #5E8B7E</summary>
-        public static readonly Color JadePrimary = new Color(94f / 255f, 139f / 255f, 126f / 255f, 1f);
+        /// <summary>春青主色 #7EAB9E — 对应 --ink-jade-primary，生命/内力/增益主色</summary>
+        public static readonly Color JadePrimary = new Color(126f / 255f, 171f / 255f, 158f / 255f, 1f);
 
-        /// <summary>翡翠亮色 #7EAE9E</summary>
-        public static readonly Color JadeBright = new Color(126f / 255f, 174f / 255f, 158f / 255f, 1f);
+        /// <summary>嫩绿青亮色 #A8D4C4 — 对应 --ink-jade-bright，悬停态/高亮/青玉萤光粒子</summary>
+        public static readonly Color JadeBright = new Color(168f / 255f, 212f / 255f, 196f / 255f, 1f);
 
-        /// <summary>血色主色 #B85450</summary>
+        /// <summary>深青色 #5E8B7E — 对应 --ink-jade-deep，按下态/激活态/描边强调</summary>
+        public static readonly Color JadeDeep = new Color(94f / 255f, 139f / 255f, 126f / 255f, 1f);
+
+        /// <summary>春青辉光 rgba(126,171,158,0.45) — 对应 --ink-jade-glow</summary>
+        public static readonly Color JadeGlow = new Color(126f / 255f, 171f / 255f, 158f / 255f, 0.45f);
+
+        /// <summary>弱化青 rgba(126,171,158,0.55) — 对应 --ink-jade-dim</summary>
+        public static readonly Color JadeDim = new Color(126f / 255f, 171f / 255f, 158f / 255f, 0.55f);
+
+        /// <summary>极弱青 rgba(126,171,158,0.15) — 对应 --ink-jade-faint</summary>
+        public static readonly Color JadeFaint = new Color(126f / 255f, 171f / 255f, 158f / 255f, 0.15f);
+
+        #endregion
+
+        #region 朱砂系 — 生命/危险补充色
+
+        /// <summary>血色主色 #B85450 — 对应 --ink-blood-primary，敌对/扣血/危险</summary>
         public static readonly Color BloodPrimary = new Color(184f / 255f, 84f / 255f, 80f / 255f, 1f);
 
-        /// <summary>血色亮色 #D46862</summary>
-        public static readonly Color BloodBright = new Color(212f / 255f, 104f / 255f, 98f / 255f, 1f);
+        /// <summary>血色亮色 #D87470 — 对应 --ink-blood-bright，高亮态/删除/扣减</summary>
+        public static readonly Color BloodBright = new Color(216f / 255f, 116f / 255f, 112f / 255f, 1f);
+
+        /// <summary>血色深色 #8A3E3A — 对应 --ink-blood-deep，铜牌/深底</summary>
+        public static readonly Color BloodDeep = new Color(138f / 255f, 62f / 255f, 58f / 255f, 1f);
+
+        /// <summary>血色辉光 rgba(184,84,80,0.4) — 对应 --ink-blood-glow</summary>
+        public static readonly Color BloodGlow = new Color(184f / 255f, 84f / 255f, 80f / 255f, 0.4f);
 
         #endregion
 
@@ -180,8 +208,219 @@ namespace HundunWorld.Game.UI.StyleSystem
         /// <summary>史诗品质 #8B5E9E</summary>
         public static readonly Color QualityEpic = new Color(139f / 255f, 94f / 255f, 158f / 255f, 1f);
 
-        /// <summary>传说品质（传世） #c0392b</summary>
-        public static readonly Color QualityLegendary = new Color(192f / 255f, 57f / 255f, 43f / 255f, 1f);
+        /// <summary>传说品质（赤金）#C8A858 — 按 ui-design-guidelines.md §1.3 品质色阶，复用鎏金主色并叠加金色辉光</summary>
+        public static readonly Color QualityLegendary = new Color(200f / 255f, 168f / 255f, 88f / 255f, 1f);
+
+        #endregion
+
+        #region 五行色 — ui-design-guidelines.md §1.4（饱和度降低 15% 融入水墨基调）
+
+        /// <summary>金行 #D4C4A0（白） — 对应 --ink-element-metal，金生水</summary>
+        public static readonly Color ElementMetal = new Color(212f / 255f, 196f / 255f, 160f / 255f, 1f);
+
+        /// <summary>木行 #6B8E5A（青） — 对应 --ink-element-wood，木生火</summary>
+        public static readonly Color ElementWood = new Color(107f / 255f, 142f / 255f, 90f / 255f, 1f);
+
+        /// <summary>水行 #4A6E8A（黑） — 对应 --ink-element-water，水生木</summary>
+        public static readonly Color ElementWater = new Color(74f / 255f, 110f / 255f, 138f / 255f, 1f);
+
+        /// <summary>火行 #B85638（红） — 对应 --ink-element-fire，火生土</summary>
+        public static readonly Color ElementFire = new Color(184f / 255f, 86f / 255f, 56f / 255f, 1f);
+
+        /// <summary>土行 #8A7B5A（黄） — 对应 --ink-element-earth，土生金</summary>
+        public static readonly Color ElementEarth = new Color(138f / 255f, 123f / 255f, 90f / 255f, 1f);
+
+        /// <summary>
+        /// 五行枚举，对应金/木/水/火/土。
+        /// 用于功法、属性、阵法、相生相克关系展示。
+        /// </summary>
+        public enum InkElement
+        {
+            /// <summary>金行 — 金生水</summary>
+            Metal,
+
+            /// <summary>木行 — 木生火</summary>
+            Wood,
+
+            /// <summary>水行 — 水生木</summary>
+            Water,
+
+            /// <summary>火行 — 火生土</summary>
+            Fire,
+
+            /// <summary>土行 — 土生金</summary>
+            Earth
+        }
+
+        /// <summary>
+        /// 根据五行返回对应色。
+        /// </summary>
+        /// <param name="element">五行</param>
+        /// <returns>五行色</returns>
+        public static Color ElementColor(InkElement element)
+        {
+            return element switch
+            {
+                InkElement.Metal => ElementMetal,
+                InkElement.Wood => ElementWood,
+                InkElement.Water => ElementWater,
+                InkElement.Fire => ElementFire,
+                InkElement.Earth => ElementEarth,
+                _ => ElementMetal
+            };
+        }
+
+        /// <summary>
+        /// 判断 src 是否生克 dst（相生关系）。
+        /// 相生序：金→水→木→火→土→金
+        /// </summary>
+        /// <param name="src">源五行</param>
+        /// <param name="dst">目标五行</param>
+        /// <returns>true=相生；false=不相生</returns>
+        public static bool IsElementGenerating(InkElement src, InkElement dst)
+        {
+            return src switch
+            {
+                InkElement.Metal => dst == InkElement.Water,
+                InkElement.Wood => dst == InkElement.Fire,
+                InkElement.Water => dst == InkElement.Wood,
+                InkElement.Fire => dst == InkElement.Earth,
+                InkElement.Earth => dst == InkElement.Metal,
+                _ => false
+            };
+        }
+
+        #endregion
+
+        #region 粒子动效色 — ink-particles.css（4 种粒子类型）
+
+        /// <summary>金粉粒子核心 #F0D898（径向渐变中心色）</summary>
+        public static readonly Color ParticleGoldCore = new Color(240f / 255f, 216f / 255f, 152f / 255f, 1f);
+
+        /// <summary>金粉粒子中段 #C8A858（径向渐变 50%）</summary>
+        public static readonly Color ParticleGoldMid = new Color(200f / 255f, 168f / 255f, 88f / 255f, 1f);
+
+        /// <summary>金粉粒子辉光 rgba(200,168,88,0.8)</summary>
+        public static readonly Color ParticleGoldGlow = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.8f);
+
+        /// <summary>金粉粒子外层辉光 rgba(200,168,88,0.4)</summary>
+        public static readonly Color ParticleGoldGlowSoft = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.4f);
+
+        /// <summary>青玉萤光核心 #C8E6D8（径向渐变中心色）</summary>
+        public static readonly Color ParticleJadeCore = new Color(200f / 255f, 230f / 255f, 216f / 255f, 1f);
+
+        /// <summary>青玉萤光中段 #A8D4C4（径向渐变 50%）</summary>
+        public static readonly Color ParticleJadeMid = new Color(168f / 255f, 212f / 255f, 196f / 255f, 1f);
+
+        /// <summary>青玉萤光辉光 rgba(168,212,196,0.7)</summary>
+        public static readonly Color ParticleJadeGlow = new Color(168f / 255f, 212f / 255f, 196f / 255f, 0.7f);
+
+        /// <summary>青玉萤光外层辉光 rgba(126,171,158,0.4)</summary>
+        public static readonly Color ParticleJadeGlowSoft = new Color(126f / 255f, 171f / 255f, 158f / 255f, 0.4f);
+
+        /// <summary>环境微粒 rgba(168,212,196,0.5)</summary>
+        public static readonly Color ParticleAmbientJade = new Color(168f / 255f, 212f / 255f, 196f / 255f, 0.5f);
+
+        /// <summary>环境微粒金 rgba(224,200,128,0.4)</summary>
+        public static readonly Color ParticleAmbientGold = new Color(224f / 255f, 200f / 255f, 128f / 255f, 0.4f);
+
+        /// <summary>墨韵涟漪边 rgba(168,212,196,0.3)</summary>
+        public static readonly Color RippleJade = new Color(168f / 255f, 212f / 255f, 196f / 255f, 0.3f);
+
+        /// <summary>墨韵涟漪金边 rgba(224,200,128,0.4)</summary>
+        public static readonly Color RippleGold = new Color(224f / 255f, 200f / 255f, 128f / 255f, 0.4f);
+
+        #endregion
+
+        #region 动效曲线与持续时间 — ink-particles.css + ui-design-guidelines.md §3
+
+        /// <summary>
+        /// 统一缓动曲线 — cubic-bezier(0.16, 1, 0.3, 1)，参考苹果 HIG ease-out。
+        /// 用于所有粒子动效、面板过渡、按钮反馈。
+        /// </summary>
+        public static readonly Float2 EasingEaseOutC1 = new Float2(0.16f, 1.0f);
+
+        /// <summary>动效曲线第三参数</summary>
+        public const float EasingEaseOutC2 = 0.3f;
+
+        /// <summary>动效曲线第四参数</summary>
+        public const float EasingEaseOutC3 = 1.0f;
+
+        /// <summary>金粉飘落持续时间 800ms — 对应 gold-burst 动画</summary>
+        public const float DurationGoldBurst = 0.8f;
+
+        /// <summary>墨韵涟漪持续时间 1200ms — 对应 ink-ripple 动画</summary>
+        public const float DurationInkRipple = 1.2f;
+
+        /// <summary>青玉萤光持续时间 1000ms — 对应 jade-firefly 动画</summary>
+        public const float DurationJadeFirefly = 1.0f;
+
+        /// <summary>环境微粒漂移周期 4000ms — 对应 ambient-drift 动画</summary>
+        public const float DurationAmbientDrift = 4.0f;
+
+        /// <summary>面板进入过渡 200ms — 对应 panel-entering 动画</summary>
+        public const float DurationPanelEnter = 0.2f;
+
+        /// <summary>面板进入 Y 位移 8px — 对应 translateY(8px)</summary>
+        public const float PanelEnterOffsetY = 8f;
+
+        /// <summary>Toast 入场持续时间 300ms — 对应 toast-slide-in 动画</summary>
+        public const float DurationToastIn = 0.3f;
+
+        /// <summary>Toast 入场 Y 位移 12px — 对应 translateY(-12px)</summary>
+        public const float ToastInOffsetY = 12f;
+
+        /// <summary>Toast 入场缩放 0.95 — 对应 scale(0.95)</summary>
+        public const float ToastInScale = 0.95f;
+
+        /// <summary>按钮按下缩放 0.97 — 对应 ds-btn:active scale(0.97)</summary>
+        public const float ButtonPressScale = 0.97f;
+
+        /// <summary>按钮按下过渡 100ms</summary>
+        public const float DurationButtonPress = 0.1f;
+
+        /// <summary>prefers-reduced-motion 模式下动画持续时间 0.01ms</summary>
+        public const float DurationReducedMotion = 0.00001f;
+
+        /// <summary>金粉粒子大小（小）4px</summary>
+        public const float ParticleGoldSizeSm = 4f;
+
+        /// <summary>金粉粒子大小（大）6px</summary>
+        public const float ParticleGoldSizeLg = 6f;
+
+        /// <summary>青玉萤光粒子大小 5px</summary>
+        public const float ParticleJadeSize = 5f;
+
+        /// <summary>环境微粒大小 3px</summary>
+        public const float ParticleAmbientSize = 3f;
+
+        /// <summary>墨韵涟漪初始描边 3px</summary>
+        public const float RippleStrokeInitial = 3f;
+
+        /// <summary>墨韵涟漪结束描边 1px</summary>
+        public const float RippleStrokeFinal = 1f;
+
+        /// <summary>墨韵涟漪第二环延迟 30%（动画 0-30% 不可见）</summary>
+        public const float RippleSecondDelay = 0.3f;
+
+        /// <summary>墨韵涟漪第二环最终缩放 1.2</summary>
+        public const float RippleSecondScale = 1.2f;
+
+        /// <summary>
+        /// 判断是否启用 reduced motion（动效降至 0.01ms）。
+        /// 默认返回 false，可由 InkParticleSystem 在初始化时根据系统偏好或玩家设置覆盖。
+        /// </summary>
+        public static bool ReducedMotion { get; set; } = false;
+
+        /// <summary>
+        /// 根据当前动效偏好返回实际持续时间。
+        /// </summary>
+        /// <param name="duration">正常模式下的持续时间（秒）</param>
+        /// <returns>实际持续时间</returns>
+        public static float GetDuration(float duration)
+        {
+            return ReducedMotion ? DurationReducedMotion : duration;
+        }
 
         #endregion
 
@@ -193,8 +432,8 @@ namespace HundunWorld.Game.UI.StyleSystem
         /// <summary>警告状态 #C8A858</summary>
         public static readonly Color Warning = new Color(200f / 255f, 168f / 255f, 88f / 255f, 1f);
 
-        /// <summary>错误状态 #c0392b</summary>
-        public static readonly Color Error = new Color(192f / 255f, 57f / 255f, 43f / 255f, 1f);
+        /// <summary>错误状态 #B85450（--status-error-default / --ink-blood-primary）</summary>
+        public static readonly Color Error = new Color(184f / 255f, 84f / 255f, 80f / 255f, 1f);
 
         /// <summary>信息状态 #4A7EA8</summary>
         public static readonly Color Info = new Color(74f / 255f, 126f / 255f, 168f / 255f, 1f);
@@ -203,17 +442,17 @@ namespace HundunWorld.Game.UI.StyleSystem
 
         #region 文字色
 
-        /// <summary>默认文字 #F0EDE4</summary>
+        /// <summary>默认文字 #F0EDE4 — 对应 --ink-text-primary，宣纸白</summary>
         public static readonly Color TextDefault = new Color(240f / 255f, 237f / 255f, 228f / 255f, 1f);
 
-        /// <summary>次级文字 #B8B0A0</summary>
+        /// <summary>次级文字 #B8B0A0 — 对应 --ink-text-secondary，浅褐</summary>
         public static readonly Color TextSecondary = new Color(184f / 255f, 176f / 255f, 160f / 255f, 1f);
 
-        /// <summary>三级文字 #7A7468</summary>
-        public static readonly Color TextTertiary = new Color(122f / 255f, 116f / 255f, 104f / 255f, 1f);
+        /// <summary>三级文字 #8A8275 — 对应 --ink-text-muted，按新设计方案修正</summary>
+        public static readonly Color TextTertiary = new Color(138f / 255f, 130f / 255f, 117f / 255f, 1f);
 
-        /// <summary>禁用文字 #4A4640</summary>
-        public static readonly Color TextDisabled = new Color(74f / 255f, 70f / 255f, 64f / 255f, 1f);
+        /// <summary>禁用文字 rgba(240,237,228,0.3) — 对应 --ink-text-faint</summary>
+        public static readonly Color TextDisabled = new Color(240f / 255f, 237f / 255f, 228f / 255f, 0.3f);
 
         /// <summary>品牌文字 #E0C880</summary>
         public static readonly Color TextBrand = new Color(224f / 255f, 200f / 255f, 128f / 255f, 1f);
@@ -224,6 +463,18 @@ namespace HundunWorld.Game.UI.StyleSystem
         /// <summary>纸色上文字 #2a2520</summary>
         public static readonly Color TextOnPaper = new Color(42f / 255f, 37f / 255f, 32f / 255f, 1f);
 
+        /// <summary>金色强调文字 #C8A858 — 对应 --ink-text-gold</summary>
+        public static readonly Color TextGold = new Color(200f / 255f, 168f / 255f, 88f / 255f, 1f);
+
+        /// <summary>青色强调文字 #A8D4C4 — 对应 --ink-text-jade</summary>
+        public static readonly Color TextJade = new Color(168f / 255f, 212f / 255f, 196f / 255f, 1f);
+
+        /// <summary>危险/扣减文字 #D87470 — 对应 --ink-text-blood</summary>
+        public static readonly Color TextBlood = new Color(216f / 255f, 116f / 255f, 112f / 255f, 1f);
+
+        /// <summary>反色文本 #0E1016 — 对应 --ink-text-inverse，金底/青底上的反色文本</summary>
+        public static readonly Color TextInverse = new Color(14f / 255f, 16f / 255f, 22f / 255f, 1f);
+
         /// <summary>朱红文字 #d9504a</summary>
         public static readonly Color TextVermilion = new Color(217f / 255f, 80f / 255f, 74f / 255f, 1f);
 
@@ -231,20 +482,32 @@ namespace HundunWorld.Game.UI.StyleSystem
 
         #region 边框色
 
-        /// <summary>中性边框 L1 rgba(240,237,228,0.06)</summary>
-        public static readonly Color BorderNeutralL1 = new Color(240f / 255f, 237f / 255f, 228f / 255f, 0.06f);
+        /// <summary>中性边框 L1 rgba(200,168,88,0.08) — 对应 --ink-border-faint / --border-neutral-l1</summary>
+        public static readonly Color BorderNeutralL1 = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.08f);
 
-        /// <summary>中性边框 L2 rgba(200,168,88,0.15)</summary>
+        /// <summary>中性边框 L2 rgba(200,168,88,0.15) — 对应 --ink-border-gold-subtle / --border-neutral-l2</summary>
         public static readonly Color BorderNeutralL2 = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.15f);
 
-        /// <summary>中性边框 L3 rgba(200,168,88,0.25)</summary>
+        /// <summary>中性边框 L3 rgba(200,168,88,0.25) — 对应 --ink-border-gold / --border-neutral-l3</summary>
         public static readonly Color BorderNeutralL3 = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.25f);
 
-        /// <summary>金色边框 rgba(200,168,88,0.35)</summary>
-        public static readonly Color BorderGold = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.35f);
+        /// <summary>金色标准边框 rgba(200,168,88,0.25) — 对应 --ink-border-gold，按新设计方案修正</summary>
+        public static readonly Color BorderGold = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.25f);
 
-        /// <summary>金色强边框 rgba(200,168,88,0.6)</summary>
+        /// <summary>金色高亮边框（选中态）rgba(200,168,88,0.5) — 对应 --ink-border-gold-bright</summary>
+        public static readonly Color BorderGoldBright = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.5f);
+
+        /// <summary>金色强边框 rgba(200,168,88,0.6) — 保留旧 Token 向后兼容</summary>
         public static readonly Color BorderGoldStrong = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.6f);
+
+        /// <summary>弱金边 rgba(200,168,88,0.15) — 对应 --ink-border-gold-subtle，卡片描边</summary>
+        public static readonly Color BorderGoldSubtle = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.15f);
+
+        /// <summary>极弱描边 rgba(200,168,88,0.08) — 对应 --ink-border-faint</summary>
+        public static readonly Color BorderFaint = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.08f);
+
+        /// <summary>青色边（增益/成功）rgba(94,139,126,0.3) — 对应 --ink-border-jade</summary>
+        public static readonly Color BorderJade = new Color(94f / 255f, 139f / 255f, 126f / 255f, 0.3f);
 
         /// <summary>古铜边框 rgba(184,115,51,0.3)</summary>
         public static readonly Color BorderBronze = new Color(184f / 255f, 115f / 255f, 51f / 255f, 0.3f);
@@ -252,24 +515,49 @@ namespace HundunWorld.Game.UI.StyleSystem
         /// <summary>朱红边框 rgba(192,57,43,0.35)</summary>
         public static readonly Color BorderVermilion = new Color(192f / 255f, 57f / 255f, 43f / 255f, 0.35f);
 
-        /// <summary>分割线 rgba(200,168,88,0.12)</summary>
+        /// <summary>分割线 rgba(200,168,88,0.12) — 对应 --ink-divider</summary>
         public static readonly Color Divider = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.12f);
 
         #endregion
 
-        #region 圆角 — 古风克制
+        #region 阴影 — 水墨纵深（新设计方案 game-ui-system）
+
+        /// <summary>深阴影 rgba(0,0,0,0.6) — 对应 --ink-shadow-deep</summary>
+        public static readonly Color ShadowDeep = new Color(0f, 0f, 0f, 0.6f);
+
+        /// <summary>中阴影 rgba(0,0,0,0.4) — 对应 --ink-shadow-mid</summary>
+        public static readonly Color ShadowMid = new Color(0f, 0f, 0f, 0.4f);
+
+        /// <summary>软阴影 rgba(0,0,0,0.2) — 对应 --ink-shadow-soft</summary>
+        public static readonly Color ShadowSoft = new Color(0f, 0f, 0f, 0.2f);
+
+        /// <summary>金色辉光 rgba(200,168,88,0.2) — 对应 --ink-shadow-gold，传说品质发光</summary>
+        public static readonly Color ShadowGold = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.2f);
+
+        /// <summary>春青辉光 rgba(126,171,158,0.45) — 玩家点发光，复用 JadeGlow</summary>
+        public static readonly Color ShadowJade = JadeGlow;
+
+        #endregion
+
+        #region 圆角 — 古风克制（新设计方案 2/4/8/12/16px 阶梯）
 
         /// <summary>无圆角 0px</summary>
         public const float RadiusNone = 0f;
 
-        /// <summary>小圆角 2px</summary>
+        /// <summary>小圆角 2px — 对应 --ink-radius-sm / --radius-2</summary>
         public const float RadiusSm = 2f;
 
-        /// <summary>中圆角 4px</summary>
+        /// <summary>中圆角 4px — 对应 --ink-radius-md / --radius-4</summary>
         public const float RadiusMd = 4f;
 
-        /// <summary>大圆角 8px</summary>
+        /// <summary>大圆角 8px — 对应 --ink-radius-lg / --radius-8</summary>
         public const float RadiusLg = 8f;
+
+        /// <summary>超大圆角 12px — 对应 --radius-12，弹窗/对话框</summary>
+        public const float RadiusXl = 12f;
+
+        /// <summary>特大圆角 16px — 对应 --radius-16，大卡片/英雄横幅</summary>
+        public const float Radius2xl = 16f;
 
         /// <summary>全圆角 999px</summary>
         public const float RadiusFull = 999f;

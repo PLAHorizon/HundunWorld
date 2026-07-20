@@ -65,7 +65,7 @@ namespace HundunWorld.Game.UI.Components
                 Text = $"  \u25BC {dimensionName}",
                 TextColor = GoldColor,
                 BackgroundColor = DimensionHeaderColor,
-                Font = UIHelper.SetFont(size: 13)
+                Font = UIHelper.SetFont(size: 12)
             };
             headerBtn.Clicked += () => ToggleDimension(dimensionName);
             _currentY += DimensionHeaderHeight;

@@ -1,0 +1,92 @@
+[
+  {
+    "SourcePath": "NS_CharacterDash.uasset",
+    "AssetName": "NS_CharacterDash",
+    "Type": 0,
+    "UEClass": "Unknown",
+    "FileSizeBytes": 1340516,
+    "LastModified": "2026-07-20T06:20:55.4751319Z",
+    "IsSelected": true
+  },
+  {
+    "SourcePath": "NS_CharacterPortalDissolve.uasset",
+    "AssetName": "NS_CharacterPortalDissolve",
+    "Type": 0,
+    "UEClass": "Unknown",
+    "FileSizeBytes": 2758868,
+    "LastModified": "2026-07-20T06:20:55.4767798Z",
+    "IsSelected": true
+  },
+  {
+    "SourcePath": "NS_CharacterSpawnIn.uasset",
+    "AssetName": "NS_CharacterSpawnIn",
+    "Type": 0,
+    "UEClass": "Unknown",
+    "FileSizeBytes": 2614101,
+    "LastModified": "2026-07-20T06:20:55.4767886Z",
+    "IsSelected": true
+  },
+  {
+    "SourcePath": "NS_CharacterSpawnIn2.uasset",
+    "AssetName": "NS_CharacterSpawnIn2",
+    "Type": 0,
+    "UEClass": "Unknown",
+    "FileSizeBytes": 1997234,
+    "LastModified": "2026-07-20T06:20:55.4767907Z",
+    "IsSelected": true
+  },
+  {
+    "SourcePath": "NS_ElectricMovement.uasset",
+    "AssetName": "NS_ElectricMovement",
+    "Type": 0,
+    "UEClass": "Unknown",
+    "FileSizeBytes": 1903044,
+    "LastModified": "2026-07-20T06:20:55.4767923Z",
+    "IsSelected": true
+  },
+  {
+    "SourcePath": "NS_JumpPad.uasset",
+    "AssetName": "NS_JumpPad",
+    "Type": 0,
+    "UEClass": "Unknown",
+    "FileSizeBytes": 3942452,
+    "LastModified": "2026-07-20T06:20:55.4767974Z",
+    "IsSelected": true
+  },
+  {
+    "SourcePath": "NS_WallPortal.uasset",
+    "AssetName": "NS_WallPortal",
+    "Type": 0,
+    "UEClass": "Unknown",
+    "FileSizeBytes": 3487780,
+    "LastModified": "2026-07-20T06:20:55.4767991Z",
+    "IsSelected": true
+  },
+  {
+    "SourcePath": "NS_WallPortalEnter.uasset",
+    "AssetName": "NS_WallPortalEnter",
+    "Type": 0,
+    "UEClass": "Unknown",
+    "FileSizeBytes": 1411972,
+    "LastModified": "2026-07-20T06:20:55.4768006Z",
+    "IsSelected": true
+  },
+  {
+    "SourcePath": "Emitters/NE_BoneBasedEmission.uasset",
+    "AssetName": "NE_BoneBasedEmission",
+    "Type": 0,
+    "UEClass": "Unknown",
+    "FileSizeBytes": 321914,
+    "LastModified": "2026-07-20T06:20:55.4768074Z",
+    "IsSelected": true
+  },
+  {
+    "SourcePath": "Emitters/NE_SkeletalSurfaceBasedEmission.uasset",
+    "AssetName": "NE_SkeletalSurfaceBasedEmission",
+    "Type": 2,
+    "UEClass": "SkeletalMesh",
+    "FileSizeBytes": 377573,
+    "LastModified": "2026-07-20T06:20:55.4768089Z",
+    "IsSelected": true
+  }
+]

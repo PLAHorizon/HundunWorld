@@ -21,9 +21,9 @@ namespace HundunWorld.Game.UI.Components
         public float BackgroundOpacity { get; set; } = 0.7f;
 
         /// <summary>
-        /// 边框颜色（默认金色，低透明度）
+        /// 边框颜色（默认金色描边，出处：--ink-border-gold）
         /// </summary>
-        public Color BorderColor { get; set; } = new Color(1.0f, 0.84f, 0.0f, 0.3f);
+        public Color BorderColor { get; set; } = UIStyleTokens.BorderGold;
 
         /// <summary>
         /// 边框厚度
@@ -31,9 +31,9 @@ namespace HundunWorld.Game.UI.Components
         public float BorderThickness { get; set; } = 1.0f;
 
         /// <summary>
-        /// 内发光颜色（用于模拟毛玻璃光泽）
+        /// 内发光颜色（模拟毛玻璃光泽，出处：--ink-shadow-inset 金色微痕）
         /// </summary>
-        public Color InnerGlowColor { get; set; } = new Color(1.0f, 1.0f, 1.0f, 0.08f);
+        public Color InnerGlowColor { get; set; } = UIStyleTokens.GoldTrace;
 
         /// <summary>
         /// 内发光内缩距离
@@ -47,8 +47,8 @@ namespace HundunWorld.Game.UI.Components
 
         public FrostedGlassPanel()
         {
-            // 设置半透明深色背景
-            BackgroundColor = new Color(0.05f, 0.05f, 0.08f, BackgroundOpacity);
+            // 设置半透明墨黑背景（出处：--ink-bg-panel 墨水深背景 + 面板透明度）
+            BackgroundColor = UIStyleTokens.WithAlpha(UIStyleTokens.BgInk, BackgroundOpacity);
         }
 
         /// <inheritdoc />
@@ -87,7 +87,7 @@ namespace HundunWorld.Game.UI.Components
                     if (highlightRect.Width > 0)
                     {
                         var highlightAlpha = 0.12f * BlurIntensity;
-                        Render2D.FillRectangle(highlightRect, new Color(1.0f, 1.0f, 1.0f, highlightAlpha));
+                        Render2D.FillRectangle(highlightRect, new Color(UIStyleTokens.GoldPrimary.R, UIStyleTokens.GoldPrimary.G, UIStyleTokens.GoldPrimary.B, highlightAlpha));
                     }
                 }
             }

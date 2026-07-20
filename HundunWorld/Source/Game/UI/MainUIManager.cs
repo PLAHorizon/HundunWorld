@@ -6,10 +6,35 @@ using Horizon.Game.Message.Enums;
 using HundunWorld.Game.UI.Authentication;
 using HundunWorld.Game.UI.Ink;
 using HundunWorld.Game.UI.Ink.Pages;
-using HundunWorld.Game.UI.Ink.Pages.Combat;
+using HundunWorld.Game.UI.Ink.Pages.Activities;
+using HundunWorld.Game.UI.Ink.Pages.Appearance;
+using HundunWorld.Game.UI.Ink.Pages.BattlePass;
+using HundunWorld.Game.UI.Ink.Pages.Bestiary;
+using HundunWorld.Game.UI.Ink.Pages.Casual;
 using HundunWorld.Game.UI.Ink.Pages.Character;
-using HundunWorld.Game.UI.Ink.Pages.Social;
+using HundunWorld.Game.UI.Ink.Pages.CharacterCreation;
+using HundunWorld.Game.UI.Ink.Pages.Combat;
+using HundunWorld.Game.UI.Ink.Pages.Crafting;
+using HundunWorld.Game.UI.Ink.Pages.Dungeon;
+using HundunWorld.Game.UI.Ink.Pages.ElementVision;
+using HundunWorld.Game.UI.Ink.Pages.Gacha;
+using HundunWorld.Game.UI.Ink.Pages.Inventory;
+using HundunWorld.Game.UI.Ink.Pages.Livelihood;
+using HundunWorld.Game.UI.Ink.Pages.Mail;
+using HundunWorld.Game.UI.Ink.Pages.Map;
+using HundunWorld.Game.UI.Ink.Pages.MartialRecord;
+using HundunWorld.Game.UI.Ink.Pages.Multiplayer;
+using HundunWorld.Game.UI.Ink.Pages.MountPet;
+using HundunWorld.Game.UI.Ink.Pages.Personal;
+using HundunWorld.Game.UI.Ink.Pages.Quest;
+using HundunWorld.Game.UI.Ink.Pages.PhotoMode;
 using HundunWorld.Game.UI.Ink.Pages.Reward;
+using HundunWorld.Game.UI.Ink.Pages.Sect;
+using HundunWorld.Game.UI.Ink.Pages.Settings;
+using HundunWorld.Game.UI.Ink.Pages.Shop;
+using HundunWorld.Game.UI.Ink.Pages.Social;
+using HundunWorld.Game.UI.Ink.Pages.Team;
+using HundunWorld.Game.UI.Ink.Pages.Timing;
 using HundunWorld.Game.UI.StyleSystem;
 using HundunWorld.Game;
 using System;
@@ -129,6 +154,20 @@ namespace HundunWorld.Game.UI
                 if (_localPlayerReady && _inkPageRouter?.CurrentPageDomId == InkPageDomIds.CombatHud && _activeCombatHud != null)
                 {
                     RefreshCombatHudDynamicData();
+                }
+
+                // 3. 快捷键 F9 打开 UI 画廊（Debug 菜单），便于查看所有 UI 页面
+                if (_inkPageRouter != null && Input.GetKeyDown(KeyboardKeys.F9))
+                {
+                    try
+                    {
+                        FlaxEngine.Debug.Log("[MainUIManager] F9 触发：打开 UI 画廊");
+                        NavigateToPage(InkPageDomIds.UIGallery);
+                    }
+                    catch (Exception galleryEx)
+                    {
+                        FlaxEngine.Debug.LogError($"[MainUIManager] 打开 UI 画廊失败: {galleryEx.Message}");
+                    }
                 }
             }
             catch (Exception ex)
@@ -433,10 +472,26 @@ namespace HundunWorld.Game.UI
                 _inkCanvas.GUI.AddChild(_inkPageRouter);
                 _inkPageRouter.Initialize(_inkPageShell, InkPageDomIds.CombatHud);
 
-                // 5. 注册全部 19 个页面
+                // 5. 关联粒子动效系统到路由器，订阅 PanelShow 事件自动触发墨韵涟漪。
+                //    粒子层由 InkPageShell 在构造时挂载（z-index 5，介于内容层与返回按钮之间），
+                //    此处仅需建立路由器 → 粒子系统的事件订阅链路。
+                if (_inkPageShell.ParticleSystem != null)
+                {
+                    _inkPageShell.ParticleSystem.Initialize(_inkPageRouter);
+                    // 默认开启环境微粒持续飘动，营造水墨江湖氛围。
+                    // 战斗 HUD 场景下可由 CombatHudPage 显式调用 StopAmbient 暂停。
+                    _inkPageShell.ParticleSystem.StartAmbient();
+                    FlaxEngine.Debug.Log("[MainUIManager] 粒子动效系统已初始化并开启环境微粒");
+                }
+                else
+                {
+                    FlaxEngine.Debug.LogWarning("[MainUIManager] InkPageShell.ParticleSystem 为 null，粒子动效将不可用");
+                }
+
+                // 6. 注册全部 19 个页面
                 RegisterInkPages();
 
-                // 6. 默认导航到战斗 HUD
+                // 7. 默认导航到战斗 HUD
                 FlaxEngine.Debug.Log("[MainUIManager] 准备导航到 CombatHud...");
                 bool navSuccess = NavigateToPage(InkPageDomIds.CombatHud);
                 if (!navSuccess)
@@ -606,6 +661,7 @@ namespace HundunWorld.Game.UI
             }
 
             _inkPageRouter.RegisterPage(InkPageDomIds.CombatHud, () => CreateCombatHud());
+            _inkPageRouter.RegisterPage(InkPageDomIds.CombatHudTraditional, () => CreateCombatHudTraditional());
             _inkPageRouter.RegisterPage(InkPageDomIds.Loading1, () => CreateLoadingPage1());
             _inkPageRouter.RegisterPage(InkPageDomIds.Loading2, () => CreateLoadingPage2());
             _inkPageRouter.RegisterPage(InkPageDomIds.ChapterTransition, () => CreateChapterTransition());
@@ -624,6 +680,59 @@ namespace HundunWorld.Game.UI
             _inkPageRouter.RegisterPage(InkPageDomIds.Acupoint, () => CreateAcupoint());
             _inkPageRouter.RegisterPage(InkPageDomIds.Qte, () => CreateQte());
             _inkPageRouter.RegisterPage(InkPageDomIds.RewardLevelUp, () => CreateRewardLevelUp());
+            _inkPageRouter.RegisterPage(InkPageDomIds.PopupVerification, () => CreatePopupVerification());
+            _inkPageRouter.RegisterPage(InkPageDomIds.PopupMartialArts, () => CreatePopupMartialArts());
+            _inkPageRouter.RegisterPage(InkPageDomIds.PopupSkillRealization, () => CreatePopupSkillRealization());
+            _inkPageRouter.RegisterPage(InkPageDomIds.PopupMartialDetail, () => CreatePopupMartialDetail());
+            _inkPageRouter.RegisterPage(InkPageDomIds.PopupGuideSide, () => CreatePopupGuideSide());
+            _inkPageRouter.RegisterPage(InkPageDomIds.PopupBestiarySide, () => CreatePopupBestiarySide());
+
+            // 注册新增页面（串联所有 UI）
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavAppearance, () => CreateMenuAppearance());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavActivities, () => CreateMenuActivities());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavMail, () => CreateMenuMail());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavSect, () => CreateMenuSect());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavTeam, () => CreateMenuTeam());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavBestiary, () => CreateMenuBestiary());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavBattlePass, () => CreateMenuBattlePass());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavGacha, () => CreateMenuGacha());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavLivelihood, () => CreateMenuLivelihood());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavPersonalInfo, () => CreateMenuPersonalInfo());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavMartialRecord, () => CreateMenuMartialRecord());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavCasualMode, () => CreateMenuCasualMode());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavTime, () => CreateMenuTime());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavShopRare, () => CreateShopRareItems());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavMultiplayer, () => CreateMultiplayer());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavPhotoMode, () => CreatePhotoMode());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavElementVision, () => CreateElementVision());
+            _inkPageRouter.RegisterPage(InkPageDomIds.CcFaceCustomize, () => CreateCcFaceCustomize());
+            _inkPageRouter.RegisterPage(InkPageDomIds.CcNaming, () => CreateCcNaming());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavSettingsAudio, () => CreateSettingsAudio());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavEquipment, () => CreateMenuEquipment());
+            _inkPageRouter.RegisterPage(InkPageDomIds.UIGallery, () =>CreateUIGallery());
+
+            // === 角色与背包子系统（game-ui-system 设计方案要求的 6 个页面） ===
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavCharacterPanel, () => CreateCharacterPanelPage());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavSkillPanel, () => CreateSkillPanelPage());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavInventory, () => CreateInventoryPage());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavEquipmentEnhance, () => CreateEquipmentEnhancePage());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavCrafting, () => CreateCraftingPage());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavMountPet, () => CreateMountPetPage());
+
+            // === 任务与技能子系统（game-ui-system 设计方案要求的 4 个页面） ===
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavQuestLog, () => CreateQuestLogPage());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavWorldMap, () => CreateWorldMapPage());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavCompass, () => CreateCompassPage());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavDungeonEntry, () => CreateDungeonEntryPage());
+
+            // === 社交与商城子系统（game-ui-system 设计方案要求的 7 个页面） ===
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavSocialGuild, () => CreateSocialGuildPage());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavFriends, () => CreateFriendsPage());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavSocialMail, () => CreateSocialMailPage());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavMentor, () => CreateMentorPage());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavLeaderboard, () => CreateLeaderboardPage());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavAchievement, () => CreateAchievementPage());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavSocialShop, () => CreateSocialShopPage());
         }
 
         /// <summary>
@@ -830,11 +939,17 @@ namespace HundunWorld.Game.UI
         /// 创建战斗 HUD 页面并订阅导航请求事件。
         /// 头像按钮、系统导航按钮触发 <see cref="CombatHudPage.NavigationRequested"/> 后，
         /// 由路由器执行 <see cref="InkPageRouter.NavigateTo"/> 跳转到目标子页面。
+        /// 同时注入粒子动效系统引用，供按钮点击触发金粉爆发反馈。
         /// </summary>
         /// <returns>CombatHudPage 实例</returns>
         private CombatHudPage CreateCombatHud()
         {
             var page = new CombatHudPage();
+            // 注入粒子系统引用，供按钮点击触发金粉反馈
+            if (_inkPageShell?.ParticleSystem != null)
+            {
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+            }
             page.NavigationRequested += (domId) =>
             {
                 try
@@ -864,6 +979,355 @@ namespace HundunWorld.Game.UI
                 FlaxEngine.Debug.Log("[MainUIManager] CombatHud 创建时本地玩家未就绪，等待重绑");
             }
             _activeCombatHud = page;
+            return page;
+        }
+
+        /// <summary>
+        /// 创建传统模式战斗 HUD 页面并订阅导航请求事件。
+        /// 与 <see cref="CreateCombatHud"/> 对应，承载更高密度的信息展示
+        /// （HP/MP/SP 三条数值条 / 8 格快捷栏 / 10 格技能槽 / 任务追踪面板）。
+        /// "沉浸模式"按钮点击触发 <see cref="InkPageDomIds.CombatHud"/> 返回沉浸式 HUD。
+        /// 同样注入粒子动效系统引用供按钮金粉反馈。
+        /// </summary>
+        /// <returns>CombatHudTraditionalPage 实例</returns>
+        private CombatHudTraditionalPage CreateCombatHudTraditional()
+        {
+            var page = new CombatHudTraditionalPage();
+            // 注入粒子系统引用
+            if (_inkPageShell?.ParticleSystem != null)
+            {
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+            }
+            page.NavigationRequested += (domId) =>
+            {
+                try
+                {
+                    NavigateToPage(domId);
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] CombatHudTraditional 导航失败 ({domId}): {ex.Message}");
+                }
+            };
+            return page;
+        }
+
+        // ===============================================================
+        // 角色与背包子系统：6 个页面工厂（game-ui-system 设计方案）
+        // ===============================================================
+
+        /// <summary>
+        /// 创建角色面板页面（character-panel.html）。
+        /// 注入粒子动效系统引用供按钮金粉反馈，订阅 NavigationRequested 转发至路由器。
+        /// </summary>
+        private CharacterPanelPage CreateCharacterPanelPage()
+        {
+            var page = new CharacterPanelPage();
+            if (_inkPageShell?.ParticleSystem != null)
+            {
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+            }
+            page.NavigationRequested += (domId) =>
+            {
+                try { NavigateToPage(domId); }
+                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] CharacterPanel 导航失败 ({domId}): {ex.Message}"); }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建武学技能面板页面（skill-panel.html）。
+        /// </summary>
+        private SkillPanelPage CreateSkillPanelPage()
+        {
+            var page = new SkillPanelPage();
+            if (_inkPageShell?.ParticleSystem != null)
+            {
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+            }
+            page.NavigationRequested += (domId) =>
+            {
+                try { NavigateToPage(domId); }
+                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] SkillPanel 导航失败 ({domId}): {ex.Message}"); }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建背包行囊页面（inventory.html）。
+        /// </summary>
+        private InventoryPage CreateInventoryPage()
+        {
+            var page = new InventoryPage();
+            if (_inkPageShell?.ParticleSystem != null)
+            {
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+            }
+            page.NavigationRequested += (domId) =>
+            {
+                try { NavigateToPage(domId); }
+                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] Inventory 导航失败 ({domId}): {ex.Message}"); }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建装备强化页面（equipment-enhance.html）。
+        /// </summary>
+        private EquipmentEnhancePage CreateEquipmentEnhancePage()
+        {
+            var page = new EquipmentEnhancePage();
+            if (_inkPageShell?.ParticleSystem != null)
+            {
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+            }
+            page.NavigationRequested += (domId) =>
+            {
+                try { NavigateToPage(domId); }
+                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] EquipmentEnhance 导航失败 ({domId}): {ex.Message}"); }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建制造技艺页面（crafting.html）。
+        /// </summary>
+        private CraftingPage CreateCraftingPage()
+        {
+            var page = new CraftingPage();
+            if (_inkPageShell?.ParticleSystem != null)
+            {
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+            }
+            page.NavigationRequested += (domId) =>
+            {
+                try { NavigateToPage(domId); }
+                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] Crafting 导航失败 ({domId}): {ex.Message}"); }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建坐骑灵兽页面（mount-pet.html）。
+        /// </summary>
+        private MountPetPage CreateMountPetPage()
+        {
+            var page = new MountPetPage();
+            if (_inkPageShell?.ParticleSystem != null)
+            {
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+            }
+            page.NavigationRequested += (domId) =>
+            {
+                try { NavigateToPage(domId); }
+                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] MountPet 导航失败 ({domId}): {ex.Message}"); }
+            };
+            return page;
+        }
+
+        // ===============================================================
+        // 任务与技能子系统：4 个页面工厂（game-ui-system 设计方案）
+        // ===============================================================
+
+        /// <summary>
+        /// 创建江湖任务志页面（quest-log.html）。
+        /// </summary>
+        private QuestLogPage CreateQuestLogPage()
+        {
+            var page = new QuestLogPage();
+            if (_inkPageShell?.ParticleSystem != null)
+            {
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+            }
+            page.NavigationRequested += (domId) =>
+            {
+                try { NavigateToPage(domId); }
+                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] QuestLog 导航失败 ({domId}): {ex.Message}"); }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建世界地图页面（world-map.html）。
+        /// </summary>
+        private WorldMapPage CreateWorldMapPage()
+        {
+            var page = new WorldMapPage();
+            if (_inkPageShell?.ParticleSystem != null)
+            {
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+            }
+            page.NavigationRequested += (domId) =>
+            {
+                try { NavigateToPage(domId); }
+                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] WorldMap 导航失败 ({domId}): {ex.Message}"); }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建指南针页面（compass.html）。
+        /// </summary>
+        private CompassPage CreateCompassPage()
+        {
+            var page = new CompassPage();
+            if (_inkPageShell?.ParticleSystem != null)
+            {
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+            }
+            page.NavigationRequested += (domId) =>
+            {
+                try { NavigateToPage(domId); }
+                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] Compass 导航失败 ({domId}): {ex.Message}"); }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建江湖秘境入口页面（dungeon-entry.html）。
+        /// </summary>
+        private DungeonEntryPage CreateDungeonEntryPage()
+        {
+            var page = new DungeonEntryPage();
+            if (_inkPageShell?.ParticleSystem != null)
+            {
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+            }
+            page.NavigationRequested += (domId) =>
+            {
+                try { NavigateToPage(domId); }
+                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] DungeonEntry 导航失败 ({domId}): {ex.Message}"); }
+            };
+            return page;
+        }
+
+        // ===============================================================
+        // 社交与商城子系统：7 个页面工厂（game-ui-system 设计方案）
+        // ===============================================================
+
+        /// <summary>
+        /// 创建江湖门派页面（social-guild.html）。
+        /// </summary>
+        private SocialGuildPage CreateSocialGuildPage()
+        {
+            var page = new SocialGuildPage();
+            if (_inkPageShell?.ParticleSystem != null)
+            {
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+            }
+            page.NavigationRequested += (domId) =>
+            {
+                try { NavigateToPage(domId); }
+                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] SocialGuild 导航失败 ({domId}): {ex.Message}"); }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建好友列表页面（friends.html）。
+        /// </summary>
+        private FriendsPage CreateFriendsPage()
+        {
+            var page = new FriendsPage();
+            if (_inkPageShell?.ParticleSystem != null)
+            {
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+            }
+            page.NavigationRequested += (domId) =>
+            {
+                try { NavigateToPage(domId); }
+                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] Friends 导航失败 ({domId}): {ex.Message}"); }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建飞鸽传书页面（mail.html）。
+        /// </summary>
+        private SocialMailPage CreateSocialMailPage()
+        {
+            var page = new SocialMailPage();
+            if (_inkPageShell?.ParticleSystem != null)
+            {
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+            }
+            page.NavigationRequested += (domId) =>
+            {
+                try { NavigateToPage(domId); }
+                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] SocialMail 导航失败 ({domId}): {ex.Message}"); }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建师徒传承页面（mentor.html）。
+        /// </summary>
+        private MentorPage CreateMentorPage()
+        {
+            var page = new MentorPage();
+            if (_inkPageShell?.ParticleSystem != null)
+            {
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+            }
+            page.NavigationRequested += (domId) =>
+            {
+                try { NavigateToPage(domId); }
+                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] Mentor 导航失败 ({domId}): {ex.Message}"); }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建江湖风云榜页面（leaderboard.html）。
+        /// </summary>
+        private LeaderboardPage CreateLeaderboardPage()
+        {
+            var page = new LeaderboardPage();
+            if (_inkPageShell?.ParticleSystem != null)
+            {
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+            }
+            page.NavigationRequested += (domId) =>
+            {
+                try { NavigateToPage(domId); }
+                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] Leaderboard 导航失败 ({domId}): {ex.Message}"); }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建江湖百艺录（成就）页面（achievement.html）。
+        /// </summary>
+        private AchievementPage CreateAchievementPage()
+        {
+            var page = new AchievementPage();
+            if (_inkPageShell?.ParticleSystem != null)
+            {
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+            }
+            page.NavigationRequested += (domId) =>
+            {
+                try { NavigateToPage(domId); }
+                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] Achievement 导航失败 ({domId}): {ex.Message}"); }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 创建江湖商城页面（shop.html）。
+        /// </summary>
+        private SocialShopPage CreateSocialShopPage()
+        {
+            var page = new SocialShopPage();
+            if (_inkPageShell?.ParticleSystem != null)
+            {
+                page.ParticleSystem = _inkPageShell.ParticleSystem;
+            }
+            page.NavigationRequested += (domId) =>
+            {
+                try { NavigateToPage(domId); }
+                catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] SocialShop 导航失败 ({domId}): {ex.Message}"); }
+            };
             return page;
         }
 
@@ -970,6 +1434,28 @@ namespace HundunWorld.Game.UI
                     FlaxEngine.Debug.LogError($"[MainUIManager] PopupItemAcquired 确认失败: {ex.Message}");
                 }
             };
+            page.ViewDetail += () =>
+            {
+                try
+                {
+                    FlaxEngine.Debug.Log("[MainUIManager] PopupItemAcquired 查看详情");
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] PopupItemAcquired 查看详情失败: {ex.Message}");
+                }
+            };
+            page.Closed += () =>
+            {
+                try
+                {
+                    _inkPageRouter?.NavigateToHud();
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] PopupItemAcquired 关闭失败: {ex.Message}");
+                }
+            };
             return page;
         }
 
@@ -990,6 +1476,28 @@ namespace HundunWorld.Game.UI
                 catch (Exception ex)
                 {
                     FlaxEngine.Debug.LogError($"[MainUIManager] PopupMessage 关闭失败: {ex.Message}");
+                }
+            };
+            page.Replied += () =>
+            {
+                try
+                {
+                    FlaxEngine.Debug.Log("[MainUIManager] PopupMessage 回复");
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] PopupMessage 回复失败: {ex.Message}");
+                }
+            };
+            page.Favorited += () =>
+            {
+                try
+                {
+                    FlaxEngine.Debug.Log("[MainUIManager] PopupMessage 收藏");
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] PopupMessage 收藏失败: {ex.Message}");
                 }
             };
             return page;
@@ -1266,6 +1774,310 @@ namespace HundunWorld.Game.UI
                 }
             };
             return page;
+        }
+
+        private PopupVerification CreatePopupVerification()
+        {
+            return new PopupVerification();
+        }
+
+        private PopupMartialArts CreatePopupMartialArts()
+        {
+            return new PopupMartialArts();
+        }
+
+        private PopupSkillRealization CreatePopupSkillRealization()
+        {
+            return new PopupSkillRealization();
+        }
+
+        private PopupMartialDetail CreatePopupMartialDetail()
+        {
+            return new PopupMartialDetail();
+        }
+
+        private PopupGuideSide CreatePopupGuideSide()
+        {
+            return new PopupGuideSide();
+        }
+
+        private PopupBestiarySide CreatePopupBestiarySide()
+        {
+            return new PopupBestiarySide();
+        }
+
+        // ===================================================================
+        // 新增页面工厂方法（串联所有 UI）
+        // =======================================================================
+
+        /// <summary>
+        /// 创建外观菜单页面。
+        /// </summary>
+        private MenuAppearancePage CreateMenuAppearance()
+        {
+            var page = new MenuAppearancePage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建活动菜单页面。
+        /// </summary>
+        private MenuActivitiesPage CreateMenuActivities()
+        {
+            var page = new MenuActivitiesPage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建邮件菜单页面。
+        /// </summary>
+        private MenuMailPage CreateMenuMail()
+        {
+            var page = new MenuMailPage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建门派菜单页面。
+        /// </summary>
+        private MenuSectPage CreateMenuSect()
+        {
+            var page = new MenuSectPage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建组队菜单页面。
+        /// </summary>
+        private MenuTeamPage CreateMenuTeam()
+        {
+            var page = new MenuTeamPage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建博物志菜单页面。
+        /// </summary>
+        private MenuBestiaryPage CreateMenuBestiary()
+        {
+            var page = new MenuBestiaryPage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建通行证菜单页面。
+        /// </summary>
+        private MenuBattlePassPage CreateMenuBattlePass()
+        {
+            var page = new MenuBattlePassPage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建抽卡菜单页面。
+        /// </summary>
+        private MenuGachaPage CreateMenuGacha()
+        {
+            var page = new MenuGachaPage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建生活技能菜单页面。
+        /// </summary>
+        private MenuLivelihoodPage CreateMenuLivelihood()
+        {
+            var page = new MenuLivelihoodPage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建个人信息菜单页面。
+        /// </summary>
+        private MenuPersonalInfoPage CreateMenuPersonalInfo()
+        {
+            var page = new MenuPersonalInfoPage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建武学记录菜单页面。
+        /// </summary>
+        private MenuMartialRecordPage CreateMenuMartialRecord()
+        {
+            var page = new MenuMartialRecordPage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建休闲模式菜单页面。
+        /// </summary>
+        private MenuCasualModePage CreateMenuCasualMode()
+        {
+            var page = new MenuCasualModePage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建时间菜单页面。
+        /// </summary>
+        private MenuTimePage CreateMenuTime()
+        {
+            var page = new MenuTimePage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建奇珍阁菜单页面。
+        /// </summary>
+        private ShopRareItemsPage CreateShopRareItems()
+        {
+            var page = new ShopRareItemsPage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建多人模式菜单页面。
+        /// </summary>
+        private MultiplayerPage CreateMultiplayer()
+        {
+            var page = new MultiplayerPage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建拍照模式菜单页面。
+        /// </summary>
+        private PhotoModePage CreatePhotoMode()
+        {
+            var page = new PhotoModePage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建元素视野页面。
+        /// </summary>
+        private ElementVisionPage CreateElementVision()
+        {
+            var page = new ElementVisionPage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建创角捏脸页面。
+        /// </summary>
+        private CharacterFaceCustomizePage CreateCcFaceCustomize()
+        {
+            var page = new CharacterFaceCustomizePage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建创角命名页面。
+        /// </summary>
+        private CharacterNamingPage CreateCcNaming()
+        {
+            var page = new CharacterNamingPage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建音频设置子页面。
+        /// </summary>
+        private SettingsAudioPage CreateSettingsAudio()
+        {
+            var page = new SettingsAudioPage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建装备管理菜单页面。
+        /// </summary>
+        private MenuEquipmentPage CreateMenuEquipment()
+        {
+            var page = new MenuEquipmentPage();
+            HookNavigationRequested(page);
+            return page;
+        }
+
+        /// <summary>
+        /// 创建 UI 浏览器（Debug 菜单）页面，订阅导航请求事件。
+        /// 点击页面卡片后通过路由器跳转到对应页面。
+        /// </summary>
+        private UIGalleryPage CreateUIGallery()
+        {
+            var page = new UIGalleryPage();
+            page.NavigationRequested += (domId) =>
+            {
+                try
+                {
+                    NavigateToPage(domId);
+                }
+                catch (Exception ex)
+                {
+                    FlaxEngine.Debug.LogError($"[MainUIManager] UIGallery 导航失败 ({domId}): {ex.Message}");
+                }
+            };
+            return page;
+        }
+
+        /// <summary>
+        /// 通用：为页面的导航请求事件挂钩路由器跳转。
+        /// 适用于实现了 <c>NavigationRequested</c> 事件的页面（duck typing）。
+        /// </summary>
+        private void HookNavigationRequested(object page)
+        {
+            try
+            {
+                // 使用反射查找 NavigationRequested 事件
+                var type = page?.GetType();
+                if (type == null) return;
+                var ev = type.GetEvent("NavigationRequested");
+                if (ev == null) return;
+
+                // 构造 Action<string> 处理器
+                Action<string> handler = (domId) =>
+                {
+                    try
+                    {
+                        NavigateToPage(domId);
+                    }
+                    catch (Exception ex)
+                    {
+                        FlaxEngine.Debug.LogError($"[MainUIManager] {type.Name} 导航失败 ({domId}): {ex.Message}");
+                    }
+                };
+
+                // 将 Action<string> 转换为事件类型
+                var delegateType = ev.EventHandlerType;
+                var converter = typeof(Action<string>).GetMethod("Invoke");
+                var typedHandler = System.Delegate.CreateDelegate(delegateType, handler.Target, handler.Method);
+                ev.AddEventHandler(page, typedHandler);
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogWarning($"[MainUIManager] HookNavigationRequested 失败: {ex.Message}");
+            }
         }
 
         /// <summary>

@@ -27,7 +27,7 @@ namespace HundunWorld.Game.UI.Components
         {
             // 使用固定宽度
             Size = new Float2(DEFAULT_WIDTH, DEFAULT_HEIGHT);
-            BackgroundColor = new Color(0.12f, 0.12f, 0.15f, 0.95f);
+            BackgroundColor = UIStyleTokens.WithAlpha(UIStyleTokens.BgElevated, 0.95f); // --ink-bg-elevated
             
             // 图标面板
             _iconPanel = new Panel
@@ -44,7 +44,7 @@ namespace HundunWorld.Game.UI.Components
             {
                 Location = new Float2(42, 5),
                 Size = new Float2(messageWidth, DEFAULT_HEIGHT - 10),
-                TextColor = Color.White,
+                TextColor = UIStyleTokens.TextPrimary, // --ink-text-primary（禁纯白，规范 §1.5）
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
                 Wrapping = TextWrapping.WrapWords,
@@ -81,19 +81,19 @@ namespace HundunWorld.Game.UI.Components
             switch (type)
             {
                 case ToastType.Success:
-                    iconColor = Color.Green;
+                    iconColor = UIStyleTokens.StatusSuccess;
                     iconText = "✓";
                     break;
                 case ToastType.Warning:
-                    iconColor = Color.Orange;
+                    iconColor = UIStyleTokens.StatusAlert;
                     iconText = "⚠";
                     break;
                 case ToastType.Error:
-                    iconColor = Color.Red;
+                    iconColor = UIStyleTokens.StatusError;
                     iconText = "✗";
                     break;
                 default:
-                    iconColor = Color.Blue;
+                    iconColor = UIStyleTokens.StatusInfo;
                     iconText = "ℹ";
                     break;
             }
@@ -117,16 +117,16 @@ namespace HundunWorld.Game.UI.Components
             switch (type)
             {
                 case ToastType.Success:
-                    borderColor = Color.Green;
+                    borderColor = UIStyleTokens.StatusSuccess;
                     break;
                 case ToastType.Warning:
-                    borderColor = Color.Orange;
+                    borderColor = UIStyleTokens.StatusAlert;
                     break;
                 case ToastType.Error:
-                    borderColor = Color.Red;
+                    borderColor = UIStyleTokens.StatusError;
                     break;
                 default:
-                    borderColor = Color.Blue;
+                    borderColor = UIStyleTokens.StatusInfo;
                     break;
             }
             

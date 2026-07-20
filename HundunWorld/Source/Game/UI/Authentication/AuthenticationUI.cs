@@ -87,7 +87,7 @@ namespace HundunWorld.Game.UI.Authentication
                         Scripting.InvokeOnUpdate(() =>
                         {
                             if (_loginPanel != null)
-                                _loginPanel.SetStatus("登录已过期，请重新登录", Color.Orange);
+                                _loginPanel.SetStatus("登录已过期，请重新登录", UIStyleTokens.StatusWarning);
                         });
                     }
                 }
@@ -213,11 +213,11 @@ namespace HundunWorld.Game.UI.Authentication
             switch (newScene)
             {
                 case SceneType.Login:
-                    if (_loginPanel != null) _loginPanel.SetStatus("请输入账户信息", Color.Yellow);
+                    if (_loginPanel != null) _loginPanel.SetStatus("请输入账户信息", UIStyleTokens.StatusAlert);
                     await ShowLoginPanel();
                     break;
                 case SceneType.Register:
-                    if (_registerPanel != null) _registerPanel.SetStatus("请输入注册信息", Color.Yellow);
+                    if (_registerPanel != null) _registerPanel.SetStatus("请输入注册信息", UIStyleTokens.StatusAlert);
                     ShowRegisterPanel();
                     break;
                 case SceneType.CharacterSelection:
@@ -251,7 +251,7 @@ namespace HundunWorld.Game.UI.Authentication
         private void OnErrorOccurred(string errorMessage)
         {
             if (_stateManager.CurrentScene == SceneType.Start || _stateManager.CurrentScene == SceneType.Login)
-                _loginPanel.SetStatus(errorMessage,Color.DarkRed);
+                _loginPanel.SetStatus(errorMessage,UIStyleTokens.StatusError);
             new ToastManager().ShowError(errorMessage);
         }
 
@@ -329,8 +329,8 @@ namespace HundunWorld.Game.UI.Authentication
                 // 网络未连接时仍然启用按钮，点击后会由业务逻辑尝试建立连接
                 _loginPanel?.EnableButtons();
                 _registerPanel?.EnableButtons();
-                _loginPanel?.SetStatus($"网络未连接，点击登录将尝试连接", Color.Yellow);
-                _registerPanel?.SetStatus($"网络未连接，点击注册将尝试连接", Color.Yellow);
+                _loginPanel?.SetStatus($"网络未连接，点击登录将尝试连接", UIStyleTokens.StatusAlert);
+                _registerPanel?.SetStatus($"网络未连接，点击注册将尝试连接", UIStyleTokens.StatusAlert);
                 FlaxEngine.Debug.Log($"[AuthenticationUI] 网络未连接，但保持按钮可点击以便触发重连");
             }
         }
@@ -431,7 +431,7 @@ namespace HundunWorld.Game.UI.Authentication
             try
             {
                 // 更新状态为正在登录
-                loginPanel.SetStatus("正在尝试登录...", Color.Yellow);
+                loginPanel.SetStatus("正在尝试登录...", UIStyleTokens.StatusAlert);
 
                 AuthenticationManager.Instance.Passport = new PassportInfo
                 {
@@ -449,16 +449,16 @@ namespace HundunWorld.Game.UI.Authentication
                 // 根据结果更新提示信息（仅更新状态标签，不弹窗）
                 if (result.IsSuccess)
                 {
-                    loginPanel.SetStatus("正在登录...", Color.Yellow);
+                    loginPanel.SetStatus("正在登录...", UIStyleTokens.StatusAlert);
                 }
                 else
                 {
-                    loginPanel.SetStatus(result.ErrorMessage ?? "登录失败，请检查用户名和密码", Color.Red);
+                    loginPanel.SetStatus(result.ErrorMessage ?? "登录失败，请检查用户名和密码", UIStyleTokens.StatusError);
                 }
             }
             catch (Exception ex)
             {
-                loginPanel.SetStatus($"错误: {ex.Message}", Color.Red);
+                loginPanel.SetStatus($"错误: {ex.Message}", UIStyleTokens.StatusError);
                 _errorManager.HandleError($"登录过程中发生错误: {ex.Message}", ErrorType.Unknown, ErrorSeverity.Error, "AuthenticationUI");
             }
             finally
@@ -486,14 +486,14 @@ namespace HundunWorld.Game.UI.Authentication
             {
 
                 // 更新状态为正在注册
-                registerPanel.SetStatus("正在注册...", Color.Yellow);
+                registerPanel.SetStatus("正在注册...", UIStyleTokens.StatusAlert);
                 FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 状态已更新为正在注册");
 
                 // 验证输入
                 if (!registerPanel.ValidateInput())
                 {
                     FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 输入验证失败");
-                    registerPanel.SetStatus("请检查输入信息", Color.Red);
+                    registerPanel.SetStatus("请检查输入信息", UIStyleTokens.StatusError);
                     return;
                 }
                 FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 输入验证成功");
@@ -516,7 +516,7 @@ namespace HundunWorld.Game.UI.Authentication
                     AuthenticationManager.Instance.Passport.PassportId = registerPanel.UsernameInput.Text;
                     AuthenticationManager.Instance.Passport.Password = registerPanel.PasswordInput.Text;
 
-                    registerPanel.SetStatus("注册成功！请使用新账户登录", Color.Green);
+                    registerPanel.SetStatus("注册成功！请使用新账户登录", UIStyleTokens.StatusSuccess);
                     FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 注册成功，状态已更新");
                     //切换到登录界面，将新注册的用户名自动填入登录框,待数据处理完在跳转
                     //_stateManager.TransitionToScene(SceneType.Login);
@@ -524,13 +524,13 @@ namespace HundunWorld.Game.UI.Authentication
                 else
                 {
                     FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 注册失败: {result.ErrorMessage}");
-                    registerPanel.SetStatus(result.ErrorMessage ?? "注册失败，请稍后重试", Color.Red);
+                    registerPanel.SetStatus(result.ErrorMessage ?? "注册失败，请稍后重试", UIStyleTokens.StatusError);
                 }
             }
             catch (Exception ex)
             {
                 FlaxEngine.Debug.LogError($"[OnRegisterButtonClicked] 注册过程中发生异常: {ex.Message}\n{ex.StackTrace}");
-                registerPanel.SetStatus($"错误: {ex.Message}", Color.Red);
+                registerPanel.SetStatus($"错误: {ex.Message}", UIStyleTokens.StatusError);
                 _errorManager.HandleError($"注册过程中发生错误: {ex.Message}", ErrorType.Unknown, ErrorSeverity.Error, "AuthenticationUI");
             }
             finally
@@ -615,13 +615,13 @@ namespace HundunWorld.Game.UI.Authentication
 
             if (response.IsSuccess)
             {
-                _loginPanel.SetStatus("登录成功！正在加载...", Color.Green);
+                _loginPanel.SetStatus("登录成功！正在加载...", UIStyleTokens.StatusSuccess);
                 _loginPanel.Enabled = false; // 禁用交互，等待场景切换
                 _animationManager?.StopAnimations(_loginPanel);
             }
             else
             {
-                _loginPanel.SetStatus(response.Message ?? "登录失败，请检查账户信息", Color.Red);
+                _loginPanel.SetStatus(response.Message ?? "登录失败，请检查账户信息", UIStyleTokens.StatusError);
                 _animationManager?.Shake(_loginPanel, 0.5f);
                 _loginPanel.Enabled = true;
             }
@@ -667,7 +667,7 @@ namespace HundunWorld.Game.UI.Authentication
                     // 更新状态标签显示错误信息并播放错误动画
                     if (_registerPanel != null)
                     {
-                        _registerPanel.SetStatus(response.ErrorMessage ?? "注册失败，请稍后重试", Color.Red);
+                        _registerPanel.SetStatus(response.ErrorMessage ?? "注册失败，请稍后重试", UIStyleTokens.StatusError);
                     }
 
                     if (_animationManager != null && _registerPanel != null)
@@ -810,7 +810,7 @@ namespace HundunWorld.Game.UI.Authentication
             _registerPanel.Location = new Float2(-_registerPanel.Size.X / 2f, 0);
             _registerPanel.Scale = Float2.One;
 
-            _registerPanel.BackgroundColor = ChineseClassicalTheme.PanelColor;
+            _registerPanel.BackgroundColor = UIStyleTokens.BgPanel; // 墨水深背景面板（--ink-bg-panel）
 
             _mainContainer.Visible = true;
             _mainContainer.Enabled = true;

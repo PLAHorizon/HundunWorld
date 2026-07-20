@@ -82,6 +82,178 @@ namespace HundunWorld.Game.UI.Ink
 
         /// <summary>等级提升奖励（属性对比）</summary>
         public const string RewardLevelUp = "reward-level-up";
+
+        /// <summary>任务验证完成弹窗</summary>
+        public const string PopupVerification = "popup-verification";
+
+        /// <summary>奇术详情弹窗</summary>
+        public const string PopupMartialArts = "popup-martial-arts";
+
+        /// <summary>心法领悟弹窗</summary>
+        public const string PopupSkillRealization = "popup-skill-realization";
+
+        /// <summary>武学详情弹窗</summary>
+        public const string PopupMartialDetail = "popup-martial-detail";
+
+        /// <summary>引导侧边栏弹窗</summary>
+        public const string PopupGuideSide = "popup-guide-side";
+
+        /// <summary>图鉴侧边栏弹窗</summary>
+        public const string PopupBestiarySide = "popup-bestiary-side";
+
+        /// <summary>外观菜单（发型/面容/服饰/武器/坐骑/挂件）</summary>
+        public const string NavAppearance = "nav-appearance";
+
+        /// <summary>活动菜单（限时活动列表+详情）</summary>
+        public const string NavActivities = "nav-activities";
+
+        /// <summary>邮件菜单（邮件列表+详情）</summary>
+        public const string NavMail = "nav-mail";
+
+        /// <summary>门派菜单（门派列表+详情）</summary>
+        public const string NavSect = "nav-sect";
+
+        /// <summary>组队菜单（队伍成员+邀请面板）</summary>
+        public const string NavTeam = "nav-team";
+
+        /// <summary>博物志菜单（收集品网格+详情）</summary>
+        public const string NavBestiary = "nav-bestiary";
+
+        /// <summary>通行证菜单（战令进度+奖励列表）</summary>
+        public const string NavBattlePass = "nav-battle-pass";
+
+        /// <summary>抽卡菜单（祈愿池+抽卡结果）</summary>
+        public const string NavGacha = "nav-gacha";
+
+        /// <summary>生活菜单（采集/制作/钓鱼等）</summary>
+        public const string NavLivelihood = "nav-livelihood";
+
+        /// <summary>个人信息菜单（角色卡+统计信息）</summary>
+        public const string NavPersonalInfo = "nav-personal-info";
+
+        /// <summary>武学记录菜单（已学武学列表）</summary>
+        public const string NavMartialRecord = "nav-martial-record";
+
+        /// <summary>休闲模式菜单（活动卡片网格）</summary>
+        public const string NavCasualMode = "nav-casual-mode";
+
+        /// <summary>时间菜单（时辰系统）</summary>
+        public const string NavTime = "nav-time";
+
+        /// <summary>奇珍阁菜单（稀有商品）</summary>
+        public const string NavShopRare = "nav-shop-rare";
+
+        /// <summary>多人模式菜单（房间列表）</summary>
+        public const string NavMultiplayer = "nav-multiplayer";
+
+        /// <summary>拍照模式菜单（取景+滤镜）</summary>
+        public const string NavPhotoMode = "nav-photo-mode";
+
+        /// <summary>元素视野页面（高亮元素标记）</summary>
+        public const string NavElementVision = "nav-element-vision";
+
+        /// <summary>创角捏脸页面（参数调整）</summary>
+        public const string CcFaceCustomize = "cc-face-customize";
+
+        /// <summary>创角命名页面（姓名输入）</summary>
+        public const string CcNaming = "cc-naming";
+
+        /// <summary>音频设置子页面</summary>
+        public const string NavSettingsAudio = "nav-settings-audio";
+
+        /// <summary>UI 浏览器（Debug 菜单，用于查看所有 UI）</summary>
+        public const string UIGallery = "ui-gallery";
+
+        // ===================================================================
+        // game-ui-system 设计方案要求的 19 个页面 dom-id
+        // 按 4 大子系统分组：① 核心战斗 HUD ② 角色与背包 ③ 任务与技能 ④ 社交与商城
+        // 与现有 dom-id 并存，由 InkPageRouter 注册工厂后即可导航。
+        // =======================================================================
+
+        // --- ① 核心战斗 HUD ---
+
+        /// <summary>传统模式战斗 HUD — 对应 combat-hud-traditional.html（沉浸式 HUD 的传统布局变体）</summary>
+        public const string CombatHudTraditional = "combat-hud-traditional";
+
+        /// <summary>战斗模式切换按钮（沉浸式 ⇄ 传统式）— 触发 toggle-traditional 动作</summary>
+        public const string ToggleTraditional = "toggle-traditional";
+
+        // --- ② 角色与背包子系统 ---
+
+        /// <summary>角色面板 — 对应 character-panel.html，nav-character-v2 的别名（功能等价）</summary>
+        public const string NavCharacterPanel = "nav-character-panel";
+
+        /// <summary>武学技能面板 — 对应 skill-panel.html，经脉/心法/招式管理</summary>
+        public const string NavSkillPanel = "nav-skill-panel";
+
+        /// <summary>背包行囊 — 对应 inventory.html，物品网格 + 分类 + 详情</summary>
+        public const string NavInventory = "nav-inventory";
+
+        /// <summary>装备强化 — 对应 equipment-enhance.html，强化/镶嵌/精炼</summary>
+        public const string NavEquipmentEnhance = "nav-equipment-enhance";
+
+        /// <summary>制造技艺 — 对应 crafting.html，配方/材料/产出</summary>
+        public const string NavCrafting = "nav-crafting";
+
+        /// <summary>坐骑灵兽 — 对应 mount-pet.html，坐骑/宠物列表 + 详情</summary>
+        public const string NavMountPet = "nav-mount-pet";
+
+        // --- ③ 任务与技能子系统 ---
+
+        /// <summary>江湖任务志 — 对应 quest-log.html，主线/支线/日常/师门任务列表 + 详情</summary>
+        public const string NavQuestLog = "nav-quest-log";
+
+        /// <summary>世界地图 — 对应 world-map.html，区域/界碑/传送点</summary>
+        public const string NavWorldMap = "nav-world-map";
+
+        /// <summary>指南针 — 对应 compass.html，方位/POI/追踪</summary>
+        public const string NavCompass = "nav-compass";
+
+        /// <summary>江湖秘境入口 — 对应 dungeon-entry.html，副本列表 + 进入</summary>
+        public const string NavDungeonEntry = "nav-dungeon-entry";
+
+        // --- ④ 社交与商城子系统 ---
+
+        /// <summary>江湖门派（社交门派） — 对应 social-guild.html，门派列表 + 成员 + 申请</summary>
+        public const string NavSocialGuild = "nav-social-guild";
+
+        /// <summary>江湖商城 — 对应 shop.html，商品分类 + 商品网格 + 购物车结算</summary>
+        public const string NavSocialShop = "nav-social-shop";
+
+        /// <summary>江湖交游（好友列表） — 对应 friends.html</summary>
+        public const string NavFriends = "nav-friends";
+
+        /// <summary>飞鸽传书（社交邮件） — 对应 mail.html，邮件分类 + 列表 + 详情</summary>
+        public const string NavSocialMail = "nav-social-mail";
+
+        /// <summary>师徒传承 — 对应 mentor.html，师徒任务/奖励</summary>
+        public const string NavMentor = "nav-mentor";
+
+        /// <summary>江湖风云榜 — 对应 leaderboard.html，排名/对比</summary>
+        public const string NavLeaderboard = "nav-leaderboard";
+
+        /// <summary>江湖百艺录（成就） — 对应 achievement.html，成就分类 + 进度</summary>
+        public const string NavAchievement = "nav-achievement";
+
+        // --- 跨页快捷跳转动作（不走 HUD 中转的合法直达路径） ---
+        // friends → mail / mentor → dungeon-entry / inventory → equipment-enhance
+        // character-panel → skill-panel / combat-hud 小地图 → world-map
+        // 这些跨页跳转触发 panel:show 自定义事件，由粒子系统接墨韵涟漪反馈。
+
+        /// <summary>跨页直达：好友详情 → 飞鸽传书（撰写邮件）</summary>
+        public const string ActionFriendsToMail = "action-friends-to-mail";
+
+        /// <summary>跨页直达：师徒周常 → 江湖秘境</summary>
+        public const string ActionMentorToDungeon = "action-mentor-to-dungeon";
+
+        /// <summary>跨页直达：背包选中装备 → 装备强化</summary>
+        public const string ActionInventoryToEnhance = "action-inventory-to-enhance";
+
+        /// <summary>跨页直达：角色面板经脉 → 武学技能</summary>
+        public const string ActionCharToSkill = "action-char-to-skill";
+
+        /// <summary>跨页直达：HUD 小地图 → 世界地图</summary>
+        public const string ActionHudToWorldMap = "action-hud-to-world-map";
     }
 
     // =======================================================================
@@ -262,6 +434,18 @@ namespace HundunWorld.Game.UI.Ink
                 _shell.ShowBackgroundLayer(!isHud);
                 _shell.ShowVignette(!isHud);
 
+                // 触发 PanelShow 事件：通知粒子系统在屏幕中心绘制墨韵涟漪。
+                // 屏幕中心坐标由粒子系统在事件回调中通过 PointFromScreen 转换为控件局部坐标，
+                // 此处传入 Zero 表示触发点未知，由粒子系统回退到自身中心。
+                try
+                {
+                    PanelShow?.Invoke(domId, Float2.Zero);
+                }
+                catch (Exception panelEx)
+                {
+                    FlaxEngine.Debug.LogWarning($"[InkPageRouter] PanelShow 事件订阅者抛出异常 (domId={domId}): {panelEx.Message}");
+                }
+
                 FlaxEngine.Debug.Log($"[InkPageRouter] 导航到页面: {domId}, isHud={isHud}, bg={!isHud}, vignette={!isHud}");
                 return true;
             }
@@ -308,6 +492,100 @@ namespace HundunWorld.Game.UI.Ink
             catch (Exception ex)
             {
                 FlaxEngine.Debug.LogError($"[InkPageRouter] OnBackButtonClicked 失败: {ex.Message}");
+            }
+        }
+
+        // ===================================================================
+        // 跨页快捷跳转支持（game-ui-system §1.2 跨页跳转约定）
+        // 不走 HUD 中转的合法直达路径，触发 PanelShow 事件供粒子系统接墨韵涟漪反馈。
+        // =======================================================================
+
+        /// <summary>
+        /// 面板显示事件。
+        /// <para>
+        /// 任何 <see cref="NavigateTo"/> / <see cref="NavigateToHud"/> / <see cref="NavigateToAction"/>
+        /// 成功后触发，供 <c>InkParticleSystem</c> 订阅并在目标位置绘制墨韵涟漪。
+        /// 参数：目标 dom-id，目标屏幕坐标（若未知则传 <see cref="Float2.Zero"/>）。
+        /// </para>
+        /// </summary>
+        public event Action<string, Float2> PanelShow;
+
+        /// <summary>
+        /// 跨页直达动作。
+        /// <para>
+        /// 合法直达路径（详见 <see cref="InkPageDomIds.Action*"/> 常量）：
+        /// <list type="bullet">
+        ///   <item><see cref="InkPageDomIds.ActionFriendsToMail"/>：好友 → 飞鸽传书</item>
+        ///   <item><see cref="InkPageDomIds.ActionMentorToDungeon"/>：师徒 → 江湖秘境</item>
+        ///   <item><see cref="InkPageDomIds.ActionInventoryToEnhance"/>：背包 → 装备强化</item>
+        ///   <item><see cref="InkPageDomIds.ActionCharToSkill"/>：角色面板 → 武学技能</item>
+        ///   <item><see cref="InkPageDomIds.ActionHudToWorldMap"/>：HUD 小地图 → 世界地图</item>
+        /// </list>
+        /// 其余跨页跳转一律视为违规，记日志返回 false。
+        /// </para>
+        /// </summary>
+        /// <param name="actionDomId">动作 dom-id（必须为 Action* 常量）</param>
+        /// <param name="triggerScreenPos">触发点屏幕坐标（用于粒子涟漪定位）</param>
+        /// <returns>跳转是否成功</returns>
+        public bool NavigateToAction(string actionDomId, Float2 triggerScreenPos = default)
+        {
+            try
+            {
+                string targetDomId = actionDomId switch
+                {
+                    InkPageDomIds.ActionFriendsToMail => InkPageDomIds.NavMail,
+                    InkPageDomIds.ActionMentorToDungeon => InkPageDomIds.NavDungeonEntry,
+                    InkPageDomIds.ActionInventoryToEnhance => InkPageDomIds.NavEquipmentEnhance,
+                    InkPageDomIds.ActionCharToSkill => InkPageDomIds.NavSkillPanel,
+                    InkPageDomIds.ActionHudToWorldMap => InkPageDomIds.NavWorldMap,
+                    _ => null
+                };
+
+                if (targetDomId == null)
+                {
+                    FlaxEngine.Debug.LogWarning($"[InkPageRouter] 非法的跨页跳转动作: {actionDomId}（其余跨页跳转必须经 HUD 中转）");
+                    return false;
+                }
+
+                // NavigateTo 内部已触发 PanelShow 事件（默认 Zero 触发点）。
+                // 若调用方提供了 triggerScreenPos（非 Zero），则覆盖触发一次带具体坐标的涟漪，
+                // 让粒子系统在按钮点击位置而非屏幕中心绘制涟漪，更贴合设计意图。
+                bool ok = NavigateTo(targetDomId);
+                if (ok && triggerScreenPos != Float2.Zero)
+                {
+                    try
+                    {
+                        PanelShow?.Invoke(targetDomId, triggerScreenPos);
+                    }
+                    catch (Exception panelEx)
+                    {
+                        FlaxEngine.Debug.LogWarning($"[InkPageRouter] NavigateToAction PanelShow 覆盖触发异常: {panelEx.Message}");
+                    }
+                }
+                return ok;
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[InkPageRouter] NavigateToAction 失败 (action={actionDomId}): {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 在 NavigateTo 成功后触发 PanelShow 事件。
+        /// 重写版本：导航完成后向订阅者广播目标 dom-id 与触发点坐标。
+        /// </summary>
+        /// <param name="domId">目标 dom-id</param>
+        /// <param name="triggerPos">触发点屏幕坐标（默认 Zero 表示未知）</param>
+        public void RaisePanelShow(string domId, Float2 triggerPos = default)
+        {
+            try
+            {
+                PanelShow?.Invoke(domId, triggerPos);
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[InkPageRouter] RaisePanelShow 失败: {ex.Message}");
             }
         }
     }

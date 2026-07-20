@@ -17,14 +17,14 @@ namespace HundunWorld.Game.UI
     /// </summary>
     public static class UIHelper
     {
-        // 默认样式配置 - 使用中国古典风格
-        public static readonly Color PrimaryColor = ChineseClassicalTheme.SecondaryColor; // 古典金
-        public static readonly Color SecondaryColor = ChineseClassicalTheme.PrimaryColor; // 墨青色
-        public static readonly Color DangerColor = ChineseClassicalTheme.AccentColor; // 朱砂红
-        public static readonly Color InfoColor = new Color(0.2f, 0.4f, 0.8f);
-        public static readonly Color BackgroundColor = ChineseClassicalTheme.BackgroundColor; // 雅致灰
-        public static readonly Color PanelColor = ChineseClassicalTheme.PanelColor; // 青石色
-        public static readonly Color InputColor = ChineseClassicalTheme.InputColor; // 深青色
+        // 默认样式配置 - 统一引用设计 Token（出处：game-ui-system/colors_and_type.css 水墨古风暗色覆盖）
+        public static readonly Color PrimaryColor = UIStyleTokens.GoldPrimary; // 鎏金主色（--ink-gold-primary）
+        public static readonly Color SecondaryColor = UIStyleTokens.JadePrimary; // 水墨青主色（--ink-jade-primary）
+        public static readonly Color DangerColor = UIStyleTokens.BloodPrimary; // 血色，危险操作（--ink-blood-primary）
+        public static readonly Color InfoColor = UIStyleTokens.StatusInfo; // 信息状态色（--status-primary-default）
+        public static readonly Color BackgroundColor = UIStyleTokens.BgPanel; // 半透明面板背景（--ink-bg-panel）
+        public static readonly Color PanelColor = UIStyleTokens.BgInk; // 墨水深背景面板（--ink-bg-ink）
+        public static readonly Color InputColor = UIStyleTokens.BgPaper; // 输入框背景（--ink-bg-paper）
 
         // 字体配置
         public static FontReference TitleFont => SetFont("Content/Fonts/Source_Han_Serif_SC_Light_Light.flax", 20);
@@ -202,7 +202,7 @@ namespace HundunWorld.Game.UI
         /// </summary>
         public static Button CreatePrimaryButton(string text)
         {
-            var button = CreateButton(text, ChineseClassicalTheme.SecondaryColor, Color.Black);
+            var button = CreateButton(text, UIStyleTokens.GoldPrimary, UIStyleTokens.TextInverse);
             ChineseClassicalTheme.ApplyVisualHierarchy(button, VisualHierarchy.Primary);
             return button;
         }
@@ -212,7 +212,7 @@ namespace HundunWorld.Game.UI
         /// </summary>
         public static Button CreateSecondaryButton(string text)
         {
-            var button = CreateButton(text, ChineseClassicalTheme.PrimaryColor, ChineseClassicalTheme.TextColor);
+            var button = CreateButton(text, UIStyleTokens.BgMist, UIStyleTokens.TextPrimary);
             ChineseClassicalTheme.ApplyVisualHierarchy(button, VisualHierarchy.Secondary);
             return button;
         }
@@ -222,7 +222,7 @@ namespace HundunWorld.Game.UI
         /// </summary>
         public static Button CreateDangerButton(string text)
         {
-            var button = CreateButton(text, ChineseClassicalTheme.AccentColor, ChineseClassicalTheme.TextColor);
+            var button = CreateButton(text, UIStyleTokens.BloodPrimary, UIStyleTokens.TextPrimary);
             ChineseClassicalTheme.ApplyVisualHierarchy(button, VisualHierarchy.Primary);
             return button;
         }
@@ -438,7 +438,7 @@ namespace HundunWorld.Game.UI
         /// <param name="panel">对话框面板</param>
         public static void ApplyDialogStyle(ContainerControl panel)
         {
-            panel.BackgroundColor = ChineseClassicalTheme.PanelColor;
+            panel.BackgroundColor = UIStyleTokens.BgInk; // ds-dialog §4.7：--ink-bg-ink
             ChineseClassicalTheme.ApplyChineseBorder(panel, ChineseBorderStyle.Elegant);
         }
 
@@ -566,12 +566,12 @@ namespace HundunWorld.Game.UI
             if (control is Button button)
             {
                 button.BackgroundColor = PrimaryColor;
-                button.TextColor = Color.White;
+                button.TextColor = UIStyleTokens.TextPrimary;
             }
             else if (control is TextBox textBox)
             {
                 textBox.BackgroundColor = InputColor;
-                textBox.TextColor = Color.White;
+                textBox.TextColor = UIStyleTokens.TextPrimary;
             }
             else if (control is Panel panel)
             {
@@ -579,7 +579,7 @@ namespace HundunWorld.Game.UI
             }
             else if (control is Label label)
             {
-                label.TextColor = Color.White;
+                label.TextColor = UIStyleTokens.TextPrimary;
             }
         }
 

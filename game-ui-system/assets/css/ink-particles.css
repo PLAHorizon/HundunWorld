@@ -1,0 +1,230 @@
+/**
+ * 混沌世界 MMORPG — 水墨粒子动效系统
+ * Ink Particles System — 春意青金灰沉浸式 UI 动效
+ *
+ * 4 种粒子类型：
+ * 1. 金粉飘落 (gold-burst)   — 按钮点击触发，800ms
+ * 2. 墨韵涟漪 (ink-ripple)   — 面板切换触发，1200ms
+ * 3. 青玉萤光 (jade-firefly) — 信息提示出现，1000ms
+ * 4. 环境水墨微粒 (ambient)   — 页面加载后持续
+ *
+ * 动效曲线：cubic-bezier(0.16, 1, 0.3, 1) — ease-out，参考苹果 HIG
+ */
+
+/* ═══════════════════════════════════════════════════════════════
+   粒子容器层 — 固定全屏，不拦截事件
+   ═══════════════════════════════════════════════════════════════ */
+.ink-particle-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   粒子基础类
+   ═══════════════════════════════════════════════════════════════ */
+.ink-particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* ── 金粉粒子 (gold-burst) ───────────────────────────────────── */
+.ink-particle--gold {
+  width: 4px;
+  height: 4px;
+  background: radial-gradient(circle, #F0D898 0%, #C8A858 50%, transparent 100%);
+  box-shadow: 0 0 6px rgba(200, 168, 88, 0.8), 0 0 12px rgba(200, 168, 88, 0.4);
+}
+
+.ink-particle--gold.lg {
+  width: 6px;
+  height: 6px;
+  box-shadow: 0 0 8px rgba(224, 200, 128, 0.9), 0 0 16px rgba(200, 168, 88, 0.5);
+}
+
+/* ── 青玉萤光粒子 (jade-firefly) ─────────────────────────────── */
+.ink-particle--jade {
+  width: 5px;
+  height: 5px;
+  background: radial-gradient(circle, #C8E6D8 0%, #A8D4C4 50%, transparent 100%);
+  box-shadow: 0 0 8px rgba(168, 212, 196, 0.7), 0 0 16px rgba(126, 171, 158, 0.4);
+}
+
+/* ── 墨韵涟漪环 (ink-ripple) ────────────────────────────────── */
+.ink-ripple-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid var(--ink-jade-bright, #A8D4C4);
+  pointer-events: none;
+  will-change: transform, opacity;
+  box-shadow: 0 0 12px rgba(168, 212, 196, 0.3), inset 0 0 12px rgba(168, 212, 196, 0.2);
+}
+
+.ink-ripple-ring--gold {
+  border-color: var(--ink-gold-bright, #E0C880);
+  box-shadow: 0 0 12px rgba(224, 200, 128, 0.4), inset 0 0 12px rgba(200, 168, 88, 0.2);
+}
+
+/* ── 环境水墨微粒 (ambient) ──────────────────────────────────── */
+.ink-ambient {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168, 212, 196, 0.5) 0%, transparent 100%);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.ink-ambient--gold {
+  background: radial-gradient(circle, rgba(224, 200, 128, 0.4) 0%, transparent 100%);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Keyframes — 4 种粒子动效
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 金粉爆发：从中心向外扩散，带重力下坠 ────────────────────── */
+@keyframes gold-burst {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  60% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(0.3);
+    opacity: 0;
+  }
+}
+
+/* ── 墨韵涟漪：从中心扩散 2 圈 ──────────────────────────────── */
+@keyframes ink-ripple {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.8;
+    border-width: 3px;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+@keyframes ink-ripple-second {
+  0%, 30% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+  }
+  40% {
+    opacity: 0.6;
+    border-width: 2px;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+/* ── 青玉萤光：从边缘飘出，随机漂浮 ────────────────────────── */
+@keyframes jade-firefly {
+  0% {
+    transform: translate(0, 0) scale(0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+    transform: translate(calc(var(--dx, 0px) * 0.3), calc(var(--dy, 0px) * 0.3)) scale(1);
+  }
+  100% {
+    transform: translate(var(--dx, 0px), var(--dy, 0px)) scale(0.6);
+    opacity: 0;
+  }
+}
+
+/* ── 环境微粒：缓慢飘动，带透明度呼吸 ──────────────────────── */
+@keyframes ambient-drift {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  10% {
+    opacity: var(--max-opacity, 0.6);
+  }
+  50% {
+    transform: translate(var(--dx-mid, 0px), var(--dy-mid, 0px));
+    opacity: var(--max-opacity, 0.6);
+  }
+  90% {
+    opacity: var(--max-opacity, 0.6);
+  }
+  100% {
+    transform: translate(var(--dx, 0px), var(--dy, 0px));
+    opacity: 0;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   按钮点击反馈增强
+   ═══════════════════════════════════════════════════════════════ */
+.ds-btn[data-particle="gold-burst"]:active,
+button[data-particle="gold-burst"]:active,
+.ds-btn:active {
+  transform: scale(0.97);
+  transition: transform 0.1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   面板切换过渡
+   ═══════════════════════════════════════════════════════════════ */
+[data-panel] {
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-panel].panel-entering {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+[data-panel].panel-entered {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   信息提示（Toast）入场
+   ═══════════════════════════════════════════════════════════════ */
+.toast-entering {
+  animation: toast-slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes toast-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   性能优化 — 降低动效偏好
+   ═══════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .ink-particle,
+  .ink-ripple-ring,
+  .ink-ambient {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

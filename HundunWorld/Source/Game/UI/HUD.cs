@@ -1,5 +1,6 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
+using HundunWorld.Game.UI;
 using System;
 using System.Collections.Generic;
 
@@ -56,7 +57,7 @@ namespace Game.UI
                 {
                     Message = message,
                     Duration = duration,
-                    DisplayColor = color ?? Color.White,
+                    DisplayColor = color ?? UIStyleTokens.TextPrimary,
                     CreatedTime = Time.GameTime,
                     State = NotificationState.Pending
                 };
@@ -238,7 +239,7 @@ namespace Game.UI
         /// </summary>
         public static void ShowSuccess(string message, float duration = 3.0f)
         {
-            ShowNotification(message, duration, Color.Green);
+            ShowNotification(message, duration, UIStyleTokens.StatusSuccess);
         }
 
         /// <summary>
@@ -246,7 +247,7 @@ namespace Game.UI
         /// </summary>
         public static void ShowWarning(string message, float duration = 3.0f)
         {
-            ShowNotification(message, duration, Color.Yellow);
+            ShowNotification(message, duration, UIStyleTokens.StatusAlert);
         }
 
         /// <summary>
@@ -254,7 +255,7 @@ namespace Game.UI
         /// </summary>
         public static void ShowError(string message, float duration = 3.0f)
         {
-            ShowNotification(message, duration, Color.Red);
+            ShowNotification(message, duration, UIStyleTokens.StatusError);
         }
 
         /// <summary>
@@ -262,7 +263,7 @@ namespace Game.UI
         /// </summary>
         public static void ShowInfo(string message, float duration = 3.0f)
         {
-            ShowNotification(message, duration, Color.Blue);
+            ShowNotification(message, duration, UIStyleTokens.StatusInfo);
         }
 
         /// <summary>

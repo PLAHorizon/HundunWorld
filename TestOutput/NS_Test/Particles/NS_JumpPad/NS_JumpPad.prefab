@@ -1,0 +1,35 @@
+{
+  "ID": "279f56a1fc554474b1144566bc74200a",
+  "TypeName": "FlaxEngine.Prefab",
+  "EngineBuild": 6705,
+  "Data": [
+    {
+      "ID": "146397a431e04e12ba639e135eaec43c",
+      "TypeName": "FlaxEngine.EmptyActor",
+      "ParentID": "00000000000000000000000000000000",
+      "Name": "NS_JumpPad",
+      "Transform": {
+        "Translation": {
+          "X": 0,
+          "Y": 0,
+          "Z": 0
+        }
+      }
+    },
+    {
+      "ID": "bd68d83f39d5427e8d50407f2e7f7f83",
+      "TypeName": "FlaxEngine.ParticleEffect",
+      "ParentID": "146397a431e04e12ba639e135eaec43c",
+      "Name": "NS_JumpPad_Effect",
+      "Transform": {
+        "Translation": {
+          "X": 0,
+          "Y": 0,
+          "Z": 0
+        }
+      },
+      "ParticleSystem": "a6f3a8edda154aa9a5c2256c0a9e615a",
+      "IsPlaying": true
+    }
+  ]
+}

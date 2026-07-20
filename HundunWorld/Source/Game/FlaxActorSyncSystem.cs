@@ -7,6 +7,7 @@ using Horizon.Game.ECS.Arch.Components;
 using Horizon.Game.ECS.Arch.Core;
 using Horizon.Game.ECS.Arch.Systems;
 using Horizon.Game.Message.Sync.Components;
+using HundunWorld.Game.Character;
 
 namespace HundunWorld.Game
 {
@@ -197,12 +198,13 @@ namespace HundunWorld.Game
                 {
                     Destroy(actor);
                 }
-                // 清理所有相关字典，避免 AnimatedModel/AnimGraphParameter 引用残留
+                // 清理所有相关字典，避免引用残留
                 _entityIdToActor.Remove(args.EntityId);
                 _entityIdToLastPosition.Remove(args.EntityId);
                 _entityIdToLastYaw.Remove(args.EntityId);
                 _entityIdToAnimatedModel.Remove(args.EntityId);
                 _entityIdToIsWalkingParam.Remove(args.EntityId);
+                _entityIdToAnimationController.Remove(args.EntityId);
                 Debug.Log($"[FlaxActorSyncSystem] 远程角色 Actor 已销毁: EntityId={args.EntityId}");
             }
         }
@@ -226,6 +228,7 @@ namespace HundunWorld.Game
             _entityIdToLastYaw.Clear();
             _entityIdToAnimatedModel.Clear();
             _entityIdToIsWalkingParam.Clear();
+            _entityIdToAnimationController.Clear();
 
             if (count > 0)
             {
@@ -365,11 +368,14 @@ namespace HundunWorld.Game
         /// <summary>EntityId → 上次同步朝向 Yaw（用于检测是否需要更新）。</summary>
         private readonly Dictionary<ulong, float> _entityIdToLastYaw = new();
 
-        /// <summary>EntityId → 远程角色 AnimatedModel（用于设置动画参数）。</summary>
+        /// <summary>EntityId → 远程角色 AnimatedModel（用于设置动画参数，回退方案）。</summary>
         private readonly Dictionary<ulong, AnimatedModel> _entityIdToAnimatedModel = new();
 
-        /// <summary>EntityId → 远程角色的 IsWalking 动画参数句柄。</summary>
+        /// <summary>EntityId → 远程角色的 IsWalking 动画参数句柄（回退方案）。</summary>
         private readonly Dictionary<ulong, AnimGraphParameter> _entityIdToIsWalkingParam = new();
+
+        /// <summary>EntityId → 远程角色的 CharacterAnimationController（优先使用）。</summary>
+        private readonly Dictionary<ulong, CharacterAnimationController> _entityIdToAnimationController = new();
 
         /// <summary>是否已输出首帧同步诊断日志。</summary>
         private bool _firstSyncDiag = true;
@@ -434,11 +440,20 @@ namespace HundunWorld.Game
                         _entityIdToLastYaw[entityId] = yawDeg;
                     }
 
-                    // 3) 同步动画：根据位置变化率或 MovementStateAuthComponent 判断是否移动
-                    // 缓存 AnimatedModel 引用
+                    // 3) 同步动画：根据 MovementStateAuthComponent 控制动画状态
+                    // 优先查找 CharacterAnimationController
+                    if (!_entityIdToAnimationController.TryGetValue(entityId, out var animationController) || animationController == null)
+                    {
+                        animationController = actor.GetScript<CharacterAnimationController>();
+                        if (animationController != null)
+                        {
+                            _entityIdToAnimationController[entityId] = animationController;
+                        }
+                    }
+
+                    // 回退：查找 AnimatedModel
                     if (!_entityIdToAnimatedModel.TryGetValue(entityId, out var animatedModel) || animatedModel == null)
                     {
-                        // 递归查找 AnimatedModel（角色 Prefab 层级中）
                         animatedModel = FindAnimatedModel(actor);
                         if (animatedModel != null)
                         {
@@ -446,16 +461,64 @@ namespace HundunWorld.Game
                         }
                     }
 
-                    // 首帧同步诊断：输出 AuthTransformComponent 和 AnimatedModel 状态
+                    // 首帧同步诊断
                     if (_firstSyncDiag)
                     {
                         _firstSyncDiag = false;
-                        Debug.Log($"[FlaxActorSyncSystem] 首帧同步诊断: EntityId={entityId}, AuthYaw={auth.Yaw}rad({yawDeg}deg), AnimatedModel={animatedModel != null}, ActorName={actor.Name}");
+                        Debug.Log($"[FlaxActorSyncSystem] 首帧同步诊断: EntityId={entityId}, AuthYaw={auth.Yaw}rad({yawDeg}deg), AnimatedModel={animatedModel != null}, AnimationController={animationController != null}, ActorName={actor.Name}");
                     }
 
-                    if (animatedModel != null)
+                    if (_archWorld.Has<MovementStateAuthComponent>(entity))
                     {
-                        // 获取或创建 IsWalking 参数句柄
+                        ref var movement = ref _archWorld.Get<MovementStateAuthComponent>(entity);
+
+                        // 使用 CharacterAnimationController 设置精细动画状态
+                        if (animationController != null)
+                        {
+                            // 设置移动速度参数（用于动画混合）- 每帧更新，不受变化检测限制
+                            if (_archWorld.Has<PlayerInputComponent>(entity))
+                            {
+                                ref var input = ref _archWorld.Get<PlayerInputComponent>(entity);
+                                animationController.SetMoveSpeed(input.MaxSpeed);
+                            }
+
+                            // 设置动画状态
+                            var animState = movement.MovementMode switch
+                            {
+                                MovementMode.Walk => CharacterAnimationState.Walk,
+                                MovementMode.Run => CharacterAnimationState.Run,
+                                MovementMode.Crouch => CharacterAnimationState.Crouch,
+                                MovementMode.Jump => CharacterAnimationState.Jump,
+                                MovementMode.Fall => CharacterAnimationState.Fall,
+                                _ => CharacterAnimationState.Idle
+                            };
+
+                            animationController.SetAnimationState(animState);
+                        }
+                        else if (animatedModel != null)
+                        {
+                            // 回退：使用 IsWalking 参数
+                            if (!_entityIdToIsWalkingParam.TryGetValue(entityId, out var isWalkingParam) || isWalkingParam == null)
+                            {
+                                isWalkingParam = animatedModel.GetParameter("IsWalking");
+                                if (isWalkingParam != null)
+                                {
+                                    _entityIdToIsWalkingParam[entityId] = isWalkingParam;
+                                }
+                            }
+
+                            if (isWalkingParam != null)
+                            {
+                                bool isMoving = movement.MovementMode == MovementMode.Walk
+                                            || movement.MovementMode == MovementMode.Run
+                                            || movement.MovementMode == MovementMode.Crouch;
+                                isWalkingParam.Value = isMoving;
+                            }
+                        }
+                    }
+                    else if (animatedModel != null)
+                    {
+                        // 回退：用 Target/Start 差值判断移动意图
                         if (!_entityIdToIsWalkingParam.TryGetValue(entityId, out var isWalkingParam) || isWalkingParam == null)
                         {
                             isWalkingParam = animatedModel.GetParameter("IsWalking");
@@ -467,28 +530,9 @@ namespace HundunWorld.Game
 
                         if (isWalkingParam != null)
                         {
-                            // [优化] 优先用服务端权威的 MovementStateAuthComponent.MovementMode 判定动画，
-                            // 比 InterpolatedTransformComponent 的 Target/Start 差值更准确（避免插值收敛期间的误判）。
-                            // 映射表与 LocalPlayerActorSyncSystem.ApplyAnimationState 一致：
-                            //   Walk/Run/Crouch → IsWalking=true，Jump/Fall/Swim → IsWalking=false
-                            // 若实体暂无 MovementStateAuthComponent（SnapshotApplySystem 尚未应用），
-                            // 回退到 Target/Start 差值判定，保证过渡期动画仍能驱动。
-                            bool isMoving = false;
-                            if (_archWorld.Has<MovementStateAuthComponent>(entity))
-                            {
-                                ref var movement = ref _archWorld.Get<MovementStateAuthComponent>(entity);
-                                isMoving = movement.MovementMode == MovementMode.Walk
-                                        || movement.MovementMode == MovementMode.Run
-                                        || movement.MovementMode == MovementMode.Crouch;
-                            }
-                            else
-                            {
-                                // 回退：用 TargetX/Y/Z 与 StartX/Y/Z 的差值判断移动意图
-                                float moveDelta = (new Vector3(interp.TargetX, interp.TargetY, interp.TargetZ)
-                                                  - new Vector3(interp.StartX, interp.StartY, interp.StartZ)).LengthSquared;
-                                isMoving = moveDelta > 0.0001f;
-                            }
-                            isWalkingParam.Value = isMoving;
+                            float moveDelta = (new Vector3(interp.TargetX, interp.TargetY, interp.TargetZ)
+                                              - new Vector3(interp.StartX, interp.StartY, interp.StartZ)).LengthSquared;
+                            isWalkingParam.Value = moveDelta > 0.0001f;
                         }
                     }
                 }
@@ -502,6 +546,7 @@ namespace HundunWorld.Game
                 _entityIdToLastYaw.Remove(entityId);
                 _entityIdToAnimatedModel.Remove(entityId);
                 _entityIdToIsWalkingParam.Remove(entityId);
+                _entityIdToAnimationController.Remove(entityId);
             }
         }
 

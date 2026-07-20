@@ -857,12 +857,12 @@ code, kbd, samp, pre {
   --ink-gold-faint: rgba(200, 168, 88, 0.15);
   --ink-gold-trace: rgba(200, 168, 88, 0.08);
 
-  --ink-jade-primary: #5E8B7E;
-  --ink-jade-bright: #7EAB9E;
-  --ink-jade-deep: #3E6B5E;
-  --ink-jade-glow: rgba(94, 139, 126, 0.4);
-  --ink-jade-dim: rgba(94, 139, 126, 0.5);
-  --ink-jade-faint: rgba(94, 139, 126, 0.12);
+  --ink-jade-primary: #7EAB9E;
+  --ink-jade-bright: #A8D4C4;
+  --ink-jade-deep: #5E8B7E;
+  --ink-jade-glow: rgba(126, 171, 158, 0.45);
+  --ink-jade-dim: rgba(126, 171, 158, 0.55);
+  --ink-jade-faint: rgba(126, 171, 158, 0.15);
 
   --ink-blood-primary: #B85450;
   --ink-blood-bright: #D87470;
@@ -876,7 +876,7 @@ code, kbd, samp, pre {
   --ink-text-muted: #8A8275;
   --ink-text-faint: rgba(240, 237, 228, 0.4);
   --ink-text-gold: #C8A858;
-  --ink-text-jade: #7EAB9E;
+  --ink-text-jade: #A8D4C4;
   --ink-text-blood: #D87470;
   --ink-text-inverse: #0E1016;
 

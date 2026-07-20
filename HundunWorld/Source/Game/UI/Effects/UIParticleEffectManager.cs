@@ -1,4 +1,5 @@
 using FlaxEngine;
+using HundunWorld.Game.UI;
 using HundunWorld.Game.UI.Effects;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
@@ -87,17 +88,12 @@ namespace Game.UI.Effects
             starSystem.TwinkleSpeed = 1.5f;
             
             // 设置中国古典主题颜色
-            starSystem.PrimaryColor = new Color(
-                ChineseClassicalTheme.SecondaryColor.R,
-                ChineseClassicalTheme.SecondaryColor.G,
-                ChineseClassicalTheme.SecondaryColor.B,
-                0.8f
-            );
+            starSystem.PrimaryColor = UIStyleTokens.Gold(0.8f); // 鎏金（--ink-gold-primary）
             
             starSystem.SecondaryColor = new Color(
-                ChineseClassicalTheme.TextColor.R,
-                ChineseClassicalTheme.TextColor.G,
-                ChineseClassicalTheme.TextColor.B,
+                UIStyleTokens.TextPrimary.R,
+                UIStyleTokens.TextPrimary.G,
+                UIStyleTokens.TextPrimary.B,
                 0.6f
             );
             
@@ -131,8 +127,8 @@ namespace Game.UI.Effects
                 starSystem.TwinkleSpeed = 1.0f;
                 
                 // 使用更简单的颜色
-                starSystem.PrimaryColor = Color.White * 0.7f;
-                starSystem.SecondaryColor = new Color(0.8f, 0.9f, 1.0f, 0.5f);
+                starSystem.PrimaryColor = UIStyleTokens.Gold(0.7f);
+                starSystem.SecondaryColor = UIStyleTokens.Jade(0.5f);
                 starSystem.MinAlpha = 0.3f;
                 starSystem.MaxAlpha = 0.7f;
 

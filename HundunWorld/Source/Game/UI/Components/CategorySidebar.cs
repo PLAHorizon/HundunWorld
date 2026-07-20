@@ -13,12 +13,13 @@ namespace HundunWorld.Game.UI.Components
     {
         public event Action<int, string> OnCategoryChanged; // (index, name)
 
-        private static readonly Color NormalColor = new Color(0.08f, 0.08f, 0.10f, 0.7f);
-        private static readonly Color SelectedColor = new Color(212f / 255f, 175f / 255f, 55f / 255f, 0.25f);
-        private static readonly Color HoverColor = new Color(0.12f, 0.12f, 0.15f, 0.8f);
-        private static readonly Color SelectedBorderColor = new Color(212f / 255f, 175f / 255f, 55f / 255f, 1.0f);
-        private static readonly Color NormalTextColor = new Color(0.6f, 0.6f, 0.65f);
-        private static readonly Color SelectedTextColor = new Color(212f / 255f, 175f / 255f, 55f / 255f, 1.0f);
+        // 样式统一引用设计 Token（出处：game-ui-system/colors_and_type.css --ink-* 系列）
+        private static readonly Color NormalColor = UIStyleTokens.InkPanel(0.7f);
+        private static readonly Color SelectedColor = UIStyleTokens.GoldFaint; // 选中底色 --ink-gold-faint
+        private static readonly Color HoverColor = UIStyleTokens.BgHover; // 悬停叠层 --ink-bg-hover
+        private static readonly Color SelectedBorderColor = UIStyleTokens.GoldPrimary; // 选中描边 --ink-gold-primary
+        private static readonly Color NormalTextColor = UIStyleTokens.TextSecondary; // --ink-text-secondary
+        private static readonly Color SelectedTextColor = UIStyleTokens.GoldPrimary; // 选中文字 --ink-text-gold
 
         private List<Button> _categoryButtons = new List<Button>();
         private int _selectedIndex = 0;
@@ -30,7 +31,8 @@ namespace HundunWorld.Game.UI.Components
         public CategorySidebar()
         {
             Width = 120;
-            BackgroundColor = new Color(0.05f, 0.05f, 0.07f, 0.85f);
+            // 侧边栏背景：墨黑 0.85 透明度（出处：--ink-bg-panel）
+            BackgroundColor = UIStyleTokens.BgPanel;
         }
 
         /// <summary>

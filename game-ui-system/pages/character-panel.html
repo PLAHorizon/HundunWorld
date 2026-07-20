@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>角色属性装备</title>
+    <title>角色属性面板</title>
     <style id="theme-vars">
 /**
  * TraeWork design library tokens
@@ -864,12 +864,12 @@ code, kbd, samp, pre {
   --ink-gold-faint: rgba(200, 168, 88, 0.15);
   --ink-gold-trace: rgba(200, 168, 88, 0.08);
 
-  --ink-jade-primary: #5E8B7E;
-  --ink-jade-bright: #7EAB9E;
-  --ink-jade-deep: #3E6B5E;
-  --ink-jade-glow: rgba(94, 139, 126, 0.4);
-  --ink-jade-dim: rgba(94, 139, 126, 0.5);
-  --ink-jade-faint: rgba(94, 139, 126, 0.12);
+  --ink-jade-primary: #7EAB9E;
+  --ink-jade-bright: #A8D4C4;
+  --ink-jade-deep: #5E8B7E;
+  --ink-jade-glow: rgba(126, 171, 158, 0.45);
+  --ink-jade-dim: rgba(126, 171, 158, 0.55);
+  --ink-jade-faint: rgba(126, 171, 158, 0.15);
 
   --ink-blood-primary: #B85450;
   --ink-blood-bright: #D87470;
@@ -883,7 +883,7 @@ code, kbd, samp, pre {
   --ink-text-muted: #8A8275;
   --ink-text-faint: rgba(240, 237, 228, 0.4);
   --ink-text-gold: #C8A858;
-  --ink-text-jade: #7EAB9E;
+  --ink-text-jade: #A8D4C4;
   --ink-text-blood: #D87470;
   --ink-text-inverse: #0E1016;
 
@@ -1323,6 +1323,36 @@ h1, h2, h3, h4, h5, h6 {
     th { @apply whitespace-nowrap; }
   }
     </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--color-background); }
+      .text-background { color: var(--color-background); }
+      .border-background { border-color: var(--color-background); }
+      .ring-background { --tw-ring-color: var(--color-background); }
+      .bg-foreground { background-color: var(--color-foreground); }
+      .text-foreground { color: var(--color-foreground); }
+      .border-foreground { border-color: var(--color-foreground); }
+      .ring-foreground { --tw-ring-color: var(--color-foreground); }
+      .bg-card { background-color: var(--color-card); }
+      .text-card { color: var(--color-card); }
+      .border-card { border-color: var(--color-card); }
+      .ring-card { --tw-ring-color: var(--color-card); }
+      .bg-primary { background-color: var(--color-primary); }
+      .text-primary { color: var(--color-primary); }
+      .border-primary { border-color: var(--color-primary); }
+      .ring-primary { --tw-ring-color: var(--color-primary); }
+      .bg-accent { background-color: var(--color-accent); }
+      .text-accent { color: var(--color-accent); }
+      .border-accent { border-color: var(--color-accent); }
+      .ring-accent { --tw-ring-color: var(--color-accent); }
+      .bg-muted-foreground { background-color: var(--color-muted-foreground); }
+      .text-muted-foreground { color: var(--color-muted-foreground); }
+      .border-muted-foreground { border-color: var(--color-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--color-muted-foreground); }
+      .bg-border { background-color: var(--color-border); }
+      .text-border { color: var(--color-border); }
+      .border-border { border-color: var(--color-border); }
+      .ring-border { --tw-ring-color: var(--color-border); }
+    </style>
     <style>
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -1339,9 +1369,11 @@ h1, h2, h3, h4, h5, h6 {
         background-color: currentColor;
       }
     </style>
+    <link rel="stylesheet" href="../assets/css/ink-particles.css">
+    <script src="../assets/js/ink-particles.js" defer></script>
 </head>
 <body class="min-h-screen font-sans antialiased">
-    <main class="char-panel-root fixed inset-0 flex flex-col" style="overflow:hidden; padding:0;">
+    <main class="char-panel-v2-root fixed inset-0 flex flex-col" style="overflow:hidden; padding:0;">
       <!-- ===== Top Title Bar ===== -->
       <header class="flex items-center justify-between px-6 shrink-0" style="height:52px; background: color-mix(in srgb, var(--ink-bg-ink) 90%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: var(--ink-border-gold-subtle);">
         <div class="flex items-center gap-3">
@@ -1361,40 +1393,90 @@ h1, h2, h3, h4, h5, h6 {
         </div>
       </header>
 
-      <!-- ===== Three Column Content ===== -->
+      <!-- ===== Two Column Content ===== -->
       <div class="flex flex-1 gap-3 p-3" style="overflow:hidden;">
 
-        <!-- ===== Left: Character Portrait (350px) ===== -->
-        <section class="flex flex-col gap-3 shrink-0" style="width:350px;">
-          <!-- Portrait preview frame -->
-          <div class="cp-portrait flex-1 relative" style="min-height:0;">
-            <div class="absolute inset-0 flex flex-col" style="background: linear-gradient(180deg, var(--ink-bg-mist) 0%, var(--ink-bg-void) 70%, var(--ink-bg-abyss) 100%); border: var(--ink-border-gold-default); border-radius: var(--radius-4); box-shadow: var(--ink-shadow-panel), var(--ink-shadow-inset); overflow:hidden;">
-              <!-- Paper texture overlay -->
-              <div class="absolute inset-0" style="background-image: var(--ink-texture-paper); opacity:0.4; pointer-events:none;"></div>
-              <!-- Ink wash ambient glow -->
-              <div class="absolute inset-0" style="background: radial-gradient(ellipse at 50% 40%, rgba(200,168,88,0.06) 0%, transparent 55%); pointer-events:none;"></div>
-              <!-- Character silhouette area -->
-              <div class="flex-1 flex flex-col items-center justify-center relative" style="z-index:1;">
-                <!-- Octagonal frame around character -->
-                <div class="relative flex items-center justify-center" style="width:140px; height:180px;">
-                  <div class="absolute inset-0" style="clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%); background: var(--ink-gold-primary); padding:2px; opacity:0.3;">
-                    <div class="w-full h-full" style="clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%); background: linear-gradient(180deg, var(--ink-bg-mist), var(--ink-bg-paper));"></div>
-                  </div>
-                  <span style="font-family: var(--ink-font-display); font-size:72px; color: var(--ink-gold-primary); opacity:0.5; line-height:1; position:relative; z-index:1;">侠</span>
-                </div>
-                <p style="font-family: var(--ink-font-display); font-size:12px; color: var(--ink-text-muted); letter-spacing:8px; margin-top:16px;">角色预览</p>
-                <p style="font-family: var(--ink-font-body); font-size:10px; color: var(--ink-text-muted); margin-top:4px; opacity:0.6;">拖拽旋转查看</p>
-              </div>
-              <!-- Corner decorations -->
-              <div class="absolute" style="top:6px; left:6px; width:20px; height:20px; border-top: 2px solid var(--ink-gold-primary); border-left: 2px solid var(--ink-gold-primary); opacity:0.5;"></div>
-              <div class="absolute" style="top:6px; right:6px; width:20px; height:20px; border-top: 2px solid var(--ink-gold-primary); border-right: 2px solid var(--ink-gold-primary); opacity:0.5;"></div>
-              <div class="absolute" style="bottom:6px; left:6px; width:20px; height:20px; border-bottom: 2px solid var(--ink-gold-primary); border-left: 2px solid var(--ink-gold-primary); opacity:0.5;"></div>
-              <div class="absolute" style="bottom:6px; right:6px; width:20px; height:20px; border-bottom: 2px solid var(--ink-gold-primary); border-right: 2px solid var(--ink-gold-primary); opacity:0.5;"></div>
-            </div>
+        <!-- ===== Left: 3D Model Display (~48%) ===== -->
+        <section class="cp-model-stage relative shrink-0" style="width:48%; overflow:hidden; background: linear-gradient(180deg, var(--ink-bg-mist) 0%, var(--ink-bg-void) 70%, var(--ink-bg-abyss) 100%); border: 1px solid var(--ink-border-gold); border-radius: var(--radius-4); box-shadow: var(--ink-shadow-panel), var(--ink-shadow-inset);">
+          <!-- Paper texture overlay -->
+          <div class="absolute inset-0" style="background-image: url('../assets/textures/ink-wash-bg-dark.jpg'); background-size: cover; background-position: center; opacity:0.15; pointer-events:none;"></div>
+          <!-- Ink wash ambient glow -->
+          <div class="absolute inset-0" style="background: radial-gradient(ellipse at 50% 40%, rgba(200,168,88,0.06) 0%, transparent 55%); pointer-events:none;"></div>
+
+          <!-- 3D Model image (centered, contain) -->
+          <img src="../assets/textures/character-3d-model.jpg" alt="角色3D模型" class="cp-model-img absolute" style="top:50%; left:50%; transform:translate(-50%,-50%); max-width:70%; max-height:78%; object-fit:contain; z-index:1; filter: drop-shadow(0 8px 24px rgba(0,0,0,0.6));" />
+
+          <!-- Equipment slots overlaid around the model -->
+          <!-- Top row: 耳环1 | 头 | 耳环2 -->
+          <button class="cp-slot cp-slot--equipped cp-slot--float" style="--quality-color: var(--ink-quality-common); top:12px; left:30%;" title="耳环·翠玉坠">
+            <span style="font-family: var(--ink-font-display); font-size:11px;">环</span>
+          </button>
+          <button class="cp-slot cp-slot--equipped cp-slot--float" style="--quality-color: var(--ink-quality-epic); top:12px; left:50%; transform:translateX(-50%);" title="头·紫金冠">
+            <span style="font-family: var(--ink-font-display); font-size:11px;">头</span>
+          </button>
+          <button class="cp-slot cp-slot--empty cp-slot--float" style="top:12px; right:30%;" title="耳环2·空">
+            <span style="font-family: var(--ink-font-display); font-size:11px; color: var(--ink-text-muted);">环</span>
+          </button>
+
+          <!-- Upper-left: 武器 -->
+          <button class="cp-slot cp-slot--selected cp-slot--float" style="--quality-color: var(--ink-quality-legendary); top:30%; left:12px;" title="武器·玄铁剑">
+            <span style="font-family: var(--ink-font-display); font-size:11px; color: var(--ink-gold-bright);">武</span>
+          </button>
+          <!-- Upper-right: 项链 -->
+          <button class="cp-slot cp-slot--equipped cp-slot--float" style="--quality-color: var(--ink-quality-rare); top:30%; right:12px;" title="项链·寒冰链">
+            <span style="font-family: var(--ink-font-display); font-size:11px;">链</span>
+          </button>
+
+          <!-- Mid-left: 主手 -->
+          <button class="cp-slot cp-slot--equipped cp-slot--float" style="--quality-color: var(--ink-quality-legendary); top:48%; left:8px;" title="主手·玄铁剑">
+            <span style="font-family: var(--ink-font-display); font-size:11px;">主</span>
+          </button>
+          <!-- Mid-right: 副手 -->
+          <button class="cp-slot cp-slot--empty cp-slot--float" style="top:48%; right:8px;" title="副手·空">
+            <span style="font-family: var(--ink-font-display); font-size:11px; color: var(--ink-text-muted);">副</span>
+          </button>
+
+          <!-- Lower-left: 戒指1 -->
+          <button class="cp-slot cp-slot--equipped cp-slot--float" style="--quality-color: var(--ink-quality-epic); top:66%; left:12px;" title="戒指1·龙纹戒">
+            <span style="font-family: var(--ink-font-display); font-size:11px;">戒</span>
+          </button>
+          <!-- Lower-right: 戒指2 -->
+          <button class="cp-slot cp-slot--empty cp-slot--float" style="top:66%; right:12px;" title="戒指2·空">
+            <span style="font-family: var(--ink-font-display); font-size:11px; color: var(--ink-text-muted);">戒</span>
+          </button>
+
+          <!-- Bottom row: 手 | 胸 | 腿 | 脚 | 饰品 -->
+          <button class="cp-slot cp-slot--equipped cp-slot--float" style="--quality-color: var(--ink-quality-common); bottom:64px; left:18%;" title="手·铁护手">
+            <span style="font-family: var(--ink-font-display); font-size:11px;">手</span>
+          </button>
+          <button class="cp-slot cp-slot--equipped cp-slot--float" style="--quality-color: var(--ink-quality-legendary); bottom:64px; left:38%;" title="胸·玄铁甲">
+            <span style="font-family: var(--ink-font-display); font-size:11px;">胸</span>
+          </button>
+          <button class="cp-slot cp-slot--equipped cp-slot--float" style="--quality-color: var(--ink-quality-uncommon); bottom:64px; left:58%;" title="腿·青布裤">
+            <span style="font-family: var(--ink-font-display); font-size:11px;">腿</span>
+          </button>
+          <button class="cp-slot cp-slot--equipped cp-slot--float" style="--quality-color: var(--ink-quality-uncommon); bottom:64px; left:78%;" title="脚·踏云靴">
+            <span style="font-family: var(--ink-font-display); font-size:11px;">脚</span>
+          </button>
+
+          <!-- Top-left: 3D preview label & rotate hint -->
+          <div class="absolute flex items-center gap-2" style="top:14px; left:14px; z-index:5; padding:4px 10px; background: rgba(14,16,22,0.7); border: 1px solid var(--ink-border-gold); border-radius: var(--radius-4); backdrop-filter: blur(4px);">
+            <i data-lucide="box" style="width:13px; height:13px; color: var(--ink-gold-primary);"></i>
+            <span style="font-family: var(--ink-font-display); font-size:11px; color: var(--ink-gold-primary); letter-spacing:2px;">3D预览</span>
+          </div>
+          <div class="absolute flex items-center gap-1" style="top:14px; right:14px; z-index:5; padding:4px 10px; background: rgba(14,16,22,0.7); border: 1px solid var(--ink-border-faint); border-radius: var(--radius-4); backdrop-filter: blur(4px);">
+            <i data-lucide="rotate-cw" style="width:12px; height:12px; color: var(--ink-text-muted);"></i>
+            <span style="font-family: var(--ink-font-body); font-size:10px; color: var(--ink-text-muted);">拖拽旋转</span>
           </div>
 
-          <!-- Appearance switch tabs -->
-          <div class="ds-card shrink-0" style="padding:6px;">
+          <!-- Gold corner decorations (L-shaped) -->
+          <div class="absolute" style="top:6px; left:6px; width:20px; height:20px; border-top: 2px solid var(--ink-gold-primary); border-left: 2px solid var(--ink-gold-primary); opacity:0.5; z-index:4;"></div>
+          <div class="absolute" style="top:6px; right:6px; width:20px; height:20px; border-top: 2px solid var(--ink-gold-primary); border-right: 2px solid var(--ink-gold-primary); opacity:0.5; z-index:4;"></div>
+          <div class="absolute" style="bottom:6px; left:6px; width:20px; height:20px; border-bottom: 2px solid var(--ink-gold-primary); border-left: 2px solid var(--ink-gold-primary); opacity:0.5; z-index:4;"></div>
+          <div class="absolute" style="bottom:6px; right:6px; width:20px; height:20px; border-bottom: 2px solid var(--ink-gold-primary); border-right: 2px solid var(--ink-gold-primary); opacity:0.5; z-index:4;"></div>
+
+          <!-- Appearance switch tabs (bottom-left) -->
+          <div class="absolute ds-card" style="bottom:12px; left:12px; right:12px; padding:6px; z-index:5; background: rgba(20,23,30,0.8); backdrop-filter: blur(8px);">
             <div class="flex items-center gap-1">
               <button class="cp-tab cp-tab--active flex-1 text-center" style="padding:8px 0; font-family: var(--ink-font-display); font-size:13px; border-radius: var(--radius-4); transition: all 0.15s ease;">发型</button>
               <button class="cp-tab flex-1 text-center" style="padding:8px 0; font-family: var(--ink-font-display); font-size:13px; border-radius: var(--radius-4); transition: all 0.15s ease;">脸型</button>
@@ -1403,8 +1485,8 @@ h1, h2, h3, h4, h5, h6 {
           </div>
         </section>
 
-        <!-- ===== Middle: Attributes (450px) ===== -->
-        <section class="flex flex-col gap-3 shrink-0" style="width:450px; overflow:hidden;">
+        <!-- ===== Right: Attribute Panel (~52%) ===== -->
+        <section class="flex flex-col gap-3" style="width:52%; overflow-y:auto; overflow-x:hidden;">
 
           <!-- Five-dimension attributes -->
           <div class="ds-card flex flex-col shrink-0" style="padding:14px;">
@@ -1412,51 +1494,127 @@ h1, h2, h3, h4, h5, h6 {
               <h3 style="font-family: var(--ink-font-display); font-size:14px; color: var(--ink-gold-primary); letter-spacing:3px;">五维属性</h3>
               <span style="font-family: var(--ink-font-body); font-size:10px; color: var(--ink-text-muted); letter-spacing:1px;">FIVE ATTRIBUTES</span>
             </div>
-            <div class="flex justify-around items-end gap-1 mt-3" style="height:170px;">
-              <!-- 体 Constitution 60 -->
-              <div class="flex flex-col items-center gap-1.5">
-                <span style="font-family: var(--ink-font-number); font-size:18px; color: var(--ink-gold-bright); font-weight:600; line-height:1;">60</span>
-                <div class="cp-vbar-bg relative" style="height:120px; width:14px;">
-                  <div class="cp-vbar-fill" style="height:60%;"></div>
-                </div>
-                <span style="font-family: var(--ink-font-display); font-size:15px; color: var(--ink-text-primary);">体</span>
-                <span style="font-family: var(--ink-font-body); font-size:9px; color: var(--ink-text-muted);">体魄</span>
+            <div class="flex justify-center items-center mt-3" style="height:220px;">
+              <svg width="220" height="220" viewBox="0 0 280 280" style="max-width:220px; max-height:220px;" xmlns="http://www.w3.org/2000/svg">
+                <!-- Grid: 5 layers (20/40/60/80/100) -->
+                <polygon points="140,120 159.0,133.8 151.8,156.2 128.2,156.2 121.0,133.8" fill="none" stroke="rgba(200,168,88,0.12)" stroke-width="1"/>
+                <polygon points="140,100 178.0,127.6 163.5,172.4 116.5,172.4 102.0,127.6" fill="none" stroke="rgba(200,168,88,0.14)" stroke-width="1"/>
+                <polygon points="140,80 197.1,121.5 175.3,188.5 104.7,188.5 82.9,121.5" fill="none" stroke="rgba(200,168,88,0.16)" stroke-width="1"/>
+                <polygon points="140,60 216.1,115.3 187.0,204.7 93.0,204.7 63.9,115.3" fill="none" stroke="rgba(200,168,88,0.18)" stroke-width="1"/>
+                <polygon points="140,40 235.1,109.1 198.8,220.9 81.2,220.9 44.9,109.1" fill="none" stroke="rgba(200,168,88,0.25)" stroke-width="1"/>
+                <!-- Axes -->
+                <line x1="140" y1="140" x2="140" y2="40" stroke="rgba(200,168,88,0.15)" stroke-width="1"/>
+                <line x1="140" y1="140" x2="235.1" y2="109.1" stroke="rgba(200,168,88,0.15)" stroke-width="1"/>
+                <line x1="140" y1="140" x2="198.8" y2="220.9" stroke="rgba(200,168,88,0.15)" stroke-width="1"/>
+                <line x1="140" y1="140" x2="81.2" y2="220.9" stroke="rgba(200,168,88,0.15)" stroke-width="1"/>
+                <line x1="140" y1="140" x2="44.9" y2="109.1" stroke="rgba(200,168,88,0.15)" stroke-width="1"/>
+                <!-- Data polygon: 体60 御45 敏80 势50 劲95 -->
+                <polygon points="140,80 182.8,126.1 187.0,204.7 110.6,180.5 49.7,110.6" fill="rgba(126,171,158,0.25)" stroke="#C8A858" stroke-width="2" stroke-linejoin="round"/>
+                <!-- Vertex dots -->
+                <circle cx="140" cy="80" r="3" fill="#C8A858"/>
+                <circle cx="182.8" cy="126.1" r="3" fill="#C8A858"/>
+                <circle cx="187.0" cy="204.7" r="3" fill="#C8A858"/>
+                <circle cx="110.6" cy="180.5" r="3" fill="#C8A858"/>
+                <circle cx="49.7" cy="110.6" r="3" fill="#C8A858"/>
+                <!-- Labels: name + value -->
+                <text x="140" y="28" text-anchor="middle" font-family="STKaiti, KaiTi, serif" font-size="14" fill="#C8A858">体</text>
+                <text x="140" y="14" text-anchor="middle" font-family="DIN, Arial, sans-serif" font-size="11" fill="var(--ink-gold-bright, #E8D088)" font-weight="600">60</text>
+                <text x="252" y="103" text-anchor="middle" font-family="STKaiti, KaiTi, serif" font-size="14" fill="#C8A858">御</text>
+                <text x="252" y="89" text-anchor="middle" font-family="DIN, Arial, sans-serif" font-size="11" fill="var(--ink-jade-bright, #A8D4C4)" font-weight="600">45</text>
+                <text x="215" y="242" text-anchor="middle" font-family="STKaiti, KaiTi, serif" font-size="14" fill="#C8A858">敏</text>
+                <text x="215" y="228" text-anchor="middle" font-family="DIN, Arial, sans-serif" font-size="11" fill="var(--ink-gold-bright, #E8D088)" font-weight="600">80</text>
+                <text x="65" y="242" text-anchor="middle" font-family="STKaiti, KaiTi, serif" font-size="14" fill="#C8A858">势</text>
+                <text x="65" y="228" text-anchor="middle" font-family="DIN, Arial, sans-serif" font-size="11" fill="var(--ink-jade-bright, #A8D4C4)" font-weight="600">50</text>
+                <text x="28" y="103" text-anchor="middle" font-family="STKaiti, KaiTi, serif" font-size="14" fill="#C8A858">劲</text>
+                <text x="28" y="89" text-anchor="middle" font-family="DIN, Arial, sans-serif" font-size="11" fill="var(--ink-gold-bright, #E8D088)" font-weight="600">95</text>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Five Elements & Constitution Radar Chart -->
+          <div class="ds-card flex flex-col shrink-0" style="padding:14px;">
+            <div class="flex items-center justify-between">
+              <h3 style="font-family: var(--ink-font-display); font-size:14px; color: var(--ink-gold-primary); letter-spacing:3px;">五行体质</h3>
+              <span style="font-family: var(--ink-font-body); font-size:10px; color: var(--ink-text-muted); letter-spacing:1px;">FIVE ELEMENTS</span>
+            </div>
+            <div class="flex items-center justify-center mt-2" style="position:relative;">
+              <svg width="260" height="260" viewBox="0 0 280 280" style="max-width:260px; max-height:260px;" xmlns="http://www.w3.org/2000/svg">
+                <!-- Grid hexagons (20/40/60/80/100) -->
+                <polygon points="140,120 157,130 157,150 140,160 123,150 123,130" fill="none" stroke="rgba(200,168,88,0.12)" stroke-width="1"/>
+                <polygon points="140,100 175,120 175,160 140,180 105,160 105,120" fill="none" stroke="rgba(200,168,88,0.14)" stroke-width="1"/>
+                <polygon points="140,80 192,110 192,170 140,200 88,170 88,110" fill="none" stroke="rgba(200,168,88,0.16)" stroke-width="1"/>
+                <polygon points="140,60 209,100 209,180 140,220 71,180 71,100" fill="none" stroke="rgba(200,168,88,0.18)" stroke-width="1"/>
+                <polygon points="140,40 227,90 227,190 140,240 53,190 53,90" fill="none" stroke="rgba(200,168,88,0.25)" stroke-width="1"/>
+
+                <!-- Axis lines from center to each vertex -->
+                <line x1="140" y1="140" x2="140" y2="40" stroke="rgba(200,168,88,0.15)" stroke-width="1"/>
+                <line x1="140" y1="140" x2="227" y2="90" stroke="rgba(200,168,88,0.15)" stroke-width="1"/>
+                <line x1="140" y1="140" x2="227" y2="190" stroke="rgba(200,168,88,0.15)" stroke-width="1"/>
+                <line x1="140" y1="140" x2="140" y2="240" stroke="rgba(200,168,88,0.15)" stroke-width="1"/>
+                <line x1="140" y1="140" x2="53" y2="190" stroke="rgba(200,168,88,0.15)" stroke-width="1"/>
+                <line x1="140" y1="140" x2="53" y2="90" stroke="rgba(200,168,88,0.15)" stroke-width="1"/>
+
+                <!-- Data polygon: 金75 木60 水80 火65 土70 体质85 -->
+                <polygon points="140,65 192,110 209,180 140,205 79,175 66,98" fill="rgba(126,171,158,0.25)" stroke="#C8A858" stroke-width="2" stroke-linejoin="round"/>
+
+                <!-- Data points (vertices) -->
+                <circle cx="140" cy="65" r="3" fill="#C8A858" stroke="#0E1016" stroke-width="1"/>
+                <circle cx="192" cy="110" r="3" fill="#C8A858" stroke="#0E1016" stroke-width="1"/>
+                <circle cx="209" cy="180" r="3" fill="#C8A858" stroke="#0E1016" stroke-width="1"/>
+                <circle cx="140" cy="205" r="3" fill="#C8A858" stroke="#0E1016" stroke-width="1"/>
+                <circle cx="79" cy="175" r="3" fill="#C8A858" stroke="#0E1016" stroke-width="1"/>
+                <circle cx="66" cy="98" r="3" fill="#C8A858" stroke="#0E1016" stroke-width="1"/>
+
+                <!-- Center taiji/wuxing icon -->
+                <circle cx="140" cy="140" r="8" fill="none" stroke="rgba(200,168,88,0.4)" stroke-width="1"/>
+                <circle cx="140" cy="140" r="3" fill="rgba(200,168,88,0.3)"/>
+
+                <!-- Dimension labels (name in display font + value in number font) -->
+                <!-- 金 (top) -->
+                <text x="140" y="28" text-anchor="middle" style="font-family: STKaiti, KaiTi, serif; font-size:15px; fill: #C8A858; font-weight:600;">金</text>
+                <text x="140" y="14" text-anchor="middle" style="font-family: 'DIN Alternate', DIN, monospace; font-size:11px; fill: #E0C880; font-weight:600;">75</text>
+                <!-- 木 (top-right) -->
+                <text x="237" y="86" text-anchor="start" style="font-family: STKaiti, KaiTi, serif; font-size:15px; fill: #C8A858; font-weight:600;">木</text>
+                <text x="237" y="100" text-anchor="start" style="font-family: 'DIN Alternate', DIN, monospace; font-size:11px; fill: #E0C880; font-weight:600;">60</text>
+                <!-- 水 (bottom-right) -->
+                <text x="237" y="194" text-anchor="start" style="font-family: STKaiti, KaiTi, serif; font-size:15px; fill: #C8A858; font-weight:600;">水</text>
+                <text x="237" y="208" text-anchor="start" style="font-family: 'DIN Alternate', DIN, monospace; font-size:11px; fill: #E0C880; font-weight:600;">80</text>
+                <!-- 火 (bottom) -->
+                <text x="140" y="258" text-anchor="middle" style="font-family: STKaiti, KaiTi, serif; font-size:15px; fill: #C8A858; font-weight:600;">火</text>
+                <text x="140" y="272" text-anchor="middle" style="font-family: 'DIN Alternate', DIN, monospace; font-size:11px; fill: #E0C880; font-weight:600;">65</text>
+                <!-- 土 (bottom-left) -->
+                <text x="43" y="194" text-anchor="end" style="font-family: STKaiti, KaiTi, serif; font-size:15px; fill: #C8A858; font-weight:600;">土</text>
+                <text x="43" y="208" text-anchor="end" style="font-family: 'DIN Alternate', DIN, monospace; font-size:11px; fill: #E0C880; font-weight:600;">70</text>
+                <!-- 体质 (top-left) -->
+                <text x="43" y="86" text-anchor="end" style="font-family: STKaiti, KaiTi, serif; font-size:15px; fill: #C8A858; font-weight:600;">体质</text>
+                <text x="43" y="100" text-anchor="end" style="font-family: 'DIN Alternate', DIN, monospace; font-size:11px; fill: #E0C880; font-weight:600;">85</text>
+              </svg>
+            </div>
+            <!-- Element legend -->
+            <div class="flex items-center justify-center gap-4 mt-2 flex-wrap">
+              <div class="flex items-center gap-1">
+                <span style="width:8px; height:8px; background: var(--ink-element-metal); border-radius:50%; display:inline-block;"></span>
+                <span style="font-family: var(--ink-font-body); font-size:10px; color: var(--ink-text-secondary);">金 75</span>
               </div>
-              <!-- 御 Defense 45 -->
-              <div class="flex flex-col items-center gap-1.5">
-                <span style="font-family: var(--ink-font-number); font-size:18px; color: var(--ink-jade-bright); font-weight:600; line-height:1;">45</span>
-                <div class="cp-vbar-bg relative" style="height:120px; width:14px;">
-                  <div class="cp-vbar-fill cp-vbar-fill--jade" style="height:45%;"></div>
-                </div>
-                <span style="font-family: var(--ink-font-display); font-size:15px; color: var(--ink-text-primary);">御</span>
-                <span style="font-family: var(--ink-font-body); font-size:9px; color: var(--ink-text-muted);">防御</span>
+              <div class="flex items-center gap-1">
+                <span style="width:8px; height:8px; background: var(--ink-element-wood); border-radius:50%; display:inline-block;"></span>
+                <span style="font-family: var(--ink-font-body); font-size:10px; color: var(--ink-text-secondary);">木 60</span>
               </div>
-              <!-- 敏 Agility 80 -->
-              <div class="flex flex-col items-center gap-1.5">
-                <span style="font-family: var(--ink-font-number); font-size:18px; color: var(--ink-gold-bright); font-weight:600; line-height:1;">80</span>
-                <div class="cp-vbar-bg relative" style="height:120px; width:14px;">
-                  <div class="cp-vbar-fill" style="height:80%;"></div>
-                </div>
-                <span style="font-family: var(--ink-font-display); font-size:15px; color: var(--ink-text-primary);">敏</span>
-                <span style="font-family: var(--ink-font-body); font-size:9px; color: var(--ink-text-muted);">身法</span>
+              <div class="flex items-center gap-1">
+                <span style="width:8px; height:8px; background: var(--ink-element-water); border-radius:50%; display:inline-block;"></span>
+                <span style="font-family: var(--ink-font-body); font-size:10px; color: var(--ink-text-secondary);">水 80</span>
               </div>
-              <!-- 势 Luck 50 -->
-              <div class="flex flex-col items-center gap-1.5">
-                <span style="font-family: var(--ink-font-number); font-size:18px; color: var(--ink-jade-bright); font-weight:600; line-height:1;">50</span>
-                <div class="cp-vbar-bg relative" style="height:120px; width:14px;">
-                  <div class="cp-vbar-fill cp-vbar-fill--jade" style="height:50%;"></div>
-                </div>
-                <span style="font-family: var(--ink-font-display); font-size:15px; color: var(--ink-text-primary);">势</span>
-                <span style="font-family: var(--ink-font-body); font-size:9px; color: var(--ink-text-muted);">运势</span>
+              <div class="flex items-center gap-1">
+                <span style="width:8px; height:8px; background: var(--ink-element-fire); border-radius:50%; display:inline-block;"></span>
+                <span style="font-family: var(--ink-font-body); font-size:10px; color: var(--ink-text-secondary);">火 65</span>
               </div>
-              <!-- 劲 Strength 95 -->
-              <div class="flex flex-col items-center gap-1.5">
-                <span style="font-family: var(--ink-font-number); font-size:18px; color: var(--ink-gold-bright); font-weight:600; line-height:1;">95</span>
-                <div class="cp-vbar-bg relative" style="height:120px; width:14px;">
-                  <div class="cp-vbar-fill" style="height:95%;"></div>
-                </div>
-                <span style="font-family: var(--ink-font-display); font-size:15px; color: var(--ink-text-primary);">劲</span>
-                <span style="font-family: var(--ink-font-body); font-size:9px; color: var(--ink-text-muted);">力道</span>
+              <div class="flex items-center gap-1">
+                <span style="width:8px; height:8px; background: var(--ink-element-earth); border-radius:50%; display:inline-block;"></span>
+                <span style="font-family: var(--ink-font-body); font-size:10px; color: var(--ink-text-secondary);">土 70</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <span style="width:8px; height:8px; background: var(--ink-jade-primary); border-radius:50%; display:inline-block;"></span>
+                <span style="font-family: var(--ink-font-body); font-size:10px; color: var(--ink-text-secondary);">体质 85</span>
               </div>
             </div>
           </div>
@@ -1540,81 +1698,9 @@ h1, h2, h3, h4, h5, h6 {
               </div>
             </div>
           </div>
-        </section>
 
-        <!-- ===== Right: Equipment (550px) ===== -->
-        <section class="flex gap-3 shrink-0" style="width:550px; overflow:hidden;">
-
-          <!-- Equipment slots (humanoid figure) -->
-          <div class="ds-card flex flex-col shrink-0" style="width:220px; padding:12px;">
-            <div class="flex items-center justify-between">
-              <h3 style="font-family: var(--ink-font-display); font-size:14px; color: var(--ink-gold-primary); letter-spacing:3px;">装备槽位</h3>
-              <span style="font-family: var(--ink-font-body); font-size:9px; color: var(--ink-text-muted);">11/14</span>
-            </div>
-            <!-- Humanoid equipment grid -->
-            <div class="cp-equip-grid mt-3 flex-1">
-              <!-- Row 1: 耳环1 | 头 | 耳环2 -->
-              <button class="cp-slot cp-slot--equipped" style="--quality-color: var(--ink-quality-common);" title="耳环·翠玉坠">
-                <span style="font-family: var(--ink-font-display); font-size:11px;">环</span>
-              </button>
-              <button class="cp-slot cp-slot--equipped" style="--quality-color: var(--ink-quality-epic);" title="头·紫金冠">
-                <span style="font-family: var(--ink-font-display); font-size:11px;">头</span>
-              </button>
-              <button class="cp-slot cp-slot--empty" title="耳环2·空">
-                <span style="font-family: var(--ink-font-display); font-size:11px; color: var(--ink-text-muted);">环</span>
-              </button>
-
-              <!-- Row 2: 武器 | 项链 | 饰品 -->
-              <button class="cp-slot cp-slot--selected" style="--quality-color: var(--ink-quality-legendary);" title="武器·玄铁剑">
-                <span style="font-family: var(--ink-font-display); font-size:11px; color: var(--ink-gold-bright);">武</span>
-              </button>
-              <button class="cp-slot cp-slot--equipped" style="--quality-color: var(--ink-quality-rare);" title="项链·寒冰链">
-                <span style="font-family: var(--ink-font-display); font-size:11px;">链</span>
-              </button>
-              <button class="cp-slot cp-slot--equipped" style="--quality-color: var(--ink-quality-rare);" title="饰品·玉佩">
-                <span style="font-family: var(--ink-font-display); font-size:11px;">饰</span>
-              </button>
-
-              <!-- Row 3: 主手 | 胸 | 副手 -->
-              <button class="cp-slot cp-slot--equipped" style="--quality-color: var(--ink-quality-legendary);" title="主手·玄铁剑">
-                <span style="font-family: var(--ink-font-display); font-size:11px;">主</span>
-              </button>
-              <button class="cp-slot cp-slot--equipped" style="--quality-color: var(--ink-quality-legendary);" title="胸·玄铁甲">
-                <span style="font-family: var(--ink-font-display); font-size:11px;">胸</span>
-              </button>
-              <button class="cp-slot cp-slot--empty" title="副手·空">
-                <span style="font-family: var(--ink-font-display); font-size:11px; color: var(--ink-text-muted);">副</span>
-              </button>
-
-              <!-- Row 4: 戒指1 | 手 | 戒指2 -->
-              <button class="cp-slot cp-slot--equipped" style="--quality-color: var(--ink-quality-epic);" title="戒指1·龙纹戒">
-                <span style="font-family: var(--ink-font-display); font-size:11px;">戒</span>
-              </button>
-              <button class="cp-slot cp-slot--equipped" style="--quality-color: var(--ink-quality-common);" title="手·铁护手">
-                <span style="font-family: var(--ink-font-display); font-size:11px;">手</span>
-              </button>
-              <button class="cp-slot cp-slot--empty" title="戒指2·空">
-                <span style="font-family: var(--ink-font-display); font-size:11px; color: var(--ink-text-muted);">戒</span>
-              </button>
-
-              <!-- Row 5: _ | 腿 | _ -->
-              <button class="cp-slot cp-slot--placeholder" disabled></button>
-              <button class="cp-slot cp-slot--equipped" style="--quality-color: var(--ink-quality-uncommon);" title="腿·青布裤">
-                <span style="font-family: var(--ink-font-display); font-size:11px;">腿</span>
-              </button>
-              <button class="cp-slot cp-slot--placeholder" disabled></button>
-
-              <!-- Row 6: _ | 脚 | _ -->
-              <button class="cp-slot cp-slot--placeholder" disabled></button>
-              <button class="cp-slot cp-slot--equipped" style="--quality-color: var(--ink-quality-uncommon);" title="脚·踏云靴">
-                <span style="font-family: var(--ink-font-display); font-size:11px;">脚</span>
-              </button>
-              <button class="cp-slot cp-slot--placeholder" disabled></button>
-            </div>
-          </div>
-
-          <!-- Equipment detail + mods (scrollable) -->
-          <div class="flex flex-col gap-2.5 flex-1 overflow-y-auto no-scrollbar" style="min-width:0;">
+          <!-- Equipment detail + mods (migrated from right column) -->
+          <div class="flex flex-col gap-2.5" style="min-width:0;">
 
             <!-- Equipment detail -->
             <div class="ds-card shrink-0" style="padding:12px;">
@@ -1777,11 +1863,78 @@ h1, h2, h3, h4, h5, h6 {
       }
 
       /* Panel root */
-      .char-panel-root {
+      .char-panel-v2-root {
         position: relative;
         width: 100vw;
         height: 100vh;
         overflow: hidden;
+      }
+
+      /* 3D Model display stage */
+      .cp-model-stage {
+        position: relative;
+        overflow: hidden;
+      }
+      .cp-model-img {
+        transition: transform 0.4s ease, filter 0.4s ease;
+        user-select: none;
+        -webkit-user-drag: none;
+        pointer-events: none;
+      }
+      .cp-model-stage:hover .cp-model-img {
+        filter: drop-shadow(0 10px 28px rgba(0,0,0,0.7)) brightness(1.05);
+      }
+
+      /* Floating equipment slots (overlaid on 3D model) */
+      .cp-slot--float {
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        max-width: 40px;
+        aspect-ratio: unset;
+        background: rgba(14, 16, 22, 0.65);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 3;
+        border-radius: var(--radius-4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, transform 0.1s ease;
+        border: 1px solid rgba(200, 168, 88, 0.15);
+      }
+      .cp-slot--float:hover {
+        background: rgba(200, 168, 88, 0.12);
+        transform: scale(1.08);
+        z-index: 6;
+      }
+      .cp-slot--float.cp-slot--equipped {
+        border-color: var(--quality-color);
+        background: color-mix(in srgb, var(--quality-color) 12%, rgba(14, 16, 22, 0.7));
+        box-shadow: 0 0 8px color-mix(in srgb, var(--quality-color) 35%, transparent), inset 0 0 4px color-mix(in srgb, var(--quality-color) 12%, transparent);
+      }
+      .cp-slot--float.cp-slot--equipped span { color: var(--quality-color); }
+      .cp-slot--float.cp-slot--selected {
+        border-color: var(--ink-gold-primary);
+        border-width: 2px;
+        background: color-mix(in srgb, var(--quality-color) 18%, rgba(14, 16, 22, 0.7));
+        box-shadow: 0 0 14px color-mix(in srgb, var(--ink-gold-primary) 45%, transparent), inset 0 0 6px color-mix(in srgb, var(--quality-color) 18%, transparent);
+      }
+      .cp-slot--float.cp-slot--selected::after {
+        content: '';
+        position: absolute;
+        inset: -3px;
+        border: 1px solid var(--ink-gold-primary);
+        border-radius: var(--radius-4);
+        opacity: 0.3;
+        pointer-events: none;
+        animation: cp-slot-pulse 2s ease-in-out infinite;
+      }
+      .cp-slot--float.cp-slot--empty {
+        border-style: dashed;
+        border-color: rgba(200, 168, 88, 0.1);
+        background: rgba(14, 16, 22, 0.4);
       }
 
       /* Close button */
@@ -1958,9 +2111,10 @@ h1, h2, h3, h4, h5, h6 {
 
       /* Reduced motion */
       @media (prefers-reduced-motion: reduce) {
-        .cp-slot--selected::after { animation: none; }
+        .cp-slot--selected::after, .cp-slot--float.cp-slot--selected::after { animation: none; }
         .cp-vbar-fill { transition: none; }
-        .cp-slot, .cp-tab, .cp-close-btn, .cp-gem-slot, .cp-layer-dot { transition: none; }
+        .cp-model-img { transition: none; }
+        .cp-slot, .cp-tab, .cp-close-btn, .cp-gem-slot, .cp-layer-dot, .cp-slot--float { transition: none; }
       }
     </style>
     <script>lucide.createIcons();</script>

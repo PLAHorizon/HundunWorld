@@ -49,7 +49,7 @@ namespace HundunWorld.Game.UI.Components
                 TextColor = new Color(0f, 0f, 0f, 0.5f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
-                Font = new FontReference { Size = 16 },
+                Font = new FontReference { Size = 14 },
                 Location = new Float2(1, 1)
             };
 
@@ -62,7 +62,7 @@ namespace HundunWorld.Game.UI.Components
                 TextColor = new Color(212f / 255f, 175f / 255f, 55f / 255f, 1f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
-                Font = new FontReference { Size = 16 }
+                Font = new FontReference { Size = 14 }
             };
         }
 

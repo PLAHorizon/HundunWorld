@@ -864,12 +864,12 @@ code, kbd, samp, pre {
   --ink-gold-faint: rgba(200, 168, 88, 0.15);
   --ink-gold-trace: rgba(200, 168, 88, 0.08);
 
-  --ink-jade-primary: #5E8B7E;
-  --ink-jade-bright: #7EAB9E;
-  --ink-jade-deep: #3E6B5E;
-  --ink-jade-glow: rgba(94, 139, 126, 0.4);
-  --ink-jade-dim: rgba(94, 139, 126, 0.5);
-  --ink-jade-faint: rgba(94, 139, 126, 0.12);
+  --ink-jade-primary: #7EAB9E;
+  --ink-jade-bright: #A8D4C4;
+  --ink-jade-deep: #5E8B7E;
+  --ink-jade-glow: rgba(126, 171, 158, 0.45);
+  --ink-jade-dim: rgba(126, 171, 158, 0.55);
+  --ink-jade-faint: rgba(126, 171, 158, 0.15);
 
   --ink-blood-primary: #B85450;
   --ink-blood-bright: #D87470;
@@ -883,7 +883,7 @@ code, kbd, samp, pre {
   --ink-text-muted: #8A8275;
   --ink-text-faint: rgba(240, 237, 228, 0.4);
   --ink-text-gold: #C8A858;
-  --ink-text-jade: #7EAB9E;
+  --ink-text-jade: #A8D4C4;
   --ink-text-blood: #D87470;
   --ink-text-inverse: #0E1016;
 
@@ -1323,6 +1323,36 @@ h1, h2, h3, h4, h5, h6 {
     th { @apply whitespace-nowrap; }
   }
     </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--color-background); }
+      .text-background { color: var(--color-background); }
+      .border-background { border-color: var(--color-background); }
+      .ring-background { --tw-ring-color: var(--color-background); }
+      .bg-foreground { background-color: var(--color-foreground); }
+      .text-foreground { color: var(--color-foreground); }
+      .border-foreground { border-color: var(--color-foreground); }
+      .ring-foreground { --tw-ring-color: var(--color-foreground); }
+      .bg-card { background-color: var(--color-card); }
+      .text-card { color: var(--color-card); }
+      .border-card { border-color: var(--color-card); }
+      .ring-card { --tw-ring-color: var(--color-card); }
+      .bg-primary { background-color: var(--color-primary); }
+      .text-primary { color: var(--color-primary); }
+      .border-primary { border-color: var(--color-primary); }
+      .ring-primary { --tw-ring-color: var(--color-primary); }
+      .bg-accent { background-color: var(--color-accent); }
+      .text-accent { color: var(--color-accent); }
+      .border-accent { border-color: var(--color-accent); }
+      .ring-accent { --tw-ring-color: var(--color-accent); }
+      .bg-muted-foreground { background-color: var(--color-muted-foreground); }
+      .text-muted-foreground { color: var(--color-muted-foreground); }
+      .border-muted-foreground { border-color: var(--color-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--color-muted-foreground); }
+      .bg-border { background-color: var(--color-border); }
+      .text-border { color: var(--color-border); }
+      .border-border { border-color: var(--color-border); }
+      .ring-border { --tw-ring-color: var(--color-border); }
+    </style>
     <style>
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -1339,6 +1369,8 @@ h1, h2, h3, h4, h5, h6 {
         background-color: currentColor;
       }
     </style>
+    <link rel="stylesheet" href="../assets/css/ink-particles.css">
+    <script src="../assets/js/ink-particles.js" defer></script>
 </head>
 <body class="min-h-screen font-sans antialiased">
     <main class="dungeon-root fixed inset-0 flex items-center justify-center" style="padding:0;">
@@ -1921,7 +1953,7 @@ h1, h2, h3, h4, h5, h6 {
 
             <!-- Enter button (fixed bottom) -->
             <div class="shrink-0" style="padding:12px 16px; border-top:1px solid var(--ink-border-gold); background:color-mix(in srgb, var(--ink-bg-void) 50%, transparent);">
-              <button class="dungeon-enter-btn" data-dom-id="enter-dungeon">
+              <button class="dungeon-enter-btn" data-dom-id="enter-dungeon" data-particle="gold-burst">
                 <i data-lucide="log-in" style="width:16px; height:16px;"></i>
                 <span>进入秘境</span>
               </button>

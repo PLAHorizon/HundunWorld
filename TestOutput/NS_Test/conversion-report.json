@@ -1,0 +1,183 @@
+{
+  "generatedAt": "2026-07-20T06:26:55.1272091Z",
+  "totalElapsed": 1.3728534,
+  "totalAssets": 8,
+  "success": 0,
+  "partialSuccess": 8,
+  "failed": 0,
+  "skipped": 0,
+  "totalFiles": 26,
+  "pendingManualSteps": [
+    "在 Flax Editor 中执行 CreateNS_CharacterDashAssets.cs 的 CreateAll() 方法，自动创建 ParticleEmitter/System .flax 资源",
+    "在 Flax Editor 中执行 CreateNS_CharacterPortalDissolveAssets.cs 的 CreateAll() 方法，自动创建 ParticleEmitter/System .flax 资源",
+    "在 Flax Editor 中执行 CreateNS_CharacterSpawnInAssets.cs 的 CreateAll() 方法，自动创建 ParticleEmitter/System .flax 资源",
+    "在 Flax Editor 中执行 CreateNS_CharacterSpawnIn2Assets.cs 的 CreateAll() 方法，自动创建 ParticleEmitter/System .flax 资源",
+    "在 Flax Editor 中执行 CreateNS_ElectricMovementAssets.cs 的 CreateAll() 方法，自动创建 ParticleEmitter/System .flax 资源",
+    "在 Flax Editor 中执行 CreateNS_JumpPadAssets.cs 的 CreateAll() 方法，自动创建 ParticleEmitter/System .flax 资源",
+    "在 Flax Editor 中执行 CreateNS_WallPortalAssets.cs 的 CreateAll() 方法，自动创建 ParticleEmitter/System .flax 资源",
+    "在 Flax Editor 中执行 CreateNS_WallPortalEnterAssets.cs 的 CreateAll() 方法，自动创建 ParticleEmitter/System .flax 资源",
+    "在 Flax Editor 中打开项目，通过 Tools > Scripts 加载 UE5AssetImporter.cs，执行 ImportAll() 方法自动导入所有 FBX 为 .flax 资源"
+  ],
+  "assets": [
+    {
+      "source": "NS_CharacterDash.uasset",
+      "target": "c:\\Works\\GitHubProjects\\HundunWorld\\TestOutput\\NS_Test\\Particles\\NS_CharacterDash",
+      "status": "PartialSuccess",
+      "elapsedMs": 203.1524,
+      "messages": [
+        {
+          "Severity": 0,
+          "Text": "读取 ParticleSystem: NS_CharacterDash"
+        },
+        {
+          "Severity": 0,
+          "Text": "发射器数: 0, 类型: Niagara"
+        },
+        {
+          "Severity": 1,
+          "Text": "待手动完成: 在 Flax Editor 中执行 CreateNS_CharacterDashAssets.cs 的 CreateAll() 方法，自动创建 ParticleEmitter/System .flax 资源"
+        }
+      ]
+    },
+    {
+      "source": "NS_CharacterPortalDissolve.uasset",
+      "target": "c:\\Works\\GitHubProjects\\HundunWorld\\TestOutput\\NS_Test\\Particles\\NS_CharacterPortalDissolve",
+      "status": "PartialSuccess",
+      "elapsedMs": 194.3326,
+      "messages": [
+        {
+          "Severity": 0,
+          "Text": "读取 ParticleSystem: NS_CharacterPortalDissolve"
+        },
+        {
+          "Severity": 0,
+          "Text": "发射器数: 0, 类型: Niagara"
+        },
+        {
+          "Severity": 1,
+          "Text": "待手动完成: 在 Flax Editor 中执行 CreateNS_CharacterPortalDissolveAssets.cs 的 CreateAll() 方法，自动创建 ParticleEmitter/System .flax 资源"
+        }
+      ]
+    },
+    {
+      "source": "NS_CharacterSpawnIn.uasset",
+      "target": "c:\\Works\\GitHubProjects\\HundunWorld\\TestOutput\\NS_Test\\Particles\\NS_CharacterSpawnIn",
+      "status": "PartialSuccess",
+      "elapsedMs": 149.8419,
+      "messages": [
+        {
+          "Severity": 0,
+          "Text": "读取 ParticleSystem: NS_CharacterSpawnIn"
+        },
+        {
+          "Severity": 0,
+          "Text": "发射器数: 0, 类型: Niagara"
+        },
+        {
+          "Severity": 1,
+          "Text": "待手动完成: 在 Flax Editor 中执行 CreateNS_CharacterSpawnInAssets.cs 的 CreateAll() 方法，自动创建 ParticleEmitter/System .flax 资源"
+        }
+      ]
+    },
+    {
+      "source": "NS_CharacterSpawnIn2.uasset",
+      "target": "c:\\Works\\GitHubProjects\\HundunWorld\\TestOutput\\NS_Test\\Particles\\NS_CharacterSpawnIn2",
+      "status": "PartialSuccess",
+      "elapsedMs": 117.5529,
+      "messages": [
+        {
+          "Severity": 0,
+          "Text": "读取 ParticleSystem: NS_CharacterSpawnIn2"
+        },
+        {
+          "Severity": 0,
+          "Text": "发射器数: 0, 类型: Niagara"
+        },
+        {
+          "Severity": 1,
+          "Text": "待手动完成: 在 Flax Editor 中执行 CreateNS_CharacterSpawnIn2Assets.cs 的 CreateAll() 方法，自动创建 ParticleEmitter/System .flax 资源"
+        }
+      ]
+    },
+    {
+      "source": "NS_ElectricMovement.uasset",
+      "target": "c:\\Works\\GitHubProjects\\HundunWorld\\TestOutput\\NS_Test\\Particles\\NS_ElectricMovement",
+      "status": "PartialSuccess",
+      "elapsedMs": 103.4776,
+      "messages": [
+        {
+          "Severity": 0,
+          "Text": "读取 ParticleSystem: NS_ElectricMovement"
+        },
+        {
+          "Severity": 0,
+          "Text": "发射器数: 0, 类型: Niagara"
+        },
+        {
+          "Severity": 1,
+          "Text": "待手动完成: 在 Flax Editor 中执行 CreateNS_ElectricMovementAssets.cs 的 CreateAll() 方法，自动创建 ParticleEmitter/System .flax 资源"
+        }
+      ]
+    },
+    {
+      "source": "NS_JumpPad.uasset",
+      "target": "c:\\Works\\GitHubProjects\\HundunWorld\\TestOutput\\NS_Test\\Particles\\NS_JumpPad",
+      "status": "PartialSuccess",
+      "elapsedMs": 244.3581,
+      "messages": [
+        {
+          "Severity": 0,
+          "Text": "读取 ParticleSystem: NS_JumpPad"
+        },
+        {
+          "Severity": 0,
+          "Text": "发射器数: 0, 类型: Niagara"
+        },
+        {
+          "Severity": 1,
+          "Text": "待手动完成: 在 Flax Editor 中执行 CreateNS_JumpPadAssets.cs 的 CreateAll() 方法，自动创建 ParticleEmitter/System .flax 资源"
+        }
+      ]
+    },
+    {
+      "source": "NS_WallPortal.uasset",
+      "target": "c:\\Works\\GitHubProjects\\HundunWorld\\TestOutput\\NS_Test\\Particles\\NS_WallPortal",
+      "status": "PartialSuccess",
+      "elapsedMs": 260.8051,
+      "messages": [
+        {
+          "Severity": 0,
+          "Text": "读取 ParticleSystem: NS_WallPortal"
+        },
+        {
+          "Severity": 0,
+          "Text": "发射器数: 0, 类型: Niagara"
+        },
+        {
+          "Severity": 1,
+          "Text": "待手动完成: 在 Flax Editor 中执行 CreateNS_WallPortalAssets.cs 的 CreateAll() 方法，自动创建 ParticleEmitter/System .flax 资源"
+        }
+      ]
+    },
+    {
+      "source": "NS_WallPortalEnter.uasset",
+      "target": "c:\\Works\\GitHubProjects\\HundunWorld\\TestOutput\\NS_Test\\Particles\\NS_WallPortalEnter",
+      "status": "PartialSuccess",
+      "elapsedMs": 95.1257,
+      "messages": [
+        {
+          "Severity": 0,
+          "Text": "读取 ParticleSystem: NS_WallPortalEnter"
+        },
+        {
+          "Severity": 0,
+          "Text": "发射器数: 0, 类型: Niagara"
+        },
+        {
+          "Severity": 1,
+          "Text": "待手动完成: 在 Flax Editor 中执行 CreateNS_WallPortalEnterAssets.cs 的 CreateAll() 方法，自动创建 ParticleEmitter/System .flax 资源"
+        }
+      ]
+    }
+  ]
+}

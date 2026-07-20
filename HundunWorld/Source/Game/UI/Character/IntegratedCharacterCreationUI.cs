@@ -171,7 +171,7 @@ namespace HundunWorld.Game.UI.Character
                 AnchorPreset = AnchorPresets.VerticalStretchLeft,
                 Offsets = new Margin(16, 100, 16, 70),
                 Width = 400,
-                BackgroundColor = new Color(0.03f, 0.03f, 0.05f, 0.72f)
+                BackgroundColor = UIStyleTokens.WithAlpha(UIStyleTokens.BgAbyss, 0.72f)
             };
 
             _categorySidebar = new CategorySidebar
@@ -247,10 +247,10 @@ namespace HundunWorld.Game.UI.Character
             {
                 Parent = this,
                 Text = "\u21BA",
-                TextColor = Color.White,
-                Font = UIHelper.SetFont(size: 20),
-                BackgroundColor = new Color(0.05f, 0.05f, 0.08f, 0.75f),
-                BorderColor = new Color(212f / 255f, 175f / 255f, 55f / 255f, 0.5f),
+                TextColor = UIStyleTokens.TextPrimary,
+                Font = UIHelper.SetFont(size: 18),
+                BackgroundColor = UIStyleTokens.WithAlpha(UIStyleTokens.BgInk, 0.75f),
+                BorderColor = UIStyleTokens.BorderGoldBright,
                 BorderThickness = 1.5f,
                 AnchorPreset = AnchorPresets.BottomRight,
                 Offsets = new Margin(0, 295, 0, 85),

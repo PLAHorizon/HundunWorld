@@ -1466,7 +1466,7 @@ namespace HundunWorld.Game.UI.GameMain
             var label = new Label
             {
                 Text = "角色预览加载中...",
-                Font = UIHelper.SetFont(size: 13),
+                Font = UIHelper.SetFont(size: 12),
                 TextColor = ChineseClassicalTheme.WowTitleColor,
                 Bounds = new Rectangle(0, 0, width, height - 30),
                 HorizontalAlignment = TextAlignment.Center,
@@ -1676,7 +1676,7 @@ namespace HundunWorld.Game.UI.GameMain
             var nameLabel = new Label
             {
                 Text = _currentCharacter?.CharacterName ?? "玩家",
-                Font = UIHelper.SetFont(size: 16),
+                Font = UIHelper.SetFont(size: 14),
                 TextColor = ChineseClassicalTheme.WowTitleColor,
                 Bounds = new Rectangle(12, 6, width * 0.5f, 26),
                 HorizontalAlignment = TextAlignment.Near,
@@ -1817,7 +1817,7 @@ namespace HundunWorld.Game.UI.GameMain
             {
                 Bounds = new Rectangle(combatRowBg.Width - 130, 2, 120, 26),
                 Text = CalculateCombatPower(defaultAttributes).ToString("F0"),
-                Font = UIHelper.SetFont(size: 15),
+                Font = UIHelper.SetFont(size: 14),
                 TextColor = ChineseClassicalTheme.WowTitleColor,
                 HorizontalAlignment = TextAlignment.Far,
                 VerticalAlignment = TextAlignment.Center,

@@ -964,7 +964,7 @@ namespace HundunWorld.Game.UI.GameMain
                     {
                         Bounds = new Rectangle(EmbeddedSlotSize - 22f, EmbeddedSlotSize - 14f, 18f, 10f),
                         Text = item.Count.ToString(),
-                        Font = UIHelper.SetFont(size: 9),
+                        Font = UIHelper.SetFont(size: 10),
                         TextColor = HundunWorld.Game.UI.StyleSystem.ChineseClassicalTheme.WowNumberTextColor,
                         HorizontalAlignment = TextAlignment.Center,
                         VerticalAlignment = TextAlignment.Center

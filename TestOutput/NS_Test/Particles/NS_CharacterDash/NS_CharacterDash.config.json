@@ -1,0 +1,11 @@
+{
+  "AssetName": "NS_CharacterDash",
+  "SourcePath": "NS_CharacterDash.uasset",
+  "EmitterGuid": "58c6507768eb4d63a95015109183746e",
+  "SystemGuid": "16da54679e1d44d8ae04ea3ab1249ac4",
+  "PrefabGuid": "976ab25bca9e46c1a3dca54ec265c50b",
+  "EmitterFlaxPath": "Particles/NS_CharacterDash/NS_CharacterDash_Emitter.flax",
+  "SystemFlaxPath": "Particles/NS_CharacterDash/NS_CharacterDash_System.flax",
+  "PrefabFlaxPath": "Particles/NS_CharacterDash/NS_CharacterDash.prefab",
+  "Emitters": []
+}

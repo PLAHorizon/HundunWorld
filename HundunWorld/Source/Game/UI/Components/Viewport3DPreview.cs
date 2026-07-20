@@ -1,5 +1,6 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
+using HundunWorld.Game.UI.StyleSystem;
 using System;
 
 namespace HundunWorld.Game.UI.Components
@@ -54,7 +55,7 @@ namespace HundunWorld.Game.UI.Components
         public Viewport3DPreview(Float2 size)
         {
             Size = size;
-            BackgroundColor = Color.Black;
+            BackgroundColor = InkWashTheme.BaseDefault;
             ClipChildren = true;
         }
         

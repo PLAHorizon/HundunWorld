@@ -1,0 +1,174 @@
+{
+  "GeneratedAt": "2026-07-20T06:26:55.11515Z",
+  "TotalAssets": 24,
+  "Assets": [
+    {
+      "Guid": "58c6507768eb4d63a95015109183746e",
+      "SourcePath": "NS_CharacterDash.uasset#emitter",
+      "FlaxAssetPath": "Particles/NS_CharacterDash/NS_CharacterDash_Emitter.flax",
+      "TypeName": "FlaxEngine.ParticleEmitter",
+      "Kind": "ParticleEmitter"
+    },
+    {
+      "Guid": "16da54679e1d44d8ae04ea3ab1249ac4",
+      "SourcePath": "NS_CharacterDash.uasset#system",
+      "FlaxAssetPath": "Particles/NS_CharacterDash/NS_CharacterDash_System.flax",
+      "TypeName": "FlaxEngine.ParticleSystem",
+      "Kind": "ParticleSystem"
+    },
+    {
+      "Guid": "976ab25bca9e46c1a3dca54ec265c50b",
+      "SourcePath": "NS_CharacterDash.uasset",
+      "FlaxAssetPath": "Particles/NS_CharacterDash/NS_CharacterDash.prefab",
+      "TypeName": "FlaxEngine.Prefab",
+      "Kind": "Prefab"
+    },
+    {
+      "Guid": "611fb3d828824eb4ac882cbe2534dea8",
+      "SourcePath": "NS_CharacterPortalDissolve.uasset#emitter",
+      "FlaxAssetPath": "Particles/NS_CharacterPortalDissolve/NS_CharacterPortalDissolve_Emitter.flax",
+      "TypeName": "FlaxEngine.ParticleEmitter",
+      "Kind": "ParticleEmitter"
+    },
+    {
+      "Guid": "be80f8144b4f49fcb7e6c81d3a6dbfa8",
+      "SourcePath": "NS_CharacterPortalDissolve.uasset#system",
+      "FlaxAssetPath": "Particles/NS_CharacterPortalDissolve/NS_CharacterPortalDissolve_System.flax",
+      "TypeName": "FlaxEngine.ParticleSystem",
+      "Kind": "ParticleSystem"
+    },
+    {
+      "Guid": "7b362e70f83f4852acb525bb186b1adb",
+      "SourcePath": "NS_CharacterPortalDissolve.uasset",
+      "FlaxAssetPath": "Particles/NS_CharacterPortalDissolve/NS_CharacterPortalDissolve.prefab",
+      "TypeName": "FlaxEngine.Prefab",
+      "Kind": "Prefab"
+    },
+    {
+      "Guid": "d7836bb01f094f6dac2648987d58f60b",
+      "SourcePath": "NS_CharacterSpawnIn.uasset#emitter",
+      "FlaxAssetPath": "Particles/NS_CharacterSpawnIn/NS_CharacterSpawnIn_Emitter.flax",
+      "TypeName": "FlaxEngine.ParticleEmitter",
+      "Kind": "ParticleEmitter"
+    },
+    {
+      "Guid": "4ba588abbe774eaa8535242c37a89621",
+      "SourcePath": "NS_CharacterSpawnIn.uasset#system",
+      "FlaxAssetPath": "Particles/NS_CharacterSpawnIn/NS_CharacterSpawnIn_System.flax",
+      "TypeName": "FlaxEngine.ParticleSystem",
+      "Kind": "ParticleSystem"
+    },
+    {
+      "Guid": "f5bac7cc7f144aaaa796e90c01ca8e86",
+      "SourcePath": "NS_CharacterSpawnIn.uasset",
+      "FlaxAssetPath": "Particles/NS_CharacterSpawnIn/NS_CharacterSpawnIn.prefab",
+      "TypeName": "FlaxEngine.Prefab",
+      "Kind": "Prefab"
+    },
+    {
+      "Guid": "02af6f3f7fde4c00b2f8c3c6677345cc",
+      "SourcePath": "NS_CharacterSpawnIn2.uasset#emitter",
+      "FlaxAssetPath": "Particles/NS_CharacterSpawnIn2/NS_CharacterSpawnIn2_Emitter.flax",
+      "TypeName": "FlaxEngine.ParticleEmitter",
+      "Kind": "ParticleEmitter"
+    },
+    {
+      "Guid": "ac7e2e6fdbfc4a8dabf2df1b0f31c879",
+      "SourcePath": "NS_CharacterSpawnIn2.uasset#system",
+      "FlaxAssetPath": "Particles/NS_CharacterSpawnIn2/NS_CharacterSpawnIn2_System.flax",
+      "TypeName": "FlaxEngine.ParticleSystem",
+      "Kind": "ParticleSystem"
+    },
+    {
+      "Guid": "3988b21eddf94f94be29ec8112c5528a",
+      "SourcePath": "NS_CharacterSpawnIn2.uasset",
+      "FlaxAssetPath": "Particles/NS_CharacterSpawnIn2/NS_CharacterSpawnIn2.prefab",
+      "TypeName": "FlaxEngine.Prefab",
+      "Kind": "Prefab"
+    },
+    {
+      "Guid": "cbb64491a444484b9a1df9986de69c4b",
+      "SourcePath": "NS_ElectricMovement.uasset#emitter",
+      "FlaxAssetPath": "Particles/NS_ElectricMovement/NS_ElectricMovement_Emitter.flax",
+      "TypeName": "FlaxEngine.ParticleEmitter",
+      "Kind": "ParticleEmitter"
+    },
+    {
+      "Guid": "97cd9f20499e45569b87a22a7d7b3d8f",
+      "SourcePath": "NS_ElectricMovement.uasset#system",
+      "FlaxAssetPath": "Particles/NS_ElectricMovement/NS_ElectricMovement_System.flax",
+      "TypeName": "FlaxEngine.ParticleSystem",
+      "Kind": "ParticleSystem"
+    },
+    {
+      "Guid": "36d5bee99e9749e5a0143b8eeb48e7bf",
+      "SourcePath": "NS_ElectricMovement.uasset",
+      "FlaxAssetPath": "Particles/NS_ElectricMovement/NS_ElectricMovement.prefab",
+      "TypeName": "FlaxEngine.Prefab",
+      "Kind": "Prefab"
+    },
+    {
+      "Guid": "b69616235d3e48f49bf4cb79670b6ecb",
+      "SourcePath": "NS_JumpPad.uasset#emitter",
+      "FlaxAssetPath": "Particles/NS_JumpPad/NS_JumpPad_Emitter.flax",
+      "TypeName": "FlaxEngine.ParticleEmitter",
+      "Kind": "ParticleEmitter"
+    },
+    {
+      "Guid": "a6f3a8edda154aa9a5c2256c0a9e615a",
+      "SourcePath": "NS_JumpPad.uasset#system",
+      "FlaxAssetPath": "Particles/NS_JumpPad/NS_JumpPad_System.flax",
+      "TypeName": "FlaxEngine.ParticleSystem",
+      "Kind": "ParticleSystem"
+    },
+    {
+      "Guid": "279f56a1fc554474b1144566bc74200a",
+      "SourcePath": "NS_JumpPad.uasset",
+      "FlaxAssetPath": "Particles/NS_JumpPad/NS_JumpPad.prefab",
+      "TypeName": "FlaxEngine.Prefab",
+      "Kind": "Prefab"
+    },
+    {
+      "Guid": "9a54791c256f4d63ad9d5a3298381daf",
+      "SourcePath": "NS_WallPortal.uasset#emitter",
+      "FlaxAssetPath": "Particles/NS_WallPortal/NS_WallPortal_Emitter.flax",
+      "TypeName": "FlaxEngine.ParticleEmitter",
+      "Kind": "ParticleEmitter"
+    },
+    {
+      "Guid": "6d9c2778c0044ef38289a0d18e8b2dad",
+      "SourcePath": "NS_WallPortal.uasset#system",
+      "FlaxAssetPath": "Particles/NS_WallPortal/NS_WallPortal_System.flax",
+      "TypeName": "FlaxEngine.ParticleSystem",
+      "Kind": "ParticleSystem"
+    },
+    {
+      "Guid": "5e77b5f5d4454f7c8728da4289669f52",
+      "SourcePath": "NS_WallPortal.uasset",
+      "FlaxAssetPath": "Particles/NS_WallPortal/NS_WallPortal.prefab",
+      "TypeName": "FlaxEngine.Prefab",
+      "Kind": "Prefab"
+    },
+    {
+      "Guid": "ad47f0b425f74185b9c0018c05613a21",
+      "SourcePath": "NS_WallPortalEnter.uasset#emitter",
+      "FlaxAssetPath": "Particles/NS_WallPortalEnter/NS_WallPortalEnter_Emitter.flax",
+      "TypeName": "FlaxEngine.ParticleEmitter",
+      "Kind": "ParticleEmitter"
+    },
+    {
+      "Guid": "cca13300587246c089e349023d2b3d83",
+      "SourcePath": "NS_WallPortalEnter.uasset#system",
+      "FlaxAssetPath": "Particles/NS_WallPortalEnter/NS_WallPortalEnter_System.flax",
+      "TypeName": "FlaxEngine.ParticleSystem",
+      "Kind": "ParticleSystem"
+    },
+    {
+      "Guid": "e7f412acea2e49e7bbc46bfb235dab70",
+      "SourcePath": "NS_WallPortalEnter.uasset",
+      "FlaxAssetPath": "Particles/NS_WallPortalEnter/NS_WallPortalEnter.prefab",
+      "TypeName": "FlaxEngine.Prefab",
+      "Kind": "Prefab"
+    }
+  ]
+}

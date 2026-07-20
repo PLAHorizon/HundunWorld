@@ -54,8 +54,22 @@ namespace HundunWorld.Game.UI.Ink.Pages
         /// <summary>buff/debuff 图标条尺寸</summary>
         private static readonly Float2 BuffBarSize = new Float2(360f, 42f);
 
-        /// <summary>系统导航栏尺寸</summary>
-        private static readonly Float2 SysNavSize = new Float2(640f, 40f);
+        /// <summary>系统主导航栏尺寸（第一行：9 个主导航按钮 + 分隔符 + 传统模式切换）</summary>
+        private static readonly Float2 SysNavSize = new Float2(760f, 36f);
+
+        /// <summary>系统扩展导航栏尺寸（第二行：9 个扩展导航按钮）</summary>
+        private static readonly Float2 SysNavExtendedSize = new Float2(760f, 36f);
+
+        /// <summary>主导航栏与扩展导航栏的垂直间距</summary>
+        private const float SysNavRowGap = 4f;
+
+        /// <summary>传统模式切换按钮的金色强调背景（rgba(200,168,88,0.12)）</summary>
+        private static readonly Color TraditionalToggleBg = new Color(
+            InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G,
+            InkWashTheme.GoldPrimary.B, 0.12f);
+
+        /// <summary>主导航栏分隔符宽度（竖线 + 两侧 margin）</summary>
+        private const float SysNavDividerWidth = 8f;
 
         /// <summary>技能槽尺寸（正方形）</summary>
         private const float SkillSlotSize = 58f;
@@ -157,8 +171,9 @@ namespace HundunWorld.Game.UI.Ink.Pages
         // SubTask 5.7 buff/debuff 图标条
         private InkPanel _buffBar;
 
-        // SubTask 5.8 系统导航栏
+        // SubTask 5.8 系统导航栏（主导航行 + 扩展导航行）
         private InkPanel _sysNav;
+        private InkPanel _sysNavExtended;
 
         // ---------- 美化扩展子控件（对齐 combat-hud-v2.html 设计） ----------
 
@@ -365,6 +380,13 @@ namespace HundunWorld.Game.UI.Ink.Pages
         /// 由 <see cref="InkPageRouter"/> 订阅以执行页面跳转。
         /// </summary>
         public event Action<string> NavigationRequested;
+
+        /// <summary>
+        /// 粒子动效系统引用（可选）。
+        /// 由 <see cref="MainUIManager"/> 在创建页面后注入，用于在按钮点击位置触发金粉爆发反馈。
+        /// 为 null 时按钮点击不触发粒子动效（功能降级，不影响导航）。
+        /// </summary>
+        public InkParticleSystem ParticleSystem { get; set; }
 
         /// <summary>
         /// 小地图玩家朝向角（度）。0 = 正北，顺时针增加。默认 0。
@@ -819,10 +841,10 @@ namespace HundunWorld.Game.UI.Ink.Pages
             };
             _leftBottom.AddChild(_characterName);
 
-            // 气血条：Vermilion 填充，位置 (barX, 22)，尺寸 (barW, barH)，Value=0.85
+            // 气血条：Blood 填充（设计方案 §3.1 HP=--ink-blood-primary），位置 (barX, 22)，尺寸 (barW, barH)，Value=0.85
             _hpBar = new InkBar
             {
-                FillVariant = InkBarFillVariant.Vermilion,
+                FillVariant = InkBarFillVariant.Blood,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(barX, 22f),
                 Size = new Float2(barW, barH),
@@ -1005,66 +1027,151 @@ namespace HundunWorld.Game.UI.Ink.Pages
         }
 
         /// <summary>
-        /// SubTask 5.8：底部系统导航栏。
-        /// <see cref="InkPanel"/> 尺寸 (640, 40)，内含 6 个 <see cref="InkButton"/> Default Md 变体。
+        /// SubTask 5.8：底部系统导航栏（双行布局，对齐 combat-hud.html 设计）。
+        /// <para>
+        /// 第一行（<see cref="_sysNav"/>，760x36）：9 个主导航按钮 + 分隔符 + 传统模式切换按钮，按 4 大子系统分组：
         /// <list type="bullet">
-        ///   <item>"任务" 绑定 <c>nav-quests</c></item>
-        ///   <item>"装备" 绑定 <c>nav-character-v2</c>（重定向至 V2 角色属性页，装备槽已集成于 V2）</item>
-        ///   <item>"战前" 绑定 <c>nav-battle-prep</c></item>
-        ///   <item>"点穴" 绑定 <c>acupoint</c></item>
-        ///   <item>"成就" 预留占位（点击记录日志）</item>
-        ///   <item>"设置" 绑定 <c>nav-settings</c></item>
+        ///   <item>角色与背包：角色(nav-character-panel) / 武学(nav-skill-panel) / 背包(nav-inventory)</item>
+        ///   <item>任务与技能：任务(nav-quests) / 地图(nav-world-map) / 罗盘(nav-compass)</item>
+        ///   <item>社交与商城：社交(nav-friends) / 商城(nav-shop)</item>
+        ///   <item>战斗模式切换：传统模式(toggle-traditional)，金色强调背景</item>
         /// </list>
-        /// 有绑定 dom-id 的按钮点击触发 <see cref="NavigationRequested"/>；占位按钮记录日志。
+        /// 第二行（<see cref="_sysNavExtended"/>，760x36）：9 个扩展导航按钮：
+        /// <list type="bullet">
+        ///   <item>角色与背包：强化(nav-equipment-enhance) / 制造(nav-crafting) / 坐骑(nav-mount-pet)</item>
+        ///   <item>社交与商城：好友(nav-friends) / 邮件(nav-mail) / 排行(nav-leaderboard) / 师徒(nav-mentor) / 成就(nav-achievement)</item>
+        ///   <item>任务与技能：副本(nav-dungeon-entry)</item>
+        /// </list>
+        /// 所有按钮点击触发 <see cref="OnSystemNavButtonClicked"/>，发射金粉粒子并请求导航。
+        /// </para>
         /// </summary>
         private void BuildSystemNav()
         {
+            // ========== 第一行：主导航栏 ==========
             _sysNav = new InkPanel
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Size = SysNavSize,
             };
 
-            // 6 个按钮：标签 + dom-id（null 表示占位）
-            var entries = new[]
+            // 主导航按钮：标签 + dom-id + 是否传统模式切换（特殊样式）
+            var mainEntries = new[]
             {
-                (label: "任务", domId: "nav-quests"),
-                (label: "装备", domId: "nav-equipment"),
-                (label: "战前", domId: "nav-battle-prep"),
-                (label: "点穴", domId: "acupoint"),
-                (label: "成就", domId: (string)null),
-                (label: "设置", domId: "nav-settings"),
+                (label: "角色", domId: InkPageDomIds.NavCharacterPanel),
+                (label: "武学", domId: InkPageDomIds.NavSkillPanel),
+                (label: "背包", domId: InkPageDomIds.NavInventory),
+                (label: "任务", domId: InkPageDomIds.NavQuests),
+                (label: "地图", domId: InkPageDomIds.NavWorldMap),
+                (label: "社交", domId: InkPageDomIds.NavFriends),
+                (label: "商城", domId: InkPageDomIds.NavShop),
+                (label: "罗盘", domId: InkPageDomIds.NavCompass),
             };
 
-            // 按钮宽度：6 个按钮 + 5 个间距 = 600，按钮宽 = (600 - 5*6) / 6 = 95
-            // 实际用 90 宽 + 间距 6 + 余白分配，避免溢出
-            float btnWidth = (SysNavSize.X - SysNavBtnGap * (entries.Length - 1)) / entries.Length;
-            float btnHeight = SysNavSize.Y - 4f; // 上下各留 2px 内边距
-            float btnY = (SysNavSize.Y - btnHeight) * 0.5f;
+            // 主导航按钮宽度：8 个按钮 + 1 个分隔符 + 1 个切换按钮 + 9 个间距
+            // 总宽 760，分隔符 8px，切换按钮略宽 80px，其余 8 个按钮均分剩余
+            float mainBtnGap = SysNavBtnGap;
+            float toggleBtnWidth = 80f;
+            float dividerWidth = SysNavDividerWidth;
+            // 8 个主按钮宽度 = (760 - 9*gap - divider - toggle) / 8
+            float mainBtnWidth = (SysNavSize.X - mainBtnGap * 9 - dividerWidth - toggleBtnWidth) / 8f;
+            float mainBtnHeight = SysNavSize.Y - 4f;
+            float mainBtnY = (SysNavSize.Y - mainBtnHeight) * 0.5f;
 
             float cursorX = 0f;
-            for (int i = 0; i < entries.Length; i++)
+            for (int i = 0; i < mainEntries.Length; i++)
             {
-                var entry = entries[i];
+                var entry = mainEntries[i];
                 var btn = new InkButton
                 {
                     Variant = InkButtonVariant.Default,
                     ButtonSize = InkButtonSize.Md,
                     Text = entry.label,
                     AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(cursorX, btnY),
-                    Size = new Float2(btnWidth, btnHeight),
+                    Location = new Float2(cursorX, mainBtnY),
+                    Size = new Float2(mainBtnWidth, mainBtnHeight),
                 };
 
-                // 闭包捕获当前 entry，避免循环变量陷阱
                 string domId = entry.domId;
-                btn.ButtonClicked += (b) => OnSystemNavButtonClicked(domId);
+                btn.ButtonClicked += (b) => OnSystemNavButtonClicked(domId, b);
 
                 _sysNav.AddChild(btn);
-                cursorX += btnWidth + SysNavBtnGap;
+                cursorX += mainBtnWidth + mainBtnGap;
             }
 
+            // 分隔符：竖线（用窄长方形 InkPanel 模拟）
+            var divider = new InkPanel
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(cursorX, (SysNavSize.Y - 20f) * 0.5f),
+                Size = new Float2(1f, 20f),
+                BackgroundColor = InkWashTheme.BorderNeutralL3,
+            };
+            _sysNav.AddChild(divider);
+            cursorX += dividerWidth + mainBtnGap;
+
+            // 传统模式切换按钮：金色强调背景
+            var toggleBtn = new InkButton
+            {
+                Variant = InkButtonVariant.Default,
+                ButtonSize = InkButtonSize.Md,
+                Text = "传统模式",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(cursorX, mainBtnY),
+                Size = new Float2(toggleBtnWidth, mainBtnHeight),
+                BackgroundColor = TraditionalToggleBg,
+            };
+            toggleBtn.ButtonClicked += (b) => OnSystemNavButtonClicked(InkPageDomIds.CombatHudTraditional, b);
+            _sysNav.AddChild(toggleBtn);
+
             AddChild(_sysNav);
+
+            // ========== 第二行：扩展导航栏 ==========
+            _sysNavExtended = new InkPanel
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Size = SysNavExtendedSize,
+            };
+
+            var extendedEntries = new[]
+            {
+                (label: "强化", domId: InkPageDomIds.NavEquipmentEnhance),
+                (label: "制造", domId: InkPageDomIds.NavCrafting),
+                (label: "坐骑", domId: InkPageDomIds.NavMountPet),
+                (label: "好友", domId: InkPageDomIds.NavFriends),
+                (label: "邮件", domId: InkPageDomIds.NavMail),
+                (label: "排行", domId: InkPageDomIds.NavLeaderboard),
+                (label: "师徒", domId: InkPageDomIds.NavMentor),
+                (label: "成就", domId: InkPageDomIds.NavAchievement),
+                (label: "副本", domId: InkPageDomIds.NavDungeonEntry),
+            };
+
+            // 扩展导航按钮宽度：9 个按钮 + 8 个间距
+            float extBtnWidth = (SysNavExtendedSize.X - SysNavBtnGap * (extendedEntries.Length - 1)) / extendedEntries.Length;
+            float extBtnHeight = SysNavExtendedSize.Y - 4f;
+            float extBtnY = (SysNavExtendedSize.Y - extBtnHeight) * 0.5f;
+
+            float cursorX2 = 0f;
+            for (int i = 0; i < extendedEntries.Length; i++)
+            {
+                var entry = extendedEntries[i];
+                var btn = new InkButton
+                {
+                    Variant = InkButtonVariant.Default,
+                    ButtonSize = InkButtonSize.Md,
+                    Text = entry.label,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(cursorX2, extBtnY),
+                    Size = new Float2(extBtnWidth, extBtnHeight),
+                };
+
+                string domId = entry.domId;
+                btn.ButtonClicked += (b) => OnSystemNavButtonClicked(domId, b);
+
+                _sysNavExtended.AddChild(btn);
+                cursorX2 += extBtnWidth + SysNavBtnGap;
+            }
+
+            AddChild(_sysNavExtended);
         }
 
         // ===================================================================
@@ -1144,11 +1251,11 @@ namespace HundunWorld.Game.UI.Ink.Pages
             };
             _targetFrame.AddChild(_targetDistanceLabel);
 
-            // 目标 HP 条（朱红）
+            // 目标 HP 条（设计方案 §3.1 HP=blood-primary，敌对目标用血色）
             float hpRatio = _targetHpMax > 0 ? Mathf.Clamp((float)_targetHpCurrent / _targetHpMax, 0f, 1f) : 0f;
             _targetHpBar = new InkBar
             {
-                FillVariant = InkBarFillVariant.Vermilion,
+                FillVariant = InkBarFillVariant.Blood,
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(8f, 48f),
                 Size = new Float2(TargetFrameSize.X - 80f, 10f),
@@ -1246,10 +1353,10 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 };
                 card.AddChild(levelLabel);
 
-                // HP 条（低 HP 用朱红，正常用翡翠）
+                // HP 条（设计方案 §3.1 HP=blood-primary；低 HP 升级为朱红示警）
                 var hpVariant = _partyHpRatio[i] < 0.3f
                     ? InkBarFillVariant.Vermilion
-                    : InkBarFillVariant.Jade;
+                    : InkBarFillVariant.Blood;
                 var hpBar = new InkBar
                 {
                     FillVariant = hpVariant,
@@ -1261,10 +1368,10 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 card.AddChild(hpBar);
                 _partyHpBars[i] = hpBar;
 
-                // MP 条（鎏金，更细）
+                // MP 条（设计方案 §3.1 MP=jade-primary，更细）
                 var mpBar = new InkBar
                 {
-                    FillVariant = InkBarFillVariant.Gold,
+                    FillVariant = InkBarFillVariant.Jade,
                     AnchorPreset = AnchorPresets.TopLeft,
                     Location = new Float2(48f, 36f),
                     Size = new Float2(PartyCardSize.X - 56f, 4f),
@@ -1492,10 +1599,19 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 _buffBar.Location = new Float2(sw * 0.5f - BuffBarSize.X * 0.5f, sh - 54f);
             }
 
-            // SubTask 5.8 系统导航栏：底部居中，紧贴屏幕底部
+            // SubTask 5.8 系统导航栏（双行）：底部居中，紧贴屏幕底部
+            // 第一行（主导航）位于最底部，第二行（扩展导航）位于其上方
+            // 布局自下而上：扩展行 y = sh - 50 - SysNavExtendedSize.Y - SysNavRowGap
+            //              主行 y = sh - 50
             if (_sysNav != null)
             {
                 _sysNav.Location = new Float2(sw * 0.5f - SysNavSize.X * 0.5f, sh - 50f);
+            }
+            if (_sysNavExtended != null)
+            {
+                _sysNavExtended.Location = new Float2(
+                    sw * 0.5f - SysNavExtendedSize.X * 0.5f,
+                    sh - 50f - SysNavExtendedSize.Y - SysNavRowGap);
             }
 
             // ---------- 美化扩展定位（对齐 combat-hud-v2.html 设计） ----------
@@ -1565,23 +1681,26 @@ namespace HundunWorld.Game.UI.Ink.Pages
         // =======================================================================
 
         /// <summary>
-        /// 引导按钮点击处理：记录"引导功能待落地"占位日志。
+        /// 引导按钮点击处理：记录"引导功能待落地"占位日志，并触发金粉反馈。
         /// </summary>
-        /// <param name="button">触发事件的按钮（未使用）</param>
+        /// <param name="button">触发事件的按钮</param>
         private void OnGuideButtonClicked(Button button)
         {
+            EmitGoldAtButton(button);
             FlaxEngine.Debug.Log("[CombatHudPage] 引导功能待落地");
         }
 
         /// <summary>
         /// 头像按钮点击处理：触发 <see cref="NavigationRequested"/>("nav-character-v2")，
         /// 由 <see cref="InkPageRouter"/> 订阅后跳转角色属性页 V2。
+        /// 同时在按钮中心位置触发金粉爆发反馈。
         /// </summary>
-        /// <param name="button">触发事件的按钮（未使用）</param>
+        /// <param name="button">触发事件的按钮</param>
         private void OnAvatarButtonClicked(Button button)
         {
             try
             {
+                EmitGoldAtButton(button);
                 NavigationRequested?.Invoke("nav-character-v2");
             }
             catch (Exception ex)
@@ -1594,12 +1713,15 @@ namespace HundunWorld.Game.UI.Ink.Pages
         /// 系统导航按钮点击处理。
         /// 若 <paramref name="domId"/> 非空，触发 <see cref="NavigationRequested"/>；
         /// 否则记录"功能待落地"日志。
+        /// 无论是否导航，均在按钮中心位置触发金粉爆发反馈。
         /// </summary>
         /// <param name="domId">按钮绑定的目标 dom-id，null 表示占位</param>
-        private void OnSystemNavButtonClicked(string domId)
+        /// <param name="sourceButton">触发事件的按钮，用于定位金粉爆发中心</param>
+        private void OnSystemNavButtonClicked(string domId, Button sourceButton)
         {
             try
             {
+                EmitGoldAtButton(sourceButton);
                 if (string.IsNullOrEmpty(domId))
                 {
                     FlaxEngine.Debug.Log("[CombatHudPage] 功能待落地");
@@ -1611,6 +1733,38 @@ namespace HundunWorld.Game.UI.Ink.Pages
             catch (Exception ex)
             {
                 FlaxEngine.Debug.LogError($"[CombatHudPage] NavigationRequested({domId}) 触发失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 在指定按钮中心位置触发金粉爆发粒子反馈。
+        /// <para>
+        /// 将按钮中心点转换为粒子系统局部坐标后调用
+        /// <see cref="InkParticleSystem.EmitGoldBurst"/>，对应 ink-particles.css
+        /// 的 gold-burst 动画（按钮点击 800ms 金粉扩散）。
+        /// 若 <see cref="ParticleSystem"/> 为 null 则静默跳过（功能降级）。
+        /// </para>
+        /// </summary>
+        /// <param name="button">触发按钮，用于计算屏幕坐标</param>
+        private void EmitGoldAtButton(Button button)
+        {
+            try
+            {
+                if (ParticleSystem == null || button == null)
+                    return;
+
+                // 按钮中心点（按钮局部坐标）
+                var buttonCenter = new Float2(button.Width * 0.5f, button.Height * 0.5f);
+                // 转换为屏幕坐标
+                var screenPos = button.PointToScreen(buttonCenter);
+                // 转换为粒子系统局部坐标
+                var localPos = ParticleSystem.PointFromScreen(screenPos);
+                // 发射 14 颗金粉粒子（略多于默认 12，强化按钮反馈）
+                ParticleSystem.EmitGoldBurst(localPos, count: 14, isLarge: false);
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogWarning($"[CombatHudPage] EmitGoldAtButton 失败（不影响导航）: {ex.Message}");
             }
         }
     }

@@ -123,6 +123,28 @@
       }
     },
     {
+      "id": "page-character-panel-v2",
+      "title": "角色属性装备 - 双栏版",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 0,
+        "y": 3016,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/character-panel-v2.html",
+        "interactions": [
+          {
+            "domId": "back-hud",
+            "targetPageId": "page-combat-hud",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
       "id": "page-skill-panel",
       "title": "武学心法奇术",
       "type": "page",
@@ -283,7 +305,7 @@
       "version": 1,
       "createdAt": 1752499200000,
       "canvasData": {
-        "x": 0,
+        "x": 620,
         "y": 3016,
         "group": 0
       },
@@ -391,7 +413,7 @@
       "version": 1,
       "createdAt": 1752499200000,
       "canvasData": {
-        "x": 620,
+        "x": 1240,
         "y": 3016,
         "group": 0
       },
@@ -413,7 +435,7 @@
       "version": 1,
       "createdAt": 1752499200000,
       "canvasData": {
-        "x": 1240,
+        "x": 1860,
         "y": 3016,
         "group": 0
       },
@@ -435,7 +457,7 @@
       "version": 1,
       "createdAt": 1752499200000,
       "canvasData": {
-        "x": 1860,
+        "x": 2480,
         "y": 3016,
         "group": 0
       },
@@ -457,7 +479,7 @@
       "version": 1,
       "createdAt": 1752499200000,
       "canvasData": {
-        "x": 2480,
+        "x": 3100,
         "y": 3016,
         "group": 0
       },
@@ -479,7 +501,7 @@
       "version": 1,
       "createdAt": 1752499200000,
       "canvasData": {
-        "x": 3100,
+        "x": 3720,
         "y": 3016,
         "group": 0
       },
@@ -501,7 +523,7 @@
       "version": 1,
       "createdAt": 1752499200000,
       "canvasData": {
-        "x": 3720,
+        "x": 4340,
         "y": 3016,
         "group": 0
       },
@@ -523,7 +545,7 @@
       "version": 1,
       "createdAt": 1752499200000,
       "canvasData": {
-        "x": 4340,
+        "x": 4960,
         "y": 3016,
         "group": 0
       },
@@ -545,7 +567,7 @@
       "version": 1,
       "createdAt": 1752499200000,
       "canvasData": {
-        "x": 4960,
+        "x": 5580,
         "y": 3016,
         "group": 0
       },
@@ -567,7 +589,7 @@
       "version": 1,
       "createdAt": 1752499200000,
       "canvasData": {
-        "x": 5580,
+        "x": 6200,
         "y": 3016,
         "group": 0
       },
@@ -650,6 +672,62 @@
       },
       "devMetadata": {
         "imageSrc": "assets/borders/ink-divider.jpg"
+      }
+    },
+    {
+      "id": "image-006",
+      "title": "春意水墨背景纹理",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 3100,
+        "y": 3393
+      },
+      "devMetadata": {
+        "imageSrc": "assets/textures/ink-wash-bg-spring.jpg"
+      }
+    },
+    {
+      "id": "image-007",
+      "title": "金粉粒子贴图",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 3720,
+        "y": 3393
+      },
+      "devMetadata": {
+        "imageSrc": "assets/ui-elements/particle-sprite-gold.jpg"
+      }
+    },
+    {
+      "id": "image-008",
+      "title": "青玉萤光粒子贴图",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 4340,
+        "y": 3393
+      },
+      "devMetadata": {
+        "imageSrc": "assets/ui-elements/particle-sprite-jade.jpg"
+      }
+    },
+    {
+      "id": "image-009",
+      "title": "角色3D模型展示",
+      "type": "image",
+      "version": 1,
+      "createdAt": 1752499200000,
+      "canvasData": {
+        "x": 4960,
+        "y": 3393
+      },
+      "devMetadata": {
+        "imageSrc": "assets/textures/character-3d-model.jpg"
       }
     }
   ],

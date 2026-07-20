@@ -12,7 +12,11 @@
 		"ID": "0dfcdd704cb11ad458b386a5ae98c6cf",
 		"TypeName": "HundunWorld.Game.Rendering.CharacterAppearanceEditor",
 		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
-		"V": {}
+		"V": {
+	"SkinController": "82a0c3ae4686a03a5c32cea920117d5c",
+	"EyeController": "2df9f7164cb48cfe15761bbda6017db6",
+	"HairController": "a8443c424204348faadef5bed2257625"
+}
 	},
 	{
 		"ID": "2df9f7164cb48cfe15761bbda6017db6",
@@ -88,7 +92,22 @@
 		"ID": "583f2c6644fd885286fb1b835233a5e0",
 		"TypeName": "Game.Combat.Skills.SkillAnimationMapping",
 		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
-		"V": {}
+		"V": {
+	"SkillAnimations": [
+		{
+			"SkillId": 0,
+			"SkillName": null,
+			"AnimationName": null,
+			"StartupTime": 0.3,
+			"ActiveTime": 0.2,
+			"RecoveryTime": 0.3,
+			"Loop": false,
+			"PlaybackSpeed": 1.0,
+			"Element": 0,
+			"AnimationType": 0
+		}
+	]
+}
 	},
 	{
 		"ID": "55e5492b4989c22240397d9e738cbda1",
@@ -102,7 +121,19 @@
 		"ID": "b975d66c421ebc31b01aae9f660ebfa9",
 		"TypeName": "Game.Combat.SkillAnimationDemo",
 		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
-		"V": {}
+		"V": {
+	"AnimationController": "faa03a72407fe36638c6afb11ed4263f",
+	"StateMachine": "3a24efe64a1210d1d872dfa3b7ee9177",
+	"AutoPlayDemo": true
+}
+	},
+	{
+		"ID": "c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6",
+		"TypeName": "HundunWorld.Game.Character.CharacterAnimationController",
+		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
+		"V": {
+	"AnimatedModel": "b426c8ed4bd917a0200d08936be572e1"
+}
 	},
 	{
 		"ID": "b426c8ed4bd917a0200d08936be572e1",

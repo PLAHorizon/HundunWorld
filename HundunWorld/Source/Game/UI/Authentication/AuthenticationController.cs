@@ -70,7 +70,7 @@ public class AuthenticationController : Script
                 {
                     FlaxEngine.Scripting.InvokeOnUpdate(() =>
                     {
-                        _loginPanel.SetStatus("登录已过期，请重新登录", Color.Orange);
+                        _loginPanel.SetStatus("登录已过期，请重新登录", UIStyleTokens.StatusWarning);
                     });
                 }
             }
@@ -181,7 +181,7 @@ public class AuthenticationController : Script
         try
         {
             // 更新状态为正在登录
-            _loginPanel.SetStatus("正在尝试登录...", Color.Yellow);
+            _loginPanel.SetStatus("正在尝试登录...", UIStyleTokens.StatusAlert);
 
             AuthenticationManager.Instance.Passport = new PassportInfo
             {
@@ -199,16 +199,16 @@ public class AuthenticationController : Script
             // 根据结果更新提示信息（仅更新状态标签，不弹窗）
             if (result.IsSuccess)
             {
-                _loginPanel.SetStatus("正在登录...", Color.Yellow);
+                _loginPanel.SetStatus("正在登录...", UIStyleTokens.StatusAlert);
             }
             else
             {
-                _loginPanel.SetStatus(result.ErrorMessage ?? "登录失败，请检查用户名和密码", Color.Red);
+                _loginPanel.SetStatus(result.ErrorMessage ?? "登录失败，请检查用户名和密码", UIStyleTokens.StatusError);
             }
         }
         catch (Exception ex)
         {
-            _loginPanel.SetStatus($"错误: {ex.Message}", Color.Red);
+            _loginPanel.SetStatus($"错误: {ex.Message}", UIStyleTokens.StatusError);
             _errorManager.HandleError($"登录过程中发生错误: {ex.Message}", ErrorType.Unknown, ErrorSeverity.Error, "AuthenticationUI");
         }
         finally
@@ -236,14 +236,14 @@ public class AuthenticationController : Script
         {
 
             // 更新状态为正在注册
-            _registerPanel.SetStatus("正在注册...", Color.Yellow);
+            _registerPanel.SetStatus("正在注册...", UIStyleTokens.StatusAlert);
             FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 状态已更新为正在注册");
 
             // 验证输入
             if (!_registerPanel.ValidateInput())
             {
                 FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 输入验证失败");
-                _registerPanel.SetStatus("请检查输入信息", Color.Red);
+                _registerPanel.SetStatus("请检查输入信息", UIStyleTokens.StatusError);
                 return;
             }
             FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 输入验证成功");
@@ -260,18 +260,18 @@ public class AuthenticationController : Script
             if (result.IsSuccess)
             {
                 FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 注册请求已发送，等待服务器响应");
-                _registerPanel.SetStatus("注册中...", Color.Yellow);
+                _registerPanel.SetStatus("注册中...", UIStyleTokens.StatusAlert);
             }
             else
             {
                 FlaxEngine.Debug.Log($"[OnRegisterButtonClicked] 注册失败: {result.ErrorMessage}");
-                _registerPanel.SetStatus(result.ErrorMessage ?? "注册失败，请稍后重试", Color.Red);
+                _registerPanel.SetStatus(result.ErrorMessage ?? "注册失败，请稍后重试", UIStyleTokens.StatusError);
             }
         }
         catch (Exception ex)
         {
             FlaxEngine.Debug.LogError($"[OnRegisterButtonClicked] 注册过程中发生异常: {ex.Message}\n{ex.StackTrace}");
-            _registerPanel.SetStatus($"错误: {ex.Message}", Color.Red);
+            _registerPanel.SetStatus($"错误: {ex.Message}", UIStyleTokens.StatusError);
             _errorManager.HandleError($"注册过程中发生错误: {ex.Message}", ErrorType.Unknown, ErrorSeverity.Error, "AuthenticationUI");
         }
         finally
@@ -426,11 +426,11 @@ public class AuthenticationController : Script
         //// 更新状态提示
         //if (!string.IsNullOrEmpty(username))
         //{
-        //    _loginPanel.SetStatus($"请登录账户: {username}", Color.Yellow);
+        //    _loginPanel.SetStatus($"请登录账户: {username}", UIStyleTokens.StatusAlert);
         //}
         //else
         //{
-        //    _loginPanel.SetStatus("请输入账户信息", Color.Yellow);
+        //    _loginPanel.SetStatus("请输入账户信息", UIStyleTokens.StatusAlert);
         //}
 
         FlaxEngine.Debug.Log("[ShowLoginPanelWithCredentials] 登录面板已显示并填充账号信息");
@@ -457,13 +457,13 @@ public class AuthenticationController : Script
 
         if (response.IsSuccess)
         {
-            _loginPanel.SetStatus("登录成功！正在加载...", Color.Green);
+            _loginPanel.SetStatus("登录成功！正在加载...", UIStyleTokens.StatusSuccess);
             _loginPanel.Enabled = false; // 禁用交互，等待场景切换
             _animationManager?.StopAnimations(_loginPanel);
         }
         else
         {
-            _loginPanel.SetStatus(response.Message ?? "登录失败，请检查账户信息", Color.Red);
+            _loginPanel.SetStatus(response.Message ?? "登录失败，请检查账户信息", UIStyleTokens.StatusError);
             _animationManager?.Shake(_loginPanel, 0.5f);
             _loginPanel.Enabled = true;
         }
@@ -509,7 +509,7 @@ public class AuthenticationController : Script
                 // 更新状态标签显示错误信息并播放错误动画
                 if (_registerPanel != null)
                 {
-                    _registerPanel.SetStatus(response.ErrorMessage ?? "注册失败，请稍后重试", Color.Red);
+                    _registerPanel.SetStatus(response.ErrorMessage ?? "注册失败，请稍后重试", UIStyleTokens.StatusError);
                 }
 
                 if (_animationManager != null && _registerPanel != null)
