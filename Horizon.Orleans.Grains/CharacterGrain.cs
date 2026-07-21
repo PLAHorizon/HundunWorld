@@ -10,6 +10,7 @@ using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 using Horizon.Model.GameModel;
 using Horizon.Orleans.Interface;
+using Horizon.Orleans.Interface.World;
 using CharacterState = Horizon.Game.Message.Network.CharacterState;
 using Horizon.Share.Dtos.Games;
 using MemoryPack;
@@ -46,6 +47,12 @@ namespace Horizon.Orleans.Grains
         /// 权威在线状态由 Redis presence key 管理，见 <see cref="ICharacterPresenceStore"/>。
         /// </summary>
         private bool _isOnline;
+
+        /// <summary>
+        /// P1.1：当前所在 ZoneShard 的 Grain Key（0 表示不在任何空间中）。<br/>
+        /// 由 <see cref="OnEnterZoneAsync"/> 设置，<see cref="OnLeaveZoneAsync"/> 清除。
+        /// </summary>
+        private long _currentZoneShardId;
 
 
 
@@ -1196,6 +1203,129 @@ namespace Horizon.Orleans.Grains
                 _logger.LogError(ex, "更新角色最后登录时间时发生异常: CharacterId={CharacterId}", 
                     characterId);
             }
+        }
+
+        #endregion
+
+        #region P1.1 统一角色状态模型：空间生命周期钩子
+
+        /// <inheritdoc />
+        public async Task OnEnterZoneAsync(long zoneShardId)
+        {
+            _currentZoneShardId = zoneShardId;
+            _logger.LogInformation(
+                "CharacterGrain {CharacterId}: 进入空间 ZoneShard={ZoneShardId}，推送权威 RPG 属性到广播缓存。",
+                CharacterId, zoneShardId);
+
+            // 将权威 RPG 属性推送到 ZoneShard 广播缓存，确保其他玩家看到正确的 HP/Level 等。
+            try
+            {
+                var zoneShard = GrainFactory.GetGrain<IZoneShardGrain>(zoneShardId);
+                var info = _characterState.State?.CharacterInfo;
+                if (info != null)
+                {
+                    await zoneShard.UpdateCharacterAttributesAsync(
+                        CharacterId,
+                        level: info.Level,
+                        exp: info.Experience,
+                        hp: (int)info.CurrentHealth,
+                        maxHp: (int)info.MaxHealth,
+                        stateBits: info.IsAlive ? 0u : 1u  // bit0 = 死亡标志
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "CharacterGrain {CharacterId}: 推送 RPG 属性到 ZoneShard={ZoneShardId} 失败。",
+                    CharacterId, zoneShardId);
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task OnLeaveZoneAsync(long zoneShardId, int finalHp, ZoneLeaveReason reason)
+        {
+            _logger.LogInformation(
+                "CharacterGrain {CharacterId}: 离开空间 ZoneShard={ZoneShardId}（原因={Reason}，最终HP={FinalHp}）。",
+                CharacterId, zoneShardId, reason, finalHp);
+
+            // 持久化最终 HP（仅当 finalHp > 0 时更新，避免孤儿清理时报告 0 覆盖正常值）。
+            if (_characterState.State?.CharacterInfo != null && finalHp > 0)
+            {
+                _characterState.State.CharacterInfo.CurrentHealth = finalHp;
+                await _characterState.WriteStateAsync();
+            }
+
+            // 清除空间标记。
+            _currentZoneShardId = 0;
+        }
+
+        /// <inheritdoc />
+        public async Task<HpChangeResult> RequestHpChangeAsync(int hpDelta, ulong sourceId, Horizon.Orleans.Interface.World.DamageType damageType)
+        {
+            var info = _characterState.State?.CharacterInfo;
+            if (info == null)
+            {
+                _logger.LogWarning(
+                    "CharacterGrain {CharacterId}: RequestHpChange 时 CharacterInfo 为 null，拒绝伤害。",
+                    CharacterId);
+                return new HpChangeResult(0, 0, 0, false, true);
+            }
+
+            // TODO（Phase 2）：在此处插入防御/减伤/Buff 计算逻辑。
+            // 当前为最简实现：直接应用原始伤害。
+            var actualDelta = hpDelta;
+            var currentHp = (int)info.CurrentHealth;
+            var maxHp = (int)info.MaxHealth;
+
+            // 治疗不超过上限
+            if (actualDelta > 0)
+            {
+                currentHp = Math.Min(currentHp + actualDelta, maxHp);
+                actualDelta = currentHp - (int)info.CurrentHealth;
+            }
+            else
+            {
+                currentHp = Math.Max(currentHp + actualDelta, 0);
+                actualDelta = currentHp - (int)info.CurrentHealth;
+            }
+
+            var isDead = currentHp <= 0;
+            info.CurrentHealth = currentHp;
+            info.IsAlive = !isDead;
+
+            if (isDead)
+            {
+                info.DeathCount++;
+                _logger.LogInformation(
+                    "CharacterGrain {CharacterId}: 角色死亡（来源={SourceId}，类型={DamageType}）。",
+                    CharacterId, sourceId, damageType);
+            }
+
+            await _characterState.WriteStateAsync();
+
+            // 将新 HP 推送到 ZoneShard 广播缓存。
+            if (_currentZoneShardId != 0)
+            {
+                try
+                {
+                    var zoneShard = GrainFactory.GetGrain<IZoneShardGrain>(_currentZoneShardId);
+                    await zoneShard.UpdateCharacterAttributesAsync(
+                        CharacterId,
+                        hp: currentHp,
+                        maxHp: maxHp,
+                        stateBits: isDead ? 1u : 0u
+                    );
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex,
+                        "CharacterGrain {CharacterId}: HP 变更后推送到 ZoneShard={ZoneShardId} 失败。",
+                        CharacterId, _currentZoneShardId);
+                }
+            }
+
+            return new HpChangeResult(actualDelta, currentHp, maxHp, isDead, false);
         }
 
         #endregion

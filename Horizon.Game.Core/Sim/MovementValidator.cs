@@ -36,13 +36,27 @@ public sealed class MovementValidator
         public float PositionEpsilon { get; set; } = DefaultPositionEpsilon;
         public float HardSpeedCap { get; set; } = DefaultHardSpeedCap;
         /// <summary>
-        /// 兜底最大速度：当 <see cref="InputPacket.MaxSpeed"/> &lt;= 0 时（旧客户端未填充）使用。
-        /// v6 协议前等价于"全局固定速度上限"，v6 后仅作向后兼容兜底。
+        /// 兆底最大速度：当 <see cref="InputPacket.MaxSpeed"/> &lt;= 0 时（旧客户端未填充）使用。
+        /// v6 协议前等价于“全局固定速度上限”，v6 后仅作向后兼容兆底。
         /// </summary>
         public float MaxSpeed { get; set; } = MovementFormula.DefaultMaxSpeed;
         public float TickDtSeconds { get; set; } = 1f / 60f;
         public int MaxJumpCount { get; set; } = 2;
         public int MaxQinggongJumpCount { get; set; } = 3;
+    
+        /// <summary>
+        /// P2.6：最大允许加速度（m/s²）。
+        /// 相邻两次校验之间速度变化超过此值则判定为瞬移外挂。
+        /// 默认 50 m/s²（约 5G，容纳轻功/传送门/击飞等合法加速）。
+        /// </summary>
+        public float MaxAcceleration { get; set; } = 50f;
+    
+        /// <summary>
+        /// P2.6：瞬移距离阈值（米）。
+        /// 相邻两次校验之间位置跳变超过此值则判定为瞬移。
+        /// 默认 100m（合法传送门走独立协议，不经过移动校验）。
+        /// </summary>
+        public float TeleportDistanceThreshold { get; set; } = 100f;
     }
 
     private readonly Options _options;
@@ -284,6 +298,78 @@ public sealed class MovementValidator
 
         /// <summary>是否需要下发 correction（存在 <see cref="Correction"/> 即为真）。</summary>
         public bool NeedsCorrection => Correction != null;
+    }
+
+    // --- P2.6：加速度校验（防瞬移） ---
+
+    /// <summary>
+    /// P2.6：校验相邻两次权威位置之间的加速度是否合法。
+    /// 用于检测瞬移外挂：客户端在两次校验之间 teleport 到远处。
+    /// </summary>
+    /// <param name="prevPosition">上次校验的权威位置。</param>
+    /// <param name="currentPosition">本次校验的权威位置。</param>
+    /// <param name="prevSpeed">上次校验时的水平速度（m/s）。</param>
+    /// <param name="currentSpeed">本次校验时的水平速度（m/s）。</param>
+    /// <param name="deltaSeconds">两次校验之间的时间差（秒）。</param>
+    /// <returns>校验结果。</returns>
+    public AccelerationCheckResult CheckAcceleration(
+        in WorldPosition prevPosition,
+        in WorldPosition currentPosition,
+        float prevSpeed,
+        float currentSpeed,
+        float deltaSeconds)
+    {
+        if (deltaSeconds <= 0f)
+            return new AccelerationCheckResult(true, 0f, 0f, AccelerationViolation.None);
+
+        // 距离跳变检测（瞬移）
+        var distance = MovementFormula.Distance3D(
+            prevPosition.X, prevPosition.Y, prevPosition.Z,
+            currentPosition.X, currentPosition.Y, currentPosition.Z);
+
+        if (distance > _options.TeleportDistanceThreshold)
+        {
+            return new AccelerationCheckResult(false, distance, 0f, AccelerationViolation.TeleportDetected);
+        }
+
+        // 加速度检测
+        var speedDelta = MathF.Abs(currentSpeed - prevSpeed);
+        var acceleration = speedDelta / deltaSeconds;
+
+        if (acceleration > _options.MaxAcceleration)
+        {
+            return new AccelerationCheckResult(false, distance, acceleration, AccelerationViolation.AccelerationExceeded);
+        }
+
+        return new AccelerationCheckResult(true, distance, acceleration, AccelerationViolation.None);
+    }
+
+    /// <summary>P2.6：加速度校验结果。</summary>
+    public readonly struct AccelerationCheckResult
+    {
+        public bool IsValid { get; }
+        public float DistanceTraveled { get; }
+        public float Acceleration { get; }
+        public AccelerationViolation Violation { get; }
+
+        public AccelerationCheckResult(bool isValid, float distance, float acceleration, AccelerationViolation violation)
+        {
+            IsValid = isValid;
+            DistanceTraveled = distance;
+            Acceleration = acceleration;
+            Violation = violation;
+        }
+    }
+
+    /// <summary>P2.6：加速度违规类型。</summary>
+    public enum AccelerationViolation : byte
+    {
+        /// <summary>无违规。</summary>
+        None = 0,
+        /// <summary>瞬移检测（距离跳变超过阈值）。</summary>
+        TeleportDetected = 1,
+        /// <summary>加速度超限。</summary>
+        AccelerationExceeded = 2,
     }
 }
 

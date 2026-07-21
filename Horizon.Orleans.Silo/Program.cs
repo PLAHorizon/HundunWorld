@@ -615,6 +615,10 @@ namespace Horizon.Orleans.Silo
             // Configure event publisher (Orleans Stream事件驱动架构)
             services.AddSingleton<IGameEventPublisher, GameEventPublisher>();
 
+            // P1.1：注册角色状态桥接服务（ZoneShard 空间权威 ↔ CharacterGrain RPG 权威）。
+            services.AddSingleton<Horizon.Orleans.Interface.World.ICharacterStateBridge,
+                Horizon.Orleans.Grains.World.CharacterStateBridge>();
+
             // Configure options
             services.ConfigureOptions();
 

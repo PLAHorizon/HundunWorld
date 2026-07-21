@@ -39,6 +39,12 @@ public sealed class SyncPacketDispatcher
     /// <summary>收到的 SceneObjectSyncPacket 计数（诊断用）。</summary>
     public long SceneObjectSyncCount { get; private set; }
 
+    /// <summary>P1.4：收到的 DamagePacket 计数。</summary>
+    public long DamageCount { get; private set; }
+
+    /// <summary>P1.4：收到的 DeathPacket 计数。</summary>
+    public long DeathCount { get; private set; }
+
     /// <summary>分派时未识别的 Kind 总数。</summary>
     public long UnknownPacketCount { get; private set; }
 
@@ -87,6 +93,21 @@ public sealed class SyncPacketDispatcher
                     // 客户端不该收到 ReconnectResume（它是客户端 → 服务器的）。
                     System.Diagnostics.Debug.WriteLine("[SyncPacketDispatcher] 警告：客户端收到 ReconnectResumePacket（应为客户端→服务器方向），已忽略。");
                     UnknownPacketCount++;
+                    break;
+                case HandshakeRejectPacket reject:
+                    // P1.3：服务器拒绝握手（协议版本过低），记录并计入未知/拒绝统计。
+                    System.Diagnostics.Debug.WriteLine($"[SyncPacketDispatcher] 握手被拒绝：{reject.Reason} (最低版本={reject.MinimumVersion})");
+                    UnknownPacketCount++;
+                    break;
+                case DamagePacket damage:
+                    // P1.4：伤害通知，路由到 CombatEffectSystem。
+                    _inbox.DamageEvents.Enqueue(damage);
+                    DamageCount++;
+                    break;
+                case DeathPacket death:
+                    // P1.4：死亡通知，路由到 CombatEffectSystem。
+                    _inbox.DeathEvents.Enqueue(death);
+                    DeathCount++;
                     break;
                 default:
                     System.Diagnostics.Debug.WriteLine($"[SyncPacketDispatcher] 警告：收到未知包类型 Kind={packet.Kind}，已忽略。");

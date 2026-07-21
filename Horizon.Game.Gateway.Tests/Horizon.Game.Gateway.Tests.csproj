@@ -9,16 +9,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-    <PackageReference Include="Microsoft.Orleans.TestingHost" Version="10.0.1" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.2" />
-    <PackageReference Include="Moq" Version="4.20.72" />
-    <PackageReference Include="coverlet.collector" Version="6.0.4">
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.Orleans.TestingHost" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="coverlet.collector">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -40,27 +40,17 @@
   </ItemGroup>
 
   <!--
-    Task E.3/E.4：ManagedHundunWorld 纯 C# 文件已从 UE5 项目中移除，
-    相关的 JitterBuffer.cs 和 ReconnectService.cs 文件不再存在，
-    因此移除 Compile Include 引用。
-  -->
+    Task E.3/E.4：ManagedHundunWorld �?C# 文件已从 UE5 项目中移除，
+    相关�?JitterBuffer.cs �?ReconnectService.cs 文件不再存在�?    因此移除 Compile Include 引用�?  -->
 
   <!--
     排除依赖 ManagedHundunWorld.Network.Sync（JitterBuffer）的已失效测试文件，
-    这些文件引用的类型已从代码库移除，编译会失败。
-    移除排除前需要先恢复 ManagedHundunWorld 相关代码或重写这些测试。
-  -->
+    这些文件引用的类型已从代码库移除，编译会失败�?    移除排除前需要先恢复 ManagedHundunWorld 相关代码或重写这些测试�?  -->
   <ItemGroup>
     <Compile Remove="CrossHardwareConsistencyTests.cs" />
     <Compile Remove="NetworkEdgeCaseTests.cs" />
     <!--
-      下列文件存在既存编译错误（与本次 BUG 修复无关），暂时排除编译以让测试项目可运行。
-      错误根因：
-        - InputRetransmitTests.cs：调用 InputSendSystem 的实例方法（CS0120）
-        - SceneObjectBroadcastAoiTests.cs:133：IReadOnlyCollection<long> 无 Length 属性（CS1061）
-        - NetworkSyncIntegrationTests.cs：EntityDelta 类型字段缺失 / NotNull 参数（CS1501,CS1061,CS0103）
-      移除排除前需要先修复这些既存错误。
-    -->
+      下列文件存在既存编译错误（与本次 BUG 修复无关），暂时排除编译以让测试项目可运行�?      错误根因�?        - InputRetransmitTests.cs：调�?InputSendSystem 的实例方法（CS0120�?        - SceneObjectBroadcastAoiTests.cs:133：IReadOnlyCollection<long> �?Length 属性（CS1061�?        - NetworkSyncIntegrationTests.cs：EntityDelta 类型字段缺失 / NotNull 参数（CS1501,CS1061,CS0103�?      移除排除前需要先修复这些既存错误�?    -->
     <Compile Remove="InputRetransmitTests.cs" />
     <Compile Remove="SceneObjectBroadcastAoiTests.cs" />
     <Compile Remove="NetworkSyncIntegrationTests.cs" />

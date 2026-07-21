@@ -7,19 +7,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MemoryPack.Core" Version="1.21.4" />
-    <PackageReference Include="MemoryPack.Generator" Version="1.21.4" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Orleans.Core.Abstractions" Version="10.0.1" />
-    <PackageReference Include="Microsoft.Orleans.Sdk" Version="10.0.1" />
-    <PackageReference Include="Microsoft.Orleans.CodeGenerator" Version="10.0.1">
+    <PackageReference Include="MemoryPack.Core" />
+    <PackageReference Include="MemoryPack.Generator" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+    <PackageReference Include="Microsoft.Orleans.Core.Abstractions" />
+    <PackageReference Include="Microsoft.Orleans.Sdk" />
+    <PackageReference Include="Microsoft.Orleans.CodeGenerator">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-	  <PackageReference Include="Microsoft.Orleans.Core" Version="10.0.1" />
-	  <PackageReference Include="Microsoft.Orleans.Persistence.Redis" Version="10.0.1" />
-	  <PackageReference Include="Microsoft.Orleans.Streaming" Version="10.0.1" />
-	  <PackageReference Include="Microsoft.Orleans.Streaming.EventHubs" Version="10.0.1" />
+	  <PackageReference Include="Microsoft.Orleans.Core" />
+	  <PackageReference Include="Microsoft.Orleans.Persistence.Redis" />
+	  <PackageReference Include="Microsoft.Orleans.Streaming" />
+	  <PackageReference Include="Microsoft.Orleans.Streaming.EventHubs" />
   </ItemGroup>
 
   <ItemGroup>

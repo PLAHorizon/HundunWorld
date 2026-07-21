@@ -5,6 +5,7 @@
     <RootNamespace>UE5ToFlaxConverter.UI</RootNamespace>
     <AssemblyName>UE5ToFlaxConverter.UI</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
   </PropertyGroup>
 
   <ItemGroup>

@@ -36,27 +36,27 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.1" />
-    <PackageReference Include="IdentityServer4" Version="4.1.2" />
-    <PackageReference Include="IdentityServer4.AccessTokenValidation" Version="3.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="5.1.0" />
-    <PackageReference Include="Microsoft.DependencyValidation.Analyzers" Version="0.11.0" />
-    <PackageReference Include="Microsoft.Orleans.Client" Version="10.0.1" />
-    <PackageReference Include="Microsoft.Orleans.Clustering.AdoNet" Version="10.0.1" />
-    <PackageReference Include="Microsoft.Orleans.Clustering.Redis" Version="10.0.1" />
-    <PackageReference Include="Microsoft.Orleans.CodeGenerator" Version="10.0.1" />
-    <PackageReference Include="Microsoft.Orleans.Core" Version="10.0.1" />
-    <PackageReference Include="Microsoft.Orleans.Sdk" Version="10.0.1" />
-    <PackageReference Include="Microsoft.Orleans.Serialization" Version="10.0.1" />
-    <PackageReference Include="Microsoft.Orleans.Serialization.Abstractions" Version="10.0.1" />
-    <PackageReference Include="Microsoft.Orleans.Serialization.NewtonsoftJson" Version="10.0.1" />
-    <PackageReference Include="NetCoreServer" Version="8.0.7" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />   
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore.Filters" Version="8.0.2" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.4" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
+    <PackageReference Include="Asp.Versioning.Mvc" />
+    <PackageReference Include="IdentityServer4" />
+    <PackageReference Include="IdentityServer4.AccessTokenValidation" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" />
+    <PackageReference Include="Microsoft.DependencyValidation.Analyzers" />
+    <PackageReference Include="Microsoft.Orleans.Client" />
+    <PackageReference Include="Microsoft.Orleans.Clustering.AdoNet" />
+    <PackageReference Include="Microsoft.Orleans.Clustering.Redis" />
+    <PackageReference Include="Microsoft.Orleans.CodeGenerator" />
+    <PackageReference Include="Microsoft.Orleans.Core" />
+    <PackageReference Include="Microsoft.Orleans.Sdk" />
+    <PackageReference Include="Microsoft.Orleans.Serialization" />
+    <PackageReference Include="Microsoft.Orleans.Serialization.Abstractions" />
+    <PackageReference Include="Microsoft.Orleans.Serialization.NewtonsoftJson" />
+    <PackageReference Include="NetCoreServer" />
+    <PackageReference Include="Newtonsoft.Json" />   
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+    <PackageReference Include="Swashbuckle.AspNetCore.Filters" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
   </ItemGroup>
 
   <ItemGroup>

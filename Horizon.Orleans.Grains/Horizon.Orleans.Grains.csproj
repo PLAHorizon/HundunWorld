@@ -11,31 +11,31 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Alipay.AopSdk.Core" Version="2.5.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.2" />
-    <PackageReference Include="Microsoft.Orleans.Runtime" Version="10.0.1" />
-	  <PackageReference Include="Microsoft.Orleans.Core" Version="10.0.1" />
-	  <PackageReference Include="Microsoft.Orleans.Core.Abstractions" Version="10.0.1" />
-	  <PackageReference Include="Microsoft.Orleans.Persistence.Redis" Version="10.0.1" />
-	  <PackageReference Include="Microsoft.Orleans.Sdk" Version="10.0.1" />
-	  <PackageReference Include="Microsoft.Orleans.CodeGenerator" Version="10.0.1">
+    <PackageReference Include="Alipay.AopSdk.Core" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+    <PackageReference Include="Microsoft.Orleans.Runtime" />
+	  <PackageReference Include="Microsoft.Orleans.Core" />
+	  <PackageReference Include="Microsoft.Orleans.Core.Abstractions" />
+	  <PackageReference Include="Microsoft.Orleans.Persistence.Redis" />
+	  <PackageReference Include="Microsoft.Orleans.Sdk" />
+	  <PackageReference Include="Microsoft.Orleans.CodeGenerator">
 	    <PrivateAssets>all</PrivateAssets>
 	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 	  </PackageReference>
-	  <PackageReference Include="Microsoft.Orleans.Streaming" Version="10.0.1" />
-	  <PackageReference Include="Microsoft.Orleans.Streaming.EventHubs" Version="10.0.1" />
-    <PackageReference Include="MongoDB.Driver" Version="3.6.0" />
-	  <PackageReference Include="MemoryPack.Core" Version="1.21.4" />
-	  <PackageReference Include="MemoryPack.Generator" Version="1.21.4" PrivateAssets="all" />
-	  <PackageReference Include="Polly" Version="8.6.5" />
-    <PackageReference Include="MiniExcel" Version="1.33.0" />
-    <PackageReference Include="SKIT.FlurlHttpClient.Wechat.TenpayV3" Version="3.16.0" />
-    <PackageReference Include="StackExchange.Redis" Version="2.10.14" />
-    <PackageReference Include="Microsoft.SemanticKernel" Version="1.57.0" />
+	  <PackageReference Include="Microsoft.Orleans.Streaming" />
+	  <PackageReference Include="Microsoft.Orleans.Streaming.EventHubs" />
+    <PackageReference Include="MongoDB.Driver" />
+	  <PackageReference Include="MemoryPack.Core" />
+	  <PackageReference Include="MemoryPack.Generator" PrivateAssets="all" />
+	  <PackageReference Include="Polly" />
+    <PackageReference Include="MiniExcel" />
+    <PackageReference Include="SKIT.FlurlHttpClient.Wechat.TenpayV3" />
+    <PackageReference Include="StackExchange.Redis" />
+    <PackageReference Include="Microsoft.SemanticKernel" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.4" />
+    <PackageReference Include="Microsoft.Data.SqlClient" />
     <ProjectReference Include="..\Horizon.Core\Horizon.Core.csproj" />
     <ProjectReference Include="..\Horizon.Entities\Horizon.Entities.csproj" />
     <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />

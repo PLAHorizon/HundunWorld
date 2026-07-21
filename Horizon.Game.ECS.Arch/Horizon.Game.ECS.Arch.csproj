@@ -8,16 +8,16 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <DocumentationFile>$(TargetDir)$(AssemblyName).xml</DocumentationFile>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <!-- Arch 上游尚未发布 net10.0 资产；引用其 net8.0 输出，禁用相关兼容性提示。 -->
+    <!-- Arch 上游尚未发布 net10.0 资产；引用其 net8.0 输出，禁用相关兼容性提示�?-->
     <NoWarn>$(NoWarn);NU1701;NU1603;CS1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Arch" Version="2.0.0-beta" />
-    <PackageReference Include="Arch.System" Version="1.1.0" />
-    <PackageReference Include="Arch.LowLevel" Version="1.1.3" />
-    <PackageReference Include="Collections.Pooled" Version="2.0.0-preview.27" />
-    <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.2.2" />
+    <PackageReference Include="Arch" />
+    <PackageReference Include="Arch.System" />
+    <PackageReference Include="Arch.LowLevel" />
+    <PackageReference Include="Collections.Pooled" />
+    <PackageReference Include="CommunityToolkit.HighPerformance" />
   </ItemGroup>
 
   <ItemGroup>
@@ -27,7 +27,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Horizon.Game.Message\Horizon.Game.Message.csproj" />
     <ProjectReference Include="..\Horizon.Game.ECS\Horizon.Game.ECS.csproj" />
-    <!-- 多玩家 AOI：LocalSimulationSystem 依赖 WorldCoord.ToChunkMortonKey 计算 chunk 边界 -->
+    <!-- 多玩�?AOI：LocalSimulationSystem 依赖 WorldCoord.ToChunkMortonKey 计算 chunk 边界 -->
     <ProjectReference Include="..\Horizon.Game.Core\Horizon.Game.Core.csproj" />
   </ItemGroup>
 	<!-- 编译后复制文件到 Flax 目录 -->
@@ -56,9 +56,9 @@
 			<Output TaskParameter="CopiedFiles" ItemName="SuccessfullyCopiedFiles" />
 		</Copy>
 
-		<Message Text="成功复制文件�?Flax 目录" Importance="high" />
+		<Message Text="成功复制文件�?Flax 目录" Importance="high" />
 	</Target>
-  <!-- 编译后复制到 UE5 托管 Binaries 目录，供 UnrealSharp 热重载直接引用。 -->
+  <!-- 编译后复制到 UE5 托管 Binaries 目录，供 UnrealSharp 热重载直接引用�?-->
   <Target Name="CopyToUE5" AfterTargets="Build">
     <PropertyGroup>
       <UE5ManagedDir>$(MSBuildProjectDirectory)\..\HundunWorld\Binaries\Managed\net10.0</UE5ManagedDir>

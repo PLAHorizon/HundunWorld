@@ -21,6 +21,15 @@ namespace ManagedHundunWorld.Network.Handlers
         public event Action<EventPacket> EventReceived;
         public event Action<WorldChunkDiffPacket> ChunkDiffReceived;
 
+        /// <summary>P1.3：服务器拒绝握手（协议版本过低），客户端应触发强制更新流程。</summary>
+        public event Action<HandshakeRejectPacket> HandshakeRejected;
+
+        /// <summary>P1.4：收到伤害通知（服务端裁决结果）。</summary>
+        public event Action<DamagePacket> DamageReceived;
+
+        /// <summary>P1.4：收到死亡通知。</summary>
+        public event Action<DeathPacket> DeathReceived;
+
         // 修复：将 HandshakeReceived 改为自定义事件，缓存最后一次握手响应。
         // 解决握手响应在 HundunWorldGame 订阅事件之前到达而导致“同步握手未完成”的竞态。
         private event Action<HandshakePacket> _handshakeReceivedInternal;
@@ -83,6 +92,19 @@ namespace ManagedHundunWorld.Network.Handlers
                     // 缓存最后一次握手响应，使后续订阅者能立即收到。
                     _lastHandshake = handshake;
                     _handshakeReceivedInternal?.Invoke(handshake);
+                    break;
+                case HandshakeRejectPacket reject:
+                    // P1.3：协议版本过低，服务器强制拒绝——触发客户端更新流程。
+                    FlaxEngine.Debug.LogError($"[Sync] 握手被拒绝：{reject.Reason} (服务器版本={reject.ServerVersion}, 最低支持={reject.MinimumVersion})");
+                    HandshakeRejected?.Invoke(reject);
+                    break;
+                case DamagePacket damage:
+                    // P1.4：伤害通知，转发给 CombatEffectSystem。
+                    DamageReceived?.Invoke(damage);
+                    break;
+                case DeathPacket death:
+                    // P1.4：死亡通知，转发给 CombatEffectSystem。
+                    DeathReceived?.Invoke(death);
                     break;
                 default:
                     FlaxEngine.Debug.LogWarning($"Unknown sync packet kind: {packet.Kind}");

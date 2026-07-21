@@ -36,6 +36,12 @@ public static class SyncProtocolVersion
     ///        未进入网络同步链路，链路两端固定用 DefaultMaxSpeed=6 m/s 推进"的问题。
     /// </summary>
     public const int Current = 6;
+
+    /// <summary>
+    /// 服务器支持的最低协议版本。低于此版本的客户端握手将被拒绝并收到 <see cref="HandshakeRejectPacket"/>，
+    /// 触发强制更新流程。允许 v5/v6 并存过渡。
+    /// </summary>
+    public const int MinimumSupported = 5;
 }
 
 /// <summary>
@@ -62,6 +68,14 @@ public enum SyncPacketKind : byte
     SceneObjectSync = 10,
     /// <summary>多玩家 AOI：动态 chunk 订阅变更（服务器→客户端，下发本次新增/移除的 chunk key 集合）。</summary>
     SubscriptionUpdate = 11,
+    /// <summary>P1.3：握手拒绝（服务器→客户端，协议版本低于 <see cref="SyncProtocolVersion.MinimumSupported"/> 时下发，含最低版本号）。</summary>
+    HandshakeReject = 12,
+    /// <summary>P1.4：战斗动作（客户端→服务器，攻击/技能/道具使用请求）。</summary>
+    CombatAction = 13,
+    /// <summary>P1.4：伤害通知（服务器→客户端，携带伤害数值/类型/暴击/剩余HP）。</summary>
+    Damage = 14,
+    /// <summary>P1.4：死亡通知（服务器→客户端，实体死亡/击杀者/死亡类型）。</summary>
+    Death = 15,
 }
 
 /// <summary>
@@ -91,6 +105,12 @@ public enum SyncPacketKind : byte
 // 注意：union tag 10 对应 SyncPacketKind.SubscriptionUpdate=11（枚举中 Unknown=0 占位导致偏移 1）。
 // 紧跟 SceneObjectSyncPacket 的 tag 9，保持 0..10 连续递增。
 [MemoryPackUnion(10, typeof(SubscriptionUpdatePacket))]
+// P1.3：握手拒绝包（协议版本过低时服务器下发）。
+[MemoryPackUnion(11, typeof(HandshakeRejectPacket))]
+// P1.4：战斗协议包。
+[MemoryPackUnion(12, typeof(CombatActionPacket))]
+[MemoryPackUnion(13, typeof(DamagePacket))]
+[MemoryPackUnion(14, typeof(DeathPacket))]
 public abstract partial class SyncPacket
 {
     /// <summary>包种类（冗余字段，便于不解码 union 时也能识别）。</summary>
@@ -686,4 +706,198 @@ public sealed partial class SubscriptionUpdatePacket : SyncPacket
     public ulong[] RemovedChunks { get; set; } = Array.Empty<ulong>();
 
     public SubscriptionUpdatePacket() { Kind = SyncPacketKind.SubscriptionUpdate; }
+}
+
+/// <summary>
+/// P1.3 服务器→客户端：握手拒绝包。
+/// 当客户端协议版本低于 <see cref="SyncProtocolVersion.MinimumSupported"/> 时，
+/// 服务器返回本包通知客户端触发强制更新流程。
+/// </summary>
+[MemoryPackable]
+[GenerateSerializer]
+public sealed partial class HandshakeRejectPacket : SyncPacket
+{
+    /// <summary>服务器当前协议版本。</summary>
+    [MemoryPackOrder(2)]
+    [Id(0)]
+    public int ServerVersion { get; set; }
+
+    /// <summary>服务器支持的最低协议版本（客户端需升级到此版本以上才能连接）。</summary>
+    [MemoryPackOrder(3)]
+    [Id(1)]
+    public int MinimumVersion { get; set; }
+
+    /// <summary>拒绝原因（便于客户端展示/日志）。</summary>
+    [MemoryPackOrder(4)]
+    [Id(2)]
+    public string Reason { get; set; } = string.Empty;
+
+    public HandshakeRejectPacket() { Kind = SyncPacketKind.HandshakeReject; }
+}
+
+// ---------------------------------------------------------------------------
+// P1.4 战斗协议包：最小可玩 PVE 战斗闭环（攻击/受击/死亡/复活）。
+// ---------------------------------------------------------------------------
+
+/// <summary>
+/// 战斗动作类型。
+/// </summary>
+public enum CombatActionKind : byte
+{
+    /// <summary>普通攻击。</summary>
+    NormalAttack = 0,
+    /// <summary>技能释放。</summary>
+    SkillCast = 1,
+    /// <summary>道具使用（药水/暗器）。</summary>
+    ItemUse = 2,
+    /// <summary>格挡/闪避。</summary>
+    Defend = 3,
+}
+
+/// <summary>
+/// 客户端→服务器：战斗动作请求（攻击/技能/道具）。
+/// 服务端收到后由 CombatSystemGrain 裁决命中/伤害，然后下发 <see cref="DamagePacket"/>。
+/// </summary>
+[MemoryPackable]
+[GenerateSerializer]
+public sealed partial class CombatActionPacket : SyncPacket
+{
+    /// <summary>攻击者实体 ID。</summary>
+    [MemoryPackOrder(2)]
+    [Id(0)]
+    public ulong AttackerId { get; set; }
+
+    /// <summary>目标实体 ID（0 表示无目标/自身）。</summary>
+    [MemoryPackOrder(3)]
+    [Id(1)]
+    public ulong TargetId { get; set; }
+
+    /// <summary>动作类型。</summary>
+    [MemoryPackOrder(4)]
+    [Id(2)]
+    public CombatActionKind ActionKind { get; set; }
+
+    /// <summary>技能/道具 ID（0 = 普通攻击）。</summary>
+    [MemoryPackOrder(5)]
+    [Id(3)]
+    public int SkillId { get; set; }
+
+    /// <summary>客户端 tick（用于 reconciliation 与攻速校验）。</summary>
+    [MemoryPackOrder(6)]
+    [Id(4)]
+    public long ClientTick { get; set; }
+
+    /// <summary>攻击者朝向 Yaw（弧度，用于背刺/侧击判定）。</summary>
+    [MemoryPackOrder(7)]
+    [Id(5)]
+    public float AttackerYaw { get; set; }
+
+    public CombatActionPacket() { Kind = SyncPacketKind.CombatAction; }
+}
+
+/// <summary>
+/// 服务器→客户端：伤害通知。
+/// 服务端裁决完成后下发给 AOI 内所有玩家，客户端据此播放伤害数字/受击动画。
+/// </summary>
+[MemoryPackable]
+[GenerateSerializer]
+public sealed partial class DamagePacket : SyncPacket
+{
+    /// <summary>攻击者实体 ID。</summary>
+    [MemoryPackOrder(2)]
+    [Id(0)]
+    public ulong AttackerId { get; set; }
+
+    /// <summary>受击者实体 ID。</summary>
+    [MemoryPackOrder(3)]
+    [Id(1)]
+    public ulong TargetId { get; set; }
+
+    /// <summary>伤害值（正数=伤害，负数=治疗）。</summary>
+    [MemoryPackOrder(4)]
+    [Id(2)]
+    public int DamageAmount { get; set; }
+
+    /// <summary>伤害类型（复用 ICharacterStateBridge 中的 DamageType 编码）。</summary>
+    [MemoryPackOrder(5)]
+    [Id(3)]
+    public byte DamageType { get; set; }
+
+    /// <summary>是否暴击。</summary>
+    [MemoryPackOrder(6)]
+    [Id(4)]
+    public bool IsCritical { get; set; }
+
+    /// <summary>受击者剩余 HP。</summary>
+    [MemoryPackOrder(7)]
+    [Id(5)]
+    public int RemainingHp { get; set; }
+
+    /// <summary>受击者最大 HP。</summary>
+    [MemoryPackOrder(8)]
+    [Id(6)]
+    public int MaxHp { get; set; }
+
+    /// <summary>触发本伤害的技能 ID（0 = 普攻）。</summary>
+    [MemoryPackOrder(9)]
+    [Id(7)]
+    public int SkillId { get; set; }
+
+    /// <summary>服务器 tick（用于客户端插值排序）。</summary>
+    [MemoryPackOrder(10)]
+    [Id(8)]
+    public long ServerTick { get; set; }
+
+    public DamagePacket() { Kind = SyncPacketKind.Damage; }
+}
+
+/// <summary>
+/// 死亡类型。
+/// </summary>
+public enum DeathKind : byte
+{
+    /// <summary>被玩家击杀。</summary>
+    KilledByPlayer = 0,
+    /// <summary>被怪物/NPC 击杀。</summary>
+    KilledByMonster = 1,
+    /// <summary>环境伤害死亡（跌落/毒雾）。</summary>
+    Environmental = 2,
+    /// <summary>自杀/GM 命令。</summary>
+    SelfDestruct = 3,
+}
+
+/// <summary>
+/// 服务器→客户端：死亡通知。
+/// 实体 HP 归零时服务端下发，客户端播放死亡动画并进入复活倒计时。
+/// </summary>
+[MemoryPackable]
+[GenerateSerializer]
+public sealed partial class DeathPacket : SyncPacket
+{
+    /// <summary>死亡实体 ID。</summary>
+    [MemoryPackOrder(2)]
+    [Id(0)]
+    public ulong EntityId { get; set; }
+
+    /// <summary>击杀者实体 ID（0 = 无击杀者/环境死亡）。</summary>
+    [MemoryPackOrder(3)]
+    [Id(1)]
+    public ulong KillerId { get; set; }
+
+    /// <summary>死亡类型。</summary>
+    [MemoryPackOrder(4)]
+    [Id(2)]
+    public DeathKind DeathType { get; set; }
+
+    /// <summary>复活倒计时（秒）。客户端据此显示复活 UI。</summary>
+    [MemoryPackOrder(5)]
+    [Id(3)]
+    public float RespawnDelaySeconds { get; set; }
+
+    /// <summary>服务器 tick。</summary>
+    [MemoryPackOrder(6)]
+    [Id(4)]
+    public long ServerTick { get; set; }
+
+    public DeathPacket() { Kind = SyncPacketKind.Death; }
 }

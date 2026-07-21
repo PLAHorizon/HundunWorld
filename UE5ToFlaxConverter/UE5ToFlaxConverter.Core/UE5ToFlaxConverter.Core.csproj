@@ -5,6 +5,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>UE5ToFlaxConverter.Core</RootNamespace>
     <AssemblyName>UE5ToFlaxConverter.Core</AssemblyName>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
   </PropertyGroup>
 
   <ItemGroup>

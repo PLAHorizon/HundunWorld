@@ -13,6 +13,7 @@ using Orleans;
 using Orleans.Configuration;
 using Microsoft.Extensions.Logging;
 using System.Threading;
+using IdentityModel.Client;
 using Horizon.Share.Dtos;
 using Horizon.Share.Dtos.User;
 using System.Net.Http;
@@ -85,7 +86,7 @@ namespace Horizon.WebApi.Controllers
                 ClientSecret = Config.ClientSecret,
                 UserName = dto.PassportId,
                 Password = dto.Password,
-                Parameters = new Dictionary<string, string> {
+                Parameters = new Parameters {
                     { "appId", $"{dto.AppId}" },
                     { "appType", $"{(int)dto.AppType}" },
                     { "passportType", $"{(int)dto.PassportType}" },
@@ -252,7 +253,7 @@ namespace Horizon.WebApi.Controllers
                 ClientSecret = Config.ClientSecret,
                 UserName = passportInfoDto.PassportId,
                 Password = registerDto.Password,
-                Parameters = new Dictionary<string, string> {
+                Parameters = new Parameters {
                     { "appId", $"{registerDto.AppId}" },
                     { "appType", $"{(int)registerDto.AppType}" },
                     { "passportType", $"{(int)registerDto.PassportType}" },

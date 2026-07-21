@@ -4,6 +4,7 @@ using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
 using Horizon.Game.Message.Sync;
 using Horizon.Game.Message.Sync.Server;
+using Horizon.Orleans.Interface.Combat;
 using Horizon.Orleans.Interface.World;
 using Microsoft.Extensions.Logging;
 using Orleans;
@@ -21,9 +22,14 @@ public sealed class SyncPacketHandler : MessageHandlerBase
     /// <summary>当前服务器世界补丁版本。</summary>
     private const int ServerWorldPatchVersion = 1;
 
-    public SyncPacketHandler(ILogger<MessageHandlerBase> logger, IClusterClient clusterClient, HorizonMessageAdapter adapter)
+    /// <summary>P1.2：Shard 路由器（替换原 DefaultShardId 硬编码）。</summary>
+    private readonly IShardRouter _shardRouter;
+
+    public SyncPacketHandler(ILogger<MessageHandlerBase> logger, IClusterClient clusterClient, HorizonMessageAdapter adapter, IShardRouter? shardRouter = null)
         : base(logger, clusterClient, adapter)
     {
+        // 默认单 Shard 路由（兼容未注入路由器的场景）
+        _shardRouter = shardRouter ?? new ZoneBasedShardRouter(1);
     }
 
     public override List<MessageType> MessageTypes => new() { MessageType.SyncPacket };
@@ -61,6 +67,7 @@ public sealed class SyncPacketHandler : MessageHandlerBase
                 InteractionSyncPacket interaction => await HandleInteractionUplinkAsync(interaction),
                 SceneObjectSyncPacket sceneObject => await HandleSceneObjectUplinkAsync(sceneObject),
                 SubscriptionUpdatePacket subscription => await HandleSubscriptionUpdateAsync(subscription, (long)message.Header.CharacterId),
+                CombatActionPacket combatAction => await HandleCombatActionAsync(combatAction),
                 _ => await HandleUnknownPacketAsync(packet),
             };
 
@@ -84,8 +91,8 @@ public sealed class SyncPacketHandler : MessageHandlerBase
         }
     }
 
-    /// <summary>单 shard 模式下的固定 shardId。</summary>
-    private const long DefaultShardId = 0;
+    /// <summary>P1.2：单 Shard 模式下的固定 shardId（已由 _shardRouter 替代，保留作为注释参考）。</summary>
+    // private const long DefaultShardId = 0;  // 已由 IShardRouter 替代
 
     /// <summary>首次进入 World 时订阅出生 chunk 周围的 AOI 半径（与客户端 OnPlayerChunkChanged 的 ViewRadiusChunks 保持一致）。</summary>
     private const int InitialAoiRadiusChunks = 2;
@@ -125,14 +132,27 @@ public sealed class SyncPacketHandler : MessageHandlerBase
     /// </summary>
     private async Task<SyncPacket> HandleHandshakeAsync(HandshakePacket handshake)
     {
-        // Task D.6.2：严格协议版本检查，拒绝不兼容客户端。
-        // 客户端据 LocalCharacterId==0 或 InitialClientTick==0 判定握手失败。
+        // P1.3：协议版本强制校验。
+        // 版本 < MinimumSupported → 返回 HandshakeRejectPacket（触发客户端强制更新）。
+        // 版本 >= MinimumSupported 但 != Current → 允许连接（过渡期）并记录警告。
+        if (handshake.ProtocolVersion < SyncProtocolVersion.MinimumSupported)
+        {
+            Logger.LogWarning(
+                "Sync握手拒绝：协议版本过低，强制更新。ClientVersion={ClientVersion}, MinimumSupported={MinimumSupported}, ServerVersion={ServerVersion}",
+                handshake.ProtocolVersion, SyncProtocolVersion.MinimumSupported, SyncProtocolVersion.Current);
+            return new HandshakeRejectPacket
+            {
+                ServerVersion = SyncProtocolVersion.Current,
+                MinimumVersion = SyncProtocolVersion.MinimumSupported,
+                Reason = $"协议版本过低（客户端 v{handshake.ProtocolVersion}，服务器最低支持 v{SyncProtocolVersion.MinimumSupported}），请更新客户端。",
+            };
+        }
+
         if (handshake.ProtocolVersion != SyncProtocolVersion.Current)
         {
             Logger.LogWarning(
-                "Sync握手拒绝：协议版本不匹配。ClientVersion={ClientVersion}, ServerVersion={ServerVersion}",
+                "Sync握手版本过渡期：允许连接但版本不完全匹配。ClientVersion={ClientVersion}, ServerVersion={ServerVersion}",
                 handshake.ProtocolVersion, SyncProtocolVersion.Current);
-            return new HandshakePacket { LocalCharacterId = 0, InitialClientTick = 0 };
         }
 
         var characterId = (long)handshake.LocalCharacterId;
@@ -171,7 +191,7 @@ public sealed class SyncPacketHandler : MessageHandlerBase
         // 握手成功后，注册实体到 ZoneShard 权威模拟层并订阅 AOI
         try
         {
-            var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(DefaultShardId);
+            var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(characterId));
             // Flax Y-up → ECS Z-up 转换：交换 Y/Z，确保 chunk 归属与服务端 entity 坐标一致
             var initialInterestChunks = WorldCoord
                 .GetChunksInView(handshake.InitialX, handshake.InitialZ, handshake.InitialY, InitialAoiRadiusChunks)
@@ -185,7 +205,7 @@ public sealed class SyncPacketHandler : MessageHandlerBase
                 initialInterestChunks);
             Logger.LogInformation(
                 "Sync握手后实体注册完成。CharacterId={CharacterId}, ShardId={ShardId}, InitialInterestChunkCount={InitialInterestChunkCount}",
-                characterId, DefaultShardId, initialInterestChunks.Length);
+                characterId, _shardRouter.Resolve(characterId), initialInterestChunks.Length);
         }
         catch (Exception ex)
         {
@@ -286,7 +306,7 @@ public sealed class SyncPacketHandler : MessageHandlerBase
             // 将输入转发到 ZoneShard 权威模拟层，使 TickAsync 能处理该输入并产生快照
             try
             {
-                var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(DefaultShardId);
+                var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(characterId));
                 await zoneShard.SubmitInputAsync((ulong)characterId, input, input.PredictedEndX, input.PredictedEndY, input.PredictedEndZ);
             }
             catch (Exception ex)
@@ -405,7 +425,7 @@ public sealed class SyncPacketHandler : MessageHandlerBase
 
         try
         {
-            var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(DefaultShardId);
+            var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(interactorId));
             await zoneShard.GenerateInteractionSync(
                 slotIdx,
                 interactableId,
@@ -532,7 +552,7 @@ public sealed class SyncPacketHandler : MessageHandlerBase
         bool accepted = false;
         try
         {
-            var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(DefaultShardId);
+            var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve((long)interactorId));
             accepted = await zoneShard.HandleSceneObjectInteract(interactorId, objectId, intentBits);
 
             if (!accepted)
@@ -597,7 +617,7 @@ public sealed class SyncPacketHandler : MessageHandlerBase
             return null;
         }
 
-        var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(DefaultShardId);
+        var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(characterId));
 
         if (update.AddedChunks is { Length: > 0 } added)
         {
@@ -773,6 +793,75 @@ public sealed class SyncPacketHandler : MessageHandlerBase
             ManifestSha256 = string.Empty,
             PatchCutoverDiffSeq = 0,
         };
+    }
+
+    /// <summary>
+    /// P1.4：处理客户端上行的战斗动作（攻击/技能/道具）。
+    /// 路由到 CombatSystemGrain 裁决，返回 DamagePacket 或 null。
+    /// </summary>
+    private async Task<SyncPacket?> HandleCombatActionAsync(CombatActionPacket combatAction)
+    {
+        var attackerId = (long)combatAction.AttackerId;
+
+        // 基本校验
+        if (combatAction.AttackerId == 0)
+        {
+            Logger.LogWarning("战斗动作无效：AttackerId=0");
+            return null;
+        }
+
+        try
+        {
+            // 路由到 CombatSystemGrain（以攻击者 ID 为 Grain Key，简化版 Phase 1）
+            var combatGrain = _clusterClient.GetGrain<ICombatSystemGrain>(_shardRouter.Resolve(attackerId));
+
+            var request = new CombatActionRequest
+            {
+                AttackerId = combatAction.AttackerId,
+                TargetId = combatAction.TargetId,
+                ActionKind = (byte)combatAction.ActionKind,
+                SkillId = combatAction.SkillId,
+                ClientTick = combatAction.ClientTick,
+                AttackerYaw = combatAction.AttackerYaw,
+            };
+
+            var verdict = await combatGrain.ProcessActionAsync(request);
+
+            if (!verdict.IsHit)
+            {
+                return null; // 闪避/无效，不下发包
+            }
+
+            // 构造 DamagePacket 返回给客户端
+            var damagePacket = new DamagePacket
+            {
+                AttackerId = combatAction.AttackerId,
+                TargetId = combatAction.TargetId,
+                DamageAmount = verdict.DamageAmount,
+                DamageType = verdict.DamageType,
+                IsCritical = verdict.IsCritical,
+                RemainingHp = verdict.TargetRemainingHp,
+                MaxHp = verdict.TargetMaxHp,
+                SkillId = combatAction.SkillId,
+                ServerTick = verdict.ServerTick,
+            };
+
+            // 如果目标死亡，后续由 ZoneShard 广播 DeathPacket（TODO Phase 2）
+            if (verdict.IsTargetDead)
+            {
+                Logger.LogInformation(
+                    "战斗击杀。AttackerId={AttackerId}, TargetId={TargetId}, Damage={Damage}",
+                    combatAction.AttackerId, combatAction.TargetId, verdict.DamageAmount);
+            }
+
+            return damagePacket;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "处理战斗动作失败。AttackerId={AttackerId}, TargetId={TargetId}",
+                combatAction.AttackerId, combatAction.TargetId);
+            return null;
+        }
     }
 
     /// <summary>

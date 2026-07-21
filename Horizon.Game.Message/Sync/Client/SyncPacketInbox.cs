@@ -31,6 +31,12 @@ public sealed class SyncPacketInbox
     /// <summary>待消费的场景对象状态事件（阶段 C；按到达顺序，应用层按 ObjectId/ServerTick 排序）。</summary>
     public ConcurrentQueue<SceneObjectSyncPacket> SceneObjectEvents { get; } = new();
 
+    /// <summary>P1.4：待消费的伤害事件（CombatEffectSystem 消费）。</summary>
+    public ConcurrentQueue<DamagePacket> DamageEvents { get; } = new();
+
+    /// <summary>P1.4：待消费的死亡事件（CombatEffectSystem 消费）。</summary>
+    public ConcurrentQueue<DeathPacket> DeathEvents { get; } = new();
+
     /// <summary>截至本次应用结束的全局 diff seq，用于后续 <see cref="ReconnectResumePacket.LastAppliedDiffSeq"/>。</summary>
     public long AppliedDiffSeq { get; set; }
 

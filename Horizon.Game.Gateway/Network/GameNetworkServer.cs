@@ -750,6 +750,13 @@ namespace Horizon.Game.Gateway.Network
                                         _logger.LogWarning("Sync握手响应中 LocalCharacterId=0，跳过角色映射注册");
                                     }
                                 }
+                                else if (syncPacket is HandshakeRejectPacket rejectResp)
+                                {
+                                    // P1.3：协议版本过低，服务器拒绝握手——不注册映射，客户端将触发强制更新。
+                                    _logger.LogWarning(
+                                        "Sync握手被拒绝（协议版本过低）: Reason={Reason}, MinimumVersion={MinimumVersion}, ConnectionId={ConnectionId}",
+                                        rejectResp.Reason, rejectResp.MinimumVersion, connection.ConnectionId);
+                                }
                             }
                             catch (Exception decodeEx)
                             {

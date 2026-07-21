@@ -15,28 +15,28 @@
   </ItemGroup>
 
   <ItemGroup>
-	  <PackageReference Include="Consul" Version="1.7.14.10" />
-	  <PackageReference Include="K4os.Compression.LZ4" Version="1.3.8" />
-	  <PackageReference Include="Microsoft.DependencyValidation.Analyzers" Version="0.11.0" />
-	  <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.2" />
-	  <PackageReference Include="Microsoft.Orleans.Client" Version="10.0.1" />
-	  <PackageReference Include="Microsoft.Orleans.Clustering.AdoNet" Version="10.0.1" />
-	  <PackageReference Include="Microsoft.Orleans.Clustering.Redis" Version="10.0.1" />
-	  <PackageReference Include="Microsoft.Orleans.CodeGenerator" Version="10.0.1">
+	  <PackageReference Include="Consul" />
+	  <PackageReference Include="K4os.Compression.LZ4" />
+	  <PackageReference Include="Microsoft.DependencyValidation.Analyzers" />
+	  <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+	  <PackageReference Include="Microsoft.Orleans.Client" />
+	  <PackageReference Include="Microsoft.Orleans.Clustering.AdoNet" />
+	  <PackageReference Include="Microsoft.Orleans.Clustering.Redis" />
+	  <PackageReference Include="Microsoft.Orleans.CodeGenerator">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 	  </PackageReference>
-	  <PackageReference Include="Microsoft.Orleans.Core" Version="10.0.1" />
-	  <PackageReference Include="Microsoft.Orleans.Sdk" Version="10.0.1" />
-	  <PackageReference Include="Microsoft.Orleans.Serialization.Abstractions" Version="10.0.1" />
-	  <PackageReference Include="Microsoft.Orleans.Serialization.NewtonsoftJson" Version="10.0.1" />
-	  <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />	  
-	  <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
-	  <PackageReference Include="System.ValueTuple" Version="4.6.1" />
+	  <PackageReference Include="Microsoft.Orleans.Core" />
+	  <PackageReference Include="Microsoft.Orleans.Sdk" />
+	  <PackageReference Include="Microsoft.Orleans.Serialization.Abstractions" />
+	  <PackageReference Include="Microsoft.Orleans.Serialization.NewtonsoftJson" />
+	  <PackageReference Include="Newtonsoft.Json" />	  
+	  <PackageReference Include="System.Data.SqlClient" />
+	  <PackageReference Include="System.ValueTuple" />
 	  <!-- Updated TouchSocket packages to align versions -->
-	  <PackageReference Include="TouchSocket" Version="4.1.1" />
-	  <PackageReference Include="TouchSocket.Core" Version="4.1.1" />
-	  <PackageReference Include="TouchSocket.Rpc" Version="4.1.1" />
+	  <PackageReference Include="TouchSocket" />
+	  <PackageReference Include="TouchSocket.Core" />
+	  <PackageReference Include="TouchSocket.Rpc" />
   </ItemGroup>
 
   <ItemGroup>
@@ -50,7 +50,7 @@
     <Folder Include="Common\" />
   </ItemGroup>
 
-  <!-- 编译后将客户端需要的依赖复制到 Flax Tools 目录 -->
+  <!-- 编译后将客户端需要的依赖复制�?Flax Tools 目录 -->
   <Target Name="CopyToFlax" AfterTargets="Build">
     <PropertyGroup>
       <FlaxToolsDir>C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools</FlaxToolsDir>

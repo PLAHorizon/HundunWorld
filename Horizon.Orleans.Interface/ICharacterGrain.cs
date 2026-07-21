@@ -5,6 +5,7 @@ using Horizon.Game.Message;
 using System.Collections.Generic;
 using Horizon.Share.Dtos.Games;
 using Horizon.Game.Message.Network;
+using Horizon.Orleans.Interface.World;
 
 namespace Horizon.Orleans.Interface
 {
@@ -333,6 +334,35 @@ namespace Horizon.Orleans.Interface
         /// <param name="request">完成任务请求</param>
         /// <returns>完成任务响应</returns>
         Task<CompleteQuestResponse> CompleteQuestAsync(CompleteQuestRequest request);
+
+        // ===== P1.1 统一角色状态模型：空间生命周期钩子 =====
+
+        /// <summary>
+        /// 角色进入空间（ZoneShard Spawn）时由 <see cref="ICharacterStateBridge"/> 调用。<br/>
+        /// CharacterGrain 据此：(1) 记录当前所在 ZoneShard；(2) 将权威 RPG 属性推送到 ZoneShard 广播缓存。
+        /// </summary>
+        /// <param name="zoneShardId">所在 ZoneShard 的 Grain Key。</param>
+        Task OnEnterZoneAsync(long zoneShardId);
+
+        /// <summary>
+        /// 角色离开空间（ZoneShard Despawn）时由 <see cref="ICharacterStateBridge"/> 调用。<br/>
+        /// CharacterGrain 据此：(1) 持久化最终状态；(2) 清除所在空间标记。
+        /// </summary>
+        /// <param name="zoneShardId">离开的 ZoneShard 的 Grain Key。</param>
+        /// <param name="finalHp">离开时的最终 HP。</param>
+        /// <param name="reason">离开原因。</param>
+        Task OnLeaveZoneAsync(long zoneShardId, int finalHp, ZoneLeaveReason reason);
+
+        /// <summary>
+        /// 请求 HP 变更（战斗伤害/治疗/环境伤害）。<br/>
+        /// CharacterGrain 作为 RPG 权威裁决实际伤害（含防御/减伤/Buff），
+        /// 并将新 HP 推送到 ZoneShard 广播缓存。
+        /// </summary>
+        /// <param name="hpDelta">HP 变化量（负数为伤害，正数为治疗）。</param>
+        /// <param name="sourceId">伤害/治疗来源实体 ID（0 表示环境）。</param>
+        /// <param name="damageType">伤害类型。</param>
+        /// <returns>实际 HP 变化量及是否导致死亡。</returns>
+        Task<HpChangeResult> RequestHpChangeAsync(int hpDelta, ulong sourceId, DamageType damageType);
     }
 
     
