@@ -510,18 +510,15 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             }
             else if (world.Has<InterpolatedTransformComponent>(archEntity))
             {
-                ref var oldAuth = ref world.Get<AuthTransformComponent>(archEntity);
                 ref var interp = ref world.Get<InterpolatedTransformComponent>(archEntity);
 
-                // 失效点 #4 修复：刷新插值起点 StartX/Y/Z 为上一帧的权威位置。
-                // 否则 InterpolationSystem（读 Start + (Target-Start)*t）会始终从
-                // 实体出生点插值，导致远程角色每帧瞬移回出生位置。
-                interp.StartX = oldAuth.X;
-                interp.StartY = oldAuth.Y;
-                interp.StartZ = oldAuth.Z;
-                interp.X = oldAuth.X;
-                interp.Y = oldAuth.Y;
-                interp.Z = oldAuth.Z;
+                // 修复 #5：插值起点 StartX/Y/Z 设为当前位置（interp.X/Y/Z，含 dead reckoning 偏移），
+                // 而非 oldAuth。否则 InterpolationSystem 航位推算推进的位置会在新快照到达时
+                // 回弹到 oldAuth 位置（见 InterpolationSystem.cs dead reckoning 逻辑），
+                // 导致远程角色可见的回弹抖动。
+                interp.StartX = interp.X;
+                interp.StartY = interp.Y;
+                interp.StartZ = interp.Z;
                 interp.TargetX = newTransform.X;
                 interp.TargetY = newTransform.Y;
                 interp.TargetZ = newTransform.Z;

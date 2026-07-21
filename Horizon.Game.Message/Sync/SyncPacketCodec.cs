@@ -122,37 +122,42 @@ public static class SyncPacketCodec
                     if (hint > MaxDecompressedSize)
                         hint = MaxDecompressedSize;
                     var rented = ArrayPool<byte>.Shared.Rent(hint);
-                    bool rentedReturned = false;
                     try
                     {
                         int decoded = LZ4Codec.Decode(payload, rented.AsSpan());
-                        if (decoded < 0)
+                        if (decoded >= 0)
                         {
-                            ArrayPool<byte>.Shared.Return(rented);
-                            rentedReturned = true;
-                            var biggerSize = Math.Max(hint * 4, payloadLength * 16);
-                            if (biggerSize > MaxDecompressedSize)
-                                throw new InvalidOperationException($"LZ4 decompressed size exceeds limit ({MaxDecompressedSize} bytes). Possible decompression bomb.");
-                            var bigger = new byte[biggerSize];
+                            if (decoded > MaxDecompressedSize)
+                                throw new InvalidOperationException($"LZ4 decompressed size ({decoded}) exceeds limit ({MaxDecompressedSize} bytes).");
+                            return MemoryPackSerializer.Deserialize<SyncPacket>(rented.AsSpan(0, decoded))
+                                   ?? throw new InvalidOperationException("MemoryPack returned null SyncPacket.");
+                        }
+
+                        // 首次 hint 过小，用更大尺寸重试。
+                        // 修复 #6：重试时复用 ArrayPool 避免 new byte[] GC 压力。
+                        ArrayPool<byte>.Shared.Return(rented);
+                        var biggerSize = Math.Max(hint * 4, payloadLength * 16);
+                        if (biggerSize > MaxDecompressedSize)
+                            throw new InvalidOperationException($"LZ4 decompressed size exceeds limit ({MaxDecompressedSize} bytes). Possible decompression bomb.");
+                        var bigger = ArrayPool<byte>.Shared.Rent(biggerSize);
+                        try
+                        {
                             decoded = LZ4Codec.Decode(payload, bigger.AsSpan());
                             if (decoded < 0)
-                            {
                                 throw new InvalidOperationException("LZ4 decode failed for sync frame.");
-                            }
                             if (decoded > MaxDecompressedSize)
                                 throw new InvalidOperationException($"LZ4 decompressed size ({decoded}) exceeds limit ({MaxDecompressedSize} bytes).");
                             return MemoryPackSerializer.Deserialize<SyncPacket>(bigger.AsSpan(0, decoded))
                                    ?? throw new InvalidOperationException("MemoryPack returned null SyncPacket.");
                         }
-                        if (decoded > MaxDecompressedSize)
-                            throw new InvalidOperationException($"LZ4 decompressed size ({decoded}) exceeds limit ({MaxDecompressedSize} bytes).");
-                        return MemoryPackSerializer.Deserialize<SyncPacket>(rented.AsSpan(0, decoded))
-                               ?? throw new InvalidOperationException("MemoryPack returned null SyncPacket.");
+                        finally
+                        {
+                            ArrayPool<byte>.Shared.Return(bigger);
+                        }
                     }
                     finally
                     {
-                        if (!rentedReturned)
-                            ArrayPool<byte>.Shared.Return(rented);
+                        ArrayPool<byte>.Shared.Return(rented);
                     }
                 }
 

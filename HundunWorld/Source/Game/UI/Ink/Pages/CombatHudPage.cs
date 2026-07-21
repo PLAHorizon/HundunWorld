@@ -51,8 +51,8 @@ namespace HundunWorld.Game.UI.Ink.Pages
         /// <summary>右下角容器尺寸（容纳 5 个技能槽 + 间隔 + 1 个奇术槽）</summary>
         private static readonly Float2 RightBottomSize = new Float2(420f, 84f);
 
-        /// <summary>buff/debuff 列表尺寸（对齐 design 左下垂直列表）</summary>
-        private static readonly Float2 BuffBarSize = new Float2(160f, 240f);
+        /// <summary>buff/debuff 图标条尺寸（对齐 design 横向图标条，位于左上角角色面板下方）</summary>
+        private static readonly Float2 BuffBarSize = new Float2(360f, 42f);
 
         /// <summary>系统主导航栏尺寸（第一行：9 个主导航按钮 + 分隔符 + 传统模式切换）</summary>
         private static readonly Float2 SysNavSize = new Float2(760f, 36f);
@@ -173,8 +173,11 @@ namespace HundunWorld.Game.UI.Ink.Pages
         private SkillSlotControl[] _skillSlots;
         private QishuSlotControl _qishuSlot;
 
-        // SubTask 5.7 buff/debuff 图标条
+        // SubTask 5.7 buff/debuff 图标条（左上角角色面板下方横向排列）
         private InkPanel _buffBar;
+
+        /// <summary>Buff/Debuff 悬停提示 ToolBar</summary>
+        private InkAttributeTooltip _buffTooltip;
 
         // SubTask 5.8 系统导航栏（主导航行 + 扩展导航行）
         private InkPanel _sysNav;
@@ -603,9 +606,9 @@ namespace HundunWorld.Game.UI.Ink.Pages
         }
 
         /// <summary>
-        /// 重建 buff 列表（对齐 design .hud-buff-item 左下垂直列表）。
-        /// 每项含：2px 色条 + 28x28 图标（色调背景+字形）+ 名称 + 计时器。
-        /// 正面 buff 用翡翠色，负面 debuff 用朱红色。
+        /// 重建 buff 横向图标条（位于左上角角色面板下方）。
+        /// 每项为 34x34 图标单元（色调背景+字形），正面 buff 用翡翠色，负面 debuff 用朱红色。
+        /// 鼠标悬停时弹出 <see cref="InkAttributeTooltip"/> 显示完整信息。
         /// </summary>
         private void RebuildBuffBar()
         {
@@ -617,11 +620,10 @@ namespace HundunWorld.Game.UI.Ink.Pages
             if (_buffs.Count == 0)
                 return;
 
-            const float entryH = 34f;
-            const float gap = 4f;
-            const float iconSize = 28f;
-            const float borderW = 3f;
-            float entryY = 4f;
+            const float cellSize = BuffCellSize;
+            const float gap = 6f;
+            const float startX = 0f;
+            float cellX = startX;
 
             for (int i = 0; i < _buffs.Count; i++)
             {
@@ -629,89 +631,89 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 bool isDebuff = buff.isDebuff;
                 Color accentColor = isDebuff ? InkWashTheme.VermilionBright : InkWashTheme.JadeBright;
                 Color iconBg = isDebuff
-                    ? new Color(184f / 255f, 84f / 255f, 80f / 255f, 0.20f)
-                    : new Color(126f / 255f, 171f / 255f, 158f / 255f, 0.20f);
+                    ? new Color(184f / 255f, 84f / 255f, 80f / 255f, 0.25f)
+                    : new Color(126f / 255f, 171f / 255f, 158f / 255f, 0.25f);
 
-                var entry = new ContainerControl
+                var cell = new BuffIconCell(
+                    buff.name,
+                    isDebuff,
+                    accentColor,
+                    iconBg,
+                    _buffTooltip)
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(0f, entryY),
-                    Size = new Float2(BuffBarSize.X, entryH),
+                    Location = new Float2(cellX, 4f),
+                    Size = new Float2(cellSize, cellSize),
                     BackgroundColor = Color.Transparent,
                     ClipChildren = false,
                 };
 
-                // 左侧色条
-                var borderStrip = new InkPanel
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = Float2.Zero,
-                    Size = new Float2(borderW, entryH),
-                    BackgroundColor = accentColor,
-                };
-                entry.AddChild(borderStrip);
+                _buffBar.AddChild(cell);
+                cellX += cellSize + gap;
+            }
+        }
 
-                // 图标背景
-                float iconX = borderW + 4f;
-                float iconY = (entryH - iconSize) * 0.5f;
-                var iconPanel = new InkPanel
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(iconX, iconY),
-                    Size = new Float2(iconSize, iconSize),
-                    BackgroundColor = iconBg,
-                };
+        /// <summary>
+        /// Buff/Debuff 图标单元，支持鼠标悬停显示 ToolBar 提示。
+        /// </summary>
+        private class BuffIconCell : ContainerControl
+        {
+            private readonly string _buffName;
+            private readonly bool _isDebuff;
+            private readonly InkAttributeTooltip _tooltip;
 
-                // 字形（取 buff 名称首字）
+            public BuffIconCell(string buffName, bool isDebuff, Color accentColor, Color iconBg, InkAttributeTooltip tooltip)
+            {
+                _buffName = buffName;
+                _isDebuff = isDebuff;
+                _tooltip = tooltip;
+
+                BackgroundColor = iconBg;
+
                 var glyph = new Label
                 {
-                    Text = buff.name.Length > 0 ? buff.name.Substring(0, 1) : "?",
+                    Text = buffName.Length > 0 ? buffName.Substring(0, 1) : "?",
                     Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 14f),
                     TextColor = accentColor,
                     HorizontalAlignment = TextAlignment.Center,
                     VerticalAlignment = TextAlignment.Center,
                     AnchorPreset = AnchorPresets.StretchAll,
-                    Location = Float2.Zero,
-                    Size = new Float2(iconSize, iconSize),
-                    BackgroundColor = Color.Transparent,
                 };
-                iconPanel.AddChild(glyph);
-                entry.AddChild(iconPanel);
+                AddChild(glyph);
+            }
 
-                // 名称标签
-                float textX = iconX + iconSize + 6f;
-                float textW = BuffBarSize.X - textX - 4f;
-                var nameLabel = new Label
-                {
-                    Text = buff.name,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 10f),
-                    TextColor = InkWashTheme.PaperBright,
-                    HorizontalAlignment = TextAlignment.Near,
-                    VerticalAlignment = TextAlignment.Center,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(textX, 2f),
-                    Size = new Float2(textW, entryH * 0.48f),
-                    BackgroundColor = Color.Transparent,
-                };
-                entry.AddChild(nameLabel);
+            public override void OnMouseEnter(Float2 location)
+            {
+                base.OnMouseEnter(location);
 
-                // 计时器标签
-                var timer = new Label
-                {
-                    Text = isDebuff ? "0:15" : "5:00",
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 9f),
-                    TextColor = accentColor,
-                    HorizontalAlignment = TextAlignment.Near,
-                    VerticalAlignment = TextAlignment.Center,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(textX, entryH * 0.48f + 1f),
-                    Size = new Float2(textW, entryH * 0.48f),
-                    BackgroundColor = Color.Transparent,
-                };
-                entry.AddChild(timer);
+                if (_tooltip == null)
+                    return;
 
-                _buffBar.AddChild(entry);
-                entryY += entryH + gap;
+                string typeText = _isDebuff ? "减益效果" : "增益效果";
+                string coreInfo = $"类型：{typeText}\n剩余时间：5:00\n层数：1";
+                string additionalInfo = _isDebuff
+                    ? "该效果会降低角色战斗能力，建议尽快驱散。"
+                    : "该效果会提升角色战斗能力。";
+
+                _tooltip.SetData(
+                    null,
+                    _buffName,
+                    coreInfo,
+                    additionalInfo,
+                    null);
+
+                _tooltip.Show(PointToScreen(location));
+            }
+
+            public override void OnMouseLeave()
+            {
+                base.OnMouseLeave();
+
+                if (_tooltip == null)
+                    return;
+
+                _tooltip.Hide();
+                _tooltip.SetData(null, string.Empty, string.Empty, string.Empty, null);
             }
         }
 
@@ -1083,9 +1085,10 @@ namespace HundunWorld.Game.UI.Ink.Pages
         }
 
         /// <summary>
-        /// SubTask 5.7：底部中央 buff/debuff 图标条。
+        /// SubTask 5.7：左上角角色面板下方 buff/debuff 横向图标条。
         /// <see cref="InkPanel"/> 尺寸 (360, 42)，子控件由 <see cref="RebuildBuffBar"/> 动态生成。
         /// 初始 6 个 mock buff（3 正面翡翠 + 3 负面朱红），支持 <see cref="AddBuff"/>/<see cref="ClearBuffs"/> 动态增减。
+        /// 鼠标悬停图标时通过 <see cref="_buffTooltip"/> 弹出完整信息 ToolBar。
         /// </summary>
         private void BuildBuffBar()
         {
@@ -1093,8 +1096,16 @@ namespace HundunWorld.Game.UI.Ink.Pages
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Size = BuffBarSize,
+                ClipChildren = false,
             };
             AddChild(_buffBar);
+
+            _buffTooltip = new InkAttributeTooltip
+            {
+                Visible = false,
+            };
+            AddChild(_buffTooltip);
+
             RebuildBuffBar();
         }
 
@@ -1721,10 +1732,10 @@ namespace HundunWorld.Game.UI.Ink.Pages
                 _rightBottom.Location = new Float2(sw - RightBottomSize.X - screenEdge, sh - bottomSafe - RightBottomSize.Y + 10f);
             }
 
-            // SubTask 5.7 buff 列表：左下角，对齐 design 左下垂直列表
+            // SubTask 5.7 buff 图标条：左上角角色面板下方，横向排列
             if (_buffBar != null)
             {
-                _buffBar.Location = new Float2(screenEdge, sh - bottomSafe - BuffBarSize.Y + 10f);
+                _buffBar.Location = new Float2(screenEdge, screenEdge + 4f + LeftBottomSize.Y + 6f);
             }
 
             // SubTask 5.8 系统导航栏（双行）：底部居中，紧贴屏幕底部

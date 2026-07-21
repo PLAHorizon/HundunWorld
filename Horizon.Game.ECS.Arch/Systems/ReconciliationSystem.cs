@@ -76,10 +76,26 @@ public sealed class ReconciliationSystem : ArchSystemBase
     /// 仅吸附不重放会导致角色停留在修正位置（回弹冻结），因为之前的预测结果已作废。
     /// 重放未确认输入（已确认的输入已被 <see cref="ProcessInputAck"/> 清理）后，
     /// 角色才能恢复到基于权威位置的最新预测状态。
+    /// <para>
+    /// 修复 #13：Drain 所有待处理的修正包，仅保留最新的一个。当修正包到达速度超过
+    /// FixedUpdate 消费速度时，单次 TryTake 会丢失较早的修正包。由于 CorrectionReceiveBuffer
+    /// 是覆盖式存储（Add 覆盖旧值），Drain 后只处理最新的修正包即可（服务器每次修正都是
+    /// 基于全量状态的权威计算，不依赖增量累积）。
+    /// </para>
     /// </remarks>
     private void ProcessCorrection(World world)
     {
-        if (!CorrectionReceiveBuffer.Instance.TryTake(out var correction) || correction == null)
+        // Drain 所有待处理的修正包，仅保留最新的一个：
+        // 修复 #13：修正包可能比 FixedUpdate 周期密集，CorrectionReceiveBuffer 是覆盖式存储，
+        // 过早到达的修正包会被新包覆盖。Drain 到最新一包可避免丢失所有修正。
+        // 使用全限定名避免 CorrectionPacket 在 Horizon.Game.ECS.Arch.Network 与
+        // Horizon.Game.Core.Sim 两个命名空间下的歧义。
+        Horizon.Game.ECS.Arch.Network.CorrectionPacket? correction = null;
+        while (CorrectionReceiveBuffer.Instance.TryTake(out var peek) && peek != null)
+        {
+            correction = peek;
+        }
+        if (correction == null)
         {
             return;
         }
@@ -136,9 +152,6 @@ public sealed class ReconciliationSystem : ArchSystemBase
                     float jumpImpulse;
                     if (isJumpPressed)
                     {
-                        if (isGrounded)
-                            jumpCount = 0;
-
                         if (isQinggongJump)
                         {
                             jumpCount++;

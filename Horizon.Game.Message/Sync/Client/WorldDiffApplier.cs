@@ -80,9 +80,19 @@ public sealed class WorldDiffApplier
         return applied;
     }
 
-    /// <summary>解码 payload；支持 LZ4 压缩（<see cref="WorldChunkDiffPacket.PayloadCompressed"/>=true 时用 <see cref="LZ4Pickler.Unpickle"/> 解包）。</summary>
+    /// <summary>解码 payload；支持 LZ4 压缩（<see cref="WorldChunkDiffPacket.PayloadCompressed"/>=true 时用 <see cref="LZ4Pickler.Unpickle"/> 解包）。
+    /// 修复：检查 PayloadType，非 VoxelOp 载荷不尝试解码为 VoxelOp[]，避免静默丢失。</summary>
     private static VoxelOp[]? DecodePayload(WorldChunkDiffPacket diff)
     {
+        // 修复 #17：非 VoxelOp/EntityDelta 载荷不由 WorldDiffApplier 处理（由 SyncPacketDispatcher 路由或预留），
+        // 此处直接返回空数组以跳过，避免 MemoryPack 反序列化失败返回 null 导致 diff 被静默丢弃。
+        if (diff.PayloadType != WorldChunkDiffPayloadType.EntityDelta
+            && diff.PayloadType != WorldChunkDiffPayloadType.Correction
+            && diff.PayloadType != WorldChunkDiffPayloadType.Event)
+        {
+            return Array.Empty<VoxelOp>();
+        }
+
         if (diff.Payload is null || diff.Payload.Length == 0)
         {
             return Array.Empty<VoxelOp>();

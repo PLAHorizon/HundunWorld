@@ -152,6 +152,21 @@ namespace HundunWorld.Game.UI
                             }
                         }
 
+                        // 重绑 CombatHud（左上角角色信息），确保进入游戏时实时更新
+                        if (_activeCombatHud != null)
+                        {
+                            try
+                            {
+                                _activeCombatHud.BindCharacter(attr);
+                                if (_cachedSkills != null) _activeCombatHud.BindSkills(_cachedSkills);
+                                FlaxEngine.Debug.Log("[MainUIManager] CombatHud 已重绑本地玩家数据");
+                            }
+                            catch (Exception bindEx)
+                            {
+                                FlaxEngine.Debug.LogError($"[MainUIManager] CombatHud 重绑失败: {bindEx.Message}");
+                            }
+                        }
+
                         // 新增页面延迟重绑：CombatHudTraditional / CharacterPanel / SkillPanel
                         if (_activeCombatHudTraditional != null)
                         {

@@ -435,16 +435,9 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             // 改为：有输入时跑权威校验+移动；无输入时仍产当前位置的 Update delta，
             // 保证其他客户端能持续看到该实体（否则其他玩家看不到静止角色）。
 
-            // 记录 tick 开始前的位置，用于后续速度计算（必须在 if 块外声明，否则作用域不覆盖速度计算）。
             var startPos = new WorldPosition(entity.X, entity.Y, entity.Z);
+            var startYaw = entity.Yaw;
 
-            // 从本 tick 待处理的输入中提取最新 LookYaw 作为实体权威朝向。
-            // 必须直接从 PendingInputs 提取（而非 PendingInputBuffer，后者是上一次 tick 的旧数据），
-            // 且必须在 PendingInputs.Clear() 之前提取，否则 Clear 之后 Count==0 永远取不到 Yaw。
-            // [旋转同步修复] 原条件 `lastInput.LookYaw != 0f || entity.Yaw == 0f` 会导致：
-            // 当玩家转回正前方（LookYaw=0）且 entity.Yaw!=0 时，服务端不更新朝向，
-            // 远程客户端看到的角色朝向卡在旧值。移除条件后，有输入时直接用最新 LookYaw，
-            // 无输入时保持上一帧 entity.Yaw（静止实体朝向不变）。
             float latestYaw = entity.Yaw;
             if (entity.PendingInputs.Count > 0)
             {
@@ -494,6 +487,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
 
                 entity.PendingInputs.Clear();
                 entity.LastSyncTick = _tickCount;
+                entity.HadInputThisTick = true;
 
                 const float groundedEpsilon = 0.001f;
                 var prevZ = startPos.Z;
@@ -512,12 +506,14 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             var velX = (entity.X - startPos.X) / MovementFormulaStepDt;
             var velY = (entity.Y - startPos.Y) / MovementFormulaStepDt;
 
-            // 根据速度推导移动模式：有水平速度且在地面上为 Run/Walk。
+            // 根据速度推导移动模式：区分 Jump（上升）与 Fall（下降）。
+            // 修复 #15：原实现仅根据 IsGrounded 分 Fall/非坠落，无法区分跳跃上升与自由落体阶段，
+            // 客户端动画状态机无法据此切换 Jump→Fall 过渡。
             var speedSq = velX * velX + velY * velY;
-            var derivedMovementMode = entity.MovementMode;
+            MovementMode derivedMovementMode;
             if (!entity.IsGrounded)
             {
-                derivedMovementMode = MovementMode.Fall;
+                derivedMovementMode = entity.Vz > 0f ? MovementMode.Jump : MovementMode.Fall;
             }
             else if (speedSq > 0.1f)
             {
@@ -528,98 +524,104 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                 derivedMovementMode = MovementMode.Walk;
             }
 
-            // 所有已注册实体（含静止）每 tick 都产 Update delta，
-            // 客户端 SnapshotApplySystem.HandleUpdate 持续刷新插值目标。
-            // Task B.5：增量添加 MovementState/AnimationState/扩展 EntityState 写入。
-            // 始终携带 Identity：握手过程中的 Spawn delta 可能因 Gateway characterId→connection
-            // 映射未建立而被丢弃，客户端 HandleUpdate 收到带 Identity 的 delta 时会容错创建实体，
-            // 保证本地玩家实体一定能创建（否则 InputSendSystem 查询不到实体，上行链路断裂）。
-            var delta = new EntityDelta
+            bool hasPositionChanged = MathF.Abs(entity.X - startPos.X) > 0.001f
+                || MathF.Abs(entity.Y - startPos.Y) > 0.001f
+                || MathF.Abs(entity.Z - startPos.Z) > 0.001f;
+            bool hasYawChanged = MathF.Abs(entity.Yaw - startYaw) > 0.001f;
+            bool hasMovementChanged = derivedMovementMode != entity.PrevMovementMode
+                || entity.IsGrounded != entity.PrevIsGrounded
+                || MathF.Abs(velX - entity.PrevVelocityXZ_X) > 0.01f
+                || MathF.Abs(velY - entity.PrevVelocityXZ_Y) > 0.01f;
+
+            bool hasInput = entity.HadInputThisTick;
+            bool hasPendingAnimation = entity.PendingAnimationEvents is not null && entity.PendingAnimationEvents.Count > 0;
+            bool updateHeartbeatDue = (_tickCount - entity.LastUpdateBroadcastTick) >= 60;
+
+            bool shouldBroadcast = hasInput || hasPositionChanged || hasYawChanged || hasMovementChanged
+                || hasPendingAnimation || updateHeartbeatDue;
+
+            if (shouldBroadcast)
             {
-                EntityId = entityId,
-                Kind = EntityDeltaKind.Update,
-                Identity = new NetworkIdentityAuthComponent
+                var delta = new EntityDelta
                 {
-                    NetworkId = entityId,
-                    EntityType = 0,
-                    OwnerId = entityId,
-                },
-                Transform = new AuthTransformComponent
-                {
-                    X = entity.X,       // 左右（不变）
-                    Y = entity.Z,       // 上下（ECS Z → Flax Y）
-                    Z = entity.Y,       // 前后（ECS Y → Flax Z）
-                    Pitch = 0f,
-                    Yaw = entity.Yaw,
-                    Roll = 0f,
-                    ServerTick = _tickCount,
-                },
-            };
-
-            // Task B.5.1/B.5.2：MovementStateAuthComponent — 每 tick 下发（20Hz），
-            // 客户端据此驱动动画状态机；附加变化检测日志（仅 debug 用）。
-            delta.MovementState = new MovementStateAuthComponent
-            {
-                MovementMode = derivedMovementMode,
-                VelocityXZ_X = velX,
-                VelocityXZ_Y = velY,
-                IsGrounded = entity.IsGrounded,
-                ServerTick = _tickCount,
-            };
-
-            // Task B.5.3：扩展 EntityStateAuthComponent — 变化触发 + 1Hz 心跳。
-            // 判断属性是否变化（Mana/Level/Exp/Stamina/Hp/StateBits）。
-            bool attributeChanged = entity.Mana != entity.PrevMana
-                || entity.Level != entity.PrevLevel
-                || entity.Exp != entity.PrevExp
-                || entity.Stamina != entity.PrevStamina
-                || entity.Hp != entity.PrevHp
-                || entity.EntityStateBits != entity.PrevEntityStateBits;
-
-            // 1Hz 心跳：tick 间隔 ≈ 60 tick/s，每 60 tick 强制心跳一次。
-            bool heartbeatDue = (_tickCount - entity.LastAttributeHeartbeatTick) >= 60;
-
-            if (attributeChanged || heartbeatDue)
-            {
-                delta.State = new EntityStateAuthComponent
-                {
-                    Health = entity.Hp,
-                    MaxHealth = entity.MaxHp > 0 ? entity.MaxHp : entity.Hp,
-                    StateBits = entity.EntityStateBits,
-                    Mana = entity.Mana,
-                    MaxMana = entity.MaxMana,
-                    Level = entity.Level,
-                    Exp = entity.Exp,
-                    Stamina = entity.Stamina,
-                    MaxStamina = entity.MaxStamina,
+                    EntityId = entityId,
+                    Kind = EntityDeltaKind.Update,
+                    Identity = new NetworkIdentityAuthComponent
+                    {
+                        NetworkId = entityId,
+                        EntityType = 0,
+                        OwnerId = entityId,
+                    },
+                    Transform = new AuthTransformComponent
+                    {
+                        X = entity.X,
+                        Y = entity.Z,
+                        Z = entity.Y,
+                        Pitch = 0f,
+                        Yaw = entity.Yaw,
+                        Roll = 0f,
+                        ServerTick = _tickCount,
+                    },
                 };
-                entity.LastAttributeHeartbeatTick = _tickCount;
 
-                // 更新上一 tick 追踪
-                entity.PrevMana = entity.Mana;
-                entity.PrevLevel = entity.Level;
-                entity.PrevExp = entity.Exp;
-                entity.PrevStamina = entity.Stamina;
-                entity.PrevHp = entity.Hp;
-                entity.PrevEntityStateBits = entity.EntityStateBits;
+                delta.MovementState = new MovementStateAuthComponent
+                {
+                    MovementMode = derivedMovementMode,
+                    VelocityXZ_X = velX,
+                    VelocityXZ_Y = velY,
+                    IsGrounded = entity.IsGrounded,
+                    ServerTick = _tickCount,
+                };
+
+                bool attributeChanged = entity.Mana != entity.PrevMana
+                    || entity.Level != entity.PrevLevel
+                    || entity.Exp != entity.PrevExp
+                    || entity.Stamina != entity.PrevStamina
+                    || entity.Hp != entity.PrevHp
+                    || entity.EntityStateBits != entity.PrevEntityStateBits;
+
+                bool attributeHeartbeatDue = (_tickCount - entity.LastAttributeHeartbeatTick) >= 60;
+
+                if (attributeChanged || attributeHeartbeatDue)
+                {
+                    delta.State = new EntityStateAuthComponent
+                    {
+                        Health = entity.Hp,
+                        MaxHealth = entity.MaxHp > 0 ? entity.MaxHp : entity.Hp,
+                        StateBits = entity.EntityStateBits,
+                        Mana = entity.Mana,
+                        MaxMana = entity.MaxMana,
+                        Level = entity.Level,
+                        Exp = entity.Exp,
+                        Stamina = entity.Stamina,
+                        MaxStamina = entity.MaxStamina,
+                    };
+                    entity.LastAttributeHeartbeatTick = _tickCount;
+
+                    entity.PrevMana = entity.Mana;
+                    entity.PrevLevel = entity.Level;
+                    entity.PrevExp = entity.Exp;
+                    entity.PrevStamina = entity.Stamina;
+                    entity.PrevHp = entity.Hp;
+                    entity.PrevEntityStateBits = entity.EntityStateBits;
+                }
+
+                if (hasPendingAnimation)
+                {
+                    var animEvt = entity.PendingAnimationEvents!.Dequeue();
+                    animEvt.ServerTick = _tickCount;
+                    delta.AnimationState = animEvt;
+                }
+
+                entity.LastUpdateBroadcastTick = _tickCount;
+                deltas.Add(delta);
             }
 
-            // Task B.5.4：AnimationStateAuthComponent — 纯事件驱动（Montage 触发/结束）。
-            // 排空待下发队列，每 tick 至多下发一个事件（多余事件在后续 tick 下发）。
-            if (entity.PendingAnimationEvents is not null && entity.PendingAnimationEvents.Count > 0)
-            {
-                var animEvt = entity.PendingAnimationEvents.Dequeue();
-                animEvt.ServerTick = _tickCount;
-                delta.AnimationState = animEvt;
-            }
-
-            // 更新移动状态上一 tick 追踪（用于下次变化检测）
-            entity.PrevMovementMode = entity.MovementMode;
+            entity.PrevMovementMode = derivedMovementMode;
             entity.PrevIsGrounded = entity.IsGrounded;
-            entity.PrevVelocityXZ_X = entity.VelocityXZ_X;
-            entity.PrevVelocityXZ_Y = entity.VelocityXZ_Y;
-
-            deltas.Add(delta);
+            entity.PrevVelocityXZ_X = velX;
+            entity.PrevVelocityXZ_Y = velY;
+            entity.HadInputThisTick = false;
 
             _simulatedEntities[entityId] = entity;
         }
@@ -2242,6 +2244,10 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
 
         /// <summary>上次属性心跳的服务器 tick（用于 1Hz 心跳判断）。</summary>
         public long LastAttributeHeartbeatTick;
+        /// <summary>上次广播 Update delta 的服务器 tick（用于静止实体心跳广播）。</summary>
+        public long LastUpdateBroadcastTick;
+        /// <summary>本 tick 是否收到输入（用于广播决策，必须在 PendingInputs.Clear() 前设置）。</summary>
+        public bool HadInputThisTick;
 
         /// <summary>待下发的动画事件队列（Montage 触发/结束）。null 表示无待下发事件。</summary>
         public Queue<AnimationStateAuthComponent>? PendingAnimationEvents;

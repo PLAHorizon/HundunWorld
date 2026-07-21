@@ -249,33 +249,66 @@ public sealed class GatewaySyncDispatcher
     /// <summary>
     /// Task D.4：预估一个 SyncPacket 序列化后的字节数。
     /// 不做真实序列化，按包类型给出保守上界估计，供带宽预算计数使用。
+    /// <para>
+    /// 修复 #18：Snapshot 超过 <see cref="SyncPacketCodec.SnapshotCompressionThreshold"/>（256B）
+    /// 时会被 LZ4 压缩（通常压缩比 2~3×）。带宽估计若不考虑压缩，实际带宽消耗远低于估计值，
+    /// 会触发虚假的带宽限流，将正常 20Hz 快照不必要地降到 10Hz。
+    /// 此处将压缩包的大小按 50% 压缩比折减估计（保守上界：压缩后 ≤ 原始大小 × <see cref="_compressionEstimateFactor"/>）。
+    /// </para>
     /// </summary>
+    private const double _compressionEstimateFactor = 0.6; // 保守估计压缩比为 0.6×（一般实际 0.3~0.5×）
+
     private static int EstimatePacketSizeBytes(SyncPacket packet)
     {
         // 帧头 + SyncPacket 基类（Kind + ProtocolVersion）开销。
         const int HeaderOverhead = 16;
 
+        // 帧头 + SyncPacketCodec 6 字节帧头
+        const int WireHeaderOverhead = HeaderOverhead + SyncPacketCodec.FrameHeaderSize;
+
+        int rawEstimate;
+        bool isCompressible = false;
+
         switch (packet)
         {
             case SnapshotPacket snapshot:
-                // 每个 EntityDelta 约 80 字节（Identity + Transform + State 保守估计）。
                 var deltaCount = snapshot.Deltas?.Length ?? 0;
-                return HeaderOverhead + 24 + deltaCount * 80;
+                rawEstimate = WireHeaderOverhead + 24 + deltaCount * 80;
+                // Snapshot 超过 256B 时会被 SyncPacketCodec LZ4 压缩
+                isCompressible = rawEstimate > (WireHeaderOverhead + SyncPacketCodec.SnapshotCompressionThreshold);
+                break;
             case WorldChunkDiffPacket diff:
-                return HeaderOverhead + 40 + (diff.Payload?.Length ?? 0);
+                rawEstimate = WireHeaderOverhead + 40 + (diff.Payload?.Length ?? 0);
+                isCompressible = diff.PayloadCompressed;
+                break;
             case EventPacket evt:
-                return HeaderOverhead + 16 + (evt.Events?.Length ?? 0) * 32;
+                rawEstimate = WireHeaderOverhead + 16 + (evt.Events?.Length ?? 0) * 32;
+                break;
             case InputAckPacket:
-                return HeaderOverhead + 24;
+                rawEstimate = WireHeaderOverhead + 24;
+                break;
             case InputPacket:
-                return HeaderOverhead + 40;
+                rawEstimate = WireHeaderOverhead + 40;
+                break;
             case InteractionSyncPacket:
-                return HeaderOverhead + 40;
+                rawEstimate = WireHeaderOverhead + 40;
+                break;
             case SceneObjectSyncPacket:
-                return HeaderOverhead + 80;
+                rawEstimate = WireHeaderOverhead + 80;
+                break;
             default:
-                return HeaderOverhead + 64;
+                rawEstimate = WireHeaderOverhead + 64;
+                break;
         }
+
+        if (isCompressible)
+        {
+            // 按保守压缩比折减，避免带宽估计虚高触发不必要的限流
+            var compressed = (int)(rawEstimate * _compressionEstimateFactor);
+            return Math.Max(compressed, WireHeaderOverhead + 32); // 至少保留帧头 + 最小内容
+        }
+
+        return rawEstimate;
     }
 
     /// <summary>

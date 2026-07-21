@@ -1,4 +1,6 @@
 using System;
+using System.Buffers;
+using Horizon.Game.Core.Utilities;
 using Horizon.Game.Message.Sync;
 using MemoryPack;
 
@@ -99,6 +101,25 @@ public sealed class SyncPacketDispatcher
     }
 
     /// <summary>
+    /// 对 <see cref="WorldChunkDiffPacket.Payload"/> 进行 LZ4 解压（如果需要）。
+    /// 修复：原实现直接对 diff.Payload 做 MemoryPack 反序列化，未检查 PayloadCompressed 标志，
+    /// 当服务端对 InteractionSync/SceneObjectSync 载荷启用 LZ4 压缩时会导致反序列化崩溃。
+    /// 使用与 <see cref="WorldDiffApplier"/> 一致的 <see cref="LZ4Pickler.Unpickle"/> 解压，
+    /// 确保与生产端 LZ4Pickler.Pickle 格式兼容（[4 bytes int32 原长度][LZ4 块]）。
+    /// </summary>
+    private static byte[]? DecompressPayloadIfNeeded(WorldChunkDiffPacket diff)
+    {
+        if (diff.Payload is null || diff.Payload.Length == 0)
+            return null;
+
+        if (!diff.PayloadCompressed)
+            return diff.Payload;
+
+        // 与生产端 LZ4Pickler.Pickle 对齐：[4 bytes int32 原长度][LZ4 块]
+        return LZ4Pickler.Unpickle(diff.Payload);
+    }
+
+    /// <summary>
     /// 根据 <see cref="WorldChunkDiffPacket.PayloadType"/> 路由 WorldChunkDiffPacket（P8-8.3）。
     /// InteractionSync 载荷直接反序列化并投递到 <see cref="SyncPacketInbox.InteractionEvents"/>；
     /// SceneObjectSync 载荷直接反序列化并投递到 <see cref="SyncPacketInbox.SceneObjectEvents"/>；
@@ -106,10 +127,14 @@ public sealed class SyncPacketDispatcher
     /// </summary>
     private void RouteWorldChunkDiff(WorldChunkDiffPacket diff)
     {
+        // 解码 payload（处理 LZ4 压缩）
+        var decompressedPayload = DecompressPayloadIfNeeded(diff);
+        if (decompressedPayload is null) return;
+
         switch (diff.PayloadType)
         {
             case WorldChunkDiffPayloadType.InteractionSync:
-                var interaction = MemoryPackSerializer.Deserialize<InteractionSyncPacket>(diff.Payload);
+                var interaction = MemoryPackSerializer.Deserialize<InteractionSyncPacket>(decompressedPayload);
                 if (interaction is not null)
                 {
                     _inbox.InteractionEvents.Enqueue(interaction);
@@ -117,7 +142,7 @@ public sealed class SyncPacketDispatcher
                 }
                 break;
             case WorldChunkDiffPayloadType.SceneObjectSync:
-                var sceneObject = MemoryPackSerializer.Deserialize<SceneObjectSyncPacket>(diff.Payload);
+                var sceneObject = MemoryPackSerializer.Deserialize<SceneObjectSyncPacket>(decompressedPayload);
                 if (sceneObject is not null)
                 {
                     _inbox.SceneObjectEvents.Enqueue(sceneObject);

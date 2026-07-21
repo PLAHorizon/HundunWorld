@@ -116,24 +116,26 @@ public sealed class MovementValidator
 
             if (isJumpPressed)
             {
-                if (isGrounded)
-                    jumpCount = 0;
-
-                jumpCount++;
-
-                jumpImpulse = jumpCount switch
+                if (isQinggongJump)
                 {
-                    1 => 5.5f,
-                    2 => 4.5f,
-                    3 => 3.5f,
-                    _ => 0f
-                };
-
-                var maxJumps = isQinggongJump ? _options.MaxQinggongJumpCount : 1;
-                if (jumpCount > maxJumps)
+                    jumpCount++;
+                    jumpImpulse = jumpCount switch
+                    {
+                        1 => 5.5f,
+                        2 => 4.5f,
+                        3 => 3.5f,
+                        _ => 0f
+                    };
+                    if (jumpCount > _options.MaxQinggongJumpCount)
+                    {
+                        jumpCountExceeded = true;
+                        jumpImpulse = 0f;
+                    }
+                }
+                else
                 {
-                    jumpCountExceeded = true;
-                    jumpImpulse = 0f;
+                    jumpCount = 1;
+                    jumpImpulse = 5.5f;
                 }
             }
 
@@ -163,18 +165,21 @@ public sealed class MovementValidator
                     nvz = 0f;
                     isGrounded = true;
                     jumpCount = 0;
+                    jumpCountExceeded = false;
                 }
                 else
                 {
                     var dz = MathF.Abs(nz - prevZ);
                     isGrounded = dz < groundedEpsilon && nvz <= 0f;
                     if (isGrounded)
+                    {
                         jumpCount = 0;
+                        jumpCountExceeded = false;
+                    }
                 }
             }
             else
             {
-                // 服务端未注入 GroundHeightSampler：用客户端上报的 PredictedEndZ 作为参考地面 Z。
                 var predictedZ = input.PredictedEndZ;
                 var dzPred = predictedZ - nz;
                 if (dzPred > 0.05f && dzPred < 10f)
@@ -183,13 +188,17 @@ public sealed class MovementValidator
                     nvz = 0f;
                     isGrounded = true;
                     jumpCount = 0;
+                    jumpCountExceeded = false;
                 }
                 else
                 {
                     var dz = MathF.Abs(nz - prevZ);
                     isGrounded = dz < groundedEpsilon && nvz <= 0f;
                     if (isGrounded)
+                    {
                         jumpCount = 0;
+                        jumpCountExceeded = false;
+                    }
                 }
             }
 
