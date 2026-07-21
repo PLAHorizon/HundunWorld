@@ -1,376 +1,144 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Game.Character.Attributes;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
 using System.Collections.Generic;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Social
 {
-    /// <summary>
-    /// 师徒传承页面 — 对应 mentor.html 设计原型。
-    /// <para>
-    /// 三栏布局：
-    /// <list type="bullet">
-    ///   <item>顶部：标题"师徒传承" + 师徒等级 + 传承值 + 当前角色等级</item>
-    ///   <item>左栏：3 个垂直 Tab（我的师父/我的徒弟/拜师申请）+ 师父信息卡 / 徒弟列表</item>
-    ///   <item>中栏：师徒任务列表（6 个，带奖励与完成状态）+ 出师条件检查清单</item>
-    ///   <item>右栏：师徒贡献进度条 + 操作按钮（传功/赠礼/解除关系/领取奖励）+ 传承记录</item>
-    ///   <item>底部：返回沉浸模式 + 跳转江湖秘境</item>
-    /// </list>
-    /// 通过 <see cref="NavigationRequested"/> 事件向路由器暴露导航请求。
-    /// </para>
-    /// </summary>
     public class MentorPage : ContainerControl, IInkPage
     {
-        // ===================================================================
-        // 布局常量
-        // =======================================================================
-
-        /// <summary>顶部标题栏高度</summary>
         private const float TopHeaderHeight = 56f;
-
-        /// <summary>底部按钮栏高度</summary>
-        private const float BottomBarHeight = 48f;
-
-        /// <summary>屏幕边缘留白</summary>
         private const float ScreenEdge = 16f;
-
-        /// <summary>列间距</summary>
         private const float ColumnGap = 12f;
-
-        /// <summary>左栏宽度（师徒关系列表）</summary>
-        private const float LeftColumnWidth = 260f;
-
-        /// <summary>右栏宽度（详情面板）</summary>
+        private const float LeftColumnWidth = 280f;
         private const float RightColumnWidth = 300f;
-
-        /// <summary>角色 Tab 高度</summary>
-        private const float RoleTabHeight = 36f;
-
-        /// <summary>角色 Tab 间距</summary>
-        private const float RoleTabGap = 6f;
-
-        /// <summary>徒弟条目高度</summary>
-        private const float DiscipleItemHeight = 54f;
-
-        /// <summary>徒弟条目间距</summary>
+        private const float RoleTabHeight = 32f;
+        private const float DiscipleItemHeight = 52f;
         private const float DiscipleItemGap = 6f;
-
-        /// <summary>任务条目高度</summary>
         private const float TaskItemHeight = 68f;
-
-        /// <summary>任务条目间距</summary>
-        private const float TaskItemGap = 8f;
-
-        /// <summary>操作按钮高度</summary>
+        private const float TaskItemGap = 10f;
         private const float ActionBtnHeight = 36f;
-
-        /// <summary>操作按钮间距</summary>
         private const float ActionBtnGap = 8f;
 
-        /// <summary>底部按钮宽度</summary>
-        private const float BottomBtnWidth = 140f;
-
-        // ===================================================================
-        // 子控件引用 — 顶部标题栏
-        // =======================================================================
-
-        /// <summary>顶部标题栏面板</summary>
+        // Top header
         private InkPanel _topHeader;
-
-        /// <summary>页面主标题</summary>
+        private InkButton _backButton;
         private Label _titleLabel;
-
-        /// <summary>英文副标题</summary>
         private Label _subtitleLabel;
-
-        /// <summary>师徒等级标签</summary>
         private Label _mentorLevelLabel;
-
-        /// <summary>传承值标签</summary>
         private Label _legacyValueLabel;
-
-        /// <summary>当前角色等级标签</summary>
         private Label _charLevelLabel;
 
-        // ===================================================================
-        // 子控件引用 — 左栏（师徒关系）
-        // =======================================================================
-
-        /// <summary>左栏容器</summary>
+        // Left panel
         private InkPanel _leftPanel;
-
-        /// <summary>角色 Tab 容器（3 个垂直 Tab）</summary>
-        private ContainerControl _roleTabBar;
-
-        /// <summary>3 个角色 Tab 按钮</summary>
         private InkButton[] _roleTabs;
-
-        /// <summary>师父信息卡容器</summary>
-        private InkPanel _masterInfoPanel;
-
-        /// <summary>师父大头像</summary>
-        private ContainerControl _masterAvatar;
-
-        /// <summary>师父姓名标签</summary>
+        private ContainerControl _masterInfoPanel;
         private Label _masterNameLabel;
-
-        /// <summary>师父等级与门派标签</summary>
         private Label _masterSectLabel;
-
-        /// <summary>师徒亲密度进度条</summary>
-        private InkBar _intimacyBar;
-
-        /// <summary>师徒亲密度数值标签</summary>
         private Label _intimacyLabel;
-
-        /// <summary>拜师天数标签</summary>
+        private InkBar _intimacyBar;
         private Label _masterDaysLabel;
-
-        /// <summary>徒弟列表容器</summary>
         private ContainerControl _discipleListHost;
-
-        /// <summary>徒弟条目集合</summary>
         private readonly List<ContainerControl> _discipleItems = new List<ContainerControl>();
+        private InkButton _btnRecruit;
+        private InkButton _btnSeekMaster;
+        private InkButton _btnDismiss;
 
-        // ===================================================================
-        // 子控件引用 — 中栏（师徒任务）
-        // =======================================================================
-
-        /// <summary>中栏容器</summary>
+        // Middle panel
         private InkPanel _middlePanel;
-
-        /// <summary>任务分类标题</summary>
-        private Label _taskSectionTitle;
-
-        /// <summary>任务列表容器</summary>
+        private InkButton[] _taskTabs;
         private ContainerControl _taskListHost;
-
-        /// <summary>任务条目集合</summary>
         private readonly List<ContainerControl> _taskItems = new List<ContainerControl>();
-
-        /// <summary>出师条件检查清单容器</summary>
         private InkPanel _graduationPanel;
-
-        /// <summary>出师进度标题</summary>
-        private Label _graduationTitleLabel;
-
-        /// <summary>出师进度条</summary>
         private InkBar _graduationBar;
-
-        /// <summary>出师条件标签集合</summary>
         private readonly List<Label> _graduationConditionLabels = new List<Label>();
 
-        // ===================================================================
-        // 子控件引用 — 右栏（详情与操作）
-        // =======================================================================
-
-        /// <summary>右栏容器</summary>
+        // Right panel
         private InkPanel _rightPanel;
-
-        /// <summary>师徒贡献进度条</summary>
-        private InkBar _contributionBar;
-
-        /// <summary>师徒贡献数值标签</summary>
-        private Label _contributionLabel;
-
-        /// <summary>操作按钮集合（传功/赠礼/解除关系/领取奖励）</summary>
-        private readonly InkButton[] _actionButtons = new InkButton[4];
-
-        /// <summary>传承记录容器</summary>
+        private InkBar _levelBar;
+        private Label _levelValueLabel;
+        private Label _levelTitleLabel;
         private ContainerControl _legacyRecordsHost;
+        private readonly List<ContainerControl> _shopItems = new List<ContainerControl>();
+        private ContainerControl _rewardPreviewHost;
+        private ContainerControl _titlesHost;
 
-        // ===================================================================
-        // 子控件引用 — 底部按钮栏
-        // =======================================================================
-
-        /// <summary>底部按钮栏容器</summary>
-        private InkPanel _bottomBar;
-
-        /// <summary>返回沉浸模式按钮</summary>
-        private InkButton _backToHudButton;
-
-        /// <summary>跳转江湖秘境按钮</summary>
-        private InkButton _goDungeonButton;
-
-        // ===================================================================
-        // 模拟数据
-        // =======================================================================
-
-        /// <summary>师父信息</summary>
-        private struct MasterInfo
-        {
-            public string Name;
-            public int Level;
-            public string Sect;
-            public string Title;
-            public int Intimacy;
-            public int IntimacyMax;
-            public int Days;
-        }
-
-        /// <summary>徒弟信息</summary>
-        private struct DiscipleInfo
-        {
-            public string Name;
-            public int Level;
-            public string Sect;
-            public float GraduationProgress;
-            public bool Online;
-            public int EnrollDays;
-        }
-
-        /// <summary>任务信息</summary>
-        private struct TaskInfo
-        {
-            public string Name;
-            public string Desc;
-            public string Reward;
-            public string Status; // 已完成 / 进行中 / 未开始
-            public int ProgressCur;
-            public int ProgressMax;
-        }
-
-        /// <summary>当前师父</summary>
-        private MasterInfo _master = new MasterInfo
-        {
-            Name = "孤云长老",
-            Level = 85,
-            Sect = "少林派",
-            Title = "武学宗师",
-            Intimacy = 2840,
-            IntimacyMax = 3000,
-            Days = 42,
-        };
-
-        /// <summary>门下徒弟列表</summary>
-        private readonly DiscipleInfo[] _disciples =
-        {
-            new DiscipleInfo { Name = "林清河", Level = 42, Sect = "峨眉", GraduationProgress = 0.68f, Online = true,  EnrollDays = 30 },
-            new DiscipleInfo { Name = "慕晴雪", Level = 38, Sect = "唐门", GraduationProgress = 0.52f, Online = true,  EnrollDays = 25 },
-            new DiscipleInfo { Name = "苏问剑", Level = 45, Sect = "武当", GraduationProgress = 0.78f, Online = false, EnrollDays = 35 },
-            new DiscipleInfo { Name = "柳含烟", Level = 33, Sect = "华山", GraduationProgress = 0.40f, Online = true,  EnrollDays = 18 },
-            new DiscipleInfo { Name = "萧无尘", Level = 50, Sect = "丐帮", GraduationProgress = 0.92f, Online = false, EnrollDays = 48 },
-        };
-
-        /// <summary>师徒任务列表</summary>
-        private readonly TaskInfo[] _tasks =
-        {
-            new TaskInfo { Name = "师徒同心·行侠仗义", Desc = "组队击败山贼头目 ×5",       Reward = "+50 传承 / +10000 经验", Status = "已完成", ProgressCur = 5,  ProgressMax = 5  },
-            new TaskInfo { Name = "传道授业·武学切磋", Desc = "与师父武学切磋 3 场",        Reward = "+50 传承 / +8000 经验",  Status = "进行中", ProgressCur = 2,  ProgressMax = 3  },
-            new TaskInfo { Name = "晨昏定省·采药炼丹", Desc = "采集灵草 ×10 并炼制丹药",   Reward = "+50 传承 / +6000 经验",  Status = "未开始", ProgressCur = 2,  ProgressMax = 10 },
-            new TaskInfo { Name = "游历江湖·名山访胜", Desc = "与师门共游名山胜景 ×3 处",  Reward = "+40 传承 / +5000 经验",  Status = "进行中", ProgressCur = 1,  ProgressMax = 3  },
-            new TaskInfo { Name = "尊师重道·奉茶请安", Desc = "向师父奉茶 1 次",            Reward = "+30 传承 / +3000 经验",  Status = "未开始", ProgressCur = 0,  ProgressMax = 1  },
-            new TaskInfo { Name = "师门试炼·组队通关", Desc = "通关「千机塔」第 3 层",      Reward = "+200 传承",              Status = "进行中", ProgressCur = 1,  ProgressMax = 3  },
-        };
-
-        /// <summary>出师条件（true=已达成，false=未达成）</summary>
-        private readonly string[] _graduationConditions =
-        {
-            "✓ 师徒亲密度 ≥ 2000",
-            "✓ 累计在线 ≥ 100 时",
-            "✓ 完成日常 ≥ 20 次",
-            "○ 等级达到 Lv.50",
-            "○ 通关出师试炼副本",
-        };
-
-        /// <summary>传承记录条目</summary>
-        private readonly string[] _legacyRecords =
-        {
-            "完成师徒同心  +50",
-            "指点林清河武学  +30",
-            "通关千机塔  +200",
-            "切磋论剑胜出  +36",
-            "签到奖励  +20",
-        };
-
-        // ===================================================================
-        // 公共 API
-        // =======================================================================
-
-        /// <summary>
-        /// 导航请求事件。按钮点击后通过此事件向路由器暴露目标 dom-id。
-        /// </summary>
         public event Action<string> NavigationRequested;
-
-        /// <summary>
-        /// 粒子动效系统引用（可选，由 MainUIManager 注入）。
-        /// </summary>
         public InkParticleSystem ParticleSystem { get; set; }
 
-        // ===================================================================
-        // 构造函数
-        // =======================================================================
+        private CharacterAttributesComponent _boundCharacter;
 
-        /// <summary>
-        /// 构造函数：初始化所有子控件。
-        /// </summary>
+        public void BindCharacter(CharacterAttributesComponent component)
+        {
+            _boundCharacter = component;
+        }
+
         public MentorPage()
         {
-            try
-            {
-                AnchorPreset = AnchorPresets.StretchAll;
-                Offsets = Margin.Zero;
-                BackgroundColor = Color.Transparent;
-                ClipChildren = false;
-                AutoFocus = false;
+            AnchorPreset = AnchorPresets.StretchAll;
+            Offsets = Margin.Zero;
+            BackgroundColor = Color.Transparent;
+            ClipChildren = false;
+            AutoFocus = false;
 
-                BuildTopHeader();
-                BuildLeftPanel();
-                BuildMiddlePanel();
-                BuildRightPanel();
-                BuildBottomBar();
-            }
-            catch (Exception ex)
-            {
-                FlaxEngine.Debug.LogError($"[MentorPage] 初始化失败: {ex.Message}");
-            }
+            BuildTopHeader();
+            BuildLeftPanel();
+            BuildMiddlePanel();
+            BuildRightPanel();
         }
 
         // ===================================================================
-        // Build 方法 — 顶部标题栏
-        // =======================================================================
+        // Top Header
+        // ===================================================================
 
-        /// <summary>
-        /// 构建顶部标题栏：返回区域 + 主标题 + 师徒等级 + 传承值 + 角色等级。
-        /// </summary>
         private void BuildTopHeader()
         {
             _topHeader = new InkPanel
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Size = new Float2(800f, TopHeaderHeight),
+                Size = new Float2(1200f, TopHeaderHeight),
             };
 
-            // 主标题"师徒传承"
+            _backButton = new InkButton
+            {
+                Variant = InkButtonVariant.Ghost,
+                ButtonSize = InkButtonSize.Sm,
+                Text = "←",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(ScreenEdge, 10f),
+                Size = new Float2(32f, 32f),
+            };
+            _backButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.CombatHud);
+            _topHeader.AddChild(_backButton);
+
             _titleLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(ScreenEdge, 8f),
+                Location = new Float2(56f, 8f),
                 Size = new Float2(160f, 28f),
                 Text = "师徒传承",
                 TextColor = InkWashTheme.TextGold,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 20f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 20f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _topHeader.AddChild(_titleLabel);
 
-            // 英文副标题
             _subtitleLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(ScreenEdge + 160f, 16f),
+                Location = new Float2(56f + 160f, 16f),
                 Size = new Float2(140f, 20f),
                 Text = "MENTOR LINEAGE",
                 TextColor = InkWashTheme.TextTertiary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 11f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _topHeader.AddChild(_subtitleLabel);
 
-            // 师徒等级标签（右上区）
             _mentorLevelLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
@@ -378,13 +146,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Size = new Float2(80f, 20f),
                 Text = "师徒 IV",
                 TextColor = InkWashTheme.TextSecondary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 13f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
                 HorizontalAlignment = TextAlignment.Far,
                 VerticalAlignment = TextAlignment.Center,
             };
             _topHeader.AddChild(_mentorLevelLabel);
 
-            // 传承值标签
             _legacyValueLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
@@ -392,13 +159,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Size = new Float2(100f, 20f),
                 Text = "传承 3,820",
                 TextColor = InkWashTheme.TextBrand,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 13f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 HorizontalAlignment = TextAlignment.Far,
                 VerticalAlignment = TextAlignment.Center,
             };
             _topHeader.AddChild(_legacyValueLabel);
 
-            // 当前角色等级标签
             _charLevelLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
@@ -406,7 +172,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Size = new Float2(56f, 20f),
                 Text = "Lv.65",
                 TextColor = InkWashTheme.TextJade,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 13f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 HorizontalAlignment = TextAlignment.Far,
                 VerticalAlignment = TextAlignment.Center,
             };
@@ -416,12 +182,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
         }
 
         // ===================================================================
-        // Build 方法 — 左栏（师徒关系）
-        // =======================================================================
+        // Left Panel
+        // ===================================================================
 
-        /// <summary>
-        /// 构建左栏：3 个垂直角色 Tab + 师父信息卡 + 徒弟列表。
-        /// </summary>
         private void BuildLeftPanel()
         {
             _leftPanel = new InkPanel
@@ -430,66 +193,62 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Size = new Float2(LeftColumnWidth, 600f),
             };
 
-            // ===== 角色 Tab 栏（3 个垂直 Tab）=====
-            _roleTabBar = new ContainerControl
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(ScreenEdge, ScreenEdge),
-                Size = new Float2(LeftColumnWidth - ScreenEdge * 2f, RoleTabHeight),
-            };
-            _leftPanel.AddChild(_roleTabBar);
-
-            string[] roleTabLabels = { "我的师父", "我的徒弟", "拜师申请" };
-            _roleTabs = new InkButton[3];
-            float tabWidth = (LeftColumnWidth - ScreenEdge * 2f - RoleTabGap * 2f) / 3f;
-            for (int i = 0; i < 3; i++)
-            {
-                var btn = new InkButton
-                {
-                    Variant = i == 0 ? InkButtonVariant.Primary : InkButtonVariant.Default,
-                    ButtonSize = InkButtonSize.Sm,
-                    Text = roleTabLabels[i],
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(i * (tabWidth + RoleTabGap), 0f),
-                    Size = new Float2(tabWidth, RoleTabHeight),
-                };
-                _roleTabs[i] = btn;
-                _roleTabBar.AddChild(btn);
-            }
-
-            // ===== 师父信息卡 =====
+            BuildRoleSwitcher();
             BuildMasterInfoCard();
-
-            // ===== 徒弟列表 =====
             BuildDiscipleList();
+            BuildLeftActionButtons();
 
             AddChild(_leftPanel);
         }
 
-        /// <summary>
-        /// 构建师父信息卡：大头像 + 姓名 + 门派 + 亲密度进度条 + 拜师天数。
-        /// </summary>
-        private void BuildMasterInfoCard()
+        private void BuildRoleSwitcher()
         {
-            _masterInfoPanel = new InkPanel
+            var container = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(ScreenEdge, ScreenEdge + RoleTabHeight + 12f),
+                Location = new Float2(ScreenEdge, ScreenEdge),
+                Size = new Float2(LeftColumnWidth - ScreenEdge * 2f, RoleTabHeight + 8f),
+            };
+
+            string[] labels = { "师父", "徒弟" };
+            _roleTabs = new InkButton[2];
+            float tabWidth = (LeftColumnWidth - ScreenEdge * 2f - 4f) / 2f;
+            for (int i = 0; i < 2; i++)
+            {
+                var btn = new InkButton
+                {
+                    Variant = i == 0 ? InkButtonVariant.Primary : InkButtonVariant.Ghost,
+                    ButtonSize = InkButtonSize.Sm,
+                    Text = labels[i],
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(2f + i * (tabWidth + 4f), 4f),
+                    Size = new Float2(tabWidth, RoleTabHeight),
+                };
+                _roleTabs = _roleTabs ?? new InkButton[2];
+                _roleTabs[i] = btn;
+                container.AddChild(btn);
+            }
+
+            _leftPanel.AddChild(container);
+        }
+
+        private void BuildMasterInfoCard()
+        {
+            _masterInfoPanel = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(ScreenEdge, ScreenEdge + RoleTabHeight + 12f + 8f),
                 Size = new Float2(LeftColumnWidth - ScreenEdge * 2f, 130f),
             };
-            _leftPanel.AddChild(_masterInfoPanel);
 
-            // 大头像
-            _masterAvatar = new ContainerControl
+            var avatar = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(12f, 14f),
                 Size = new Float2(56f, 56f),
-                BackgroundColor = new Color(
-                    InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G,
-                    InkWashTheme.GoldPrimary.B, 0.18f),
+                BackgroundColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.25f),
             };
-            _masterInfoPanel.AddChild(_masterAvatar);
+            _masterInfoPanel.AddChild(avatar);
 
             var avatarChar = new Label
             {
@@ -497,194 +256,197 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Offsets = Margin.Zero,
                 Text = "孤",
                 TextColor = InkWashTheme.TextBrand,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 24f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 24f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
             };
-            _masterAvatar.AddChild(avatarChar);
+            avatar.AddChild(avatarChar);
 
-            // 师父姓名
             _masterNameLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(80f, 14f),
                 Size = new Float2(150f, 22f),
-                Text = _master.Name,
+                Text = "孤云长老",
                 TextColor = InkWashTheme.TextDefault,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 15f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 15f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _masterInfoPanel.AddChild(_masterNameLabel);
 
-            // 师父门派与称号
             _masterSectLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(80f, 38f),
                 Size = new Float2(160f, 18f),
-                Text = $"{_master.Sect} · {_master.Title}",
+                Text = "少林派 · 武学宗师",
                 TextColor = InkWashTheme.TextSecondary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 12f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _masterInfoPanel.AddChild(_masterSectLabel);
 
-            // 亲密度数值标签
             _intimacyLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(80f, 60f),
                 Size = new Float2(160f, 16f),
-                Text = $"亲密度 {_master.Intimacy} / {_master.IntimacyMax}",
-                TextColor = InkWashTheme.TextTertiary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 11f),
+                Text = "2,840 / 3,000",
+                TextColor = InkWashTheme.TextBrand,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _masterInfoPanel.AddChild(_intimacyLabel);
 
-            // 亲密度进度条
             _intimacyBar = new InkBar
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(80f, 78f),
-                Size = new Float2(160f, 8f),
-                Value = (float)_master.Intimacy / _master.IntimacyMax,
+                Location = new Float2(80f, 56f),
+                Size = new Float2(160f, 6f),
+                Value = 2840f / 3000f,
                 FillVariant = InkBarFillVariant.Gold,
             };
             _masterInfoPanel.AddChild(_intimacyBar);
 
-            // 拜师天数
             _masterDaysLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(12f, 102f),
+                Location = new Float2(12f, 80f),
                 Size = new Float2(LeftColumnWidth - ScreenEdge * 2f - 24f, 18f),
-                Text = $"拜师 {_master.Days} 日 · 在师门",
+                Text = "拜师 42 日 · 在师门",
                 TextColor = InkWashTheme.TextJade,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 11f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _masterInfoPanel.AddChild(_masterDaysLabel);
+
+            _leftPanel.AddChild(_masterInfoPanel);
         }
 
-        /// <summary>
-        /// 构建徒弟列表：5 个徒弟条目，每个显示姓名/等级/门派/出师进度/在线状态。
-        /// </summary>
         private void BuildDiscipleList()
         {
-            // 列表标题
             var listTitle = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(ScreenEdge, ScreenEdge + RoleTabHeight + 12f + 130f + 8f),
+                Location = new Float2(ScreenEdge, ScreenEdge + RoleTabHeight + 12f + 8f + 130f + 8f),
                 Size = new Float2(LeftColumnWidth - ScreenEdge * 2f, 20f),
-                Text = "◆ 门下弟子 (" + _disciples.Length + " / 3)",
+                Text = "门下弟子  2 / 3",
                 TextColor = InkWashTheme.TextGold,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 13f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _leftPanel.AddChild(listTitle);
 
-            // 列表容器
             _discipleListHost = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(ScreenEdge, ScreenEdge + RoleTabHeight + 12f + 130f + 8f + 24f),
-                Size = new Float2(LeftColumnWidth - ScreenEdge * 2f, 400f),
+                Location = new Float2(ScreenEdge, ScreenEdge + RoleTabHeight + 12f + 8f + 130f + 8f + 24f),
+                Size = new Float2(LeftColumnWidth - ScreenEdge * 2f, 200f),
             };
             _leftPanel.AddChild(_discipleListHost);
 
+            string[][] disciples = {
+                new[] { "林", "林清河", "42", "峨眉", "68" },
+                new[] { "慕", "慕晴雪", "38", "唐门", "52" },
+            };
+
             float cursorY = 0f;
-            for (int i = 0; i < _disciples.Length; i++)
+            for (int i = 0; i < disciples.Length; i++)
             {
-                var d = _disciples[i];
+                var d = disciples[i];
                 var item = new ContainerControl
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
                     Location = new Float2(0f, cursorY),
                     Size = new Float2(LeftColumnWidth - ScreenEdge * 2f, DiscipleItemHeight),
                     BackgroundColor = i == 0
-                        ? new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.10f)
+                        ? new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.10f)
                         : Color.Transparent,
                 };
 
-                // 在线状态圆点
-                var dot = new InkDot
+                var avatarSmall = new ContainerControl
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(8f, (DiscipleItemHeight - 8f) * 0.5f),
-                    Size = new Float2(8f, 8f),
-                    Online = d.Online,
+                    Location = new Float2(10f, 6f),
+                    Size = new Float2(36f, 36f),
+                    BackgroundColor = new Color(94f / 255f, 139f / 255f, 126f / 255f, 0.15f),
                 };
-                item.AddChild(dot);
+                item.AddChild(avatarSmall);
 
-                // 姓名标签
+                var avatarChar = new Label
+                {
+                    AnchorPreset = AnchorPresets.StretchAll,
+                    Offsets = Margin.Zero,
+                    Text = d[0],
+                    TextColor = InkWashTheme.TextJade,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f),
+                    HorizontalAlignment = TextAlignment.Center,
+                    VerticalAlignment = TextAlignment.Center,
+                };
+                avatarSmall.AddChild(avatarChar);
+
                 var nameLabel = new Label
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(22f, 6f),
+                    Location = new Float2(52f, 6f),
                     Size = new Float2(110f, 20f),
-                    Text = d.Name,
+                    Text = d[1],
                     TextColor = InkWashTheme.TextDefault,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 13f),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Center,
                 };
                 item.AddChild(nameLabel);
 
-                // 等级标签
                 var levelLabel = new Label
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(132f, 6f),
-                    Size = new Float2(50f, 20f),
-                    Text = "Lv." + d.Level,
+                    Location = new Float2(162f, 6f),
+                    Size = new Float2(40f, 20f),
+                    Text = d[2],
                     TextColor = InkWashTheme.TextGold,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 12f),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Center,
                 };
                 item.AddChild(levelLabel);
 
-                // 门派与入门时间
                 var sectLabel = new Label
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(22f, 28f),
-                    Size = new Float2(180f, 16f),
-                    Text = $"{d.Sect} · 入门 {d.EnrollDays} 日",
+                    Location = new Float2(52f, 28f),
+                    Size = new Float2(60f, 16f),
+                    Text = d[3],
                     TextColor = InkWashTheme.TextSecondary,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 11f),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Center,
                 };
                 item.AddChild(sectLabel);
 
-                // 出师进度条
                 var gradBar = new InkBar
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(22f, 44f),
-                    Size = new Float2(140f, 6f),
-                    Value = d.GraduationProgress,
-                    FillVariant = d.GraduationProgress >= 0.9f ? InkBarFillVariant.Jade : InkBarFillVariant.Gold,
+                    Location = new Float2(110f, 30f),
+                    Size = new Float2(80f, 4f),
+                    Value = int.Parse(d[4]) / 100f,
+                    FillVariant = InkBarFillVariant.Gold,
                 };
                 item.AddChild(gradBar);
 
-                // 出师进度百分比
                 var gradLabel = new Label
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(166f, 40f),
-                    Size = new Float2(50f, 14f),
-                    Text = ((int)(d.GraduationProgress * 100)).ToString() + "%",
+                    Location = new Float2(194f, 28f),
+                    Size = new Float2(40f, 14f),
+                    Text = d[4] + "%",
                     TextColor = InkWashTheme.TextBrand,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 11f),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Center,
                 };
@@ -694,15 +456,103 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 _discipleListHost.AddChild(item);
                 cursorY += DiscipleItemHeight + DiscipleItemGap;
             }
+
+            // Empty slot
+            var emptySlot = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, cursorY),
+                Size = new Float2(LeftColumnWidth - ScreenEdge * 2f, DiscipleItemHeight),
+                BackgroundColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.03f),
+            };
+
+            var emptyIcon = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(10f, 6f),
+                Size = new Float2(36f, 36f),
+                Text = "+",
+                TextColor = InkWashTheme.TextTertiary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 20f),
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            emptySlot.AddChild(emptyIcon);
+
+            var emptyLabel = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(52f, 6f),
+                Size = new Float2(120f, 20f),
+                Text = "虚位以待",
+                TextColor = InkWashTheme.TextTertiary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            emptySlot.AddChild(emptyLabel);
+
+            var emptySub = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(52f, 28f),
+                Size = new Float2(120f, 16f),
+                Text = "可再收 1 名弟子",
+                TextColor = InkWashTheme.TextTertiary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            emptySlot.AddChild(emptySub);
+
+            _discipleListHost.AddChild(emptySlot);
+        }
+
+        private void BuildLeftActionButtons()
+        {
+            float yPos = ScreenEdge + RoleTabHeight + 12f + 8f + 130f + 8f + 24f + 200f + 12f;
+
+            _btnRecruit = new InkButton
+            {
+                Variant = InkButtonVariant.Primary,
+                ButtonSize = InkButtonSize.Md,
+                Text = "收徒纳贤",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(ScreenEdge, yPos),
+                Size = new Float2(LeftColumnWidth - ScreenEdge * 2f, ActionBtnHeight),
+            };
+            _btnRecruit.Clicked += () => EmitGoldBurstAt(_btnRecruit);
+            _leftPanel.AddChild(_btnRecruit);
+
+            _btnSeekMaster = new InkButton
+            {
+                Variant = InkButtonVariant.Default,
+                ButtonSize = InkButtonSize.Md,
+                Text = "寻访明师",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(ScreenEdge, yPos + ActionBtnHeight + ActionBtnGap),
+                Size = new Float2(LeftColumnWidth - ScreenEdge * 2f, ActionBtnHeight),
+            };
+            _btnSeekMaster.Clicked += () => EmitGoldBurstAt(_btnSeekMaster);
+            _leftPanel.AddChild(_btnSeekMaster);
+
+            _btnDismiss = new InkButton
+            {
+                Variant = InkButtonVariant.Vermilion,
+                ButtonSize = InkButtonSize.Md,
+                Text = "解除师徒",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(ScreenEdge, yPos + (ActionBtnHeight + ActionBtnGap) * 2f),
+                Size = new Float2(LeftColumnWidth - ScreenEdge * 2f, ActionBtnHeight),
+            };
+            _btnDismiss.Clicked += () => EmitGoldBurstAt(_btnDismiss);
+            _leftPanel.AddChild(_btnDismiss);
         }
 
         // ===================================================================
-        // Build 方法 — 中栏（师徒任务）
-        // =======================================================================
+        // Middle Panel
+        // ===================================================================
 
-        /// <summary>
-        /// 构建中栏：任务分类标题 + 6 个师徒任务条目 + 出师条件检查清单。
-        /// </summary>
         private void BuildMiddlePanel()
         {
             _middlePanel = new InkPanel
@@ -711,66 +561,132 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Size = new Float2(500f, 600f),
             };
 
-            // 任务分类标题
-            _taskSectionTitle = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(ScreenEdge, ScreenEdge),
-                Size = new Float2(400f, 24f),
-                Text = "◆ 日常师徒任务 · 师徒组队完成，增进情谊",
-                TextColor = InkWashTheme.TextGold,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 14f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _middlePanel.AddChild(_taskSectionTitle);
+            BuildTaskTabs();
+            BuildTaskList();
 
-            // 任务列表容器
+            AddChild(_middlePanel);
+        }
+
+        private void BuildTaskTabs()
+        {
+            string[] tabLabels = { "日常师徒", "师徒历练", "出师试炼" };
+            _taskTabs = new InkButton[3];
+            float tabWidth = 120f;
+            for (int i = 0; i < 3; i++)
+            {
+                var btn = new InkButton
+                {
+                    Variant = i == 0 ? InkButtonVariant.Primary : InkButtonVariant.Ghost,
+                    ButtonSize = InkButtonSize.Sm,
+                    Text = tabLabels[i],
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(ScreenEdge + i * (tabWidth + 4f), ScreenEdge),
+                    Size = new Float2(tabWidth, 32f),
+                };
+                _taskTabs[i] = btn;
+                _middlePanel.AddChild(btn);
+            }
+        }
+
+        private void BuildTaskList()
+        {
             _taskListHost = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(ScreenEdge, ScreenEdge + 28f),
-                Size = new Float2(460f, 420f),
+                Location = new Float2(ScreenEdge, ScreenEdge + 40f),
+                Size = new Float2(460f, 500f),
             };
             _middlePanel.AddChild(_taskListHost);
 
             float cursorY = 0f;
-            for (int i = 0; i < _tasks.Length; i++)
+
+            // Daily section label
+            var dailySection = new Label
             {
-                var t = _tasks[i];
-                var item = BuildTaskItem(t, cursorY, i);
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, cursorY),
+                Size = new Float2(460f, 20f),
+                Text = "日常师徒任务  师徒组队完成，增进情谊",
+                TextColor = InkWashTheme.TextGold,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            _taskListHost.AddChild(dailySection);
+            cursorY += 28f;
+
+            // Daily tasks
+            string[][] dailyTasks = {
+                new[] { "师徒同心·行侠仗义", "与师父组队击败山贼头目 ×5", "+50 传承 / +10000 经验", "已完成", "5", "5" },
+                new[] { "传道授业·武学切磋", "与师父进行武学切磋 3 场", "+50 传承 / +8000 经验", "进行中", "2", "3" },
+                new[] { "晨昏定省·采药炼丹", "采集灵草 ×10 并炼制丹药", "+50 传承 / +6000 经验", "未开始", "2", "10" },
+                new[] { "游历江湖·名山访胜", "与师门共游名山胜景 ×3 处", "+40 传承 / +5000 经验", "进行中", "1", "3" },
+                new[] { "尊师重道·奉茶请安", "向师父奉茶 1 次，以尽弟子之礼", "+30 传承 / +3000 经验", "未开始", "0", "1" },
+            };
+
+            for (int i = 0; i < dailyTasks.Length; i++)
+            {
+                var t = dailyTasks[i];
+                var item = BuildTaskItem(t[0], t[1], t[2], t[3], t[4], t[5], cursorY);
                 _taskItems.Add(item);
                 _taskListHost.AddChild(item);
                 cursorY += TaskItemHeight + TaskItemGap;
             }
 
-            // 出师条件检查清单
-            BuildGraduationPanel(cursorY + 8f);
+            // Weekly section label
+            cursorY += 4f;
+            var weeklySection = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, cursorY),
+                Size = new Float2(460f, 20f),
+                Text = "师徒历练·周常  每周重置，丰厚传承",
+                TextColor = InkWashTheme.TextGold,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            _taskListHost.AddChild(weeklySection);
+            cursorY += 28f;
 
-            AddChild(_middlePanel);
+            // Weekly tasks
+            string[][] weeklyTasks = {
+                new[] { "师门试炼·组队通关副本", "与师父组队通关「千机塔」第 3 层", "+200 传承", "进行中", "1", "3" },
+                new[] { "传授武学·指点招式", "师父指点弟子武学招式 5 次", "+150 传承", "进行中", "3", "5" },
+                new[] { "切磋武艺·师徒论剑", "与同门师兄弟切磋 10 场", "+180 传承", "进行中", "8", "10" },
+            };
+
+            for (int i = 0; i < weeklyTasks.Length; i++)
+            {
+                var t = weeklyTasks[i];
+                var item = BuildTaskItem(t[0], t[1], t[2], t[3], t[4], t[5], cursorY);
+                _taskItems.Add(item);
+                _taskListHost.AddChild(item);
+                cursorY += TaskItemHeight + TaskItemGap;
+            }
+
+            // Graduation section
+            cursorY += 4f;
+            BuildGraduationPanel(cursorY);
         }
 
-        /// <summary>
-        /// 构建单个任务条目：任务名 + 状态标签 + 描述 + 进度条 + 奖励。
-        /// </summary>
-        private ContainerControl BuildTaskItem(TaskInfo t, float yPos, int index)
+        private ContainerControl BuildTaskItem(string name, string desc, string reward, string status, string cur, string max, float yPos)
         {
-            var item = new InkPanel
+            var item = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(0f, yPos),
                 Size = new Float2(460f, TaskItemHeight),
             };
 
-            // 状态色映射
             Color statusColor;
             InkBarFillVariant fillVariant;
-            if (t.Status == "已完成")
+            if (status == "已完成")
             {
                 statusColor = InkWashTheme.TextJade;
                 fillVariant = InkBarFillVariant.Jade;
             }
-            else if (t.Status == "进行中")
+            else if (status == "进行中")
             {
                 statusColor = InkWashTheme.TextGold;
                 fillVariant = InkBarFillVariant.Gold;
@@ -778,161 +694,156 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             else
             {
                 statusColor = InkWashTheme.TextTertiary;
-                fillVariant = InkBarFillVariant.Blood;
+                fillVariant = InkBarFillVariant.Gold;
             }
 
-            // 任务名
             var nameLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(12f, 6f),
                 Size = new Float2(240f, 20f),
-                Text = t.Name,
+                Text = name,
                 TextColor = InkWashTheme.TextDefault,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 13f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             item.AddChild(nameLabel);
 
-            // 状态标签
             var statusLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(252f, 6f),
                 Size = new Float2(56f, 20f),
-                Text = t.Status,
+                Text = status,
                 TextColor = statusColor,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 11f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
             };
             item.AddChild(statusLabel);
 
-            // 任务描述
             var descLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(12f, 26f),
                 Size = new Float2(280f, 16f),
-                Text = t.Desc,
+                Text = desc,
                 TextColor = InkWashTheme.TextSecondary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 11f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             item.AddChild(descLabel);
 
-            // 进度条
+            int curVal = int.Parse(cur);
+            int maxVal = int.Parse(max);
             var progressBar = new InkBar
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(12f, 44f),
-                Size = new Float2(220f, 8f),
-                Value = t.ProgressMax > 0 ? (float)t.ProgressCur / t.ProgressMax : 0f,
+                Size = new Float2(220f, 6f),
+                Value = maxVal > 0 ? (float)curVal / maxVal : 0f,
                 FillVariant = fillVariant,
             };
             item.AddChild(progressBar);
 
-            // 进度数值
             var progressLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(236f, 40f),
                 Size = new Float2(56f, 14f),
-                Text = t.ProgressCur + " / " + t.ProgressMax,
+                Text = cur + " / " + max,
                 TextColor = statusColor,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 11f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             item.AddChild(progressLabel);
 
-            // 奖励文本
             var rewardLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(310f, 26f),
                 Size = new Float2(140f, 32f),
-                Text = t.Reward,
+                Text = reward,
                 TextColor = InkWashTheme.TextBrand,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 11f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
                 HorizontalAlignment = TextAlignment.Far,
                 VerticalAlignment = TextAlignment.Center,
             };
             item.AddChild(rewardLabel);
 
-            // 领取按钮（仅已完成任务可领）
-            var claimBtn = new InkButton
-            {
-                Variant = t.Status == "已完成" ? InkButtonVariant.Primary : InkButtonVariant.Ghost,
-                ButtonSize = InkButtonSize.Sm,
-                Text = t.Status == "已完成" ? "领取" : "未完成",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(310f, 6f),
-                Size = new Float2(140f, 22f),
-            };
-            // 已完成任务通过粒子反馈模拟领取
-            if (t.Status == "已完成")
-            {
-                claimBtn.ButtonClicked += (b) => EmitGoldAtButton(b);
-            }
-            item.AddChild(claimBtn);
-
             return item;
         }
 
-        /// <summary>
-        /// 构建出师条件检查清单：出师进度条 + 5 个条件标签。
-        /// </summary>
         private void BuildGraduationPanel(float yPos)
         {
             _graduationPanel = new InkPanel
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(0f, yPos),
-                Size = new Float2(460f, 140f),
+                Size = new Float2(460f, 160f),
             };
-            _middlePanel.AddChild(_graduationPanel);
+            _taskListHost.AddChild(_graduationPanel);
 
-            // 出师进度标题
-            _graduationTitleLabel = new Label
+            var gradTitle = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(12f, 8f),
                 Size = new Float2(300f, 20f),
-                Text = "◆ 出师试炼 · 达成条件，独立江湖 (3 / 5 项达成)",
+                Text = "出师试炼  达成条件，独立江湖",
                 TextColor = InkWashTheme.TextGold,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 13f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
-            _graduationPanel.AddChild(_graduationTitleLabel);
+            _graduationPanel.AddChild(gradTitle);
 
-            // 出师进度条
+            var gradCount = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(320f, 8f),
+                Size = new Float2(120f, 20f),
+                Text = "3 / 5 项达成",
+                TextColor = InkWashTheme.TextBrand,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
+                HorizontalAlignment = TextAlignment.Far,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            _graduationPanel.AddChild(gradCount);
+
             _graduationBar = new InkBar
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(12f, 32f),
-                Size = new Float2(436f, 10f),
+                Size = new Float2(436f, 8f),
                 Value = 0.6f,
                 FillVariant = InkBarFillVariant.Gold,
             };
             _graduationPanel.AddChild(_graduationBar);
 
-            // 5 个出师条件标签（2 列布局）
-            for (int i = 0; i < _graduationConditions.Length; i++)
+            string[][] conditions = {
+                new[] { "✓", "师徒亲密度 ≥2000" },
+                new[] { "✓", "累计在线 ≥100 时" },
+                new[] { "✓", "完成日常 ≥20 次" },
+                new[] { "○", "等级达到 Lv.50" },
+                new[] { "○", "通关出师试炼副本" },
+            };
+
+            for (int i = 0; i < conditions.Length; i++)
             {
                 int col = i % 2;
                 int row = i / 2;
+                bool met = i < 3;
                 var condLabel = new Label
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
                     Location = new Float2(12f + col * 218f, 50f + row * 22f),
                     Size = new Float2(210f, 20f),
-                    Text = _graduationConditions[i],
-                    TextColor = i < 3 ? InkWashTheme.TextJade : InkWashTheme.TextTertiary,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 12f),
+                    Text = conditions[i][0] + " " + conditions[i][1],
+                    TextColor = met ? InkWashTheme.TextJade : InkWashTheme.TextTertiary,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Center,
                 };
@@ -942,12 +853,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
         }
 
         // ===================================================================
-        // Build 方法 — 右栏（详情与操作）
-        // =======================================================================
+        // Right Panel
+        // ===================================================================
 
-        /// <summary>
-        /// 构建右栏：师徒贡献进度条 + 4 个操作按钮 + 传承记录列表。
-        /// </summary>
         private void BuildRightPanel()
         {
             _rightPanel = new InkPanel
@@ -956,211 +864,440 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Size = new Float2(RightColumnWidth, 600f),
             };
 
-            // ===== 师徒贡献进度条区块 =====
-            var contributionTitle = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(ScreenEdge, ScreenEdge),
-                Size = new Float2(RightColumnWidth - ScreenEdge * 2f, 20f),
-                Text = "◆ 师徒贡献",
-                TextColor = InkWashTheme.TextGold,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 13f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _rightPanel.AddChild(contributionTitle);
-
-            _contributionLabel = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(ScreenEdge, ScreenEdge + 24f),
-                Size = new Float2(RightColumnWidth - ScreenEdge * 2f, 18f),
-                Text = "3,820 / 5,000 传承值",
-                TextColor = InkWashTheme.TextBrand,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 12f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _rightPanel.AddChild(_contributionLabel);
-
-            _contributionBar = new InkBar
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(ScreenEdge, ScreenEdge + 46f),
-                Size = new Float2(RightColumnWidth - ScreenEdge * 2f, 10f),
-                Value = 3820f / 5000f,
-                FillVariant = InkBarFillVariant.Gold,
-            };
-            _rightPanel.AddChild(_contributionBar);
-
-            // ===== 4 个操作按钮 =====
-            string[] actionLabels = { "传功", "赠礼", "解除关系", "领取奖励" };
-            InkButtonVariant[] actionVariants =
-            {
-                InkButtonVariant.Primary,
-                InkButtonVariant.Default,
-                InkButtonVariant.Vermilion,
-                InkButtonVariant.Primary,
-            };
-            float actionStartY = ScreenEdge + 46f + 10f + 16f;
-            for (int i = 0; i < 4; i++)
-            {
-                var btn = new InkButton
-                {
-                    Variant = actionVariants[i],
-                    ButtonSize = InkButtonSize.Md,
-                    Text = actionLabels[i],
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(ScreenEdge, actionStartY + i * (ActionBtnHeight + ActionBtnGap)),
-                    Size = new Float2(RightColumnWidth - ScreenEdge * 2f, ActionBtnHeight),
-                };
-                // 操作按钮触发金粉粒子反馈
-                btn.ButtonClicked += (b) => EmitGoldAtButton(b);
-                _actionButtons[i] = btn;
-                _rightPanel.AddChild(btn);
-            }
-
-            // ===== 传承记录列表 =====
-            BuildLegacyRecords(actionStartY + 4 * (ActionBtnHeight + ActionBtnGap) + 8f);
+            BuildMentorLevelProgress();
+            BuildLegacyRecords();
+            BuildMentorShop();
+            BuildGraduationRewardPreview();
+            BuildMentorTitles();
 
             AddChild(_rightPanel);
         }
 
-        /// <summary>
-        /// 构建传承记录列表：标题 + 5 条记录条目。
-        /// </summary>
-        private void BuildLegacyRecords(float yPos)
+        private void BuildMentorLevelProgress()
         {
-            var recordsTitle = new Label
+            float x = ScreenEdge;
+            float w = RightColumnWidth - ScreenEdge * 2f;
+
+            var title = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(ScreenEdge, yPos),
-                Size = new Float2(RightColumnWidth - ScreenEdge * 2f, 20f),
-                Text = "◆ 传承记录",
+                Location = new Float2(x, ScreenEdge),
+                Size = new Float2(w, 20f),
+                Text = "师徒等级",
                 TextColor = InkWashTheme.TextGold,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 13f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
-            _rightPanel.AddChild(recordsTitle);
+            _rightPanel.AddChild(title);
+
+            _levelTitleLabel = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(x, ScreenEdge + 24f),
+                Size = new Float2(w, 24f),
+                Text = "IV  名震一方  → V",
+                TextColor = InkWashTheme.TextDefault,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 15f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            _rightPanel.AddChild(_levelTitleLabel);
+
+            _levelBar = new InkBar
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(x, ScreenEdge + 52f),
+                Size = new Float2(w, 8f),
+                Value = 3820f / 5000f,
+                FillVariant = InkBarFillVariant.Gold,
+            };
+            _rightPanel.AddChild(_levelBar);
+
+            _levelValueLabel = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(x, ScreenEdge + 64f),
+                Size = new Float2(w, 18f),
+                Text = "3,820 / 5,000  传承值",
+                TextColor = InkWashTheme.TextBrand,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            _rightPanel.AddChild(_levelValueLabel);
+        }
+
+        private void BuildLegacyRecords()
+        {
+            float x = ScreenEdge;
+            float w = RightColumnWidth - ScreenEdge * 2f;
+            float yPos = ScreenEdge + 90f;
+
+            var title = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(x, yPos),
+                Size = new Float2(w, 20f),
+                Text = "传承记录",
+                TextColor = InkWashTheme.TextGold,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            _rightPanel.AddChild(title);
 
             _legacyRecordsHost = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(ScreenEdge, yPos + 24f),
-                Size = new Float2(RightColumnWidth - ScreenEdge * 2f, 200f),
+                Location = new Float2(x, yPos + 24f),
+                Size = new Float2(w, 140f),
             };
             _rightPanel.AddChild(_legacyRecordsHost);
 
-            float cursorY = 0f;
-            for (int i = 0; i < _legacyRecords.Length; i++)
+            var records = new (string desc, string value, Color color)[]
             {
-                var record = new Label
+                ("完成师徒同心", "+50", InkWashTheme.TextJade),
+                ("指点林清河武学", "+30", InkWashTheme.TextBrand),
+                ("通关千机塔", "+200", InkWashTheme.TextBrand),
+                ("切磋论剑胜出", "+36", InkWashTheme.TextBrand),
+                ("签到奖励", "+20", InkWashTheme.TextTertiary),
+            };
+
+            float cursorY = 0f;
+            for (int i = 0; i < records.Length; i++)
+            {
+                var r = records[i];
+                var item = new ContainerControl
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
                     Location = new Float2(0f, cursorY),
-                    Size = new Float2(RightColumnWidth - ScreenEdge * 2f, 22f),
-                    Text = "• " + _legacyRecords[i],
-                    TextColor = i == 0 ? InkWashTheme.TextJade : InkWashTheme.TextSecondary,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 12f),
+                    Size = new Float2(w, 24f),
+                };
+
+                var dot = new Label
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(0f, 4f),
+                    Size = new Float2(6f, 6f),
+                    Text = "●",
+                    TextColor = i == 0 ? InkWashTheme.TextJade : InkWashTheme.TextGold,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 6f),
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Center,
                 };
-                _legacyRecordsHost.AddChild(record);
+                item.AddChild(dot);
+
+                var descLabel = new Label
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(12f, 0f),
+                    Size = new Float2(w - 60f, 24f),
+                    Text = r.desc,
+                    TextColor = InkWashTheme.TextSecondary,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
+                    HorizontalAlignment = TextAlignment.Near,
+                    VerticalAlignment = TextAlignment.Center,
+                };
+                item.AddChild(descLabel);
+
+                var valueLabel = new Label
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(w - 48f, 0f),
+                    Size = new Float2(48f, 24f),
+                    Text = r.value,
+                    TextColor = r.color,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
+                    HorizontalAlignment = TextAlignment.Far,
+                    VerticalAlignment = TextAlignment.Center,
+                };
+                item.AddChild(valueLabel);
+
+                _legacyRecordsHost.AddChild(item);
                 cursorY += 24f;
             }
         }
 
-        // ===================================================================
-        // Build 方法 — 底部按钮栏
-        // =======================================================================
-
-        /// <summary>
-        /// 构建底部按钮栏：返回沉浸模式 + 跳转江湖秘境。
-        /// </summary>
-        private void BuildBottomBar()
+        private void BuildMentorShop()
         {
-            _bottomBar = new InkPanel
+            float x = ScreenEdge;
+            float w = RightColumnWidth - ScreenEdge * 2f;
+            float yPos = ScreenEdge + 90f + 24f + 140f + 8f;
+
+            var title = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Size = new Float2(BottomBtnWidth * 2f + 12f, BottomBarHeight),
+                Location = new Float2(x, yPos),
+                Size = new Float2(w, 20f),
+                Text = "传承商店",
+                TextColor = InkWashTheme.TextGold,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
             };
+            _rightPanel.AddChild(title);
 
-            // 返回沉浸模式按钮
-            _backToHudButton = new InkButton
+            var balanceLabel = new Label
             {
-                Variant = InkButtonVariant.Default,
-                ButtonSize = InkButtonSize.Md,
-                Text = "返回沉浸模式",
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 6f),
-                Size = new Float2(BottomBtnWidth, ActionBtnHeight),
+                Location = new Float2(x, yPos),
+                Size = new Float2(w, 20f),
+                Text = "3,820 传承",
+                TextColor = InkWashTheme.TextBrand,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
+                HorizontalAlignment = TextAlignment.Far,
+                VerticalAlignment = TextAlignment.Center,
             };
-            _backToHudButton.ButtonClicked += (b) => OnNavigationButtonClicked(InkPageDomIds.CombatHud, b);
-            _bottomBar.AddChild(_backToHudButton);
+            _rightPanel.AddChild(balanceLabel);
 
-            // 跳转江湖秘境按钮
-            _goDungeonButton = new InkButton
+            string[][] shopItems = {
+                new[] { "传功玉简", "传说", "直接提升武学熟练度", "2,000" },
+                new[] { "洗髓丹", "史诗", "重置属性分配", "1,200" },
+                new[] { "悟道香", "稀有", "双倍经验 1 小时", "500" },
+                new[] { "回春丹", "良品", "恢复全部生命", "200" },
+            };
+
+            float cursorY = yPos + 24f;
+            for (int i = 0; i < shopItems.Length; i++)
             {
-                Variant = InkButtonVariant.Primary,
-                ButtonSize = InkButtonSize.Md,
-                Text = "跳转江湖秘境",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(BottomBtnWidth + 12f, 6f),
-                Size = new Float2(BottomBtnWidth, ActionBtnHeight),
-            };
-            _goDungeonButton.ButtonClicked += (b) => OnNavigationButtonClicked(InkPageDomIds.ActionMentorToDungeon, b);
-            _bottomBar.AddChild(_goDungeonButton);
+                var s = shopItems[i];
+                var item = new ContainerControl
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(x, cursorY),
+                    Size = new Float2(w, 44f),
+                };
 
-            AddChild(_bottomBar);
+                var nameLabel = new Label
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(0f, 4f),
+                    Size = new Float2(w - 60f, 20f),
+                    Text = s[0],
+                    TextColor = i == 0 ? InkWashTheme.TextBrand : InkWashTheme.TextDefault,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
+                    HorizontalAlignment = TextAlignment.Near,
+                    VerticalAlignment = TextAlignment.Center,
+                };
+                item.AddChild(nameLabel);
+
+                var qualityLabel = new Label
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(0f, 24f),
+                    Size = new Float2(w - 60f, 16f),
+                    Text = s[2],
+                    TextColor = InkWashTheme.TextTertiary,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                    HorizontalAlignment = TextAlignment.Near,
+                    VerticalAlignment = TextAlignment.Center,
+                };
+                item.AddChild(qualityLabel);
+
+                var buyBtn = new InkButton
+                {
+                    Variant = InkButtonVariant.Ghost,
+                    ButtonSize = InkButtonSize.Sm,
+                    Text = s[3],
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(w - 60f, 8f),
+                    Size = new Float2(60f, 28f),
+                };
+                buyBtn.Clicked += () => EmitGoldBurstAt(buyBtn);
+                item.AddChild(buyBtn);
+
+                _shopItems.Add(item);
+                _rightPanel.AddChild(item);
+                cursorY += 48f;
+            }
+        }
+
+        private void BuildGraduationRewardPreview()
+        {
+            float x = ScreenEdge;
+            float w = RightColumnWidth - ScreenEdge * 2f;
+            float yPos = ScreenEdge + 90f + 24f + 140f + 8f + 24f + 48f * 4 + 8f;
+
+            var title = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(x, yPos),
+                Size = new Float2(w, 20f),
+                Text = "出师奖励预览",
+                TextColor = InkWashTheme.TextGold,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            _rightPanel.AddChild(title);
+
+            _rewardPreviewHost = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(x, yPos + 24f),
+                Size = new Float2(w, 80f),
+            };
+            _rightPanel.AddChild(_rewardPreviewHost);
+
+            string[][] rewards = {
+                new[] { "绝学秘籍", "scroll" },
+                new[] { "洗髓丹×3", "gem" },
+                new[] { "金币×5000", "coins" },
+                new[] { "出师称号", "award" },
+            };
+
+            float cellW = (w - 6f * 3f) / 4f;
+            for (int i = 0; i < rewards.Length; i++)
+            {
+                var cell = new ContainerControl
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(i * (cellW + 6f), 0f),
+                    Size = new Float2(cellW, 60f),
+                };
+
+                var icon = new ContainerControl
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2((cellW - 40f) * 0.5f, 0f),
+                    Size = new Float2(40f, 40f),
+                    BackgroundColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.15f),
+                };
+                cell.AddChild(icon);
+
+                var label = new Label
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(0f, 44f),
+                    Size = new Float2(cellW, 16f),
+                    Text = rewards[i][0],
+                    TextColor = InkWashTheme.TextSecondary,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
+                    HorizontalAlignment = TextAlignment.Center,
+                    VerticalAlignment = TextAlignment.Center,
+                };
+                cell.AddChild(label);
+
+                _rewardPreviewHost.AddChild(cell);
+            }
+        }
+
+        private void BuildMentorTitles()
+        {
+            float x = ScreenEdge;
+            float w = RightColumnWidth - ScreenEdge * 2f;
+            float yPos = ScreenEdge + 90f + 24f + 140f + 8f + 24f + 48f * 4 + 8f + 24f + 80f + 8f;
+
+            var title = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(x, yPos),
+                Size = new Float2(w, 20f),
+                Text = "师徒称号",
+                TextColor = InkWashTheme.TextGold,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            _rightPanel.AddChild(title);
+
+            _titlesHost = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(x, yPos + 24f),
+                Size = new Float2(w, 160f),
+            };
+            _rightPanel.AddChild(_titlesHost);
+
+            string[][] titles = {
+                new[] { "名震一方", "师徒等级 IV 解锁", "已佩戴" },
+                new[] { "桃李满门", "收徒 3 人解锁", "佩戴" },
+                new[] { "一代宗师", "师徒等级 VI 解锁", "未解锁" },
+                new[] { "万世师表", "出师弟子 5 人", "未解锁" },
+            };
+
+            float cursorY = 0f;
+            for (int i = 0; i < titles.Length; i++)
+            {
+                var t = titles[i];
+                var item = new ContainerControl
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(0f, cursorY),
+                    Size = new Float2(w, 36f),
+                };
+
+                var nameLabel = new Label
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(0f, 2f),
+                    Size = new Float2(w - 60f, 18f),
+                    Text = t[0],
+                    TextColor = i == 0 ? InkWashTheme.TextBrand : (i < 2 ? InkWashTheme.TextDefault : InkWashTheme.TextTertiary),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
+                    HorizontalAlignment = TextAlignment.Near,
+                    VerticalAlignment = TextAlignment.Center,
+                };
+                item.AddChild(nameLabel);
+
+                var descLabel = new Label
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(0f, 20f),
+                    Size = new Float2(w - 60f, 16f),
+                    Text = t[1],
+                    TextColor = InkWashTheme.TextTertiary,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                    HorizontalAlignment = TextAlignment.Near,
+                    VerticalAlignment = TextAlignment.Center,
+                };
+                item.AddChild(descLabel);
+
+                var statusLabel = new Label
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(w - 60f, 8f),
+                    Size = new Float2(60f, 20f),
+                    Text = t[2],
+                    TextColor = i == 0 ? InkWashTheme.TextBrand : (i < 2 ? InkWashTheme.TextJade : InkWashTheme.TextTertiary),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                    HorizontalAlignment = TextAlignment.Far,
+                    VerticalAlignment = TextAlignment.Center,
+                };
+                item.AddChild(statusLabel);
+
+                _titlesHost.AddChild(item);
+                cursorY += 38f;
+            }
         }
 
         // ===================================================================
-        // 事件处理
-        // =======================================================================
+        // Particle helpers
+        // ===================================================================
 
-        /// <summary>
-        /// 导航按钮点击处理：发射金粉粒子 + 触发导航请求。
-        /// </summary>
-        private void OnNavigationButtonClicked(string domId, Button sourceButton)
+        private void EmitGoldBurstAt(Control control)
         {
             try
             {
-                EmitGoldAtButton(sourceButton);
-                NavigationRequested?.Invoke(domId);
-            }
-            catch (Exception ex)
-            {
-                FlaxEngine.Debug.LogError($"[MentorPage] NavigationRequested({domId}) 触发失败: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// 在按钮中心位置触发金粉爆发粒子反馈。
-        /// </summary>
-        private void EmitGoldAtButton(Button button)
-        {
-            try
-            {
-                if (ParticleSystem == null || button == null)
+                if (ParticleSystem == null || control == null)
                     return;
 
-                var buttonCenter = new Float2(button.Width * 0.5f, button.Height * 0.5f);
-                var screenPos = button.PointToScreen(buttonCenter);
+                var center = new Float2(control.Width * 0.5f, control.Height * 0.5f);
+                var screenPos = control.PointToScreen(center);
                 var localPos = ParticleSystem.PointFromScreen(screenPos);
                 ParticleSystem.EmitGoldBurst(localPos, count: 14, isLarge: false);
             }
             catch (Exception ex)
             {
-                FlaxEngine.Debug.LogWarning($"[MentorPage] EmitGoldAtButton 失败: {ex.Message}");
+                FlaxEngine.Debug.LogWarning($"[MentorPage] EmitGoldBurstAt 失败: {ex.Message}");
             }
         }
 
         // ===================================================================
-        // IInkPage 实现
-        // =======================================================================
+        // IInkPage
+        // ===================================================================
 
-        /// <inheritdoc />
         public void RefreshLayout()
         {
             try
@@ -1168,64 +1305,35 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 float sw = Width;
                 float sh = Height;
                 float contentTop = TopHeaderHeight + ScreenEdge;
-                float contentBottom = sh - BottomBarHeight - ScreenEdge;
+                float contentBottom = sh - ScreenEdge;
                 float contentH = contentBottom - contentTop;
                 float middleWidth = sw - LeftColumnWidth - RightColumnWidth - ColumnGap * 2f - ScreenEdge * 2f;
 
-                // 顶部标题栏：顶部全宽
                 if (_topHeader != null)
                 {
                     _topHeader.Location = new Float2(ScreenEdge, ScreenEdge);
                     _topHeader.Size = new Float2(sw - ScreenEdge * 2f, TopHeaderHeight);
                 }
 
-                // 左栏：左上角
                 if (_leftPanel != null)
                 {
                     _leftPanel.Location = new Float2(ScreenEdge, contentTop);
                     _leftPanel.Size = new Float2(LeftColumnWidth, contentH);
                 }
 
-                // 中栏：左栏右侧
                 if (_middlePanel != null)
                 {
                     _middlePanel.Location = new Float2(ScreenEdge + LeftColumnWidth + ColumnGap, contentTop);
                     _middlePanel.Size = new Float2(middleWidth, contentH);
 
-                    // 同步任务列表容器宽度
                     if (_taskListHost != null)
-                    {
                         _taskListHost.Size = new Float2(middleWidth - ScreenEdge * 2f, _taskListHost.Height);
-                    }
-                    if (_taskSectionTitle != null)
-                    {
-                        _taskSectionTitle.Size = new Float2(middleWidth - ScreenEdge * 2f, 24f);
-                    }
-
-                    // 同步出师条件面板宽度与位置
-                    if (_graduationPanel != null)
-                    {
-                        _graduationPanel.Size = new Float2(middleWidth - ScreenEdge * 2f, 140f);
-                        if (_graduationBar != null)
-                        {
-                            _graduationBar.Size = new Float2(middleWidth - ScreenEdge * 2f - 24f, 10f);
-                        }
-                    }
                 }
 
-                // 右栏：右侧
                 if (_rightPanel != null)
                 {
                     _rightPanel.Location = new Float2(sw - RightColumnWidth - ScreenEdge, contentTop);
                     _rightPanel.Size = new Float2(RightColumnWidth, contentH);
-                }
-
-                // 底部按钮栏：底部居中
-                if (_bottomBar != null)
-                {
-                    float barWidth = BottomBtnWidth * 2f + 12f;
-                    _bottomBar.Location = new Float2(sw * 0.5f - barWidth * 0.5f, sh - BottomBarHeight - ScreenEdge * 0.5f);
-                    _bottomBar.Size = new Float2(barWidth, BottomBarHeight);
                 }
             }
             catch (Exception ex)
@@ -1234,7 +1342,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             }
         }
 
-        /// <inheritdoc />
         public override void OnParentResized()
         {
             base.OnParentResized();

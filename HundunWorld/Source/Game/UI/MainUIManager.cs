@@ -84,6 +84,10 @@ namespace HundunWorld.Game.UI
         private CombatHudPage _activeCombatHud;
         private CombatHudV2Page _activeCombatHudV2;
         private MenuCharAttributesV2Page _activeMenuCharAttributesV2;
+        // 新增活动页面引用（game-ui-system 设计方案 19 页面中的核心 3 页）
+        private CombatHudTraditionalPage _activeCombatHudTraditional;
+        private CharacterPanelPage _activeCharacterPanel;
+        private SkillPanelPage _activeSkillPanel;
 
         public override void OnStart()
         {
@@ -147,6 +151,46 @@ namespace HundunWorld.Game.UI
                                 FlaxEngine.Debug.LogError($"[MainUIManager] MenuCharAttributesV2 重绑失败: {bindEx.Message}");
                             }
                         }
+
+                        // 新增页面延迟重绑：CombatHudTraditional / CharacterPanel / SkillPanel
+                        if (_activeCombatHudTraditional != null)
+                        {
+                            try
+                            {
+                                _activeCombatHudTraditional.BindCharacter(attr);
+                                if (_cachedSkills != null) _activeCombatHudTraditional.BindSkills(_cachedSkills);
+                                FlaxEngine.Debug.Log("[MainUIManager] CombatHudTraditional 已重绑本地玩家数据");
+                            }
+                            catch (Exception bindEx)
+                            {
+                                FlaxEngine.Debug.LogError($"[MainUIManager] CombatHudTraditional 重绑失败: {bindEx.Message}");
+                            }
+                        }
+                        if (_activeCharacterPanel != null)
+                        {
+                            try
+                            {
+                                _activeCharacterPanel.BindCharacter(attr);
+                                FlaxEngine.Debug.Log("[MainUIManager] CharacterPanel 已重绑本地玩家数据");
+                            }
+                            catch (Exception bindEx)
+                            {
+                                FlaxEngine.Debug.LogError($"[MainUIManager] CharacterPanel 重绑失败: {bindEx.Message}");
+                            }
+                        }
+                        if (_activeSkillPanel != null)
+                        {
+                            try
+                            {
+                                _activeSkillPanel.BindCharacter(attr);
+                                if (_cachedSkills != null) _activeSkillPanel.BindSkills(_cachedSkills);
+                                FlaxEngine.Debug.Log("[MainUIManager] SkillPanel 已重绑本地玩家数据");
+                            }
+                            catch (Exception bindEx)
+                            {
+                                FlaxEngine.Debug.LogError($"[MainUIManager] SkillPanel 重绑失败: {bindEx.Message}");
+                            }
+                        }
                     }
                 }
 
@@ -154,6 +198,12 @@ namespace HundunWorld.Game.UI
                 if (_localPlayerReady && _inkPageRouter?.CurrentPageDomId == InkPageDomIds.CombatHud && _activeCombatHud != null)
                 {
                     RefreshCombatHudDynamicData();
+                }
+
+                // 2b. 持续刷新 CombatHudTraditional 动态数据（仅当当前页面为 combat-hud-traditional 且玩家就绪时）
+                if (_localPlayerReady && _inkPageRouter?.CurrentPageDomId == InkPageDomIds.CombatHudTraditional && _activeCombatHudTraditional != null)
+                {
+                    RefreshCombatHudTraditionalDynamicData();
                 }
 
                 // 3. 快捷键 F9 打开 UI 画廊（Debug 菜单），便于查看所有 UI 页面
@@ -201,6 +251,7 @@ namespace HundunWorld.Game.UI
                 // 归一化到 0-360
                 yaw = ((yaw % 360f) + 360f) % 360f;
                 _activeCombatHud.MinimapPlayerYaw = yaw;
+                _activeCombatHud.NavStripPlayerYaw = yaw;
             }
             catch (Exception ex)
             {
@@ -224,6 +275,31 @@ namespace HundunWorld.Game.UI
             catch (Exception ex)
             {
                 FlaxEngine.Debug.LogError($"[MainUIManager] 刷新技能冷却异常: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 刷新 CombatHudTraditional 的动态数据：小地图玩家朝向。
+        /// HP/MP/SP/技能冷却由页面自身 Update 方法每帧从绑定组件读取，此处仅刷新朝向（依赖 LocalPlayerActor.Orientation）。
+        /// </summary>
+        private void RefreshCombatHudTraditionalDynamicData()
+        {
+            var game = HundunWorldGame.Instance;
+            var actor = game?.LocalPlayerActor;
+            if (actor == null || _activeCombatHudTraditional == null)
+                return;
+
+            try
+            {
+                var orient = actor.Orientation;
+                var eulerAngles = orient.EulerAngles;
+                float yaw = eulerAngles.Y;
+                yaw = ((yaw % 360f) + 360f) % 360f;
+                _activeCombatHudTraditional.MinimapPlayerYaw = yaw;
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[MainUIManager] 刷新 CombatHudTraditional 小地图朝向异常: {ex.Message}");
             }
         }
 
@@ -864,6 +940,9 @@ namespace HundunWorld.Game.UI
                 _activeCombatHud = null;
                 _activeCombatHudV2 = null;
                 _activeMenuCharAttributesV2 = null;
+                _activeCombatHudTraditional = null;
+                _activeCharacterPanel = null;
+                _activeSkillPanel = null;
 
                 FlaxEngine.Debug.Log("[MainUIManager] 水墨主题 UI 已销毁");
             }
@@ -900,6 +979,23 @@ namespace HundunWorld.Game.UI
                 {
                     _activeMenuCharAttributesV2.BindCharacter(_cachedAttributes);
                     FlaxEngine.Debug.Log("[MainUIManager] 自愈后已重绑 MenuCharAttributesV2 数据");
+                }
+                else if (_lastKnownDomId == InkPageDomIds.CombatHudTraditional && _activeCombatHudTraditional != null)
+                {
+                    _activeCombatHudTraditional.BindCharacter(_cachedAttributes);
+                    if (_cachedSkills != null) _activeCombatHudTraditional.BindSkills(_cachedSkills);
+                    FlaxEngine.Debug.Log("[MainUIManager] 自愈后已重绑 CombatHudTraditional 数据");
+                }
+                else if (_lastKnownDomId == InkPageDomIds.NavCharacterPanel && _activeCharacterPanel != null)
+                {
+                    _activeCharacterPanel.BindCharacter(_cachedAttributes);
+                    FlaxEngine.Debug.Log("[MainUIManager] 自愈后已重绑 CharacterPanel 数据");
+                }
+                else if (_lastKnownDomId == InkPageDomIds.NavSkillPanel && _activeSkillPanel != null)
+                {
+                    _activeSkillPanel.BindCharacter(_cachedAttributes);
+                    if (_cachedSkills != null) _activeSkillPanel.BindSkills(_cachedSkills);
+                    FlaxEngine.Debug.Log("[MainUIManager] 自愈后已重绑 SkillPanel 数据");
                 }
             }
             catch (Exception ex)
@@ -1009,6 +1105,20 @@ namespace HundunWorld.Game.UI
                     FlaxEngine.Debug.LogError($"[MainUIManager] CombatHudTraditional 导航失败 ({domId}): {ex.Message}");
                 }
             };
+            // 即时绑定：若本地玩家已就绪则直接绑定真实数据（与 CombatHudPage 同一模式）
+            if (TryGetLocalPlayerAttributes(out var attr))
+            {
+                page.BindCharacter(attr);
+                _cachedAttributes = attr;
+                if (TryGetLocalPlayerSkills(out var skills))
+                {
+                    page.BindSkills(skills);
+                    _cachedSkills = skills;
+                }
+                _localPlayerReady = true;
+                FlaxEngine.Debug.Log("[MainUIManager] CombatHudTraditional 已即时绑定本地玩家数据");
+            }
+            _activeCombatHudTraditional = page;
             return page;
         }
 
@@ -1032,6 +1142,15 @@ namespace HundunWorld.Game.UI
                 try { NavigateToPage(domId); }
                 catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] CharacterPanel 导航失败 ({domId}): {ex.Message}"); }
             };
+            // 即时绑定：若本地玩家已就绪则直接绑定真实数据
+            if (TryGetLocalPlayerAttributes(out var attr))
+            {
+                page.BindCharacter(attr);
+                _cachedAttributes = attr;
+                _localPlayerReady = true;
+                FlaxEngine.Debug.Log("[MainUIManager] CharacterPanel 已即时绑定本地玩家数据");
+            }
+            _activeCharacterPanel = page;
             return page;
         }
 
@@ -1050,6 +1169,20 @@ namespace HundunWorld.Game.UI
                 try { NavigateToPage(domId); }
                 catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] SkillPanel 导航失败 ({domId}): {ex.Message}"); }
             };
+            // 即时绑定：若本地玩家已就绪则直接绑定真实数据
+            if (TryGetLocalPlayerAttributes(out var attr))
+            {
+                page.BindCharacter(attr);
+                _cachedAttributes = attr;
+                if (TryGetLocalPlayerSkills(out var skills))
+                {
+                    page.BindSkills(skills);
+                    _cachedSkills = skills;
+                }
+                _localPlayerReady = true;
+                FlaxEngine.Debug.Log("[MainUIManager] SkillPanel 已即时绑定本地玩家数据");
+            }
+            _activeSkillPanel = page;
             return page;
         }
 
@@ -1068,6 +1201,13 @@ namespace HundunWorld.Game.UI
                 try { NavigateToPage(domId); }
                 catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] Inventory 导航失败 ({domId}): {ex.Message}"); }
             };
+            // 即时绑定：若本地玩家已就绪则直接绑定真实数据（占位 API，待网络层接入后扩展）
+            if (TryGetLocalPlayerAttributes(out var attr))
+            {
+                page.BindCharacter(attr);
+                _cachedAttributes = attr;
+                _localPlayerReady = true;
+            }
             return page;
         }
 
@@ -1086,6 +1226,13 @@ namespace HundunWorld.Game.UI
                 try { NavigateToPage(domId); }
                 catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] EquipmentEnhance 导航失败 ({domId}): {ex.Message}"); }
             };
+            // 即时绑定：若本地玩家已就绪则直接绑定真实数据（占位 API，待网络层接入后扩展）
+            if (TryGetLocalPlayerAttributes(out var attr))
+            {
+                page.BindCharacter(attr);
+                _cachedAttributes = attr;
+                _localPlayerReady = true;
+            }
             return page;
         }
 
@@ -1104,6 +1251,13 @@ namespace HundunWorld.Game.UI
                 try { NavigateToPage(domId); }
                 catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] Crafting 导航失败 ({domId}): {ex.Message}"); }
             };
+            // 即时绑定：若本地玩家已就绪则直接绑定真实数据（占位 API，待网络层接入后扩展）
+            if (TryGetLocalPlayerAttributes(out var attr))
+            {
+                page.BindCharacter(attr);
+                _cachedAttributes = attr;
+                _localPlayerReady = true;
+            }
             return page;
         }
 
@@ -1122,6 +1276,13 @@ namespace HundunWorld.Game.UI
                 try { NavigateToPage(domId); }
                 catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] MountPet 导航失败 ({domId}): {ex.Message}"); }
             };
+            // 即时绑定：若本地玩家已就绪则直接绑定真实数据（占位 API，待网络层接入后扩展）
+            if (TryGetLocalPlayerAttributes(out var attr))
+            {
+                page.BindCharacter(attr);
+                _cachedAttributes = attr;
+                _localPlayerReady = true;
+            }
             return page;
         }
 
@@ -1220,6 +1381,13 @@ namespace HundunWorld.Game.UI
                 try { NavigateToPage(domId); }
                 catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] SocialGuild 导航失败 ({domId}): {ex.Message}"); }
             };
+            // 即时绑定：若本地玩家已就绪则直接绑定真实数据（占位 API，待网络层接入后扩展）
+            if (TryGetLocalPlayerAttributes(out var attr))
+            {
+                page.BindCharacter(attr);
+                _cachedAttributes = attr;
+                _localPlayerReady = true;
+            }
             return page;
         }
 
@@ -1238,6 +1406,13 @@ namespace HundunWorld.Game.UI
                 try { NavigateToPage(domId); }
                 catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] Friends 导航失败 ({domId}): {ex.Message}"); }
             };
+            // 即时绑定：若本地玩家已就绪则直接绑定真实数据（占位 API，待网络层接入后扩展）
+            if (TryGetLocalPlayerAttributes(out var attr))
+            {
+                page.BindCharacter(attr);
+                _cachedAttributes = attr;
+                _localPlayerReady = true;
+            }
             return page;
         }
 
@@ -1256,6 +1431,13 @@ namespace HundunWorld.Game.UI
                 try { NavigateToPage(domId); }
                 catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] SocialMail 导航失败 ({domId}): {ex.Message}"); }
             };
+            // 即时绑定：若本地玩家已就绪则直接绑定真实数据（占位 API，待网络层接入后扩展）
+            if (TryGetLocalPlayerAttributes(out var attr))
+            {
+                page.BindCharacter(attr);
+                _cachedAttributes = attr;
+                _localPlayerReady = true;
+            }
             return page;
         }
 
@@ -1274,6 +1456,13 @@ namespace HundunWorld.Game.UI
                 try { NavigateToPage(domId); }
                 catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] Mentor 导航失败 ({domId}): {ex.Message}"); }
             };
+            // 即时绑定：若本地玩家已就绪则直接绑定真实数据（占位 API，待网络层接入后扩展）
+            if (TryGetLocalPlayerAttributes(out var attr))
+            {
+                page.BindCharacter(attr);
+                _cachedAttributes = attr;
+                _localPlayerReady = true;
+            }
             return page;
         }
 
@@ -1292,6 +1481,13 @@ namespace HundunWorld.Game.UI
                 try { NavigateToPage(domId); }
                 catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] Leaderboard 导航失败 ({domId}): {ex.Message}"); }
             };
+            // 即时绑定：若本地玩家已就绪则直接绑定真实数据（占位 API，待网络层接入后扩展）
+            if (TryGetLocalPlayerAttributes(out var attr))
+            {
+                page.BindCharacter(attr);
+                _cachedAttributes = attr;
+                _localPlayerReady = true;
+            }
             return page;
         }
 
@@ -1310,6 +1506,13 @@ namespace HundunWorld.Game.UI
                 try { NavigateToPage(domId); }
                 catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] Achievement 导航失败 ({domId}): {ex.Message}"); }
             };
+            // 即时绑定：若本地玩家已就绪则直接绑定真实数据（占位 API，待网络层接入后扩展）
+            if (TryGetLocalPlayerAttributes(out var attr))
+            {
+                page.BindCharacter(attr);
+                _cachedAttributes = attr;
+                _localPlayerReady = true;
+            }
             return page;
         }
 
@@ -1328,6 +1531,13 @@ namespace HundunWorld.Game.UI
                 try { NavigateToPage(domId); }
                 catch (Exception ex) { FlaxEngine.Debug.LogError($"[MainUIManager] SocialShop 导航失败 ({domId}): {ex.Message}"); }
             };
+            // 即时绑定：若本地玩家已就绪则直接绑定真实数据（占位 API，待网络层接入后扩展）
+            if (TryGetLocalPlayerAttributes(out var attr))
+            {
+                page.BindCharacter(attr);
+                _cachedAttributes = attr;
+                _localPlayerReady = true;
+            }
             return page;
         }
 
@@ -2256,6 +2466,9 @@ namespace HundunWorld.Game.UI
             _activeCombatHud = null;
             _activeCombatHudV2 = null;
             _activeMenuCharAttributesV2 = null;
+            _activeCombatHudTraditional = null;
+            _activeCharacterPanel = null;
+            _activeSkillPanel = null;
 
             // 清空单例引用
             if (_instance == this)

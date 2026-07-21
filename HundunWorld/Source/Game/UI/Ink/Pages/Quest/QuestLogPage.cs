@@ -1,5 +1,6 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Game.Character.Attributes;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
 
@@ -237,6 +238,25 @@ namespace HundunWorld.Game.UI.Ink.Pages.Quest
         /// 用于在按钮点击位置触发金粉爆发反馈。
         /// </summary>
         public InkParticleSystem ParticleSystem { get; set; }
+
+        // ===================================================================
+        // 数据绑定字段
+        // =======================================================================
+
+        /// <summary>已绑定的角色属性组件（null 表示未绑定，使用 mock 数据）</summary>
+        private CharacterAttributesComponent _boundCharacter;
+
+        /// <summary>
+        /// 绑定角色属性组件。绑定后页面可从组件读取真实角色名/等级等基础信息。
+        /// 传入 null 解除绑定，回退到 mock 数据。
+        /// 注意：本页面主要依赖服务端数据（通过 TouchSocket + MemoryPack 推送），
+        /// 此方法仅绑定本地可获取的角色基础信息，服务端数据待网络层接入后通过 RefreshFromServerAsync 绑定。
+        /// </summary>
+        /// <param name="component">角色属性组件实例</param>
+        public void BindCharacter(CharacterAttributesComponent component)
+        {
+            _boundCharacter = component;
+        }
 
         // ===================================================================
         // 构造函数

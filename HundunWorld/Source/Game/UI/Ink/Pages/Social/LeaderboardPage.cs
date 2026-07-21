@@ -1,269 +1,96 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Game.Character.Attributes;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
 using System.Collections.Generic;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Social
 {
-    /// <summary>
-    /// 江湖风云榜页面 — 对应 leaderboard.html 设计原型。
-    /// <para>
-    /// 三栏布局：
-    /// <list type="bullet">
-    ///   <item>顶部：标题"江湖风云榜" + 当前赛季 + 剩余天数 + 关闭按钮</item>
-    ///   <item>左栏：6 个榜单分类（战力/等级/财富/门派/竞技/帮派）+ 4 个时间筛选按钮</item>
-    ///   <item>中栏：Top 3 颁奖台（金/银/铜）+ 前 12 名排名表格 + 加载更多指示</item>
-    ///   <item>右栏：我的排名卡 + 距上一名差距 + 本周趋势柱状图 + 赛季奖励预览</item>
-    ///   <item>底部：返回沉浸模式</item>
-    /// </list>
-    /// 通过 <see cref="NavigationRequested"/> 事件向路由器暴露导航请求。
-    /// </para>
-    /// </summary>
     public class LeaderboardPage : ContainerControl, IInkPage
     {
-        // ===================================================================
-        // 布局常量
-        // =======================================================================
-
-        /// <summary>顶部标题栏高度</summary>
         private const float TopHeaderHeight = 52f;
-
-        /// <summary>底部按钮栏高度</summary>
-        private const float BottomBarHeight = 48f;
-
-        /// <summary>屏幕边缘留白</summary>
+        private const float ContentPadding = 12f;
         private const float ScreenEdge = 16f;
-
-        /// <summary>列间距</summary>
         private const float ColumnGap = 12f;
-
-        /// <summary>左栏宽度（榜单分类）</summary>
         private const float LeftColumnWidth = 240f;
-
-        /// <summary>右栏宽度（个人排名对比）</summary>
         private const float RightColumnWidth = 280f;
-
-        /// <summary>颁奖台高度（Top 3）</summary>
         private const float PodiumHeight = 170f;
-
-        /// <summary>表格表头高度</summary>
         private const float TableHeaderHeight = 32f;
-
-        /// <summary>表格行高</summary>
         private const float TableRowHeight = 36f;
-
-        /// <summary>分类条目高度</summary>
         private const float CategoryItemHeight = 50f;
-
-        /// <summary>分类条目间距</summary>
         private const float CategoryItemGap = 4f;
-
-        /// <summary>时间筛选按钮高度</summary>
         private const float TimeBtnHeight = 28f;
-
-        /// <summary>时间筛选按钮间距</summary>
         private const float TimeBtnGap = 6f;
 
-        /// <summary>底部按钮宽度</summary>
-        private const float BottomBtnWidth = 160f;
-
-        /// <summary>操作按钮高度</summary>
-        private const float ActionBtnHeight = 36f;
-
-        // ===================================================================
-        // 子控件引用 — 顶部标题栏
-        // =======================================================================
-
-        /// <summary>顶部标题栏面板</summary>
         private InkPanel _topHeader;
-
-        /// <summary>页面主标题</summary>
         private Label _titleLabel;
-
-        /// <summary>英文副标题</summary>
         private Label _subtitleLabel;
-
-        /// <summary>赛季信息标签</summary>
         private Label _seasonLabel;
-
-        /// <summary>剩余天数标签</summary>
         private Label _remainDaysLabel;
-
-        /// <summary>关闭（返回沉浸）按钮</summary>
         private InkButton _closeButton;
 
-        // ===================================================================
-        // 子控件引用 — 左栏（榜单分类与时间筛选）
-        // =======================================================================
-
-        /// <summary>左栏容器</summary>
         private InkPanel _leftPanel;
-
-        /// <summary>分类列表宿主容器</summary>
         private ContainerControl _categoryHost;
-
-        /// <summary>分类列表标题</summary>
         private Label _categoryTitleLabel;
-
-        /// <summary>分类条目容器列表</summary>
         private readonly List<ContainerControl> _categoryItems = new List<ContainerControl>();
-
-        /// <summary>时间筛选面板</summary>
         private InkPanel _timeFilterPanel;
-
-        /// <summary>时间筛选标题</summary>
         private Label _timeFilterTitleLabel;
-
-        /// <summary>时间筛选按钮列表（4 个）</summary>
         private readonly List<InkButton> _timeFilterButtons = new List<InkButton>();
 
-        // ===================================================================
-        // 子控件引用 — 中栏（颁奖台与排名表格）
-        // =======================================================================
-
-        /// <summary>中栏容器</summary>
         private InkPanel _middlePanel;
-
-        /// <summary>颁奖台宿主容器</summary>
         private ContainerControl _podiumHost;
-
-        /// <summary>2nd 青玉颁奖卡片</summary>
         private InkPanel _podiumSilver;
-
-        /// <summary>1st 鎏金颁奖卡片</summary>
         private InkPanel _podiumGold;
-
-        /// <summary>3rd 古铜颁奖卡片</summary>
         private InkPanel _podiumBronze;
-
-        /// <summary>排名表格宿主容器</summary>
         private InkPanel _tablePanel;
-
-        /// <summary>表格表头容器</summary>
         private ContainerControl _tableHeader;
-
-        /// <summary>表格行宿主容器</summary>
         private ContainerControl _tableBodyHost;
-
-        /// <summary>加载更多指示器标签</summary>
         private Label _loadMoreLabel;
-
-        /// <summary>表格行容器列表</summary>
         private readonly List<ContainerControl> _tableRows = new List<ContainerControl>();
 
-        // ===================================================================
-        // 子控件引用 — 右栏（个人排名对比）
-        // =======================================================================
-
-        /// <summary>右栏容器</summary>
         private InkPanel _rightPanel;
-
-        /// <summary>我的排名卡片</summary>
         private InkPanel _myRankCard;
-
-        /// <summary>我的排名标题</summary>
         private Label _myRankTitleLabel;
-
-        /// <summary>我的角色名标签</summary>
         private Label _myNameLabel;
-
-        /// <summary>我的门派等级标签</summary>
         private Label _mySectLevelLabel;
-
-        /// <summary>我的当前排名数值标签</summary>
         private Label _myRankValueLabel;
-
-        /// <summary>我的战力值标签</summary>
         private Label _myPowerValueLabel;
-
-        /// <summary>距上一名卡片</summary>
         private InkPanel _gapCard;
-
-        /// <summary>距上一名标题</summary>
         private Label _gapTitleLabel;
-
-        /// <summary>上一名战力值标签</summary>
         private Label _prevRankPowerLabel;
-
-        /// <summary>差距数值标签</summary>
         private Label _gapValueLabel;
-
-        /// <summary>距上一名进度条</summary>
         private InkBar _gapProgressBar;
-
-        /// <summary>本周趋势卡片</summary>
         private InkPanel _trendCard;
-
-        /// <summary>本周趋势标题</summary>
         private Label _trendTitleLabel;
-
-        /// <summary>本周变化数值标签</summary>
         private Label _trendChangeLabel;
-
-        /// <summary>本周趋势柱状图宿主</summary>
         private ContainerControl _trendChartHost;
-
-        /// <summary>本周起始排名标签</summary>
         private Label _trendStartLabel;
-
-        /// <summary>赛季奖励卡片</summary>
         private InkPanel _rewardCard;
-
-        /// <summary>赛季奖励标题</summary>
         private Label _rewardTitleLabel;
-
-        /// <summary>奖励条目宿主容器</summary>
         private ContainerControl _rewardListHost;
-
-        /// <summary>额外奖励提示标签</summary>
         private Label _rewardHintLabel;
 
-        // ===================================================================
-        // 子控件引用 — 底部按钮栏
-        // =======================================================================
-
-        /// <summary>底部按钮栏面板</summary>
-        private InkPanel _bottomBar;
-
-        /// <summary>返回沉浸模式按钮</summary>
-        private InkButton _backToHudButton;
-
-        // ===================================================================
-        // 模拟数据 — 榜单分类
-        // =======================================================================
-
-        /// <summary>榜单分类信息结构</summary>
         private struct CategoryInfo
         {
             public string Name;
             public string Desc;
-            public string Symbol;
             public bool Active;
         }
 
-        /// <summary>6 个榜单分类数据</summary>
         private readonly CategoryInfo[] _categories =
         {
-            new CategoryInfo { Name = "战力榜", Desc = "综合战力排名", Symbol = "⚡", Active = true },
-            new CategoryInfo { Name = "等级榜", Desc = "角色等级排名", Symbol = "▲", Active = false },
-            new CategoryInfo { Name = "财富榜", Desc = "银两资产排名", Symbol = "◆", Active = false },
-            new CategoryInfo { Name = "门派贡献", Desc = "门派贡献排名", Symbol = "❖", Active = false },
-            new CategoryInfo { Name = "竞技场榜", Desc = "PVP胜场排名", Symbol = "✦", Active = false },
-            new CategoryInfo { Name = "帮派战力", Desc = "帮派总战力", Symbol = "◈", Active = false },
+            new CategoryInfo { Name = "战力榜", Desc = "综合战力排名", Active = true },
+            new CategoryInfo { Name = "等级榜", Desc = "角色等级排名", Active = false },
+            new CategoryInfo { Name = "财富榜", Desc = "银两资产排名", Active = false },
+            new CategoryInfo { Name = "门派贡献", Desc = "门派贡献排名", Active = false },
+            new CategoryInfo { Name = "竞技场榜", Desc = "PVP胜场排名", Active = false },
+            new CategoryInfo { Name = "帮派战力", Desc = "帮派总战力", Active = false },
         };
 
-        /// <summary>4 个时间筛选标签</summary>
         private readonly string[] _timeFilters = { "本日", "本周", "本月", "总榜" };
-
-        /// <summary>当前激活的时间筛选索引（本周）</summary>
         private const int ActiveTimeFilterIndex = 1;
 
-        // ===================================================================
-        // 模拟数据 — 颁奖台 Top 3
-        // =======================================================================
-
-        /// <summary>颁奖台信息结构</summary>
         private struct PodiumInfo
         {
             public int Rank;
@@ -272,22 +99,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             public string Sect;
             public int Level;
             public int Power;
-            public string Tier; // Gold / Silver / Bronze
         }
 
-        /// <summary>Top 3 颁奖台数据（按 Silver/Gold/Bronze 顺序对应左中右）</summary>
         private readonly PodiumInfo[] _podiums =
         {
-            new PodiumInfo { Rank = 2, AvatarChar = "沈", Name = "沈青鸾", Sect = "峨眉派", Level = 76, Power = 121830, Tier = "Silver" },
-            new PodiumInfo { Rank = 1, AvatarChar = "剑", Name = "剑无痕", Sect = "华山派", Level = 78, Power = 128450, Tier = "Gold" },
-            new PodiumInfo { Rank = 3, AvatarChar = "萧", Name = "萧别离", Sect = "丐帮", Level = 75, Power = 118920, Tier = "Bronze" },
+            new PodiumInfo { Rank = 2, AvatarChar = "沈", Name = "沈青鸾", Sect = "峨眉派", Level = 76, Power = 121830 },
+            new PodiumInfo { Rank = 1, AvatarChar = "剑", Name = "剑无痕", Sect = "华山派", Level = 78, Power = 128450 },
+            new PodiumInfo { Rank = 3, AvatarChar = "萧", Name = "萧别离", Sect = "丐帮", Level = 75, Power = 118920 },
         };
 
-        // ===================================================================
-        // 模拟数据 — 排名表格
-        // =======================================================================
-
-        /// <summary>排名行信息结构</summary>
         private struct RankRowInfo
         {
             public int Rank;
@@ -296,11 +116,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             public string Sect;
             public int Level;
             public int Power;
-            public int Trend; // 正数上升，负数下降，0 不变
+            public int Trend;
             public bool IsMe;
         }
 
-        /// <summary>12 行排名数据（第 4-15 名）</summary>
         private readonly RankRowInfo[] _rankRows =
         {
             new RankRowInfo { Rank = 4, AvatarChar = "楚", Name = "楚留香", Sect = "武当派", Level = 74, Power = 112340, Trend = 2, IsMe = false },
@@ -317,79 +136,43 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             new RankRowInfo { Rank = 15, AvatarChar = "李", Name = "李寻欢", Sect = "唐门", Level = 63, Power = 78930, Trend = 4, IsMe = false },
         };
 
-        // ===================================================================
-        // 模拟数据 — 个人排名对比
-        // =======================================================================
-
-        /// <summary>我的排名信息</summary>
         private readonly PodiumInfo _myInfo = new PodiumInfo
         {
-            Rank = 47,
-            AvatarChar = "侠",
-            Name = "逍遥客",
-            Sect = "武当派",
-            Level = 60,
-            Power = 85420,
-            Tier = "Self",
+            Rank = 47, AvatarChar = "侠", Name = "逍遥客", Sect = "武当派", Level = 60, Power = 85420,
         };
 
-        /// <summary>上一名（第 46 名）信息</summary>
         private readonly PodiumInfo _prevRank = new PodiumInfo
         {
-            Rank = 46,
-            AvatarChar = "风",
-            Name = "风清扬",
-            Sect = "华山派",
-            Level = 60,
-            Power = 86650,
-            Tier = "Prev",
+            Rank = 46, AvatarChar = "风", Name = "风清扬", Sect = "华山派", Level = 60, Power = 86650,
         };
 
-        /// <summary>本周每日排名数据（高最差，低最好）</summary>
         private readonly int[] _weeklyRanks = { 55, 53, 54, 51, 50, 48, 47 };
-
-        /// <summary>本周每日标签</summary>
         private readonly string[] _weekdayLabels = { "一", "二", "三", "四", "五", "六", "日" };
 
-        /// <summary>赛季奖励信息结构</summary>
         private struct RewardInfo
         {
             public string Name;
             public string Desc;
             public int Count;
-            public string Quality; // Legendary / Rare / Epic
-            public string Symbol;
+            public string Quality;
         }
 
-        /// <summary>3 个赛季奖励</summary>
         private readonly RewardInfo[] _rewards =
         {
-            new RewardInfo { Name = "声望令", Desc = "江湖声望", Count = 500, Quality = "Legendary", Symbol = "★" },
-            new RewardInfo { Name = "精铁锭", Desc = "锻造材料", Count = 20, Quality = "Rare", Symbol = "◆" },
-            new RewardInfo { Name = "灵石", Desc = "修炼资源", Count = 10, Quality = "Epic", Symbol = "✦" },
+            new RewardInfo { Name = "声望令", Desc = "江湖声望", Count = 500, Quality = "Legendary" },
+            new RewardInfo { Name = "精铁锭", Desc = "锻造材料", Count = 20, Quality = "Rare" },
+            new RewardInfo { Name = "灵石", Desc = "修炼资源", Count = 10, Quality = "Epic" },
         };
 
-        // ===================================================================
-        // 接口与属性
-        // =======================================================================
-
-        /// <summary>
-        /// 导航请求事件。按钮点击后通过此事件向路由器暴露目标 dom-id。
-        /// </summary>
         public event Action<string> NavigationRequested;
-
-        /// <summary>
-        /// 粒子动效系统引用（可选，由 MainUIManager 注入）。
-        /// </summary>
         public InkParticleSystem ParticleSystem { get; set; }
+        private CharacterAttributesComponent _boundCharacter;
 
-        // ===================================================================
-        // 构造函数
-        // =======================================================================
+        public void BindCharacter(CharacterAttributesComponent component)
+        {
+            _boundCharacter = component;
+        }
 
-        /// <summary>
-        /// 构造函数：初始化所有子控件。
-        /// </summary>
         public LeaderboardPage()
         {
             try
@@ -404,7 +187,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 BuildLeftPanel();
                 BuildMiddlePanel();
                 BuildRightPanel();
-                BuildBottomBar();
             }
             catch (Exception ex)
             {
@@ -412,101 +194,115 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             }
         }
 
-        // ===================================================================
-        // Build 方法 — 顶部标题栏
-        // =======================================================================
-
-        /// <summary>
-        /// 构建顶部标题栏：主标题 + 副标题 + 赛季信息 + 关闭按钮。
-        /// </summary>
         private void BuildTopHeader()
         {
             _topHeader = new InkPanel
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Size = new Float2(800f, TopHeaderHeight),
-                Variant = InkPanelVariant.Default,
             };
 
-            // 主标题"江湖风云榜"
+            var trophyLabel = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(24f, 15f),
+                Size = new Float2(20f, 22f),
+                Text = "♛",
+                TextColor = InkWashTheme.GoldPrimary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 16f),
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            _topHeader.AddChild(trophyLabel);
+
             _titleLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(20f, 14f),
-                Size = new Float2(180f, 24f),
+                Location = new Float2(52f, 14f),
+                Size = new Float2(160f, 24f),
                 Text = "江湖风云榜",
                 TextColor = InkWashTheme.GoldPrimary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 18f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 18f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _topHeader.AddChild(_titleLabel);
 
-            // 英文副标题 LEADERBOARD
             _subtitleLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(208f, 18f),
-                Size = new Float2(140f, 18f),
+                Location = new Float2(220f, 18f),
+                Size = new Float2(120f, 16f),
                 Text = "LEADERBOARD",
                 TextColor = InkWashTheme.TextTertiary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 11f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _topHeader.AddChild(_subtitleLabel);
 
-            // 赛季信息
+            var calendarLabel = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(560f, 16f),
+                Size = new Float2(16f, 20f),
+                Text = "◷",
+                TextColor = InkWashTheme.TextTertiary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            _topHeader.AddChild(calendarLabel);
+
             _seasonLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(560f, 18f),
-                Size = new Float2(100f, 18f),
+                Location = new Float2(580f, 18f),
+                Size = new Float2(60f, 16f),
                 Text = "第3赛季",
                 TextColor = InkWashTheme.TextSecondary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 12f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _topHeader.AddChild(_seasonLabel);
 
-            // 剩余天数
             _remainDaysLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(664f, 18f),
-                Size = new Float2(100f, 18f),
+                Location = new Float2(644f, 18f),
+                Size = new Float2(70f, 16f),
                 Text = "剩余12天",
                 TextColor = InkWashTheme.GoldPrimary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 12f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _topHeader.AddChild(_remainDaysLabel);
 
-            // 关闭（返回沉浸）按钮
+            var divider = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(726f, 16f),
+                Size = new Float2(1f, 20f),
+                BackgroundColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.5f),
+            };
+            _topHeader.AddChild(divider);
+
             _closeButton = new InkButton
             {
                 Variant = InkButtonVariant.Default,
-                ButtonSize = InkButtonSize.Sm,
                 Text = "✕",
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(760f, 10f),
+                Location = new Float2(740f, 10f),
                 Size = new Float2(32f, 32f),
             };
-            _closeButton.ButtonClicked += (b) => OnNavigationButtonClicked(InkPageDomIds.CombatHud, b);
+            _closeButton.Clicked += () => NavigationRequested?.Invoke(InkPageDomIds.CombatHud);
             _topHeader.AddChild(_closeButton);
 
             AddChild(_topHeader);
         }
 
-        // ===================================================================
-        // Build 方法 — 左栏（榜单分类与时间筛选）
-        // =======================================================================
-
-        /// <summary>
-        /// 构建左栏：榜单分类列表（6 个）+ 时间筛选面板（4 个按钮）。
-        /// </summary>
         private void BuildLeftPanel()
         {
             _leftPanel = new InkPanel
@@ -515,7 +311,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Size = new Float2(LeftColumnWidth, 600f),
             };
 
-            // ===== 榜单分类卡片 =====
             var categoryCard = new InkPanel
             {
                 AnchorPreset = AnchorPresets.TopLeft,
@@ -524,21 +319,32 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             };
             _leftPanel.AddChild(categoryCard);
 
-            // 分类列表标题
             _categoryTitleLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(12f, 8f),
-                Size = new Float2(LeftColumnWidth - ScreenEdge * 2f - 24f, 22f),
-                Text = "◆ 榜单分类",
+                Size = new Float2(LeftColumnWidth - ScreenEdge * 2f - 48f, 22f),
+                Text = "榜单分类",
                 TextColor = InkWashTheme.TextSecondary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 13f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             categoryCard.AddChild(_categoryTitleLabel);
 
-            // 分类列表宿主
+            var listIcon = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(LeftColumnWidth - ScreenEdge * 2f - 28f, 8f),
+                Size = new Float2(16f, 22f),
+                Text = "☰",
+                TextColor = InkWashTheme.TextTertiary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            categoryCard.AddChild(listIcon);
+
             _categoryHost = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
@@ -547,7 +353,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             };
             categoryCard.AddChild(_categoryHost);
 
-            // 6 个分类条目
             float cursorY = 0f;
             for (int i = 0; i < _categories.Length; i++)
             {
@@ -562,35 +367,32 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                         : Color.Transparent,
                 };
 
-                // 符号标签
                 var symbolLabel = new Label
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
                     Location = new Float2(10f, 14f),
                     Size = new Float2(20f, 22f),
-                    Text = cat.Symbol,
+                    Text = cat.Active ? "⚡" : "◈",
                     TextColor = cat.Active ? InkWashTheme.GoldBright : InkWashTheme.TextTertiary,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 16f),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 16f),
                     HorizontalAlignment = TextAlignment.Center,
                     VerticalAlignment = TextAlignment.Center,
                 };
                 item.AddChild(symbolLabel);
 
-                // 分类名称
                 var nameLabel = new Label
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
                     Location = new Float2(36f, 6f),
                     Size = new Float2(140f, 20f),
                     Text = cat.Name,
-                    TextColor = cat.Active ? InkWashTheme.GoldBright : InkWashTheme.TextSecondary,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 13f),
+                    TextColor = cat.Active ? InkWashTheme.GoldPrimary : InkWashTheme.TextSecondary,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Center,
                 };
                 item.AddChild(nameLabel);
 
-                // 分类描述
                 var descLabel = new Label
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
@@ -598,13 +400,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                     Size = new Float2(160f, 18f),
                     Text = cat.Desc,
                     TextColor = InkWashTheme.TextTertiary,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 10f),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Center,
                 };
                 item.AddChild(descLabel);
 
-                // 激活指示符（chevron-right）
                 if (cat.Active)
                 {
                     var arrowLabel = new Label
@@ -613,8 +414,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                         Location = new Float2(_categoryHost.Width - 22f, 14f),
                         Size = new Float2(20f, 22f),
                         Text = "›",
-                        TextColor = InkWashTheme.GoldBright,
-                        Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 18f),
+                        TextColor = InkWashTheme.GoldPrimary,
+                        Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 18f),
                         HorizontalAlignment = TextAlignment.Center,
                         VerticalAlignment = TextAlignment.Center,
                     };
@@ -626,7 +427,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 cursorY += CategoryItemHeight + CategoryItemGap;
             }
 
-            // ===== 时间筛选面板 =====
             _timeFilterPanel = new InkPanel
             {
                 AnchorPreset = AnchorPresets.TopLeft,
@@ -639,16 +439,28 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(12f, 8f),
-                Size = new Float2(LeftColumnWidth - ScreenEdge * 2f - 24f, 22f),
-                Text = "◆ 时间筛选",
+                Size = new Float2(LeftColumnWidth - ScreenEdge * 2f - 48f, 22f),
+                Text = "时间筛选",
                 TextColor = InkWashTheme.TextSecondary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 12f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 12f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _timeFilterPanel.AddChild(_timeFilterTitleLabel);
 
-            // 4 个时间筛选按钮（2x2 网格）
+            var clockIcon = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(LeftColumnWidth - ScreenEdge * 2f - 28f, 8f),
+                Size = new Float2(16f, 22f),
+                Text = "◷",
+                TextColor = InkWashTheme.TextTertiary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            _timeFilterPanel.AddChild(clockIcon);
+
             float btnWidth = (_timeFilterPanel.Width - 24f - TimeBtnGap) * 0.5f;
             for (int i = 0; i < _timeFilters.Length; i++)
             {
@@ -658,13 +470,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 var btn = new InkButton
                 {
                     Variant = active ? InkButtonVariant.Primary : InkButtonVariant.Ghost,
-                    ButtonSize = InkButtonSize.Sm,
                     Text = _timeFilters[i],
                     AnchorPreset = AnchorPresets.TopLeft,
                     Location = new Float2(12f + col * (btnWidth + TimeBtnGap), 36f + row * (TimeBtnHeight + TimeBtnGap)),
                     Size = new Float2(btnWidth, TimeBtnHeight),
                 };
-                btn.ButtonClicked += (b) => EmitGoldAtButton(b);
+                btn.Clicked += () => EmitGoldAtButton(btn);
                 _timeFilterButtons.Add(btn);
                 _timeFilterPanel.AddChild(btn);
             }
@@ -672,13 +483,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             AddChild(_leftPanel);
         }
 
-        // ===================================================================
-        // Build 方法 — 中栏（颁奖台与排名表格）
-        // =======================================================================
-
-        /// <summary>
-        /// 构建中栏：Top 3 颁奖台 + 排名表格（表头 + 12 行 + 加载更多）。
-        /// </summary>
         private void BuildMiddlePanel()
         {
             _middlePanel = new InkPanel
@@ -687,7 +491,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Size = new Float2(800f, 600f),
             };
 
-            // ===== Top 3 颁奖台 =====
             _podiumHost = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
@@ -696,11 +499,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             };
             _middlePanel.AddChild(_podiumHost);
 
-            BuildPodiumCard(_podiums[0], 0, "Silver");   // 2nd 青玉（左）
-            BuildPodiumCard(_podiums[1], 1, "Gold");     // 1st 鎏金（中，最高）
-            BuildPodiumCard(_podiums[2], 2, "Bronze");   // 3rd 古铜（右）
+            BuildPodiumCard(_podiums[0], 0, "Silver");
+            BuildPodiumCard(_podiums[1], 1, "Gold");
+            BuildPodiumCard(_podiums[2], 2, "Bronze");
 
-            // ===== 排名表格 =====
             _tablePanel = new InkPanel
             {
                 AnchorPreset = AnchorPresets.TopLeft,
@@ -716,14 +518,10 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             AddChild(_middlePanel);
         }
 
-        /// <summary>
-        /// 构建颁奖台卡片：根据 tier 选择配色（Gold 鎏金 / Silver 青玉 / Bronze 古铜）。
-        /// </summary>
         private void BuildPodiumCard(PodiumInfo info, int slotIndex, string tier)
         {
-            Color borderColor;
-            Color textColor;
-            Color avatarBg;
+            Color tierPrimary;
+            Color tierBright;
             float marginTop;
             float avatarSize;
             float padding;
@@ -731,32 +529,28 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             switch (tier)
             {
                 case "Gold":
-                    borderColor = InkWashTheme.GoldPrimary;
-                    textColor = InkWashTheme.GoldBright;
-                    avatarBg = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.15f);
+                    tierPrimary = InkWashTheme.GoldPrimary;
+                    tierBright = InkWashTheme.GoldBright;
                     marginTop = 0f;
                     avatarSize = 56f;
                     padding = 18f;
                     break;
                 case "Silver":
-                    borderColor = InkWashTheme.JadePrimary;
-                    textColor = InkWashTheme.JadeBright;
-                    avatarBg = new Color(InkWashTheme.JadePrimary.R, InkWashTheme.JadePrimary.G, InkWashTheme.JadePrimary.B, 0.15f);
+                    tierPrimary = InkWashTheme.JadePrimary;
+                    tierBright = InkWashTheme.JadeBright;
                     marginTop = 12f;
                     avatarSize = 48f;
                     padding = 14f;
                     break;
-                default: // Bronze
-                    borderColor = InkWashTheme.BronzePrimary;
-                    textColor = InkWashTheme.BronzePrimary;
-                    avatarBg = new Color(InkWashTheme.BronzePrimary.R, InkWashTheme.BronzePrimary.G, InkWashTheme.BronzePrimary.B, 0.15f);
+                default:
+                    tierPrimary = InkWashTheme.BronzePrimary;
+                    tierBright = InkWashTheme.BronzePrimary;
                     marginTop = 16f;
                     avatarSize = 44f;
                     padding = 12f;
                     break;
             }
 
-            // 三栏均分（每栏占 1/3 宽度）
             float cardWidth = (_podiumHost.Width - ColumnGap * 2f) / 3f;
             float cardX = slotIndex * (cardWidth + ColumnGap);
 
@@ -766,14 +560,30 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Location = new Float2(cardX, marginTop),
                 Size = new Float2(cardWidth, PodiumHeight - marginTop),
             };
-            card.BackgroundColor = new Color(borderColor.R, borderColor.G, borderColor.B, 0.08f);
+            card.BackgroundColor = new Color(tierPrimary.R, tierPrimary.G, tierPrimary.B, 0.08f);
+            _podiumHost.AddChild(card);
 
-            // 排名徽章（顶部居中圆形）
+            if (tier == "Gold")
+            {
+                var crownLabel = new Label
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(cardWidth * 0.5f - 12f, -14f),
+                    Size = new Float2(24f, 24f),
+                    Text = "👑",
+                    TextColor = InkWashTheme.GoldBright,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 20f),
+                    HorizontalAlignment = TextAlignment.Center,
+                    VerticalAlignment = TextAlignment.Center,
+                };
+                card.AddChild(crownLabel);
+            }
+
             float badgeSize = tier == "Gold" ? 32f : 28f;
             var badge = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(cardWidth * 0.5f - badgeSize * 0.5f, 6f),
+                Location = new Float2(cardWidth * 0.5f - badgeSize * 0.5f, tier == "Gold" ? 12f : 6f),
                 Size = new Float2(badgeSize, badgeSize),
                 BackgroundColor = InkWashTheme.BaseSecondary,
             };
@@ -782,37 +592,35 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
                 Text = info.Rank.ToString(),
-                TextColor = textColor,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), tier == "Gold" ? 16f : 14f),
+                TextColor = tierBright,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, tier == "Gold" ? 16f : 14f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
             };
             badge.AddChild(rankNumLabel);
             card.AddChild(badge);
 
-            // 头像（圆形背景 + 单字）
-            float avatarY = badgeSize + 8f;
+            float avatarY = (tier == "Gold" ? 12f : 6f) + badgeSize + 8f;
             var avatar = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(cardWidth * 0.5f - avatarSize * 0.5f, avatarY),
                 Size = new Float2(avatarSize, avatarSize),
-                BackgroundColor = avatarBg,
+                BackgroundColor = new Color(tierPrimary.R, tierPrimary.G, tierPrimary.B, 0.15f),
             };
             var avatarCharLabel = new Label
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
                 Text = info.AvatarChar,
-                TextColor = textColor,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), avatarSize == 56f ? 24f : (avatarSize == 48f ? 20f : 18f)),
+                TextColor = tierBright,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, avatarSize == 56f ? 24f : (avatarSize == 48f ? 20f : 18f)),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
             };
             avatar.AddChild(avatarCharLabel);
             card.AddChild(avatar);
 
-            // 姓名标签
             float nameY = avatarY + avatarSize + 6f;
             var nameLabel = new Label
             {
@@ -821,13 +629,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Size = new Float2(cardWidth, 20f),
                 Text = info.Name,
                 TextColor = tier == "Gold" ? InkWashTheme.GoldBright : InkWashTheme.TextDefault,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), tier == "Gold" ? 15f : 14f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, tier == "Gold" ? 15f : 14f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
             };
             card.AddChild(nameLabel);
 
-            // 门派标签
             var sectLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
@@ -835,13 +642,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Size = new Float2(cardWidth, 18f),
                 Text = info.Sect,
                 TextColor = InkWashTheme.TextTertiary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 11f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
             };
             card.AddChild(sectLabel);
 
-            // 等级标签
             var levelLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
@@ -849,27 +655,25 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Size = new Float2(cardWidth, 18f),
                 Text = "Lv." + info.Level,
                 TextColor = InkWashTheme.TextSecondary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 13f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
             };
             card.AddChild(levelLabel);
 
-            // 战力值徽章
             var powerLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(0f, nameY + 58f),
                 Size = new Float2(cardWidth, 22f),
                 Text = "⚡ " + info.Power.ToString("N0"),
-                TextColor = textColor,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), tier == "Gold" ? 15f : 13f),
+                TextColor = tierBright,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, tier == "Gold" ? 15f : 13f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
             };
             card.AddChild(powerLabel);
 
-            // 按层级保存引用
             switch (tier)
             {
                 case "Gold":
@@ -882,12 +686,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                     _podiumBronze = card;
                     break;
             }
-            _podiumHost.AddChild(card);
         }
 
-        /// <summary>
-        /// 构建表格表头：排名 / 头像 / 角色名 / 门派 / 等级 / 战力值 / 变化。
-        /// </summary>
         private void BuildTableHeader()
         {
             _tableHeader = new ContainerControl
@@ -899,19 +699,26 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             };
             _tablePanel.AddChild(_tableHeader);
 
-            // 6 列固定宽度（与 HTML 原型对齐）
-            BuildHeaderCell(0f, 48f, "排名", TextAlignment.Center);
-            BuildHeaderCell(48f, 44f, "", TextAlignment.Center);
-            BuildHeaderCell(92f, 200f, "角色名", TextAlignment.Near);
-            BuildHeaderCell(292f, 90f, "门派", TextAlignment.Near);
-            BuildHeaderCell(382f, 60f, "等级", TextAlignment.Far);
-            BuildHeaderCell(442f, 100f, "战力值", TextAlignment.Far);
-            BuildHeaderCell(542f, 60f, "变化", TextAlignment.Center);
+            BuildHeaderCell(16f, 48f, "排名", TextAlignment.Center);
+            BuildHeaderCell(64f, 44f, "", TextAlignment.Center);
+            float nameX = 108f;
+            float nameW = _tablePanel.Width - 32f - 380f;
+            BuildHeaderCell(nameX, Mathf.Max(nameW, 120f), "角色名", TextAlignment.Near);
+            BuildHeaderCell(nameX + Mathf.Max(nameW, 120f), 80f, "门派", TextAlignment.Near);
+            BuildHeaderCell(nameX + Mathf.Max(nameW, 120f) + 80f, 56f, "等级", TextAlignment.Far);
+            BuildHeaderCell(nameX + Mathf.Max(nameW, 120f) + 80f + 56f, 100f, "战力值", TextAlignment.Far);
+            BuildHeaderCell(nameX + Mathf.Max(nameW, 120f) + 80f + 56f + 100f, 52f, "变化", TextAlignment.Center);
+
+            var headerBorder = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, TableHeaderHeight),
+                Size = new Float2(_tablePanel.Width, 1f),
+                BackgroundColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.3f),
+            };
+            _tablePanel.AddChild(headerBorder);
         }
 
-        /// <summary>
-        /// 构建表头单元格。
-        /// </summary>
         private void BuildHeaderCell(float x, float w, string text, TextAlignment align)
         {
             var cell = new Label
@@ -921,22 +728,19 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Size = new Float2(w, TableHeaderHeight),
                 Text = text,
                 TextColor = InkWashTheme.TextTertiary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 11f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 HorizontalAlignment = align,
                 VerticalAlignment = TextAlignment.Center,
             };
             _tableHeader.AddChild(cell);
         }
 
-        /// <summary>
-        /// 构建表格主体：12 行排名数据。
-        /// </summary>
         private void BuildTableBody()
         {
             _tableBodyHost = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, TableHeaderHeight),
+                Location = new Float2(0f, TableHeaderHeight + 1f),
                 Size = new Float2(_tablePanel.Width, 12 * TableRowHeight),
             };
             _tablePanel.AddChild(_tableBodyHost);
@@ -947,12 +751,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             }
         }
 
-        /// <summary>
-        /// 构建单行排名数据。
-        /// </summary>
         private void BuildTableRow(RankRowInfo info, float yPos)
         {
-            // 自己排名高亮（金色背景）
             Color rowBg = info.IsMe
                 ? new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.12f)
                 : Color.Transparent;
@@ -965,25 +765,27 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 BackgroundColor = rowBg,
             };
 
-            // 排名
+            float tw = _tableBodyHost.Width;
+            float nameW = tw - 32f - 380f;
+            if (nameW < 120f) nameW = 120f;
+
             var rankLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 0f),
+                Location = new Float2(16f, 0f),
                 Size = new Float2(48f, TableRowHeight),
                 Text = info.Rank.ToString(),
                 TextColor = InkWashTheme.TextSecondary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 14f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 14f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
             };
             row.AddChild(rankLabel);
 
-            // 头像
             var avatar = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(58f, (TableRowHeight - 28f) * 0.5f),
+                Location = new Float2(72f, (TableRowHeight - 28f) * 0.5f),
                 Size = new Float2(28f, 28f),
                 BackgroundColor = InkWashTheme.BaseElevated,
             };
@@ -993,96 +795,95 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Offsets = Margin.Zero,
                 Text = info.AvatarChar,
                 TextColor = InkWashTheme.TextSecondary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 12f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 12f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
             };
             avatar.AddChild(avatarCharLabel);
             row.AddChild(avatar);
 
-            // 角色名
             var nameLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(92f, 0f),
-                Size = new Float2(200f, TableRowHeight),
+                Location = new Float2(108f, 0f),
+                Size = new Float2(nameW, TableRowHeight),
                 Text = info.Name,
                 TextColor = info.IsMe ? InkWashTheme.GoldBright : InkWashTheme.TextDefault,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 13f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             row.AddChild(nameLabel);
 
-            // 门派
+            float sectX = 108f + nameW;
             var sectLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(292f, 0f),
-                Size = new Float2(90f, TableRowHeight),
+                Location = new Float2(sectX, 0f),
+                Size = new Float2(80f, TableRowHeight),
                 Text = info.Sect,
                 TextColor = InkWashTheme.TextSecondary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 12f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             row.AddChild(sectLabel);
 
-            // 等级
+            float levelX = sectX + 80f;
             var levelLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(382f, 0f),
-                Size = new Float2(60f, TableRowHeight),
+                Location = new Float2(levelX, 0f),
+                Size = new Float2(56f, TableRowHeight),
                 Text = "Lv." + info.Level,
                 TextColor = InkWashTheme.TextSecondary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 13f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
                 HorizontalAlignment = TextAlignment.Far,
                 VerticalAlignment = TextAlignment.Center,
             };
             row.AddChild(levelLabel);
 
-            // 战力值
+            float powerX = levelX + 56f;
             var powerLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(442f, 0f),
+                Location = new Float2(powerX, 0f),
                 Size = new Float2(100f, TableRowHeight),
                 Text = info.Power.ToString("N0"),
                 TextColor = InkWashTheme.GoldPrimary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 14f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 14f),
                 HorizontalAlignment = TextAlignment.Far,
                 VerticalAlignment = TextAlignment.Center,
             };
             row.AddChild(powerLabel);
 
-            // 变化趋势（▲上升 / ▼下降 / —不变）
+            float trendX = powerX + 100f;
             string trendText;
             Color trendColor;
             if (info.Trend > 0)
             {
-                trendText = "▲ " + info.Trend;
+                trendText = "↑ " + info.Trend;
                 trendColor = InkWashTheme.GoldBright;
             }
             else if (info.Trend < 0)
             {
-                trendText = "▼ " + Math.Abs(info.Trend);
+                trendText = "↓ " + Math.Abs(info.Trend);
                 trendColor = InkWashTheme.TextTertiary;
             }
             else
             {
-                trendText = "—";
+                trendText = "−";
                 trendColor = InkWashTheme.TextTertiary;
             }
 
             var trendLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(542f, 0f),
-                Size = new Float2(60f, TableRowHeight),
+                Location = new Float2(trendX, 0f),
+                Size = new Float2(52f, TableRowHeight),
                 Text = trendText,
                 TextColor = trendColor,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 11f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
             };
@@ -1092,32 +893,22 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             _tableBodyHost.AddChild(row);
         }
 
-        /// <summary>
-        /// 构建加载更多指示器。
-        /// </summary>
         private void BuildLoadMoreIndicator()
         {
             _loadMoreLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, TableHeaderHeight + 12 * TableRowHeight + 8f),
+                Location = new Float2(0f, TableHeaderHeight + 1f + 12 * TableRowHeight + 8f),
                 Size = new Float2(_tablePanel.Width, 24f),
                 Text = "• • •  滚动加载更多",
                 TextColor = InkWashTheme.TextTertiary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 11f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
             };
             _tablePanel.AddChild(_loadMoreLabel);
         }
 
-        // ===================================================================
-        // Build 方法 — 右栏（个人排名对比）
-        // =======================================================================
-
-        /// <summary>
-        /// 构建右栏：我的排名卡 + 距上一名卡 + 本周趋势卡 + 赛季奖励卡。
-        /// </summary>
         private void BuildRightPanel()
         {
             _rightPanel = new InkPanel
@@ -1129,12 +920,11 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             float cursorY = ScreenEdge;
             float cardWidth = RightColumnWidth - ScreenEdge * 2f;
 
-            // ===== 我的排名卡 =====
             _myRankCard = new InkPanel
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(ScreenEdge, cursorY),
-                Size = new Float2(cardWidth, 130f),
+                Size = new Float2(cardWidth, 144f),
             };
             _myRankCard.BackgroundColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.06f);
             _rightPanel.AddChild(_myRankCard);
@@ -1143,16 +933,28 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(12f, 10f),
-                Size = new Float2(cardWidth - 24f, 20f),
-                Text = "◆ 我的排名",
+                Size = new Float2(cardWidth - 48f, 20f),
+                Text = "我的排名",
                 TextColor = InkWashTheme.TextTertiary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 12f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 12f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _myRankCard.AddChild(_myRankTitleLabel);
 
-            // 头像
+            var awardIcon = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(cardWidth - 30f, 10f),
+                Size = new Float2(16f, 20f),
+                Text = "🏅",
+                TextColor = InkWashTheme.GoldPrimary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f),
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            _myRankCard.AddChild(awardIcon);
+
             var myAvatar = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
@@ -1166,14 +968,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Offsets = Margin.Zero,
                 Text = _myInfo.AvatarChar,
                 TextColor = InkWashTheme.GoldBright,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 20f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 20f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
             };
             myAvatar.AddChild(myAvatarChar);
             _myRankCard.AddChild(myAvatar);
 
-            // 姓名标签
             _myNameLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
@@ -1181,13 +982,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Size = new Float2(cardWidth - 80f, 20f),
                 Text = _myInfo.Name,
                 TextColor = InkWashTheme.TextDefault,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 15f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 15f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _myRankCard.AddChild(_myNameLabel);
 
-            // 门派 + 等级
             _mySectLevelLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
@@ -1195,48 +995,54 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Size = new Float2(cardWidth - 80f, 18f),
                 Text = _myInfo.Sect + "  Lv." + _myInfo.Level,
                 TextColor = InkWashTheme.TextSecondary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 11f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _myRankCard.AddChild(_mySectLevelLabel);
 
-            // 当前排名（左侧）
+            var rankDivider = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(12f, 94f),
+                Size = new Float2(cardWidth - 24f, 1f),
+                BackgroundColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.25f),
+            };
+            _myRankCard.AddChild(rankDivider);
+
             _myRankValueLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(14f, 96f),
-                Size = new Float2(cardWidth * 0.5f - 14f, 26f),
+                Location = new Float2(14f, 102f),
+                Size = new Float2(cardWidth * 0.5f - 14f, 34f),
                 Text = "第 " + _myInfo.Rank + " 名",
                 TextColor = InkWashTheme.GoldBright,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 18f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 22f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _myRankCard.AddChild(_myRankValueLabel);
 
-            // 战力值（右侧）
             _myPowerValueLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(cardWidth * 0.5f, 96f),
-                Size = new Float2(cardWidth * 0.5f - 14f, 26f),
+                Location = new Float2(cardWidth * 0.5f, 104f),
+                Size = new Float2(cardWidth * 0.5f - 14f, 28f),
                 Text = "⚡ " + _myInfo.Power.ToString("N0"),
                 TextColor = InkWashTheme.GoldPrimary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 16f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 16f),
                 HorizontalAlignment = TextAlignment.Far,
                 VerticalAlignment = TextAlignment.Center,
             };
             _myRankCard.AddChild(_myPowerValueLabel);
 
-            cursorY += 130f + 8f;
+            cursorY += 144f + 8f;
 
-            // ===== 距上一名卡 =====
             _gapCard = new InkPanel
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(ScreenEdge, cursorY),
-                Size = new Float2(cardWidth, 120f),
+                Size = new Float2(cardWidth, 130f),
             };
             _rightPanel.AddChild(_gapCard);
 
@@ -1244,16 +1050,28 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(12f, 10f),
-                Size = new Float2(cardWidth - 24f, 20f),
-                Text = "▲ 距上一名",
+                Size = new Float2(cardWidth - 48f, 20f),
+                Text = "距上一名",
                 TextColor = InkWashTheme.TextSecondary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 12f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 12f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _gapCard.AddChild(_gapTitleLabel);
 
-            // 上一名战力
+            var arrowIcon = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(cardWidth - 28f, 10f),
+                Size = new Float2(16f, 20f),
+                Text = "↑",
+                TextColor = InkWashTheme.GoldBright,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 16f),
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            _gapCard.AddChild(arrowIcon);
+
             var prevRankLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
@@ -1261,7 +1079,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Size = new Float2(120f, 18f),
                 Text = "第" + _prevRank.Rank + "名战力",
                 TextColor = InkWashTheme.TextTertiary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 10f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
@@ -1274,18 +1092,17 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Size = new Float2(120f, 22f),
                 Text = _prevRank.Power.ToString("N0"),
                 TextColor = InkWashTheme.TextSecondary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 16f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 16f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _gapCard.AddChild(_prevRankPowerLabel);
 
-            // 差距数值（右侧徽章式）
             var gapBg = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(cardWidth - 100f, 40f),
-                Size = new Float2(86f, 40f),
+                Location = new Float2(cardWidth - 100f, 38f),
+                Size = new Float2(86f, 44f),
                 BackgroundColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.08f),
             };
             var gapDescLabel = new Label
@@ -1295,7 +1112,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 Size = new Float2(86f, 16f),
                 Text = "差距",
                 TextColor = InkWashTheme.TextTertiary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 9f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 9f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
             };
@@ -1304,35 +1121,33 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(0f, 18f),
-                Size = new Float2(86f, 20f),
+                Size = new Float2(86f, 22f),
                 Text = (_prevRank.Power - _myInfo.Power).ToString("N0"),
                 TextColor = InkWashTheme.GoldPrimary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 15f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 15f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
             };
             gapBg.AddChild(_gapValueLabel);
             _gapCard.AddChild(gapBg);
 
-            // 进度条
             _gapProgressBar = new InkBar
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(14f, 88f),
+                Location = new Float2(14f, 100f),
                 Size = new Float2(cardWidth - 28f, 8f),
                 Value = (float)_myInfo.Power / _prevRank.Power,
                 FillVariant = InkBarFillVariant.Gold,
             };
             _gapCard.AddChild(_gapProgressBar);
 
-            cursorY += 120f + 8f;
+            cursorY += 130f + 8f;
 
-            // ===== 本周趋势卡 =====
             _trendCard = new InkPanel
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(ScreenEdge, cursorY),
-                Size = new Float2(cardWidth, 140f),
+                Size = new Float2(cardWidth, 150f),
             };
             _rightPanel.AddChild(_trendCard);
 
@@ -1341,61 +1156,57 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(12f, 10f),
                 Size = new Float2(120f, 20f),
-                Text = "◆ 本周趋势",
+                Text = "本周趋势",
                 TextColor = InkWashTheme.TextSecondary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 12f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 12f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _trendCard.AddChild(_trendTitleLabel);
 
-            // +5 变化数值
             _trendChangeLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(cardWidth - 80f, 10f),
                 Size = new Float2(68f, 20f),
-                Text = "▲ +5",
+                Text = "↑ +5",
                 TextColor = InkWashTheme.GoldBright,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 12f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
                 HorizontalAlignment = TextAlignment.Far,
                 VerticalAlignment = TextAlignment.Center,
             };
             _trendCard.AddChild(_trendChangeLabel);
 
-            // 迷你柱状图宿主
             _trendChartHost = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(12f, 36f),
-                Size = new Float2(cardWidth - 24f, 70f),
+                Size = new Float2(cardWidth - 24f, 80f),
             };
             _trendCard.AddChild(_trendChartHost);
 
             BuildTrendChart();
 
-            // 本周起始排名
             _trendStartLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(12f, 110f),
+                Location = new Float2(12f, 120f),
                 Size = new Float2(cardWidth - 24f, 20f),
                 Text = "本周起始：第55名",
                 TextColor = InkWashTheme.TextTertiary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 10f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _trendCard.AddChild(_trendStartLabel);
 
-            cursorY += 140f + 8f;
+            cursorY += 150f + 8f;
 
-            // ===== 赛季奖励卡 =====
             _rewardCard = new InkPanel
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(ScreenEdge, cursorY),
-                Size = new Float2(cardWidth, 220f),
+                Size = new Float2(cardWidth, 230f),
             };
             _rightPanel.AddChild(_rewardCard);
 
@@ -1403,35 +1214,46 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(12f, 10f),
-                Size = new Float2(cardWidth - 24f, 20f),
-                Text = "◆ 赛季奖励",
+                Size = new Float2(cardWidth - 48f, 20f),
+                Text = "赛季奖励",
                 TextColor = InkWashTheme.TextSecondary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 12f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 12f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
             _rewardCard.AddChild(_rewardTitleLabel);
 
-            // 奖励条目宿主
+            var giftIcon = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(cardWidth - 28f, 10f),
+                Size = new Float2(16f, 20f),
+                Text = "♦",
+                TextColor = InkWashTheme.GoldPrimary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 16f),
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            _rewardCard.AddChild(giftIcon);
+
             _rewardListHost = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(12f, 36f),
-                Size = new Float2(cardWidth - 24f, 120f),
+                Size = new Float2(cardWidth - 24f, 130f),
             };
             _rewardCard.AddChild(_rewardListHost);
 
             BuildRewardList();
 
-            // 额外奖励提示
             _rewardHintLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(12f, 168f),
+                Location = new Float2(12f, 178f),
                 Size = new Float2(cardWidth - 24f, 40f),
                 Text = "排名进入前30可获额外奖励",
                 TextColor = InkWashTheme.TextTertiary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 10f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
             };
@@ -1440,18 +1262,13 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             AddChild(_rightPanel);
         }
 
-        /// <summary>
-        /// 构建本周趋势迷你柱状图（7 天）。
-        /// 排名数值越大表示越差（柱越高），数值越小越好（柱越短）。
-        /// </summary>
         private void BuildTrendChart()
         {
             float chartWidth = _trendChartHost.Width;
-            float chartHeight = _trendChartHost.Height - 16f; // 底部预留 16px 给星期标签
+            float chartHeight = _trendChartHost.Height - 16f;
             float barGap = 4f;
             float barWidth = (chartWidth - barGap * 6f) / 7f;
 
-            // 计算排名范围用于柱高归一化
             int maxRank = _weeklyRanks[0];
             int minRank = _weeklyRanks[0];
             for (int i = 1; i < _weeklyRanks.Length; i++)
@@ -1464,10 +1281,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             for (int i = 0; i < _weeklyRanks.Length; i++)
             {
                 int rank = _weeklyRanks[i];
-                // 排名越差（数值越大），柱越高
                 float normalizedHeight = (float)(rank - minRank) / rankRange;
                 float barH = Mathf.Lerp(chartHeight * 0.4f, chartHeight, 1f - normalizedHeight);
-                // 排名最好（最后一天）使用渐变亮金色
                 bool isCurrent = i == _weeklyRanks.Length - 1;
 
                 float barX = i * (barWidth + barGap);
@@ -1496,7 +1311,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 };
                 _trendChartHost.AddChild(bar);
 
-                // 星期标签
                 var dayLabel = new Label
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
@@ -1504,7 +1318,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                     Size = new Float2(barWidth, 14f),
                     Text = _weekdayLabels[i],
                     TextColor = isCurrent ? InkWashTheme.GoldPrimary : InkWashTheme.TextTertiary,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 9f),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 9f),
                     HorizontalAlignment = TextAlignment.Center,
                     VerticalAlignment = TextAlignment.Center,
                 };
@@ -1512,9 +1326,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             }
         }
 
-        /// <summary>
-        /// 构建赛季奖励条目列表（3 个奖励）。
-        /// </summary>
         private void BuildRewardList()
         {
             float cursorY = 0f;
@@ -1541,6 +1352,20 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                         break;
                 }
 
+                string qualitySymbol;
+                switch (reward.Quality)
+                {
+                    case "Legendary":
+                        qualitySymbol = "★";
+                        break;
+                    case "Rare":
+                        qualitySymbol = "◆";
+                        break;
+                    default:
+                        qualitySymbol = "✦";
+                        break;
+                }
+
                 var item = new ContainerControl
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
@@ -1549,7 +1374,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                     BackgroundColor = new Color(qualityColor.R, qualityColor.G, qualityColor.B, 0.08f),
                 };
 
-                // 奖励图标徽章
                 var iconBox = new ContainerControl
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
@@ -1561,16 +1385,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 {
                     AnchorPreset = AnchorPresets.StretchAll,
                     Offsets = Margin.Zero,
-                    Text = reward.Symbol,
+                    Text = qualitySymbol,
                     TextColor = qualityColor,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 14f),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f),
                     HorizontalAlignment = TextAlignment.Center,
                     VerticalAlignment = TextAlignment.Center,
                 };
                 iconBox.AddChild(iconLabel);
                 item.AddChild(iconBox);
 
-                // 名称
                 var nameLabel = new Label
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
@@ -1578,13 +1401,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                     Size = new Float2(_rewardListHost.Width - 100f, 16f),
                     Text = reward.Name,
                     TextColor = InkWashTheme.TextDefault,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 12f),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 12f),
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Center,
                 };
                 item.AddChild(nameLabel);
 
-                // 描述
                 var descLabel = new Label
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
@@ -1592,13 +1414,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                     Size = new Float2(_rewardListHost.Width - 100f, 16f),
                     Text = reward.Desc,
                     TextColor = InkWashTheme.TextTertiary,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 10f),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Center,
                 };
                 item.AddChild(descLabel);
 
-                // 数量
                 var countLabel = new Label
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
@@ -1606,7 +1427,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                     Size = new Float2(64f, 28f),
                     Text = "x" + reward.Count,
                     TextColor = qualityColor,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 14f),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 14f),
                     HorizontalAlignment = TextAlignment.Far,
                     VerticalAlignment = TextAlignment.Center,
                 };
@@ -1617,59 +1438,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             }
         }
 
-        // ===================================================================
-        // Build 方法 — 底部按钮栏
-        // =======================================================================
-
-        /// <summary>
-        /// 构建底部按钮栏：返回沉浸模式。
-        /// </summary>
-        private void BuildBottomBar()
-        {
-            _bottomBar = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Size = new Float2(BottomBtnWidth, BottomBarHeight),
-            };
-
-            _backToHudButton = new InkButton
-            {
-                Variant = InkButtonVariant.Default,
-                ButtonSize = InkButtonSize.Md,
-                Text = "返回沉浸模式",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 6f),
-                Size = new Float2(BottomBtnWidth, ActionBtnHeight),
-            };
-            _backToHudButton.ButtonClicked += (b) => OnNavigationButtonClicked(InkPageDomIds.CombatHud, b);
-            _bottomBar.AddChild(_backToHudButton);
-
-            AddChild(_bottomBar);
-        }
-
-        // ===================================================================
-        // 事件处理
-        // =======================================================================
-
-        /// <summary>
-        /// 导航按钮点击处理：发射金粉粒子 + 触发导航请求。
-        /// </summary>
-        private void OnNavigationButtonClicked(string domId, Button sourceButton)
-        {
-            try
-            {
-                EmitGoldAtButton(sourceButton);
-                NavigationRequested?.Invoke(domId);
-            }
-            catch (Exception ex)
-            {
-                FlaxEngine.Debug.LogError($"[LeaderboardPage] NavigationRequested({domId}) 触发失败: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// 在按钮中心位置触发金粉爆发粒子反馈。
-        /// </summary>
         private void EmitGoldAtButton(Button button)
         {
             try
@@ -1688,50 +1456,40 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             }
         }
 
-        // ===================================================================
-        // IInkPage 实现
-        // =======================================================================
-
-        /// <inheritdoc />
         public void RefreshLayout()
         {
             try
             {
                 float sw = Width;
                 float sh = Height;
-                float contentTop = TopHeaderHeight + ScreenEdge;
-                float contentBottom = sh - BottomBarHeight - ScreenEdge;
+                float contentTop = TopHeaderHeight + ContentPadding;
+                float contentBottom = sh - ContentPadding;
                 float contentH = contentBottom - contentTop;
                 float middleWidth = sw - LeftColumnWidth - RightColumnWidth - ColumnGap * 2f - ScreenEdge * 2f;
 
-                // 顶部标题栏：顶部全宽
                 if (_topHeader != null)
                 {
-                    _topHeader.Location = new Float2(ScreenEdge, ScreenEdge);
-                    _topHeader.Size = new Float2(sw - ScreenEdge * 2f, TopHeaderHeight);
+                    _topHeader.Location = Float2.Zero;
+                    _topHeader.Size = new Float2(sw, TopHeaderHeight);
                 }
 
-                // 左栏：左上角
                 if (_leftPanel != null)
                 {
                     _leftPanel.Location = new Float2(ScreenEdge, contentTop);
                     _leftPanel.Size = new Float2(LeftColumnWidth, contentH);
                 }
 
-                // 中栏：左栏右侧
                 if (_middlePanel != null)
                 {
                     _middlePanel.Location = new Float2(ScreenEdge + LeftColumnWidth + ColumnGap, contentTop);
                     _middlePanel.Size = new Float2(middleWidth, contentH);
 
-                    // 同步颁奖台宿主宽度
                     if (_podiumHost != null)
                     {
                         _podiumHost.Size = new Float2(middleWidth - ScreenEdge * 2f, PodiumHeight);
                         RebuildPodiumLayout(middleWidth - ScreenEdge * 2f);
                     }
 
-                    // 同步表格面板宽度
                     if (_tablePanel != null)
                     {
                         float tableWidth = middleWidth - ScreenEdge * 2f;
@@ -1743,7 +1501,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                         if (_tableBodyHost != null)
                         {
                             _tableBodyHost.Size = new Float2(tableWidth, 12 * TableRowHeight);
-                            // 同步所有行的宽度
                             foreach (var row in _tableRows)
                             {
                                 row.Size = new Float2(tableWidth, TableRowHeight);
@@ -1751,24 +1508,16 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                         }
                         if (_loadMoreLabel != null)
                         {
-                            _loadMoreLabel.Location = new Float2(0f, TableHeaderHeight + 12 * TableRowHeight + 8f);
+                            _loadMoreLabel.Location = new Float2(0f, TableHeaderHeight + 1f + 12 * TableRowHeight + 8f);
                             _loadMoreLabel.Size = new Float2(tableWidth, 24f);
                         }
                     }
                 }
 
-                // 右栏：右侧
                 if (_rightPanel != null)
                 {
                     _rightPanel.Location = new Float2(sw - RightColumnWidth - ScreenEdge, contentTop);
                     _rightPanel.Size = new Float2(RightColumnWidth, contentH);
-                }
-
-                // 底部按钮栏：底部居中
-                if (_bottomBar != null)
-                {
-                    _bottomBar.Location = new Float2(sw * 0.5f - BottomBtnWidth * 0.5f, sh - BottomBarHeight - ScreenEdge * 0.5f);
-                    _bottomBar.Size = new Float2(BottomBtnWidth, BottomBarHeight);
                 }
             }
             catch (Exception ex)
@@ -1777,9 +1526,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             }
         }
 
-        /// <summary>
-        /// 重新计算颁奖台 3 张卡片的位置与尺寸（RefreshLayout 时调用）。
-        /// </summary>
         private void RebuildPodiumLayout(float totalWidth)
         {
             if (_podiumHost == null)
@@ -1804,7 +1550,6 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             }
         }
 
-        /// <inheritdoc />
         public override void OnParentResized()
         {
             base.OnParentResized();

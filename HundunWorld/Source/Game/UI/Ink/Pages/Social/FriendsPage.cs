@@ -1,1013 +1,703 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Game.Character.Attributes;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Social
 {
-    /// <summary>
-    /// 江湖交游（好友列表）页面 — 对应 friends.html 设计原型。
-    /// <para>
-    /// 水墨古风好友管理界面，承担玩家查看好友分组、浏览在线状态、
-    /// 查询好友详情与共同回忆的核心入口。
-    /// 整体布局沿用 HTML 原型的三栏式结构：
-    /// <list type="bullet">
-    ///   <item>顶部：标题"江湖交游" + 在线好友数/总数 + 关闭按钮</item>
-    ///   <item>左栏：好友分组 Tab（全部/在线/亲密/同门/仇人，5 个垂直 Tab）</item>
-    ///   <item>中栏：好友列表（12 名，每条含头像/姓名/等级/门派/在线状态/亲密度进度条）</item>
-    ///   <item>右栏：选中好友详情（大头像/称谓/个人信息/亲密度条/共同回忆/操作按钮）</item>
-    ///   <item>底部：返回沉浸模式 + 跳转飞鸽传书（NavSocialMail）</item>
-    /// </list>
-    /// 通过 <see cref="NavigationRequested"/> 事件向路由器暴露导航请求，
-    /// 关闭按钮与底部"返回沉浸模式"按钮均触发 <see cref="InkPageDomIds.CombatHud"/>。
-    /// </para>
-    /// <para>
-    /// 当前实现全部使用 mock 数据；后续接入门派系统时，
-    /// 通过刷新方法替换列表内容即可。
-    /// </para>
-    /// </summary>
     public class FriendsPage : ContainerControl, IInkPage
     {
-        // ===================================================================
-        // 布局常量
-        // =======================================================================
-
-        /// <summary>顶部标题栏高度（像素）</summary>
-        private const float HeaderHeight = 60f;
-
-        /// <summary>底部导航按钮栏高度（像素）</summary>
-        private const float BottomNavHeight = 36f;
-
-        /// <summary>屏幕边距（像素）</summary>
-        private const float ScreenEdge = 16f;
-
-        /// <summary>区域间距（像素）</summary>
-        private const float RegionGap = 12f;
-
-        /// <summary>左栏分组 Tab 宽度占比（占内容区宽度）</summary>
-        private const float LeftRatio = 0.16f;
-
-        /// <summary>右栏好友详情宽度占比（占内容区宽度）</summary>
-        private const float RightRatio = 0.38f;
-
-        /// <summary>导航按钮宽度（像素）</summary>
-        private const float NavBtnWidth = 140f;
-
-        /// <summary>导航按钮间距（像素）</summary>
-        private const float NavBtnGap = 8f;
-
-        /// <summary>分组 Tab 按钮高度（像素）</summary>
-        private const float TabBtnHeight = 36f;
-
-        /// <summary>分组 Tab 按钮间距（像素）</summary>
-        private const float TabBtnGap = 4f;
-
-        /// <summary>好友列表项高度（像素）</summary>
-        private const float FriendItemHeight = 64f;
-
-        /// <summary>好友列表项间距（像素）</summary>
-        private const float FriendItemGap = 4f;
-
-        // ===================================================================
-        // 子控件引用 — 顶部
-        // =======================================================================
-
-        /// <summary>顶部标题栏面板</summary>
-        private InkPanel _headerPanel;
-
-        /// <summary>页面标题"江湖交游"</summary>
-        private Label _titleLabel;
-
-        /// <summary>在线好友数标签</summary>
-        private Label _onlineCountLabel;
-
-        /// <summary>"添加好友"按钮</summary>
-        private InkButton _addFriendButton;
-
-        /// <summary>关闭按钮</summary>
-        private InkButton _closeButton;
-
-        // ===================================================================
-        // 子控件引用 — 左栏分组 Tab
-        // =======================================================================
-
-        /// <summary>左栏分组 Tab 面板</summary>
-        private InkPanel _tabPanel;
-
-        /// <summary>5 个分组 Tab 按钮（全部/在线/亲密/同门/仇人）</summary>
-        private InkButton[] _tabButtons;
-
-        /// <summary>当前激活的 Tab 索引</summary>
-        private int _activeTabIndex = 0;
-
-        // ===================================================================
-        // 子控件引用 — 中栏好友列表
-        // =======================================================================
-
-        /// <summary>中栏好友列表面板</summary>
-        private InkPanel _friendListPanel;
-
-        /// <summary>中栏标题"好友列表"</summary>
-        private Label _friendListTitle;
-
-        /// <summary>好友列表项容器数组（12 名）</summary>
-        private InkListItem[] _friendItems;
-
-        /// <summary>好友头像数组</summary>
-        private InkAvatar[] _friendAvatars;
-
-        /// <summary>好友姓名标签数组</summary>
-        private Label[] _friendNames;
-
-        /// <summary>好友等级标签数组</summary>
-        private Label[] _friendLevels;
-
-        /// <summary>好友门派标签数组</summary>
-        private Label[] _friendSects;
-
-        /// <summary>好友在线状态圆点数组</summary>
-        private InkDot[] _friendDots;
-
-        /// <summary>好友亲密度进度条数组</summary>
-        private InkBar[] _friendIntimacyBars;
-
-        /// <summary>当前选中的好友索引</summary>
-        private int _selectedFriendIndex = 0;
-
-        // ===================================================================
-        // 子控件引用 — 右栏好友详情
-        // =======================================================================
-
-        /// <summary>右栏好友详情面板</summary>
-        private InkPanel _detailPanel;
-
-        /// <summary>详情大头像</summary>
-        private InkAvatar _detailAvatar;
-
-        /// <summary>详情姓名标签</summary>
-        private Label _detailNameLabel;
-
-        /// <summary>详情称谓标签</summary>
-        private Label _detailTitleLabel;
-
-        /// <summary>详情：等级数值</summary>
-        private Label _detailLevelLabel;
-
-        /// <summary>详情：门派</summary>
-        private Label _detailSectLabel;
-
-        /// <summary>详情：性别</summary>
-        private Label _detailGenderLabel;
-
-        /// <summary>详情：所在地</summary>
-        private Label _detailLocationLabel;
-
-        /// <summary>亲密度数值标签</summary>
-        private Label _detailIntimacyValueLabel;
-
-        /// <summary>亲密度进度条</summary>
-        private InkBar _detailIntimacyBar;
-
-        /// <summary>共同回忆区标题</summary>
-        private Label _memoryTitle;
-
-        /// <summary>共同回忆条目标签数组（4 条）</summary>
-        private Label[] _memoryLabels;
-
-        /// <summary>"私聊"按钮</summary>
-        private InkButton _whisperButton;
-
-        /// <summary>"组队"按钮</summary>
-        private InkButton _teamButton;
-
-        /// <summary>"邀请入派"按钮</summary>
-        private InkButton _inviteSectButton;
-
-        /// <summary>"发送邮件"按钮</summary>
-        private InkButton _sendMailButton;
-
-        /// <summary>"删除"按钮</summary>
-        private InkButton _deleteButton;
-
-        // ===================================================================
-        // 子控件引用 — 底部
-        // =======================================================================
-
-        /// <summary>底部导航按钮面板</summary>
-        private InkPanel _bottomNavPanel;
-
-        /// <summary>"返回沉浸模式"按钮</summary>
-        private InkButton _returnHudButton;
-
-        /// <summary>"飞鸽传书"按钮</summary>
-        private InkButton _gotoMailButton;
-
-        // ===================================================================
-        // 公共 API
-        // =======================================================================
-
-        /// <summary>
-        /// 导航请求事件。由关闭按钮与底部导航按钮触发，
-        /// 参数为 <see cref="InkPageDomIds"/> 中定义的 dom-id 字符串。
-        /// </summary>
         public event Action<string> NavigationRequested;
 
-        /// <summary>
-        /// 粒子动效系统引用（可选，由外部注入）。
-        /// 用于在按钮点击位置触发金粉爆发反馈。
-        /// </summary>
         public InkParticleSystem ParticleSystem { get; set; }
 
-        // ===================================================================
-        // 构造函数
-        // =======================================================================
+        public void BindCharacter(CharacterAttributesComponent component)
+        {
+        }
 
-        /// <summary>
-        /// 构造函数：初始化全部子控件并填充 mock 数据。
-        /// </summary>
+        private const float HeaderH = 56f;
+        private const float SideW = 280f;
+
+        private static Color Gold(float a) => new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, a);
+        private static Color Blood(float a) => new Color(InkWashTheme.BloodPrimary.R, InkWashTheme.BloodPrimary.G, InkWashTheme.BloodPrimary.B, a);
+
+        private class ClickPanel : Panel
+        {
+            public event System.Action Clicked;
+            public event System.Action<bool> HoverChanged;
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left) Clicked?.Invoke();
+                return base.OnMouseUp(location, button);
+            }
+            public override void OnMouseEnter(Float2 location) { HoverChanged?.Invoke(true); base.OnMouseEnter(location); }
+            public override void OnMouseLeave() { HoverChanged?.Invoke(false); base.OnMouseLeave(); }
+        }
+
+        private struct Entry
+        {
+            public string Name, Char, Lv, Sect, Loc, Title, Stars;
+            public bool Online;
+            public int Intim;
+            public int Grade;
+        }
+
+        private static readonly Entry[] Friends =
+        {
+            new Entry{Name="剑客张三", Char="张", Lv="60", Sect="武当派", Loc="武当山 · 紫霄宫", Title="武林豪侠", Stars="★★★★★", Online=true,  Intim=8520, Grade=0},
+            new Entry{Name="飞燕李四", Char="李", Lv="55", Sect="丐帮",   Loc="丐帮总舵",        Title="江湖游侠", Stars="★★★★☆", Online=true,  Intim=7200, Grade=1},
+            new Entry{Name="狂刀赵六", Char="赵", Lv="52", Sect="明教",   Loc="光明顶",          Title="烈火使者", Stars="★★★★☆", Online=true,  Intim=6800, Grade=2},
+            new Entry{Name="青衣王五", Char="王", Lv="48", Sect="峨眉",   Loc="金顶",            Title="青衣剑客", Stars="★★★☆☆", Online=true,  Intim=5500, Grade=3},
+            new Entry{Name="幻影孙七", Char="孙", Lv="45", Sect="唐门",   Loc="暗器阁",          Title="暗影行者", Stars="★★☆☆☆", Online=true,  Intim=4200, Grade=4},
+            new Entry{Name="药师周八", Char="周", Lv="40", Sect="少林",   Loc="藏经阁",          Title="药王谷传人", Stars="★★★☆☆", Online=false, Intim=3800, Grade=0},
+            new Entry{Name="铁掌郑十", Char="郑", Lv="42", Sect="昆仑",   Loc="玉虚峰",          Title="铁掌无敌", Stars="★★★☆☆", Online=false, Intim=3500, Grade=0},
+            new Entry{Name="琴音吴九", Char="吴", Lv="38", Sect="嵩山",   Loc="峻极峰",          Title="琴魔",    Stars="★★☆☆☆", Online=false, Intim=2800, Grade=0},
+        };
+
+        private int _sel;
+        private int _tab;
+        private readonly string[] _tabLbls = { "好友", "仇人", "黑名单" };
+
+        // top bar
+        private Panel _bar;
+        private InkButton _back;
+        private Label _titleLbl;
+        private Label _countLbl;
+        private InkButton _addBtn;
+
+        // left column
+        private Panel _left;
+        private Panel _search;
+        private InkButton[] _tabs;
+        private ClickPanel[] _rows;
+        private Panel[] _rowDots;
+        private Panel[] _rowAvts;
+        private Label[] _rowChars;
+        private Label[] _rowNames;
+        private Label[] _rowLvs;
+        private Label[] _rowSects;
+        private Label[] _rowStars;
+        private Label _onlineHdr;
+        private Label _offlineHdr;
+
+        // center column
+        private Panel _ctr;
+        private Panel _idBox;
+        private Panel _idAvt;
+        private Label _idAvtChar;
+        private Panel _idDot;
+        private Label _idName;
+        private Label _idTitle;
+        private Label _idLoc;
+        private Label _idSta;
+        private Panel _infoGrid;
+        private Label[] _infoVals;
+        private Panel _intiBox;
+        private Panel _intiTrack;
+        private Panel _intiFill;
+        private Label _intiLbl;
+        private Label _intiSub;
+        private Panel _tagBox;
+        private InkButton[] _acts;
+        private Panel _equipBox;
+
+        // right column
+        private Panel _right;
+
         public FriendsPage()
         {
-            try
-            {
-                AnchorPreset = AnchorPresets.StretchAll;
-                Offsets = Margin.Zero;
-                BackgroundColor = Color.Transparent;
-                ClipChildren = false;
-                AutoFocus = false;
-
-                BuildHeader();
-                BuildTabPanel();
-                BuildFriendList();
-                BuildDetailPanel();
-                BuildBottomNav();
-            }
-            catch (Exception ex)
-            {
-                FlaxEngine.Debug.LogError($"[FriendsPage] 初始化失败: {ex.Message}");
-            }
+            AnchorPreset = AnchorPresets.StretchAll;
+            Offsets = Margin.Zero;
+            ClipChildren = false;
+            AutoFocus = false;
+            Build();
         }
 
-        // ===================================================================
-        // Build 方法
-        // =======================================================================
-
-        /// <summary>
-        /// 构建顶部标题栏：标题 + 在线好友数 + 添加好友 + 关闭按钮。
-        /// </summary>
-        private void BuildHeader()
+        private Panel NewP(Color bg, ContainerControl p)
         {
-            _headerPanel = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-            };
-
-            _titleLabel = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(20f, 0f),
-                Size = new Float2(160f, HeaderHeight),
-                Text = "江湖交游",
-                TextColor = InkWashTheme.TextGold,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 22f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _headerPanel.AddChild(_titleLabel);
-
-            _onlineCountLabel = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(200f, 0f),
-                Size = new Float2(240f, HeaderHeight),
-                Text = "在线  5 / 12",
-                TextColor = InkWashTheme.TextJade,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 14f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _headerPanel.AddChild(_onlineCountLabel);
-
-            // 添加好友按钮（右上方，RefreshLayout 中靠右定位）
-            _addFriendButton = new InkButton
-            {
-                Variant = InkButtonVariant.Default,
-                ButtonSize = InkButtonSize.Sm,
-                Text = "添加好友",
-                AnchorPreset = AnchorPresets.TopRight,
-                Size = new Float2(96f, 32f),
-            };
-            _addFriendButton.ButtonClicked += (b) => EmitGoldAtButton(b);
-            _headerPanel.AddChild(_addFriendButton);
-
-            _closeButton = new InkButton
-            {
-                Variant = InkButtonVariant.Ghost,
-                ButtonSize = InkButtonSize.Sm,
-                Text = "✕",
-                AnchorPreset = AnchorPresets.TopRight,
-                Size = new Float2(32f, 32f),
-            };
-            _closeButton.ButtonClicked += (b) => OnSystemNavButtonClicked(InkPageDomIds.CombatHud, b);
-            _headerPanel.AddChild(_closeButton);
-
-            AddChild(_headerPanel);
+            var n = new Panel { BackgroundColor = bg, Parent = p };
+            return n;
         }
 
-        /// <summary>
-        /// 构建左栏分组 Tab 面板：5 个垂直 Tab（全部/在线/亲密/同门/仇人）。
-        /// </summary>
-        private void BuildTabPanel()
-        {
-            _tabPanel = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-            };
-
-            // 分组标题
-            var groupTitle = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(12f, 10f),
-                Size = new Float2(160f, 20f),
-                Text = "◆ 好友分组",
-                TextColor = InkWashTheme.TextBrand,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 14f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _tabPanel.AddChild(groupTitle);
-
-            // 5 个分组 Tab
-            string[] tabNames = { "全部", "在线", "亲密", "同门", "仇人" };
-            _tabButtons = new InkButton[tabNames.Length];
-            float tabY = 40f;
-            for (int i = 0; i < tabNames.Length; i++)
-            {
-                int capturedIndex = i;
-                var btn = new InkButton
-                {
-                    Variant = (i == _activeTabIndex) ? InkButtonVariant.Default : InkButtonVariant.Ghost,
-                    ButtonSize = InkButtonSize.Md,
-                    Text = tabNames[i],
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(12f, tabY + i * (TabBtnHeight + TabBtnGap)),
-                    Size = new Float2(160f, TabBtnHeight),
-                };
-                btn.ButtonClicked += (b) => OnTabButtonClicked(capturedIndex, b);
-                _tabButtons[i] = btn;
-                _tabPanel.AddChild(btn);
-            }
-
-            AddChild(_tabPanel);
-        }
-
-        /// <summary>
-        /// 构建中栏好友列表：12 名好友，每条含头像/姓名/等级/门派/在线圆点/亲密度进度条。
-        /// </summary>
-        private void BuildFriendList()
-        {
-            _friendListPanel = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-            };
-
-            _friendListTitle = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(16f, 10f),
-                Size = new Float2(300f, 20f),
-                Text = "◆ 好友列表（12）",
-                TextColor = InkWashTheme.TextBrand,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 14f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _friendListPanel.AddChild(_friendListTitle);
-
-            // 12 名好友 mock 数据：姓名 / 等级 / 门派 / 在线 / 亲密度(0~1)
-            string[][] friends =
-            {
-                new[] { "剑客张三", "60", "武当派", "1", "0.95" },
-                new[] { "飞燕李四", "55", "丐帮",   "1", "0.80" },
-                new[] { "狂刀赵六", "52", "明教",   "1", "0.75" },
-                new[] { "青衣王五", "48", "峨眉",   "1", "0.65" },
-                new[] { "幻影孙七", "45", "唐门",   "1", "0.55" },
-                new[] { "药师周八", "40", "少林",   "0", "0.60" },
-                new[] { "铁掌郑十", "42", "昆仑",   "0", "0.50" },
-                new[] { "琴音吴九", "38", "嵩山",   "0", "0.40" },
-                new[] { "冰心钱十一","36", "天山",   "0", "0.30" },
-                new[] { "紫霞钱十", "45", "唐门",   "1", "0.45" },
-                new[] { "孤剑赵九", "52", "少林",   "1", "0.70" },
-                new[] { "玉面孙七", "38", "峨眉",   "0", "0.35" },
-            };
-
-            _friendItems = new InkListItem[friends.Length];
-            _friendAvatars = new InkAvatar[friends.Length];
-            _friendNames = new Label[friends.Length];
-            _friendLevels = new Label[friends.Length];
-            _friendSects = new Label[friends.Length];
-            _friendDots = new InkDot[friends.Length];
-            _friendIntimacyBars = new InkBar[friends.Length];
-
-            float listStartY = 40f;
-            for (int i = 0; i < friends.Length; i++)
-            {
-                bool isOnline = friends[i][3] == "1";
-                float intimacy = float.Parse(friends[i][4]);
-
-                var item = new InkListItem
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(12f, listStartY + i * (FriendItemHeight + FriendItemGap)),
-                    Size = new Float2(360f, FriendItemHeight),
-                    Active = (i == _selectedFriendIndex),
-                };
-                _friendItems[i] = item;
-                _friendListPanel.AddChild(item);
-
-                // 在线圆点
-                var dot = new InkDot
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(8f, (FriendItemHeight - 8f) * 0.5f),
-                    Size = new Float2(8f, 8f),
-                    Online = isOnline,
-                };
-                _friendDots[i] = dot;
-                item.AddChild(dot);
-
-                // 头像
-                var avatar = new InkAvatar
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(24f, (FriendItemHeight - 36f) * 0.5f),
-                    Size = new Float2(36f, 36f),
-                };
-                _friendAvatars[i] = avatar;
-                item.AddChild(avatar);
-
-                // 姓名 + 等级
-                var nameLabel = new Label
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(70f, 8f),
-                    Size = new Float2(180f, 20f),
-                    Text = friends[i][0] + "  Lv." + friends[i][1],
-                    TextColor = isOnline ? InkWashTheme.TextDefault : InkWashTheme.TextTertiary,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 13f),
-                    HorizontalAlignment = TextAlignment.Near,
-                    VerticalAlignment = TextAlignment.Center,
-                };
-                _friendNames[i] = nameLabel;
-                item.AddChild(nameLabel);
-
-                // 门派
-                var sectLabel = new Label
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(70f, 28f),
-                    Size = new Float2(180f, 16f),
-                    Text = friends[i][2],
-                    TextColor = InkWashTheme.TextSecondary,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 11f),
-                    HorizontalAlignment = TextAlignment.Near,
-                    VerticalAlignment = TextAlignment.Center,
-                };
-                _friendSects[i] = sectLabel;
-                item.AddChild(sectLabel);
-
-                // 等级（单独存放便于刷新）
-                var levelLabel = new Label
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(0f, 0f),
-                    Size = new Float2(0f, 0f),
-                    Text = friends[i][1],
-                    Visible = false,
-                };
-                _friendLevels[i] = levelLabel;
-                item.AddChild(levelLabel);
-
-                // 亲密度进度条
-                var intimacyBar = new InkBar
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(70f, 46f),
-                    Size = new Float2(260f, 6f),
-                    Value = intimacy,
-                    FillVariant = InkBarFillVariant.Jade,
-                };
-                _friendIntimacyBars[i] = intimacyBar;
-                item.AddChild(intimacyBar);
-            }
-
-            AddChild(_friendListPanel);
-        }
-
-        /// <summary>
-        /// 构建右栏好友详情：大头像 + 称谓 + 个人信息 + 亲密度条 + 共同回忆 + 操作按钮。
-        /// </summary>
-        private void BuildDetailPanel()
-        {
-            _detailPanel = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-            };
-
-            // 大头像（72×72）
-            _detailAvatar = new InkAvatar
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(20f, 16f),
-                Size = new Float2(72f, 72f),
-            };
-            _detailPanel.AddChild(_detailAvatar);
-
-            // 姓名
-            _detailNameLabel = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(108f, 16f),
-                Size = new Float2(220f, 28f),
-                Text = "剑客张三",
-                TextColor = InkWashTheme.TextGold,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 20f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _detailPanel.AddChild(_detailNameLabel);
-
-            // 称谓
-            _detailTitleLabel = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(108f, 48f),
-                Size = new Float2(220f, 20f),
-                Text = "称谓：武林豪侠",
-                TextColor = InkWashTheme.TextBrand,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 13f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _detailPanel.AddChild(_detailTitleLabel);
-
-            // 在线状态
-            var statusLabel = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(108f, 70f),
-                Size = new Float2(220f, 18f),
-                Text = "● 在线",
-                TextColor = InkWashTheme.TextJade,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 12f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _detailPanel.AddChild(statusLabel);
-
-            // 个人信息区标题
-            var infoTitle = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(20f, 100f),
-                Size = new Float2(360f, 20f),
-                Text = "◆ 个人信息",
-                TextColor = InkWashTheme.TextBrand,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 13f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _detailPanel.AddChild(infoTitle);
-
-            // 4 项个人信息：等级 / 门派 / 性别 / 所在地
-            _detailLevelLabel = CreateInfoLabel(20f, 124f, "等级", "Lv.60");
-            _detailSectLabel = CreateInfoLabel(200f, 124f, "门派", "武当派");
-            _detailGenderLabel = CreateInfoLabel(20f, 148f, "性别", "男");
-            _detailLocationLabel = CreateInfoLabel(200f, 148f, "所在地", "武当山 · 紫霄宫");
-            _detailPanel.AddChild(_detailLevelLabel);
-            _detailPanel.AddChild(_detailSectLabel);
-            _detailPanel.AddChild(_detailGenderLabel);
-            _detailPanel.AddChild(_detailLocationLabel);
-
-            // 亲密度区
-            var intimacyTitle = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(20f, 178f),
-                Size = new Float2(360f, 20f),
-                Text = "◆ 亲密度",
-                TextColor = InkWashTheme.TextBrand,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 13f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _detailPanel.AddChild(intimacyTitle);
-
-            _detailIntimacyValueLabel = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(20f, 202f),
-                Size = new Float2(360f, 18f),
-                Text = "亲密度  950 / 1000  （★★★★★）",
-                TextColor = InkWashTheme.TextGold,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 12f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _detailPanel.AddChild(_detailIntimacyValueLabel);
-
-            _detailIntimacyBar = new InkBar
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(20f, 224f),
-                Size = new Float2(360f, 8f),
-                Value = 0.95f,
-                FillVariant = InkBarFillVariant.Gold,
-            };
-            _detailPanel.AddChild(_detailIntimacyBar);
-
-            // 共同回忆区
-            _memoryTitle = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(20f, 246f),
-                Size = new Float2(360f, 20f),
-                Text = "◆ 共同回忆",
-                TextColor = InkWashTheme.TextBrand,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), 13f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _detailPanel.AddChild(_memoryTitle);
-
-            string[] memories =
-            {
-                "三日 ▸ 同闯少林藏经阁，得《易筋经》残卷",
-                "上周 ▸ 共赴武当论剑，败于紫虚真人",
-                "今晨 ▸ 切磋三百招，胜负各半",
-                "上月 ▸ 同立襄阳城退敌之约",
-            };
-            _memoryLabels = new Label[memories.Length];
-            for (int i = 0; i < memories.Length; i++)
-            {
-                var memLabel = new Label
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(24f, 270f + i * 20f),
-                    Size = new Float2(360f, 18f),
-                    Text = memories[i],
-                    TextColor = InkWashTheme.TextSecondary,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 12f),
-                    HorizontalAlignment = TextAlignment.Near,
-                    VerticalAlignment = TextAlignment.Center,
-                };
-                _memoryLabels[i] = memLabel;
-                _detailPanel.AddChild(memLabel);
-            }
-
-            // 操作按钮区（5 个按钮：私聊/组队/邀请入派/发送邮件/删除）
-            float btnY = 270f + memories.Length * 20f + 16f;
-            float btnWidth = 110f;
-            float btnGap = 6f;
-
-            _whisperButton = new InkButton
-            {
-                Variant = InkButtonVariant.Primary,
-                ButtonSize = InkButtonSize.Sm,
-                Text = "私聊",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(20f, btnY),
-                Size = new Float2(btnWidth, 32f),
-            };
-            _whisperButton.ButtonClicked += (b) => EmitGoldAtButton(b);
-            _detailPanel.AddChild(_whisperButton);
-
-            _teamButton = new InkButton
-            {
-                Variant = InkButtonVariant.Default,
-                ButtonSize = InkButtonSize.Sm,
-                Text = "组队",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(20f + (btnWidth + btnGap) * 1f, btnY),
-                Size = new Float2(btnWidth, 32f),
-            };
-            _teamButton.ButtonClicked += (b) => EmitGoldAtButton(b);
-            _detailPanel.AddChild(_teamButton);
-
-            _inviteSectButton = new InkButton
-            {
-                Variant = InkButtonVariant.Default,
-                ButtonSize = InkButtonSize.Sm,
-                Text = "邀请入派",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(20f + (btnWidth + btnGap) * 2f, btnY),
-                Size = new Float2(btnWidth, 32f),
-            };
-            _inviteSectButton.ButtonClicked += (b) => EmitGoldAtButton(b);
-            _detailPanel.AddChild(_inviteSectButton);
-
-            _sendMailButton = new InkButton
-            {
-                Variant = InkButtonVariant.Default,
-                ButtonSize = InkButtonSize.Sm,
-                Text = "发送邮件",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(20f, btnY + 36f),
-                Size = new Float2(btnWidth, 32f),
-            };
-            _sendMailButton.ButtonClicked += (b) =>
-                OnSystemNavButtonClicked(InkPageDomIds.NavSocialMail, b);
-            _detailPanel.AddChild(_sendMailButton);
-
-            _deleteButton = new InkButton
-            {
-                Variant = InkButtonVariant.Vermilion,
-                ButtonSize = InkButtonSize.Sm,
-                Text = "删除好友",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(20f + (btnWidth + btnGap) * 1f, btnY + 36f),
-                Size = new Float2(btnWidth, 32f),
-            };
-            _deleteButton.ButtonClicked += (b) => EmitGoldAtButton(b);
-            _detailPanel.AddChild(_deleteButton);
-
-            AddChild(_detailPanel);
-        }
-
-        /// <summary>
-        /// 构建底部导航按钮栏：返回沉浸模式 / 飞鸽传书。
-        /// </summary>
-        private void BuildBottomNav()
-        {
-            _bottomNavPanel = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.BottomLeft,
-            };
-
-            _returnHudButton = new InkButton
-            {
-                Variant = InkButtonVariant.Ghost,
-                ButtonSize = InkButtonSize.Md,
-                Text = "返回沉浸模式",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 0f),
-                Size = new Float2(NavBtnWidth, BottomNavHeight),
-            };
-            _returnHudButton.ButtonClicked += (b) => OnSystemNavButtonClicked(InkPageDomIds.CombatHud, b);
-            _bottomNavPanel.AddChild(_returnHudButton);
-
-            _gotoMailButton = new InkButton
-            {
-                Variant = InkButtonVariant.Default,
-                ButtonSize = InkButtonSize.Md,
-                Text = "飞鸽传书",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(NavBtnWidth + NavBtnGap, 0f),
-                Size = new Float2(NavBtnWidth, BottomNavHeight),
-            };
-            _gotoMailButton.ButtonClicked += (b) =>
-                OnSystemNavButtonClicked(InkPageDomIds.NavSocialMail, b);
-            _bottomNavPanel.AddChild(_gotoMailButton);
-
-            AddChild(_bottomNavPanel);
-        }
-
-        // ===================================================================
-        // 辅助构建方法
-        // =======================================================================
-
-        /// <summary>
-        /// 创建一个个人信息键值标签（左标签 + 右数值，共占一行）。
-        /// </summary>
-        private Label CreateInfoLabel(float x, float y, string key, string value)
+        private Label NewL(string t, Color tc, InkWashTheme.FontRole fr, float fs, TextAlignment ha, ContainerControl p)
         {
             return new Label
             {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(x, y),
-                Size = new Float2(180f, 20f),
-                Text = key + "：  " + value,
-                TextColor = InkWashTheme.TextDefault,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 12f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
+                Text = t, TextColor = tc, Font = InkRenderHelper.GetFontRef(fr, fs),
+                HorizontalAlignment = ha, VerticalAlignment = TextAlignment.Center, Parent = p
             };
         }
 
-        // ===================================================================
-        // 事件处理
-        // =======================================================================
-
-        /// <summary>
-        /// 顶部分组 Tab 按钮点击处理：切换激活态并发射金粉粒子。
-        /// </summary>
-        private void OnTabButtonClicked(int tabIndex, Button sourceButton)
+        private InkButton NewBtn(string t, InkButtonVariant v, InkButtonSize s, Color tc, Color bc, Color bg, Action cb, ContainerControl p)
         {
-            try
+            var n = new InkButton { Text = t, Variant = v, ButtonSize = s, TextColor = tc, BorderColor = bc, BackgroundColor = bg, Parent = p };
+            n.Clicked += cb;
+            return n;
+        }
+
+        private Color GradeBorder(int g) => g switch
+        {
+            1 => InkWashTheme.JadeDeep, 2 => InkWashTheme.BloodBright,
+            3 => InkWashTheme.QualityRare, 4 => InkWashTheme.QualityEpic,
+            _ => InkWashTheme.GoldPrimary
+        };
+
+        private Color GradeAvtBg(int g) { var b = GradeBorder(g); return new Color(b.R, b.G, b.B, 0.15f); }
+
+        // ═══════════════ BUILD ═══════════════
+
+        private void Build()
+        {
+            BuildTopBar();
+            BuildLeft();
+            BuildCenter();
+            BuildRight();
+        }
+
+        private void BuildTopBar()
+        {
+            _bar = NewP(new Color(InkWashTheme.BaseSecondary.R, InkWashTheme.BaseSecondary.G, InkWashTheme.BaseSecondary.B, 0.9f), this);
+            _back = NewBtn("\u2190", InkButtonVariant.Ghost, InkButtonSize.Sm, InkWashTheme.GoldPrimary, InkWashTheme.BorderGold, Color.Transparent, () => NavigationRequested?.Invoke("back-hud"), _bar);
+            _titleLbl = NewL("江湖交游", InkWashTheme.GoldPrimary, InkWashTheme.FontRole.Display, 20f, TextAlignment.Near, _bar);
+            _countLbl = NewL("好友 12 / 50", InkWashTheme.TextTertiary, InkWashTheme.FontRole.Body, 13f, TextAlignment.Near, _bar);
+            _addBtn = NewBtn("添加好友", InkButtonVariant.Ghost, InkButtonSize.Sm, InkWashTheme.GoldPrimary, InkWashTheme.BorderGold, Gold(0.12f), () => { }, _bar);
+        }
+
+        private void BuildLeft()
+        {
+            _left = NewP(InkWashTheme.Panel, this);
+
+            _search = NewP(InkWashTheme.PanelSolid, _left);
+            NewL("搜索好友名号", InkWashTheme.TextTertiary, InkWashTheme.FontRole.Body, 13f, TextAlignment.Near, _search);
+
+            _tabs = new InkButton[_tabLbls.Length];
+            for (int i = 0; i < _tabLbls.Length; i++)
             {
-                EmitGoldAtButton(sourceButton);
-                _activeTabIndex = tabIndex;
-                ApplyTabHighlight();
+                int ci = i;
+                _tabs[i] = NewBtn(_tabLbls[i], InkButtonVariant.Ghost, InkButtonSize.Sm, InkWashTheme.TextSecondary, Color.Transparent, Color.Transparent, () => OnTab(ci), _left);
             }
-            catch (Exception ex)
+            SelectTabStyle(0);
+
+            int on = 0; foreach (var f in Friends) if (f.Online) on++;
+            int off = Friends.Length - on;
+
+            _onlineHdr = NewL("在线 " + on, InkWashTheme.TextSecondary, InkWashTheme.FontRole.Body, 11f, TextAlignment.Near, _left);
+            _offlineHdr = NewL("离线 " + off, InkWashTheme.TextSecondary, InkWashTheme.FontRole.Body, 11f, TextAlignment.Near, _left);
+
+            _rows = new ClickPanel[Friends.Length];
+            _rowDots = new Panel[Friends.Length];
+            _rowAvts = new Panel[Friends.Length];
+            _rowChars = new Label[Friends.Length];
+            _rowNames = new Label[Friends.Length];
+            _rowLvs = new Label[Friends.Length];
+            _rowSects = new Label[Friends.Length];
+            _rowStars = new Label[Friends.Length];
+
+            for (int i = 0; i < Friends.Length; i++)
             {
-                FlaxEngine.Debug.LogError($"[FriendsPage] Tab 切换失败: {ex.Message}");
+                var f = Friends[i];
+                int ci = i;
+                var row = new ClickPanel { Parent = _left };
+                row.Clicked += () => SelectFriend(ci);
+                row.HoverChanged += (e) => { if (ci != _sel) row.BackgroundColor = e ? Gold(0.06f) : Color.Transparent; };
+                _rows[i] = row;
+
+                _rowDots[i] = NewP(f.Online ? InkWashTheme.JadePrimary : InkWashTheme.TextTertiary, row);
+                _rowAvts[i] = NewP(GradeAvtBg(f.Grade), row);
+                _rowChars[i] = NewL(f.Char, f.Online ? GradeBorder(f.Grade) : InkWashTheme.TextTertiary, InkWashTheme.FontRole.Display, 14f, TextAlignment.Center, _rowAvts[i]);
+                _rowChars[i].VerticalAlignment = TextAlignment.Center;
+                _rowChars[i].AnchorPreset = AnchorPresets.StretchAll;
+
+                _rowNames[i] = NewL(f.Name, f.Online ? InkWashTheme.TextDefault : InkWashTheme.TextSecondary, InkWashTheme.FontRole.Heading, 13f, TextAlignment.Near, row);
+                _rowLvs[i] = NewL(f.Lv, InkWashTheme.GoldPrimary, InkWashTheme.FontRole.Number, 11f, TextAlignment.Near, row);
+                _rowSects[i] = NewL(f.Sect, InkWashTheme.TextSecondary, InkWashTheme.FontRole.Body, 11f, TextAlignment.Near, row);
+                _rowStars[i] = NewL(f.Stars, InkWashTheme.GoldPrimary, InkWashTheme.FontRole.Body, 10f, TextAlignment.Far, row);
+            }
+            SelectFriend(0);
+        }
+
+        private void BuildCenter()
+        {
+            _ctr = NewP(InkWashTheme.Void, this);
+            _idBox = NewP(Color.Transparent, _ctr);
+
+            _idAvt = NewP(Gold(0.12f), _idBox);
+            _idAvtChar = NewL("张", InkWashTheme.GoldPrimary, InkWashTheme.FontRole.Display, 28f, TextAlignment.Center, _idAvt);
+            _idAvtChar.VerticalAlignment = TextAlignment.Center;
+            _idAvtChar.AnchorPreset = AnchorPresets.StretchAll;
+
+            _idDot = NewP(InkWashTheme.JadePrimary, _idBox);
+            _idName = NewL("剑客张三", InkWashTheme.TextDefault, InkWashTheme.FontRole.Display, 22f, TextAlignment.Near, _idBox);
+            _idTitle = NewL("武林豪侠", InkWashTheme.GoldBright, InkWashTheme.FontRole.Display, 11f, TextAlignment.Near, _idBox);
+            _idLoc = NewL("武当山 · 紫霄宫", InkWashTheme.TextSecondary, InkWashTheme.FontRole.Body, 13f, TextAlignment.Near, _idBox);
+            _idSta = NewL("在线", InkWashTheme.JadeBright, InkWashTheme.FontRole.Body, 13f, TextAlignment.Near, _idBox);
+
+            _infoGrid = NewP(Color.Transparent, _ctr);
+            string[] inames = { "等级", "门派", "修为", "阵营" };
+            string[] ivals = { "60", "武当派", "渡劫期", "正道" };
+            Color[] icols = { InkWashTheme.GoldPrimary, InkWashTheme.TextDefault, InkWashTheme.TextDefault, InkWashTheme.JadeBright };
+            _infoVals = new Label[4];
+            for (int i = 0; i < 4; i++)
+            {
+                var cell = NewP(Gold(0.04f), _infoGrid);
+                NewL(inames[i], InkWashTheme.TextTertiary, InkWashTheme.FontRole.Body, 11f, TextAlignment.Center, cell);
+                var role = i < 2 ? InkWashTheme.FontRole.Number : InkWashTheme.FontRole.Display;
+                var sz = i < 1 ? 18f : 13f;
+                _infoVals[i] = NewL(ivals[i], icols[i], role, sz, TextAlignment.Center, cell);
+                _infoVals[i].VerticalAlignment = TextAlignment.Center;
+            }
+
+            _intiBox = NewP(Color.Transparent, _ctr);
+            _intiLbl = NewL("亲密度  ★★★★★", InkWashTheme.TextDefault, InkWashTheme.FontRole.Body, 13f, TextAlignment.Near, _intiBox);
+            _intiSub = NewL("8520 / 10000  ·  距下一阶段还需 1480 点", InkWashTheme.TextTertiary, InkWashTheme.FontRole.Number, 11f, TextAlignment.Near, _intiBox);
+            _intiTrack = NewP(Gold(0.08f), _intiBox);
+            _intiFill = NewP(InkWashTheme.GoldPrimary, _intiTrack);
+
+            _tagBox = NewP(Color.Transparent, _ctr);
+            string[] tagN = { "好友", "结义兄弟", "同门师兄" };
+            Color[] tagC = { InkWashTheme.GoldPrimary, InkWashTheme.BloodBright, InkWashTheme.JadeBright };
+            for (int i = 0; i < 3; i++)
+            {
+                var t = NewL(tagN[i], tagC[i], InkWashTheme.FontRole.Display, 11f, TextAlignment.Center, _tagBox);
+                t.BackgroundColor = new Color(tagC[i].R, tagC[i].G, tagC[i].B, 0.12f);
+            }
+
+            _acts = new InkButton[6];
+            string[] actN = { "私聊", "组队", "传送", "赠礼", "飞鸽", "删除" };
+            for (int i = 0; i < 6; i++)
+            {
+                bool del = i == 5;
+                _acts[i] = NewBtn(actN[i], InkButtonVariant.Ghost, InkButtonSize.Sm,
+                    del ? InkWashTheme.TextBlood : InkWashTheme.TextDefault,
+                    del ? InkWashTheme.BorderVermilion : InkWashTheme.BorderGold,
+                    del ? Blood(0.08f) : Gold(0.06f), () => { }, _ctr);
+            }
+
+            _equipBox = NewP(Color.Transparent, _ctr);
+            NewL("装备简览", InkWashTheme.TextDefault, InkWashTheme.FontRole.Display, 14f, TextAlignment.Near, _equipBox);
+            string[] eqN = { "真武剑", "紫霄袍", "凌云冠", "青玉佩" };
+            Color[] eqC = { InkWashTheme.QualityLegendary, InkWashTheme.QualityEpic, InkWashTheme.QualityRare, InkWashTheme.QualityUncommon };
+            string[] eqQ = { "传说", "史诗", "稀有", "精良" };
+            for (int i = 0; i < 4; i++)
+            {
+                var slot = NewP(new Color(eqC[i].R, eqC[i].G, eqC[i].B, 0.06f), _equipBox);
+                NewL(eqN[i], eqC[i], InkWashTheme.FontRole.Display, 11f, TextAlignment.Center, slot);
+                NewL(eqQ[i], InkWashTheme.TextTertiary, InkWashTheme.FontRole.Body, 10f, TextAlignment.Center, slot);
             }
         }
 
-        /// <summary>
-        /// 根据当前激活的 Tab 索引更新所有 Tab 按钮的视觉状态。
-        /// </summary>
-        private void ApplyTabHighlight()
+        private void BuildRight()
         {
-            if (_tabButtons == null)
-                return;
-            for (int i = 0; i < _tabButtons.Length; i++)
+            _right = NewP(InkWashTheme.Panel, this);
+
+            NewL("近期互动", InkWashTheme.TextDefault, InkWashTheme.FontRole.Display, 14f, TextAlignment.Near, _right);
+            string[][] ints = {
+                new[] { "组队通关副本", "2时前", "幽冥幻境 · 深渊难度" },
+                new[] { "赠送礼物", "昨天", "天山雪莲 ×1" },
+                new[] { "私聊消息", "3天前", "\"下次副本叫上我\"" },
+                new[] { "击杀世界BOSS", "1周前", "赤焰麒麟 · 组队讨伐" },
+                new[] { "结义", "2周前", "桃园结义 · 义结金兰" },
+            };
+            for (int i = 0; i < ints.Length; i++)
             {
-                if (_tabButtons[i] == null)
-                    continue;
-                _tabButtons[i].Variant = (i == _activeTabIndex)
-                    ? InkButtonVariant.Default
-                    : InkButtonVariant.Ghost;
+                var it = NewP(Gold(0.04f), _right);
+                NewL(ints[i][0], InkWashTheme.TextDefault, InkWashTheme.FontRole.Heading, 12f, TextAlignment.Near, it);
+                NewL(ints[i][1], InkWashTheme.TextTertiary, InkWashTheme.FontRole.Number, 10f, TextAlignment.Far, it);
+                NewL(ints[i][2], InkWashTheme.TextSecondary, InkWashTheme.FontRole.Body, 11f, TextAlignment.Near, it);
+            }
+
+            NewL("共同好友", InkWashTheme.TextDefault, InkWashTheme.FontRole.Display, 14f, TextAlignment.Near, _right);
+            string[] cfs = { "李", "王", "赵", "孙" };
+            string[] cfn = { "飞燕李四", "青衣王五", "狂刀赵六", "幻影孙七" };
+            Color[] cfc = { InkWashTheme.JadePrimary, InkWashTheme.QualityRare, InkWashTheme.BloodPrimary, InkWashTheme.QualityEpic };
+            for (int i = 0; i < 4; i++)
+            {
+                var av = NewP(new Color(cfc[i].R, cfc[i].G, cfc[i].B, 0.15f), _right);
+                var ch = NewL(cfs[i], cfc[i], InkWashTheme.FontRole.Display, 14f, TextAlignment.Center, av);
+                ch.VerticalAlignment = TextAlignment.Center;
+                ch.AnchorPreset = AnchorPresets.StretchAll;
+                NewL(cfn[i], InkWashTheme.TextSecondary, InkWashTheme.FontRole.Body, 10f, TextAlignment.Center, _right);
+            }
+
+            NewL("交游里程碑", InkWashTheme.TextDefault, InkWashTheme.FontRole.Display, 14f, TextAlignment.Near, _right);
+            string[][] mils = {
+                new[] { "相识百日", "已相识 128 天" },
+                new[] { "并肩作战", "共同通关 23 次副本" },
+                new[] { "礼尚往来", "互赠礼物 56 件" },
+                new[] { "义结金兰", "结义 14 天" },
+            };
+            for (int i = 0; i < mils.Length; i++)
+            {
+                var mi = NewP(Gold(0.04f), _right);
+                NewL(mils[i][0], InkWashTheme.GoldPrimary, InkWashTheme.FontRole.Heading, 12f, TextAlignment.Near, mi);
+                NewL(mils[i][1], InkWashTheme.TextTertiary, InkWashTheme.FontRole.Body, 11f, TextAlignment.Near, mi);
             }
         }
 
-        /// <summary>
-        /// 系统导航按钮点击处理：发射金粉粒子 + 触发导航请求。
-        /// </summary>
-        private void OnSystemNavButtonClicked(string domId, Button sourceButton)
-        {
-            try
-            {
-                EmitGoldAtButton(sourceButton);
-                NavigationRequested?.Invoke(domId);
-            }
-            catch (Exception ex)
-            {
-                FlaxEngine.Debug.LogError(
-                    $"[FriendsPage] NavigationRequested({domId}) 触发失败: {ex.Message}");
-            }
-        }
+        // ═══════════════ LAYOUT ═══════════════
 
-        /// <summary>
-        /// 在按钮中心位置触发金粉爆发粒子反馈。
-        /// </summary>
-        private void EmitGoldAtButton(Button button)
-        {
-            try
-            {
-                if (ParticleSystem == null || button == null)
-                    return;
-
-                var buttonCenter = new Float2(button.Width * 0.5f, button.Height * 0.5f);
-                var screenPos = button.PointToScreen(buttonCenter);
-                var localPos = ParticleSystem.PointFromScreen(screenPos);
-                ParticleSystem.EmitGoldBurst(localPos, count: 14, isLarge: false);
-            }
-            catch (Exception ex)
-            {
-                FlaxEngine.Debug.LogWarning($"[FriendsPage] EmitGoldAtButton 失败: {ex.Message}");
-            }
-        }
-
-        // ===================================================================
-        // IInkPage 实现
-        // =======================================================================
-
-        /// <inheritdoc />
         public void RefreshLayout()
         {
-            try
+            float w = Width;
+            float h = Height;
+            if (w <= 0 || h <= 0) return;
+
+            float pad = 12f;
+
+            // header
+            _bar.Location = Float2.Zero;
+            _bar.Size = new Float2(w, HeaderH);
+
+            float bs = 32f;
+            _back.Location = new Float2(pad, (HeaderH - bs) * 0.5f);
+            _back.Size = new Float2(bs, bs);
+
+            float tx = pad + bs + pad;
+            _titleLbl.Location = new Float2(tx, 0);
+            _titleLbl.Size = new Float2(140f, HeaderH);
+
+            float cx = tx + 150f;
+            _countLbl.Location = new Float2(cx, 0);
+            _countLbl.Size = new Float2(100f, HeaderH);
+
+            float aw = 90f;
+            _addBtn.Location = new Float2(w - pad - aw, (HeaderH - bs) * 0.5f);
+            _addBtn.Size = new Float2(aw, bs);
+
+            // body
+            float ct = HeaderH;
+            float ch = h - ct;
+
+            // left column
+            _left.Location = new Float2(0, ct);
+            _left.Size = new Float2(SideW, ch);
+
+            float lp = pad;
+
+            _search.Location = new Float2(lp, 12f);
+            _search.Size = new Float2(SideW - lp * 2f, 36f);
+            foreach (var c in _search.Children)
+                if (c is Label l) { l.Location = new Float2(10f, 0); l.Size = new Float2(_search.Width - 20f, 36f); }
+
+            float ty = 56f;
+            float tw = (SideW - lp * 2f - 8f) / 3f;
+            for (int i = 0; i < _tabs.Length; i++)
             {
-                float w = Width;
-                float h = Height;
-                float panelX = ScreenEdge;
-                float panelW = w - ScreenEdge * 2f;
+                _tabs[i].Location = new Float2(lp + i * (tw + 4f), ty);
+                _tabs[i].Size = new Float2(tw, 30f);
+            }
 
-                // 1. 顶部标题栏：顶部全宽
-                if (_headerPanel != null)
+            float fy = ty + 36f;
+            float rowH = 44f;
+            float rowGap = 1f;
+
+            foreach (var child in _left.Children)
+            {
+                if (child == _onlineHdr)
                 {
-                    _headerPanel.Location = new Float2(panelX, ScreenEdge);
-                    _headerPanel.Size = new Float2(panelW, HeaderHeight);
-
-                    // 添加好友 / 关闭按钮靠右排列
-                    float rightX = panelW - 8f;
-                    if (_closeButton != null)
-                    {
-                        _closeButton.Location = new Float2(rightX - 32f, (HeaderHeight - 32f) * 0.5f);
-                        rightX -= 32f + 8f;
-                    }
-                    if (_addFriendButton != null)
-                    {
-                        _addFriendButton.Location = new Float2(rightX - 96f, (HeaderHeight - 32f) * 0.5f);
-                    }
+                    _onlineHdr.Location = new Float2(lp, fy);
+                    _onlineHdr.Size = new Float2(SideW - lp * 2f, 18f);
+                    fy += 22f;
                 }
-
-                // 2. 底部导航栏：底部全宽
-                float bottomNavY = h - ScreenEdge - BottomNavHeight;
-                if (_bottomNavPanel != null)
+                else if (child == _offlineHdr)
                 {
-                    _bottomNavPanel.Location = new Float2(panelX, bottomNavY);
-                    _bottomNavPanel.Size = new Float2(panelW, BottomNavHeight);
-                }
-
-                // 3. 内容区：顶部下方 → 底部上方
-                float contentTop = ScreenEdge + HeaderHeight + RegionGap;
-                float contentBottom = bottomNavY - RegionGap;
-                float contentH = contentBottom - contentTop;
-                if (contentH < 100f)
-                    contentH = 100f;
-
-                float leftW = panelW * LeftRatio;
-                float rightW = panelW * RightRatio;
-                float centerW = panelW - leftW - rightW - RegionGap * 2f;
-
-                // 4. 左栏分组 Tab
-                if (_tabPanel != null)
-                {
-                    _tabPanel.Location = new Float2(panelX, contentTop);
-                    _tabPanel.Size = new Float2(leftW, contentH);
-
-                    // Tab 按钮宽度按列宽自适应
-                    float tabW = leftW - 24f;
-                    if (_tabButtons != null)
-                    {
-                        float tabY = 40f;
-                        for (int i = 0; i < _tabButtons.Length; i++)
-                        {
-                            if (_tabButtons[i] == null)
-                                continue;
-                            _tabButtons[i].Location = new Float2(12f, tabY + i * (TabBtnHeight + TabBtnGap));
-                            _tabButtons[i].Size = new Float2(tabW, TabBtnHeight);
-                        }
-                    }
-                }
-
-                // 5. 中栏好友列表
-                if (_friendListPanel != null)
-                {
-                    float listX = panelX + leftW + RegionGap;
-                    _friendListPanel.Location = new Float2(listX, contentTop);
-                    _friendListPanel.Size = new Float2(centerW, contentH);
-
-                    // 好友列表项按列宽重新布局
-                    float itemW = centerW - 24f;
-                    float innerW = itemW - 90f;
-                    if (_friendItems != null)
-                    {
-                        float listStartY = 40f;
-                        for (int i = 0; i < _friendItems.Length; i++)
-                        {
-                            if (_friendItems[i] == null)
-                                continue;
-                            _friendItems[i].Location = new Float2(12f, listStartY + i * (FriendItemHeight + FriendItemGap));
-                            _friendItems[i].Size = new Float2(itemW, FriendItemHeight);
-
-                            // 亲密度进度条按宽度自适应
-                            if (_friendIntimacyBars != null && _friendIntimacyBars[i] != null)
-                                _friendIntimacyBars[i].Size = new Float2(Mathf.Max(120f, innerW - 20f), 6f);
-                            if (_friendNames != null && _friendNames[i] != null)
-                                _friendNames[i].Size = new Float2(Mathf.Max(150f, innerW), 20f);
-                            if (_friendSects != null && _friendSects[i] != null)
-                                _friendSects[i].Size = new Float2(Mathf.Max(150f, innerW), 16f);
-                        }
-                    }
-                }
-
-                // 6. 右栏好友详情
-                if (_detailPanel != null)
-                {
-                    float detailX = panelX + leftW + RegionGap + centerW + RegionGap;
-                    _detailPanel.Location = new Float2(detailX, contentTop);
-                    _detailPanel.Size = new Float2(rightW, contentH);
-
-                    // 内部信息行宽度自适应
-                    float innerW = rightW - 40f;
-                    if (_detailNameLabel != null)
-                        _detailNameLabel.Size = new Float2(Mathf.Max(160f, innerW - 112f), 28f);
-                    if (_detailTitleLabel != null)
-                        _detailTitleLabel.Size = new Float2(Mathf.Max(160f, innerW - 112f), 20f);
-                    if (_detailIntimacyValueLabel != null)
-                        _detailIntimacyValueLabel.Size = new Float2(innerW, 18f);
-                    if (_detailIntimacyBar != null)
-                        _detailIntimacyBar.Size = new Float2(innerW, 8f);
-                    if (_memoryLabels != null)
-                    {
-                        for (int i = 0; i < _memoryLabels.Length; i++)
-                        {
-                            if (_memoryLabels[i] != null)
-                                _memoryLabels[i].Size = new Float2(innerW, 18f);
-                        }
-                    }
+                    _offlineHdr.Location = new Float2(lp, fy);
+                    _offlineHdr.Size = new Float2(SideW - lp * 2f, 18f);
+                    fy += 22f;
                 }
             }
-            catch (Exception ex)
+
+            for (int i = 0; i < _rows.Length; i++)
             {
-                FlaxEngine.Debug.LogError($"[FriendsPage] RefreshLayout 失败: {ex.Message}");
+                var row = _rows[i];
+                if (row == null) continue;
+                row.Location = new Float2(lp, fy);
+                row.Size = new Float2(SideW - lp * 2f, rowH);
+
+                float dotS = 8f;
+                _rowDots[i].Location = new Float2(4f, (rowH - dotS) * 0.5f);
+                _rowDots[i].Size = new Float2(dotS, dotS);
+
+                float avtS = 36f;
+                _rowAvts[i].Location = new Float2(16f, (rowH - avtS) * 0.5f);
+                _rowAvts[i].Size = new Float2(avtS, avtS);
+
+                float nameX = 58f;
+                float nameW = row.Width - nameX - 40f;
+                _rowNames[i].Location = new Float2(nameX, 4f);
+                _rowNames[i].Size = new Float2(nameW, 18f);
+
+                _rowLvs[i].Location = new Float2(nameX + nameW + 2f, 4f);
+                _rowLvs[i].Size = new Float2(24f, 18f);
+
+                _rowSects[i].Location = new Float2(nameX, 22f);
+                _rowSects[i].Size = new Float2(row.Width - nameX - 60f, 16f);
+
+                _rowStars[i].Location = new Float2(row.Width - 60f, 22f);
+                _rowStars[i].Size = new Float2(50f, 16f);
+
+                fy += rowH + rowGap;
+            }
+
+            // center column
+            float cw = w - SideW * 2f;
+            _ctr.Location = new Float2(SideW, ct);
+            _ctr.Size = new Float2(cw, ch);
+
+            float cy = 0;
+            float cp = pad;
+
+            _idBox.Location = new Float2(0, cy);
+            _idBox.Size = new Float2(cw, 96f);
+
+            float avtBig = 64f;
+            _idAvt.Location = new Float2(cp, 16f);
+            _idAvt.Size = new Float2(avtBig, avtBig);
+
+            _idDot.Location = new Float2(cp + avtBig - 12f, avtBig + 12f);
+            _idDot.Size = new Float2(10f, 10f);
+
+            float idX = cp + avtBig + 16f;
+            _idName.Location = new Float2(idX, 16f);
+            _idName.Size = new Float2(cw - idX - cp, 28f);
+
+            _idTitle.Location = new Float2(idX, 44f);
+            _idTitle.Size = new Float2(cw - idX - cp, 18f);
+
+            _idLoc.Location = new Float2(idX, 66f);
+            _idLoc.Size = new Float2(cw * 0.4f, 18f);
+
+            _idSta.Location = new Float2(idX + cw * 0.4f + 8f, 66f);
+            _idSta.Size = new Float2(80f, 18f);
+
+            cy += 110f;
+
+            _infoGrid.Location = new Float2(0, cy);
+            _infoGrid.Size = new Float2(cw, 70f);
+            float cellW = (cw - cp * 2f - 12f) / 4f;
+            int ci = 0;
+            foreach (var c in _infoGrid.Children)
+            {
+                if (c is Panel cell)
+                {
+                    cell.Location = new Float2(cp + ci * (cellW + 4f), 8f);
+                    cell.Size = new Float2(cellW, 54f);
+                    int si = 0;
+                    foreach (var cc in cell.Children)
+                    {
+                        if (cc is Label cl)
+                        {
+                            cl.Location = si == 0 ? new Float2(0, 6f) : new Float2(0, 26f);
+                            cl.Size = new Float2(cellW, si == 0 ? 18f : 24f);
+                            si++;
+                        }
+                    }
+                    ci++;
+                }
+            }
+            cy += 78f;
+
+            _intiBox.Location = new Float2(0, cy);
+            _intiBox.Size = new Float2(cw, 48f);
+
+            _intiLbl.Location = new Float2(cp, 4f);
+            _intiLbl.Size = new Float2(cw - cp * 2f, 20f);
+
+            _intiTrack.Location = new Float2(cp, 24f);
+            _intiTrack.Size = new Float2(cw - cp * 2f, 6f);
+
+            float pct = Mathf.Clamp(Friends[_sel].Intim / 10000f, 0, 1);
+            _intiFill.Location = Float2.Zero;
+            _intiFill.Size = new Float2(_intiTrack.Width * pct, 6f);
+
+            _intiSub.Location = new Float2(cp, 32f);
+            _intiSub.Size = new Float2(cw - cp * 2f, 16f);
+
+            cy += 52f;
+
+            _tagBox.Location = new Float2(0, cy);
+            _tagBox.Size = new Float2(cw, 30f);
+            float tagX = cp;
+            foreach (var c in _tagBox.Children)
+            {
+                if (c is Label tl)
+                {
+                    tl.Location = new Float2(tagX, 4f);
+                    tl.Size = new Float2(tl.Text.ToString().Length * 14f + 20f, 22f);
+                    tagX += tl.Width + 6f;
+                }
+            }
+            cy += 34f;
+
+            float aGap = 6f;
+            float aCols = 3f;
+            float aW = (cw - cp * 2f - aGap * (aCols - 1)) / aCols;
+            float aH = 34f;
+            for (int i = 0; i < 3; i++)
+            {
+                _acts[i].Location = new Float2(cp + i * (aW + aGap), cy + 4f);
+                _acts[i].Size = new Float2(aW, aH);
+            }
+            for (int i = 3; i < 6; i++)
+            {
+                _acts[i].Location = new Float2(cp + (i - 3) * (aW + aGap), cy + 4f + aH + aGap);
+                _acts[i].Size = new Float2(aW, aH);
+            }
+            cy += 80f;
+
+            _equipBox.Location = new Float2(0, cy);
+            _equipBox.Size = new Float2(cw, 88f);
+
+            bool eqTitle = false;
+            float eqX = cp;
+            float eqW = (cw - cp * 2f - 12f) / 4f;
+            foreach (var c in _equipBox.Children)
+            {
+                if (c is Label el && !eqTitle)
+                {
+                    el.Location = new Float2(cp, 0);
+                    el.Size = new Float2(120f, 22f);
+                    eqTitle = true;
+                }
+                else if (c is Panel slot)
+                {
+                    slot.Location = new Float2(eqX, 26f);
+                    slot.Size = new Float2(eqW, 58f);
+                    int si = 0;
+                    foreach (var sc in slot.Children)
+                    {
+                        if (sc is Label sl)
+                        {
+                            sl.Location = si == 0 ? new Float2(0, 10f) : new Float2(0, 36f);
+                            sl.Size = si == 0 ? new Float2(eqW, 20f) : new Float2(eqW, 16f);
+                            si++;
+                        }
+                    }
+                    eqX += eqW + 4f;
+                }
+            }
+
+            // right column
+            _right.Location = new Float2(w - SideW, ct);
+            _right.Size = new Float2(SideW, ch);
+
+            float rp = pad;
+            float ry = 12f;
+            foreach (var c in _right.Children)
+            {
+                if (c is Label rl)
+                {
+                    string t = rl.Text.ToString();
+                    if (t == "近期互动" || t == "共同好友" || t == "交游里程碑")
+                    {
+                        if (t == "共同好友" || t == "交游里程碑") ry += 8f;
+                        rl.Location = new Float2(rp, ry);
+                        rl.Size = new Float2(SideW - rp * 2, 22f);
+                        ry += 26f;
+                        continue;
+                    }
+                    if (c.Parent is Panel itp && itp != _right)
+                    {
+                        continue;
+                    }
+                    rl.Location = new Float2(rp, ry);
+                    rl.Size = new Float2(SideW - rp * 2, 16f);
+                    ry += 18f;
+                }
+                else if (c is Panel it && it.Parent == _right)
+                {
+                    it.Location = new Float2(rp, ry);
+                    it.Size = new Float2(SideW - rp * 2, 48f);
+                    float iy = 4f;
+                    int ic = 0;
+                    foreach (var sc in it.Children)
+                    {
+                        if (sc is Label sl)
+                        {
+                            if (ic == 0)
+                            {
+                                sl.Location = new Float2(8f, iy);
+                                sl.Size = new Float2(it.Width - 60f, 18f);
+                                iy += 20f;
+                            }
+                            else if (ic == 1)
+                            {
+                                sl.Location = new Float2(it.Width - 80f, 4f);
+                                sl.Size = new Float2(68f, 18f);
+                                sl.HorizontalAlignment = TextAlignment.Far;
+                            }
+                            else
+                            {
+                                sl.Location = new Float2(8f, iy);
+                                sl.Size = new Float2(it.Width - 16f, 16f);
+                            }
+                            ic++;
+                        }
+                    }
+                    ry += 52f;
+                }
             }
         }
 
-        /// <inheritdoc />
+        // ═══════════════ INTERACTION ═══════════════
+
+        private void OnTab(int i)
+        {
+            _tab = i;
+            SelectTabStyle(i);
+        }
+
+        private void SelectTabStyle(int active)
+        {
+            for (int i = 0; i < _tabs.Length; i++)
+            {
+                bool a = i == active;
+                _tabs[i].BackgroundColor = a ? Gold(0.12f) : Color.Transparent;
+                _tabs[i].TextColor = a ? InkWashTheme.GoldPrimary : InkWashTheme.TextSecondary;
+                _tabs[i].BorderColor = a ? InkWashTheme.BorderGold : Color.Transparent;
+            }
+        }
+
+        private void SelectFriend(int i)
+        {
+            if (_sel >= 0 && _sel < _rows.Length)
+                _rows[_sel].BackgroundColor = Color.Transparent;
+            _sel = i;
+            if (i >= 0 && i < _rows.Length)
+            {
+                _rows[i].BackgroundColor = Gold(0.1f);
+                UpdateDetail();
+            }
+        }
+
+        private void UpdateDetail()
+        {
+            var f = Friends[_sel];
+            _idAvtChar.Text = f.Char;
+            _idAvt.BackgroundColor = GradeAvtBg(f.Grade);
+            _idAvtChar.TextColor = GradeBorder(f.Grade);
+            _idDot.BackgroundColor = f.Online ? InkWashTheme.JadePrimary : InkWashTheme.TextTertiary;
+            _idName.Text = f.Name;
+            _idTitle.Text = f.Title;
+            _idLoc.Text = f.Loc;
+            _idSta.Text = f.Online ? "在线" : "离线";
+            _idSta.TextColor = f.Online ? InkWashTheme.JadeBright : InkWashTheme.TextTertiary;
+
+            if (_infoVals.Length >= 4)
+            {
+                _infoVals[0].Text = f.Lv;
+                _infoVals[1].Text = f.Sect;
+            }
+
+            _intiLbl.Text = "亲密度  " + f.Stars;
+            _intiSub.Text = f.Intim + " / 10000  ·  距下一阶段还需 " + (10000 - f.Intim) + " 点";
+            float pct = Mathf.Clamp(f.Intim / 10000f, 0f, 1f);
+            _intiFill.Size = new Float2(_intiTrack.Width * pct, 6f);
+        }
+
+        // ═══════════════ IInkPage ═══════════════
+
         public override void OnParentResized()
         {
             base.OnParentResized();

@@ -298,6 +298,8 @@ namespace HundunWorld.Game.UI.Ink
 
             try
             {
+                UILayout.UpdateScale(this);
+
                 if (_currentPage is IInkPage inkPage)
                 {
                     inkPage.RefreshLayout();

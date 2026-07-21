@@ -3,970 +3,578 @@ using FlaxEngine.GUI;
 using HundunWorld.Game.UI.Ink;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
-using HundunWorld.Game.UI;
+using System.Collections.Generic;
 
 namespace HundunWorld.Game.UI.Ink.Pages
 {
+    /// <summary>
+    /// 商城页面 —— 对应 game-ui-system/pages/shop.html
+    /// </summary>
     public class MenuShopPage : ContainerControl, IInkPage
     {
-        private const float LeftNavWidth = 240f;
-        private const float TopBarHeight = 60f;
-        private const float ConfirmPanelWidth = 300f;
+        // ───────────── Data Types ─────────────
 
-        private InkPanelSolid _leftNavPanel;
-        private InkPanelSolid _topBarPanel;
-        private InkPanel _contentPanel;
-        private InkPaperPanel _confirmPanel;
+        private class ShopProduct
+        {
+            public string Name;
+            public InkWashTheme.InkQuality Quality;
+            public int Price;
+            public string Currency; // 金/钻/荣誉
+            public int Limit; // 0 = no limit
+            public string IconText;
+        }
 
-        private InkTextBlock _navVerticalTitle;
-        private InkTextBlock _topBarName;
-        private InkTag _topBarLevel;
-        private InkTextBlock _topBarSect;
-        private InkTextBlock _topBarCopper;
-        private InkTextBlock _topBarSilver;
+        private class CartItem
+        {
+            public ShopProduct Product;
+            public int Qty;
+        }
 
-        private InkTextBlock _pageTitle;
-        private TabButton[] _tabButtons;
-        private ShopCard[] _shopCards;
-
-        private InkTextBlock _confirmTitle;
-        private InkTag _confirmQualityTag;
-        private InkTextBlock[] _confirmItems;
-        private InkTextBlock _confirmPrice;
-        private InkTextBlock _confirmQty;
-        private InkTextBlock _confirmTotal;
-        private InkTextBlock _confirmBalance;
-        private InkButton _confirmButton;
-        private InkButton _cancelButton;
-
-        private int _selectedTab = 0;
-        private int _selectedCard = 0;
-        private int _buyQty = 1;
+        // ───────────── Fields ─────────────
 
         private Float2 _screenSize;
 
+        // Header
+        private Panel _header;
+        private Label _title;
+        private List<InkButton> _tabs;
+        private InkButton _closeBtn;
+
+        // Body
+        private Panel _body;
+        private Panel _gridPanel;
+        private List<ClickableCard> _cards;
+        private Panel _cartPanel;
+        private Label _cartTitle;
+        private InkButton _cartClear;
+        private Panel _cartItems;
+        private Label _cartTotal;
+        private Panel _balances;
+        private InkButton _buyBtn;
+        private Label _footerInfo;
+
+        private int _selectedTab;
+        private ShopProduct[] _products;
+        private List<CartItem> _cart;
+
+        private const float HeaderH = 60f;
+        private const float CartW = 360f;
+        private const float FooterH = 40f;
+
+        public event Action<string> NavigationRequested;
+
+        // ───────────── Clickable Card ─────────────
+
+        private class ClickableCard : Panel
+        {
+            public event Action Clicked;
+
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left) Clicked?.Invoke();
+                return base.OnMouseUp(location, button);
+            }
+        }
+
+        // ───────────── Constructor ─────────────
+
         public MenuShopPage()
         {
-            _screenSize = FlaxEngine.Screen.Size;
+            _screenSize = new Float2(Width, Height);
             if (_screenSize.X <= 0f || _screenSize.Y <= 0f)
-            {
                 _screenSize = new Float2(1920f, 1080f);
-            }
 
             AnchorPreset = AnchorPresets.StretchAll;
-            BackgroundColor = new Color(InkWashTheme.BaseDefault.R, InkWashTheme.BaseDefault.G, InkWashTheme.BaseDefault.B, 0.55f);
+            BackgroundColor = Color.Transparent;
             ClipChildren = false;
             AutoFocus = false;
             Location = Float2.Zero;
             Size = _screenSize;
 
+            InitData();
             try
             {
-                BuildLeftNavigation();
-                BuildTopBar();
-                BuildContent();
-                BuildConfirmPanel();
-
+                BuildBg();
+                BuildHeader();
+                BuildBody();
                 ApplyLayout();
-                SelectCard(_selectedCard);
             }
             catch (Exception ex)
             {
-                FlaxEngine.Debug.LogError($"[MenuShopPage] 初始化失败: {ex.Message}");
+                Debug.LogError($"[MenuShopPage] init: {ex.Message}");
             }
         }
 
-        private void BuildLeftNavigation()
+        private void InitData()
         {
-            _leftNavPanel = new InkPanelSolid
+            _products = new ShopProduct[]
             {
-                AnchorPreset = AnchorPresets.TopLeft,
+                new ShopProduct { Name = "\u7384\u94C1\u5251", Quality = InkWashTheme.InkQuality.Epic, Price = 500, Currency = "\u91D1", Limit = 3, IconText = "\u5251" },
+                new ShopProduct { Name = "\u5BD2\u94C1\u62A4\u8155", Quality = InkWashTheme.InkQuality.Rare, Price = 300, Currency = "\u91D1", IconText = "\u76FE" },
+                new ShopProduct { Name = "\u751F\u547D\u836F\u6C34", Quality = InkWashTheme.InkQuality.Common, Price = 50, Currency = "\u91D1", IconText = "\u74F6" },
+                new ShopProduct { Name = "\u7ECF\u9A8C\u4E39", Quality = InkWashTheme.InkQuality.Uncommon, Price = 50, Currency = "\u94BB", Limit = 5, IconText = "\u4E39" },
+                new ShopProduct { Name = "\u94C1\u77FF", Quality = InkWashTheme.InkQuality.Common, Price = 10, Currency = "\u91D1", IconText = "\u77FF" },
+                new ShopProduct { Name = "\u5750\u9A91\u4EE4", Quality = InkWashTheme.InkQuality.Legendary, Price = 100, Currency = "\u8363\u8A89", Limit = 1, IconText = "\u9A91" },
+                new ShopProduct { Name = "\u5916\u89C2\u5305", Quality = InkWashTheme.InkQuality.Epic, Price = 200, Currency = "\u94BB", IconText = "\u8863" },
+                new ShopProduct { Name = "\u5F3A\u5316\u77F3", Quality = InkWashTheme.InkQuality.Uncommon, Price = 100, Currency = "\u91D1", IconText = "\u77F3" },
+                new ShopProduct { Name = "\u7CBE\u94C1\u5251", Quality = InkWashTheme.InkQuality.Rare, Price = 500, Currency = "\u91D1", IconText = "\u5251" },
+                new ShopProduct { Name = "\u7384\u94C1\u7532", Quality = InkWashTheme.InkQuality.Epic, Price = 800, Currency = "\u91D1", Limit = 2, IconText = "\u76D4" },
+                new ShopProduct { Name = "\u7075\u9B42\u77F3", Quality = InkWashTheme.InkQuality.Uncommon, Price = 30, Currency = "\u94BB", IconText = "\u7CBE" },
+                new ShopProduct { Name = "\u4F20\u529F\u7B26", Quality = InkWashTheme.InkQuality.Rare, Price = 80, Currency = "\u8363\u8A89", Limit = 3, IconText = "\u7B26" },
             };
-            AddChild(_leftNavPanel);
 
-            InkPanel brandPanel = new InkPanel
+            _cart = new List<CartItem>();
+            _cart.Add(new CartItem { Product = _products[8], Qty = 1 });
+            _cart.Add(new CartItem { Product = _products[2], Qty = 5 });
+        }
+
+        private Color QualityColor(InkWashTheme.InkQuality q)
+        {
+            switch (q)
             {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 0f),
-                Size = new Float2(LeftNavWidth, 60f),
-                BackgroundColor = Color.Transparent,
+                case InkWashTheme.InkQuality.Legendary: return InkWashTheme.QualityLegendary;
+                case InkWashTheme.InkQuality.Epic: return InkWashTheme.QualityEpic;
+                case InkWashTheme.InkQuality.Rare: return InkWashTheme.QualityRare;
+                case InkWashTheme.InkQuality.Uncommon: return InkWashTheme.QualityUncommon;
+                default: return InkWashTheme.QualityCommon;
+            }
+        }
+
+        // ───────────── Build ─────────────
+
+        private void BuildBg()
+        {
+            new Panel
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                BackgroundColor = InkWashTheme.Void,
+                Parent = this
             };
-            _leftNavPanel.AddChild(brandPanel);
+        }
 
-            InkTextBlock brandText = new InkTextBlock(InkTextStyle.Display)
+        private void BuildHeader()
+        {
+            _header = new Panel
             {
-                Text = "混沌世界",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(12f, 14f),
-                Size = new Float2(LeftNavWidth - 24f, 32f),
-                HorizontalAlignment = TextAlignment.Center,
+                BackgroundColor = InkWashTheme.PanelSolid,
+                Parent = this
+            };
+
+            _title = new Label
+            {
+                Text = "\u5546\u57CE",
                 Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 22f),
                 TextColor = InkWashTheme.GoldPrimary,
+                Parent = _header
             };
-            brandPanel.AddChild(brandText);
 
-            string[] navItems = { "任务", "博物志", "武林录", "营生", "组队", "邮箱", "商店", "", "休闲模式", "", "角色", "装备", "", "设置" };
-            bool[] navActive = { false, false, false, false, false, false, true, false, false, false, false, false, false, false };
-
-            for (int i = 0; i < navItems.Length; i++)
+            _tabs = new List<InkButton>();
+            string[] tabNames = { "\u63A8\u8350", "\u6B66\u5668", "\u62A4\u7532", "\u6D88\u8017\u54C1", "\u6750\u6599", "\u7279\u6B8A" };
+            for (int i = 0; i < tabNames.Length; i++)
             {
-                if (string.IsNullOrEmpty(navItems[i]))
-                    continue;
-
-                var item = new InkListItem
+                int ci = i;
+                var t = new InkButton
                 {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(0f, 60f + i * 32f),
-                    Size = new Float2(LeftNavWidth, 32f),
-                    Active = navActive[i],
+                    Text = tabNames[i],
+                    ButtonSize = InkButtonSize.Sm,
+                    Variant = InkButtonVariant.Ghost,
+                    Parent = _header
                 };
+                t.Clicked += () => SelectShopTab(ci);
+                _tabs.Add(t);
+            }
+            SelectShopTab(0);
 
-                var label = new InkTextBlock(InkTextStyle.Body)
-                {
-                    Text = navItems[i],
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(24f, 0f),
-                    Size = new Float2(LeftNavWidth - 24f, 32f),
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
-                    TextColor = navActive[i] ? InkWashTheme.GoldPrimary : InkWashTheme.TextSecondary,
-                };
-                item.AddChild(label);
-                _leftNavPanel.AddChild(item);
+            _closeBtn = new InkButton
+            {
+                Text = "\u2715",
+                ButtonSize = InkButtonSize.Sm,
+                Variant = InkButtonVariant.Ghost,
+                Parent = _header
+            };
+            _closeBtn.Clicked += () => NavigationRequested?.Invoke("combat-hud");
+        }
+
+        private void SelectShopTab(int idx)
+        {
+            _selectedTab = idx;
+            for (int i = 0; i < _tabs.Count; i++)
+            {
+                _tabs[i].TextColor = i == idx ? InkWashTheme.GoldPrimary : InkWashTheme.TextSecondary;
             }
         }
 
-        private void BuildTopBar()
+        private void BuildBody()
         {
-            _topBarPanel = new InkPanelSolid
+            _body = new Panel
             {
-                AnchorPreset = AnchorPresets.TopLeft,
-            };
-            AddChild(_topBarPanel);
-
-            InkPanel avatarPanel = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(LeftNavWidth + 24f, 15f),
-                Size = new Float2(32f, 32f),
-                BackgroundColor = UIStyleTokens.BloodDeep,
-            };
-            _topBarPanel.AddChild(avatarPanel);
-
-            _topBarName = new InkTextBlock(InkTextStyle.Heading)
-            {
-                Text = "无名侠",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(LeftNavWidth + 64f, 18f),
-                Size = new Float2(100f, 24f),
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 15f),
-                TextColor = InkWashTheme.PaperBright,
-            };
-            _topBarPanel.AddChild(_topBarName);
-
-            _topBarLevel = new InkTag
-            {
-                TagVariant = InkTagVariant.Brand,
-                Text = "Lv.42",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(LeftNavWidth + 170f, 20f),
-                Size = new Float2(56f, 22f),
-            };
-            _topBarPanel.AddChild(_topBarLevel);
-
-            _topBarSect = new InkTextBlock(InkTextStyle.Body)
-            {
-                Text = "逍遥派",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(LeftNavWidth + 234f, 22f),
-                Size = new Float2(80f, 18f),
-                TextColor = InkWashTheme.GoldPrimary,
-            };
-            _topBarPanel.AddChild(_topBarSect);
-
-            _topBarCopper = new InkTextBlock(InkTextStyle.Number)
-            {
-                Text = "12,450",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(_screenSize.X - 220f, 20f),
-                Size = new Float2(80f, 20f),
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
-                TextColor = InkWashTheme.PaperBright,
-            };
-            _topBarPanel.AddChild(_topBarCopper);
-
-            InkTextBlock copperLabel = new InkTextBlock(InkTextStyle.Caption)
-            {
-                Text = "铜钱",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(_screenSize.X - 280f, 22f),
-                Size = new Float2(50f, 16f),
-                TextColor = InkWashTheme.PaperAged,
-            };
-            _topBarPanel.AddChild(copperLabel);
-
-            _topBarSilver = new InkTextBlock(InkTextStyle.Number)
-            {
-                Text = "328",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(_screenSize.X - 100f, 20f),
-                Size = new Float2(60f, 20f),
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
-                TextColor = InkWashTheme.GoldBright,
-            };
-            _topBarPanel.AddChild(_topBarSilver);
-
-            InkTextBlock silverLabel = new InkTextBlock(InkTextStyle.Caption)
-            {
-                Text = "银两",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(_screenSize.X - 150f, 22f),
-                Size = new Float2(40f, 16f),
-                TextColor = InkWashTheme.GoldPrimary,
-            };
-            _topBarPanel.AddChild(silverLabel);
-        }
-
-        private void BuildContent()
-        {
-            _contentPanel = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-            };
-            AddChild(_contentPanel);
-
-            InkPanel titlePanel = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 0f),
-                Size = new Float2(1f, 60f),
                 BackgroundColor = Color.Transparent,
+                Parent = this
             };
-            _contentPanel.AddChild(titlePanel);
 
-            _navVerticalTitle = new InkTextBlock(InkTextStyle.Display)
+            // Product grid
+            _gridPanel = new Panel
             {
-                Text = "市集",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 0f),
-                Size = new Float2(40f, 60f),
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 26f),
-                TextColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.85f),
+                BackgroundColor = Color.Transparent,
+                ClipChildren = true,
+                Parent = _body
             };
-            titlePanel.AddChild(_navVerticalTitle);
 
-            _pageTitle = new InkTextBlock(InkTextStyle.Display)
+            _cards = new List<ClickableCard>();
+            foreach (var prod in _products)
             {
-                Text = "商店",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(50f, 8f),
-                Size = new Float2(200f, 44f),
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 32f),
-                TextColor = InkWashTheme.TextBrand,
-            };
-            titlePanel.AddChild(_pageTitle);
-
-            InkPanel tabsPanel = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(1f - 400f, 12f),
-                Size = new Float2(400f, 36f),
-                BackgroundColor = InkWashTheme.BaseTertiary,
-            };
-            titlePanel.AddChild(tabsPanel);
-
-            string[] tabs = { "推荐", "装备", "消耗品", "材料", "外观", "礼包" };
-            _tabButtons = new TabButton[6];
-            float tabWidth = 400f / 6f;
-            for (int i = 0; i < tabs.Length; i++)
-            {
-                var tab = new TabButton(tabs[i], i)
+                var card = new ClickableCard
                 {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(i * tabWidth, 0f),
-                    Size = new Float2(tabWidth, 36f),
-                    Active = (i == 0),
+                    BackgroundColor = new Color(InkWashTheme.BaseSecondary.R, InkWashTheme.BaseSecondary.G, InkWashTheme.BaseSecondary.B, 0.5f),
+                    Parent = _gridPanel
                 };
-                tab.Clicked += OnTabClicked;
-                _tabButtons[i] = tab;
-                tabsPanel.AddChild(tab);
+
+                var iconPanel = new Panel
+                {
+                    Size = new Float2(48, 48),
+                    BackgroundColor = new Color(QualityColor(prod.Quality).R, QualityColor(prod.Quality).G, QualityColor(prod.Quality).B, 0.15f),
+                    Parent = card
+                };
+                new Label
+                {
+                    Text = prod.IconText,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 20f),
+                    TextColor = QualityColor(prod.Quality),
+                    HorizontalAlignment = TextAlignment.Center,
+                    VerticalAlignment = TextAlignment.Center,
+                    AnchorPreset = AnchorPresets.StretchAll,
+                    Parent = iconPanel
+                };
+
+                new Label
+                {
+                    Text = prod.Name,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
+                    TextColor = InkWashTheme.TextDefault,
+                    Parent = card
+                };
+
+                new Label
+                {
+                    Text = $"{prod.Price} {prod.Currency}",
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
+                    TextColor = prod.Currency == "\u91D1" ? InkWashTheme.TextSecondary : InkWashTheme.GoldBright,
+                    Parent = card
+                };
+
+                if (prod.Limit > 0)
+                {
+                    new Label
+                    {
+                        Text = $"\u9650\u8D2D{prod.Limit}",
+                        Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
+                        TextColor = InkWashTheme.BloodBright,
+                        BackgroundColor = new Color(InkWashTheme.BloodPrimary.R, InkWashTheme.BloodPrimary.G, InkWashTheme.BloodPrimary.B, 0.12f),
+                        Parent = card
+                    };
+                }
+
+                int ci = _cards.Count;
+                card.Clicked += () => AddToCart(ci);
+                _cards.Add(card);
             }
 
-            var items = new[]
+            // Cart panel
+            _cartPanel = new Panel
             {
-                (name: "新手大礼包", quality: InkWashTheme.InkQuality.Legendary, price: 328, currency: "银两", tag: "传世"),
-                (name: "神秘宝箱", quality: InkWashTheme.InkQuality.Epic, price: 200, currency: "银两", tag: "史"),
-                (name: "精良装备箱", quality: InkWashTheme.InkQuality.Rare, price: 80, currency: "银两", tag: "珍"),
-                (name: "精良武器", quality: InkWashTheme.InkQuality.Uncommon, price: 50, currency: "银两", tag: "良"),
-                (name: "经验丹×10", quality: InkWashTheme.InkQuality.Uncommon, price: 20, currency: "银两", tag: "良"),
-                (name: "染色剂套装", quality: InkWashTheme.InkQuality.Rare, price: 120, currency: "银两", tag: "珍"),
-                (name: "修复锤×5", quality: InkWashTheme.InkQuality.Common, price: 500, currency: "铜钱", tag: "凡"),
-                (name: "回城符×3", quality: InkWashTheme.InkQuality.Common, price: 300, currency: "铜钱", tag: "凡"),
-                (name: "体力丹×5", quality: InkWashTheme.InkQuality.Common, price: 200, currency: "铜钱", tag: "凡"),
+                BackgroundColor = InkWashTheme.BaseSecondary,
+                Parent = _body
             };
 
-            _shopCards = new ShopCard[9];
-            for (int i = 0; i < items.Length; i++)
+            _cartTitle = new Label
             {
-                var item = items[i];
-                var card = new ShopCard(item.name, item.quality, item.price, item.currency, item.tag, i)
+                Text = "\u5DF2\u9009\u5546\u54C1",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 14f),
+                TextColor = InkWashTheme.TextDefault,
+                Parent = _cartPanel
+            };
+
+            _cartClear = new InkButton
+            {
+                Text = "\u6E05\u7A7A",
+                ButtonSize = InkButtonSize.Sm,
+                Variant = InkButtonVariant.Ghost,
+                Parent = _cartPanel
+            };
+            _cartClear.Clicked += () => { _cart.Clear(); RefreshCart(); };
+
+            _cartItems = new Panel
+            {
+                BackgroundColor = Color.Transparent,
+                ClipChildren = true,
+                Parent = _cartPanel
+            };
+
+            _cartTotal = new Label
+            {
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 16f),
+                TextColor = InkWashTheme.GoldPrimary,
+                Parent = _cartPanel
+            };
+
+            // Balances
+            _balances = new Panel
+            {
+                BackgroundColor = Color.Transparent,
+                Parent = _cartPanel
+            };
+            string[][] bals = {
+                new[] { "\u91D1\u5E01", "12,450" },
+                new[] { "\u94BB\u77F3", "85" },
+                new[] { "\u8363\u8A89", "300" },
+            };
+            foreach (var b in bals)
+            {
+                var row = new ContainerControl
                 {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(0f, 80f + i * 100f),
-                    Size = new Float2(1f, 96f),
-                    Selected = (i == _selectedCard),
+                    BackgroundColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.04f),
+                    Parent = _balances
                 };
-                card.Clicked += OnCardClicked;
-                _shopCards[i] = card;
-                _contentPanel.AddChild(card);
-            }
-        }
-
-        private void BuildConfirmPanel()
-        {
-            _confirmPanel = new InkPaperPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-            };
-            AddChild(_confirmPanel);
-
-            InkCornerDeco corners = new InkCornerDeco
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = Float2.Zero,
-                Size = new Float2(ConfirmPanelWidth, 500f),
-            };
-            _confirmPanel.AddChild(corners);
-
-            InkPanel contentPanel = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(20f, 20f),
-                Size = new Float2(ConfirmPanelWidth - 40f, 460f),
-            };
-            _confirmPanel.AddChild(contentPanel);
-
-            InkPanel titleRow = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 0f),
-                Size = new Float2(1f, 32f),
-            };
-            contentPanel.AddChild(titleRow);
-
-            _confirmTitle = new InkTextBlock(InkTextStyle.Heading)
-            {
-                Text = "新手大礼包",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 0f),
-                Size = new Float2(1f - 60f, 32f),
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 17f),
-                TextColor = InkWashTheme.TextOnPaper,
-            };
-            titleRow.AddChild(_confirmTitle);
-
-            _confirmQualityTag = new InkTag
-            {
-                TagVariant = InkTagVariant.Default,
-                Text = "传世",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(1f - 56f, 4f),
-                Size = new Float2(52f, 24f),
-            };
-            titleRow.AddChild(_confirmQualityTag);
-
-            InkTextBlock itemsLabel = new InkTextBlock(InkTextStyle.Caption)
-            {
-                Text = "礼包内容",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 40f),
-                Size = new Float2(1f, 18f),
-                TextColor = InkWashTheme.TextOnPaper,
-            };
-            contentPanel.AddChild(itemsLabel);
-
-            string[] itemNames = { "经验丹", "修复锤", "回城符", "体力丹", "银两" };
-            string[] itemCounts = { "×10", "×5", "×3", "×5", "×500" };
-            _confirmItems = new InkTextBlock[10];
-            for (int i = 0; i < itemNames.Length; i++)
-            {
-                InkPanel itemRow = new InkPanel
+                new Label
                 {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(0f, 64f + i * 24f),
-                    Size = new Float2(1f, 22f),
+                    Text = b[0],
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
+                    TextColor = InkWashTheme.TextSecondary,
+                    Parent = row
                 };
-                contentPanel.AddChild(itemRow);
-
-                _confirmItems[i * 2] = new InkTextBlock(InkTextStyle.Body)
+                new Label
                 {
-                    Text = itemNames[i],
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(0f, 0f),
-                    Size = new Float2(1f - 60f, 22f),
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
-                    TextColor = InkWashTheme.TextOnPaper,
-                };
-                itemRow.AddChild(_confirmItems[i * 2]);
-
-                _confirmItems[i * 2 + 1] = new InkTextBlock(InkTextStyle.Number)
-                {
-                    Text = itemCounts[i],
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(1f - 56f, 0f),
-                    Size = new Float2(52f, 22f),
+                    Text = b[1],
                     Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
-                    TextColor = InkWashTheme.TextOnPaper,
+                    TextColor = InkWashTheme.TextDefault,
+                    HorizontalAlignment = TextAlignment.Far,
+                    Parent = row
                 };
-                itemRow.AddChild(_confirmItems[i * 2 + 1]);
             }
 
-            InkDivider divider = new InkDivider
+            _buyBtn = new InkButton
             {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 180f),
-                Size = new Float2(1f, 1f),
-            };
-            contentPanel.AddChild(divider);
-
-            InkPanel priceRow = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 192f),
-                Size = new Float2(1f, 24f),
-            };
-            contentPanel.AddChild(priceRow);
-
-            InkTextBlock priceLabel = new InkTextBlock(InkTextStyle.Body)
-            {
-                Text = "单价",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 0f),
-                Size = new Float2(60f, 24f),
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
-                TextColor = InkWashTheme.TextOnPaper,
-            };
-            priceRow.AddChild(priceLabel);
-
-            _confirmPrice = new InkTextBlock(InkTextStyle.Number)
-            {
-                Text = "328 银两",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(1f - 80f, 0f),
-                Size = new Float2(76f, 24f),
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
-                TextColor = InkWashTheme.GoldPrimary,
-            };
-            priceRow.AddChild(_confirmPrice);
-
-            InkPanel qtyRow = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 224f),
-                Size = new Float2(1f, 32f),
-            };
-            contentPanel.AddChild(qtyRow);
-
-            InkTextBlock qtyLabel = new InkTextBlock(InkTextStyle.Body)
-            {
-                Text = "数量",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 4f),
-                Size = new Float2(60f, 24f),
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
-                TextColor = InkWashTheme.TextOnPaper,
-            };
-            qtyRow.AddChild(qtyLabel);
-
-            InkButton qtyDecBtn = new InkButton
-            {
-                Variant = InkButtonVariant.Default,
-                Text = "-",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(1f - 100f, 4f),
-                Size = new Float2(32f, 28f),
-            };
-            qtyDecBtn.ButtonClicked += (b) => { if (_buyQty > 1) { _buyQty--; UpdateConfirmPanel(); } };
-            qtyRow.AddChild(qtyDecBtn);
-
-            _confirmQty = new InkTextBlock(InkTextStyle.Number)
-            {
-                Text = "1",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(1f - 64f, 4f),
-                Size = new Float2(28f, 28f),
-                HorizontalAlignment = TextAlignment.Center,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 14f),
-                TextColor = InkWashTheme.TextOnPaper,
-            };
-            qtyRow.AddChild(_confirmQty);
-
-            InkButton qtyIncBtn = new InkButton
-            {
-                Variant = InkButtonVariant.Default,
-                Text = "+",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(1f - 32f, 4f),
-                Size = new Float2(28f, 28f),
-            };
-            qtyIncBtn.ButtonClicked += (b) => { if (_buyQty < 10) { _buyQty++; UpdateConfirmPanel(); } };
-            qtyRow.AddChild(qtyIncBtn);
-
-            InkPanel totalPanel = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 264f),
-                Size = new Float2(1f, 40f),
-                BackgroundColor = UIStyleTokens.WithAlpha(UIStyleTokens.BloodPrimary, 0.08f),
-            };
-            contentPanel.AddChild(totalPanel);
-
-            InkTextBlock totalLabel = new InkTextBlock(InkTextStyle.Body)
-            {
-                Text = "总价",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(12f, 8f),
-                Size = new Float2(60f, 24f),
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
-                TextColor = InkWashTheme.TextOnPaper,
-            };
-            totalPanel.AddChild(totalLabel);
-
-            _confirmTotal = new InkTextBlock(InkTextStyle.Number)
-            {
-                Text = "328 银两",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(1f - 80f, 6f),
-                Size = new Float2(76f, 28f),
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 18f),
-                TextColor = InkWashTheme.GoldPrimary,
-            };
-            totalPanel.AddChild(_confirmTotal);
-
-            InkPanel balanceRow = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 312f),
-                Size = new Float2(1f, 24f),
-            };
-            contentPanel.AddChild(balanceRow);
-
-            InkTextBlock balanceLabel = new InkTextBlock(InkTextStyle.Caption)
-            {
-                Text = "当前银两",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 0f),
-                Size = new Float2(80f, 24f),
-                TextColor = InkWashTheme.TextOnPaper,
-            };
-            balanceRow.AddChild(balanceLabel);
-
-            _confirmBalance = new InkTextBlock(InkTextStyle.Number)
-            {
-                Text = "328（刚好够）",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(1f - 100f, 0f),
-                Size = new Float2(96f, 24f),
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
-                TextColor = InkWashTheme.TextOnPaper,
-            };
-            balanceRow.AddChild(_confirmBalance);
-
-            InkPanel buttonPanel = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 344f),
-                Size = new Float2(1f, 44f),
-            };
-            contentPanel.AddChild(buttonPanel);
-
-            _confirmButton = new InkButton
-            {
+                Text = "\u786E\u8BA4\u8D2D\u4E70",
+                ButtonSize = InkButtonSize.Lg,
                 Variant = InkButtonVariant.Primary,
-                Text = "确认购买",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 0f),
-                Size = new Float2(1f - 72f, 44f),
+                Parent = _cartPanel
             };
-            buttonPanel.AddChild(_confirmButton);
+            _buyBtn.Clicked += () => Debug.Log("[Shop] purchase confirmed");
 
-            _cancelButton = new InkButton
+            // Footer
+            _footerInfo = new Label
             {
-                Variant = InkButtonVariant.Default,
-                Text = "取消",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(1f - 64f, 0f),
-                Size = new Float2(60f, 44f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
+                TextColor = InkWashTheme.TextTertiary,
+                Parent = _body
             };
-            buttonPanel.AddChild(_cancelButton);
+            RefreshCart();
         }
 
-        private void OnTabClicked(int index)
+        private void AddToCart(int prodIdx)
         {
-            _selectedTab = index;
-            for (int i = 0; i < _tabButtons.Length; i++)
+            var prod = _products[prodIdx];
+            foreach (var ci in _cart)
             {
-                _tabButtons[i].Active = (i == index);
+                if (ci.Product == prod)
+                {
+                    ci.Qty++;
+                    RefreshCart();
+                    return;
+                }
             }
+            _cart.Add(new CartItem { Product = prod, Qty = 1 });
+            RefreshCart();
         }
 
-        private void OnCardClicked(int index)
+        private void RefreshCart()
         {
-            SelectCard(index);
-        }
+            foreach (var child in _cartItems.Children)
+                child.Dispose();
 
-        private void SelectCard(int index)
-        {
-            _selectedCard = index;
-            for (int i = 0; i < _shopCards.Length; i++)
+            int total = 0;
+            float iy = 0;
+            foreach (var ci in _cart)
             {
-                _shopCards[i].Selected = (i == index);
+                var row = new ContainerControl
+                {
+                    BackgroundColor = Color.Transparent,
+                    Parent = _cartItems
+                };
+                new Label
+                {
+                    Text = ci.Product.Name,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
+                    TextColor = InkWashTheme.TextDefault,
+                    Parent = row
+                };
+                new Label
+                {
+                    Text = $"x{ci.Qty}",
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
+                    TextColor = InkWashTheme.TextSecondary,
+                    Parent = row
+                };
+                int subtotal = ci.Product.Price * ci.Qty;
+                total += subtotal;
+                new Label
+                {
+                    Text = $"{subtotal} {ci.Product.Currency}",
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
+                    TextColor = InkWashTheme.TextDefault,
+                    HorizontalAlignment = TextAlignment.Far,
+                    Parent = row
+                };
+                row.Location = new Float2(0, iy);
+                row.Size = new Float2(CartW - 24, 24);
+                iy += 28;
             }
 
-            var items = new[]
-            {
-                (name: "新手大礼包", quality: InkWashTheme.InkQuality.Legendary, price: 328, currency: "银两", tag: "传世"),
-                (name: "神秘宝箱", quality: InkWashTheme.InkQuality.Epic, price: 200, currency: "银两", tag: "史"),
-                (name: "精良装备箱", quality: InkWashTheme.InkQuality.Rare, price: 80, currency: "银两", tag: "珍"),
-                (name: "精良武器", quality: InkWashTheme.InkQuality.Uncommon, price: 50, currency: "银两", tag: "良"),
-                (name: "经验丹×10", quality: InkWashTheme.InkQuality.Uncommon, price: 20, currency: "银两", tag: "良"),
-                (name: "染色剂套装", quality: InkWashTheme.InkQuality.Rare, price: 120, currency: "银两", tag: "珍"),
-                (name: "修复锤×5", quality: InkWashTheme.InkQuality.Common, price: 500, currency: "铜钱", tag: "凡"),
-                (name: "回城符×3", quality: InkWashTheme.InkQuality.Common, price: 300, currency: "铜钱", tag: "凡"),
-                (name: "体力丹×5", quality: InkWashTheme.InkQuality.Common, price: 200, currency: "铜钱", tag: "凡"),
-            };
-
-            var item = items[index];
-            _confirmTitle.Text = item.name;
-            _confirmQualityTag.Text = item.tag;
-            _confirmPrice.Text = $"{item.price} {item.currency}";
-            _buyQty = 1;
-            UpdateConfirmPanel();
+            _cartTotal.Text = $"\u5408\u8BA1 {total}";
+            _footerInfo.Text = $"\u80CC\u5305\u5BB9\u91CF 45/100    \u4ECA\u65E5\u9650\u8D2D\u5269\u4F59 7 \u4EF6";
         }
 
-        private void UpdateConfirmPanel()
-        {
-            var items = new[]
-            {
-                (price: 328, currency: "银两"),
-                (price: 200, currency: "银两"),
-                (price: 80, currency: "银两"),
-                (price: 50, currency: "银两"),
-                (price: 20, currency: "银两"),
-                (price: 120, currency: "银两"),
-                (price: 500, currency: "铜钱"),
-                (price: 300, currency: "铜钱"),
-                (price: 200, currency: "铜钱"),
-            };
-
-            var item = items[_selectedCard];
-            int total = item.price * _buyQty;
-            _confirmQty.Text = _buyQty.ToString();
-            _confirmTotal.Text = $"{total} {item.currency}";
-
-            int balance = item.currency == "银两" ? 328 : 12450;
-            string status = total <= balance ? "（刚好够）" : "（不足）";
-            _confirmBalance.Text = $"{balance}{status}";
-            if (total > balance)
-            {
-                _confirmBalance.TextColor = InkWashTheme.BloodBright;
-            }
-            else
-            {
-                _confirmBalance.TextColor = InkWashTheme.TextOnPaper;
-            }
-        }
+        // ───────────── Layout ─────────────
 
         private void ApplyLayout()
         {
-            float sw = _screenSize.X;
-            float sh = _screenSize.Y;
+            float sw = Width > 0 ? Width : _screenSize.X;
+            float sh = Height > 0 ? Height : _screenSize.Y;
 
-            if (_leftNavPanel != null)
+            float panelW = Math.Min(sw - 40, 1400f);
+            float panelX = (sw - panelW) / 2;
+            float panelH = sh - 40;
+
+            // Header
+            _header.Location = new Float2(panelX, 20);
+            _header.Size = new Float2(panelW, HeaderH);
+
+            _title.Location = new Float2(24, (HeaderH - 28) / 2);
+
+            float tx = 120;
+            for (int i = 0; i < _tabs.Count; i++)
             {
-                _leftNavPanel.Location = new Float2(0f, 0f);
-                _leftNavPanel.Size = new Float2(LeftNavWidth, sh);
+                _tabs[i].Location = new Float2(tx, (HeaderH - 28) / 2);
+                _tabs[i].Size = new Float2(60, 28);
+                tx += 70;
             }
 
-            if (_topBarPanel != null)
-            {
-                _topBarPanel.Location = new Float2(LeftNavWidth, 0f);
-                _topBarPanel.Size = new Float2(sw - LeftNavWidth, TopBarHeight);
-            }
+            _closeBtn.Location = new Float2(panelW - 40, (HeaderH - 28) / 2);
 
-            if (_topBarCopper != null)
-            {
-                _topBarCopper.Location = new Float2(sw - 220f, 20f);
-            }
-            if (_topBarSilver != null)
-            {
-                _topBarSilver.Location = new Float2(sw - 100f, 20f);
-            }
+            // Body
+            float bodyY = 20 + HeaderH;
+            float bodyH = panelH - HeaderH - FooterH - 40;
+            _body.Location = new Float2(panelX, bodyY);
+            _body.Size = new Float2(panelW, bodyH);
 
-            float contentWidth = sw - LeftNavWidth - ConfirmPanelWidth - 24f;
-            if (_contentPanel != null)
-            {
-                _contentPanel.Location = new Float2(LeftNavWidth + 24f, TopBarHeight + 16f);
-                _contentPanel.Size = new Float2(contentWidth, sh - TopBarHeight - 80f);
-            }
+            // Grid
+            float gw = panelW - CartW - 24;
+            _gridPanel.Location = Float2.Zero;
+            _gridPanel.Size = new Float2(gw, bodyH);
 
-            if (_shopCards != null)
-            {
-                int cols = sw >= 1400 ? 3 : sw >= 1000 ? 2 : 1;
-                float cardWidth = (contentWidth - (cols - 1) * 16f) / cols;
-                float cardHeight = 96f;
+            int cols = 4;
+            float gap = 12f;
+            float cardW = (gw - gap * (cols - 1) - 24) / cols;
+            float cardH = 80f;
 
-                for (int i = 0; i < _shopCards.Length; i++)
+            for (int i = 0; i < _cards.Count; i++)
+            {
+                int col = i % cols;
+                int row = i / cols;
+                _cards[i].Location = new Float2(12 + col * (cardW + gap), 12 + row * (cardH + gap));
+                _cards[i].Size = new Float2(cardW, cardH);
+
+                int childIdx = 0;
+                foreach (var child in _cards[i].Children)
                 {
-                    int col = i % cols;
-                    int row = i / cols;
-                    _shopCards[i].Location = new Float2(col * (cardWidth + 16f), 80f + row * (cardHeight + 16f));
-                    _shopCards[i].Size = new Float2(cardWidth, cardHeight);
+                    if (child is Panel icon && icon.Size == new Float2(48, 48))
+                    {
+                        icon.Location = new Float2(8, (cardH - 48) / 2);
+                    }
+                    else if (child is Label l)
+                    {
+                        string txt = l.Text.ToString();
+                        bool isLimit = txt.Contains("\u9650\u8D2D");
+                        bool isPrice = char.IsDigit(txt.Length > 0 ? txt[0] : ' ') || txt.Contains("\u91D1") || txt.Contains("\u94BB") || txt.Contains("\u8363");
+                        if (isLimit)
+                        {
+                            l.Location = new Float2(cardW - 50, cardH - 20);
+                            l.Size = new Float2(44, 16);
+                        }
+                        else if (isPrice)
+                        {
+                            l.Location = new Float2(64, cardH - 22);
+                            l.Size = new Float2(cardW - 70, 18);
+                        }
+                        else if (childIdx == 1) // name label (first non-icon label)
+                        {
+                            l.Location = new Float2(64, 14);
+                            l.Size = new Float2(cardW - 70, 18);
+                        }
+                        childIdx++;
+                    }
                 }
             }
 
-            if (_confirmPanel != null)
+            // Cart
+            _cartPanel.Location = new Float2(gw + 24, 0);
+            _cartPanel.Size = new Float2(CartW, bodyH);
+
+            _cartTitle.Location = new Float2(16, 16);
+            _cartClear.Location = new Float2(CartW - 72, 14);
+            _cartClear.Size = new Float2(56, 24);
+
+            float ciy = 48;
+            _cartItems.Location = new Float2(12, ciy);
+            _cartItems.Size = new Float2(CartW - 24, bodyH - ciy - 220);
+
+            // Cart item layout is done in RefreshCart
+
+            float totalY = bodyH - 210;
+            _cartTotal.Location = new Float2(16, totalY);
+
+            _balances.Location = new Float2(12, totalY + 30);
+            _balances.Size = new Float2(CartW - 24, 80);
+
+            float balY = 0;
+            foreach (var child in _balances.Children)
             {
-                _confirmPanel.Location = new Float2(sw - ConfirmPanelWidth - 24f, TopBarHeight + 16f);
-                _confirmPanel.Size = new Float2(ConfirmPanelWidth, 500f);
+                if (child is ContainerControl row)
+                {
+                    row.Location = new Float2(0, balY);
+                    row.Size = new Float2(CartW - 24, 24);
+                    foreach (var sub in row.Children)
+                    {
+                        if (sub is Label l)
+                        {
+                            if (l.HorizontalAlignment == TextAlignment.Far)
+                            {
+                                l.Location = new Float2(row.Width - 100, 0);
+                                l.Size = new Float2(96, 24);
+                            }
+                            else
+                            {
+                                l.Location = new Float2(8, 0);
+                                l.Size = new Float2(80, 24);
+                            }
+                        }
+                    }
+                    balY += 26;
+                }
             }
+
+            _buyBtn.Location = new Float2(16, totalY + 120);
+            _buyBtn.Size = new Float2(CartW - 32, 44);
+
+            // Footer
+            _footerInfo.Location = new Float2(panelX, 20 + HeaderH + bodyH + 8);
+            _footerInfo.Size = new Float2(panelW, FooterH);
         }
 
         public void RefreshLayout()
         {
-            float w = Width;
-            float h = Height;
-            if (w <= 0f || h <= 0f)
-            {
-                var screen = FlaxEngine.Screen.Size;
-                w = screen.X;
-                h = screen.Y;
-            }
-            if (w <= 0f || h <= 0f)
-            {
-                w = 1920f;
-                h = 1080f;
-            }
-            _screenSize = new Float2(w, h);
+            _screenSize = new Float2(Width, Height);
             ApplyLayout();
-        }
-
-        private class TabButton : ContainerControl
-        {
-            private string _text;
-            private int _index;
-            private bool _active;
-            private InkTextBlock _label;
-
-            public event Action<int> Clicked;
-
-            public bool Active
-            {
-                get => _active;
-                set
-                {
-                    _active = value;
-                    if (_label != null)
-                    {
-                        _label.TextColor = _active ? InkWashTheme.TextOnBrand : InkWashTheme.TextSecondary;
-                    }
-                    if (_active)
-                    {
-                        BackgroundColor = new Color(InkWashTheme.GoldBright.R, InkWashTheme.GoldBright.G, InkWashTheme.GoldBright.B, 1f);
-                    }
-                    else
-                    {
-                        BackgroundColor = Color.Transparent;
-                    }
-                }
-            }
-
-            public TabButton(string text, int index)
-            {
-                _text = text;
-                _index = index;
-                ClipChildren = false;
-
-                _label = new InkTextBlock(InkTextStyle.Body)
-                {
-                    Text = text,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = Float2.Zero,
-                    Size = new Float2(1f, 36f),
-                    HorizontalAlignment = TextAlignment.Center,
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
-                    TextColor = InkWashTheme.TextSecondary,
-                };
-                AddChild(_label);
-            }
-
-            public override bool OnMouseDown(Float2 location, MouseButton button)
-            {
-                base.OnMouseDown(location, button);
-                if (button == MouseButton.Left)
-                {
-                    Clicked?.Invoke(_index);
-                }
-                return true;
-            }
-        }
-
-        private class ShopCard : ContainerControl
-        {
-            private string _name;
-            private InkWashTheme.InkQuality _quality;
-            private int _price;
-            private string _currency;
-            private string _tag;
-            private int _index;
-            private bool _selected;
-            private InkPanel _qualityPanel;
-            private InkTextBlock _nameLabel;
-            private InkTag _qualityTag;
-            private InkTextBlock _priceLabel;
-            private InkButton _buyButton;
-            private Color _borderColor = InkWashTheme.BorderGold;
-            private float _borderThickness = 1f;
-
-            public event Action<int> Clicked;
-
-            public bool Selected
-            {
-                get => _selected;
-                set
-                {
-                    _selected = value;
-                    if (_selected)
-                    {
-                        BackgroundColor = new Color(InkWashTheme.VermilionPrimary.R, InkWashTheme.VermilionPrimary.G, InkWashTheme.VermilionPrimary.B, 0.08f);
-                        _borderColor = InkWashTheme.VermilionPrimary;
-                    }
-                    else
-                    {
-                        BackgroundColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.04f);
-                        _borderColor = InkWashTheme.BorderGold;
-                    }
-                }
-            }
-
-            public ShopCard(string name, InkWashTheme.InkQuality quality, int price, string currency, string tag, int index)
-            {
-                _name = name;
-                _quality = quality;
-                _price = price;
-                _currency = currency;
-                _tag = tag;
-                _index = index;
-                ClipChildren = false;
-
-                _qualityPanel = new InkPanel
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(0f, 0f),
-                    Size = new Float2(1f, 80f),
-                };
-                AddChild(_qualityPanel);
-
-                Color qualityColor = GetQualityColor(quality);
-                _qualityPanel.BackgroundColor = new Color(qualityColor.R, qualityColor.G, qualityColor.B, 0.12f);
-
-                InkTextBlock iconText = new InkTextBlock(InkTextStyle.Display)
-                {
-                    Text = GetIconText(quality),
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(16f, 16f),
-                    Size = new Float2(48f, 48f),
-                    HorizontalAlignment = TextAlignment.Center,
-                    VerticalAlignment = TextAlignment.Center,
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 32f),
-                    TextColor = qualityColor,
-                };
-                _qualityPanel.AddChild(iconText);
-
-                InkPanel bottomPanel = new InkPanel
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(0f, 80f),
-                    Size = new Float2(1f, 16f),
-                };
-                AddChild(bottomPanel);
-
-                _nameLabel = new InkTextBlock(InkTextStyle.Body)
-                {
-                    Text = name,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(8f, 0f),
-                    Size = new Float2(1f - 140f, 16f),
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
-                    TextColor = InkWashTheme.PaperBright,
-                };
-                bottomPanel.AddChild(_nameLabel);
-
-                _qualityTag = new InkTag
-                {
-                    TagVariant = InkTagVariant.Default,
-                    Text = tag,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(1f - 128f, 0f),
-                    Size = new Float2(44f, 16f),
-                };
-                _qualityTag.TextColor = qualityColor;
-                bottomPanel.AddChild(_qualityTag);
-
-                _priceLabel = new InkTextBlock(InkTextStyle.Number)
-                {
-                    Text = $"{price} {currency}",
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(1f - 80f, 0f),
-                    Size = new Float2(72f, 16f),
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
-                    TextColor = currency == "银两" ? InkWashTheme.GoldBright : InkWashTheme.PaperBright,
-                };
-                bottomPanel.AddChild(_priceLabel);
-            }
-
-            private static Color GetQualityColor(InkWashTheme.InkQuality quality)
-            {
-                // 按设计方案 §4.1 品质色阶：Legendary=#C8A858(鎏金)、Epic=#8B5E9E、Rare=#4A7EA8、Uncommon=#6B8E5A、Common=#8A8275
-                switch (quality)
-                {
-                    case InkWashTheme.InkQuality.Legendary: return InkWashTheme.QualityLegendary;
-                    case InkWashTheme.InkQuality.Epic: return InkWashTheme.QualityEpic;
-                    case InkWashTheme.InkQuality.Rare: return InkWashTheme.QualityRare;
-                    case InkWashTheme.InkQuality.Uncommon: return InkWashTheme.QualityUncommon;
-                    default: return InkWashTheme.QualityCommon;
-                }
-            }
-
-            private static string GetIconText(InkWashTheme.InkQuality quality)
-            {
-                switch (quality)
-                {
-                    case InkWashTheme.InkQuality.Legendary: return "礼";
-                    case InkWashTheme.InkQuality.Epic: return "宝";
-                    case InkWashTheme.InkQuality.Rare: return "箱";
-                    case InkWashTheme.InkQuality.Uncommon: return "武";
-                    default: return "物";
-                }
-            }
-
-            public override bool OnMouseDown(Float2 location, MouseButton button)
-            {
-                base.OnMouseDown(location, button);
-                if (button == MouseButton.Left)
-                {
-                    Clicked?.Invoke(_index);
-                }
-                return true;
-            }
-
-            public override void Draw()
-            {
-                base.Draw();
-                if (Width > 0f && Height > 0f && _borderThickness > 0f && _borderColor.A > 0f)
-                {
-                    Render2D.DrawRectangle(new Rectangle(0, 0, Width, Height), _borderColor, _borderThickness);
-                }
-            }
         }
     }
 }

@@ -526,9 +526,11 @@
     <Compile Include="Game\UI\Ink\Components\InkBackpackGrid.cs" />
     <Compile Include="Game\UI\Ink\Components\InkDialClock.cs" />
     <Compile Include="Game\UI\Ink\Components\InkEquipmentSlot.cs" />
+    <Compile Include="Game\UI\Ink\Components\InkEquipToolBar.cs" />
     <Compile Include="Game\UI\Ink\Components\InkMeridianDiagram.cs" />
     <Compile Include="Game\UI\Ink\Components\InkMinimap.cs" />
     <Compile Include="Game\UI\Ink\Components\InkSkillSlotGrid.cs" />
+    <Compile Include="Game\UI\Ink\Components\InkTabButton.cs" />
     <Compile Include="Game\UI\Ink\IInkPage.cs" />
     <Compile Include="Game\UI\Ink\InkBackgrounds.cs" />
     <Compile Include="Game\UI\Ink\InkBars.cs" />
@@ -550,7 +552,6 @@
     <Compile Include="Game\UI\Ink\Pages\Character\MenuCharAttributesV2Page.cs" />
     <Compile Include="Game\UI\Ink\Pages\Character\MenuEquipmentPage.cs" />
     <Compile Include="Game\UI\Ink\Pages\Character\SkillPanelPage.cs" />
-    <Compile Include="Game\UI\Ink\Pages\Crafting\CraftingPage.cs" />
     <Compile Include="Game\UI\Ink\Pages\CharacterCreation\CharacterFaceCustomizePage.cs" />
     <Compile Include="Game\UI\Ink\Pages\CharacterCreation\CharacterNamingPage.cs" />
     <Compile Include="Game\UI\Ink\Pages\Combat\AcupointPage.cs" />
@@ -560,6 +561,7 @@
     <Compile Include="Game\UI\Ink\Pages\Combat\MenuBattlePrepPage.cs" />
     <Compile Include="Game\UI\Ink\Pages\Combat\QtePage.cs" />
     <Compile Include="Game\UI\Ink\Pages\CombatHudPage.cs" />
+    <Compile Include="Game\UI\Ink\Pages\Crafting\CraftingPage.cs" />
     <Compile Include="Game\UI\Ink\Pages\Dungeon\DungeonEntryPage.cs" />
     <Compile Include="Game\UI\Ink\Pages\ElementVision\ElementVisionPage.cs" />
     <Compile Include="Game\UI\Ink\Pages\Gacha\MenuGachaPage.cs" />
@@ -578,12 +580,12 @@
     <Compile Include="Game\UI\Ink\Pages\MenuQuestsPage.cs" />
     <Compile Include="Game\UI\Ink\Pages\MenuShopPage.cs" />
     <Compile Include="Game\UI\Ink\Pages\MiniGameCompletePage.cs" />
-    <Compile Include="Game\UI\Ink\Pages\Multiplayer\MultiplayerPage.cs" />
     <Compile Include="Game\UI\Ink\Pages\MountPet\MountPetPage.cs" />
-    <Compile Include="Game\UI\Ink\Pages\Quest\QuestLogPage.cs" />
+    <Compile Include="Game\UI\Ink\Pages\Multiplayer\MultiplayerPage.cs" />
     <Compile Include="Game\UI\Ink\Pages\Personal\MenuPersonalInfoPage.cs" />
     <Compile Include="Game\UI\Ink\Pages\PhotoMode\PhotoModePage.cs" />
     <Compile Include="Game\UI\Ink\Pages\PopupPages.cs" />
+    <Compile Include="Game\UI\Ink\Pages\Quest\QuestLogPage.cs" />
     <Compile Include="Game\UI\Ink\Pages\Reward\RewardLevelUpPage.cs" />
     <Compile Include="Game\UI\Ink\Pages\RewardPages.cs" />
     <Compile Include="Game\UI\Ink\Pages\Sect\MenuSectPage.cs" />
@@ -601,6 +603,7 @@
     <Compile Include="Game\UI\Ink\Pages\Team\MenuTeamPage.cs" />
     <Compile Include="Game\UI\Ink\Pages\Time\MenuTimePage.cs" />
     <Compile Include="Game\UI\Ink\Pages\UIGalleryPage.cs" />
+    <Compile Include="Game\UI\Ink\UILayout.cs" />
     <Compile Include="Game\UI\Kungfu\KungfuSystemUI.cs" />
     <Compile Include="Game\UI\Layout\ResponsiveLayoutCalculator.cs" />
     <Compile Include="Game\UI\MainUIManager.cs" />

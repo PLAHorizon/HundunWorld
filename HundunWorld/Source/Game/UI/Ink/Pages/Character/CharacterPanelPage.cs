@@ -1,815 +1,1108 @@
 using FlaxEngine;
 using FlaxEngine.GUI;
+using Game.Character.Attributes;
+using HundunWorld.Game.UI.Ink.Components;
 using HundunWorld.Game.UI.StyleSystem;
 using System;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Character
 {
-    /// <summary>
-    /// 角色面板页面 — 对应 character-panel.html 设计原型（dom-id: nav-character-panel）。
-    /// <para>
-    /// 采用"顶部标题栏 + 左侧立绘/装备 + 右侧属性面板 + 底部导航"四区结构，
-    /// 居中显示 900x680 主面板。通过 <see cref="NavigationRequested"/> 事件向路由器
-    /// 暴露导航跳转：返回沉浸模式（combat-hud）、武学面板（nav-skill-panel）、
-    /// 背包（nav-inventory）。
-    /// </para>
-    /// <list type="bullet">
-    ///   <item>顶部：返回按钮 + "角色信息"标题 + 角色名/等级摘要</item>
-    ///   <item>左侧：3D 立绘占位区 + 6 格装备槽（头/身/手/足/武器/饰品）</item>
-    ///   <item>右侧：基本信息 + 气血/内力条 + 六维属性 + 五行状态条 + 武学缩略</item>
-    ///   <item>底部：返回沉浸模式 / 跳转武学 / 跳转背包</item>
-    /// </list>
-    /// </summary>
     public class CharacterPanelPage : ContainerControl, IInkPage
     {
-        // ===================================================================
-        // 布局常量
-        // =======================================================================
-
-        /// <summary>主面板尺寸（居中显示）</summary>
-        private static readonly Float2 MainPanelSize = new Float2(900f, 680f);
-
-        /// <summary>顶部标题栏高度</summary>
         private const float TopBarHeight = 52f;
-
-        /// <summary>底部导航栏高度</summary>
         private const float BottomBarHeight = 56f;
-
-        /// <summary>面板内边距</summary>
         private const float Padding = 12f;
-
-        /// <summary>子面板间距</summary>
-        private const float PanelGap = 10f;
-
-        /// <summary>分区标题装饰竖线宽度</summary>
-        private const float TitleBarWidth = 3f;
-
-        /// <summary>分区标题装饰竖线高度</summary>
-        private const float TitleBarHeight = 16f;
-
-        /// <summary>分区标题字号</summary>
-        private const float TitleFontSize = 14f;
-
-        /// <summary>分区标题与内容间距</summary>
-        private const float TitleToContentGap = 8f;
-
-        /// <summary>装备槽尺寸</summary>
-        private const float EquipmentSlotSize = 56f;
-
-        /// <summary>装备槽间距</summary>
-        private const float EquipmentSlotGap = 8f;
-
-        /// <summary>属性行高</summary>
-        private const float AttrRowHeight = 22f;
-
-        /// <summary>五行进度条高度</summary>
-        private const float ElementBarHeight = 8f;
-
-        /// <summary>五行行间距</summary>
-        private const float ElementRowGap = 6f;
-
-        /// <summary>导航按钮宽度</summary>
+        private const float LeftPanelRatio = 0.48f;
+        private const float SlotBtnSize = 40f;
         private const float NavButtonWidth = 130f;
-
-        /// <summary>导航按钮高度</summary>
         private const float NavButtonHeight = 36f;
-
-        /// <summary>导航按钮间距</summary>
         private const float NavButtonGap = 12f;
 
-        /// <summary>左侧面板宽度占比（48%）</summary>
-        private const float LeftPanelRatio = 0.48f;
-
-        /// <summary>左侧装备槽数量（头/身/手/足/武器/饰品）</summary>
-        private const int EquipmentSlotCount = 6;
-
-        /// <summary>六维属性数量（气血/内力/体魄/身法/根骨/悟性）</summary>
-        private const int PrimaryAttrCount = 6;
-
-        /// <summary>五行数量</summary>
-        private const int ElementCount = 5;
-
-        /// <summary>武学缩略条目数</summary>
-        private const int MartialThumbnailCount = 3;
-
-        // ===================================================================
-        // 子控件引用 — 主面板与标题栏
-        // =======================================================================
-
-        /// <summary>主面板容器（居中 900x680）</summary>
-        private InkPanelElevated _mainPanel;
-
-        /// <summary>顶部标题栏</summary>
-        private InkPanel _topBar;
-
-        /// <summary>左上角返回按钮</summary>
-        private InkBackButton _backButton;
-
-        /// <summary>顶部"角色信息"标题</summary>
-        private Label _topTitleLabel;
-
-        /// <summary>顶部"CHARACTER"副标题</summary>
-        private Label _topSubtitleLabel;
-
-        /// <summary>顶部角色名摘要</summary>
-        private Label _topNameLabel;
-
-        /// <summary>顶部等级摘要</summary>
-        private Label _topLevelLabel;
-
-        // ===================================================================
-        // 子控件引用 — 左侧立绘与装备
-        // =======================================================================
-
-        /// <summary>左侧立绘/装备面板</summary>
-        private InkPanel _leftPanel;
-
-        /// <summary>3D 立绘占位标签</summary>
-        private Label _previewPlaceholderLabel;
-
-        /// <summary>立绘区角色名标签</summary>
-        private Label _previewNameLabel;
-
-        /// <summary>6 个装备槽</summary>
-        private InkCell[] _equipmentSlots;
-
-        /// <summary>6 个装备槽名称标签</summary>
-        private Label[] _equipmentSlotLabels;
-
-        // ===================================================================
-        // 子控件引用 — 右侧属性面板
-        // =======================================================================
-
-        /// <summary>右侧属性面板</summary>
-        private InkPanel _rightPanel;
-
-        /// <summary>"基本信息"分区标题</summary>
-        private Label _basicInfoTitleLabel;
-
-        /// <summary>姓名数值标签</summary>
-        private Label _nameValueLabel;
-
-        /// <summary>等级数值标签</summary>
-        private Label _levelValueLabel;
-
-        /// <summary>门派数值标签</summary>
-        private Label _sectValueLabel;
-
-        /// <summary>性别数值标签</summary>
-        private Label _genderValueLabel;
-
-        /// <summary>"主要属性"分区标题</summary>
-        private Label _attrTitleLabel;
-
-        /// <summary>6 项属性名称标签（气血/内力/体魄/身法/根骨/悟性）</summary>
-        private Label[] _attrNameLabels;
-
-        /// <summary>6 项属性数值标签</summary>
-        private Label[] _attrValueLabels;
-
-        /// <summary>气血进度条</summary>
-        private InkBar _hpBar;
-
-        /// <summary>内力进度条</summary>
-        private InkBar _mpBar;
-
-        /// <summary>气血数值标签</summary>
-        private Label _hpValueLabel;
-
-        /// <summary>内力数值标签</summary>
-        private Label _mpValueLabel;
-
-        /// <summary>"五行体质"分区标题</summary>
-        private Label _elementTitleLabel;
-
-        /// <summary>5 条五行进度条</summary>
-        private InkBar[] _elementBars;
-
-        /// <summary>5 个五行名称标签（金/木/水/火/土）</summary>
-        private Label[] _elementLabels;
-
-        /// <summary>"武学摘要"分区标题</summary>
-        private Label _martialTitleLabel;
-
-        /// <summary>3 条武学缩略标签</summary>
-        private Label[] _martialLabels;
-
-        // ===================================================================
-        // 子控件引用 — 底部导航栏
-        // =======================================================================
-
-        /// <summary>底部导航栏</summary>
-        private InkPanel _bottomBar;
-
-        /// <summary>返回沉浸模式按钮</summary>
-        private InkButton _btnReturnHud;
-
-        /// <summary>跳转武学面板按钮</summary>
-        private InkButton _btnGotoSkill;
-
-        /// <summary>跳转背包按钮</summary>
-        private InkButton _btnGotoInventory;
-
-        // ===================================================================
-        // 公共 API
-        // =======================================================================
-
-        /// <summary>
-        /// 导航请求事件。触发后由 MainUIManager 订阅并调用 InkPageRouter.NavigateTo。
-        /// </summary>
         public event Action<string> NavigationRequested;
 
-        /// <summary>
-        /// 粒子动效系统引用（可选，由 MainUIManager 注入）。
-        /// </summary>
-        public InkParticleSystem ParticleSystem { get; set; }
+        private InkParticleSystem _particleSystem;
+        public InkParticleSystem ParticleSystem
+        {
+            get => _particleSystem;
+            set
+            {
+                _particleSystem = value;
+                if (_navTabs != null)
+                    foreach (var t in _navTabs) t.ParticleSystem = value;
+            }
+        }
 
-        // ===================================================================
-        // 构造函数
-        // =======================================================================
+        private CharacterAttributesComponent _boundCharacter;
 
-        /// <summary>
-        /// 构造函数：初始化主面板与所有子控件。
-        /// </summary>
+        private ContainerControl _topBar;
+        private Label _titleLabel;
+        private Label _subtitleLabel;
+        private Label _nameLabel;
+        private Label _levelLabel;
+        private InkButton _closeButton;
+
+        private ContainerControl _leftPanel;
+        private ContainerControl _modelStage;
+        private InkButton[] _floatingSlots;
+        private int _activeSlotIndex = -1;
+        private ContainerControl _tabPanel;
+        private ContainerControl _cornerTL;
+        private ContainerControl _cornerTR;
+        private ContainerControl _cornerBL;
+        private ContainerControl _cornerBR;
+        private const float CornerSize = 20f;
+        private const float CornerInset = 6f;
+        private Label _previewBadge;
+        private Label _rotateHint;
+
+        private ContainerControl _rightPanel;
+
+        private ContainerControl _bottomBar;
+        private InkButton _btnReturnHud;
+        private InkTabButton _tabSkill;
+        private InkTabButton _tabInventory;
+        private InkTabButton _tabAttributes;
+        private InkTabButton[] _navTabs;
+
+        private float[] _slotLeftPct;
+        private float[] _slotTopPct;
+
         public CharacterPanelPage()
+        {
+            AnchorPreset = AnchorPresets.StretchAll;
+            Offsets = Margin.Zero;
+            BackgroundColor = InkWashTheme.Scrim;
+            ClipChildren = false;
+            AutoFocus = false;
+
+            BuildTopBar();
+            BuildLeftColumn();
+            BuildRightColumn();
+            BuildBottomBar();
+        }
+
+        public void BindCharacter(CharacterAttributesComponent component)
+        {
+            _boundCharacter = component;
+            if (component != null)
+            {
+                if (_nameLabel != null) _nameLabel.Text = component.Nickname;
+                if (_levelLabel != null) _levelLabel.Text = "Lv." + component.Level.ToString();
+            }
+        }
+
+        public void RefreshLayout()
         {
             try
             {
-                AnchorPreset = AnchorPresets.StretchAll;
-                Offsets = Margin.Zero;
-                BackgroundColor = InkWashTheme.Scrim;
-                ClipChildren = false;
-                AutoFocus = false;
+                float w = Width;
+                float h = Height;
+                float contentH = h - TopBarHeight - BottomBarHeight;
 
-                BuildMainPanel();
-                BuildTopBar();
-                BuildLeftColumn();
-                BuildRightColumn();
-                BuildBottomBar();
+                if (_topBar != null)
+                {
+                    _topBar.Size = new Float2(w, TopBarHeight);
+                }
+
+                if (_leftPanel != null)
+                {
+                    _leftPanel.Size = new Float2(w * LeftPanelRatio, contentH);
+                    _leftPanel.Location = new Float2(Padding, TopBarHeight);
+                }
+
+                if (_rightPanel != null)
+                {
+                    _rightPanel.Size = new Float2(w * (1f - LeftPanelRatio) - Padding * 2, contentH);
+                    _rightPanel.Location = new Float2(w * LeftPanelRatio + Padding * 1.5f, TopBarHeight);
+                }
+
+                if (_bottomBar != null)
+                {
+                    _bottomBar.Location = new Float2(0f, h - BottomBarHeight);
+                    _bottomBar.Size = new Float2(w, BottomBarHeight);
+
+                    float btnY = (BottomBarHeight - NavButtonHeight) * 0.5f;
+
+                    if (_btnReturnHud != null)
+                        _btnReturnHud.Location = new Float2(Padding, btnY);
+
+                    float tabW = NavButtonWidth;
+                    float tabGap = NavButtonGap;
+                    float tabTotal = tabW * _navTabs.Length + tabGap * (_navTabs.Length - 1);
+                    float tabStartX = (w - tabTotal) * 0.5f;
+                    if (tabStartX < Padding + NavButtonWidth + NavButtonGap * 2)
+                        tabStartX = Padding + NavButtonWidth + NavButtonGap * 2;
+
+                    for (int i = 0; i < _navTabs.Length; i++)
+                    {
+                        _navTabs[i].Location = new Float2(tabStartX + i * (tabW + tabGap), btnY);
+                        _navTabs[i].Size = new Float2(tabW, NavButtonHeight);
+                    }
+                }
+
+                if (_closeButton != null && _topBar != null)
+                {
+                    _closeButton.Location = new Float2(_topBar.Width - Padding - SlotBtnSize, (TopBarHeight - SlotBtnSize) * 0.5f);
+                }
+                if (_levelLabel != null && _closeButton != null && _topBar != null)
+                {
+                    _levelLabel.Location = new Float2(_closeButton.Left - 90f, 0f);
+                }
+                if (_nameLabel != null && _levelLabel != null)
+                {
+                    _nameLabel.Location = new Float2(_levelLabel.Left - 8f - 100f, 0f);
+                }
+
+                if (_modelStage != null && _floatingSlots != null)
+                {
+                    float mw = _modelStage.Width;
+                    float mh = _modelStage.Height;
+                    for (int i = 0; i < _floatingSlots.Length; i++)
+                    {
+                        float sx = _slotLeftPct[i] * mw - SlotBtnSize * 0.5f;
+                        float sy = _slotTopPct[i] * mh - SlotBtnSize * 0.5f;
+                        _floatingSlots[i].Location = new Float2(sx, sy);
+                    }
+                }
+
+                if (_modelStage != null)
+                {
+                    float mw = _modelStage.Width;
+                    float mh = _modelStage.Height;
+
+                    if (_cornerTL != null)
+                        _cornerTL.Location = new Float2(CornerInset, CornerInset);
+                    if (_cornerTR != null)
+                        _cornerTR.Location = new Float2(mw - CornerInset - CornerSize, CornerInset);
+                    if (_cornerBL != null)
+                        _cornerBL.Location = new Float2(CornerInset, mh - CornerInset - CornerSize);
+                    if (_cornerBR != null)
+                        _cornerBR.Location = new Float2(mw - CornerInset - CornerSize, mh - CornerInset - CornerSize);
+                }
+
+                if (_tabPanel != null && _modelStage != null)
+                {
+                    _tabPanel.Location = new Float2((_modelStage.Width - _tabPanel.Width) * 0.5f, _modelStage.Height - _tabPanel.Height - 8f);
+                }
+
+                if (_rightPanel != null)
+                {
+                    float rw = _rightPanel.Width;
+                    float ry = Padding;
+                    foreach (var child in _rightPanel.Children)
+                    {
+                        if (child is ContainerControl card)
+                        {
+                            card.Width = rw - Padding * 2;
+                            card.Location = new Float2(Padding, ry);
+                            ry += card.Height + Padding;
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
-                FlaxEngine.Debug.LogError($"[CharacterPanelPage] 初始化失败: {ex.Message}");
+                FlaxEngine.Debug.LogError($"[CharacterPanelPage] RefreshLayout: {ex.Message}");
             }
         }
 
-        // ===================================================================
-        // Build 方法
-        // =======================================================================
-
-        /// <summary>
-        /// 构建居中主面板容器（900x680，带抬升阴影）。
-        /// </summary>
-        private void BuildMainPanel()
+        public override void OnParentResized()
         {
-            _mainPanel = new InkPanelElevated
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Size = MainPanelSize,
-            };
-            AddChild(_mainPanel);
+            base.OnParentResized();
+            RefreshLayout();
         }
 
-        /// <summary>
-        /// 构建顶部标题栏：返回按钮 + "角色信息" + "CHARACTER" + 角色名/等级摘要。
-        /// </summary>
+        // ===================================================================
+        // Top Bar
+        // ===================================================================
+
         private void BuildTopBar()
         {
-            _topBar = new InkPanel
+            _topBar = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = Float2.Zero,
-                Size = new Float2(MainPanelSize.X, TopBarHeight),
+                Size = new Float2(Width, TopBarHeight),
+                BackgroundColor = new Color(InkWashTheme.BaseSecondary.R, InkWashTheme.BaseSecondary.G, InkWashTheme.BaseSecondary.B, 0.9f),
             };
-            _mainPanel.AddChild(_topBar);
+            AddChild(_topBar);
 
-            // 返回按钮（左上角）
-            _backButton = new InkBackButton
+            var bottomBorder = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(Padding, (TopBarHeight - 40f) * 0.5f),
+                Location = new Float2(0f, TopBarHeight - 1f),
+                Size = new Float2(Width, 1f),
+                BackgroundColor = InkWashTheme.BorderGoldSubtle,
             };
-            _backButton.Clicked += OnBackButtonClicked;
-            _topBar.AddChild(_backButton);
+            _topBar.AddChild(bottomBorder);
 
-            // "角色信息"标题
-            _topTitleLabel = new Label
+            var iconLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(Padding + 40f + 12f, 0f),
+                Location = new Float2(Padding, (TopBarHeight - 18f) * 0.5f),
+                Size = new Float2(18f, 18f),
+                Text = "\u2630",
+                TextColor = InkWashTheme.GoldPrimary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 14f),
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            _topBar.AddChild(iconLabel);
+
+            _titleLabel = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(Padding + 18f + 10f, 0f),
                 Size = new Float2(120f, TopBarHeight),
                 Text = "角色信息",
-                TextColor = InkWashTheme.TextGold,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 16f),
+                TextColor = InkWashTheme.GoldPrimary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 18f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
-            _topBar.AddChild(_topTitleLabel);
+            _topBar.AddChild(_titleLabel);
 
-            // "CHARACTER"副标题
-            _topSubtitleLabel = new Label
+            _subtitleLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(Padding + 40f + 12f + 100f, 0f),
+                Location = new Float2(Padding + 18f + 10f + 118f, 0f),
                 Size = new Float2(100f, TopBarHeight),
                 Text = "CHARACTER",
                 TextColor = InkWashTheme.TextTertiary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 10f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
-            _topBar.AddChild(_topSubtitleLabel);
+            _topBar.AddChild(_subtitleLabel);
 
-            // 等级摘要（右上）
-            _topLevelLabel = new Label
+            _closeButton = new InkButton
+            {
+                Variant = InkButtonVariant.Ghost,
+                ButtonSize = InkButtonSize.Sm,
+                Text = "X",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(Width > 0f ? Width - Padding - SlotBtnSize : 900f - Padding - SlotBtnSize, (TopBarHeight - SlotBtnSize) * 0.5f),
+                Size = new Float2(SlotBtnSize, SlotBtnSize),
+            };
+            _closeButton.Clicked += OnCloseClicked;
+            _topBar.AddChild(_closeButton);
+
+            _levelLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Size = new Float2(80f, TopBarHeight),
-                Text = "Lv. 60",
-                TextColor = InkWashTheme.TextGold,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 14f),
+                Text = "Lv.60",
+                TextColor = InkWashTheme.GoldPrimary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 14f),
                 HorizontalAlignment = TextAlignment.Far,
                 VerticalAlignment = TextAlignment.Center,
             };
-            _topBar.AddChild(_topLevelLabel);
+            _topBar.AddChild(_levelLabel);
 
-            // 角色名摘要（右上，等级左侧）
-            _topNameLabel = new Label
+            _nameLabel = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
                 Size = new Float2(100f, TopBarHeight),
                 Text = "逍遥客",
                 TextColor = InkWashTheme.TextDefault,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 14f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f),
                 HorizontalAlignment = TextAlignment.Far,
                 VerticalAlignment = TextAlignment.Center,
             };
-            _topBar.AddChild(_topNameLabel);
+            _topBar.AddChild(_nameLabel);
         }
 
-        /// <summary>
-        /// 构建左侧立绘与装备槽面板。
-        /// </summary>
+        // ===================================================================
+        // Left Column - Model Stage
+        // ===================================================================
+
         private void BuildLeftColumn()
         {
-            float contentTop = TopBarHeight + PanelGap;
-            float contentBottom = MainPanelSize.Y - BottomBarHeight - PanelGap;
-            float contentH = contentBottom - contentTop;
-            float leftW = (MainPanelSize.X - Padding * 2 - PanelGap) * LeftPanelRatio;
-
-            _leftPanel = new InkPanel
+            _leftPanel = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(Padding, contentTop),
-                Size = new Float2(leftW, contentH),
+                Location = new Float2(Padding, TopBarHeight),
+                Size = new Float2(Width * LeftPanelRatio, Height - TopBarHeight - BottomBarHeight),
+                ClipChildren = false,
             };
-            _mainPanel.AddChild(_leftPanel);
+            AddChild(_leftPanel);
 
-            // 立绘占位区（上方 ~65% 高度）
-            float previewH = contentH * 0.62f;
-            var previewPanel = new InkPanel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(Padding, Padding),
-                Size = new Float2(leftW - Padding * 2, previewH - Padding),
-                BackgroundColor = InkWashTheme.Abyss,
-            };
-            _leftPanel.AddChild(previewPanel);
-
-            _previewPlaceholderLabel = new Label
+            _modelStage = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.StretchAll,
-                Text = "3D 立绘",
+                Offsets = Margin.Zero,
+                BackgroundColor = InkWashTheme.BaseDefault,
+                ClipChildren = false,
+            };
+            _leftPanel.AddChild(_modelStage);
+
+            var modelPlaceholder = new Label
+            {
+                Size = new Float2(200f, 40f),
+                Text = "3D 角色模型",
                 TextColor = InkWashTheme.TextTertiary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 18f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 16f),
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
             };
-            previewPanel.AddChild(_previewPlaceholderLabel);
+            _modelStage.AddChild(modelPlaceholder);
 
-            // 立绘区底部角色名
-            _previewNameLabel = new Label
-            {
-                AnchorPreset = AnchorPresets.BottomLeft,
-                Location = new Float2(Padding, previewH - Padding - 28f),
-                Size = new Float2(leftW - Padding * 2, 22f),
-                Text = "逍遥客 · 武当派",
-                TextColor = InkWashTheme.TextDefault,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 14f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            previewPanel.AddChild(_previewNameLabel);
+            BuildFloatingSlots();
 
-            // 装备槽分区标题
-            float equipTop = previewH + Padding * 0.5f;
-            var equipTitleBar = new ContainerControl
+            var bubble = new InkToolBarBubble();
+            _modelStage.AddChild(bubble);
+
+            _previewBadge = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(Padding, equipTop),
-                Size = new Float2(TitleBarWidth, TitleBarHeight),
-                BackgroundColor = InkWashTheme.GoldPrimary,
+                Location = new Float2(8f, 8f),
+                Size = new Float2(70f, 24f),
+                Text = "3D预览",
+                TextColor = InkWashTheme.GoldPrimary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 11f),
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                BackgroundColor = new Color(14f / 255f, 16f / 255f, 22f / 255f, 0.7f),
             };
-            _leftPanel.AddChild(equipTitleBar);
+            _modelStage.AddChild(_previewBadge);
 
-            var equipTitleLabel = new Label
+            _rotateHint = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(Padding + TitleBarWidth + 6f, equipTop - 2f),
-                Size = new Float2(160f, TitleBarHeight + 4f),
-                Text = "装备槽位",
-                TextColor = InkWashTheme.TextGold,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), TitleFontSize),
-                HorizontalAlignment = TextAlignment.Near,
+                Location = new Float2(82f, 8f),
+                Size = new Float2(80f, 24f),
+                Text = "拖拽旋转",
+                TextColor = InkWashTheme.TextTertiary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
+                HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
+                BackgroundColor = new Color(14f / 255f, 16f / 255f, 22f / 255f, 0.7f),
             };
-            _leftPanel.AddChild(equipTitleLabel);
+            _modelStage.AddChild(_rotateHint);
 
-            // 6 个装备槽（3 列 × 2 行）
-            _equipmentSlots = new InkCell[EquipmentSlotCount];
-            _equipmentSlotLabels = new Label[EquipmentSlotCount];
-            string[] slotNames = { "头", "身", "手", "足", "武器", "饰品" };
-            var slotQualities = new InkWashTheme.InkQuality[]
+            BuildCornerDecorations();
+            BuildAppearanceTabs();
+        }
+
+        private void BuildFloatingSlots()
+        {
+            string[] slotChars = { "头", "颈", "面", "肩", "背", "右", "腰", "左", "右戒", "左戒", "右腕", "身", "腿", "左腕", "足" };
+            _floatingSlots = new InkButton[slotChars.Length];
+            _slotLeftPct = new float[slotChars.Length];
+            _slotTopPct = new float[slotChars.Length];
+
+            var slotPositions = new (float leftPct, float topPct, bool equipped, string icon, string name, string type, string attr, string extra, int enhance)[]
             {
-                InkWashTheme.InkQuality.Rare,
-                InkWashTheme.InkQuality.Legendary,
-                InkWashTheme.InkQuality.Common,
-                InkWashTheme.InkQuality.Uncommon,
-                InkWashTheme.InkQuality.Legendary,
-                InkWashTheme.InkQuality.Epic,
+                (0.30f, 0.04f, true,  "头", "玄铁重盔",   "头部", "防+47", "耐久 200", 3),
+                (0.50f, 0.04f, true,  "颈", "镇魂项链",   "颈部", "气+32", "耐久 180", 5),
+                (0.70f, 0.04f, true,  "面", "天蚕面纱",   "面部", "敏+28", "耐久 160", 2),
+                (0.08f, 0.24f, true,  "肩", "龙鳞护肩",   "肩部", "防+35", "耐久 220", 4),
+                (0.84f, 0.24f, true,  "背", "玄龟背甲",   "背部", "体+40", "耐久 240", 1),
+                (0.04f, 0.42f, true,  "右", "破军剑",     "右手", "攻+88", "耐久 150", 7),
+                (0.46f, 0.42f, true,  "腰", "蟒筋腰带",   "腰部", "气+25", "耐久 190", 2),
+                (0.90f, 0.42f, true,  "左", "玄铁盾",     "左手", "防+62", "耐久 210", 6),
+                (0.08f, 0.60f, true,  "右戒", "镇魂戒",   "右戒", "攻+22", "耐久 130", 3),
+                (0.84f, 0.60f, true,  "左戒", "灵犀戒",   "左戒", "气+20", "耐久 130", 4),
+                (0.04f, 0.78f, true,  "右腕", "玄铁护腕", "右腕", "防+18", "耐久 170", 1),
+                (0.24f, 0.78f, true,  "身", "天蚕宝甲",   "身体", "防+55", "耐久 280", 5),
+                (0.44f, 0.78f, true,  "腿", "龙鳞战腿",   "腿部", "防+38", "耐久 230", 3),
+                (0.64f, 0.78f, true,  "左腕", "灵犀护腕", "左腕", "防+16", "耐久 170", 2),
+                (0.84f, 0.78f, true,  "足", "追风靴",     "脚部", "敏+30", "耐久 200", 4),
             };
 
-            float gridTop = equipTop + TitleBarHeight + TitleToContentGap;
-            float colWidth = EquipmentSlotSize + EquipmentSlotGap;
-            for (int i = 0; i < EquipmentSlotCount; i++)
+            var bubbleData = new (string icon, string name, string type, string attr, string extra, int enhance)[slotPositions.Length];
+            for (int i = 0; i < slotChars.Length; i++)
             {
-                int col = i % 3;
-                int row = i / 3;
-                float slotX = Padding + col * colWidth;
-                float slotY = gridTop + row * (EquipmentSlotSize + EquipmentSlotGap + 14f);
+                var pos = slotPositions[i];
+                _slotLeftPct[i] = pos.leftPct;
+                _slotTopPct[i] = pos.topPct;
+                bubbleData[i] = (pos.icon, pos.name, pos.type, pos.attr, pos.extra, pos.enhance);
 
-                var slot = new InkCell
+                var btn = new InkButton
                 {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(slotX, slotY),
-                    Size = new Float2(EquipmentSlotSize, EquipmentSlotSize),
-                    Quality = slotQualities[i],
+                    Variant = InkButtonVariant.Ghost,
+                    Text = pos.icon,
+                    Size = new Float2(SlotBtnSize - 4f, SlotBtnSize - 4f),
+                    BackgroundColor = pos.equipped
+                        ? new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.1f)
+                        : new Color(14f / 255f, 16f / 255f, 22f / 255f, 0.4f),
+                    BorderColor = pos.equipped ? InkWashTheme.BorderGold : InkWashTheme.BorderFaint,
+                    BorderThickness = 1f,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 11f),
+                    TextColor = pos.equipped ? InkWashTheme.TextDefault : InkWashTheme.TextTertiary,
                 };
-                _equipmentSlots[i] = slot;
-                _leftPanel.AddChild(slot);
+                _floatingSlots[i] = btn;
+                _modelStage.AddChild(btn);
 
-                var slotLabel = new Label
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(slotX, slotY + EquipmentSlotSize + 2f),
-                    Size = new Float2(EquipmentSlotSize, 12f),
-                    Text = slotNames[i],
-                    TextColor = InkWashTheme.TextSecondary,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 11f),
-                    HorizontalAlignment = TextAlignment.Center,
-                    VerticalAlignment = TextAlignment.Center,
-                };
-                _equipmentSlotLabels[i] = slotLabel;
-                _leftPanel.AddChild(slotLabel);
+                int captured = i;
+                btn.Clicked += () => OnSlotClicked(captured);
             }
         }
 
-        /// <summary>
-        /// 构建右侧属性面板：基本信息 + 主要属性 + 五行 + 武学摘要。
-        /// </summary>
-        private void BuildRightColumn()
+        private void ShowSlotBubble(int index)
         {
-            float contentTop = TopBarHeight + PanelGap;
-            float contentBottom = MainPanelSize.Y - BottomBarHeight - PanelGap;
-            float contentH = contentBottom - contentTop;
-            float leftW = (MainPanelSize.X - Padding * 2 - PanelGap) * LeftPanelRatio;
-            float rightW = MainPanelSize.X - Padding * 2 - PanelGap - leftW;
-            float rightX = Padding + leftW + PanelGap;
+            if (_floatingSlots == null || index < 0 || index >= _floatingSlots.Length) return;
 
-            _rightPanel = new InkPanel
+            string[][] bubbleSlots =
+            {
+                new[] { "头", "玄铁重盔", "头部", "防+47", "耐久 200", "3" },
+                new[] { "颈", "镇魂项链", "颈部", "气+32", "耐久 180", "5" },
+                new[] { "面", "天蚕面纱", "面部", "敏+28", "耐久 160", "2" },
+                new[] { "肩", "龙鳞护肩", "肩部", "防+35", "耐久 220", "4" },
+                new[] { "背", "玄龟背甲", "背部", "体+40", "耐久 240", "1" },
+                new[] { "右", "破军剑",   "右手", "攻+88", "耐久 150", "7" },
+                new[] { "腰", "蟒筋腰带", "腰部", "气+25", "耐久 190", "2" },
+                new[] { "左", "玄铁盾",   "左手", "防+62", "耐久 210", "6" },
+                new[] { "右戒", "镇魂戒", "右戒", "攻+22", "耐久 130", "3" },
+                new[] { "左戒", "灵犀戒", "左戒", "气+20", "耐久 130", "4" },
+                new[] { "右腕", "玄铁护腕", "右腕", "防+18", "耐久 170", "1" },
+                new[] { "身", "天蚕宝甲", "身体", "防+55", "耐久 280", "5" },
+                new[] { "腿", "龙鳞战腿", "腿部", "防+38", "耐久 230", "3" },
+                new[] { "左腕", "灵犀护腕", "左腕", "防+16", "耐久 170", "2" },
+                new[] { "足", "追风靴",   "脚部", "敏+30", "耐久 200", "4" },
+            };
+
+            if (index >= bubbleSlots.Length) return;
+            var d = bubbleSlots[index];
+            var btn = _floatingSlots[index];
+            InkToolBarBubble.Instance.ShowAt(btn, d[1], d[2], d[3], d[4], int.Parse(d[5]));
+            _activeSlotIndex = index;
+        }
+
+        private void BuildCornerDecorations()
+        {
+            float thick = 2f;
+            var gold = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.5f);
+
+            _cornerTL = new ContainerControl { Size = new Float2(CornerSize, CornerSize) };
+            _modelStage.AddChild(_cornerTL);
+            MakeLBars(_cornerTL, thick, gold);
+
+            _cornerTR = new ContainerControl { Size = new Float2(CornerSize, CornerSize) };
+            _modelStage.AddChild(_cornerTR);
+            MakeRBars(_cornerTR, thick, gold);
+
+            _cornerBL = new ContainerControl { Size = new Float2(CornerSize, CornerSize) };
+            _modelStage.AddChild(_cornerBL);
+            MakeLBars(_cornerBL, thick, gold);
+
+            _cornerBR = new ContainerControl { Size = new Float2(CornerSize, CornerSize) };
+            _modelStage.AddChild(_cornerBR);
+            MakeRBars(_cornerBR, thick, gold);
+        }
+
+        private static void MakeLBars(ContainerControl parent, float thick, Color color)
+        {
+            parent.AddChild(new ContainerControl { Size = new Float2(parent.Width, thick), BackgroundColor = color });
+            parent.AddChild(new ContainerControl { Size = new Float2(thick, parent.Height), BackgroundColor = color });
+        }
+
+        private static void MakeRBars(ContainerControl parent, float thick, Color color)
+        {
+            parent.AddChild(new ContainerControl { Location = new Float2(0f, 0f), Size = new Float2(parent.Width, thick), BackgroundColor = color });
+            parent.AddChild(new ContainerControl { Location = new Float2(parent.Width - thick, 0f), Size = new Float2(thick, parent.Height), BackgroundColor = color });
+        }
+
+        private void BuildAppearanceTabs()
+        {
+            _tabPanel = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(rightX, contentTop),
-                Size = new Float2(rightW, contentH),
+                Size = new Float2(220f, 36f),
+                BackgroundColor = new Color(20f / 255f, 23f / 255f, 30f / 255f, 0.85f),
             };
-            _mainPanel.AddChild(_rightPanel);
+            _modelStage.AddChild(_tabPanel);
 
-            float innerX = Padding;
-            float innerW = rightW - Padding * 2;
-            float cursorY = Padding;
+            string[] tabs = { "发型", "脸型", "肤色" };
+            float tabW = _tabPanel.Width / 3f;
+            for (int i = 0; i < 3; i++)
+            {
+                var tab = new InkButton
+                {
+                    Variant = InkButtonVariant.Ghost,
+                    ButtonSize = InkButtonSize.Sm,
+                    Text = tabs[i],
+                    Location = new Float2(i * tabW, 2f),
+                    Size = new Float2(tabW - 2f, 32f),
+                    BackgroundColor = i == 0 ? InkWashTheme.BgHover : Color.Transparent,
+                    BorderColor = i == 0 ? InkWashTheme.BorderGoldSubtle : Color.Transparent,
+                    BorderThickness = i == 0 ? 1f : 0f,
+                    TextColor = i == 0 ? InkWashTheme.TextBrand : InkWashTheme.TextSecondary,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 13f),
+                };
+                _tabPanel.AddChild(tab);
+            }
+        }
 
-            // ===== 基本信息分区 =====
-            cursorY = AddSectionTitle(_rightPanel, innerX, cursorY, "基本信息", "BASIC INFO");
-            cursorY += TitleToContentGap;
+        // ===================================================================
+        // Right Column - Attribute Panels
+        // ===================================================================
 
-            // 4 个基本信息项（2 列 × 2 行）
-            string[] basicLabels = { "姓名", "等级", "门派", "性别" };
-            string[] basicValues = { "逍遥客", "Lv. 60", "武当派", "男" };
-            float basicRowH = 20f;
-            float basicColW = innerW * 0.5f;
-            for (int i = 0; i < 4; i++)
+        private void BuildRightColumn()
+        {
+            _rightPanel = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(Width * LeftPanelRatio + Padding * 1.5f, TopBarHeight),
+                Size = new Float2(Width * (1f - LeftPanelRatio) - Padding * 2, Height - TopBarHeight - BottomBarHeight),
+                ClipChildren = false,
+            };
+            AddChild(_rightPanel);
+
+            float ry = Padding;
+            float rw = _rightPanel.Width - Padding * 2;
+
+            ry = BuildFiveAttributesCard(ry, rw);
+            ry = BuildFiveElementsCard(ry, rw);
+            ry = BuildBaseStatsCard(ry, rw);
+            ry = BuildCombatCard(ry, rw);
+            BuildEquipmentDetailCard(ry, rw);
+        }
+
+        private float BuildFiveAttributesCard(float y, float w)
+        {
+            var card = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(Padding, y),
+                Size = new Float2(w, 110f),
+                BackgroundColor = InkWashTheme.BaseSecondary,
+            };
+            _rightPanel.AddChild(card);
+
+            var header = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(8f, 6f),
+                Size = new Float2(160f, 20f),
+                Text = "五维属性",
+                TextColor = InkWashTheme.GoldPrimary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            card.AddChild(header);
+
+            var sub = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(130f, 6f),
+                Size = new Float2(140f, 20f),
+                Text = "FIVE ATTRIBUTES",
+                TextColor = InkWashTheme.TextTertiary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            card.AddChild(sub);
+
+            string[] names = { "体", "御", "敏", "势", "劲" };
+            float[] vals = { 60f, 45f, 80f, 50f, 95f };
+            float cellW = (w - 16f) / 5f;
+
+            for (int i = 0; i < 5; i++)
+            {
+                var nLabel = new Label
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(8f + i * cellW, 34f),
+                    Size = new Float2(cellW, 18f),
+                    Text = names[i],
+                    TextColor = InkWashTheme.GoldPrimary,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f),
+                    HorizontalAlignment = TextAlignment.Center,
+                    VerticalAlignment = TextAlignment.Center,
+                };
+                card.AddChild(nLabel);
+
+                var vLabel = new Label
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(8f + i * cellW, 52f),
+                    Size = new Float2(cellW, 18f),
+                    Text = ((int)vals[i]).ToString(),
+                    TextColor = InkWashTheme.TextBrand,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 13f),
+                    HorizontalAlignment = TextAlignment.Center,
+                    VerticalAlignment = TextAlignment.Center,
+                };
+                card.AddChild(vLabel);
+
+                float barW = cellW * 0.7f;
+                var barBg = new ContainerControl
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(8f + i * cellW + (cellW - barW) * 0.5f, 78f),
+                    Size = new Float2(barW, 4f),
+                    BackgroundColor = InkWashTheme.BorderNeutralL1,
+                };
+                card.AddChild(barBg);
+
+                var barFill = new ContainerControl
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = Float2.Zero,
+                    Size = new Float2(barW * (vals[i] / 100f), barBg.Height),
+                    BackgroundColor = InkWashTheme.GoldPrimary,
+                };
+                barBg.AddChild(barFill);
+            }
+
+            return y + card.Height + Padding;
+        }
+
+        private float BuildFiveElementsCard(float y, float w)
+        {
+            var card = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(Padding, y),
+                Size = new Float2(w, 170f),
+                BackgroundColor = InkWashTheme.BaseSecondary,
+            };
+            _rightPanel.AddChild(card);
+
+            var header = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(8f, 6f),
+                Size = new Float2(160f, 20f),
+                Text = "五行体质",
+                TextColor = InkWashTheme.GoldPrimary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            card.AddChild(header);
+
+            var sub = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(130f, 6f),
+                Size = new Float2(140f, 20f),
+                Text = "FIVE ELEMENTS",
+                TextColor = InkWashTheme.TextTertiary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            card.AddChild(sub);
+
+            string[] names = { "金", "木", "水", "火", "土" };
+            float[] vals = { 75f, 60f, 80f, 65f, 70f };
+            Color[] elemColors =
+            {
+                InkWashTheme.ElementMetal,
+                InkWashTheme.ElementWood,
+                InkWashTheme.ElementWater,
+                InkWashTheme.ElementFire,
+                InkWashTheme.ElementEarth,
+            };
+            float barH = 12f;
+            float barGap = 26f;
+            float nameW = 24f;
+            float pctW = 30f;
+
+            for (int i = 0; i < 5; i++)
+            {
+                float rowY = 34f + i * barGap;
+
+                var nLabel = new Label
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(8f, rowY),
+                    Size = new Float2(nameW, barH + 4f),
+                    Text = names[i],
+                    TextColor = elemColors[i],
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 13f),
+                    HorizontalAlignment = TextAlignment.Center,
+                    VerticalAlignment = TextAlignment.Center,
+                };
+                card.AddChild(nLabel);
+
+                float barW = w - 16f - nameW - pctW - 10f;
+                var barBg = new ContainerControl
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(8f + nameW + 6f, rowY + 2f),
+                    Size = new Float2(barW, barH),
+                    BackgroundColor = InkWashTheme.BorderNeutralL1,
+                };
+                card.AddChild(barBg);
+
+                var barFill = new ContainerControl
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = Float2.Zero,
+                    Size = new Float2(barW * (vals[i] / 100f), barH),
+                    BackgroundColor = elemColors[i],
+                };
+                barBg.AddChild(barFill);
+
+                var vLabel = new Label
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(8f + nameW + 6f + barW + 4f, rowY),
+                    Size = new Float2(pctW, barH + 4f),
+                    Text = ((int)vals[i]).ToString(),
+                    TextColor = InkWashTheme.TextSecondary,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
+                    HorizontalAlignment = TextAlignment.Far,
+                    VerticalAlignment = TextAlignment.Center,
+                };
+                card.AddChild(vLabel);
+            }
+
+            return y + card.Height + Padding;
+        }
+
+        private float BuildBaseStatsCard(float y, float w)
+        {
+            var card = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(Padding, y),
+                Size = new Float2(w, 130f),
+                BackgroundColor = InkWashTheme.BaseSecondary,
+            };
+            _rightPanel.AddChild(card);
+
+            var header = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(8f, 6f),
+                Size = new Float2(160f, 20f),
+                Text = "基础属性",
+                TextColor = InkWashTheme.GoldPrimary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            card.AddChild(header);
+
+            var sub = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(130f, 6f),
+                Size = new Float2(140f, 20f),
+                Text = "BASE STATS",
+                TextColor = InkWashTheme.TextTertiary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            card.AddChild(sub);
+
+            string[] statNames = { "攻击力", "防御力", "暴击率", "暴击伤害", "命中率", "闪避率" };
+            string[] statValues = { "1234", "567", "45%", "250%", "95%", "12%" };
+            float colW = (w - 16f) / 3f;
+            float rowH = 30f;
+
+            for (int i = 0; i < 6; i++)
+            {
+                int col = i % 3;
+                int row = i / 3;
+                float sx = 8f + col * colW;
+                float sy = 34f + row * rowH;
+
+                var nLabel = new Label
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(sx, sy),
+                    Size = new Float2(colW * 0.55f, rowH),
+                    Text = statNames[i],
+                    TextColor = InkWashTheme.TextSecondary,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                    HorizontalAlignment = TextAlignment.Near,
+                    VerticalAlignment = TextAlignment.Center,
+                };
+                card.AddChild(nLabel);
+
+                var vLabel = new Label
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(sx + colW * 0.55f, sy),
+                    Size = new Float2(colW * 0.45f, rowH),
+                    Text = statValues[i],
+                    TextColor = InkWashTheme.TextDefault,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 14f),
+                    HorizontalAlignment = TextAlignment.Far,
+                    VerticalAlignment = TextAlignment.Center,
+                };
+                card.AddChild(vLabel);
+            }
+
+            return y + card.Height + Padding;
+        }
+
+        private float BuildCombatCard(float y, float w)
+        {
+            var card = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(Padding, y),
+                Size = new Float2(w, 210f),
+                BackgroundColor = InkWashTheme.BaseSecondary,
+            };
+            _rightPanel.AddChild(card);
+
+            var header = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(8f, 6f),
+                Size = new Float2(160f, 20f),
+                Text = "战斗属性",
+                TextColor = InkWashTheme.GoldPrimary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            card.AddChild(header);
+
+            var sub = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(130f, 6f),
+                Size = new Float2(80f, 20f),
+                Text = "COMBAT",
+                TextColor = InkWashTheme.TextTertiary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            card.AddChild(sub);
+
+            var powerLabel = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(8f, 32f),
+                Size = new Float2(60f, 28f),
+                Text = "战斗力",
+                TextColor = InkWashTheme.TextSecondary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 12f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            card.AddChild(powerLabel);
+
+            var powerVal = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(72f, 28f),
+                Size = new Float2(180f, 36f),
+                Text = "45,678",
+                TextColor = InkWashTheme.GoldPrimary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 32f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            card.AddChild(powerVal);
+
+            var separator = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(8f, 68f),
+                Size = new Float2(w - 16f, 1f),
+                BackgroundColor = InkWashTheme.BorderNeutralL2,
+            };
+            card.AddChild(separator);
+
+            string[] combatNames = { "境界", "门派", "阵营", "侠义值", "恶名值", "修炼经验" };
+            string[] combatValues = { "筑基后期", "武当派", "正派", "1200", "0", "82%" };
+            float cColW = (w - 16f) / 2f;
+
+            for (int i = 0; i < 6; i++)
             {
                 int col = i % 2;
                 int row = i / 2;
-                float itemX = innerX + col * basicColW;
-                float itemY = cursorY + row * basicRowH;
+                float cy = 76f + row * 34f;
+                float cx = 8f + col * cColW;
 
-                var labLabel = new Label
+                var nLabel = new Label
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(itemX, itemY),
-                    Size = new Float2(40f, basicRowH),
-                    Text = basicLabels[i],
+                    Location = new Float2(cx, cy),
+                    Size = new Float2(cColW * 0.5f, 28f),
+                    Text = combatNames[i],
                     TextColor = InkWashTheme.TextSecondary,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 11f),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
                     HorizontalAlignment = TextAlignment.Near,
                     VerticalAlignment = TextAlignment.Center,
                 };
-                _rightPanel.AddChild(labLabel);
+                card.AddChild(nLabel);
 
-                var valLabel = new Label
+                var vLabel = new Label
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(itemX + 42f, itemY),
-                    Size = new Float2(basicColW - 50f, basicRowH),
-                    Text = basicValues[i],
+                    Location = new Float2(cx + cColW * 0.5f, cy),
+                    Size = new Float2(cColW * 0.5f, 28f),
+                    Text = combatValues[i],
                     TextColor = InkWashTheme.TextDefault,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 12f),
-                    HorizontalAlignment = TextAlignment.Near,
-                    VerticalAlignment = TextAlignment.Center,
-                };
-                _rightPanel.AddChild(valLabel);
-
-                switch (i)
-                {
-                    case 0: _nameValueLabel = valLabel; break;
-                    case 1: _levelValueLabel = valLabel; break;
-                    case 2: _sectValueLabel = valLabel; break;
-                    case 3: _genderValueLabel = valLabel; break;
-                }
-            }
-            cursorY += basicRowH * 2 + PanelGap;
-
-            // ===== 主要属性分区 =====
-            _attrTitleLabel = AddSectionTitleLabel(_rightPanel, innerX, cursorY, "主要属性", "PRIMARY");
-            cursorY += TitleBarHeight + TitleToContentGap;
-
-            // 气血/内力进度条
-            float barH = 10f;
-            _hpBar = new InkBar
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(innerX, cursorY),
-                Size = new Float2(innerW, barH),
-                Value = 0.85f,
-                FillVariant = InkBarFillVariant.Blood,
-            };
-            _rightPanel.AddChild(_hpBar);
-
-            _hpValueLabel = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(innerX, cursorY + barH + 2f),
-                Size = new Float2(innerW, 14f),
-                Text = "气血 8500 / 10000",
-                TextColor = InkWashTheme.TextSecondary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 11f),
-                HorizontalAlignment = TextAlignment.Near,
-            };
-            _rightPanel.AddChild(_hpValueLabel);
-            cursorY += barH + 18f;
-
-            _mpBar = new InkBar
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(innerX, cursorY),
-                Size = new Float2(innerW, barH),
-                Value = 0.72f,
-                FillVariant = InkBarFillVariant.Jade,
-            };
-            _rightPanel.AddChild(_mpBar);
-
-            _mpValueLabel = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(innerX, cursorY + barH + 2f),
-                Size = new Float2(innerW, 14f),
-                Text = "内力 3600 / 5000",
-                TextColor = InkWashTheme.TextSecondary,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 11f),
-                HorizontalAlignment = TextAlignment.Near,
-            };
-            _rightPanel.AddChild(_mpValueLabel);
-            cursorY += barH + 18f + 4f;
-
-            // 六维属性（3 列 × 2 行）
-            _attrNameLabels = new Label[PrimaryAttrCount];
-            _attrValueLabels = new Label[PrimaryAttrCount];
-            string[] attrNames = { "体魄", "身法", "根骨", "悟性", "臂力", "定力" };
-            string[] attrValues = { "600", "450", "520", "480", "700", "380" };
-            float attrColW = innerW / 3f;
-            for (int i = 0; i < PrimaryAttrCount; i++)
-            {
-                int col = i % 3;
-                int row = i / 3;
-                float itemX = innerX + col * attrColW;
-                float itemY = cursorY + row * AttrRowHeight;
-
-                var nameLabel = new Label
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(itemX, itemY),
-                    Size = new Float2(attrColW * 0.55f, AttrRowHeight),
-                    Text = attrNames[i],
-                    TextColor = InkWashTheme.TextSecondary,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 11f),
-                    HorizontalAlignment = TextAlignment.Near,
-                    VerticalAlignment = TextAlignment.Center,
-                };
-                _attrNameLabels[i] = nameLabel;
-                _rightPanel.AddChild(nameLabel);
-
-                var valLabel = new Label
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(itemX + attrColW * 0.55f, itemY),
-                    Size = new Float2(attrColW * 0.45f, AttrRowHeight),
-                    Text = attrValues[i],
-                    TextColor = InkWashTheme.TextDefault,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 13f),
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 12f),
                     HorizontalAlignment = TextAlignment.Far,
                     VerticalAlignment = TextAlignment.Center,
                 };
-                _attrValueLabels[i] = valLabel;
-                _rightPanel.AddChild(valLabel);
+                card.AddChild(vLabel);
             }
-            cursorY += AttrRowHeight * 2 + PanelGap;
 
-            // ===== 五行体质分区 =====
-            _elementTitleLabel = AddSectionTitleLabel(_rightPanel, innerX, cursorY, "五行体质", "FIVE ELEMENTS");
-            cursorY += TitleBarHeight + TitleToContentGap;
-
-            _elementBars = new InkBar[ElementCount];
-            _elementLabels = new Label[ElementCount];
-            string[] elementNames = { "金", "木", "水", "火", "土" };
-            float[] elementValues = { 0.75f, 0.60f, 0.80f, 0.65f, 0.70f };
-            var elementVariants = new InkBarFillVariant[]
-            {
-                InkBarFillVariant.Gold,     // 金
-                InkBarFillVariant.Jade,     // 木
-                InkBarFillVariant.Jade,     // 水
-                InkBarFillVariant.Vermilion, // 火
-                InkBarFillVariant.Gold,     // 土
-            };
-
-            for (int i = 0; i < ElementCount; i++)
-            {
-                float rowY = cursorY + i * (ElementBarHeight + ElementRowGap + 8f);
-
-                var nameLabel = new Label
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(innerX, rowY - 2f),
-                    Size = new Float2(20f, ElementBarHeight + 4f),
-                    Text = elementNames[i],
-                    TextColor = InkWashTheme.TextGold,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 12f),
-                    HorizontalAlignment = TextAlignment.Center,
-                    VerticalAlignment = TextAlignment.Center,
-                };
-                _elementLabels[i] = nameLabel;
-                _rightPanel.AddChild(nameLabel);
-
-                var bar = new InkBar
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(innerX + 24f, rowY),
-                    Size = new Float2(innerW - 60f, ElementBarHeight),
-                    Value = elementValues[i],
-                    FillVariant = elementVariants[i],
-                };
-                _elementBars[i] = bar;
-                _rightPanel.AddChild(bar);
-
-                var pctLabel = new Label
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(innerX + innerW - 36f, rowY - 2f),
-                    Size = new Float2(36f, ElementBarHeight + 4f),
-                    Text = ((int)(elementValues[i] * 100)).ToString() + "%",
-                    TextColor = InkWashTheme.TextSecondary,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 11f),
-                    HorizontalAlignment = TextAlignment.Far,
-                    VerticalAlignment = TextAlignment.Center,
-                };
-                _rightPanel.AddChild(pctLabel);
-            }
-            cursorY += ElementCount * (ElementBarHeight + ElementRowGap + 8f) + PanelGap;
-
-            // ===== 武学摘要分区 =====
-            _martialTitleLabel = AddSectionTitleLabel(_rightPanel, innerX, cursorY, "武学摘要", "MARTIAL");
-            cursorY += TitleBarHeight + TitleToContentGap;
-
-            _martialLabels = new Label[MartialThumbnailCount];
-            string[] martialTexts =
-            {
-                "• 太极剑法 · 大师 4/4",
-                "• 纯阳内功 · 高级 3/5",
-                "• 凌波微步 · 中级 2/3",
-            };
-            for (int i = 0; i < MartialThumbnailCount; i++)
-            {
-                var lab = new Label
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(innerX, cursorY + i * 18f),
-                    Size = new Float2(innerW, 18f),
-                    Text = martialTexts[i],
-                    TextColor = InkWashTheme.TextSecondary,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 12f),
-                    HorizontalAlignment = TextAlignment.Near,
-                    VerticalAlignment = TextAlignment.Center,
-                };
-                _martialLabels[i] = lab;
-                _rightPanel.AddChild(lab);
-            }
+            return y + card.Height + Padding;
         }
 
-        /// <summary>
-        /// 在指定父容器内添加分区标题（装饰竖线 + 标题 + 副标题），返回标题区域底部 Y 坐标。
-        /// </summary>
-        private float AddSectionTitle(ContainerControl parent, float x, float y, string title, string subtitle)
+        private void BuildEquipmentDetailCard(float y, float w)
         {
-            var titleBar = new ContainerControl
+            var card = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(x, y),
-                Size = new Float2(TitleBarWidth, TitleBarHeight),
-                BackgroundColor = InkWashTheme.GoldPrimary,
+                Location = new Float2(Padding, y),
+                Size = new Float2(w, 130f),
+                BackgroundColor = InkWashTheme.BaseSecondary,
             };
-            parent.AddChild(titleBar);
+            _rightPanel.AddChild(card);
 
-            var titleLabel = new Label
+            var header = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(x + TitleBarWidth + 6f, y - 2f),
-                Size = new Float2(160f, TitleBarHeight + 4f),
-                Text = title,
-                TextColor = InkWashTheme.TextGold,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Heading), TitleFontSize),
+                Location = new Float2(8f, 6f),
+                Size = new Float2(160f, 20f),
+                Text = "装备详情",
+                TextColor = InkWashTheme.GoldPrimary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f),
                 HorizontalAlignment = TextAlignment.Near,
                 VerticalAlignment = TextAlignment.Center,
             };
-            parent.AddChild(titleLabel);
+            card.AddChild(header);
 
-            if (!string.IsNullOrEmpty(subtitle))
-            {
-                var subLabel = new Label
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(x + TitleBarWidth + 6f + 130f, y - 2f),
-                    Size = new Float2(100f, TitleBarHeight + 4f),
-                    Text = subtitle,
-                    TextColor = InkWashTheme.TextTertiary,
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 9f),
-                    HorizontalAlignment = TextAlignment.Near,
-                    VerticalAlignment = TextAlignment.Center,
-                };
-                parent.AddChild(subLabel);
-            }
-
-            return y + TitleBarHeight;
-        }
-
-        /// <summary>
-        /// 添加分区标题并返回标题 Label 引用（供字段缓存）。
-        /// </summary>
-        private Label AddSectionTitleLabel(ContainerControl parent, float x, float y, string title, string subtitle)
-        {
-            float endY = AddSectionTitle(parent, x, y, title, subtitle);
-            // 返回占位 Label（实际标题已通过 AddSectionTitle 添加；这里返回 null 兼容字段赋值）
-            // 改为返回最后一个添加的标题近似 Label：使用 y 坐标定位构造一个引用 Label
-            // 由于上面已添加了真实 Label，这里仅返回 null 占位（字段用于外部刷新场景，可省略）
-            _ = endY;
-            return null;
-        }
-
-        /// <summary>
-        /// 构建底部导航栏：返回沉浸模式 + 跳转武学 + 跳转背包。
-        /// </summary>
-        private void BuildBottomBar()
-        {
-            _bottomBar = new InkPanel
+            var sub = new Label
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, MainPanelSize.Y - BottomBarHeight),
-                Size = new Float2(MainPanelSize.X, BottomBarHeight),
+                Location = new Float2(120f, 6f),
+                Size = new Float2(60f, 20f),
+                Text = "DETAIL",
+                TextColor = InkWashTheme.TextTertiary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 9f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
             };
-            _mainPanel.AddChild(_bottomBar);
+            card.AddChild(sub);
 
-            // 三个按钮总宽
-            float totalBtnW = NavButtonWidth * 3 + NavButtonGap * 2;
-            float startX = (MainPanelSize.X - totalBtnW) * 0.5f;
+            var iconBg = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(8f, 34f),
+                Size = new Float2(52f, 52f),
+                BackgroundColor = InkWashTheme.Void,
+            };
+            card.AddChild(iconBg);
+
+            var iconLabel = new Label
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = Margin.Zero,
+                Text = "\u2694",
+                TextColor = InkWashTheme.GoldPrimary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 22f),
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            iconBg.AddChild(iconLabel);
+
+            var itemName = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(68f, 34f),
+                Size = new Float2(w - 84f, 22f),
+                Text = "玄铁剑",
+                TextColor = InkWashTheme.QualityLegendary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 15f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            card.AddChild(itemName);
+
+            var itemInfo = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(68f, 56f),
+                Size = new Float2(w - 84f, 18f),
+                Text = "五行: 金  类型: 长剑",
+                TextColor = InkWashTheme.TextSecondary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            card.AddChild(itemInfo);
+
+            var durLabel = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(8f, 100f),
+                Size = new Float2(30f, 14f),
+                Text = "耐久",
+                TextColor = InkWashTheme.TextTertiary,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            card.AddChild(durLabel);
+
+            float durBarW = w - 16f - 30f - 80f;
+            if (durBarW < 20f) durBarW = 20f;
+            var durBarBg = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(38f, 104f),
+                Size = new Float2(durBarW, 6f),
+                BackgroundColor = new Color(0f, 0f, 0f, 0.5f),
+            };
+            card.AddChild(durBarBg);
+
+            var durBarFill = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = Float2.Zero,
+                Size = new Float2(durBarW * 0.85f, durBarBg.Height),
+                BackgroundColor = InkWashTheme.JadePrimary,
+            };
+            durBarBg.AddChild(durBarFill);
+
+            var durVal = new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(38f + durBarW + 4f, 100f),
+                Size = new Float2(80f, 14f),
+                Text = "850/1000",
+                TextColor = InkWashTheme.TextDefault,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 10f),
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+            };
+            card.AddChild(durVal);
+        }
+
+        // ===================================================================
+        // Bottom Navigation Bar
+        // ===================================================================
+
+        private void BuildBottomBar()
+        {
+            _bottomBar = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, Height - BottomBarHeight),
+                Size = new Float2(Width, BottomBarHeight),
+                BackgroundColor = InkWashTheme.BaseSecondary,
+            };
+            AddChild(_bottomBar);
+
+            var topBorder = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = Float2.Zero,
+                Size = new Float2(Width, 1f),
+                BackgroundColor = InkWashTheme.BorderGoldSubtle,
+            };
+            _bottomBar.AddChild(topBorder);
+
             float btnY = (BottomBarHeight - NavButtonHeight) * 0.5f;
 
             _btnReturnHud = new InkButton
@@ -818,138 +1111,118 @@ namespace HundunWorld.Game.UI.Ink.Pages.Character
                 ButtonSize = InkButtonSize.Md,
                 Text = "返回沉浸模式",
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(startX, btnY),
+                Location = new Float2(Padding, btnY),
                 Size = new Float2(NavButtonWidth, NavButtonHeight),
             };
-            _btnReturnHud.ButtonClicked += (b) => OnSystemNavButtonClicked(InkPageDomIds.CombatHud, b);
+            _btnReturnHud.Clicked += OnReturnHudClicked;
             _bottomBar.AddChild(_btnReturnHud);
 
-            _btnGotoSkill = new InkButton
-            {
-                Variant = InkButtonVariant.Primary,
-                ButtonSize = InkButtonSize.Md,
-                Text = "武学面板",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(startX + NavButtonWidth + NavButtonGap, btnY),
-                Size = new Float2(NavButtonWidth, NavButtonHeight),
-            };
-            _btnGotoSkill.ButtonClicked += (b) => OnSystemNavButtonClicked(InkPageDomIds.NavSkillPanel, b);
-            _bottomBar.AddChild(_btnGotoSkill);
+            float tabStartX = Padding + NavButtonWidth + NavButtonGap * 2;
 
-            _btnGotoInventory = new InkButton
+            _tabAttributes = new InkTabButton
             {
-                Variant = InkButtonVariant.Default,
-                ButtonSize = InkButtonSize.Md,
-                Text = "背包装囊",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(startX + (NavButtonWidth + NavButtonGap) * 2, btnY),
-                Size = new Float2(NavButtonWidth, NavButtonHeight),
+                Text = "角色属性",
+                IsSelected = true,
+                ParticleSystem = ParticleSystem,
             };
-            _btnGotoInventory.ButtonClicked += (b) => OnSystemNavButtonClicked(InkPageDomIds.NavInventory, b);
-            _bottomBar.AddChild(_btnGotoInventory);
+            _tabAttributes.Clicked += OnTabAttributesClicked;
+            _bottomBar.AddChild(_tabAttributes);
+
+            _tabSkill = new InkTabButton
+            {
+                Text = "武学面板",
+                ParticleSystem = ParticleSystem,
+            };
+            _tabSkill.Clicked += OnGotoSkillClicked;
+            _bottomBar.AddChild(_tabSkill);
+
+            _tabInventory = new InkTabButton
+            {
+                Text = "背包装囊",
+                ParticleSystem = ParticleSystem,
+            };
+            _tabInventory.Clicked += OnGotoInventoryClicked;
+            _bottomBar.AddChild(_tabInventory);
+
+            _navTabs = new[] { _tabAttributes, _tabSkill, _tabInventory };
         }
 
         // ===================================================================
-        // 事件处理
-        // =======================================================================
+        // Event Handlers
+        // ===================================================================
 
-        /// <summary>
-        /// 顶部返回按钮点击：触发返回沉浸模式导航。
-        /// </summary>
-        private void OnBackButtonClicked()
+        private void OnCloseClicked()
         {
-            try
+            EmitGoldAtButton(_closeButton);
+            NavigationRequested?.Invoke("combat-hud");
+        }
+
+        private void SelectTab(InkTabButton selected)
+        {
+            foreach (var tab in _navTabs)
+                tab.IsSelected = tab == selected;
+        }
+
+        private void OnTabAttributesClicked()
+        {
+            SelectTab(_tabAttributes);
+        }
+
+        private void OnSlotClicked(int index)
+        {
+            if (_floatingSlots != null && index >= 0 && index < _floatingSlots.Length)
             {
-                if (_backButton != null)
-                {
-                    EmitGoldAtButton(_backButton);
-                }
-                NavigationRequested?.Invoke(InkPageDomIds.CombatHud);
-            }
-            catch (Exception ex)
-            {
-                FlaxEngine.Debug.LogError($"[CharacterPanelPage] 返回按钮触发失败: {ex.Message}");
+                EmitGoldAtButton(_floatingSlots[index]);
+                _activeSlotIndex = index;
+                ShowSlotBubble(index);
             }
         }
 
-        /// <summary>
-        /// 系统导航按钮点击处理：发射金粉粒子 + 触发导航请求。
-        /// </summary>
-        private void OnSystemNavButtonClicked(string domId, Button sourceButton)
+        private void OnSlotHovered(int index)
         {
-            try
-            {
-                EmitGoldAtButton(sourceButton);
-                NavigationRequested?.Invoke(domId);
-            }
-            catch (Exception ex)
-            {
-                FlaxEngine.Debug.LogError($"[CharacterPanelPage] NavigationRequested({domId}) 触发失败: {ex.Message}");
-            }
         }
 
-        /// <summary>
-        /// 在按钮中心位置触发金粉爆发粒子反馈。
-        /// </summary>
-        private void EmitGoldAtButton(Control button)
+        private void OnReturnHudClicked()
+        {
+            EmitGoldAtButton(_btnReturnHud);
+            NavigationRequested?.Invoke("combat-hud");
+        }
+
+        private void OnGotoSkillClicked()
+        {
+            SelectTab(_tabSkill);
+            EmitGoldAtButton(_tabSkill);
+            NavigationRequested?.Invoke("nav-skill-panel");
+        }
+
+        private void OnGotoInventoryClicked()
+        {
+            SelectTab(_tabInventory);
+            EmitGoldAtButton(_tabInventory);
+            NavigationRequested?.Invoke("nav-inventory");
+        }
+
+        private void EmitGoldAtButton(Control target)
         {
             try
             {
-                if (ParticleSystem == null || button == null)
+                if (ParticleSystem == null || target == null)
                     return;
 
-                var buttonCenter = new Float2(button.Width * 0.5f, button.Height * 0.5f);
-                var screenPos = button.PointToScreen(buttonCenter);
+                var center = new Float2(target.Width * 0.5f, target.Height * 0.5f);
+                var screenPos = target.PointToScreen(center);
                 var localPos = ParticleSystem.PointFromScreen(screenPos);
                 ParticleSystem.EmitGoldBurst(localPos, count: 14, isLarge: false);
             }
             catch (Exception ex)
             {
-                FlaxEngine.Debug.LogWarning($"[CharacterPanelPage] EmitGoldAtButton 失败: {ex.Message}");
+                FlaxEngine.Debug.LogWarning($"[CharacterPanelPage] EmitGold: {ex.Message}");
             }
         }
 
-        // ===================================================================
-        // IInkPage 实现
-        // =======================================================================
-
-        /// <inheritdoc />
-        public void RefreshLayout()
+        public override void Update(float deltaTime)
         {
-            try
-            {
-                float sw = Width;
-                float sh = Height;
-
-                // 主面板居中
-                if (_mainPanel != null)
-                {
-                    float panelX = (sw - MainPanelSize.X) * 0.5f;
-                    float panelY = (sh - MainPanelSize.Y) * 0.5f;
-                    _mainPanel.Location = new Float2(
-                        panelX > 0f ? panelX : 0f,
-                        panelY > 0f ? panelY : 0f);
-                }
-
-                // 顶部名/等级摘要靠右对齐
-                if (_topBar != null && _topNameLabel != null && _topLevelLabel != null)
-                {
-                    float rightEdge = MainPanelSize.X - Padding;
-                    _topLevelLabel.Location = new Float2(rightEdge - 80f, 0f);
-                    _topNameLabel.Location = new Float2(rightEdge - 80f - 100f - 8f, 0f);
-                }
-            }
-            catch (Exception ex)
-            {
-                FlaxEngine.Debug.LogError($"[CharacterPanelPage] RefreshLayout 失败: {ex.Message}");
-            }
-        }
-
-        /// <inheritdoc />
-        public override void OnParentResized()
-        {
-            base.OnParentResized();
-            RefreshLayout();
+            base.Update(deltaTime);
         }
     }
 }
