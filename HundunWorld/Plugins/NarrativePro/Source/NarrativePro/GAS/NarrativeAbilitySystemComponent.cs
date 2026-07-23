@@ -243,7 +243,7 @@ namespace NarrativePro.GAS
             if (spec == null || spec.Ability == null) return false;
             if (spec.bIsActive) return false;
 
-            // 检查能力是否可激活（Cost/Cooldown/Tag 检查；Cost 应用 TODO [需接入 Cost 效果应用机制]）
+            // 检查能力是否可激活（Cost/Cooldown/Tag 检查，Cost 通过 Ability.CanAffordCost 验证）
             if (!spec.Ability.CanActivateAbility(this))
             {
                 return false;

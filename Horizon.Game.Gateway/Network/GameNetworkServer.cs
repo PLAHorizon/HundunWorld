@@ -620,11 +620,22 @@ namespace Horizon.Game.Gateway.Network
                         var existingConn = _connectionManager.GetConnectionByCharacterId(fallbackCharacterId);
                         if (existingConn == null || existingConn.ConnectionId != connection.ConnectionId)
                         {
-                            _connectionManager.RegisterCharacter(fallbackCharacterId, connection);
-                            _despawnScheduler.CancelDespawn(fallbackCharacterId);
-                            _logger.LogInformation(
-                                "请求体补注册角色映射: CharacterId={CharacterId}, ConnectionId={ConnectionId}, MessageType={MessageType}",
-                                fallbackCharacterId, connection.ConnectionId, messagePacket.Header.MessageType);
+                            // 修复（角色映射弹跳）：当已有不同连接持有该角色映射且仍在线时，
+                            // 仅允许 HandshakePacket 覆盖映射（握手是新会话的权威信号）。
+                            // InputPacket 不覆盖，防止旧连接的残留重传反复抢夺映射，
+                            // 导致 fanout 快照包被投递到错误连接（根因：其他客户端看不到角色移动）。
+                            bool isHandshake = messagePacket.Body is SyncFrameMessage hsFrame
+                                && TryDecodeAsHandshake(hsFrame);
+                            bool existingStillAlive = existingConn is { IsConnected: true };
+
+                            if (!existingStillAlive || isHandshake || existingConn == null)
+                            {
+                                _connectionManager.RegisterCharacter(fallbackCharacterId, connection);
+                                _despawnScheduler.CancelDespawn(fallbackCharacterId);
+                                _logger.LogInformation(
+                                    "请求体补注册角色映射: CharacterId={CharacterId}, ConnectionId={ConnectionId}, MessageType={MessageType}, IsHandshake={IsHandshake}",
+                                    fallbackCharacterId, connection.ConnectionId, messagePacket.Header.MessageType, isHandshake);
+                            }
                         }
                     }
 
@@ -842,6 +853,23 @@ namespace Horizon.Game.Gateway.Network
                 || message.Header.MessageType == MessageType.RegisterRequest
                 || message.Header.MessageType == MessageType.TokenLoginRequest
                 || message.Header.MessageType == MessageType.SyncPacket;
+        }
+
+        /// <summary>
+        /// 尝试将 SyncFrameMessage 解码为 HandshakePacket（用于判断是否为握手请求）。
+        /// 解码失败或非 HandshakePacket 时返回 false。
+        /// </summary>
+        private static bool TryDecodeAsHandshake(SyncFrameMessage syncFrame)
+        {
+            try
+            {
+                var packet = SyncPacketCodec.Decode(syncFrame.Frame);
+                return packet is HandshakePacket;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>

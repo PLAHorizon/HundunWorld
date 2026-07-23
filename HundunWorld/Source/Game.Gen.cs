@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 [assembly: AssemblyTitle("Game")]
 [assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("Development")]
+[assembly: AssemblyConfiguration("Debug")]
 [assembly: AssemblyCompany("My Company")]
 [assembly: AssemblyProduct("FlaxEngine")]
 [assembly: AssemblyCopyright("")]

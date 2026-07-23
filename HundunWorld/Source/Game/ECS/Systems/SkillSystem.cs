@@ -2,6 +2,8 @@ using Arch.Core;
 using Arch.Core.Utils;
 using FlaxEngine;
 using HundunWorld.Game.ECS.Components;
+using HundunWorld.Game.Combat.Skills;
+using HundunWorld.Game.Audio;
 using Horizon.Game.Message.Network;
 using Game.Character.Attributes;
 using System;
@@ -11,20 +13,19 @@ using Horizon.Game.Message.Enums;
 namespace HundunWorld.Game.ECS.Systems
 {
     /// <summary>
-    /// 技能系统，处理技能的施放、冷却和效果
+    /// 技能系统，处理技能的施放、冷却和效果。
+    /// 使用数据驱动的 SkillDatabase 替代硬编码技能。
     /// </summary>
     public class SkillSystem : BaseSystem
     {
         private QueryDescription _skillQuery;
         private QueryDescription _castingQuery;
-        private Dictionary<int, SkillData> _skillDatabase;
-        private Random _random; // 添加随机数生成器
+        private Random _random;
         private NetworkEntityRegistry _entityRegistry;
 
         public SkillSystem()
         {
-            _skillDatabase = new Dictionary<int, SkillData>();
-            _random = new Random(); // 初始化随机数生成器
+            _random = new Random();
         }
 
         /// <summary>
@@ -45,8 +46,8 @@ namespace HundunWorld.Game.ECS.Systems
             // 查询正在施法的实体
             _castingQuery = new QueryDescription().WithAll<SkillCastingComponent, PositionComponent>();
             
-            // 初始化技能数据库
-            InitializeSkillDatabase();
+            // 初始化数据驱动技能数据库
+            SkillDatabase.Initialize();
         }
 
         public override void Update(World world, float deltaTime)
@@ -58,38 +59,6 @@ namespace HundunWorld.Game.ECS.Systems
             UpdateSkillCasting(world, deltaTime);
         }
 
-        /// <summary>
-        /// 初始化技能数据库
-        /// </summary>
-        private void InitializeSkillDatabase()
-        {
-            // 示例技能数据
-            _skillDatabase[1] = new SkillData 
-            { 
-                SkillId = 1, 
-                SkillName = "火球术",
-                Element = WuxingElement.Fire,
-                Type = SkillType.ActiveAttack,
-                DamageMultiplier = 1.5f,
-                EnergyCost = 30f,
-                Cooldown = 3f,
-                Range = 15f,
-                CastTime = 0.8f
-            };
-
-            _skillDatabase[2] = new SkillData 
-            { 
-                SkillId = 2, 
-                SkillName = "冰霜箭",
-                Element = WuxingElement.Water,
-                Type = SkillType.ActiveAttack,
-                DamageMultiplier = 1.2f,
-                EnergyCost = 25f,
-                Cooldown = 2.5f,
-                Range = 20f,
-                CastTime = 0.6f
-            };
-        }
 
         /// <summary>
         /// 更新技能冷却
@@ -138,10 +107,11 @@ namespace HundunWorld.Game.ECS.Systems
                 return false;
             }
 
-            // 获取技能数据
-            if (!_skillDatabase.TryGetValue(skillId, out var skillData))
+            // 从数据驱动数据库获取技能配置
+            var skillConfig = SkillDatabase.GetSkill(skillId);
+            if (skillConfig == null)
             {
-                Debug.LogWarning($"Skill {skillId} not found in database");
+                Debug.LogWarning($"Skill {skillId} not found in SkillDatabase");
                 return false;
             }
 
@@ -149,14 +119,14 @@ namespace HundunWorld.Game.ECS.Systems
             if (world.Has<HealthComponent>(caster))
             {
                 var health = world.Get<HealthComponent>(caster);
-                if (health.Energy < skillData.EnergyCost)
+                if (health.Energy < skillConfig.EnergyCost)
                 {
                     Debug.LogWarning("Not enough energy to cast skill");
                     return false;
                 }
 
                 // 消耗能量
-                health.Energy -= skillData.EnergyCost;
+                health.Energy -= skillConfig.EnergyCost;
                 world.Set(caster, health);
             }
 
@@ -172,31 +142,29 @@ namespace HundunWorld.Game.ECS.Systems
             }
 
             // 开始施法
-            StartSkillCast(world, caster, skillData, target, targetPosition);
+            StartSkillCast(world, caster, skillConfig, target, targetPosition);
             return true;
         }
 
         /// <summary>
         /// 开始施法
         /// </summary>
-        private void StartSkillCast(World world, Entity caster, SkillData skillData, Entity target, Vector3 targetPosition)
+        private void StartSkillCast(World world, Entity caster, SkillConfig skillConfig, Entity target, Vector3 targetPosition)
         {
-            // 注意：这里我们假设target实体是有效的，并且我们存储它的ID
-            // 在实际应用中，可能需要更复杂的实体引用管理机制
-            var targetId = target.Id; // 使用Entity的Id属性
+            var targetId = target.Id;
             
             var castingComponent = new SkillCastingComponent(
-                skillData.SkillId,
-                skillData.CastTime,
+                skillConfig.SkillId,
+                skillConfig.CastTime,
                 (ulong)targetId,
                 targetPosition,
-                false
+                skillConfig.CanMoveWhileCasting
             );
 
             world.Set(caster, castingComponent);
 
-            // 触发施法开始事件（播放动画、特效等）
-            OnSkillCastStart(world, caster, skillData);
+            // 触发施法开始事件（播放动画、特效、音效）
+            OnSkillCastStart(world, caster, skillConfig);
         }
 
         /// <summary>
@@ -204,72 +172,74 @@ namespace HundunWorld.Game.ECS.Systems
         /// </summary>
         private void CompleteSkillCast(World world, Entity caster, SkillCastingComponent casting, PositionComponent position)
         {
-            if (!_skillDatabase.TryGetValue(casting.SkillId, out var skillData))
-                return;
+            var skillConfig = SkillDatabase.GetSkill(casting.SkillId);
+            if (skillConfig == null) return;
 
             // 执行技能效果
-            ExecuteSkillEffect(world, caster, skillData, casting.TargetEntityId, casting.TargetPosition);
+            ExecuteSkillEffect(world, caster, skillConfig, casting.TargetEntityId, casting.TargetPosition);
 
             // 设置冷却
             if (world.Has<SkillComponent>(caster))
             {
                 var skill = world.Get<SkillComponent>(caster);
-                skill.CurrentCooldown = skill.Cooldown;
+                skill.CurrentCooldown = skillConfig.Cooldown;
                 world.Set(caster, skill);
             }
 
             // 触发施法完成事件
-            OnSkillCastComplete(world, caster, skillData);
+            OnSkillCastComplete(world, caster, skillConfig);
         }
 
         /// <summary>
         /// 执行技能效果
         /// </summary>
-        private void ExecuteSkillEffect(World world, Entity caster, SkillData skillData, ulong targetId, Vector3 targetPosition)
+        private void ExecuteSkillEffect(World world, Entity caster, SkillConfig skillConfig, ulong targetId, Vector3 targetPosition)
         {
-            // 根据技能类型执行不同的效果
-            switch (skillData.Type)
+            var skillType = skillConfig.GetSkillType();
+            switch (skillType)
             {
                 case SkillType.ActiveAttack:
-                    ExecuteAttackSkill(world, caster, skillData, targetId, targetPosition);
+                    ExecuteAttackSkill(world, caster, skillConfig, targetId, targetPosition);
                     break;
-
                 case SkillType.Control:
-                    ExecuteControlSkill(world, caster, skillData, targetId);
+                    ExecuteControlSkill(world, caster, skillConfig, targetId);
                     break;
-
                 case SkillType.Dash:
-                    ExecuteDashSkill(world, caster, skillData, targetPosition);
+                    ExecuteDashSkill(world, caster, skillConfig, targetPosition);
                     break;
-
                 case SkillType.Support:
-                    ExecuteSupportSkill(world, caster, skillData, targetId);
+                    ExecuteSupportSkill(world, caster, skillConfig, targetId);
                     break;
-
                 case SkillType.Ultimate:
-                    ExecuteUltimateSkill(world, caster, skillData, targetId, targetPosition);
+                    ExecuteUltimateSkill(world, caster, skillConfig, targetId, targetPosition);
                     break;
             }
+
+            // 应用附带效果（Buff/Debuff/DoT等）
+            ApplySkillEffects(world, caster, skillConfig, targetId);
         }
 
         /// <summary>
         /// 执行攻击技能
         /// </summary>
-        private void ExecuteAttackSkill(World world, Entity caster, SkillData skillData, ulong targetId, Vector3 targetPosition)
+        private void ExecuteAttackSkill(World world, Entity caster, SkillConfig skillConfig, ulong targetId, Vector3 targetPosition)
         {
-            // 计算伤害
-            float damage = CalculateSkillDamage(world, caster, skillData);
+            float damage = CalculateSkillDamage(world, caster, skillConfig);
+            bool isCritical = _random.NextSingle() < skillConfig.CritRate;
+            if (isCritical) damage *= skillConfig.CritMultiplier;
 
-            // 判断是否暴击
-            bool isCritical = _random.NextSingle() < 0.2f; // 20%暴击率
-
-            // 通过网络实体注册表查找目标实体
             if (_entityRegistry != null && _entityRegistry.TryGetEntity(targetId, out var targetEntity))
             {
                 if (world.IsAlive(targetEntity))
                 {
                     CombatSystem.ApplyDamage(world, targetEntity, damage,
-                        Horizon.Game.Message.Enums.DamageType.Magic, caster, targetPosition, isCritical);
+                        DamageType.Magic, caster, targetPosition, isCritical);
+
+                    // 播放命中音效
+                    if (!string.IsNullOrEmpty(skillConfig.HitSound))
+                    {
+                        GameAudioManager.Instance.Play3D(skillConfig.HitSound, targetPosition, GameAudioCategory.Skill);
+                    }
                 }
             }
         }
@@ -277,15 +247,19 @@ namespace HundunWorld.Game.ECS.Systems
         /// <summary>
         /// 执行控制技能
         /// </summary>
-        private void ExecuteControlSkill(World world, Entity caster, SkillData skillData, ulong targetId)
+        private void ExecuteControlSkill(World world, Entity caster, SkillConfig skillConfig, ulong targetId)
         {
-            // 通过网络实体注册表查找目标实体
             if (_entityRegistry != null && _entityRegistry.TryGetEntity(targetId, out var targetEntity))
             {
                 if (world.IsAlive(targetEntity))
                 {
-                    // 应用控制效果
-                    EffectSystem.ApplyEffect(world, targetEntity, skillData.SkillId, EffectType.Control, 3.0f, 1.0f);
+                    float duration = 3.0f;
+                    if (skillConfig.Effects != null && skillConfig.Effects.Count > 0)
+                    {
+                        var controlEffect = skillConfig.Effects.Find(e => e.EffectType == "Stun" || e.EffectType == "Slow");
+                        if (controlEffect != null) duration = controlEffect.Duration;
+                    }
+                    EffectSystem.ApplyEffect(world, targetEntity, skillConfig.SkillId, EffectType.Control, duration, 1.0f);
                 }
             }
         }
@@ -293,7 +267,7 @@ namespace HundunWorld.Game.ECS.Systems
         /// <summary>
         /// 执行位移技能
         /// </summary>
-        private void ExecuteDashSkill(World world, Entity caster, SkillData skillData, Vector3 targetPosition)
+        private void ExecuteDashSkill(World world, Entity caster, SkillConfig skillConfig, Vector3 targetPosition)
         {
             if (world.Has<PositionComponent>(caster))
             {
@@ -306,15 +280,19 @@ namespace HundunWorld.Game.ECS.Systems
         /// <summary>
         /// 执行辅助技能
         /// </summary>
-        private void ExecuteSupportSkill(World world, Entity caster, SkillData skillData, ulong targetId)
+        private void ExecuteSupportSkill(World world, Entity caster, SkillConfig skillConfig, ulong targetId)
         {
-            // 通过网络实体注册表查找目标实体
             if (_entityRegistry != null && _entityRegistry.TryGetEntity(targetId, out var targetEntity))
             {
                 if (world.IsAlive(targetEntity))
                 {
-                    // 应用治疗效果
-                    EffectSystem.ApplyEffect(world, targetEntity, skillData.SkillId, EffectType.HoT, 5.0f, skillData.DamageMultiplier * 10f);
+                    float healValue = skillConfig.DamageMultiplier * 10f;
+                    if (skillConfig.Effects != null)
+                    {
+                        var hotEffect = skillConfig.Effects.Find(e => e.EffectType == "HoT");
+                        if (hotEffect != null) healValue = hotEffect.Value;
+                    }
+                    EffectSystem.ApplyEffect(world, targetEntity, skillConfig.SkillId, EffectType.HoT, 5.0f, healValue);
                 }
             }
         }
@@ -322,28 +300,59 @@ namespace HundunWorld.Game.ECS.Systems
         /// <summary>
         /// 执行终结技
         /// </summary>
-        private void ExecuteUltimateSkill(World world, Entity caster, SkillData skillData, ulong targetId, Vector3 targetPosition)
+        private void ExecuteUltimateSkill(World world, Entity caster, SkillConfig skillConfig, ulong targetId, Vector3 targetPosition)
         {
-            // 终结技通常有更强大的效果
-            float damage = CalculateSkillDamage(world, caster, skillData) * 2.0f;
-            
-            // 通过网络实体注册表查找目标实体
+            float damage = CalculateSkillDamage(world, caster, skillConfig) * 2.0f;
+            bool isCritical = _random.NextSingle() < skillConfig.CritRate;
+            if (isCritical) damage *= skillConfig.CritMultiplier;
+
             if (_entityRegistry != null && _entityRegistry.TryGetEntity(targetId, out var targetEntity))
             {
                 if (world.IsAlive(targetEntity))
                 {
                     CombatSystem.ApplyDamage(world, targetEntity, damage,
-                        Horizon.Game.Message.Enums.DamageType.Magic, caster, targetPosition, true);
+                        DamageType.Magic, caster, targetPosition, isCritical);
                 }
             }
         }
 
         /// <summary>
-        /// 计算技能伤害
+        /// 应用技能附带效果（Buff/Debuff/DoT/控制等）
         /// </summary>
-        private float CalculateSkillDamage(World world, Entity caster, SkillData skillData)
+        private void ApplySkillEffects(World world, Entity caster, SkillConfig skillConfig, ulong targetId)
         {
-            float baseDamage = 100f; // 基础伤害
+            if (skillConfig.Effects == null || skillConfig.Effects.Count == 0) return;
+            if (_entityRegistry == null || !_entityRegistry.TryGetEntity(targetId, out var targetEntity)) return;
+            if (!world.IsAlive(targetEntity)) return;
+
+            foreach (var effect in skillConfig.Effects)
+            {
+                // 概率触发
+                if (_random.NextSingle() > effect.Chance) continue;
+
+                var effectType = effect.EffectType switch
+                {
+                    "Burn" => EffectType.DoT,
+                    "DoT" => EffectType.DoT,
+                    "Slow" => EffectType.Control,
+                    "Stun" => EffectType.Control,
+                    "HoT" => EffectType.HoT,
+                    "Shield" => EffectType.Buff,
+                    "Invincible" => EffectType.Buff,
+                    "Cleanse" => EffectType.Buff,
+                    _ => EffectType.Buff
+                };
+
+                EffectSystem.ApplyEffect(world, targetEntity, skillConfig.SkillId, effectType, effect.Duration, effect.Value);
+            }
+        }
+
+        /// <summary>
+        /// 计算技能伤害（基于数据配置 + 五行加成 + 等级缩放）
+        /// </summary>
+        private float CalculateSkillDamage(World world, Entity caster, SkillConfig skillConfig)
+        {
+            float baseDamage = 100f;
 
             if (world.Has<HealthComponent>(caster))
             {
@@ -351,13 +360,20 @@ namespace HundunWorld.Game.ECS.Systems
                 baseDamage = health.Attack;
             }
 
-            float damage = baseDamage * skillData.DamageMultiplier;
+            // 等级缩放的伤害倍率
+            int skillLevel = 1;
+            if (world.Has<SkillComponent>(caster))
+            {
+                skillLevel = world.Get<SkillComponent>(caster).Level;
+            }
+            float damageMultiplier = skillConfig.GetDamageMultiplierAtLevel(skillLevel);
+            float damage = baseDamage * damageMultiplier;
 
             // 应用五行亲和度加成
             if (world.Has<WuxingComponent>(caster))
             {
                 var wuxing = world.Get<WuxingComponent>(caster);
-                int affinity = wuxing.GetAffinity(skillData.Element);
+                int affinity = wuxing.GetAffinity(skillConfig.GetWuxingElement());
                 float affinityBonus = 1.0f + (affinity / 10) * 0.005f;
                 damage *= affinityBonus;
             }
@@ -366,40 +382,30 @@ namespace HundunWorld.Game.ECS.Systems
         }
 
         /// <summary>
-        /// 施法开始事件
+        /// 施法开始事件（播放动画、音效、特效）
         /// </summary>
-        private void OnSkillCastStart(World world, Entity caster, SkillData skillData)
+        private void OnSkillCastStart(World world, Entity caster, SkillConfig skillConfig)
         {
-            Debug.Log($"Started casting {skillData.SkillName}");
-            
-            // 这里可以触发动画、特效等
-            // 例如：播放施法动画、显示施法特效
+            Debug.Log($"[SkillSystem] 开始施放: {skillConfig.SkillName}");
+
+            // 播放施法音效
+            if (!string.IsNullOrEmpty(skillConfig.CastSound))
+            {
+                Vector3 pos = Vector3.Zero;
+                if (world.Has<PositionComponent>(caster))
+                    pos = world.Get<PositionComponent>(caster).Position;
+                GameAudioManager.Instance.Play3D(skillConfig.CastSound, pos, GameAudioCategory.Skill);
+            }
         }
 
         /// <summary>
         /// 施法完成事件
         /// </summary>
-        private void OnSkillCastComplete(World world, Entity caster, SkillData skillData)
+        private void OnSkillCastComplete(World world, Entity caster, SkillConfig skillConfig)
         {
-            Debug.Log($"Completed casting {skillData.SkillName}");
-            
-            // 这里可以触发完成动画、特效等
+            Debug.Log($"[SkillSystem] 施放完成: {skillConfig.SkillName}");
         }
 
-        /// <summary>
-        /// 技能数据类
-        /// </summary>
-        public class SkillData
-        {
-            public int SkillId { get; set; }
-            public string SkillName { get; set; }
-            public WuxingElement Element { get; set; }
-            public SkillType Type { get; set; }
-            public float DamageMultiplier { get; set; }
-            public float EnergyCost { get; set; }
-            public float Cooldown { get; set; }
-            public float Range { get; set; }
-            public float CastTime { get; set; }
-        }
+
     }
 }

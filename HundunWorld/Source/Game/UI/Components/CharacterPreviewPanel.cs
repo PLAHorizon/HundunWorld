@@ -705,7 +705,7 @@ namespace HundunWorld.Game.UI.Components
                 To = azim,
                 Duration = duration,
                 Elapsed = 0f,
-                Ease = EaseType.EaseInOutSine
+                Ease = global::Game.Effects.EaseType.EaseInOutSine
             };
             _elevationTween = new FloatTween
             {
@@ -713,7 +713,7 @@ namespace HundunWorld.Game.UI.Components
                 To = elev,
                 Duration = duration,
                 Elapsed = 0f,
-                Ease = EaseType.EaseInOutSine
+                Ease = global::Game.Effects.EaseType.EaseInOutSine
             };
             _distanceTween = new FloatTween
             {
@@ -721,7 +721,7 @@ namespace HundunWorld.Game.UI.Components
                 To = clampedDist,
                 Duration = duration,
                 Elapsed = 0f,
-                Ease = EaseType.EaseInOutSine
+                Ease = global::Game.Effects.EaseType.EaseInOutSine
             };
             _isPresetTransitioning = true;
 
@@ -772,7 +772,7 @@ namespace HundunWorld.Game.UI.Components
                 To = target.Azimuth,
                 Duration = duration,
                 Elapsed = 0f,
-                Ease = EaseType.EaseInOutSine
+                Ease = global::Game.Effects.EaseType.EaseInOutSine
             };
             _elevationTween = new FloatTween
             {
@@ -780,7 +780,7 @@ namespace HundunWorld.Game.UI.Components
                 To = target.Elevation,
                 Duration = duration,
                 Elapsed = 0f,
-                Ease = EaseType.EaseInOutSine
+                Ease = global::Game.Effects.EaseType.EaseInOutSine
             };
             _distanceTween = new FloatTween
             {
@@ -788,7 +788,7 @@ namespace HundunWorld.Game.UI.Components
                 To = target.Distance,
                 Duration = duration,
                 Elapsed = 0f,
-                Ease = EaseType.EaseInOutSine
+                Ease = global::Game.Effects.EaseType.EaseInOutSine
             };
             _isPresetTransitioning = true;
         }
@@ -849,7 +849,7 @@ namespace HundunWorld.Game.UI.Components
                 To = 250f,
                 Duration = duration,
                 Elapsed = 0f,
-                Ease = EaseType.EaseInOutSine
+                Ease = global::Game.Effects.EaseType.EaseInOutSine
             };
         }
 

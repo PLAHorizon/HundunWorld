@@ -354,6 +354,9 @@ namespace NarrativePro.Tales
             {
                 _currentDialogue.TickDialogue(Time.DeltaTime);
             }
+
+            // Tick NarrativeSyncManager（定期刷新待发送的网络更新）
+            NarrativeProPlugin.Instance?.SyncManager?.TickSync(Time.DeltaTime);
         }
 
         private void SubscribeToQuestEvents(QuestClass quest)

@@ -31,25 +31,7 @@
     
     <Message Text="成功复制文件: @(SuccessfullyCopiedFiles)" Importance="high" />
   </Target>
-
-  <!-- 编译后复制到 UE5 托管 Binaries 目录，供 UnrealSharp 热重载直接引用。
-       目标路径相对于本项目文件：..\HundunWorld\Binaries\Managed\net10.0\ -->
-  <Target Name="CopyToUE5" AfterTargets="Build">
-    <PropertyGroup>
-      <UE5ManagedDir>$(MSBuildProjectDirectory)\..\HundunWorld\Binaries\Managed\net10.0</UE5ManagedDir>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <UE5FilesToCopy Include="$(TargetDir)$(AssemblyName).dll" />
-      <UE5FilesToCopy Include="$(TargetDir)$(AssemblyName).pdb" Condition="Exists('$(TargetDir)$(AssemblyName).pdb')" />
-    </ItemGroup>
-
-    <MakeDir Directories="$(UE5ManagedDir)" ContinueOnError="WarnAndContinue" />
-    <Copy SourceFiles="@(UE5FilesToCopy)" DestinationFolder="$(UE5ManagedDir)"
-          SkipUnchangedFiles="false" OverwriteReadOnlyFiles="true"
-          ContinueOnError="WarnAndContinue" />
-  </Target>
-
+  
   <ItemGroup>
     <Compile Remove="_build_validation\**" />
     <EmbeddedResource Remove="_build_validation\**" />

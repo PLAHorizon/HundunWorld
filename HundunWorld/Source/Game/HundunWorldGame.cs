@@ -239,6 +239,25 @@ namespace HundunWorld.Game
             if (status == ConnectionStatus.Disconnected)
             {
                 ClearLocalEntitiesOnDisconnect();
+
+                // 网关离线时，若当前处于游戏世界中，退出到角色选择界面。
+                // 必须回到角色选择界面重新进入游戏，因为服务端已清理该角色的实体和 AOI 订阅，
+                // 客户端无法通过简单重连恢复游戏状态。
+                var gameState = HundunWorld.Game.Core.GameStateManager.Instance;
+                if (gameState != null && gameState.IsInGame)
+                {
+                    Debug.Log("[HundunWorldGame] 网关离线，退出游戏世界，返回角色选择界面");
+                    // 切换到主线程执行场景切换（场景操作必须在主线程）
+                    Scripting.InvokeOnUpdate(() =>
+                    {
+                        var sceneManager = HundunWorld.Game.UI.GameSceneManager.Instance;
+                        if (sceneManager != null)
+                        {
+                            sceneManager.TransitionTo(Horizon.Game.Message.Enums.SceneType.CharacterSelection);
+                        }
+                        gameState.ChangeState(HundunWorld.Game.Core.GameState.CharacterSelect);
+                    });
+                }
             }
         }
 

@@ -220,14 +220,22 @@ namespace Game.UI.Character
             {
                 _stateManager.SetLoadingState(true);
 
+                // 0. 检查网关连接状态：网关不在线时禁止进入游戏，停留在角色选择界面
+                var networkManager = HundunWorldGame.Instance.NetworkManager;
+                if (networkManager == null || !networkManager.CanSendMessage())
+                {
+                    FlaxEngine.Debug.LogError("[CharacterManager] 网关不在线，无法进入游戏，停留在角色选择界面");
+                    _errorHandler.HandleError(UIErrorType.Network, "服务器连接已断开，无法进入游戏。请检查网络后重试。", null, "enter_game_gateway_offline");
+                    return false;
+                }
+
                 // 1. 发送进入游戏请求（通知服务器）
                 var enterGameRequest = new EnterGameRequest
                 {
                     CharacterId = _selectedCharacter.CharacterId,
                     ClientVersion = "1.0.0"
                 };
-                
-                var networkManager = HundunWorldGame.Instance.NetworkManager;
+
                 var messagePacket = new HorizonMessagePacket
                 {
                     Header = new MessageHeader

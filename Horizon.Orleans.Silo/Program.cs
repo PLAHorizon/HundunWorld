@@ -123,6 +123,14 @@ namespace Horizon.Orleans.Silo
             try
             {
                 var startTime = DateTime.Now;
+
+                // 强制加载所有 grain 实现程序集，确保 Orleans 10 运行时在构建 Silo 主机之前
+                // 能扫描到 [assembly: Orleans.ApplicationPart] 标记并发现所有 grain 实现。
+                // .NET 默认按需加载程序集，若不强制加载，GetGrain<T> 会报 "Could not find an implementation"。
+                _ = typeof(Horizon.Orleans.Grains.World.ZoneShardGrain).Assembly;
+                _ = typeof(Horizon.Orleans.Grains.CharacterGrain).Assembly;
+                _ = typeof(Horizon.Orleans.Grains.PassportGrain).Assembly;
+
                 _logger?.LogInformation("正在配置Orleans Silo...");
 
                 var oco = _config?.GetSection("ClusteringSiloOptions").Get<OrleansClusteringDbOptions>();

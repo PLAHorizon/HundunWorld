@@ -30,6 +30,9 @@ using Horizon.Orleans.Interface.World;
 using Horizon.Strategy.Storage.Redis;
 using StackExchange.Redis;
 
+[assembly: Orleans.ApplicationPart("Horizon.Orleans.Grains")]
+[assembly: Orleans.ApplicationPart("Horizon.Orleans.Interface")]
+
 namespace Horizon.Game.Gateway
 {
     /// <summary>
@@ -49,11 +52,14 @@ namespace Horizon.Game.Gateway
             // 确保控制台能正确输出简体中文
             Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-            // 强制加载 grain 实现程序集，确保 Orleans 10 运行时在初始化 IClusterClient 之前
-            // 能扫描到 [assembly: ApplicationPartAttribute] 标记并发现 ZoneShardGrain 实现。
-            // .NET 默认按需加载程序集，若不强制加载，GetGrain<IZoneShardGrain> 会报
-            // "Could not find an implementation"。
+            // 强制加载所有 grain 实现程序集，确保 Orleans 10 运行时在初始化 IClusterClient 之前
+            // 能扫描到 [assembly: ApplicationPartAttribute] 标记并发现所有 grain 实现。
+            // .NET 默认按需加载程序集，若不强制加载，GetGrain<T> 会报 "Could not find an implementation"。
             _ = typeof(Horizon.Orleans.Grains.World.ZoneShardGrain).Assembly;
+            _ = typeof(Horizon.Orleans.Grains.CharacterGrain).Assembly;
+            _ = typeof(Horizon.Orleans.Grains.PassportGrain).Assembly;
+            _ = typeof(Horizon.Orleans.Grains.IMUserGrain).Assembly;
+            _ = typeof(Horizon.Orleans.Grains.GameServerGrain).Assembly;
 
             try
             {

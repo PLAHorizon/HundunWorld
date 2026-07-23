@@ -282,6 +282,12 @@ namespace Horizon.Orleans.Grains
                 }
 
                 // 2. 检查角色是否已经在线（查询 Redis 权威源）
+                //    注意：检测到残留在线状态时仅记录日志，不执行 ZoneShard 实体清理。
+                //    EnterWorldAsync（ZoneShardGrain）已有幂等性检查：若实体已存在会先 UnregisterEntityAsync
+                //    再重新注册，无需在 CharacterGrain 业务层提前清理。提前清理会在 EnterGameAsync（阶段1）
+                //    与 EnterWorldAsync（阶段2，HandshakePacket 触发）之间产生实体空窗期，
+                //    导致其他玩家在时间窗口内看不到该角色，且可能触发 PlayerDespawnScheduler 的
+                //    实体丢失误检测（用默认出生点重新注册，AOI 不匹配 → 角色永久不可见）。
                 var isOnlineInRedis = await _presenceStore.IsOnlineAsync((long)CharacterId);
                 if (isOnlineInRedis || _isOnline)
                 {

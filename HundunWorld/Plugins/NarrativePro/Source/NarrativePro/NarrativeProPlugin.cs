@@ -21,6 +21,16 @@ namespace NarrativePro
         /// </summary>
         private object _networkAdapterRef;
 
+        /// <summary>
+        /// NarrativeSyncManager 单例实例（延迟创建，当 ActiveTalesComponent 可用时自动初始化）
+        /// </summary>
+        private NarrativePro.Network.NarrativeSyncManager _syncManager;
+
+        /// <summary>
+        /// 获取当前 NarrativeSyncManager 实例（可能为 null，当 ActiveTalesComponent 未设置时）
+        /// </summary>
+        public NarrativePro.Network.NarrativeSyncManager SyncManager => GetNarrativeSyncManager();
+
         public NarrativeProPlugin()
         {
             _description = new PluginDescription
@@ -121,15 +131,35 @@ namespace NarrativePro
         }
 
         /// <summary>
-        /// 获取当前 NarrativeSyncManager 实例（延迟获取，因为可能在插件初始化后才创建）
+        /// 获取当前 NarrativeSyncManager 实例（延迟创建，当 ActiveTalesComponent 可用时自动初始化）
         /// </summary>
         private NarrativePro.Network.NarrativeSyncManager GetNarrativeSyncManager()
         {
             if (ActiveTalesComponent == null) return null;
-            // TODO [需接入 NarrativeSyncManager 实例化系统]: NarrativeSyncManager 由外部业务层创建并注入，
-            // 此处当前返回 null。接入时应在 ActiveTalesComponent 上挂载/查询 NarrativeSyncManager 引用，
-            // 或通过专门的 Singleton/Service Locator 模式获取运行时实例。
-            return null;
+
+            // 延迟初始化：当 TalesComponent 可用时创建 SyncManager 并接线
+            if (_syncManager == null)
+            {
+                _syncManager = new NarrativePro.Network.NarrativeSyncManager(ActiveTalesComponent);
+
+                // 接入网络发送回调
+                var sendCb = CreateSendCallback();
+                if (sendCb != null)
+                {
+                    _syncManager.SendCallback = sendCb;
+                }
+
+                // 接入网络连接状态检查
+                var connectedCb = CreateIsConnectedCallback();
+                if (connectedCb != null)
+                {
+                    _syncManager.IsConnectedCallback = connectedCb;
+                }
+
+                Debug.Log("[NarrativePro] NarrativeSyncManager 实例化完成并已接入网络回调");
+            }
+
+            return _syncManager;
         }
 
         /// <summary>
@@ -168,6 +198,7 @@ namespace NarrativePro
 
         public override void Deinitialize()
         {
+            _syncManager = null;
             _networkAdapterRef = null;
             _instance = null;
             Debug.Log("[NarrativePro] 叙事系统插件已卸载");

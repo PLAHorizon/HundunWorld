@@ -122,7 +122,14 @@ public sealed class SyncPacketHandler : MessageHandlerBase
     /// </summary>
     private readonly Dictionary<ulong, long> _lastInputTickPerCharacter = new();
 
-    /// <summary>保护 <see cref="_lastInputTickPerCharacter"/> 的锁。</summary>
+    /// <summary>
+    /// 修复：握手基线 tick。key=characterId, value=握手时客户端声明的 InitialClientTick。
+    /// 握手后，任何 ClientTick < 基线的输入包视为来自旧会话/过期连接的残留重传，直接丢弃，
+    /// 防止旧连接的高 tick 重传污染新会话的去重字典（根因：多连接 tick 冲突导致所有输入被拒绝）。
+    /// </summary>
+    private readonly Dictionary<ulong, long> _handshakeBaselineTick = new();
+
+    /// <summary>保护 <see cref="_lastInputTickPerCharacter"/> 和 <see cref="_handshakeBaselineTick"/> 的锁。</summary>
     private readonly object _inputDedupLock = new();
 
     /// <summary>
@@ -183,9 +190,14 @@ public sealed class SyncPacketHandler : MessageHandlerBase
         // 握手表示新会话开始：清理去重字典中该角色的旧 tick 记录，
         // 避免客户端重新登录/断线重连后 ClientTick 从 0 重置时，所有新输入被误判为重复包而拒绝。
         // （PlayerSessionGrain.HandshakeAsync 内部会同步重置 PlayerSessionState.LastAcceptedClientTick）
+        // 修复：客户端可能错误发送 Unix 时间戳作为 InitialClientTick，
+        // 若值过大（> 1000000 判定为时间戳），重置为 0，避免后续所有顺序 tick 被误判为"旧会话残留"而拒绝。
         lock (_inputDedupLock)
         {
             _lastInputTickPerCharacter.Remove(handshake.LocalCharacterId);
+            long baseline = handshake.InitialClientTick;
+            if (baseline > 1_000_000) baseline = 0; // 时间戳保护
+            _handshakeBaselineTick[handshake.LocalCharacterId] = baseline;
         }
 
         // 握手成功后，注册实体到 ZoneShard 权威模拟层并订阅 AOI
@@ -268,11 +280,24 @@ public sealed class SyncPacketHandler : MessageHandlerBase
         // 客户端冗余重传会发送重复/过期 input，服务端据 characterId 维护已接受的最大 ClientTick，
         // 重复或更早的 ClientTick 直接返回最新 ack，不转发到 ZoneShard（避免重复模拟）。
         // SyncPacketHandler 为单例多连接并发，需加锁保护字典；锁内仅做字典操作，锁外再 await grain 调用。
+        //
+        // 修复（多连接 tick 冲突）：增加握手基线检查。
+        // 场景：玩家断线重连后，旧连接仍在发送高 tick 重传包（如 tick=10570），
+        // 新连接从低 tick 开始（如 tick=6480）。旧实现中旧连接的高 tick 会污染去重字典，
+        // 导致新连接所有输入被永久拒绝（ClientTick <= LastAccepted）。
+        // 修复：握手时记录 InitialClientTick 作为基线，低于基线的包视为旧会话残留，直接丢弃。
         bool isDuplicate = false;
+        bool isStaleSession = false;
         long lastAcceptedTick = 0;
         lock (_inputDedupLock)
         {
-            if (_lastInputTickPerCharacter.TryGetValue(input.CharacterId, out lastAcceptedTick)
+            // 握手基线检查：低于基线的包来自旧会话/过期连接，直接丢弃
+            if (_handshakeBaselineTick.TryGetValue(input.CharacterId, out var baselineTick)
+                && input.ClientTick < baselineTick)
+            {
+                isStaleSession = true;
+            }
+            else if (_lastInputTickPerCharacter.TryGetValue(input.CharacterId, out lastAcceptedTick)
                 && input.ClientTick <= lastAcceptedTick)
             {
                 isDuplicate = true;
@@ -281,6 +306,19 @@ public sealed class SyncPacketHandler : MessageHandlerBase
             {
                 _lastInputTickPerCharacter[input.CharacterId] = input.ClientTick;
             }
+        }
+
+        if (isStaleSession)
+        {
+            Logger.LogDebug(
+                "输入包被拒绝（旧会话残留，低于握手基线）。CharacterId={CharacterId}, ClientTick={ClientTick}, BaselineTick={BaselineTick}",
+                characterId, input.ClientTick, _handshakeBaselineTick.GetValueOrDefault(input.CharacterId));
+            return new InputAckPacket
+            {
+                LastProcessedClientTick = 0,
+                ServerTick = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                EchoClientTick = input.ClientTick,
+            };
         }
 
         if (isDuplicate)

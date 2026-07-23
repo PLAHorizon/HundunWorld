@@ -43,9 +43,11 @@
 
 ---
 
-### 2. 包版本分散，无集中管理
+### 2. 包版本分散，无集中管理（✅ 已解决）
 
 **问题**：每个 `.csproj` 独立声明 `PackageReference` 版本，**无 `Directory.Packages.props`**，同一库在不同项目可能版本不一致。
+
+**现状**：✅ 已创建 `Directory.Packages.props`，启用中央包管理（CPM），所有包版本集中管理。
 
 **现状示例**：
 - `Microsoft.Extensions.Logging.Console`：部分项目 10.0.2，部分更早

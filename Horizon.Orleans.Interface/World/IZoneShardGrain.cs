@@ -204,6 +204,13 @@ public interface IZoneShardGrain : IGrainWithIntegerKey
     /// 用于未来 sharding 路由决策和监控。
     /// </summary>
     Task<ZoneShardLoadMetrics> GetLoadMetricsAsync();
+
+    /// <summary>
+    /// 返回当前已注册的所有实体 ID（用于网关侧实体恢复检测）。<br/>
+    /// 网关续约时发现 renewed < expected，可调用此方法确认哪些实体丢失（Grain 重启/状态丢失），
+    /// 然后重新调用 EnterWorldAsync 恢复实体。
+    /// </summary>
+    Task<ulong[]> GetRegisteredEntityIdsAsync();
 }
 
 /// <summary>扇出结果：一个 session 收到哪些 diff（按原 <c>diffs</c> 数组下标表示）。</summary>

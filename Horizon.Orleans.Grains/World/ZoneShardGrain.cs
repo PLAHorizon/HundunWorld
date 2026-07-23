@@ -59,8 +59,14 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
 
     // Task 13：fire-and-forget 广播竞态保护（0=空闲，1=进行中）
     private int _broadcastInProgress;
+    private long _broadcastStartTimestamp; // Stopwatch 时间戳，用于超时保护
     private DateTime _lastBroadcastSkipWarnUtc = DateTime.MinValue;
     private static readonly TimeSpan BroadcastSkipWarnInterval = TimeSpan.FromSeconds(10);
+    /// <summary>广播超时保护阈值：超过此时间 _broadcastInProgress 仍为 1 则强制重置，防止永久阻塞。</summary>
+    private static readonly long BroadcastTimeoutTicks = Stopwatch.Frequency * 5; // 5 秒
+
+    // 修复：新实体注册后强制下一次广播为全量快照，确保新加入的玩家立即收到所有实体状态。
+    private bool _forceFullSnapshotNextTick;
 
     // P8-8.5：交互槽状态持久化，用于校验 Start/End/Stolen 状态转换的合法性。
     private readonly Dictionary<(long interactableId, int slotIdx), (long interactorId, byte stateBits)> _interactionSlots = new();
@@ -352,12 +358,96 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     public Task SubscribeFanoutAsync(Guid subscriptionId, IZoneShardFanoutObserver observer)
     {
         ArgumentNullException.ThrowIfNull(observer);
+        var isNewObserver = !_fanoutObservers.ContainsKey(subscriptionId);
         _fanoutObservers[subscriptionId] = observer;
         _observerSnapshot = null; // Task 12：失效 observer 快照缓存
+
+        // 修复 visibility BUG（核心根因）：新 Gateway 订阅 fanout 时，必须触发全量快照广播。
+        // 场景：Gateway-2 在 Player A 进入后才订阅 fanout，此时 _forceFullSnapshotNextTick 已被
+        // Player A 的 RegisterEntityAsync 消耗（或即将被消耗）。若无此修复，下一次 tick 产生的
+        // 增量快照不包含静止实体（Player A 未移动），Gateway-2 永远收不到 Player A 的 Spawn/Update，
+        // 导致 Gateway-2 上的玩家看不到 Player A。
+        // 修复：新 observer 加入时强制下一次 tick 广播全量快照，确保该 observer 收到所有已存在实体
+        // 的完整状态（BaselineTick=0，客户端可直接应用）。
+        if (isNewObserver && _simulatedEntities.Count > 0)
+        {
+            _forceFullSnapshotNextTick = true;
+
+            // 修复（即时推送）：不等待下一次 tick，立即向新 observer 推送当前所有实体的全量 Spawn。
+            // 根因：_forceFullSnapshotNextTick 仅在下一次 TickAsync 时生效（最多 1/60 秒后），
+            // 但若 TickAsync 的 BroadcastSnapshotAsync 因 _broadcastInProgress 竞态被跳过，
+            // 或 observer 引用在 Orleans 回调链路中失效，新 observer 可能永远收不到首帧快照。
+            // 即时推送绕过 tick 周期，确保新 observer 订阅后立即收到完整状态。
+            _ = PushImmediateFullSnapshotToObserver(observer, subscriptionId);
+        }
+
         _logger.LogInformation(
-            "ZoneShard {ShardId}: fanout 订阅成功。SubscriptionId={SubscriptionId}, 当前订阅者数={Count}",
-            this.GetPrimaryKeyLong(), subscriptionId, _fanoutObservers.Count);
+            "ZoneShard {ShardId}: fanout 订阅成功。SubscriptionId={SubscriptionId}, 当前订阅者数={Count}, IsNew={IsNew}",
+            this.GetPrimaryKeyLong(), subscriptionId, _fanoutObservers.Count, isNewObserver);
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 立即向新订阅的 observer 推送当前所有实体的全量 Spawn delta。
+    /// 绕过 TickAsync 周期，确保新 observer 订阅后立即收到完整世界状态。
+    /// 失败时仅记录日志，不影响主流程（下一次 tick 的 _forceFullSnapshotNextTick 仍会重试）。
+    /// </summary>
+    private async Task PushImmediateFullSnapshotToObserver(IZoneShardFanoutObserver observer, Guid subscriptionId)
+    {
+        try
+        {
+            if (_simulatedEntities.Count == 0) return;
+
+            var allSubscribers = _aoi.GetAllSubscribers();
+            if (allSubscribers.Count == 0) return;
+
+            var deltas = new List<EntityDelta>(_simulatedEntities.Count);
+            foreach (var kv in _simulatedEntities)
+            {
+                var e = kv.Value;
+                deltas.Add(new EntityDelta
+                {
+                    EntityId = kv.Key,
+                    Kind = EntityDeltaKind.Spawn,
+                    Identity = new NetworkIdentityAuthComponent
+                    {
+                        NetworkId = kv.Key,
+                        EntityType = 0,
+                        OwnerId = kv.Key,
+                    },
+                    Transform = new AuthTransformComponent
+                    {
+                        X = e.X,
+                        Y = e.Z,   // ECS Z → Flax Y
+                        Z = e.Y,   // ECS Y → Flax Z
+                        Pitch = 0f,
+                        Yaw = e.Yaw,
+                        Roll = 0f,
+                    },
+                });
+            }
+
+            var diff = new WorldChunkDiffPacket
+            {
+                ChunkMortonKey = 0,
+                DiffSeqStart = _tickCount,
+                DiffSeqEnd = _tickCount,
+                Payload = MemoryPack.MemoryPackSerializer.Serialize(deltas.ToArray()),
+                PayloadType = WorldChunkDiffPayloadType.EntityDelta,
+            };
+
+            await observer.OnChunkDiffAsync(diff, allSubscribers).ConfigureAwait(false);
+
+            _logger.LogInformation(
+                "ZoneShard {ShardId}: 即时全量快照已推送到新 observer。SubscriptionId={SubscriptionId}, EntityCount={EntityCount}, SubscriberCount={SubscriberCount}",
+                this.GetPrimaryKeyLong(), subscriptionId, deltas.Count, allSubscribers.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "ZoneShard {ShardId}: 即时全量快照推送到新 observer 失败（下一次 tick 将重试）。SubscriptionId={SubscriptionId}",
+                this.GetPrimaryKeyLong(), subscriptionId);
+        }
     }
 
     /// <inheritdoc />
@@ -540,7 +630,12 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             bool shouldBroadcast = hasInput || hasPositionChanged || hasYawChanged || hasMovementChanged
                 || hasPendingAnimation || updateHeartbeatDue;
 
-            if (shouldBroadcast)
+            // 修复：全量快照模式下（新玩家加入/定期全量）包含所有实体，
+            // 而非仅 shouldBroadcast 的实体。原实现在全量快照时仍按 shouldBroadcast 过滤，
+            // 导致静止实体（heartbeat 未到期）不出现在全量快照中，新玩家看不到它们。
+            bool includeInSnapshot = shouldBroadcast || _forceFullSnapshotNextTick;
+
+            if (includeInSnapshot)
             {
                 var delta = new EntityDelta
                 {
@@ -661,13 +756,17 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
 
             // Task D.3.1/D.3.4：判定全量/增量模式。
             // 首次 tick 或距上次全量快照超过 FullSnapshotIntervalTicks（60 tick = 1 秒）时强制全量。
+            // 修复：新实体注册后也强制全量，确保新玩家立即收到所有实体状态。
             SnapshotPacket toSend;
-            if (_lastSnapshot == null || (_tickCount - _lastFullSnapshotTick) >= FullSnapshotIntervalTicks)
+            bool isFullSnapshot = false;
+            if (_lastSnapshot == null || (_tickCount - _lastFullSnapshotTick) >= FullSnapshotIntervalTicks || _forceFullSnapshotNextTick)
             {
                 // 全量快照：BaselineTick=0，客户端直接应用
                 snapshot.BaselineTick = 0;
                 toSend = snapshot;
                 _lastFullSnapshotTick = _tickCount;
+                _forceFullSnapshotNextTick = false;
+                isFullSnapshot = true;
             }
             else
             {
@@ -676,22 +775,45 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             }
 
             // Task 13：通过 Interlocked.CompareExchange 保证不与上次广播并发
+            // 修复：增加超时保护，防止 _broadcastInProgress 因 Orleans observer 调用挂起而永久卡在 1，
+            // 导致后续所有广播被永久跳过（"角色无法看到彼此的移动"根因之一）。
             if (Interlocked.CompareExchange(ref _broadcastInProgress, 1, 0) == 0)
             {
-                _ = BroadcastSnapshotAsync(toSend, corrections).ContinueWith(
+                _broadcastStartTimestamp = Stopwatch.GetTimestamp();
+                _ = BroadcastSnapshotAsync(toSend, corrections, isFullSnapshot).ContinueWith(
                     _ => Interlocked.Exchange(ref _broadcastInProgress, 0),
                     TaskScheduler.Default);
             }
             else
             {
-                // 上次广播未完成：跳过本次广播并输出限频告警
-                var now = DateTime.UtcNow;
-                if (now - _lastBroadcastSkipWarnUtc >= BroadcastSkipWarnInterval)
+                // 超时保护：如果上次广播超过 5 秒仍未完成，强制重置标志位，恢复广播能力。
+                var elapsed = Stopwatch.GetTimestamp() - _broadcastStartTimestamp;
+                if (elapsed > BroadcastTimeoutTicks)
                 {
-                    _lastBroadcastSkipWarnUtc = now;
-                    _logger.LogWarning(
-                        "ZoneShard {ShardId}: tick 跳过广播（上次未完成）。Tick={Tick}, Entities={EntityCount}",
-                        this.GetPrimaryKeyLong(), _tickCount, _simulatedEntities.Count);
+                    _logger.LogError(
+                        "ZoneShard {ShardId}: 广播超时保护触发（{ElapsedMs}ms），强制重置 _broadcastInProgress。Tick={Tick}",
+                        this.GetPrimaryKeyLong(), elapsed * 1000 / Stopwatch.Frequency, _tickCount);
+                    Interlocked.Exchange(ref _broadcastInProgress, 0);
+                    // 立即重试本次广播
+                    if (Interlocked.CompareExchange(ref _broadcastInProgress, 1, 0) == 0)
+                    {
+                        _broadcastStartTimestamp = Stopwatch.GetTimestamp();
+                        _ = BroadcastSnapshotAsync(toSend, corrections, isFullSnapshot).ContinueWith(
+                            _ => Interlocked.Exchange(ref _broadcastInProgress, 0),
+                            TaskScheduler.Default);
+                    }
+                }
+                else
+                {
+                    // 上次广播未完成（未超时）：跳过本次广播并输出限频告警
+                    var now = DateTime.UtcNow;
+                    if (now - _lastBroadcastSkipWarnUtc >= BroadcastSkipWarnInterval)
+                    {
+                        _lastBroadcastSkipWarnUtc = now;
+                        _logger.LogWarning(
+                            "ZoneShard {ShardId}: tick 跳过广播（上次未完成）。Tick={Tick}, Entities={EntityCount}",
+                            this.GetPrimaryKeyLong(), _tickCount, _simulatedEntities.Count);
+                    }
                 }
             }
             // _lastSnapshot 始终保存完整状态（非增量），供下次增量比对（无论是否广播都更新）
@@ -733,6 +855,10 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         _logger.LogInformation(
             "ZoneShard {ShardId}: 注册实体 {EntityId} 初始位置 ECS({X:F2},{Y:F2},{Z:F2}) ← Flax({FX:F2},{FY:F2},{FZ:F2})。",
             this.GetPrimaryKeyLong(), entityId, ecsX, ecsY, ecsZ, initialX, initialY, initialZ);
+
+        // 修复：新实体注册后强制下一次 TickAsync 广播全量快照，
+        // 确保新加入的玩家能立即收到所有已存在实体的完整状态（而非仅收到增量 delta）。
+        _forceFullSnapshotNextTick = true;
 
         // 失效点 #1 修复：注册后立即广播 Spawn delta，让所有已在线玩家看到新玩家。
         // 同时给新玩家补发当前所有已存在实体的 Spawn，让其看到已在场的其他玩家。
@@ -785,6 +911,11 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             string.Join(",", initialInterestChunks.Take(10)),
             string.Join(",", _aoi.GetAllSubscribers()), _aoi.SessionCount);
 
+        // RegisterEntityAsync 内部已做 Flax→ECS 坐标转换（Y/Z 互换），
+        // 此处直接传入 Flax Y-up 原始坐标（X=左右, Y=上下, Z=前后）即可。
+        // 注意：不要在此处额外做 Y/Z 互换，否则会与 RegisterEntityAsync 内部转换叠加，
+        // 导致双重转换（坐标恢复为 Flax 顺序），重力施加在错误轴上，实体快速漂移，
+        // Despawn 广播的 chunk key 与 AOI 订阅不匹配，其他客户端无法收到 Despawn delta。
         await RegisterEntityAsync(entityId, initialX, initialY, initialZ, maxSpeed).ConfigureAwait(false);
     }
 
@@ -921,6 +1052,19 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         return Task.FromResult(renewed);
     }
 
+    /// <inheritdoc />
+    public Task<ulong[]> GetRegisteredEntityIdsAsync()
+    {
+        if (_simulatedEntities.Count == 0)
+            return Task.FromResult(Array.Empty<ulong>());
+
+        var ids = new ulong[_simulatedEntities.Count];
+        var i = 0;
+        foreach (var key in _simulatedEntities.Keys)
+            ids[i++] = key;
+        return Task.FromResult(ids);
+    }
+
     /// <summary>
     /// 孤儿实体检测：扫描所有实体的 <see cref="SimulatedEntity.LeaseExpiry"/>，
     /// 清理超过租约期未续约的实体（网关崩溃/断线未清理的残留实体）。<br/>
@@ -1027,7 +1171,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         var triggerEntityYaw = _simulatedEntities.TryGetValue(entityId, out var triggerEntity) ? triggerEntity.Yaw : 0f;
         var triggerDelta = BuildEntityDelta(entityId, x, y, z, kind, triggerEntityYaw);
         var triggerChunkKey = WorldCoord.ToChunkMortonKey(x, y, z);
-        var triggerDiff = BuildChunkDiff(new[] { triggerDelta }, triggerChunkKey);
+        var triggerDiff = BuildChunkDiff(new[] { triggerDelta }, triggerChunkKey, _tickCount);
 
         // 先查 AOI 订阅者（按实体所在 chunk），再剔除触发方（仅 Spawn 时新玩家尚未完成自身初始化，
         // 自身的 Spawn delta 会由客户端 IsLocalPlayer 路径处理；Despawn 时触发方已离线，也应剔除）。
@@ -1135,7 +1279,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             if (existingDeltas.Count > 0)
             {
                 // 补发全场 Spawn 仅发给新 session，不经过 AOI 过滤；使用触发实体所在 chunk 作为 mortonKey 占位。
-                var initialDiff = BuildChunkDiff(existingDeltas.ToArray(), triggerChunkKey);
+                var initialDiff = BuildChunkDiff(existingDeltas.ToArray(), triggerChunkKey, _tickCount);
                 var newSessionIds = new long[] { (long)entityId };
                 var observers = GetObserversSnapshot();
                 foreach (var (subscriptionId, observer) in observers)
@@ -1184,12 +1328,15 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     }
 
     /// <summary>把 EntityDelta[] 序列化为 WorldChunkDiffPacket，使用传入的 chunkMortonKey 做 AOI 过滤。</summary>
-    private static WorldChunkDiffPacket BuildChunkDiff(EntityDelta[] deltas, ulong chunkMortonKey)
+    /// <param name="deltas">要下发的实体增量数组。</param>
+    /// <param name="chunkMortonKey">目标 chunk 的 Morton 键。</param>
+    /// <param name="serverTick">当前服务端 tick（用于客户端 baseline 跟踪）。0 表示未知。</param>
+    private static WorldChunkDiffPacket BuildChunkDiff(EntityDelta[] deltas, ulong chunkMortonKey, long serverTick = 0)
     {
         return new WorldChunkDiffPacket
         {
             ChunkMortonKey = chunkMortonKey,
-            DiffSeqEnd = 0,
+            DiffSeqEnd = serverTick,
             Payload = MemoryPack.MemoryPackSerializer.Serialize(deltas),
             PayloadCompressed = false,
             PayloadType = WorldChunkDiffPayloadType.EntityDelta,
@@ -1224,9 +1371,12 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         }
 
         entity.PendingInputs.Add(input);
+        // 修复（坐标系不匹配）：客户端上报的 PredictedEndX/Y/Z 是 Flax Y-up 坐标，
+        // 但 MovementValidator.Validate 的 clientEnd 参数期望 ECS Z-up 坐标。
+        // 转换：ECS.X = Flax.X, ECS.Y = Flax.Z(前后), ECS.Z = Flax.Y(上下)
         entity.ReportedEndX = reportedEndX;
-        entity.ReportedEndY = reportedEndY;
-        entity.ReportedEndZ = reportedEndZ;
+        entity.ReportedEndY = reportedEndZ;  // Flax Z (前后) → ECS Y
+        entity.ReportedEndZ = reportedEndY;  // Flax Y (上下) → ECS Z
         _simulatedEntities[entityId] = entity;
 
         return Task.CompletedTask;
@@ -1320,7 +1470,13 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     /// <summary>
     /// 广播快照和校正包到已注册的 fanout 观察者。
     /// </summary>
-    private async Task BroadcastSnapshotAsync(SnapshotPacket snapshot, List<CorrectionPacket> corrections)
+    /// <param name="snapshot">要广播的快照包。</param>
+    /// <param name="corrections">校正包列表。</param>
+    /// <param name="bypassAoiFilter">全量快照时绕过 per-chunk AOI 过滤，直接广播到所有订阅者。
+    /// 修复根因：新玩家加入时仅订阅了出生点附近的 chunk，全量快照中其他 chunk 的实体
+    /// 被 per-chunk AOI 过滤静默丢弃，导致新玩家看不到远处的已有角色，已有角色也看不到新玩家
+    /// （因为已有玩家的订阅集不一定覆盖新玩家所在 chunk）。全量快照绕过 AOI 确保双向可见。</param>
+    private async Task BroadcastSnapshotAsync(SnapshotPacket snapshot, List<CorrectionPacket> corrections, bool bypassAoiFilter = false)
     {
         // 诊断：前 5 次调用无条件输出详情，定位 fanout 断点（_fanoutObservers 为空？AOI 无订阅者？）
         _broadcastDiagCount++;
@@ -1397,8 +1553,15 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             var chunkDeltas = kv.Value;
 
             // 获取该 chunk 的所有订阅者（chunkKey==0 表示无法定位 chunk，回退广播到全部订阅者）
+            // 修复：全量快照时绕过 per-chunk AOI 过滤，直接广播到所有订阅者。
+            // 根因：新玩家仅订阅出生点附近 chunk，全量快照中其他 chunk 的实体被静默丢弃，
+            // 导致新玩家看不到远处已有角色，已有角色也看不到新玩家（双向不可见）。
             IReadOnlyCollection<long> sessionIds;
-            if (effectiveChunkKey != 0UL)
+            if (bypassAoiFilter)
+            {
+                sessionIds = _aoi.GetAllSubscribers();
+            }
+            else if (effectiveChunkKey != 0UL)
             {
                 sessionIds = _aoi.GetSubscribers(effectiveChunkKey);
             }

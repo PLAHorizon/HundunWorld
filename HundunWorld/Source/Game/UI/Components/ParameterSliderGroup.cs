@@ -177,7 +177,7 @@ namespace HundunWorld.Game.UI.Components
                 To = newValue,
                 Duration = ParamTweenDuration,
                 Elapsed = 0f,
-                Ease = EaseType.EaseOutCubic
+                Ease = global::Game.Effects.EaseType.EaseOutCubic
             };
         }
 

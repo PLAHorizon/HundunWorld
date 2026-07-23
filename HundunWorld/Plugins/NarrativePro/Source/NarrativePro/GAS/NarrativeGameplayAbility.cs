@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using FlaxEngine;
 using NarrativePro.Items;
 
@@ -11,6 +12,7 @@ namespace NarrativePro.GAS
     /// - InputAction 用字符串路径占位（TODO [需接入 Flax 输入系统]: 接入 Flax InputEvent 配置）
     /// - 移除网络预测/Local/Remote 区分
     /// - 移除 RPC，改为本地逻辑
+    /// - Cost/Cooldown 通过内联配置 + GameplayEffect 管线实现
     /// </summary>
     public class NarrativeGameplayAbility : Script
     {
@@ -31,14 +33,23 @@ namespace NarrativePro.GAS
         /// <summary>激活此能力所需阻断的标签（如果有则不能激活）。</summary>
         public GameplayTagContainer ActivationBlockedTags = new GameplayTagContainer();
 
-        /// <summary>Cost 效果路径（如消耗耐力）。</summary>
+        /// <summary>Cost 效果路径（如消耗耐力）。若配置了资产加载系统，优先使用此路径加载 GameplayEffect。</summary>
         public string CostGameplayEffectPath = "";
 
-        /// <summary>Cooldown 效果路径。</summary>
+        /// <summary>Cost 属性名（内联配置，如 "Stamina"、"Health"）。当 CostGameplayEffectPath 为空时使用。</summary>
+        public string CostAttributeName = "Stamina";
+
+        /// <summary>Cost 消耗量（正数表示消耗量）。当 CostGameplayEffectPath 为空时使用。</summary>
+        public float CostAmount = 0f;
+
+        /// <summary>Cooldown 效果路径。若配置了资产加载系统，优先使用此路径加载 Cooldown GameplayEffect。</summary>
         public string CooldownGameplayEffectPath = "";
 
         /// <summary>Cooldown 持续时间（秒）。</summary>
         public float CooldownDuration = 0f;
+
+        /// <summary>Cooldown 标签（可选）。激活时授予此标签，标签存在期间能力不可再次激活。与 CooldownDuration 配合使用。</summary>
+        public GameplayTag CooldownTag = GameplayTag.None;
 
         /// <summary>能力等级。</summary>
         public float AbilityLevel = 1f;
@@ -69,8 +80,11 @@ namespace NarrativePro.GAS
             if (asc == null) return false;
             if (asc.IsDead) return false;
 
-            // Cooldown 检查
+            // Cooldown 检查（计时器方式）
             if (CooldownRemaining > 0f) return false;
+
+            // Cooldown 标签检查（标签方式，若 ASC 仍持有 CooldownTag 则不可激活）
+            if (CooldownTag.IsValid() && asc.HasMatchingGameplayTag(CooldownTag)) return false;
 
             // 必需标签检查
             if (ActivationRequiredTags != null)
@@ -90,8 +104,26 @@ namespace NarrativePro.GAS
                 }
             }
 
-            // Cost 检查（TODO [需接入 Cost 效果应用机制]: 实际应用 Cost 效果）
+            // Cost 检查：验证属性是否足够支付消耗
+            if (!CanAffordCost(asc)) return false;
+
             return true;
+        }
+
+        /// <summary>检查 ASC 是否有足够属性支付 Cost。</summary>
+        protected virtual bool CanAffordCost(NarrativeAbilitySystemComponent asc)
+        {
+            if (CostAmount <= 0f) return true; // 无消耗
+            if (asc.AttributeSet == null) return false;
+
+            var attr = asc.AttributeSet.GetAttribute(CostAttributeName);
+            if (attr == null)
+            {
+                NarrativePro.Core.NarrativeLog.LogWarning($"[GAS] Cost 属性 '{CostAttributeName}' 不存在，跳过 Cost 检查");
+                return true;
+            }
+
+            return attr.CurrentValue >= CostAmount;
         }
 
         /// <summary>激活能力。由 ASC 调用。</summary>
@@ -99,11 +131,17 @@ namespace NarrativePro.GAS
         {
             _currentHandle = handle;
 
-            // 应用 Cooldown
+            // 应用 Cooldown（计时器 + 可选标签）
             if (CooldownDuration > 0f)
             {
                 CooldownStartTime = Time.GameTime;
                 CooldownRemaining = CooldownDuration;
+
+                // 通过 GameplayEffect 授予 CooldownTag（持续期 = CooldownDuration）
+                if (CooldownTag.IsValid() && OwningASC != null)
+                {
+                    ApplyCooldownEffect();
+                }
             }
 
             // 授予 AbilityTags
@@ -112,7 +150,48 @@ namespace NarrativePro.GAS
                 OwningASC.AddDynamicTagsGameplayEffect(AbilityTags);
             }
 
-            // 应用 Cost（TODO [需接入 Cost 效果应用机制]: 加载 CostGameplayEffect）
+            // 应用 Cost：扣除属性消耗
+            ApplyCost();
+        }
+
+        /// <summary>应用 Cost 消耗（通过 ASC 的 GameplayEffect 管线扣除属性）。</summary>
+        protected virtual void ApplyCost()
+        {
+            if (CostAmount <= 0f || OwningASC == null) return;
+
+            // 构建一个 Instant 类型的 GameplayEffect 来扣除属性
+            var costEffect = new GameplayEffect($"Cost_{AbilityName}")
+            {
+                DurationType = EGameplayEffectDurationType.Instant,
+                Modifiers = new List<GameplayModifierInfo>
+                {
+                    new GameplayModifierInfo
+                    {
+                        AttributeName = CostAttributeName,
+                        ModifierOp = EGameplayModOp.Add,
+                        Magnitude = -CostAmount // 负值表示消耗
+                    }
+                }
+            };
+
+            var spec = new GameplayEffectSpec(costEffect, OwningASC, AbilityLevel);
+            OwningASC.ApplyGameplayEffectSpecToSelf(new GameplayEffectSpecHandle(spec));
+        }
+
+        /// <summary>应用 Cooldown 效果（通过 Duration 类型 GameplayEffect 授予 CooldownTag）。</summary>
+        protected virtual void ApplyCooldownEffect()
+        {
+            if (OwningASC == null || !CooldownTag.IsValid()) return;
+
+            var cooldownEffect = new GameplayEffect($"Cooldown_{AbilityName}")
+            {
+                DurationType = EGameplayEffectDurationType.Duration,
+                Duration = CooldownDuration,
+                GrantedTags = new GameplayTagContainer(new[] { CooldownTag.TagName })
+            };
+
+            var spec = new GameplayEffectSpec(cooldownEffect, OwningASC, AbilityLevel);
+            OwningASC.ApplyGameplayEffectSpecToSelf(new GameplayEffectSpecHandle(spec));
         }
 
         /// <summary>结束能力（由能力本身调用）。</summary>

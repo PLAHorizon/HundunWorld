@@ -300,7 +300,46 @@ namespace Horizon.Game.Gateway.Services
                 }
 
                 var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(DefaultShardId);
-                var renewed = await zoneShard.RenewLeaseAsync(validEntityIds.ToArray()).ConfigureAwait(false);
+
+                // 修复严重 BUG（在线角色一段时间后从其它客户端离线）：
+                // 原实现只调用一次 RenewLeaseAsync，如果 Orleans grain 调用因瞬时网络问题失败，
+                // 异常被 catch 并仅记录 Warning，导致租约未续约。连续 4 次失败（80 秒）后
+                // 实体租约过期（90 秒），ZoneShardGrain 孤儿清理触发，广播 Despawn 给其他客户端，
+                // 角色从其他客户端视野中消失。增加重试机制确保瞬时失败不会导致租约过期。
+                int renewed = 0;
+                const int maxRetries = 3;
+                for (int attempt = 1; attempt <= maxRetries; attempt++)
+                {
+                    try
+                    {
+                        renewed = await zoneShard.RenewLeaseAsync(validEntityIds.ToArray()).ConfigureAwait(false);
+                        break; // 成功则退出重试循环
+                    }
+                    catch (Exception retryEx) when (attempt < maxRetries)
+                    {
+                        _logger.LogWarning(retryEx,
+                            "批量续约实体租约第 {Attempt}/{MaxRetries} 次尝试失败，{DelayMs}ms 后重试",
+                            attempt, maxRetries, 500 * attempt);
+                        await Task.Delay(500 * attempt).ConfigureAwait(false);
+                    }
+                }
+
+                // 注意：不执行实体丢失检测/重新注册。
+                // 原实现用默认出生点 (0, 100, 0) 重新注册"丢失"的实体，会导致：
+                // 1) 实体位置被重置到错误坐标，AOI 订阅不覆盖 → 其他玩家看不到该角色
+                // 2) 与角色进入游戏的两阶段流程产生交互效应：
+                //    EnterGameAsync（阶段1）→ EnterWorldAsync（阶段2，HandshakePacket 触发）之间
+                //    实体可能暂时不在 ZoneShard 中，续约恰好触发会误判实体丢失，
+                //    用错误位置重新注册 → AOI 不匹配 → 角色永久不可见（"角色无法看到彼此"根因）
+                // ZoneShardGrain 已配置无限生命周期（TimeSpan.MaxValue）防止状态丢失，
+                // 且 EnterWorldAsync 的幂等性检查已处理重连场景的旧实体清理。
+                if (renewed < validEntityIds.Count)
+                {
+                    _logger.LogWarning(
+                        "续约 {Renewed}/{Expected} 个实体（部分实体不在 ZoneShardGrain 中，" +
+                        "可能正在重新进入游戏/正在 Despawn，不做自动重新注册以避免位置错乱）。",
+                        renewed, validEntityIds.Count);
+                }
 
                 if (skippedCount > 0)
                 {

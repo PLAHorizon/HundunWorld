@@ -188,6 +188,18 @@ public static class HorizonTimeoutConfigurationExtensions
             var characterGrainName = typeof(Horizon.Orleans.Grains.CharacterGrain).FullName;
             if (characterGrainName != null)
                 options.ClassSpecificCollectionAge[characterGrainName] = TimeSpan.FromMinutes(10);
+            // ZoneShardGrain: 超长生命周期（关键修复）。
+            // ZoneShardGrain 持有所有在线实体的内存状态（_simulatedEntities）、AOI 订阅和 fanout 观察者，
+            // 一旦被 Grain Collection 停用，所有实体状态永久丢失，其他客户端将看不到任何角色。
+            // RegisterTimer 不能阻止 Grain Collection（Orleans 只根据最后一次收到外部消息的时间判断空闲），
+            // 因此必须显式配置为超长 CollectionAge 防止被回收。
+            // ⚠️ 关键：不能使用 TimeSpan.MaxValue，否则 ActivationCollector.MakeTicketFromTimeSpan
+            // 执行 now + TimeSpan.MaxValue 时会 DateTime 溢出，抛出 ArgumentOutOfRangeException，
+            // 导致 grain 激活失败、fanout 订阅全部失败、角色互相看不见。
+            // 使用 50 年（安全范围内，不会溢出 DateTime.MaxValue）。
+            var zoneShardGrainName = typeof(Horizon.Orleans.Grains.World.ZoneShardGrain).FullName;
+            if (zoneShardGrainName != null)
+                options.ClassSpecificCollectionAge[zoneShardGrainName] = TimeSpan.FromDays(365 * 50);
         });
         
         // 配置线程池优化 - 基于当前系统核心数

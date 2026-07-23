@@ -232,30 +232,36 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 if (baseline == null ||
                     baseline.ServerTick != snapshot.BaselineTick)
                 {
-                    // baseline 不匹配：跳过本次应用（网络层应触发全量重传）
-                    continue;
+                    // 修复：baseline 不匹配时不再静默跳过，而是直接应用收到的 delta（作为部分更新）。
+                    // 原实现 `continue` 导致新加入玩家在等待全量快照期间（最多 1 秒）收不到任何更新，
+                    // 表现为“远程角色冻结不动”。直接应用增量 delta 可确保移动/旋转/跳跃立即生效，
+                    // 即使缺少 baseline 也不会比跳过更差（最坏情况是某些实体位置延迟到下一个全量快照才同步）。
+                    toApply = snapshot;
+                    Volatile.Write(ref _lastAppliedSnapshot, snapshot);
                 }
-
-                // 合并 baseline 与 delta：以 baseline 为基础，用 delta 中变化的 EntityDelta 覆盖
-                // Task 3：复用实例缓冲区，避免每帧分配新 Dictionary/数组。
-                _deltaMergeBuffer.Clear();
-                foreach (var d in baseline.Deltas)
-                    _deltaMergeBuffer[d.EntityId] = d;
-                foreach (var d in snapshot.Deltas)
-                    _deltaMergeBuffer[d.EntityId] = d;
-
-                _deltaMergeList.Clear();
-                foreach (var d in _deltaMergeBuffer.Values)
-                    _deltaMergeList.Add(d);
-
-                toApply = new SnapshotPacket
+                else
                 {
-                    ServerTick = snapshot.ServerTick,
-                    BaselineTick = 0, // 重建后视为全量
-                    Deltas = _deltaMergeList.ToArray(),
-                };
+                    // 合并 baseline 与 delta：以 baseline 为基础，用 delta 中变化的 EntityDelta 覆盖
+                    // Task 3：复用实例缓冲区，避免每帧分配新 Dictionary/数组。
+                    _deltaMergeBuffer.Clear();
+                    foreach (var d in baseline.Deltas)
+                        _deltaMergeBuffer[d.EntityId] = d;
+                    foreach (var d in snapshot.Deltas)
+                        _deltaMergeBuffer[d.EntityId] = d;
 
-                Volatile.Write(ref _lastAppliedSnapshot, toApply);
+                    _deltaMergeList.Clear();
+                    foreach (var d in _deltaMergeBuffer.Values)
+                        _deltaMergeList.Add(d);
+
+                    toApply = new SnapshotPacket
+                    {
+                        ServerTick = snapshot.ServerTick,
+                        BaselineTick = 0, // 重建后视为全量
+                        Deltas = _deltaMergeList.ToArray(),
+                    };
+
+                    Volatile.Write(ref _lastAppliedSnapshot, toApply);
+                }
             }
 
             foreach (var delta in toApply.Deltas)
