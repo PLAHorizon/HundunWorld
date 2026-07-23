@@ -8,6 +8,7 @@ using Horizon.Orleans.Interface.Combat;
 using Horizon.Orleans.Interface.World;
 using Microsoft.Extensions.Logging;
 using Orleans;
+using TouchSocket.Sockets;
 
 namespace Horizon.Game.Core.Handlers;
 
@@ -35,6 +36,18 @@ public sealed class SyncPacketHandler : MessageHandlerBase
     public override List<MessageType> MessageTypes => new() { MessageType.SyncPacket };
 
     public override ServiceType ServiceType => ServiceType.Game;
+
+    /// <summary>
+    /// Override：<see cref="MessageHandlerBase.HandleAsync"/> 入口，在调用基类逻辑前
+    /// 将当前连接 ID 存入 <see cref="_currentConnectionId"/>（AsyncLocal），
+    /// 供后续 <see cref="HandleInputAsync"/> / <see cref="HandleHandshakeAsync"/> 读取，
+    /// 实现按连接隔离的输入去重。
+    /// </summary>
+    public override async Task<(bool IsSuccess, MessageUnion? Response)> HandleAsync(ITcpSessionClient client, HorizonMessagePacket message)
+    {
+        _currentConnectionId.Value = client.Id;
+        return await base.HandleAsync(client, message);
+    }
 
     public override async Task<(bool IsSuccess, HorizonMessagePacket MessagePacket)> RouteHandlerAsync(HorizonMessagePacket message)
     {
@@ -116,20 +129,38 @@ public sealed class SyncPacketHandler : MessageHandlerBase
     private DateTime _lastRateLimitCleanup = DateTime.MinValue;
 
     /// <summary>
-    /// Task D.2.3：每个 characterId 最近一次接受的 ClientTick，用于服务端去重。
-    /// key=characterId, value=last seen ClientTick。
-    /// SyncPacketHandler 为单例（多连接并发），需通过 <see cref="_inputDedupLock"/> 保护。
+    /// 当前请求的连接 ID（AsyncLocal，在 async 调用链中按 ExecutionContext 隔离传播，
+    /// 不受单例多连接并发影响）。由 <see cref="HandleAsync"/> override 设置，
+    /// 供 <see cref="HandleInputAsync"/> 等方法读取，用于按连接隔离输入去重状态。
     /// </summary>
-    private readonly Dictionary<ulong, long> _lastInputTickPerCharacter = new();
+    /// <remarks>
+    /// 为什么不用 <see cref="MessageHandlerBase._gameClient"/>：SyncPacketHandler 是单例，
+    /// 多连接并发时 <c>_gameClient</c> 实例字段会被互相覆盖，在 RouteHandlerAsync 的 async
+    /// 执行段中读取到的可能是其他连接的 client。AsyncLocal 按 ExecutionContext 隔离，
+    /// 每个 async 调用链读到的是各自 HandleAsync 设置的值，可靠且线程安全。
+    /// </remarks>
+    private static readonly AsyncLocal<string?> _currentConnectionId = new();
 
     /// <summary>
-    /// 修复：握手基线 tick。key=characterId, value=握手时客户端声明的 InitialClientTick。
-    /// 握手后，任何 ClientTick < 基线的输入包视为来自旧会话/过期连接的残留重传，直接丢弃，
-    /// 防止旧连接的高 tick 重传污染新会话的去重字典（根因：多连接 tick 冲突导致所有输入被拒绝）。
+    /// 每个连接最近一次接受的 ClientTick，用于服务端去重。
+    /// key=(characterId, connectionId)，按连接隔离，防止旧连接高 tick 包污染新连接去重字典。
+    /// SyncPacketHandler 为单例（多连接并发），需通过 <see cref="_inputDedupLock"/> 保护。
     /// </summary>
-    private readonly Dictionary<ulong, long> _handshakeBaselineTick = new();
+    /// <remarks>
+    /// 修复（多连接 tick 污染）：原实现用 characterId 作 key，自动重连时旧连接的高 tick 包
+    /// 在握手清理字典后重新写入，污染新连接的去重状态，导致新连接所有输入被持续拒绝
+    /// （ClientTick &lt;= LastAccepted），角色卡住/离线。改用 (characterId, connectionId)
+    /// 复合 key 后，不同连接的去重状态完全隔离，旧连接的包不影响新连接。
+    /// </remarks>
+    private readonly Dictionary<(ulong CharacterId, string ConnectionId), long> _lastInputTickPerConnection = new();
 
-    /// <summary>保护 <see cref="_lastInputTickPerCharacter"/> 和 <see cref="_handshakeBaselineTick"/> 的锁。</summary>
+    /// <summary>
+    /// 握手基线 tick。key=(characterId, connectionId)，value=握手时客户端声明的 InitialClientTick。
+    /// 握手后，任何 ClientTick &lt; 基线的输入包视为来自旧会话/过期连接的残留重传，直接丢弃。
+    /// </summary>
+    private readonly Dictionary<(ulong CharacterId, string ConnectionId), long> _handshakeBaselinePerConnection = new();
+
+    /// <summary>保护 <see cref="_lastInputTickPerConnection"/> 和 <see cref="_handshakeBaselinePerConnection"/> 的锁。</summary>
     private readonly object _inputDedupLock = new();
 
     /// <summary>
@@ -192,12 +223,30 @@ public sealed class SyncPacketHandler : MessageHandlerBase
         // （PlayerSessionGrain.HandshakeAsync 内部会同步重置 PlayerSessionState.LastAcceptedClientTick）
         // 修复：客户端可能错误发送 Unix 时间戳作为 InitialClientTick，
         // 若值过大（> 1000000 判定为时间戳），重置为 0，避免后续所有顺序 tick 被误判为"旧会话残留"而拒绝。
+        // 修复（多连接 tick 污染）：去重字典改用 (characterId, connectionId) 复合 key，
+        // 不同连接的去重状态完全隔离，旧连接的高 tick 包无法污染新连接。
+        // 此处设置当前连接的基线，并清理同一角色旧连接的残留记录（防内存泄漏）。
+        var connId = _currentConnectionId.Value ?? string.Empty;
+        var connKey = (handshake.LocalCharacterId, connId);
         lock (_inputDedupLock)
         {
-            _lastInputTickPerCharacter.Remove(handshake.LocalCharacterId);
             long baseline = handshake.InitialClientTick;
             if (baseline > 1_000_000) baseline = 0; // 时间戳保护
-            _handshakeBaselineTick[handshake.LocalCharacterId] = baseline;
+            _handshakeBaselinePerConnection[connKey] = baseline;
+
+            // 清理同一 characterId 的旧连接记录（防内存泄漏）。
+            // 复合 key 已隔离不同连接，此清理仅为释放断开连接的残留记录。
+            var staleKeys = new List<(ulong, string)>();
+            foreach (var k in _lastInputTickPerConnection.Keys)
+            {
+                if (k.CharacterId == handshake.LocalCharacterId && k.ConnectionId != connId)
+                    staleKeys.Add(k);
+            }
+            foreach (var sk in staleKeys)
+            {
+                _lastInputTickPerConnection.Remove(sk);
+                _handshakeBaselinePerConnection.Remove(sk);
+            }
         }
 
         // 握手成功后，注册实体到 ZoneShard 权威模拟层并订阅 AOI
@@ -286,25 +335,30 @@ public sealed class SyncPacketHandler : MessageHandlerBase
         // 新连接从低 tick 开始（如 tick=6480）。旧实现中旧连接的高 tick 会污染去重字典，
         // 导致新连接所有输入被永久拒绝（ClientTick <= LastAccepted）。
         // 修复：握手时记录 InitialClientTick 作为基线，低于基线的包视为旧会话残留，直接丢弃。
+        // 修复（多连接 tick 污染）：去重字典使用 (characterId, connectionId) 复合 key，
+        // 不同连接的去重状态完全隔离。旧连接的高 tick 包只会写入旧连接的 key，
+        // 不会污染新连接，从根本上解决"自动重连后输入被持续拒绝"的问题。
+        var connId = _currentConnectionId.Value ?? string.Empty;
+        var connKey = (input.CharacterId, connId);
         bool isDuplicate = false;
         bool isStaleSession = false;
         long lastAcceptedTick = 0;
         lock (_inputDedupLock)
         {
             // 握手基线检查：低于基线的包来自旧会话/过期连接，直接丢弃
-            if (_handshakeBaselineTick.TryGetValue(input.CharacterId, out var baselineTick)
+            if (_handshakeBaselinePerConnection.TryGetValue(connKey, out var baselineTick)
                 && input.ClientTick < baselineTick)
             {
                 isStaleSession = true;
             }
-            else if (_lastInputTickPerCharacter.TryGetValue(input.CharacterId, out lastAcceptedTick)
+            else if (_lastInputTickPerConnection.TryGetValue(connKey, out lastAcceptedTick)
                 && input.ClientTick <= lastAcceptedTick)
             {
                 isDuplicate = true;
             }
             else
             {
-                _lastInputTickPerCharacter[input.CharacterId] = input.ClientTick;
+                _lastInputTickPerConnection[connKey] = input.ClientTick;
             }
         }
 
@@ -312,7 +366,7 @@ public sealed class SyncPacketHandler : MessageHandlerBase
         {
             Logger.LogDebug(
                 "输入包被拒绝（旧会话残留，低于握手基线）。CharacterId={CharacterId}, ClientTick={ClientTick}, BaselineTick={BaselineTick}",
-                characterId, input.ClientTick, _handshakeBaselineTick.GetValueOrDefault(input.CharacterId));
+                characterId, input.ClientTick, _handshakeBaselinePerConnection.GetValueOrDefault(connKey));
             return new InputAckPacket
             {
                 LastProcessedClientTick = 0,
