@@ -44,7 +44,7 @@ namespace HundunWorld.Game.UI.Ink.Components
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 13f),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 14f),
                 TextColor = InkWashTheme.TextSecondary,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
@@ -56,18 +56,24 @@ namespace HundunWorld.Game.UI.Ink.Components
 
         private void ApplyVisualState()
         {
-            _label.TextColor = _isSelected ? InkWashTheme.SpringGreenBright : InkWashTheme.TextSecondary;
+            // ds-tabs §4.5：激活标签文字 --ink-text-primary，非激活 --ink-text-secondary
+            _label.TextColor = _isSelected ? InkWashTheme.TextDefault : InkWashTheme.TextSecondary;
         }
 
         public override void OnMouseEnter(Float2 location)
         {
             _isHovered = true;
+            // ds-tabs §4.5：悬停态文字色 --ink-text-primary
+            if (!_isSelected)
+                _label.TextColor = InkWashTheme.TextDefault;
             base.OnMouseEnter(location);
         }
 
         public override void OnMouseLeave()
         {
             _isHovered = false;
+            if (!_isSelected)
+                _label.TextColor = InkWashTheme.TextSecondary;
             base.OnMouseLeave();
         }
 
@@ -128,52 +134,24 @@ namespace HundunWorld.Game.UI.Ink.Components
 
         public override void Draw()
         {
-            if (_isSelected)
-                DrawSpringGreenBg();
-
             if (_isAnimating)
                 DrawPulseOverlay();
 
-            if (_isHovered && !_isSelected)
-                DrawHoverBg();
-
-            if (IsFocused)
-                DrawFocusIndicator();
-
             base.Draw();
 
-            Render2D.DrawRectangle(new Rectangle(Float2.Zero, Size), InkWashTheme.BorderNeutralL2, 1f);
-        }
-
-        private void DrawSpringGreenBg()
-        {
-            var center = new Float2(Width * 0.5f, Height * 0.5f);
-            float radius = Mathf.Max(Width, Height) * 0.65f;
-            InkRenderHelper.FillRadialGradient(center, radius,
-                InkWashTheme.SpringGreenBright,
-                Color.Transparent, 10);
-            Render2D.FillRectangle(new Rectangle(0f, Height - 2f, Width, 2f), InkWashTheme.SpringGreenPrimary);
+            // ds-tabs §4.5：激活态 2px 下划线，颜色 --ink-jade-primary
+            if (_isSelected)
+            {
+                Render2D.FillRectangle(new Rectangle(0f, Height - 2f, Width, 2f), InkWashTheme.JadePrimary);
+            }
         }
 
         private void DrawPulseOverlay()
         {
             float pulse = 0.5f + 0.5f * Mathf.Sin(_pulseTime * 14f);
-            var pulseClr = new Color(InkWashTheme.SpringGreenBright.R, InkWashTheme.SpringGreenBright.G,
-                InkWashTheme.SpringGreenBright.B, pulse * 0.25f);
+            var pulseClr = new Color(InkWashTheme.JadeBright.R, InkWashTheme.JadeBright.G,
+                InkWashTheme.JadeBright.B, pulse * 0.15f);
             Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), pulseClr);
-        }
-
-        private void DrawHoverBg()
-        {
-            var hoverClr = new Color(InkWashTheme.SpringGreenPrimary.R, InkWashTheme.SpringGreenPrimary.G,
-                InkWashTheme.SpringGreenPrimary.B, 0.08f);
-            Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), hoverClr);
-        }
-
-        private void DrawFocusIndicator()
-        {
-            var focusClr = InkWashTheme.SpringGreenGlow;
-            Render2D.DrawRectangle(new Rectangle(Float2.Zero, Size), focusClr, 1.5f);
         }
     }
 }

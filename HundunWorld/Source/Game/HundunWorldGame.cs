@@ -385,26 +385,46 @@ namespace HundunWorld.Game
         /// - InteractionSync: 反序列化为 InteractionSyncPacket → EventReceiveBuffer
         /// - SceneObjectSync: 反序列化为 SceneObjectSyncPacket → EventReceiveBuffer
         /// </summary>
+        // 诊断：OnChunkDiffReceived 调用计数，用于限频日志（前 5 次无条件输出，后续每 60 次输出一次）
+        private long _chunkDiffReceivedCount;
+
         private void OnChunkDiffReceived(WorldChunkDiffPacket diff)
         {
-            if (diff?.Payload == null || diff.Payload.Length == 0) return;
+            if (diff?.Payload == null || diff.Payload.Length == 0)
+            {
+                Debug.LogWarning("[HundunWorldGame] OnChunkDiffReceived: Payload 为空，已丢弃");
+                return;
+            }
             try
             {
+                var recvCount = Interlocked.Increment(ref _chunkDiffReceivedCount);
                 switch (diff.PayloadType)
                 {
                     case WorldChunkDiffPayloadType.EntityDelta:
                         {
                             var deltas = MemoryPack.MemoryPackSerializer.Deserialize<EntityDelta[]>(diff.Payload);
-                            if (deltas != null && deltas.Length > 0)
+                            if (deltas == null || deltas.Length == 0)
                             {
-                                var snapshot = new SnapshotPacket
-                                {
-                                    ServerTick = diff.DiffSeqEnd,
-                                    BaselineTick = 0,
-                                    Deltas = deltas,
-                                };
-                                SnapshotReceiveBuffer.Instance.Enqueue(snapshot);
+                                Debug.LogWarning($"[HundunWorldGame] OnChunkDiffReceived: EntityDelta 反序列化为空！PayloadSize={diff.Payload.Length}, ChunkKey=0x{diff.ChunkMortonKey:X16}");
+                                break;
                             }
+                            // 诊断日志：前 5 次无条件输出，后续每 60 次输出一次
+                            if (recvCount <= 5 || recvCount % 60 == 1)
+                            {
+                                var entityIds = string.Join(",", deltas.Take(5).Select(d => d.EntityId));
+                                var kinds = string.Join(",", deltas.Take(5).Select(d => d.Kind));
+                                var firstTransform = deltas[0].Transform.HasValue
+                                    ? $"X={deltas[0].Transform.Value.X:F2},Y={deltas[0].Transform.Value.Y:F2},Z={deltas[0].Transform.Value.Z:F2},Yaw={deltas[0].Transform.Value.Yaw:F2}"
+                                    : "null";
+                                Debug.Log($"[HundunWorldGame] OnChunkDiffReceived#{recvCount} EntityDelta: DeltaCount={deltas.Length}, ChunkKey=0x{diff.ChunkMortonKey:X16}, EntityIds=[{entityIds}], Kinds=[{kinds}], FirstTransform={firstTransform}");
+                            }
+                            var snapshot = new SnapshotPacket
+                            {
+                                ServerTick = diff.DiffSeqEnd,
+                                BaselineTick = 0,
+                                Deltas = deltas,
+                            };
+                            SnapshotReceiveBuffer.Instance.Enqueue(snapshot);
                             break;
                         }
                     case WorldChunkDiffPayloadType.Event:
@@ -849,7 +869,9 @@ namespace HundunWorld.Game
         }
 
         /// <summary>
-        /// 创建本地玩家 Arch ECS 实体（服务端不发送本地玩家的 Spawn delta，由客户端自行创建）。
+        /// 创建本地玩家 Arch ECS 实体。
+        /// 注意：服务端 BroadcastEntityLifecycleAsync step 2 会补发含自身的 Spawn delta，
+        /// SnapshotApplySystem.HandleSpawn 会检测并收养此实体（注册到字典），而非重复创建。
         /// 参照 <see cref="Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.HandleSpawn"/> 的本地玩家分支：
         /// 添加 NetworkIdentityComponent(IsLocalPlayer=true) + AuthTransformComponent +
         /// PlayerInputComponent + PredictedTransformComponent，不添加 InterpolatedTransformComponent

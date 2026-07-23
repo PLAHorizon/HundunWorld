@@ -6,16 +6,32 @@ namespace HundunWorld.Game.UI.Ink
 {
     /// <summary>
     /// 品质色格子。
-    /// 对应 CSS <c>.ink-cell</c> + <c>.ink-cell-quality</c> + <c>.ink-cell-badge</c>，
-    /// 56x56 默认尺寸，通过 <see cref="Draw"/> 绘制品质色边框、图标纹理与数量徽章。
+    /// 对应设计方案 inventory.html 中的 <c>.inv-cell</c> 系列：
+    /// 64x64 默认尺寸、rgba(28,31,40,0.5) 背景、4px 圆角、
+    /// 品质色边框注入（--quality-color 模式）、选中态金边 + 辉光。
     /// </summary>
     public class InkCell : ContainerControl
     {
-        /// <summary>格子背景色（rgba(0,0,0,0.20)）— 降低透明度以减轻场景遮挡</summary>
-        private static readonly Color CellBackground = new Color(0f, 0f, 0f, 0.20f);
+        /// <summary>格子背景色 rgba(28,31,40,0.5)（--ink-bg-paper 50%）</summary>
+        private static readonly Color CellBackground = new Color(28f / 255f, 31f / 255f, 40f / 255f, 0.5f);
+
+        /// <summary>悬停背景色 rgba(28,31,40,0.8)</summary>
+        private static readonly Color CellHoverBackground = new Color(28f / 255f, 31f / 255f, 40f / 255f, 0.8f);
+
+        /// <summary>选中背景色 rgba(200,168,88,0.06)</summary>
+        private static readonly Color CellSelectedBackground = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.06f);
+
+        /// <summary>选中辉光色 rgba(200,168,88,0.25)</summary>
+        private static readonly Color CellSelectedGlow = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.25f);
+
+        /// <summary>悬停边框色 rgba(200,168,88,0.3)</summary>
+        private static readonly Color CellHoverBorder = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.3f);
+
+        /// <summary>圆角半径 4px</summary>
+        private const float CellRadius = 4f;
 
         /// <summary>格子默认尺寸</summary>
-        private const float DefaultSize = 56f;
+        private const float DefaultSize = 64f;
 
         /// <summary>品质等级</summary>
         private InkWashTheme.InkQuality _quality = InkWashTheme.InkQuality.Common;
@@ -26,23 +42,19 @@ namespace HundunWorld.Game.UI.Ink
         /// <summary>数量徽章文字</summary>
         private string _badge;
 
-        /// <summary>边框颜色（ContainerControl 不支持 BorderColor，手动绘制）</summary>
-        private Color _borderColor = InkWashTheme.QualityCommon;
+        /// <summary>是否选中</summary>
+        private bool _selected;
 
-        /// <summary>边框厚度</summary>
-        private float _borderThickness = 1f;
+        /// <summary>是否悬停</summary>
+        private bool _hovered;
 
         /// <summary>
-        /// 品质等级。设置时更新边框色。
+        /// 品质等级。设置时更新边框色（--quality-color 注入模式）。
         /// </summary>
         public InkWashTheme.InkQuality Quality
         {
             get => _quality;
-            set
-            {
-                _quality = value;
-                _borderColor = InkWashTheme.QualityColor(_quality);
-            }
+            set => _quality = value;
         }
 
         /// <summary>
@@ -64,15 +76,47 @@ namespace HundunWorld.Game.UI.Ink
         }
 
         /// <summary>
-        /// 构造函数：56x56 默认尺寸，普通品质。
+        /// 是否选中。选中态：gold-primary 边框 + 12px 金色辉光 + 微金背景。
+        /// </summary>
+        public bool Selected
+        {
+            get => _selected;
+            set => _selected = value;
+        }
+
+        /// <summary>
+        /// 构造函数：64x64 默认尺寸，普通品质。
         /// </summary>
         public InkCell()
         {
             Size = new Float2(DefaultSize, DefaultSize);
             BackgroundColor = Color.Transparent;
-            _borderColor = InkWashTheme.QualityCommon;
-            _borderThickness = 1f;
             ClipChildren = false;
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseEnter(Float2 location)
+        {
+            _hovered = true;
+            base.OnMouseEnter(location);
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseLeave()
+        {
+            _hovered = false;
+            base.OnMouseLeave();
+        }
+
+        /// <summary>
+        /// 获取品质边框色（--quality-color 注入：common 0.35 透明，其余品质全色）。
+        /// </summary>
+        private Color GetQualityBorderColor()
+        {
+            var qc = InkWashTheme.QualityColor(_quality);
+            if (_quality == InkWashTheme.InkQuality.Common)
+                return new Color(qc.R, qc.G, qc.B, 0.35f);
+            return qc;
         }
 
         /// <inheritdoc />
@@ -83,8 +127,11 @@ namespace HundunWorld.Game.UI.Ink
 
             var bounds = new Rectangle(0, 0, Width, Height);
 
-            // 1. 背景
-            Render2D.FillRectangle(bounds, CellBackground);
+            // 1. 背景（选中 > 悬停 > 默认）
+            Color bg = _selected ? CellSelectedBackground
+                : _hovered ? CellHoverBackground
+                : CellBackground;
+            InkRenderHelper.FillRoundedRectangle(bounds, CellRadius, bg);
 
             // 2. 图标（居中，占 70%）
             if (_icon != null && _icon.IsLoaded)
@@ -98,10 +145,28 @@ namespace HundunWorld.Game.UI.Ink
                     Color.White);
             }
 
-            // 3. 品质色边框
-            Render2D.DrawRectangle(bounds, _borderColor, _borderThickness);
+            // 3. 边框（选中 > 悬停 > 品质色）
+            Color border = _selected ? InkWashTheme.GoldPrimary
+                : _hovered ? CellHoverBorder
+                : GetQualityBorderColor();
+            InkRenderHelper.DrawRoundedRectangle(bounds, CellRadius, border, 1f);
 
-            // 4. 数量徽章（右下角）
+            // 4. 选中/传说辉光（多层半透明描边近似 box-shadow）
+            if (_selected)
+            {
+                InkRenderHelper.DrawRoundedRectangle(
+                    new Rectangle(-2f, -2f, Width + 4f, Height + 4f), CellRadius + 2f, CellSelectedGlow, 2f);
+            }
+            else if (_quality == InkWashTheme.InkQuality.Legendary)
+            {
+                var legendaryGlow = new Color(
+                    InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G,
+                    InkWashTheme.GoldPrimary.B, 0.15f);
+                InkRenderHelper.DrawRoundedRectangle(
+                    new Rectangle(-1.5f, -1.5f, Width + 3f, Height + 3f), CellRadius + 1.5f, legendaryGlow, 2f);
+            }
+
+            // 5. 数量徽章（右下角，DIN 11px）
             if (!string.IsNullOrEmpty(_badge))
             {
                 var fontRef = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f);

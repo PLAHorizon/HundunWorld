@@ -1,0 +1,3 @@
+﻿Unknown Visual Studio installation. Display name: SQL Server Management Studio 22
+Missing Emscripten SDK. Cannot build for Web platform.
+Building for Windows without Vulkan rendering backend (Vulkan SDK is missing)

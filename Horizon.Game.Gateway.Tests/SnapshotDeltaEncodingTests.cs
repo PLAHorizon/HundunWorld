@@ -169,16 +169,18 @@ public class SnapshotDeltaEncodingTests
         var grain = CreateGrain();
         var observer = new FakeFanoutObserver();
         await grain.SubscribeFanoutAsync(Guid.NewGuid(), observer);
-        // 注意：实体初始 Z=8（chunk cell=16m 的中部），避免重力使 Z 产生微小负偏移
+        // 实体位于 ECS (0, 0, 8) — X=0(左右), Y=0(前后), Z=8(上下)。
+        // Z=8 是 chunk cell=16m 的中部，避免重力使 Z 产生微小负偏移
         // 导致 Floor(Z/16) 从 0 变为 -1 跨出订阅 chunk，AOI 过滤后广播被跳过。
-        // chunk Morton 键由 MortonCodec 编码（含 AxisBias 偏移），不等于 0。
-        const float initialZ = 8f;
-        var chunkKey = WorldCoord.ToChunkMortonKey(0, 0, initialZ);
+        const float ecsZ = 8f;
+        // chunk Morton 键使用 ECS Z-up 坐标（X=左右, Y=前后, Z=上下）
+        var chunkKey = WorldCoord.ToChunkMortonKey(0, 0, ecsZ);
         await grain.SubscribeSessionAsync(sessionId: 1, mortonKeys: new[] { chunkKey });
 
-        // 注册 2 个实体
-        await grain.RegisterEntityAsync(entityId: 3001, initialX: 0, initialY: 0, initialZ: initialZ);
-        await grain.RegisterEntityAsync(entityId: 3002, initialX: 0, initialY: 0, initialZ: initialZ);
+        // RegisterEntityAsync 接受 Flax Y-up 坐标（X=左右, Y=上下, Z=前后），
+        // 内部转换为 ECS Z-up。ECS (0, 0, 8) → Flax (0, 8, 0)。
+        await grain.RegisterEntityAsync(entityId: 3001, initialX: 0, initialY: ecsZ, initialZ: 0);
+        await grain.RegisterEntityAsync(entityId: 3002, initialX: 0, initialY: ecsZ, initialZ: 0);
 
         // tick 0：全量快照 → 2 diffs
         await grain.TickAsync(tickTime: 1.0);
@@ -188,17 +190,186 @@ public class SnapshotDeltaEncodingTests
         // 为实体 3001 提交输入使其移动（位置变化 > 0.01）。
         // InputPacket.MaxSpeed 未填（默认 0），服务端兜底用 DefaultMaxSpeed=6 m/s，
         // reportedEndX=0.1f 与权威回放一致（6 m/s × 1/60s = 0.1m），不触发 correction。
+        // reportedEnd 为 ECS Z-up 坐标（与 InputSendSystem 的 PredictedEndX/Y/Z 一致）：
+        // (0.1, 0, 8) — X=0.1(左右), Y=0(前后), Z=8(上下)
         var input = new InputPacket { ClientTick = 1, MoveX = 1.0f, MoveY = 0 };
         await grain.SubmitInputAsync(entityId: 3001, input,
-            reportedEndX: 0.1f, reportedEndY: 0, reportedEndZ: initialZ);
+            reportedEndX: 0.1f, reportedEndY: 0f, reportedEndZ: ecsZ);
 
         // tick 1：增量快照 → 仅 1 diff（实体 3001 移动，3002 不变）
-        await grain.TickAsync(tickTime: 2.0);
+        var tick1Result = await grain.TickAsync(tickTime: 2.0);
         var deltaDiffCount = observer.ReceivedDiffs.Count - countAfterFull;
 
+        // 诊断：输出 tick 1 的详细信息
+        System.Diagnostics.Debug.WriteLine(
+            $"[诊断] tick1Result={tick1Result}, countAfterFull={countAfterFull}, " +
+            $"totalCount={observer.ReceivedDiffs.Count}, deltaDiffCount={deltaDiffCount}");
+
         // 增量快照应只包含变化的实体（3001），不包含未变化的实体（3002）
-        Assert.True(deltaDiffCount >= 1, $"增量快照应至少包含 1 个变化的实体，实际 {deltaDiffCount}");
+        Assert.True(deltaDiffCount >= 1, $"增量快照应至少包含 1 个变化的实体，实际 {deltaDiffCount}。tick1Result={tick1Result}, countAfterFull={countAfterFull}, totalCount={observer.ReceivedDiffs.Count}");
         Assert.True(deltaDiffCount <= 1, $"增量快照不应包含未变化的实体，实际 {deltaDiffCount}");
+
+        // ===== 坐标值验证：确认 ECS→Flax 转换正确（X=ECS.X, Y=ECS.Z, Z=ECS.Y）=====
+        // 实体 3001 起始 ECS (0, 0, 8)，提交 MoveX=1.0 后权威回放：
+        //   ECS X: 0 → 0 + 1.0 * 6 * (1/60) = 0.1（MaxSpeed 兜底 6 m/s）
+        //   ECS Y: 0 → 0（MoveY=0，无前后位移）
+        //   ECS Z: 8 → 8 - gravity_offset ≈ 7.997（重力 1 tick 偏移 ~0.003m，PredictedEndZ 兜底未触发因 dzPred < 0.05）
+        // Delta Transform 为 Flax Y-up：X=0.1, Y≈7.997(ECS Z), Z=0.0(ECS Y)
+        var deltaDiffs = observer.ReceivedDiffs.Skip(countAfterFull).ToList();
+        var entityDeltaDiff = deltaDiffs.FirstOrDefault(d =>
+            d.Diff.PayloadType == WorldChunkDiffPayloadType.EntityDelta);
+        Assert.NotNull(entityDeltaDiff.Diff);
+
+        var deserializedDeltas = MemoryPack.MemoryPackSerializer.Deserialize<EntityDelta[]>(entityDeltaDiff.Diff.Payload);
+        Assert.NotNull(deserializedDeltas);
+        Assert.Single(deserializedDeltas);
+
+        var movedDelta = deserializedDeltas[0];
+        Assert.Equal(3001UL, movedDelta.EntityId);
+
+        // Transform 必须存在且包含正确的 Flax Y-up 坐标
+        Assert.True(movedDelta.Transform.HasValue, "Update delta 必须包含 Transform");
+        var transform = movedDelta.Transform.Value;
+
+        // X = ECS X = 0.1（左右位移）
+        Assert.True(MathF.Abs(transform.X - 0.1f) < 0.02f,
+            $"Transform.X 应为 ~0.1（ECS X 位移），实际 {transform.X}");
+
+        // Y = ECS Z ≈ 8.0（上下，重力偏移 ~0.003m 在容差内）
+        Assert.True(MathF.Abs(transform.Y - ecsZ) < 0.05f,
+            $"Transform.Y 应为 ~{ecsZ}（ECS Z→Flax Y），实际 {transform.Y}");
+
+        // Z = ECS Y = 0.0（前后，无位移）
+        Assert.True(MathF.Abs(transform.Z - 0f) < 0.02f,
+            $"Transform.Z 应为 ~0.0（ECS Y→Flax Z），实际 {transform.Z}");
+
+        // 确认不是旧的 Y/Z 交换错误（旧 bug 会把 Y 和 Z 颠倒）
+        Assert.True(MathF.Abs(transform.Y - 0f) > 1f,
+            "Transform.Y 不应为 0（排除旧的 Y/Z 交换错误：旧 bug 会把 ECS Y=0 放到 Flax Y）");
+        Assert.True(MathF.Abs(transform.Z - ecsZ) > 1f,
+            $"Transform.Z 不应为 ~{ecsZ}（排除旧的 Y/Z 交换错误：旧 bug 会把 ECS Z=8 放到 Flax Z）");
+    }
+
+    // =======================================================================
+    // 测试 3b: DeltaSnapshot_ContainsRotationAndJumpSync
+    // =======================================================================
+    /// <summary>
+    /// 验证旋转（Yaw）和跳跃（MovementState）的网络同步。
+    /// 这是"角色基础移动、旋转、跳跃网络不同步"BUG 修复的关键验证：
+    /// 1. 旋转同步：提交 LookYaw 后，delta.Transform.Yaw 必须正确传递
+    /// 2. 跳跃同步：提交跳跃输入后，delta.MovementState.MovementMode 必须为 Jump
+    /// </summary>
+    [Fact]
+    public async Task DeltaSnapshot_ContainsRotationAndJumpSync()
+    {
+        var grain = CreateGrain();
+        var observer = new FakeFanoutObserver();
+        await grain.SubscribeFanoutAsync(Guid.NewGuid(), observer);
+
+        const float ecsZ = 8f;
+        var chunkKey = WorldCoord.ToChunkMortonKey(0, 0, ecsZ);
+        await grain.SubscribeSessionAsync(sessionId: 1, mortonKeys: new[] { chunkKey });
+
+        // 注册 2 个实体（代表 2 个玩家）
+        // RegisterEntityAsync 接受 Flax Y-up：ECS (0, 0, 8) → Flax (0, 8, 0)
+        await grain.RegisterEntityAsync(entityId: 4001, initialX: 0, initialY: ecsZ, initialZ: 0);
+        await grain.RegisterEntityAsync(entityId: 4002, initialX: 0, initialY: ecsZ, initialZ: 0);
+
+        // tick 0：全量快照
+        await grain.TickAsync(tickTime: 1.0);
+        var countAfterFull = observer.ReceivedDiffs.Count;
+
+        // ===== 旋转同步验证 =====
+        // 提交 LookYaw=1.57f（~90度），不移动不跳跃
+        // reportedEnd 不变（位置不动），避免触发 correction
+        var rotateInput = new InputPacket
+        {
+            ClientTick = 1,
+            MoveX = 0f,
+            MoveY = 0f,
+            LookYaw = 1.57f,  // ~90度（弧度）
+            InputBits = 0,
+            MaxSpeed = 0,  // 兜底 DefaultMaxSpeed
+        };
+        await grain.SubmitInputAsync(entityId: 4001, rotateInput,
+            reportedEndX: 0f, reportedEndY: 0f, reportedEndZ: ecsZ);
+
+        // tick 1：增量快照 → 应包含 4001 的旋转变化
+        await grain.TickAsync(tickTime: 2.0);
+
+        var rotateDiffs = observer.ReceivedDiffs.Skip(countAfterFull).ToList();
+        var rotateEntityDiff = rotateDiffs.FirstOrDefault(d =>
+            d.Diff.PayloadType == WorldChunkDiffPayloadType.EntityDelta);
+        Assert.NotNull(rotateEntityDiff.Diff);
+
+        var rotateDeltas = MemoryPack.MemoryPackSerializer.Deserialize<EntityDelta[]>(rotateEntityDiff.Diff.Payload);
+        Assert.NotNull(rotateDeltas);
+        Assert.Single(rotateDeltas);
+
+        var rotateDelta = rotateDeltas![0];
+        Assert.Equal(4001UL, rotateDelta.EntityId);
+
+        // 旋转验证：Transform.Yaw 必须为 1.57f
+        Assert.True(rotateDelta.Transform.HasValue, "旋转 delta 必须包含 Transform");
+        var rotateTransform = rotateDelta.Transform.Value;
+        Assert.True(MathF.Abs(rotateTransform.Yaw - 1.57f) < 0.01f,
+            $"Transform.Yaw 应为 1.57（~90度），实际 {rotateTransform.Yaw}");
+
+        var countAfterRotate = observer.ReceivedDiffs.Count;
+
+        // ===== 跳跃同步验证 =====
+        // 提交跳跃输入（InputBits bit0=1），计算跳跃后的预测 Z 位置
+        // 使用 MovementFormula.Step 计算与服务端一致的预测位置，避免 correction
+        var (_, _, predictedJumpZ, _) = Horizon.Game.Message.Sim.MovementFormula.Step(
+            0f, 0f, ecsZ, 0f,  // 起始位置 ECS (0, 0, 8)
+            0f, 0f,             // 不移动
+            5.5f,               // 普通跳跃冲量
+            1f / 60f,           // 固定时间步长
+            maxSpeed: 0f);      // 兜底 DefaultMaxSpeed
+
+        var jumpInput = new InputPacket
+        {
+            ClientTick = 2,
+            MoveX = 0f,
+            MoveY = 0f,
+            LookYaw = 1.57f,  // 保持旋转
+            InputBits = 0x1,  // 跳跃（bit0=1）
+            MaxSpeed = 0,
+        };
+        await grain.SubmitInputAsync(entityId: 4001, jumpInput,
+            reportedEndX: 0f, reportedEndY: 0f, reportedEndZ: predictedJumpZ);
+
+        // tick 2：增量快照 → 应包含 4001 的跳跃变化
+        await grain.TickAsync(tickTime: 3.0);
+
+        var jumpDiffs = observer.ReceivedDiffs.Skip(countAfterRotate).ToList();
+        var jumpEntityDiff = jumpDiffs.FirstOrDefault(d =>
+            d.Diff.PayloadType == WorldChunkDiffPayloadType.EntityDelta);
+        Assert.NotNull(jumpEntityDiff.Diff);
+
+        var jumpDeltas = MemoryPack.MemoryPackSerializer.Deserialize<EntityDelta[]>(jumpEntityDiff.Diff.Payload);
+        Assert.NotNull(jumpDeltas);
+        Assert.Single(jumpDeltas);
+
+        var jumpDelta = jumpDeltas![0];
+        Assert.Equal(4001UL, jumpDelta.EntityId);
+
+        // 跳跃验证：MovementState 必须存在且 MovementMode 为 Jump（上升中）
+        Assert.NotNull(jumpDelta.MovementState);
+        var movementState = jumpDelta.MovementState!.Value;
+        Assert.True(movementState.MovementMode == Horizon.Game.Message.Sync.Components.MovementMode.Jump ||
+                    movementState.MovementMode == Horizon.Game.Message.Sync.Components.MovementMode.Fall,
+            $"跳跃后 MovementMode 应为 Jump 或 Fall，实际 {movementState.MovementMode}");
+
+        // 跳跃后 Z 位置应上升（Flax Y = ECS Z > 8）
+        Assert.True(jumpDelta.Transform.HasValue, "跳跃 delta 必须包含 Transform");
+        var jumpTransform = jumpDelta.Transform.Value;
+        Assert.True(jumpTransform.Y > ecsZ,
+            $"跳跃后 Flax Y（ECS Z）应 > {ecsZ}（上升），实际 {jumpTransform.Y}");
+
+        // 跳跃后 IsGrounded 应为 false
+        Assert.False(movementState.IsGrounded,
+            $"跳跃后 IsGrounded 应为 false，实际 {movementState.IsGrounded}");
     }
 
     // =======================================================================

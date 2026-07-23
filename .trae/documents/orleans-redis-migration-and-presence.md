@@ -4,9 +4,9 @@
 
 ### 当前问题
 
-1.   角色离线持久化 BUG  ：服务器刚启动时角色下线后无法从持久化中清理。根因是 CharacterGrain 使用 \[PersistentState("character", "GameStore")]（SQL Server via AdoNet）持久化 IsOnline 字段，grain 未激活时 IsOnline=true 永久残留。
-2.   存储架构问题  ：Orleans 使用 SQL Server 存储所有 grain 状态，写入慢且可能失败，导致 GoOfflineAsync 的 WriteStateAsync 不可靠。
-3.   缺乏应用层心跳  ：只有 TCP 层 KeepAlive 和空闲超时（60 秒），没有角色级别的应用层心跳保活。
+1. 角色离线持久化 BUG  ：服务器刚启动时角色下线后无法从持久化中清理。根因是 CharacterGrain 使用 \[PersistentState("character", "GameStore")]（SQL Server via AdoNet）持久化 IsOnline 字段，grain 未激活时 IsOnline=true 永久残留。
+2. 存储架构问题  ：Orleans 使用 SQL Server 存储所有 grain 状态，写入慢且可能失败，导致 GoOfflineAsync 的 WriteStateAsync 不可靠。
+3. 缺乏应用层心跳  ：只有 TCP 层 KeepAlive 和空闲超时（60 秒），没有角色级别的应用层心跳保活。
 
 ### 目标
 
@@ -21,8 +21,6 @@
 
 ### 1. Orleans 存储切换到 Redis（保留 SQL Server 作为备份）
 
-
-
 NuGet 包变更
 
 ：
@@ -33,9 +31,7 @@ NuGet 包变更
 
 * Microsoft.Orleans.Persistence.Redis 10.0.1 已安装
 
-*   保留  原 AdoNet 包引用（备份方案）
-
-
+* 保留  原 AdoNet 包引用（备份方案）
 
 配置变更
 
@@ -47,17 +43,13 @@ NuGet 包变更
 
 * 所有 AddAdoNetGrainStorage → AddRedisGrainStorage（7 个存储：PubSubStore、默认、GameStore、PassportStore、WorldSqlStore、FlowerStore、AIStore）
 
-*   保留  原 SQL Server 配置代码（注释掉），作为降级备份方案
-
-
+* 保留  原 SQL Server 配置代码（注释掉），作为降级备份方案
 
 客户端项目变更
 
 ：
 
 * Horizon.Game.Core、Horizon.Game.Gateway、Horizon.IM.Gateway、Horizon.WebApi 的 UseAdoNetClustering → UseRedisClustering
-
-
 
 连接字符串
 
@@ -68,8 +60,6 @@ NuGet 包变更
 * 从 appsettings.json 的 Redis:ConnectionString 读取
 
 ### 2. 角色在线状态 Redis 持久化（双轨制）
-
-
 
 新增接口 ICharacterPresenceStore
 
@@ -91,8 +81,6 @@ NuGet 包变更
 
 * GetExpiredCharactersAsync(TimeSpan heartbeatTimeout) → Task\<IReadOnlyList<(long, DateTime)>>
 
-
-
 Redis 实现 RedisCharacterPresenceStore
 
 （位置：Horizon.Strategy.Storage.Redis\RedisCharacterPresenceStore.cs）：
@@ -113,8 +101,6 @@ Redis 实现 RedisCharacterPresenceStore
 
 * GetExpiredCharactersAsync: 扫描所有 presence key，检查 lastHeartbeat
 
-
-
 降级策略
 
 ：
@@ -125,8 +111,6 @@ Redis 实现 RedisCharacterPresenceStore
 
 ### 3. 心跳保活机制
 
-
-
 客户端心跳
 
 ：
@@ -136,8 +120,6 @@ Redis 实现 RedisCharacterPresenceStore
 * 客户端每 30 秒发送一次 HeartbeatMessage
 
 * 服务器收到后调用 ICharacterPresenceStore.RefreshHeartbeatAsync
-
-
 
 服务器心跳检查后台服务
 
@@ -150,8 +132,6 @@ Redis 实现 RedisCharacterPresenceStore
 * 超时阈值：90 秒（3 倍心跳间隔）
 
 * 发现过期角色 → 调用 PlayerDespawnScheduler.DespawnImmediatelyAsync
-
-
 
 心跳处理 Handler
 
@@ -199,8 +179,6 @@ Redis 实现 RedisCharacterPresenceStore
 
 ### Phase 1: Orleans 存储切换到 Redis（基础设施）
 
-
-
 步骤 1.1
 
 ：添加 NuGet 包
@@ -208,8 +186,6 @@ Redis 实现 RedisCharacterPresenceStore
 * Horizon.Orleans.Silo.csproj：添加 Microsoft.Orleans.Clustering.Redis、Microsoft.Orleans.Reminders.Redis
 
 * 其他客户端项目：添加 Microsoft.Orleans.Clustering.Redis
-
-
 
 步骤 1.2
 
@@ -219,15 +195,11 @@ Redis 实现 RedisCharacterPresenceStore
 
 * 添加 Redis 配置（UseRedisClustering、UseRedisReminderService、AddRedisGrainStorage × 7）
 
-
-
 步骤 1.3
 
 ：修改客户端项目
 
 * Horizon.Game.Core、Horizon.Game.Gateway、Horizon.IM.Gateway、Horizon.WebApi 的 UseAdoNetClustering → UseRedisClustering
-
-
 
 步骤 1.4
 
@@ -235,22 +207,17 @@ Redis 实现 RedisCharacterPresenceStore
 
 ### Phase 2: 角色在线状态 Redis 持久化（双轨制）
 
-
-
 步骤 2.1
 
 ：创建 ICharacterPresenceStore 接口（Horizon.Game.Core\Sim\Server\ICharacterPresenceStore.cs）
-
 
 步骤 2.2
 
 ：创建 RedisCharacterPresenceStore 实现（Horizon.Strategy.Storage.Redis\RedisCharacterPresenceStore.cs）
 
-
 步骤 2.3
 
 ：DI 注册（Gateway + Silo）
-
 
 步骤 2.4
 
@@ -258,35 +225,27 @@ Redis 实现 RedisCharacterPresenceStore
 
 ### Phase 3: 心跳保活机制
 
-
-
 步骤 3.1
 
 ：创建 CharacterPresenceMonitorHostedService
-
 
 步骤 3.2
 
 ：创建 HeartbeatHandler
 
-
 步骤 3.3
 
 ：修改 GameNetworkServer（注册 HeartbeatHandler + CleanupConnectionAsync 兜底）
 
-
 步骤 3.4
 
 ：修改 PlayerDespawnScheduler（注入 ICharacterPresenceStore）
-
 
 步骤 3.5
 
 ：DI 注册 CharacterPresenceMonitorHostedService
 
 ### Phase 4: 客户端心跳发送（如需）
-
-
 
 步骤 4.1
 
@@ -366,9 +325,9 @@ Redis 实现 RedisCharacterPresenceStore
 
 ## 风险与注意事项
 
-1.   Redis 单点故障  ：Redis 宕机会导致整个 Orleans 集群崩溃。保留 SQL Server 配置作为快速回退方案。
-2.   数据丢失  ：切换后 Redis 从空开始，所有 grain 状态丢失。角色数据从 EF Core 数据库重新加载。
-3.   序列化兼容性  ：Redis GrainStorage 使用 JSON 序列化，需要确认所有 grain 状态可 JSON 序列化。
-4.   性能  ：Redis 比 SQL Server 快，但单线程模型可能成为瓶颈。监控 Redis CPU 和内存。
-5.   MemoryPack  ：角色在线状态 Hash 中的 lastHeartbeat 使用 ISO 8601 字符串，避免二进制序列化兼容性问题。
+1. Redis 单点故障  ：Redis 宕机会导致整个 Orleans 集群崩溃。保留 SQL Server 配置作为快速回退方案。
+2. 数据丢失  ：切换后 Redis 从空开始，所有 grain 状态丢失。角色数据从 EF Core 数据库重新加载。
+3. 序列化兼容性  ：Redis GrainStorage 使用 JSON 序列化，需要确认所有 grain 状态可 JSON 序列化。
+4. 性能  ：Redis 比 SQL Server 快，但单线程模型可能成为瓶颈。监控 Redis CPU 和内存。
+5. MemoryPack  ：角色在线状态 Hash 中的 lastHeartbeat 使用 ISO 8601 字符串，避免二进制序列化兼容性问题。
 

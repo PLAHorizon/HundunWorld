@@ -7,36 +7,45 @@ namespace HundunWorld.Game.UI.Ink
 {
     /// <summary>
     /// 水墨按钮视觉变体。
-    /// 对应 CSS <c>.ink-btn</c> 系列变体类。
+    /// 对应设计规范 ds-btn §4.1 五变体：primary/secondary/ghost/danger/brand。
     /// </summary>
     public enum InkButtonVariant
     {
-        /// <summary>默认按钮 — 深灰底 + 金线描边，对应 .ink-btn</summary>
-        Default,
+        /// <summary>主按钮 — 春青底 + 反色文字，主操作（确认、提交）</summary>
+        Primary = 0,
 
-        /// <summary>主按钮 — 鎏金渐变底 + 金辉光，对应 .ink-btn-primary</summary>
-        Primary,
+        /// <summary>次按钮 — 金雾底 + 金边 + 主文字，次操作（取消、返回）</summary>
+        Secondary = 1,
 
-        /// <summary>朱红按钮 — 朱红渐变底，战斗/危险操作，对应 .ink-btn-vermilion</summary>
-        Vermilion,
+        /// <summary>幽灵按钮 — 透明底 + 透明边，工具栏、行内操作</summary>
+        Ghost = 2,
 
-        /// <summary>幽灵按钮 — 透明底 + 弱边框，对应 .ink-btn-ghost</summary>
-        Ghost
+        /// <summary>危险按钮 — 血色底 + 反色文字，危险操作（删除、丢弃）</summary>
+        Danger = 3,
+
+        /// <summary>品牌按钮 — 鎏金底 + 反色文字，金色强调（购买、强化）</summary>
+        Brand = 4,
+
+        /// <summary>默认按钮（向后兼容别名 = Secondary）</summary>
+        Default = Secondary,
+
+        /// <summary>朱红按钮（向后兼容别名 = Danger）</summary>
+        Vermilion = Danger
     }
 
     /// <summary>
     /// 水墨按钮尺寸。
-    /// 对应 CSS <c>.ink-btn-sm</c> / 默认 / <c>.ink-btn-lg</c>。
+    /// 对应设计规范 ds-btn §4.1：sm 24px / md 28px / lg 32px，圆角统一 8px。
     /// </summary>
     public enum InkButtonSize
     {
-        /// <summary>小号 — 高 28px，字号 12，对应 .ink-btn-sm</summary>
+        /// <summary>小号 — 高 24px，字号 11，表格内操作、紧凑工具栏</summary>
         Sm,
 
-        /// <summary>中号 — 高 36px，字号 13（默认）</summary>
+        /// <summary>中号 — 高 28px，字号 14（默认），通用场景</summary>
         Md,
 
-        /// <summary>大号 — 高 44px，字号 15，对应 .ink-btn-lg</summary>
+        /// <summary>大号 — 高 32px，字号 14，主操作、对话框确认</summary>
         Lg
     }
 
@@ -104,14 +113,34 @@ namespace HundunWorld.Game.UI.Ink
         }
 
         /// <summary>
-        /// 根据变体设置正常态与悬停态配色。
+        /// 根据变体设置正常态与悬停态配色（ds-btn §4.1 状态表）。
         /// </summary>
         private void ApplyVariantColors()
         {
             switch (_variant)
             {
                 case InkButtonVariant.Primary:
-                    // 鎏金渐变底用 GoldPrimary 近似（CSS linear-gradient）
+                    // 春青底 + 反色文字，悬停 jade-bright
+                    _normalBg = InkWashTheme.JadePrimary;
+                    _normalBorder = InkWashTheme.JadePrimary;
+                    _normalText = InkWashTheme.TextInverse;
+                    _hoverBg = InkWashTheme.JadeBright;
+                    _hoverBorder = InkWashTheme.JadeBright;
+                    _hoverText = InkWashTheme.TextInverse;
+                    break;
+
+                case InkButtonVariant.Danger:
+                    // 血色底 + 反色文字，悬停 blood-bright
+                    _normalBg = InkWashTheme.BloodPrimary;
+                    _normalBorder = InkWashTheme.BloodPrimary;
+                    _normalText = InkWashTheme.TextInverse;
+                    _hoverBg = InkWashTheme.BloodBright;
+                    _hoverBorder = InkWashTheme.BloodBright;
+                    _hoverText = InkWashTheme.TextInverse;
+                    break;
+
+                case InkButtonVariant.Brand:
+                    // 鎏金底 + 反色文字，悬停 gold-bright
                     _normalBg = InkWashTheme.GoldPrimary;
                     _normalBorder = InkWashTheme.GoldPrimary;
                     _normalText = InkWashTheme.TextOnBrand;
@@ -120,39 +149,30 @@ namespace HundunWorld.Game.UI.Ink
                     _hoverText = InkWashTheme.TextOnBrand;
                     break;
 
-                case InkButtonVariant.Vermilion:
-                    _normalBg = InkWashTheme.VermilionPrimary;
-                    _normalBorder = InkWashTheme.VermilionDeep;
-                    _normalText = InkWashTheme.PaperBright;
-                    _hoverBg = InkWashTheme.VermilionBright;
-                    _hoverBorder = InkWashTheme.VermilionBright;
-                    _hoverText = InkWashTheme.PaperBright;
-                    break;
-
                 case InkButtonVariant.Ghost:
+                    // 透明底 + 透明边，悬停 bg-hover
                     _normalBg = Color.Transparent;
-                    _normalBorder = InkWashTheme.BorderNeutralL2;
-                    _normalText = InkWashTheme.TextSecondary;
-                    _hoverBg = new Color(
-                        InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G,
-                        InkWashTheme.GoldPrimary.B, 0.06f);
-                    _hoverBorder = InkWashTheme.BorderGold;
-                    _hoverText = InkWashTheme.TextBrand;
+                    _normalBorder = Color.Transparent;
+                    _normalText = InkWashTheme.TextDefault;
+                    _hoverBg = InkWashTheme.BgHover;
+                    _hoverBorder = InkWashTheme.BgHover;
+                    _hoverText = InkWashTheme.TextDefault;
                     break;
 
-                default: // Default
-                    _normalBg = InkWashTheme.BaseTertiary;
+                default: // Secondary
+                    // 金雾底 + 金边 + 主文字，悬停 bg-hover
+                    _normalBg = InkWashTheme.BgMist;
                     _normalBorder = InkWashTheme.BorderGold;
                     _normalText = InkWashTheme.TextDefault;
-                    _hoverBg = InkWashTheme.BaseElevated;
-                    _hoverBorder = InkWashTheme.BorderGoldStrong;
-                    _hoverText = InkWashTheme.TextBrand;
+                    _hoverBg = InkWashTheme.BgHover;
+                    _hoverBorder = InkWashTheme.BorderGold;
+                    _hoverText = InkWashTheme.TextDefault;
                     break;
             }
         }
 
         /// <summary>
-        /// 根据尺寸设置按钮高度与字号。
+        /// 根据尺寸设置按钮高度与字号（ds-btn §4.1：24/28/32px，字号 11/14/14）。
         /// </summary>
         private void ApplySize()
         {
@@ -162,19 +182,19 @@ namespace HundunWorld.Game.UI.Ink
             {
                 case InkButtonSize.Sm:
                     height = InkWashTheme.ControlHSm;
-                    fontSize = 12f;
+                    fontSize = 11f;
                     break;
                 case InkButtonSize.Lg:
                     height = InkWashTheme.ControlHLg;
-                    fontSize = 15f;
+                    fontSize = 14f;
                     break;
                 default:
                     height = InkWashTheme.ControlHMd;
-                    fontSize = 13f;
+                    fontSize = 14f;
                     break;
             }
             Height = height;
-            Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, fontSize);
+            Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, fontSize);
         }
 
         /// <summary>

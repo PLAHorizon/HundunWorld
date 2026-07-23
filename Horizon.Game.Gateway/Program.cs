@@ -166,21 +166,25 @@ namespace Horizon.Game.Gateway
                 })
                 .ConfigureLogging((context, logging) =>
                 {
-                    // 日志配置
+                    // 日志配置：
+                    // - 控制台：简单格式（只显示格式化后的 Message，不暴露 State/{OriginalFormat} 占位符），
+                    //           通过 appsettings 的 "Logging:Console:LogLevel" 过滤为只显示主要信息
+                    // - 文件：全量日志落盘（Debug+），按日切割 + 大小滚动，便于事后排查
+                    // - Seq：可选的日志聚合（开发环境）
                     logging.ClearProviders();
-                    logging.AddConsole();
-                    logging.AddJsonConsole(options =>
-                    {
-                        options.IncludeScopes = true;
-                        options.TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffZ";
-                        options.UseUtcTimestamp = true;
-                        options.JsonWriterOptions = new System.Text.Json.JsonWriterOptions
-                        {
-                            Indented = false,
-                            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
-                        };
-                    });
                     logging.AddConfiguration(context.Configuration.GetSection("Logging"));
+
+                    // 控制台使用 Simple 格式器，避免 JsonConsole 暴露 {OriginalFormat} 原始模板与 State 字典
+                    logging.AddSimpleConsole(options =>
+                    {
+                        options.SingleLine = true;
+                        options.IncludeScopes = false;
+                        options.TimestampFormat = "yyyy-MM-dd HH:mm:ss.fff ";
+                        options.UseUtcTimestamp = false;
+                    });
+
+                    // 文件日志：全量落盘，控制台只显示主要信息时文件仍保留完整日志
+                    logging.AddFile(context.Configuration, "HundunWorld-Gateway");
 
                     // 开发环境启用Seq日志聚合（Phase 2.2）
                     logging.AddSeqIfEnabled(context.Configuration, "HundunWorld.Gateway");

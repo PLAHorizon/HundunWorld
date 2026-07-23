@@ -41,6 +41,29 @@ namespace HundunWorld.Game.UI.Ink
         }
 
         /// <summary>
+        /// 绘制圆形描边（多段折线近似）。
+        /// </summary>
+        /// <param name="center">圆心坐标（控件局部坐标系）</param>
+        /// <param name="radius">圆半径（像素），小于等于 0 时不绘制</param>
+        /// <param name="color">描边颜色</param>
+        /// <param name="thickness">线宽（像素）</param>
+        internal static void DrawCircle(Float2 center, float radius, Color color, float thickness)
+        {
+            if (radius <= 0f)
+                return;
+
+            float step = Mathf.TwoPi / CircleSegments;
+            for (int i = 0; i < CircleSegments; i++)
+            {
+                float a1 = i * step;
+                float a2 = (i + 1) * step;
+                var p1 = center + new Float2(Mathf.Cos(a1) * radius, Mathf.Sin(a1) * radius);
+                var p2 = center + new Float2(Mathf.Cos(a2) * radius, Mathf.Sin(a2) * radius);
+                Render2D.DrawLine(p1, p2, color, thickness);
+            }
+        }
+
+        /// <summary>
         /// 绘制径向渐变圆形：圆心处使用 centerColor，边缘处使用 edgeColor，
         /// 中间通过线性插值过渡。采用从外到内逐层叠加同心圆的方式实现。
         /// </summary>
@@ -72,6 +95,85 @@ namespace HundunWorld.Game.UI.Ink
         internal static FontReference GetFontRef(InkWashTheme.FontRole role, float size)
         {
             return new FontReference(InkWashTheme.GetFont(role), size);
+        }
+
+        /// <summary>
+        /// 填充圆角矩形（十字带 + 四角圆形拼合）。
+        /// </summary>
+        /// <param name="rect">矩形区域</param>
+        /// <param name="radius">圆角半径，超过半边时自动钳制</param>
+        /// <param name="color">填充颜色</param>
+        internal static void FillRoundedRectangle(Rectangle rect, float radius, Color color)
+        {
+            if (rect.Size.X <= 0f || rect.Size.Y <= 0f)
+                return;
+            if (radius <= 0f)
+            {
+                Render2D.FillRectangle(rect, color);
+                return;
+            }
+
+            float r = Mathf.Min(radius, Mathf.Min(rect.Size.X, rect.Size.Y) * 0.5f);
+            float x = rect.Location.X, y = rect.Location.Y, w = rect.Size.X, h = rect.Size.Y;
+
+            // 水平带（去掉上下圆角区域）
+            Render2D.FillRectangle(new Rectangle(x, y + r, w, h - 2f * r), color);
+            // 垂直带（去掉左右圆角区域）
+            Render2D.FillRectangle(new Rectangle(x + r, y, w - 2f * r, h), color);
+            // 四角圆形
+            FillCircle(new Float2(x + r, y + r), r, color);
+            FillCircle(new Float2(x + w - r, y + r), r, color);
+            FillCircle(new Float2(x + r, y + h - r), r, color);
+            FillCircle(new Float2(x + w - r, y + h - r), r, color);
+        }
+
+        /// <summary>
+        /// 绘制圆角矩形描边（四边线段 + 四角弧线）。
+        /// </summary>
+        /// <param name="rect">矩形区域</param>
+        /// <param name="radius">圆角半径</param>
+        /// <param name="color">描边颜色</param>
+        /// <param name="thickness">线宽</param>
+        internal static void DrawRoundedRectangle(Rectangle rect, float radius, Color color, float thickness)
+        {
+            if (rect.Size.X <= 0f || rect.Size.Y <= 0f)
+                return;
+            if (radius <= 0f)
+            {
+                Render2D.DrawRectangle(rect, color, thickness);
+                return;
+            }
+
+            float r = Mathf.Min(radius, Mathf.Min(rect.Size.X, rect.Size.Y) * 0.5f);
+            float x = rect.Location.X, y = rect.Location.Y, w = rect.Size.X, h = rect.Size.Y;
+
+            // 四边（缩短圆角长度）
+            Render2D.DrawLine(new Float2(x + r, y), new Float2(x + w - r, y), color, thickness);           // 上
+            Render2D.DrawLine(new Float2(x + r, y + h), new Float2(x + w - r, y + h), color, thickness);   // 下
+            Render2D.DrawLine(new Float2(x, y + r), new Float2(x, y + h - r), color, thickness);           // 左
+            Render2D.DrawLine(new Float2(x + w, y + r), new Float2(x + w, y + h - r), color, thickness);   // 右
+
+            // 四角弧线（每角 8 段折线近似）
+            const int arcSegs = 8;
+            DrawArc(new Float2(x + r, y + r), r, Mathf.Pi, Mathf.Pi * 1.5f, arcSegs, color, thickness);         // 左上
+            DrawArc(new Float2(x + w - r, y + r), r, Mathf.Pi * 1.5f, Mathf.TwoPi, arcSegs, color, thickness);  // 右上
+            DrawArc(new Float2(x + r, y + h - r), r, Mathf.Pi * 0.5f, Mathf.Pi, arcSegs, color, thickness);     // 左下
+            DrawArc(new Float2(x + w - r, y + h - r), r, 0f, Mathf.Pi * 0.5f, arcSegs, color, thickness);       // 右下
+        }
+
+        /// <summary>
+        /// 绘制圆弧（折线近似）。
+        /// </summary>
+        private static void DrawArc(Float2 center, float radius, float startAngle, float endAngle, int segments, Color color, float thickness)
+        {
+            Float2 prev = center + new Float2(Mathf.Cos(startAngle) * radius, Mathf.Sin(startAngle) * radius);
+            for (int i = 1; i <= segments; i++)
+            {
+                float a = Mathf.Lerp(startAngle, endAngle, i / (float)segments);
+                var cur = center + new Float2(Mathf.Cos(a) * radius, Mathf.Sin(a) * radius);
+                Render2D.DrawLine(prev, cur, color, thickness);
+                prev = cur;
+            }
         }
     }
 

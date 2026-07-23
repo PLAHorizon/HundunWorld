@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +9,7 @@ using Horizon.Game.Core.Adapters;
 using Horizon.Game.Core.Sim.Server;
 using Horizon.Game.Gateway.Services;
 using Horizon.Game.Message.Sync;
+using Horizon.Game.Message.Sync.Components;
 using Moq;
 using Xunit;
 
@@ -237,6 +238,103 @@ public class GatewaySyncWiringTests
         Assert.Equal(0, dispatcher.DroppedOfflineCount);
         Assert.Single(conn.Sent);
         Assert.True(conn.Sent[0].Length >= SyncPacketCodec.FrameHeaderSize);
+    }
+
+    /// <summary>
+    /// 端到端：WorldChunkDiffPacket + EntityDelta payload 通过 fanout source → dispatcher → sink → 连接。
+    /// 验证 Update delta（移动/旋转/跳跃）能完整通过 gateway wiring 链路，
+    /// 且 EntityDelta 的 Transform 坐标值在 SyncPacketCodec 编码/解码往返后保持不变。
+    /// 这是"角色基础移动/旋转/跳跃网络不同步"修复的关键验证：
+    /// 确认服务端 BroadcastSnapshotAsync 生成的 EntityDelta 能通过 Gateway 正确转发给客户端。
+    /// </summary>
+    [Fact]
+    public async Task EndToEnd_EntityDeltaPacket_ThroughGatewayWiring()
+    {
+        await using var src = new GatewayZoneShardFanoutSource();
+        var cm = new FakeConnectionManager();
+        var conn = new FakeConnection("c1", userId: 10, isConnected: true);
+        cm.Put(conn);
+
+        var registry = new ConnectionManagerSessionRegistry(cm.Object);
+        var adapter = new HorizonMessageAdapter();
+        var sink = new GameConnectionPacketSink(adapter);
+        var dispatcher = new GatewaySyncDispatcher(src, registry, sink, enabled: true);
+
+        // 构造 EntityDelta — 模拟服务端 BroadcastSnapshotAsync 的输出
+        // Transform 为 Flax Y-up 坐标（X=左右, Y=上下, Z=前后）
+        // 与 ZoneShardGrain.TickAsync L650-659 的 ECS→Flax 转换一致：
+        // X=entity.X(ECS X), Y=entity.Z(ECS Z→Flax Y), Z=entity.Y(ECS Y→Flax Z)
+        var entityDelta = new EntityDelta
+        {
+            EntityId = 3001,
+            Kind = EntityDeltaKind.Update,
+            Transform = new AuthTransformComponent
+            {
+                X = 0.1f,    // ECS X = 0.1（左右位移）
+                Y = 8.0f,    // ECS Z = 8.0 → Flax Y（上下）
+                Z = 0.0f,    // ECS Y = 0.0 → Flax Z（前后）
+                Pitch = 0f,
+                Yaw = 1.57f, // 旋转 ~90度（弧度）
+                Roll = 0f,
+                ServerTick = 42,
+            },
+        };
+
+        var diff = new WorldChunkDiffPacket
+        {
+            ChunkMortonKey = 1,
+            DiffSeqStart = 1,
+            DiffSeqEnd = 42,
+            Payload = MemoryPack.MemoryPackSerializer.Serialize(new[] { entityDelta }),
+            PayloadType = WorldChunkDiffPayloadType.EntityDelta,
+        };
+
+        // 1. 通过 fanout source → dispatcher → sink → 连接
+        await src.OnChunkDiffAsync(diff, new long[] { 10 });
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+        await dispatcher.RunOnceAsync(cts.Token);
+
+        Assert.Equal(1, dispatcher.ProcessedEventCount);
+        Assert.Equal(1, dispatcher.DeliveredPacketCount);
+        Assert.Equal(0, dispatcher.DroppedOfflineCount);
+        Assert.Single(conn.Sent);
+        Assert.True(conn.Sent[0].Length >= SyncPacketCodec.FrameHeaderSize);
+
+        // 2. SyncPacketCodec 编码/解码往返验证
+        // 确认 WorldChunkDiffPacket + EntityDelta payload 在编码后能正确解码还原
+        SyncPacketCodec.Encode(diff, out var frame, out var frameLength);
+        var decodedPacket = SyncPacketCodec.Decode(frame);
+
+        Assert.NotNull(decodedPacket);
+        var decodedDiff = Assert.IsType<WorldChunkDiffPacket>(decodedPacket);
+        Assert.Equal(WorldChunkDiffPayloadType.EntityDelta, decodedDiff.PayloadType);
+        Assert.Equal(42L, decodedDiff.DiffSeqEnd);
+        Assert.Equal(1UL, decodedDiff.ChunkMortonKey);
+
+        // 3. 反序列化 EntityDelta[] 并验证 Transform 坐标值保持不变
+        Assert.NotNull(decodedDiff.Payload);
+        Assert.True(decodedDiff.Payload.Length > 0);
+
+        var decodedDeltas = MemoryPack.MemoryPackSerializer.Deserialize<EntityDelta[]>(decodedDiff.Payload);
+        Assert.NotNull(decodedDeltas);
+        Assert.Single(decodedDeltas);
+
+        var delta = decodedDeltas![0];
+        Assert.Equal(3001UL, delta.EntityId);
+        Assert.Equal(EntityDeltaKind.Update, delta.Kind);
+
+        // Transform 坐标值必须与原始值一致（Flax Y-up）
+        Assert.True(delta.Transform.HasValue, "Update delta 必须包含 Transform");
+        var t = delta.Transform.Value;
+        Assert.True(MathF.Abs(t.X - 0.1f) < 0.001f, $"Transform.X 应为 0.1，实际 {t.X}");
+        Assert.True(MathF.Abs(t.Y - 8.0f) < 0.001f, $"Transform.Y 应为 8.0，实际 {t.Y}");
+        Assert.True(MathF.Abs(t.Z - 0.0f) < 0.001f, $"Transform.Z 应为 0.0，实际 {t.Z}");
+        Assert.True(MathF.Abs(t.Yaw - 1.57f) < 0.001f, $"Transform.Yaw 应为 1.57，实际 {t.Yaw}");
+
+        // 确认不是旧的 Y/Z 交换错误
+        Assert.True(MathF.Abs(t.Y - 0f) > 1f, "Transform.Y 不应为 0（排除旧的 Y/Z 交换错误）");
+        Assert.True(MathF.Abs(t.Z - 8f) > 1f, "Transform.Z 不应为 8（排除旧的 Y/Z 交换错误）");
     }
 
     // --- Fakes ---

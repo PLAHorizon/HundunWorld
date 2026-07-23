@@ -34,6 +34,11 @@ namespace HundunWorld.Game.UI.Ink
         private InkPanelVariant _variant = InkPanelVariant.Default;
 
         /// <summary>
+        /// 圆角半径（默认 8px，卡片场景可设 12px）。
+        /// </summary>
+        public float Radius { get; set; } = InkWashTheme.RadiusLg;
+
+        /// <summary>
         /// 面板变体。设置时根据变体更新背景色透明度。
         /// Default = rgba(20,23,30,0.85),Lightweight = rgba(20,23,30,0.50)。
         /// 边框保持 1px BorderGold 不变。
@@ -82,11 +87,21 @@ namespace HundunWorld.Game.UI.Ink
         /// <inheritdoc />
         public override void Draw()
         {
+            // 圆角背景
+            if (Width > 0f && Height > 0f && BackgroundColor.A > 0f)
+            {
+                InkRenderHelper.FillRoundedRectangle(new Rectangle(0, 0, Width, Height), Radius, BackgroundColor);
+            }
+
+            // 基类绘制子控件（跳过基类背景绘制，BackgroundColor 已手动绘制）
+            var savedBg = BackgroundColor;
+            BackgroundColor = Color.Transparent;
             base.Draw();
+            BackgroundColor = savedBg;
 
             if (Width > 0f && Height > 0f && _borderThickness > 0f && _borderColor.A > 0f)
             {
-                Render2D.DrawRectangle(new Rectangle(0, 0, Width, Height), _borderColor, _borderThickness);
+                InkRenderHelper.DrawRoundedRectangle(new Rectangle(0, 0, Width, Height), Radius, _borderColor, _borderThickness);
             }
         }
     }
@@ -106,6 +121,11 @@ namespace HundunWorld.Game.UI.Ink
         private float _borderThickness = 1f;
 
         /// <summary>
+        /// 圆角半径（默认 8px，卡片场景可设 12px）。
+        /// </summary>
+        public float Radius { get; set; } = InkWashTheme.RadiusLg;
+
+        /// <summary>
         /// 构造函数：应用纯色面板默认样式。
         /// </summary>
         public InkPanelSolid()
@@ -117,11 +137,20 @@ namespace HundunWorld.Game.UI.Ink
         /// <inheritdoc />
         public override void Draw()
         {
+            // 圆角背景
+            if (Width > 0f && Height > 0f)
+            {
+                InkRenderHelper.FillRoundedRectangle(new Rectangle(0, 0, Width, Height), Radius, BackgroundColor);
+            }
+
+            var savedBg = BackgroundColor;
+            BackgroundColor = Color.Transparent;
             base.Draw();
+            BackgroundColor = savedBg;
 
             if (Width > 0f && Height > 0f && _borderThickness > 0f && _borderColor.A > 0f)
             {
-                Render2D.DrawRectangle(new Rectangle(0, 0, Width, Height), _borderColor, _borderThickness);
+                InkRenderHelper.DrawRoundedRectangle(new Rectangle(0, 0, Width, Height), Radius, _borderColor, _borderThickness);
             }
         }
     }
@@ -141,6 +170,11 @@ namespace HundunWorld.Game.UI.Ink
 
         /// <summary>边框厚度</summary>
         private float _borderThickness = 1f;
+
+        /// <summary>
+        /// 圆角半径（默认 8px）。
+        /// </summary>
+        public float Radius { get; set; } = InkWashTheme.RadiusLg;
 
         /// <summary>
         /// 构造函数：应用抬升面板默认样式。
@@ -174,10 +208,10 @@ namespace HundunWorld.Game.UI.Ink
             // 调用基类绘制背景、子控件
             base.Draw();
 
-            // 手动绘制边框
+            // 手动绘制边框（圆角）
             if (Width > 0f && Height > 0f && _borderThickness > 0f && _borderColor.A > 0f)
             {
-                Render2D.DrawRectangle(bounds, _borderColor, _borderThickness);
+                InkRenderHelper.DrawRoundedRectangle(bounds, Radius, _borderColor, _borderThickness);
             }
         }
     }

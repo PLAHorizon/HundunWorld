@@ -26,10 +26,13 @@ namespace HundunWorld.Game
         private float _lastHandshakeWaitLogTime = 0f;
 
         /// <summary>
-        /// 是否已经输出过一次"握手未完成"诊断日志。
-        /// 首次立即输出，后续按 5 秒间隔输出。
-        /// </summary>
-        private bool _handshakeWaitLogged = false;
+    /// 是否已经输出过一次"握手未完成"诊断日志。
+    /// 首次立即输出，后续按 5 秒间隔输出。
+    /// </summary>
+    private bool _handshakeWaitLogged = false;
+
+    /// <summary>诊断：FlushInputSendQueue 帧计数器，用于限频日志输出。</summary>
+    private long _diagSendFrameCount;
 
         public override void OnStart()
         {
@@ -118,6 +121,13 @@ namespace HundunWorld.Game
             var pendingInputs = InputSendSystem.Instance?.GetPendingInputs();
             if (pendingInputs == null || pendingInputs.Count == 0)
                 return;
+
+            // 诊断：每 120 帧（≈2 秒）输出发送状态
+            _diagSendFrameCount++;
+            if (_diagSendFrameCount <= 3 || _diagSendFrameCount % 120 == 1)
+            {
+                FlaxEngine.Debug.Log($"[ECSUpdateDriver] FlushInputSendQueue#{_diagSendFrameCount}: SendingInputs={pendingInputs.Count}, HandshakeComplete={networkManager.IsSyncHandshakeComplete}");
+            }
 
             foreach (var inputPacket in pendingInputs)
             {

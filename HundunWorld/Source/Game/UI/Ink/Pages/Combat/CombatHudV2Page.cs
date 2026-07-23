@@ -9,383 +9,167 @@ using Game.Character.Attributes;
 namespace HundunWorld.Game.UI.Ink.Pages.Combat
 {
     /// <summary>
-    /// 战斗 HUD V2 页面。
-    /// 作为战斗场景的增强型 UI 枢纽，承载 8 个子区域：
+    /// 战斗 HUD V2 页面（沉浸式自由探索布局，对应 combat-hud.html）。
+    /// 六大区域：
     /// <list type="bullet">
-    ///   <item>小地图（左上角，<see cref="InkMinimap"/>，玩家中心 + 友方/敌方/NPC mock 点位）</item>
-    ///   <item>目标信息（顶部中央，BOSS 头像 + HP 条 + 弱点/狂暴提示）</item>
-    ///   <item>队伍状态（右上角，3 名 mock 成员，HP/MP 条 + 名称 + 等级）</item>
-    ///   <item>增益/减益列表（右上角，队伍下方，状态效果 + 倒计时）</item>
-    ///   <item>连击计数器（左侧中央，连击数 + 倍率 + 计时器）</item>
-    ///   <item>玩家状态（左下角，头像 + HP/MP/XP 条 + 自身增益图标）</item>
-    ///   <item>技能栏（底部中央，8 槽 + 奇术槽，快捷键 1-8/QERF）</item>
-    ///   <item>道具栏（右下角，4 格 mock，<see cref="InkCell"/>）</item>
+    ///   <item>左上：角色状态面板（八角头像 + 门派徽章 + 名称/等级 + 血/气/体三条）</item>
+    ///   <item>顶部中央：任务追踪器（可折叠，目标清单 + 进度）</item>
+    ///   <item>右上：小地图（160 圆形 + 区域名标签）</item>
+    ///   <item>左下：增益/减益列表（32 图标 + 左边框色区分增益/减益）</item>
+    ///   <item>底部中央：技能栏（双武器 + Q/W/E/R/F + 大招）+ 双行功能导航栏</item>
+    ///   <item>右下：快捷道具栏（10 格 36x36）</item>
     /// </list>
     /// 通过 <see cref="NavigationRequested"/> 事件向 <see cref="InkPageRouter"/> 暴露导航请求。
     /// </summary>
     public class CombatHudV2Page : ContainerControl, IInkPage
     {
         // ===================================================================
-        // 布局常量
+        // 布局常量（1920x1080 参考分辨率，像素值对齐 combat-hud.html）
         // =======================================================================
 
-        /// <summary>屏幕顶部/侧面统一边距</summary>
-        private const float Margin = 20f;
+        /// <summary>屏幕边缘统一边距（top/left/right/bottom 均 16px）</summary>
+        private const float Margin = 16f;
 
-        /// <summary>小地图尺寸（正方形）</summary>
-        private const float MinimapSize = 120f;
+        // --- 左上：角色状态面板 ---
+        private const float PlayerPanelPadding = 12f;
+        private const float AvatarSize = 80f;
+        private const float SectBadgeSize = 26f;
+        private const float InfoColumnWidth = 200f;
+        private const float InfoColumnGap = 12f;
+        private const float NameRowHeight = 18f;
+        private const float HpBarHeight = 12f;
+        private const float MpBarHeight = 8f;
+        private const float SpBarHeight = 4f;
+        private const float BarLabelWidth = 14f;
+        private const float BarValueWidth = 70f;
+        private const float BarRowGap = 6f;
 
-        /// <summary>目标信息面板宽度</summary>
-        private const float TargetPanelWidth = 360f;
+        // --- 顶部中央：任务追踪器 ---
+        private const float QuestTrackerWidth = 300f;
+        private const float QuestHeaderHeight = 36f;
+        private const float QuestBodyHeight = 150f;
 
-        /// <summary>目标信息面板高度</summary>
-        private const float TargetPanelHeight = 80f;
+        // --- 右上：小地图 ---
+        private const float MinimapSize = 160f;
+        private const float RegionLabelHeight = 24f;
 
-        /// <summary>队伍面板宽度</summary>
-        private const float PartyPanelWidth = 220f;
+        // --- 左下：增益/减益 ---
+        private const float BuffIconSize = 32f;
+        private const float BuffItemHeight = 38f;
+        private const float BuffItemWidth = 120f;
+        private const float BuffItemGap = 6f;
+        private const float BuffBottomExtra = 4f;
 
-        /// <summary>队伍成员状态卡高度</summary>
-        private const float PartyCardHeight = 50f;
+        // --- 底部中央：技能栏 + 导航 ---
+        private const float SkillSlotSize = 48f;
+        private const float SkillSlotGap = 6f;
+        private const float SkillBarPaddingX = 12f;
+        private const float SkillBarPaddingY = 8f;
+        private const float DividerWidth = 1f;
+        private const float DividerHeight = 40f;
+        private const float NavButtonWidth = 48f;
+        private const float NavRowHeight = 36f;
+        private const float SkillToNavGap = 8f;
+        private const float NavRowGap = 2f;
 
-        /// <summary>队伍成员状态卡间距</summary>
-        private const float PartyCardGap = 4f;
-
-        /// <summary>队伍职业图标占位尺寸（正方形）</summary>
-        private const float PartyIconSize = 32f;
-
-        /// <summary>队伍成员 HP 条宽度</summary>
-        private const float PartyHpBarWidth = 120f;
-
-        /// <summary>队伍成员 HP 条高度</summary>
-        private const float PartyHpBarHeight = 6f;
-
-        /// <summary>队伍成员 MP 条高度</summary>
-        private const float PartyMpBarHeight = 3f;
-
-        /// <summary>增益/减益面板宽度</summary>
-        private const float BuffsPanelWidth = 220f;
-
-        /// <summary>增益/减益条目高度</summary>
-        private const float BuffItemHeight = 36f;
-
-        /// <summary>连击计数器面板尺寸</summary>
-        private const float ComboPanelSize = 140f;
-
-        /// <summary>玩家状态面板宽度</summary>
-        private const float PlayerStatsWidth = 320f;
-
-        /// <summary>玩家状态面板高度</summary>
-        private const float PlayerStatsHeight = 140f;
-
-        /// <summary>玩家头像按钮尺寸（正方形）</summary>
-        private const float AvatarSize = 48f;
-
-        /// <summary>玩家 HP/MP 条宽度</summary>
-        private const float PlayerBarWidth = 280f;
-
-        /// <summary>玩家 HP 条高度</summary>
-        private const float PlayerHpBarHeight = 12f;
-
-        /// <summary>玩家 MP 条高度</summary>
-        private const float PlayerMpBarHeight = 8f;
-
-        /// <summary>玩家 XP 条高度</summary>
-        private const float PlayerXpBarHeight = 2f;
-
-        /// <summary>道具栏格子尺寸（正方形）</summary>
-        private const float ItemCellSize = 56f;
-
-        /// <summary>道具栏格子间距</summary>
-        private const float ItemCellGap = 8f;
-
-        /// <summary>技能栏距屏幕底部的偏移</summary>
-        private const float SkillBarBottomOffset = 40f;
+        // --- 右下：快捷道具栏 ---
+        private const float ItemSlotSize = 36f;
+        private const float ItemSlotGap = 4f;
+        private const float ItemBarPaddingX = 8f;
+        private const float ItemBarPaddingY = 6f;
+        private const float ItemBottomExtra = 4f;
+        private const int ItemSlotCount = 10;
 
         // ===================================================================
         // 子控件引用
         // =======================================================================
 
-        // 小地图（左上角）
-        /// <summary>小地图组件</summary>
-        private InkMinimap _minimap;
-
-        /// <summary>小地图坐标标签</summary>
-        private Label _minimapCoordLabel;
-
-        // 目标信息（顶部中央）
-        /// <summary>目标信息面板容器</summary>
-        private InkPanel _targetPanel;
-
-        /// <summary>目标头像</summary>
-        private Label _targetAvatar;
-
-        /// <summary>目标名称标签</summary>
-        private Label _targetNameLabel;
-
-        /// <summary>目标等级标签</summary>
-        private Label _targetLevelLabel;
-
-        /// <summary>目标距离标签</summary>
-        private Label _targetDistanceLabel;
-
-        /// <summary>目标 HP 条</summary>
-        private InkBar _targetHpBar;
-
-        /// <summary>目标 HP 数值标签</summary>
-        private Label _targetHpLabel;
-
-        // 队伍状态（右上角）
-        /// <summary>队伍面板容器</summary>
-        private ContainerControl _partyContainer;
-
-        /// <summary>队伍标题标签</summary>
-        private Label _partyTitleLabel;
-
-        /// <summary>3 张队伍成员状态卡</summary>
-        private InkPanel[] _partyCards;
-
-        /// <summary>3 名队伍成员的职业图标</summary>
-        private Label[] _partyAvatarLabels;
-
-        /// <summary>3 名队伍成员的名称标签</summary>
-        private Label[] _partyNameLabels;
-
-        /// <summary>3 名队伍成员的等级标签</summary>
-        private Label[] _partyLevelLabels;
-
-        /// <summary>3 名队伍成员的 HP 条</summary>
-        private InkBar[] _partyHpBars;
-
-        /// <summary>3 名队伍成员的 MP 条</summary>
-        private InkBar[] _partyMpBars;
-
-        // 增益/减益列表（队伍下方）
-        /// <summary>增益/减益面板容器</summary>
-        private ContainerControl _buffsContainer;
-
-        /// <summary>增益/减益标题标签</summary>
-        private Label _buffsTitleLabel;
-
-        /// <summary>增益/减益条目容器</summary>
-        private InkPanel[] _buffItems;
-
-        /// <summary>增益/减益图标</summary>
-        private Label[] _buffGlyphLabels;
-
-        /// <summary>增益/减益名称标签</summary>
-        private Label[] _buffNameLabels;
-
-        /// <summary>增益/减益时间标签</summary>
-        private Label[] _buffTimeLabels;
-
-        // 连击计数器（左侧中央）
-        /// <summary>连击计数器面板</summary>
-        private InkPanel _comboPanel;
-
-        /// <summary>连击数标签</summary>
-        private Label _comboNumberLabel;
-
-        /// <summary>连击倍率标签</summary>
-        private Label _comboHintLabel;
-
-        /// <summary>连击计时器</summary>
-        private InkBar _comboTimerBar;
-
-        // 玩家状态（左下角）
-        /// <summary>玩家状态面板容器</summary>
-        private ContainerControl _playerStats;
-
-        /// <summary>玩家头像</summary>
-        private InkButton _playerAvatar;
-
-        /// <summary>玩家名称标签</summary>
+        // 左上：角色状态面板
+        private InkPanel _playerPanel;
+        private OctagonAvatar _playerAvatar;
         private Label _playerNameLabel;
-
-        /// <summary>玩家等级标签</summary>
         private Label _playerLevelLabel;
-
-        /// <summary>玩家职业标签</summary>
-        private Label _playerClassLabel;
-
-        /// <summary>玩家气血条（HP）</summary>
         private InkBar _hpBar;
-
-        /// <summary>玩家气血数值标签</summary>
-        private Label _hpLabel;
-
-        /// <summary>玩家内力条（MP）</summary>
+        private Label _hpValueLabel;
         private InkBar _mpBar;
+        private Label _mpValueLabel;
+        private InkBar _spBar;
 
-        /// <summary>玩家内力数值标签</summary>
-        private Label _mpLabel;
+        // 顶部中央：任务追踪器
+        private InkPanel _questPanel;
+        private ContainerControl _questBody;
+        private Label _questChevron;
+        private bool _questExpanded = true;
 
-        /// <summary>玩家经验条（XP）</summary>
-        private InkBar _xpBar;
+        // 右上：小地图
+        private InkMinimap _minimap;
+        private Label _regionLabel;
 
-        /// <summary>玩家增益图标容器</summary>
-        private ContainerControl _playerBuffsContainer;
+        // 左下：增益/减益
+        private ContainerControl _buffContainer;
 
-        /// <summary>玩家增益图标</summary>
-        private Label[] _playerBuffIcons;
+        // 底部中央：技能栏 + 导航
+        private ContainerControl _skillBar;
+        private HudSkillSlot[] _skillSlots;
+        private ContainerControl _navRow1;
+        private ContainerControl _navRow2;
 
-        /// <summary>玩家增益时间标签</summary>
-        private Label[] _playerBuffTimeLabels;
-
-        // 技能栏（底部中央）
-        /// <summary>技能槽网格（8 常规 + 1 奇术）</summary>
-        private InkSkillSlotGrid _skillGrid;
-
-        /// <summary>技能栏提示标签</summary>
-        private Label _skillHintLabel;
-
-        // 道具栏（右下角）
-        /// <summary>道具栏容器</summary>
+        // 右下：快捷道具栏
         private ContainerControl _itemBar;
 
-        /// <summary>道具栏标题标签</summary>
-        private Label _itemBarTitleLabel;
-
-        /// <summary>4 个道具格</summary>
-        private InkCell[] _itemCells;
-
         // ===================================================================
-        // mock 数据
+        // mock 数据（对齐 combat-hud.html）
         // =======================================================================
 
-        /// <summary>目标名称（mock）</summary>
-        private string _targetName = "墨麒麟";
+        private string _playerName = "逍遥客";
+        private int _playerLevel = 60;
+        private int _hpCurrent = 12450;
+        private int _hpMax = 15000;
+        private int _mpCurrent = 800;
+        private int _mpMax = 1000;
+        private float _spRatio = 0.65f;
 
-        /// <summary>目标等级（mock）</summary>
-        private int _targetLevel = 50;
-
-        /// <summary>目标当前 HP（mock）</summary>
-        private int _targetHpCurrent = 18500;
-
-        /// <summary>目标最大 HP（mock）</summary>
-        private int _targetHpMax = 25000;
-
-        /// <summary>目标距离（mock）</summary>
-        private int _targetDistance = 18;
-
-        /// <summary>3 名队伍成员的名称（mock）</summary>
-        private string[] _partyNames = { "青云剑客", "紫霞仙子", "铁拳和尚" };
-
-        /// <summary>3 名队伍成员的头像文字（mock）</summary>
-        private string[] _partyAvatars = { "青", "紫", "铁" };
-
-        /// <summary>3 名队伍成员的等级（mock）</summary>
-        private int[] _partyLevels = { 40, 38, 41 };
-
-        /// <summary>3 名队伍成员 HP 比例（mock，0-1）</summary>
-        private float[] _partyHpRatio = { 0.80f, 0.65f, 0.25f };
-
-        /// <summary>3 名队伍成员 MP 比例（mock，0-1）</summary>
-        private float[] _partyMpRatio = { 0.92f, 0.70f, 0.48f };
-
-        /// <summary>增益/减益效果名称（mock）</summary>
-        private string[] _buffNames = { "攻击力 +10%", "防御力 +15%", "中毒 · 每秒 -120" };
-
-        /// <summary>增益/减益图标（mock）</summary>
-        private string[] _buffGlyphs = { "攻", "防", "毒" };
-
-        /// <summary>增益/减益剩余时间（mock）</summary>
-        private string[] _buffTimes = { "5:30", "8:45", "2:15" };
-
-        /// <summary>增益/减益类型（mock，true=增益，false=减益）</summary>
-        private bool[] _buffIsPositive = { true, true, false };
-
-        /// <summary>连击数（mock）</summary>
-        private int _comboCount = 23;
-
-        /// <summary>连击倍率（mock）</summary>
-        private float _comboMultiplier = 1.8f;
-
-        /// <summary>连击计时器比例（mock，0-1）</summary>
-        private float _comboTimerRatio = 0.68f;
-
-        /// <summary>9 个技能槽（0-7 常规 + 8 奇术）冷却进度（mock，0=就绪，1=冷却中）</summary>
-        private float[] _skillCooldowns = { 0f, 0.3f, 0f, 0.7f, 0f, 0.5f, 0f, 0.2f, 0f };
-
-        /// <summary>4 个道具格的图标（mock）</summary>
-        private string[] _itemGlyphs = { "血", "气", "解", "烟" };
-
-        /// <summary>4 个道具格的数量徽章（mock）</summary>
-        private string[] _itemBadges = { "×5", "×3", "×2", "×1" };
-
-        /// <summary>4 个道具格的品质（mock）</summary>
-        private InkWashTheme.InkQuality[] _itemQualities =
+        /// <summary>技能槽配置：字符、快捷键、冷却秒数（0=就绪）、是否大招</summary>
+        private static readonly (string glyph, string key, float cooldown, bool ultimate)[] SkillConfig =
         {
-            InkWashTheme.InkQuality.Legendary,
-            InkWashTheme.InkQuality.Epic,
-            InkWashTheme.InkQuality.Rare,
-            InkWashTheme.InkQuality.Common
+            ("剑", "", 0f, false),   // 武器1（激活）
+            ("枪", "", 0f, false),   // 武器2
+            ("斩", "Q", 0f, false),
+            ("疾", "W", 0f, false),
+            ("焰", "E", 8f, false),
+            ("阵", "R", 0f, false),
+            ("雷", "F", 15f, false),
+            ("万", "G", 0f, true),   // 大招
         };
 
-        /// <summary>玩家角色名（mock）</summary>
-        private string _playerName = "江湖过客";
-
-        /// <summary>玩家职业（mock）</summary>
-        private string _playerClass = "剑客";
-
-        /// <summary>玩家等级（mock）</summary>
-        private int _mockLevel = 42;
-
-        /// <summary>玩家气血比例（mock，0-1）</summary>
-        private float _mockHpRatio = 1.0f;
-
-        /// <summary>玩家内力比例（mock，0-1）</summary>
-        private float _mockMpRatio = 0.925f;
-
-        /// <summary>玩家经验比例（mock，0-1）</summary>
-        private float _mockXpRatio = 0.54f;
-
-        /// <summary>玩家当前气血值（mock）</summary>
-        private int _mockHpCurrent = 12450;
-
-        /// <summary>玩家最大气血值（mock）</summary>
-        private int _mockHpMax = 12450;
-
-        /// <summary>玩家当前内力值（mock）</summary>
-        private int _mockMpCurrent = 1850;
-
-        /// <summary>玩家最大内力值（mock）</summary>
-        private int _mockMpMax = 2000;
-
-        /// <summary>玩家增益图标（mock）</summary>
-        private string[] _playerBuffGlyphs = { "攻", "防", "轻" };
-
-        /// <summary>玩家增益剩余时间（mock）</summary>
-        private string[] _playerBuffTimes = { "5:30", "8:45", "0:18" };
+        /// <summary>道具槽配置：字符、数量、色调（亮色变体，背景按 15% 混入墨底）</summary>
+        private static readonly (string glyph, int count, Color tint)[] ItemConfig =
+        {
+            ("药", 5, InkWashTheme.BloodBright),
+            ("气", 3, InkWashTheme.JadeBright),
+            ("食", 2, InkWashTheme.AlertHover),
+            ("符", 1, InkWashTheme.GoldBright),
+        };
 
         // ===================================================================
         // 屏幕尺寸缓存与数据绑定
         // =======================================================================
 
-        /// <summary>当前屏幕尺寸缓存，用于布局计算</summary>
         private Float2 _screenSize;
-
-        /// <summary>绑定的角色属性组件，null 时回退到 mock 数据</summary>
         private CharacterAttributesComponent _boundCharacter;
 
-        // ===================================================================
-        // 公共 API：事件
-        // =======================================================================
-
         /// <summary>
-        /// 导航请求事件。
-        /// 由头像按钮等触发，参数为目标页面的 dom-id（如 <c>"nav-character-v2"</c>）。
+        /// 导航请求事件。参数为目标页面的 dom-id。
         /// 由 <see cref="InkPageRouter"/> 订阅以执行页面跳转。
         /// </summary>
         public event Action<string> NavigationRequested;
 
         // ===================================================================
         // 构造函数
-        // =======================================================================
+        // ===================================================================
 
         /// <summary>
-        /// 构造函数：初始化全部 8 个子区域，使用 mock 数据填充。
-        /// 构造时读取 <see cref="FlaxEngine.Screen.Size"/> 计算布局，
-        /// 屏幕尺寸未就绪时使用 1920x1080 兜底。
+        /// 构造函数：初始化全部六大区域，使用 mock 数据填充。
         /// </summary>
         public CombatHudV2Page()
         {
@@ -404,13 +188,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
 
             try
             {
+                BuildPlayerPanel();
+                BuildQuestTracker();
                 BuildMinimap();
-                BuildTargetInfo();
-                BuildPartyCards();
-                BuildBuffsList();
-                BuildComboCounter();
-                BuildPlayerStats();
-                BuildSkillGrid();
+                BuildBuffList();
+                BuildSkillBar();
+                BuildNavBars();
                 BuildItemBar();
 
                 ApplyLayout();
@@ -422,14 +205,336 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
         }
 
         // ===================================================================
-        // SubTask 构造方法
+        // 区域构造：左上角色状态面板
         // =======================================================================
 
         /// <summary>
-        /// 小地图（左上角）。
-        /// 创建 <see cref="InkMinimap"/> 120x120，mock 实体点位：
-        /// 玩家居中 + 3 友方 + 2 敌方。
-        /// 实体坐标 relativeX/relativeZ 范围 -1~1。
+        /// 左上角色状态面板：八角头像 + 门派徽章 + 名称/等级 + 血/气/体三条。
+        /// </summary>
+        private void BuildPlayerPanel()
+        {
+            float panelW = PlayerPanelPadding + AvatarSize + InfoColumnGap + InfoColumnWidth + PlayerPanelPadding;
+            float panelH = PlayerPanelPadding + AvatarSize + PlayerPanelPadding;
+
+            _playerPanel = new InkPanel
+            {
+                Variant = InkPanelVariant.Default,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Size = new Float2(panelW, panelH),
+                Radius = InkWashTheme.RadiusLg,
+            };
+
+            // 八角头像（含金色描边 + 门派徽章）
+            _playerAvatar = new OctagonAvatar
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(PlayerPanelPadding, PlayerPanelPadding),
+                Size = new Float2(AvatarSize, AvatarSize),
+                Glyph = _playerName.Length > 0 ? _playerName[0].ToString() : "侠",
+            };
+            _playerAvatar.Clicked += () => RequestNavigation(InkPageDomIds.NavCharacterV2);
+            _playerPanel.AddChild(_playerAvatar);
+
+            // 信息列
+            float colX = PlayerPanelPadding + AvatarSize + InfoColumnGap;
+            float rowY = PlayerPanelPadding;
+
+            // 名称 + 等级
+            _playerNameLabel = new Label
+            {
+                Text = _playerName,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 15f),
+                TextColor = InkWashTheme.PaperBright,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(colX, rowY),
+                Size = new Float2(InfoColumnWidth - 60f, NameRowHeight),
+            };
+            _playerPanel.AddChild(_playerNameLabel);
+
+            _playerLevelLabel = new Label
+            {
+                Text = $"Lv.{_playerLevel}",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 16f),
+                TextColor = InkWashTheme.GoldPrimary,
+                HorizontalAlignment = TextAlignment.Far,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(colX + InfoColumnWidth - 60f, rowY),
+                Size = new Float2(60f, NameRowHeight),
+            };
+            _playerPanel.AddChild(_playerLevelLabel);
+
+            rowY += NameRowHeight + BarRowGap;
+
+            // 血条（12px，朱砂渐变）
+            rowY = BuildStatBar(_playerPanel, colX, rowY, "血", HpBarHeight,
+                InkBarFillVariant.Vermilion, out _hpBar, out _hpValueLabel, true);
+            _hpBar.Value = (float)_hpCurrent / _hpMax;
+            _hpValueLabel.Text = $"{_hpCurrent}/{_hpMax}";
+
+            // 气条（8px，青渐变）
+            rowY = BuildStatBar(_playerPanel, colX, rowY, "气", MpBarHeight,
+                InkBarFillVariant.Jade, out _mpBar, out _mpValueLabel, true);
+            _mpBar.Value = (float)_mpCurrent / _mpMax;
+            _mpValueLabel.Text = $"{_mpCurrent}/{_mpMax}";
+
+            // 体条（4px，暖金，无数值）
+            BuildStatBar(_playerPanel, colX, rowY, "体", SpBarHeight,
+                InkBarFillVariant.Alert, out _spBar, out _, false);
+            _spBar.Value = _spRatio;
+
+            AddChild(_playerPanel);
+        }
+
+        /// <summary>
+        /// 构建单条状态条行（标签 + 进度条 + 可选数值）。返回下一行 Y。
+        /// </summary>
+        private float BuildStatBar(ContainerControl parent, float colX, float rowY, string label,
+            float barHeight, InkBarFillVariant variant, out InkBar bar, out Label valueLabel, bool showValue)
+        {
+            var barLabel = new Label
+            {
+                Text = label,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
+                TextColor = InkWashTheme.TextSecondary,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(colX, rowY),
+                Size = new Float2(BarLabelWidth, barHeight),
+            };
+            parent.AddChild(barLabel);
+
+            float valueW = showValue ? BarValueWidth : 0f;
+            float barX = colX + BarLabelWidth + 6f;
+            float barW = InfoColumnWidth - BarLabelWidth - 6f - (showValue ? valueW + 6f : 0f);
+
+            bar = new InkBar
+            {
+                FillVariant = variant,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(barX, rowY),
+                Size = new Float2(barW, barHeight),
+            };
+            parent.AddChild(bar);
+
+            valueLabel = null;
+            if (showValue)
+            {
+                valueLabel = new Label
+                {
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 10f),
+                    TextColor = InkWashTheme.TextDefault,
+                    HorizontalAlignment = TextAlignment.Far,
+                    VerticalAlignment = TextAlignment.Center,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(barX + barW + 6f, rowY),
+                    Size = new Float2(valueW, barHeight),
+                };
+                parent.AddChild(valueLabel);
+            }
+
+            return rowY + barHeight + BarRowGap;
+        }
+
+        // ===================================================================
+        // 区域构造：顶部中央任务追踪器
+        // =======================================================================
+
+        /// <summary>
+        /// 顶部中央任务追踪器（可折叠）：卷轴图标 + 标题 + 进度 + 目标清单。
+        /// </summary>
+        private void BuildQuestTracker()
+        {
+            _questPanel = new InkPanel
+            {
+                Variant = InkPanelVariant.Default,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Size = new Float2(QuestTrackerWidth, QuestHeaderHeight + QuestBodyHeight),
+                Radius = InkWashTheme.RadiusLg,
+            };
+
+            // 头部（可点击折叠）
+            var header = new Button
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = Float2.Zero,
+                Size = new Float2(QuestTrackerWidth, QuestHeaderHeight),
+                BackgroundColor = Color.Transparent,
+                BorderThickness = 0f,
+            };
+            header.Clicked += ToggleQuestTracker;
+            _questPanel.AddChild(header);
+
+            // 卷轴图标占位（金色文字符号）
+            var scrollIcon = new Label
+            {
+                Text = "卷",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f),
+                TextColor = InkWashTheme.GoldPrimary,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(16f, 0f),
+                Size = new Float2(16f, QuestHeaderHeight),
+            };
+            _questPanel.AddChild(scrollIcon);
+
+            var questTitle = new Label
+            {
+                Text = "当前任务：初入江湖",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f),
+                TextColor = InkWashTheme.PaperBright,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(38f, 0f),
+                Size = new Float2(170f, QuestHeaderHeight),
+            };
+            _questPanel.AddChild(questTitle);
+
+            var questProgress = new Label
+            {
+                Text = "2/5",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
+                TextColor = InkWashTheme.GoldPrimary,
+                HorizontalAlignment = TextAlignment.Far,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(QuestTrackerWidth - 60f, 0f),
+                Size = new Float2(30f, QuestHeaderHeight),
+            };
+            _questPanel.AddChild(questProgress);
+
+            _questChevron = new Label
+            {
+                Text = "▾",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
+                TextColor = InkWashTheme.TextSecondary,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(QuestTrackerWidth - 26f, 0f),
+                Size = new Float2(14f, QuestHeaderHeight),
+            };
+            _questPanel.AddChild(_questChevron);
+
+            // 主体（目标清单）
+            _questBody = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, QuestHeaderHeight),
+                Size = new Float2(QuestTrackerWidth, QuestBodyHeight),
+                BackgroundColor = Color.Transparent,
+                ClipChildren = true,
+            };
+            _questPanel.AddChild(_questBody);
+
+            // 顶部分隔线
+            var separator = new Control
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = Float2.Zero,
+                Size = new Float2(QuestTrackerWidth, 1f),
+                BackgroundColor = InkWashTheme.BorderFaint,
+            };
+            _questBody.AddChild(separator);
+
+            var desc = new Label
+            {
+                Text = "初入江湖，拜访开封城内各派长老，了解武林格局。",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                TextColor = InkWashTheme.TextSecondary,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Near,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(16f, 8f),
+                Size = new Float2(QuestTrackerWidth - 32f, 34f),
+                AutoHeight = true,
+            };
+            _questBody.AddChild(desc);
+
+            // 目标清单：done=已完成青勾, current=当前金点, todo=待办灰圈
+            var objectives = new (string state, string text)[]
+            {
+                ("done", "前往武当山拜见掌门"),
+                ("done", "领取入门心法"),
+                ("current", "前往开封城郊探访"),
+                ("todo", "击败山贼头目"),
+                ("todo", "回报开封府衙"),
+            };
+
+            float objY = 48f;
+            foreach (var (state, text) in objectives)
+            {
+                Color iconColor = state == "done" ? InkWashTheme.JadePrimary
+                    : state == "current" ? InkWashTheme.GoldPrimary
+                    : InkWashTheme.TextTertiary;
+                Color textColor = state == "done" ? InkWashTheme.TextSecondary
+                    : state == "current" ? InkWashTheme.PaperBright
+                    : InkWashTheme.TextTertiary;
+                string icon = state == "done" ? "✓" : state == "current" ? "◉" : "○";
+
+                var iconLabel = new Label
+                {
+                    Text = icon,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                    TextColor = iconColor,
+                    HorizontalAlignment = TextAlignment.Center,
+                    VerticalAlignment = TextAlignment.Center,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(16f, objY),
+                    Size = new Float2(12f, 16f),
+                };
+                _questBody.AddChild(iconLabel);
+
+                var textLabel = new Label
+                {
+                    Text = text,
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
+                    TextColor = textColor,
+                    HorizontalAlignment = TextAlignment.Near,
+                    VerticalAlignment = TextAlignment.Center,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(34f, objY),
+                    Size = new Float2(QuestTrackerWidth - 50f, 16f),
+                };
+                _questBody.AddChild(textLabel);
+
+                objY += 21f;
+            }
+
+            AddChild(_questPanel);
+            ApplyQuestCollapse();
+        }
+
+        /// <summary>切换任务追踪器折叠状态。</summary>
+        private void ToggleQuestTracker()
+        {
+            _questExpanded = !_questExpanded;
+            ApplyQuestCollapse();
+        }
+
+        /// <summary>应用任务追踪器折叠/展开状态。</summary>
+        private void ApplyQuestCollapse()
+        {
+            if (_questPanel == null)
+                return;
+            _questPanel.Height = _questExpanded ? QuestHeaderHeight + QuestBodyHeight : QuestHeaderHeight;
+            if (_questBody != null)
+                _questBody.Visible = _questExpanded;
+            if (_questChevron != null)
+                _questChevron.Text = _questExpanded ? "▾" : "▸";
+        }
+
+        // ===================================================================
+        // 区域构造：右上方小地图
+        // =======================================================================
+
+        /// <summary>
+        /// 右上方小地图：160 圆形 + 区域名标签。
         /// </summary>
         private void BuildMinimap()
         {
@@ -439,663 +544,377 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
                 Size = new Float2(MinimapSize, MinimapSize),
             };
 
+            // mock 实体点位（对齐 combat-hud.html：NPC 金 / 敌红 / 友青 / 玩家居中）
             _minimap.AddEntity(InkMinimapEntityType.Player, 0f, 0f);
-            _minimap.AddEntity(InkMinimapEntityType.Friendly, -0.4f, -0.2f);
-            _minimap.AddEntity(InkMinimapEntityType.Friendly, 0.3f, -0.3f);
-            _minimap.AddEntity(InkMinimapEntityType.Friendly, -0.3f, 0.3f);
-            _minimap.AddEntity(InkMinimapEntityType.Enemy, 0.55f, -0.1f);
-            _minimap.AddEntity(InkMinimapEntityType.Enemy, 0.6f, 0.2f);
+            _minimap.AddEntity(InkMinimapEntityType.NPC, -0.16f, -0.30f);
+            _minimap.AddEntity(InkMinimapEntityType.NPC, 0.36f, 0.16f);
+            _minimap.AddEntity(InkMinimapEntityType.NPC, -0.36f, 0.44f);
+            _minimap.AddEntity(InkMinimapEntityType.Enemy, 0.24f, -0.44f);
+            _minimap.AddEntity(InkMinimapEntityType.Enemy, 0.10f, 0.36f);
+            _minimap.AddEntity(InkMinimapEntityType.Friendly, 0.04f, -0.10f);
 
             AddChild(_minimap);
 
-            _minimapCoordLabel = new Label
+            _regionLabel = new Label
             {
-                Text = "昆仑墟 · 深渊",
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 11f),
-                TextColor = InkWashTheme.PaperAged,
-                HorizontalAlignment = TextAlignment.Center,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Size = new Float2(MinimapSize, 20f),
-            };
-            AddChild(_minimapCoordLabel);
-        }
-
-        /// <summary>
-        /// 目标信息（顶部中央）。
-        /// 创建 BOSS 头像、名称、等级、距离、HP 条及弱点/狂暴提示。
-        /// </summary>
-        private void BuildTargetInfo()
-        {
-            _targetPanel = new InkPanel
-            {
-                Variant = InkPanelVariant.Default,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Size = new Float2(TargetPanelWidth, TargetPanelHeight),
-                BackgroundColor = new Color(0.11f, 0.12f, 0.16f, 0.92f),
-            };
-
-            _targetAvatar = new Label
-            {
-                Text = "麟",
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 18f),
+                Text = "清河 · 开封城郊",
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 12f),
                 TextColor = InkWashTheme.PaperBright,
                 HorizontalAlignment = TextAlignment.Center,
                 VerticalAlignment = TextAlignment.Center,
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(12f, 8f),
-                Size = new Float2(36f, 36f),
-                BackgroundColor = InkWashTheme.VermilionPrimary,
+                Size = new Float2(MinimapSize, RegionLabelHeight),
+                BackgroundColor = InkWashTheme.Panel,
             };
-            _targetPanel.AddChild(_targetAvatar);
-
-            _targetNameLabel = new Label
-            {
-                Text = _targetName,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 16f),
-                TextColor = InkWashTheme.VermilionBright,
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(56f, 8f),
-                Size = new Float2(180f, 20f),
-            };
-            _targetPanel.AddChild(_targetNameLabel);
-
-            _targetLevelLabel = new Label
-            {
-                Text = $"Lv.{_targetLevel} · 首领",
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 12f),
-                TextColor = InkWashTheme.PaperFaded,
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(56f, 32f),
-                Size = new Float2(120f, 16f),
-            };
-            _targetPanel.AddChild(_targetLevelLabel);
-
-            _targetDistanceLabel = new Label
-            {
-                Text = $"{_targetDistance}m",
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 11f),
-                TextColor = InkWashTheme.PaperAged,
-                HorizontalAlignment = TextAlignment.Far,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(300f, 8f),
-                Size = new Float2(50f, 20f),
-            };
-            _targetPanel.AddChild(_targetDistanceLabel);
-
-            float hpRatio = (float)_targetHpCurrent / _targetHpMax;
-            _targetHpBar = new InkBar
-            {
-                FillVariant = InkBarFillVariant.Vermilion,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(12f, 52f),
-                Size = new Float2(TargetPanelWidth - 120f, 10f),
-                Value = hpRatio,
-            };
-            _targetPanel.AddChild(_targetHpBar);
-
-            _targetHpLabel = new Label
-            {
-                Text = $"{_targetHpCurrent:N0} / {_targetHpMax:N0}",
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 10f),
-                TextColor = InkWashTheme.PaperBright,
-                HorizontalAlignment = TextAlignment.Far,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(TargetPanelWidth - 100f, 52f),
-                Size = new Float2(88f, 10f),
-            };
-            _targetPanel.AddChild(_targetHpLabel);
-
-            AddChild(_targetPanel);
+            AddChild(_regionLabel);
         }
 
-        /// <summary>
-        /// 队伍状态（右上角）。
-        /// 创建 3 名队伍成员状态卡，每张卡片包含头像、名称、等级、HP 条、MP 条。
-        /// </summary>
-        private void BuildPartyCards()
-        {
-            float titleHeight = 24f;
-            _partyContainer = new ContainerControl
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                BackgroundColor = Color.Transparent,
-                ClipChildren = false,
-                Size = new Float2(PartyPanelWidth, titleHeight + 3 * PartyCardHeight + 2 * PartyCardGap),
-            };
-
-            _partyTitleLabel = new Label
-            {
-                Text = "队伍 (4/4)",
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 13f),
-                TextColor = InkWashTheme.GoldBright,
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 0f),
-                Size = new Float2(PartyPanelWidth, titleHeight),
-            };
-            _partyContainer.AddChild(_partyTitleLabel);
-
-            _partyCards = new InkPanel[3];
-            _partyAvatarLabels = new Label[3];
-            _partyNameLabels = new Label[3];
-            _partyLevelLabels = new Label[3];
-            _partyHpBars = new InkBar[3];
-            _partyMpBars = new InkBar[3];
-
-            for (int i = 0; i < 3; i++)
-            {
-                var card = new InkPanel
-                {
-                    Variant = InkPanelVariant.Lightweight,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(0f, titleHeight + i * (PartyCardHeight + PartyCardGap)),
-                    Size = new Float2(PartyPanelWidth, PartyCardHeight),
-                };
-
-                bool isLowHp = _partyHpRatio[i] < 0.3f;
-
-                var avatarLabel = new Label
-                {
-                    Text = _partyAvatars[i],
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 13f),
-                    TextColor = InkWashTheme.PaperBright,
-                    HorizontalAlignment = TextAlignment.Center,
-                    VerticalAlignment = TextAlignment.Center,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(8f, 9f),
-                    Size = new Float2(PartyIconSize, PartyIconSize),
-                    BackgroundColor = isLowHp ? InkWashTheme.VermilionPrimary : InkWashTheme.JadePrimary,
-                };
-                card.AddChild(avatarLabel);
-                _partyAvatarLabels[i] = avatarLabel;
-
-                var nameLabel = new Label
-                {
-                    Text = _partyNames[i],
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 12f),
-                    TextColor = InkWashTheme.PaperBright,
-                    HorizontalAlignment = TextAlignment.Near,
-                    VerticalAlignment = TextAlignment.Center,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(48f, 6f),
-                    Size = new Float2(120f, 14f),
-                };
-                card.AddChild(nameLabel);
-                _partyNameLabels[i] = nameLabel;
-
-                var levelLabel = new Label
-                {
-                    Text = $"Lv.{_partyLevels[i]}",
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 10f),
-                    TextColor = InkWashTheme.PaperFaded,
-                    HorizontalAlignment = TextAlignment.Far,
-                    VerticalAlignment = TextAlignment.Center,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(170f, 6f),
-                    Size = new Float2(42f, 14f),
-                };
-                card.AddChild(levelLabel);
-                _partyLevelLabels[i] = levelLabel;
-
-                var hpBar = new InkBar
-                {
-                    FillVariant = isLowHp ? InkBarFillVariant.Vermilion : InkBarFillVariant.Jade,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(48f, 24f),
-                    Size = new Float2(PartyHpBarWidth, PartyHpBarHeight),
-                    Value = _partyHpRatio[i],
-                };
-                card.AddChild(hpBar);
-                _partyHpBars[i] = hpBar;
-
-                var mpLabel = new Label
-                {
-                    Text = "内力",
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 9f),
-                    TextColor = InkWashTheme.PaperDark,
-                    HorizontalAlignment = TextAlignment.Near,
-                    VerticalAlignment = TextAlignment.Center,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(48f, 34f),
-                    Size = new Float2(30f, 12f),
-                };
-                card.AddChild(mpLabel);
-
-                var mpBar = new InkBar
-                {
-                    FillVariant = InkBarFillVariant.Gold,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(82f, 34f),
-                    Size = new Float2(PartyHpBarWidth - 34f, PartyMpBarHeight),
-                    Value = _partyMpRatio[i],
-                };
-                card.AddChild(mpBar);
-                _partyMpBars[i] = mpBar;
-
-                _partyCards[i] = card;
-                _partyContainer.AddChild(card);
-            }
-
-            AddChild(_partyContainer);
-        }
+        // ===================================================================
+        // 区域构造：左下增益/减益列表
+        // =======================================================================
 
         /// <summary>
-        /// 增益/减益列表（右上角，队伍下方）。
-        /// 创建状态效果列表，包含图标、名称、倒计时。
+        /// 左下增益/减益列表：32 图标 + 名称 + 倒计时，左边框色区分增益（青）/减益（朱砂）。
         /// </summary>
-        private void BuildBuffsList()
+        private void BuildBuffList()
         {
-            float titleHeight = 24f;
-            _buffsContainer = new ContainerControl
+            var buffs = new (string glyph, string name, string time, bool positive)[]
             {
-                AnchorPreset = AnchorPresets.TopLeft,
-                BackgroundColor = Color.Transparent,
-                ClipChildren = false,
-                Size = new Float2(BuffsPanelWidth, titleHeight + 3 * BuffItemHeight + 8f),
+                ("轻", "轻功加速", "5:23", true),
+                ("盾", "内力护盾", "12:00", true),
+                ("毒", "中毒", "0:15", false),
+                ("缓", "减速", "0:08", false),
             };
 
-            _buffsTitleLabel = new Label
-            {
-                Text = "状态效果",
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 13f),
-                TextColor = InkWashTheme.GoldBright,
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 0f),
-                Size = new Float2(BuffsPanelWidth, titleHeight),
-            };
-            _buffsContainer.AddChild(_buffsTitleLabel);
-
-            _buffItems = new InkPanel[3];
-            _buffGlyphLabels = new Label[3];
-            _buffNameLabels = new Label[3];
-            _buffTimeLabels = new Label[3];
-
-            for (int i = 0; i < 3; i++)
-            {
-                var item = new InkPanel
-                {
-                    Variant = InkPanelVariant.Lightweight,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(0f, titleHeight + i * (BuffItemHeight + 4f)),
-                    Size = new Float2(BuffsPanelWidth, BuffItemHeight),
-                };
-
-                bool isPositive = _buffIsPositive[i];
-                var bgColor = isPositive ? InkWashTheme.GoldPrimary : InkWashTheme.VermilionPrimary;
-                var borderColor = isPositive ? InkWashTheme.GoldDeep : InkWashTheme.VermilionDeep;
-                var textColor = isPositive ? InkWashTheme.GoldBright : InkWashTheme.VermilionBright;
-
-                var glyphLabel = new Label
-                {
-                    Text = _buffGlyphs[i],
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 13f),
-                    TextColor = textColor,
-                    HorizontalAlignment = TextAlignment.Center,
-                    VerticalAlignment = TextAlignment.Center,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(8f, 6f),
-                    Size = new Float2(24f, 24f),
-                    BackgroundColor = bgColor * 0.15f,
-                };
-                item.AddChild(glyphLabel);
-                _buffGlyphLabels[i] = glyphLabel;
-
-                var nameLabel = new Label
-                {
-                    Text = _buffNames[i],
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 11f),
-                    TextColor = isPositive ? InkWashTheme.PaperBright : InkWashTheme.VermilionBright,
-                    HorizontalAlignment = TextAlignment.Near,
-                    VerticalAlignment = TextAlignment.Center,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(40f, 6f),
-                    Size = new Float2(150f, 14f),
-                };
-                item.AddChild(nameLabel);
-                _buffNameLabels[i] = nameLabel;
-
-                var timeLabel = new Label
-                {
-                    Text = _buffTimes[i],
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 10f),
-                    TextColor = isPositive ? InkWashTheme.PaperFaded : InkWashTheme.VermilionBright,
-                    HorizontalAlignment = TextAlignment.Near,
-                    VerticalAlignment = TextAlignment.Center,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(40f, 20f),
-                    Size = new Float2(50f, 12f),
-                };
-                item.AddChild(timeLabel);
-                _buffTimeLabels[i] = timeLabel;
-
-                _buffItems[i] = item;
-                _buffsContainer.AddChild(item);
-            }
-
-            AddChild(_buffsContainer);
-        }
-
-        /// <summary>
-        /// 连击计数器（左侧中央）。
-        /// 创建连击数、倍率、计时器。
-        /// </summary>
-        private void BuildComboCounter()
-        {
-            _comboPanel = new InkPanel
-            {
-                Variant = InkPanelVariant.Default,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Size = new Float2(ComboPanelSize, 180f),
-                BackgroundColor = new Color(0.11f, 0.12f, 0.16f, 0.7f),
-            };
-
-            var comboLabel = new Label
-            {
-                Text = "连击",
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 14f),
-                TextColor = InkWashTheme.GoldBright,
-                HorizontalAlignment = TextAlignment.Center,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 8f),
-                Size = new Float2(ComboPanelSize, 20f),
-            };
-            _comboPanel.AddChild(comboLabel);
-
-            _comboNumberLabel = new Label
-            {
-                Text = $"{_comboCount}",
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 48f),
-                TextColor = InkWashTheme.GoldBright,
-                HorizontalAlignment = TextAlignment.Center,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 32f),
-                Size = new Float2(ComboPanelSize, 56f),
-            };
-            _comboPanel.AddChild(_comboNumberLabel);
-
-            var comboSubLabel = new Label
-            {
-                Text = "COMBO",
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 12f),
-                TextColor = InkWashTheme.PaperFaded,
-                HorizontalAlignment = TextAlignment.Center,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 92f),
-                Size = new Float2(ComboPanelSize, 16f),
-            };
-            _comboPanel.AddChild(comboSubLabel);
-
-            _comboTimerBar = new InkBar
-            {
-                FillVariant = InkBarFillVariant.Gold,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(40f, 112f),
-                Size = new Float2(60f, 4f),
-                Value = _comboTimerRatio,
-            };
-            _comboPanel.AddChild(_comboTimerBar);
-
-            _comboHintLabel = new Label
-            {
-                Text = $"倍率 ×{_comboMultiplier:F1}",
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 10f),
-                TextColor = InkWashTheme.VermilionBright,
-                HorizontalAlignment = TextAlignment.Center,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 124f),
-                Size = new Float2(ComboPanelSize, 16f),
-            };
-            _comboPanel.AddChild(_comboHintLabel);
-
-            AddChild(_comboPanel);
-        }
-
-        /// <summary>
-        /// 玩家状态（左下角）。
-        /// 创建头像、名称、等级、职业、HP/MP/XP 条及自身增益图标。
-        /// </summary>
-        private void BuildPlayerStats()
-        {
-            _playerStats = new ContainerControl
+            float totalH = buffs.Length * BuffItemHeight + (buffs.Length - 1) * BuffItemGap;
+            _buffContainer = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Size = new Float2(PlayerStatsWidth, PlayerStatsHeight),
+                Size = new Float2(BuffItemWidth, totalH),
                 BackgroundColor = Color.Transparent,
                 ClipChildren = false,
             };
 
-            _playerAvatar = new InkButton
+            for (int i = 0; i < buffs.Length; i++)
             {
-                Text = _playerName[0].ToString(),
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 28f),
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, 0f),
-                Size = new Float2(AvatarSize, AvatarSize),
-                BackgroundColor = InkWashTheme.GoldPrimary,
-            };
-            _playerAvatar.Clicked += OnAvatarButtonClicked;
-            _playerStats.AddChild(_playerAvatar);
-
-            _playerNameLabel = new Label
-            {
-                Text = _playerName,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 14f),
-                TextColor = InkWashTheme.GoldBright,
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(AvatarSize + 8f, 2f),
-                Size = new Float2(120f, 18f),
-            };
-            _playerStats.AddChild(_playerNameLabel);
-
-            _playerLevelLabel = new Label
-            {
-                Text = $"Lv.{_mockLevel}",
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 12f),
-                TextColor = InkWashTheme.PaperFaded,
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(AvatarSize + 8f + 80f, 2f),
-                Size = new Float2(50f, 18f),
-            };
-            _playerStats.AddChild(_playerLevelLabel);
-
-            _playerClassLabel = new Label
-            {
-                Text = _playerClass,
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 10f),
-                TextColor = InkWashTheme.TextBrand,
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(AvatarSize + 8f + 134f, 4f),
-                Size = new Float2(50f, 14f),
-            };
-            _playerStats.AddChild(_playerClassLabel);
-
-            _hpBar = new InkBar
-            {
-                FillVariant = InkBarFillVariant.Vermilion,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(AvatarSize + 8f, 24f),
-                Size = new Float2(PlayerBarWidth, PlayerHpBarHeight),
-                Value = _mockHpRatio,
-            };
-            _playerStats.AddChild(_hpBar);
-
-            _hpLabel = new Label
-            {
-                Text = $"{_mockHpCurrent:N0} / {_mockHpMax:N0}",
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 10f),
-                TextColor = InkWashTheme.PaperBright,
-                HorizontalAlignment = TextAlignment.Center,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(AvatarSize + 8f, 24f),
-                Size = new Float2(PlayerBarWidth, PlayerHpBarHeight),
-            };
-            _playerStats.AddChild(_hpLabel);
-
-            _mpBar = new InkBar
-            {
-                FillVariant = InkBarFillVariant.Gold,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(AvatarSize + 8f, 38f),
-                Size = new Float2(PlayerBarWidth, PlayerMpBarHeight),
-                Value = _mockMpRatio,
-            };
-            _playerStats.AddChild(_mpBar);
-
-            _mpLabel = new Label
-            {
-                Text = $"{_mockMpCurrent:N0} / {_mockMpMax:N0}",
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 10f),
-                TextColor = InkWashTheme.PaperBright,
-                HorizontalAlignment = TextAlignment.Center,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(AvatarSize + 8f, 38f),
-                Size = new Float2(PlayerBarWidth, PlayerMpBarHeight),
-            };
-            _playerStats.AddChild(_mpLabel);
-
-            var xpLabel = new Label
-            {
-                Text = "经验",
-                Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Body), 9f),
-                TextColor = InkWashTheme.PaperDark,
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(AvatarSize + 8f, 50f),
-                Size = new Float2(40f, 12f),
-            };
-            _playerStats.AddChild(xpLabel);
-
-            _xpBar = new InkBar
-            {
-                FillVariant = InkBarFillVariant.Jade,
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(AvatarSize + 8f + 46f, 52f),
-                Size = new Float2(PlayerBarWidth - 46f, PlayerXpBarHeight),
-                Value = _mockXpRatio,
-            };
-            _playerStats.AddChild(_xpBar);
-
-            _playerBuffsContainer = new ContainerControl
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(AvatarSize + 8f, 60f),
-                Size = new Float2(PlayerBarWidth, 30f),
-                BackgroundColor = Color.Transparent,
-            };
-
-            _playerBuffIcons = new Label[3];
-            _playerBuffTimeLabels = new Label[3];
-
-            for (int i = 0; i < 3; i++)
-            {
-                var buffIcon = new Label
-                {
-                    Text = _playerBuffGlyphs[i],
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Display), 12f),
-                    TextColor = InkWashTheme.JadeBright,
-                    HorizontalAlignment = TextAlignment.Center,
-                    VerticalAlignment = TextAlignment.Center,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(i * 30f, 0f),
-                    Size = new Float2(24f, 24f),
-                    BackgroundColor = new Color(0.06f, 0.07f, 0.11f, 0.8f),
-                };
-                _playerBuffsContainer.AddChild(buffIcon);
-                _playerBuffIcons[i] = buffIcon;
-
-                var timeLabel = new Label
-                {
-                    Text = _playerBuffTimes[i],
-                    Font = new FontReference(InkWashTheme.GetFont(InkWashTheme.FontRole.Number), 8f),
-                    TextColor = InkWashTheme.PaperFaded,
-                    HorizontalAlignment = TextAlignment.Center,
-                    VerticalAlignment = TextAlignment.Center,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(i * 30f, 24f),
-                    Size = new Float2(24f, 12f),
-                };
-                _playerBuffsContainer.AddChild(timeLabel);
-                _playerBuffTimeLabels[i] = timeLabel;
+                var (glyph, name, time, positive) = buffs[i];
+                BuildBuffItem(_buffContainer, i * (BuffItemHeight + BuffItemGap), glyph, name, time, positive);
             }
 
-            _playerStats.AddChild(_playerBuffsContainer);
-
-            AddChild(_playerStats);
+            AddChild(_buffContainer);
         }
 
-        /// <summary>
-        /// SubTask 8.4：右下角技能槽网格。
-        /// 创建 <see cref="InkSkillSlotGrid"/>（8 常规槽 + 1 奇术槽，尺寸自动计算），
-        /// 应用 mock 冷却进度（含冷却扇形遮罩 + 快捷键 1-8/Q + 奇术槽脉冲动画由组件内部实现）。
-        /// </summary>
-        private void BuildSkillGrid()
+        /// <summary>构建单个增益/减益条目。</summary>
+        private void BuildBuffItem(ContainerControl parent, float y, string glyph, string name, string time, bool positive)
         {
-            _skillGrid = new InkSkillSlotGrid
+            Color accent = positive ? InkWashTheme.JadePrimary : InkWashTheme.BloodPrimary;
+            Color iconBgBase = positive ? InkWashTheme.JadeDeep : InkWashTheme.BloodPrimary;
+            Color glyphColor = positive ? InkWashTheme.JadeBright : InkWashTheme.BloodBright;
+
+            var item = new InkPanel
+            {
+                Variant = InkPanelVariant.Lightweight,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, y),
+                Size = new Float2(BuffItemWidth, BuffItemHeight),
+                Radius = InkWashTheme.RadiusSm + 2f,
+            };
+            parent.AddChild(item);
+
+            // 左边框色条（2px，区分增益/减益）
+            var leftBorder = new Control
             {
                 AnchorPreset = AnchorPresets.TopLeft,
+                Location = Float2.Zero,
+                Size = new Float2(2f, BuffItemHeight),
+                BackgroundColor = accent,
             };
+            item.AddChild(leftBorder);
 
-            // 应用 mock 冷却（0-7 常规槽，8 奇术槽）
-            for (int i = 0; i < _skillCooldowns.Length && i < 9; i++)
+            // 图标
+            var iconLabel = new Label
             {
-                _skillGrid.SetCooldown(i, _skillCooldowns[i]);
-            }
+                Text = glyph,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 16f),
+                TextColor = glyphColor,
+                HorizontalAlignment = TextAlignment.Center,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(6f, (BuffItemHeight - BuffIconSize) * 0.5f),
+                Size = new Float2(BuffIconSize, BuffIconSize),
+                BackgroundColor = new Color(iconBgBase.R, iconBgBase.G, iconBgBase.B, 0.3f),
+            };
+            item.AddChild(iconLabel);
 
-            AddChild(_skillGrid);
+            // 名称
+            var nameLabel = new Label
+            {
+                Text = name,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 10f),
+                TextColor = InkWashTheme.PaperBright,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(6f + BuffIconSize + 6f, 4f),
+                Size = new Float2(BuffItemWidth - BuffIconSize - 20f, 14f),
+            };
+            item.AddChild(nameLabel);
+
+            // 倒计时
+            var timeLabel = new Label
+            {
+                Text = time,
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 10f),
+                TextColor = glyphColor,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(6f + BuffIconSize + 6f, 20f),
+                Size = new Float2(BuffItemWidth - BuffIconSize - 20f, 14f),
+            };
+            item.AddChild(timeLabel);
         }
 
+        // ===================================================================
+        // 区域构造：底部中央技能栏
+        // =======================================================================
+
         /// <summary>
-        /// SubTask 8.5：底部道具栏（4 格 mock）。
-        /// <see cref="ContainerControl"/> 内含 4 个 <see cref="InkCell"/>，56x56，间距 8px。
-        /// 每个 cell 设置品质色边框（<see cref="InkCell.Quality"/>）与数量徽章（<see cref="InkCell.Badge"/>）。
+        /// 底部中央技能栏：双武器槽 + 分隔线 + Q/W/E/R/F 技能槽 + 分隔线 + 大招槽。
+        /// 槽位 48x48，冷却 conic 遮罩 + 大招充能条与脉冲由 <see cref="HudSkillSlot"/> 实现。
+        /// </summary>
+        private void BuildSkillBar()
+        {
+            int slotCount = SkillConfig.Length;
+            float slotsW = slotCount * SkillSlotSize + (slotCount - 1) * SkillSlotGap;
+            float divExtra = 2f * (DividerWidth + 4f);
+            float barW = SkillBarPaddingX * 2f + slotsW + divExtra;
+            float barH = SkillBarPaddingY * 2f + SkillSlotSize;
+
+            _skillBar = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Size = new Float2(barW, barH),
+                BackgroundColor = new Color(InkWashTheme.PanelSolid.R, InkWashTheme.PanelSolid.G, InkWashTheme.PanelSolid.B, 0.80f),
+                ClipChildren = false,
+            };
+
+            _skillSlots = new HudSkillSlot[slotCount];
+            float x = SkillBarPaddingX;
+            for (int i = 0; i < slotCount; i++)
+            {
+                var (glyph, key, cooldown, ultimate) = SkillConfig[i];
+
+                var slot = new HudSkillSlot
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(x, SkillBarPaddingY),
+                    Size = new Float2(SkillSlotSize, SkillSlotSize),
+                    Glyph = glyph,
+                    Hotkey = key,
+                    IsUltimate = ultimate,
+                    IsActiveWeapon = i == 0,
+                    CooldownSeconds = cooldown,
+                    MaxCooldownSeconds = cooldown,
+                    ChargeRatio = ultimate ? 0.70f : 0f,
+                };
+                if (i == 1) // 副武器未激活
+                    slot.AlphaMultiplier = 0.5f;
+                _skillSlots[i] = slot;
+                _skillBar.AddChild(slot);
+                x += SkillSlotSize + SkillSlotGap;
+
+                // 在武器组后与大招前插入分隔线
+                if (i == 1 || i == slotCount - 2)
+                {
+                    var divider = new Control
+                    {
+                        AnchorPreset = AnchorPresets.TopLeft,
+                        Location = new Float2(x - SkillSlotGap + 2f, (barH - DividerHeight) * 0.5f),
+                        Size = new Float2(DividerWidth, DividerHeight),
+                        BackgroundColor = InkWashTheme.GoldFaint,
+                    };
+                    _skillBar.AddChild(divider);
+                    x += DividerWidth + 4f;
+                }
+            }
+
+            AddChild(_skillBar);
+        }
+
+        // ===================================================================
+        // 区域构造：底部中央功能导航栏（双行）
+        // ===================================================================
+
+        /// <summary>
+        /// 功能导航栏：第一行 8 主入口 + 传统模式切换，第二行 9 子系统入口。
+        /// </summary>
+        private void BuildNavBars()
+        {
+            var row1 = new (string label, string domId)[]
+            {
+                ("角色", InkPageDomIds.NavCharacterV2),
+                ("武学", InkPageDomIds.NavSkillPanel),
+                ("背包", InkPageDomIds.NavInventory),
+                ("任务", InkPageDomIds.NavQuestLog),
+                ("地图", InkPageDomIds.NavWorldMap),
+                ("社交", InkPageDomIds.NavSocialGuild),
+                ("商城", InkPageDomIds.NavSocialShop),
+                ("罗盘", InkPageDomIds.NavCompass),
+            };
+            var row2 = new (string label, string domId)[]
+            {
+                ("强化", InkPageDomIds.NavEquipmentEnhance),
+                ("制造", InkPageDomIds.NavCrafting),
+                ("坐骑", InkPageDomIds.NavMountPet),
+                ("好友", InkPageDomIds.NavFriends),
+                ("邮件", InkPageDomIds.NavSocialMail),
+                ("排行", InkPageDomIds.NavLeaderboard),
+                ("师徒", InkPageDomIds.NavMentor),
+                ("成就", InkPageDomIds.NavAchievement),
+                ("副本", InkPageDomIds.NavDungeonEntry),
+            };
+
+            _navRow1 = BuildNavRow(row1, true);
+            _navRow2 = BuildNavRow(row2, false);
+            AddChild(_navRow1);
+            AddChild(_navRow2);
+        }
+
+        /// <summary>构建单行导航栏。</summary>
+        private ContainerControl BuildNavRow((string label, string domId)[] entries, bool includeTraditionalToggle)
+        {
+            int count = entries.Length + (includeTraditionalToggle ? 2 : 0);
+            float rowW = count * NavButtonWidth + 8f;
+            var row = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Size = new Float2(rowW, NavRowHeight),
+                BackgroundColor = new Color(InkWashTheme.PanelSolid.R, InkWashTheme.PanelSolid.G, InkWashTheme.PanelSolid.B, 0.75f),
+                ClipChildren = false,
+            };
+
+            float x = 4f;
+            foreach (var (label, domId) in entries)
+            {
+                AddNavButton(row, x, label, domId, false);
+                x += NavButtonWidth;
+            }
+
+            if (includeTraditionalToggle)
+            {
+                var divider = new Control
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(x + NavButtonWidth * 0.5f - 0.5f, (NavRowHeight - 20f) * 0.5f),
+                    Size = new Float2(1f, 20f),
+                    BackgroundColor = InkWashTheme.BorderGold,
+                };
+                row.AddChild(divider);
+                x += NavButtonWidth;
+
+                AddNavButton(row, x, "传统模式", InkPageDomIds.ToggleTraditional, true);
+            }
+
+            return row;
+        }
+
+        /// <summary>添加单个导航按钮（悬停金色高亮由 Ghost 变体提供）。</summary>
+        private void AddNavButton(ContainerControl row, float x, string label, string domId, bool highlighted)
+        {
+            var btn = new InkButton
+            {
+                Text = label,
+                Variant = InkButtonVariant.Ghost,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(x, 0f),
+                Size = new Float2(NavButtonWidth, NavRowHeight),
+                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 10f),
+            };
+            btn.TextColor = highlighted ? InkWashTheme.GoldPrimary : InkWashTheme.TextSecondary;
+            string target = domId;
+            btn.Clicked += () => RequestNavigation(target);
+            row.AddChild(btn);
+        }
+
+        // ===================================================================
+        // 区域构造：右下快捷道具栏
+        // ===================================================================
+
+        /// <summary>
+        /// 右下快捷道具栏：10 格 36x36（4 格有物 + 6 格空槽），快捷键 1-0。
         /// </summary>
         private void BuildItemBar()
         {
-            float barWidth = 4f * ItemCellSize + 3f * ItemCellGap;
+            float barW = ItemBarPaddingX * 2f + ItemSlotCount * ItemSlotSize + (ItemSlotCount - 1) * ItemSlotGap;
+            float barH = ItemBarPaddingY * 2f + ItemSlotSize;
+
             _itemBar = new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Size = new Float2(barWidth, ItemCellSize),
-                BackgroundColor = Color.Transparent,
+                Size = new Float2(barW, barH),
+                BackgroundColor = new Color(InkWashTheme.PanelSolid.R, InkWashTheme.PanelSolid.G, InkWashTheme.PanelSolid.B, 0.80f),
                 ClipChildren = false,
             };
 
-            _itemCells = new InkCell[4];
-            for (int i = 0; i < 4; i++)
+            string[] keys = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0" };
+            for (int i = 0; i < ItemSlotCount; i++)
             {
-                var cell = new InkCell
+                float x = ItemBarPaddingX + i * (ItemSlotSize + ItemSlotGap);
+                bool filled = i < ItemConfig.Length;
+
+                var slot = new ContainerControl
                 {
                     AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(i * (ItemCellSize + ItemCellGap), 0f),
-                    Size = new Float2(ItemCellSize, ItemCellSize),
-                    Quality = _itemQualities[i],
-                    Badge = _itemBadges[i],
+                    Location = new Float2(x, ItemBarPaddingY),
+                    Size = new Float2(ItemSlotSize, ItemSlotSize),
+                    BackgroundColor = filled ? Color.Transparent : new Color(0f, 0f, 0f, 0.10f),
                 };
-                _itemCells[i] = cell;
-                _itemBar.AddChild(cell);
+                _itemBar.AddChild(slot);
+
+                if (filled)
+                {
+                    var (glyph, count, tint) = ItemConfig[i];
+                    var inner = new Label
+                    {
+                        Text = glyph,
+                        Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 18f),
+                        TextColor = tint,
+                        HorizontalAlignment = TextAlignment.Center,
+                        VerticalAlignment = TextAlignment.Center,
+                        AnchorPreset = AnchorPresets.TopLeft,
+                        Location = new Float2(1f, 1f),
+                        Size = new Float2(ItemSlotSize - 2f, ItemSlotSize - 2f),
+                        BackgroundColor = Color.Lerp(InkWashTheme.BaseTertiary, tint, 0.15f),
+                    };
+                    slot.AddChild(inner);
+
+                    var countLabel = new Label
+                    {
+                        Text = count.ToString(),
+                        Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 10f),
+                        TextColor = InkWashTheme.PaperBright,
+                        HorizontalAlignment = TextAlignment.Far,
+                        VerticalAlignment = TextAlignment.Far,
+                        AnchorPreset = AnchorPresets.TopLeft,
+                        Location = new Float2(ItemSlotSize - 14f, ItemSlotSize - 12f),
+                        Size = new Float2(12f, 11f),
+                    };
+                    slot.AddChild(countLabel);
+                }
+
+                var keyLabel = new Label
+                {
+                    Text = keys[i],
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 10f),
+                    TextColor = InkWashTheme.TextTertiary,
+                    HorizontalAlignment = TextAlignment.Near,
+                    VerticalAlignment = TextAlignment.Near,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(2f, 1f),
+                    Size = new Float2(10f, 10f),
+                };
+                slot.AddChild(keyLabel);
             }
 
             AddChild(_itemBar);
@@ -1103,97 +922,55 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
 
         // ===================================================================
         // 布局计算
-        // =======================================================================
+        // ===================================================================
 
-        /// <summary>
-        /// 根据当前 <see cref="_screenSize"/> 重新计算所有子控件的位置。
-        /// 由构造函数与 <see cref="RefreshLayout"/> 调用。
-        /// </summary>
+        /// <summary>根据当前 <see cref="_screenSize"/> 重新计算所有子控件的位置。</summary>
         private void ApplyLayout()
         {
             float sw = _screenSize.X;
             float sh = _screenSize.Y;
 
-            // 小地图：左上角
+            if (_playerPanel != null)
+                _playerPanel.Location = new Float2(Margin, Margin);
+
+            if (_questPanel != null)
+                _questPanel.Location = new Float2(sw * 0.5f - QuestTrackerWidth * 0.5f, Margin);
+
             if (_minimap != null)
-            {
-                _minimap.Location = new Float2(Margin, Margin);
-            }
-            if (_minimapCoordLabel != null)
-            {
-                _minimapCoordLabel.Location = new Float2(Margin, Margin + MinimapSize + 4f);
-            }
+                _minimap.Location = new Float2(sw - MinimapSize - Margin, Margin);
+            if (_regionLabel != null)
+                _regionLabel.Location = new Float2(sw - MinimapSize - Margin, Margin + MinimapSize + 4f);
 
-            // 目标信息：顶部中央
-            if (_targetPanel != null)
-            {
-                _targetPanel.Location = new Float2(sw * 0.5f - TargetPanelWidth * 0.5f, Margin);
-            }
+            if (_buffContainer != null)
+                _buffContainer.Location = new Float2(Margin, sh - _buffContainer.Height - Margin - BuffBottomExtra);
 
-            // 队伍状态：右上角
-            if (_partyContainer != null)
-            {
-                _partyContainer.Location = new Float2(sw - PartyPanelWidth - Margin, Margin);
-            }
+            // 底部中央：技能栏 + 双行导航（自下而上堆叠）
+            float nav2Y = sh - NavRowHeight - Margin;
+            float nav1Y = nav2Y - NavRowHeight - NavRowGap;
+            if (_navRow1 != null)
+                _navRow1.Location = new Float2(sw * 0.5f - _navRow1.Width * 0.5f, nav1Y);
+            if (_navRow2 != null)
+                _navRow2.Location = new Float2(sw * 0.5f - _navRow2.Width * 0.5f, nav2Y);
+            if (_skillBar != null)
+                _skillBar.Location = new Float2(sw * 0.5f - _skillBar.Width * 0.5f, nav1Y - SkillToNavGap - _skillBar.Height);
 
-            // 增益/减益列表：右上角，队伍下方
-            if (_buffsContainer != null)
-            {
-                float partyBottom = Margin + _partyContainer.Height;
-                _buffsContainer.Location = new Float2(sw - BuffsPanelWidth - Margin, partyBottom);
-            }
-
-            // 连击计数器：左侧中央
-            if (_comboPanel != null)
-            {
-                _comboPanel.Location = new Float2(Margin, sh * 0.5f - _comboPanel.Height * 0.5f);
-            }
-
-            // 玩家状态：左下角
-            if (_playerStats != null)
-            {
-                _playerStats.Location = new Float2(Margin, sh - PlayerStatsHeight - Margin);
-            }
-
-            // 技能栏：底部中央
-            if (_skillGrid != null)
-            {
-                _skillGrid.Location = new Float2(sw * 0.5f - _skillGrid.Width * 0.5f, sh - SkillBarBottomOffset - _skillGrid.Height);
-            }
-            if (_skillHintLabel != null)
-            {
-                float skillGridBottom = sh - SkillBarBottomOffset;
-                _skillHintLabel.Location = new Float2(sw * 0.5f - 150f, skillGridBottom + 8f);
-            }
-
-            // 道具栏：右下角
             if (_itemBar != null)
-            {
-                float itemBarWidth = 4f * ItemCellSize + 3f * ItemCellGap;
-                float itemBarHeight = ItemCellSize + 30f;
-                _itemBar.Location = new Float2(sw - itemBarWidth - Margin, sh - itemBarHeight - Margin);
-            }
+                _itemBar.Location = new Float2(sw - _itemBar.Width - Margin, sh - _itemBar.Height - Margin - ItemBottomExtra);
         }
 
-        /// <summary>
-        /// 在屏幕尺寸变化时重新布局所有子控件。
-        /// 外部（如 <see cref="InkPageShell"/> 或屏幕大小变更监听器）应调用此方法。
-        /// </summary>
+        /// <summary>在屏幕尺寸变化时重新布局所有子控件。</summary>
         public void RefreshLayout()
         {
-            // 优先使用控件实际尺寸（已由 InkPageShell.LoadPage 的 StretchAll 锚点填充父容器）
             float w = Width;
             float h = Height;
             if (w <= 0f || h <= 0f)
             {
-                // 控件尚未布局，回退到屏幕尺寸
                 var screen = FlaxEngine.Screen.Size;
                 w = screen.X;
                 h = screen.Y;
             }
             if (w <= 0f || h <= 0f)
             {
-                // 仍然为 0，使用 1920x1080 兜底
                 w = 1920f;
                 h = 1080f;
             }
@@ -1203,24 +980,18 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
 
         // ===================================================================
         // 数据绑定 API
-        // =======================================================================
+        // ===================================================================
 
-        /// <summary>
-        /// 绑定角色属性组件。
-        /// 绑定后气血/内力/体魄条每帧从组件读取真实数据（气血=Health，内力=Energy，体魄=Stamina），
-        /// 传入 null 解除绑定回退到 mock。
-        /// </summary>
-        /// <param name="component">角色属性组件，null 解除绑定</param>
+        /// <summary>绑定角色属性组件。绑定后血/气/体条每帧读取真实数据，传入 null 解除绑定回退 mock。</summary>
         public void BindCharacter(CharacterAttributesComponent component)
         {
             _boundCharacter = component;
-            // 绑定瞬间立即刷新身份信息（角色名/等级/阶段），避免等下一帧 Update
             RefreshPlayerIdentity();
         }
 
         // ===================================================================
         // 生命周期
-        // =======================================================================
+        // ===================================================================
 
         /// <inheritdoc />
         public override void Update(float deltaTime)
@@ -1229,50 +1000,31 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             RefreshBoundData();
         }
 
-        /// <summary>
-        /// 每帧从绑定的数据源刷新气血/内力/体魄。
-        /// 未绑定时保持 mock 数据不变。
-        /// </summary>
+        /// <summary>每帧从绑定数据源刷新血/气/体。未绑定时保持 mock。</summary>
         private void RefreshBoundData()
         {
             if (_boundCharacter == null)
                 return;
 
-            // 刷新角色名/等级/阶段（每帧同步，防止运行时改名）
             RefreshPlayerIdentity();
 
-            // 气血（HP）= CurrentHealth / MaxHealth
             float hpRatio = _boundCharacter.MaxHealth > 0f
-                ? Mathf.Clamp(_boundCharacter.CurrentHealth / _boundCharacter.MaxHealth, 0f, 1f)
-                : 0f;
-            // 内力（MP）= CurrentEnergy / MaxEnergy
+                ? Mathf.Clamp(_boundCharacter.CurrentHealth / _boundCharacter.MaxHealth, 0f, 1f) : 0f;
             float mpRatio = _boundCharacter.MaxEnergy > 0f
-                ? Mathf.Clamp(_boundCharacter.CurrentEnergy / _boundCharacter.MaxEnergy, 0f, 1f)
-                : 0f;
-            // 体魄（XP）= CurrentStamina / MaxStamina
-            float xpRatio = _boundCharacter.MaxStamina > 0f
-                ? Mathf.Clamp(_boundCharacter.CurrentStamina / _boundCharacter.MaxStamina, 0f, 1f)
-                : 0f;
+                ? Mathf.Clamp(_boundCharacter.CurrentEnergy / _boundCharacter.MaxEnergy, 0f, 1f) : 0f;
+            float spRatio = _boundCharacter.MaxStamina > 0f
+                ? Mathf.Clamp(_boundCharacter.CurrentStamina / _boundCharacter.MaxStamina, 0f, 1f) : 0f;
 
-            if (_hpBar != null)
-                _hpBar.Value = hpRatio;
-            if (_hpLabel != null)
-                _hpLabel.Text = $"{(int)_boundCharacter.CurrentHealth}/{(int)_boundCharacter.MaxHealth}";
-
-            if (_mpBar != null)
-                _mpBar.Value = mpRatio;
-            if (_mpLabel != null)
-                _mpLabel.Text = $"{(int)_boundCharacter.CurrentEnergy}/{(int)_boundCharacter.MaxEnergy}";
-
-            if (_xpBar != null)
-                _xpBar.Value = xpRatio;
+            if (_hpBar != null) _hpBar.Value = hpRatio;
+            if (_hpValueLabel != null)
+                _hpValueLabel.Text = $"{(int)_boundCharacter.CurrentHealth}/{(int)_boundCharacter.MaxHealth}";
+            if (_mpBar != null) _mpBar.Value = mpRatio;
+            if (_mpValueLabel != null)
+                _mpValueLabel.Text = $"{(int)_boundCharacter.CurrentEnergy}/{(int)_boundCharacter.MaxEnergy}";
+            if (_spBar != null) _spBar.Value = spRatio;
         }
 
-        /// <summary>
-        /// 刷新玩家身份信息（角色名、等级）。
-        /// 由 <see cref="BindCharacter"/> 立即调用，并由 <see cref="RefreshBoundData"/> 每帧调用以保持同步。
-        /// 未绑定时保留 mock 数据，不覆盖。
-        /// </summary>
+        /// <summary>刷新玩家身份信息（名称、等级）。未绑定时保留 mock。</summary>
         private void RefreshPlayerIdentity()
         {
             if (_boundCharacter == null)
@@ -1281,31 +1033,315 @@ namespace HundunWorld.Game.UI.Ink.Pages.Combat
             if (_playerNameLabel != null && !string.IsNullOrEmpty(_boundCharacter.Nickname))
             {
                 _playerNameLabel.Text = _boundCharacter.Nickname;
+                if (_playerAvatar != null)
+                    _playerAvatar.Glyph = _boundCharacter.Nickname[0].ToString();
             }
-
             if (_playerLevelLabel != null)
-            {
                 _playerLevelLabel.Text = $"Lv.{_boundCharacter.Level}";
-            }
         }
 
         // ===================================================================
         // 事件处理
-        // =======================================================================
+        // ===================================================================
 
-        /// <summary>
-        /// 头像点击处理：触发 <see cref="NavigationRequested"/>("nav-character-v2")，
-        /// 由 <see cref="InkPageRouter"/> 订阅后跳转角色属性页 V2。
-        /// </summary>
-        private void OnAvatarButtonClicked()
+        /// <summary>触发导航请求（带异常保护）。</summary>
+        private void RequestNavigation(string domId)
         {
             try
             {
-                NavigationRequested?.Invoke("nav-character-v2");
+                NavigationRequested?.Invoke(domId);
             }
             catch (Exception ex)
             {
-                FlaxEngine.Debug.LogError($"[CombatHudV2Page] NavigationRequested(nav-character-v2) 触发失败: {ex.Message}");
+                FlaxEngine.Debug.LogError($"[CombatHudV2Page] NavigationRequested({domId}) 触发失败: {ex.Message}");
+            }
+        }
+
+        // ===================================================================
+        // 嵌套控件：八角头像
+        // ===================================================================
+
+        /// <summary>
+        /// 八角头像控件：金色八角描边 + 墨底渐变 + 中央门派字 + 右下门派徽章。
+        /// 对应 combat-hud.html 的 .hud-avatar-octagon（clip-path 八角 + 2px 金边）。
+        /// </summary>
+        private sealed class OctagonAvatar : Button
+        {
+            /// <summary>中央显示的字（默认取角色名首字）</summary>
+            public string Glyph { get; set; } = "侠";
+
+            /// <summary>八角切点比例（对齐 CSS clip-path polygon）</summary>
+            private static readonly Float2[] OctagonRatios =
+            {
+                new Float2(0.30f, 0f), new Float2(0.70f, 0f),
+                new Float2(1f, 0.30f), new Float2(1f, 0.70f),
+                new Float2(0.70f, 1f), new Float2(0.30f, 1f),
+                new Float2(0f, 0.70f), new Float2(0f, 0.30f),
+            };
+
+            public OctagonAvatar()
+            {
+                BackgroundColor = Color.Transparent;
+                BorderThickness = 0f;
+            }
+
+            /// <inheritdoc />
+            public override void Draw()
+            {
+                base.Draw();
+                if (Width <= 0f || Height <= 0f)
+                    return;
+
+                // 外层八角（金色，作为 2px 描边）
+                var outer = GetOctagonPoints(0f);
+                FillOctagon(outer, InkWashTheme.GoldPrimary);
+
+                // 内层八角（墨底 + 淡金叠加，近似 135deg mist→paper 渐变）
+                var inner = GetOctagonPoints(2f);
+                FillOctagon(inner, InkWashTheme.BaseTertiary);
+                FillOctagon(inner, InkWashTheme.BgMist);
+
+                // 中央字（楷书 36px 金色）
+                var fontRef = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 36f);
+                var font = fontRef.GetFont();
+                if (font != null)
+                {
+                    Render2D.DrawText(font, Glyph, new Rectangle(0, 0, Width, Height),
+                        InkWashTheme.GoldPrimary, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+                }
+
+                // 门派徽章（右下 26px 圆形，墨底 + 金边 + 金字）
+                float badge = SectBadgeSize;
+                var bc = new Float2(Width - badge + 3f, Height - badge + 3f) + new Float2(badge * 0.5f, badge * 0.5f);
+                InkRenderHelper.FillCircle(bc, badge * 0.5f, InkWashTheme.PanelSolid);
+                InkRenderHelper.DrawCircle(bc, badge * 0.5f, InkWashTheme.GoldPrimary, 1f);
+                var badgeFont = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f).GetFont();
+                if (badgeFont != null)
+                {
+                    Render2D.DrawText(badgeFont, "山",
+                        new Rectangle(bc.X - badge * 0.5f, bc.Y - badge * 0.5f, badge, badge),
+                        InkWashTheme.GoldPrimary, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+                }
+            }
+
+            /// <summary>按指定内缩量获取八角形顶点（绝对坐标）。</summary>
+            private Float2[] GetOctagonPoints(float inset)
+            {
+                var pts = new Float2[8];
+                for (int i = 0; i < 8; i++)
+                {
+                    float px = OctagonRatios[i].X * Width;
+                    float py = OctagonRatios[i].Y * Height;
+                    // 向中心内缩 inset
+                    float cx = Width * 0.5f, cy = Height * 0.5f;
+                    float dx = px - cx, dy = py - cy;
+                    float len = Mathf.Sqrt(dx * dx + dy * dy);
+                    if (len > 0f)
+                    {
+                        px -= dx / len * inset;
+                        py -= dy / len * inset;
+                    }
+                    pts[i] = new Float2(px, py);
+                }
+                return pts;
+            }
+
+            /// <summary>用三角形扇填充八角形。</summary>
+            private static void FillOctagon(Float2[] pts, Color color)
+            {
+                var center = new Float2(pts[0].X, pts[0].Y);
+                for (int i = 0; i < 8; i++)
+                {
+                    center += pts[i];
+                }
+                center *= 1f / 8f;
+
+                var vertices = new Float2[8 * 3];
+                for (int i = 0; i < 8; i++)
+                {
+                    vertices[i * 3] = center;
+                    vertices[i * 3 + 1] = pts[i];
+                    vertices[i * 3 + 2] = pts[(i + 1) % 8];
+                }
+                Render2D.FillTriangles(vertices, color);
+            }
+        }
+
+        // ===================================================================
+        // 嵌套控件：技能槽
+        // ===================================================================
+
+        /// <summary>
+        /// HUD 技能槽控件（48x48 方形，4px 圆角）。
+        /// 支持：武器激活态（2px 金边 + 辉光）、冷却 conic 遮罩 + 倒计时、大招脉冲 + 充能条。
+        /// 对应 combat-hud.html 的 .hud-skill-slot / .hud-weapon-active / .hud-ultimate。
+        /// </summary>
+        private sealed class HudSkillSlot : ContainerControl
+        {
+            private const int SectorSegments = 32;
+
+            /// <summary>技能字符</summary>
+            public string Glyph { get; set; } = "";
+
+            /// <summary>快捷键标签（空则不显示）</summary>
+            public string Hotkey { get; set; } = "";
+
+            /// <summary>是否大招槽（金边 + 脉冲 + 充能条）</summary>
+            public bool IsUltimate { get; set; }
+
+            /// <summary>是否激活武器（2px 金边 + 辉光）</summary>
+            public bool IsActiveWeapon { get; set; }
+
+            /// <summary>当前冷却剩余秒数</summary>
+            public float CooldownSeconds { get; set; }
+
+            /// <summary>冷却总时长（秒）</summary>
+            public float MaxCooldownSeconds { get; set; }
+
+            /// <summary>大招充能比例 0-1</summary>
+            public float ChargeRatio { get; set; }
+
+            /// <summary>整体透明度倍率 0-1（用于未激活武器减淡）</summary>
+            public float AlphaMultiplier { get; set; } = 1f;
+
+            private bool _hovered;
+            private float _pulseTime;
+
+            /// <summary>应用透明度倍率。</summary>
+            private Color A(Color c) => new Color(c.R, c.G, c.B, c.A * AlphaMultiplier);
+
+            /// <inheritdoc />
+            public override void Update(float deltaTime)
+            {
+                base.Update(deltaTime);
+                if (CooldownSeconds > 0f)
+                    CooldownSeconds = Mathf.Max(0f, CooldownSeconds - deltaTime);
+                if (IsUltimate)
+                    _pulseTime += deltaTime;
+            }
+
+            /// <inheritdoc />
+            public override void Draw()
+            {
+                base.Draw();
+                if (Width <= 0f || Height <= 0f)
+                    return;
+
+                var rect = new Rectangle(0, 0, Width, Height);
+                float radius = InkWashTheme.RadiusSm + 2f; // 4px
+
+                // 大招脉冲外辉光
+                if (IsUltimate)
+                {
+                    float pulse = 0.3f + 0.35f * (0.5f + 0.5f * Mathf.Sin(_pulseTime * 2.5f));
+                    InkRenderHelper.FillRoundedRectangle(rect, radius + 3f,
+                        new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, pulse * 0.35f));
+                }
+
+                // 背景（墨纸 70%）
+                InkRenderHelper.FillRoundedRectangle(rect, radius,
+                    A(new Color(InkWashTheme.BaseTertiary.R, InkWashTheme.BaseTertiary.G, InkWashTheme.BaseTertiary.B, 0.70f)));
+
+                // 技能字符（冷却中灰，正常亮）
+                bool onCooldown = CooldownSeconds > 0f;
+                Color glyphColor = A((IsActiveWeapon || IsUltimate) ? InkWashTheme.GoldBright
+                    : onCooldown ? InkWashTheme.TextSecondary
+                    : InkWashTheme.PaperBright);
+                var glyphFont = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 24f).GetFont();
+                if (glyphFont != null)
+                {
+                    Render2D.DrawText(glyphFont, Glyph, rect, glyphColor,
+                        TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+                }
+
+                // 冷却 conic 遮罩 + 倒计时
+                if (onCooldown && MaxCooldownSeconds > 0f)
+                {
+                    float ratio = CooldownSeconds / MaxCooldownSeconds;
+                    DrawCooldownSector(new Float2(Width * 0.5f, Height * 0.5f), Width * 0.5f, ratio,
+                        new Color(0f, 0f, 0f, 0.78f));
+                    var cdFont = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 14f).GetFont();
+                    if (cdFont != null)
+                    {
+                        Render2D.DrawText(cdFont, $"{(int)Mathf.Ceil(CooldownSeconds)}s", rect,
+                            InkWashTheme.PaperBright, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+                    }
+                }
+
+                // 大招充能条（底部 3px）
+                if (IsUltimate && ChargeRatio > 0f)
+                {
+                    float barH = 3f;
+                    var barRect = new Rectangle(0, Height - barH, Width, barH);
+                    Render2D.FillRectangle(barRect, new Color(0f, 0f, 0f, 0.6f));
+                    float fillW = Width * ChargeRatio;
+                    int strips = 8;
+                    for (int i = 0; i < strips; i++)
+                    {
+                        float t = strips > 1 ? (float)i / (strips - 1) : 0f;
+                        Color c = Color.Lerp(InkWashTheme.GoldDeep, InkWashTheme.GoldBright, t);
+                        Render2D.FillRectangle(new Rectangle(fillW * i / strips, Height - barH, fillW / strips, barH), c);
+                    }
+                }
+
+                // 边框（激活武器/大招 2px 金，普通 1px 淡金，悬停亮金）
+                Color borderColor = A((IsActiveWeapon || IsUltimate) ? InkWashTheme.GoldPrimary
+                    : _hovered ? InkWashTheme.GoldPrimary
+                    : InkWashTheme.BorderGold);
+                float thickness = (IsActiveWeapon || IsUltimate) ? 2f : 1f;
+                InkRenderHelper.DrawRoundedRectangle(rect, radius, borderColor, thickness);
+
+                // 快捷键标签（右下角）
+                if (!string.IsNullOrEmpty(Hotkey))
+                {
+                    var keyFont = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 10f).GetFont();
+                    if (keyFont != null)
+                    {
+                        Color keyColor = A(IsUltimate ? InkWashTheme.GoldPrimary : InkWashTheme.TextSecondary);
+                        Render2D.DrawText(keyFont, Hotkey,
+                            new Rectangle(0, 0, Width - 3f, Height - 2f), keyColor,
+                            TextAlignment.Far, TextAlignment.Far, TextWrapping.NoWrap);
+                    }
+                }
+            }
+
+            /// <inheritdoc />
+            public override void OnMouseEnter(Float2 location)
+            {
+                _hovered = true;
+                base.OnMouseEnter(location);
+            }
+
+            /// <inheritdoc />
+            public override void OnMouseLeave()
+            {
+                _hovered = false;
+                base.OnMouseLeave();
+            }
+
+            /// <summary>绘制冷却扇形遮罩（从正上方顺时针）。</summary>
+            private static void DrawCooldownSector(Float2 center, float radius, float progress, Color color)
+            {
+                if (progress <= 0f || radius <= 0f)
+                    return;
+                if (progress >= 1f)
+                {
+                    InkRenderHelper.FillCircle(center, radius, color);
+                    return;
+                }
+                int segments = Mathf.Max(1, Mathf.CeilToInt(progress * SectorSegments));
+                float startAngle = -Mathf.Pi * 0.5f;
+                float totalAngle = progress * Mathf.TwoPi;
+                var vertices = new Float2[segments * 3];
+                for (int i = 0; i < segments; i++)
+                {
+                    float a1 = startAngle + (float)i / segments * totalAngle;
+                    float a2 = startAngle + (float)(i + 1) / segments * totalAngle;
+                    vertices[i * 3] = center;
+                    vertices[i * 3 + 1] = center + new Float2(Mathf.Cos(a1) * radius, Mathf.Sin(a1) * radius);
+                    vertices[i * 3 + 2] = center + new Float2(Mathf.Cos(a2) * radius, Mathf.Sin(a2) * radius);
+                }
+                Render2D.FillTriangles(vertices, color);
             }
         }
     }

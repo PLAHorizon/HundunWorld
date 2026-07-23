@@ -122,6 +122,9 @@ namespace HundunWorld.Game.UI
         /// <summary>血色辉光 rgba(184,84,80,0.4)（--ink-blood-glow）</summary>
         public static readonly Color BloodGlow = new Color(184f / 255f, 84f / 255f, 80f / 255f, 0.4f);
 
+        /// <summary>血色柔光 rgba(184,84,80,0.5)（--ink-blood-dim）</summary>
+        public static readonly Color BloodDim = new Color(184f / 255f, 84f / 255f, 80f / 255f, 0.5f);
+
         /// <summary>血色淡痕 rgba(184,84,80,0.12)（--ink-blood-faint）</summary>
         public static readonly Color BloodFaint = new Color(184f / 255f, 84f / 255f, 80f / 255f, 0.12f);
 
@@ -140,6 +143,9 @@ namespace HundunWorld.Game.UI
 
         /// <summary>弱化文本 #8A8275（--ink-text-muted）</summary>
         public static readonly Color TextMuted = new Color(138f / 255f, 130f / 255f, 117f / 255f, 1f);
+
+        /// <summary>弱化文本 rgba(240,237,228,0.4)（--ink-text-faint）</summary>
+        public static readonly Color TextFaint = new Color(240f / 255f, 237f / 255f, 228f / 255f, 0.4f);
 
         /// <summary>禁用文本 rgba(240,237,228,0.3)（--text-disabled）</summary>
         public static readonly Color TextDisabled = new Color(240f / 255f, 237f / 255f, 228f / 255f, 0.3f);
@@ -250,6 +256,9 @@ namespace HundunWorld.Game.UI
 
         /// <summary>春青辉光阴影 rgba(126,171,158,0.45)（--ink-shadow-jade，玩家点发光/青玉光晕）</summary>
         public static readonly Color ShadowJade = new Color(126f / 255f, 171f / 255f, 158f / 255f, 0.45f);
+
+        /// <summary>内阴影色 rgba(200,168,88,0.08)（--ink-shadow-inset，inset 0 1px 0）</summary>
+        public static readonly Color ShadowInset = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.08f);
 
         #endregion
 

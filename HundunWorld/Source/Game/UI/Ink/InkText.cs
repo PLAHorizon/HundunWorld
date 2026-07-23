@@ -19,7 +19,7 @@ namespace HundunWorld.Game.UI.Ink
         /// <summary>副标题 — 思源宋体 14px，次级文字色，左对齐，对应 .ink-text-subheading</summary>
         Subheading,
 
-        /// <summary>正文 — 思源黑体 13px，次级文字色，左对齐，对应 .ink-text-body</summary>
+        /// <summary>正文 — 思源黑体 14px，次级文字色，左对齐，对应 .ink-text-body</summary>
         Body,
 
         /// <summary>说明 — 思源黑体 11px，三级文字色，左对齐，对应 .ink-text-caption</summary>
@@ -104,13 +104,13 @@ namespace HundunWorld.Game.UI.Ink
                     break;
 
                 case InkTextStyle.Number:
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 15f);
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 14f);
                     TextColor = InkWashTheme.TextBrand;
                     HorizontalAlignment = TextAlignment.Far;
                     break;
 
                 default: // Body
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f);
+                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 14f);
                     TextColor = InkWashTheme.TextSecondary;
                     HorizontalAlignment = TextAlignment.Near;
                     break;

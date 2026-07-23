@@ -22,6 +22,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
         private const float ActionBtnHeight = 36f;
         private const float ActionBtnGap = 8f;
 
+        private static Color Gold(float a) => new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, a);
+        private static Color Jade(float a) => new Color(InkWashTheme.JadeDeep.R, InkWashTheme.JadeDeep.G, InkWashTheme.JadeDeep.B, a);
+
         // Top header
         private InkPanel _topHeader;
         private InkButton _backButton;
@@ -246,7 +249,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(12f, 14f),
                 Size = new Float2(56f, 56f),
-                BackgroundColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.25f),
+                BackgroundColor = Gold(0.25f),
             };
             _masterInfoPanel.AddChild(avatar);
 
@@ -365,7 +368,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                     Location = new Float2(0f, cursorY),
                     Size = new Float2(LeftColumnWidth - ScreenEdge * 2f, DiscipleItemHeight),
                     BackgroundColor = i == 0
-                        ? new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.10f)
+                        ? Gold(0.10f)
                         : Color.Transparent,
                 };
 
@@ -374,7 +377,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                     AnchorPreset = AnchorPresets.TopLeft,
                     Location = new Float2(10f, 6f),
                     Size = new Float2(36f, 36f),
-                    BackgroundColor = new Color(94f / 255f, 139f / 255f, 126f / 255f, 0.15f),
+                    BackgroundColor = Jade(0.15f),
                 };
                 item.AddChild(avatarSmall);
 
@@ -463,7 +466,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 AnchorPreset = AnchorPresets.TopLeft,
                 Location = new Float2(0f, cursorY),
                 Size = new Float2(LeftColumnWidth - ScreenEdge * 2f, DiscipleItemHeight),
-                BackgroundColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.03f),
+                BackgroundColor = Gold(0.03f),
             };
 
             var emptyIcon = new Label
@@ -1162,7 +1165,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                     AnchorPreset = AnchorPresets.TopLeft,
                     Location = new Float2((cellW - 40f) * 0.5f, 0f),
                     Size = new Float2(40f, 40f),
-                    BackgroundColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.15f),
+                    BackgroundColor = Gold(0.15f),
                 };
                 cell.AddChild(icon);
 

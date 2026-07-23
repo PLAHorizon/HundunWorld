@@ -506,7 +506,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     }
 
     /// <inheritdoc />
-    public Task<int> TickAsync(double tickTime)
+    public async Task<int> TickAsync(double tickTime)
     {
         // Task 19：记录 tick 开始时间戳，用于测量执行耗时
         var tickStartTimestamp = Stopwatch.GetTimestamp();
@@ -515,6 +515,15 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         // Task 10.2：复用字段级缓冲，避免每次 tick 分配 List
         var deltas = _deltaBuffer; deltas.Clear();
         var corrections = _correctionBuffer; corrections.Clear();
+
+        // 修复：在实体循环前判定本 tick 是否为全量快照。
+        // 原实现仅在循环后判定（L761），导致周期性全量快照（每 60 tick）时
+        // 实体循环的 includeInSnapshot 仍只检查 _forceFullSnapshotNextTick（为 false），
+        // 静止实体（heartbeat 未到期）不被纳入快照 → "全量快照"实际不完整，
+        // 客户端周期性刷新时丢失静止角色。
+        bool forceFullThisTick = _lastSnapshot == null
+            || (_tickCount - _lastFullSnapshotTick) >= FullSnapshotIntervalTicks
+            || _forceFullSnapshotNextTick;
 
         foreach (var kv in _simulatedEntities)
         {
@@ -633,7 +642,9 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             // 修复：全量快照模式下（新玩家加入/定期全量）包含所有实体，
             // 而非仅 shouldBroadcast 的实体。原实现在全量快照时仍按 shouldBroadcast 过滤，
             // 导致静止实体（heartbeat 未到期）不出现在全量快照中，新玩家看不到它们。
-            bool includeInSnapshot = shouldBroadcast || _forceFullSnapshotNextTick;
+            // 进一步修复：使用 forceFullThisTick（循环前已计算）替代 _forceFullSnapshotNextTick，
+            // 确保周期性全量快照（每 60 tick）也包含所有实体。
+            bool includeInSnapshot = shouldBroadcast || forceFullThisTick;
 
             if (includeInSnapshot)
             {
@@ -740,8 +751,8 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         if (_tickDiagCount <= 5)
         {
             _logger.LogWarning(
-                "[ZoneShardGrain 诊断#{N}] TickAsync：Tick={Tick}, Entities={EntityCount}, Deltas={DeltaCount}, PendingInputs={PendingInputs}, Sessions={SessionCount}, Observers={ObserverCount}",
-                _tickDiagCount, _tickCount, _simulatedEntities.Count, deltas.Count, _simulatedEntities.Values.Sum(e => e.PendingInputs.Count), _aoi.SessionCount, _fanoutObservers.Count);
+                "[ZoneShardGrain 诊断#{N}] TickAsync：Tick={Tick}, Entities={EntityCount}, Deltas={DeltaCount}, Corrections={CorrectionCount}, PendingInputs={PendingInputs}, Sessions={SessionCount}, Observers={ObserverCount}",
+                _tickDiagCount, _tickCount, _simulatedEntities.Count, deltas.Count, corrections.Count, _simulatedEntities.Values.Sum(e => e.PendingInputs.Count), _aoi.SessionCount, _fanoutObservers.Count);
         }
 
         if (deltas.Count > 0)
@@ -774,50 +785,57 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                 toSend = BuildDeltaSnapshot(_lastSnapshot, deltas);
             }
 
-            // Task 13：通过 Interlocked.CompareExchange 保证不与上次广播并发
-            // 修复：增加超时保护，防止 _broadcastInProgress 因 Orleans observer 调用挂起而永久卡在 1，
-            // 导致后续所有广播被永久跳过（"角色无法看到彼此的移动"根因之一）。
-            if (Interlocked.CompareExchange(ref _broadcastInProgress, 1, 0) == 0)
+            // 修复（广播竞态根因）：直接 await 广播完成，而非 fire-and-forget + ContinueWith。
+            // 原实现把 _broadcastInProgress 重置放在 ContinueWith(TaskScheduler.Default) 中，
+            // 该 continuation 在线程池上异步执行。在连续 tick 场景下（测试或 60Hz 定时器），
+            // 线程池可能尚未执行重置，下一个 tick 看到 _broadcastInProgress==1 就跳过广播，
+            // 导致增量 delta 永远不下发——"角色无法看到彼此的移动/旋转/跳跃"的直接根因。
+            // Orleans grain 是单线程 turn-based 并发，await 不会引入并发，
+            // 且确保广播在 TickAsync 返回前完成，下一个 tick 一定能看到已重置的标志。
+            _broadcastStartTimestamp = Stopwatch.GetTimestamp();
+            Interlocked.Exchange(ref _broadcastInProgress, 1);
+            try
             {
-                _broadcastStartTimestamp = Stopwatch.GetTimestamp();
-                _ = BroadcastSnapshotAsync(toSend, corrections, isFullSnapshot).ContinueWith(
-                    _ => Interlocked.Exchange(ref _broadcastInProgress, 0),
-                    TaskScheduler.Default);
+                await BroadcastSnapshotAsync(toSend, corrections, isFullSnapshot).ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "ZoneShard {ShardId}: BroadcastSnapshotAsync 发生未捕获异常。Tick={Tick}",
+                    this.GetPrimaryKeyLong(), _tickCount);
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _broadcastInProgress, 0);
+            }
+            // _lastSnapshot 必须保存完整状态（所有实体的最新 delta），供下次增量比对。
+            // 修复：原实现直接 _lastSnapshot = snapshot，但增量 tick 的 snapshot 仅含变化实体，
+            // 导致 baseline 丢失未变化实体 → BuildDeltaSnapshot 的 EntityDeltaChanged 比对不完整，
+            // 未在 baseline 中的实体被当作"新 Spawn"无条件纳入（虽然不丢数据，但破坏比对语义）。
+            // 正确做法：增量 tick 时将当前 deltas 合并到上次 baseline，保持完整状态。
+            if (isFullSnapshot)
+            {
+                // 全量快照已包含所有实体（forceFullThisTick 确保）
+                _lastSnapshot = snapshot;
             }
             else
             {
-                // 超时保护：如果上次广播超过 5 秒仍未完成，强制重置标志位，恢复广播能力。
-                var elapsed = Stopwatch.GetTimestamp() - _broadcastStartTimestamp;
-                if (elapsed > BroadcastTimeoutTicks)
+                // 增量 tick：合并当前 deltas 到上次 baseline，复用 _baselineDictBuffer 避免分配
+                var mergeDict = _baselineDictBuffer; mergeDict.Clear();
+                if (_lastSnapshot != null)
                 {
-                    _logger.LogError(
-                        "ZoneShard {ShardId}: 广播超时保护触发（{ElapsedMs}ms），强制重置 _broadcastInProgress。Tick={Tick}",
-                        this.GetPrimaryKeyLong(), elapsed * 1000 / Stopwatch.Frequency, _tickCount);
-                    Interlocked.Exchange(ref _broadcastInProgress, 0);
-                    // 立即重试本次广播
-                    if (Interlocked.CompareExchange(ref _broadcastInProgress, 1, 0) == 0)
-                    {
-                        _broadcastStartTimestamp = Stopwatch.GetTimestamp();
-                        _ = BroadcastSnapshotAsync(toSend, corrections, isFullSnapshot).ContinueWith(
-                            _ => Interlocked.Exchange(ref _broadcastInProgress, 0),
-                            TaskScheduler.Default);
-                    }
+                    foreach (var d in _lastSnapshot.Deltas)
+                        mergeDict[d.EntityId] = d;
                 }
-                else
+                foreach (var d in deltas)
+                    mergeDict[d.EntityId] = d; // 更新或添加
+                _lastSnapshot = new SnapshotPacket
                 {
-                    // 上次广播未完成（未超时）：跳过本次广播并输出限频告警
-                    var now = DateTime.UtcNow;
-                    if (now - _lastBroadcastSkipWarnUtc >= BroadcastSkipWarnInterval)
-                    {
-                        _lastBroadcastSkipWarnUtc = now;
-                        _logger.LogWarning(
-                            "ZoneShard {ShardId}: tick 跳过广播（上次未完成）。Tick={Tick}, Entities={EntityCount}",
-                            this.GetPrimaryKeyLong(), _tickCount, _simulatedEntities.Count);
-                    }
-                }
+                    ServerTick = _tickCount,
+                    BaselineTick = 0,
+                    Deltas = mergeDict.Values.ToArray(),
+                };
             }
-            // _lastSnapshot 始终保存完整状态（非增量），供下次增量比对（无论是否广播都更新）
-            _lastSnapshot = snapshot;
         }
 
         _tickCount++;
@@ -827,7 +845,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         var elapsedTicks = Stopwatch.GetTimestamp() - tickStartTimestamp;
         Interlocked.Exchange(ref _lastTickDurationMs, elapsedTicks * 1000 / Stopwatch.Frequency);
 
-        return Task.FromResult(processedEntityCount);
+        return processedEntityCount;
     }
 
     /// <inheritdoc />
@@ -1371,12 +1389,14 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         }
 
         entity.PendingInputs.Add(input);
-        // 修复（坐标系不匹配）：客户端上报的 PredictedEndX/Y/Z 是 Flax Y-up 坐标，
-        // 但 MovementValidator.Validate 的 clientEnd 参数期望 ECS Z-up 坐标。
-        // 转换：ECS.X = Flax.X, ECS.Y = Flax.Z(前后), ECS.Z = Flax.Y(上下)
+        // 修复（坐标系不匹配）：InputSendSystem 发送的 PredictedEndX/Y/Z 来自
+        // PredictedTransformComponent（ECS Z-up：X=左右, Y=前后, Z=上下），
+        // 与 MovementValidator.Validate 的 clientEnd 参数坐标系一致，无需转换。
+        // 原实现误以为是 Flax Y-up 坐标并做了 Y/Z 交换，导致 ReportedEnd 的前后/上下被颠倒，
+        // drift 检测持续超阈值触发 Correction 风暴，客户端频繁被校正导致卡顿。
         entity.ReportedEndX = reportedEndX;
-        entity.ReportedEndY = reportedEndZ;  // Flax Z (前后) → ECS Y
-        entity.ReportedEndZ = reportedEndY;  // Flax Y (上下) → ECS Z
+        entity.ReportedEndY = reportedEndY;
+        entity.ReportedEndZ = reportedEndZ;
         _simulatedEntities[entityId] = entity;
 
         return Task.CompletedTask;
@@ -1478,6 +1498,9 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     /// （因为已有玩家的订阅集不一定覆盖新玩家所在 chunk）。全量快照绕过 AOI 确保双向可见。</param>
     private async Task BroadcastSnapshotAsync(SnapshotPacket snapshot, List<CorrectionPacket> corrections, bool bypassAoiFilter = false)
     {
+        // 诊断：测量广播执行时间，定位"广播耗时过长导致 tick 跳过"问题
+        var broadcastSw = Stopwatch.GetTimestamp();
+
         // 诊断：前 5 次调用无条件输出详情，定位 fanout 断点（_fanoutObservers 为空？AOI 无订阅者？）
         _broadcastDiagCount++;
         if (_broadcastDiagCount <= 5)
@@ -1491,13 +1514,14 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                 firstDeltaEntityId = d0.EntityId;
                 if (d0.Transform is { } t0)
                 {
-                    firstDeltaChunkKey = WorldCoord.ToChunkMortonKey(t0.X, t0.Y, t0.Z);
+                    // 与实际过滤逻辑（L1532）保持一致：Flax Y-up → ECS Z-up 需 Y/Z 互换
+                    firstDeltaChunkKey = WorldCoord.ToChunkMortonKey(t0.X, t0.Z, t0.Y);
                     firstDeltaTransform = $"X={t0.X:F2},Y={t0.Y:F2},Z={t0.Z:F2}";
                 }
             }
             _logger.LogWarning(
-                "[ZoneShardGrain 诊断#{N}] BroadcastSnapshot 入口：Tick={Tick}, Deltas={DeltaCount}, Observers={ObserverCount}, Sessions={SessionCount}, Chunks={ChunkCount}, Entities={EntityCount}, FirstDeltaEntity={EntityId}, FirstDeltaChunkKey=0x{ChunkKey:X16}, FirstDeltaTransform={Transform}",
-                _broadcastDiagCount, _tickCount, snapshot.Deltas.Length, _fanoutObservers.Count, _aoi.SessionCount, _aoi.ChunkCount, _simulatedEntities.Count, firstDeltaEntityId, firstDeltaChunkKey, firstDeltaTransform);
+                "[ZoneShardGrain 诊断#{N}] BroadcastSnapshot 入口：Tick={Tick}, BypassAoi={BypassAoi}, Deltas={DeltaCount}, Observers={ObserverCount}, Sessions={SessionCount}, Chunks={ChunkCount}, Entities={EntityCount}, FirstDeltaEntity={EntityId}, FirstDeltaChunkKey=0x{ChunkKey:X16}, FirstDeltaTransform={Transform}",
+                _broadcastDiagCount, _tickCount, bypassAoiFilter, snapshot.Deltas.Length, _fanoutObservers.Count, _aoi.SessionCount, _aoi.ChunkCount, _simulatedEntities.Count, firstDeltaEntityId, firstDeltaChunkKey, firstDeltaTransform);
         }
 
         if (_fanoutObservers.Count == 0)
@@ -1686,6 +1710,16 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                         this.GetPrimaryKeyLong(), subscriptionId);
                 }
             }
+        }
+
+        // 诊断：输出广播执行时间，定位"广播耗时过长导致 tick 跳过"问题。
+        // 正常应在 16.7ms（60Hz 单 tick）内完成；若持续超时，说明 observer 调用或序列化瓶颈。
+        var broadcastElapsedMs = (Stopwatch.GetTimestamp() - broadcastSw) * 1000.0 / Stopwatch.Frequency;
+        if (_broadcastDiagCount <= 10 || _broadcastDiagCount % 60 == 1)
+        {
+            _logger.LogWarning(
+                "[ZoneShardGrain 诊断#{N}] BroadcastSnapshot 完成：耗时={ElapsedMs:F2}ms, Tick={Tick}, Deltas={DeltaCount}, Corrections={CorrectionCount}, BypassAoi={BypassAoi}",
+                _broadcastDiagCount, broadcastElapsedMs, _tickCount, snapshot.Deltas.Length, corrections.Count, bypassAoiFilter);
         }
     }
 

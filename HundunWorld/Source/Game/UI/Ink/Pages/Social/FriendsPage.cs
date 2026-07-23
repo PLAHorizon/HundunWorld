@@ -53,6 +53,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             new Entry{Name="药师周八", Char="周", Lv="40", Sect="少林",   Loc="藏经阁",          Title="药王谷传人", Stars="★★★☆☆", Online=false, Intim=3800, Grade=0},
             new Entry{Name="铁掌郑十", Char="郑", Lv="42", Sect="昆仑",   Loc="玉虚峰",          Title="铁掌无敌", Stars="★★★☆☆", Online=false, Intim=3500, Grade=0},
             new Entry{Name="琴音吴九", Char="吴", Lv="38", Sect="嵩山",   Loc="峻极峰",          Title="琴魔",    Stars="★★☆☆☆", Online=false, Intim=2800, Grade=0},
+            new Entry{Name="冰心钱十一", Char="钱", Lv="36", Sect="天山",   Loc="天山 · 冰湖",      Title="冰魄仙子", Stars="★☆☆☆☆", Online=false, Intim=2200, Grade=0},
         };
 
         private int _sel;
@@ -71,6 +72,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
         private Panel _search;
         private InkButton[] _tabs;
         private ClickPanel[] _rows;
+        private Panel[] _rowBorders;
         private Panel[] _rowDots;
         private Panel[] _rowAvts;
         private Label[] _rowChars;
@@ -186,6 +188,7 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
             _offlineHdr = NewL("离线 " + off, InkWashTheme.TextSecondary, InkWashTheme.FontRole.Body, 11f, TextAlignment.Near, _left);
 
             _rows = new ClickPanel[Friends.Length];
+            _rowBorders = new Panel[Friends.Length];
             _rowDots = new Panel[Friends.Length];
             _rowAvts = new Panel[Friends.Length];
             _rowChars = new Label[Friends.Length];
@@ -202,6 +205,8 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 row.Clicked += () => SelectFriend(ci);
                 row.HoverChanged += (e) => { if (ci != _sel) row.BackgroundColor = e ? Gold(0.06f) : Color.Transparent; };
                 _rows[i] = row;
+
+                _rowBorders[i] = NewP(Color.Transparent, row);
 
                 _rowDots[i] = NewP(f.Online ? InkWashTheme.JadePrimary : InkWashTheme.TextTertiary, row);
                 _rowAvts[i] = NewP(GradeAvtBg(f.Grade), row);
@@ -414,6 +419,9 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
                 if (row == null) continue;
                 row.Location = new Float2(lp, fy);
                 row.Size = new Float2(SideW - lp * 2f, rowH);
+
+                _rowBorders[i].Location = Float2.Zero;
+                _rowBorders[i].Size = new Float2(2f, rowH);
 
                 float dotS = 8f;
                 _rowDots[i].Location = new Float2(4f, (rowH - dotS) * 0.5f);
@@ -662,11 +670,15 @@ namespace HundunWorld.Game.UI.Ink.Pages.Social
         private void SelectFriend(int i)
         {
             if (_sel >= 0 && _sel < _rows.Length)
+            {
                 _rows[_sel].BackgroundColor = Color.Transparent;
+                _rowBorders[_sel].BackgroundColor = Color.Transparent;
+            }
             _sel = i;
             if (i >= 0 && i < _rows.Length)
             {
                 _rows[i].BackgroundColor = Gold(0.1f);
+                _rowBorders[i].BackgroundColor = InkWashTheme.GoldPrimary;
                 UpdateDetail();
             }
         }

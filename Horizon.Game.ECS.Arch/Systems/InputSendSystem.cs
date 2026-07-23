@@ -170,8 +170,14 @@ public sealed class InputSendSystem : ArchSystemBase
         var query = new QueryDescription()
             .WithAll<PlayerInputComponent, NetworkIdentityComponent, PredictedTransformComponent>();
 
+        // 诊断：统计本帧匹配到的本地玩家实体数与生成的 InputPacket 数
+        var diagMatchedEntities = 0;
+        var diagGeneratedPackets = 0;
+
         world.Query(in query, (Entity entity, ref PlayerInputComponent input, ref NetworkIdentityComponent netId, ref PredictedTransformComponent pred) =>
         {
+            diagMatchedEntities++;
+
             if (!netId.IsLocalPlayer)
             {
                 return;
@@ -193,6 +199,7 @@ public sealed class InputSendSystem : ArchSystemBase
             };
 
             InputSendQueue.Instance.Enqueue(packet);
+            diagGeneratedPackets++;
 
             // 写入未确认环形缓冲，并检查冗余重传条件。
             // 加锁保证与 OnInputAck（网络线程）的并发安全。
@@ -202,5 +209,16 @@ public sealed class InputSendSystem : ArchSystemBase
                 TryRetransmitUnconfirmed(pred.ClientTick);
             }
         });
+
+        // 诊断：每 120 帧（≈2 秒）输出匹配/生成状态，定位"本地玩家实体未设置导致输入不生成"问题
+        _diagFrameCount++;
+        if (_diagFrameCount <= 3 || _diagFrameCount % 120 == 1)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[InputSendSystem] Update#{_diagFrameCount}: MatchedEntities={diagMatchedEntities}, GeneratedPackets={diagGeneratedPackets}, LastAckedTick={_lastAckedClientTick}");
+        }
     }
+
+    /// <summary>诊断帧计数器，用于限频日志输出。</summary>
+    private long _diagFrameCount;
 }

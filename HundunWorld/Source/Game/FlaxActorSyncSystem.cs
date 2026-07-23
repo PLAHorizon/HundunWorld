@@ -73,6 +73,8 @@ namespace HundunWorld.Game
         }
 
         private bool _firstUpdateDiag = true;
+        // 诊断：OnUpdate 帧计数，用于限频日志（每 120 帧 ≈ 2 秒输出一次）
+        private long _onUpdateFrameCount;
 
         public override void OnUpdate()
         {
@@ -94,6 +96,20 @@ namespace HundunWorld.Game
                 _firstUpdateDiag = false;
                 var archHost = HundunWorldGame.Instance?.ArchHost;
                 Debug.Log($"[FlaxActorSyncSystem] 首帧诊断: ArchWorld={_archWorld != null}, EventsSubscribed={_eventsSubscribed}, ArchHost={archHost != null}, RemoteActorCount={_entityIdToActor.Count}");
+            }
+
+            // 限频诊断：每 120 帧（≈2 秒）输出系统运行状态 + Actor/实体计数，
+            // 确认 FlaxActorSyncSystem 是否在运行、是否有远程实体需要同步。
+            var frameCount = System.Threading.Interlocked.Increment(ref _onUpdateFrameCount);
+            if (frameCount <= 3 || frameCount % 120 == 1)
+            {
+                int interpEntityCount = 0;
+                if (_archWorld != null)
+                {
+                    var countQuery = new QueryDescription().WithAll<InterpolatedTransformComponent>();
+                    _archWorld.Query(in countQuery, (Entity e, ref InterpolatedTransformComponent _) => interpEntityCount++);
+                }
+                Debug.Log($"[FlaxActorSyncSystem] OnUpdate#{frameCount}: ArchWorld={_archWorld != null}, EventsSubscribed={_eventsSubscribed}, ActorCount={_entityIdToActor.Count}, InterpEntityCount={interpEntityCount}");
             }
 
             // 同步远程实体的插值位置到 Flax Actor
@@ -205,6 +221,9 @@ namespace HundunWorld.Game
                 _entityIdToAnimatedModel.Remove(args.EntityId);
                 _entityIdToIsWalkingParam.Remove(args.EntityId);
                 _entityIdToAnimationController.Remove(args.EntityId);
+                _diagLastWrittenPos.Remove(args.EntityId);
+                _diagPosOverrideWarnCount.Remove(args.EntityId);
+                _diagInterpSnapshot.Remove(args.EntityId);
                 Debug.Log($"[FlaxActorSyncSystem] 远程角色 Actor 已销毁: EntityId={args.EntityId}");
             }
         }
@@ -229,6 +248,9 @@ namespace HundunWorld.Game
             _entityIdToAnimatedModel.Clear();
             _entityIdToIsWalkingParam.Clear();
             _entityIdToAnimationController.Clear();
+            _diagLastWrittenPos.Clear();
+            _diagPosOverrideWarnCount.Clear();
+            _diagInterpSnapshot.Clear();
 
             if (count > 0)
             {
@@ -305,7 +327,15 @@ namespace HundunWorld.Game
                 // 远程实例不应采集本机输入、不应跑技能状态机/demo 逻辑，否则会干扰本机玩家。
                 DisableLocalControlScripts(actor, entityId);
 
-                // 4) 挂载 RemotePlayerActor 脚本（用于 EntityId 标识与动画参数 setter，零冲突）
+                // 4) ★★★ 关键修复：禁用 AnimatedModel 的 RootMotionTarget。
+                // CharacterRoot.prefab 中 AnimatedModel.RootMotionTarget 指向 CharacterRoot 自身，
+                // 如果不禁用，动画系统每帧会在 FlaxActorSyncSystem 设置位置之后，
+                // 用根运动位移覆盖 Actor.Position，导致远程角色位置由动画根运动驱动而非网络同步驱动，
+                // 表现为"看不到彼此移动"或"位置被动画拉回/漂移"。
+                // 远程角色位置的唯一事实源是 ECS InterpolatedTransformComponent（由网络快照驱动）。
+                DisableRootMotionOnRemoteActor(actor, entityId);
+
+                // 5) 挂载 RemotePlayerActor 脚本（用于 EntityId 标识与动画参数 setter，零冲突）
                 // 若 prefab 已自带同名脚本则复用，否则新增。
                 var remotePlayerScript = actor.GetScript<RemotePlayerActor>();
                 if (remotePlayerScript == null)
@@ -330,6 +360,8 @@ namespace HundunWorld.Game
         /// <summary>
         /// 禁用 prefab 自带的本机控制/编辑器/demo 脚本，避免远程实例采集本机输入或抢写本地玩家 ECS。
         /// PlayerController 是核心必须禁用项：它 OnUpdate 会读键盘鼠标并 WriteInputToEcs（命中本地玩家实体）。
+        /// LocalPlayerActorSyncSystem 必须禁用：它 OnUpdate 会读取本地玩家 PredictedTransformComponent 并设置 Actor.Position，
+        /// 如果远程 Actor 上仍启用此脚本，会每帧将远程 Actor 位置覆盖为本地玩家位置，导致远程角色"卡在本地玩家位置不动"。
         /// SkillAnimation* / AppearanceEditor / PreviewController 是 demo/编辑器脚本，禁用更安全。
         /// 保留：AnimationGraphController、MaterialController*（驱动动画与外观，不读输入）。
         /// </summary>
@@ -342,6 +374,14 @@ namespace HundunWorld.Game
                 playerController.Enabled = false;
                 Debug.Log($"[FlaxActorSyncSystem] 远程玩家 {entityId} 已禁用 PlayerController");
             }
+
+            // LocalPlayerActorSyncSystem：必须禁用（会覆盖远程 Actor 位置为本地玩家位置）
+            // 这是"看不到彼此移动"BUG 的关键根因：如果 CharacterRoot.prefab 包含此脚本，
+            // 远程 Actor 每帧都会被设置为本地玩家的预测位置，完全覆盖 FlaxActorSyncSystem 的插值位置。
+            DisableScriptIfExists<LocalPlayerActorSyncSystem>(actor, entityId, "LocalPlayerActorSyncSystem");
+
+            // ECSUpdateDriver：必须禁用（会重复驱动 ArchWorldHost.Tick，导致并发异常或状态错乱）
+            DisableScriptIfExists<ECSUpdateDriver>(actor, entityId, "ECSUpdateDriver");
 
             // SkillAnimationDemo：demo 脚本，禁用
             DisableScriptIfExists<SkillAnimationDemo>(actor, entityId, "SkillAnimationDemo");
@@ -365,6 +405,46 @@ namespace HundunWorld.Game
             }
         }
 
+        /// <summary>
+        /// 禁用远程角色 AnimatedModel 的 RootMotionTarget，防止动画根运动覆盖网络同步位置。
+        /// CharacterRoot.prefab 的 AnimatedModel 默认设置 RootMotionTarget=CharacterRoot，
+        /// 用于本地玩家的动画驱动移动。但远程角色位置由网络快照（InterpolatedTransformComponent）驱动，
+        /// 如果不禁用根运动，动画系统会在 FlaxActorSyncSystem 设置位置后用根运动位移覆盖 Actor.Position，
+        /// 导致远程角色"看不到移动"或位置漂移。
+        /// 递归查找 Actor 层级中所有 AnimatedModel 并禁用 RootMotionTarget（角色可能有多个 AnimatedModel）。
+        /// </summary>
+        private void DisableRootMotionOnRemoteActor(Actor actor, ulong entityId)
+        {
+            int disabledCount = 0;
+            DisableRootMotionRecursive(actor, entityId, ref disabledCount);
+            if (disabledCount > 0)
+            {
+                Debug.Log($"[FlaxActorSyncSystem] 远程玩家 {entityId} 已禁用 {disabledCount} 个 AnimatedModel 的 RootMotionTarget（防止根运动覆盖网络位置）");
+            }
+            else
+            {
+                Debug.LogWarning($"[FlaxActorSyncSystem] 远程玩家 {entityId} 未找到 AnimatedModel，无法禁用 RootMotionTarget。角色可能不可见或位置同步异常。");
+            }
+        }
+
+        private void DisableRootMotionRecursive(Actor actor, ulong entityId, ref int disabledCount)
+        {
+            if (actor is AnimatedModel am)
+            {
+                if (am.RootMotionTarget != null)
+                {
+                    am.RootMotionTarget = null;
+                    disabledCount++;
+                }
+            }
+
+            for (int i = 0; i < actor.ChildrenCount; i++)
+            {
+                var child = actor.GetChild(i);
+                DisableRootMotionRecursive(child, entityId, ref disabledCount);
+            }
+        }
+
         /// <summary>EntityId → 上次同步朝向 Yaw（用于检测是否需要更新）。</summary>
         private readonly Dictionary<ulong, float> _entityIdToLastYaw = new();
 
@@ -380,15 +460,56 @@ namespace HundunWorld.Game
         /// <summary>是否已输出首帧同步诊断日志。</summary>
         private bool _firstSyncDiag = true;
 
+        /// <summary>诊断：SyncInterpolatedPositions 帧计数器。</summary>
+        private long _syncPosFrameCount;
+
+        /// <summary>诊断：每帧记录远程实体的插值位置快照（用于检测位置是否在变化）。</summary>
+        private readonly Dictionary<ulong, Vector3> _diagInterpSnapshot = new();
+
+        /// <summary>
+        /// 诊断：上一帧 FlaxActorSyncSystem 实际写入 Actor 的位置（与下一帧读取的 Actor.Position 对比，
+        /// 检测是否有其他系统在覆盖位置，如 Root Motion / RigidBody / 其他 Script）。
+        /// key: entityId, value: 上一帧通过 actor.Position = 写入的值。
+        /// </summary>
+        private readonly Dictionary<ulong, Vector3> _diagLastWrittenPos = new();
+
+        /// <summary>诊断：位置被外部覆盖的累计告警次数（限频用）。</summary>
+        private readonly Dictionary<ulong, long> _diagPosOverrideWarnCount = new();
+
         /// <summary>
         /// 每帧同步远程实体的插值位置、朝向、动画到 Flax Actor。
         /// </summary>
         private void SyncInterpolatedPositions()
         {
-            if (_archWorld == null || _entityIdToActor.Count == 0) return;
+            if (_archWorld == null)
+            {
+                return;
+            }
+
+            // 诊断：每 120 帧（≈2 秒）输出详细同步状态
+            var diagFrame = System.Threading.Interlocked.Increment(ref _syncPosFrameCount);
+            var isDiagFrame = diagFrame <= 5 || diagFrame % 120 == 1;
+
+            if (_entityIdToActor.Count == 0)
+            {
+                if (isDiagFrame)
+                {
+                    // 关键诊断：有 InterpolatedTransformComponent 实体但没有 Actor
+                    int interpCount = 0;
+                    var countQuery = new QueryDescription().WithAll<InterpolatedTransformComponent>();
+                    _archWorld.Query(in countQuery, (Entity e, ref InterpolatedTransformComponent _) => interpCount++);
+                    Debug.LogWarning($"[FlaxActorSyncSystem] SyncInterpolatedPositions#{diagFrame}: ActorCount=0 但 InterpEntityCount={interpCount}！远程角色 Actor 未创建，位置无法同步。EventsSubscribed={_eventsSubscribed}");
+                }
+                return;
+            }
 
             // 收集需要清理的已销毁 Actor
             var destroyedEntityIds = new List<ulong>();
+
+            // 诊断：本帧位置变更统计
+            int diagTotalEntities = 0;
+            int diagActorsFound = 0;
+            int diagPositionsChanged = 0;
 
             // 查询所有带 InterpolatedTransformComponent + NetworkIdentityComponent + AuthTransformComponent 的实体
             var query = new QueryDescription()
@@ -396,6 +517,8 @@ namespace HundunWorld.Game
 
             _archWorld.Query(in query, (Entity entity, ref InterpolatedTransformComponent interp, ref NetworkIdentityComponent netId, ref AuthTransformComponent auth) =>
             {
+                diagTotalEntities++;
+
                 if (_entityIdToActor.TryGetValue(netId.EntityId, out var actor))
                 {
                     if (actor == null)
@@ -404,10 +527,33 @@ namespace HundunWorld.Game
                         return;
                     }
 
+                    diagActorsFound++;
                     var entityId = netId.EntityId;
+
+                    // ★★★ 位置覆盖检测：对比上一帧我们写入的位置与当前 Actor 实际位置。
+                    // 如果两者差异显著，说明有其他系统（Root Motion / RigidBody / 其他 Script）
+                    // 在 FlaxActorSyncSystem 写入后覆盖了 Actor.Position，这是"看不到移动"的关键线索。
+                    if (_diagLastWrittenPos.TryGetValue(entityId, out var lastWrittenPos))
+                    {
+                        var currentActorPos = actor.Position;
+                        float overrideDistSq = (currentActorPos - lastWrittenPos).LengthSquared;
+                        // 阈值 0.01 平方米（10cm 位移）— 排除浮点抖动
+                        if (overrideDistSq > 0.01f)
+                        {
+                            _diagPosOverrideWarnCount.TryGetValue(entityId, out var warnCount);
+                            warnCount++;
+                            _diagPosOverrideWarnCount[entityId] = warnCount;
+                            // 限频：每个实体前 3 次无条件输出，后续每 300 次（≈5 秒）输出一次
+                            if (warnCount <= 3 || warnCount % 300 == 1)
+                            {
+                                Debug.LogWarning($"[FlaxActorSyncSystem] ⚠️ 位置被外部覆盖！EntityId={entityId}, 上帧写入=({lastWrittenPos.X:F2},{lastWrittenPos.Y:F2},{lastWrittenPos.Z:F2}), 当前读取=({currentActorPos.X:F2},{currentActorPos.Y:F2},{currentActorPos.Z:F2}), 偏移={Mathf.Sqrt(overrideDistSq):F3}m。可能原因：Root Motion 未禁用 / RigidBody 物理 / 其他 Script 覆盖。WarnCount={warnCount}");
+                            }
+                        }
+                    }
 
                     // 1) 同步插值位置
                     var newPos = new Vector3(interp.X, interp.Y, interp.Z);
+                    bool positionUpdated = false;
                     if (_entityIdToLastPosition.TryGetValue(entityId, out var lastPos))
                     {
                         float distSquared = (newPos - lastPos).LengthSquared;
@@ -415,12 +561,29 @@ namespace HundunWorld.Game
                         {
                             actor.Position = newPos;
                             _entityIdToLastPosition[entityId] = newPos;
+                            _diagLastWrittenPos[entityId] = newPos;
+                            positionUpdated = true;
+                            diagPositionsChanged++;
                         }
                     }
                     else
                     {
                         actor.Position = newPos;
                         _entityIdToLastPosition[entityId] = newPos;
+                        _diagLastWrittenPos[entityId] = newPos;
+                        positionUpdated = true;
+                        diagPositionsChanged++;
+                    }
+
+                    // 诊断：每 120 帧输出每个远程实体的详细位置信息
+                    if (isDiagFrame)
+                    {
+                        var actorPos = actor.Position;
+                        bool interpChanged = !_diagInterpSnapshot.TryGetValue(entityId, out var prevInterp)
+                            || (newPos - prevInterp).LengthSquared > 0.0001f;
+                        _diagInterpSnapshot[entityId] = newPos;
+
+                        Debug.Log($"[FlaxActorSyncSystem] SyncPos#{diagFrame} EntityId={entityId}: InterpPos=({interp.X:F2},{interp.Y:F2},{interp.Z:F2}), ActorPos=({actorPos.X:F2},{actorPos.Y:F2},{actorPos.Z:F2}), LastPos=({lastPos.X:F2},{lastPos.Y:F2},{lastPos.Z:F2}), PosUpdated={positionUpdated}, InterpChanged={interpChanged}, Alpha={interp.Alpha:F2}, Target=({interp.TargetX:F2},{interp.TargetY:F2},{interp.TargetZ:F2}), AuthYaw={auth.Yaw:F2}rad");
                     }
 
                     // 2) 同步朝向（从 AuthTransformComponent.Yaw，弧度）
@@ -547,6 +710,12 @@ namespace HundunWorld.Game
                 _entityIdToAnimatedModel.Remove(entityId);
                 _entityIdToIsWalkingParam.Remove(entityId);
                 _entityIdToAnimationController.Remove(entityId);
+            }
+
+            // 诊断：每 120 帧输出汇总统计，定位"有实体但位置不变"问题
+            if (isDiagFrame)
+            {
+                Debug.Log($"[FlaxActorSyncSystem] SyncPos#{diagFrame} 汇总: TotalEntities={diagTotalEntities}, ActorsFound={diagActorsFound}, PositionsChanged={diagPositionsChanged}, ActorCount={_entityIdToActor.Count}。若 PositionsChanged=0 且 TotalEntities>0，说明插值位置未变化（HandleUpdate 未更新 Target 或 InterpolationSystem 未推进 Alpha）");
             }
         }
 

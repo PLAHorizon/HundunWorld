@@ -6,22 +6,24 @@ namespace HundunWorld.Game.UI.Ink
 {
     /// <summary>
     /// 进度条填充色变体。
-    /// 对应 CSS <c>.ink-bar-fill</c> / <c>.ink-bar-fill-jade</c> /
-    /// <c>.ink-bar-fill-blood</c> / <c>.ink-bar-fill-vermilion</c>。
+    /// 对应设计方案中的渐变填充规范。
     /// </summary>
     public enum InkBarFillVariant
     {
-        /// <summary>鎏金填充 — GoldDeep → GoldBright 渐变，对应 .ink-bar-fill</summary>
+        /// <summary>鎏金填充 — GoldDeep → GoldBright 渐变</summary>
         Gold,
 
-        /// <summary>翡翠填充 — 暗翡翠 → JadeBright 渐变，对应 .ink-bar-fill-jade</summary>
+        /// <summary>春青填充 — JadePrimary → JadeBright 渐变（--ink-jade-primary → --ink-jade-bright）</summary>
         Jade,
 
-        /// <summary>血色填充 — 暗血红 → BloodBright 渐变，对应 .ink-bar-fill-blood</summary>
+        /// <summary>血色填充 — BloodPrimary → BloodBright 渐变（--status-error-default → hover）</summary>
         Blood,
 
-        /// <summary>朱红填充 — VermilionDeep → VermilionBright 渐变，对应 .ink-bar-fill-vermilion</summary>
-        Vermilion
+        /// <summary>朱红填充 — VermilionDeep → VermilionBright 渐变</summary>
+        Vermilion,
+
+        /// <summary>暖金填充 — Alert → AlertHover 渐变（--status-alert-default → hover，体力条用）</summary>
+        Alert
     }
 
     /// <summary>
@@ -32,20 +34,23 @@ namespace HundunWorld.Game.UI.Ink
     /// </summary>
     public class InkBar : ContainerControl
     {
-        /// <summary>进度条背景色（rgba(0,0,0,0.4)）</summary>
-        private static readonly Color BarBackground = new Color(0f, 0f, 0f, 0.4f);
+        /// <summary>进度条背景色 rgba(0,0,0,0.5)（设计方案 HUD 条规范）</summary>
+        private static readonly Color BarBackground = new Color(0f, 0f, 0f, 0.5f);
 
-        /// <summary>翡翠深色（CSS #3E6B5E）</summary>
-        private static readonly Color JadeDeep = new Color(62f / 255f, 107f / 255f, 94f / 255f, 1f);
-
-        /// <summary>血色深色（CSS #8A3E3A）</summary>
-        private static readonly Color BloodDeep = new Color(138f / 255f, 62f / 255f, 58f / 255f, 1f);
+        /// <summary>圆角半径 2px（设计方案 HUD 条规范）</summary>
+        private const float BarRadius = 2f;
 
         /// <summary>渐变分段数（越大越平滑）</summary>
         private const int GradientSteps = 24;
 
-        /// <summary>当前进度值（0.0~1.0）</summary>
+        /// <summary>过渡动画时长 400ms（ds-progress §4.6）</summary>
+        private const float TransitionDuration = 0.4f;
+
+        /// <summary>目标进度值（0.0~1.0）</summary>
         private float _value;
+
+        /// <summary>当前显示进度（动画插值用）</summary>
+        private float _displayValue;
 
         /// <summary>填充色变体</summary>
         private InkBarFillVariant _fillVariant = InkBarFillVariant.Gold;
@@ -54,7 +59,18 @@ namespace HundunWorld.Game.UI.Ink
         private bool _vertical;
 
         /// <summary>
-        /// 进度值（0.0~1.0），自动钳制到有效范围。
+        /// 背景槽颜色（默认 rgba(0,0,0,0.5)；传统 HUD 可设为 Abyss 对齐 --ink-bg-abyss）。
+        /// </summary>
+        public Color SlotColor { get; set; } = BarBackground;
+
+        /// <summary>
+        /// 边框颜色（默认 BorderNeutralL2；传统 HUD 血条设 BorderGold、气条设 BorderJade）。
+        /// 设为 <see cref="Color.Transparent"/> 可隐藏边框（如修为条）。
+        /// </summary>
+        public Color BorderColor { get; set; } = InkWashTheme.BorderNeutralL2;
+
+        /// <summary>
+        /// 进度值（0.0~1.0），自动钳制到有效范围，400ms 平滑过渡。
         /// </summary>
         public float Value
         {
@@ -90,6 +106,22 @@ namespace HundunWorld.Game.UI.Ink
             Height = 8f;
         }
 
+        /// <inheritdoc />
+        public override void Update(float deltaTime)
+        {
+            base.Update(deltaTime);
+            // 400ms 线性插值过渡（cubic-bezier 近似）
+            if (Mathf.Abs(_displayValue - _value) > 0.001f)
+            {
+                float step = deltaTime / TransitionDuration;
+                _displayValue = Mathf.MoveTowards(_displayValue, _value, step);
+            }
+            else
+            {
+                _displayValue = _value;
+            }
+        }
+
         /// <summary>
         /// 获取当前变体对应的渐变起止色。
         /// </summary>
@@ -100,16 +132,20 @@ namespace HundunWorld.Game.UI.Ink
             switch (_fillVariant)
             {
                 case InkBarFillVariant.Jade:
-                    deep = JadeDeep;
+                    deep = InkWashTheme.JadePrimary;
                     bright = InkWashTheme.JadeBright;
                     break;
                 case InkBarFillVariant.Blood:
-                    deep = BloodDeep;
+                    deep = InkWashTheme.BloodPrimary;
                     bright = InkWashTheme.BloodBright;
                     break;
                 case InkBarFillVariant.Vermilion:
                     deep = InkWashTheme.VermilionDeep;
                     bright = InkWashTheme.VermilionBright;
+                    break;
+                case InkBarFillVariant.Alert:
+                    deep = InkWashTheme.Alert;
+                    bright = InkWashTheme.AlertHover;
                     break;
                 default:
                     deep = InkWashTheme.GoldDeep;
@@ -124,16 +160,17 @@ namespace HundunWorld.Game.UI.Ink
             if (!Visible || Width <= 0f || Height <= 0f)
                 return;
 
-            // 1. 绘制背景槽
-            Render2D.FillRectangle(new Rectangle(0, 0, Width, Height), BarBackground);
+            var bounds = new Rectangle(0, 0, Width, Height);
 
-            // 2. 绘制边框
-            Render2D.DrawRectangle(
-                new Rectangle(0, 0, Width, Height),
-                InkWashTheme.BorderNeutralL2, 1f);
+            // 1. 绘制背景槽（2px 圆角）
+            InkRenderHelper.FillRoundedRectangle(bounds, BarRadius, SlotColor);
+
+            // 2. 绘制边框（2px 圆角）
+            if (BorderColor.A > 0f)
+                InkRenderHelper.DrawRoundedRectangle(bounds, BarRadius, BorderColor, 1f);
 
             // 3. 绘制渐变填充
-            if (_value <= 0f)
+            if (_displayValue <= 0f)
                 return;
 
             GetGradientColors(out Color deep, out Color bright);
@@ -149,7 +186,7 @@ namespace HundunWorld.Game.UI.Ink
         /// </summary>
         private void DrawHorizontalFill(Color deep, Color bright)
         {
-            float fillWidth = Width * _value;
+            float fillWidth = Width * _displayValue;
             if (fillWidth <= 0f)
                 return;
 
@@ -173,7 +210,7 @@ namespace HundunWorld.Game.UI.Ink
         /// </summary>
         private void DrawVerticalFill(Color deep, Color bright)
         {
-            float fillHeight = Height * _value;
+            float fillHeight = Height * _displayValue;
             if (fillHeight <= 0f)
                 return;
 
@@ -204,8 +241,11 @@ namespace HundunWorld.Game.UI.Ink
     /// </summary>
     public class InkBarVertical : ContainerControl
     {
-        /// <summary>进度条背景色</summary>
-        private static readonly Color BarBackground = new Color(0f, 0f, 0f, 0.4f);
+        /// <summary>进度条背景色 rgba(0,0,0,0.5)</summary>
+        private static readonly Color BarBackground = new Color(0f, 0f, 0f, 0.5f);
+
+        /// <summary>圆角半径 2px</summary>
+        private const float BarRadius = 2f;
 
         /// <summary>渐变分段数</summary>
         private const int GradientSteps = 24;
@@ -250,13 +290,13 @@ namespace HundunWorld.Game.UI.Ink
             if (!Visible || Width <= 0f || Height <= 0f)
                 return;
 
-            // 1. 背景槽
-            Render2D.FillRectangle(new Rectangle(0, 0, Width, Height), BarBackground);
+            var bounds = new Rectangle(0, 0, Width, Height);
 
-            // 2. 边框
-            Render2D.DrawRectangle(
-                new Rectangle(0, 0, Width, Height),
-                InkWashTheme.BorderNeutralL2, 1f);
+            // 1. 背景槽（2px 圆角）
+            InkRenderHelper.FillRoundedRectangle(bounds, BarRadius, BarBackground);
+
+            // 2. 边框（2px 圆角）
+            InkRenderHelper.DrawRoundedRectangle(bounds, BarRadius, InkWashTheme.BorderNeutralL2, 1f);
 
             // 3. 从底部向上的渐变填充
             if (_value <= 0f)
@@ -266,16 +306,20 @@ namespace HundunWorld.Game.UI.Ink
             switch (_fillVariant)
             {
                 case InkBarFillVariant.Jade:
-                    deep = new Color(62f / 255f, 107f / 255f, 94f / 255f, 1f);
+                    deep = InkWashTheme.JadePrimary;
                     bright = InkWashTheme.JadeBright;
                     break;
                 case InkBarFillVariant.Blood:
-                    deep = new Color(138f / 255f, 62f / 255f, 58f / 255f, 1f);
+                    deep = InkWashTheme.BloodPrimary;
                     bright = InkWashTheme.BloodBright;
                     break;
                 case InkBarFillVariant.Vermilion:
                     deep = InkWashTheme.VermilionDeep;
                     bright = InkWashTheme.VermilionBright;
+                    break;
+                case InkBarFillVariant.Alert:
+                    deep = InkWashTheme.Alert;
+                    bright = InkWashTheme.AlertHover;
                     break;
                 default:
                     deep = InkWashTheme.GoldDeep;

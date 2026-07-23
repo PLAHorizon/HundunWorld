@@ -87,6 +87,13 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     // Task 4：本地玩家保护次数计数器（替代热路径 Console.WriteLine）。
     private long _localPlayerProtectionCount;
 
+    // 诊断：HandleUpdate 调用计数，用于限频日志（前 5 次无条件输出，后续每 120 次输出一次）
+    private long _handleUpdateCount;
+    // 诊断：HandleUpdate 中实体不在字典（走 Spawn 回退）的次数
+    private long _handleUpdateSpawnFallbackCount;
+    // 诊断：HandleUpdate 中实体为远程玩家且有 InterpolatedTransformComponent 的次数
+    private long _handleUpdateRemoteInterpCount;
+
     // Task 2：单帧消费上限溢出日志限频时间戳（Stopwatch.GetTimestamp() 单位）。
     private long _lastOverflowLogTime;
 
@@ -293,7 +300,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             if (now - _lastOverflowLogTime >= Stopwatch.Frequency)
             {
                 _lastOverflowLogTime = now;
-                Debug.WriteLine($"[SnapshotApplySystem] 单帧消费上限 {MaxSnapshotsPerFrame} 达到，剩余队列长度: {SnapshotReceiveBuffer.Instance.Count}");
+                Console.WriteLine($"[SnapshotApplySystem] 单帧消费上限 {MaxSnapshotsPerFrame} 达到，剩余队列长度: {SnapshotReceiveBuffer.Instance.Count}");
             }
         }
 
@@ -402,6 +409,44 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             EntityDespawned?.Invoke(new EntityDespawnedEventArgs(delta.EntityId));
         }
 
+        // 修复（重复本地玩家实体根因）：
+        // CreateLocalPlayerEntity（HundunWorldGame）在客户端先行创建本地玩家实体但不注册到本字典，
+        // 服务端 BroadcastEntityLifecycleAsync step 2 补发全场 Spawn（含自身）到达后，
+        // 本方法在字典中找不到该实体 → 创建第二个 IsLocalPlayer=true 实体。
+        // 两个实体导致 InputSendSystem 每帧生成两个 InputPacket（一个正确、一个全零），
+        // 服务端同 tick 应用后零输入覆盖正确输入 → 角色几乎不动 → 其他客户端看不到移动。
+        // 修复：检测 Arch World 中已存在的同 EntityId 本地玩家实体，收养（注册到字典）而非重复创建。
+        var isLocalPlayerSpawn = delta.Identity.Value.OwnerId == LocalPlayerOwnerId && LocalPlayerOwnerId != 0;
+        if (isLocalPlayerSpawn)
+        {
+            Entity foundLocal = default;
+            var localQuery = new QueryDescription().WithAll<NetworkIdentityComponent, PlayerInputComponent, Components.PredictedTransformComponent>();
+            world.Query(in localQuery, (Entity e, ref NetworkIdentityComponent nid) =>
+            {
+                if (nid.EntityId == delta.EntityId && nid.IsLocalPlayer)
+                {
+                    foundLocal = e;
+                }
+            });
+
+            if (foundLocal != default && world.IsAlive(foundLocal))
+            {
+                // 收养已存在的本地玩家实体：注册到字典，保留其 ClientTick/位置/输入状态。
+                _entityIdToArchEntity[delta.EntityId] = foundLocal;
+
+                // 用服务端权威 Transform 更新 AuthTransformComponent（不覆盖 PredictedTransformComponent，
+                // 保留客户端预测位置，避免回弹）。
+                if (delta.Transform != null)
+                {
+                    var auth = delta.Transform.Value;
+                    auth.ServerTick = serverTick;
+                    world.Set(foundLocal, ref auth);
+                }
+
+                return;
+            }
+        }
+
         var archEntity = world.Create();
 
         var netId = new NetworkIdentityComponent
@@ -479,6 +524,8 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     /// </summary>
     private void HandleUpdate(World world, EntityDelta delta, long serverTick)
     {
+        var updateCount = Interlocked.Increment(ref _handleUpdateCount);
+
         if (!_entityIdToArchEntity.TryGetValue(delta.EntityId, out var archEntity))
         {
             // 容错：本地没该实体但 delta 带 Identity（服务端 TickAsync 始终带 Identity）时，
@@ -486,6 +533,11 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             // （characterId→connection 映射在握手响应返回后才建立）导致的实体缺失。
             if (delta.Identity != null)
             {
+                Interlocked.Increment(ref _handleUpdateSpawnFallbackCount);
+                if (updateCount <= 5 || updateCount % 120 == 1)
+                {
+                    Console.WriteLine($"[SnapshotApplySystem] HandleUpdate#{updateCount}: 实体 {delta.EntityId} 不在字典，走 Spawn 回退。Transform={(delta.Transform.HasValue ? $"X={delta.Transform.Value.X:F2},Y={delta.Transform.Value.Y:F2},Z={delta.Transform.Value.Z:F2}" : "null")}");
+                }
                 HandleSpawn(world, delta, serverTick);
             }
             return;
@@ -512,11 +564,22 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 // 修复：删除 return;，让代码继续向下执行 MovementState/State/AnimationState 应用分支。
                 // 后续 `if (world.Has<InterpolatedTransformComponent>(archEntity))` 判断天然会跳过本地玩家
                 // （本地玩家无 InterpolatedTransformComponent），插值不会被错误更新。
+                if (updateCount <= 5 || updateCount % 120 == 1)
+                {
+                    Console.WriteLine($"[SnapshotApplySystem] HandleUpdate#{updateCount}: EntityId={delta.EntityId} 为本地玩家，仅写 AuthTransformComponent");
+                }
                 world.Set(archEntity, ref newTransform);
             }
             else if (world.Has<InterpolatedTransformComponent>(archEntity))
             {
                 ref var interp = ref world.Get<InterpolatedTransformComponent>(archEntity);
+
+                // 诊断日志：前 5 次无条件输出，后续每 120 次输出一次
+                var interpCount = Interlocked.Increment(ref _handleUpdateRemoteInterpCount);
+                if (interpCount <= 5 || interpCount % 120 == 1)
+                {
+                    Console.WriteLine($"[SnapshotApplySystem] HandleUpdate#{updateCount} 远程实体插值更新: EntityId={delta.EntityId}, OldPos=({interp.X:F2},{interp.Y:F2},{interp.Z:F2}), NewTarget=({newTransform.X:F2},{newTransform.Y:F2},{newTransform.Z:F2}), Yaw={newTransform.Yaw:F2}, ServerTick={serverTick}");
+                }
 
                 // 修复 #5：插值起点 StartX/Y/Z 设为当前位置（interp.X/Y/Z，含 dead reckoning 偏移），
                 // 而非 oldAuth。否则 InterpolationSystem 航位推算推进的位置会在新快照到达时
@@ -535,6 +598,36 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             }
             else
             {
+                // 防御性修复：远程实体缺少 InterpolatedTransformComponent 时主动补加，
+                // 确保 FlaxActorSyncSystem（查询条件 WithAll<InterpolatedTransformComponent>）能同步此实体。
+                // 这种情况可能发生在 HandleSpawn 时 LocalPlayerOwnerId 已设置但实体实际为远程玩家
+                // （OwnerId 与 LocalPlayerOwnerId 的匹配时序问题），或重复 Spawn 竞态条件。
+                // 补加后走与正常远程实体相同的插值更新路径，确保移动/旋转/跳跃可见。
+                if (updateCount <= 10 || updateCount % 120 == 1)
+                {
+                    Console.WriteLine($"[SnapshotApplySystem] HandleUpdate#{updateCount} 修复: EntityId={delta.EntityId} 非本地玩家但缺少 InterpolatedTransformComponent，已补加。IsLocalPlayer={netId.IsLocalPlayer}");
+                }
+
+                var recoveryInterp = new InterpolatedTransformComponent
+                {
+                    X = newTransform.X, Y = newTransform.Y, Z = newTransform.Z,
+                    StartX = newTransform.X, StartY = newTransform.Y, StartZ = newTransform.Z,
+                    TargetX = newTransform.X, TargetY = newTransform.Y, TargetZ = newTransform.Z,
+                    Alpha = 1f, ServerTick = serverTick, ReceivedTick = 0,
+                };
+                world.Add(archEntity, recoveryInterp);
+
+                // 补加后走与正常远程实体相同的插值更新路径
+                ref var interp = ref world.Get<InterpolatedTransformComponent>(archEntity);
+                interp.StartX = interp.X;
+                interp.StartY = interp.Y;
+                interp.StartZ = interp.Z;
+                interp.TargetX = newTransform.X;
+                interp.TargetY = newTransform.Y;
+                interp.TargetZ = newTransform.Z;
+                interp.Alpha = 0f;
+                interp.ServerTick = serverTick;
+
                 world.Set(archEntity, ref newTransform);
             }
         }

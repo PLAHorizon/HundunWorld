@@ -469,7 +469,12 @@ namespace Horizon.Game.Gateway.Services
         }
 
         /// <summary>
-        /// 安全发送消息给连接
+        /// 安全发送消息给连接。<br/>
+        /// 修复 BUG（A角色在线会在B角色客户端莫名离线）：<br/>
+        /// 原实现在 SendAsync 抛异常时立即 CloseAsync + RemoveConnectionAsync，
+        /// 但 SendAsync 现在对瞬时异常（TCP 缓冲区满等）也会 throw（仅记录计数不标记 broken）。
+        /// 新实现：仅当连接已被标记为 broken（IsConnected=false）时才执行清理，
+        /// 瞬时异常不触发连接关闭，由 GameConnection 内部连续失败计数兜底。
         /// </summary>
         private async Task SendToConnectionSafeAsync(IGameConnection connection, byte[] message)
         {
@@ -486,12 +491,16 @@ namespace Horizon.Game.Gateway.Services
                     _networkStatistics.Errors++;
                 }
 
-                // 连接发送失败，标记为需要移除
-                _ = Task.Run(async () =>
+                // 仅当连接已被标记为损坏时才执行清理（致命异常或连续失败超阈）。
+                // 瞬时异常（IsConnected 仍为 true）不触发关闭，由 GameConnection 内部计数兜底。
+                if (!connection.IsConnected)
                 {
-                    await connection.CloseAsync("发送消息失败");
-                    await RemoveConnectionAsync(connection.ConnectionId);
-                });
+                    _ = Task.Run(async () =>
+                    {
+                        await connection.CloseAsync("发送消息失败（连接已损坏）");
+                        await RemoveConnectionAsync(connection.ConnectionId);
+                    });
+                }
             }
         }
 

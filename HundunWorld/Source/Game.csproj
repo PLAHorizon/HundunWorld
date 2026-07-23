@@ -238,7 +238,9 @@
   <ItemGroup>
     <Compile Include="Game.Gen.cs" />
     <Compile Include="Game\AdvancedInputManager.cs" />
+    <Compile Include="Game\AI\BehaviorTreeComponent.cs" />
     <Compile Include="Game\Audio\GameAudioManager.cs" />
+    <Compile Include="Game\Audio\MusicManager.cs" />
     <Compile Include="Game\CameraCollisionDebugger.cs" />
     <Compile Include="Game\CameraShakeSystem.cs" />
     <Compile Include="Game\Character\Attributes\CharacterAttributes.cs" />
@@ -250,6 +252,7 @@
     <Compile Include="Game\Character\CharacterEquipmentManager.cs" />
     <Compile Include="Game\Character\CharacterStats.cs" />
     <Compile Include="Game\Character\ControlStateManager.cs" />
+    <Compile Include="Game\Character\EnhancedAnimationController.cs" />
     <Compile Include="Game\Character\ICharacterAttributeManager.cs" />
     <Compile Include="Game\Character\Movement\QinggongSystem.cs" />
     <Compile Include="Game\ClimbingSystem\ClimbDetector.cs" />
@@ -261,6 +264,7 @@
     <Compile Include="Game\Combat\AOEIndicatorSystem.cs" />
     <Compile Include="Game\Combat\CombatSystemCoordinator.cs" />
     <Compile Include="Game\Combat\CombatSystemManager.cs" />
+    <Compile Include="Game\Combat\ComboSystem.cs" />
     <Compile Include="Game\Combat\DamageCalculator.cs" />
     <Compile Include="Game\Combat\DamageMeter.cs" />
     <Compile Include="Game\Combat\Effects\CameraShakeSystem.cs" />
@@ -269,6 +273,7 @@
     <Compile Include="Game\Combat\Effects\SkillEffectManager.cs" />
     <Compile Include="Game\Combat\Effects\SkillEffectSystem.cs" />
     <Compile Include="Game\Combat\Effects\WuxingParticleEffects.cs" />
+    <Compile Include="Game\Combat\LootSystem.cs" />
     <Compile Include="Game\Combat\PendingAction.cs" />
     <Compile Include="Game\Combat\SkillCastHelper.cs" />
     <Compile Include="Game\Combat\Skills\AnimationGraphController.cs" />
@@ -279,6 +284,7 @@
     <Compile Include="Game\Combat\Skills\SkillAnimationStateMachine.cs" />
     <Compile Include="Game\Combat\Skills\SkillAnimationSystemInitializer.cs" />
     <Compile Include="Game\Combat\Skills\SkillBase.cs" />
+    <Compile Include="Game\Combat\Skills\SkillDatabase.cs" />
     <Compile Include="Game\Combat\Skills\SkillEffects.cs" />
     <Compile Include="Game\Combat\TargetSelectionSystem.cs" />
     <Compile Include="Game\Combat\WuxingSystem\EarthSkills.cs" />
@@ -286,6 +292,9 @@
     <Compile Include="Game\Combat\WuxingSystem\MetalSkills.cs" />
     <Compile Include="Game\Combat\WuxingSystem\WaterSkills.cs" />
     <Compile Include="Game\Combat\WuxingSystem\WoodSkills.cs" />
+    <Compile Include="Game\Core\GameStateManager.cs" />
+    <Compile Include="Game\Core\NetworkOptimizer.cs" />
+    <Compile Include="Game\Core\ObjectPool.cs" />
     <Compile Include="Game\CRC32.cs" />
     <Compile Include="Game\Database\DatabaseManager.cs" />
     <Compile Include="Game\Database\LiteDataContext.cs" />
@@ -336,6 +345,7 @@
     <Compile Include="Game\HundunWorldGamePlugin.cs" />
     <Compile Include="Game\InputConfigurationManager.cs" />
     <Compile Include="Game\InputManager.cs" />
+    <Compile Include="Game\Inventory\InventoryManager.cs" />
     <Compile Include="Game\LocalPlayerActorSyncSystem.cs" />
     <Compile Include="Game\Modules\BaseModule.cs" />
     <Compile Include="Game\Modules\ChatModule.cs" />
@@ -428,6 +438,9 @@
     <Compile Include="Game\Services\GengDiAuthService.cs" />
     <Compile Include="Game\Services\HorizonGameIniReader.cs" />
     <Compile Include="Game\Services\UIStateManager.cs" />
+    <Compile Include="Game\Social\ChatSystem.cs" />
+    <Compile Include="Game\Social\TeamSystem.cs" />
+    <Compile Include="Game\Social\TradeSystem.cs" />
     <Compile Include="Game\SpringArmCamera.cs" />
     <Compile Include="Game\Tests\SpringArmCameraTest.cs" />
     <Compile Include="Game\ThirdPersonCamera.cs" />
@@ -526,11 +539,11 @@
     <Compile Include="Game\UI\Ink\Components\InkBackpackGrid.cs" />
     <Compile Include="Game\UI\Ink\Components\InkDialClock.cs" />
     <Compile Include="Game\UI\Ink\Components\InkEquipmentSlot.cs" />
-    <Compile Include="Game\UI\Ink\Components\InkEquipToolBar.cs" />
     <Compile Include="Game\UI\Ink\Components\InkMeridianDiagram.cs" />
     <Compile Include="Game\UI\Ink\Components\InkMinimap.cs" />
     <Compile Include="Game\UI\Ink\Components\InkSkillSlotGrid.cs" />
     <Compile Include="Game\UI\Ink\Components\InkTabButton.cs" />
+    <Compile Include="Game\UI\Ink\Components\InkToolBarBubble.cs" />
     <Compile Include="Game\UI\Ink\IInkPage.cs" />
     <Compile Include="Game\UI\Ink\InkBackgrounds.cs" />
     <Compile Include="Game\UI\Ink\InkBars.cs" />
@@ -618,6 +631,7 @@
     <Compile Include="Game\UI\Performance\PerformanceAnalyzer.cs" />
     <Compile Include="Game\UI\Performance\UIPerformanceManager.cs" />
     <Compile Include="Game\UI\Performance\UIPerformanceMonitor.cs" />
+    <Compile Include="Game\UI\QuestTrackerHUD.cs" />
     <Compile Include="Game\UI\SceneTransitionEffect.cs" />
     <Compile Include="Game\UI\SceneTransitionManager.cs" />
     <Compile Include="Game\UI\SceneTransitionValidator.cs" />
@@ -632,10 +646,12 @@
     <Compile Include="Game\UI\Tests\CharacterPreviewTest.cs" />
     <Compile Include="Game\UI\Tests\EquipmentComparisonUITest.cs" />
     <Compile Include="Game\UI\Tests\EquipmentSlotViewTest.cs" />
+    <Compile Include="Game\UI\UIAnimationSystem.cs" />
     <Compile Include="Game\UI\UIHelper.cs" />
     <Compile Include="Game\UI\UISceneManager.cs" />
     <Compile Include="Game\UI\UIStateManager.cs" />
     <Compile Include="Game\UI\UIStyleTokens.cs" />
+    <Compile Include="Game\World\NavigationSystem.cs" />
     <Compile Include="Game\Worlds\EntitySynchronizationManager.cs" />
     <Compile Include="Game\Worlds\EventBroadcaster.cs" />
     <Compile Include="Game\Worlds\PlayerPositionUpdater.cs" />

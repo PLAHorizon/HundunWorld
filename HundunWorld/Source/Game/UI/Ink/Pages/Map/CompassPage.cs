@@ -6,46 +6,30 @@ using System;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Map
 {
+    /// <summary>
+    /// 司南（罗盘）页面 — 对应设计方案 compass.html。
+    /// 全屏布局：顶栏（图标+司南+副标题+关闭）/ 中央 500x500 罗盘刻度盘
+    /// （天干/八卦/四正/POI 四环 + 中心枢纽 + 玩家星 + 朝向金针）/ 底部信息面板
+    /// （朝向/坐标/区域 + 附近方位列表 + 模式切换 + 追踪目标）。
+    /// 严格遵循水墨主题 Token，禁止硬编码色值。
+    /// </summary>
     public class CompassPage : ContainerControl, IInkPage
     {
-        private const float HeaderHeight = 56f;
-        private const float BottomPanelWidth = 780f;
-        private const float BottomPanelHeight = 300f;
+        private const float HeaderHeight = 66f;
         private const float DialDiameter = 500f;
-        private const float DialRadius = DialDiameter * 0.5f;
-        private const float RingTianganRadius = 220f;
-        private const float RingBaguaRadius = 168f;
-        private const float RingCardinalRadius = 112f;
-        private const float RingPoiRadius = 246f;
-        private const float HubRadius = 24f;
-        private const float NeedleLength = 110f;
-        private const float NeedleBaseHalf = 7f;
-        private const float ScreenEdge = 16f;
-        private const int CircleStrokeSegments = 48;
-        private static readonly Color DividerColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.15f);
-        private static readonly Color PanelBg = new Color(20f / 255f, 23f / 255f, 30f / 255f, 0.85f);
-        private static readonly Color GoldVeryDim = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.12f);
+        private const float BottomPanelWidth = 780f;
+        private const float BottomPanelHeight = 252f;
+        private const float BottomMargin = 16f;
 
-        private Panel _header;
-        private Panel _headerBorder;
-        private Label _titleLabel;
-        private Label _subtitleLabel;
-        private InkButton _closeButton;
-        private InkPaperPanel _bottomPanel;
-        private Label _facingLabel;
-        private Label _coordLabel;
-        private Label _regionLabel;
-        private Label _poiCountLabel;
-        private ContainerControl[] _poiRows;
-        private InkButton _compassModeBtn;
-        private InkButton _mapModeBtn;
-        private InkButton _trackingTargetBtn;
+        public event Action<string> NavigationRequested;
+        public InkParticleSystem ParticleSystem { get; set; }
 
         private CharacterAttributesComponent _boundCharacter;
 
-        public event Action<string> NavigationRequested;
-
-        public InkParticleSystem ParticleSystem { get; set; }
+        private InkButton _closeBtn;
+        private CompassDial _dial;
+        private InkPanel _bottomPanel;
+        private InkButton _compassModeBtn, _mapModeBtn;
 
         public void BindCharacter(CharacterAttributesComponent component)
         {
@@ -58,11 +42,12 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
             {
                 AnchorPreset = AnchorPresets.StretchAll;
                 Offsets = Margin.Zero;
-                BackgroundColor = new Color(8f / 255f, 9f / 255f, 12f / 255f, 1f);
+                BackgroundColor = InkWashTheme.Void;
                 ClipChildren = false;
                 AutoFocus = false;
 
                 BuildHeader();
+                BuildDial();
                 BuildBottomPanel();
             }
             catch (Exception ex)
@@ -71,571 +56,284 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
             }
         }
 
+        // ===================================================================
+        // 顶栏
+        // ===================================================================
+
         private void BuildHeader()
         {
-            _header = new Panel
+            var header = new ContainerControl
             {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = Float2.Zero,
-                Size = new Float2(Width, HeaderHeight),
+                AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                Offsets = new Margin(0f, 0f, 0f, HeaderHeight),
                 BackgroundColor = Color.Transparent,
+                AutoFocus = false,
             };
+            AddChild(header);
 
-            var iconBox = new Panel
+            // 底部 gold-subtle 边线
+            header.AddChild(new ContainerControl
             {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(24f, 11f),
-                Size = new Float2(34f, 34f),
-                BackgroundColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.1f),
-            };
-            var iconLabel = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(8f, 8f),
-                Size = new Float2(18f, 18f),
-                Text = "\u2316",
-                TextColor = InkWashTheme.GoldPrimary,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 18f),
-                HorizontalAlignment = TextAlignment.Center,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            iconBox.AddChild(iconLabel);
-            _header.AddChild(iconBox);
+                AnchorPreset = AnchorPresets.HorizontalStretchBottom,
+                Offsets = new Margin(0f, 0f, HeaderHeight - 1f, 1f),
+                BackgroundColor = InkWashTheme.BorderGoldSubtle,
+                AutoFocus = false,
+            });
 
-            _titleLabel = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(66f, 12f),
-                Size = new Float2(100f, 32f),
-                Text = "司南",
-                TextColor = InkWashTheme.GoldPrimary,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 22f),
-                HorizontalAlignment = TextAlignment.Near,
-            };
-            _header.AddChild(_titleLabel);
+            // 罗盘图标块（34x34，radius 8，gold10% 底 + gold-subtle 边）
+            header.AddChild(new CompassIcon());
 
-            _subtitleLabel = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(174f, 18f),
-                Size = new Float2(240f, 20f),
-                Text = "天机方位 · 寻龙点脉",
-                TextColor = InkWashTheme.TextSecondary,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
-                HorizontalAlignment = TextAlignment.Near,
-            };
-            _header.AddChild(_subtitleLabel);
+            header.AddChild(MakeLabel("司南", 60f, 14f, 120f, 30f,
+                InkWashTheme.GoldPrimary, 22f, InkWashTheme.FontRole.Display, TextAlignment.Near));
+            header.AddChild(MakeLabel("天机方位 · 寻龙点脉", 150f, 22f, 220f, 20f,
+                InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
 
-            _closeButton = new InkButton
+            // 关闭按钮（secondary sm）
+            _closeBtn = new InkButton
             {
-                Variant = InkButtonVariant.Ghost,
+                Variant = InkButtonVariant.Secondary,
                 ButtonSize = InkButtonSize.Sm,
                 Text = "✕ 关闭",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(Width - 90f, 12f),
-                Size = new Float2(80f, 32f),
-                BorderColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.15f),
+                AnchorPreset = AnchorPresets.TopRight,
+                Location = new Float2(-90f, 16f),
+                Size = new Float2(74f, 26f),
             };
-            _closeButton.Clicked += () => OnSystemNavButtonClicked(InkPageDomIds.CombatHud, null);
-            _header.AddChild(_closeButton);
-
-            _headerBorder = new Panel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, HeaderHeight - 1f),
-                Size = new Float2(Width, 1f),
-                BackgroundColor = DividerColor,
-            };
-            _header.AddChild(_headerBorder);
-
-            AddChild(_header);
+            _closeBtn.ButtonClicked += (b) => NavigationRequested?.Invoke(InkPageDomIds.BackHud);
+            header.AddChild(_closeBtn);
         }
+
+        // ===================================================================
+        // 中央罗盘
+        // ===================================================================
+
+        private void BuildDial()
+        {
+            _dial = new CompassDial
+            {
+                AnchorPreset = AnchorPresets.MiddleCenter,
+                Size = new Float2(DialDiameter, DialDiameter),
+            };
+            AddChild(_dial);
+        }
+
+        // ===================================================================
+        // 底部信息面板
+        // ===================================================================
 
         private void BuildBottomPanel()
         {
-            _bottomPanel = new InkPaperPanel
+            _bottomPanel = new InkPanel
             {
-                AnchorPreset = AnchorPresets.TopLeft,
+                AnchorPreset = AnchorPresets.BottomCenter,
                 Size = new Float2(BottomPanelWidth, BottomPanelHeight),
-                BackgroundColor = PanelBg,
             };
+            AddChild(_bottomPanel);
 
-            float colWidth = BottomPanelWidth / 3f;
-            float infoY = 12f;
-            float colHeight = 52f;
+            // ── 信息三列：朝向 / 坐标 / 区域 ──
+            float colW = (BottomPanelWidth - 2f) / 3f;
+            BuildInfoCell(0f, colW, "朝向", "北偏东 15°", InkWashTheme.FontRole.Number, 15f);
+            BuildInfoCell(colW + 1f, colW, "坐标", "X:1234 Y:5678 Z:100", InkWashTheme.FontRole.Number, 14f);
+            BuildInfoCell((colW + 1f) * 2f, colW, "区域", "清河 · 开封城郊", InkWashTheme.FontRole.Display, 14f);
 
-            for (int col = 0; col < 3; col++)
-            {
-                float colX = col * colWidth;
-                string title = col == 0 ? "朝向" : col == 1 ? "坐标" : "区域";
-                Label valueLabel;
-
-                var colContainer = new ContainerControl
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(colX + 12f, infoY),
-                    Size = new Float2(colWidth - 24f, colHeight),
-                    BackgroundColor = Color.Transparent,
-                };
-
-                var titleLbl = new Label
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = Float2.Zero,
-                    Size = new Float2(colWidth - 24f, 16f),
-                    Text = title,
-                    TextColor = InkWashTheme.TextSecondary,
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
-                    HorizontalAlignment = TextAlignment.Near,
-                };
-                colContainer.AddChild(titleLbl);
-
-                if (col == 0)
-                {
-                    _facingLabel = new Label
-                    {
-                        AnchorPreset = AnchorPresets.TopLeft,
-                        Location = new Float2(0f, 18f),
-                        Size = new Float2(colWidth - 24f, 22f),
-                        Text = "北偏东 15°",
-                        TextColor = InkWashTheme.TextDefault,
-                        Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 15f),
-                        HorizontalAlignment = TextAlignment.Near,
-                    };
-                    valueLabel = _facingLabel;
-                }
-                else if (col == 1)
-                {
-                    _coordLabel = new Label
-                    {
-                        AnchorPreset = AnchorPresets.TopLeft,
-                        Location = new Float2(0f, 18f),
-                        Size = new Float2(colWidth - 24f, 22f),
-                        Text = "X:1234 Y:5678 Z:100",
-                        TextColor = InkWashTheme.TextDefault,
-                        Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 14f),
-                        HorizontalAlignment = TextAlignment.Near,
-                    };
-                    valueLabel = _coordLabel;
-                }
-                else
-                {
-                    _regionLabel = new Label
-                    {
-                        AnchorPreset = AnchorPresets.TopLeft,
-                        Location = new Float2(0f, 18f),
-                        Size = new Float2(colWidth - 24f, 22f),
-                        Text = "清河 · 开封城郊",
-                        TextColor = InkWashTheme.TextDefault,
-                        Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 14f),
-                        HorizontalAlignment = TextAlignment.Near,
-                    };
-                    valueLabel = _regionLabel;
-                }
-                colContainer.AddChild(valueLabel);
-                _bottomPanel.AddChild(colContainer);
-
-                if (col < 2)
-                {
-                    var vDivider = new Panel
-                    {
-                        AnchorPreset = AnchorPresets.TopLeft,
-                        Location = new Float2(colX + colWidth, infoY + 4f),
-                        Size = new Float2(1f, colHeight - 8f),
-                        BackgroundColor = DividerColor,
-                    };
-                    _bottomPanel.AddChild(vDivider);
-                }
-            }
-
-            float divider1Y = infoY + colHeight + 8f;
-            var hDivider1 = new Panel
+            // 列分隔线
+            _bottomPanel.AddChild(new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, divider1Y),
+                Location = new Float2(colW, 10f),
+                Size = new Float2(1f, 40f),
+                BackgroundColor = InkWashTheme.BorderGoldSubtle,
+                AutoFocus = false,
+            });
+            _bottomPanel.AddChild(new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(colW * 2f + 1f, 10f),
+                Size = new Float2(1f, 40f),
+                BackgroundColor = InkWashTheme.BorderGoldSubtle,
+                AutoFocus = false,
+            });
+
+            // ── 附近方位 ──
+            float secTop = 60f;
+            _bottomPanel.AddChild(new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, secTop),
                 Size = new Float2(BottomPanelWidth, 1f),
-                BackgroundColor = DividerColor,
-            };
-            _bottomPanel.AddChild(hDivider1);
+                BackgroundColor = InkWashTheme.BorderGoldSubtle,
+                AutoFocus = false,
+            });
+            _bottomPanel.AddChild(MakeLabel("附近方位", 16f, secTop + 6f, 120f, 18f,
+                InkWashTheme.GoldPrimary, 12f, InkWashTheme.FontRole.Display, TextAlignment.Near));
+            _bottomPanel.AddChild(MakeLabel("3 处", BottomPanelWidth - 16f - 60f, secTop + 6f, 60f, 18f,
+                InkWashTheme.TextSecondary, 11f, InkWashTheme.FontRole.Number, TextAlignment.Far));
 
-            float poiTitleY = divider1Y + 10f;
-            var poiListTitle = new Label
+            float rowY = secTop + 28f;
+            BuildPoiRow(rowY, "◆", InkWashTheme.GoldBright, "界碑", TagKind.Brand, "开封城门", "北 200m", false);
+            rowY += 34f;
+            BuildPoiRow(rowY, "●", InkWashTheme.GoldBright, "NPC", TagKind.Neutral, "药师张老", "东南 50m", false);
+            rowY += 34f;
+            BuildPoiRow(rowY, "★", InkWashTheme.JadeBright, "任务", TagKind.Success, "山贼营地", "西 500m", true);
+
+            // ── 模式切换 + 追踪目标 ──
+            float modeTop = BottomPanelHeight - 44f;
+            _bottomPanel.AddChild(new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(16f, poiTitleY),
-                Size = new Float2(200f, 18f),
-                Text = "附近方位",
-                TextColor = InkWashTheme.GoldPrimary,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 12f),
-                HorizontalAlignment = TextAlignment.Near,
-            };
-            _bottomPanel.AddChild(poiListTitle);
-
-            _poiCountLabel = new Label
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(BottomPanelWidth - 80f, poiTitleY),
-                Size = new Float2(64f, 18f),
-                Text = "3 处",
-                TextColor = InkWashTheme.TextSecondary,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f),
-                HorizontalAlignment = TextAlignment.Far,
-            };
-            _bottomPanel.AddChild(_poiCountLabel);
-
-            _poiRows = new ContainerControl[3];
-            string[] poiIcons = { "◆", "●", "★" };
-            string[] poiTags = { "界碑", "NPC", "任务" };
-            string[] poiNames = { "开封城门", "药师张老", "山贼营地" };
-            string[] poiDistances = { "北 200m", "东南 50m", "西 500m" };
-            Color[] poiIconColors = { InkWashTheme.GoldBright, InkWashTheme.GoldBright, InkWashTheme.JadeBright };
-            Color[] poiTagColors = { GoldVeryDim, GoldVeryDim, new Color(100f / 255f, 200f / 255f, 140f / 255f, 0.15f) };
-            Color[] poiDistanceColors = { InkWashTheme.TextSecondary, InkWashTheme.TextSecondary, InkWashTheme.JadeBright };
-
-            float poiRowY = poiTitleY + 22f;
-            float poiRowH = 28f;
-            for (int i = 0; i < 3; i++)
-            {
-                var row = new ContainerControl
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(16f, poiRowY + i * poiRowH),
-                    Size = new Float2(BottomPanelWidth - 32f, poiRowH),
-                    BackgroundColor = Color.Transparent,
-                };
-
-                var iconLbl = new Label
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(0f, 0f),
-                    Size = new Float2(20f, poiRowH),
-                    Text = poiIcons[i],
-                    TextColor = poiIconColors[i],
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 15f),
-                    HorizontalAlignment = TextAlignment.Center,
-                    VerticalAlignment = TextAlignment.Center,
-                };
-                row.AddChild(iconLbl);
-
-                var tagLbl = new Label
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(28f, 4f),
-                    Size = new Float2(50f, poiRowH - 8f),
-                    Text = poiTags[i],
-                    TextColor = InkWashTheme.TextBrand,
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f),
-                    BackgroundColor = poiTagColors[i],
-                    HorizontalAlignment = TextAlignment.Center,
-                    VerticalAlignment = TextAlignment.Center,
-                };
-                row.AddChild(tagLbl);
-
-                var nameLbl = new Label
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(90f, 0f),
-                    Size = new Float2(BottomPanelWidth - 32f - 90f - 100f, poiRowH),
-                    Text = poiNames[i],
-                    TextColor = InkWashTheme.TextDefault,
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
-                    HorizontalAlignment = TextAlignment.Near,
-                    VerticalAlignment = TextAlignment.Center,
-                };
-                row.AddChild(nameLbl);
-
-                var distLbl = new Label
-                {
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Location = new Float2(BottomPanelWidth - 32f - 100f, 0f),
-                    Size = new Float2(100f, poiRowH),
-                    Text = poiDistances[i],
-                    TextColor = poiDistanceColors[i],
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
-                    HorizontalAlignment = TextAlignment.Far,
-                    VerticalAlignment = TextAlignment.Center,
-                };
-                row.AddChild(distLbl);
-
-                _poiRows[i] = row;
-                _bottomPanel.AddChild(row);
-            }
-
-            float divider2Y = poiRowY + 3 * poiRowH + 4f;
-            var hDivider2 = new Panel
-            {
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(0f, divider2Y),
+                Location = new Float2(0f, modeTop - 6f),
                 Size = new Float2(BottomPanelWidth, 1f),
-                BackgroundColor = DividerColor,
-            };
-            _bottomPanel.AddChild(hDivider2);
-
-            float modeRowY = divider2Y + 10f;
+                BackgroundColor = InkWashTheme.BorderGoldSubtle,
+                AutoFocus = false,
+            });
 
             _compassModeBtn = new InkButton
             {
-                Variant = InkButtonVariant.Primary,
+                Variant = InkButtonVariant.Brand,
                 ButtonSize = InkButtonSize.Sm,
-                Text = "罗盘模式",
+                Text = "◎ 罗盘模式",
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(16f, modeRowY),
-                Size = new Float2(108f, 30f),
-                Height = 30f,
+                Location = new Float2(16f, modeTop),
+                Size = new Float2(104f, 28f),
             };
+            _compassModeBtn.ButtonClicked += (b) => SetMode(true);
             _bottomPanel.AddChild(_compassModeBtn);
 
             _mapModeBtn = new InkButton
             {
                 Variant = InkButtonVariant.Ghost,
                 ButtonSize = InkButtonSize.Sm,
-                Text = "地图模式",
+                Text = "▦ 地图模式",
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(128f, modeRowY),
-                Size = new Float2(108f, 30f),
-                Height = 30f,
+                Location = new Float2(16f + 104f + 8f, modeTop),
+                Size = new Float2(104f, 28f),
             };
-            _mapModeBtn.Clicked += () => OnSystemNavButtonClicked(InkPageDomIds.NavWorldMap, null);
+            _mapModeBtn.ButtonClicked += (b) => SetMode(false);
             _bottomPanel.AddChild(_mapModeBtn);
 
-            var trackingLabel = new Label
+            // 追踪目标
+            _bottomPanel.AddChild(MakeLabel("◎ 追踪目标", BottomPanelWidth - 16f - 240f, modeTop + 4f, 90f, 20f,
+                InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+            _bottomPanel.AddChild(new TrackSelect());
+        }
+
+        private void SetMode(bool compass)
+        {
+            _compassModeBtn.Variant = compass ? InkButtonVariant.Brand : InkButtonVariant.Ghost;
+            _mapModeBtn.Variant = compass ? InkButtonVariant.Ghost : InkButtonVariant.Brand;
+        }
+
+        private void BuildInfoCell(float x, float w, string label, string value,
+            InkWashTheme.FontRole valueRole, float valueSize)
+        {
+            _bottomPanel.AddChild(MakeLabel(label, x + 40f, 10f, w - 56f, 16f,
+                InkWashTheme.TextSecondary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+            _bottomPanel.AddChild(MakeLabel(value, x + 40f, 28f, w - 56f, 22f,
+                InkWashTheme.TextDefault, valueSize, valueRole, TextAlignment.Near));
+            // 金色图标（代替 lucide）
+            _bottomPanel.AddChild(new ContainerControl
             {
                 AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(BottomPanelWidth - 270f, modeRowY),
-                Size = new Float2(70f, 34f),
-                Text = "追踪目标",
-                TextColor = InkWashTheme.TextSecondary,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
-                HorizontalAlignment = TextAlignment.Near,
+                Location = new Float2(x + 14f, 18f),
+                Size = new Float2(14f, 14f),
+                BackgroundColor = InkWashTheme.GoldPrimary,
+                AutoFocus = false,
+            });
+        }
+
+        private enum TagKind { Brand, Neutral, Success }
+
+        private void BuildPoiRow(float y, string glyph, Color glyphColor, string tag, TagKind kind,
+            string name, string dist, bool jadeDist)
+        {
+            var row = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(16f, y),
+                Size = new Float2(BottomPanelWidth - 32f, 32f),
+                BackgroundColor = Color.Transparent,
+                AutoFocus = false,
+            };
+            _bottomPanel.AddChild(row);
+
+            // 行底边线
+            row.AddChild(new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.HorizontalStretchBottom,
+                Offsets = new Margin(0f, 0f, 31f, 1f),
+                BackgroundColor = InkWashTheme.GoldTrace,
+                AutoFocus = false,
+            });
+
+            row.AddChild(MakeLabel(glyph, 0f, 4f, 18f, 24f, glyphColor, 15f,
+                InkWashTheme.FontRole.Body, TextAlignment.Center));
+
+            Color tagTc, tagBorder, tagBg;
+            if (kind == TagKind.Brand)
+            {
+                tagTc = InkWashTheme.TextOnBrand; tagBorder = InkWashTheme.GoldPrimary; tagBg = InkWashTheme.GoldPrimary;
+            }
+            else if (kind == TagKind.Success)
+            {
+                tagTc = InkWashTheme.JadeBright; tagBorder = InkWashTheme.JadeDim; tagBg = InkWashTheme.JadeFaint;
+            }
+            else
+            {
+                tagTc = InkWashTheme.TextSecondary; tagBorder = InkWashTheme.BorderFaint;
+                tagBg = VoidBg(0.40f);
+            }
+            row.AddChild(new TagPill(tag, tagTc, tagBorder, tagBg)
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(28f, 6f),
+                Size = new Float2(48f, 20f),
+            });
+
+            row.AddChild(MakeLabel(name, 88f, 4f, 300f, 24f,
+                InkWashTheme.TextDefault, 13f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+            row.AddChild(MakeLabel(dist, row.Size.X - 16f - 90f, 4f, 90f, 24f,
+                jadeDist ? InkWashTheme.JadeBright : InkWashTheme.TextSecondary, 12f,
+                InkWashTheme.FontRole.Number, TextAlignment.Far));
+        }
+
+        // ===================================================================
+        // 辅助
+        // ===================================================================
+
+        private static Color VoidBg(float alpha)
+        {
+            var c = InkWashTheme.Void;
+            return new Color(c.R, c.G, c.B, alpha);
+        }
+
+        private Label MakeLabel(string text, float x, float y, float w, float h,
+            Color color, float fontSize, InkWashTheme.FontRole role, TextAlignment hAlign)
+        {
+            return new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(x, y),
+                Size = new Float2(w, h),
+                Text = text,
+                TextColor = color,
+                Font = InkRenderHelper.GetFontRef(role, fontSize),
+                HorizontalAlignment = hAlign,
                 VerticalAlignment = TextAlignment.Center,
+                AutoFocus = false,
             };
-            _bottomPanel.AddChild(trackingLabel);
-
-            _trackingTargetBtn = new InkButton
-            {
-                Variant = InkButtonVariant.Default,
-                ButtonSize = InkButtonSize.Sm,
-                Text = "山贼营地 ▼",
-                AnchorPreset = AnchorPresets.TopLeft,
-                Location = new Float2(BottomPanelWidth - 200f, modeRowY),
-                Size = new Float2(184f, 30f),
-                Height = 30f,
-                BorderColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.28f),
-            };
-            _bottomPanel.AddChild(_trackingTargetBtn);
-
-            AddChild(_bottomPanel);
-        }
-
-        public override void Draw()
-        {
-            try
-            {
-                DrawCompassDial();
-            }
-            catch (Exception ex)
-            {
-                FlaxEngine.Debug.LogError($"[CompassPage] DrawCompassDial failed: {ex.Message}");
-            }
-            base.Draw();
-        }
-
-        private void DrawCompassDial()
-        {
-            if (Width <= 0f || Height <= 0f)
-                return;
-
-            float cx = Width * 0.5f;
-            float availTop = HeaderHeight + ScreenEdge + 8f;
-            float availBottom = Height - BottomPanelHeight - ScreenEdge - 8f;
-            if (availBottom <= availTop)
-                return;
-            float cy = (availTop + availBottom) * 0.5f;
-
-            InkRenderHelper.FillCircle(new Float2(cx, cy), DialRadius + 4f,
-                new Color(8f / 255f, 9f / 255f, 12f / 255f, 0.72f));
-            InkRenderHelper.FillCircle(new Float2(cx, cy), DialRadius,
-                new Color(20f / 255f, 23f / 255f, 30f / 255f, 0.85f));
-
-            DrawCircleStroke(new Float2(cx, cy), DialRadius, InkWashTheme.GoldPrimary, 2f);
-
-            InkRenderHelper.FillCircle(new Float2(cx, cy), DialRadius - 6f,
-                new Color(20f / 255f, 23f / 255f, 30f / 255f, 0.34f));
-
-            string[] tiangan = { "甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸" };
-            for (int i = 0; i < 10; i++)
-            {
-                float angle = i * 36f;
-                var pos = CompassToScreen(cx, cy, angle, RingTianganRadius);
-                DrawChar(pos, tiangan[i], InkWashTheme.TextSecondary, 15f);
-            }
-
-            string[] bagua = { "坎", "艮", "震", "巽", "离", "坤", "兑", "乾" };
-            for (int i = 0; i < 8; i++)
-            {
-                float angle = i * 45f;
-                var pos = CompassToScreen(cx, cy, angle, RingBaguaRadius);
-                DrawChar(pos, bagua[i], InkWashTheme.GoldDeep, 17f);
-            }
-
-            string[] cardinals = { "北", "东", "南", "西" };
-            for (int i = 0; i < 4; i++)
-            {
-                float angle = i * 90f;
-                var pos = CompassToScreen(cx, cy, angle, RingCardinalRadius);
-                DrawChar(pos, cardinals[i], InkWashTheme.GoldPrimary, 30f);
-            }
-
-            DrawPoiMarker(CompassToScreen(cx, cy, 0f, RingPoiRadius), "◆", InkWashTheme.GoldBright);
-            DrawPoiMarker(CompassToScreen(cx, cy, 135f, RingPoiRadius), "●", InkWashTheme.GoldBright);
-            DrawPoiMarker(CompassToScreen(cx, cy, 270f, RingPoiRadius), "★", InkWashTheme.JadeBright);
-
-            InkRenderHelper.FillCircle(new Float2(cx, cy), HubRadius,
-                new Color(26f / 255f, 29f / 255f, 38f / 255f, 1f));
-            DrawCircleStroke(new Float2(cx, cy), HubRadius, InkWashTheme.GoldPrimary, 1f);
-
-            DrawChar(new Float2(cx, cy), "★", InkWashTheme.JadeBright, 26f);
-
-            float swayDeg = Mathf.Sin(Time.GameTime * 1.0f) * 4f;
-            DrawNeedle(new Float2(cx, cy), swayDeg);
-        }
-
-        private Float2 CompassToScreen(float cx, float cy, float angleDeg, float radius)
-        {
-            float rad = angleDeg * Mathf.DegreesToRadians;
-            return new Float2(
-                cx + radius * Mathf.Sin(rad),
-                cy - radius * Mathf.Cos(rad));
-        }
-
-        private void DrawChar(Float2 pos, string ch, Color color, float size)
-        {
-            var fontRef = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, size);
-            var font = fontRef.GetFont();
-            if (font == null)
-                return;
-
-            var metrics = font.MeasureText(ch);
-            var rect = new Rectangle(
-                pos.X - metrics.X * 0.5f,
-                pos.Y - metrics.Y * 0.5f,
-                metrics.X,
-                metrics.Y);
-            Render2D.DrawText(font, ch, rect, color,
-                TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
-        }
-
-        private void DrawPoiMarker(Float2 pos, string symbol, Color color)
-        {
-            Color glow1 = new Color(color.R, color.G, color.B, 0.25f);
-            Color glow2 = new Color(color.R, color.G, color.B, 0.5f);
-            InkRenderHelper.FillCircle(pos, 14f, glow1);
-            InkRenderHelper.FillCircle(pos, 10f, glow2);
-            DrawChar(pos, symbol, color, 17f);
-        }
-
-        private void DrawCircleStroke(Float2 center, float radius, Color color, float thickness)
-        {
-            if (radius <= 0f)
-                return;
-
-            Float2 prev = center + new Float2(radius, 0f);
-            for (int i = 1; i <= CircleStrokeSegments; i++)
-            {
-                float a = (i / (float)CircleStrokeSegments) * Mathf.TwoPi;
-                var curr = center + new Float2(Mathf.Cos(a) * radius, Mathf.Sin(a) * radius);
-                Render2D.DrawLine(prev, curr, color, thickness);
-                prev = curr;
-            }
-        }
-
-        private void DrawNeedle(Float2 center, float swayDeg)
-        {
-            float rad = swayDeg * Mathf.DegreesToRadians;
-            float dirX = Mathf.Sin(rad);
-            float dirY = -Mathf.Cos(rad);
-
-            var tip = center + new Float2(dirX * NeedleLength, dirY * NeedleLength);
-            float perpX = dirY;
-            float perpY = -dirX;
-            var base1 = center + new Float2(perpX * NeedleBaseHalf, perpY * NeedleBaseHalf);
-            var base2 = center - new Float2(perpX * NeedleBaseHalf, perpY * NeedleBaseHalf);
-
-            var vertices = new Float2[3];
-            vertices[0] = tip;
-            vertices[1] = base1;
-            vertices[2] = base2;
-            Render2D.FillTriangles(vertices,
-                new Color(InkWashTheme.VermilionBright.R, InkWashTheme.VermilionBright.G,
-                          InkWashTheme.VermilionBright.B, 0.95f));
-
-            var tipS = center - new Float2(dirX * NeedleLength * 0.8f, dirY * NeedleLength * 0.8f);
-            vertices[0] = tipS;
-            Render2D.FillTriangles(vertices,
-                new Color(InkWashTheme.TextSecondary.R, InkWashTheme.TextSecondary.G,
-                          InkWashTheme.TextSecondary.B, 0.32f));
-        }
-
-        private void OnSystemNavButtonClicked(string domId, Button sourceButton)
-        {
-            try
-            {
-                EmitGoldAtButton(sourceButton);
-                NavigationRequested?.Invoke(domId);
-            }
-            catch (Exception ex)
-            {
-                FlaxEngine.Debug.LogError($"[CompassPage] NavigationRequested({domId}) failed: {ex.Message}");
-            }
-        }
-
-        private void EmitGoldAtButton(Button button)
-        {
-            try
-            {
-                if (ParticleSystem == null || button == null)
-                    return;
-
-                var buttonCenter = new Float2(button.Width * 0.5f, button.Height * 0.5f);
-                var screenPos = button.PointToScreen(buttonCenter);
-                var localPos = ParticleSystem.PointFromScreen(screenPos);
-                ParticleSystem.EmitGoldBurst(localPos, count: 14, isLarge: false);
-            }
-            catch (Exception ex)
-            {
-                FlaxEngine.Debug.LogWarning($"[CompassPage] EmitGoldAtButton failed: {ex.Message}");
-            }
         }
 
         public void RefreshLayout()
         {
-            try
+            if (_bottomPanel != null)
             {
-                float sw = Width;
-                float sh = Height;
-
-                if (_header != null)
-                {
-                    _header.Size = new Float2(sw, HeaderHeight);
-                    _header.Location = Float2.Zero;
-
-                    if (_closeButton != null)
-                        _closeButton.Location = new Float2(sw - 90f, 12f);
-
-                    if (_headerBorder != null)
-                        _headerBorder.Size = new Float2(sw, 1f);
-                }
-
-                if (_bottomPanel != null)
-                {
-                    _bottomPanel.Location = new Float2(
-                        sw * 0.5f - BottomPanelWidth * 0.5f,
-                        sh - ScreenEdge - BottomPanelHeight);
-                }
+                float bx = (Width - BottomPanelWidth) * 0.5f;
+                _bottomPanel.Location = new Float2(bx > 0f ? bx : 0f, Height - BottomMargin - BottomPanelHeight);
             }
-            catch (Exception ex)
+            if (_dial != null)
             {
-                FlaxEngine.Debug.LogError($"[CompassPage] RefreshLayout failed: {ex.Message}");
+                float dx = (Width - DialDiameter) * 0.5f;
+                float dy = (Height - DialDiameter) * 0.5f - 30f;
+                _dial.Location = new Float2(dx > 0f ? dx : 0f, dy > HeaderHeight ? dy : HeaderHeight);
             }
         }
 
@@ -643,6 +341,266 @@ namespace HundunWorld.Game.UI.Ink.Pages.Map
         {
             base.OnParentResized();
             RefreshLayout();
+        }
+
+        // ===============================================================
+        // 嵌套自绘控件
+        // ===============================================================
+
+        /// <summary>顶栏罗盘图标块（34x34，radius 8，gold10% 底 + gold-subtle 边）。</summary>
+        private sealed class CompassIcon : Control
+        {
+            public CompassIcon()
+            {
+                AutoFocus = false;
+                AnchorPreset = AnchorPresets.TopLeft;
+                Location = new Float2(24f, 16f);
+                Size = new Float2(34f, 34f);
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+                if (!Visible) return;
+                var rect = new Rectangle(Float2.Zero, Size);
+                var g = InkWashTheme.GoldPrimary;
+                InkRenderHelper.FillRoundedRectangle(rect, 8f, new Color(g.R, g.G, g.B, 0.10f));
+                InkRenderHelper.DrawRoundedRectangle(rect, 8f, InkWashTheme.BorderGoldSubtle, 1f);
+                var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 18f).GetFont();
+                if (font != null)
+                    Render2D.DrawText(font, "◎", rect, InkWashTheme.GoldPrimary,
+                        TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+            }
+        }
+
+        /// <summary>标签药丸（radius 2）。</summary>
+        private sealed class TagPill : Control
+        {
+            private readonly string _text;
+            private readonly Color _tc;
+            private readonly Color _border;
+            private readonly Color _bg;
+
+            public TagPill(string text, Color textColor, Color border, Color bg)
+            {
+                _text = text;
+                _tc = textColor;
+                _border = border;
+                _bg = bg;
+                AutoFocus = false;
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+                if (!Visible) return;
+                var rect = new Rectangle(Float2.Zero, Size);
+                if (_bg.A > 0f)
+                    InkRenderHelper.FillRoundedRectangle(rect, 2f, _bg);
+                if (_border.A > 0f)
+                    InkRenderHelper.DrawRoundedRectangle(rect, 2f, _border, 1f);
+                var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 11f).GetFont();
+                if (font != null)
+                    Render2D.DrawText(font, _text, rect, _tc,
+                        TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+            }
+        }
+
+        /// <summary>追踪目标下拉框（金6% 底 + gold-subtle 边 + 山贼营地 + ▼）。</summary>
+        private sealed class TrackSelect : Control
+        {
+            public TrackSelect()
+            {
+                AutoFocus = false;
+                AnchorPreset = AnchorPresets.TopLeft;
+                Location = new Float2(BottomPanelWidth - 16f - 150f, BottomPanelHeight - 44f);
+                Size = new Float2(150f, 28f);
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+                if (!Visible) return;
+                var rect = new Rectangle(Float2.Zero, Size);
+                var g = InkWashTheme.GoldPrimary;
+                InkRenderHelper.FillRoundedRectangle(rect, 6f, new Color(g.R, g.G, g.B, 0.06f));
+                InkRenderHelper.DrawRoundedRectangle(rect, 6f, InkWashTheme.BorderGoldSubtle, 1f);
+                var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 13f).GetFont();
+                if (font != null)
+                    Render2D.DrawText(font, "山贼营地", new Rectangle(12f, 0f, Width - 40f, Height),
+                        InkWashTheme.TextDefault, TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap);
+                var cf = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f).GetFont();
+                if (cf != null)
+                    Render2D.DrawText(cf, "▼", new Rectangle(Width - 26f, 0f, 18f, Height),
+                        InkWashTheme.GoldPrimary, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+            }
+        }
+
+        /// <summary>罗盘刻度盘（500x500：天干/八卦/四正/POI 四环 + 枢纽 + 玩家星 + 朝向金针）。</summary>
+        private sealed class CompassDial : Control
+        {
+            private static readonly string[] Tiangan = { "甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸" };
+            private static readonly string[] Bagua = { "坎", "艮", "震", "巽", "离", "坤", "兑", "乾" };
+            private static readonly string[] Cardinals = { "北", "东", "南", "西" };
+
+            private float _t;
+
+            public CompassDial() { AutoFocus = false; }
+
+            public override void Update(float dt)
+            {
+                base.Update(dt);
+                _t += dt;
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+                if (!Visible || Width <= 0f) return;
+
+                float cx = Width * 0.5f;
+                float cy = Height * 0.5f;
+                var center = new Float2(cx, cy);
+                float R = Width * 0.5f - 2f;
+
+                DrawBase(center, R);
+                DrawTicks(center, R);
+                DrawRings(center);
+                DrawPois(center);
+                DrawHub(center);
+                DrawNeedle(center);
+                DrawPlayerStar(center);
+            }
+
+            /// <summary>环底：径向渐变 + 2px 金边 + 外辉光 + 暗纱。</summary>
+            private void DrawBase(Float2 c, float R)
+            {
+                // 外辉光（多层淡金圈）
+                var g = InkWashTheme.GoldPrimary;
+                for (int i = 3; i >= 1; i--)
+                    InkRenderHelper.DrawCircle(c, R + i * 3f, new Color(g.R, g.G, g.B, 0.05f), 2f);
+
+                // 环底（代替 compass-ring.jpg：深墨径向渐变）
+                InkRenderHelper.FillRadialGradient(c, R, InkWashTheme.BaseTertiary, InkWashTheme.Abyss, 24);
+                // 暗纱（中心 panel 0.52 → 边缘 abyss 0.62）
+                var p = InkWashTheme.Panel;
+                var ab = InkWashTheme.Abyss;
+                InkRenderHelper.FillRadialGradient(c, R,
+                    new Color(p.R, p.G, p.B, 0.52f), new Color(ab.R, ab.G, ab.B, 0.62f), 24);
+                // 2px 金边
+                InkRenderHelper.DrawCircle(c, R, InkWashTheme.GoldPrimary, 2f);
+                // 内阴影圈
+                InkRenderHelper.DrawCircle(c, R - 6f, new Color(ab.R, ab.G, ab.B, 0.50f), 4f);
+            }
+
+            /// <summary>刻度线（每 15°，四正加长）。</summary>
+            private void DrawTicks(Float2 c, float R)
+            {
+                var gold = InkWashTheme.GoldPrimary;
+                for (int i = 0; i < 24; i++)
+                {
+                    float ang = i * (Mathf.TwoPi / 24f);
+                    bool cardinal = (i % 6 == 0);
+                    float r1 = R - (cardinal ? 18f : 12f);
+                    float r2 = R - 6f;
+                    var p1 = c + new Float2(Mathf.Sin(ang) * r1, -Mathf.Cos(ang) * r1);
+                    var p2 = c + new Float2(Mathf.Sin(ang) * r2, -Mathf.Cos(ang) * r2);
+                    Render2D.DrawLine(p1, p2,
+                        new Color(gold.R, gold.G, gold.B, cardinal ? 0.55f : 0.28f), cardinal ? 1.5f : 1f);
+                }
+            }
+
+            /// <summary>天干 / 八卦 / 四正 三环文字。</summary>
+            private void DrawRings(Float2 c)
+            {
+                DrawRingText(c, Tiangan, 220f, 15f, InkWashTheme.TextSecondary, 10);
+                DrawRingText(c, Bagua, 168f, 17f, InkWashTheme.GoldDeep, 8);
+                DrawRingText(c, Cardinals, 112f, 30f, InkWashTheme.GoldPrimary, 4);
+            }
+
+            private void DrawRingText(Float2 c, string[] chars, float r, float fontSize, Color color, int count)
+            {
+                var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, fontSize).GetFont();
+                if (font == null) return;
+                float span = fontSize + 8f;
+                for (int i = 0; i < count; i++)
+                {
+                    float ang = i * (Mathf.TwoPi / count);
+                    float x = c.X + Mathf.Sin(ang) * r;
+                    float y = c.Y - Mathf.Cos(ang) * r;
+                    Render2D.DrawText(font, chars[i],
+                        new Rectangle(x - span * 0.5f, y - span * 0.5f, span, span), color,
+                        TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+                }
+            }
+
+            /// <summary>POI 方向标记（◆0° 金 / ●135° 金 / ★270° 青追踪脉冲）。</summary>
+            private void DrawPois(Float2 c)
+            {
+                var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 17f).GetFont();
+                if (font == null) return;
+                DrawPoi(font, c, 0f, "◆", InkWashTheme.GoldBright, false);
+                DrawPoi(font, c, 135f * Mathf.DegreesToRadians, "●", InkWashTheme.GoldBright, false);
+                DrawPoi(font, c, 270f * Mathf.DegreesToRadians, "★", InkWashTheme.JadeBright, true);
+            }
+
+            private void DrawPoi(Font font, Float2 c, float ang, string glyph, Color color, bool tracked)
+            {
+                float r = 246f;
+                float x = c.X + Mathf.Sin(ang) * r;
+                float y = c.Y - Mathf.Cos(ang) * r;
+                float alpha = tracked
+                    ? Mathf.Lerp(0.82f, 1f, 0.5f + 0.5f * Mathf.Sin(_t * Mathf.TwoPi / 2.6f))
+                    : 1f;
+                var clr = new Color(color.R, color.G, color.B, alpha);
+                Render2D.DrawText(font, glyph, new Rectangle(x - 12f, y - 12f, 24f, 24f), clr,
+                    TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+            }
+
+            /// <summary>中心枢纽（48px 圆，径向渐变 + 金边）。</summary>
+            private void DrawHub(Float2 c)
+            {
+                InkRenderHelper.FillRadialGradient(c, 24f, InkWashTheme.BgMist, InkWashTheme.BaseSecondary, 12);
+                InkRenderHelper.DrawCircle(c, 24f, InkWashTheme.GoldPrimary, 1f);
+            }
+
+            /// <summary>朝向金针（红三角指北 + 灰三角尾，微摆 ±2.2°）。</summary>
+            private void DrawNeedle(Float2 c)
+            {
+                float sway = Mathf.Sin(_t * Mathf.TwoPi / 6.5f) * 2.2f * Mathf.DegreesToRadians;
+
+                // 前针（指北，红）
+                var n1 = Rot(c + new Float2(0f, -56f), c, sway);
+                var n2 = Rot(c + new Float2(-12f, 2f), c, sway);
+                var n3 = Rot(c + new Float2(12f, 2f), c, sway);
+                var red = InkWashTheme.VermilionBright;
+                var redClr = new Color(red.R, red.G, red.B, 0.95f);
+                Render2D.FillTriangle(n1, n2, n3, redClr);
+
+                // 尾针（指南，灰）
+                var s1 = Rot(c + new Float2(0f, 56f), c, sway);
+                var s2 = Rot(c + new Float2(-10f, 0f), c, sway);
+                var s3 = Rot(c + new Float2(10f, 0f), c, sway);
+                var gray = InkWashTheme.TextSecondary;
+                var grayClr = new Color(gray.R, gray.G, gray.B, 0.32f);
+                Render2D.FillTriangle(s1, s2, s3, grayClr);
+            }
+
+            private static Float2 Rot(Float2 p, Float2 c, float a)
+            {
+                float dx = p.X - c.X, dy = p.Y - c.Y;
+                float ca = Mathf.Cos(a), sa = Mathf.Sin(a);
+                return new Float2(c.X + dx * ca - dy * sa, c.Y + dx * sa + dy * ca);
+            }
+
+            /// <summary>玩家星（★ 26px 青亮，中心）。</summary>
+            private void DrawPlayerStar(Float2 c)
+            {
+                var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 26f).GetFont();
+                if (font == null) return;
+                Render2D.DrawText(font, "★", new Rectangle(c.X - 16f, c.Y - 16f, 32f, 32f),
+                    InkWashTheme.JadeBright, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+            }
         }
     }
 }

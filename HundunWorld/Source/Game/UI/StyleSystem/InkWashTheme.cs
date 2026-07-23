@@ -72,6 +72,15 @@ namespace HundunWorld.Game.UI.StyleSystem
         /// <summary>品牌禁用色 rgba(200,168,88,0.28)</summary>
         public static readonly Color BrandDisabled = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.28f);
 
+        /// <summary>弱化金 rgba(200,168,88,0.5) — 对应 --ink-gold-dim</summary>
+        public static readonly Color GoldDim = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.5f);
+
+        /// <summary>淡金 rgba(200,168,88,0.15) — 对应 --ink-gold-faint，标签底色/弱填充</summary>
+        public static readonly Color GoldFaint = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.15f);
+
+        /// <summary>极弱金 rgba(200,168,88,0.08) — 对应 --ink-gold-trace，悬停底色/微填充</summary>
+        public static readonly Color GoldTrace = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.08f);
+
         #endregion
 
         #region 古铜系 — 辅助主色
@@ -169,6 +178,12 @@ namespace HundunWorld.Game.UI.StyleSystem
 
         /// <summary>血色辉光 rgba(184,84,80,0.4) — 对应 --ink-blood-glow</summary>
         public static readonly Color BloodGlow = new Color(184f / 255f, 84f / 255f, 80f / 255f, 0.4f);
+
+        /// <summary>弱化血色 rgba(184,84,80,0.5) — 对应 --ink-blood-dim</summary>
+        public static readonly Color BloodDim = new Color(184f / 255f, 84f / 255f, 80f / 255f, 0.5f);
+
+        /// <summary>淡血色 rgba(184,84,80,0.12) — 对应 --ink-blood-faint，仇人/危险底色</summary>
+        public static readonly Color BloodFaint = new Color(184f / 255f, 84f / 255f, 80f / 255f, 0.12f);
 
         #endregion
 
@@ -424,19 +439,31 @@ namespace HundunWorld.Game.UI.StyleSystem
 
         #endregion
 
-        #region 状态色（错误=朱红）
+        #region 状态色 — colors_and_type.css 暗色覆盖值
 
-        /// <summary>成功状态 #6B8E5A</summary>
-        public static readonly Color Success = new Color(107f / 255f, 142f / 255f, 90f / 255f, 1f);
+        /// <summary>成功状态 #5E8B5E — 对应 --status-success-default(dark)</summary>
+        public static readonly Color Success = new Color(94f / 255f, 139f / 255f, 94f / 255f, 1f);
 
-        /// <summary>警告状态 #C8A858</summary>
-        public static readonly Color Warning = new Color(200f / 255f, 168f / 255f, 88f / 255f, 1f);
+        /// <summary>警告状态 #C47B3E — 对应 --status-warning-default(dark)</summary>
+        public static readonly Color Warning = new Color(196f / 255f, 123f / 255f, 62f / 255f, 1f);
 
         /// <summary>错误状态 #B85450（--status-error-default / --ink-blood-primary）</summary>
         public static readonly Color Error = new Color(184f / 255f, 84f / 255f, 80f / 255f, 1f);
 
-        /// <summary>信息状态 #4A7EA8</summary>
-        public static readonly Color Info = new Color(74f / 255f, 126f / 255f, 168f / 255f, 1f);
+        /// <summary>信息状态 #4A7BA8 — 对应 --status-info-default(dark)</summary>
+        public static readonly Color Info = new Color(74f / 255f, 123f / 255f, 168f / 255f, 1f);
+
+        /// <summary>提醒状态 #C49B5E — 对应 --status-alert-default(dark)</summary>
+        public static readonly Color Alert = new Color(196f / 255f, 155f / 255f, 94f / 255f, 1f);
+
+        /// <summary>提醒悬停 #D4BB7E — 对应 --status-alert-hover(dark)</summary>
+        public static readonly Color AlertHover = new Color(212f / 255f, 187f / 255f, 126f / 255f, 1f);
+
+        /// <summary>成功悬停 #7EAB7E — 对应 --status-success-hover(dark)</summary>
+        public static readonly Color SuccessHover = new Color(126f / 255f, 171f / 255f, 126f / 255f, 1f);
+
+        /// <summary>错误悬停 #D87470 — 对应 --status-error-hover(dark)，同 BloodBright</summary>
+        public static readonly Color ErrorHover = BloodBright;
 
         #endregion
 
@@ -451,7 +478,10 @@ namespace HundunWorld.Game.UI.StyleSystem
         /// <summary>三级文字 #8A8275 — 对应 --ink-text-muted，按新设计方案修正</summary>
         public static readonly Color TextTertiary = new Color(138f / 255f, 130f / 255f, 117f / 255f, 1f);
 
-        /// <summary>禁用文字 rgba(240,237,228,0.3) — 对应 --ink-text-faint</summary>
+        /// <summary>弱化文字 rgba(240,237,228,0.4) — 对应 --ink-text-faint</summary>
+        public static readonly Color TextFaint = new Color(240f / 255f, 237f / 255f, 228f / 255f, 0.4f);
+
+        /// <summary>禁用文字 rgba(240,237,228,0.3) — 对应 --ink-text-disabled</summary>
         public static readonly Color TextDisabled = new Color(240f / 255f, 237f / 255f, 228f / 255f, 0.3f);
 
         /// <summary>品牌文字 #E0C880</summary>
@@ -537,6 +567,9 @@ namespace HundunWorld.Game.UI.StyleSystem
         /// <summary>春青辉光 rgba(126,171,158,0.45) — 玩家点发光，复用 JadeGlow</summary>
         public static readonly Color ShadowJade = JadeGlow;
 
+        /// <summary>内阴影色 rgba(200,168,88,0.08) — 对应 --ink-shadow-inset (inset 0 1px 0)</summary>
+        public static readonly Color ShadowInset = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.08f);
+
         #endregion
 
         #region 圆角 — 古风克制（新设计方案 2/4/8/12/16px 阶梯）
@@ -589,16 +622,16 @@ namespace HundunWorld.Game.UI.StyleSystem
 
         #endregion
 
-        #region 控件高度
+        #region 控件高度 — ds-btn §4.1 三尺寸
 
-        /// <summary>小控件高度 28px</summary>
-        public const float ControlHSm = 28f;
+        /// <summary>小控件高度 24px（ds-btn sm）</summary>
+        public const float ControlHSm = 24f;
 
-        /// <summary>中控件高度 36px</summary>
-        public const float ControlHMd = 36f;
+        /// <summary>中控件高度 28px（ds-btn md）</summary>
+        public const float ControlHMd = 28f;
 
-        /// <summary>大控件高度 44px</summary>
-        public const float ControlHLg = 44f;
+        /// <summary>大控件高度 32px（ds-btn lg）</summary>
+        public const float ControlHLg = 32f;
 
         #endregion
 

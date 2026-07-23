@@ -6,707 +6,765 @@ using System;
 
 namespace HundunWorld.Game.UI.Ink.Pages.Inventory
 {
+    /// <summary>
+    /// 背包行囊面板 — 对应设计方案 inventory.html。
+    /// 1400x900 居中面板：顶栏（标题+4背包Tab+整理/仓库/关闭）+ 左8列网格（品质边框+强化/数量角标）
+    /// + 右侧物品详情（大图标+标签+属性+套装+操作）+ 底部货币栏。
+    /// 严格遵循水墨主题 Token，禁止硬编码色值。
+    /// </summary>
     public class InventoryPage : ContainerControl, IInkPage
     {
-        private const float PanelWidth = 1400f;
-        private const float PanelHeight = 900f;
+        private static readonly Float2 MainPanelSize = new Float2(1400f, 900f);
         private const float HeaderHeight = 56f;
+        private const float CurrencyHeight = 52f;
+        private const float ContentPadX = 24f;
+        private const float ContentPadY = 20f;
         private const float ContentGap = 24f;
-        private const float GridFixedWidth = 800f;
+        private const float GridSectionWidth = 800f;
         private const float CellSize = 64f;
         private const float CellGap = 12f;
         private const int GridCols = 8;
-        private const int GridRows = 6;
-        private const float CurrencyHeight = 52f;
-
-        private ContainerControl _headerPanel;
-        private Label _titleLabel;
-        private InkButton[] _tabButtons;
-        private int _activeTabIndex;
-        private InkButton _sortButton;
-        private InkButton _warehouseButton;
-        private InkButton _closeButton;
-
-        private ContainerControl _gridSection;
-        private InkButton[] _gridCells;
-        private int _selectedCellIndex = -1;
-        private Label _capLabel;
-        private Label _capNum;
-        private Panel _capBarTrack;
-        private Panel _capBarFill;
-
-        private ContainerControl _detailPanel;
-        private ContainerControl _detailIconOuter;
-        private Panel _detailIconGlow;
-        private Label _detailName;
-        private Label _detailTagQuality;
-        private Label _detailTagType;
-        private Label _detailTagQty;
-        private Label _metaEnhance;
-        private Label _metaElement;
-        private Label _metaBind;
-        private Label _metaDura;
-        private Panel _durabilityTrack;
-        private Panel _durabilityFill;
-        private Label _baseAttrTitle;
-        private Label _baseAtk;
-        private Label _baseCrit;
-        private Label _extraAttrTitle;
-        private Label _extraFocus;
-        private ContainerControl _setBox;
-        private Label _setTitle;
-        private Label _setName;
-        private Label _setCount;
-        private Label _setDesc;
-        private ContainerControl _actionRow;
-        private InkButton _useButton;
-        private InkButton _equipButton;
-        private InkButton _dropButton;
-
-        private ContainerControl _currencyBar;
-        private ContainerControl _currCopper;
-        private ContainerControl _currSilver;
-        private ContainerControl _currGold;
-        private ContainerControl _currYuanbao;
-        private Panel _currencySep1;
-        private Panel _currencySep2;
-        private Panel _currencySep3;
-
-        private struct CellData
-        {
-            public InkWashTheme.InkQuality Quality;
-            public string Badge;
-            public bool IsQuest;
-            public bool HasItem;
-        }
-        private CellData[] _cellData;
+        private const int GridRows = 5;
+        private const float GridFooterHeight = 44f;
+        private const float DetailPad = 20f;
 
         public event Action<string> NavigationRequested;
         public InkParticleSystem ParticleSystem { get; set; }
 
+        private CharacterAttributesComponent _boundCharacter;
+
+        private InkPanelElevated _mainPanel;
+
+        // 顶栏
+        private ContainerControl _header;
+        private InvTab[] _tabs;
+        private ContainerControl _tabActiveLine;
+        private InkButton _sortBtn;
+        private InkButton _warehouseBtn;
+        private InkButton _closeBtn;
+
+        // 网格区
+        private ContainerControl _gridSection;
+        private ContainerControl _gridScroll;
+        private InvCell[] _cells;
+        private int _selectedCell = -1;
+        private ContainerControl _capBarFill;
+
+        // 详情区
+        private ContainerControl _detail;
+        private DetailIconBox _detailIcon;
+        private Label _detailName;
+        private TagBox _tagQuality;
+        private TagBox _tagType;
+        private TagBox _tagQty;
+        private Label _metaEnhanceVal;
+        private Label _metaElementVal;
+        private Label _metaBindVal;
+        private Label _metaDuraVal;
+        private InkButton _useBtn;
+        private InkButton _equipBtn;
+        private InkButton _dropBtn;
+
+        // 货币栏
+        private ContainerControl _currencyBar;
+
+        internal struct CellData
+        {
+            public InkWashTheme.InkQuality Quality;
+            public string Glyph;
+            public string Enhance;
+            public string Qty;
+            public bool IsQuest;
+            public bool HasItem;
+            public string Name;
+            public string Type;
+        }
+        private CellData[] _cellData;
+
         public void BindCharacter(CharacterAttributesComponent component)
         {
+            _boundCharacter = component;
         }
 
         public InventoryPage()
         {
-            AnchorPreset = AnchorPresets.StretchAll;
-            Offsets = Margin.Zero;
-            BackgroundColor = new Color(20f / 255f, 23f / 255f, 30f / 255f, 0.85f);
-            ClipChildren = false;
-            AutoFocus = false;
+            try
+            {
+                AnchorPreset = AnchorPresets.StretchAll;
+                Offsets = Margin.Zero;
+                BackgroundColor = InkWashTheme.Scrim;
+                ClipChildren = false;
+                AutoFocus = false;
 
-            InitCellData();
-            BuildHeader();
-            BuildGridSection();
-            BuildDetailPanel();
-            BuildCurrencyBar();
-            PopulateDetailMock();
-            ApplyTabHighlight();
-            SelectCell(0);
+                InitCellData();
+                BuildMainPanel();
+                BuildHeader();
+                BuildGridSection();
+                BuildDetailPanel();
+                BuildCurrencyBar();
+                SelectCell(0);
+            }
+            catch (Exception ex)
+            {
+                FlaxEngine.Debug.LogError($"[InventoryPage] init failed: {ex.Message}");
+            }
         }
 
         private void InitCellData()
         {
             _cellData = new CellData[GridCols * GridRows];
-            var items = new (InkWashTheme.InkQuality q, string badge, bool quest)[]
+            // (glyph, name, type, quality, enhance, qty, quest)
+            var items = new (string glyph, string name, string type, InkWashTheme.InkQuality q,
+                             string enh, string qty, bool quest)[]
             {
-                (InkWashTheme.InkQuality.Legendary, "+12", false),
-                (InkWashTheme.InkQuality.Epic,      "+8",  false),
-                (InkWashTheme.InkQuality.Rare,      "+5",  false),
-                (InkWashTheme.InkQuality.Common,     null,  false),
-                (InkWashTheme.InkQuality.Common,     null,  false),
-                (InkWashTheme.InkQuality.Common,     null,  false),
-                (InkWashTheme.InkQuality.Uncommon,   "9",   false),
-                (InkWashTheme.InkQuality.Uncommon,   "3",   false),
-                (InkWashTheme.InkQuality.Uncommon,   "5",   false),
-                (InkWashTheme.InkQuality.Common,     "3",   false),
-                (InkWashTheme.InkQuality.Common,     "5",   false),
-                (InkWashTheme.InkQuality.Common,     "2",   false),
-                (InkWashTheme.InkQuality.Common,     "4",   false),
-                (InkWashTheme.InkQuality.Common,     "2",   false),
-                (InkWashTheme.InkQuality.Epic,       null,  true),
+                ("剑", "玄铁剑",   "武器", InkWashTheme.InkQuality.Legendary, "+12", null, false),
+                ("刀", "寒铁刀",   "武器", InkWashTheme.InkQuality.Epic,      "+8",  null, false),
+                ("腕", "精铁护腕", "防具", InkWashTheme.InkQuality.Rare,      "+5",  null, false),
+                ("衣", "布衣",     "防具", InkWashTheme.InkQuality.Common,    null,  null, false),
+                ("剑", "铁剑",     "武器", InkWashTheme.InkQuality.Common,    null,  null, false),
+                ("甲", "皮甲",     "防具", InkWashTheme.InkQuality.Common,    null,  null, false),
+                ("药", "生命药水", "丹药", InkWashTheme.InkQuality.Uncommon,  null,  "9", false),
+                ("液", "内力药水", "丹药", InkWashTheme.InkQuality.Uncommon,  null,  "3", false),
+                ("丹", "活血丹",   "丹药", InkWashTheme.InkQuality.Uncommon,  null,  "5", false),
+                ("矿", "铁矿",     "材料", InkWashTheme.InkQuality.Common,    null,  "3", false),
+                ("草", "草药",     "材料", InkWashTheme.InkQuality.Common,    null,  "5", false),
+                ("皮", "兽皮",     "材料", InkWashTheme.InkQuality.Common,    null,  "2", false),
+                ("矿", "铁矿",     "材料", InkWashTheme.InkQuality.Common,    null,  "4", false),
+                ("草", "草药",     "材料", InkWashTheme.InkQuality.Common,    null,  "2", false),
+                ("信", "密信",     "任务", InkWashTheme.InkQuality.Common,    null,  null, true),
             };
+            // 按设计方案的行布局填充（前6格为第1行，随后跳过空位）
+            int[] slots = { 0, 1, 2, 3, 4, 5, 8, 9, 10, 16, 17, 18, 19, 20, 24 };
             for (int i = 0; i < _cellData.Length; i++)
+                _cellData[i] = new CellData { Quality = InkWashTheme.InkQuality.Common, HasItem = false };
+            for (int k = 0; k < items.Length; k++)
             {
-                if (i < items.Length)
+                var it = items[k];
+                _cellData[slots[k]] = new CellData
                 {
-                    _cellData[i] = new CellData
-                    {
-                        Quality = items[i].q,
-                        Badge = items[i].badge,
-                        IsQuest = items[i].quest,
-                        HasItem = true,
-                    };
-                }
-                else
-                {
-                    _cellData[i] = new CellData { Quality = InkWashTheme.InkQuality.Common, HasItem = false };
-                }
+                    Quality = it.q,
+                    Glyph = it.glyph,
+                    Enhance = it.enh,
+                    Qty = it.qty,
+                    IsQuest = it.quest,
+                    HasItem = true,
+                    Name = it.name,
+                    Type = it.type,
+                };
             }
         }
 
+        private void BuildMainPanel()
+        {
+            _mainPanel = new InkPanelElevated
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Size = MainPanelSize,
+            };
+            AddChild(_mainPanel);
+        }
+
+        // ===================================================================
+        // 顶栏：标题 + 4 背包 Tab + 整理/仓库/关闭
+        // ===================================================================
+
         private void BuildHeader()
         {
-            _headerPanel = new ContainerControl { BackgroundColor = Color.Transparent };
-
-            _titleLabel = new Label
+            _header = new ContainerControl
             {
-                Text = "行囊",
-                TextColor = InkWashTheme.TextGold,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 22f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = Float2.Zero,
+                Size = new Float2(MainPanelSize.X, HeaderHeight),
+                BackgroundColor = Color.Transparent,
             };
-            _headerPanel.AddChild(_titleLabel);
+            _mainPanel.AddChild(_header);
 
-            string[] tabNames = { "主背包", "材料背包", "任务背包", "时装背包" };
-            _tabButtons = new InkButton[4];
-            for (int i = 0; i < _tabButtons.Length; i++)
+            // 底边框 gold-subtle
+            _header.AddChild(new ContainerControl
             {
-                int idx = i;
-                var btn = new InkButton
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, HeaderHeight - 1f),
+                Size = new Float2(MainPanelSize.X, 1f),
+                BackgroundColor = InkWashTheme.BorderGoldSubtle,
+            });
+
+            // 标题“行囊”（22px 楷书金色，letter-spacing 6px，右侧 1px 分隔线）
+            _header.AddChild(MakeLabel("行囊", ContentPadX, 0f, 60f, HeaderHeight,
+                InkWashTheme.GoldPrimary, 22f, InkWashTheme.FontRole.Display, TextAlignment.Near));
+            _header.AddChild(new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(ContentPadX + 60f + 16f, (HeaderHeight - 22f) * 0.5f),
+                Size = new Float2(1f, 22f),
+                BackgroundColor = InkWashTheme.BorderGoldSubtle,
+            });
+
+            // Tab：主背包/材料背包/任务背包/时装背包（gap 28，14px 黑体）
+            string[] tabNames = { "主背包", "材料背包", "任务背包", "时装背包" };
+            _tabs = new InvTab[tabNames.Length];
+            float tabX = ContentPadX + 60f + 16f + 1f + 32f;
+            const float tabW = 70f;
+            const float tabGap = 28f;
+            for (int i = 0; i < tabNames.Length; i++)
+            {
+                var tab = new InvTab(tabNames[i], i == 0)
                 {
-                    Variant = InkButtonVariant.Ghost,
-                    ButtonSize = InkButtonSize.Sm,
-                    Text = tabNames[i],
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 14f),
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(tabX, 0f),
+                    Size = new Float2(tabW, HeaderHeight),
                 };
-                btn.ButtonClicked += (b) => OnTabClicked(idx);
-                _tabButtons[i] = btn;
-                _headerPanel.AddChild(btn);
+                int captured = i;
+                tab.Clicked += () => OnTabClicked(captured);
+                _tabs[i] = tab;
+                _header.AddChild(tab);
+                tabX += tabW + tabGap;
             }
 
-            _sortButton = new InkButton
+            // 激活下划线 2px 金色
+            _tabActiveLine = new ContainerControl
             {
-                Variant = InkButtonVariant.Default,
-                ButtonSize = InkButtonSize.Sm,
-                Text = "整理",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(ContentPadX + 60f + 16f + 1f + 32f, HeaderHeight - 2f),
+                Size = new Float2(tabW, 2f),
+                BackgroundColor = InkWashTheme.GoldPrimary,
             };
-            _sortButton.ButtonClicked += (b) => EmitGoldAtButton(b);
-            _headerPanel.AddChild(_sortButton);
+            _header.AddChild(_tabActiveLine);
 
-            _warehouseButton = new InkButton
-            {
-                Variant = InkButtonVariant.Default,
-                ButtonSize = InkButtonSize.Sm,
-                Text = "仓库",
-            };
-            _warehouseButton.ButtonClicked += (b) => EmitGoldAtButton(b);
-            _headerPanel.AddChild(_warehouseButton);
-
-            _closeButton = new InkButton
+            // 右侧按钮：关闭（ghost 36x36）+ 仓库 + 整理（secondary sm）
+            _closeBtn = new InkButton
             {
                 Variant = InkButtonVariant.Ghost,
                 ButtonSize = InkButtonSize.Sm,
                 Text = "✕",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(MainPanelSize.X - ContentPadX - 36f, (HeaderHeight - 36f) * 0.5f),
+                Size = new Float2(36f, 36f),
+                BorderColor = InkWashTheme.BorderGoldSubtle,
+                BorderThickness = 1f,
             };
-            _closeButton.ButtonClicked += (b) => NavigationRequested?.Invoke("combat-hud");
-            _headerPanel.AddChild(_closeButton);
+            _closeBtn.ButtonClicked += (b) => OnCloseClicked();
+            _header.AddChild(_closeBtn);
 
-            AddChild(_headerPanel);
+            _warehouseBtn = new InkButton
+            {
+                Variant = InkButtonVariant.Secondary,
+                ButtonSize = InkButtonSize.Sm,
+                Text = "仓库",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(MainPanelSize.X - ContentPadX - 36f - 12f - 64f, (HeaderHeight - 24f) * 0.5f),
+                Size = new Float2(64f, 24f),
+            };
+            _warehouseBtn.ButtonClicked += (b) => EmitGoldAtButton(b);
+            _header.AddChild(_warehouseBtn);
+
+            _sortBtn = new InkButton
+            {
+                Variant = InkButtonVariant.Secondary,
+                ButtonSize = InkButtonSize.Sm,
+                Text = "整理",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(MainPanelSize.X - ContentPadX - 36f - 12f - 64f - 12f - 64f, (HeaderHeight - 24f) * 0.5f),
+                Size = new Float2(64f, 24f),
+            };
+            _sortBtn.ButtonClicked += (b) => EmitGoldAtButton(b);
+            _header.AddChild(_sortBtn);
         }
+
+        // ===================================================================
+        // 网格区：8 列 x 5 行格子 + 容量页脚
+        // ===================================================================
 
         private void BuildGridSection()
         {
-            _gridSection = new ContainerControl { BackgroundColor = Color.Transparent };
-            AddChild(_gridSection);
+            float contentTop = HeaderHeight + ContentPadY;
+            float contentBottom = MainPanelSize.Y - CurrencyHeight - ContentPadY;
+            float sectionH = contentBottom - contentTop;
 
-            _gridCells = new InkButton[GridCols * GridRows];
-            for (int i = 0; i < _gridCells.Length; i++)
+            _gridSection = new ContainerControl
             {
-                int idx = i;
-                var data = _cellData[i];
-                var cell = new InkButton
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(ContentPadX, contentTop),
+                Size = new Float2(GridSectionWidth, sectionH),
+                BackgroundColor = Color.Transparent,
+            };
+            _mainPanel.AddChild(_gridSection);
+
+            // 网格滚动区（居中放置 8x5 格子）
+            float footerH = GridFooterHeight;
+            float scrollH = sectionH - footerH - 16f;
+            _gridScroll = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = Float2.Zero,
+                Size = new Float2(GridSectionWidth, scrollH),
+                BackgroundColor = Color.Transparent,
+            };
+            _gridSection.AddChild(_gridScroll);
+
+            float gridW = CellSize * GridCols + CellGap * (GridCols - 1);
+            float gridH = CellSize * GridRows + CellGap * (GridRows - 1);
+            float startX = (GridSectionWidth - gridW) * 0.5f;
+            float startY = (scrollH - gridH) * 0.5f;
+
+            _cells = new InvCell[GridCols * GridRows];
+            for (int i = 0; i < _cells.Length; i++)
+            {
+                int col = i % GridCols;
+                int row = i / GridCols;
+                var cell = new InvCell(_cellData[i])
                 {
-                    Variant = InkButtonVariant.Default,
-                    ButtonSize = InkButtonSize.Sm,
-                    Text = "",
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(startX + col * (CellSize + CellGap), startY + row * (CellSize + CellGap)),
+                    Size = new Float2(CellSize, CellSize),
                 };
-                ApplyCellVisual(cell, data, false);
-
-                if (data.HasItem && !string.IsNullOrEmpty(data.Badge))
-                {
-                    bool isEnhance = data.Badge.StartsWith("+");
-                    var badge = new Label
-                    {
-                        Text = data.Badge,
-                        TextColor = isEnhance ? InkWashTheme.TextGold : InkWashTheme.TextDefault,
-                        Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
-                        HorizontalAlignment = isEnhance ? TextAlignment.Near : TextAlignment.Far,
-                        VerticalAlignment = isEnhance ? TextAlignment.Near : TextAlignment.Far,
-                    };
-                    cell.AddChild(badge);
-                }
-
-                cell.ButtonClicked += (b) => SelectCell(idx);
-                _gridCells[i] = cell;
-                _gridSection.AddChild(cell);
+                int captured = i;
+                cell.Clicked += () => OnCellClicked(captured);
+                _cells[i] = cell;
+                _gridScroll.AddChild(cell);
             }
 
-            _capLabel = new Label
+            // 容量页脚：格子 + 15/80 + 容量条
+            float footerY = sectionH - footerH;
+            var footer = new ContainerControl
             {
-                Text = "格子",
-                TextColor = InkWashTheme.TextSecondary,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, footerY),
+                Size = new Float2(GridSectionWidth, footerH),
+                BackgroundColor = Color.Transparent,
             };
-            _gridSection.AddChild(_capLabel);
+            _gridSection.AddChild(footer);
 
-            _capNum = new Label
+            footer.AddChild(new ContainerControl
             {
-                Text = "15/80",
-                TextColor = InkWashTheme.TextDefault,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 14f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, 0f),
+                Size = new Float2(GridSectionWidth, 1f),
+                BackgroundColor = InkWashTheme.BorderFaint,
+            });
+
+            footer.AddChild(MakeLabel("格子", 12f, 0f, 40f, footerH,
+                InkWashTheme.TextSecondary, 13f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+            footer.AddChild(MakeLabel("15/80", 56f, 0f, 60f, footerH,
+                InkWashTheme.PaperBright, 14f, InkWashTheme.FontRole.Number, TextAlignment.Near));
+
+            var capTrack = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(126f, (footerH - 4f) * 0.5f),
+                Size = new Float2(GridSectionWidth - 126f - 12f, 4f),
+                BackgroundColor = InkWashTheme.BorderFaint,
             };
-            _gridSection.AddChild(_capNum);
+            footer.AddChild(capTrack);
 
-            _capBarTrack = new Panel
+            _capBarFill = new ContainerControl
             {
-                BackgroundColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.08f),
-            };
-            _gridSection.AddChild(_capBarTrack);
-
-            _capBarFill = new Panel
-            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = Float2.Zero,
+                Size = new Float2((GridSectionWidth - 138f) * 0.1875f, 4f),
                 BackgroundColor = InkWashTheme.GoldPrimary,
             };
-            _capBarTrack.AddChild(_capBarFill);
+            capTrack.AddChild(_capBarFill);
         }
 
-        private void ApplyCellVisual(InkButton cell, CellData data, bool selected)
+        // ===================================================================
+        // 详情区：大图标 + 名称标签 + 属性 + 套装 + 操作按钮
+        // ===================================================================
+
+        private void BuildDetailPanel()
         {
-            Color bg;
-            Color border;
-            if (selected)
+            float contentTop = HeaderHeight + ContentPadY;
+            float contentBottom = MainPanelSize.Y - CurrencyHeight - ContentPadY;
+            float detailH = contentBottom - contentTop;
+            float detailX = ContentPadX + GridSectionWidth + ContentGap;
+            float detailW = MainPanelSize.X - ContentPadX * 2f - GridSectionWidth - ContentGap;
+
+            _detail = new ContainerControl
             {
-                bg = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.06f);
-                border = InkWashTheme.GoldPrimary;
-            }
-            else if (!data.HasItem)
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(detailX, contentTop),
+                Size = new Float2(detailW, detailH),
+                BackgroundColor = Color.Transparent,
+            };
+            _mainPanel.AddChild(_detail);
+            _detail.AddChild(new RoundedBox(
+                new Color(InkWashTheme.Void.R, InkWashTheme.Void.G, InkWashTheme.Void.B, 0.6f),
+                new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.12f),
+                8f));
+
+            float innerW = detailW - DetailPad * 2f;
+            float cx = DetailPad;
+            float dy = DetailPad;
+
+            // 大图标 120x120（居中，径向渐变金辉 + 金边）
+            _detailIcon = new DetailIconBox("剑", InkWashTheme.QualityLegendary)
             {
-                bg = new Color(28f / 255f, 31f / 255f, 40f / 255f, 0.5f);
-                border = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.08f);
-            }
-            else
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(cx + (innerW - 120f) * 0.5f, dy),
+                Size = new Float2(120f, 120f),
+            };
+            _detail.AddChild(_detailIcon);
+            dy += 120f + 2f + 14f;
+
+            // 名称 24px 楷书（品质色）
+            _detailName = MakeLabel("玄铁剑", cx, dy, innerW, 30f,
+                InkWashTheme.QualityLegendary, 24f, InkWashTheme.FontRole.Display, TextAlignment.Center);
+            _detail.AddChild(_detailName);
+            dy += 30f + 8f;
+
+            // 标签行：传说 / 武器 / 数量 1
+            float tagW = 56f;
+            float qtyW = 72f;
+            float tagsTotal = tagW * 2f + qtyW + 6f * 2f;
+            float tagX = cx + (innerW - tagsTotal) * 0.5f;
+            _tagQuality = new TagBox("传说",
+                new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.12f),
+                InkWashTheme.QualityLegendary,
+                new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.25f))
             {
-                bg = new Color(28f / 255f, 31f / 255f, 40f / 255f, 0.5f);
-                border = data.IsQuest ? InkWashTheme.Warning : InkWashTheme.QualityColor(data.Quality);
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(tagX, dy),
+                Size = new Float2(tagW, 22f),
+            };
+            _detail.AddChild(_tagQuality);
+            _tagType = new TagBox("武器",
+                new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.08f),
+                InkWashTheme.TextSecondary,
+                new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.15f))
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(tagX + tagW + 6f, dy),
+                Size = new Float2(tagW, 22f),
+            };
+            _detail.AddChild(_tagType);
+            _tagQty = new TagBox("数量 1",
+                new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.08f),
+                InkWashTheme.TextSecondary,
+                new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.15f))
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(tagX + (tagW + 6f) * 2f, dy),
+                Size = new Float2(qtyW, 22f),
+            };
+            _detail.AddChild(_tagQty);
+            dy += 22f + 14f;
+
+            // 元信息网格 2x2（强化/五行/绑定/耐久），上下发丝线
+            var metaTop = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(cx, dy),
+                Size = new Float2(innerW, 1f),
+                BackgroundColor = InkWashTheme.BorderFaint,
+            };
+            _detail.AddChild(metaTop);
+            dy += 1f + 12f;
+
+            float halfW = innerW * 0.5f - 10f;
+            AddMetaRow(_detail, cx, dy, halfW, "强化", out _metaEnhanceVal);
+            _metaEnhanceVal.Text = "+12";
+            _metaEnhanceVal.TextColor = InkWashTheme.GoldPrimary;
+            AddMetaRow(_detail, cx + halfW + 20f, dy, halfW, "五行", out _metaElementVal);
+            _metaElementVal.Text = "金";
+            _metaElementVal.TextColor = InkWashTheme.ElementMetal;
+            dy += 22f + 8f;
+            AddMetaRow(_detail, cx, dy, halfW, "绑定", out _metaBindVal);
+            _metaBindVal.Text = "拾取绑定";
+            AddMetaRow(_detail, cx + halfW + 20f, dy, halfW, "耐久", out _metaDuraVal);
+            _metaDuraVal.Text = "850/1000";
+            dy += 22f + 12f;
+
+            var metaBottom = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(cx, dy),
+                Size = new Float2(innerW, 1f),
+                BackgroundColor = InkWashTheme.BorderFaint,
+            };
+            _detail.AddChild(metaBottom);
+            dy += 1f + 10f;
+
+            // 耐久度条 4px（85%）
+            var duraTrack = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(cx + 2f, dy),
+                Size = new Float2(innerW - 4f, 4f),
+                BackgroundColor = InkWashTheme.BorderFaint,
+            };
+            _detail.AddChild(duraTrack);
+            duraTrack.AddChild(new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = Float2.Zero,
+                Size = new Float2((innerW - 4f) * 0.85f, 4f),
+                BackgroundColor = InkWashTheme.GoldPrimary,
+            });
+            dy += 4f + 14f;
+
+            // 基础属性
+            dy = AddAttrSection(_detail, cx, dy, innerW, "基础属性",
+                new[] { ("攻击力", "+120"), ("暴击率", "+5%") },
+                new[] { InkWashTheme.PaperBright, InkWashTheme.PaperBright });
+
+            // 附加属性
+            dy = AddAttrSection(_detail, cx, dy, innerW, "附加属性",
+                new[] { ("会心率", "+3%") },
+                new[] { InkWashTheme.TextJade });
+
+            // 套装效果
+            _detail.AddChild(MakeSectionTitle("套装效果", cx, dy, innerW));
+            dy += 20f + 4f + 8f;
+            var setBox = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(cx, dy),
+                Size = new Float2(innerW, 60f),
+                BackgroundColor = Color.Transparent,
+            };
+            _detail.AddChild(setBox);
+            setBox.AddChild(new RoundedBox(
+                new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.06f),
+                new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.12f),
+                4f));
+            setBox.AddChild(MakeLabel("◆", 12f, 8f, 14f, 18f,
+                InkWashTheme.GoldPrimary, 11f, InkWashTheme.FontRole.Body, TextAlignment.Center));
+            setBox.AddChild(MakeLabel("玄铁套", 30f, 8f, 80f, 18f,
+                InkWashTheme.GoldPrimary, 13f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+            setBox.AddChild(MakeLabel("2/4", 112f, 8f, 40f, 18f,
+                InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Number, TextAlignment.Near));
+            setBox.AddChild(MakeLabel("2件套：攻击力 +10%", 12f, 32f, innerW - 24f, 18f,
+                InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+
+            // 操作按钮行（底部固定：使用/装备/丢弃）
+            float actionY = detailH - DetailPad - 36f;
+            var actionLine = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(cx, actionY - 12f - 1f),
+                Size = new Float2(innerW, 1f),
+                BackgroundColor = InkWashTheme.BorderFaint,
+            };
+            _detail.AddChild(actionLine);
+
+            float btnW = (innerW - 12f * 2f) / 3f;
+            _useBtn = new InkButton
+            {
+                Variant = InkButtonVariant.Brand,
+                ButtonSize = InkButtonSize.Lg,
+                Text = "使用",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(cx, actionY),
+                Size = new Float2(btnW, 36f),
+            };
+            _useBtn.ButtonClicked += (b) => EmitGoldAtButton(b);
+            _detail.AddChild(_useBtn);
+
+            _equipBtn = new InkButton
+            {
+                Variant = InkButtonVariant.Secondary,
+                ButtonSize = InkButtonSize.Lg,
+                Text = "装备",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(cx + btnW + 12f, actionY),
+                Size = new Float2(btnW, 36f),
+            };
+            _equipBtn.ButtonClicked += (b) => EmitGoldAtButton(b);
+            _detail.AddChild(_equipBtn);
+
+            _dropBtn = new InkButton
+            {
+                Variant = InkButtonVariant.Danger,
+                ButtonSize = InkButtonSize.Lg,
+                Text = "丢弃",
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(cx + (btnW + 12f) * 2f, actionY),
+                Size = new Float2(btnW, 36f),
+            };
+            _dropBtn.ButtonClicked += (b) => EmitGoldAtButton(b);
+            _detail.AddChild(_dropBtn);
+        }
+
+        /// <summary>元信息行：标签（12px 弱色）+ 值（13px）。</summary>
+        private void AddMetaRow(ContainerControl parent, float x, float y, float w, string label, out Label val)
+        {
+            parent.AddChild(MakeLabel(label, x, y, w * 0.4f, 22f,
+                InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+            val = MakeLabel("", x + w * 0.4f, y, w * 0.6f, 22f,
+                InkWashTheme.PaperBright, 13f, InkWashTheme.FontRole.Number, TextAlignment.Far);
+            parent.AddChild(val);
+        }
+
+        /// <summary>区块标题（14px 楷书金色 + 下划发丝线）。</summary>
+        private ContainerControl MakeSectionTitle(string title, float x, float y, float w)
+        {
+            var c = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(x, y),
+                Size = new Float2(w, 24f),
+                BackgroundColor = Color.Transparent,
+            };
+            c.AddChild(MakeLabel(title, 0f, 0f, 120f, 20f,
+                InkWashTheme.GoldPrimary, 14f, InkWashTheme.FontRole.Display, TextAlignment.Near));
+            c.AddChild(new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, 23f),
+                Size = new Float2(w, 1f),
+                BackgroundColor = InkWashTheme.BorderFaint,
+            });
+            return c;
+        }
+
+        /// <summary>属性区块：标题 + 属性行（标签 13px 弱色 + 值 14px 数字）。</summary>
+        private float AddAttrSection(ContainerControl parent, float x, float y, float w,
+            string title, (string label, string val)[] rows, Color[] valColors)
+        {
+            parent.AddChild(MakeSectionTitle(title, x, y, w));
+            y += 20f + 4f + 8f;
+            for (int i = 0; i < rows.Length; i++)
+            {
+                parent.AddChild(MakeLabel(rows[i].label, x, y, w * 0.5f, 20f,
+                    InkWashTheme.TextSecondary, 13f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+                parent.AddChild(MakeLabel(rows[i].val, x + w * 0.5f, y, w * 0.5f, 20f,
+                    valColors[i], 14f, InkWashTheme.FontRole.Number, TextAlignment.Far));
+                y += 20f + 6f;
             }
-            cell.BackgroundColor = bg;
-            cell.BorderColor = border;
-            cell.BorderThickness = 1f;
+            y += 8f;
+            return y;
+        }
+
+        // ===================================================================
+        // 货币栏：铜币 / 银两 / 金锭 / 元宝（分隔线分隔）
+        // ===================================================================
+
+        private void BuildCurrencyBar()
+        {
+            float barTop = MainPanelSize.Y - CurrencyHeight;
+            _currencyBar = new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, barTop),
+                Size = new Float2(MainPanelSize.X, CurrencyHeight),
+                BackgroundColor = Color.Transparent,
+            };
+            _mainPanel.AddChild(_currencyBar);
+
+            _currencyBar.AddChild(new ContainerControl
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(0f, 0f),
+                Size = new Float2(MainPanelSize.X, 1f),
+                BackgroundColor = InkWashTheme.BorderGoldSubtle,
+            });
+
+            // (glyph, label, value, iconColor)
+            var defs = new (string glyph, string label, string val, Color iconColor)[]
+            {
+                ("铜", "铜币", "12,450", InkWashTheme.Alert),
+                ("银", "银两", "3,200",  InkWashTheme.TextSecondary),
+                ("金", "金锭", "85",     InkWashTheme.GoldPrimary),
+                ("宝", "元宝", "12",     InkWashTheme.GoldBright),
+            };
+
+            float itemW = (MainPanelSize.X - ContentPadX * 2f - 3f) / 4f;
+            float ix = ContentPadX;
+            for (int i = 0; i < defs.Length; i++)
+            {
+                var d = defs[i];
+                var item = new ContainerControl
+                {
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Location = new Float2(ix, 0f),
+                    Size = new Float2(itemW, CurrencyHeight),
+                    BackgroundColor = Color.Transparent,
+                };
+                _currencyBar.AddChild(item);
+
+                item.AddChild(MakeLabel(d.glyph, 0f, 0f, 22f, CurrencyHeight,
+                    d.iconColor, 16f, InkWashTheme.FontRole.Body, TextAlignment.Center));
+                item.AddChild(MakeLabel(d.label, 32f, 0f, 48f, CurrencyHeight,
+                    InkWashTheme.TextSecondary, 12f, InkWashTheme.FontRole.Body, TextAlignment.Near));
+                item.AddChild(MakeLabel(d.val, itemW - 110f, 0f, 110f, CurrencyHeight,
+                    InkWashTheme.PaperBright, 17f, InkWashTheme.FontRole.Number, TextAlignment.Far));
+
+                ix += itemW;
+                if (i < defs.Length - 1)
+                {
+                    _currencyBar.AddChild(new ContainerControl
+                    {
+                        AnchorPreset = AnchorPresets.TopLeft,
+                        Location = new Float2(ix, (CurrencyHeight - 28f) * 0.5f),
+                        Size = new Float2(1f, 28f),
+                        BackgroundColor = new Color(InkWashTheme.GoldPrimary.R, InkWashTheme.GoldPrimary.G, InkWashTheme.GoldPrimary.B, 0.12f),
+                    });
+                    ix += 1f;
+                }
+            }
+        }
+
+        // ===================================================================
+        // 事件处理
+        // ===================================================================
+
+        private void OnTabClicked(int index)
+        {
+            if (_tabs == null) return;
+            for (int i = 0; i < _tabs.Length; i++)
+                _tabs[i].IsActive = (i == index);
+            if (_tabActiveLine != null)
+                _tabActiveLine.Location = new Float2(
+                    ContentPadX + 60f + 16f + 1f + 32f + index * (70f + 28f), HeaderHeight - 2f);
+        }
+
+        private void OnCellClicked(int index)
+        {
+            if (_cellData[index].HasItem)
+                SelectCell(index);
         }
 
         private void SelectCell(int index)
         {
-            if (_selectedCellIndex >= 0 && _selectedCellIndex < _gridCells.Length)
-            {
-                ApplyCellVisual(_gridCells[_selectedCellIndex], _cellData[_selectedCellIndex], false);
-            }
-            _selectedCellIndex = index;
-            if (index >= 0 && index < _gridCells.Length)
-            {
-                ApplyCellVisual(_gridCells[index], _cellData[index], true);
-            }
-            PopulateDetailForCell(index);
+            if (_cells == null) return;
+            for (int i = 0; i < _cells.Length; i++)
+                _cells[i].IsSelected = (i == index);
+            _selectedCell = index;
+            PopulateDetail(index);
+            if (index >= 0 && index < _cells.Length)
+                EmitGoldAtControl(_cells[index]);
         }
 
-        private void BuildDetailPanel()
+        private void PopulateDetail(int index)
         {
-            _detailPanel = new ContainerControl
-            {
-                BackgroundColor = new Color(14f / 255f, 16f / 255f, 22f / 255f, 0.6f),
-            };
-            AddChild(_detailPanel);
-
-            _detailIconOuter = new ContainerControl { BackgroundColor = Color.Transparent };
-            _detailPanel.AddChild(_detailIconOuter);
-
-            _detailIconGlow = new Panel
-            {
-                BackgroundColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.15f),
-            };
-            _detailIconOuter.AddChild(_detailIconGlow);
-
-            _detailName = new Label
-            {
-                TextColor = InkWashTheme.QualityLegendary,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 24f),
-                HorizontalAlignment = TextAlignment.Center,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _detailPanel.AddChild(_detailName);
-
-            _detailTagQuality = new Label
-            {
-                TextColor = InkWashTheme.TextGold,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
-                BackgroundColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.12f),
-                HorizontalAlignment = TextAlignment.Center,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _detailPanel.AddChild(_detailTagQuality);
-
-            _detailTagType = new Label
-            {
-                TextColor = InkWashTheme.TextSecondary,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
-                BackgroundColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.08f),
-                HorizontalAlignment = TextAlignment.Center,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _detailPanel.AddChild(_detailTagType);
-
-            _detailTagQty = new Label
-            {
-                TextColor = InkWashTheme.TextSecondary,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
-                BackgroundColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.08f),
-                HorizontalAlignment = TextAlignment.Center,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _detailPanel.AddChild(_detailTagQty);
-
-            _metaEnhance = new Label
-            {
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-                TextColor = InkWashTheme.TextGold,
-            };
-            _detailPanel.AddChild(_metaEnhance);
-
-            _metaElement = new Label
-            {
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-                TextColor = InkWashTheme.ElementMetal,
-            };
-            _detailPanel.AddChild(_metaElement);
-
-            _metaBind = new Label
-            {
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-                TextColor = InkWashTheme.TextDefault,
-            };
-            _detailPanel.AddChild(_metaBind);
-
-            _metaDura = new Label
-            {
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-                TextColor = InkWashTheme.TextDefault,
-            };
-            _detailPanel.AddChild(_metaDura);
-
-            _durabilityTrack = new Panel
-            {
-                BackgroundColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.08f),
-            };
-            _detailPanel.AddChild(_durabilityTrack);
-
-            _durabilityFill = new Panel
-            {
-                BackgroundColor = InkWashTheme.GoldPrimary,
-            };
-            _durabilityTrack.AddChild(_durabilityFill);
-
-            _baseAttrTitle = new Label
-            {
-                Text = "基础属性",
-                TextColor = InkWashTheme.TextGold,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 14f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _detailPanel.AddChild(_baseAttrTitle);
-
-            _baseAtk = new Label
-            {
-                TextColor = InkWashTheme.TextDefault,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _detailPanel.AddChild(_baseAtk);
-
-            _baseCrit = new Label
-            {
-                TextColor = InkWashTheme.TextDefault,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _detailPanel.AddChild(_baseCrit);
-
-            _extraAttrTitle = new Label
-            {
-                Text = "附加属性",
-                TextColor = InkWashTheme.TextGold,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 14f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _detailPanel.AddChild(_extraAttrTitle);
-
-            _extraFocus = new Label
-            {
-                TextColor = InkWashTheme.TextJade,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 13f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _detailPanel.AddChild(_extraFocus);
-
-            _setTitle = new Label
-            {
-                Text = "套装效果",
-                TextColor = InkWashTheme.TextGold,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 14f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _detailPanel.AddChild(_setTitle);
-
-            _setBox = new ContainerControl
-            {
-                BackgroundColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.06f),
-            };
-            _detailPanel.AddChild(_setBox);
-
-            _setName = new Label
-            {
-                TextColor = InkWashTheme.TextGold,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Heading, 13f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _setBox.AddChild(_setName);
-
-            _setCount = new Label
-            {
-                TextColor = InkWashTheme.TextSecondary,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Center,
-            };
-            _setBox.AddChild(_setCount);
-
-            _setDesc = new Label
-            {
-                TextColor = InkWashTheme.TextSecondary,
-                Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
-                HorizontalAlignment = TextAlignment.Near,
-                VerticalAlignment = TextAlignment.Near,
-            };
-            _setBox.AddChild(_setDesc);
-
-            _actionRow = new ContainerControl { BackgroundColor = Color.Transparent };
-            _detailPanel.AddChild(_actionRow);
-
-            _useButton = new InkButton
-            {
-                Variant = InkButtonVariant.Primary,
-                ButtonSize = InkButtonSize.Md,
-                Text = "使用",
-            };
-            _useButton.ButtonClicked += (b) => EmitGoldAtButton(b);
-            _actionRow.AddChild(_useButton);
-
-            _equipButton = new InkButton
-            {
-                Variant = InkButtonVariant.Default,
-                ButtonSize = InkButtonSize.Md,
-                Text = "装备",
-            };
-            _equipButton.ButtonClicked += (b) => EmitGoldAtButton(b);
-            _actionRow.AddChild(_equipButton);
-
-            _dropButton = new InkButton
-            {
-                Variant = InkButtonVariant.Vermilion,
-                ButtonSize = InkButtonSize.Md,
-                Text = "丢弃",
-            };
-            _dropButton.ButtonClicked += (b) => EmitGoldAtButton(b);
-            _actionRow.AddChild(_dropButton);
-        }
-
-        private void PopulateDetailMock()
-        {
-            _detailName.Text = "玄铁剑";
-            _detailTagQuality.Text = "传说";
-            _detailTagType.Text = "武器";
-            _detailTagQty.Text = "数量 1";
-            _metaEnhance.Text = "强化  +12";
-            _metaElement.Text = "五行  金";
-            _metaBind.Text = "绑定  拾取绑定";
-            _metaDura.Text = "耐久  850/1000";
-            _baseAtk.Text = "攻击力        +120";
-            _baseCrit.Text = "暴击率        +5%";
-            _extraFocus.Text = "会心率        +3%";
-            _setName.Text = "玄铁套";
-            _setCount.Text = "2/4";
-            _setDesc.Text = "2件套：攻击力 +10%";
-        }
-
-        private void PopulateDetailForCell(int index)
-        {
-            if (index < 0 || index >= _cellData.Length || !_cellData[index].HasItem)
-            {
-                _detailName.Text = "";
-                _detailTagQuality.Text = "";
-                _detailTagType.Text = "";
-                _detailTagQty.Text = "";
-                _metaEnhance.Text = "";
-                _metaElement.Text = "";
-                _metaBind.Text = "";
-                _metaDura.Text = "";
-                _baseAtk.Text = "";
-                _baseCrit.Text = "";
-                _extraFocus.Text = "";
-                _setName.Text = "";
-                _setCount.Text = "";
-                _setDesc.Text = "";
-                _detailIconGlow.BackgroundColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.05f);
-                _detailName.TextColor = InkWashTheme.TextSecondary;
-                return;
-            }
-
+            if (index < 0 || index >= _cellData.Length || !_cellData[index].HasItem) return;
             var data = _cellData[index];
-            string qualityName = data.Quality switch
+
+            string qualityName = data.IsQuest ? "任务" : data.Quality switch
             {
                 InkWashTheme.InkQuality.Legendary => "传说",
                 InkWashTheme.InkQuality.Epic => "史诗",
-                InkWashTheme.InkQuality.Rare => "精良",
-                InkWashTheme.InkQuality.Uncommon => "优秀",
+                InkWashTheme.InkQuality.Rare => "稀有",
+                InkWashTheme.InkQuality.Uncommon => "良好",
                 _ => "普通",
             };
-            if (data.IsQuest) qualityName = "任务";
-
-            string itemName = data.IsQuest ? "密信" : (index switch { 0 => "玄铁剑", 1 => "寒铁刀", 2 => "精铁护腕", 3 => "布衣", 4 => "铁剑", 5 => "皮甲", 6 => "生命药水", 7 => "内力药水", 8 => "活血丹", 9 => "铁矿", 10 => "草药", 11 => "兽皮", 12 => "铁矿", 13 => "草药", _ => "物品" });
-
-            _detailName.Text = itemName;
-            _detailTagQuality.Text = qualityName;
-            _detailTagType.Text = data.IsQuest ? "任务" : "道具";
-            _detailTagQty.Text = "数量 " + (data.Badge ?? "1");
-            _metaEnhance.Text = "强化  " + (data.Badge ?? "-");
-            _metaElement.Text = "五行  金";
-            _metaBind.Text = "绑定  拾取绑定";
-            _metaDura.Text = "耐久  -/-";
-            _baseAtk.Text = data.Badge != null ? "属性        " + data.Badge : "";
-            _baseCrit.Text = "";
-            _extraFocus.Text = "";
-            _setName.Text = "";
-            _setCount.Text = "";
-            _setDesc.Text = "";
-
             Color qColor = data.IsQuest ? InkWashTheme.Warning : InkWashTheme.QualityColor(data.Quality);
+
+            _detailName.Text = data.Name;
             _detailName.TextColor = qColor;
-            _detailTagQuality.TextColor = qColor;
-            _detailTagQuality.BackgroundColor = new Color(qColor.R, qColor.G, qColor.B, 0.12f);
-            _detailIconGlow.BackgroundColor = new Color(qColor.R, qColor.G, qColor.B, 0.15f);
+            _tagQuality.SetText(qualityName);
+            _tagQuality.SetColors(new Color(qColor.R, qColor.G, qColor.B, 0.12f), qColor,
+                new Color(qColor.R, qColor.G, qColor.B, 0.25f));
+            _tagType.SetText(data.Type);
+            _tagQty.SetText("数量 " + (data.Qty ?? "1"));
+            _detailIcon.SetGlyph(data.Glyph, qColor);
+            _metaEnhanceVal.Text = data.Enhance ?? "-";
+            _metaEnhanceVal.TextColor = data.Enhance != null ? InkWashTheme.GoldPrimary : InkWashTheme.TextSecondary;
+            _metaDuraVal.Text = data.Enhance != null ? "850/1000" : "-/-";
         }
 
-        private void BuildCurrencyBar()
+        private void OnCloseClicked()
         {
-            _currencyBar = new ContainerControl { BackgroundColor = Color.Transparent };
-            AddChild(_currencyBar);
-
-            string[][] defs = {
-                new[] { "\U0001fa99", "铜币", "12,450" },
-                new[] { "\U0001f4a0", "银两", "3,200" },
-                new[] { "\U0001f3c5", "金锭", "85" },
-                new[] { "\U0001f48e", "元宝", "12" },
-            };
-            Color[] iconColors = {
-                InkWashTheme.Warning,
-                InkWashTheme.TextSecondary,
-                InkWashTheme.GoldPrimary,
-                InkWashTheme.GoldBright,
-            };
-            ContainerControl[] items = new ContainerControl[4];
-            for (int i = 0; i < 4; i++)
-            {
-                var item = new ContainerControl { BackgroundColor = Color.Transparent };
-
-                var icon = new Label
-                {
-                    Text = defs[i][0],
-                    TextColor = iconColors[i],
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 14f),
-                    HorizontalAlignment = TextAlignment.Near,
-                    VerticalAlignment = TextAlignment.Center,
-                };
-                item.AddChild(icon);
-
-                var label = new Label
-                {
-                    Text = defs[i][1],
-                    TextColor = InkWashTheme.TextSecondary,
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f),
-                    HorizontalAlignment = TextAlignment.Near,
-                    VerticalAlignment = TextAlignment.Center,
-                };
-                item.AddChild(label);
-
-                var val = new Label
-                {
-                    Text = defs[i][2],
-                    TextColor = InkWashTheme.TextDefault,
-                    Font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 17f),
-                    HorizontalAlignment = TextAlignment.Far,
-                    VerticalAlignment = TextAlignment.Center,
-                };
-                item.AddChild(val);
-
-                _currencyBar.AddChild(item);
-                items[i] = item;
-            }
-
-            _currCopper = items[0];
-            _currSilver = items[1];
-            _currGold = items[2];
-            _currYuanbao = items[3];
-
-            for (int i = 0; i < 3; i++)
-            {
-                var sep = new Panel
-                {
-                    BackgroundColor = new Color(200f / 255f, 168f / 255f, 88f / 255f, 0.12f),
-                };
-                _currencyBar.AddChild(sep);
-                switch (i)
-                {
-                    case 0: _currencySep1 = sep; break;
-                    case 1: _currencySep2 = sep; break;
-                    case 2: _currencySep3 = sep; break;
-                }
-            }
-        }
-
-        private void OnTabClicked(int index)
-        {
-            _activeTabIndex = index;
-            ApplyTabHighlight();
-        }
-
-        private void ApplyTabHighlight()
-        {
-            if (_tabButtons == null) return;
-            for (int i = 0; i < _tabButtons.Length; i++)
-            {
-                if (_tabButtons[i] == null) continue;
-                _tabButtons[i].TextColor = (i == _activeTabIndex) ? InkWashTheme.TextGold : InkWashTheme.TextSecondary;
-            }
+            NavigationRequested?.Invoke(InkPageDomIds.CombatHud);
         }
 
         private void EmitGoldAtButton(Button button)
@@ -717,230 +775,39 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
                 var center = new Float2(button.Width * 0.5f, button.Height * 0.5f);
                 var screenPos = button.PointToScreen(center);
                 var localPos = ParticleSystem.PointFromScreen(screenPos);
-                ParticleSystem.EmitGoldBurst(localPos, count: 14, isLarge: false);
+                ParticleSystem.EmitGoldBurst(localPos, count: 12, isLarge: false);
             }
             catch { }
         }
+
+        private void EmitGoldAtControl(Control control)
+        {
+            if (ParticleSystem == null || control == null) return;
+            try
+            {
+                var center = new Float2(control.Width * 0.5f, control.Height * 0.5f);
+                var screenPos = control.PointToScreen(center);
+                var localPos = ParticleSystem.PointFromScreen(screenPos);
+                ParticleSystem.EmitGoldBurst(localPos, count: 8, isLarge: false);
+            }
+            catch { }
+        }
+
+        // ===================================================================
+        // 布局
+        // ===================================================================
 
         public void RefreshLayout()
         {
             try
             {
-                float w = Width;
-                float h = Height;
-                if (w <= 0f || h <= 0f) return;
-
-                float pad = 16f;
-                float panelX = pad;
-                float panelW = w - pad * 2f;
-
-                if (_headerPanel != null)
+                float sw = Width;
+                float sh = Height;
+                if (_mainPanel != null)
                 {
-                    _headerPanel.Location = new Float2(panelX, pad);
-                    _headerPanel.Size = new Float2(panelW, HeaderHeight);
-
-                    float titleW = 80f;
-                    _titleLabel.Location = new Float2(0f, 0f);
-                    _titleLabel.Size = new Float2(titleW, HeaderHeight);
-
-                    float tabStartX = titleW + 24f + 16f;
-                    float tabGap = 28f;
-                    for (int i = 0; i < _tabButtons.Length; i++)
-                    {
-                        _tabButtons[i].Location = new Float2(tabStartX + i * (80f + tabGap), 0f);
-                        _tabButtons[i].Size = new Float2(80f, HeaderHeight);
-                    }
-
-                    float rightX = panelW - 4f;
-                    float btnSize = 32f;
-                    _closeButton.Location = new Float2(rightX - btnSize, (HeaderHeight - 28f) * 0.5f);
-                    _closeButton.Size = new Float2(btnSize, 28f);
-                    rightX -= btnSize + 6f;
-
-                    btnSize = 56f;
-                    _warehouseButton.Location = new Float2(rightX - btnSize, (HeaderHeight - 28f) * 0.5f);
-                    _warehouseButton.Size = new Float2(btnSize, 28f);
-                    rightX -= btnSize + 6f;
-
-                    _sortButton.Location = new Float2(rightX - btnSize, (HeaderHeight - 28f) * 0.5f);
-                    _sortButton.Size = new Float2(btnSize, 28f);
-                }
-
-                float headerBottom = pad + HeaderHeight + 14f;
-                float currencyTop = h - pad - CurrencyHeight;
-                float contentTop = headerBottom;
-                float contentH = currencyTop - contentTop - 12f;
-                if (contentH < 200f) contentH = 200f;
-
-                float innerX = 4f;
-                float innerW = panelW - 8f;
-                _gridSection.Location = new Float2(panelX + innerX, contentTop);
-                _gridSection.Size = new Float2(GridFixedWidth, contentH);
-
-                float cellTotalW = CellSize * GridCols + CellGap * (GridCols - 1);
-                float cellTotalH = CellSize * GridRows + CellGap * (GridRows - 1);
-                float gridStartX = (GridFixedWidth - cellTotalW) * 0.5f;
-                float gridStartY = 4f;
-
-                for (int i = 0; i < _gridCells.Length; i++)
-                {
-                    int col = i % GridCols;
-                    int row = i / GridCols;
-                    _gridCells[i].Location = new Float2(gridStartX + col * (CellSize + CellGap), gridStartY + row * (CellSize + CellGap));
-                    _gridCells[i].Size = new Float2(CellSize, CellSize);
-                    _gridCells[i].Height = CellSize;
-
-                    foreach (var child in _gridCells[i].Children)
-                    {
-                        if (child is Label badge)
-                        {
-                            badge.Location = new Float2(2f, 2f);
-                            badge.Size = new Float2(CellSize - 4f, CellSize - 4f);
-                        }
-                    }
-                }
-
-                float footerY = gridStartY + cellTotalH + 16f;
-                float footerH = 24f;
-                _capLabel.Location = new Float2(gridStartX, footerY);
-                _capLabel.Size = new Float2(40f, footerH);
-
-                _capNum.Location = new Float2(gridStartX + 44f, footerY);
-                _capNum.Size = new Float2(70f, footerH);
-
-                float capBarX = gridStartX + 120f;
-                float capBarW = GridFixedWidth - capBarX - gridStartX;
-                _capBarTrack.Location = new Float2(capBarX, footerY + (footerH - 4f) * 0.5f);
-                _capBarTrack.Size = new Float2(Mathf.Max(60f, capBarW), 4f);
-
-                _capBarFill.Location = Float2.Zero;
-                _capBarFill.Size = new Float2(_capBarTrack.Width * 0.1875f, 4f);
-
-                float detailW = innerW - GridFixedWidth - ContentGap;
-                if (detailW < 300f) detailW = 300f;
-                _detailPanel.Location = new Float2(panelX + innerX + GridFixedWidth + ContentGap, contentTop);
-                _detailPanel.Size = new Float2(detailW, contentH);
-
-                float dp = 16f;
-                float dw = detailW - dp * 2f;
-
-                float iconSize = 120f;
-                _detailIconOuter.Location = new Float2(dp + (dw - iconSize) * 0.5f, dp);
-                _detailIconOuter.Size = new Float2(iconSize, iconSize);
-
-                _detailIconGlow.Location = Float2.Zero;
-                _detailIconGlow.Size = new Float2(iconSize, iconSize);
-
-                float nameY = dp + iconSize + 12f;
-                _detailName.Location = new Float2(dp, nameY);
-                _detailName.Size = new Float2(dw, 28f);
-
-                float tagsY = nameY + 30f;
-                float tagW = 50f;
-                _detailTagQuality.Location = new Float2(dp + (dw - tagW * 3f - 12f) * 0.5f, tagsY);
-                _detailTagQuality.Size = new Float2(tagW, 22f);
-
-                _detailTagType.Location = new Float2(dp + (dw - tagW * 3f - 12f) * 0.5f + tagW + 6f, tagsY);
-                _detailTagType.Size = new Float2(tagW, 22f);
-
-                _detailTagQty.Location = new Float2(dp + (dw - tagW * 3f - 12f) * 0.5f + (tagW + 6f) * 2f, tagsY);
-                _detailTagQty.Size = new Float2(tagW + 12f, 22f);
-
-                float metaY = tagsY + 28f;
-                float halfW = dw * 0.5f - 4f;
-                _metaEnhance.Location = new Float2(dp, metaY);
-                _metaEnhance.Size = new Float2(halfW, 22f);
-                _metaElement.Location = new Float2(dp + halfW + 8f, metaY);
-                _metaElement.Size = new Float2(halfW, 22f);
-                _metaBind.Location = new Float2(dp, metaY + 24f);
-                _metaBind.Size = new Float2(halfW, 22f);
-                _metaDura.Location = new Float2(dp + halfW + 8f, metaY + 24f);
-                _metaDura.Size = new Float2(halfW, 22f);
-
-                float duraY = metaY + 50f + 4f;
-                _durabilityTrack.Location = new Float2(dp + 2f, duraY);
-                _durabilityTrack.Size = new Float2(dw - 4f, 4f);
-                _durabilityFill.Location = Float2.Zero;
-                _durabilityFill.Size = new Float2(_durabilityTrack.Width * 0.85f, 4f);
-
-                float attrY = duraY + 16f;
-                _baseAttrTitle.Location = new Float2(dp, attrY);
-                _baseAttrTitle.Size = new Float2(dw, 20f);
-                _baseAtk.Location = new Float2(dp, attrY + 22f);
-                _baseAtk.Size = new Float2(dw, 20f);
-                _baseCrit.Location = new Float2(dp, attrY + 44f);
-                _baseCrit.Size = new Float2(dw, 20f);
-
-                float extraY = attrY + 68f;
-                _extraAttrTitle.Location = new Float2(dp, extraY);
-                _extraAttrTitle.Size = new Float2(dw, 20f);
-                _extraFocus.Location = new Float2(dp, extraY + 22f);
-                _extraFocus.Size = new Float2(dw, 20f);
-
-                float setTitleY = extraY + 48f;
-                _setTitle.Location = new Float2(dp, setTitleY);
-                _setTitle.Size = new Float2(dw, 20f);
-
-                float setBoxY = setTitleY + 22f;
-                _setBox.Location = new Float2(dp, setBoxY);
-                _setBox.Size = new Float2(dw, 56f);
-                _setName.Location = new Float2(8f, 6f);
-                _setName.Size = new Float2(100f, 18f);
-                _setCount.Location = new Float2(108f, 6f);
-                _setCount.Size = new Float2(60f, 18f);
-                _setDesc.Location = new Float2(8f, 26f);
-                _setDesc.Size = new Float2(dw - 16f, 22f);
-
-                float actionY = setBoxY + 60f + 8f;
-                _actionRow.Location = new Float2(dp, actionY);
-                _actionRow.Size = new Float2(dw, 40f);
-                float abtnW = (dw - 12f * 2f) / 3f;
-                _useButton.Size = new Float2(abtnW, 36f);
-                _useButton.Location = new Float2(0f, 2f);
-                _equipButton.Size = new Float2(abtnW, 36f);
-                _equipButton.Location = new Float2(abtnW + 12f, 2f);
-                _dropButton.Size = new Float2(abtnW, 36f);
-                _dropButton.Location = new Float2((abtnW + 12f) * 2f, 2f);
-
-                if (_currencyBar != null)
-                {
-                    _currencyBar.Location = new Float2(panelX, currencyTop);
-                    _currencyBar.Size = new Float2(panelW, CurrencyHeight);
-
-                    float sepW = 1f;
-                    float itemW = (panelW - sepW * 3f) / 4f;
-                    ContainerControl[] currItems = { _currCopper, _currSilver, _currGold, _currYuanbao };
-                    Panel[] seps = { _currencySep1, _currencySep2, _currencySep3 };
-
-                    for (int i = 0; i < 4; i++)
-                    {
-                        var item = currItems[i];
-                        float ix = i * (itemW + sepW);
-                        item.Location = new Float2(ix, 0f);
-                        item.Size = new Float2(itemW, CurrencyHeight);
-
-                        if (item.ChildrenCount >= 3 && item.Children[2] is Label val)
-                        {
-                            val.Location = new Float2(itemW - 100f, (CurrencyHeight - 20f) * 0.5f);
-                            val.Size = new Float2(100f, 20f);
-                        }
-                        if (item.ChildrenCount >= 2 && item.Children[1] is Label lbl)
-                        {
-                            lbl.Location = new Float2(28f, (CurrencyHeight - 20f) * 0.5f);
-                            lbl.Size = new Float2(itemW - 130f, 20f);
-                        }
-                        if (item.ChildrenCount >= 1 && item.Children[0] is Label icon)
-                        {
-                            icon.Location = new Float2(0f, (CurrencyHeight - 20f) * 0.5f);
-                            icon.Size = new Float2(24f, 20f);
-                        }
-
-                        if (i < 3)
-                        {
-                            seps[i].Location = new Float2(ix + itemW, (CurrencyHeight - 24f) * 0.5f);
-                            seps[i].Size = new Float2(sepW, 24f);
-                        }
-                    }
+                    float panelX = (sw - MainPanelSize.X) * 0.5f;
+                    float panelY = (sh - MainPanelSize.Y) * 0.5f;
+                    _mainPanel.Location = new Float2(panelX > 0f ? panelX : 0f, panelY > 0f ? panelY : 0f);
                 }
             }
             catch (Exception ex)
@@ -953,6 +820,303 @@ namespace HundunWorld.Game.UI.Ink.Pages.Inventory
         {
             base.OnParentResized();
             RefreshLayout();
+        }
+
+        // ===================================================================
+        // 辅助方法
+        // ===================================================================
+
+        private static Label MakeLabel(string text, float x, float y, float w, float h,
+            Color color, float fontSize, InkWashTheme.FontRole role, TextAlignment hAlign)
+        {
+            return new Label
+            {
+                AnchorPreset = AnchorPresets.TopLeft,
+                Location = new Float2(x, y),
+                Size = new Float2(w, h),
+                Text = text,
+                TextColor = color,
+                Font = InkRenderHelper.GetFontRef(role, fontSize),
+                HorizontalAlignment = hAlign,
+                VerticalAlignment = TextAlignment.Center,
+                AutoFocus = false,
+            };
+        }
+
+        // ===================================================================
+        // 嵌套控件：圆角背景+边框盒
+        // ===================================================================
+
+        /// <summary>自绘圆角背景 + 边框（StretchAll 填充父容器）。</summary>
+        internal class RoundedBox : Control
+        {
+            private readonly Color _bg;
+            private readonly Color _border;
+            private readonly float _radius;
+
+            public RoundedBox(Color bg, Color border, float radius)
+            {
+                _bg = bg;
+                _border = border;
+                _radius = radius;
+                AutoFocus = false;
+                AnchorPreset = AnchorPresets.StretchAll;
+                Offsets = Margin.Zero;
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+                if (!Visible) return;
+                var rect = new Rectangle(Float2.Zero, Size);
+                if (_bg.A > 0f)
+                    InkRenderHelper.FillRoundedRectangle(rect, _radius, _bg);
+                if (_border.A > 0f)
+                    InkRenderHelper.DrawRoundedRectangle(rect, _radius, _border, 1f);
+            }
+        }
+
+        // ===================================================================
+        // 嵌套控件：顶部背包 Tab
+        // ===================================================================
+
+        /// <summary>顶栏背包 Tab（14px 黑体，激活金色，自绘 + Clicked 事件）。</summary>
+        internal class InvTab : Control
+        {
+            private readonly string _text;
+            private bool _isActive;
+
+            public event Action Clicked;
+
+            public bool IsActive { get => _isActive; set => _isActive = value; }
+
+            public InvTab(string text, bool active)
+            {
+                _text = text;
+                _isActive = active;
+                AutoFocus = false;
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+                if (!Visible) return;
+                Color color = _isActive ? InkWashTheme.GoldPrimary : InkWashTheme.TextSecondary;
+                var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 14f).GetFont();
+                if (font != null)
+                    Render2D.DrawText(font, _text, new Rectangle(Float2.Zero, Size), color,
+                        TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+            }
+
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && ContainsPoint(ref location))
+                    Clicked?.Invoke();
+                return base.OnMouseUp(location, button);
+            }
+        }
+
+        // ===================================================================
+        // 嵌套控件：背包格子
+        // ===================================================================
+
+        /// <summary>背包格子（64x64）：品质边框 + 图标字 + 强化/数量角标 + 选中辉光。</summary>
+        internal class InvCell : Control
+        {
+            private readonly CellData _data;
+            private bool _isSelected;
+            private bool _isHovered;
+
+            public event Action Clicked;
+
+            public bool IsSelected { get => _isSelected; set => _isSelected = value; }
+
+            public InvCell(CellData data)
+            {
+                _data = data;
+                AutoFocus = false;
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+                if (!Visible) return;
+                var rect = new Rectangle(Float2.Zero, Size);
+                Color gold = InkWashTheme.GoldPrimary;
+                Color baseBg = InkWashTheme.BaseTertiary;
+
+                // 背景：选中 gold0.06 / 悬停 BaseTertiary0.8 / 默认 BaseTertiary0.5
+                Color bg;
+                if (_isSelected)
+                    bg = new Color(gold.R, gold.G, gold.B, 0.06f);
+                else if (_isHovered && _data.HasItem)
+                    bg = new Color(baseBg.R, baseBg.G, baseBg.B, 0.8f);
+                else
+                    bg = new Color(baseBg.R, baseBg.G, baseBg.B, 0.5f);
+                InkRenderHelper.FillRoundedRectangle(rect, 4f, bg);
+
+                // 边框：选中金 / 任务预警色 / 品质色（普通 0.35）
+                Color border;
+                if (_isSelected)
+                    border = gold;
+                else if (!_data.HasItem)
+                    border = InkWashTheme.BorderFaint;
+                else if (_data.IsQuest)
+                    border = InkWashTheme.Warning;
+                else if (_data.Quality == InkWashTheme.InkQuality.Common)
+                    border = new Color(InkWashTheme.QualityCommon.R, InkWashTheme.QualityCommon.G, InkWashTheme.QualityCommon.B, 0.35f);
+                else
+                    border = InkWashTheme.QualityColor(_data.Quality);
+                InkRenderHelper.DrawRoundedRectangle(rect, 4f, border, 1f);
+
+                // 辉光：选中 gold0.25 / 传说 gold0.15
+                if (_isSelected)
+                {
+                    var glowRect = new Rectangle(-2f, -2f, Size.X + 4f, Size.Y + 4f);
+                    InkRenderHelper.DrawRoundedRectangle(glowRect, 6f, new Color(gold.R, gold.G, gold.B, 0.25f), 3f);
+                }
+                else if (_data.HasItem && _data.Quality == InkWashTheme.InkQuality.Legendary)
+                {
+                    var glowRect = new Rectangle(-1.5f, -1.5f, Size.X + 3f, Size.Y + 3f);
+                    InkRenderHelper.DrawRoundedRectangle(glowRect, 5.5f, new Color(gold.R, gold.G, gold.B, 0.15f), 2.5f);
+                }
+
+                if (!_data.HasItem) return;
+
+                // 图标字（居中，品质色）
+                Color iconColor = _data.IsQuest ? InkWashTheme.Warning : InkWashTheme.QualityColor(_data.Quality);
+                var iconFont = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 26f).GetFont();
+                if (iconFont != null)
+                    Render2D.DrawText(iconFont, _data.Glyph, rect, iconColor,
+                        TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+
+                // 强化角标（左上，金色 11px）
+                if (!string.IsNullOrEmpty(_data.Enhance))
+                {
+                    var ef = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 11f).GetFont();
+                    if (ef != null)
+                        Render2D.DrawText(ef, _data.Enhance, new Rectangle(5f, 3f, 30f, 12f), gold,
+                            TextAlignment.Near, TextAlignment.Near, TextWrapping.NoWrap);
+                }
+
+                // 数量角标（右下，亮白 12px）
+                if (!string.IsNullOrEmpty(_data.Qty))
+                {
+                    var qf = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Number, 12f).GetFont();
+                    if (qf != null)
+                        Render2D.DrawText(qf, _data.Qty, new Rectangle(Size.X - 35f, Size.Y - 16f, 30f, 13f),
+                            InkWashTheme.PaperBright, TextAlignment.Far, TextAlignment.Far, TextWrapping.NoWrap);
+                }
+
+                // 锁标记（任务物品，右下，预警色）
+                if (_data.IsQuest)
+                {
+                    var lf = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 11f).GetFont();
+                    if (lf != null)
+                        Render2D.DrawText(lf, "锁", new Rectangle(Size.X - 19f, Size.Y - 16f, 14f, 13f),
+                            InkWashTheme.Warning, TextAlignment.Far, TextAlignment.Far, TextWrapping.NoWrap);
+                }
+            }
+
+            public override void OnMouseEnter(Float2 location) { _isHovered = true; base.OnMouseEnter(location); }
+            public override void OnMouseLeave() { _isHovered = false; base.OnMouseLeave(); }
+
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _data.HasItem && ContainsPoint(ref location))
+                    Clicked?.Invoke();
+                return base.OnMouseUp(location, button);
+            }
+        }
+
+        // ===================================================================
+        // 嵌套控件：详情大图标
+        // ===================================================================
+
+        /// <summary>详情大图标（120x120）：径向渐变金辉 + 金边 + 辉光 + 64px 图标字。</summary>
+        internal class DetailIconBox : Control
+        {
+            private string _glyph;
+            private Color _glyphColor;
+
+            public DetailIconBox(string glyph, Color color)
+            {
+                _glyph = glyph;
+                _glyphColor = color;
+                AutoFocus = false;
+            }
+
+            public void SetGlyph(string glyph, Color color)
+            {
+                _glyph = glyph;
+                _glyphColor = color;
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+                if (!Visible) return;
+                var rect = new Rectangle(Float2.Zero, Size);
+                Color gold = InkWashTheme.GoldPrimary;
+
+                // 径向渐变背景（gold0.15 -> 透明）
+                InkRenderHelper.FillRadialGradient(new Float2(Width * 0.5f, Height * 0.5f), Width * 0.5f,
+                    new Color(gold.R, gold.G, gold.B, 0.15f), Color.Transparent);
+                // 外辉光 + 边框 gold0.3
+                var glowRect = new Rectangle(-2f, -2f, Size.X + 4f, Size.Y + 4f);
+                InkRenderHelper.DrawRoundedRectangle(glowRect, 10f, new Color(gold.R, gold.G, gold.B, 0.2f), 3f);
+                InkRenderHelper.DrawRoundedRectangle(rect, 8f, new Color(gold.R, gold.G, gold.B, 0.3f), 1f);
+
+                // 图标字（56px）
+                var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Display, 56f).GetFont();
+                if (font != null)
+                    Render2D.DrawText(font, _glyph, rect, _glyphColor,
+                        TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+            }
+        }
+
+        // ===================================================================
+        // 嵌套控件：标签
+        // ===================================================================
+
+        /// <summary>详情标签（背景 + 边框 + 文字，radius 2）。</summary>
+        internal class TagBox : Control
+        {
+            private string _text;
+            private Color _bg;
+            private Color _textColor;
+            private Color _border;
+
+            public TagBox(string text, Color bg, Color textColor, Color border)
+            {
+                _text = text;
+                _bg = bg;
+                _textColor = textColor;
+                _border = border;
+                AutoFocus = false;
+            }
+
+            public void SetText(string text) { _text = text; }
+
+            public void SetColors(Color bg, Color textColor, Color border)
+            {
+                _bg = bg;
+                _textColor = textColor;
+                _border = border;
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+                if (!Visible) return;
+                var rect = new Rectangle(Float2.Zero, Size);
+                InkRenderHelper.FillRoundedRectangle(rect, 2f, _bg);
+                InkRenderHelper.DrawRoundedRectangle(rect, 2f, _border, 1f);
+                var font = InkRenderHelper.GetFontRef(InkWashTheme.FontRole.Body, 12f).GetFont();
+                if (font != null)
+                    Render2D.DrawText(font, _text, rect, _textColor,
+                        TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap);
+            }
         }
     }
 }
