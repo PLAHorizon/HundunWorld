@@ -163,18 +163,18 @@ namespace Game.Network
 
         /// <summary>
         /// 更新本地玩家
+        /// [重构 Phase C1] 本地玩家的预测和输入发送已完全由 ECS 管线负责
+        /// （LocalSimulationSystem → InputSendSystem → ReconciliationSystem），
+        /// 本方法不再执行 PredictMovement，避免双预测系统冲突浪费 CPU。
+        /// 仅保留网络更新计时器用于统计。
         /// </summary>
         private void UpdateLocalPlayer()
         {
-            // 客户端预测
-            if (EnablePrediction)
-            {
-                // 获取输入并预测移动
-                Vector3 input = GetMovementInput();
-                PredictMovement(input);
-            }
+            // [Phase C1] 本地玩家预测已由 ECS 管线（LocalSimulationSystem）接管，
+            // 不再执行 PredictMovement，避免双预测系统并存导致 CPU 浪费和状态混淆。
+            // 如需调试遗留预测逻辑，设置 EnablePrediction=false 后手动调用。
 
-            // 发送网络更新
+            // 发送网络更新（内部已跳过本地玩家发送，仅保留计时器兼容）
             networkTimer += Time.DeltaTime;
             if (networkTimer >= networkInterval)
             {
@@ -447,6 +447,8 @@ namespace Game.Network
 
         /// <summary>
         /// 接收服务端位置校验
+        /// [重构 Phase C1] 本地玩家的 reconciliation 已由 ECS ReconciliationSystem 负责，
+        /// 本方法仅记录预测误差统计，不再执行 CorrectPrediction。
         /// </summary>
         public void OnServerPositionUpdate(Vector3 position, Quaternion rotation, int sequenceNumber)
         {
@@ -456,14 +458,14 @@ namespace Game.Network
 
             if (IsLocalPlayer && EnablePrediction)
             {
-                // 计算预测误差
+                // 计算预测误差（仅统计，不修正）
                 float error = Vector3.Distance(currentPosition, serverPosition);
                 averagePredictionError = (averagePredictionError + error) / 2.0f;
 
-                // 检查是否需要修正
+                // [Phase C1] 修正逻辑已由 ECS ReconciliationSystem 接管，
+                // 不再调用 CorrectPrediction，避免双 reconciliation 冲突。
                 if (error > PositionCorrectionThreshold)
                 {
-                    CorrectPrediction(sequenceNumber);
                     correctionCount++;
                 }
             }

@@ -28,7 +28,6 @@ namespace Horizon.Game.Gateway.Services
     {
         private readonly Channel<FanoutEvent> _channel;
         private readonly ILogger<GatewayZoneShardFanoutSource>? _logger;
-        private int _diagCount;
 
         /// <summary>累计收到的 fanout 事件数（来自 grain 推送）。</summary>
         public long ReceivedEventCount { get; private set; }
@@ -68,17 +67,9 @@ namespace Horizon.Game.Gateway.Services
 
             ReceivedEventCount++;
 
-            // 诊断：前 5 次无条件输出，确认 fanout 推送链路联通
-            _diagCount++;
-            if (_diagCount <= 5)
+            if (ReceivedEventCount % 60 == 1)
             {
-                _logger?.LogWarning(
-                    "[GatewayFanoutSource 诊断#{N}] 收到 fanout 推送。ReceivedCount={Count}, Sessions={SessionCount}, PendingCount={Pending}, PayloadType={PayloadType}, ChunkKey=0x{ChunkKey:X16}",
-                    _diagCount, ReceivedEventCount, sessionIds.Count, PendingCount, diff.PayloadType, diff.ChunkMortonKey);
-            }
-            else if (ReceivedEventCount % 60 == 1)
-            {
-                _logger?.LogInformation(
+                _logger?.LogDebug(
                     "GatewayZoneShardFanoutSource：收到 fanout 推送。ReceivedCount={Count}, Sessions={SessionCount}, PendingCount={Pending}, PayloadType={PayloadType}, ChunkKey=0x{ChunkKey:X16}",
                     ReceivedEventCount, sessionIds.Count, PendingCount, diff.PayloadType, diff.ChunkMortonKey);
             }
@@ -170,7 +161,6 @@ namespace Horizon.Game.Gateway.Services
         private readonly ILogger<GameConnectionPacketSink>? _logger;
         private readonly HorizonMessageAdapter _adapter;
         private long _sendAttemptCount;
-        private int _diagCount;
 
         /// <summary>累计发送失败次数（连接异常、已关闭、序列化失败等）。</summary>
         public long FailedSendCount { get; private set; }
@@ -185,26 +175,25 @@ namespace Horizon.Game.Gateway.Services
         public void Send(object endpoint, SyncPacket packet)
         {
             var attempt = Interlocked.Increment(ref _sendAttemptCount);
-            _diagCount++;
 
             if (endpoint is not IGameConnection conn)
             {
-                if (_diagCount <= 5 || attempt % 60 == 1)
+                if (attempt % 60 == 1)
                 {
-                    _logger?.LogWarning(
-                        "[GameConnectionPacketSink 诊断#{N}] endpoint 不是 IGameConnection，静默丢弃（Attempt={Attempt}, EndpointType={Type}, PacketKind={Kind}）",
-                        _diagCount, attempt, endpoint?.GetType().Name ?? "null", packet.Kind);
+                    _logger?.LogDebug(
+                        "GameConnectionPacketSink：endpoint 不是 IGameConnection，静默丢弃（Attempt={Attempt}, EndpointType={Type}, PacketKind={Kind}）",
+                        attempt, endpoint?.GetType().Name ?? "null", packet.Kind);
                 }
                 return;
             }
 
             if (!conn.IsConnected)
             {
-                if (_diagCount <= 5 || attempt % 60 == 1)
+                if (attempt % 60 == 1)
                 {
-                    _logger?.LogWarning(
-                        "[GameConnectionPacketSink 诊断#{N}] 连接已断开，静默丢弃（Attempt={Attempt}, ConnectionId={Id}, PacketKind={Kind}）",
-                        _diagCount, attempt, conn.ConnectionId, packet.Kind);
+                    _logger?.LogDebug(
+                        "GameConnectionPacketSink：连接已断开，静默丢弃（Attempt={Attempt}, ConnectionId={Id}, PacketKind={Kind}）",
+                        attempt, conn.ConnectionId, packet.Kind);
                 }
                 return;
             }
@@ -230,9 +219,6 @@ namespace Horizon.Game.Gateway.Services
                 var wireBytes = _adapter.PackMessage(syncFrame, MessageType.SyncPacket, compress: false);
 
                 // 4. 发送到连接
-                // 修复 BUG：原实现 _ = conn.SendAsync(wireBytes) 是 fire-and-forget，
-                // SendAsync 内部 catch 块虽然会 MarkAsBroken，但 rethrow 的异常会成为 UnobservedTaskException。
-                // 改为 ContinueWith 显式观察异常（SendAsync 内部已完成 MarkAsBroken/计数，无需再次处理）。
                 var sendTask = conn.SendAsync(wireBytes);
                 if (sendTask.IsCompleted)
                 {
@@ -253,15 +239,9 @@ namespace Horizon.Game.Gateway.Services
                         TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
                 }
 
-                if (_diagCount <= 5)
+                if (attempt % 60 == 1)
                 {
-                    _logger?.LogWarning(
-                        "[GameConnectionPacketSink 诊断#{N}] 已发送 SyncPacket 到客户端（ConnectionId={Id}, PacketKind={Kind}, WireBytes={Bytes}）",
-                        _diagCount, conn.ConnectionId, packet.Kind, wireBytes.Length);
-                }
-                else if (attempt % 60 == 1)
-                {
-                    _logger?.LogInformation(
+                    _logger?.LogDebug(
                         "GameConnectionPacketSink：已发送 SyncPacket 到客户端（Attempt={Attempt}, ConnectionId={Id}, PacketKind={Kind}, WireBytes={Bytes}）",
                         attempt, conn.ConnectionId, packet.Kind, wireBytes.Length);
                 }
@@ -269,17 +249,7 @@ namespace Horizon.Game.Gateway.Services
             catch (Exception ex)
             {
                 FailedSendCount++;
-                // 提升日志级别：前 5 次用 Warning，确保异常不被吞掉
-                if (_diagCount <= 5)
-                {
-                    _logger?.LogWarning(ex,
-                        "[GameConnectionPacketSink 诊断#{N}] 写回失败（ConnectionId={Id}, PacketKind={Kind}）",
-                        _diagCount, conn.ConnectionId, packet.Kind);
-                }
-                else
-                {
-                    _logger?.LogDebug(ex, "GameConnectionPacketSink 写回失败（ConnectionId={Id}）", conn.ConnectionId);
-                }
+                _logger?.LogDebug(ex, "GameConnectionPacketSink 写回失败（ConnectionId={Id}）", conn.ConnectionId);
             }
         }
 
@@ -317,44 +287,37 @@ namespace Horizon.Game.Gateway.Services
         public void Send(object endpoint, byte[] wireBytes, int length)
         {
             var attempt = Interlocked.Increment(ref _sendAttemptCount);
-            _diagCount++;
 
             if (endpoint is not IGameConnection conn)
             {
-                if (_diagCount <= 5 || attempt % 60 == 1)
+                if (attempt % 60 == 1)
                 {
-                    _logger?.LogWarning(
-                        "[GameConnectionPacketSink 诊断#{N}] endpoint 不是 IGameConnection，静默丢弃（Attempt={Attempt}, EndpointType={Type}）",
-                        _diagCount, attempt, endpoint?.GetType().Name ?? "null");
+                    _logger?.LogDebug(
+                        "GameConnectionPacketSink：endpoint 不是 IGameConnection，静默丢弃（Attempt={Attempt}, EndpointType={Type}）",
+                        attempt, endpoint?.GetType().Name ?? "null");
                 }
                 return;
             }
 
             if (!conn.IsConnected)
             {
-                if (_diagCount <= 5 || attempt % 60 == 1)
+                if (attempt % 60 == 1)
                 {
-                    _logger?.LogWarning(
-                        "[GameConnectionPacketSink 诊断#{N}] 连接已断开，静默丢弃（Attempt={Attempt}, ConnectionId={Id}）",
-                        _diagCount, attempt, conn.ConnectionId);
+                    _logger?.LogDebug(
+                        "GameConnectionPacketSink：连接已断开，静默丢弃（Attempt={Attempt}, ConnectionId={Id}）",
+                        attempt, conn.ConnectionId);
                 }
                 return;
             }
 
             try
             {
-                // 修复 BUG：原实现 _ = conn.SendAsync(wireBytes) 是 fire-and-forget，
-                // SendAsync 内部 catch 块虽然会 MarkAsBroken，但 rethrow 的异常会成为 UnobservedTaskException，
-                // 在 GC 时延迟触发，可能导致进程级未观察任务异常事件被错误地记录。
-                // 改为 ContinueWith 显式观察并吞掉异常（SendAsync 内部已完成 MarkAsBroken/计数，无需再次处理），
-                // 同时使用 TaskContinuationOptions.OnlyOnFaulted 避免无谓的延续分配。
                 var sendTask = conn.SendAsync(wireBytes);
-                if (sendTask.IsCompleted) // 同步完成（失败/成功）的快速路径，避免不必要的 ContinueWith 分配
+                if (sendTask.IsCompleted)
                 {
                     if (sendTask.IsFaulted)
                     {
                         FailedSendCount++;
-                        // 异常已在 SendAsync 内部处理（MarkAsBroken/计数），这里只观察，不 rethrow
                         _ = sendTask.Exception;
                     }
                 }
@@ -364,24 +327,14 @@ namespace Horizon.Game.Gateway.Services
                         t =>
                         {
                             FailedSendCount++;
-                            // 异常已在 SendAsync 内部处理（MarkAsBroken/计数），这里只观察，避免 UnobservedTaskException
                             _ = t.Exception;
                         },
                         TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
                 }
 
-                // 修复 BUG（诊断盲区）：原实现在预编码 wireBytes 版本中缺少发送成功的诊断日志，
-                // 导致前5次诊断后无法确认同步包是否被正确下发到客户端。
-                // 添加与旧方法一致的成功诊断日志（前5次 WRN + 每60次 INF）。
-                if (_diagCount <= 5)
+                if (attempt % 60 == 1)
                 {
-                    _logger?.LogWarning(
-                        "[GameConnectionPacketSink 诊断#{N}] 已发送预编码 SyncPacket 到客户端（ConnectionId={Id}, WireBytes={Bytes}）",
-                        _diagCount, conn.ConnectionId, length);
-                }
-                else if (attempt % 60 == 1)
-                {
-                    _logger?.LogInformation(
+                    _logger?.LogDebug(
                         "GameConnectionPacketSink：已发送预编码 SyncPacket 到客户端（Attempt={Attempt}, ConnectionId={Id}, WireBytes={Bytes}）",
                         attempt, conn.ConnectionId, length);
                 }
@@ -389,16 +342,7 @@ namespace Horizon.Game.Gateway.Services
             catch (Exception ex)
             {
                 FailedSendCount++;
-                if (_diagCount <= 5)
-                {
-                    _logger?.LogWarning(ex,
-                        "[GameConnectionPacketSink 诊断#{N}] 写回失败（ConnectionId={Id}）",
-                        _diagCount, conn.ConnectionId);
-                }
-                else
-                {
-                    _logger?.LogDebug(ex, "GameConnectionPacketSink 写回失败（ConnectionId={Id}）", conn.ConnectionId);
-                }
+                _logger?.LogDebug(ex, "GameConnectionPacketSink 写回失败（ConnectionId={Id}）", conn.ConnectionId);
             }
         }
     }

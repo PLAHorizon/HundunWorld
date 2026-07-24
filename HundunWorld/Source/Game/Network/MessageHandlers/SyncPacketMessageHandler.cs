@@ -77,9 +77,13 @@ namespace ManagedHundunWorld.Network.Handlers
             switch (packet)
             {
                 case SnapshotPacket snapshot:
+                    // [Phase C2] 记录快照接收时间戳和间隔统计
+                    ClientSyncMetrics.RecordSnapshotReceived();
                     SnapshotReceived?.Invoke(snapshot);
                     break;
                 case InputAckPacket inputAck:
+                    // [Phase C2] 记录 InputAck 接收
+                    ClientSyncMetrics.RecordInputAck();
                     InputAckReceived?.Invoke(inputAck);
                     break;
                 case EventPacket eventPacket:
@@ -107,6 +111,8 @@ namespace ManagedHundunWorld.Network.Handlers
                     DeathReceived?.Invoke(death);
                     break;
                 default:
+                    // [Phase C2] 记录未知 Kind 包计数
+                    ClientSyncMetrics.RecordUnknownPacket();
                     FlaxEngine.Debug.LogWarning($"Unknown sync packet kind: {packet.Kind}");
                     break;
             }

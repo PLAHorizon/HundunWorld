@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Horizon.Game.Core.Sim.Server;
+using Horizon.Game.Core.World;
 using Horizon.Game.Gateway.Configuration;
 using Horizon.Orleans.Interface.World;
 using Microsoft.Extensions.Hosting;
@@ -24,9 +25,6 @@ namespace Horizon.Game.Gateway.Services
     /// </remarks>
     public sealed class SyncDispatcherHostedService : BackgroundService
     {
-        /// <summary>单 shard 模式下的固定 shardId。</summary>
-        private const long DefaultShardId = 0;
-
         /// <summary>订阅重试最大次数。</summary>
         private const int MaxRetries = 10;
 
@@ -38,20 +36,23 @@ namespace Horizon.Game.Gateway.Services
         private readonly ILogger<SyncDispatcherHostedService> _logger;
         private readonly IClusterClient _clusterClient;
         private readonly IZoneShardFanoutObserver _fanoutObserver;
+        private readonly IShardRouter _shardRouter;
 
         public SyncDispatcherHostedService(
             GatewaySyncDispatcher dispatcher,
             IOptionsMonitor<GatewayOptions> options,
             ILogger<SyncDispatcherHostedService> logger,
             IClusterClient clusterClient,
-            IZoneShardFanoutObserver fanoutObserver)
+            IZoneShardFanoutObserver fanoutObserver,
+            IShardRouter? shardRouter = null)
         {
             _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             _options = options ?? throw new ArgumentNullException(nameof(options));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _clusterClient = clusterClient ?? throw new ArgumentNullException(nameof(clusterClient));
             _fanoutObserver = fanoutObserver ?? throw new ArgumentNullException(nameof(fanoutObserver));
-            _logger.LogInformation("SyncDispatcherHostedService：构造完成，等待 ExecuteAsync 启动。");
+            _shardRouter = shardRouter ?? new ZoneBasedShardRouter(1);
+            _logger.LogInformation("SyncDispatcherHostedService：构造完成，等待 ExecuteAsync 启动。ShardCount={ShardCount}", _shardRouter.ShardCount);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -100,18 +101,18 @@ namespace Horizon.Game.Gateway.Services
             {
                 try
                 {
-                    var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(DefaultShardId);
+                    var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(0));
                     await zoneShard.SubscribeFanoutAsync(subscriptionId, observerRef).ConfigureAwait(false);
                     _logger.LogInformation(
                         "SyncDispatcherHostedService：已向 ZoneShard {ShardId} 订阅 fanout（SubscriptionId={SubscriptionId}，尝试={Attempt}）。",
-                        DefaultShardId, subscriptionId, attempt);
+                        _shardRouter.Resolve(0), subscriptionId, attempt);
                     subscribed = true;
                 }
                 catch (Exception ex) when (attempt < MaxRetries)
                 {
                     _logger.LogWarning(ex,
                         "SyncDispatcherHostedService：向 ZoneShard {ShardId} 订阅 fanout 失败（尝试 {Attempt}/{MaxRetries}），{Delay}ms 后重试。",
-                        DefaultShardId, attempt, MaxRetries, RetryBaseDelayMs * attempt);
+                        _shardRouter.Resolve(0), attempt, MaxRetries, RetryBaseDelayMs * attempt);
                     try
                     {
                         await Task.Delay(RetryBaseDelayMs * attempt, stoppingToken).ConfigureAwait(false);
@@ -122,7 +123,7 @@ namespace Horizon.Game.Gateway.Services
                 {
                     _logger.LogError(ex,
                         "SyncDispatcherHostedService：向 ZoneShard {ShardId} 订阅 fanout 已达最大重试次数（{MaxRetries}），进入循环但可能收不到推送。",
-                        DefaultShardId, MaxRetries);
+                        _shardRouter.Resolve(0), MaxRetries);
                 }
             }
 
@@ -148,7 +149,7 @@ namespace Horizon.Game.Gateway.Services
                 {
                     try
                     {
-                        var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(DefaultShardId);
+                        var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(0));
                         await zoneShard.SubscribeFanoutAsync(subscriptionId, observerRef).ConfigureAwait(false);
                         if (!subscribed)
                         {
@@ -229,11 +230,11 @@ namespace Horizon.Game.Gateway.Services
                 {
                     try
                     {
-                        var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(DefaultShardId);
+                        var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(0));
                         await zoneShard.UnsubscribeFanoutAsync(subscriptionId).ConfigureAwait(false);
                         _logger.LogInformation(
                             "SyncDispatcherHostedService：已取消 ZoneShard {ShardId} fanout 订阅（SubscriptionId={SubscriptionId}）。",
-                            DefaultShardId, subscriptionId);
+                            _shardRouter.Resolve(0), subscriptionId);
                     }
                     catch (Exception ex)
                     {

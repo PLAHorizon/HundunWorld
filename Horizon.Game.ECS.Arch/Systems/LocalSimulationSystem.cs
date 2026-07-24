@@ -56,6 +56,14 @@ public sealed class LocalSimulationSystem : ArchSystemBase
 
     private readonly Dictionary<int, int> _jumpCounts = new();
 
+    /// <summary>
+    /// 修复「进入游戏后在天上飞」：初始帧地面锁定计数器。
+    /// 系统启动后的前 N 帧，若 GroundHeightSampler 返回 NaN（场景未加载/地形碰撞未就绪），
+    /// 则冻结垂直位置（不施加重力），防止角色在场景过渡期间坠入虚空。
+    /// 一旦采样成功或超过保护帧数，恢复正常重力模拟。
+    /// </summary>
+    private int _groundLockFramesRemaining = 120; // 保护 2 秒（60fps × 2）
+
     // Task 5：_jumpCounts 懒清理相关字段。
     // _jumpCountsLastSeenTick 记录每个 entity.Id 上次访问时的 CurrentClientTick；
     // 每 60 帧扫描移除超过 600 tick 未见的条目，避免已销毁实体的条目持续累积导致内存泄漏。
@@ -155,13 +163,27 @@ public sealed class LocalSimulationSystem : ArchSystemBase
             if (sampler != null)
             {
                 var groundZ = sampler(nx, ny);
-                if (!float.IsNaN(groundZ) && nz < groundZ)
+                if (!float.IsNaN(groundZ))
                 {
-                    nz = groundZ;
-                    nvz = 0f;
-                    // 落地后重置跳跃计数，允许下一轮三段跳
-                    _jumpCounts[entity.Id] = 0;
-                    jumpCount = 0;
+                    // 采样成功：解除地面锁定
+                    _groundLockFramesRemaining = 0;
+
+                    if (nz < groundZ)
+                    {
+                        nz = groundZ;
+                        nvz = 0f;
+                        // 落地后重置跳跃计数，允许下一轮三段跳
+                        _jumpCounts[entity.Id] = 0;
+                        jumpCount = 0;
+                    }
+                }
+                else if (_groundLockFramesRemaining > 0)
+                {
+                    // 采样失败但仍在保护期内：冻结垂直位置，不施加重力。
+                    // 防止场景过渡期间（Terrain 未加载）角色坠入虚空。
+                    _groundLockFramesRemaining--;
+                    nz = pred.Z;  // 保持原始高度
+                    nvz = 0f;     // 清零垂直速度
                 }
             }
 

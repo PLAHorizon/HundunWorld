@@ -213,10 +213,18 @@ namespace Horizon.Game.Core
 
         /// <summary>
         /// 从消息体提取角色ID并填充到消息头，供服务端按角色路由和订阅管理使用。
-        /// 支持 CharacterId（ulong/long）和 LocalCharacterId（ulong）两种常见字段名。
+        /// Phase 5 优化：优先检查 ICharacterIdCarrier 接口（避免反射），回退到反射查找
+        /// CharacterId（ulong/long）和 LocalCharacterId（ulong）两种常见字段名。
         /// </summary>
         private static ulong ExtractCharacterId<T>(T message) where T : MessageUnion, INetworkMessage
         {
+            // Phase 5: 优先检查接口（零反射，高频路径性能优化）
+            if (message is ICharacterIdCarrier carrier)
+            {
+                return carrier.CarrierCharacterId;
+            }
+
+            // 回退到反射（兼容未实现 ICharacterIdCarrier 的旧消息类型）
             try
             {
                 var type = message.GetType();

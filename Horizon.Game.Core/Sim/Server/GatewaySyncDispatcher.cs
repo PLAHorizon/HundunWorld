@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Horizon.Game.Core.Observability;
 using Horizon.Game.Message.Sync;
 using Microsoft.Extensions.Logging;
 
@@ -42,9 +43,6 @@ public sealed class GatewaySyncDispatcher
     // 包丢弃告警限频（每 10 秒最多一次）
     private DateTime _lastDropWarnUtc = DateTime.MinValue;
     private static readonly TimeSpan DropWarnInterval = TimeSpan.FromSeconds(10);
-
-    // 诊断：前 5 次分派无条件输出详情
-    private int _dispatchDiagCount;
 
     // Task D.4：per-session 带宽跟踪器。key = sessionId。
     private readonly ConcurrentDictionary<long, SessionBandwidthTracker> _bandwidthTrackers = new();
@@ -133,18 +131,9 @@ public sealed class GatewaySyncDispatcher
 
         var sessionCount = evt.TargetSessionIds.Count;
 
-        // 诊断：前 5 次无条件输出，确认转发链路联通
-        _dispatchDiagCount++;
-        if (_dispatchDiagCount <= 5)
+        if (ProcessedEventCount % 60 == 0)
         {
-            _logger?.LogWarning(
-                "[GatewaySyncDispatcher 诊断#{N}] 分派事件。PacketKind={PacketKind}, SessionCount={SessionCount}, Sessions=[{Sessions}], Delivered={Delivered}, DroppedOffline={Dropped}",
-                _dispatchDiagCount, evt.Packet.Kind, sessionCount,
-                string.Join(",", evt.TargetSessionIds), DeliveredPacketCount, DroppedOfflineCount);
-        }
-        else if (ProcessedEventCount % 60 == 0)
-        {
-            _logger?.LogInformation(
+            _logger?.LogDebug(
                 "GatewaySyncDispatcher：分派事件。PacketKind={PacketKind}, SessionCount={SessionCount}, Delivered={Delivered}, DroppedOffline={Dropped}",
                 evt.Packet.Kind, sessionCount, DeliveredPacketCount, DroppedOfflineCount);
         }
@@ -173,26 +162,16 @@ public sealed class GatewaySyncDispatcher
                 {
                     _sink.Send(endpoint, wireBytes, wireLength);
                     Interlocked.Increment(ref _deliveredPacketCount);
-                    // 诊断：前 5 次输出 endpoint 命中详情
-                    if (_dispatchDiagCount <= 5)
-                    {
-                        _logger?.LogWarning(
-                            "[GatewaySyncDispatcher 诊断#{N}] 已下发到 session={SessionId}, Delivered={Delivered}",
-                            _dispatchDiagCount, sessionId, DeliveredPacketCount);
-                    }
+                    // Phase 4: 补充 PacketsDelivered 指标
+                    SyncMetrics.PacketsDelivered.Add(1);
                     // Task D.4：累计该 session 的下发字节数，并按需触发限流/恢复。
                     RecordSend(sessionId, estimatedBytes);
                 }
                 else
                 {
                     Interlocked.Increment(ref _droppedOfflineCount);
-                    // 诊断：前 5 次输出 endpoint 未命中详情
-                    if (_dispatchDiagCount <= 5)
-                    {
-                        _logger?.LogWarning(
-                            "[GatewaySyncDispatcher 诊断#{N}] endpoint 未命中，丢弃。SessionId={SessionId}, DroppedOffline={Dropped}",
-                            _dispatchDiagCount, sessionId, DroppedOfflineCount);
-                    }
+                    // Phase 4: 补充 PacketsDropped 指标（按 reason 维度）
+                    SyncMetrics.PacketsDropped.Add(1, new KeyValuePair<string, object?>("reason", "offline"));
                     LogDropWarn(sessionId);
                 }
             });

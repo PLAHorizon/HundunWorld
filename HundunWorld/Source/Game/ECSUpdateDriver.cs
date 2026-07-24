@@ -5,6 +5,7 @@ using Horizon.Game.ECS.Arch.Network;
 using Horizon.Game.ECS.Arch.Systems;
 using Horizon.Game.Message.Sync;
 using Horizon.Game.Message.Network;
+using HundunWorld.Game.Network;
 
 namespace HundunWorld.Game
 {
@@ -33,6 +34,15 @@ namespace HundunWorld.Game
 
     /// <summary>诊断：FlushInputSendQueue 帧计数器，用于限频日志输出。</summary>
     private long _diagSendFrameCount;
+
+    /// <summary>[Phase C2] 上次采集的 InputSendSystem 重传计数，用于计算增量。</summary>
+    private long _lastRetransmitCount;
+
+    /// <summary>[Phase C2] 上次采集的 ReconciliationSystem 修正计数，用于计算增量。</summary>
+    private int _lastCorrectionCount;
+
+    /// <summary>[Phase C6] 上次采集的 SnapshotApplySystem 溢出计数。</summary>
+    private long _lastOverflowCount;
 
         public override void OnStart()
         {
@@ -147,6 +157,9 @@ namespace HundunWorld.Game
                         };
 
                         _ = networkManager.SendAsync(syncFrame);
+
+                        // [Phase C2] 记录输入包发送
+                        ClientSyncMetrics.RecordInputSent();
                     }
                     finally
                     {
@@ -156,6 +169,66 @@ namespace HundunWorld.Game
                 catch (Exception ex)
                 {
                     Debug.LogWarning($"[ECSUpdateDriver] 发送输入包失败: {ex.Message}");
+                }
+            }
+
+            // [Phase C2] 转发 ECS 系统指标到 ClientSyncMetrics
+            ForwardEcsMetrics();
+        }
+
+        /// <summary>
+        /// [Phase C2] 将 ECS 系统的内部计数器增量转发到 ClientSyncMetrics。
+        /// </summary>
+        private void ForwardEcsMetrics()
+        {
+            // 冗余重传增量
+            var inputSend = InputSendSystem.Instance;
+            if (inputSend != null)
+            {
+                long currentRetransmits = inputSend.TotalRetransmits;
+                var delta = currentRetransmits - _lastRetransmitCount;
+                for (long i = 0; i < delta; i++)
+                    ClientSyncMetrics.RecordRetransmit();
+                _lastRetransmitCount = currentRetransmits;
+            }
+
+            // 修正次数 + 预测误差 + 溢出计数
+            var archHost = HundunWorldGame.Instance?.ArchHost;
+            if (archHost != null)
+            {
+                var systems = archHost.GetSystems(Horizon.Game.ECS.Arch.Core.SystemGroup.FixedUpdate);
+                foreach (var sys in systems)
+                {
+                    if (sys is ReconciliationSystem reconc)
+                    {
+                        int currentCorrections = reconc.TotalCorrectionsApplied;
+                        var deltaCorr = currentCorrections - _lastCorrectionCount;
+                        for (int i = 0; i < deltaCorr; i++)
+                            ClientSyncMetrics.RecordCorrection();
+                        _lastCorrectionCount = currentCorrections;
+
+                        if (reconc.HasNewPredictionError)
+                        {
+                            ClientSyncMetrics.RecordPredictionError(reconc.LastPredictionError);
+                            reconc.HasNewPredictionError = false;
+                        }
+                        break;
+                    }
+                }
+
+                // [Phase C6] 转发 SnapshotApplySystem 溢出计数
+                var netSystems = archHost.GetSystems(Horizon.Game.ECS.Arch.Core.SystemGroup.NetworkReceive);
+                foreach (var sys in netSystems)
+                {
+                    if (sys is SnapshotApplySystem snapshotSys)
+                    {
+                        long currentOverflow = snapshotSys.OverflowCount;
+                        var deltaOverflow = currentOverflow - _lastOverflowCount;
+                        for (long i = 0; i < deltaOverflow; i++)
+                            ClientSyncMetrics.RecordSnapshotOverflow();
+                        _lastOverflowCount = currentOverflow;
+                        break;
+                    }
                 }
             }
         }

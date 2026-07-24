@@ -131,8 +131,71 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     /// <summary>Task 2：单帧最多消费的快照包数量，超出部分留待下一帧处理。默认 8。</summary>
     public int MaxSnapshotsPerFrame { get; set; } = 8;
 
+    /// <summary>[Phase C6] 累计单帧快照消费溢出次数（供游戏层转发到 ClientSyncMetrics）。</summary>
+    public long OverflowCount { get; private set; }
+
     /// <summary>Task 4：本地玩家保护（跳过 Despawn）累计次数。</summary>
     public long LocalPlayerProtectionCount => Interlocked.Read(ref _localPlayerProtectionCount);
+
+    // ─── [Phase C4] 自适应插值延迟 ───
+
+    /// <summary>是否启用自适应插值延迟（默认关闭，待充分测试后开启）。</summary>
+    public static bool UseAdaptiveDelay { get; set; } = true;
+
+    /// <summary>固定插值延迟（秒），当 UseAdaptiveDelay=false 时使用。默认 100ms。</summary>
+    public static float FixedInterpolationDelaySeconds { get; set; } = 0.1f;
+
+    private static float _adaptiveAvgInterval;
+    private static float _adaptiveJitter;
+    private static long _adaptiveLastArrivalTimestamp;
+    private static readonly object _adaptiveLock = new();
+
+    /// <summary>
+    /// [Phase C4] 计算当前自适应插值延迟（秒）。
+    /// 公式：targetDelay = avgInterval + 2 * jitter，clamp 到 [50ms, 200ms]。
+    /// </summary>
+    public static float AdaptiveInterpolationDelaySeconds
+    {
+        get
+        {
+            if (!UseAdaptiveDelay)
+                return FixedInterpolationDelaySeconds;
+
+            float avg, jitter;
+            lock (_adaptiveLock)
+            {
+                avg = _adaptiveAvgInterval;
+                jitter = _adaptiveJitter;
+            }
+
+            if (avg <= 0f)
+                return FixedInterpolationDelaySeconds;
+
+            var target = avg + 2f * jitter;
+            return Math.Clamp(target, 0.05f, 0.2f);
+        }
+    }
+
+    /// <summary>[Phase C4] 记录快照到达时间，更新自适应延迟统计。</summary>
+    public static void RecordSnapshotArrival()
+    {
+        var now = Stopwatch.GetTimestamp();
+        lock (_adaptiveLock)
+        {
+            if (_adaptiveLastArrivalTimestamp > 0)
+            {
+                var intervalSec = (float)((now - _adaptiveLastArrivalTimestamp) / (double)Stopwatch.Frequency);
+                _adaptiveAvgInterval = _adaptiveAvgInterval == 0f
+                    ? intervalSec
+                    : _adaptiveAvgInterval + 0.2f * (intervalSec - _adaptiveAvgInterval);
+                var deviation = Math.Abs(intervalSec - _adaptiveAvgInterval);
+                _adaptiveJitter = _adaptiveJitter == 0f
+                    ? deviation
+                    : _adaptiveJitter + 0.25f * (deviation - _adaptiveJitter);
+            }
+            _adaptiveLastArrivalTimestamp = now;
+        }
+    }
 
     /// <summary>
     /// Task D.3.3：供网络层调用，记录最近应用的全量快照。
@@ -221,6 +284,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
         while (consumedThisTick < MaxSnapshotsPerFrame && SnapshotReceiveBuffer.Instance.TryDequeue(out var snapshot))
         {
             consumedThisTick++;
+            RecordSnapshotArrival(); // [Phase C4] 记录快照到达时间，更新自适应延迟统计
             deltasThisTick += snapshot.Deltas?.Length ?? 0;
             // Task D.3.3：增量快照重建。
             // BaselineTick=0 → 全量快照，直接应用并更新 _lastAppliedSnapshot。
@@ -296,11 +360,12 @@ public sealed class SnapshotApplySystem : ArchSystemBase
         // Task 2：单帧消费上限溢出 — 队列仍有剩余时，限频（每秒一次）输出 Debug 日志。
         if (SnapshotReceiveBuffer.Instance.Count > 0)
         {
+            OverflowCount++; // [Phase C6] 溢出计数，供游戏层转发到 ClientSyncMetrics
             var now = Stopwatch.GetTimestamp();
             if (now - _lastOverflowLogTime >= Stopwatch.Frequency)
             {
                 _lastOverflowLogTime = now;
-                Console.WriteLine($"[SnapshotApplySystem] 单帧消费上限 {MaxSnapshotsPerFrame} 达到，剩余队列长度: {SnapshotReceiveBuffer.Instance.Count}");
+                Debug.WriteLine($"[SnapshotApplySystem] 单帧消费上限 {MaxSnapshotsPerFrame} 达到，剩余队列长度: {SnapshotReceiveBuffer.Instance.Count}");
             }
         }
 
@@ -572,7 +637,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 Interlocked.Increment(ref _handleUpdateSpawnFallbackCount);
                 if (updateCount <= 5 || updateCount % 120 == 1)
                 {
-                    Console.WriteLine($"[SnapshotApplySystem] HandleUpdate#{updateCount}: 实体 {delta.EntityId} 不在字典，走 Spawn 回退。Transform={(delta.Transform.HasValue ? $"X={delta.Transform.Value.X:F2},Y={delta.Transform.Value.Y:F2},Z={delta.Transform.Value.Z:F2}" : "null")}");
+                    Debug.WriteLine($"[SnapshotApplySystem] HandleUpdate#{updateCount}: 实体 {delta.EntityId} 不在字典，走 Spawn 回退。Transform={(delta.Transform.HasValue ? $"X={delta.Transform.Value.X:F2},Y={delta.Transform.Value.Y:F2},Z={delta.Transform.Value.Z:F2}" : "null")}");
                 }
                 HandleSpawn(world, delta, serverTick);
             }
@@ -602,7 +667,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 // （本地玩家无 InterpolatedTransformComponent），插值不会被错误更新。
                 if (updateCount <= 5 || updateCount % 120 == 1)
                 {
-                    Console.WriteLine($"[SnapshotApplySystem] HandleUpdate#{updateCount}: EntityId={delta.EntityId} 为本地玩家，仅写 AuthTransformComponent");
+                    Debug.WriteLine($"[SnapshotApplySystem] HandleUpdate#{updateCount}: EntityId={delta.EntityId} 为本地玩家，仅写 AuthTransformComponent");
                 }
                 world.Set(archEntity, ref newTransform);
             }
@@ -614,7 +679,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 var interpCount = Interlocked.Increment(ref _handleUpdateRemoteInterpCount);
                 if (interpCount <= 5 || interpCount % 120 == 1)
                 {
-                    Console.WriteLine($"[SnapshotApplySystem] HandleUpdate#{updateCount} 远程实体插值更新: EntityId={delta.EntityId}, OldPos=({interp.X:F2},{interp.Y:F2},{interp.Z:F2}), NewTarget=({newTransform.X:F2},{newTransform.Y:F2},{newTransform.Z:F2}), Yaw={newTransform.Yaw:F2}, ServerTick={serverTick}");
+                    Debug.WriteLine($"[SnapshotApplySystem] HandleUpdate#{updateCount} 远程实体插值更新: EntityId={delta.EntityId}, OldPos=({interp.X:F2},{interp.Y:F2},{interp.Z:F2}), NewTarget=({newTransform.X:F2},{newTransform.Y:F2},{newTransform.Z:F2}), Yaw={newTransform.Yaw:F2}, ServerTick={serverTick}");
                 }
 
                 // 修复 #5：插值起点 StartX/Y/Z 设为当前位置（interp.X/Y/Z，含 dead reckoning 偏移），
@@ -629,6 +694,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 interp.TargetZ = newTransform.Z;
                 interp.Alpha = 0f;
                 interp.ServerTick = serverTick;
+                interp.TimeSinceLastSnapshot = 0f; // [Phase C4] 重置 dead reckoning 计时
 
                 world.Set(archEntity, ref newTransform);
             }
@@ -641,7 +707,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 // 补加后走与正常远程实体相同的插值更新路径，确保移动/旋转/跳跃可见。
                 if (updateCount <= 10 || updateCount % 120 == 1)
                 {
-                    Console.WriteLine($"[SnapshotApplySystem] HandleUpdate#{updateCount} 修复: EntityId={delta.EntityId} 非本地玩家但缺少 InterpolatedTransformComponent，已补加。IsLocalPlayer={netId.IsLocalPlayer}");
+                    Debug.WriteLine($"[SnapshotApplySystem] HandleUpdate#{updateCount} 修复: EntityId={delta.EntityId} 非本地玩家但缺少 InterpolatedTransformComponent，已补加。IsLocalPlayer={netId.IsLocalPlayer}");
                 }
 
                 var recoveryInterp = new InterpolatedTransformComponent
@@ -650,6 +716,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                     StartX = newTransform.X, StartY = newTransform.Y, StartZ = newTransform.Z,
                     TargetX = newTransform.X, TargetY = newTransform.Y, TargetZ = newTransform.Z,
                     Alpha = 1f, ServerTick = serverTick, ReceivedTick = 0,
+                    TimeSinceLastSnapshot = 0f, // [Phase C4]
                 };
                 world.Add(archEntity, recoveryInterp);
 
@@ -663,6 +730,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 interp.TargetZ = newTransform.Z;
                 interp.Alpha = 0f;
                 interp.ServerTick = serverTick;
+                interp.TimeSinceLastSnapshot = 0f; // [Phase C4]
 
                 world.Set(archEntity, ref newTransform);
             }
@@ -772,7 +840,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
         _entityIdToArchEntity.Clear();
         if (count > 0)
         {
-            Console.WriteLine($"[SnapshotApplySystem] 已清理所有实体映射: {count} 个");
+            Debug.WriteLine($"[SnapshotApplySystem] 已清理所有实体映射: {count} 个");
         }
     }
 }

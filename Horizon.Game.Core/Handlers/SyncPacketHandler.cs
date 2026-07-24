@@ -1,3 +1,5 @@
+using Horizon.Game.Core.Interfaces;
+using Horizon.Game.Core.Observability;
 using Horizon.Game.Core.World;
 using Horizon.Game.Message;
 using Horizon.Game.Message.Enums;
@@ -26,11 +28,15 @@ public sealed class SyncPacketHandler : MessageHandlerBase
     /// <summary>P1.2：Shard 路由器（替换原 DefaultShardId 硬编码）。</summary>
     private readonly IShardRouter _shardRouter;
 
-    public SyncPacketHandler(ILogger<MessageHandlerBase> logger, IClusterClient clusterClient, HorizonMessageAdapter adapter, IShardRouter? shardRouter = null)
+    /// <summary>Phase 2：会话绑定校验器（可选，由 Gateway 层注入，灰度开关控制）。</summary>
+    private readonly ISessionBindingValidator? _sessionBindingValidator;
+
+    public SyncPacketHandler(ILogger<MessageHandlerBase> logger, IClusterClient clusterClient, HorizonMessageAdapter adapter, IShardRouter? shardRouter = null, ISessionBindingValidator? sessionBindingValidator = null)
         : base(logger, clusterClient, adapter)
     {
         // 默认单 Shard 路由（兼容未注入路由器的场景）
         _shardRouter = shardRouter ?? new ZoneBasedShardRouter(1);
+        _sessionBindingValidator = sessionBindingValidator;
     }
 
     public override List<MessageType> MessageTypes => new() { MessageType.SyncPacket };
@@ -312,6 +318,8 @@ public sealed class SyncPacketHandler : MessageHandlerBase
             var initialInterestChunks = WorldCoord
                 .GetChunksInView(handshake.InitialX, handshake.InitialZ, handshake.InitialY, InitialAoiRadiusChunks)
                 .ToArray();
+            // Phase 4: 补充 AoiChunkCount 指标（初始订阅时的 chunk 数）
+            SyncMetrics.AoiChunkCount.Record(initialInterestChunks.Length);
             await zoneShard.EnterWorldAsync(
                 characterId,
                 (ulong)characterId,
@@ -440,6 +448,13 @@ public sealed class SyncPacketHandler : MessageHandlerBase
 
         var acceptResult = await sessionGrain.ReceiveInputAsync(input);
 
+        // Phase 4: 补充 InputLagMs 指标（客户端 input 到服务器 consume 的滞后）
+        var inputLagMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - input.ClientTick;
+        if (inputLagMs > 0 && inputLagMs < 60_000) // 过滤异常值（负数或超过60秒）
+        {
+            SyncMetrics.InputLagMs.Record(inputLagMs);
+        }
+
         if (acceptResult == InputAcceptResult.Invalid)
         {
             Logger.LogWarning("输入包被拒绝（无效）。CharacterId={CharacterId}, ClientTick={ClientTick}", characterId, input.ClientTick);
@@ -538,17 +553,19 @@ public sealed class SyncPacketHandler : MessageHandlerBase
         // 当前存在身份伪造风险：客户端可对不存在的 interactableId 触发交互同步。
 
         // --- 校验：会话绑定（防止身份伪造） ---
-        // TODO（Task 8.6a / 阶段 2 对接后补全）：IPlayerSessionGrain 当前未暴露
-        // ValidateSessionAsync(long characterId) 或 GetBoundCharacterIdAsync() 等接口，
-        // 无法校验 interactorId 是否与当前连接绑定的 characterId 一致。
-        // 存在身份伪造风险：恶意客户端可在 InteractionSyncPacket.InteractorId 中填入他人 ID，
-        // 触发以受害者身份下发的权威交互状态。
-        // 待 IPlayerSessionGrain 扩展会话校验接口后，在此追加：
-        //   var sessionGrain = _clusterClient.GetGrain<IPlayerSessionGrain>(interactorId);
-        //   if (!await sessionGrain.ValidateSessionAsync(interactorId)) { ... return false; }
-        Logger.LogWarning(
-            "安全缺口：会话绑定校验未实装，interactorId 未与当前连接的 characterId 比对。InteractorId={InteractorId}, InteractableId={InteractableId}",
-            interactorId, interactableId);
+        // Phase 2 安全补全：验证 interactorId 是否与当前 TCP 连接绑定的 characterId 一致。
+        // 灰度开关控制（GatewayOptions.EnableSessionBindingValidation），默认关闭。
+        if (_sessionBindingValidator is { IsEnabled: true })
+        {
+            var connId = _currentConnectionId.Value ?? string.Empty;
+            if (!string.IsNullOrEmpty(connId) && !_sessionBindingValidator.IsCharacterBoundToConnection(connId, interactorId))
+            {
+                Logger.LogWarning(
+                    "会话绑定校验失败：interactorId 与当前连接绑定的 characterId 不一致。InteractorId={InteractorId}, ConnectionId={ConnectionId}, InteractableId={InteractableId}",
+                    interactorId, connId, interactableId);
+                return false;
+            }
+        }
 
         // --- 校验：速率限制（每个 interactorId 每秒最多 10 次请求） ---
         if (!CheckInteractionRateLimit(interactorId))
@@ -682,6 +699,24 @@ public sealed class SyncPacketHandler : MessageHandlerBase
             };
         }
 
+        // Phase 2 安全补全：会话绑定校验（灰度开关控制）
+        if (_sessionBindingValidator is { IsEnabled: true })
+        {
+            var connId = _currentConnectionId.Value ?? string.Empty;
+            if (!string.IsNullOrEmpty(connId) && !_sessionBindingValidator.IsCharacterBoundToConnection(connId, (long)interactorId))
+            {
+                Logger.LogWarning(
+                    "场景对象交互会话绑定校验失败：OwnerCharacterId 与当前连接不一致。InteractorId={InteractorId}, ConnectionId={ConnectionId}, ObjectId={ObjectId}",
+                    interactorId, connId, objectId);
+                return new InputAckPacket
+                {
+                    LastProcessedClientTick = 0,
+                    ServerTick = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                    EchoClientTick = packet.ServerTick,
+                };
+            }
+        }
+
         // 速率限制（复用交互意图的 per-interactorId 限制）
         if (!CheckInteractionRateLimit((long)interactorId))
         {
@@ -751,10 +786,20 @@ public sealed class SyncPacketHandler : MessageHandlerBase
             return null;
         }
 
-        // 安全缺口（与 HandleInteractionIntent 同根问题）：
-        // characterId 来自 message.Header.CharacterId（客户端填充），未与当前连接绑定的角色 ID 比对。
-        // 恶意客户端可填充他人 ID 触发以受害者身份的订阅变更，导致其 AOI 推送被恶意增删。
-        // 待 IPlayerSessionGrain 扩展会话校验接口后，在此追加 ValidateSessionAsync 校验。
+        // Phase 2 安全补全：会话绑定校验（灰度开关控制）。
+        // characterId 来自 message.Header.CharacterId（客户端填充），需验证与当前连接绑定一致。
+        if (_sessionBindingValidator is { IsEnabled: true })
+        {
+            var connId = _currentConnectionId.Value ?? string.Empty;
+            if (!string.IsNullOrEmpty(connId) && !_sessionBindingValidator.IsCharacterBoundToConnection(connId, characterId))
+            {
+                Logger.LogWarning(
+                    "订阅变更会话绑定校验失败：characterId 与当前连接不一致。CharacterId={CharacterId}, ConnectionId={ConnectionId}",
+                    characterId, connId);
+                return null;
+            }
+        }
+
         if (characterId == 0)
         {
             Logger.LogWarning(
@@ -864,6 +909,9 @@ public sealed class SyncPacketHandler : MessageHandlerBase
         var diffLogStats = await diffLog.GetStatsAsync();
         var serverHeadDiffSeq = Math.Max(0, diffLogStats.NextSeq - 1);
         var decision = await sessionGrain.ResumeAsync(resume, serverHeadDiffSeq, ServerWorldPatchVersion);
+
+        // Phase 4: 补充 ReconnectDecisions 指标（按 decision 维度）
+        SyncMetrics.ReconnectDecisions.Add(1, new KeyValuePair<string, object?>("decision", decision.ToString()));
 
         SyncPacket response = decision switch
         {

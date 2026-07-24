@@ -4,6 +4,7 @@ using HundunWorld.Game.Network;
 using HundunWorld.Game.Network.Handlers;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace ManagedHundunWorld.Network.Handlers
@@ -33,12 +34,22 @@ namespace ManagedHundunWorld.Network.Handlers
         {
             if (message?.Body is HeartbeatResponse response)
             {
-                var latency = response.Latency;
-                FlaxEngine.Debug.Log($"心跳响应 - 延迟: {latency}ms");
-
-                // 可以在这里更新UI显示网络状态
-                // 例如：更新网络延迟显示
-                 //NetworkUIManager.Instance?.UpdateLatency(latency);
+                // [Phase C2/C3] 基于 HeartbeatManager 记录的发送时间戳计算 RTT
+                var sentTimestamp = HeartbeatManager.LastHeartbeatSentTimestamp;
+                if (sentTimestamp > 0)
+                {
+                    var rttMs = (float)((Stopwatch.GetTimestamp() - sentTimestamp) * 1000.0 / Stopwatch.Frequency);
+                    ClientSyncMetrics.RecordRtt(rttMs);
+#if DEBUG
+                    FlaxEngine.Debug.Log($"心跳响应 - RTT: {rttMs:F1}ms (服务端报告延迟: {response.Latency}ms)");
+#endif
+                }
+                else
+                {
+#if DEBUG
+                    FlaxEngine.Debug.Log($"心跳响应 - 服务端延迟: {response.Latency}ms (无发送时间戳，无法计算 RTT)");
+#endif
+                }
             }
 
             await Task.CompletedTask;

@@ -31,6 +31,12 @@ public sealed class ReconciliationSystem : ArchSystemBase
     /// <summary>累计修正次数（诊断用）。</summary>
     public int TotalCorrectionsApplied { get; private set; }
 
+    /// <summary>[Phase C2] 最近一次预测误差（米），供游戏层转发到 ClientSyncMetrics。</summary>
+    public float LastPredictionError { get; private set; }
+
+    /// <summary>[Phase C2] 是否有新的预测误差样本待消费。</summary>
+    public bool HasNewPredictionError { get; set; }
+
     /// <summary>
     /// 地面高度采样委托：与 <see cref="LocalSimulationSystem.GroundHeightSampler"/> 语义一致。
     /// <para>
@@ -124,6 +130,10 @@ public sealed class ReconciliationSystem : ArchSystemBase
                 pred.NeedsReconciliation = true;
 
                 TotalCorrectionsApplied++;
+
+                // [Phase C2] 记录预测误差供游戏层采集
+                LastPredictionError = drift;
+                HasNewPredictionError = true;
 
                 // 从修正后的权威位置重放所有未确认输入。
                 // 已确认输入已被 ProcessInputAck 清理，GetFromTick(0) 返回的是服务端尚未确认的输入，

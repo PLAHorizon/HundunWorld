@@ -46,4 +46,7 @@ public struct InterpolatedTransformComponent
 
     /// <summary>接收到此目标位置的本地 Tick 序号。</summary>
     public long ReceivedTick;
+
+    /// <summary>[Phase C4] 自上次快照重置 Alpha 以来经过的时间（秒），用于 dead reckoning 速度衰减。</summary>
+    public float TimeSinceLastSnapshot;
 }

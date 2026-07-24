@@ -227,6 +227,13 @@ namespace Horizon.Game.Gateway
                     // 注册核心服务
                     services.AddSingleton<IGatewayService, GatewayService>();
                     services.AddSingleton<IConnectionManager, ConnectionManager>();
+                    services.AddSingleton<Horizon.Game.Core.Interfaces.ISessionBindingValidator, SessionBindingValidator>();
+                    services.AddSingleton<PresenceRefreshService>();
+                    services.AddSingleton<Horizon.Game.Core.World.IShardRouter>(sp =>
+                    {
+                        var opts = sp.GetRequiredService<IOptionsMonitor<Horizon.Game.Gateway.Configuration.GatewayOptions>>();
+                        return new Horizon.Game.Core.World.ZoneBasedShardRouter(opts.CurrentValue.ShardCount);
+                    });
                     services.AddSingleton<ILoadBalancer, LoadBalancer>();
                     services.AddSingleton<ISessionManager, SessionManager>();
                     services.AddSingleton<TouchSocket.Core.ILog>(_ => ConsoleLogger.Default);

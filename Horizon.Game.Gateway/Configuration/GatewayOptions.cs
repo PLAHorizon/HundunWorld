@@ -116,5 +116,19 @@ namespace Horizon.Game.Gateway.Configuration
         /// </summary>
         [Range(1, 64)]
         public int MaxDispatcherWorkers { get; set; } = 1;
+
+        /// <summary>
+        /// 灰度开关（Phase 2 安全补全）：启用后，网关将对上行的交互意图/场景对象交互/订阅变更包
+        /// 执行会话绑定校验（验证 characterId 是否与当前 TCP 连接绑定一致），
+        /// 防止身份伪造。默认 <c>false</c>（关闭），验证通过后开启。
+        /// </summary>
+        public bool EnableSessionBindingValidation { get; set; } = false;
+
+        /// <summary>
+        /// ZoneShard 分片数量（Phase 3.3 统一 Shard 路由）。默认 1（单 Shard 模式，向后兼容）。
+        /// 调高后需同步部署对应数量的 ZoneShardGrain 实例。
+        /// </summary>
+        [Range(1, 64)]
+        public int ShardCount { get; set; } = 1;
     }
 }

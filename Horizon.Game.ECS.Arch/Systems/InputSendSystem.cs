@@ -31,6 +31,9 @@ public sealed class InputSendSystem : ArchSystemBase
     /// <summary>触发冗余重传的落后 tick 阈值：当 ClientTick - LastAckedClientTick &gt; 此值时重传。</summary>
     private const int RetransmitThreshold = 5;
 
+    /// <summary>[Phase C2] 累计冗余重传包数（供游戏层转发到 ClientSyncMetrics）。</summary>
+    public long TotalRetransmits { get; private set; }
+
     /// <summary>
     /// 当前已注册的 InputSendSystem 实例（兼容静态调用入口）。
     /// 在 <see cref="Update"/> 第一次执行时设置，供未持有 ArchWorldHost 引用的调用方
@@ -157,6 +160,7 @@ public sealed class InputSendSystem : ArchSystemBase
         {
             var idx = (_pendingTail + i) % PendingAcksCapacity;
             InputSendQueue.Instance.Enqueue(_pendingAcks[idx]);
+            TotalRetransmits++; // [Phase C2] 记录重传计数
         }
     }
 

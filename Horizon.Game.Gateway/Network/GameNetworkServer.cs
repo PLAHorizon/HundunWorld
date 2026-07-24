@@ -58,17 +58,9 @@ namespace Horizon.Game.Gateway.Network
         private readonly ConcurrentDictionary<string, byte> _cleanedConnections = new();
 
         /// <summary>
-        /// presence TTL 兜底刷新的每角色上次刷新时间。<br/>
-        /// 修复 BUG（心跳 TTL 反复过低）：客户端只发送 InputPacket 不发送 Heartbeat 消息，
-        /// 导致 Redis presence TTL 在 90 秒后过期。<see cref="CharacterPresenceMonitorHostedService"/>
-        /// 虽能修复，但每 60 秒才扫描一次，期间角色可能被误判离线。<br/>
-        /// 此字典记录每个角色上次通过 OnDataReceived 兜底刷新 presence 的时间，
-        /// 限制刷新频率为每 30 秒一次（避免每帧 InputPacket 都刷新 Redis）。
+        /// Presence TTL 兜底刷新服务（Phase 3.2 提取为独立服务）。
         /// </summary>
-        private readonly ConcurrentDictionary<long, DateTime> _lastPresenceRefreshByCharacter = new();
-
-        /// <summary>presence TTL 兜底刷新的最小间隔（秒）。</summary>
-        private const int PresenceRefreshIntervalSeconds = 30;
+        private readonly PresenceRefreshService _presenceRefreshService;
         public GameNetworkServer(
             ILogger<GameNetworkServer> logger,
             ILog tlogger,
@@ -78,6 +70,7 @@ namespace Horizon.Game.Gateway.Network
             IEnumerable<IMessageHandler> messageHandlers, HorizonMessageAdapter adapter,
             PlayerDespawnScheduler despawnScheduler,
             ICharacterPresenceStore presenceStore,
+            PresenceRefreshService presenceRefreshService,
             UserAuthTokenProvider? authTokenProvider = null,
             ICharacterFingerprintService? fingerprintService = null)
         {
@@ -92,6 +85,7 @@ namespace Horizon.Game.Gateway.Network
             _fingerprintService = fingerprintService;
             _despawnScheduler = despawnScheduler ?? throw new ArgumentNullException(nameof(despawnScheduler));
             _presenceStore = presenceStore ?? throw new ArgumentNullException(nameof(presenceStore));
+            _presenceRefreshService = presenceRefreshService ?? throw new ArgumentNullException(nameof(presenceRefreshService));
         }
 
 
@@ -320,48 +314,12 @@ namespace Horizon.Game.Gateway.Network
         }
 
         /// <summary>
-        /// 兜底刷新角色 presence TTL（fire-and-forget，不阻塞消息处理）。<br/>
-        /// 修复 BUG（心跳 TTL 反复过低）：客户端只发送 InputPacket 不发送 Heartbeat 消息，
-        /// 导致 Redis presence TTL 在 90 秒后过期。此处限制每 30 秒刷新一次，
-        /// 确保只要客户端在发送输入，角色在线状态就不会过期。<br/>
-        /// 异常被吞并（仅 Debug 日志），避免 Redis 故障影响消息处理主流程。
+        /// 兜底刷新角色 presence TTL（委托给 PresenceRefreshService）。
         /// </summary>
         /// <param name="characterId">角色 ID。</param>
         private void TryRefreshPresenceTtlInBackground(long characterId)
         {
-            // 频率限制：每 30 秒最多刷新一次，避免每帧 InputPacket 都刷新 Redis
-            var now = DateTime.UtcNow;
-            if (_lastPresenceRefreshByCharacter.TryGetValue(characterId, out var lastRefresh))
-            {
-                if ((now - lastRefresh).TotalSeconds < PresenceRefreshIntervalSeconds)
-                    return;
-            }
-
-            // CAS 更新刷新时间：多 worker 并发时只有一个线程实际执行刷新
-            _lastPresenceRefreshByCharacter[characterId] = now;
-
-            // fire-and-forget：不阻塞 OnDataReceived 主流程
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    var refreshed = await _presenceStore.RefreshHeartbeatAsync(characterId).ConfigureAwait(false);
-                    if (!refreshed)
-                    {
-                        // presence key 不存在（可能角色已下线或 Redis 故障）。
-                        // 不重建 presence（与 HeartbeatHandler 一致：避免已下线角色在 Redis 中"复活"）。
-                        _logger.LogDebug(
-                            "presence TTL 兜底刷新返回 false，可能角色已下线或 Redis 故障。CharacterId={CharacterId}",
-                            characterId);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogDebug(ex,
-                        "presence TTL 兜底刷新异常（不影响消息处理）。CharacterId={CharacterId}",
-                        characterId);
-                }
-            });
+            _presenceRefreshService.TryRefreshInBackground(characterId);
         }
 
         /// <summary>
@@ -620,7 +578,7 @@ namespace Horizon.Game.Gateway.Network
                     foreach (var characterId in characterIdsToDespawn)
                     {
                         // 清理 presence 兜底刷新时间记录，避免内存泄漏
-                        _lastPresenceRefreshByCharacter.TryRemove(characterId, out _);
+                        _presenceRefreshService.RemoveCharacter(characterId);
 
                         try
                         {
@@ -678,41 +636,32 @@ namespace Horizon.Game.Gateway.Network
                 _cleanedConnections.TryRemove(connectionId, out _);
                 _logger.LogError(ex, "清理连接 {Id} 时发生错误（来源: {Source}）", connectionId, source);
             }
+
+            // 延迟清理幂等标志，防止 _cleanedConnections 无限增长（内存泄漏修复）。
+            // 60 秒窗口足以覆盖并发重入场景（Closed 事件 + 定时检测竞态），之后安全移除。
+            _ = Task.Delay(TimeSpan.FromSeconds(60)).ContinueWith(t =>
+            {
+                _cleanedConnections.TryRemove(connectionId, out _);
+            }, TaskScheduler.Default);
         }
 
         /// <summary>
-        /// 接收数据事件
+        /// 接收数据事件（薄编排层，各阶段逻辑已提取为独立私有方法）。
         /// </summary>
         private async Task OnDataReceived(ITcpSessionClient client, ReceivedDataEventArgs e)
         {
             try
             {
-                // 快速检测：如果连接已不在线，直接关闭以触发 OnClientDisconnected
-                if (!client.Online)
-                {
-                    try { await client.CloseAsync("连接已离线"); } catch { /* 忽略 */ }
-                    return;
-                }
+                // Stage 1: 连接确保（补注册）
+                var connection = await StageConnectionEnsureAsync(client);
+                if (connection == null) return;
 
-                // 获取连接对象
-                var connection = _connectionManager.GetConnection(client.Id);
-                if (connection == null)
-                {
-                    connection = await EnsureConnectionRegisteredAsync(client, logOnCreate: true);
-                    if (connection == null)
-                    {
-                        _logger.LogWarning("收到数据但连接不存在，且无法补注册: {Id}", client.Id);
-                        return;
-                    }
-                }
-
-                // 更新最后活跃时间
+                // Stage 2: 活跃时间更新
                 connection.LastActiveTime = DateTime.UtcNow;
 
                 try
                 {
-                    // HorizonMessageAdapter（CustomFixedHeaderDataHandlingAdapter）会在帧边界完整后
-                    // 将解析结果作为 HorizonMessageInfo 投递到 e.RequestInfo。
+                    // 解析消息帧
                     if (e.RequestInfo is not HorizonMessageInfo horizonRequest || horizonRequest.Packet == null)
                     {
                         _logger.LogWarning("收到无法解析的消息帧: {Id}", client.Id);
@@ -721,195 +670,19 @@ namespace Horizon.Game.Gateway.Network
 
                     var messagePacket = horizonRequest.Packet;
 
-                    // 后备角色映射注册：从请求体中提取 CharacterId 并注册映射。
-                    // SyncPacket 消息的 Header.CharacterId 通常为 0（CharacterId 在 InputPacket 载荷中），
-                    // 因此需要解码 SyncFrameMessage 来提取。这是 Despawn 能反查出 characterId 的前提。
-                    // 优先级：HandshakePacket.LocalCharacterId > InputPacket.CharacterId > Header.CharacterId
-                    long fallbackCharacterId = messagePacket.Header.CharacterId != 0
-                        ? (long)messagePacket.Header.CharacterId
-                        : 0;
+                    // Stage 3: 角色映射注册 + Presence 兜底刷新
+                    StageCharacterMappingAndPresence(connection, messagePacket);
 
-                    if (fallbackCharacterId == 0 && messagePacket.Body is SyncFrameMessage reqSyncFrame)
-                    {
-                        try
-                        {
-                            var reqSyncPacket = SyncPacketCodec.Decode(reqSyncFrame.Frame);
-                            fallbackCharacterId = reqSyncPacket switch
-                            {
-                                HandshakePacket h => (long)h.LocalCharacterId,
-                                InputPacket i => (long)i.CharacterId,
-                                _ => 0
-                            };
-                        }
-                        catch { /* 解码失败，忽略 */ }
-                    }
+                    // Stage 4: 鉴权令牌验证
+                    if (!await StageAuthValidationAsync(client, messagePacket)) return;
 
-                    if (fallbackCharacterId != 0)
-                    {
-                        var existingConn = _connectionManager.GetConnectionByCharacterId(fallbackCharacterId);
-                        if (existingConn == null || existingConn.ConnectionId != connection.ConnectionId)
-                        {
-                            // 修复（角色映射弹跳）：当已有不同连接持有该角色映射且仍在线时，
-                            // 仅允许 HandshakePacket 覆盖映射（握手是新会话的权威信号）。
-                            // InputPacket 不覆盖，防止旧连接的残留重传反复抢夺映射，
-                            // 导致 fanout 快照包被投递到错误连接（根因：其他客户端看不到角色移动）。
-                            bool isHandshake = messagePacket.Body is SyncFrameMessage hsFrame
-                                && TryDecodeAsHandshake(hsFrame);
-                            bool existingStillAlive = existingConn is { IsConnected: true };
-
-                            if (!existingStillAlive || isHandshake || existingConn == null)
-                            {
-                                _connectionManager.RegisterCharacter(fallbackCharacterId, connection);
-                                _despawnScheduler.CancelDespawn(fallbackCharacterId);
-                                _logger.LogInformation(
-                                    "请求体补注册角色映射: CharacterId={CharacterId}, ConnectionId={ConnectionId}, MessageType={MessageType}, IsHandshake={IsHandshake}",
-                                    fallbackCharacterId, connection.ConnectionId, messagePacket.Header.MessageType, isHandshake);
-                            }
-                        }
-
-                        // 修复 BUG（心跳 TTL 反复过低）：客户端只发送 InputPacket 不发送 Heartbeat 消息，
-                        // 导致 Redis presence TTL 在 90 秒后过期。此处作为兜底机制：
-                        // 收到已绑定角色的数据时，每 30 秒刷新一次 presence TTL，
-                        // 确保只要客户端在发送输入，角色在线状态就不会过期。
-                        // 不阻塞消息处理（fire-and-forget + 异常吞并）。
-                        TryRefreshPresenceTtlInBackground(fallbackCharacterId);
-                    }
-
-                    // 验证消息头的必需字段
-                    if (!messagePacket.Header.IsResponse)
-                    {
-                        if (messagePacket.Header.GameId <= 0)
-                        {
-                            _logger.LogWarning("收到无效消息: GameId必须为正数. Client: {Id}", client.Id);
-                            return;
-                        }
-
-                        if (messagePacket.Header.ServerId <= 0)
-                        {
-                            _logger.LogWarning("收到无效消息: ServerId必须为正数. Client: {Id}", client.Id);
-                            return;
-                        }
-                    }
-
-                    // 用户鉴权令牌验证：非登录/注册请求必须携带有效的鉴权令牌
-                    if (_authTokenProvider != null && !IsAuthExemptMessage(messagePacket))
-                    {
-                        var authToken = messagePacket.Header.AuthToken;
-                        if (string.IsNullOrWhiteSpace(authToken))
-                        {
-                            _logger.LogWarning("收到未携带鉴权令牌的请求，拒绝服务. Client: {Id}, MessageType: {MessageType}", 
-                                client.Id, messagePacket.Header.MessageType);
-                            await SendAuthErrorAsync(client, messagePacket, "请求缺少鉴权令牌，请重新登录");
-                            return;
-                        }
-
-                        var machineId = messagePacket.Header.MachineId;
-                        var expectedMachineId = _gatewayOptions.CurrentValue.ValidateTokenMachineId ? machineId : null;
-                        var validationResult = _authTokenProvider.ValidateToken(authToken, expectedMachineId: expectedMachineId);
-                        if (!validationResult.IsValid)
-                        {
-                            _logger.LogWarning("鉴权令牌验证失败，拒绝服务. Client: {Id}, Reason: {Reason}, MessageType: {MessageType}", 
-                                client.Id, validationResult.ErrorMessage, messagePacket.Header.MessageType);
-                            await SendAuthErrorAsync(client, messagePacket, "鉴权失败，请重新登录");
-                            return;
-                        }
-                    }
-
+                    // Stage 5: 消息路由分发
                     var (isSuccess, responseData) = await ProcessMessageAsync(client, messagePacket);
 
-                    // 处理完成后，将响应中携带的鉴权令牌存储到对应连接，实现令牌替换
+                    // Stage 6: 响应拦截（令牌更新/角色映射）
                     if (isSuccess && responseData != null)
                     {
-                        _logger.LogDebug("响应拦截: Type={ResponseType}, ConnectionId={ConnectionId}",
-                            responseData.GetType().Name, connection.ConnectionId);
-
-                        if (responseData is LoginResponse loginResp && !string.IsNullOrEmpty(loginResp.AuthToken))
-                        {
-                            connection.AuthToken = loginResp.AuthToken;
-                            _logger.LogDebug("已更新连接 {Id} 的鉴权令牌（登录）", client.Id);
-                        }
-                        else if (responseData is TokenLoginResponse tokenLoginResp && !string.IsNullOrEmpty(tokenLoginResp.AuthToken))
-                        {
-                            connection.AuthToken = tokenLoginResp.AuthToken;
-                            _logger.LogDebug("已更新连接 {Id} 的鉴权令牌（Token登录）", client.Id);
-                        }
-                        else if (responseData is EnterGameResponse enterResp)
-                        {
-                            // 更新鉴权令牌（可能为空，例如 _authTokenProvider 未配置或失败时）
-                            if (!string.IsNullOrEmpty(enterResp.AuthToken))
-                            {
-                                connection.AuthToken = enterResp.AuthToken;
-                                _logger.LogDebug("已更新连接 {Id} 的鉴权令牌（含角色Id）", client.Id);
-                            }
-
-                            // 绑定 characterId → IGameConnection 映射，使 fanout 推送（按 characterId 寻址）能命中本连接
-                            // 注意：此绑定不能依赖 AuthToken 非空，否则令牌缺失时 fanout 推送的快照包会被全部丢弃
-                            // 优先使用顶层 CharacterId，回退到 CharacterInfo.CharacterId
-                            if (enterResp.Success)
-                            {
-                                var characterId = (long)(enterResp.CharacterId != 0
-                                    ? enterResp.CharacterId
-                                    : enterResp.CharacterInfo?.CharacterId ?? 0);
-                                if (characterId != 0)
-                                {
-                                    _connectionManager.RegisterCharacter(characterId, connection);
-                                    // 取消任何挂起的延迟 Despawn（断线重连场景：避免角色被误注销）
-                                    _despawnScheduler.CancelDespawn(characterId);
-                                    _logger.LogInformation(
-                                        "EnterGame响应注册角色映射: CharacterId={CharacterId}, ConnectionId={ConnectionId}",
-                                        characterId, connection.ConnectionId);
-                                }
-                                else
-                                {
-                                    _logger.LogWarning(
-                                        "EnterGame响应成功但无法提取CharacterId。TopLevel={TopLevel}, CharacterInfo={CharacterInfo}",
-                                        enterResp.CharacterId, enterResp.CharacterInfo?.CharacterId ?? 0);
-                                }
-                            }
-                            else
-                            {
-                                _logger.LogWarning("EnterGame响应失败，跳过角色映射注册。Message={Message}", enterResp.Message);
-                            }
-                        }
-                        else if (responseData is SyncFrameMessage syncFrameResp)
-                        {
-                            // SyncPacket 握手响应：解码 HandshakePacket 并注册 characterId → connection 映射
-                            // 握手路径不经过 EnterGameResponse，若不在此注册，fanout 推送（按 characterId 寻址）会全部丢弃
-                            try
-                            {
-                                var syncPacket = SyncPacketCodec.Decode(syncFrameResp.Frame);
-                                _logger.LogDebug("SyncFrame响应解码: Kind={Kind}, ConnectionId={ConnectionId}",
-                                    syncPacket.Kind, connection.ConnectionId);
-                                if (syncPacket is HandshakePacket handshakeResp)
-                                {
-                                    if (handshakeResp.LocalCharacterId != 0)
-                                    {
-                                        var characterId = (long)handshakeResp.LocalCharacterId;
-                                        _connectionManager.RegisterCharacter(characterId, connection);
-                                        // 取消任何挂起的延迟 Despawn（断线重连场景：避免角色被误注销）
-                                        _despawnScheduler.CancelDespawn(characterId);
-                                        _logger.LogInformation(
-                                            "Sync握手响应已注册角色映射: CharacterId={CharacterId}, ConnectionId={ConnectionId}",
-                                            characterId, connection.ConnectionId);
-                                    }
-                                    else
-                                    {
-                                        _logger.LogWarning("Sync握手响应中 LocalCharacterId=0，跳过角色映射注册");
-                                    }
-                                }
-                                else if (syncPacket is HandshakeRejectPacket rejectResp)
-                                {
-                                    // P1.3：协议版本过低，服务器拒绝握手——不注册映射，客户端将触发强制更新。
-                                    _logger.LogWarning(
-                                        "Sync握手被拒绝（协议版本过低）: Reason={Reason}, MinimumVersion={MinimumVersion}, ConnectionId={ConnectionId}",
-                                        rejectResp.Reason, rejectResp.MinimumVersion, connection.ConnectionId);
-                                }
-                            }
-                            catch (Exception decodeEx)
-                            {
-                                _logger.LogWarning(decodeEx, "解码 SyncFrame 响应失败，跳过角色映射注册");
-                            }
-                        }
+                        StageResponseIntercept(connection, client, responseData);
                     }
                 }
                 catch (ArgumentException argEx)
@@ -924,6 +697,235 @@ namespace Horizon.Game.Gateway.Network
             catch (Exception ex)
             {
                 _logger.LogError(ex, "处理接收数据事件时发生错误: {Id}", client.Id);
+            }
+        }
+
+        /// <summary>
+        /// Stage 1: 连接确保——如果连接不存在则补注册。
+        /// </summary>
+        private async Task<IGameConnection?> StageConnectionEnsureAsync(ITcpSessionClient client)
+        {
+            // 快速检测：如果连接已不在线，直接关闭以触发 OnClientDisconnected
+            if (!client.Online)
+            {
+                try { await client.CloseAsync("连接已离线"); } catch { /* 忽略 */ }
+                return null;
+            }
+
+            var connection = _connectionManager.GetConnection(client.Id);
+            if (connection == null)
+            {
+                connection = await EnsureConnectionRegisteredAsync(client, logOnCreate: true);
+                if (connection == null)
+                {
+                    _logger.LogWarning("收到数据但连接不存在，且无法补注册: {Id}", client.Id);
+                }
+            }
+            return connection;
+        }
+
+        /// <summary>
+        /// Stage 3: 角色映射注册（从请求体提取 CharacterId 并注册映射）+ Presence TTL 兜底刷新。
+        /// </summary>
+        private void StageCharacterMappingAndPresence(IGameConnection connection, HorizonMessagePacket messagePacket)
+        {
+            // 后备角色映射注册：从请求体中提取 CharacterId 并注册映射。
+            // SyncPacket 消息的 Header.CharacterId 通常为 0（CharacterId 在 InputPacket 载荷中），
+            // 因此需要解码 SyncFrameMessage 来提取。这是 Despawn 能反查出 characterId 的前提。
+            // 优先级：HandshakePacket.LocalCharacterId > InputPacket.CharacterId > Header.CharacterId
+            long fallbackCharacterId = messagePacket.Header.CharacterId != 0
+                ? (long)messagePacket.Header.CharacterId
+                : 0;
+
+            if (fallbackCharacterId == 0 && messagePacket.Body is SyncFrameMessage reqSyncFrame)
+            {
+                try
+                {
+                    var reqSyncPacket = SyncPacketCodec.Decode(reqSyncFrame.Frame);
+                    fallbackCharacterId = reqSyncPacket switch
+                    {
+                        HandshakePacket h => (long)h.LocalCharacterId,
+                        InputPacket i => (long)i.CharacterId,
+                        _ => 0
+                    };
+                }
+                catch { /* 解码失败，忽略 */ }
+            }
+
+            if (fallbackCharacterId != 0)
+            {
+                var existingConn = _connectionManager.GetConnectionByCharacterId(fallbackCharacterId);
+                if (existingConn == null || existingConn.ConnectionId != connection.ConnectionId)
+                {
+                    // 修复（角色映射弹跳）：当已有不同连接持有该角色映射且仍在线时，
+                    // 仅允许 HandshakePacket 覆盖映射（握手是新会话的权威信号）。
+                    // InputPacket 不覆盖，防止旧连接的残留重传反复抢夺映射，
+                    // 导致 fanout 快照包被投递到错误连接（根因：其他客户端看不到角色移动）。
+                    bool isHandshake = messagePacket.Body is SyncFrameMessage hsFrame
+                        && TryDecodeAsHandshake(hsFrame);
+                    bool existingStillAlive = existingConn is { IsConnected: true };
+
+                    if (!existingStillAlive || isHandshake || existingConn == null)
+                    {
+                        _connectionManager.RegisterCharacter(fallbackCharacterId, connection);
+                        _despawnScheduler.CancelDespawn(fallbackCharacterId);
+                        _logger.LogInformation(
+                            "请求体补注册角色映射: CharacterId={CharacterId}, ConnectionId={ConnectionId}, MessageType={MessageType}, IsHandshake={IsHandshake}",
+                            fallbackCharacterId, connection.ConnectionId, messagePacket.Header.MessageType, isHandshake);
+                    }
+                }
+
+                // 修复 BUG（心跳 TTL 反复过低）：客户端只发送 InputPacket 不发送 Heartbeat 消息，
+                // 导致 Redis presence TTL 在 90 秒后过期。此处作为兜底机制：
+                // 收到已绑定角色的数据时，每 30 秒刷新一次 presence TTL，
+                // 确保只要客户端在发送输入，角色在线状态就不会过期。
+                // 不阻塞消息处理（fire-and-forget + 异常吞并）。
+                TryRefreshPresenceTtlInBackground(fallbackCharacterId);
+            }
+        }
+
+        /// <summary>
+        /// Stage 4: 鉴权令牌验证。返回 true 表示通过，false 表示拒绝（已发送错误响应）。
+        /// </summary>
+        private async Task<bool> StageAuthValidationAsync(ITcpSessionClient client, HorizonMessagePacket messagePacket)
+        {
+            // 验证消息头的必需字段
+            if (!messagePacket.Header.IsResponse)
+            {
+                if (messagePacket.Header.GameId <= 0)
+                {
+                    _logger.LogWarning("收到无效消息: GameId必须为正数. Client: {Id}", client.Id);
+                    return false;
+                }
+
+                if (messagePacket.Header.ServerId <= 0)
+                {
+                    _logger.LogWarning("收到无效消息: ServerId必须为正数. Client: {Id}", client.Id);
+                    return false;
+                }
+            }
+
+            // 用户鉴权令牌验证：非登录/注册请求必须携带有效的鉴权令牌
+            if (_authTokenProvider != null && !IsAuthExemptMessage(messagePacket))
+            {
+                var authToken = messagePacket.Header.AuthToken;
+                if (string.IsNullOrWhiteSpace(authToken))
+                {
+                    _logger.LogWarning("收到未携带鉴权令牌的请求，拒绝服务. Client: {Id}, MessageType: {MessageType}", 
+                        client.Id, messagePacket.Header.MessageType);
+                    await SendAuthErrorAsync(client, messagePacket, "请求缺少鉴权令牌，请重新登录");
+                    return false;
+                }
+
+                var machineId = messagePacket.Header.MachineId;
+                var expectedMachineId = _gatewayOptions.CurrentValue.ValidateTokenMachineId ? machineId : null;
+                var validationResult = _authTokenProvider.ValidateToken(authToken, expectedMachineId: expectedMachineId);
+                if (!validationResult.IsValid)
+                {
+                    _logger.LogWarning("鉴权令牌验证失败，拒绝服务. Client: {Id}, Reason: {Reason}, MessageType: {MessageType}", 
+                        client.Id, validationResult.ErrorMessage, messagePacket.Header.MessageType);
+                    await SendAuthErrorAsync(client, messagePacket, "鉴权失败，请重新登录");
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Stage 6: 响应拦截——从响应中提取鉴权令牌并存储到连接，以及注册角色映射。
+        /// </summary>
+        private void StageResponseIntercept(IGameConnection connection, ITcpSessionClient client, MessageUnion responseData)
+        {
+            _logger.LogDebug("响应拦截: Type={ResponseType}, ConnectionId={ConnectionId}",
+                responseData.GetType().Name, connection.ConnectionId);
+
+            if (responseData is LoginResponse loginResp && !string.IsNullOrEmpty(loginResp.AuthToken))
+            {
+                connection.AuthToken = loginResp.AuthToken;
+                _logger.LogDebug("已更新连接 {Id} 的鉴权令牌（登录）", client.Id);
+            }
+            else if (responseData is TokenLoginResponse tokenLoginResp && !string.IsNullOrEmpty(tokenLoginResp.AuthToken))
+            {
+                connection.AuthToken = tokenLoginResp.AuthToken;
+                _logger.LogDebug("已更新连接 {Id} 的鉴权令牌（Token登录）", client.Id);
+            }
+            else if (responseData is EnterGameResponse enterResp)
+            {
+                // 更新鉴权令牌（可能为空，例如 _authTokenProvider 未配置或失败时）
+                if (!string.IsNullOrEmpty(enterResp.AuthToken))
+                {
+                    connection.AuthToken = enterResp.AuthToken;
+                    _logger.LogDebug("已更新连接 {Id} 的鉴权令牌（含角色Id）", client.Id);
+                }
+
+                // 绑定 characterId → IGameConnection 映射，使 fanout 推送（按 characterId 寻址）能命中本连接
+                // 注意：此绑定不能依赖 AuthToken 非空，否则令牌缺失时 fanout 推送的快照包会被全部丢弃
+                // 优先使用顶层 CharacterId，回退到 CharacterInfo.CharacterId
+                if (enterResp.Success)
+                {
+                    var characterId = (long)(enterResp.CharacterId != 0
+                        ? enterResp.CharacterId
+                        : enterResp.CharacterInfo?.CharacterId ?? 0);
+                    if (characterId != 0)
+                    {
+                        _connectionManager.RegisterCharacter(characterId, connection);
+                        // 取消任何挂起的延迟 Despawn（断线重连场景：避免角色被误注销）
+                        _despawnScheduler.CancelDespawn(characterId);
+                        _logger.LogInformation(
+                            "EnterGame响应注册角色映射: CharacterId={CharacterId}, ConnectionId={ConnectionId}",
+                            characterId, connection.ConnectionId);
+                    }
+                    else
+                    {
+                        _logger.LogWarning(
+                            "EnterGame响应成功但无法提取CharacterId。TopLevel={TopLevel}, CharacterInfo={CharacterInfo}",
+                            enterResp.CharacterId, enterResp.CharacterInfo?.CharacterId ?? 0);
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("EnterGame响应失败，跳过角色映射注册。Message={Message}", enterResp.Message);
+                }
+            }
+            else if (responseData is SyncFrameMessage syncFrameResp)
+            {
+                // SyncPacket 握手响应：解码 HandshakePacket 并注册 characterId → connection 映射
+                // 握手路径不经过 EnterGameResponse，若不在此注册，fanout 推送（按 characterId 寻址）会全部丢弃
+                try
+                {
+                    var syncPacket = SyncPacketCodec.Decode(syncFrameResp.Frame);
+                    _logger.LogDebug("SyncFrame响应解码: Kind={Kind}, ConnectionId={ConnectionId}",
+                        syncPacket.Kind, connection.ConnectionId);
+                    if (syncPacket is HandshakePacket handshakeResp)
+                    {
+                        if (handshakeResp.LocalCharacterId != 0)
+                        {
+                            var characterId = (long)handshakeResp.LocalCharacterId;
+                            _connectionManager.RegisterCharacter(characterId, connection);
+                            // 取消任何挂起的延迟 Despawn（断线重连场景：避免角色被误注销）
+                            _despawnScheduler.CancelDespawn(characterId);
+                            _logger.LogInformation(
+                                "Sync握手响应已注册角色映射: CharacterId={CharacterId}, ConnectionId={ConnectionId}",
+                                characterId, connection.ConnectionId);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Sync握手响应中 LocalCharacterId=0，跳过角色映射注册");
+                        }
+                    }
+                    else if (syncPacket is HandshakeRejectPacket rejectResp)
+                    {
+                        // P1.3：协议版本过低，服务器拒绝握手——不注册映射，客户端将触发强制更新。
+                        _logger.LogWarning(
+                            "Sync握手被拒绝（协议版本过低）: Reason={Reason}, MinimumVersion={MinimumVersion}, ConnectionId={ConnectionId}",
+                            rejectResp.Reason, rejectResp.MinimumVersion, connection.ConnectionId);
+                    }
+                }
+                catch (Exception decodeEx)
+                {
+                    _logger.LogWarning(decodeEx, "解码 SyncFrame 响应失败，跳过角色映射注册");
+                }
             }
         }
 

@@ -27,6 +27,15 @@ namespace HundunWorld.Game
         /// <summary>EntityId → Flax Actor 的映射表。</summary>
         private readonly Dictionary<ulong, Actor> _entityIdToActor = new();
 
+        /// <summary>[Phase C5] 断线期间暂停位置更新（不 Destroy Actor，重连后恢复）。</summary>
+        public bool IsPaused { get; set; } = false;
+
+        /// <summary>[Phase C6] 远程实体数超过此阈值时启用 LOD 降频（非最近实体每 2 帧更新一次）。</summary>
+        public int LodEntityThreshold { get; set; } = 50;
+
+        /// <summary>[Phase C6] LOD 降频帧计数（奇偶帧交替更新）。</summary>
+        private long _lodFrameCount;
+
         /// <summary>EntityId → 上次同步位置（用于检测是否需要更新）。</summary>
         private readonly Dictionary<ulong, Vector3> _entityIdToLastPosition = new();
 
@@ -98,9 +107,11 @@ namespace HundunWorld.Game
                 Debug.Log($"[FlaxActorSyncSystem] 首帧诊断: ArchWorld={_archWorld != null}, EventsSubscribed={_eventsSubscribed}, ArchHost={archHost != null}, RemoteActorCount={_entityIdToActor.Count}");
             }
 
-            // 限频诊断：每 120 帧（≈2 秒）输出系统运行状态 + Actor/实体计数，
-            // 确认 FlaxActorSyncSystem 是否在运行、是否有远程实体需要同步。
+            // 帧计数（所有构建配置均递增，供 ReconcileMissingActors 限频使用）
             var frameCount = System.Threading.Interlocked.Increment(ref _onUpdateFrameCount);
+
+#if DEBUG
+            // 限频诊断：每 120 帧（≈2 秒）输出系统运行状态 + Actor/实体计数（仅 Debug 构建）
             if (frameCount <= 3 || frameCount % 120 == 1)
             {
                 int interpEntityCount = 0;
@@ -110,6 +121,15 @@ namespace HundunWorld.Game
                     _archWorld.Query(in countQuery, (Entity e, ref InterpolatedTransformComponent _) => interpEntityCount++);
                 }
                 Debug.Log($"[FlaxActorSyncSystem] OnUpdate#{frameCount}: ArchWorld={_archWorld != null}, EventsSubscribed={_eventsSubscribed}, ActorCount={_entityIdToActor.Count}, InterpEntityCount={interpEntityCount}");
+            }
+#endif
+
+            // 周期性补偿检查：确保所有远程实体都有对应的 Flax Actor。
+            // 覆盖场景：事件订阅时序竞态、网络抖动导致 Spawn 事件丢失、重连后实体重建。
+            // 每 120 帧（≈2秒）检查一次，开销极低（仅字典计数比较）。
+            if (_eventsSubscribed && _archWorld != null && frameCount % 120 == 60)
+            {
+                ReconcileMissingActors();
             }
 
             // 同步远程实体的插值位置到 Flax Actor
@@ -131,6 +151,7 @@ namespace HundunWorld.Game
 
         /// <summary>
         /// 订阅 SnapshotApplySystem 的 Spawn/Despawn 事件。
+        /// 订阅成功后立即扫描已有远程实体并补创建 Actor（修复时序竞态：首批快照在订阅前处理导致 Actor 缺失）。
         /// </summary>
         private void SubscribeToSnapshotEvents()
         {
@@ -144,6 +165,71 @@ namespace HundunWorld.Game
             snapshotSystem.EntityDespawned += OnEntityDespawned;
             _eventsSubscribed = true;
             Debug.Log("[FlaxActorSyncSystem] 已订阅 SnapshotApplySystem 事件");
+
+            // 修复 BUG：订阅前已 Spawn 的远程实体不会触发 EntitySpawned 事件，
+            // 导致 Flax Actor 永远不被创建（玩家间不可见）。
+            // 订阅成功后立即扫描已有实体，补创建缺失的 Actor。
+            CreateActorsForExistingEntities();
+        }
+
+        /// <summary>
+        /// 扫描 Arch World 中已存在的远程实体，为缺少 Flax Actor 的实体补创建。
+        /// 解决事件订阅时序竞态：若 SnapshotApplySystem 在 FlaxActorSyncSystem 订阅前已处理了 Spawn，
+        /// 则 EntitySpawned 事件被错过，远程角色 Actor 不会被创建。
+        /// </summary>
+        private void CreateActorsForExistingEntities()
+        {
+            if (_archWorld == null) return;
+
+            int created = 0;
+            var query = new QueryDescription()
+                .WithAll<InterpolatedTransformComponent, NetworkIdentityComponent, AuthTransformComponent>();
+
+            _archWorld.Query(in query, (Entity entity, ref InterpolatedTransformComponent interp, ref NetworkIdentityComponent netId, ref AuthTransformComponent auth) =>
+            {
+                // 跳过本地玩家
+                if (netId.IsLocalPlayer) return;
+
+                // 已有 Actor 的实体跳过
+                if (_entityIdToActor.ContainsKey(netId.EntityId)) return;
+
+                // 补创建远程角色 Actor
+                Actor remoteActor = CreateRemotePlayerActor(netId.EntityId, interp.X, interp.Y, interp.Z);
+                if (remoteActor != null)
+                {
+                    _entityIdToActor[netId.EntityId] = remoteActor;
+                    _entityIdToLastPosition[netId.EntityId] = new Vector3(interp.X, interp.Y, interp.Z);
+                    created++;
+                }
+            });
+
+            if (created > 0)
+            {
+                Debug.Log($"[FlaxActorSyncSystem] 补创建了 {created} 个已有远程实体的 Actor（修复订阅时序竞态）");
+            }
+        }
+
+        /// <summary>
+        /// 周期性补偿：检查是否有远程实体缺少对应 Actor，若有则补创建。
+        /// 轻量级检查：先比较计数，不匹配时才遍历。
+        /// </summary>
+        private void ReconcileMissingActors()
+        {
+            if (_archWorld == null) return;
+
+            // 快速计数检查：如果远程实体数 == Actor 数，无需遍历
+            int remoteEntityCount = 0;
+            var countQuery = new QueryDescription()
+                .WithAll<InterpolatedTransformComponent, NetworkIdentityComponent>();
+            _archWorld.Query(in countQuery, (Entity e, ref InterpolatedTransformComponent _, ref NetworkIdentityComponent nid) =>
+            {
+                if (!nid.IsLocalPlayer) remoteEntityCount++;
+            });
+
+            if (remoteEntityCount <= _entityIdToActor.Count) return;
+
+            // 存在缺失 Actor 的实体，补创建
+            CreateActorsForExistingEntities();
         }
 
         /// <summary>
@@ -221,9 +307,6 @@ namespace HundunWorld.Game
                 _entityIdToAnimatedModel.Remove(args.EntityId);
                 _entityIdToIsWalkingParam.Remove(args.EntityId);
                 _entityIdToAnimationController.Remove(args.EntityId);
-                _diagLastWrittenPos.Remove(args.EntityId);
-                _diagPosOverrideWarnCount.Remove(args.EntityId);
-                _diagInterpSnapshot.Remove(args.EntityId);
                 Debug.Log($"[FlaxActorSyncSystem] 远程角色 Actor 已销毁: EntityId={args.EntityId}");
             }
         }
@@ -248,9 +331,6 @@ namespace HundunWorld.Game
             _entityIdToAnimatedModel.Clear();
             _entityIdToIsWalkingParam.Clear();
             _entityIdToAnimationController.Clear();
-            _diagLastWrittenPos.Clear();
-            _diagPosOverrideWarnCount.Clear();
-            _diagInterpSnapshot.Clear();
 
             if (count > 0)
             {
@@ -463,18 +543,8 @@ namespace HundunWorld.Game
         /// <summary>诊断：SyncInterpolatedPositions 帧计数器。</summary>
         private long _syncPosFrameCount;
 
-        /// <summary>诊断：每帧记录远程实体的插值位置快照（用于检测位置是否在变化）。</summary>
-        private readonly Dictionary<ulong, Vector3> _diagInterpSnapshot = new();
-
-        /// <summary>
-        /// 诊断：上一帧 FlaxActorSyncSystem 实际写入 Actor 的位置（与下一帧读取的 Actor.Position 对比，
-        /// 检测是否有其他系统在覆盖位置，如 Root Motion / RigidBody / 其他 Script）。
-        /// key: entityId, value: 上一帧通过 actor.Position = 写入的值。
-        /// </summary>
-        private readonly Dictionary<ulong, Vector3> _diagLastWrittenPos = new();
-
-        /// <summary>诊断：位置被外部覆盖的累计告警次数（限频用）。</summary>
-        private readonly Dictionary<ulong, long> _diagPosOverrideWarnCount = new();
+        // [Phase C1] 已移除 _diagInterpSnapshot/_diagLastWrittenPos/_diagPosOverrideWarnCount 诊断字典，
+        // 位置覆盖检测改为通过 ClientSyncMetrics.PositionOverrideCount 计数器记录（Phase C2）。
 
         /// <summary>
         /// 每帧同步远程实体的插值位置、朝向、动画到 Flax Actor。
@@ -482,6 +552,12 @@ namespace HundunWorld.Game
         private void SyncInterpolatedPositions()
         {
             if (_archWorld == null)
+            {
+                return;
+            }
+
+            // [Phase C5] 断线期间冻结位置更新，避免无新数据时 Actor 位置漂移
+            if (IsPaused)
             {
                 return;
             }
@@ -511,6 +587,11 @@ namespace HundunWorld.Game
             int diagActorsFound = 0;
             int diagPositionsChanged = 0;
 
+            // [Phase C6] LOD 降频：远程实体数超过阈值时，非最近实体每 2 帧更新一次
+            var lodFrame = System.Threading.Interlocked.Increment(ref _lodFrameCount);
+            var lodActive = _entityIdToActor.Count > LodEntityThreshold;
+            var lodEntityIndex = 0;
+
             // 查询所有带 InterpolatedTransformComponent + NetworkIdentityComponent + AuthTransformComponent 的实体
             var query = new QueryDescription()
                 .WithAll<InterpolatedTransformComponent, NetworkIdentityComponent, AuthTransformComponent>();
@@ -518,6 +599,13 @@ namespace HundunWorld.Game
             _archWorld.Query(in query, (Entity entity, ref InterpolatedTransformComponent interp, ref NetworkIdentityComponent netId, ref AuthTransformComponent auth) =>
             {
                 diagTotalEntities++;
+
+                // [Phase C6] LOD 降频：当实体数超过阈值时，奇偶帧交替更新一半实体
+                var entityIdx = lodEntityIndex++;
+                if (lodActive && (entityIdx + lodFrame) % 2 != 0)
+                {
+                    return; // 本帧跳过此实体，下帧更新
+                }
 
                 if (_entityIdToActor.TryGetValue(netId.EntityId, out var actor))
                 {
@@ -530,27 +618,6 @@ namespace HundunWorld.Game
                     diagActorsFound++;
                     var entityId = netId.EntityId;
 
-                    // ★★★ 位置覆盖检测：对比上一帧我们写入的位置与当前 Actor 实际位置。
-                    // 如果两者差异显著，说明有其他系统（Root Motion / RigidBody / 其他 Script）
-                    // 在 FlaxActorSyncSystem 写入后覆盖了 Actor.Position，这是"看不到移动"的关键线索。
-                    if (_diagLastWrittenPos.TryGetValue(entityId, out var lastWrittenPos))
-                    {
-                        var currentActorPos = actor.Position;
-                        float overrideDistSq = (currentActorPos - lastWrittenPos).LengthSquared;
-                        // 阈值 0.01 平方米（10cm 位移）— 排除浮点抖动
-                        if (overrideDistSq > 0.01f)
-                        {
-                            _diagPosOverrideWarnCount.TryGetValue(entityId, out var warnCount);
-                            warnCount++;
-                            _diagPosOverrideWarnCount[entityId] = warnCount;
-                            // 限频：每个实体前 3 次无条件输出，后续每 300 次（≈5 秒）输出一次
-                            if (warnCount <= 3 || warnCount % 300 == 1)
-                            {
-                                Debug.LogWarning($"[FlaxActorSyncSystem] ⚠️ 位置被外部覆盖！EntityId={entityId}, 上帧写入=({lastWrittenPos.X:F2},{lastWrittenPos.Y:F2},{lastWrittenPos.Z:F2}), 当前读取=({currentActorPos.X:F2},{currentActorPos.Y:F2},{currentActorPos.Z:F2}), 偏移={Mathf.Sqrt(overrideDistSq):F3}m。可能原因：Root Motion 未禁用 / RigidBody 物理 / 其他 Script 覆盖。WarnCount={warnCount}");
-                            }
-                        }
-                    }
-
                     // 1) 同步插值位置
                     var newPos = new Vector3(interp.X, interp.Y, interp.Z);
                     bool positionUpdated = false;
@@ -561,7 +628,6 @@ namespace HundunWorld.Game
                         {
                             actor.Position = newPos;
                             _entityIdToLastPosition[entityId] = newPos;
-                            _diagLastWrittenPos[entityId] = newPos;
                             positionUpdated = true;
                             diagPositionsChanged++;
                         }
@@ -570,21 +636,18 @@ namespace HundunWorld.Game
                     {
                         actor.Position = newPos;
                         _entityIdToLastPosition[entityId] = newPos;
-                        _diagLastWrittenPos[entityId] = newPos;
                         positionUpdated = true;
                         diagPositionsChanged++;
                     }
 
-                    // 诊断：每 120 帧输出每个远程实体的详细位置信息
+#if DEBUG
+                    // 诊断：每 120 帧输出每个远程实体的详细位置信息（仅 Debug 构建）
                     if (isDiagFrame)
                     {
                         var actorPos = actor.Position;
-                        bool interpChanged = !_diagInterpSnapshot.TryGetValue(entityId, out var prevInterp)
-                            || (newPos - prevInterp).LengthSquared > 0.0001f;
-                        _diagInterpSnapshot[entityId] = newPos;
-
-                        Debug.Log($"[FlaxActorSyncSystem] SyncPos#{diagFrame} EntityId={entityId}: InterpPos=({interp.X:F2},{interp.Y:F2},{interp.Z:F2}), ActorPos=({actorPos.X:F2},{actorPos.Y:F2},{actorPos.Z:F2}), LastPos=({lastPos.X:F2},{lastPos.Y:F2},{lastPos.Z:F2}), PosUpdated={positionUpdated}, InterpChanged={interpChanged}, Alpha={interp.Alpha:F2}, Target=({interp.TargetX:F2},{interp.TargetY:F2},{interp.TargetZ:F2}), AuthYaw={auth.Yaw:F2}rad");
+                        Debug.Log($"[FlaxActorSyncSystem] SyncPos#{diagFrame} EntityId={entityId}: InterpPos=({interp.X:F2},{interp.Y:F2},{interp.Z:F2}), ActorPos=({actorPos.X:F2},{actorPos.Y:F2},{actorPos.Z:F2}), PosUpdated={positionUpdated}, Alpha={interp.Alpha:F2}, Target=({interp.TargetX:F2},{interp.TargetY:F2},{interp.TargetZ:F2}), AuthYaw={auth.Yaw:F2}rad");
                     }
+#endif
 
                     // 2) 同步朝向（从 AuthTransformComponent.Yaw，弧度）
                     // 服务端 Yaw 为弧度，Flax 旋转用 Yaw/Pitch/Roll（度）
@@ -712,11 +775,13 @@ namespace HundunWorld.Game
                 _entityIdToAnimationController.Remove(entityId);
             }
 
-            // 诊断：每 120 帧输出汇总统计，定位"有实体但位置不变"问题
+#if DEBUG
+            // 诊断：每 120 帧输出汇总统计（仅 Debug 构建）
             if (isDiagFrame)
             {
-                Debug.Log($"[FlaxActorSyncSystem] SyncPos#{diagFrame} 汇总: TotalEntities={diagTotalEntities}, ActorsFound={diagActorsFound}, PositionsChanged={diagPositionsChanged}, ActorCount={_entityIdToActor.Count}。若 PositionsChanged=0 且 TotalEntities>0，说明插值位置未变化（HandleUpdate 未更新 Target 或 InterpolationSystem 未推进 Alpha）");
+                Debug.Log($"[FlaxActorSyncSystem] SyncPos#{diagFrame} 汇总: TotalEntities={diagTotalEntities}, ActorsFound={diagActorsFound}, PositionsChanged={diagPositionsChanged}, ActorCount={_entityIdToActor.Count}");
             }
+#endif
         }
 
         /// <summary>

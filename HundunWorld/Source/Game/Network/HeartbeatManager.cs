@@ -17,6 +17,15 @@ namespace HundunWorld.Game.Network
         private bool _isRunning = false;
         private const int HeartbeatInterval = 20000; // 20秒间隔
 
+        /// <summary>
+        /// [Phase C3] 最近一次心跳发送的 Stopwatch 时间戳，供 HeartbeatResponseHandler 计算 RTT。
+        /// 跨线程读写使用 Volatile 保证可见性。
+        /// </summary>
+        private static long _lastHeartbeatSentTimestamp;
+
+        /// <summary>获取最近一次心跳发送的 Stopwatch 时间戳（0 表示尚未发送）。</summary>
+        public static long LastHeartbeatSentTimestamp => Volatile.Read(ref _lastHeartbeatSentTimestamp);
+
         public HeartbeatManager(NetworkManager networkManager)
         {
             _networkManager = networkManager ?? throw new ArgumentNullException(nameof(networkManager));
@@ -77,6 +86,12 @@ namespace HundunWorld.Game.Network
                             };
 
                             var heartbeatSuccess = await _networkManager.SendMessageAsync(heartbeatPacket);
+
+                            // [Phase C3] 记录心跳发送时间戳，供 RTT 计算
+                            if (heartbeatSuccess)
+                            {
+                                Volatile.Write(ref _lastHeartbeatSentTimestamp, System.Diagnostics.Stopwatch.GetTimestamp());
+                            }
                             
                             if (heartbeatSuccess)
                             {

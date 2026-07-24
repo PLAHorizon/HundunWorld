@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Horizon.Game.Core.Interfaces;
 using Horizon.Game.Core.Sim.Server;
+using Horizon.Game.Core.World;
 using Horizon.Orleans.Interface;
 using Horizon.Orleans.Interface.World;
 
@@ -36,27 +37,27 @@ namespace Horizon.Game.Gateway.Services
         private readonly ICharacterPresenceStore _presenceStore;
         private readonly ICharacterFingerprintService _fingerprintService;
         private readonly ILogger<PlayerDespawnScheduler> _logger;
+        private readonly IShardRouter _shardRouter;
 
         /// <summary>characterId → 待执行的 Despawn 取消令牌。</summary>
         private readonly ConcurrentDictionary<long, CancellationTokenSource> _pendingDespawns = new();
-
-        /// <summary>ZoneShard 默认分片 ID（与 SyncDispatcherHostedService.DefaultShardId 一致）。</summary>
-        private const long DefaultShardId = 0;
 
         public PlayerDespawnScheduler(
             IClusterClient clusterClient,
             IConnectionManager connectionManager,
             ICharacterPresenceStore presenceStore,
             ICharacterFingerprintService fingerprintService,
-            ILogger<PlayerDespawnScheduler> logger)
+            ILogger<PlayerDespawnScheduler> logger,
+            IShardRouter? shardRouter = null)
         {
             _clusterClient = clusterClient ?? throw new ArgumentNullException(nameof(clusterClient));
             _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
             _presenceStore = presenceStore ?? throw new ArgumentNullException(nameof(presenceStore));
             _fingerprintService = fingerprintService ?? throw new ArgumentNullException(nameof(fingerprintService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _shardRouter = shardRouter ?? new ZoneBasedShardRouter(1);
 
-            _logger.LogInformation("PlayerDespawnScheduler 初始化完成，断线立即 Despawn。");
+            _logger.LogInformation("PlayerDespawnScheduler 初始化完成，断线立即 Despawn。ShardCount={ShardCount}", _shardRouter.ShardCount);
         }
 
         /// <summary>
@@ -125,127 +126,7 @@ namespace Horizon.Game.Gateway.Services
             CancelDespawn(characterId);
 
             _logger.LogInformation("角色 {CharacterId} 同步执行 Despawn（CleanupConnection 已确认断线）", characterId);
-
-            // 修复 BUG（角色离线后持久化在线信息未更新）：
-            // GoOfflineAsync 必须被立即调用并持久化 IsOnline=false，否则 CharacterGrain 的
-            // [PersistentState] 状态会永久卡在 true，导致角色离线信息无法从服务端移除。
-            // 原实现把 GoOfflineAsync 放在 try 块末尾，若 UnregisterEntityAsync/RemoveSessionAsync
-            // 抛异常，GoOfflineAsync 会被跳过。现改为 finally 块确保一定执行。
-            var goOfflineCompleted = false;
-            try
-            {
-                var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(DefaultShardId);
-
-                // 1) 注销实体并广播 Despawn delta 给所有在线客户端。
-                //    UnregisterEntityAsync 内部有兜底逻辑：广播失败时保留实体并重试，10 次后强制移除。
-                await zoneShard.UnregisterEntityAsync((ulong)characterId).ConfigureAwait(false);
-
-                // 2) 移除 AOI session（清理该角色在服务端的订阅与可见性表）
-                await zoneShard.RemoveSessionAsync(characterId).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                // 实体注销/AOI 清理失败不阻断 GoOfflineAsync（持久化在线状态是更高优先级）
-                _logger.LogError(ex, "角色 {CharacterId} UnregisterEntity/RemoveSession 失败（仍会执行 GoOfflineAsync）", characterId);
-            }
-            finally
-            {
-                // 3) 重置 CharacterGrain 在线状态（核心修复：GoOfflineAsync 必须被调用，
-                //    否则 IsOnline 永久持久化为 true，grain 永不 DeactivateOnIdle）。
-                //    放在 finally 块中：即使上面的步骤抛异常，GoOfflineAsync 也一定执行。
-                try
-                {
-                    var characterGrain = _clusterClient.GetGrain<ICharacterGrain>(characterId);
-                    var offlineResult = await characterGrain.GoOfflineAsync().ConfigureAwait(false);
-                    goOfflineCompleted = true;
-                    if (!offlineResult)
-                    {
-                        _logger.LogWarning(
-                            "角色 {CharacterId} GoOfflineAsync 返回 false（可能角色数据未加载），在线状态可能未重置",
-                            characterId);
-                    }
-                }
-                catch (Exception charEx)
-                {
-                    _logger.LogWarning(charEx,
-                        "角色 {CharacterId} GoOfflineAsync 异常（持久化在线状态可能未重置，依赖 OnActivateAsync 兜底重置）",
-                        characterId);
-                }
-
-                // 4) 兜底：直接清理 Redis 中所有角色在线持久化点（双轨制架构）。
-                //    GoOfflineAsync 内部已调用 SetOfflineAsync，但若 grain 调用失败或超时，
-                //    presence/fingerprint key 可能未被清理。这里直接调用确保一定被清除，
-                //    避免角色在线状态残留导致 IsOnlineAsync 误返回 true。
-                //    CharacterPresenceMonitorHostedService 也会在 90 秒后兜底清理过期 presence。
-                //
-                //    修复 BUG（角色离线后 Redis 中仍看到在线信息）：
-                //    原实现只清理 character:presence:{id}（TTL 90s），未清理 character:fingerprint:{id}（TTL 5min）。
-                //    fingerprint key 残留 5 分钟，外部观察"角色在线信息未及时更新"。
-                //    现在按 characterId 直接调用 ReleaseAsync，不依赖 connectionId 反查 Set，
-                //    确保 fingerprint key 被立即删除。
-                try
-                {
-                    await _presenceStore.SetOfflineAsync(characterId).ConfigureAwait(false);
-                }
-                catch (Exception presenceEx)
-                {
-                    _logger.LogWarning(presenceEx,
-                        "角色 {CharacterId} 直接清理 Redis presence 失败（依赖 Monitor 兜底）",
-                        characterId);
-                }
-
-                try
-                {
-                    await _fingerprintService.ReleaseAsync(characterId).ConfigureAwait(false);
-                }
-                catch (Exception fpEx)
-                {
-                    _logger.LogWarning(fpEx,
-                        "角色 {CharacterId} 直接清理 Redis fingerprint 失败（依赖 TTL 5min 兜底过期）",
-                        characterId);
-                }
-
-                // 5) 兜底：直接更新 GameServerGrain 持久化在线角色列表（修复严重 BUG 的核心兜底点）。
-                //    GoOfflineAsync 内部已调用 PlayerOfflineAsync，但若 grain 调用失败、超时、
-                //    或 CharacterGrain 因 State 异常提前 return false 而未真正调用 PlayerOfflineAsync，
-                //    持久化在线列表 OnlinePlayers 仍会残留该 characterId，导致角色离线后持久化
-                //    在线信息未被更新、角色永久残留服务端。这里直接调用 GameServerGrain 双保险。
-                //    默认服务器 ID = 1；调用失败不影响其他清理流程。
-                try
-                {
-                    var gameServerGrain = _clusterClient.GetGrain<IGameServerGrain>(1L);
-                    await gameServerGrain.PlayerOfflineAsync(characterId).ConfigureAwait(false);
-                }
-                catch (Exception gameServerEx)
-                {
-                    _logger.LogWarning(gameServerEx,
-                        "角色 {CharacterId} 兜底调用 GameServerGrain.PlayerOfflineAsync 失败（依赖 Monitor 兜底）",
-                        characterId);
-                }
-
-                // 6) 清理 ConnectionManager 中的角色映射，消除僵尸映射残留窗口。
-                //    修复 BUG：DespawnImmediatelyAsync 不清理 _characterConnections 映射，
-                //    会导致 GetConnectionByCharacterId 仍返回旧 conn（即使角色已下线）。
-                //    CharacterPresenceMonitor 的二次确认（conn==null || !conn.IsConnected）
-                //    会误判为"连接仍在线"，导致计数器持续累计或重复 Despawn。
-                //    虽然 GameNetworkServer 的 60 秒空闲超时会兜底清理连接，但此期间
-                //    Monitor 会持续误判。这里主动调用 UnregisterCharacter 清理映射，
-                //    确保 ConnectionManager 状态与 CharacterGrain/Redis 一致。
-                try
-                {
-                    _connectionManager.UnregisterCharacter(characterId);
-                }
-                catch (Exception connEx)
-                {
-                    _logger.LogWarning(connEx,
-                        "角色 {CharacterId} 清理 ConnectionManager 角色映射失败（依赖 60s 空闲超时兜底）",
-                        characterId);
-                }
-            }
-
-            _logger.LogInformation(
-                "角色 {CharacterId} Despawn 完成（goOfflineCompleted={GoOfflineCompleted}）",
-                characterId, goOfflineCompleted);
+            await DoDespawnCoreAsync(characterId);
         }
 
         /// <summary>
@@ -299,7 +180,8 @@ namespace Horizon.Game.Gateway.Services
                     return;
                 }
 
-                var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(DefaultShardId);
+                // 批量续约使用 Shard 0（单 Shard 模式）。多 Shard 场景需按 characterId 分组到不同 Shard。
+                var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(0));
 
                 // 修复严重 BUG（在线角色一段时间后从其它客户端离线）：
                 // 原实现只调用一次 RenewLeaseAsync，如果 Orleans grain 调用因瞬时网络问题失败，
@@ -374,9 +256,29 @@ namespace Horizon.Game.Gateway.Services
                 return;
             }
 
+            await DoDespawnCoreAsync(characterId);
+        }
+
+        /// <summary>
+        /// Despawn 核心逻辑（统一实现）。<br/>
+        /// 由 <see cref="DespawnImmediatelyAsync"/> 和 <see cref="ExecuteDespawnAsync"/> 共同调用，
+        /// 消除原两条路径的代码重复。<br/>
+        /// 执行顺序：
+        /// <list type="number">
+        ///   <item>UnregisterEntityAsync（广播 Despawn delta）+ RemoveSessionAsync（清理 AOI）</item>
+        ///   <item>GoOfflineAsync（重置 CharacterGrain 持久化在线状态，finally 保证执行）</item>
+        ///   <item>SetOfflineAsync（清理 Redis presence）</item>
+        ///   <item>ReleaseAsync（清理 Redis fingerprint）</item>
+        ///   <item>GameServerGrain.PlayerOfflineAsync（兜底清理持久化在线列表）</item>
+        ///   <item>UnregisterCharacter（清理 ConnectionManager 角色映射）</item>
+        /// </list>
+        /// </summary>
+        private async Task DoDespawnCoreAsync(long characterId)
+        {
+            var goOfflineCompleted = false;
             try
             {
-                var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(DefaultShardId);
+                var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(characterId));
 
                 // 1) 注销实体并广播 Despawn delta 给所有在线客户端。
                 await zoneShard.UnregisterEntityAsync((ulong)characterId).ConfigureAwait(false);
@@ -386,19 +288,16 @@ namespace Horizon.Game.Gateway.Services
             }
             catch (Exception ex)
             {
-                // 实体注销/AOI 清理失败不阻断 GoOfflineAsync（持久化在线状态是更高优先级）
                 _logger.LogError(ex, "角色 {CharacterId} UnregisterEntity/RemoveSession 失败（仍会执行 GoOfflineAsync）", characterId);
             }
             finally
             {
-                // 3) 重置 CharacterGrain 在线状态（修复 BUG：GoOfflineAsync 必须被调用，
-                //    否则 IsOnline 永久持久化为 true，grain 永不 DeactivateOnIdle，
-                //    IsOnlineAsync 永远返回 true —— 即"在线信息不能被准确移除"的根因）。
-                //    放在 finally 块中：即使上面的步骤抛异常，GoOfflineAsync 也一定执行。
+                // 3) 重置 CharacterGrain 在线状态（finally 保证执行）。
                 try
                 {
                     var characterGrain = _clusterClient.GetGrain<ICharacterGrain>(characterId);
                     var offlineResult = await characterGrain.GoOfflineAsync().ConfigureAwait(false);
+                    goOfflineCompleted = true;
                     if (!offlineResult)
                     {
                         _logger.LogWarning(
@@ -413,10 +312,7 @@ namespace Horizon.Game.Gateway.Services
                         characterId);
                 }
 
-                // 4) 兜底：直接清理 Redis 中所有角色在线持久化点（与 DespawnImmediatelyAsync 一致）
-                //    修复 BUG：原实现只清理 character:presence:{id}，未清理 character:fingerprint:{id}。
-                //    fingerprint key TTL 5 分钟，远长于 presence 的 90 秒，离线后会残留导致
-                //    外部观察"角色在线信息未及时更新"。现在按 characterId 直接 ReleaseAsync。
+                // 4) 兜底：清理 Redis presence + fingerprint。
                 try
                 {
                     await _presenceStore.SetOfflineAsync(characterId).ConfigureAwait(false);
@@ -439,9 +335,7 @@ namespace Horizon.Game.Gateway.Services
                         characterId);
                 }
 
-                // 5) 兜底：直接更新 GameServerGrain 持久化在线角色列表（与 DespawnImmediatelyAsync 一致）。
-                //    即使 GoOfflineAsync 调用失败、超时或返回 false，也确保持久化 OnlinePlayers 列表
-                //    中该 characterId 被移除，避免角色离线后持久化在线信息未更新、角色永久残留服务端。
+                // 5) 兜底：更新 GameServerGrain 持久化在线角色列表。
                 try
                 {
                     var gameServerGrain = _clusterClient.GetGrain<IGameServerGrain>(1L);
@@ -454,8 +348,7 @@ namespace Horizon.Game.Gateway.Services
                         characterId);
                 }
 
-                // 6) 清理 ConnectionManager 中的角色映射（与 DespawnImmediatelyAsync 一致）。
-                //    消除僵尸映射残留窗口，避免 CharacterPresenceMonitor 二次确认误判。
+                // 6) 清理 ConnectionManager 中的角色映射。
                 try
                 {
                     _connectionManager.UnregisterCharacter(characterId);
@@ -468,7 +361,9 @@ namespace Horizon.Game.Gateway.Services
                 }
             }
 
-            _logger.LogInformation("角色 {CharacterId} Despawn 完成，已广播离线并重置在线状态", characterId);
+            _logger.LogInformation(
+                "角色 {CharacterId} Despawn 完成（goOfflineCompleted={GoOfflineCompleted}）",
+                characterId, goOfflineCompleted);
         }
     }
 }

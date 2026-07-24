@@ -21,6 +21,12 @@ namespace Horizon.Game.Gateway.Services
         private readonly ConcurrentDictionary<string, IGameConnection> _connections = new();
         private readonly ConcurrentDictionary<long, string> _userConnections = new();
         private readonly ConcurrentDictionary<long, string> _characterConnections = new();
+
+        /// <summary>
+        /// 反向索引：connectionId → 该连接绑定的所有 characterId。<br/>
+        /// 与 <see cref="_characterConnections"/> 同步维护，使 <see cref="GetCharacterIdsByConnection"/> 为 O(1) 查询。
+        /// </summary>
+        private readonly ConcurrentDictionary<string, HashSet<long>> _connectionToCharacters = new();
         
         private readonly ConnectionManagerStatistics _statistics = new();
         private readonly NetworkStatistics _networkStatistics = new();
@@ -175,6 +181,14 @@ namespace Horizon.Game.Gateway.Services
         {
             if (connection is null) throw new ArgumentNullException(nameof(connection));
             _characterConnections[characterId] = connection.ConnectionId;
+
+            // 维护反向索引
+            var charSet = _connectionToCharacters.GetOrAdd(connection.ConnectionId, _ => new HashSet<long>());
+            lock (charSet)
+            {
+                charSet.Add(characterId);
+            }
+
             _logger.LogInformation("已注册角色映射: CharacterId={CharacterId}, ConnectionId={ConnectionId}",
                 characterId, connection.ConnectionId);
         }
@@ -184,30 +198,37 @@ namespace Horizon.Game.Gateway.Services
         /// </summary>
         public void UnregisterCharacter(long characterId)
         {
-            if (_characterConnections.TryRemove(characterId, out _))
+            if (_characterConnections.TryRemove(characterId, out var connectionId))
             {
+                // 维护反向索引
+                if (connectionId != null && _connectionToCharacters.TryGetValue(connectionId, out var charSet))
+                {
+                    lock (charSet)
+                    {
+                        charSet.Remove(characterId);
+                    }
+                }
                 _logger.LogDebug("已注销角色映射: CharacterId={CharacterId}", characterId);
             }
         }
 
         /// <summary>
-        /// 根据连接ID反查该连接绑定的所有角色ID。
+        /// 根据连接ID反查该连接绑定的所有角色ID（O(1) 反向索引查询）。
         /// 用于客户端断连时获取需要延迟 Despawn 的角色列表。
-        /// 单连接通常只绑定一个角色，但遍历保证完整性。
+        /// 单连接通常只绑定一个角色，但反向索引保证完整性。
         /// </summary>
         public IReadOnlyList<long> GetCharacterIdsByConnection(string connectionId)
         {
             if (string.IsNullOrEmpty(connectionId)) return Array.Empty<long>();
 
-            var result = new List<long>();
-            foreach (var kv in _characterConnections)
+            if (_connectionToCharacters.TryGetValue(connectionId, out var charSet))
             {
-                if (kv.Value == connectionId)
+                lock (charSet)
                 {
-                    result.Add(kv.Key);
+                    return charSet.Count > 0 ? charSet.ToArray() : Array.Empty<long>();
                 }
             }
-            return result;
+            return Array.Empty<long>();
         }
 
         /// <summary>
@@ -505,19 +526,18 @@ namespace Horizon.Game.Gateway.Services
         /// </summary>
         private void CleanupCharacterMappings(string connectionId)
         {
-            // 遍历清理所有指向该 connectionId 的角色映射
-            // 单连接通常只绑定一个角色，但遍历保证一致性
-            var keysToRemove = new List<long>();
-            foreach (var kv in _characterConnections)
+            // 使用反向索引直接获取该连接的所有角色
+            if (_connectionToCharacters.TryRemove(connectionId, out var charSet))
             {
-                if (kv.Value == connectionId)
+                long[] keysToRemove;
+                lock (charSet)
                 {
-                    keysToRemove.Add(kv.Key);
+                    keysToRemove = charSet.ToArray();
                 }
-            }
-            foreach (var key in keysToRemove)
-            {
-                _characterConnections.TryRemove(key, out _);
+                foreach (var key in keysToRemove)
+                {
+                    _characterConnections.TryRemove(key, out _);
+                }
             }
         }
 

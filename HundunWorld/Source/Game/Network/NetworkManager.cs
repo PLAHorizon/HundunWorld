@@ -41,6 +41,19 @@ namespace HundunWorld.Game.Network
         private volatile bool _syncHandshakeComplete = false;
         private long _syncClientTick = 0;
 
+        // [Phase C5] 断线重连增量恢复
+        /// <summary>是否启用 ReconnectResumePacket 上行（默认关闭，待服务端配合验证后开启）。</summary>
+        public bool EnableReconnectResume { get; set; } = true;
+
+        /// <summary>客户端最近已应用的服务器快照 Tick（从 SnapshotPacket.ServerTick 更新）。</summary>
+        private long _lastAppliedServerTick;
+
+        /// <summary>更新最近已应用的服务器 Tick（由 HundunWorldGame.OnSnapshotReceived 调用）。</summary>
+        public void UpdateLastAppliedServerTick(long serverTick)
+        {
+            System.Threading.Interlocked.Exchange(ref _lastAppliedServerTick, serverTick);
+        }
+
         // 同步握手重试状态：记录上次发送的参数与时间，用于丢包或响应未达时重发。
         private long _lastHandshakeSentTicks = 0;
         private ulong _lastHandshakeCharacterId;
@@ -553,99 +566,118 @@ namespace HundunWorld.Game.Network
         /// <summary>
         /// 数据接收事件处理
         /// </summary>
+        /// <summary>
+        /// [Phase C3] 网络数据接收入口，拆分为三个阶段：StageParse → StageValidate → StageDispatch。
+        /// </summary>
         private async Task OnDataReceived(ITcpClient sender, ReceivedDataEventArgs e)
         {
             try
             {
-                EnhancedLogging.LogInfo("[OnDataReceived] 开始处理接收到的数据");
-
-                // 检查数据是否有效
-                if (e == null)
-                {
-                    EnhancedLogging.LogWarning("[OnDataReceived] 接收到空的事件参数");
+                // Stage 1: 解析
+                var messagePacket = StageParse(e);
+                if (messagePacket == null)
                     return;
-                }
-
-                try
-                {
-                    HorizonMessagePacket messagePacket = null;
-
-                    // 检查是否有RequestInfo（通过自定义适配器解析的消息）
-                    if (e.RequestInfo is HorizonMessageInfo horizonRequest)
-                    {
-                        EnhancedLogging.LogInfo("[OnDataReceived] 检测到RequestInfo，处理解析后的消息");
-                        messagePacket = horizonRequest.Packet;
-                    }
-                    else
-                    {
-                        // 如果适配器未解析数据，尝试手动解析
-                        EnhancedLogging.LogInfo("[OnDataReceived] RequestInfo未解析，尝试手动解析数据");
-                        if (e.Memory.IsEmpty)
-                        {
-                            EnhancedLogging.LogWarning("[OnDataReceived] 接收到空数据");
-                            return;
-                        }
-
-                        var dataArray = e.Memory.ToArray();
-                        EnhancedLogging.LogInfo($"[OnDataReceived] 准备解包原始数据，数据长度: {dataArray.Length}");
-
-                        // 复用字段适配器解包，避免每次创建临时适配器产生GC压力
-                        messagePacket = _messageAdapter.UnpackMessage(dataArray);
-                    }
-
-                    if (messagePacket != null)
-                    {
-                        EnhancedLogging.LogInfo($"[OnDataReceived] 成功获取消息: Type={messagePacket.Header.MessageType}, Service={messagePacket.ServiceType}");
-
-                        // 验证消息头的必需字段
-                        if (!messagePacket.Header.IsResponse)
-                        {
-                            if (messagePacket.Header.GameId <= 0)
-                            {
-                                EnhancedLogging.LogWarning($"[OnDataReceived] 收到无效请求消息: GameId必须为正数");
-                                return;
-                            }
-
-                            if (messagePacket.Header.ServerId <= 0)
-                            {
-                                EnhancedLogging.LogWarning($"[OnDataReceived] 收到无效请求消息: ServerId必须为正数");
-                                return;
-                            }
-
-                            if (messagePacket.Header.ZoneId <= 0)
-                            {
-                                EnhancedLogging.LogWarning($"[OnDataReceived] 收到无效请求消息: ZoneId必须为正数");
-                                return;
-                            }
-                        }
-
-                        await ProcessMessageAsync(sender, messagePacket);
-                    }
-                    else
-                    {
-                        EnhancedLogging.LogWarning("[OnDataReceived] 反序列化消息失败");
-                    }
-                }
-                catch (ArgumentException argEx)
-                {
-                    EnhancedLogging.LogWarning($"[OnDataReceived] 消息验证失败: {argEx.Message}");
-                    EnhancedDiagnostics.LogException(argEx, "消息验证");
-                }
-                catch (Exception deserializeEx)
-                {
-                    EnhancedLogging.LogError($"[OnDataReceived] 反序列化消息时发生错误: {deserializeEx.Message}");
-                    EnhancedLogging.LogError($"[OnDataReceived] 异常堆栈: {deserializeEx.StackTrace}");
-                    EnhancedDiagnostics.LogException(deserializeEx, "反序列化消息");
-                }
+        
+                // Stage 2: 验证
+                if (!StageValidate(messagePacket))
+                    return;
+        
+                // Stage 3: 分发
+                await StageDispatch(sender, messagePacket);
             }
             catch (Exception ex)
             {
                 ConnectionError?.Invoke($"解析消息失败: {ex.Message}");
                 EnhancedDiagnostics.LogException(ex, "解析消息");
                 EnhancedLogging.LogError($"[OnDataReceived] 处理数据时发生异常: {ex.Message}");
-                EnhancedLogging.LogError($"[OnDataReceived] 异常堆栈: {ex.StackTrace}");
             }
-            await Task.CompletedTask;
+        }
+        
+        /// <summary>
+        /// [Phase C3] Stage 1：从 ReceivedDataEventArgs 提取 HorizonMessagePacket。
+        /// </summary>
+        private HorizonMessagePacket StageParse(ReceivedDataEventArgs e)
+        {
+            if (e == null)
+            {
+                EnhancedLogging.LogWarning("[StageParse] 接收到空的事件参数");
+                return null;
+            }
+        
+            try
+            {
+                // 检查是否有 RequestInfo（通过自定义适配器解析的消息）
+                if (e.RequestInfo is HorizonMessageInfo horizonRequest)
+                {
+                    return horizonRequest.Packet;
+                }
+        
+                // 适配器未解析，尝试手动解析
+                if (e.Memory.IsEmpty)
+                {
+                    EnhancedLogging.LogWarning("[StageParse] 接收到空数据");
+                    return null;
+                }
+        
+                var dataArray = e.Memory.ToArray();
+                return _messageAdapter.UnpackMessage(dataArray);
+            }
+            catch (Exception ex)
+            {
+                EnhancedLogging.LogError($"[StageParse] 反序列化消息失败: {ex.Message}");
+                EnhancedDiagnostics.LogException(ex, "反序列化消息");
+                return null;
+            }
+        }
+        
+        /// <summary>
+        /// [Phase C3] Stage 2：验证消息头必需字段（GameId/ServerId/ZoneId）。
+        /// </summary>
+        private bool StageValidate(HorizonMessagePacket messagePacket)
+        {
+            if (messagePacket.Header.IsResponse)
+                return true; // 响应消息无需验证
+        
+            if (messagePacket.Header.GameId <= 0)
+            {
+                EnhancedLogging.LogWarning("[StageValidate] 收到无效请求消息: GameId必须为正数");
+                return false;
+            }
+        
+            if (messagePacket.Header.ServerId <= 0)
+            {
+                EnhancedLogging.LogWarning("[StageValidate] 收到无效请求消息: ServerId必须为正数");
+                return false;
+            }
+        
+            if (messagePacket.Header.ZoneId <= 0)
+            {
+                EnhancedLogging.LogWarning("[StageValidate] 收到无效请求消息: ZoneId必须为正数");
+                return false;
+            }
+        
+            return true;
+        }
+        
+        /// <summary>
+        /// [Phase C3] Stage 3：路由到 MessageProcessor。
+        /// </summary>
+        private async Task StageDispatch(ITcpClient sender, HorizonMessagePacket messagePacket)
+        {
+            try
+            {
+                await ProcessMessageAsync(sender, messagePacket);
+            }
+            catch (ArgumentException argEx)
+            {
+                EnhancedLogging.LogWarning($"[StageDispatch] 消息验证失败: {argEx.Message}");
+                EnhancedDiagnostics.LogException(argEx, "消息验证");
+            }
+            catch (Exception ex)
+            {
+                EnhancedLogging.LogError($"[StageDispatch] 处理消息异常: {ex.Message}");
+                EnhancedDiagnostics.LogException(ex, "处理消息");
+            }
         }
 
         /// <summary>
@@ -1348,7 +1380,64 @@ namespace HundunWorld.Game.Network
         {
             EnhancedLogging.LogInfo("[OnReconnectionSucceeded] 重连成功");
             EnhancedDiagnostics.LogDiagnostic("重连成功");
+
+            // [Phase C5] 重连成功后发送 ReconnectResumePacket（若启用）
+            if (EnableReconnectResume && CharacterId > 0)
+            {
+                _ = SendReconnectResumeAsync();
+            }
+
+            // [Phase C2] 记录重连成功指标
+            ClientSyncMetrics.RecordReconnectSuccess();
+
             OnReconnectionStateChanged(ReconnectionManager.ReconnectState.Connected);
+        }
+
+        /// <summary>
+        /// [Phase C5] 发送 ReconnectResumePacket，尝试增量恢复（服务端已支持）。
+        /// </summary>
+        private async Task SendReconnectResumeAsync()
+        {
+            try
+            {
+                var lastTick = System.Threading.Interlocked.Read(ref _lastAppliedServerTick);
+                var resumePacket = new Horizon.Game.Message.Sync.ReconnectResumePacket
+                {
+                    LocalCharacterId = CharacterId,
+                    LastAppliedSnapshotTick = lastTick,
+                    LastAppliedDiffSeq = 0, // 待后续 WorldChunkDiff 支持后更新
+                };
+
+                Horizon.Game.Message.Sync.SyncPacketCodec.Encode(resumePacket, out var frame, out var frameLength);
+                try
+                {
+                    var payload = new byte[frameLength];
+                    System.Buffer.BlockCopy(frame, 0, payload, 0, frameLength);
+
+                    var syncFrame = new Horizon.Game.Message.Network.SyncFrameMessage
+                    {
+                        Frame = payload,
+                        PacketKind = (byte)resumePacket.Kind,
+                        ProtocolVersion = resumePacket.ProtocolVersion,
+                    };
+
+                    await SendAsync(syncFrame);
+                    EnhancedLogging.LogInfo($"[Phase C5] ReconnectResumePacket 已发送: CharacterId={CharacterId}, LastTick={lastTick}");
+                }
+                finally
+                {
+                    Horizon.Game.Message.Sync.SyncPacketCodec.ReturnFrame(frame);
+                }
+            }
+            catch (Exception ex)
+            {
+                EnhancedLogging.LogWarning($"[Phase C5] ReconnectResumePacket 发送失败，回退到全量握手: {ex.Message}");
+                // 回退：重新发送同步握手
+                if (_lastHandshakeCharacterId > 0)
+                {
+                    await SendSyncHandshakeAsync(_lastHandshakeCharacterId, _lastHandshakeX, _lastHandshakeY, _lastHandshakeZ);
+                }
+            }
         }
 
         /// <summary>

@@ -231,15 +231,59 @@ namespace HundunWorld.Game
         /// <summary>
         /// 连接状态变化事件处理
         /// </summary>
+        /// <summary>跟踪是否处于重连流程中（区分首次连接和重连）。</summary>
+        private bool _wasReconnecting;
+
         private void OnConnectionStatusChanged(ConnectionStatus status)
         {
             Debug.Log($"网络连接状态变化: {status}");
+
+            // 重连中：冻结远程实体插值和 Actor 位置更新，避免无新数据时 dead reckoning 漂移
+            if (status == ConnectionStatus.Reconnecting)
+            {
+                _wasReconnecting = true;
+                var flaxSync = FlaxActorSyncSystem.Instance;
+                if (flaxSync != null) flaxSync.IsPaused = true;
+
+                // 暂停 InterpolationSystem
+                if (_archWorldHost != null)
+                {
+                    var interpSys = _archWorldHost.GetSystems(Horizon.Game.ECS.Arch.Core.SystemGroup.Render)
+                        .OfType<Horizon.Game.ECS.Arch.Systems.InterpolationSystem>()
+                        .FirstOrDefault();
+                    if (interpSys != null) interpSys.IsPaused = true;
+                }
+            }
+
+            // 重连成功：清理断线期间的残留实体/Actor，然后恢复插值
+            if (status == ConnectionStatus.Connected && _wasReconnecting)
+            {
+                _wasReconnecting = false;
+                Debug.Log("[HundunWorldGame] 重连成功，清理断线期间残留实体并恢复同步");
+
+                // 清理所有远程 Actor 和 ECS 实体映射（服务端会重新发送全量快照重建）
+                ClearLocalEntitiesOnDisconnect();
+
+                // 恢复 FlaxActorSyncSystem
+                var flaxSync = FlaxActorSyncSystem.Instance;
+                if (flaxSync != null) flaxSync.IsPaused = false;
+
+                // 恢复 InterpolationSystem
+                if (_archWorldHost != null)
+                {
+                    var interpSys = _archWorldHost.GetSystems(Horizon.Game.ECS.Arch.Core.SystemGroup.Render)
+                        .OfType<Horizon.Game.ECS.Arch.Systems.InterpolationSystem>()
+                        .FirstOrDefault();
+                    if (interpSys != null) interpSys.IsPaused = false;
+                }
+            }
 
             // 断线时立即清理本地所有远程角色实体和 Actor，避免离线期间角色残留。
             // 服务端的 Despawn delta 在断线期间无法到达客户端，必须主动清理。
             // 重连后服务端会重新发送 Spawn delta 重建所有可见实体。
             if (status == ConnectionStatus.Disconnected)
             {
+                _wasReconnecting = false;
                 ClearLocalEntitiesOnDisconnect();
 
                 // 网关离线时，若当前处于游戏世界中，退出到角色选择界面。
@@ -286,6 +330,27 @@ namespace HundunWorld.Game
                 snapshotSystem?.ClearAllEntityMappings();
             }
 
+            // 2.5 销毁 Arch World 中所有远程实体（带 InterpolatedTransformComponent 的非本地玩家实体），
+            // 避免孤儿实体在重连后被 ReconcileMissingActors 补创建为幽灵 Actor。
+            if (_archWorld != null)
+            {
+                var remoteQuery = new Arch.Core.QueryDescription()
+                    .WithAll<Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent, Horizon.Game.ECS.Arch.Components.NetworkIdentityComponent>();
+                var toDestroy = new List<Arch.Core.Entity>();
+                _archWorld.Query(in remoteQuery, (Arch.Core.Entity e, ref Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent _, ref Horizon.Game.ECS.Arch.Components.NetworkIdentityComponent nid) =>
+                {
+                    if (!nid.IsLocalPlayer)
+                        toDestroy.Add(e);
+                });
+                foreach (var e in toDestroy)
+                {
+                    if (_archWorld.IsAlive(e))
+                        _archWorld.Destroy(e);
+                }
+                if (toDestroy.Count > 0)
+                    Debug.Log($"[HundunWorldGame] 断线清理：销毁了 {toDestroy.Count} 个远程 ECS 实体");
+            }
+
             // 3. 清理快照接收缓冲区，避免断线期间积压的旧快照在重连后污染状态
             Horizon.Game.ECS.Arch.Network.SnapshotReceiveBuffer.Instance.ClearQueue();
 
@@ -319,6 +384,9 @@ namespace HundunWorld.Game
         private void OnSnapshotReceived(SnapshotPacket snapshot)
         {
             SnapshotReceiveBuffer.Instance.Enqueue(snapshot);
+
+            // [Phase C5] 更新最近已应用的服务器 Tick，供重连时 ReconnectResumePacket 使用
+            _networkManager?.UpdateLastAppliedServerTick(snapshot.ServerTick);
 
             if (snapshot.Deltas != null && snapshot.Deltas.Length > 0)
             {
@@ -731,6 +799,57 @@ namespace HundunWorld.Game
             // 未命中任何碰撞体（例如角色走到 Terrain 边界外或场景未配置地面）
             // 返回 NaN 让 LocalSimulationSystem 跳过地面约束，避免错误地把角色拉到 0 高度
             return float.NaN;
+        }
+
+        /// <summary>
+        /// 修复「进入游戏后在天上飞」：在 GameWorld 场景加载完成后重新采样地面高度，
+        /// 并修正本地玩家 ECS 实体的 PredictedTransformComponent.Z（ECS 上下轴）。
+        /// <para>
+        /// 根因：CreateLocalPlayerEntity 在角色选择场景中被调用，此时 Physics.RayCast 无法命中
+        /// GameWorld 的 Terrain（未加载），SampleGroundHeightEcs 返回 NaN，
+        /// pred.Z 使用了服务端 initialY（可能为 0 或上次保存值，与实际地形高度不一致）。
+        /// 场景加载完成后重新采样可获取正确地面高度，立即修正 pred.Z 防止角色悬空或穿透。
+        /// </para>
+        /// </summary>
+        /// <param name="characterId">本地玩家角色 ID（用于查找 ECS 实体）</param>
+        /// <param name="flaxX">Flax 世界 X 坐标（左右）</param>
+        /// <param name="flaxZ">Flax 世界 Z 坐标（前后）</param>
+        private void RealignLocalPlayerToGround(ulong characterId, float flaxX, float flaxZ)
+        {
+            if (_archWorld == null) return;
+
+            // 采样地面高度（ECS 坐标系：传入 FlaxX=左右, FlaxZ=前后）
+            var groundEcsZ = SampleGroundHeightEcs(flaxX, flaxZ);
+            if (float.IsNaN(groundEcsZ))
+            {
+                Debug.LogWarning($"[HundunWorldGame] RealignLocalPlayerToGround: 地面采样失败（NaN），保持当前高度。Pos=({flaxX:F2}, {flaxZ:F2})");
+                return;
+            }
+
+            // 查找本地玩家 ECS 实体
+            var query = new Arch.Core.QueryDescription()
+                .WithAll<Horizon.Game.ECS.Arch.Components.NetworkIdentityComponent, Horizon.Game.ECS.Arch.Components.PredictedTransformComponent>();
+
+            bool found = false;
+            _archWorld.Query(in query, (Arch.Core.Entity e, ref Horizon.Game.ECS.Arch.Components.NetworkIdentityComponent nid, ref Horizon.Game.ECS.Arch.Components.PredictedTransformComponent pred) =>
+            {
+                if (!nid.IsLocalPlayer || nid.EntityId != characterId) return;
+                if (found) return;
+                found = true;
+
+                // 仅当当前高度与地面偏差超过 0.5m 时修正（避免每帧微小抖动）
+                if (MathF.Abs(pred.Z - groundEcsZ) > 0.5f)
+                {
+                    Debug.Log($"[HundunWorldGame] RealignLocalPlayerToGround: 修正本地玩家高度 pred.Z={pred.Z:F3} → groundZ={groundEcsZ:F3} (FlaxX={flaxX:F2}, FlaxZ={flaxZ:F2})");
+                    pred.Z = groundEcsZ;
+                    pred.Vz = 0f; // 清零垂直速度，防止残留重力加速度
+                }
+            });
+
+            if (!found)
+            {
+                Debug.LogWarning($"[HundunWorldGame] RealignLocalPlayerToGround: 未找到本地玩家 ECS 实体 (CharacterId={characterId})");
+            }
         }
 
         /// <summary>
@@ -1590,6 +1709,13 @@ namespace HundunWorld.Game
                 localPlayerSyncSystem = actor.AddScript<LocalPlayerActorSyncSystem>();
                 Debug.Log($"[HundunWorldGame] 已挂载 LocalPlayerActorSyncSystem: CharacterId={characterId}");
             }
+
+            // ★ 修复「进入游戏后在天上飞」：重新对齐地面高度。
+            // CreateLocalPlayerEntity 在角色选择场景中被调用（GameWorld 未加载），
+            // 此时 SampleGroundHeightEcs 的 Physics.RayCast 无法命中 Terrain → 返回 NaN，
+            // pred.Z 使用了服务端 initialY（可能为 0 或上次保存值，与实际地形高度不一致）。
+            // 此刻 GameWorld 场景已加载完毕，Physics.RayCast 可正常工作，重新采样并修正 ECS 实体高度。
+            RealignLocalPlayerToGround(characterId, x, z);
 
             return actor;
         }
