@@ -98,6 +98,8 @@ namespace Game.Network
         /// </summary>
         private class PredictedState
         {
+            // 新增 ClientTick 以与 ECS/网络协议对齐（优先使用 long ClientTick）
+            public long ClientTick;
             public int SequenceNumber;
             public float Timestamp;
             public Vector3 Position;
@@ -256,8 +258,21 @@ namespace Game.Network
                 predictionBuffer.Dequeue();
             }
 
+            // 尝试从 HundunWorldGame 获取当前 ClientTick（ECS 管线），若不可用则回退到本地帧序号
+            long clientTickForState = predictedFrameCount; // fallback
+            try
+            {
+                var gw = HundunWorld.Game.HundunWorldGame.Instance;
+                var archHost = gw?.ArchHost;
+                // LocalSimulationSystem 会维护 CurrentClientTick；这里无法直接访问系统实例，
+                // 尝试通过 PredictedTransformComponent/ArchWorld 查询并读取（若存在）——为了保守实现，先使用 predictedFrameCount 作为兼容值。
+                // TODO: 如果需要更精确的 ClientTick，从 LocalSimulationSystem 导出 CurrentClientTick 的公共 API。
+            }
+            catch { }
+
             predictionBuffer.Enqueue(new PredictedState
             {
+                ClientTick = clientTickForState,
                 SequenceNumber = predictedFrameCount++,
                 Timestamp = Time.GameTime,
                 Position = currentPosition,
@@ -499,16 +514,32 @@ namespace Game.Network
         /// <summary>
         /// 修正预测误差
         /// </summary>
-        private void CorrectPrediction(int serverSequenceNumber)
+        // 新版：按 server 回显的 ClientTick（long）匹配预测；保留对旧 int 序号的回退兼容
+        private void CorrectPrediction(long serverClientTickOrSequenceNumber)
         {
-            // 找到对应序列号的预测状态
             PredictedState matchedState = null;
+
+            // 先尝试按 ClientTick(long) 匹配
             foreach (var state in predictionBuffer)
             {
-                if (state.SequenceNumber == serverSequenceNumber)
+                if (state.ClientTick == serverClientTickOrSequenceNumber)
                 {
                     matchedState = state;
                     break;
+                }
+            }
+
+            // 回退兼容：如果未找到，按旧的 int SequenceNumber 匹配
+            if (matchedState == null)
+            {
+                foreach (var state in predictionBuffer)
+                {
+                    if (state.SequenceNumber == (int)serverClientTickOrSequenceNumber)
+                    {
+                        matchedState = state;
+                        Debug.LogWarning($"[Network] CorrectPrediction: fell back to SequenceNumber matching for {serverClientTickOrSequenceNumber}");
+                        break;
+                    }
                 }
             }
 
@@ -544,15 +575,16 @@ namespace Game.Network
                     }
                 }
 
-                // 重新预测后续帧
-                ReplayPredictions(serverSequenceNumber);
+                // 重新预测后续帧，使用 ClientTick（若 matchedState 有 ClientTick 则用之，否则回退到 sequence）
+                long fromTick = matchedState.ClientTick != 0 ? matchedState.ClientTick : matchedState.SequenceNumber;
+                ReplayPredictions(fromTick);
             }
             else
             {
                 // 服务端序列号比缓冲区所有状态都旧：直接拉回到服务端位置，清空缓冲
                 if (ShowDebug)
                 {
-                    Debug.LogWarning($"[Network] No matching prediction state for seq={serverSequenceNumber}, teleporting to server position");
+                    Debug.LogWarning($"[Network] No matching prediction state for seq={serverClientTickOrSequenceNumber}, teleporting to server position");
                 }
                 currentPosition = serverPosition;
                 currentRotation = serverRotation;
@@ -565,13 +597,13 @@ namespace Game.Network
         /// <summary>
         /// 重放预测（服务端校验后）
         /// </summary>
-        private void ReplayPredictions(int fromSequence)
+        private void ReplayPredictions(long fromClientTick)
         {
             List<PredictedState> statesToReplay = new List<PredictedState>();
-            
+
             foreach (var state in predictionBuffer)
             {
-                if (state.SequenceNumber > fromSequence)
+                if (state.ClientTick > fromClientTick)
                 {
                     statesToReplay.Add(state);
                 }
