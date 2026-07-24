@@ -31,7 +31,7 @@ namespace Game.Network
         [Tooltip("是否为本地玩家")]
         public bool IsLocalPlayer = false;
 
-        [Tooltip("网络更新频率（Hz）")]
+        [Tooltip("网络更新频率（Hz)")]
         [Limit(10, 60)]
         public int NetworkUpdateRate = 20; // 20Hz = 50ms
 
@@ -280,7 +280,10 @@ namespace Game.Network
             if (interpolationBuffer.Count < 2)
             {
                 // 缓冲区状态不足时移动到最新状态
-                var latest = interpolationBuffer.Count > 0 ? interpolationBuffer.Peek() : null;
+                ServerState latest = null;
+                foreach (var s in interpolationBuffer)
+                    latest = s; // last element
+
                 if (latest != null)
                 {
                     Actor.Position = Vector3.Lerp(Actor.Position, latest.Position, InterpolationSpeed * Time.DeltaTime);
@@ -304,6 +307,14 @@ namespace Game.Network
                     next = state;
                     break;
                 }
+            }
+
+            // 如果没有 previous，但有 next，说明 targetTime 在缓冲最早时间之前，向 next 靠近（平滑到更早的服务端状态）
+            if (previous == null && next != null)
+            {
+                Actor.Position = Vector3.Lerp(Actor.Position, next.Position, InterpolationSpeed * Time.DeltaTime);
+                Actor.Orientation = Quaternion.Slerp(Actor.Orientation, next.Rotation, InterpolationSpeed * Time.DeltaTime);
+                return;
             }
 
             if (previous != null && next != null)
