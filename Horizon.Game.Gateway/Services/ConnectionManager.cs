@@ -470,11 +470,18 @@ namespace Horizon.Game.Gateway.Services
 
         /// <summary>
         /// 安全发送消息给连接。<br/>
-        /// 修复 BUG（A角色在线会在B角色客户端莫名离线）：<br/>
+        /// 修复 BUG（A角色在线会在B角色客户端莫名离线、连接风暴后角色不可见）：<br/>
         /// 原实现在 SendAsync 抛异常时立即 CloseAsync + RemoveConnectionAsync，
         /// 但 SendAsync 现在对瞬时异常（TCP 缓冲区满等）也会 throw（仅记录计数不标记 broken）。
-        /// 新实现：仅当连接已被标记为 broken（IsConnected=false）时才执行清理，
-        /// 瞬时异常不触发连接关闭，由 GameConnection 内部连续失败计数兜底。
+        /// <para>
+        /// 注意：此处不再主动关闭/移除连接。<br/>
+        /// <c>GameConnection.SendAsync</c> 内部对致命异常（连接重置、管道断裂等）会调用
+        /// <c>MarkAsBroken()</c> 触发 <c>Closed</c> 事件，<c>GameNetworkServer</c> 的
+        /// <c>CleanupConnectionAsync</c> 会统一处理 Despawn/移除等全部清理工作。<br/>
+        /// 瞬时异常（缓冲区满等）仅累计计数，由连续失败阈值（默认 5 次）兜底后触发 <c>MarkAsBroken</c>。
+        /// 在此处额外 fire-and-forget CloseAsync + RemoveConnectionAsync 会与 CleanupConnectionAsync
+        /// 产生并发竞态（两者同时操作同一连接），且 no-op 的额外日志干扰诊断。
+        /// </para>
         /// </summary>
         private async Task SendToConnectionSafeAsync(IGameConnection connection, byte[] message)
         {
@@ -485,21 +492,10 @@ namespace Horizon.Game.Gateway.Services
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "发送消息失败: {ConnectionId}", connection.ConnectionId);
-                
+
                 lock (_statsLock)
                 {
                     _networkStatistics.Errors++;
-                }
-
-                // 仅当连接已被标记为损坏时才执行清理（致命异常或连续失败超阈）。
-                // 瞬时异常（IsConnected 仍为 true）不触发关闭，由 GameConnection 内部计数兜底。
-                if (!connection.IsConnected)
-                {
-                    _ = Task.Run(async () =>
-                    {
-                        await connection.CloseAsync("发送消息失败（连接已损坏）");
-                        await RemoveConnectionAsync(connection.ConnectionId);
-                    });
                 }
             }
         }

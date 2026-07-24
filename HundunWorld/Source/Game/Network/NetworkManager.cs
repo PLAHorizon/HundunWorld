@@ -420,6 +420,11 @@ namespace HundunWorld.Game.Network
         /// <summary>
         /// 断开连接
         /// </summary>
+        /// <summary>
+        /// 断开连接并清理客户端实例。调用后 _client 被 Dispose + null，
+        /// 下次 ConnectAsync 会通过 InitializeClient 创建全新的 TouchSocket TcpClient，
+        /// 避免复用断开状态下的客户端导致内部 Socket 状态不一致。
+        /// </summary>
         public async Task DisconnectAsync()
         {
             if (_client != null && _client.Online)
@@ -428,6 +433,12 @@ namespace HundunWorld.Game.Network
                 await _client.CloseAsync();
                 EnhancedLogging.LogInfo("[DisconnectAsync] 连接已断开");
             }
+            // 断开后清理客户端，确保下次连接使用全新的 TouchSocket TcpClient 实例
+            CleanupClient();
+
+            // 修复 BUG（客户端之间无法看到彼此）：断线后重置同步握手状态，
+            // 使重连后重新发送 HandshakePacket 触发 EnterWorldAsync，在 ZoneShard 中重新注册实体。
+            ResetSyncHandshake();
         }
 
         /// <summary>
