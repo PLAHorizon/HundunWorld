@@ -805,7 +805,7 @@ namespace HundunWorld.Game.UI
             // === 角色与背包子系统（game-ui-system 设计方案要求的 6 个页面） ===
             _inkPageRouter.RegisterPage(InkPageDomIds.NavCharacterPanel, () => CreateCharacterPanelPage());
             _inkPageRouter.RegisterPage(InkPageDomIds.NavSkillPanel, () => CreateSkillPanelPage());
-            _inkPageRouter.RegisterPage(InkPageDomIds.NavInventory, () => CreateInventoryPage());
+            _inkPageRouter.RegisterPage(InkPageDomIds.NavInventory, () => CreateCharacterPanelPage()); // 背包已合并进角色面板
             _inkPageRouter.RegisterPage(InkPageDomIds.NavEquipmentEnhance, () => CreateEquipmentEnhancePage());
             _inkPageRouter.RegisterPage(InkPageDomIds.NavCrafting, () => CreateCraftingPage());
             _inkPageRouter.RegisterPage(InkPageDomIds.NavMountPet, () => CreateMountPetPage());

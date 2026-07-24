@@ -37,8 +37,14 @@ namespace HundunWorld.Game.UI.Ink.Components
         /// <summary>默认控件高度</summary>
         private const float DefaultHeight = 600f;
 
-        /// <summary>相机距离角色原点的距离（约 200 单位）</summary>
-        private const float CameraDistance = 200f;
+        /// <summary>相机距离角色的距离（约 250 单位/cm，与 skm_uefn_mannequin 约180cm 身高匹配）</summary>
+        private const float CameraDistance = 250f;
+
+        /// <summary>相机高度偏移（cm，略高于角色中心，轻微俯视更自然）</summary>
+        private const float CameraHeight = 120f;
+
+        /// <summary>相机注视点高度（角色中心约 90cm，而非脚底）</summary>
+        private const float LookAtHeight = 90f;
 
         /// <summary>相机视野角度（度）</summary>
         private const float CameraFieldOfView = 45f;
@@ -51,6 +57,9 @@ namespace HundunWorld.Game.UI.Ink.Components
 
         /// <summary>水平拖拽旋转灵敏度（弧度/像素，约 0.01）</summary>
         private const float DragYawSensitivity = 0.01f;
+
+        /// <summary>模型俯仰校正（度）：UE 导出的 skm_uefn_mannequin 为 Z-up 轴向，在 Flax（Y-up）中直接加载会躺倒（头朝 -Z、正面朝 +Y）。绕 X 轴旋转 +90° 使头朝 +Y（上）、正面朝 +Z（相机）。注意方向为 +90°：-90° 会使头朝下倒立。</summary>
+        private const float ModelPitchCorrection = 90f;
 
         /// <summary>角色模型资产 GUID（来自 HundunWorldGame.cs）</summary>
         private static readonly Guid CharacterAnimGraphGuid = new Guid("ceded67f4bb2623f40b4dcb493b0d419");
@@ -87,6 +96,18 @@ namespace HundunWorld.Game.UI.Ink.Components
         /// <summary>角色蒙皮模型组件</summary>
         private AnimatedModel _animatedModel;
 
+        /// <summary>灯光根 Actor（承载三点光照，不随模型旋转）</summary>
+        private EmptyActor _lightRoot;
+
+        /// <summary>主光源（方向光）</summary>
+        private DirectionalLight _keyLight;
+
+        /// <summary>补光（方向光）</summary>
+        private DirectionalLight _fillLight;
+
+        /// <summary>轮廓光（方向光）</summary>
+        private DirectionalLight _rimLight;
+
         // ===================================================================
         // 交互状态
         // =======================================================================
@@ -100,8 +121,61 @@ namespace HundunWorld.Game.UI.Ink.Components
         /// <summary>当前模型 Yaw 旋转（弧度）</summary>
         private float _modelYaw;
 
+        // ===================================================================
+        // 水墨微粒（少量环境粒子）
+        // =======================================================================
+
+        /// <summary>水墨微粒（无状态：位置/透明度由绝对时间推导，无需逐帧累积更新）</summary>
+        private struct InkMote
+        {
+            public float XFrac;      // 基准水平位置（0~1，相对宽度）
+            public float YFrac0;     // 初始垂直位置（0~1，相对高度）
+            public float RiseSpeed;  // 上升漂移速度（每秒高度的比例）
+            public float SwayAmp;    // 水平摆动幅度（像素）
+            public float SwayFreq;   // 摆动频率（Hz）
+            public float Phase;      // 随机相位
+            public float Size;       // 粒子半径（像素）
+            public float BaseAlpha;  // 基准不透明度
+            public Color Tint;       // 粒子颜色
+        }
+
+        /// <summary>水墨微粒数组（少量，约 16 个）</summary>
+        private InkMote[] _motes;
+
+        /// <summary>微粒随机源（固定种子，多次打开观感一致）</summary>
+        private readonly System.Random _moteRandom = new System.Random(20260723);
+
         /// <summary>是否已初始化渲染资源（避免重复初始化）</summary>
         private bool _initialized;
+
+        /// <summary>透明背景模式开关（嵌入宿主容器时使用）</summary>
+        private bool _transparentBackground;
+
+        /// <summary>待应用的角色组件（场景/Actor 未就绪时暂存，初始化完成后重放）</summary>
+        private CharacterAttributesComponent _pendingCharacter;
+
+        /// <summary>
+        /// 透明背景模式：跳过自身背景填充与描边，由宿主容器（如 ModelStage）
+        /// 提供底色与边框，渲染纹理的透明区域透出宿主背景。
+        /// </summary>
+        public bool TransparentBackground
+        {
+            get => _transparentBackground;
+            set
+            {
+                _transparentBackground = value;
+                BackgroundColor = value ? Color.Transparent : InkWashTheme.BaseDefault;
+            }
+        }
+
+        /// <summary>
+        /// 是否已就绪（渲染资源与角色模型均已建立）。
+        /// 宿主容器可据此隐藏 2D 占位提示，切换为真实 3D 预览。
+        /// </summary>
+        public bool IsReady => _initialized
+                               && _renderTexture != null
+                               && _animatedModel != null
+                               && _animatedModel.SkinnedModel != null;
 
         // ===================================================================
         // 构造函数
@@ -138,7 +212,7 @@ namespace HundunWorld.Game.UI.Ink.Components
 
         /// <summary>
         /// 基于当前控件实际尺寸刷新布局。
-        /// 重建 <see cref="RenderTexture"/> 分辨率（匹配控件尺寸），
+        /// 重建 <see cref="GPUTexture"/> 分辨率（匹配控件尺寸），
         /// 重新计算相机位置（保持角色居中、距离约 200、FOV 45 度）。
         /// </summary>
         public void RefreshLayout()
@@ -192,6 +266,14 @@ namespace HundunWorld.Game.UI.Ink.Components
         {
             try
             {
+                // Actor 尚未创建（场景未就绪）：暂存角色数据，待 InitializeActors 完成后重放
+                if (_animatedModel == null)
+                {
+                    _pendingCharacter = component;
+                    FlaxEngine.Debug.Log("[CharacterPreview3D] SetCharacter：Actor 未就绪，已暂存角色数据待重放");
+                    return;
+                }
+
                 SkinnedModel targetSkinnedModel = null;
                 AnimationGraph targetAnimGraph = null;
 
@@ -305,18 +387,72 @@ namespace HundunWorld.Game.UI.Ink.Components
             _animatedModel = _modelRoot.AddChild<AnimatedModel>();
             _animatedModel.SkinnedModel = null;
             _animatedModel.AnimationGraph = null;
+            // 扶正模型：UE 导出模型为 Z-up 轴向，直接加载会躺倒（头朝 -Z、正面朝 +Y），绕 X 轴旋转 +90° 使头朝 +Y（上）、正面朝 +Z（相机）。
+            // 应用于子节点 _animatedModel，与父节点 _modelRoot 上的转盘 Yaw 互不干扰（先扶正、再水平旋转）。
+            _animatedModel.Orientation = Quaternion.Euler(ModelPitchCorrection, 0f, 0f);
 
             ApplyModelResources(null, null);
+
+            // ── 灯光 Actor（三点光照，保证孤立渲染下模型可见） ──
+            CreateLightingRig(scene);
 
             // ── 绑定渲染任务 ──
             _renderTask.Camera = _camera;
             _renderTask.ActorsSource = ActorsSources.CustomActors;
-            _renderTask.CustomActors = new[] { _modelRoot };
+            // 关键修复：CustomActors 孤立渲染不包含场景原有灯光，
+            // 必须将灯光组一并加入渲染列表，否则无光源导致渲染结果全黑
+            _renderTask.CustomActors = new Actor[] { _modelRoot, _lightRoot };
             _renderTask.Enabled = true;
 
             UpdateCameraTransform();
 
+            // 重放场景就绪前暂存的角色绑定
+            if (_pendingCharacter != null)
+            {
+                var pending = _pendingCharacter;
+                _pendingCharacter = null;
+                SetCharacter(pending);
+            }
+
             FlaxEngine.Debug.Log("[CharacterPreview3D] InitializeActors 成功");
+        }
+
+        /// <summary>
+        /// 创建三点光照组并加入目标场景。
+        /// <para>
+        /// CustomActors 孤立渲染模式下，场景原有灯光不参与渲染，
+        /// 必须将自建光源一并加入 <see cref="SceneRenderTask.CustomActors"/>，否则渲染结果一片漆黑。
+        /// 主光/补光/轮廓光覆盖多个角度，确保模型在任意朝向下均清晰可见。
+        /// </para>
+        /// </summary>
+        /// <param name="scene">目标场景</param>
+        private void CreateLightingRig(FlaxEngine.Scene scene)
+        {
+            _lightRoot = new EmptyActor { Name = "CharacterPreview3D_Lights" };
+            Level.SpawnActor(_lightRoot, scene);
+
+            // 太阳主光：模拟自然阳光 —— 50° 高入射角、柔和亮度、微暖白，避免曝光过度
+            _keyLight = _lightRoot.AddChild<DirectionalLight>();
+            _keyLight.Name = "PreviewKeyLight";
+            _keyLight.Orientation = Quaternion.Euler(-50f, -30f, 0f);
+            _keyLight.Brightness = 1.5f;
+            _keyLight.Color = new Color(1f, 0.96f, 0.90f);
+
+            // 天空补光：模拟天光散射 —— 冷蓝紫、亮度约为主光一半，软化阴影降低对比
+            _fillLight = _lightRoot.AddChild<DirectionalLight>();
+            _fillLight.Name = "PreviewFillLight";
+            _fillLight.Orientation = Quaternion.Euler(-60f, 150f, 0f);
+            _fillLight.Brightness = 0.8f;
+            _fillLight.Color = new Color(0.80f, 0.87f, 1f);
+
+            // 轮廓光：后上方弱勾边，分离角色与深色背景（低亮度防过曝）
+            _rimLight = _lightRoot.AddChild<DirectionalLight>();
+            _rimLight.Name = "PreviewRimLight";
+            _rimLight.Orientation = Quaternion.Euler(-35f, 180f, 0f);
+            _rimLight.Brightness = 0.4f;
+            _rimLight.Color = new Color(0.9f, 0.92f, 1f);
+
+            FlaxEngine.Debug.Log("[CharacterPreview3D] 三点光照组已创建");
         }
 
         /// <summary>
@@ -483,10 +619,10 @@ namespace HundunWorld.Game.UI.Ink.Components
             if (_cameraRoot == null || _camera == null)
                 return;
 
-            // 相机根节点置于模型前方（+Z 方向）距离 CameraDistance 处，
-            // 朝向原点（子 Camera 继承父 Actor 的世界变换）。
-            _cameraRoot.Position = new Vector3(0f, 0f, CameraDistance);
-            _cameraRoot.LookAt(Vector3.Zero);
+            // 相机根节点置于模型前方（+Z 方向）并抬高，注视角色中心（约 90cm）而非脚底，
+            // 确保约 180cm 角色完整入画（FOV 45、距离 250 时垂直视野约 207cm）。
+            _cameraRoot.Position = new Vector3(0f, CameraHeight, CameraDistance);
+            _cameraRoot.LookAt(new Vector3(0f, LookAtHeight, 0f));
         }
 
         // ===================================================================
@@ -500,8 +636,9 @@ namespace HundunWorld.Game.UI.Ink.Components
 
             var bounds = new Rectangle(0, 0, Width, Height);
 
-            // 1. 先绘制纯色背景占位（避免 RenderTexture 透明区域显示为黑，或未就绪时完全黑屏）
-            Render2D.FillRectangle(bounds, InkWashTheme.BaseDefault);
+            // 1. 先绘制纯色背景占位（嵌入模式下跳过，由宿主容器提供底色）
+            if (!_transparentBackground)
+                Render2D.FillRectangle(bounds, InkWashTheme.BaseDefault);
 
             // 2. 绘制离屏 RenderTexture（若可用）
             if (_textureBrush != null && _renderTexture != null && _renderTexture.IsAllocated)
@@ -509,8 +646,81 @@ namespace HundunWorld.Game.UI.Ink.Components
                 _textureBrush.Draw(bounds, Color.White);
             }
 
-            // 3. 描边（金色）
-            Render2D.DrawRectangle(bounds, InkWashTheme.BorderGold, 1f);
+            // 3. 水墨微粒（少量环境粒子，漂浮于模型与背景之上）
+            DrawInkMotes();
+
+            // 4. 描边（金色，嵌入模式下跳过，由宿主容器提供边框）
+            if (!_transparentBackground)
+                Render2D.DrawRectangle(bounds, InkWashTheme.BorderGold, 1f);
+        }
+
+        // ===================================================================
+        // 水墨微粒渲染
+        // =======================================================================
+
+        /// <summary>
+        /// 初始化水墨微粒场（约 16 个，低密度不喧宾夺主）。
+        /// 颜色取青玉 / 淡紫 / 淡金，与水墨青紫背景呼应。
+        /// </summary>
+        private void InitializeMotes()
+        {
+            const int count = 16;
+            _motes = new InkMote[count];
+
+            var tints = new[]
+            {
+                InkWashTheme.JadeBright,                    // 青玉
+                new Color(0.70f, 0.62f, 0.92f, 1f),         // 淡紫
+                new Color(0.90f, 0.86f, 0.74f, 1f),         // 淡金
+            };
+
+            for (int i = 0; i < count; i++)
+            {
+                _motes[i] = new InkMote
+                {
+                    XFrac = (float)_moteRandom.NextDouble(),
+                    YFrac0 = (float)_moteRandom.NextDouble(),
+                    RiseSpeed = 0.012f + (float)_moteRandom.NextDouble() * 0.028f, // 每秒 1.2%~4% 高度
+                    SwayAmp = 5f + (float)_moteRandom.NextDouble() * 14f,
+                    SwayFreq = 0.12f + (float)_moteRandom.NextDouble() * 0.30f,
+                    Phase = (float)(_moteRandom.NextDouble() * Mathf.TwoPi),
+                    Size = 1.5f + (float)_moteRandom.NextDouble() * 2.5f,
+                    BaseAlpha = 0.20f + (float)_moteRandom.NextDouble() * 0.28f,
+                    Tint = tints[i % tints.Length],
+                };
+            }
+        }
+
+        /// <summary>
+        /// 绘制水墨微粒：缓慢上升并左右摇曳、透明度呼吸，
+        /// 超出顶部后回绕到底部，形成自然的水墨氛围。
+        /// </summary>
+        private void DrawInkMotes()
+        {
+            if (_motes == null)
+                InitializeMotes();
+
+            float t = Time.GameTime;
+            for (int i = 0; i < _motes.Length; i++)
+            {
+                var m = _motes[i];
+
+                // 垂直：随时间上升，归一化到 [0,1) 循环（超顶后回到底部）
+                float yFrac = m.YFrac0 - m.RiseSpeed * t;
+                yFrac -= Mathf.Floor(yFrac);
+
+                // 水平：基准位置 + 正弦摇曳
+                float x = m.XFrac * Width + Mathf.Sin(t * m.SwayFreq * Mathf.TwoPi + m.Phase) * m.SwayAmp;
+                float y = yFrac * Height;
+
+                // 透明度呼吸（缓慢脉动）
+                float alpha = m.BaseAlpha * (0.55f + 0.45f * Mathf.Sin(t * 1.3f + m.Phase));
+                if (alpha <= 0.02f)
+                    continue;
+
+                var core = new Color(m.Tint.R, m.Tint.G, m.Tint.B, alpha);
+                InkRenderHelper.FillRadialGradient(new Float2(x, y), m.Size * 2.2f, core, Color.Transparent, 6);
+            }
         }
 
         // ===================================================================
@@ -613,6 +823,12 @@ namespace HundunWorld.Game.UI.Ink.Components
                     _modelRoot = null;
                 }
 
+                if (_lightRoot != null)
+                {
+                    FlaxEngine.Object.Destroy(_lightRoot);
+                    _lightRoot = null;
+                }
+
                 if (_cameraRoot != null)
                 {
                     FlaxEngine.Object.Destroy(_cameraRoot);
@@ -621,6 +837,9 @@ namespace HundunWorld.Game.UI.Ink.Components
 
                 _animatedModel = null;
                 _camera = null;
+                _keyLight = null;
+                _fillLight = null;
+                _rimLight = null;
             }
             catch (Exception ex)
             {

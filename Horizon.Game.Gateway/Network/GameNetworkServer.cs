@@ -12,6 +12,7 @@ using MemoryPack;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Reflection;
@@ -44,6 +45,30 @@ namespace Horizon.Game.Gateway.Network
         private readonly SemaphoreSlim _connectionRegistrationGate = new(1, 1);
         private Timer? _disconnectCheckTimer;
         private Timer? _leaseRenewalTimer;
+
+        /// <summary>
+        /// 已清理连接的幂等保护集合。<br/>
+        /// 修复 BUG：Closed 事件会被两个订阅路径同时触发：<br/>
+        /// 1. <see cref="OnClientDisconnected"/>（订阅 <c>_tcpService.Closed</c>，source="Closed事件"）<br/>
+        /// 2. <see cref="EnsureConnectionRegisteredAsync"/> 中的 lambda（订阅 <c>GameConnection.Closed</c>，source="GameConnection.Closed"）<br/>
+        /// GameConnection 内部在 <c>_client.Closed</c> 触发时会 Invoke 自身的 Closed 事件，
+        /// 因此一次断开会同时触发两条清理路径，导致指纹重复清理、重复日志、潜在 Despawn 竞态。<br/>
+        /// 此集合确保同一连接的 CleanupConnectionAsync 只完整执行一次，第二次调用直接返回。
+        /// </summary>
+        private readonly ConcurrentDictionary<string, byte> _cleanedConnections = new();
+
+        /// <summary>
+        /// presence TTL 兜底刷新的每角色上次刷新时间。<br/>
+        /// 修复 BUG（心跳 TTL 反复过低）：客户端只发送 InputPacket 不发送 Heartbeat 消息，
+        /// 导致 Redis presence TTL 在 90 秒后过期。<see cref="CharacterPresenceMonitorHostedService"/>
+        /// 虽能修复，但每 60 秒才扫描一次，期间角色可能被误判离线。<br/>
+        /// 此字典记录每个角色上次通过 OnDataReceived 兜底刷新 presence 的时间，
+        /// 限制刷新频率为每 30 秒一次（避免每帧 InputPacket 都刷新 Redis）。
+        /// </summary>
+        private readonly ConcurrentDictionary<long, DateTime> _lastPresenceRefreshByCharacter = new();
+
+        /// <summary>presence TTL 兜底刷新的最小间隔（秒）。</summary>
+        private const int PresenceRefreshIntervalSeconds = 30;
         public GameNetworkServer(
             ILogger<GameNetworkServer> logger,
             ILog tlogger,
@@ -247,18 +272,37 @@ namespace Horizon.Game.Gateway.Network
         /// 通过反射设置底层 Socket 的 KeepAlive 选项。<br/>
         /// TouchSocket 的 ITcpSessionClient 不直接暴露 Socket，需要递归查找属性和字段（含非公共成员）。<br/>
         /// 注意：此 KeepAlive 为辅助机制，核心断线检测依赖 <see cref="CheckDisconnectedConnections"/> 的应用层心跳超时。
+        /// 即使 Socket 反射查找失败也绝对不主动关闭连接，避免误杀健康连接（客户端 500ms 断线风暴的根源）。
         /// </summary>
-        private void TrySetKeepAlive(ITcpSessionClient client)
+        private void TrySetKeepAlive(ITcpSessionClient client, bool isRetry = false)
         {
             try
             {
                 var socket = FindSocketMember(client, depth: 0);
                 if (socket == null)
                 {
-                    // 提升日志级别到 Warning：便于诊断反射查找失败问题。
-                    // 反射失败时 TCP KeepAlive 不会设置，但应用层心跳超时检测仍能保证断线清理。
+                    if (!isRetry)
+                    {
+                        // 首次连接时 Socket 可能尚未初始化（TouchSocket 内部延迟创建），
+                        // 延迟 500ms 后重试一次。若仍失败则降级到应用层心跳超时检测。
+                        _ = Task.Run(async () =>
+                        {
+                            await Task.Delay(500);
+                            if (client.Online)
+                            {
+                                TrySetKeepAlive(client, isRetry: true);
+                            }
+                        });
+                        return;
+                    }
+
+                    // [修复] 重试后 Socket 仍为 null：不加 KeepAlive，依靠应用层心跳检测断线。
+                    // 注意：绝对不能主动关闭连接！此前逻辑在重试失败后执行 client.CloseAsync()，
+                    // 导致所有 FindSocketMember 反射查找失败的连接在 500ms 后被服务端主动关闭，
+                    // 客户端因此陷入「重连成功→500ms 断线→重连」的死循环。
                     _logger.LogWarning(
-                        "客户端 {Id} 未找到底层 Socket，跳过 TCP KeepAlive 设置（断线检测回退到应用层心跳超时）",
+                        "客户端 {Id} 未找到底层 Socket，TCP KeepAlive 设置失败（反射路径不匹配），"
+                        + "断线检测降级到应用层心跳超时",
                         client.Id);
                     return;
                 }
@@ -271,8 +315,53 @@ namespace Horizon.Game.Gateway.Network
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "设置 KeepAlive 失败: {Id}（断线检测回退到应用层心跳超时）", client.Id);
+                _logger.LogWarning(ex, "设置 KeepAlive 失败: {Id}（断线检测降级到应用层心跳超时）", client.Id);
             }
+        }
+
+        /// <summary>
+        /// 兜底刷新角色 presence TTL（fire-and-forget，不阻塞消息处理）。<br/>
+        /// 修复 BUG（心跳 TTL 反复过低）：客户端只发送 InputPacket 不发送 Heartbeat 消息，
+        /// 导致 Redis presence TTL 在 90 秒后过期。此处限制每 30 秒刷新一次，
+        /// 确保只要客户端在发送输入，角色在线状态就不会过期。<br/>
+        /// 异常被吞并（仅 Debug 日志），避免 Redis 故障影响消息处理主流程。
+        /// </summary>
+        /// <param name="characterId">角色 ID。</param>
+        private void TryRefreshPresenceTtlInBackground(long characterId)
+        {
+            // 频率限制：每 30 秒最多刷新一次，避免每帧 InputPacket 都刷新 Redis
+            var now = DateTime.UtcNow;
+            if (_lastPresenceRefreshByCharacter.TryGetValue(characterId, out var lastRefresh))
+            {
+                if ((now - lastRefresh).TotalSeconds < PresenceRefreshIntervalSeconds)
+                    return;
+            }
+
+            // CAS 更新刷新时间：多 worker 并发时只有一个线程实际执行刷新
+            _lastPresenceRefreshByCharacter[characterId] = now;
+
+            // fire-and-forget：不阻塞 OnDataReceived 主流程
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var refreshed = await _presenceStore.RefreshHeartbeatAsync(characterId).ConfigureAwait(false);
+                    if (!refreshed)
+                    {
+                        // presence key 不存在（可能角色已下线或 Redis 故障）。
+                        // 不重建 presence（与 HeartbeatHandler 一致：避免已下线角色在 Redis 中"复活"）。
+                        _logger.LogDebug(
+                            "presence TTL 兜底刷新返回 false，可能角色已下线或 Redis 故障。CharacterId={CharacterId}",
+                            characterId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex,
+                        "presence TTL 兜底刷新异常（不影响消息处理）。CharacterId={CharacterId}",
+                        characterId);
+                }
+            });
         }
 
         /// <summary>
@@ -374,14 +463,17 @@ namespace Horizon.Game.Gateway.Network
 
         /// <summary>
         /// 定时检测断线连接（每 5 秒触发）。<br/>
-        /// 检测两种断线判定：<br/>
+        /// 检测三种断线判定：<br/>
         /// 1. <see cref="IGameConnection.IsConnected"/>==false：TouchSocket 底层判定（依赖 TCP 层 RST/FIN 或 KeepAlive 探测）；<br/>
-        /// 2. <see cref="IGameConnection.LastActiveTime"/> 空闲超时：应用层心跳超时判定，超过 <see cref="NetworkOptions.IdleTimeoutSeconds"/> 未收到任何数据。<br/>
+        /// 2. 首包超时：连接建立后从未收到数据（<see cref="IGameConnection.LastActiveTime"/>==<see cref="IGameConnection.ConnectedTime"/>），
+        ///    且超过 <see cref="NetworkOptions.FirstPacketTimeoutSeconds"/> 秒，判定为幽灵连接（探测/错误连接/客户端崩溃）；<br/>
+        /// 3. <see cref="IGameConnection.LastActiveTime"/> 空闲超时：应用层心跳超时判定，超过 <see cref="NetworkOptions.IdleTimeoutSeconds"/> 未收到任何数据。<br/>
         /// <para>
-        /// 关键说明：检测 2 是检测客户端非正常断开（关进程/断网）的最可靠机制。
+        /// 关键说明：检测 3 是检测客户端非正常断开（关进程/断网）的最可靠机制。
         /// TCP KeepAlive 在 TouchSocket 中需要反射访问底层 Socket，可能失败；
         /// <c>Online</c> 属性在 TCP 层未探测到断开时会一直保持 true（Windows 默认 keepalive 长达 2 小时）。
         /// 而客户端有 20 秒心跳，超过 60 秒无数据必然是非正常断开。
+        /// 检测 2 用于快速清理幽灵连接（连接后不发送任何数据），避免占用连接管理器资源 60 秒。
         /// </para>
         /// </summary>
         private async void CheckDisconnectedConnections(object? state)
@@ -389,6 +481,7 @@ namespace Horizon.Game.Gateway.Network
             try
             {
                 var idleTimeout = TimeSpan.FromSeconds(_networkOptions.CurrentValue.IdleTimeoutSeconds);
+                var firstPacketTimeout = TimeSpan.FromSeconds(_networkOptions.CurrentValue.FirstPacketTimeoutSeconds);
                 var now = DateTime.UtcNow;
 
                 // 修复 BUG：原实现串行 await CleanupConnectionAsync，单个连接的 DespawnImmediatelyAsync
@@ -410,7 +503,26 @@ namespace Horizon.Game.Gateway.Network
                         continue;
                     }
 
-                    // 检测 2：应用层心跳超时判定（最可靠，不依赖 TCP KeepAlive）
+                    // 检测 2：首包超时判定（幽灵连接检测）
+                    // 连接建立后从未收到数据（LastActiveTime ≈ ConnectedTime），且超过首包超时时间，
+                    // 判定为幽灵连接（探测/错误连接/客户端崩溃后未关闭 Socket），立即清理。
+                    // 使用容差比较而非严格相等：即使 GameConnection 构造函数中只用了一次 DateTime.UtcNow
+                    // 同时赋值给两者，DateTime 精度在跨平台/高负载下仍可能出现亚毫秒级偏差，严格相等可能误判。
+                    bool neverReceivedData = (connection.LastActiveTime - connection.ConnectedTime).TotalMilliseconds < 100;
+                    if (neverReceivedData)
+                    {
+                        var sinceConnect = now - connection.ConnectedTime;
+                        if (sinceConnect > firstPacketTimeout)
+                        {
+                            _logger.LogWarning(
+                                "连接 {Id} 首包超时（{Seconds:F0}秒未收到任何数据），判定为幽灵连接并清理。Connected={Connected:O}, Remote={Remote}",
+                                connection.ConnectionId, sinceConnect.TotalSeconds, connection.ConnectedTime, connection.RemoteAddress);
+                            connectionsToCleanup.Add((connection.ConnectionId, "首包超时"));
+                            continue;
+                        }
+                    }
+
+                    // 检测 3：应用层心跳超时判定（最可靠，不依赖 TCP KeepAlive）
                     // 客户端心跳间隔约 20 秒，超过 IdleTimeoutSeconds（默认 60 秒）未收到任何数据，
                     // 说明客户端已非正常断开（关进程/断网），需要主动清理。
                     var idleDuration = now - connection.LastActiveTime;
@@ -462,6 +574,16 @@ namespace Horizon.Game.Gateway.Network
         /// <param name="source">调用来源（用于日志诊断）</param>
         private async Task CleanupConnectionAsync(string connectionId, string source)
         {
+            // 幂等保护：Closed 事件会被 _tcpService.Closed 与 GameConnection.Closed 两条路径同时触发，
+            // 同一连接只允许完整清理一次。第二次调用直接返回，避免重复清理指纹、重复日志、潜在 Despawn 竞态。
+            // 标志在连接被移除后保留（不立即 TryRemove），防止并发重入；定时器下一轮不会再扫到该连接。
+            if (!_cleanedConnections.TryAdd(connectionId, 0))
+            {
+                _logger.LogDebug(
+                    "连接 {Id} 已在清理中/已清理，跳过重复清理（来源: {Source}）", connectionId, source);
+                return;
+            }
+
             try
             {
                 // 关键时序：先反查 characterId，再 RemoveConnectionAsync（会清理映射）。
@@ -497,6 +619,9 @@ namespace Horizon.Game.Gateway.Network
                 {
                     foreach (var characterId in characterIdsToDespawn)
                     {
+                        // 清理 presence 兜底刷新时间记录，避免内存泄漏
+                        _lastPresenceRefreshByCharacter.TryRemove(characterId, out _);
+
                         try
                         {
                             await _despawnScheduler.DespawnImmediatelyAsync(characterId);
@@ -547,6 +672,10 @@ namespace Horizon.Game.Gateway.Network
             }
             catch (Exception ex)
             {
+                // 清理失败时移除幂等标志，允许定时器下一轮重试。
+                // 重试是安全的：GetCharacterIdsByConnection 在 RemoveConnectionAsync 之后会返回空列表，
+                // DespawnImmediatelyAsync 内部对重复调用安全（grain 调用幂等）。
+                _cleanedConnections.TryRemove(connectionId, out _);
                 _logger.LogError(ex, "清理连接 {Id} 时发生错误（来源: {Source}）", connectionId, source);
             }
         }
@@ -637,6 +766,13 @@ namespace Horizon.Game.Gateway.Network
                                     fallbackCharacterId, connection.ConnectionId, messagePacket.Header.MessageType, isHandshake);
                             }
                         }
+
+                        // 修复 BUG（心跳 TTL 反复过低）：客户端只发送 InputPacket 不发送 Heartbeat 消息，
+                        // 导致 Redis presence TTL 在 90 秒后过期。此处作为兜底机制：
+                        // 收到已绑定角色的数据时，每 30 秒刷新一次 presence TTL，
+                        // 确保只要客户端在发送输入，角色在线状态就不会过期。
+                        // 不阻塞消息处理（fire-and-forget + 异常吞并）。
+                        TryRefreshPresenceTtlInBackground(fallbackCharacterId);
                     }
 
                     // 验证消息头的必需字段

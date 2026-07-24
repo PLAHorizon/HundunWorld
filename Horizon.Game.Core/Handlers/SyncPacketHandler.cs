@@ -164,6 +164,22 @@ public sealed class SyncPacketHandler : MessageHandlerBase
     private readonly object _inputDedupLock = new();
 
     /// <summary>
+    /// 已完成握手的 (characterId, connectionId) 集合，用于重复握手幂等保护。<br/>
+    /// 修复 BUG：客户端可能错误发送两次 Sync 握手（日志显示同一连接在 ~400ms 内发送两次握手），
+    /// 导致 <see cref="HandleHandshakeAsync"/> 被调用两次，进而：<br/>
+    /// 1. <c>EnterWorldAsync</c> 被调用两次，ZoneShard 实体重复创建<br/>
+    /// 2. <c>ConnectionManager.RegisterCharacter</c> 被调用两次，重复日志/映射<br/>
+    /// 3. AOI 订阅被重复建立<br/>
+    /// 握手幂等保护：同一 (characterId, connectionId) 第二次握手直接返回成功响应，
+    /// 不重复执行 EnterWorldAsync 等副作用。<br/>
+    /// 连接断开时通过 <see cref="CleanupHandshakeRecord"/> 清理记录。
+    /// </summary>
+    private readonly HashSet<(ulong CharacterId, string ConnectionId)> _handshookConnections = new();
+
+    /// <summary>保护 <see cref="_handshookConnections"/> 的锁。</summary>
+    private readonly object _handshakeIdempotentLock = new();
+
+    /// <summary>
     /// 处理握手包：初始化玩家会话并返回握手确认。
     /// 返回 <see cref="HandshakePacket"/>（回显 LocalCharacterId / InitialClientTick），
     /// 使客户端 <c>SyncPacketMessageHandler.HandshakeReceived</c> 事件能正确触发。
@@ -194,6 +210,28 @@ public sealed class SyncPacketHandler : MessageHandlerBase
         }
 
         var characterId = (long)handshake.LocalCharacterId;
+
+        // 重复握手幂等保护：同一 (characterId, connectionId) 已握手过时，直接返回成功响应，
+        // 不重复执行 EnterWorldAsync / RegisterCharacter / AOI 订阅等副作用。
+        // 修复 BUG：日志显示客户端在 ~400ms 内发送两次 Sync 握手，导致角色映射重复注册、
+        // EnterWorldAsync 被调用两次、ZoneShard 实体重复创建。
+        var idempotentConnId = _currentConnectionId.Value ?? string.Empty;
+        var idempotentKey = (handshake.LocalCharacterId, idempotentConnId);
+        lock (_handshakeIdempotentLock)
+        {
+            if (!_handshookConnections.Add(idempotentKey))
+            {
+                Logger.LogWarning(
+                    "重复 Sync握手 被幂等拒绝，直接返回成功响应。CharacterId={CharacterId}, ConnectionId={ConnectionId}",
+                    characterId, idempotentConnId);
+                // 回显与首次握手一致的响应，触发客户端 HandshakeReceived 事件
+                return new HandshakePacket
+                {
+                    LocalCharacterId = handshake.LocalCharacterId,
+                    InitialClientTick = handshake.InitialClientTick,
+                };
+            }
+        }
 
         Logger.LogInformation(
             "Sync握手开始。CharacterId={CharacterId}, ClientTick={ClientTick}",
@@ -246,6 +284,23 @@ public sealed class SyncPacketHandler : MessageHandlerBase
             {
                 _lastInputTickPerConnection.Remove(sk);
                 _handshakeBaselinePerConnection.Remove(sk);
+            }
+        }
+
+        // 同步清理 _handshookConnections 中同一 characterId 的旧连接握手记录。
+        // 避免锁嵌套（_inputDedupLock → _handshakeIdempotentLock），单独加锁。
+        // 断线重连时旧连接的握手记录应被清除，允许新连接正常握手。
+        lock (_handshakeIdempotentLock)
+        {
+            var staleHandshakeKeys = new List<(ulong, string)>();
+            foreach (var k in _handshookConnections)
+            {
+                if (k.CharacterId == handshake.LocalCharacterId && k.ConnectionId != connId)
+                    staleHandshakeKeys.Add(k);
+            }
+            foreach (var sk in staleHandshakeKeys)
+            {
+                _handshookConnections.Remove(sk);
             }
         }
 

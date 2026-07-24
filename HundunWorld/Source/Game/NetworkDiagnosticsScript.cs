@@ -75,19 +75,31 @@ namespace HundunWorld.Game
         private void InitializeNetworkManager()
         {
             Debug.Log("--- 2. 网络管理器初始化 ---");
-            
+
             try
             {
+                // [修复] 优先复用主游戏的 NetworkManager，避免创建独立连接形成幽灵连接。
+                // 诊断脚本不应建立独立的 TCP 连接，否则服务端会看到未认证的重复连接。
+                var existingManager = HundunWorldGame.Instance?.NetworkManager;
+                if (existingManager != null)
+                {
+                    Debug.Log("检测到主游戏 NetworkManager 已存在，复用实例进行诊断（不创建独立连接）");
+                    _networkManager = existingManager;
+                    _networkManager.ConnectionStatusChanged += OnConnectionStatusChanged;
+                    _networkManager.ConnectionError += OnConnectionError;
+                    return;
+                }
+
                 var config = NetworkConfigManager.LoadConfig();
                 var gatewayList = NetworkConfigManager.ConvertToGatewayInfo(config.GatewayList);
-                
+
                 _networkManager = new NetworkManager(gatewayList);
-                
+
                 // 订阅所有事件
                 _networkManager.ConnectionStatusChanged += OnConnectionStatusChanged;
                 _networkManager.ConnectionError += OnConnectionError;
                // _networkManager.MessageReceived += OnMessageReceived;
-                
+
                 Debug.Log("网络管理器初始化成功");
             }
             catch (System.Exception ex)

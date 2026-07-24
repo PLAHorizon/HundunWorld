@@ -123,15 +123,19 @@ namespace HundunWorld.Game.Network
         private CancellationTokenSource _reconnectCts;
         private Timer _heartbeatTimer;
         private bool _disposed;
+        private volatile bool _reconnectAttemptInProgress;
         private readonly Func<Task<bool>> _connectFunction;
+        private readonly Func<Task> _disconnectFunction;
 
         /// <summary>
         /// 构造函数
         /// </summary>
         /// <param name="connectFunction">连接函数，返回true表示连接成功</param>
-        public ReconnectionManager(Func<Task<bool>> connectFunction = null)
+        /// <param name="disconnectFunction">断开连接函数，重连前调用以清理旧连接残留（防止幽灵连接）</param>
+        public ReconnectionManager(Func<Task<bool>> connectFunction = null, Func<Task> disconnectFunction = null)
         {
             _connectFunction = connectFunction;
+            _disconnectFunction = disconnectFunction;
         }
 
         /// <summary>
@@ -165,7 +169,7 @@ namespace HundunWorld.Game.Network
         /// </summary>
         private void CheckHeartbeat(object state)
         {
-            if (CurrentState == ReconnectState.Connected)
+            if (CurrentState != ReconnectState.Connected)
                 return;
 
             var elapsed = (DateTime.UtcNow - LastHeartbeatTime).TotalMilliseconds;
@@ -181,7 +185,7 @@ namespace HundunWorld.Game.Network
         /// </summary>
         public void HandleDisconnect()
         {
-            if (CurrentState == ReconnectState.Reconnecting)
+            if (CurrentState == ReconnectState.Reconnecting || CurrentState == ReconnectState.Failed || _reconnectAttemptInProgress)
                 return;
 
             LastDisconnectTime = DateTime.UtcNow;
@@ -211,52 +215,75 @@ namespace HundunWorld.Game.Network
                 oldCts.Dispose();
             }
 
+            _reconnectAttemptInProgress = true;
             ChangeState(ReconnectState.Reconnecting);
             CurrentAttemptCount = 0;
 
-            while (CurrentAttemptCount < MaxReconnectAttempts && !token.IsCancellationRequested)
+            try
             {
-                CurrentAttemptCount++;
-
-                Debug.Log($"重连尝试 {CurrentAttemptCount}/{MaxReconnectAttempts}");
-                OnReconnectAttempt?.Invoke(CurrentAttemptCount);
-
-                try
+                while (CurrentAttemptCount < MaxReconnectAttempts && !token.IsCancellationRequested)
                 {
-                    bool success = false;
+                    CurrentAttemptCount++;
 
-                    if (_connectFunction != null)
+                    Debug.Log($"重连尝试 {CurrentAttemptCount}/{MaxReconnectAttempts}");
+                    OnReconnectAttempt?.Invoke(CurrentAttemptCount);
+
+                    try
                     {
-                        success = await _connectFunction();
+                        bool success = false;
+
+                        // [修复] 重连前先断开旧连接，清理可能残留的 TCP 套接字。
+                        // 不断开直接 ConnectAsync 可能导致服务端旧连接尚未释放时新连接已建立，
+                        // 形成幽灵连接（旧连接不发送数据，被服务端首包超时清理）。
+                        if (_disconnectFunction != null)
+                        {
+                            try
+                            {
+                                await _disconnectFunction();
+                            }
+                            catch (Exception disconnectEx)
+                            {
+                                Debug.LogWarning($"重连前断开旧连接时发生异常（忽略并继续重连）: {disconnectEx.Message}");
+                            }
+                        }
+
+                        if (_connectFunction != null)
+                        {
+                            success = await _connectFunction();
+                        }
+
+                        if (success)
+                        {
+                            ChangeState(ReconnectState.Connected);
+                            CurrentAttemptCount = 0;
+                            LastHeartbeatTime = DateTime.UtcNow;
+                            OnReconnected?.Invoke();
+                            Debug.Log("重连成功");
+                            return;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning($"重连尝试 {CurrentAttemptCount} 失败: {ex.Message}");
                     }
 
-                    if (success)
+                    // 计算退避延迟
+                    int delay = CalculateBackoffDelay(CurrentAttemptCount);
+                    Debug.Log($"等待 {delay}ms 后重试...");
+
+                    try
                     {
-                        ChangeState(ReconnectState.Connected);
-                        CurrentAttemptCount = 0;
-                        LastHeartbeatTime = DateTime.UtcNow;
-                        OnReconnected?.Invoke();
-                        Debug.Log("重连成功");
+                        await Task.Delay(delay, token);
+                    }
+                    catch (TaskCanceledException)
+                    {
                         return;
                     }
                 }
-                catch (Exception ex)
-                {
-                    Debug.LogWarning($"重连尝试 {CurrentAttemptCount} 失败: {ex.Message}");
-                }
-
-                // 计算退避延迟
-                int delay = CalculateBackoffDelay(CurrentAttemptCount);
-                Debug.Log($"等待 {delay}ms 后重试...");
-
-                try
-                {
-                    await Task.Delay(delay, token);
-                }
-                catch (TaskCanceledException)
-                {
-                    return;
-                }
+            }
+            finally
+            {
+                _reconnectAttemptInProgress = false;
             }
 
             // 所有重连尝试都失败
@@ -291,6 +318,15 @@ namespace HundunWorld.Game.Network
         /// </summary>
         public void MarkConnected()
         {
+            // [修复] 重试循环中不覆盖 CurrentState（保持 Reconnecting），
+            // 防止短暂连接成功后 OnClientDisconnected 触发级联 HandleDisconnect。
+            // StartReconnectAsync 退出循环时统一设置最终状态。
+            if (_reconnectAttemptInProgress)
+            {
+                LastHeartbeatTime = DateTime.UtcNow;
+                return;
+            }
+
             ChangeState(ReconnectState.Connected);
             CurrentAttemptCount = 0;
             LastHeartbeatTime = DateTime.UtcNow;

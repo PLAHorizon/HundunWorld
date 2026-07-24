@@ -139,15 +139,22 @@ namespace HundunWorld.Game.Network
             _messageProcessor = new MessageProcessor();
             _messageAdapter = new HorizonMessageAdapter();
 
-            // 初始化重连管理器，提供连接函数
-            _reconnectionManager = new ReconnectionManager(async () =>
-            {
-                if (_currentGateway != null)
+            // 初始化重连管理器，提供连接函数和断开函数
+            // [修复] 传入 DisconnectAsync 作为断开函数，确保重连前先清理旧 TCP 连接，防止幽灵连接
+            _reconnectionManager = new ReconnectionManager(
+                connectFunction: async () =>
                 {
-                    return await ConnectAsync(_currentGateway.IP, _currentGateway.Port);
-                }
-                return false;
-            });
+                    if (_currentGateway != null)
+                    {
+                        // [修复] 先用临时 TouchSocket 连接探查网关可达性，
+                        // 确认网关在线后再用主 _client 正式连接，避免失败的连接尝试在服务端留下幽灵会话
+                        if (!await ProbeGatewayAsync(_currentGateway.IP, _currentGateway.Port))
+                            return false;
+                        return await ConnectAsync(_currentGateway.IP, _currentGateway.Port);
+                    }
+                    return false;
+                },
+                disconnectFunction: DisconnectAsync);
 
             // 订阅重连管理器事件
             _reconnectionManager.OnReconnected += OnReconnectionSucceeded;
@@ -192,6 +199,23 @@ namespace HundunWorld.Game.Network
         /// </summary>
         private async Task InitializeClient(List<GatewayInfo> gatewayList)
         {
+            // 释放旧客户端，防止幽灵连接/资源泄漏
+            if (_client != null)
+            {
+                try
+                {
+                    _client.Connected -= OnClientConnected;
+                    _client.Closed -= OnClientDisconnected;
+                    _client.Received -= OnDataReceived;
+                    _client.Dispose();
+                    EnhancedLogging.LogInfo("[InitializeClient] 已释放旧TcpClient实例");
+                }
+                catch (Exception ex)
+                {
+                    EnhancedLogging.LogWarning($"[InitializeClient] 释放旧客户端时发生错误: {ex.Message}");
+                }
+            }
+
             _client = new TcpClient();
             EnhancedLogging.LogInfo("[InitializeClient] 创建新的TcpClient实例");
 
@@ -264,11 +288,12 @@ namespace HundunWorld.Game.Network
                 _gatewayCheckCts = EnsureCancellationTokenSource(_gatewayCheckCts, "网关检查取消令牌");
 
                 // 配置客户端 - 每次连接时创建新的适配器实例
+                // [修复] 移除 UseReconnection<ITcpClient>() 插件：该插件与自定义 ReconnectionManager 形成双重重连，
+                // 断线时两者同时创建新 TCP 连接，导致服务端出现幽灵连接（成对的未认证连接）。
+                // 重连逻辑统一由 ReconnectionManager 管理。
                 var config = new TouchSocketConfig()
                     .SetRemoteIPHost($"{ip}:{port}")
-                    .SetTcpDataHandlingAdapter(() => new HorizonMessageAdapter()) // 每次创建新的适配器实例
-                    .ConfigurePlugins(plugin => plugin.UseReconnection<ITcpClient>());
-                // simplified: no complex plugin configuration
+                    .SetTcpDataHandlingAdapter(() => new HorizonMessageAdapter());
 
                 // 更新当前网关信息
                 _currentGateway = new GatewayInfo { IP = ip, Port = port };
@@ -285,7 +310,11 @@ namespace HundunWorld.Game.Network
                 // 并将事件通知调度到主线程，无需外层再包 InvokeOnUpdate，避免状态更新延迟导致 SendMessageAsync 拒绝发送
                 if (_client.Online)
                     UpdateConnectionStatus(ConnectionStatus.Connected);
-                _reconnectionManager.CurrentState = _client.Online? ReconnectionManager.ReconnectState.Connected:ReconnectionManager.ReconnectState.Failed;
+                // [修复] 不在此处设置 _reconnectionManager.CurrentState。
+                // OnClientConnected 已通过 MarkConnected() 处理状态变更。
+                // 直接设置 CurrentState = Connected 会绕过 ChangeState/OnStateChanged，
+                // 导致 HandleDisconnect 无法判断当前是否在重试循环中（CurrentState == Reconnecting），
+                // 从而在重试链中临时成功/断开时启动级联的新 StartReconnectAsync 循环。
                 return true;
             }
             catch (OperationCanceledException)
@@ -293,6 +322,7 @@ namespace HundunWorld.Game.Network
                 ConnectionError?.Invoke("连接被取消");
                 UpdateConnectionStatus(ConnectionStatus.Disconnected);
                 EnhancedDiagnostics.LogNetworkOperation("连接", $"{ip}:{port}", false, "连接被取消");
+                CleanupClient();
                 return false;
             }
             catch (Exception ex)
@@ -303,6 +333,41 @@ namespace HundunWorld.Game.Network
                 ConnectionError?.Invoke($"连接失败: {ex.Message}");
                 UpdateConnectionStatus(ConnectionStatus.Disconnected);
                 EnhancedDiagnostics.LogNetworkOperation("连接", $"{ip}:{port}", false, ex.Message);
+                CleanupClient();
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 使用原始 TCP Socket 探查网关是否可达。
+        /// 避免使用 TouchSocket TcpClient 创建完整协议栈连接，防止服务端 OnClientConnected
+        /// 触发 GameConnection 创建和 TrySetKeepAlive 延迟清理（幽灵连接滞留 500ms+）。
+        /// 原始 Socket 完成 TCP 三次握手后立即关闭，服务端 TouchSocket 不会为该连接创建
+        /// ITcpSessionClient/GameConnection，从根本上消除探查连接在服务端的残留。
+        /// </summary>
+        private async Task<bool> ProbeGatewayAsync(string ip, int port)
+        {
+            try
+            {
+                EnhancedLogging.LogInfo($"[ProbeGatewayAsync] 开始探查网关 {ip}:{port}");
+                using var rawClient = new System.Net.Sockets.TcpClient();
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                cts.Token.Register(() => { try { rawClient.Close(); } catch { } });
+                await rawClient.ConnectAsync(ip, port);
+                EnhancedLogging.LogInfo($"[ProbeGatewayAsync] 探查网关 {ip}:{port} 成功");
+                // 探查成功后保存网关信息
+                if (_currentGateway != null)
+                {
+                    _currentGateway.IsAvailable = true;
+                }
+                // 直接关闭原始 TCP 连接（不经过 TouchSocket 协议栈），
+                // 服务端 TouchSocket 可能短暂看到 TCP 连接但不会创建 GameConnection
+                rawClient.Close();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                EnhancedLogging.LogInfo($"[ProbeGatewayAsync] 探查网关 {ip}:{port} 失败: {ex.Message}");
                 return false;
             }
         }
@@ -366,6 +431,25 @@ namespace HundunWorld.Game.Network
         }
 
         /// <summary>
+        /// 清理客户端实例。在连接失败后调用，确保下次重连创建全新客户端，防止复用损坏实例导致幽灵连接。
+        /// </summary>
+        private void CleanupClient()
+        {
+            if (_client != null)
+            {
+                try
+                {
+                    _client.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    EnhancedLogging.LogWarning($"[CleanupClient] 释放客户端时发生错误: {ex.Message}");
+                }
+                _client = null;
+            }
+        }
+
+        /// <summary>
         /// 检查并重连
         /// </summary>
         public async Task<bool> CheckAndReconnectAsync()
@@ -392,10 +476,16 @@ namespace HundunWorld.Game.Network
         /// </summary>
         private async Task OnClientConnected(ITcpClient client, TouchSocketEventArgs e)
         {
+            if (client != _client)
+            {
+                EnhancedLogging.LogInfo("[OnClientConnected] 忽略过时连接事件（来自旧客户端实例）");
+                return;
+            }
+
             EnhancedLogging.LogInfo("[OnClientConnected] 客户端连接成功");
             EnhancedDiagnostics.LogNetworkOperation("连接", $"{_currentGateway?.IP}:{_currentGateway?.Port}", true, "连接成功");
-            Scripting.InvokeOnUpdate(() =>
-           UpdateConnectionStatus(ConnectionStatus.Connected));
+            // 立即更新状态为 Connected，确保 StartHeartbeat 中 CanSendMessage 返回 true
+            UpdateConnectionStatus(ConnectionStatus.Connected);
 
             _reconnectionManager?.MarkConnected();
 
@@ -410,6 +500,13 @@ namespace HundunWorld.Game.Network
         /// </summary>
         private async Task OnClientDisconnected(ITcpClient client, ClosedEventArgs e)
         {
+            // 跳过来自旧 _client 实例的过时 Closed 事件（新 _client 已在 InitializeClient 中创建并注册新事件）
+            if (client != _client)
+            {
+                EnhancedLogging.LogInfo("[OnClientDisconnected] 忽略过时断开事件（来自旧客户端实例）");
+                return;
+            }
+
             EnhancedLogging.LogInfo("[OnClientDisconnected] 客户端断开连接");
             EnhancedDiagnostics.LogNetworkOperation("断开连接", $"{_currentGateway?.IP}:{_currentGateway?.Port}", true, "连接断开");
 
@@ -422,7 +519,20 @@ namespace HundunWorld.Game.Network
             }
 
             // 如果不是主动断开，使用重连管理器进行重连
-            if (!_connectionCts.Token.IsCancellationRequested && !_isDisposing)
+            bool shouldReconnect = !_isDisposing;
+            if (shouldReconnect && _connectionCts != null)
+            {
+                try
+                {
+                    shouldReconnect = !_connectionCts.IsCancellationRequested;
+                }
+                catch (ObjectDisposedException)
+                {
+                    shouldReconnect = false;
+                }
+            }
+
+            if (shouldReconnect)
             {
                 EnhancedLogging.LogInfo("[OnClientDisconnected] 检测到非主动断开，触发重连管理器");
                 _reconnectionManager?.HandleDisconnect();
@@ -468,9 +578,8 @@ namespace HundunWorld.Game.Network
                         var dataArray = e.Memory.ToArray();
                         EnhancedLogging.LogInfo($"[OnDataReceived] 准备解包原始数据，数据长度: {dataArray.Length}");
 
-                        // 创建临时适配器实例进行解包
-                        var tempAdapter = new HorizonMessageAdapter();
-                        messagePacket = tempAdapter.UnpackMessage(dataArray);
+                        // 复用字段适配器解包，避免每次创建临时适配器产生GC压力
+                        messagePacket = _messageAdapter.UnpackMessage(dataArray);
                     }
 
                     if (messagePacket != null)
@@ -546,11 +655,20 @@ namespace HundunWorld.Game.Network
                     EnhancedLogging.LogInfo("[OnNetworkStatusChanged] 检测到网络在线");
                     EnhancedDiagnostics.LogDiagnostic("检测到网络在线");
                     // 网络恢复时，检查是否需要重连
-                    if (_connectionStatus == ConnectionStatus.Disconnected && _currentGateway != null)
+                    // [修复] 若 ReconnectionManager 已在重连中，则跳过，避免并发重连创建重复连接（幽灵连接根因之一）
+                    if (_connectionStatus == ConnectionStatus.Disconnected
+                        && _currentGateway != null
+                        && _reconnectionManager.CurrentState != ReconnectionManager.ReconnectState.Reconnecting)
                     {
                         RunBackground(async () =>
                         {
                             await Task.Delay(3000); // 等待3秒确保网络稳定
+                            // 延迟后再次检查，防止 ReconnectionManager 在等待期间已启动重连
+                            if (_reconnectionManager.CurrentState == ReconnectionManager.ReconnectState.Reconnecting)
+                            {
+                                EnhancedLogging.LogInfo("[OnNetworkStatusChanged] ReconnectionManager 已在重连中，跳过 NetworkStateMonitor 触发的重连");
+                                return;
+                            }
                             await CheckAndReconnectAsync();
                         });
                     }
@@ -1239,30 +1357,24 @@ namespace HundunWorld.Game.Network
         {
             EnhancedLogging.LogInfo($"[OnReconnectionStateChanged] 重连状态变化: {state}");
 
-            // 根据重连状态更新连接状态
-            // 注意：Connected 和 Disconnected 状态已在 OnClientConnected/OnClientDisconnected 中更新，
-            // 此处仅处理 Reconnecting 和 Failed 状态，避免重复触发导致UI状态混乱
+            // [修复] 直接调用 UpdateConnectionStatus（不包 InvokeOnUpdate），
+            // 因为 UpdateConnectionStatus 内部已通过 InvokeOnUpdate 调度通知。
+            // 外层再包一层 InvokeOnUpdate 会导致队列回调查到时连接状态已被较新的同步更新覆盖，
+            // 造成状态回退（例如 Connected -> Disconnected -> Reconnecting -> Connected 循环）。
             switch (state)
             {
                 case ReconnectionManager.ReconnectState.Reconnecting:
-                    Scripting.InvokeOnUpdate(() => UpdateConnectionStatus(ConnectionStatus.Reconnecting));
+                    UpdateConnectionStatus(ConnectionStatus.Reconnecting);
                     break;
                 case ReconnectionManager.ReconnectState.Connected:
-                    Scripting.InvokeOnUpdate(() =>
-                    {
-                        if (_client.Online)
-                            UpdateConnectionStatus(ConnectionStatus.Connected);
-                    });
+                    if (_client.Online)
+                        UpdateConnectionStatus(ConnectionStatus.Connected);
                     break;
                 case ReconnectionManager.ReconnectState.Disconnected:
-                    Scripting.InvokeOnUpdate(() =>
-                    {
-                        
-                            UpdateConnectionStatus(ConnectionStatus.Disconnected);
-                    });
+                    UpdateConnectionStatus(ConnectionStatus.Disconnected);
                     break;
                 case ReconnectionManager.ReconnectState.Failed:
-                    Scripting.InvokeOnUpdate(() => UpdateConnectionStatus(ConnectionStatus.Failed));
+                    UpdateConnectionStatus(ConnectionStatus.Failed);
                     break;
             }
         }

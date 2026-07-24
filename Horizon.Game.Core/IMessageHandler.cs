@@ -54,30 +54,57 @@ public interface IMessageHandler
 /// 抽象消息处理器基类
 /// </summary>
 public abstract class MessageHandlerBase : IMessageHandler
-{
-    protected readonly ILogger<MessageHandlerBase> Logger;
-    protected readonly IClusterClient _clusterClient;
-    protected readonly HorizonMessageAdapter _adapter;
-    protected MessageHandlerBase(ILogger<MessageHandlerBase> logger, IClusterClient clusterClient, HorizonMessageAdapter adapter)
     {
-        Logger = logger;
-        _clusterClient = clusterClient;
-        _adapter = adapter;
-    }
-
-    public abstract List<MessageType> MessageTypes { get; }
-
-    public abstract ServiceType ServiceType { get; }
-    public IClusterClient OrleansClient => _clusterClient;
-
-    public ITcpSessionClient GameClient => _gameClient;
-    public ITcpSessionClient _gameClient;
-
-    public virtual async Task<(bool IsSuccess, MessageUnion? Response)> HandleAsync(ITcpSessionClient client, HorizonMessagePacket message)
-    {
-        _gameClient = client;
-        try
+        protected readonly ILogger<MessageHandlerBase> Logger;
+        protected readonly IClusterClient _clusterClient;
+        protected readonly HorizonMessageAdapter _adapter;
+        protected MessageHandlerBase(ILogger<MessageHandlerBase> logger, IClusterClient clusterClient, HorizonMessageAdapter adapter)
         {
+            Logger = logger;
+            _clusterClient = clusterClient;
+            _adapter = adapter;
+        }
+
+        public abstract List<MessageType> MessageTypes { get; }
+
+        public abstract ServiceType ServiceType { get; }
+        public IClusterClient OrleansClient => _clusterClient;
+
+        /// <summary>
+        /// 当前请求的客户端连接（AsyncLocal，按 async 调用链隔离）。<br/>
+        /// 修复 BUG（_gameClient 竞态导致 A 角色心跳被误判为 B 角色离线）：<br/>
+        /// 原实现 <c>_gameClient</c> 为 public 实例字段，由于 <c>GameNetworkServer</c>(Singleton)
+        /// 通过构造函数注入 <c>IEnumerable&lt;IMessageHandler&gt;</c> 捕获了 Scoped handler，
+        /// 构成 captive dependency，handler 实际被提升为单例，所有连接共享同一实例。<br/>
+        /// <c>HandleAsync</c> 中 <c>_gameClient = client</c> 修改实例字段，多连接并发处理消息时
+        /// <c>_gameClient</c> 被互相覆盖，在 <c>RouteHandlerAsync</c> 的 async 执行段中读取到的
+        /// 可能是其他连接的 client，导致：<br/>
+        /// 1. <see cref="HeartbeatHandler"/> 读取 <c>_gameClient.Id</c> 拿到错误连接 ID →
+        ///    characterId 反查失败 → 心跳续期失败 → Redis presence TTL 过低 → 角色被错误 Despawn<br/>
+        /// 2. <c>CharacterHandler</c>/<c>AuthenticationHandler</c> 同样问题<br/>
+        /// 改用 AsyncLocal 按 ExecutionContext 隔离，每个 async 调用链读到的是各自
+        /// <see cref="HandleAsync"/> 设置的值，可靠且线程安全（与 SyncPacketHandler._currentConnectionId 一致）。
+        /// </summary>
+        private static readonly AsyncLocal<ITcpSessionClient?> _currentClientAsyncLocal = new();
+
+        public ITcpSessionClient GameClient => _currentClientAsyncLocal.Value!;
+
+        /// <summary>
+        /// 当前请求的客户端连接（AsyncLocal 包装）。<br/>
+        /// 保留 public 字段语法以兼容现有代码（HeartbeatHandler/CharacterHandler/AuthenticationHandler）。
+        /// 读取和赋值均作用于 <see cref="_currentClientAsyncLocal"/>，按 async 调用链隔离。
+        /// </summary>
+        public ITcpSessionClient _gameClient
+        {
+            get => _currentClientAsyncLocal.Value!;
+            set => _currentClientAsyncLocal.Value = value;
+        }
+
+        public virtual async Task<(bool IsSuccess, MessageUnion? Response)> HandleAsync(ITcpSessionClient client, HorizonMessagePacket message)
+        {
+            _gameClient = client;
+            try
+            {
             (bool IsSuccess, HorizonMessagePacket tem) = await RouteHandlerAsync(message);
             if (tem == null)
             {

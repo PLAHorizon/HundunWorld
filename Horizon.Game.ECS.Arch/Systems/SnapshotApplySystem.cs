@@ -319,6 +319,8 @@ public sealed class SnapshotApplySystem : ArchSystemBase
 
     /// <summary>
     /// 当 LocalPlayerOwnerId 从0变为非0时，回溯更新已创建实体的 IsLocalPlayer 标志和组件。
+    /// 同时销毁因 HandleSpawn 竞态（LocalPlayerOwnerId 尚未设置时 Spawn 先到达）创建的重复本地玩家实体，
+    /// 避免 InputSendSystem 每帧生成两个 InputPacket（一个正确、一个全零）导致角色几乎不动。
     /// </summary>
     private void RetrospectivelyUpdateLocalPlayer(World world)
     {
@@ -332,52 +334,85 @@ public sealed class SnapshotApplySystem : ArchSystemBase
         var query = new QueryDescription()
             .WithAll<NetworkIdentityComponent, AuthTransformComponent>();
 
+        // 收集重复实体（在 Query 外销毁，避免迭代期间修改集合）
+        var duplicatesToDestroy = new List<Entity>();
+        var foundOriginal = false;
+
         world.Query(in query, (Entity entity, ref NetworkIdentityComponent netId, ref AuthTransformComponent authTransform) =>
         {
+            if (netId.EntityId != localPlayerOwnerId)
+                return;
+
             if (netId.IsLocalPlayer)
-                return; // 已经标记为本地玩家，跳过
-
-            if (netId.EntityId == localPlayerOwnerId)
             {
-                netId.IsLocalPlayer = true;
-                world.Set(entity, netId);
-
-                // 移除 InterpolatedTransformComponent（如果存在）
-                if (world.Has<InterpolatedTransformComponent>(entity))
+                // 已标记为本地玩家：第一个视为原始实体（CreateLocalPlayerEntity 创建），
+                // 后续为重复实体（HandleSpawn 在 LocalPlayerOwnerId=0 时创建后被本方法上次调用转换）。
+                if (!foundOriginal)
                 {
-                    world.Remove<InterpolatedTransformComponent>(entity);
+                    foundOriginal = true;
+                    return; // 保留原始实体
                 }
-
-                // 添加 PlayerInputComponent + PredictedTransformComponent
-                if (!world.Has<PlayerInputComponent>(entity))
-                {
-                    var input = new PlayerInputComponent
-                    {
-                        MoveX = 0f, MoveY = 0f, LookYaw = 0f, LookPitch = 0f, InputBits = 0,
-                    };
-                    world.Add(entity, input);
-                }
-
-                if (!world.Has<Components.PredictedTransformComponent>(entity))
-                {
-                    // AuthTransformComponent 是 Y-up（Flax 坐标系：X=左右, Y=上下, Z=前后），
-                    // PredictedTransformComponent 供 MovementFormula 使用，必须为 Z-up（X=左右, Y=前后, Z=上下）。
-                    // 因此 Y/Z 交换：Y(前后) ← authTransform.Z, Z(上下) ← authTransform.Y
-                    var predicted = new Components.PredictedTransformComponent
-                    {
-                        X = authTransform.X,
-                        Y = authTransform.Z,
-                        Z = authTransform.Y,
-                        Pitch = authTransform.Pitch, Yaw = authTransform.Yaw,
-                        ClientTick = 0,
-                    };
-                    world.Add(entity, predicted);
-                }
-
-                // 通知 FlaxActorSyncSystem 销毁可能已创建的远程玩家 Actor
-                EntityDespawned?.Invoke(new EntityDespawnedEventArgs(netId.EntityId));
+                // 重复的本地玩家实体 → 标记销毁
+                duplicatesToDestroy.Add(entity);
+                return;
             }
+
+            // IsLocalPlayer=false 的实体：如果已有原始实体，则为重复 → 销毁；否则转换为本地玩家。
+            if (foundOriginal)
+            {
+                duplicatesToDestroy.Add(entity);
+                return;
+            }
+
+            foundOriginal = true;
+            netId.IsLocalPlayer = true;
+            world.Set(entity, netId);
+
+            // 移除 InterpolatedTransformComponent（如果存在）
+            if (world.Has<InterpolatedTransformComponent>(entity))
+            {
+                world.Remove<InterpolatedTransformComponent>(entity);
+            }
+
+            // 添加 PlayerInputComponent + PredictedTransformComponent
+            if (!world.Has<PlayerInputComponent>(entity))
+            {
+                var input = new PlayerInputComponent
+                {
+                    MoveX = 0f, MoveY = 0f, LookYaw = 0f, LookPitch = 0f, InputBits = 0,
+                };
+                world.Add(entity, input);
+            }
+
+            if (!world.Has<Components.PredictedTransformComponent>(entity))
+            {
+                // AuthTransformComponent 是 Y-up（Flax 坐标系：X=左右, Y=上下, Z=前后），
+                // PredictedTransformComponent 供 MovementFormula 使用，必须为 Z-up（X=左右, Y=前后, Z=上下）。
+                // 因此 Y/Z 交换：Y(前后) ← authTransform.Z, Z(上下) ← authTransform.Y
+                var predicted = new Components.PredictedTransformComponent
+                {
+                    X = authTransform.X,
+                    Y = authTransform.Z,
+                    Z = authTransform.Y,
+                    Pitch = authTransform.Pitch, Yaw = authTransform.Yaw,
+                    ClientTick = 0,
+                };
+                world.Add(entity, predicted);
+            }
+
+            // 通知 FlaxActorSyncSystem 销毁可能已创建的远程玩家 Actor
+            EntityDespawned?.Invoke(new EntityDespawnedEventArgs(netId.EntityId));
         });
+
+        // 销毁重复实体（在 Query 外执行，避免迭代期间修改集合）
+        foreach (var dup in duplicatesToDestroy)
+        {
+            if (world.IsAlive(dup))
+            {
+                world.Destroy(dup);
+                _entityIdToArchEntity.Remove(localPlayerOwnerId);
+            }
+        }
     }
 
     /// <summary>
@@ -415,9 +450,10 @@ public sealed class SnapshotApplySystem : ArchSystemBase
         // 本方法在字典中找不到该实体 → 创建第二个 IsLocalPlayer=true 实体。
         // 两个实体导致 InputSendSystem 每帧生成两个 InputPacket（一个正确、一个全零），
         // 服务端同 tick 应用后零输入覆盖正确输入 → 角色几乎不动 → 其他客户端看不到移动。
-        // 修复：检测 Arch World 中已存在的同 EntityId 本地玩家实体，收养（注册到字典）而非重复创建。
-        var isLocalPlayerSpawn = delta.Identity.Value.OwnerId == LocalPlayerOwnerId && LocalPlayerOwnerId != 0;
-        if (isLocalPlayerSpawn)
+        // 修复：无条件检测 Arch World 中已存在的同 EntityId 本地玩家实体，收养（注册到字典）而非重复创建。
+        // 原实现仅在 isLocalPlayerSpawn（LocalPlayerOwnerId != 0）时检查，但 fanout 路径可能比握手响应
+        // 更快送达（Channel dispatch vs 直接 TCP），此时 LocalPlayerOwnerId 仍为 0，检查被跳过，
+        // 导致重复实体。EntityId 全局唯一，仅本地玩家自身的 Spawn 才会匹配同 EntityId 的本地实体。
         {
             Entity foundLocal = default;
             var localQuery = new QueryDescription().WithAll<NetworkIdentityComponent, PlayerInputComponent, Components.PredictedTransformComponent>();

@@ -75,6 +75,17 @@ namespace Horizon.Game.Gateway.Configuration
         public int IdleTimeoutSeconds { get; set; } = 60;
 
         /// <summary>
+        /// 首包超时时间（秒）。<br/>
+        /// 连接建立后，客户端必须在此时间内发送第一个数据包（登录/握手请求）。<br/>
+        /// 超时未收到任何数据的连接将被判定为幽灵连接（探测/错误连接/客户端崩溃）并立即清理。<br/>
+        /// 这区别于 <see cref="IdleTimeoutSeconds"/>：首包超时针对"从未发送数据"的新连接，<br/>
+        /// 空闲超时针对"曾发送数据但长时间无活动"的已认证连接。<br/>
+        /// 正常客户端连接后会立即发送登录请求，建议设置较短（默认 10 秒）。
+        /// </summary>
+        [Range(3, 60)]
+        public int FirstPacketTimeoutSeconds { get; set; } = 10;
+
+        /// <summary>
         /// 是否启用SSL/TLS
         /// </summary>
         public bool EnableSsl { get; set; } = false;

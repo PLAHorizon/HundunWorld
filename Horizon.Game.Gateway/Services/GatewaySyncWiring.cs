@@ -230,7 +230,28 @@ namespace Horizon.Game.Gateway.Services
                 var wireBytes = _adapter.PackMessage(syncFrame, MessageType.SyncPacket, compress: false);
 
                 // 4. 发送到连接
-                _ = conn.SendAsync(wireBytes);
+                // 修复 BUG：原实现 _ = conn.SendAsync(wireBytes) 是 fire-and-forget，
+                // SendAsync 内部 catch 块虽然会 MarkAsBroken，但 rethrow 的异常会成为 UnobservedTaskException。
+                // 改为 ContinueWith 显式观察异常（SendAsync 内部已完成 MarkAsBroken/计数，无需再次处理）。
+                var sendTask = conn.SendAsync(wireBytes);
+                if (sendTask.IsCompleted)
+                {
+                    if (sendTask.IsFaulted)
+                    {
+                        FailedSendCount++;
+                        _ = sendTask.Exception; // 观察异常，避免 UnobservedTaskException
+                    }
+                }
+                else
+                {
+                    sendTask.ContinueWith(
+                        t =>
+                        {
+                            FailedSendCount++;
+                            _ = t.Exception;
+                        },
+                        TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
+                }
 
                 if (_diagCount <= 5)
                 {
@@ -322,8 +343,48 @@ namespace Horizon.Game.Gateway.Services
 
             try
             {
-                // 调用方（GatewaySyncDispatcher）每次编码会创建新 byte[]，可直接传递引用，无需拷贝
-                _ = conn.SendAsync(wireBytes);
+                // 修复 BUG：原实现 _ = conn.SendAsync(wireBytes) 是 fire-and-forget，
+                // SendAsync 内部 catch 块虽然会 MarkAsBroken，但 rethrow 的异常会成为 UnobservedTaskException，
+                // 在 GC 时延迟触发，可能导致进程级未观察任务异常事件被错误地记录。
+                // 改为 ContinueWith 显式观察并吞掉异常（SendAsync 内部已完成 MarkAsBroken/计数，无需再次处理），
+                // 同时使用 TaskContinuationOptions.OnlyOnFaulted 避免无谓的延续分配。
+                var sendTask = conn.SendAsync(wireBytes);
+                if (sendTask.IsCompleted) // 同步完成（失败/成功）的快速路径，避免不必要的 ContinueWith 分配
+                {
+                    if (sendTask.IsFaulted)
+                    {
+                        FailedSendCount++;
+                        // 异常已在 SendAsync 内部处理（MarkAsBroken/计数），这里只观察，不 rethrow
+                        _ = sendTask.Exception;
+                    }
+                }
+                else
+                {
+                    sendTask.ContinueWith(
+                        t =>
+                        {
+                            FailedSendCount++;
+                            // 异常已在 SendAsync 内部处理（MarkAsBroken/计数），这里只观察，避免 UnobservedTaskException
+                            _ = t.Exception;
+                        },
+                        TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously);
+                }
+
+                // 修复 BUG（诊断盲区）：原实现在预编码 wireBytes 版本中缺少发送成功的诊断日志，
+                // 导致前5次诊断后无法确认同步包是否被正确下发到客户端。
+                // 添加与旧方法一致的成功诊断日志（前5次 WRN + 每60次 INF）。
+                if (_diagCount <= 5)
+                {
+                    _logger?.LogWarning(
+                        "[GameConnectionPacketSink 诊断#{N}] 已发送预编码 SyncPacket 到客户端（ConnectionId={Id}, WireBytes={Bytes}）",
+                        _diagCount, conn.ConnectionId, length);
+                }
+                else if (attempt % 60 == 1)
+                {
+                    _logger?.LogInformation(
+                        "GameConnectionPacketSink：已发送预编码 SyncPacket 到客户端（Attempt={Attempt}, ConnectionId={Id}, WireBytes={Bytes}）",
+                        attempt, conn.ConnectionId, length);
+                }
             }
             catch (Exception ex)
             {

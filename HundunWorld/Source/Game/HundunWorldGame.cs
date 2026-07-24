@@ -74,6 +74,7 @@ namespace HundunWorld.Game
         private int _pendingLocalPlayerLevel;
         private CharacterStage _pendingLocalPlayerStage;
         private static HundunWorldGame _instance;
+        private System.Action _requestingExitHandler;
         public static HundunWorldGame Instance
         {
             get
@@ -144,10 +145,11 @@ namespace HundunWorld.Game
                 // ECS 初始化失败是严重问题，但不应导致闪退，至少让游戏窗口显示出来
             }
 
-            Engine.RequestingExit += () =>
+            _requestingExitHandler = () =>
             {
                 Dispose();
             };
+            Engine.RequestingExit += _requestingExitHandler;
             Debug.Log("HundunWorldGame 构造函数完成");
         }
 
@@ -1960,6 +1962,14 @@ namespace HundunWorld.Game
             _disposed = true;
 
             Debug.Log("HundunWorldGame 开始释放资源");
+
+            // [修复] 取消订阅 Engine.RequestingExit，防止释放后再次触发 Dispose
+            if (_requestingExitHandler != null)
+            {
+                Engine.RequestingExit -= _requestingExitHandler;
+                _requestingExitHandler = null;
+            }
+
             try
             {
                 // 停止游戏

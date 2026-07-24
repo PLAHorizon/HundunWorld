@@ -4,6 +4,7 @@ using FlaxEngine;
 using Horizon.Game.Message.Sim;
 using Horizon.Game.Message.Network;
 using Horizon.Game.Message.Sync;
+using System.Threading.Tasks;
 
 namespace Game.Network
 {
@@ -43,6 +44,9 @@ namespace Game.Network
 
         [Tooltip("位置修正阈值（米）")]
         public float PositionCorrectionThreshold = 0.5f;
+
+        [Tooltip("客户端预测使用的最大移动速度（米/秒），0=使用MovementFormula.DefaultMaxSpeed")]
+        public float ClientMaxSpeed = 0f;
 
         [Header("插值设置")]
         [Tooltip("是否启用插值")]
@@ -101,6 +105,8 @@ namespace Game.Network
             public Vector3 Velocity;
             public Vector3 Input;
             public float JumpImpulse;
+            public float DeltaTime;
+            public float MaxSpeed;
         }
 
         /// <summary>
@@ -184,12 +190,16 @@ namespace Game.Network
             if (EnableInterpolation && interpolationBuffer.Count > 0)
             {
                 InterpolateToServerState();
+                // 同步插值结果到 backing fields
+                currentPosition = Actor.Position;
+                currentRotation = Actor.Orientation;
             }
             else
             {
-                // 直接应用服务端状态
                 Actor.Position = serverPosition;
                 Actor.Orientation = serverRotation;
+                currentPosition = serverPosition;
+                currentRotation = serverRotation;
             }
         }
 
@@ -223,11 +233,14 @@ namespace Game.Network
                 };
             }
 
+            // 获取当前预测速度：优先使用配置的ClientMaxSpeed，否则使用DefaultMaxSpeed
+            float currentMaxSpeed = ClientMaxSpeed > 0 ? ClientMaxSpeed : MovementFormula.DefaultMaxSpeed;
+
             Vector3 previousPosition = currentPosition;
             var (nx, ny, nz, nvz) = MovementFormula.Step(
                 currentPosition.X, currentPosition.Z, currentPosition.Y, _verticalVelocity,
                 input.X, input.Z, jumpImpulse,
-                deltaTime, MovementFormula.DefaultMaxSpeed);
+                deltaTime, currentMaxSpeed);
 
             currentPosition.X = nx;
             currentPosition.Z = ny;
@@ -251,7 +264,9 @@ namespace Game.Network
                 Rotation = currentRotation,
                 Velocity = currentVelocity,
                 Input = input,
-                JumpImpulse = jumpImpulse
+                JumpImpulse = jumpImpulse,
+                DeltaTime = deltaTime,
+                MaxSpeed = currentMaxSpeed,
             });
         }
 
@@ -262,31 +277,57 @@ namespace Game.Network
         {
             float targetTime = Time.GameTime - InterpolationDelay;
 
-            // 查找插值目标
-            ServerState target = null;
+            if (interpolationBuffer.Count < 2)
+            {
+                // 缓冲区状态不足时移动到最新状态
+                var latest = interpolationBuffer.Count > 0 ? interpolationBuffer.Peek() : null;
+                if (latest != null)
+                {
+                    Actor.Position = Vector3.Lerp(Actor.Position, latest.Position, InterpolationSpeed * Time.DeltaTime);
+                    Actor.Orientation = Quaternion.Slerp(Actor.Orientation, latest.Rotation, InterpolationSpeed * Time.DeltaTime);
+                }
+                return;
+            }
+
+            // 查找插值的两个边界状态
+            ServerState previous = null;
+            ServerState next = null;
+
             foreach (var state in interpolationBuffer)
             {
                 if (state.Timestamp <= targetTime)
                 {
-                    target = state;
+                    previous = state;
                 }
                 else
                 {
+                    next = state;
                     break;
                 }
             }
 
-            if (target != null)
+            if (previous != null && next != null)
             {
-                // 平滑插值到目标状态
-                Actor.Position = Vector3.Lerp(Actor.Position, target.Position, InterpolationSpeed * Time.DeltaTime);
-                Actor.Orientation = Quaternion.Slerp(Actor.Orientation, target.Rotation, InterpolationSpeed * Time.DeltaTime);
+                // 两状态之间的线性插值
+                float t = (next.Timestamp - previous.Timestamp) > 0.0001f
+                    ? (targetTime - previous.Timestamp) / (next.Timestamp - previous.Timestamp)
+                    : 0f;
+                t = Mathf.Clamp(t, 0f, 1f);
 
-                // 移除旧状态
-                while (interpolationBuffer.Count > 0 && interpolationBuffer.Peek().Timestamp < targetTime)
+                Actor.Position = Vector3.Lerp(previous.Position, next.Position, t);
+                Actor.Orientation = Quaternion.Slerp(previous.Rotation, next.Rotation, t);
+
+                // 移除已消耗的旧状态（保留 next 用于后续插值）
+                while (interpolationBuffer.Count > 0 && interpolationBuffer.Peek().Timestamp < next.Timestamp)
                 {
                     interpolationBuffer.Dequeue();
                 }
+            }
+            else if (previous != null)
+            {
+                // 所有状态都已过时，向最新状态跟随
+                Actor.Position = Vector3.Lerp(Actor.Position, previous.Position, InterpolationSpeed * Time.DeltaTime);
+                Actor.Orientation = Quaternion.Slerp(Actor.Orientation, previous.Rotation, InterpolationSpeed * Time.DeltaTime);
             }
         }
 
@@ -313,24 +354,30 @@ namespace Game.Network
             }
 
             var networkManager = HundunWorld.Game.HundunWorldGame.Instance?.NetworkManager;
+            // 使用真实时间戳作为 ClientTick（基于握手初始 tick + 累计增量）
+            long clientTick = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             if (networkManager != null && networkManager.CanSendMessage() && networkManager.IsSyncHandshakeComplete)
             {
                 // 从 HundunWorldGame 获取玩家 CharacterId
                 var characterId = HundunWorld.Game.HundunWorldGame.Instance?.PlayerId ?? 0;
 
-                // [修复] MoveX/MoveY 应为归一化移动方向（-1..1），而非位置差值（单位为米）。
-                // 使用 currentVelocity 的方向分量，与 PlayerController 使用 _moveDirection 一致。
                 Vector3 moveDir = currentVelocity.Length > 0.01f ? Vector3.Normalize(currentVelocity) : Vector3.Zero;
+
+                float currentMaxSpeed = ClientMaxSpeed > 0 ? ClientMaxSpeed : MovementFormula.DefaultMaxSpeed;
 
                 var inputPacket = new InputPacket
                 {
-                    ClientTick = predictedFrameCount,
+                    ClientTick = clientTick,
                     MoveX = moveDir.X,
                     MoveY = moveDir.Z,
                     InputBits = 0,
                     LookYaw = 0f,
                     LookPitch = 0f,
                     CharacterId = characterId,
+                    MaxSpeed = currentMaxSpeed,
+                    PredictedEndX = currentPosition.X,
+                    PredictedEndY = currentPosition.Y,
+                    PredictedEndZ = currentPosition.Z,
                 };
 
                 SyncPacketCodec.Encode(inputPacket, out var frame, out var frameLength);
@@ -346,7 +393,19 @@ namespace Game.Network
                         ProtocolVersion = inputPacket.ProtocolVersion,
                     };
 
-                    _ = networkManager.SendAsync(syncFrame);
+                    // 非 fire-and-forget：跟踪发送结果
+                    Task.Run(async () =>
+                    {
+                        try
+                        {
+                            if (networkManager != null)
+                                await networkManager.SendAsync(syncFrame);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.LogWarning($"[Network] SendMovementUpdate failed: {ex.Message}");
+                        }
+                    });
                 }
                 finally
                 {
@@ -356,7 +415,7 @@ namespace Game.Network
 
             if (ShowDebug)
             {
-                Debug.Log($"[Network] Send movement: Pos={currentPosition}, Seq={predictedFrameCount}");
+                Debug.Log($"[Network] Send movement: Pos={currentPosition}, Tick={clientTick}");
             }
         }
 
@@ -406,6 +465,8 @@ namespace Game.Network
                     // 直接应用
                     serverPosition = position;
                     serverRotation = rotation;
+                    currentPosition = position;
+                    currentRotation = rotation;
                 }
             }
 
@@ -475,6 +536,19 @@ namespace Game.Network
                 // 重新预测后续帧
                 ReplayPredictions(serverSequenceNumber);
             }
+            else
+            {
+                // 服务端序列号比缓冲区所有状态都旧：直接拉回到服务端位置，清空缓冲
+                if (ShowDebug)
+                {
+                    Debug.LogWarning($"[Network] No matching prediction state for seq={serverSequenceNumber}, teleporting to server position");
+                }
+                currentPosition = serverPosition;
+                currentRotation = serverRotation;
+                Actor.Position = serverPosition;
+                Actor.Orientation = serverRotation;
+                predictionBuffer.Clear();
+            }
         }
 
         /// <summary>
@@ -494,10 +568,12 @@ namespace Game.Network
 
             foreach (var state in statesToReplay)
             {
+                float delta = state.DeltaTime > 0 ? state.DeltaTime : Time.DeltaTime;
+                float speed = state.MaxSpeed > 0 ? state.MaxSpeed : MovementFormula.DefaultMaxSpeed;
                 var (nx, ny, nz, nvz) = MovementFormula.Step(
                     currentPosition.X, currentPosition.Z, currentPosition.Y, _verticalVelocity,
                     state.Input.X, state.Input.Z, state.JumpImpulse,
-                    Time.DeltaTime, MovementFormula.DefaultMaxSpeed);
+                    delta, speed);
 
                 currentPosition.X = nx;
                 currentPosition.Z = ny;

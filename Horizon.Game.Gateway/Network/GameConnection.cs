@@ -97,8 +97,9 @@ namespace Horizon.Game.Gateway.Network
             _client = client ?? throw new ArgumentNullException(nameof(client));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             
-            ConnectedTime = DateTime.UtcNow;
-            LastActiveTime = DateTime.UtcNow;
+            var now = DateTime.UtcNow;
+            ConnectedTime = now;
+            LastActiveTime = now;
 
             // 监听客户端断开连接事件
             _client.Closed += OnClientDisconnected;

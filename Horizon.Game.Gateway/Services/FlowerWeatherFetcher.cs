@@ -39,6 +39,11 @@ namespace Horizon.Game.Gateway.Services
         {
             _logger.LogInformation("花卉产区天气数据抓取服务启动，间隔: {Interval}分钟", FetchInterval.TotalMinutes);
 
+            // 等待 Orleans Silo 就绪：客户端 GetGrain<T>() 需要从 Silo 获取 grain 类型映射，
+            // Silo 未启动时会抛出 ArgumentException "Could not find an implementation for interface"。
+            // 这里重试直到 Silo 可用，避免启动瞬间的批量失败日志。
+            await WaitForSiloReadyAsync(stoppingToken).ConfigureAwait(false);
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
@@ -59,6 +64,45 @@ namespace Horizon.Game.Gateway.Services
                     break;
                 }
             }
+        }
+
+        /// <summary>
+        /// 等待 Orleans Silo 就绪，确保 GetGrain&lt;T&gt;() 能成功解析 grain 接口。
+        /// Silo 未启动时客户端无法获取 grain 类型映射，会抛出 ArgumentException。
+        /// </summary>
+        private async Task WaitForSiloReadyAsync(CancellationToken stoppingToken)
+        {
+            const int maxAttempts = 60;
+            const int retryDelayMs = 2000;
+
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                if (stoppingToken.IsCancellationRequested) return;
+
+                try
+                {
+                    _ = _clusterClient.GetGrain<IFlowerDataPoolGrain>(0);
+                    if (attempt > 1)
+                    {
+                        _logger.LogInformation("Orleans Silo 已就绪（等待 {Attempt} 次后成功）", attempt);
+                    }
+                    return;
+                }
+                catch (ArgumentException)
+                {
+                    _logger.LogDebug("等待 Orleans Silo 就绪（尝试 {Attempt}/{Max}）", attempt, maxAttempts);
+                    try
+                    {
+                        await Task.Delay(retryDelayMs, stoppingToken).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+                }
+            }
+
+            _logger.LogWarning("等待 Orleans Silo 就绪超时（{Max} 次），服务继续启动但可能无法写入数据", maxAttempts);
         }
 
         private async Task FetchAndWriteAsync()

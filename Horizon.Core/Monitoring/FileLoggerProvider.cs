@@ -44,6 +44,7 @@ namespace Horizon.Core.Monitoring
     /// 与 JsonConsole 不同，本提供程序只写入格式化后的 Message，<br/>
     /// 不暴露 State 中的 {OriginalFormat} 原始模板与占位符。
     /// </summary>
+    [ProviderAlias("File")]
     public sealed class FileLoggerProvider : ILoggerProvider, IAsyncDisposable, IDisposable
     {
         private readonly FileLoggerOptions _options;
