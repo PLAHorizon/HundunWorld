@@ -50,10 +50,19 @@ namespace HundunWorld.Game
         // 由 LocalSimulationSystem.PlayerChunkChanged 事件驱动，跨 chunk 边界时计算 added/removed
         // 并通过 NetworkManager.SendSubscriptionUpdateAsync 上行到服务端。
         // 之前仅服务端在握手时订阅单个 chunk（16m），玩家移动出该 chunk 后即收不到任何 delta，
-        // 导致远程角色"静止不动"。现改为客户端动态订阅 5x5x5 视野范围（80m×80m×80m）。
+        // 导致远程角色“静止不动”。现改为客户端动态订阅 11x11x11 视野范围（176m×176m×176m）。
         private HashSet<ulong>? _localPlayerSubscribedChunks = null;
         // 标记是否已订阅 PlayerChunkChanged 事件，避免 SetPlayerId 多次调用时重复订阅。
         private bool _isPlayerChunkChangedSubscribed = false;
+        
+        // AOI 订阅滞后防抖：记录上次订阅中心的 chunk 坐标。
+        // 只有当玩家移动超过 HysteresisChunks 个 chunk 时才重新计算订阅，
+        // 避免每跨 16m chunk 边界就触发 1331 chunk 的 diff 计算和网络上行。
+        private int _lastSubCenterCX = int.MinValue;
+        private int _lastSubCenterCY = int.MinValue;
+        private int _lastSubCenterCZ = int.MinValue;
+        /// <summary>滞后阈值（chunk 数）：玩家移动超过此距离才重新订阅。radius=5 时，3 chunks=48m 移动才触发一次更新。</summary>
+        private const int AoiHysteresisChunks = 3;
 
         /// <summary>
         /// 本地玩家角色ID（由握手响应或登录响应设置）
@@ -356,6 +365,12 @@ namespace HundunWorld.Game
 
             // 4. 重置快照基线缓存，确保重连后首个全量快照重建 baseline
             Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.ResetLastAppliedSnapshot();
+
+            // 5. 重置 AOI 订阅状态，确保重连后重新全量订阅（而非被滞后防抖跳过）
+            _localPlayerSubscribedChunks = null;
+            _lastSubCenterCX = int.MinValue;
+            _lastSubCenterCY = int.MinValue;
+            _lastSubCenterCZ = int.MinValue;
 
             Debug.Log("[HundunWorldGame] 断线清理完成");
         }
@@ -856,8 +871,12 @@ namespace HundunWorld.Game
         /// 本地玩家跨越 chunk 边界时触发：计算新视野范围与旧订阅范围的 diff，
         /// 通过 NetworkManager.SendSubscriptionUpdateAsync 上行 SubscriptionUpdatePacket。
         /// <para>
-        /// 视野半径 radius=2 表示 5x5x5=125 个 chunk（覆盖 80m×80m×80m）。
+        /// 视野半径 radius=5 表示 11x11x11=1331 个 chunk（覆盖 176m×176m×176m，视距约 80m）。
         /// 与服务端 HandleHandshakeAsync 中的初始订阅半径保持一致。
+        /// </para>
+        /// <para>
+        /// 滞后防抖：只有当玩家移动超过 <see cref="AoiHysteresisChunks"/> 个 chunk（48m）才重新计算订阅，
+        /// 避免每 16m 就触发 1331 chunk 的 diff 计算和网络包上行。
         /// </para>
         /// </summary>
         /// <param name="x">本地玩家当前世界 X 坐标（米）</param>
@@ -867,7 +886,26 @@ namespace HundunWorld.Game
         {
             try
             {
-                const int ViewRadiusChunks = 2;
+                const int ViewRadiusChunks = 5;
+                const float MetresPerChunkCell = 16f;
+
+                // 滞后防抖：计算当前 chunk 坐标，与上次订阅中心比较。
+                int curCX = (int)MathF.Floor(x / MetresPerChunkCell);
+                int curCY = (int)MathF.Floor(y / MetresPerChunkCell);
+                int curCZ = (int)MathF.Floor(z / MetresPerChunkCell);
+
+                if (_localPlayerSubscribedChunks != null && _localPlayerSubscribedChunks.Count > 0)
+                {
+                    // 已有订阅：检查是否移动超过滞后阈值
+                    int dx = Math.Abs(curCX - _lastSubCenterCX);
+                    int dy = Math.Abs(curCY - _lastSubCenterCY);
+                    int dz = Math.Abs(curCZ - _lastSubCenterCZ);
+                    if (dx < AoiHysteresisChunks && dy < AoiHysteresisChunks && dz < AoiHysteresisChunks)
+                    {
+                        return; // 未超过滞后阈值，跳过本次订阅更新
+                    }
+                }
+
                 var newView = ComputeChunksInView(x, y, z, ViewRadiusChunks);
 
                 var added = new List<ulong>();
@@ -877,7 +915,7 @@ namespace HundunWorld.Game
                 {
                     // 首次订阅：全部为 added
                     added.AddRange(newView);
-                    Debug.Log($"[HundunWorldGame] 初始 AOI 订阅: {added.Count} chunks, Pos=({x:F1},{y:F1},{z:F1})");
+                    Debug.Log($"[HundunWorldGame] 初始 AOI 订阅: {added.Count} chunks (radius={ViewRadiusChunks}), Pos=({x:F1},{y:F1},{z:F1})");
                 }
                 else
                 {
@@ -901,6 +939,9 @@ namespace HundunWorld.Game
 
                 // 更新本地订阅状态（乐观更新：立即反映，不等服务端确认）
                 _localPlayerSubscribedChunks = newView;
+                _lastSubCenterCX = curCX;
+                _lastSubCenterCY = curCY;
+                _lastSubCenterCZ = curCZ;
 
                 // 异步发送订阅更新包（非阻塞，避免影响 FixedUpdate 节奏）
                 if (added.Count > 0 || removed.Count > 0)

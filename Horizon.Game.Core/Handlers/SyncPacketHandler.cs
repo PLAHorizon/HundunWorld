@@ -113,8 +113,9 @@ public sealed class SyncPacketHandler : MessageHandlerBase
     /// <summary>P1.2：单 Shard 模式下的固定 shardId（已由 _shardRouter 替代，保留作为注释参考）。</summary>
     // private const long DefaultShardId = 0;  // 已由 IShardRouter 替代
 
-    /// <summary>首次进入 World 时订阅出生 chunk 周围的 AOI 半径（与客户端 OnPlayerChunkChanged 的 ViewRadiusChunks 保持一致）。</summary>
-    private const int InitialAoiRadiusChunks = 2;
+    /// <summary>首次进入 World 时订阅出生 chunk 周围的 AOI 半径（与客户端 OnPlayerChunkChanged 的 ViewRadiusChunks 保持一致）。
+    /// radius=5 → 11×11×11=1331 chunks，覆盖约 176m×176m×176m，视距约 80m，满足 MMORPG 视野需求。</summary>
+    private const int InitialAoiRadiusChunks = 5;
 
     /// <summary>交互意图速率限制：每个 interactorId 每秒最多请求数。</summary>
     private const int InteractionRateLimitPerSecond = 10;
