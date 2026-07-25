@@ -49,6 +49,22 @@ public partial class CorrectionPacket
     /// <summary>修正原因（便于反外挂后台做聚合告警）。</summary>
     [MemoryPackOrder(7)]
     public CorrectionReason Reason { get; set; }
+
+    /// <summary>
+    /// 服务端本次权威回放处理到的最后一个客户端 tick（含）。
+    /// <para>
+    /// 客户端 <c>ReconciliationSystem</c> 据此：
+    /// <list type="number">
+    ///   <item>调用 <c>InputHistoryBuffer.ClearUpTo</c> 清理已确认输入；</item>
+    ///   <item>重放时仅取 <c>ClientTick &gt; LastProcessedClientTick</c> 的输入。</item>
+    /// </list>
+    /// 修复"吸附+重放导致角色无法移动"：原实现 Correction 不携带此字段，
+    /// 客户端重放时 <c>GetFromTick(0)</c> 返回所有历史输入（含已确认），
+    /// 角色从权威位置飞出极远 → 下一帧 drift 巨大 → 再次 Correction → 死循环。
+    /// </para>
+    /// </summary>
+    [MemoryPackOrder(8)]
+    public long LastProcessedClientTick { get; set; }
 }
 
 /// <summary>修正触发原因。</summary>

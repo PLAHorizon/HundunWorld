@@ -97,6 +97,14 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     // Task 2：单帧消费上限溢出日志限频时间戳（Stopwatch.GetTimestamp() 单位）。
     private long _lastOverflowLogTime;
 
+    // 孤儿实体清理：每 300 帧（约 5 秒 @60fps）扫描一次映射字典，
+    // 移除 Arch World 中已不存活的实体引用，防止内存泄漏和字典膨胀。
+    private int _orphanCleanupCounter;
+    private const int OrphanCleanupInterval = 300;
+    private readonly List<ulong> _orphanKeysToRemove = new();
+    /// <summary>累计清理的孤儿实体映射数（诊断用）。</summary>
+    public long OrphanMappingsCleaned { get; private set; }
+
     // Task 3：增量合并缓冲复用（实例方法 Update 使用），避免每帧分配 Dictionary/数组。
     private readonly Dictionary<ulong, EntityDelta> _deltaMergeBuffer = new();
     private readonly List<EntityDelta> _deltaMergeList = new();
@@ -273,6 +281,14 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     {
         // 检测 LocalPlayerOwnerId 变更，回溯更新已创建实体
         RetrospectivelyUpdateLocalPlayer(world);
+
+        // 孤儿实体清理：定期扫描映射字典，移除已不存活的实体引用。
+        // 防止因 Arch World 外部销毁实体（如场景切换、World.Clear）后字典残留导致内存泄漏。
+        if (++_orphanCleanupCounter >= OrphanCleanupInterval)
+        {
+            _orphanCleanupCounter = 0;
+            CleanupOrphanMappings(world);
+        }
 
         _updateCallCount++;
         var consumedThisTick = 0;
@@ -608,6 +624,9 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 TargetX = authTransform.X,
                 TargetY = authTransform.Y,
                 TargetZ = authTransform.Z,
+                Yaw = authTransform.Yaw,
+                StartYaw = authTransform.Yaw,
+                TargetYaw = authTransform.Yaw,
                 Alpha = 1f,
                 ServerTick = serverTick,
                 ReceivedTick = 0,
@@ -692,6 +711,9 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 interp.TargetX = newTransform.X;
                 interp.TargetY = newTransform.Y;
                 interp.TargetZ = newTransform.Z;
+                // Yaw 插值：起点为当前插值 Yaw，目标为服务端权威 Yaw
+                interp.StartYaw = interp.Yaw;
+                interp.TargetYaw = newTransform.Yaw;
                 interp.Alpha = 0f;
                 interp.ServerTick = serverTick;
                 interp.TimeSinceLastSnapshot = 0f; // [Phase C4] 重置 dead reckoning 计时
@@ -715,6 +737,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                     X = newTransform.X, Y = newTransform.Y, Z = newTransform.Z,
                     StartX = newTransform.X, StartY = newTransform.Y, StartZ = newTransform.Z,
                     TargetX = newTransform.X, TargetY = newTransform.Y, TargetZ = newTransform.Z,
+                    Yaw = newTransform.Yaw, StartYaw = newTransform.Yaw, TargetYaw = newTransform.Yaw,
                     Alpha = 1f, ServerTick = serverTick, ReceivedTick = 0,
                     TimeSinceLastSnapshot = 0f, // [Phase C4]
                 };
@@ -728,6 +751,8 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 interp.TargetX = newTransform.X;
                 interp.TargetY = newTransform.Y;
                 interp.TargetZ = newTransform.Z;
+                interp.StartYaw = interp.Yaw;
+                interp.TargetYaw = newTransform.Yaw;
                 interp.Alpha = 0f;
                 interp.ServerTick = serverTick;
                 interp.TimeSinceLastSnapshot = 0f; // [Phase C4]
@@ -841,6 +866,33 @@ public sealed class SnapshotApplySystem : ArchSystemBase
         if (count > 0)
         {
             Debug.WriteLine($"[SnapshotApplySystem] 已清理所有实体映射: {count} 个");
+        }
+    }
+
+    /// <summary>
+    /// 孤儿实体清理：扫描映射字典，移除 Arch World 中已不存活的实体引用。
+    /// 防止因外部销毁实体（场景切换、World.Clear、重复 Spawn 覆盖）后字典残留导致内存泄漏。
+    /// 每 <see cref="OrphanCleanupInterval"/> 帧调用一次，均摊开销可忽略。
+    /// </summary>
+    private void CleanupOrphanMappings(World world)
+    {
+        _orphanKeysToRemove.Clear();
+        foreach (var kvp in _entityIdToArchEntity)
+        {
+            if (!world.IsAlive(kvp.Value))
+            {
+                _orphanKeysToRemove.Add(kvp.Key);
+            }
+        }
+
+        if (_orphanKeysToRemove.Count > 0)
+        {
+            foreach (var key in _orphanKeysToRemove)
+            {
+                _entityIdToArchEntity.Remove(key);
+            }
+            OrphanMappingsCleaned += _orphanKeysToRemove.Count;
+            Debug.WriteLine($"[SnapshotApplySystem] 孤儿实体清理: 移除 {_orphanKeysToRemove.Count} 个已失效映射，字典剩余 {_entityIdToArchEntity.Count}");
         }
     }
 }

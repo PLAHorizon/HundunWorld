@@ -87,6 +87,30 @@ public sealed class InputHistoryBuffer
     }
 
     /// <summary>
+    /// 零分配版本：将 ClientTick 大于指定 tick 的输入包写入调用方提供的缓冲区。
+    /// 避免热路径（ReconciliationSystem 每帧调用）上的 List 分配与 GC 压力。
+    /// </summary>
+    /// <param name="tick">参考 tick，返回 ClientTick &gt; tick 的输入包。</param>
+    /// <param name="destination">调用方提供的复用缓冲区，本方法先 Clear 再写入。</param>
+    /// <returns>写入的输入包数量。</returns>
+    public int GetFromTick(long tick, List<InputPacket> destination)
+    {
+        lock (_lock)
+        {
+            destination.Clear();
+            for (int i = 0; i < _count; i++)
+            {
+                var index = (_head + i) % Capacity;
+                if (_buffer[index].ClientTick > tick)
+                {
+                    destination.Add(_buffer[index]);
+                }
+            }
+            return destination.Count;
+        }
+    }
+
+    /// <summary>
     /// 清除所有 ClientTick 小于等于指定 tick 的输入包。
     /// </summary>
     /// <param name="tick">清理阈值，ClientTick &lt;= tick 的输入将被移除。</param>

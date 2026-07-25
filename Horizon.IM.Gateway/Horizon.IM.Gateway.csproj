@@ -17,6 +17,7 @@
 		<PackageReference Include="Microsoft.Orleans.Clustering.AdoNet" />
 		<PackageReference Include="Microsoft.Orleans.Clustering.Redis" />
 		<PackageReference Include="Microsoft.Orleans.Core" />
+		<PackageReference Include="Microsoft.Orleans.Sdk" />
 		<PackageReference Include="Microsoft.Orleans.CodeGenerator">
 		  <PrivateAssets>all</PrivateAssets>
 		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

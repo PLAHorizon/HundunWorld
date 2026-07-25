@@ -43,6 +43,17 @@ namespace Horizon.Game.Gateway.Network
         private const int MaxConsecutiveSendFailures = 5;
 
         /// <summary>
+        /// 非致命发送失败后的指数退避机制。<br/>
+        /// 当 TCP 缓冲区瞬时满载（NoBufferSpaceAvailable / WouldBlock）时，
+        /// 立即重试往往仍会失败，引入指数退避可给内核 TCP 栈时间排空缓冲区。<br/>
+        /// 初始退避 5ms，每次失败翻倍，上限 200ms。成功发送后重置为 0。
+        /// </summary>
+        private int _sendBackoffMs;
+        private const int InitialBackoffMs = 5;
+        private const int MaxBackoffMs = 200;
+        private long _lastFailedSendTimestamp;
+
+        /// <summary>
         /// 连接ID
         /// </summary>
         public string ConnectionId => _client.Id;
@@ -106,7 +117,7 @@ namespace Horizon.Game.Gateway.Network
         }
 
         /// <summary>
-        /// 发送数据
+        /// 发送数据（带指数退避保护）。
         /// </summary>
         public async Task SendAsync(byte[] data)
         {
@@ -115,6 +126,19 @@ namespace Horizon.Game.Gateway.Network
                 if (!IsConnected)
                 {
                     throw new InvalidOperationException("连接已断开");
+                }
+
+                // 指数退避：若上次发送失败且仍在退避窗口内，延迟后再发送。
+                // 避免 TCP 缓冲区未排空时连续发送导致反复失败。
+                var backoff = Volatile.Read(ref _sendBackoffMs);
+                if (backoff > 0)
+                {
+                    var elapsed = Environment.TickCount64 - Volatile.Read(ref _lastFailedSendTimestamp);
+                    var remaining = backoff - (int)elapsed;
+                    if (remaining > 0)
+                    {
+                        await Task.Delay(remaining).ConfigureAwait(false);
+                    }
                 }
 
                 await _client.SendAsync(data);
@@ -126,10 +150,14 @@ namespace Horizon.Game.Gateway.Network
                 // 2) CharacterPresenceMonitorHostedService 检查 LastActiveTime 时误判为在线，
                 //    导致 Redis 异常时无法清理僵尸连接
 
-                // 发送成功，重置连续失败计数
+                // 发送成功，重置连续失败计数和退避
                 if (_consecutiveSendFailures > 0)
                 {
                     Interlocked.Exchange(ref _consecutiveSendFailures, 0);
+                }
+                if (_sendBackoffMs > 0)
+                {
+                    Volatile.Write(ref _sendBackoffMs, 0);
                 }
 
                 _logger.LogDebug("发送数据给客户端 {ConnectionId}: {DataLength} 字节",
@@ -153,6 +181,15 @@ namespace Horizon.Game.Gateway.Network
                 {
                     // 瞬时异常：累计失败计数，超过阈值才标记为损坏
                     var failures = Interlocked.Increment(ref _consecutiveSendFailures);
+
+                    // 指数退避：初始 5ms，每次失败翻倍，上限 200ms。
+                    // 给内核 TCP 栈时间排空缓冲区，避免连续快速重试反复失败。
+                    var newBackoff = _sendBackoffMs == 0
+                        ? InitialBackoffMs
+                        : Math.Min(_sendBackoffMs * 2, MaxBackoffMs);
+                    Volatile.Write(ref _sendBackoffMs, newBackoff);
+                    Volatile.Write(ref _lastFailedSendTimestamp, Environment.TickCount64);
+
                     if (failures >= MaxConsecutiveSendFailures)
                     {
                         _logger.LogWarning(ex,
@@ -163,8 +200,8 @@ namespace Horizon.Game.Gateway.Network
                     else
                     {
                         _logger.LogDebug(ex,
-                            "发送数据瞬时失败（{Failures}/{Max}），不标记损坏: {ConnectionId}",
-                            failures, MaxConsecutiveSendFailures, ConnectionId);
+                            "发送数据瞬时失败（{Failures}/{Max}），退避 {BackoffMs}ms: {ConnectionId}",
+                            failures, MaxConsecutiveSendFailures, newBackoff, ConnectionId);
                     }
                     throw;
                 }

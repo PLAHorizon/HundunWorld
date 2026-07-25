@@ -54,6 +54,13 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     private readonly List<EntityDelta> _changedDeltasBuffer = new();
     private readonly EntityDelta[] _singleDeltaArray = new EntityDelta[1];  // Task 11 用
 
+    // InputAck 复用缓冲：TickAsync 中收集本 tick 有输入的实体及其 LastProcessedClientTick，
+    // 广播阶段通过 EventPacket→WorldChunkDiffPacket 下发给对应 session。
+    // 修复"服务端从不发送 InputAckPacket"：客户端 InputAckReceiveBuffer 永远为空，
+    // InputHistoryBuffer 永不清理 → 冗余重传每帧触发 + 重放窗口过大。
+    private readonly List<(ulong entityId, long lastProcessedClientTick)> _inputAckBuffer = new();
+    private readonly long[] _singleInputAckSessionArray = new long[1]; // 只含目标 session 的复用数组
+
     // Task 11：BroadcastSnapshotAsync 按 chunk 分组聚合 delta 的复用缓冲
     private readonly Dictionary<ulong, List<EntityDelta>> _deltaByChunkBuffer = new();
 
@@ -515,6 +522,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         // Task 10.2：复用字段级缓冲，避免每次 tick 分配 List
         var deltas = _deltaBuffer; deltas.Clear();
         var corrections = _correctionBuffer; corrections.Clear();
+        var inputAcks = _inputAckBuffer; inputAcks.Clear();
 
         // 修复：在实体循环前判定本 tick 是否为全量快照。
         // 原实现仅在循环后判定（L761），导致周期性全量快照（每 60 tick）时
@@ -564,7 +572,8 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                     entity.Vz,
                     inputs,
                     clientEnd,
-                    _tickCount);
+                    _tickCount,
+                    entity.EstimatedRttMs);
 
                 if (validationResult.NeedsCorrection)
                 {
@@ -587,6 +596,11 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                 entity.PendingInputs.Clear();
                 entity.LastSyncTick = _tickCount;
                 entity.HadInputThisTick = true;
+
+                // 收集本 tick 处理到的最大 ClientTick，广播阶段下发 InputAck 给该 session。
+                // inputs 按 ClientTick 升序，最后一个即为本 tick 处理到的最新客户端 tick。
+                // 客户端据此清理 InputHistoryBuffer + 推进 _lastAckedClientTick，避免冗余重传每帧触发。
+                _inputAckBuffer.Add((entityId, inputs[inputs.Length - 1].ClientTick));
 
                 const float groundedEpsilon = 0.001f;
                 var prevZ = startPos.Z;
@@ -836,6 +850,15 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                     Deltas = mergeDict.Values.ToArray(),
                 };
             }
+        }
+
+        // 下发 InputAck：为每个本 tick 有输入的实体构造 InputAckPacket，
+        // 通过 EventPacket→WorldChunkDiffPacket(Event) 推送到对应 session。
+        // 修复"服务端从不发送 InputAckPacket"：客户端 InputAckReceiveBuffer 永远为空，
+        // InputHistoryBuffer 永不清理 → 冗余重传每帧触发 + 重放窗口过大。
+        if (inputAcks.Count > 0)
+        {
+            await BroadcastInputAckAsync(inputAcks).ConfigureAwait(true);
         }
 
         _tickCount++;
@@ -1397,6 +1420,19 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         entity.ReportedEndX = reportedEndX;
         entity.ReportedEndY = reportedEndY;
         entity.ReportedEndZ = reportedEndZ;
+
+        // §12.2 动态 RTT 阈值：从 ClientTick（Unix 毫秒时间戳）估算单向网络延迟，
+        // 使用指数移动平均（EMA α=0.3）平滑抖动，供 TickAsync 中 MovementValidator 动态放宽校验阈值。
+        var nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var oneWayMs = (float)(nowMs - input.ClientTick);
+        if (oneWayMs > 0f && oneWayMs < 5000f) // 过滤异常值（时钟偏移/首包）
+        {
+            const float alpha = 0.3f;
+            entity.EstimatedRttMs = entity.EstimatedRttMs <= 0f
+                ? oneWayMs
+                : entity.EstimatedRttMs + alpha * (oneWayMs - entity.EstimatedRttMs);
+        }
+
         _simulatedEntities[entityId] = entity;
 
         return Task.CompletedTask;
@@ -1720,6 +1756,82 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             _logger.LogWarning(
                 "[ZoneShardGrain 诊断#{N}] BroadcastSnapshot 完成：耗时={ElapsedMs:F2}ms, Tick={Tick}, Deltas={DeltaCount}, Corrections={CorrectionCount}, BypassAoi={BypassAoi}",
                 _broadcastDiagCount, broadcastElapsedMs, _tickCount, snapshot.Deltas.Length, corrections.Count, bypassAoiFilter);
+        }
+    }
+
+    /// <summary>
+    /// 广播 InputAck 到对应 session。
+    /// </summary>
+    /// <param name="inputAcks">本 tick 有输入的实体列表（entityId, lastProcessedClientTick）。</param>
+    /// <remarks>
+    /// 每个实体对应一个独立 session（characterId == entityId），InputAck 只发给该 session。
+    /// 通过 EventPacket→WorldChunkDiffPacket(Event) 通道下发，客户端 EventApplySystem 收到后
+    /// 反序列化 InputAckPacket 并路由到 InputAckReceiveBuffer + InputSendSystem.OnInputAck。
+    /// </remarks>
+    private async Task BroadcastInputAckAsync(List<(ulong entityId, long lastProcessedClientTick)> inputAcks)
+    {
+        if (inputAcks.Count == 0 || _fanoutObservers.Count == 0)
+        {
+            return;
+        }
+
+        var observers = GetObserversSnapshot();
+        if (observers.Length == 0)
+        {
+            return;
+        }
+
+        foreach (var (entityId, lastProcessedClientTick) in inputAcks)
+        {
+            // InputAck 是 per-player 的，只发给该 entity 对应的 session。
+            // sessionId == characterId == entityId（注册实体时建立的映射）。
+            _singleInputAckSessionArray[0] = (long)entityId;
+
+            var inputAckPacket = new InputAckPacket
+            {
+                LastProcessedClientTick = lastProcessedClientTick,
+                ServerTick = _tickCount,
+                EchoClientTick = lastProcessedClientTick,
+            };
+
+            var eventPacket = new EventPacket
+            {
+                ServerTick = _tickCount,
+                Events = new[]
+                {
+                    new SyncEvent
+                    {
+                        Kind = SyncEventKind.InputAck,
+                        SourceEntityId = entityId,
+                        IntValue = (int)lastProcessedClientTick,
+                        Payload = MemoryPack.MemoryPackSerializer.Serialize(inputAckPacket),
+                    },
+                },
+            };
+
+            var diff = new WorldChunkDiffPacket
+            {
+                ChunkMortonKey = GetChunkMortonKeyForEntity((long)entityId) ?? 0,
+                DiffSeqStart = _tickCount,
+                DiffSeqEnd = _tickCount,
+                Payload = MemoryPack.MemoryPackSerializer.Serialize(eventPacket),
+                PayloadType = WorldChunkDiffPayloadType.Event,
+            };
+
+            foreach (var (subscriptionId, observer) in observers)
+            {
+                try
+                {
+                    await observer.OnChunkDiffAsync(diff, _singleInputAckSessionArray).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(
+                        ex,
+                        "ZoneShard {ShardId}: 推送 InputAck 到观察者 {SubscriptionId} 失败（已吞）。",
+                        this.GetPrimaryKeyLong(), subscriptionId);
+                }
+            }
         }
     }
 
@@ -2448,5 +2560,11 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
 
         /// <summary>待下发的动画事件队列（Montage 触发/结束）。null 表示无待下发事件。</summary>
         public Queue<AnimationStateAuthComponent>? PendingAnimationEvents;
+
+        /// <summary>
+        /// 估算的客户端→服务端单向延迟（毫秒），由 SubmitInputAsync 通过 EMA 平滑更新。<br/>
+        /// MovementValidator 据此动态放宽位置校验阈值，避免高延迟玩家被误判为作弊。
+        /// </summary>
+        public float EstimatedRttMs;
     }
 }

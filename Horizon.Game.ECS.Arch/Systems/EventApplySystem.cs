@@ -39,11 +39,26 @@ public sealed class EventApplySystem : ArchSystemBase
     /// <summary>累计处理的 Correction 事件数量（诊断用）。</summary>
     public int TotalCorrectionEvents { get; private set; }
 
+    /// <summary>累计处理的 InputAck 事件数量（诊断用）。</summary>
+    public int TotalInputAckEvents { get; private set; }
+
+    /// <summary>
+    /// 单帧最多消费的事件包数量，超出部分留待下一帧处理。
+    /// 防止网络突发（如批量技能事件）导致单帧处理时间过长。
+    /// 默认 16（约 250ms @60fps 的事件量）。
+    /// </summary>
+    public int MaxEventsPerFrame { get; set; } = 16;
+
+    /// <summary>累计单帧事件消费溢出次数（供游戏层转发到 ClientSyncMetrics）。</summary>
+    public long OverflowCount { get; private set; }
+
     /// <inheritdoc />
     public override void Update(World world, TimeSpan deltaTime)
     {
-        while (EventReceiveBuffer.Instance.TryDequeue(out var eventPacket))
+        var consumedThisFrame = 0;
+        while (consumedThisFrame < MaxEventsPerFrame && EventReceiveBuffer.Instance.TryDequeue(out var eventPacket))
         {
+            consumedThisFrame++;
             foreach (var syncEvent in eventPacket.Events)
             {
                 switch (syncEvent.Kind)
@@ -64,6 +79,10 @@ public sealed class EventApplySystem : ArchSystemBase
                         HandleCorrection(syncEvent);
                         break;
 
+                    case SyncEventKind.InputAck:
+                        HandleInputAck(syncEvent);
+                        break;
+
                     // 交互事件由 NetworkRuntime.RouteEventPacketToBuffer 单独路由到
                     // InteractionSyncEvents 队列，交由 InteractionApplySystem 消费，不在本系统处理；
                     // 此处显式列出空分支以避免触发下方 default 警告。
@@ -79,6 +98,12 @@ public sealed class EventApplySystem : ArchSystemBase
                         break;
                 }
             }
+        }
+
+        // 单帧消费上限溢出检测
+        if (EventReceiveBuffer.Instance.Count > 0)
+        {
+            OverflowCount++;
         }
     }
 
@@ -184,6 +209,45 @@ public sealed class EventApplySystem : ArchSystemBase
         {
             System.Diagnostics.Debug.WriteLine(
                 $"[EventApply] Correction 反序列化失败: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 处理输入确认事件：从 SyncEvent.Payload 反序列化 InputAckPacket，
+    /// 路由到 InputAckReceiveBuffer 供 ReconciliationSystem 消费，
+    /// 并通知 InputSendSystem 推进 _lastAckedClientTick 停止冗余重传。
+    /// </summary>
+    private void HandleInputAck(SyncEvent syncEvent)
+    {
+        TotalInputAckEvents++;
+
+        if (syncEvent.Payload == null || syncEvent.Payload.Length == 0)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                "[EventApply] InputAck: Payload 为空，无法反序列化 InputAckPacket");
+            return;
+        }
+
+        try
+        {
+            var inputAck = MemoryPack.MemoryPackSerializer.Deserialize<InputAckPacket>(syncEvent.Payload);
+            if (inputAck != null)
+            {
+                // 桥接到 ECS 缓冲区，供 ReconciliationSystem.ProcessInputAck 消费。
+                InputAckReceiveBuffer.Instance.Latest = inputAck;
+
+                // 推进 InputSendSystem 的已确认 tick，停止冗余重传。
+                InputSendSystem.Instance?.OnInputAck(inputAck.LastProcessedClientTick);
+
+                System.Diagnostics.Debug.WriteLine(
+                    $"[EventApply] InputAck: LastProcessedClientTick={inputAck.LastProcessedClientTick}, " +
+                    $"ServerTick={inputAck.ServerTick}");
+            }
+        }
+        catch (System.Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[EventApply] InputAck 反序列化失败: {ex.Message}");
         }
     }
 }

@@ -37,26 +37,41 @@ public sealed class MovementValidator
         public float HardSpeedCap { get; set; } = DefaultHardSpeedCap;
         /// <summary>
         /// 兆底最大速度：当 <see cref="InputPacket.MaxSpeed"/> &lt;= 0 时（旧客户端未填充）使用。
-        /// v6 协议前等价于“全局固定速度上限”，v6 后仅作向后兼容兆底。
+        /// v6 协议前等价于"全局固定速度上限"，v6 后仅作向后兼容兆底。
         /// </summary>
         public float MaxSpeed { get; set; } = MovementFormula.DefaultMaxSpeed;
         public float TickDtSeconds { get; set; } = 1f / 60f;
         public int MaxJumpCount { get; set; } = 2;
         public int MaxQinggongJumpCount { get; set; } = 3;
-    
+        
         /// <summary>
         /// P2.6：最大允许加速度（m/s²）。
         /// 相邻两次校验之间速度变化超过此值则判定为瞬移外挂。
         /// 默认 50 m/s²（约 5G，容纳轻功/传送门/击飞等合法加速）。
         /// </summary>
         public float MaxAcceleration { get; set; } = 50f;
-    
+        
         /// <summary>
         /// P2.6：瞬移距离阈值（米）。
         /// 相邻两次校验之间位置跳变超过此值则判定为瞬移。
         /// 默认 100m（合法传送门走独立协议，不经过移动校验）。
         /// </summary>
         public float TeleportDistanceThreshold { get; set; } = 100f;
+    
+        /// <summary>
+        /// 动态阈值 RTT 缩放因子（m/ms）。
+        /// 高 RTT 时客户端预测误差天然增大，动态放宽 epsilon 避免 Correction 风暴。
+        /// 公式：effectiveEpsilon = PositionEpsilon + RttScalingFactor × rttMs。
+        /// 默认 0.002f（即 RTT=300ms 时额外放宽 0.6m，总阈值 1.1m）。
+        /// 设为 0 禁用动态阈值（退化为固定 PositionEpsilon）。
+        /// </summary>
+        public float RttScalingFactor { get; set; } = 0.002f;
+    
+        /// <summary>
+        /// 动态阈值上限（米）。无论 RTT 多高，epsilon 不超过此值。
+        /// 防止极端网络条件下阈值过大导致反作弊失效。默认 2.0m。
+        /// </summary>
+        public float MaxDynamicEpsilon { get; set; } = 2.0f;
     }
 
     private readonly Options _options;
@@ -101,6 +116,30 @@ public sealed class MovementValidator
         ReadOnlySpan<InputPacket> inputs,
         in WorldPosition clientEnd,
         long serverTick)
+    {
+        return Validate(entityId, in start, startVz, inputs, in clientEnd, serverTick, rttMs: 0f);
+    }
+
+    /// <summary>
+    /// 按输入序列回放（动态阈值版本）：当 <paramref name="rttMs"/> &gt; 0 时，
+    /// 位置偏差阈值按 <c>epsilon = PositionEpsilon + RttScalingFactor × rttMs</c> 动态放宽，
+    /// 避免高延迟玩家因预测误差天然偏大触发 Correction 风暴。
+    /// </summary>
+    /// <param name="entityId">目标实体的网络 ID。</param>
+    /// <param name="start">起点坐标（服务器权威）。</param>
+    /// <param name="startVz">起点 Z 方向速度。</param>
+    /// <param name="inputs">按 <see cref="InputPacket.ClientTick"/> 升序排列的输入序列。</param>
+    /// <param name="clientEnd">客户端自报的终点。</param>
+    /// <param name="serverTick">当前服务器 tick。</param>
+    /// <param name="rttMs">该玩家当前估计 RTT（毫秒）。0 或负值使用固定阈值。</param>
+    public ValidationResult Validate(
+        ulong entityId,
+        in WorldPosition start,
+        float startVz,
+        ReadOnlySpan<InputPacket> inputs,
+        in WorldPosition clientEnd,
+        long serverTick,
+        float rttMs)
     {
         // 1) 权威回放
         // v6 协议：每个 InputPacket 携带当帧 MaxSpeed，服务端按客户端指定的速度回放，
@@ -240,11 +279,22 @@ public sealed class MovementValidator
             hardCapViolated = clientSpeed > maxInputMaxSpeed * 1.5f;
         }
 
-        // 3) 位置偏差
+        // 3) 位置偏差（动态阈值）
+        // 高 RTT 时客户端预测误差天然增大（RTT=300ms → 预测移动 ~1.8m），
+        // 方向变化可能导致 drift > 固定 0.5m 触发 Correction 风暴。
+        // 动态阈值：effectiveEpsilon = base + k × rttMs，上限 MaxDynamicEpsilon。
+        var effectiveEpsilon = _options.PositionEpsilon;
+        if (rttMs > 0f && _options.RttScalingFactor > 0f)
+        {
+            effectiveEpsilon = MathF.Min(
+                _options.PositionEpsilon + _options.RttScalingFactor * rttMs,
+                _options.MaxDynamicEpsilon);
+        }
+
         var drift = MovementFormula.Distance3D(
             authoritativeEnd.X, authoritativeEnd.Y, authoritativeEnd.Z,
             clientEnd.X, clientEnd.Y, clientEnd.Z);
-        var needCorrection = drift > _options.PositionEpsilon;
+        var needCorrection = drift > effectiveEpsilon;
 
         CorrectionPacket? correction = null;
         if (needCorrection || hardCapViolated || jumpCountExceeded)
@@ -260,6 +310,14 @@ public sealed class MovementValidator
             else
                 reason = CorrectionReason.JumpCountExceeded;
 
+            // 取本批输入序列中最大的 ClientTick 作为 LastProcessedClientTick。
+            // inputs 按 ClientTick 升序排列，故最后一个即为本次服务端处理到的最新客户端 tick。
+            // 客户端 ReconciliationSystem 据此清理 InputHistoryBuffer 并仅重放未确认输入，
+            // 避免重放已确认输入导致角色飞出 → drift 巨大 → Correction 风暴的死循环。
+            var lastProcessedClientTick = inputs.Length > 0
+                ? inputs[inputs.Length - 1].ClientTick
+                : 0L;
+
             correction = new CorrectionPacket
             {
                 EntityId = entityId,
@@ -270,10 +328,11 @@ public sealed class MovementValidator
                 CorrectedVz = vz,
                 DriftMeters = drift,
                 Reason = reason,
+                LastProcessedClientTick = lastProcessedClientTick,
             };
         }
 
-        return new ValidationResult(authoritativeEnd, vz, drift, maxObservedSpeed, correction);
+        return new ValidationResult(authoritativeEnd, vz, drift, maxObservedSpeed, correction, effectiveEpsilon);
     }
 
     /// <summary>校验结果。</summary>
@@ -284,16 +343,19 @@ public sealed class MovementValidator
         public float DriftMeters { get; }
         public float MaxObservedHorizontalSpeed { get; }
         public CorrectionPacket? Correction { get; }
+        /// <summary>本次校验实际使用的位置偏差阈值（含动态 RTT 放宽）。</summary>
+        public float EffectiveEpsilon { get; }
 
         public ValidationResult(
             WorldPosition end, float vz, float drift, float maxSpeed,
-            CorrectionPacket? correction)
+            CorrectionPacket? correction, float effectiveEpsilon)
         {
             AuthoritativeEnd = end;
             AuthoritativeVz = vz;
             DriftMeters = drift;
             MaxObservedHorizontalSpeed = maxSpeed;
             Correction = correction;
+            EffectiveEpsilon = effectiveEpsilon;
         }
 
         /// <summary>是否需要下发 correction（存在 <see cref="Correction"/> 即为真）。</summary>

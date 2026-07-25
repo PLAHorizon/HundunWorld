@@ -55,4 +55,16 @@ public sealed class InputAckReceiveBuffer
             return packet != null;
         }
     }
+
+    /// <summary>
+    /// 清空缓冲区中待处理的 ACK 包（断线/重连场景使用）。
+    /// 避免重连后消费旧会话的 ACK 导致 InputHistoryBuffer 被错误清理。
+    /// </summary>
+    public void Clear()
+    {
+        lock (_lock)
+        {
+            _latest = null;
+        }
+    }
 }

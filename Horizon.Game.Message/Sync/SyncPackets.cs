@@ -346,6 +346,11 @@ public enum SyncEventKind : ushort
     InteractStolen = 9,
     /// <summary>位置修正事件：Payload 为序列化的 CorrectionPacket，客户端 EventApplySystem 提取后路由到 CorrectionReceiveBuffer。</summary>
     Correction = 10,
+    /// <summary>输入确认事件：Payload 为序列化的 InputAckPacket，客户端 EventApplySystem 提取后路由到 InputAckReceiveBuffer。
+    /// 服务端在 TickAsync 处理完输入后通过此事件下发 LastProcessedClientTick，让客户端定期清理 InputHistoryBuffer
+    /// 并推进 InputSendSystem._lastAckedClientTick，避免冗余重传每帧触发。
+    /// </summary>
+    InputAck = 11,
 }
 
 /// <summary>

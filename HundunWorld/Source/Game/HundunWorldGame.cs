@@ -363,6 +363,22 @@ namespace HundunWorld.Game
             // 3. 清理快照接收缓冲区，避免断线期间积压的旧快照在重连后污染状态
             Horizon.Game.ECS.Arch.Network.SnapshotReceiveBuffer.Instance.ClearQueue();
 
+            // 3.5 清空所有网络同步缓冲区，避免旧会话残留数据在重连后干扰新会话
+            Horizon.Game.ECS.Arch.Network.InputHistoryBuffer.Instance.Clear();
+            Horizon.Game.ECS.Arch.Network.InputSendQueue.Instance.ClearQueue();
+            Horizon.Game.ECS.Arch.Network.EventReceiveBuffer.Instance.ClearQueue();
+            Horizon.Game.ECS.Arch.Network.CorrectionReceiveBuffer.Instance.Clear();
+            Horizon.Game.ECS.Arch.Network.InputAckReceiveBuffer.Instance.Clear();
+
+            // 3.6 重置 ReconciliationSystem 状态（风暴检测/冷却/统计），避免旧会话历史影响新会话
+            if (_archWorldHost != null)
+            {
+                var reconciliationSys = _archWorldHost.GetSystems(Horizon.Game.ECS.Arch.Core.SystemGroup.FixedUpdate)
+                    .OfType<Horizon.Game.ECS.Arch.Systems.ReconciliationSystem>()
+                    .FirstOrDefault();
+                reconciliationSys?.ResetState();
+            }
+
             // 4. 重置快照基线缓存，确保重连后首个全量快照重建 baseline
             Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.ResetLastAppliedSnapshot();
 

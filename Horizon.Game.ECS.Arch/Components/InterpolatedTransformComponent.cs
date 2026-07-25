@@ -49,4 +49,13 @@ public struct InterpolatedTransformComponent
 
     /// <summary>[Phase C4] 自上次快照重置 Alpha 以来经过的时间（秒），用于 dead reckoning 速度衰减。</summary>
     public float TimeSinceLastSnapshot;
+
+    /// <summary>当前插值 Yaw（度）。</summary>
+    public float Yaw;
+
+    /// <summary>插值起始 Yaw（度）。</summary>
+    public float StartYaw;
+
+    /// <summary>目标 Yaw（度），由快照更新写入。</summary>
+    public float TargetYaw;
 }

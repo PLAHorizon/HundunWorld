@@ -111,6 +111,13 @@ public sealed class InterpolationSystem : ArchSystemBase
                 interp.X = interp.StartX + (interp.TargetX - interp.StartX) * t;
                 interp.Y = interp.StartY + (interp.TargetY - interp.StartY) * t;
                 interp.Z = interp.StartZ + (interp.TargetZ - interp.StartZ) * t;
+
+                // Yaw 插值：最短路径插值，避免 359°→0° 时反向旋转 359°
+                var yawDelta = interp.TargetYaw - interp.StartYaw;
+                // 归一化到 [-180, 180] 范围
+                if (yawDelta > 180f) yawDelta -= 360f;
+                else if (yawDelta < -180f) yawDelta += 360f;
+                interp.Yaw = interp.StartYaw + yawDelta * t;
             }
         });
     }
