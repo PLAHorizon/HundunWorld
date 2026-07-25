@@ -1,0 +1,1599 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Horizon.Game.ECS.Arch</name>
+    </assembly>
+    <members>
+        <member name="T:Horizon.Game.ECS.Arch.Compatibility.LegacyEcsSystemAdapter">
+            <summary>
+            把旧版 <see cref="T:Horizon.Game.ECS.Core.IEcsSystem"/> 适配为 Arch <see cref="T:Horizon.Game.ECS.Arch.Core.IArchSystem"/>。
+            老系统继续在它自己的轻量 <see cref="T:Horizon.Game.ECS.Core.EcsWorld"/> 上运行（由调用方持有），
+            适配器只是把 Tick 时机挂到 Arch 调度上，方便渐进迁移：每个系统逐个改写时不破坏整体执行。
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Components.InteractionSyncComponent">
+            <summary>
+            交互槽同步组件（Arch ECS 侧）：由 InteractionApplySystem
+            从 <see cref="T:Horizon.Game.Message.Sync.InteractionSyncPacket"/> 写入，
+            驱动客户端交互表现（占用 / 进行中 / 结束 / 被抢占）。
+            与协议层 <see cref="T:Horizon.Game.Message.Sync.Components.InteractionSyncComponent"/> 字段对齐，
+            但本结构为纯 Arch 组件，不携带序列化特性。
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InteractionSyncComponent.NetworkId">
+            <summary>承载该交互槽的实体 NetworkId。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InteractionSyncComponent.SlotIdx">
+            <summary>交互槽索引（同一 InteractableId 下可有多个槽位）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InteractionSyncComponent.InteractableId">
+            <summary>可交互对象的 NetworkId。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InteractionSyncComponent.InteractorId">
+            <summary>交互者（玩家）的 NetworkId。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InteractionSyncComponent.StateBits">
+            <summary>交互状态位标志（占用 / 进行中 / 结束 / 被抢占等）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InteractionSyncComponent.ServerTick">
+            <summary>采样时的服务器 tick（用于 reconciliation / 插值排序）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Components.InteractionSyncComponent.IsOccupied">
+            <summary>是否已占用/开始（StateBits 包含 Start 位）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Components.InteractionSyncComponent.IsInProgress">
+            <summary>是否进行中（已开始且未结束）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Components.InteractionSyncComponent.IsCompleted">
+            <summary>是否已结束（StateBits 包含 End 位）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Components.InteractionSyncComponent.IsStolen">
+            <summary>是否被抢占（StateBits 包含 Stolen 位）。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent">
+            <summary>
+            非玩家实体插值变换组件：用于平滑服务器权威位置更新，消除网络抖动。
+            </summary>
+            <remarks>
+            每个 Tick 开始时，<see cref="T:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem"/> 将服务器下发的权威位置写入
+            <see cref="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.TargetX"/>/<see cref="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.TargetY"/>/<see cref="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.TargetZ"/>，并将 <see cref="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.Alpha"/> 重置为 0。
+            <see cref="T:Horizon.Game.ECS.Arch.Systems.InterpolationSystem"/> 在 Render 阶段根据 <see cref="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.Alpha"/> 在当前位置与目标位置间插值，
+            逐步推进 <see cref="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.Alpha"/> 至 1.0。
+            </remarks>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.X">
+            <summary>当前插值位置 X（米）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.Y">
+            <summary>当前插值位置 Y（米）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.Z">
+            <summary>当前插值位置 Z（米）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.TargetX">
+            <summary>目标位置 X（米），由快照更新写入。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.TargetY">
+            <summary>目标位置 Y（米），由快照更新写入。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.TargetZ">
+            <summary>目标位置 Z（米），由快照更新写入。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.StartX">
+            <summary>插值起始位置 X。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.StartY">
+            <summary>插值起始位置 Y。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.StartZ">
+            <summary>插值起始位置 Z。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.Alpha">
+            <summary>插值系数（0..1），0 表示位于旧位置，1 表示到达目标位置。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.ServerTick">
+            <summary>目标位置对应的服务器 Tick 序号。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.ReceivedTick">
+            <summary>接收到此目标位置的本地 Tick 序号。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.TimeSinceLastSnapshot">
+            <summary>[Phase C4] 自上次快照重置 Alpha 以来经过的时间（秒），用于 dead reckoning 速度衰减。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.Yaw">
+            <summary>当前插值 Yaw（度）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.StartYaw">
+            <summary>插值起始 Yaw（度）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.TargetYaw">
+            <summary>目标 Yaw（度），由快照更新写入。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Components.NetworkIdentityComponent">
+            <summary>
+            网络实体标识组件：区分本地玩家与远程实体。
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.NetworkIdentityComponent.EntityId">
+            <summary>服务器分配的实体唯一 ID。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.NetworkIdentityComponent.IsLocalPlayer">
+            <summary>是否为本地玩家所控制的实体。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Components.PlayerInputComponent">
+            <summary>
+            玩家输入状态组件：存储当前帧的玩家输入数据。
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.PlayerInputComponent.MoveX">
+            <summary>水平移动输入 X（-1..1），对应 strafing。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.PlayerInputComponent.MoveY">
+            <summary>水平移动输入 Y（-1..1），对应前进/后退。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.PlayerInputComponent.LookYaw">
+            <summary>视角偏航（Yaw 弧度）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.PlayerInputComponent.LookPitch">
+            <summary>视角俯仰（Pitch 弧度）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.PlayerInputComponent.JumpPressed">
+            <summary>跳跃按键是否按下。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.PlayerInputComponent.JumpPressedThisFrame">
+            <summary>
+            本帧是否为跳跃按下边沿（前一帧 false → 当前帧 true）。
+            由 PlayerController 在 WriteInputToEcs 中维护，仅 true 的那一帧触发跳跃 jumpCount++。
+            修复"持续按住空格 → 轻功三段跳在 50ms 内被消耗完"问题。
+            服务端通过 InputBits bit0 推断跳跃，客户端需在 JumpPressedThisFrame=true 的帧才设 bit0=1，
+            下一帧即使持续按住也置 0，相当于客户端先行做边沿触发，服务端无需改动。
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.PlayerInputComponent.InputBits">
+            <summary>输入位掩码：移动方向、跳跃、技能 1..N。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.PlayerInputComponent.MaxSpeed">
+            <summary>
+            本帧目标最大水平移动速度（米/秒）。由 PlayerController.WriteInputToEcs 根据 MoveSpeed
+            及当前状态（Run/Sprint/Crouch 倍数）计算后写入。LocalSimulationSystem 据此调用
+            MovementFormula.Step，InputSendSystem 打包到 InputPacket.MaxSpeed 上送服务端。
+            取值 &lt;= 0 时由 MovementFormula 内部兜底为 DefaultMaxSpeed（向后兼容）。
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Components.PlayerSubscriptionStateComponent">
+            <summary>
+            记录本地玩家当前的 chunk 订阅状态，用于检测跨 chunk 边界时触发订阅更新。
+            </summary>
+            <remarks>
+            由 <see cref="T:Horizon.Game.ECS.Arch.Systems.LocalSimulationSystem"/> 在每次 tick 中读写：
+            比较本地玩家当前所在 chunk 的 MortonKey 与 <see cref="F:Horizon.Game.ECS.Arch.Components.PlayerSubscriptionStateComponent.CurrentChunkKey"/>，
+            不一致时触发 <c>PlayerChunkChanged</c> 事件，由 <c>NetworkRuntime</c> 计算并上行
+            <see cref="T:Horizon.Game.Message.Sync.SubscriptionUpdatePacket"/>。
+            <see cref="F:Horizon.Game.ECS.Arch.Components.PlayerSubscriptionStateComponent.SubscribedChunks"/> 由 NetworkRuntime 在收到服务端确认后回写，作为下一帧 diff 计算的基准。
+            </remarks>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.PlayerSubscriptionStateComponent.CurrentChunkKey">
+            <summary>当前玩家所在 chunk 的 MortonKey。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.PlayerSubscriptionStateComponent.SubscribedChunks">
+            <summary>当前已订阅的 chunk MortonKey 集合。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.PlayerSubscriptionStateComponent.Initialized">
+            <summary>是否已初始化（首次握手后设置）。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Components.PredictedTransformComponent">
+            <summary>
+            客户端预测 Transform 组件：本地模拟的实体位姿。
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.PredictedTransformComponent.X">
+            <summary>世界坐标 X（米）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.PredictedTransformComponent.Y">
+            <summary>世界坐标 Y（米）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.PredictedTransformComponent.Z">
+            <summary>世界坐标 Z（米）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.PredictedTransformComponent.Vz">
+            <summary>垂直速度（米/秒）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.PredictedTransformComponent.Yaw">
+            <summary>偏航角（弧度）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.PredictedTransformComponent.Pitch">
+            <summary>俯仰角（弧度）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.PredictedTransformComponent.ClientTick">
+            <summary>产生此预测的客户端 tick 序号。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Components.PredictedTransformComponent.NeedsReconciliation">
+            <summary>是否需要服务器校正（收到 correction 后标记为 true）。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Core.ArchSystemAttribute">
+            <summary>
+            标注一个 <see cref="T:Horizon.Game.ECS.Arch.Core.IArchSystem"/> 实现的元数据，便于
+            <see cref="T:Horizon.Game.ECS.Arch.Core.SystemRegistry"/> 通过反射自动发现并注册到 <see cref="T:Horizon.Game.ECS.Arch.Core.ArchWorldHost"/>。
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Core.ArchSystemAttribute.Group">
+            <summary>所属系统组（决定执行阶段）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Core.ArchSystemAttribute.Order">
+            <summary>同组内执行顺序，越小越早。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Core.ArchSystemAttribute.MainThreadOnly">
+            <summary>是否仅允许主线程执行（涉及 UE Actor/UI 必须为 true）。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Core.ArchSystemBase">
+            <summary>
+            便捷基类：通过 <see cref="T:Horizon.Game.ECS.Arch.Core.ArchSystemAttribute"/> 自动推导 Group/Order/MainThreadOnly。
+            派生类只需覆写 <see cref="M:Horizon.Game.ECS.Arch.Core.ArchSystemBase.Update(Arch.Core.World,System.TimeSpan)"/>。
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Core.ArchSystemBase.Name">
+            <inheritdoc />
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Core.ArchSystemBase.Group">
+            <inheritdoc />
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Core.ArchSystemBase.Order">
+            <inheritdoc />
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Core.ArchSystemBase.MainThreadOnly">
+            <inheritdoc />
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Core.ArchSystemBase.Initialize(Arch.Core.World)">
+            <inheritdoc />
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Core.ArchSystemBase.Update(Arch.Core.World,System.TimeSpan)">
+            <inheritdoc />
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Core.ArchSystemBase.Dispose(Arch.Core.World)">
+            <inheritdoc />
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Core.ArchWorldHost">
+            <summary>
+            Arch ECS 的宿主：封装一个 <see cref="P:Horizon.Game.ECS.Arch.Core.ArchWorldHost.World"/>，按 <see cref="T:Horizon.Game.ECS.Arch.Core.SystemGroup"/> 分阶段执行 <see cref="T:Horizon.Game.ECS.Arch.Core.IArchSystem"/>。
+            设计目标：
+              * 接管旧 <see cref="T:Horizon.Game.ECS.Core.EcsWorld"/> 的角色，提供更高性能的 chunk-based 存储。
+              * 调度顺序：NetworkReceive → FixedUpdate → Update → Render → NetworkSend。
+              * 主线程系统串行执行；标记非 <c>MainThreadOnly</c> 的系统在同组内仍按声明顺序执行（后续可接入
+                Arch.System.JobScheduler 实现并行 chunk）。
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Core.ArchWorldHost.World">
+            <summary>底层 Arch 世界。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Core.ArchWorldHost.CurrentTick">
+            <summary>当前 tick 序号（每次 <see cref="M:Horizon.Game.ECS.Arch.Core.ArchWorldHost.Tick(System.TimeSpan)"/> 自增）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Core.ArchWorldHost.TotalTime">
+            <summary>累计已运行时间（驱动用）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Core.ArchWorldHost.IsTicking">
+            <summary>当前是否处于 <see cref="M:Horizon.Game.ECS.Arch.Core.ArchWorldHost.Tick(System.TimeSpan)"/> 调用栈中。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Core.ArchWorldHost.AddSystem(Horizon.Game.ECS.Arch.Core.IArchSystem)">
+            <summary>
+            注册一个系统。同组内按 <see cref="P:Horizon.Game.ECS.Arch.Core.IArchSystem.Order"/> 升序执行。
+            不允许在 <see cref="M:Horizon.Game.ECS.Arch.Core.ArchWorldHost.Tick(System.TimeSpan)"/> 期间注册（会抛 <see cref="T:System.InvalidOperationException"/>）。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Core.ArchWorldHost.RemoveSystem(Horizon.Game.ECS.Arch.Core.IArchSystem)">
+            <summary>移除并 Dispose 一个系统。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Core.ArchWorldHost.GetSystems(Horizon.Game.ECS.Arch.Core.SystemGroup)">
+            <summary>列出某组系统（调试 / 测试用，返回快照副本）。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Core.ArchWorldHost.GetAllSystems">
+            <summary>列出所有已注册系统。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Core.ArchWorldHost.Tick(System.TimeSpan)">
+            <summary>
+            推进一帧。按 <see cref="T:Horizon.Game.ECS.Arch.Core.SystemGroup"/> 顺序串行执行各组系统。
+            注意：本方法 **必须** 在主线程调用，因 <see cref="P:Horizon.Game.ECS.Arch.Core.IArchSystem.MainThreadOnly"/> 系统
+            会被假定运行在调用线程上。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Core.ArchWorldHost.Dispose">
+            <summary>释放所有系统并销毁底层 World。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Core.IArchSystem">
+            <summary>
+            Arch 世界中的系统接口。
+            实现请保持无状态/线程安全（Worker 线程组）或显式声明仅主线程（标记 <see cref="P:Horizon.Game.ECS.Arch.Core.ArchSystemAttribute.MainThreadOnly"/>）。
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Core.IArchSystem.Name">
+            <summary>系统名称（诊断/调度用）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Core.IArchSystem.Group">
+            <summary>所属系统组，决定执行阶段。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Core.IArchSystem.Order">
+            <summary>同组内执行顺序，数值越小越早执行。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Core.IArchSystem.MainThreadOnly">
+            <summary>仅在主线程执行（通常为接触 UE Actor / UI 的系统）。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Core.IArchSystem.Initialize(Arch.Core.World)">
+            <summary>世界注册时调用，用于缓存查询、订阅事件。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Core.IArchSystem.Update(Arch.Core.World,System.TimeSpan)">
+            <summary>每帧执行。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Core.IArchSystem.Dispose(Arch.Core.World)">
+            <summary>世界销毁时调用，用于释放资源。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Core.SystemGroup">
+            <summary>
+            系统分组：定义在 <see cref="T:Horizon.Game.ECS.Arch.Core.ArchWorldHost"/> 单帧 Tick 中各阶段的执行顺序。
+            顺序与枚举值一致：先收消息、再做 Fixed/Update 模拟、最后回写视图与发包。
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Core.SystemGroup.NetworkReceive">
+            <summary>从网络/IO 队列拉取数据，写入 ECS 组件。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Core.SystemGroup.FixedUpdate">
+            <summary>固定时间步模拟（物理、移动预测、回滚）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Core.SystemGroup.Update">
+            <summary>逐帧逻辑（AI、技能、状态机等）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Core.SystemGroup.Render">
+            <summary>渲染前同步（把 ECS 数据写到 UE Actor / UI）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Core.SystemGroup.NetworkSend">
+            <summary>把本地输入/状态打包发送到服务器。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Core.SystemRegistry">
+            <summary>
+            通过反射扫描 <see cref="T:Horizon.Game.ECS.Arch.Core.ArchSystemAttribute"/> 标注的系统类型并注册到 <see cref="T:Horizon.Game.ECS.Arch.Core.ArchWorldHost"/>。
+            供 Game Feature 模块 (LyraExampleContent / NarrativePro 等) 在加载时统一挂入主循环。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Core.SystemRegistry.RegisterFromAssembly(Horizon.Game.ECS.Arch.Core.ArchWorldHost,System.Reflection.Assembly,System.Func{System.Type,Horizon.Game.ECS.Arch.Core.IArchSystem})">
+            <summary>
+            在指定程序集中扫描带 <see cref="T:Horizon.Game.ECS.Arch.Core.ArchSystemAttribute"/> 的 <see cref="T:Horizon.Game.ECS.Arch.Core.IArchSystem"/> 实现，
+            用 <paramref name="factory"/> 构造实例并 <see cref="M:Horizon.Game.ECS.Arch.Core.ArchWorldHost.AddSystem(Horizon.Game.ECS.Arch.Core.IArchSystem)"/>。
+            默认 factory 使用无参构造函数。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Core.SystemRegistry.RegisterFromAssemblies(Horizon.Game.ECS.Arch.Core.ArchWorldHost,System.Collections.Generic.IEnumerable{System.Reflection.Assembly},System.Func{System.Type,Horizon.Game.ECS.Arch.Core.IArchSystem})">
+            <summary>从多个程序集批量注册。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Events.ComponentEvents`1">
+             <summary>
+             组件订阅工具：让 UI / 剧情 / 音视频系统可以响应组件的 Add/Set/Remove 而无需轮询。
+            
+             使用模式：
+             <code>
+             ComponentEvents&lt;HealthAuthComponent&gt;.OnSet += (entity, value) => UpdateHealthBar(entity, value);
+             </code>
+             系统在写入数据后调用 <see cref="M:Horizon.Game.ECS.Arch.Events.ComponentEvents`1.RaiseSet(Arch.Core.Entity,`0@)"/> / <see cref="M:Horizon.Game.ECS.Arch.Events.ComponentEvents`1.RaiseAdd(Arch.Core.Entity,`0@)"/> / <see cref="M:Horizon.Game.ECS.Arch.Events.ComponentEvents`1.RaiseRemove(Arch.Core.Entity,`0@)"/> 触发回调。
+             这是一个 **协作式** 通知机制（不会自动 hook Arch 内部写入，避免运行时反射开销）。
+             </summary>
+             <typeparam name="TComponent">组件类型。</typeparam>
+        </member>
+        <member name="E:Horizon.Game.ECS.Arch.Events.ComponentEvents`1.OnAdd">
+            <summary>组件首次添加到实体时触发。</summary>
+        </member>
+        <member name="E:Horizon.Game.ECS.Arch.Events.ComponentEvents`1.OnSet">
+            <summary>组件值更新（含初次写入）时触发。</summary>
+        </member>
+        <member name="E:Horizon.Game.ECS.Arch.Events.ComponentEvents`1.OnRemove">
+            <summary>组件被移除前触发。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Events.ComponentEvents`1.ClearForTesting">
+            <summary>移除所有订阅（测试隔离用，生产代码不要随便调用）。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Network.CorrectionPacket">
+            <summary>
+            服务器→客户端的位置修正包（P1-b）。<br/>
+            当 <see cref="T:Horizon.Game.Core.Sim.MovementValidator"/> 发现客户端预测位置与权威回放偏差超过阈值时下发；
+            客户端 <c>ReconciliationSystem</c> 据此强制吸附 <see cref="T:Horizon.Game.Message.Sync.Components.AuthTransformComponent"/>。
+            </summary>
+            <remarks>
+            本包与 <see cref="T:Horizon.Game.Message.Sync.SyncPacket"/> 体系独立：
+            <list type="bullet">
+              <item>correction 走**可靠 + 高优先级**通道，不受 snapshot tick 限制。</item>
+              <item>在 P6-a 的 <c>SyncDispatcher</c> 落地时，会以 <c>EventPacket</c> 的负载形式下发，
+              避免 <see cref="T:Horizon.Game.Message.Sync.SyncPacket"/> union 再次扩容。</item>
+            </list>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.CorrectionPacket.EntityId">
+            <summary>目标实体的网络 ID。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.CorrectionPacket.ServerTick">
+            <summary>下发时的服务器 tick，客户端按此排序应用。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.CorrectionPacket.CorrectedX">
+            <summary>权威 X。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.CorrectionPacket.CorrectedY">
+            <summary>权威 Y。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.CorrectionPacket.CorrectedZ">
+            <summary>权威 Z。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.CorrectionPacket.CorrectedVz">
+            <summary>权威 Z 方向速度（便于客户端继续推演）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.CorrectionPacket.DriftMeters">
+            <summary>偏差（米）；仅用于客户端日志、不参与吸附计算。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.CorrectionPacket.Reason">
+            <summary>修正原因（便于反外挂后台做聚合告警）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.CorrectionPacket.LastProcessedClientTick">
+            <summary>
+            服务端本次权威回放处理到的最后一个客户端 tick（含）。
+            <para>
+            客户端 <c>ReconciliationSystem</c> 据此：
+            <list type="number">
+              <item>调用 <c>InputHistoryBuffer.ClearUpTo</c> 清理已确认输入；</item>
+              <item>重放时仅取 <c>ClientTick &gt; LastProcessedClientTick</c> 的输入。</item>
+            </list>
+            修复"吸附+重放导致角色无法移动"：原实现 Correction 不携带此字段，
+            客户端重放时 <c>GetFromTick(0)</c> 返回所有历史输入（含已确认），
+            角色从权威位置飞出极远 → 下一帧 drift 巨大 → 再次 Correction → 死循环。
+            </para>
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Network.CorrectionReason">
+            <summary>修正触发原因。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Network.CorrectionReason.Unknown">
+            <summary>未知/保留。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Network.CorrectionReason.PredictionDrift">
+            <summary>客户端预测漂移超出阈值（常见情况：高 RTT、丢包、浮点累积）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Network.CorrectionReason.SpeedHackSuspected">
+            <summary>客户端速度超出硬性上限（疑似外挂或网络抖动）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Network.CorrectionReason.CollisionOverride">
+            <summary>客户端试图穿越不可行走区域（本包暂未使用；P1-b 之后的碰撞校验会启用）。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Network.CorrectionReceiveBuffer">
+            <summary>
+            线程安全的 CorrectionPacket 接收缓冲区。
+            </summary>
+            <remarks>
+            网络线程写入（收到服务器修正包后放入），ECS 线程读取（ReconciliationSystem 消费）。
+            每次 TryTake 会取出并清空缓冲区，确保每个修正包只被处理一次。
+            </remarks>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Network.CorrectionReceiveBuffer.Instance">
+            <summary>全局唯一实例。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.CorrectionReceiveBuffer.TryTake(Horizon.Game.ECS.Arch.Network.CorrectionPacket@)">
+            <summary>
+            尝试取出并清空最新的 CorrectionPacket。
+            </summary>
+            <param name="packet">取出的修正包。</param>
+            <returns>成功取出时返回 <c>true</c>，无数据时返回 <c>false</c>。</returns>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.CorrectionReceiveBuffer.Add(Horizon.Game.ECS.Arch.Network.CorrectionPacket)">
+            <summary>
+            将一个 CorrectionPacket 放入缓冲区（覆盖旧值）。
+            </summary>
+            <param name="packet">要放入的修正包。</param>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.CorrectionReceiveBuffer.Clear">
+            <summary>
+            清空缓冲区中待处理的修正包（断线/重连场景使用）。
+            避免断线期间积压的旧修正在重连后触发无意义的位置吸附。
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Network.EventReceiveBuffer">
+            <summary>
+            线程安全的 <see cref="T:Horizon.Game.Message.Sync.EventPacket"/> 接收队列（带溢出保护）。
+            </summary>
+            <remarks>
+            网络线程写入（收到服务器事件包后放入），ECS 线程读取（<see cref="T:Horizon.Game.ECS.Arch.Systems.EventApplySystem"/> 消费）。
+            使用 <see cref="T:System.Collections.Concurrent.ConcurrentQueue`1"/> 保证跨线程安全通信。
+            静态单例，整个进程共享。
+            <para>
+            溢出保护：队列超过 <see cref="P:Horizon.Game.ECS.Arch.Network.EventReceiveBuffer.MaxQueueSize"/> 时采用 DropOldest 策略丢弃最旧包，
+            防止网络突发（如批量技能事件）导致内存无限膨胀。
+            </para>
+            </remarks>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Network.EventReceiveBuffer.Instance">
+            <summary>全局唯一的队列实例。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.EventReceiveBuffer.MaxQueueSize">
+            <summary>
+            队列软上限，超过此值时采用 DropOldest 策略丢弃最旧包。
+            默认 512，事件包通常较小但可能突发（批量技能/伤害）。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.EventReceiveBuffer.Enqueue(Horizon.Game.Message.Sync.EventPacket)">
+            <summary>
+            将一个 <see cref="T:Horizon.Game.Message.Sync.EventPacket"/> 入队。
+            </summary>
+            <param name="packet">要入队的事件包。</param>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.EventReceiveBuffer.TryDequeue(Horizon.Game.Message.Sync.EventPacket@)">
+            <summary>
+            尝试从队列中取出一个 <see cref="T:Horizon.Game.Message.Sync.EventPacket"/>。
+            </summary>
+            <param name="packet">取出的事件包。</param>
+            <returns>成功取出时返回 <c>true</c>，队列为空时返回 <c>false</c>。</returns>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.EventReceiveBuffer.Count">
+            <summary>
+            当前队列中待处理的事件包数量。
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.EventReceiveBuffer.TotalEnqueued">
+            <summary>累计入队数（从不重置）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.EventReceiveBuffer.TotalDequeued">
+            <summary>累计出队数（从不重置）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.EventReceiveBuffer.DroppedByOverflowCount">
+            <summary>队列溢出时累计丢弃的最旧包数量。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.EventReceiveBuffer.ClearQueue">
+            <summary>
+            清空队列中所有待处理的事件包（断线/重连场景使用）。
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Network.InputAckReceiveBuffer">
+            <summary>
+            线程安全的 InputAckPacket 接收缓冲区（覆盖式）。
+            </summary>
+            <remarks>
+            网络线程写入（收到服务器 ACK 后放入），ECS 线程读取（ReconciliationSystem 消费）。
+            采用覆盖策略，始终保留最新一条 InputAckPacket。
+            </remarks>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Network.InputAckReceiveBuffer.Instance">
+            <summary>全局唯一实例。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.InputAckReceiveBuffer.Latest">
+            <summary>
+            当前最新的 InputAckPacket，可能为 null。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.InputAckReceiveBuffer.TryTake(Horizon.Game.Message.Sync.InputAckPacket@)">
+            <summary>
+            尝试取出并清空最新的 InputAckPacket。
+            </summary>
+            <param name="packet">取出的输入确认包。</param>
+            <returns>成功取出时返回 <c>true</c>，无数据时返回 <c>false</c>。</returns>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.InputAckReceiveBuffer.Clear">
+            <summary>
+            清空缓冲区中待处理的 ACK 包（断线/重连场景使用）。
+            避免重连后消费旧会话的 ACK 导致 InputHistoryBuffer 被错误清理。
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Network.InputHistoryBuffer">
+            <summary>
+            客户端输入历史记录环形缓冲区（容量 256），用于预测回滚时重播未确认的输入。
+            </summary>
+            <remarks>
+            由 <c>LocalSimulationSystem</c> 写入，<c>ReconciliationSystem</c> 读取和清理。
+            使用 lock 保证线程安全，容量满时覆盖最旧的输入。
+            </remarks>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Network.InputHistoryBuffer.Instance">
+            <summary>全局唯一实例。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Network.InputHistoryBuffer._head">
+            <summary>环形缓冲区起始索引。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Network.InputHistoryBuffer._count">
+            <summary>缓冲区中元素数量。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.InputHistoryBuffer.Count">
+            <summary>
+            当前缓冲区中的输入包数量。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.InputHistoryBuffer.Add(Horizon.Game.Message.Sync.InputPacket)">
+            <summary>
+            添加一个 <see cref="T:Horizon.Game.Message.Sync.InputPacket"/> 到缓冲区。
+            </summary>
+            <param name="packet">要添加的输入包。</param>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.InputHistoryBuffer.GetFromTick(System.Int64)">
+            <summary>
+            获取 ClientTick 大于指定 tick 的所有输入包。
+            </summary>
+            <param name="tick">参考 tick，返回 ClientTick &gt; tick 的输入包。</param>
+            <returns>满足条件的输入包集合，按 tick 升序排列。</returns>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.InputHistoryBuffer.GetFromTick(System.Int64,System.Collections.Generic.List{Horizon.Game.Message.Sync.InputPacket})">
+            <summary>
+            零分配版本：将 ClientTick 大于指定 tick 的输入包写入调用方提供的缓冲区。
+            避免热路径（ReconciliationSystem 每帧调用）上的 List 分配与 GC 压力。
+            </summary>
+            <param name="tick">参考 tick，返回 ClientTick &gt; tick 的输入包。</param>
+            <param name="destination">调用方提供的复用缓冲区，本方法先 Clear 再写入。</param>
+            <returns>写入的输入包数量。</returns>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.InputHistoryBuffer.ClearUpTo(System.Int64)">
+            <summary>
+            清除所有 ClientTick 小于等于指定 tick 的输入包。
+            </summary>
+            <param name="tick">清理阈值，ClientTick &lt;= tick 的输入将被移除。</param>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.InputHistoryBuffer.Clear">
+            <summary>
+            清空缓冲区中的所有输入包。
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Network.InputSendQueue">
+            <summary>
+            线程安全的输入包发送队列（带溢出保护）：存放等待通过网络层发送到服务器的 <see cref="T:Horizon.Game.Message.Sync.InputPacket"/> 和 <see cref="T:Horizon.Game.Message.Sync.CombatActionPacket"/>。
+            </summary>
+            <remarks>
+            使用 <see cref="T:System.Collections.Concurrent.ConcurrentQueue`1"/> 保证 ECS 线程（生产者）与网络 IO 线程（消费者）的安全通信。
+            静态单例，整个进程共享。
+            <para>
+            溢出保护：队列超过 <see cref="P:Horizon.Game.ECS.Arch.Network.InputSendQueue.MaxQueueSize"/> 时采用 DropOldest 策略丢弃最旧包，
+            防止网络阻塞（TCP 缓冲区满）时队列无限膨胀。
+            输入包具有时效性（60Hz 定频），旧包被新包覆盖是合理的。
+            </para>
+            </remarks>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Network.InputSendQueue.Instance">
+            <summary>全局唯一的队列实例。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Network.InputSendQueue._combatQueue">
+            <summary>P1.4：战斗动作包队列。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.InputSendQueue.#ctor">
+            <summary>私有构造函数，确保单例。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.InputSendQueue.MaxQueueSize">
+            <summary>
+            队列软上限，超过此值时采用 DropOldest 策略丢弃最旧包。
+            默认 256（约 4 秒 @60Hz 的输入量）。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.InputSendQueue.Enqueue(Horizon.Game.Message.Sync.InputPacket)">
+            <summary>
+            将一个 <see cref="T:Horizon.Game.Message.Sync.InputPacket"/> 入队，等待网络层消费。
+            </summary>
+            <param name="packet">要发送的输入包。</param>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.InputSendQueue.EnqueueCombatAction(Horizon.Game.Message.Sync.CombatActionPacket)">
+            <summary>
+            P1.4：将一个 <see cref="T:Horizon.Game.Message.Sync.CombatActionPacket"/> 入队，等待网络层消费。
+            </summary>
+            <param name="packet">要发送的战斗动作包。</param>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.InputSendQueue.TryDequeue(Horizon.Game.Message.Sync.InputPacket@)">
+            <summary>
+            尝试从队列中取出一个 <see cref="T:Horizon.Game.Message.Sync.InputPacket"/>。
+            </summary>
+            <param name="packet">取出的输入包。</param>
+            <returns>成功取出时返回 <c>true</c>，队列为空时返回 <c>false</c>。</returns>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.InputSendQueue.TryDequeueCombat(Horizon.Game.Message.Sync.CombatActionPacket@)">
+            <summary>
+            P1.4：尝试从战斗队列中取出一个 <see cref="T:Horizon.Game.Message.Sync.CombatActionPacket"/>。
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.InputSendQueue.Count">
+            <summary>
+            当前队列中待发送的包数量。
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.InputSendQueue.CombatCount">
+            <summary>P1.4：战斗队列待发送数量。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.InputSendQueue.DroppedByOverflowCount">
+            <summary>队列溢出时累计丢弃的最旧包数量。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.InputSendQueue.ClearQueue">
+            <summary>
+            清空队列中所有待发送的输入包（断线/重连场景使用）。
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Network.SnapshotReceiveBuffer">
+            <summary>
+            线程安全的 <see cref="T:Horizon.Game.Message.Sync.SnapshotPacket"/> 接收队列。
+            </summary>
+            <remarks>
+            网络线程写入（收到服务器快照后放入），ECS 线程读取（<see cref="T:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem"/> 消费）。
+            使用 <see cref="T:System.Collections.Concurrent.ConcurrentQueue`1"/> 保证跨线程安全通信。
+            静态单例，整个进程共享。
+            </remarks>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Network.SnapshotReceiveBuffer.Instance">
+            <summary>全局唯一的队列实例。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.SnapshotReceiveBuffer.MaxQueueSize">
+            <summary>
+            队列软上限，超过此值时采用 DropOldest 策略丢弃最旧包。
+            默认 1024，可根据业务场景调整。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.SnapshotReceiveBuffer.Enqueue(Horizon.Game.Message.Sync.SnapshotPacket)">
+            <summary>
+            将一个 <see cref="T:Horizon.Game.Message.Sync.SnapshotPacket"/> 入队。
+            </summary>
+            <param name="packet">要入队的快照包。</param>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.SnapshotReceiveBuffer.LogOverflowWarn">
+            <summary>
+            限频输出队列溢出告警日志：每 10 秒最多一次。
+            输出到 Console.Error（不阻塞主线程，区别于 Console.WriteLine）。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.SnapshotReceiveBuffer.TryDequeue(Horizon.Game.Message.Sync.SnapshotPacket@)">
+            <summary>
+            尝试从队列中取出一个 <see cref="T:Horizon.Game.Message.Sync.SnapshotPacket"/>。
+            </summary>
+            <param name="packet">取出的快照包。</param>
+            <returns>成功取出时返回 <c>true</c>，队列为空时返回 <c>false</c>。</returns>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.SnapshotReceiveBuffer.Count">
+            <summary>
+            当前队列中待处理的快照包数量。
+            注意：SnapshotApplySystem 每帧 drain 整个队列，所以本字段在 ECS tick 后总是 0；
+            诊断链路是否联通应优先看 <see cref="P:Horizon.Game.ECS.Arch.Network.SnapshotReceiveBuffer.TotalEnqueued"/> 与 <see cref="P:Horizon.Game.ECS.Arch.Network.SnapshotReceiveBuffer.TotalDequeued"/>。
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.SnapshotReceiveBuffer.TotalEnqueued">
+            <summary>累计入队数（从不重置）。诊断 fanout 链路是否联通的可靠指标。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.SnapshotReceiveBuffer.TotalDequeued">
+            <summary>累计出队数（从不重置）。等于 SnapshotApplySystem 已消费的快照包总数。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Network.SnapshotReceiveBuffer.DroppedByOverflowCount">
+            <summary>
+            队列溢出时累计丢弃的最旧包数量（从不重置）。
+            当 <see cref="P:Horizon.Game.ECS.Arch.Network.SnapshotReceiveBuffer.Count"/> 达到 <see cref="P:Horizon.Game.ECS.Arch.Network.SnapshotReceiveBuffer.MaxQueueSize"/> 时采用 DropOldest 策略，丢弃最旧包以腾出空间。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Network.SnapshotReceiveBuffer.ClearQueue">
+            <summary>
+            清空队列中所有待处理的快照包（断线/重连场景使用）。
+            避免断线期间积压的旧快照在重连后污染状态。
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Systems.CombatEffectSystem">
+            <summary>
+            P1.4 战斗特效系统：处理服务端下发的 <see cref="T:Horizon.Game.Message.Sync.DamagePacket"/> 和 <see cref="T:Horizon.Game.Message.Sync.DeathPacket"/>，
+            驱动伤害数字飘字、受击动画、技能特效、死亡表现。
+            <para>
+            在 <see cref="F:Horizon.Game.ECS.Arch.Core.SystemGroup.Render"/> 阶段执行（渲染前同步），
+            从 <see cref="!:CombatEffectBuffer"/> 中取出本帧待处理的战斗事件并应用到 ECS 组件/Flax Actor。
+            </para>
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.CombatEffectSystem.Instance">
+            <summary>当前实例（供网络层静态推送事件）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.CombatEffectSystem._damageQueue">
+            <summary>待处理的伤害事件队列（线程安全：网络线程写入，主线程消费）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.CombatEffectSystem._deathQueue">
+            <summary>待处理的死亡事件队列。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.CombatEffectSystem._queueLock">
+            <summary>队列锁（网络线程 vs 主线程）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.CombatEffectSystem.MaxEventsPerFrame">
+            <summary>每帧最大处理事件数（防止突发大量事件导致卡顿）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.CombatEffectSystem.DamageNumberDuration">
+            <summary>伤害数字飘字持续时间（秒）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.CombatEffectSystem.HitFlashDuration">
+            <summary>受击闪烁持续时间（秒）。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.CombatEffectSystem.EnqueueDamage(Horizon.Game.Message.Sync.DamagePacket)">
+            <summary>
+            网络层收到 DamagePacket 后调用（线程安全）。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.CombatEffectSystem.EnqueueDeath(Horizon.Game.Message.Sync.DeathPacket)">
+            <summary>
+            网络层收到 DeathPacket 后调用（线程安全）。
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Systems.CombatEffectEvents">
+            <summary>
+            战斗特效事件总线：ECS 系统通过此静态类向 Flax 渲染层推送表现事件。
+            Flax 侧订阅这些事件来播放粒子特效/伤害数字/动画。
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Systems.DamageNumberEvent">
+            <summary>伤害数字飘字事件。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Systems.HitReactionEvent">
+            <summary>受击反馈事件。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Systems.DeathEvent">
+            <summary>死亡事件。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Systems.CombatInputSystem">
+            <summary>
+            P1.4 战斗输入系统：采集玩家攻击/技能/道具输入，打包为 <see cref="T:Horizon.Game.Message.Sync.CombatActionPacket"/> 放入发送队列。
+            <para>
+            在 <see cref="F:Horizon.Game.ECS.Arch.Core.SystemGroup.Update"/> 阶段执行，每帧检测本地玩家的战斗输入状态，
+            若触发攻击/技能/道具使用，则构造 CombatActionPacket 并通过 <see cref="T:Horizon.Game.ECS.Arch.Network.InputSendQueue"/> 发送。
+            </para>
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.CombatInputSystem.Instance">
+            <summary>当前实例（供外部静态访问）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.CombatInputSystem._localPlayerEntity">
+            <summary>本地玩家实体引用。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.CombatInputSystem._pendingInput">
+            <summary>攻击输入缓冲（由 Flax 侧 Input 系统写入）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.CombatInputSystem._attackCooldownTimer">
+            <summary>攻击冷却计时（秒）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.CombatInputSystem.BaseAttackCooldown">
+            <summary>基础攻击冷却时间（秒）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.CombatInputSystem._sendQueue">
+            <summary>网络发送队列引用。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.CombatInputSystem.SetCombatInput(System.UInt64,Horizon.Game.Message.Sync.CombatActionKind,System.Int32)">
+            <summary>
+            由 Flax 侧 Input Action 调用：设置攻击输入。
+            </summary>
+            <param name="targetId">目标实体 NetworkId（0=无目标/自身）。</param>
+            <param name="actionKind">动作类型。</param>
+            <param name="skillId">技能 ID（0=普攻）。</param>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.CombatInputSystem.SetLocalPlayer(Arch.Core.Entity)">
+            <summary>设置本地玩家实体（由 ArchWorldHost 在角色创建后调用）。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Systems.CombatInputSystem.CombatInputState">
+            <summary>内部输入状态结构。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Systems.EventApplySystem">
+            <summary>
+            事件应用系统：在 NetworkReceive 阶段消费 <see cref="T:Horizon.Game.ECS.Arch.Network.EventReceiveBuffer"/>，
+            将服务器下发的同步事件（技能释放、伤害、死亡等）应用到 Arch 世界。
+            </summary>
+            <remarks>
+            当前实现以诊断日志和组件更新为主，VFX/动画触发将通过后续 UE5 绑定完成。
+            系统通过查询 <see cref="T:Horizon.Game.ECS.Arch.Components.NetworkIdentityComponent"/> 来匹配目标实体。
+            <para>
+            交互离散事件（<c>InteractStart</c>/<c>InteractEnd</c>/<c>InteractStolen</c>）不由本系统处理：
+            <see cref="!:ManagedHundunWorld.Network.NetworkRuntime.RouteEventPacketToBuffer"/> 在路由
+            <see cref="T:Horizon.Game.Message.Sync.EventPacket"/> 到 <see cref="T:Horizon.Game.ECS.Arch.Network.EventReceiveBuffer"/> 的同时，将这些事件单独提取到
+            <c>NetworkRuntime.InteractionSyncEvents</c> 队列，交由 <c>InteractionApplySystem</c> 消费，
+            避免与本系统争抢同一个 <see cref="T:Horizon.Game.ECS.Arch.Network.EventReceiveBuffer"/>。本系统 switch 中显式列出空分支以避免
+            触发 <c>default</c> 警告。
+            </para>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.EventApplySystem.TotalSkillCastEvents">
+            <summary>累计处理的 SkillCast 事件数量（诊断用）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.EventApplySystem.TotalDamageEvents">
+            <summary>累计处理的 Damage 事件数量（诊断用）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.EventApplySystem.TotalDeathEvents">
+            <summary>累计处理的 Death 事件数量（诊断用）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.EventApplySystem.TotalCorrectionEvents">
+            <summary>累计处理的 Correction 事件数量（诊断用）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.EventApplySystem.TotalInputAckEvents">
+            <summary>累计处理的 InputAck 事件数量（诊断用）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.EventApplySystem.MaxEventsPerFrame">
+            <summary>
+            单帧最多消费的事件包数量，超出部分留待下一帧处理。
+            防止网络突发（如批量技能事件）导致单帧处理时间过长。
+            默认 16（约 250ms @60fps 的事件量）。
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.EventApplySystem.OverflowCount">
+            <summary>累计单帧事件消费溢出次数（供游戏层转发到 ClientSyncMetrics）。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.EventApplySystem.Update(Arch.Core.World,System.TimeSpan)">
+            <inheritdoc />
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.EventApplySystem.HandleSkillCast(Horizon.Game.Message.Sync.SyncEvent)">
+            <summary>
+            处理技能释放事件：记录日志，预留 VFX 触发入口。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.EventApplySystem.HandleDamage(Arch.Core.World,Horizon.Game.Message.Sync.SyncEvent)">
+            <summary>
+            处理伤害事件：更新目标实体的 <see cref="T:Horizon.Game.Message.Sync.Components.EntityStateAuthComponent"/> 健康值。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.EventApplySystem.HandleDeath(Arch.Core.World,Horizon.Game.Message.Sync.SyncEvent)">
+            <summary>
+            处理死亡事件：标记目标实体为死亡状态。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.EventApplySystem.HandleCorrection(Horizon.Game.Message.Sync.SyncEvent)">
+            <summary>
+            处理位置修正事件：从 SyncEvent.Payload 反序列化 CorrectionPacket，
+            路由到 CorrectionReceiveBuffer 供 ReconciliationSystem 消费。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.EventApplySystem.HandleInputAck(Horizon.Game.Message.Sync.SyncEvent)">
+            <summary>
+            处理输入确认事件：从 SyncEvent.Payload 反序列化 InputAckPacket，
+            路由到 InputAckReceiveBuffer 供 ReconciliationSystem 消费，
+            并通知 InputSendSystem 推进 _lastAckedClientTick 停止冗余重传。
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Systems.InputSendSystem">
+            <summary>
+            输入发送系统：在 NetworkSend 阶段将本地玩家的输入打包成 <see cref="T:Horizon.Game.Message.Sync.InputPacket"/> 并放入发送队列。
+            </summary>
+            <remarks>
+            仅查询拥有 <see cref="T:Horizon.Game.ECS.Arch.Components.PlayerInputComponent"/> + <see cref="T:Horizon.Game.ECS.Arch.Components.NetworkIdentityComponent"/>（IsLocalPlayer=true）
+            + <see cref="T:Horizon.Game.ECS.Arch.Components.PredictedTransformComponent"/> 的实体。
+            打包后的 InputPacket 通过 <see cref="T:Horizon.Game.ECS.Arch.Network.InputSendQueue"/> 缓存，网络层通过 <see cref="M:Horizon.Game.ECS.Arch.Systems.InputSendSystem.GetPendingInputs"/> 批量取出。
+            <para>
+            Task D.2：冗余重传。维护容量 64 的未确认 input 环形缓冲（<see cref="F:Horizon.Game.ECS.Arch.Systems.InputSendSystem._pendingAcks"/>），
+            当 <c>pred.ClientTick - _lastAckedClientTick &gt; 5</c> 时（即服务端已确认的 tick 落后当前超过 5），
+            将环形缓冲中所有未确认 input 重新 enqueue 到 <see cref="T:Horizon.Game.ECS.Arch.Network.InputSendQueue"/>，用于冗余重传以对抗丢包。
+            网络层收到 <see cref="T:Horizon.Game.Message.Sync.InputAckPacket"/> 时调用 <see cref="M:Horizon.Game.ECS.Arch.Systems.InputSendSystem.OnInputAck(System.Int64)"/> 清理已确认的 input。
+            </para>
+            </remarks>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.InputSendSystem.PendingAcksCapacity">
+            <summary>未确认 input 环形缓冲容量。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.InputSendSystem.RetransmitThreshold">
+            <summary>触发冗余重传的落后 tick 阈值：当 ClientTick - LastAckedClientTick &gt; 此值时重传。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.InputSendSystem.TotalRetransmits">
+            <summary>[Phase C2] 累计冗余重传包数（供游戏层转发到 ClientSyncMetrics）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.InputSendSystem.Instance">
+            <summary>
+            当前已注册的 InputSendSystem 实例（兼容静态调用入口）。
+            在 <see cref="M:Horizon.Game.ECS.Arch.Systems.InputSendSystem.Update(Arch.Core.World,System.TimeSpan)"/> 第一次执行时设置，供未持有 ArchWorldHost 引用的调用方
+            （如 ECSUpdateDriver、网络层）以 <c>InputSendSystem.Instance?.XXX()</c> 形式访问。
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.InputSendSystem._lastAckedClientTick">
+            <summary>
+            服务端最近一次确认到的客户端 tick（含）。
+            由网络层收到 <see cref="T:Horizon.Game.Message.Sync.InputAckPacket"/> 后通过 <see cref="M:Horizon.Game.ECS.Arch.Systems.InputSendSystem.OnInputAck(System.Int64)"/> 推进。
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.InputSendSystem._pendingAcks">
+            <summary>
+            未确认 input 环形缓冲（容量 <see cref="F:Horizon.Game.ECS.Arch.Systems.InputSendSystem.PendingAcksCapacity"/>）。
+            存储已发送但尚未被服务端确认的 <see cref="T:Horizon.Game.Message.Sync.InputPacket"/> 副本，用于冗余重传。
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.InputSendSystem._pendingTail">
+            <summary>环形缓冲中最旧元素的下标（出队位置）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.InputSendSystem._pendingHead">
+            <summary>环形缓冲中下一个写入位置。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.InputSendSystem._pendingAcksCount">
+            <summary>环形缓冲中当前元素数量。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.InputSendSystem._pendingLock">
+            <summary>
+            保护 <see cref="F:Horizon.Game.ECS.Arch.Systems.InputSendSystem._pendingAcks"/>/_pendingTail/_pendingHead/_pendingAcksCount/_lastAckedClientTick 的锁。
+            ECS 线程（Update）与网络 IO 线程（OnInputAck）并发访问，需保证线程安全。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.InputSendSystem.GetPendingInputs">
+            <summary>
+            获取所有待发送的输入包列表（网络层应调用此方法消费并清空队列）。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.InputSendSystem.OnInputAck(System.Int64)">
+            <summary>
+            网络层收到 <see cref="T:Horizon.Game.Message.Sync.InputAckPacket"/> 时调用，推进已确认 tick 并清理环形缓冲中已确认的 input。
+            </summary>
+            <param name="lastProcessedClientTick">服务端最近一次处理到的客户端 tick（含）。</param>
+            <remarks>
+            线程安全：可由网络 IO 线程并发调用。
+            仅当 lastProcessedClientTick &gt; _lastAckedClientTick 时推进，避免乱序 ACK 导致回退。
+            </remarks>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.InputSendSystem.WriteToPendingAcks(Horizon.Game.Message.Sync.InputPacket)">
+            <summary>
+            将 InputPacket 副本写入未确认环形缓冲。
+            必须在 <see cref="F:Horizon.Game.ECS.Arch.Systems.InputSendSystem._pendingLock"/> 内调用。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.InputSendSystem.TryRetransmitUnconfirmed(System.Int64)">
+            <summary>
+            检查冗余重传条件，若落后阈值超 <see cref="F:Horizon.Game.ECS.Arch.Systems.InputSendSystem.RetransmitThreshold"/> 则将所有未确认 input 重新入队。
+            必须在 <see cref="F:Horizon.Game.ECS.Arch.Systems.InputSendSystem._pendingLock"/> 内调用。
+            </summary>
+            <param name="currentClientTick">当前帧的客户端 tick。</param>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.InputSendSystem.Update(Arch.Core.World,System.TimeSpan)">
+            <inheritdoc />
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.InputSendSystem._diagFrameCount">
+            <summary>诊断帧计数器，用于限频日志输出。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Systems.InterpolationSystem">
+            <summary>
+            插值系统：在 Render 阶段对非玩家实体进行位置插值，平滑网络抖动。
+            </summary>
+            <remarks>
+            查询所有携带 <see cref="T:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent"/> 的实体，
+            根据 <see cref="T:System.TimeSpan"/> 递推 <see cref="F:Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent.Alpha"/>，
+            将当前位置向目标位置线性插值。
+            <para>Task B.6.2：当实体携带 <see cref="T:Horizon.Game.Message.Sync.Components.MovementStateAuthComponent"/> 时，在到达目标位置后
+            使用服务器下发的速度向量进行 dead reckoning（航位推算），沿速度方向继续推进位置，
+            避免在两个快照之间角色“卡顿”，实现速度向量的平滑过渡。</para>
+            <para>[Phase C4] 支持自适应插值延迟（基于快照到达间隔 jitter）和 dead reckoning 速度衰减
+            （超过 200ms 无新快照时速度线性衰减到 0，避免角色无限滑行）。</para>
+            <para>本地玩家实体不携带此组件，不受本系统影响（由 <see cref="T:Horizon.Game.ECS.Arch.Systems.LocalSimulationSystem"/> 驱动）。</para>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.InterpolationSystem.InterpolationSpeed">
+            <summary>插值速度系数（每秒推进 Alpha 的速率）。当 UseAdaptiveSpeed=true 时每帧从自适应延迟计算。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.InterpolationSystem.UseAdaptiveSpeed">
+            <summary>[Phase C4] 是否使用自适应插值速度（从 SnapshotApplySystem.AdaptiveInterpolationDelaySeconds 计算）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.InterpolationSystem.EnableDeadReckoningDecay">
+            <summary>[Phase C4] 是否启用 dead reckoning 速度衰减（默认开启）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.InterpolationSystem.DeadReckonSpeedThreshold">
+            <summary>
+            Dead reckoning 速度阈值（m/s）。水平速度低于此值视为静止，不进行航位推算。
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.InterpolationSystem.DecayStartTime">
+            <summary>
+            [Phase C4] Dead reckoning 衰减启动时间（秒）。超过此时间无新快照时，速度开始线性衰减。
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.InterpolationSystem.DecayEndTime">
+            <summary>
+            [Phase C4] Dead reckoning 衰减完成时间（秒）。超过此时间速度完全为 0。
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.InterpolationSystem.IsPaused">
+            <summary>[Phase C4] 断线期间暂停插值推进（避免无新数据时 dead reckoning 漂移）。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.InterpolationSystem.Update(Arch.Core.World,System.TimeSpan)">
+            <inheritdoc />
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Systems.LocalSimulationSystem">
+            <summary>
+            本地预测模拟系统：在 FixedUpdate 阶段读取玩家输入，调用 <see cref="T:Horizon.Game.Message.Sim.MovementFormula"/> 进行本地位置预测。
+            </summary>
+            <remarks>
+            本系统仅处理拥有 <see cref="T:Horizon.Game.ECS.Arch.Components.PlayerInputComponent"/> + <see cref="T:Horizon.Game.ECS.Arch.Components.PredictedTransformComponent"/> 的实体。
+            对于本地玩家，每次执行会递增 <see cref="P:Horizon.Game.ECS.Arch.Systems.LocalSimulationSystem.CurrentClientTick"/> 并维护输入历史。
+            固定时间步长默认为 1/60 秒（可被外部通过 <see cref="P:Horizon.Game.ECS.Arch.Systems.LocalSimulationSystem.FixedDtSeconds"/> 调整）。
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.LocalSimulationSystem.FixedDtSeconds">
+            <summary>固定时间步长（秒），默认 1/60 秒。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.LocalSimulationSystem.CurrentClientTick">
+            <summary>当前客户端 tick 序号（从 0 开始，仅对本地玩家有效）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.LocalSimulationSystem.LocalPlayerEntityId">
+            <summary>本地玩家实体 ID，未设置时为 0。</summary>
+        </member>
+        <member name="E:Horizon.Game.ECS.Arch.Systems.LocalSimulationSystem.PlayerChunkChanged">
+            <summary>
+            本地玩家跨越 chunk 边界时触发，参数为新位置的世界坐标 (X, Y, Z)（米）。
+            <para>
+            由客户端网络运行时订阅，计算新视野范围内的 chunk 集合并上行
+            <see cref="T:Horizon.Game.Message.Sync.SubscriptionUpdatePacket"/>。
+            事件在 FixedUpdate 阶段（主线程）触发，订阅方可在事件回调中直接读写 ECS 组件。
+            </para>
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.LocalSimulationSystem.GroundHeightSampler">
+            <summary>
+            地面高度采样委托：给定 ECS 世界坐标 (x, y)（ECS 为 Z-up，x=左右, y=前后），
+            返回该位置对应的地面 ECS.Z 高度（米）。
+            <para>
+            ECS 层为纯逻辑，不能依赖 FlaxEngine.Physics；由 <c>HundunWorldGame</c> 在启动时
+            注入一个使用 <c>Physics.RayCast</c> 采样 Terrain/碰撞体的回调。
+            若委托为 null（未注入），则不做地面约束，角色将受重力持续下落穿透 Terrain。
+            委托返回 <c>float.NaN</c> 表示采样失败（无地面），本系统会跳过约束。
+            </para>
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.LocalSimulationSystem._groundLockFramesRemaining">
+            <summary>
+            修复「进入游戏后在天上飞」：初始帧地面锁定计数器。
+            系统启动后的前 N 帧，若 GroundHeightSampler 返回 NaN（场景未加载/地形碰撞未就绪），
+            则冻结垂直位置（不施加重力），防止角色在场景过渡期间坠入虚空。
+            一旦采样成功或超过保护帧数，恢复正常重力模拟。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.LocalSimulationSystem.Update(Arch.Core.World,System.TimeSpan)">
+            <inheritdoc />
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem">
+            <summary>
+            客户端回滚修正系统：处理服务器 InputAck 和 Correction，确保客户端预测位置与权威一致。
+            </summary>
+            <remarks>
+            在 FixedUpdate 阶段执行（order: 20），位于 <see cref="T:Horizon.Game.ECS.Arch.Systems.LocalSimulationSystem"/>（order: 10）之后。
+            <list type="number">
+              <item>从 <see cref="T:Horizon.Game.ECS.Arch.Network.InputAckReceiveBuffer"/> 读取最新 ACK，清理已确认输入（不重放）。</item>
+              <item>从 <see cref="T:Horizon.Game.ECS.Arch.Network.CorrectionReceiveBuffer"/> 读取修正包，当偏差超过阈值时强制修正位置，
+              并依据 <see cref="!:CorrectionPacket.LastProcessedClientTick"/> 清理已确认输入、重放未确认输入。</item>
+            </list>
+            <para>
+            修复"吸附+重放导致角色无法移动"：原实现服务端从不发送 InputAckPacket，
+            InputHistoryBuffer 永不清理；CorrectionPacket 也不携带 LastProcessedClientTick，
+            导致 ProcessCorrection 重放 GetFromTick(0) 返回所有历史输入（含已确认），
+            角色从权威位置飞出极远 → drift 巨大 → 再次 Correction → 死循环。
+            现将 LastProcessedClientTick 字段加入 CorrectionPacket，ProcessCorrection 据此清理与重放。
+            </para>
+            </remarks>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem.CorrectionThreshold">
+            <summary>位置修正阈值（米），超过此值将触发强制吸附。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem.HardSnapThreshold">
+            <summary>
+            [已废弃] 硬性吸附阈值（米）。当前实现统一使用平滑修正，此字段保留仅供向后兼容配置。
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem.SmoothCorrectionSpeed">
+            <summary>
+            平滑修正插值速度（每秒）。Correction 后 pred 向"从权威位置重放未确认输入的结果"插值，
+            而非瞬移，避免视觉突变。
+            默认 15/s（约 4 帧 @60fps 追平）。
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem.TotalCorrectionsApplied">
+            <summary>累计修正次数（诊断用）。</summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "F:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem._lastAckedClientTick" -->
+        <member name="P:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem.LastPredictionError">
+            <summary>[Phase C2] 最近一次预测误差（米），供游戏层转发到 ClientSyncMetrics。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem.HasNewPredictionError">
+            <summary>[Phase C2] 是否有新的预测误差样本待消费。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem.StormThreshold">
+            <summary>
+            修正风暴检测窗口内允许的最大修正次数。
+            超过此次数进入冷却期，跳过后续修正避免角色反复抽搐。
+            </summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem.StormWindowSeconds">
+            <summary>修正风暴检测窗口（秒）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem.StormCooldownSeconds">
+            <summary>修正风暴冷却时间（秒）。进入风暴模式后跳过修正的时长。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem._recentCorrectionTimes">
+            <summary>最近修正时间戳环形缓冲（用于风暴检测）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem.StormSuppressedCount">
+            <summary>累计因风暴抑制而跳过的修正次数（诊断用）。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem._replayBuffer">
+            <summary>复用缓冲区：避免 GetFromTick 热路径上的 List 分配。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem.ResetState">
+            <summary>
+            重置内部状态（断线/重连场景使用）。
+            清空修正风暴检测历史、冷却计时器和统计计数，
+            避免重连后旧会话的风暴历史影响新会话的修正逻辑。
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem.GroundHeightSampler">
+            <summary>
+            地面高度采样委托：与 <see cref="P:Horizon.Game.ECS.Arch.Systems.LocalSimulationSystem.GroundHeightSampler"/> 语义一致。
+            <para>
+            回滚重播时同样需要应用地面约束：否则从服务端权威位置重放未确认输入时，
+            <see cref="M:Horizon.Game.Message.Sim.MovementFormula.Step(System.Single,System.Single,System.Single,System.Single,System.Single,System.Single,System.Single,System.Single,System.Single)"/> 计算出的 Z 会穿透 Terrain，导致下一次 correction
+            触发循环。委托为 null 时跳过约束（保持原行为，仅在未注入时使用）。
+            </para>
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem.Update(Arch.Core.World,System.TimeSpan)">
+            <inheritdoc />
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem.ProcessInputAck(Arch.Core.World)">
+            <summary>
+            处理服务器输入确认：仅清理已确认输入，不重放未确认输入。
+            </summary>
+            <remarks>
+            未确认输入已由 <see cref="T:Horizon.Game.ECS.Arch.Systems.LocalSimulationSystem"/>（order: 10）在本 tick 的 FixedUpdate 中应用过，
+            此处若从当前预测位置再次重放会导致移动被双重应用（位置累加两次）。
+            重放职责转移到 <see cref="M:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem.ProcessCorrection(Arch.Core.World,System.Single)"/>：仅在服务端位置修正后才需要从权威位置重放未确认输入。
+            </remarks>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.ReconciliationSystem.ProcessCorrection(Arch.Core.World,System.Single)">
+            <summary>
+            处理服务器位置修正：当偏差超过阈值时修正位置，并从权威位置重放未确认输入。
+            包含修正风暴抑制和平滑修正机制。
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem">
+            <summary>
+            快照应用系统：在 NetworkReceive 阶段消费 <see cref="T:Horizon.Game.ECS.Arch.Network.SnapshotReceiveBuffer"/>，
+            将服务器下发的快照增量（Spawn / Update / Despawn）写入 Arch 世界。
+            </summary>
+            <remarks>
+            系统维护一个 EntityId → <see cref="T:Arch.Core.Entity"/> 的字典映射，用于快速查找远程实体。
+            对于本地玩家实体（通过 <see cref="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.LocalPlayerOwnerId"/> 匹配），跳过变换更新，
+            以保证本地预测优先权。
+            </remarks>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem._entityIdToArchEntity">
+            <summary>EntityId 到 Arch Entity 的映射表。</summary>
+        </member>
+        <member name="F:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem._previousOwnerId">
+            <summary>上一帧的 LocalPlayerOwnerId，用于检测变更。跨线程读写使用 Volatile 保证可见性。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.EntitySpawnedEventArgs">
+            <summary>实体 Spawn 事件参数。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.EntitySpawnedEventArgs.#ctor(System.UInt64,Arch.Core.Entity,System.Boolean,System.Single,System.Single,System.Single)">
+            <summary>实体 Spawn 事件参数。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.EntityDespawnedEventArgs">
+            <summary>实体 Despawn 事件参数。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.EntityDespawnedEventArgs.#ctor(System.UInt64)">
+            <summary>实体 Despawn 事件参数。</summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.AnimationStateChangedEventArgs">
+            <summary>
+            Task B.6.3：动画状态变更事件参数。
+            当服务器下发 <see cref="T:Horizon.Game.Message.Sync.Components.AnimationStateAuthComponent"/>（Montage 触发/结束）时触发，
+            供 UE5 侧订阅以调用 AnimationMontage 播放/停止。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.AnimationStateChangedEventArgs.#ctor(System.UInt64,System.UInt32,System.UInt32,System.Single,System.Boolean,System.Int64)">
+            <summary>
+            Task B.6.3：动画状态变更事件参数。
+            当服务器下发 <see cref="T:Horizon.Game.Message.Sync.Components.AnimationStateAuthComponent"/>（Montage 触发/结束）时触发，
+            供 UE5 侧订阅以调用 AnimationMontage 播放/停止。
+            </summary>
+        </member>
+        <member name="E:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.EntitySpawned">
+            <summary>实体 Spawn 通知（供 FlaxActorSyncSystem 等外部系统订阅）。</summary>
+        </member>
+        <member name="E:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.EntityDespawned">
+            <summary>实体 Despawn 通知（供 FlaxActorSyncSystem 等外部系统订阅）。</summary>
+        </member>
+        <member name="E:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.AnimationStateChanged">
+            <summary>
+            Task B.6.3：动画状态变更通知（供 UE5 侧订阅以播放/停止 Montage）。
+            当 delta 携带 <see cref="T:Horizon.Game.Message.Sync.Components.AnimationStateAuthComponent"/> 时触发。
+            </summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.LocalPlayerOwnerId">
+            <summary>本地玩家归属 ID（0 表示未设置）。跨线程读写使用 Volatile 保证可见性。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.OrphanMappingsCleaned">
+            <summary>累计清理的孤儿实体映射数（诊断用）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.TotalSnapshotsApplied">
+            <summary>累计已消费的快照包总数（从不重置）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.TotalDeltasApplied">
+            <summary>累计已应用的 EntityDelta 总数（从不重置）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.TotalSpawnsApplied">
+            <summary>累计已应用的 Spawn delta 总数（从不重置）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.TotalUpdatesApplied">
+            <summary>累计已应用的 Update delta 总数（从不重置）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.TotalDespawnsApplied">
+            <summary>累计已应用的 Despawn delta 总数（从不重置）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.LastTickConsumed">
+            <summary>上一帧消费的快照包数量。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.LastTickDeltas">
+            <summary>上一帧应用的 EntityDelta 数量。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.LastTickSpawns">
+            <summary>上一帧应用的 Spawn delta 数量。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.LastTickUpdates">
+            <summary>上一帧应用的 Update delta 数量。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.LastTickDespawns">
+            <summary>上一帧应用的 Despawn delta 数量。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.UpdateCallCount">
+            <summary>Update 方法被调用的总次数。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.MaxSnapshotsPerFrame">
+            <summary>Task 2：单帧最多消费的快照包数量，超出部分留待下一帧处理。默认 8。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.OverflowCount">
+            <summary>[Phase C6] 累计单帧快照消费溢出次数（供游戏层转发到 ClientSyncMetrics）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.LocalPlayerProtectionCount">
+            <summary>Task 4：本地玩家保护（跳过 Despawn）累计次数。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.UseAdaptiveDelay">
+            <summary>是否启用自适应插值延迟（默认关闭，待充分测试后开启）。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.FixedInterpolationDelaySeconds">
+            <summary>固定插值延迟（秒），当 UseAdaptiveDelay=false 时使用。默认 100ms。</summary>
+        </member>
+        <member name="P:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.AdaptiveInterpolationDelaySeconds">
+            <summary>
+            [Phase C4] 计算当前自适应插值延迟（秒）。
+            公式：targetDelay = avgInterval + 2 * jitter，clamp 到 [50ms, 200ms]。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.RecordSnapshotArrival">
+            <summary>[Phase C4] 记录快照到达时间，更新自适应延迟统计。</summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.OnFullSnapshotApplied(Horizon.Game.Message.Sync.SnapshotPacket)">
+            <summary>
+            Task D.3.3：供网络层调用，记录最近应用的全量快照。
+            <para>
+            当服务端下发 BaselineTick=0 的全量快照并成功应用后，网络层应调用本方法更新缓存，
+            供后续 BaselineTick!=0 的增量快照重建使用。
+            </para>
+            </summary>
+            <param name="snapshot">已应用的全量快照（BaselineTick 应为 0）。</param>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.TryRebuildFromDelta(Horizon.Game.Message.Sync.SnapshotPacket)">
+            <summary>
+            Task D.3.3：尝试从增量快照重建完整状态（不涉及 Arch World，供测试与网络层校验使用）。
+            <para>
+            若 <paramref name="deltaSnapshot"/> 为全量快照（BaselineTick=0），直接返回并更新缓存。
+            若为增量快照（BaselineTick!=0），基于 _lastAppliedSnapshot 合并重建；
+            若 _lastAppliedSnapshot 为 null 或 ServerTick 不匹配 BaselineTick，返回 null（调用方应请求全量重传）。
+            </para>
+            </summary>
+            <param name="deltaSnapshot">待应用的全量或增量快照。</param>
+            <returns>重建后的全量快照；若 baseline 不匹配则返回 null。</returns>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.ResetLastAppliedSnapshot">
+            <summary>
+            Task D.3.3：重置客户端快照缓存（重连/握手场景使用，避免旧 baseline 污染新连接）。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.Update(Arch.Core.World,System.TimeSpan)">
+            <inheritdoc />
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.RetrospectivelyUpdateLocalPlayer(Arch.Core.World)">
+            <summary>
+            当 LocalPlayerOwnerId 从0变为非0时，回溯更新已创建实体的 IsLocalPlayer 标志和组件。
+            同时销毁因 HandleSpawn 竞态（LocalPlayerOwnerId 尚未设置时 Spawn 先到达）创建的重复本地玩家实体，
+            避免 InputSendSystem 每帧生成两个 InputPacket（一个正确、一个全零）导致角色几乎不动。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.HandleSpawn(Arch.Core.World,Horizon.Game.Message.Sync.EntityDelta,System.Int64)">
+            <summary>
+            处理实体生成：创建新的 Arch 实体并添加网络身份、权威变换和插值变换组件。
+            </summary>
+            <remarks>
+            多玩家 AOI 场景下，服务器可能在 chunk 订阅切换、重连重传等情况下重复下发同一 EntityId 的 Spawn delta。
+            本方法在创建新实体前检查映射表，若该 EntityId 已存在则先销毁旧实体并通知外部系统释放对应资源，
+            避免旧实体残留导致泄露与 Actor 同步错乱。
+            </remarks>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.HandleUpdate(Arch.Core.World,Horizon.Game.Message.Sync.EntityDelta,System.Int64)">
+            <summary>
+            处理实体更新：查找对应 Arch 实体，更新权威变换和插值目标。
+            本地玩家实体的变换更新被跳过（本地预测优先）。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.HandleDespawn(Arch.Core.World,Horizon.Game.Message.Sync.EntityDelta)">
+            <summary>
+            处理实体销毁：从 Arch 世界中移除实体并清理映射表。
+            </summary>
+            <remarks>
+            本地玩家实体不会被 Despawn：本地玩家不会因 AOI 视野离开而被销毁，
+            防止在多玩家场景下因 chunk 订阅切换或 AOI 边界抖动导致本地玩家实体被误销毁。
+            服务端 ZoneShardGrain 设置 OwnerId == EntityId，因此用 EntityId == LocalPlayerOwnerId 判断等价于 OwnerId 比较。
+            </remarks>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.ClearAllEntityMappings">
+            <summary>
+            清理所有远程实体映射（断线/重连场景使用）。
+            注意：此方法不销毁 ECS 实体（ECS World 由外部管理），仅清理本系统的映射字典。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.CleanupOrphanMappings(Arch.Core.World)">
+            <summary>
+            孤儿实体清理：扫描映射字典，移除 Arch World 中已不存活的实体引用。
+            防止因外部销毁实体（场景切换、World.Clear、重复 Spawn 覆盖）后字典残留导致内存泄漏。
+            每 <see cref="F:Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.OrphanCleanupInterval"/> 帧调用一次，均摊开销可忽略。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.GeneratorPropertyAttribute">
+            <summary>
+            标识源生成依赖属性。
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Core.GeneratorPropertyAttribute.TargetType">
+            <summary>
+            要生成依赖属性的目标类型名称。如果未设置，则表示当前属性所在的类型。
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Core.GeneratorPropertyAttribute.GenerationOptions">
+            <summary>
+            生成的属性类型。
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Core.GeneratorPropertyAttribute.ActionMode">
+            <summary>
+            是否使用Action模式生成Set扩展方法访问器。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.PropertyGenerationOptions">
+            <summary>
+            依赖属性生成选项。
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Core.PropertyGenerationOptions.All">
+            <summary>
+            生成所有访问器。
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Core.PropertyGenerationOptions.IncludeMethodGetter">
+            <summary>
+            包含方法形式的 Getter。
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Core.PropertyGenerationOptions.IncludeMethodSetter">
+            <summary>
+            包含方法形式的 Setter。
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Core.PropertyGenerationOptions.IncludePropertyGetter">
+            <summary>
+            包含属性形式的 Getter。
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Core.PropertyGenerationOptions.IncludePropertySetter">
+            <summary>
+            包含属性形式的 Setter。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.FastSerializableAttribute">
+            <summary>
+            标识源生成Fast序列化相关的实现。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.GeneratorPackageAttribute">
+            <summary>
+            标识源生成<see cref="T:TouchSocket.Core.IPackage"/>的实现。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.PackageMemberAttribute">
+            <summary>
+            标识源生成<see cref="T:TouchSocket.Core.IPackage"/>成员的特性。
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Core.PackageMemberAttribute.Behavior">
+            <summary>
+            生成行为。一般来说，对于非只读、非重写、且同时拥有get，set（可以私有）访问器的属性，会自动生成。
+            对于字段，均不会自动生成。所以可以使用该设置，来指示生成器的生成行为。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Rpc.GeneratorRpcProxyAttribute">
+            <summary>
+            标识该接口将使用源生成自动生成调用的代理类
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Rpc.GeneratorRpcProxyAttribute.Prefix">
+            <summary>
+            调用键的前缀，包括服务的命名空间，类名，不区分大小写。格式：命名空间.类名
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Rpc.GeneratorRpcProxyAttribute.GenericConstraintTypes">
+            <summary>
+            生成泛型方法的约束
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Rpc.GeneratorRpcProxyAttribute.MethodInvoke">
+            <summary>
+            是否仅以函数名调用，当为True是，调用时仅需要传入方法名即可。
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Rpc.GeneratorRpcProxyAttribute.Namespace">
+            <summary>
+            生成代码的命名空间
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Rpc.GeneratorRpcProxyAttribute.ClassName">
+            <summary>
+            生成的类名，不要包含“I”，生成接口时会自动添加。
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Rpc.GeneratorRpcProxyAttribute.GeneratorFlag">
+            <summary>
+            生成代码
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Rpc.GeneratorRpcProxyAttribute.InheritedInterface">
+            <summary>
+            继承接口
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Rpc.GeneratorFlag">
+            <summary>
+            代码生成标识
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Rpc.GeneratorFlag.ExtensionSync">
+            <summary>
+            生成扩展同步代码
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Rpc.GeneratorFlag.ExtensionAsync">
+            <summary>
+            生成扩展异步代码
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Rpc.GeneratorFlag.InstanceSync">
+            <summary>
+            生成实例类同步代码（源代码生成无效）
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Rpc.GeneratorFlag.InstanceAsync">
+            <summary>
+            生成实例类异步代码（源代码生成无效）
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Rpc.GeneratorFlag.InterfaceSync">
+            <summary>
+            生成接口同步代码
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Rpc.GeneratorFlag.InterfaceAsync">
+            <summary>
+            生成接口异步代码
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Rpc.GeneratorRpcServerAttribute">
+            <summary>
+            标识将通过源生成器生成Rpc服务的调用委托。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Rpc.GeneratorRpcServerRegisterAttribute">
+            <summary>
+            标识将通过源生成器生成Rpc服务的注册代码。
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Rpc.GeneratorRpcServerRegisterAttribute.MethodName">
+            <summary>
+            方法名称。默认是“RegisterAllFrom+AssemblyName”
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Rpc.GeneratorRpcServerRegisterAttribute.ClassName">
+            <summary>
+            扩展类类名，默认是“RegisterRpcServerFrom+AssemblyName+Extension”
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Rpc.GeneratorRpcServerRegisterAttribute.Accessibility">
+            <summary>
+            访问修饰。
+            <para>
+            如果为<see cref="F:TouchSocket.Rpc.Accessibility.Both"/>，将生成注册公共Rpc服务与非公共服务两个方法。其中非公共方法会在<see cref="P:TouchSocket.Rpc.GeneratorRpcServerRegisterAttribute.MethodName"/>之前以Internal开头。
+            如果为<see cref="F:TouchSocket.Rpc.Accessibility.Internal"/>，将只生成注册非公共Rpc服务。
+            如果为<see cref="F:TouchSocket.Rpc.Accessibility.Public"/>，将只生成注册公共Rpc服务。
+            </para>
+            </summary>
+        </member>
+    </members>
+</doc>

@@ -43,6 +43,10 @@ namespace ManagedHundunWorld.Network.Handlers
 
                             // 设置本地玩家 ID，使 SnapshotApplySystem 能区分本地玩家和远程玩家
                             var gameInstance = HundunWorld.Game.HundunWorldGame.Instance;
+                            // 修复（角色无法真正移动）：将初始位置和地面对齐后的 Y 提升到外层作用域，
+                            // 供后续握手包使用。
+                            float initX = 0f, initY = 0f, initZ = 0f;
+                            float groundAlignedY = 0f;
                             if (gameInstance != null && response.CharacterInfo != null)
                             {
                                 gameInstance.SetPlayerId(response.CharacterInfo.CharacterId);
@@ -50,7 +54,6 @@ namespace ManagedHundunWorld.Network.Handlers
 
                                 // 创建本地玩家 ECS 实体（服务端不发送本地玩家的 Spawn delta，由客户端自行创建）。
                                 // 初始位置优先从 EnterGameResponse.CharacterInfo.Position 获取，否则默认 (0,0,0)。
-                                float initX = 0f, initY = 0f, initZ = 0f;
                                 var pos = response.CharacterInfo.Position;
                                 if (pos != null)
                                 {
@@ -58,8 +61,13 @@ namespace ManagedHundunWorld.Network.Handlers
                                     initY = pos.Y;
                                     initZ = pos.Z;
                                 }
-                                gameInstance.CreateLocalPlayerEntity(response.CharacterInfo.CharacterId, initX, initY, initZ);
-                                FlaxEngine.Debug.Log($"[EnterGameHandler] 已创建本地玩家 ECS 实体: CharacterId={response.CharacterInfo.CharacterId}, Pos=({initX},{initY},{initZ})");
+                                // 修复（角色无法真正移动）：CreateLocalPlayerEntity 内部会做地面对齐，
+                                // 返回地面对齐后的 Flax Y（上下）坐标。握手包必须使用此值，
+                                // 确保服务端 RegisterEntityAsync 的初始位置与客户端 PredictedTransformComponent 一致，
+                                // 避免首帧 drift 超阈值触发 Correction 风暴。
+                                float groundAlignedYLocal = gameInstance.CreateLocalPlayerEntity(response.CharacterInfo.CharacterId, initX, initY, initZ);
+                                groundAlignedY = groundAlignedYLocal;
+                                FlaxEngine.Debug.Log($"[EnterGameHandler] 已创建本地玩家 ECS 实体: CharacterId={response.CharacterInfo.CharacterId}, Pos=({initX},{initY},{initZ}), GroundAlignedY={groundAlignedY:F3}");
 
                                 // 缓存本地玩家 Actor 创建请求，待场景切换到 GameWorld 完成后再创建。
                                 // 若在场景切换前创建，Actor 会被旧场景卸载时销毁。
@@ -109,18 +117,14 @@ namespace ManagedHundunWorld.Network.Handlers
                             var networkManager = HundunWorld.Game.HundunWorldGame.Instance?.NetworkManager;
                             if (networkManager != null && response.CharacterInfo != null)
                             {
-                                // 从 EnterGameResponse.CharacterInfo.Position 提取初始位置，
-                                // 通过握手包下发给服务端，使服务端注册实体时使用真实位置而非 (0,0,0)。
-                                var handshakePos = response.CharacterInfo.Position;
-                                float handshakeX = handshakePos?.X ?? 0f;
-                                float handshakeY = handshakePos?.Y ?? 0f;
-                                float handshakeZ = handshakePos?.Z ?? 0f;
+                                // 修复（角色无法真正移动）：使用地面对齐后的 Y 坐标发送握手，
+                                // 确保服务端初始位置与客户端一致。
                                 _ = networkManager.SendSyncHandshakeAsync(
                                     response.CharacterInfo.CharacterId,
-                                    handshakeX,
-                                    handshakeY,
-                                    handshakeZ);
-                                FlaxEngine.Debug.Log($"[EnterGameHandler] 已发起同步握手: CharacterId={response.CharacterInfo.CharacterId}, Pos=({handshakeX},{handshakeY},{handshakeZ})");
+                                    initX,
+                                    groundAlignedY,
+                                    initZ);
+                                FlaxEngine.Debug.Log($"[EnterGameHandler] 已发起同步握手: CharacterId={response.CharacterInfo.CharacterId}, Pos=({initX},{groundAlignedY},{initZ})");
                             }
                             else
                             {

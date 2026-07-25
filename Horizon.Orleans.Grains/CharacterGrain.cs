@@ -1335,5 +1335,46 @@ namespace Horizon.Orleans.Grains
         }
 
         #endregion
+
+        #region 角色位置缓存
+
+        /// <summary>位置数据过期阈值（分钟）。超过此时间的位置数据视为无效，回退到握手坐标。</summary>
+        private const double PositionStaleMinutes = 5.0;
+
+        /// <inheritdoc />
+        public async Task UpdateLastPositionAsync(float x, float y, float z, float yaw)
+        {
+            var state = _characterState.State;
+            if (state == null) return;
+
+            state.LastPositionX = x;
+            state.LastPositionY = y;
+            state.LastPositionZ = z;
+            state.LastYaw = yaw;
+            state.LastPositionUpdateUtc = DateTime.UtcNow;
+
+            await _characterState.WriteStateAsync();
+        }
+
+        /// <inheritdoc />
+        public Task<(float X, float Y, float Z, float Yaw)?> GetLastPositionAsync()
+        {
+            var state = _characterState.State;
+            if (state == null || state.LastPositionUpdateUtc == default)
+            {
+                return Task.FromResult<(float, float, float, float)?>(null);
+            }
+
+            // 过期检查：超过 5 分钟的位置数据视为无效
+            if ((DateTime.UtcNow - state.LastPositionUpdateUtc).TotalMinutes > PositionStaleMinutes)
+            {
+                return Task.FromResult<(float, float, float, float)?>(null);
+            }
+
+            return Task.FromResult<(float, float, float, float)?>(
+                (state.LastPositionX, state.LastPositionY, state.LastPositionZ, state.LastYaw));
+        }
+
+        #endregion
     }
 }

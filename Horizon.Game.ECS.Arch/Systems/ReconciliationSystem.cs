@@ -53,6 +53,15 @@ public sealed class ReconciliationSystem : ArchSystemBase
     /// <summary>累计修正次数（诊断用）。</summary>
     public int TotalCorrectionsApplied { get; private set; }
 
+    /// <summary>
+    /// 服务端最近一次 Ack 确认到的客户端 tick。
+    /// 修复（角色移动后仍被吸附回原地）：用于检测过期 Correction。
+    /// 当 Correction.LastProcessedClientTick < _lastAckedClientTick 时，
+    /// 说明该 Correction 对应的输入批次已被更新的 Ack 覆盖，
+    /// 其重放所需的输入已被清理，必须跳过否则角色会被拉回旧位置。
+    /// </summary>
+    private long _lastAckedClientTick;
+
     /// <summary>[Phase C2] 最近一次预测误差（米），供游戏层转发到 ClientSyncMetrics。</summary>
     public float LastPredictionError { get; private set; }
 
@@ -97,6 +106,7 @@ public sealed class ReconciliationSystem : ArchSystemBase
         _recentCorrectionCount = 0;
         _stormCooldownUntil = 0f;
         _lastTickTimestamp = Environment.TickCount64;
+        _lastAckedClientTick = 0;
         StormSuppressedCount = 0;
         TotalCorrectionsApplied = 0;
         LastPredictionError = 0f;
@@ -137,6 +147,12 @@ public sealed class ReconciliationSystem : ArchSystemBase
         }
 
         var lastProcessedTick = ack.LastProcessedClientTick;
+
+        // 记录最新 Ack tick，供 ProcessCorrection 检测过期 Correction。
+        if (lastProcessedTick > _lastAckedClientTick)
+        {
+            _lastAckedClientTick = lastProcessedTick;
+        }
 
         // 仅清理已确认的输入历史。world 参数保留以维持调用签名一致性。
         InputHistoryBuffer.Instance.ClearUpTo(lastProcessedTick);
@@ -229,14 +245,24 @@ public sealed class ReconciliationSystem : ArchSystemBase
                 LastPredictionError = drift;
                 HasNewPredictionError = true;
 
-                // 修复"吸附+重放导致角色无法移动"：
-                // 服务端从不发送 InputAckPacket，导致 InputHistoryBuffer 永不清理。
-                // 若直接 GetFromTick(0) 会返回所有历史输入（含已确认），
-                // 重放后角色从权威位置飞出极远 → 下一帧 drift 巨大 → 再次 Correction → 死循环。
-                // 修复策略：CorrectionPacket 现携带 LastProcessedClientTick（服务端处理到的最大客户端 tick），
-                // 据此先清理已确认输入，再仅重放真正未确认的输入。
+                // 修复（角色移动后仍被吸附回原地 — 残留根因）：
+                // 场景：服务端 Tick N 发送 Correction(lastProcessedTick=50)，
+                // Tick N+1 发送 Ack(lastProcessedTick=100)。
+                // 因网络乱序，Ack(100) 先到达客户端，ClearUpTo(100) 清除了输入 1-100。
+                // 随后 Correction(50) 到达，GetFromTick(50) 只能获取 101+ 的输入，
+                // 缺失了 51-100 的输入，重放结果远远落后于实际位置，角色被拉回。
+                // 修复策略：
+                // 1. 若 Correction.LastProcessedClientTick < _lastAckedClientTick，
+                //    说明该 Correction 已被更新的 Ack 覆盖（服务端已处理到更新的 tick），
+                //    其重放所需的输入已被 Ack 清理，必须跳过。
+                // 2. 不再在 ProcessCorrection 中调用 ClearUpTo（仅由 Ack 负责清理），
+                //    避免与 Ack 的清理逻辑冲突。
                 var lastProcessedTick = correction.LastProcessedClientTick;
-                InputHistoryBuffer.Instance.ClearUpTo(lastProcessedTick);
+                if (lastProcessedTick < _lastAckedClientTick)
+                {
+                    // 过期 Correction：服务端已 Ack 到更新的 tick，本 Correction 的重放数据已不完整，跳过。
+                    return;
+                }
 
                 // 从权威位置重放所有未确认输入（ClientTick > lastProcessedTick），得到正确的预测位置。
                 // 重放使用临时变量 replayX/Y/Z，不直接修改 pred，以便最后平滑插值。
@@ -341,15 +367,18 @@ public sealed class ReconciliationSystem : ArchSystemBase
                     }
                 }
 
-                // 平滑插值到重放结果（而非瞬移）。
-                // 重放结果是从权威位置应用未确认输入的正确预测位置，下一帧预测应从此处继续。
-                // 视觉上平滑过渡避免突变；逻辑上 pred 最终会收敛到 replayX/Y/Z。
-                // 注意：插值后 pred 与 replay 仍有差距，下一帧预测会从插值位置继续，
-                // 但因为 InputAck 已清理已确认输入，未确认输入很少，drift 会快速收敛。
-                var tSmooth = MathF.Min(1f, SmoothCorrectionSpeed * dt);
-                pred.X += (replayX - pred.X) * tSmooth;
-                pred.Y += (replayY - pred.Y) * tSmooth;
-                pred.Z += (replayZ - pred.Z) * tSmooth;
+                // 修复（角色移动后仍被吸附回原地）：原实现使用平滑插值（tSmooth=0.25），
+                // 每帧仅应用 25% 的修正量。修正后 pred 处于中间位置（既非旧预测也非正确重放结果），
+                // 下一帧 LocalSimulationSystem 从中间位置继续预测，服务端从正确位置继续，
+                // 两端持续分叉 → drift 始终 > CorrectionThreshold → 每几帧触发一次 Correction →
+                // 角色被反复拉回，永远无法真正移动。
+                // 正确做法：直接将 pred 设置为重放结果（replayX/Y/Z）。
+                // 重放结果 = 服务端权威位置 + 未确认输入重放，是客户端应有的正确预测位置。
+                // 视觉平滑由 FlaxActorSyncSystem/LocalPlayerActorSyncSystem 在 Actor 层处理，
+                // ECS 逻辑层必须立即对齐，否则下一帧预测从错误位置继续，导致校正死循环。
+                pred.X = replayX;
+                pred.Y = replayY;
+                pred.Z = replayZ;
                 pred.Vz = replayVz;
             }
         });

@@ -356,12 +356,95 @@ public class NetworkSyncHardeningTests
 
     #endregion
 
+    #region 修复验证：角色无法真正移动（服务端位置不重置为原点）
+
+    [Fact]
+    public async Task BugFix_CharacterMovement_ServerPositionNotResetToOrigin()
+    {
+        var grain = CreateGrain();
+        const ulong entityId = 9200;
+        await grain.RegisterEntityAsync(entityId, 0, 0, 0);
+
+        float clientX = 0, clientY = 0, clientZ = 0, clientVz = 0;
+        for (long tick = 1; tick <= 10; tick++)
+        {
+            var input = new InputPacket { ClientTick = tick, MoveX = 1.0f, MoveY = 0f, CharacterId = entityId, MaxSpeed = 6f };
+            var (nx, ny, nz, nvz) = MovementFormula.Step(clientX, clientY, clientZ, clientVz, input.MoveX, input.MoveY, 0, Dt, 6f);
+            if (nz < 0f) { nz = 0f; nvz = 0f; }
+            clientX = nx; clientY = ny; clientZ = nz; clientVz = nvz;
+            input.PredictedEndX = clientX; input.PredictedEndY = clientY; input.PredictedEndZ = clientZ;
+            await grain.SubmitInputAsync(entityId, input, clientX, clientY, clientZ);
+            await grain.TickAsync(tickTime: tick / 60.0);
+        }
+
+        var entitiesField = typeof(ZoneShardGrain).GetField("_simulatedEntities", BindingFlags.NonPublic | BindingFlags.Instance);
+        var entities = (Dictionary<ulong, ZoneShardGrain.SimulatedEntity>)entitiesField!.GetValue(grain)!;
+        var entity = entities[entityId];
+
+        Assert.True(entity.X > 0.9f, $"服务端 X 应 > 0.9m，实际={entity.X:F4}");
+        Assert.True(entity.Z >= -0.01f, $"服务端 Z 应 >= 0，实际={entity.Z:F4}");
+        Assert.True(entity.IsGrounded, $"IsGrounded 应为 true");
+    }
+
+    #endregion
+
+    #region 持久化恢复测试
+
+    /// <summary>
+    /// 验证 ZoneShardGrain 持久化状态恢复：模拟实体移动后持久化，然后验证 State 中包含正确位置。
+    /// </summary>
+    [Fact]
+    public async Task ZoneShardState_PersistAndRestore_PositionPreserved()
+    {
+        var mockState = new Mock<global::Orleans.Runtime.IPersistentState<Horizon.Orleans.Grains.World.ZoneShardState>>();
+        var stateObj = new Horizon.Orleans.Grains.World.ZoneShardState();
+        mockState.SetupGet(s => s.State).Returns(stateObj);
+        mockState.Setup(s => s.WriteStateAsync()).Callback(() => { }).Returns(Task.CompletedTask);
+
+        var mockLogger = new Mock<ILogger<ZoneShardGrain>>();
+        var grain = new ZoneShardGrain(mockLogger.Object, mockState.Object);
+        var grainId = GrainId.Create(GrainType.Create("ZoneShard"), "1");
+        var mockContext = new Mock<IGrainContext>();
+        mockContext.SetupGet(c => c.GrainId).Returns(grainId);
+        typeof(Grain).GetField("<GrainContext>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(grain, mockContext.Object);
+
+        const ulong entityId = 9400;
+        await grain.RegisterEntityAsync(entityId, 0, 0, 0);
+
+        // 移动 10 tick
+        float cx = 0, cy = 0, cz = 0, cvz = 0;
+        for (long tick = 1; tick <= 10; tick++)
+        {
+            var input = new InputPacket { ClientTick = tick, MoveX = 1.0f, MoveY = 0f, CharacterId = entityId, MaxSpeed = 6f };
+            var (nx, ny, nz, nvz) = MovementFormula.Step(cx, cy, cz, cvz, 1.0f, 0f, 0, Dt, 6f);
+            if (nz < 0f) { nz = 0f; nvz = 0f; }
+            cx = nx; cy = ny; cz = nz; cvz = nvz;
+            input.PredictedEndX = cx; input.PredictedEndY = cy; input.PredictedEndZ = cz;
+            await grain.SubmitInputAsync(entityId, input, cx, cy, cz);
+            await grain.TickAsync(tickTime: tick / 60.0);
+        }
+
+        // 触发持久化（通过反射调用 PersistEntityStateAsync）
+        var persistMethod = typeof(ZoneShardGrain).GetMethod("PersistEntityStateAsync", BindingFlags.NonPublic | BindingFlags.Instance);
+        await (Task)persistMethod!.Invoke(grain, null)!;
+
+        // 验证 State 中包含正确位置
+        Assert.True(stateObj.Entities.ContainsKey(entityId), "持久化 State 应包含实体");
+        var persistedEntity = stateObj.Entities[entityId];
+        Assert.True(persistedEntity.X > 0.9f, $"持久化 X 应 > 0.9m，实际={persistedEntity.X:F4}");
+        Assert.True(stateObj.TickCount >= 10, $"持久化 TickCount 应 >= 10，实际={stateObj.TickCount}");
+    }
+
+    #endregion
+
     #region 辅助方法
 
     private static ZoneShardGrain CreateGrain()
     {
         var mockLogger = new Mock<ILogger<ZoneShardGrain>>();
-        var grain = new ZoneShardGrain(mockLogger.Object);
+        var mockState = new Mock<global::Orleans.Runtime.IPersistentState<Horizon.Orleans.Grains.World.ZoneShardState>>();
+        mockState.SetupGet(s => s.State).Returns(new Horizon.Orleans.Grains.World.ZoneShardState());
+        var grain = new ZoneShardGrain(mockLogger.Object, mockState.Object);
 
         var grainId = GrainId.Create(GrainType.Create("ZoneShard"), "1");
         var mockContext = new Mock<IGrainContext>();

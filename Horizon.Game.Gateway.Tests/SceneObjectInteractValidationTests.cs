@@ -28,7 +28,9 @@ public class SceneObjectInteractValidationTests
     private static ZoneShardGrain CreateGrain(ISceneObjectPersistenceStore? persistence = null)
     {
         var mockLogger = new Mock<ILogger<ZoneShardGrain>>();
-        var grain = new ZoneShardGrain(mockLogger.Object, persistence);
+        var mockState = new Mock<global::Orleans.Runtime.IPersistentState<Horizon.Orleans.Grains.World.ZoneShardState>>();
+        mockState.SetupGet(s => s.State).Returns(new Horizon.Orleans.Grains.World.ZoneShardState());
+        var grain = new ZoneShardGrain(mockLogger.Object, mockState.Object, persistence);
 
         // ZoneShardGrain 直接 new 时 GrainContext 为 null，导致 GetPrimaryKeyLong() 抛 NullReferenceException。
         // 通过反射注入 mock IGrainContext，使日志参数中的 GetPrimaryKeyLong() 调用不再抛异常。

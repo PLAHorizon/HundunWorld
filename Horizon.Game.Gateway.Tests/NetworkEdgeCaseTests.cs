@@ -469,7 +469,9 @@ public class NetworkEdgeCaseTests
     private static ZoneShardGrain CreateGrain(long shardId)
     {
         var mockLogger = new Mock<ILogger<ZoneShardGrain>>();
-        var grain = new ZoneShardGrain(mockLogger.Object);
+        var mockState = new Mock<global::Orleans.Runtime.IPersistentState<Horizon.Orleans.Grains.World.ZoneShardState>>();
+        mockState.SetupGet(s => s.State).Returns(new Horizon.Orleans.Grains.World.ZoneShardState());
+        var grain = new ZoneShardGrain(mockLogger.Object, mockState.Object);
 
         var grainId = GrainId.Create(GrainType.Create("ZoneShard"), shardId.ToString());
         var mockContext = new Mock<IGrainContext>();

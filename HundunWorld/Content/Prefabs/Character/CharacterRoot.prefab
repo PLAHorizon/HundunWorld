@@ -136,6 +136,20 @@
 }
 	},
 	{
+		"ID": "b31a940b468e9bcf889248b0b5061724",
+		"TypeName": "NarrativePro.Navigation.NarrativeNavigationComponent",
+		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
+		"V": {
+	"DiscoveredPOIs": {}
+}
+	},
+	{
+		"ID": "b0ebc5934eb359e1602c9cbfb56ca74f",
+		"TypeName": "NarrativePro.Camera.NarrativeCameraComponent",
+		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
+		"V": {}
+	},
+	{
 		"ID": "b426c8ed4bd917a0200d08936be572e1",
 		"TypeName": "FlaxEngine.AnimatedModel",
 		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",

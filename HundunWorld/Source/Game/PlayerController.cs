@@ -638,6 +638,24 @@ namespace HundunWorld.Game
             // 要求客户端在每个 InputPacket 中显式携带，否则 characterId==0 时服务端会拒绝该输入包。
             var characterId = HundunWorldGame.Instance?.PlayerId ?? 0;
 
+            // 修复（角色被吸附回原点）：备用路径必须携带 PredictedEndX/Y/Z 和 MaxSpeed。
+            // 原实现未设置这些字段（默认 0），导致服务端 MovementValidator 的 clientEnd=(0,0,0)，
+            // 与权威回放结果产生巨大 drift，触发 Correction 将角色拉回原点。
+            // 从 ECS PredictedTransformComponent 读取当前预测位置（ECS Z-up）。
+            float predictedX = 0f, predictedY = 0f, predictedZ = 0f;
+            var archWorld = HundunWorldGame.Instance?.ArchWorld;
+            if (archWorld != null && TryFindLocalPlayerEntity() && archWorld.IsAlive(_localPlayerEntity))
+            {
+                try
+                {
+                    ref var pred = ref archWorld.Get<Horizon.Game.ECS.Arch.Components.PredictedTransformComponent>(_localPlayerEntity);
+                    predictedX = pred.X;
+                    predictedY = pred.Y;
+                    predictedZ = pred.Z;
+                }
+                catch { /* 实体已销毁，使用默认值 */ }
+            }
+
             var inputPacket = new InputPacket
             {
                 ClientTick = _clientTick,
@@ -647,6 +665,10 @@ namespace HundunWorld.Game
                 MoveX = moveX,
                 MoveY = moveY,
                 CharacterId = characterId,
+                PredictedEndX = predictedX,
+                PredictedEndY = predictedY,
+                PredictedEndZ = predictedZ,
+                MaxSpeed = ComputeCurrentMaxSpeed(),
             };
 
             SyncPacketCodec.Encode(inputPacket, out var frame, out var frameLength);

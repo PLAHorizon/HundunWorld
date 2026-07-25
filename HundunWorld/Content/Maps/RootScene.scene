@@ -54,14 +54,9 @@
 			"ID": "f6a7b889d0e1f23456789abcdef01234",
 			"TypeName": "HundunWorld.Game.UI.GameSceneManager",
 			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
-			"V": {}
-		},
-		{
-			"ID": "a7b8c990e1f2a3456789abcdef012345",
-			"TypeName": "HundunWorld.Game.UI.GameMain.GameMainUI",
-			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
-			"V": {},
-			"Enabled": false
+			"V": {
+	"EnableTransitionEffect": true
+}
 		},
 		{
 			"ID": "b8c9d001f2a3b456789abcdef0123456",
@@ -84,6 +79,12 @@
 		{
 			"ID": "89a4e022482baffdc7792790907ebe16",
 			"TypeName": "HundunWorld.Game.UI.MainUIManager",
+			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
+			"V": {}
+		},
+		{
+			"ID": "1085150a44f8b885e318edb47fe24abb",
+			"TypeName": "NarrativePro.Camera.NarrativePlayerCameraManager",
 			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
 			"V": {}
 		},

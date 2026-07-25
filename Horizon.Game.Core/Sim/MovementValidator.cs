@@ -233,9 +233,18 @@ public sealed class MovementValidator
             }
             else
             {
+                // 修复（角色无法真正移动根因）：原阈值 dzPred > 0.05f 过严。
+                // 当 GroundHeightSampler 为 null 时，服务端每 tick 因重力使 nz 下降约 0.003m，
+                // 前 6 tick 内 dzPred < 0.05 不触发钳制，实体持续下落。
+                // 客户端 LocalSimulationSystem 有 GroundHeightSampler 会将 Z 钳制到地面，
+                // PredictedEndZ 即为地面高度。服务端应信任客户端的地面约束结果。
+                // 修复策略：只要客户端 PredictedEndZ >= 服务端计算 nz（dzPred >= 0），
+                // 且差值在合理范围内（< 10m，防作弊），就钳制到客户端 Z。
+                // 这保证服务端实体不会因缺少地形数据而穿透地面，
+                // 同时 10m 上限 + drift 校验兜底防止客户端伪造高度。
                 var predictedZ = input.PredictedEndZ;
                 var dzPred = predictedZ - nz;
-                if (dzPred > 0.05f && dzPred < 10f)
+                if (dzPred >= 0f && dzPred < 10f)
                 {
                     nz = predictedZ;
                     nvz = 0f;

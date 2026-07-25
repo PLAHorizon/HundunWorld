@@ -170,6 +170,13 @@ namespace Horizon.Game.Message.Network
         // 角色在线状态不再由 Orleans GrainStorage 持久化，而是使用 Redis presence key（TTL 90 秒）
         // 作为权威源，避免离线后因持久化状态残留导致角色永远显示在线的严重 BUG。
         // 如需内存缓存，请在 CharacterGrain 中使用私有字段。
+
+        // ===== 角色最后已知位置缓存（用于 Grain 重激活后恢复实体位置） =====
+        [MemoryPackOrder(1)] [Id(1)] public float LastPositionX { get; set; }
+        [MemoryPackOrder(2)] [Id(2)] public float LastPositionY { get; set; }
+        [MemoryPackOrder(3)] [Id(3)] public float LastPositionZ { get; set; }
+        [MemoryPackOrder(4)] [Id(4)] public float LastYaw { get; set; }
+        [MemoryPackOrder(5)] [Id(5)] public DateTime LastPositionUpdateUtc { get; set; }
     }
 
     #endregion

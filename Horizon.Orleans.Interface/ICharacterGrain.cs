@@ -363,6 +363,20 @@ namespace Horizon.Orleans.Interface
         /// <param name="damageType">伤害类型。</param>
         /// <returns>实际 HP 变化量及是否导致死亡。</returns>
         Task<HpChangeResult> RequestHpChangeAsync(int hpDelta, ulong sourceId, DamageType damageType);
+
+        // ===== 角色位置缓存（用于 ZoneShardGrain 重激活后恢复实体位置） =====
+
+        /// <summary>
+        /// 更新角色最后已知位置（由 ZoneShardGrain 定期 fire-and-forget 调用）。
+        /// 坐标为 ECS Z-up（X=左右, Y=前后, Z=上下）。
+        /// </summary>
+        Task UpdateLastPositionAsync(float x, float y, float z, float yaw);
+
+        /// <summary>
+        /// 获取角色最后已知位置。
+        /// 返回 null 表示无有效位置数据（首次创建角色或数据过期）。
+        /// </summary>
+        Task<(float X, float Y, float Z, float Yaw)?> GetLastPositionAsync();
     }
 
     

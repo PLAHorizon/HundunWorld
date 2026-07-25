@@ -1,0 +1,4557 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Horizon.IM.Message</name>
+    </assembly>
+    <members>
+        <member name="T:Horizon.IM.Message.Enums.IMChatRelationType">
+            <summary>
+            聊天关系类型（熟人/陌生人/群聊）
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMChatRelationType.Friend">
+            <summary>
+            熟人/好友聊天
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMChatRelationType.Stranger">
+            <summary>
+            陌生人聊天
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMChatRelationType.Group">
+            <summary>
+            群组聊天
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Enums.IMContentType">
+            <summary>
+            IM消息内容类型
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMContentType.Text">
+            <summary>
+            文本消息
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMContentType.Image">
+            <summary>
+            图片消息
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMContentType.Audio">
+            <summary>
+            语音消息
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMContentType.Video">
+            <summary>
+            视频消息
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMContentType.File">
+            <summary>
+            文件消息
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMContentType.Location">
+            <summary>
+            位置消息
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMContentType.ContactCard">
+            <summary>
+            名片消息
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMContentType.Emoji">
+            <summary>
+            表情消息
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMContentType.RedPacket">
+            <summary>
+            红包消息
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMContentType.System">
+            <summary>
+            系统消息
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMContentType.Custom">
+            <summary>
+            自定义消息
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Enums.IdentityVerificationStatus">
+            <summary>
+            实名认证状态
+            未实名认证的用户不能向陌生人发起聊天请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IdentityVerificationStatus.Unverified">
+            <summary>
+            未实名认证（不能向陌生人发起聊天请求）
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IdentityVerificationStatus.Verified">
+            <summary>
+            已实名认证
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IdentityVerificationStatus.VerifiedRestricted">
+            <summary>
+            已实名认证但受限制（被研判为风险人员）
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Enums.UserRiskLevel">
+            <summary>
+            用户风险等级
+            实名认证后被研判为失信人员、诈骗嫌疑人或犯罪分子的不允许发起陌生人聊天请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.UserRiskLevel.Normal">
+            <summary>
+            正常用户
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.UserRiskLevel.Dishonest">
+            <summary>
+            失信人员
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.UserRiskLevel.FraudSuspect">
+            <summary>
+            诈骗嫌疑人
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.UserRiskLevel.Criminal">
+            <summary>
+            犯罪分子
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Enums.StrangerChatDeniedReason">
+            <summary>
+            陌生人聊天拒绝原因
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.StrangerChatDeniedReason.None">
+            <summary>
+            无拒绝原因（允许聊天）
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.StrangerChatDeniedReason.NotVerified">
+            <summary>
+            未实名认证
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.StrangerChatDeniedReason.SenderDishonest">
+            <summary>
+            发送方为失信人员
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.StrangerChatDeniedReason.SenderFraudSuspect">
+            <summary>
+            发送方为诈骗嫌疑人
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.StrangerChatDeniedReason.SenderCriminal">
+            <summary>
+            发送方为犯罪分子
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.StrangerChatDeniedReason.ReceiverBlocked">
+            <summary>
+            接收方已屏蔽陌生人消息
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.StrangerChatDeniedReason.ReceiverDisabledStranger">
+            <summary>
+            接收方关闭了陌生人消息功能
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.StrangerChatDeniedReason.RateLimited">
+            <summary>
+            发送频率超限
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.StrangerChatDeniedReason.ReceiverNotFound">
+            <summary>
+            接收方不存在
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Enums.IMMessageStatus">
+            <summary>
+            IM消息状态
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageStatus.Sending">
+            <summary>
+            发送中
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageStatus.Sent">
+            <summary>
+            已发送（服务器已收到）
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageStatus.Delivered">
+            <summary>
+            已送达（对方已收到）
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageStatus.Read">
+            <summary>
+            已读
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageStatus.Failed">
+            <summary>
+            发送失败
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageStatus.Recalled">
+            <summary>
+            已撤回
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Enums.IMOnlineStatus">
+            <summary>
+            用户在线状态
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMOnlineStatus.Offline">
+            <summary>
+            离线
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMOnlineStatus.Online">
+            <summary>
+            在线
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMOnlineStatus.Away">
+            <summary>
+            离开
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMOnlineStatus.Busy">
+            <summary>
+            忙碌
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMOnlineStatus.Invisible">
+            <summary>
+            隐身
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Enums.IMContactRelation">
+            <summary>
+            联系人关系状态
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMContactRelation.None">
+            <summary>
+            无关系
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMContactRelation.PendingRequest">
+            <summary>
+            待验证（已发送好友请求）
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMContactRelation.Friend">
+            <summary>
+            好友
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMContactRelation.Blocked">
+            <summary>
+            已屏蔽
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMContactRelation.Deleted">
+            <summary>
+            已删除
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Enums.IMGroupMemberRole">
+            <summary>
+            群组成员角色
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMGroupMemberRole.Member">
+            <summary>
+            普通成员
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMGroupMemberRole.Admin">
+            <summary>
+            管理员
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMGroupMemberRole.Owner">
+            <summary>
+            群主
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Enums.IMErrorCode">
+            <summary>
+            IM错误码
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMErrorCode.Success">
+            <summary>
+            成功
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMErrorCode.Unknown">
+            <summary>
+            未知错误
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMErrorCode.IdentityNotVerified">
+            <summary>
+            未实名认证，不允许向陌生人发起聊天
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMErrorCode.DishonestRestricted">
+            <summary>
+            失信人员，不允许发起陌生人聊天
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMErrorCode.FraudSuspectRestricted">
+            <summary>
+            诈骗嫌疑人，不允许发起陌生人聊天
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMErrorCode.CriminalRestricted">
+            <summary>
+            犯罪分子，不允许发起陌生人聊天
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMErrorCode.UserNotFound">
+            <summary>
+            用户不存在
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMErrorCode.BlockedByReceiver">
+            <summary>
+            已被对方屏蔽
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMErrorCode.StrangerChatDisabled">
+            <summary>
+            对方关闭了陌生人消息
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMErrorCode.RateLimitExceeded">
+            <summary>
+            消息发送频率超限
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMErrorCode.ContentViolation">
+            <summary>
+            消息内容违规
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMErrorCode.GroupNotFound">
+            <summary>
+            群组不存在
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMErrorCode.NotGroupMember">
+            <summary>
+            非群组成员
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMErrorCode.GroupFull">
+            <summary>
+            群组已满
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMErrorCode.PermissionDenied">
+            <summary>
+            权限不足
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Enums.IMMessageType">
+            <summary>
+            IM消息类型枚举
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.PrivateChatSend">
+            <summary>
+            私聊消息发送
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.PrivateChatNotify">
+            <summary>
+            私聊消息通知（服务器推送给接收方）
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ChatAck">
+            <summary>
+            消息送达/已读回执
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ChatRecall">
+            <summary>
+            消息撤回
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ChatReadReceipt">
+            <summary>
+            已读回执
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.TypingIndicator">
+            <summary>
+            正在输入指示
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupChatSend">
+            <summary>
+            群聊消息发送
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupChatNotify">
+            <summary>
+            群聊消息通知
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupChatRecall">
+            <summary>
+            群聊消息撤回
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupCreateRequest">
+            <summary>
+            创建群组请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupCreateResponse">
+            <summary>
+            创建群组响应
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupJoinRequest">
+            <summary>
+            加入群组请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupJoinResponse">
+            <summary>
+            加入群组响应
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupLeaveRequest">
+            <summary>
+            退出群组请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupLeaveResponse">
+            <summary>
+            退出群组响应
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupDisbandRequest">
+            <summary>
+            解散群组请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupDisbandResponse">
+            <summary>
+            解散群组响应
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupInfoUpdate">
+            <summary>
+            群组信息更新
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupMemberListRequest">
+            <summary>
+            群成员列表请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupMemberListResponse">
+            <summary>
+            群成员列表响应
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupInviteRequest">
+            <summary>
+            邀请用户加入群组请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupInviteResponse">
+            <summary>
+            被邀请者响应邀请（接受/拒绝）
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupJoinApplyReview">
+            <summary>
+            管理员/群主审核加群申请
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupInviteNotify">
+            <summary>
+            推送：被邀请者收到入群邀请通知
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupJoinApplyNotify">
+            <summary>
+            推送：管理员/群主收到新的加群申请通知
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupPendingInviteListRequest">
+            <summary>
+            查询当前用户待处理入群邀请列表请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupPendingInviteListResponse">
+            <summary>
+            查询当前用户待处理入群邀请列表响应
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupInviteApprovalNotify">
+            <summary>
+            推送：群主收到由非群主成员发起的入群邀请审批请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupInviteApprovalReview">
+            <summary>
+            群主审核由非群主成员发起的入群邀请
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupDisbandNotify">
+            <summary>
+            推送：群组被解散通知（服务端→成员）
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupPendingApprovalListRequest">
+            <summary>
+            群主查询待审批邀请列表请求（客户端→服务端）
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupPendingApprovalListResponse">
+            <summary>
+            群主查询待审批邀请列表响应（服务端→客户端）
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.GroupInviteResultNotify">
+            <summary>
+            推送：原邀请人收到群主对其邀请的审批结果通知（同意或拒绝）
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.StrangerChatRequest">
+            <summary>
+            陌生人聊天请求（需验证实名认证与风险等级）
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.StrangerChatResponse">
+            <summary>
+            陌生人聊天响应
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.StrangerChatSend">
+            <summary>
+            陌生人聊天消息发送
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.StrangerChatNotify">
+            <summary>
+            陌生人聊天消息通知
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ContactAddRequest">
+            <summary>
+            添加联系人请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ContactAddResponse">
+            <summary>
+            添加联系人响应
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ContactRemoveRequest">
+            <summary>
+            删除联系人请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ContactRemoveResponse">
+            <summary>
+            删除联系人响应
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ContactBlockRequest">
+            <summary>
+            屏蔽联系人请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ContactBlockResponse">
+            <summary>
+            屏蔽联系人响应
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ContactListRequest">
+            <summary>
+            联系人列表请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ContactListResponse">
+            <summary>
+            联系人列表响应
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ContactSearchRequest">
+            <summary>
+            联系人搜索请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ContactSearchResponse">
+            <summary>
+            联系人搜索响应
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ContactOnlineStatus">
+            <summary>
+            联系人在线状态变更
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ContactPendingListRequest">
+            <summary>
+            待处理好友申请列表请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ContactPendingListResponse">
+            <summary>
+            待处理好友申请列表响应
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ContactRequestHandleRequest">
+            <summary>
+            处理好友申请请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ContactRequestHandleResponse">
+            <summary>
+            处理好友申请响应
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ContactProfileUpdate">
+            <summary>
+            好友资料变更推送（服务器 → 客户端）
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ContactProfileBroadcastRequest">
+            <summary>
+            广播个人资料变更请求（客户端 → 网关）
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ContactGroupUpdateRequest">
+            <summary>
+            联系人分组更新请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ContactGroupUpdateResponse">
+            <summary>
+            联系人分组更新响应
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ConversationListRequest">
+            <summary>
+            会话列表请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ConversationListResponse">
+            <summary>
+            会话列表响应
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ConversationDelete">
+            <summary>
+            删除会话
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ConversationPin">
+            <summary>
+            置顶会话
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ConversationMute">
+            <summary>
+            会话免打扰
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ChatHistoryQuery">
+            <summary>
+            聊天记录查询请求
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ChatHistoryQueryResponse">
+            <summary>
+            聊天记录查询响应
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.ChatHistoryClear">
+            <summary>
+            清空聊天记录
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.Heartbeat">
+            <summary>
+            IM心跳
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.HeartbeatResponse">
+            <summary>
+            IM心跳响应
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.Error">
+            <summary>
+            IM错误消息
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.SystemNotification">
+            <summary>
+            IM系统通知
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMMessageType.Unknown">
+            <summary>
+            未知消息
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Enums.IMServiceType">
+            <summary>
+            IM服务类型枚举
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMServiceType.Gateway">
+            <summary>
+            IM网关服务
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMServiceType.Chat">
+            <summary>
+            聊天服务
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMServiceType.Contact">
+            <summary>
+            联系人服务
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMServiceType.Notification">
+            <summary>
+            通知服务
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMServiceType.Group">
+            <summary>
+            群组服务
+            </summary>
+        </member>
+        <member name="F:Horizon.IM.Message.Enums.IMServiceType.Moderation">
+            <summary>
+            内容审核服务
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.IMUserState">
+            <summary>
+            IM用户Grain持久化状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>string</b> Nickname<br/>
+            <b>string</b> Avatar<br/>
+            <b>Horizon.IM.Message.Enums.IdentityVerificationStatus</b> VerificationStatus<br/>
+            <b>Horizon.IM.Message.Enums.UserRiskLevel</b> RiskLevel<br/>
+            <b>bool</b> AllowStrangerMessage<br/>
+            <b>Horizon.IM.Message.Enums.IMOnlineStatus</b> OnlineStatus<br/>
+            <b>System.Collections.Generic.Dictionary&lt;ulong, Horizon.IM.Message.IMContactEntry&gt;</b> Contacts<br/>
+            <b>System.Collections.Generic.Dictionary&lt;ulong, Horizon.IM.Message.IMPendingContactRequest&gt;</b> PendingContactRequests<br/>
+            <b>System.Collections.Generic.HashSet&lt;ulong&gt;</b> BlockedUsers<br/>
+            <b>System.Collections.Generic.Dictionary&lt;string, Horizon.IM.Message.IMConversationEntry&gt;</b> Conversations<br/>
+            <b>System.Collections.Generic.Dictionary&lt;ulong, System.Collections.Generic.List&lt;Horizon.IM.Message.IMChatRecord&gt;&gt;</b> PrivateChatHistory<br/>
+            <b>System.Collections.Generic.Dictionary&lt;ulong, System.Collections.Generic.List&lt;Horizon.IM.Message.IMChatRecord&gt;&gt;</b> StrangerChatHistory<br/>
+            <b>System.Collections.Generic.Dictionary&lt;ulong, Horizon.IM.Message.IMStrangerChatRequestEntry&gt;</b> PendingStrangerRequests<br/>
+            <b>int</b> MaxContacts<br/>
+            <b>int</b> MaxChatHistoryPerConversation<br/>
+            <b>int</b> MaxConversations<br/>
+            <b>System.Collections.Generic.Dictionary&lt;ulong, Horizon.IM.Message.IMUserPendingGroupInviteEntry&gt;</b> PendingGroupInvites<br/>
+            <b>System.Collections.Generic.Dictionary&lt;string, ulong&gt;</b> OwnedGroupNames<br/>
+            <b>System.Collections.Generic.Dictionary&lt;string, int&gt;</b> ContactGroups<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.UserId">
+            <summary>
+            用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.Nickname">
+            <summary>
+            用户昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.Avatar">
+            <summary>
+            用户头像URL
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.VerificationStatus">
+            <summary>
+            实名认证状态
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.RiskLevel">
+            <summary>
+            用户风险等级
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.AllowStrangerMessage">
+            <summary>
+            是否允许陌生人消息
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.OnlineStatus">
+            <summary>
+            在线状态
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.Contacts">
+            <summary>
+            联系人列表（联系人UserID → 联系人信息）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.PendingContactRequests">
+            <summary>
+            待处理的好友请求列表（请求者UserID → 请求信息）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.BlockedUsers">
+            <summary>
+            屏蔽列表
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.Conversations">
+            <summary>
+            会话列表（会话ID → 会话信息）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.PrivateChatHistory">
+            <summary>
+            私聊消息历史（对话方UserID → 消息列表）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.StrangerChatHistory">
+            <summary>
+            陌生人聊天消息历史（对话方UserID → 消息列表）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.PendingStrangerRequests">
+            <summary>
+            待处理的陌生人聊天请求列表（请求者UserID → 请求信息）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.MaxContacts">
+            <summary>
+            最大联系人数量
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.MaxChatHistoryPerConversation">
+            <summary>
+            每个对话最大缓存消息数量
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.MaxConversations">
+            <summary>
+            最大会话数量
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.PendingGroupInvites">
+            <summary>
+            待处理的入群邀请列表（群组ID → 邀请信息）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.OwnedGroupNames">
+            <summary>
+            该用户作为群主创建的群组名称集合（群名称 → 群组ID）。
+            用于服务端防重名校验，确保同一用户不能创建同名群组。
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserState.ContactGroups">
+            <summary>
+            联系人分组定义（分组名称 → 排序序号）。
+            序号越小越靠前，默认分组 "" 不在此字典中。
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.IMContactEntry">
+            <summary>
+            联系人条目
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>string</b> Nickname<br/>
+            <b>string</b> Avatar<br/>
+            <b>string</b> Remark<br/>
+            <b>Horizon.IM.Message.Enums.IMContactRelation</b> Relation<br/>
+            <b>Horizon.IM.Message.Enums.IMOnlineStatus</b> OnlineStatus<br/>
+            <b>long</b> AddTime<br/>
+            <b>string</b> Bio<br/>
+            <b>string</b> GroupName<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.IMContactEntry.UserId">
+            <summary>
+            联系人用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMContactEntry.Nickname">
+            <summary>
+            联系人昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMContactEntry.Avatar">
+            <summary>
+            联系人头像URL
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMContactEntry.Remark">
+            <summary>
+            备注名
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMContactEntry.Relation">
+            <summary>
+            关系状态
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMContactEntry.OnlineStatus">
+            <summary>
+            联系人在线状态
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMContactEntry.AddTime">
+            <summary>
+            添加时间
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMContactEntry.Bio">
+            <summary>
+            个人简介
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMContactEntry.GroupName">
+            <summary>
+            所属分组名称（空字符串表示默认分组/未分组）
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.IMPendingContactRequest">
+            <summary>
+            待处理的好友请求
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> RequesterId<br/>
+            <b>string</b> RequesterName<br/>
+            <b>string</b> Message<br/>
+            <b>long</b> Timestamp<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.IMPendingContactRequest.RequesterId">
+            <summary>
+            请求者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMPendingContactRequest.RequesterName">
+            <summary>
+            请求者昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMPendingContactRequest.Message">
+            <summary>
+            验证消息
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMPendingContactRequest.Timestamp">
+            <summary>
+            请求时间
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.IMUserPendingGroupInviteEntry">
+            <summary>
+            用户侧待处理的入群邀请条目（存储在 IMUserState 中，用于离线投递恢复）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> GroupId<br/>
+            <b>string</b> GroupName<br/>
+            <b>ulong</b> InviterId<br/>
+            <b>string</b> InviterName<br/>
+            <b>long</b> Timestamp<br/>
+            <b>bool</b> RequiresConsent<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserPendingGroupInviteEntry.GroupId">
+            <summary>群组ID</summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserPendingGroupInviteEntry.GroupName">
+            <summary>群组名称</summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserPendingGroupInviteEntry.InviterId">
+            <summary>邀请人ID</summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserPendingGroupInviteEntry.InviterName">
+            <summary>邀请人昵称</summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserPendingGroupInviteEntry.Timestamp">
+            <summary>邀请时间戳（Unix 毫秒）</summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMUserPendingGroupInviteEntry.RequiresConsent">
+            <summary>
+            是否需要被邀请者确认（true=需要同意；false=已被直接加入群组）。
+            默认 true，以便与旧数据兼容。
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.IMStrangerChatRequestEntry">
+            <summary>
+            陌生人聊天请求条目
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> RequesterId<br/>
+            <b>string</b> RequesterName<br/>
+            <b>string</b> GreetingMessage<br/>
+            <b>long</b> Timestamp<br/>
+            <b>bool</b> Accepted<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.IMStrangerChatRequestEntry.RequesterId">
+            <summary>
+            请求者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMStrangerChatRequestEntry.RequesterName">
+            <summary>
+            请求者昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMStrangerChatRequestEntry.GreetingMessage">
+            <summary>
+            打招呼消息
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMStrangerChatRequestEntry.Timestamp">
+            <summary>
+            请求时间
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMStrangerChatRequestEntry.Accepted">
+            <summary>
+            是否已被接受
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.IMChatRecord">
+            <summary>
+            聊天记录条目
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> ServerMessageId<br/>
+            <b>string</b> ClientMessageId<br/>
+            <b>ulong</b> SenderId<br/>
+            <b>string</b> SenderName<br/>
+            <b>ulong</b> ReceiverId<br/>
+            <b>string</b> Content<br/>
+            <b>Horizon.IM.Message.Enums.IMContentType</b> ContentType<br/>
+            <b>long</b> Timestamp<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageStatus</b> Status<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.IMChatRecord.ServerMessageId">
+            <summary>
+            服务器消息ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMChatRecord.ClientMessageId">
+            <summary>
+            客户端消息ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMChatRecord.SenderId">
+            <summary>
+            发送者ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMChatRecord.SenderName">
+            <summary>
+            发送者昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMChatRecord.ReceiverId">
+            <summary>
+            接收者ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMChatRecord.Content">
+            <summary>
+            消息内容
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMChatRecord.ContentType">
+            <summary>
+            内容类型
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMChatRecord.Timestamp">
+            <summary>
+            服务器时间戳
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMChatRecord.Status">
+            <summary>
+            消息状态
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.IMConversationEntry">
+            <summary>
+            会话条目
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> ConversationId<br/>
+            <b>Horizon.IM.Message.Enums.IMChatRelationType</b> ChatType<br/>
+            <b>ulong</b> TargetId<br/>
+            <b>string</b> TargetName<br/>
+            <b>string</b> TargetAvatar<br/>
+            <b>string</b> LastMessage<br/>
+            <b>long</b> LastMessageTime<br/>
+            <b>int</b> UnreadCount<br/>
+            <b>bool</b> IsPinned<br/>
+            <b>bool</b> IsMuted<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.IMConversationEntry.ConversationId">
+            <summary>
+            会话ID（私聊用 "p_{userId}"，群聊用 "g_{groupId}"，陌生人用 "s_{userId}"）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMConversationEntry.ChatType">
+            <summary>
+            聊天关系类型
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMConversationEntry.TargetId">
+            <summary>
+            对方用户ID（私聊/陌生人）或群组ID对应的ulong表示
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMConversationEntry.TargetName">
+            <summary>
+            对方昵称或群组名称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMConversationEntry.TargetAvatar">
+            <summary>
+            对方头像或群组头像
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMConversationEntry.LastMessage">
+            <summary>
+            最后一条消息内容摘要
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMConversationEntry.LastMessageTime">
+            <summary>
+            最后一条消息时间戳
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMConversationEntry.UnreadCount">
+            <summary>
+            未读消息数
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMConversationEntry.IsPinned">
+            <summary>
+            是否置顶
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMConversationEntry.IsMuted">
+            <summary>
+            是否免打扰
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.IMGroupState">
+            <summary>
+            IM群组Grain持久化状态
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Guid</b> GroupId<br/>
+            <b>string</b> GroupName<br/>
+            <b>ulong</b> OwnerId<br/>
+            <b>string</b> Avatar<br/>
+            <b>string</b> Announcement<br/>
+            <b>int</b> MaxMembers<br/>
+            <b>long</b> CreateTime<br/>
+            <b>bool</b> IsDisbanded<br/>
+            <b>System.Collections.Generic.Dictionary&lt;ulong, Horizon.IM.Message.IMGroupMemberEntry&gt;</b> Members<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.IM.Message.IMGroupChatRecord&gt;</b> ChatHistory<br/>
+            <b>int</b> MaxChatHistory<br/>
+            <b>bool</b> JoinApprovalRequired<br/>
+            <b>bool</b> InviteConsentRequired<br/>
+            <b>System.Collections.Generic.Dictionary&lt;ulong, Horizon.IM.Message.IMGroupJoinApplicationEntry&gt;</b> PendingJoinApplications<br/>
+            <b>System.Collections.Generic.Dictionary&lt;ulong, Horizon.IM.Message.IMGroupPendingInviteEntry&gt;</b> PendingInvites<br/>
+            <b>System.Collections.Generic.Dictionary&lt;ulong, Horizon.IM.Message.IMGroupPendingInviteApprovalEntry&gt;</b> PendingInviteApprovals<br/>
+            <b>bool</b> MemberInviteRequiresApproval<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupState.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupState.GroupName">
+            <summary>
+            群组名称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupState.OwnerId">
+            <summary>
+            群主用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupState.Avatar">
+            <summary>
+            群组头像URL
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupState.Announcement">
+            <summary>
+            群公告
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupState.MaxMembers">
+            <summary>
+            最大成员数
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupState.CreateTime">
+            <summary>
+            创建时间
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupState.IsDisbanded">
+            <summary>
+            群组是否已解散
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupState.Members">
+            <summary>
+            群成员列表（用户ID → 成员信息）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupState.ChatHistory">
+            <summary>
+            群聊消息历史
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupState.MaxChatHistory">
+            <summary>
+            最大缓存消息数量
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupState.JoinApprovalRequired">
+            <summary>
+            加群是否需要管理员/群主审核
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupState.InviteConsentRequired">
+            <summary>
+            被邀请入群是否需要被邀请者同意
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupState.PendingJoinApplications">
+            <summary>
+            待审核的加群申请（用户ID → 申请条目）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupState.PendingInvites">
+            <summary>
+            待确认的邀请（用户ID → 邀请条目）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupState.PendingInviteApprovals">
+            <summary>
+            待群主审批的入群邀请（被邀请者用户ID → 审批条目）。
+            非群主成员发起邀请时先放入此队列，等待群主 <see cref="F:Horizon.IM.Message.Enums.IMGroupMemberRole.Owner"/> 审批后才转为 <see cref="P:Horizon.IM.Message.IMGroupState.PendingInvites"/> 或直接加入。
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupState.MemberInviteRequiresApproval">
+            <summary>
+            非群主成员发起邀请时是否需要群主审批。
+            默认为 <c>false</c>：普通成员邀请好友时邀请通知直接送达被邀请者，无需群主介入。
+            设为 <c>true</c> 时，非群主发出的邀请先进入 <see cref="P:Horizon.IM.Message.IMGroupState.PendingInviteApprovals"/> 队列，由群主审批后才送达被邀请者。
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.IMGroupMemberEntry">
+            <summary>
+            群成员条目
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>string</b> Nickname<br/>
+            <b>string</b> Avatar<br/>
+            <b>string</b> GroupNickname<br/>
+            <b>Horizon.IM.Message.Enums.IMGroupMemberRole</b> Role<br/>
+            <b>long</b> JoinTime<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupMemberEntry.UserId">
+            <summary>
+            用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupMemberEntry.Nickname">
+            <summary>
+            用户昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupMemberEntry.Avatar">
+            <summary>
+            用户头像
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupMemberEntry.GroupNickname">
+            <summary>
+            群内昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupMemberEntry.Role">
+            <summary>
+            群角色
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupMemberEntry.JoinTime">
+            <summary>
+            加入时间
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.IMGroupChatRecord">
+            <summary>
+            群聊消息记录
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> ServerMessageId<br/>
+            <b>ulong</b> SenderId<br/>
+            <b>string</b> SenderName<br/>
+            <b>string</b> Content<br/>
+            <b>Horizon.IM.Message.Enums.IMContentType</b> ContentType<br/>
+            <b>long</b> Timestamp<br/>
+            <b>System.Collections.Generic.List&lt;ulong&gt;</b> MentionedUserIds<br/>
+            <b>bool</b> MentionAll<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageStatus</b> Status<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupChatRecord.ServerMessageId">
+            <summary>
+            服务器消息ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupChatRecord.SenderId">
+            <summary>
+            发送者ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupChatRecord.SenderName">
+            <summary>
+            发送者昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupChatRecord.Content">
+            <summary>
+            消息内容
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupChatRecord.ContentType">
+            <summary>
+            内容类型
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupChatRecord.Timestamp">
+            <summary>
+            服务器时间戳
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupChatRecord.MentionedUserIds">
+            <summary>
+            @的用户ID列表
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupChatRecord.MentionAll">
+            <summary>
+            是否@所有人
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupChatRecord.Status">
+            <summary>
+            消息状态
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.IMGroupJoinApplicationEntry">
+            <summary>
+            加群申请条目
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> ApplicantId<br/>
+            <b>string</b> ApplicantName<br/>
+            <b>string</b> Reason<br/>
+            <b>long</b> ApplyTime<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupJoinApplicationEntry.ApplicantId">
+            <summary>
+            申请人ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupJoinApplicationEntry.ApplicantName">
+            <summary>
+            申请人昵称（快照）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupJoinApplicationEntry.Reason">
+            <summary>
+            申请理由
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupJoinApplicationEntry.ApplyTime">
+            <summary>
+            申请时间戳
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.IMGroupPendingInviteEntry">
+            <summary>
+            待确认入群邀请条目
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> InviteeId<br/>
+            <b>ulong</b> InviterId<br/>
+            <b>long</b> InviteTime<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupPendingInviteEntry.InviteeId">
+            <summary>
+            被邀请用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupPendingInviteEntry.InviterId">
+            <summary>
+            邀请人ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupPendingInviteEntry.InviteTime">
+            <summary>
+            邀请时间戳
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.IMGroupPendingInviteApprovalEntry">
+            <summary>
+            待群主审批的入群邀请条目（非群主成员发起的邀请在群主审批前停留在此处）。
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> InviteeId<br/>
+            <b>ulong</b> InviterId<br/>
+            <b>string</b> InviterName<br/>
+            <b>long</b> RequestTime<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupPendingInviteApprovalEntry.InviteeId">
+            <summary>
+            被邀请用户ID（审批主键）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupPendingInviteApprovalEntry.InviterId">
+            <summary>
+            发起邀请的成员ID（非群主）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupPendingInviteApprovalEntry.InviterName">
+            <summary>
+            发起邀请的成员昵称快照
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMGroupPendingInviteApprovalEntry.RequestTime">
+            <summary>
+            发起时间戳（毫秒）
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.IMMessageUnion">
+            <summary>
+            IM消息联合体基类
+            所有IM网络消息类型都应继承此类
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMMessageUnion.ServiceType">
+            <summary>
+            IM服务类型
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMMessageUnion.Type">
+            <summary>
+            IM消息类型
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.IMServiceToClientMessage">
+            <summary>
+            IM服务器到客户端的消息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> S2CMessageId<br/>
+            <b>Horizon.IM.Message.IMMessageUnion</b> Data<br/>
+            <b>System.DateTime</b> Timestamp<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.IMServiceToClientMessage.S2CMessageId">
+            <summary>
+            消息ID，客户端请求时的消息ID，用于匹配请求和响应
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMServiceToClientMessage.Data">
+            <summary>
+            发送给客户端的数据
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMServiceToClientMessage.Timestamp">
+            <summary>
+            消息时间戳
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMServiceToClientMessage.Type">
+            <summary>
+            IM消息类型
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.IMServiceToClientMessage.ServiceType">
+            <summary>
+            IM服务类型
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IIMNetworkMessage">
+            <summary>
+            IM网络消息接口
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IIMNetworkMessage.ServiceType">
+            <summary>
+            IM服务类型
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IIMNetworkMessage.Type">
+            <summary>
+            IM消息类型
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMChatHistoryQueryRequest">
+            <summary>
+            聊天记录查询请求
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>string</b> ConversationId<br/>
+            <b>Horizon.IM.Message.Enums.IMChatRelationType</b> ChatRelationType<br/>
+            <b>ulong</b> PeerId<br/>
+            <b>long</b> StartTime<br/>
+            <b>long</b> EndTime<br/>
+            <b>int</b> Count<br/>
+            <b>string</b> AnchorMessageId<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatHistoryQueryRequest.UserId">
+            <summary>
+            用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatHistoryQueryRequest.ConversationId">
+            <summary>
+            会话ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatHistoryQueryRequest.ChatRelationType">
+            <summary>
+            聊天关系类型
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatHistoryQueryRequest.PeerId">
+            <summary>
+            对方用户ID（私聊/陌生人聊天）或群组ID（群聊）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatHistoryQueryRequest.StartTime">
+            <summary>
+            起始时间戳（毫秒）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatHistoryQueryRequest.EndTime">
+            <summary>
+            结束时间戳（毫秒）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatHistoryQueryRequest.Count">
+            <summary>
+            查询数量
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatHistoryQueryRequest.AnchorMessageId">
+            <summary>
+            锚点消息ID（用于翻页加载更多历史消息）
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMChatHistoryQueryResponse">
+            <summary>
+            聊天记录查询响应
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> ConversationId<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.IM.Message.Network.IMPrivateChatNotifyMessage&gt;</b> PrivateMessages<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.IM.Message.Network.IMGroupChatNotifyMessage&gt;</b> GroupMessages<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.IM.Message.Network.IMStrangerChatNotifyMessage&gt;</b> StrangerMessages<br/>
+            <b>Horizon.IM.Message.Enums.IMChatRelationType</b> ChatRelationType<br/>
+            <b>bool</b> HasMore<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatHistoryQueryResponse.ConversationId">
+            <summary>
+            会话ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatHistoryQueryResponse.PrivateMessages">
+            <summary>
+            私聊消息列表
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatHistoryQueryResponse.GroupMessages">
+            <summary>
+            群聊消息列表
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatHistoryQueryResponse.StrangerMessages">
+            <summary>
+            陌生人聊天消息列表
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatHistoryQueryResponse.ChatRelationType">
+            <summary>
+            聊天关系类型（标识返回的是哪种消息列表）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatHistoryQueryResponse.HasMore">
+            <summary>
+            是否还有更早的消息
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMChatHistoryClearMessage">
+            <summary>
+            清空聊天记录
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>string</b> ConversationId<br/>
+            <b>Horizon.IM.Message.Enums.IMChatRelationType</b> ChatRelationType<br/>
+            <b>ulong</b> PeerId<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatHistoryClearMessage.UserId">
+            <summary>
+            用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatHistoryClearMessage.ConversationId">
+            <summary>
+            会话ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatHistoryClearMessage.ChatRelationType">
+            <summary>
+            聊天关系类型
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatHistoryClearMessage.PeerId">
+            <summary>
+            对方用户ID或群组ID
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMContactAddRequest">
+            <summary>
+            添加联系人请求
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>ulong</b> TargetUserId<br/>
+            <b>string</b> VerifyMessage<br/>
+            <b>string</b> RemarkName<br/>
+            <b>string</b> Source<br/>
+            <b>string</b> RequesterName<br/>
+            <b>string</b> RequesterAvatar<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactAddRequest.UserId">
+            <summary>
+            请求者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactAddRequest.TargetUserId">
+            <summary>
+            目标用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactAddRequest.VerifyMessage">
+            <summary>
+            验证消息
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactAddRequest.RemarkName">
+            <summary>
+            备注名
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactAddRequest.Source">
+            <summary>
+            请求来源（搜索、群组、附近等）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactAddRequest.RequesterName">
+            <summary>
+            请求者昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactAddRequest.RequesterAvatar">
+            <summary>
+            请求者头像
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMContactAddResponse">
+            <summary>
+            添加联系人响应
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>bool</b> Success<br/>
+            <b>string</b> Message<br/>
+            <b>ulong</b> UserId<br/>
+            <b>ulong</b> TargetUserId<br/>
+            <b>Horizon.IM.Message.Enums.IMContactRelation</b> Relation<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactAddResponse.Success">
+            <summary>
+            是否成功
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactAddResponse.Message">
+            <summary>
+            消息
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactAddResponse.UserId">
+            <summary>
+            请求者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactAddResponse.TargetUserId">
+            <summary>
+            目标用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactAddResponse.Relation">
+            <summary>
+            联系人关系状态
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMContactRequestHandleRequest">
+            <summary>
+            处理好友申请请求
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>ulong</b> RequesterId<br/>
+            <b>bool</b> Accept<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMContactRequestHandleResponse">
+            <summary>
+            处理好友申请响应
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>bool</b> Success<br/>
+            <b>string</b> Message<br/>
+            <b>ulong</b> RequesterId<br/>
+            <b>bool</b> Accepted<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            <b>Horizon.IM.Message.Network.IMContactInfo</b> NewContact<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMPendingContactRequestListRequest">
+            <summary>
+            待处理好友申请列表请求
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>int</b> Offset<br/>
+            <b>int</b> Limit<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMPendingContactRequestListResponse">
+            <summary>
+            待处理好友申请列表响应
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Collections.Generic.List&lt;Horizon.IM.Message.IMPendingContactRequest&gt;</b> PendingRequests<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMContactRemoveRequest">
+            <summary>
+            删除联系人请求
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>ulong</b> TargetUserId<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactRemoveRequest.UserId">
+            <summary>
+            用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactRemoveRequest.TargetUserId">
+            <summary>
+            目标联系人用户ID
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMContactRemoveResponse">
+            <summary>
+            删除联系人响应
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>bool</b> Success<br/>
+            <b>string</b> Message<br/>
+            <b>ulong</b> TargetUserId<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactRemoveResponse.Success">
+            <summary>
+            是否成功
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactRemoveResponse.Message">
+            <summary>
+            消息
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactRemoveResponse.TargetUserId">
+            <summary>
+            被删除的联系人用户ID
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMContactBlockRequest">
+            <summary>
+            屏蔽联系人请求
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>ulong</b> TargetUserId<br/>
+            <b>bool</b> IsBlock<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactBlockRequest.UserId">
+            <summary>
+            用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactBlockRequest.TargetUserId">
+            <summary>
+            被屏蔽的用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactBlockRequest.IsBlock">
+            <summary>
+            是否屏蔽（true=屏蔽，false=取消屏蔽）
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMContactBlockResponse">
+            <summary>
+            屏蔽联系人响应
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>bool</b> Success<br/>
+            <b>string</b> Message<br/>
+            <b>ulong</b> TargetUserId<br/>
+            <b>Horizon.IM.Message.Enums.IMContactRelation</b> Relation<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactBlockResponse.Success">
+            <summary>
+            是否成功
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactBlockResponse.Message">
+            <summary>
+            消息
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactBlockResponse.TargetUserId">
+            <summary>
+            目标用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactBlockResponse.Relation">
+            <summary>
+            当前关系状态
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMContactListRequest">
+            <summary>
+            联系人列表请求
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>int</b> Offset<br/>
+            <b>int</b> Limit<br/>
+            <b>bool</b> OnlineOnly<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactListRequest.UserId">
+            <summary>
+            用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactListRequest.Offset">
+            <summary>
+            分页偏移量
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactListRequest.Limit">
+            <summary>
+            每页数量
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactListRequest.OnlineOnly">
+            <summary>
+            是否只获取在线好友
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMContactListResponse">
+            <summary>
+            联系人列表响应
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Collections.Generic.List&lt;Horizon.IM.Message.Network.IMContactInfo&gt;</b> Contacts<br/>
+            <b>int</b> TotalCount<br/>
+            <b>bool</b> HasMore<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactListResponse.Contacts">
+            <summary>
+            联系人列表
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactListResponse.TotalCount">
+            <summary>
+            总数
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactListResponse.HasMore">
+            <summary>
+            是否还有更多
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMContactSearchRequest">
+            <summary>
+            联系人搜索请求
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> Keyword<br/>
+            <b>ulong</b> UserId<br/>
+            <b>int</b> Offset<br/>
+            <b>int</b> Limit<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactSearchRequest.Keyword">
+            <summary>
+            搜索关键词（昵称、ID等）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactSearchRequest.UserId">
+            <summary>
+            搜索者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactSearchRequest.Offset">
+            <summary>
+            分页偏移量
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactSearchRequest.Limit">
+            <summary>
+            每页数量
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMContactSearchResponse">
+            <summary>
+            联系人搜索响应
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Collections.Generic.List&lt;Horizon.IM.Message.Network.IMContactInfo&gt;</b> Results<br/>
+            <b>bool</b> HasMore<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactSearchResponse.Results">
+            <summary>
+            搜索结果
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactSearchResponse.HasMore">
+            <summary>
+            是否还有更多
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMContactOnlineStatusMessage">
+            <summary>
+            联系人在线状态变更通知
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>Horizon.IM.Message.Enums.IMOnlineStatus</b> OnlineStatus<br/>
+            <b>long</b> Timestamp<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactOnlineStatusMessage.UserId">
+            <summary>
+            联系人用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactOnlineStatusMessage.OnlineStatus">
+            <summary>
+            在线状态
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactOnlineStatusMessage.Timestamp">
+            <summary>
+            状态变更时间戳
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMContactInfo">
+            <summary>
+            联系人信息数据模型
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>string</b> Nickname<br/>
+            <b>string</b> Avatar<br/>
+            <b>string</b> RemarkName<br/>
+            <b>Horizon.IM.Message.Enums.IMContactRelation</b> Relation<br/>
+            <b>Horizon.IM.Message.Enums.IMOnlineStatus</b> OnlineStatus<br/>
+            <b>string</b> Signature<br/>
+            <b>Horizon.IM.Message.Enums.IdentityVerificationStatus</b> VerificationStatus<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            <b>string</b> GroupName<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactInfo.UserId">
+            <summary>
+            用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactInfo.Nickname">
+            <summary>
+            昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactInfo.Avatar">
+            <summary>
+            头像URL
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactInfo.RemarkName">
+            <summary>
+            备注名
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactInfo.Relation">
+            <summary>
+            关系状态
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactInfo.OnlineStatus">
+            <summary>
+            在线状态
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactInfo.Signature">
+            <summary>
+            个性签名
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactInfo.VerificationStatus">
+            <summary>
+            实名认证状态
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactInfo.GroupName">
+            <summary>
+            所属分组名称（空字符串表示默认分组）
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMContactProfileUpdateMessage">
+            <summary>
+            好友资料变更推送消息（服务器 → 客户端）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>string</b> Nickname<br/>
+            <b>string</b> Avatar<br/>
+            <b>string</b> Bio<br/>
+            <b>long</b> Timestamp<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactProfileUpdateMessage.UserId">
+            <summary>
+            发生资料变更的用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactProfileUpdateMessage.Nickname">
+            <summary>
+            最新昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactProfileUpdateMessage.Avatar">
+            <summary>
+            最新头像地址
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactProfileUpdateMessage.Bio">
+            <summary>
+            最新个人简介
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactProfileUpdateMessage.Timestamp">
+            <summary>
+            变更时间戳
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMContactProfileBroadcastRequest">
+            <summary>
+            广播个人资料变更请求（客户端 → 网关）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>string</b> Nickname<br/>
+            <b>string</b> Avatar<br/>
+            <b>string</b> Bio<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactProfileBroadcastRequest.UserId">
+            <summary>
+            发起广播的用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactProfileBroadcastRequest.Nickname">
+            <summary>
+            最新昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactProfileBroadcastRequest.Avatar">
+            <summary>
+            最新头像地址
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMContactProfileBroadcastRequest.Bio">
+            <summary>
+            最新个人简介
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMContactGroupUpdateRequest">
+            <summary>
+            联系人分组更新请求（客户端 → 服务端）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>string</b> Action<br/>
+            <b>string</b> GroupName<br/>
+            <b>string</b> NewGroupName<br/>
+            <b>System.Collections.Generic.List&lt;ulong&gt;</b> ContactUserIds<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMContactGroupUpdateResponse">
+            <summary>
+            联系人分组更新响应（服务端 → 客户端）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>bool</b> Success<br/>
+            <b>string</b> Message<br/>
+            <b>System.Collections.Generic.Dictionary&lt;string, int&gt;</b> ContactGroups<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMConversationListRequest">
+            <summary>
+            会话列表请求
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>int</b> Offset<br/>
+            <b>int</b> Limit<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationListRequest.UserId">
+            <summary>
+            用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationListRequest.Offset">
+            <summary>
+            分页偏移量
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationListRequest.Limit">
+            <summary>
+            每页数量
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMConversationListResponse">
+            <summary>
+            会话列表响应
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Collections.Generic.List&lt;Horizon.IM.Message.Network.IMConversationInfo&gt;</b> Conversations<br/>
+            <b>int</b> TotalCount<br/>
+            <b>bool</b> HasMore<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationListResponse.Conversations">
+            <summary>
+            会话列表
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationListResponse.TotalCount">
+            <summary>
+            总数
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationListResponse.HasMore">
+            <summary>
+            是否还有更多
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMConversationDeleteMessage">
+            <summary>
+            删除会话消息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>string</b> ConversationId<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationDeleteMessage.UserId">
+            <summary>
+            用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationDeleteMessage.ConversationId">
+            <summary>
+            会话ID
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMConversationPinMessage">
+            <summary>
+            置顶会话消息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>string</b> ConversationId<br/>
+            <b>bool</b> IsPinned<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationPinMessage.UserId">
+            <summary>
+            用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationPinMessage.ConversationId">
+            <summary>
+            会话ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationPinMessage.IsPinned">
+            <summary>
+            是否置顶
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMConversationMuteMessage">
+            <summary>
+            会话免打扰消息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>string</b> ConversationId<br/>
+            <b>bool</b> IsMuted<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationMuteMessage.UserId">
+            <summary>
+            用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationMuteMessage.ConversationId">
+            <summary>
+            会话ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationMuteMessage.IsMuted">
+            <summary>
+            是否免打扰
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMConversationInfo">
+            <summary>
+            会话信息数据模型
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> ConversationId<br/>
+            <b>Horizon.IM.Message.Enums.IMChatRelationType</b> ChatRelationType<br/>
+            <b>ulong</b> PeerId<br/>
+            <b>string</b> DisplayName<br/>
+            <b>string</b> Avatar<br/>
+            <b>string</b> LastMessageSummary<br/>
+            <b>long</b> LastMessageTime<br/>
+            <b>int</b> UnreadCount<br/>
+            <b>bool</b> IsPinned<br/>
+            <b>bool</b> IsMuted<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationInfo.ConversationId">
+            <summary>
+            会话ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationInfo.ChatRelationType">
+            <summary>
+            聊天关系类型
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationInfo.PeerId">
+            <summary>
+            对方用户ID（私聊时）/ 群组ID（群聊时）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationInfo.DisplayName">
+            <summary>
+            会话显示名称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationInfo.Avatar">
+            <summary>
+            会话头像URL
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationInfo.LastMessageSummary">
+            <summary>
+            最后一条消息内容摘要
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationInfo.LastMessageTime">
+            <summary>
+            最后一条消息时间戳
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationInfo.UnreadCount">
+            <summary>
+            未读消息数
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationInfo.IsPinned">
+            <summary>
+            是否置顶
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMConversationInfo.IsMuted">
+            <summary>
+            是否免打扰
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupChatSendMessage">
+            <summary>
+            群聊消息发送
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> SenderId<br/>
+            <b>string</b> SenderName<br/>
+            <b>string</b> SenderAvatar<br/>
+            <b>ulong</b> GroupId<br/>
+            <b>string</b> Content<br/>
+            <b>Horizon.IM.Message.Enums.IMContentType</b> ContentType<br/>
+            <b>string</b> ClientMessageId<br/>
+            <b>long</b> Timestamp<br/>
+            <b>System.Collections.Generic.List&lt;ulong&gt;</b> MentionedUserIds<br/>
+            <b>bool</b> MentionAll<br/>
+            <b>System.Collections.Generic.List&lt;string&gt;</b> Attachments<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatSendMessage.SenderId">
+            <summary>
+            发送者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatSendMessage.SenderName">
+            <summary>
+            发送者昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatSendMessage.SenderAvatar">
+            <summary>
+            发送者头像URL
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatSendMessage.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatSendMessage.Content">
+            <summary>
+            消息内容
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatSendMessage.ContentType">
+            <summary>
+            消息内容类型
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatSendMessage.ClientMessageId">
+            <summary>
+            客户端消息ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatSendMessage.Timestamp">
+            <summary>
+            发送时间戳
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatSendMessage.MentionedUserIds">
+            <summary>
+            @提及的用户ID列表
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatSendMessage.MentionAll">
+            <summary>
+            是否@所有人
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatSendMessage.Attachments">
+            <summary>
+            附件URL列表
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupChatNotifyMessage">
+            <summary>
+            群聊消息通知（服务器推送给群成员）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> ServerMessageId<br/>
+            <b>ulong</b> SenderId<br/>
+            <b>string</b> SenderName<br/>
+            <b>string</b> SenderAvatar<br/>
+            <b>ulong</b> GroupId<br/>
+            <b>string</b> GroupName<br/>
+            <b>string</b> Content<br/>
+            <b>Horizon.IM.Message.Enums.IMContentType</b> ContentType<br/>
+            <b>long</b> Timestamp<br/>
+            <b>System.Collections.Generic.List&lt;ulong&gt;</b> MentionedUserIds<br/>
+            <b>bool</b> MentionAll<br/>
+            <b>System.Collections.Generic.List&lt;string&gt;</b> Attachments<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatNotifyMessage.ServerMessageId">
+            <summary>
+            服务器消息ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatNotifyMessage.SenderId">
+            <summary>
+            发送者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatNotifyMessage.SenderName">
+            <summary>
+            发送者昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatNotifyMessage.SenderAvatar">
+            <summary>
+            发送者头像URL
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatNotifyMessage.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatNotifyMessage.GroupName">
+            <summary>
+            群组名称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatNotifyMessage.Content">
+            <summary>
+            消息内容
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatNotifyMessage.ContentType">
+            <summary>
+            消息内容类型
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatNotifyMessage.Timestamp">
+            <summary>
+            服务器时间戳
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatNotifyMessage.MentionedUserIds">
+            <summary>
+            @提及的用户ID列表
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatNotifyMessage.MentionAll">
+            <summary>
+            是否@所有人
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupChatNotifyMessage.Attachments">
+            <summary>
+            附件URL列表
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupCreateRequest">
+            <summary>
+            创建群组请求
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> CreatorId<br/>
+            <b>string</b> GroupName<br/>
+            <b>string</b> GroupAvatar<br/>
+            <b>string</b> Announcement<br/>
+            <b>System.Collections.Generic.List&lt;ulong&gt;</b> InitialMemberIds<br/>
+            <b>int</b> MaxMembers<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupCreateRequest.CreatorId">
+            <summary>
+            创建者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupCreateRequest.GroupName">
+            <summary>
+            群组名称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupCreateRequest.GroupAvatar">
+            <summary>
+            群组头像URL
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupCreateRequest.Announcement">
+            <summary>
+            群组公告
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupCreateRequest.InitialMemberIds">
+            <summary>
+            初始成员ID列表
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupCreateRequest.MaxMembers">
+            <summary>
+            群最大人数
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupCreateResponse">
+            <summary>
+            创建群组响应
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>bool</b> Success<br/>
+            <b>string</b> Message<br/>
+            <b>ulong</b> GroupId<br/>
+            <b>Horizon.IM.Message.Network.IMGroupInfo</b> GroupInfo<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupCreateResponse.Success">
+            <summary>
+            是否成功
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupCreateResponse.Message">
+            <summary>
+            消息
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupCreateResponse.GroupId">
+            <summary>
+            群组ID（创建成功时返回）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupCreateResponse.GroupInfo">
+            <summary>
+            群组信息
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupJoinRequest">
+            <summary>
+            加入群组请求
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>ulong</b> GroupId<br/>
+            <b>string</b> Reason<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupJoinRequest.UserId">
+            <summary>
+            用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupJoinRequest.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupJoinRequest.Reason">
+            <summary>
+            申请理由
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupJoinResponse">
+            <summary>
+            加入群组响应
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>bool</b> Success<br/>
+            <b>string</b> Message<br/>
+            <b>ulong</b> GroupId<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            <b>bool</b> InviteConsentRequired<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupJoinResponse.Success">
+            <summary>
+            是否成功
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupJoinResponse.Message">
+            <summary>
+            消息
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupJoinResponse.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupJoinResponse.InviteConsentRequired">
+            <summary>
+            是否需要被邀请者确认入群
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupLeaveRequest">
+            <summary>
+            退出群组请求
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>ulong</b> GroupId<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupLeaveRequest.UserId">
+            <summary>
+            用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupLeaveRequest.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupLeaveResponse">
+            <summary>
+            退出群组响应
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>bool</b> Success<br/>
+            <b>string</b> Message<br/>
+            <b>ulong</b> GroupId<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupLeaveResponse.Success">
+            <summary>
+            是否成功
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupLeaveResponse.Message">
+            <summary>
+            消息
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupLeaveResponse.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupDisbandRequest">
+            <summary>
+            解散群组请求
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> OwnerId<br/>
+            <b>ulong</b> GroupId<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupDisbandRequest.OwnerId">
+            <summary>
+            群主用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupDisbandRequest.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupDisbandResponse">
+            <summary>
+            解散群组响应
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>bool</b> Success<br/>
+            <b>string</b> Message<br/>
+            <b>ulong</b> GroupId<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupDisbandResponse.Success">
+            <summary>
+            是否成功
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupDisbandResponse.Message">
+            <summary>
+            消息
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupDisbandResponse.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupInfoUpdateMessage">
+            <summary>
+            群组信息更新消息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> GroupId<br/>
+            <b>Horizon.IM.Message.Network.IMGroupInfo</b> GroupInfo<br/>
+            <b>ulong</b> OperatorId<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInfoUpdateMessage.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInfoUpdateMessage.GroupInfo">
+            <summary>
+            群组信息
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInfoUpdateMessage.OperatorId">
+            <summary>
+            操作者用户ID
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupMemberListRequest">
+            <summary>
+            群成员列表请求
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> GroupId<br/>
+            <b>ulong</b> UserId<br/>
+            <b>int</b> Offset<br/>
+            <b>int</b> Limit<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupMemberListRequest.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupMemberListRequest.UserId">
+            <summary>
+            请求者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupMemberListRequest.Offset">
+            <summary>
+            分页偏移量
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupMemberListRequest.Limit">
+            <summary>
+            每页数量
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupMemberListResponse">
+            <summary>
+            群成员列表响应
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> GroupId<br/>
+            <b>System.Collections.Generic.List&lt;Horizon.IM.Message.Network.IMGroupMemberInfo&gt;</b> Members<br/>
+            <b>int</b> TotalCount<br/>
+            <b>bool</b> HasMore<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupMemberListResponse.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupMemberListResponse.Members">
+            <summary>
+            成员列表
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupMemberListResponse.TotalCount">
+            <summary>
+            总成员数
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupMemberListResponse.HasMore">
+            <summary>
+            是否还有更多
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupInfo">
+            <summary>
+            群组信息数据模型
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> GroupId<br/>
+            <b>string</b> GroupName<br/>
+            <b>string</b> GroupAvatar<br/>
+            <b>ulong</b> OwnerId<br/>
+            <b>string</b> Announcement<br/>
+            <b>int</b> MemberCount<br/>
+            <b>int</b> MaxMembers<br/>
+            <b>long</b> CreateTime<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            <b>bool</b> JoinApprovalRequired<br/>
+            <b>bool</b> InviteConsentRequired<br/>
+            <b>bool</b> IsDisbanded<br/>
+            <b>bool</b> MemberInviteRequiresApproval<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInfo.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInfo.GroupName">
+            <summary>
+            群组名称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInfo.GroupAvatar">
+            <summary>
+            群组头像URL
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInfo.OwnerId">
+            <summary>
+            群主用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInfo.Announcement">
+            <summary>
+            群组公告
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInfo.MemberCount">
+            <summary>
+            当前成员数
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInfo.MaxMembers">
+            <summary>
+            最大成员数
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInfo.CreateTime">
+            <summary>
+            创建时间戳
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInfo.JoinApprovalRequired">
+            <summary>
+            加群是否需要管理员/群主审核
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInfo.InviteConsentRequired">
+            <summary>
+            被邀请入群是否需要被邀请者同意
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInfo.IsDisbanded">
+            <summary>
+            群组是否已解散
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInfo.MemberInviteRequiresApproval">
+            <summary>
+            非群主成员发起邀请时是否需要群主审批。
+            默认为 <c>false</c>：普通成员可直接邀请好友入群，无需群主审批。
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupMemberInfo">
+            <summary>
+            群成员信息数据模型
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>string</b> Nickname<br/>
+            <b>string</b> Avatar<br/>
+            <b>Horizon.IM.Message.Enums.IMGroupMemberRole</b> Role<br/>
+            <b>string</b> GroupNickname<br/>
+            <b>long</b> JoinTime<br/>
+            <b>Horizon.IM.Message.Enums.IMOnlineStatus</b> OnlineStatus<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupMemberInfo.UserId">
+            <summary>
+            用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupMemberInfo.Nickname">
+            <summary>
+            用户昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupMemberInfo.Avatar">
+            <summary>
+            用户头像URL
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupMemberInfo.Role">
+            <summary>
+            群内角色
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupMemberInfo.GroupNickname">
+            <summary>
+            群内备注名
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupMemberInfo.JoinTime">
+            <summary>
+            加入时间戳
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupMemberInfo.OnlineStatus">
+            <summary>
+            在线状态
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupInviteRequest">
+            <summary>
+            邀请用户加入群组请求（成员/管理员发起）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> InviterId<br/>
+            <b>ulong</b> GroupId<br/>
+            <b>System.Collections.Generic.List&lt;ulong&gt;</b> InviteeIds<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteRequest.InviterId">
+            <summary>
+            邀请人ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteRequest.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteRequest.InviteeIds">
+            <summary>
+            被邀请的用户ID列表
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupInviteResponse">
+            <summary>
+            被邀请者响应邀请（接受/拒绝）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>ulong</b> GroupId<br/>
+            <b>bool</b> Accept<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteResponse.UserId">
+            <summary>
+            响应用户ID（被邀请者）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteResponse.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteResponse.Accept">
+            <summary>
+            true=接受邀请，false=拒绝邀请
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupJoinApplyReview">
+            <summary>
+            管理员/群主审核加群申请
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> ReviewerId<br/>
+            <b>ulong</b> GroupId<br/>
+            <b>ulong</b> ApplicantId<br/>
+            <b>bool</b> Approve<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupJoinApplyReview.ReviewerId">
+            <summary>
+            审核人ID（管理员或群主）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupJoinApplyReview.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupJoinApplyReview.ApplicantId">
+            <summary>
+            申请人ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupJoinApplyReview.Approve">
+            <summary>
+            true=通过，false=拒绝
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupInviteNotify">
+            <summary>
+            推送：被邀请者收到入群邀请通知（服务端→客户端）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> GroupId<br/>
+            <b>string</b> GroupName<br/>
+            <b>ulong</b> InviterId<br/>
+            <b>string</b> InviterName<br/>
+            <b>bool</b> RequiresConsent<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteNotify.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteNotify.GroupName">
+            <summary>
+            群组名称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteNotify.InviterId">
+            <summary>
+            邀请人ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteNotify.InviterName">
+            <summary>
+            邀请人昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteNotify.RequiresConsent">
+            <summary>
+            是否需要被邀请者同意（true=需要同意；false=已直接加入）
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupJoinApplyNotify">
+            <summary>
+            推送：管理员/群主收到新的加群申请通知（服务端→客户端）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> GroupId<br/>
+            <b>string</b> GroupName<br/>
+            <b>ulong</b> ApplicantId<br/>
+            <b>string</b> ApplicantName<br/>
+            <b>string</b> Reason<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupJoinApplyNotify.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupJoinApplyNotify.GroupName">
+            <summary>
+            群组名称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupJoinApplyNotify.ApplicantId">
+            <summary>
+            申请人ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupJoinApplyNotify.ApplicantName">
+            <summary>
+            申请人昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupJoinApplyNotify.Reason">
+            <summary>
+            申请理由
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGetPendingGroupInvitesRequest">
+            <summary>
+            查询当前用户待处理入群邀请列表请求（客户端→服务端）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>int</b> Offset<br/>
+            <b>int</b> Limit<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGetPendingGroupInvitesResponse">
+            <summary>
+            查询当前用户待处理入群邀请列表响应（服务端→客户端）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Collections.Generic.List&lt;Horizon.IM.Message.IMUserPendingGroupInviteEntry&gt;</b> PendingInvites<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupInviteApprovalNotify">
+            <summary>
+            推送：群主收到由非群主成员发起的入群邀请审批请求（服务端→群主）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> GroupId<br/>
+            <b>string</b> GroupName<br/>
+            <b>ulong</b> InviterId<br/>
+            <b>string</b> InviterName<br/>
+            <b>ulong</b> InviteeId<br/>
+            <b>long</b> Timestamp<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteApprovalNotify.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteApprovalNotify.GroupName">
+            <summary>
+            群组名称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteApprovalNotify.InviterId">
+            <summary>
+            发起邀请的成员ID（非群主）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteApprovalNotify.InviterName">
+            <summary>
+            发起邀请的成员昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteApprovalNotify.InviteeId">
+            <summary>
+            被邀请用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteApprovalNotify.Timestamp">
+            <summary>
+            发起时间戳（毫秒）
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupInviteApprovalReview">
+            <summary>
+            群主审核由非群主成员发起的入群邀请（客户端→服务端）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> ReviewerId<br/>
+            <b>ulong</b> GroupId<br/>
+            <b>ulong</b> InviteeId<br/>
+            <b>bool</b> Approve<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteApprovalReview.ReviewerId">
+            <summary>
+            审核人ID（群主）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteApprovalReview.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteApprovalReview.InviteeId">
+            <summary>
+            被邀请用户ID（审核主键）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteApprovalReview.Approve">
+            <summary>
+            true=同意，false=拒绝
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupDisbandNotify">
+            <summary>
+            推送：群组被解散通知（服务端→成员）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> GroupId<br/>
+            <b>string</b> GroupName<br/>
+            <b>long</b> Timestamp<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupDisbandNotify.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupDisbandNotify.GroupName">
+            <summary>
+            群组名称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupDisbandNotify.Timestamp">
+            <summary>
+            解散时间戳（毫秒）
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGetPendingApprovalListRequest">
+            <summary>
+            群主查询待审批邀请列表请求（客户端→服务端）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> OwnerId<br/>
+            <b>ulong</b> GroupId<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGetPendingApprovalListRequest.OwnerId">
+            <summary>
+            发起请求的群主用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGetPendingApprovalListRequest.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGetPendingApprovalListResponse">
+            <summary>
+            群主查询待审批邀请列表响应（服务端→客户端）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>System.Collections.Generic.List&lt;Horizon.IM.Message.Network.IMGroupInviteApprovalNotify&gt;</b> PendingApprovals<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGetPendingApprovalListResponse.PendingApprovals">
+            <summary>
+            待审批邀请列表
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMGroupInviteResultNotify">
+            <summary>
+            推送：原邀请人收到群主对其邀请的审批结果通知（服务端→客户端）。
+            当 <c>MemberInviteRequiresApproval=true</c> 时，群主审批后通过此消息通知原邀请人。
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> GroupId<br/>
+            <b>string</b> GroupName<br/>
+            <b>ulong</b> InviteeId<br/>
+            <b>bool</b> Approved<br/>
+            <b>long</b> Timestamp<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteResultNotify.GroupId">
+            <summary>
+            群组ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteResultNotify.GroupName">
+            <summary>
+            群组名称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteResultNotify.InviteeId">
+            <summary>
+            被邀请的用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteResultNotify.Approved">
+            <summary>
+            true=群主已批准，false=群主已拒绝
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMGroupInviteResultNotify.Timestamp">
+            <summary>
+            审批时间戳（毫秒）
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMMessageHeader">
+            <summary>
+            IM消息头
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>string</b> MessageId<br/>
+            <b>long</b> SequenceId<br/>
+            <b>long</b> Timestamp<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> MessageType<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            <b>string</b> Hash<br/>
+            <b>uint</b> Flags<br/>
+            <b>System.Collections.Generic.Dictionary&lt;string, string&gt;</b> ExtensionData<br/>
+            <b>bool</b> RequireResponse<br/>
+            <b>bool</b> IsResponse<br/>
+            <b>string</b> ResponseToMessageId<br/>
+            <b>byte</b> Priority<br/>
+            <b>byte</b> Version<br/>
+            <b>string</b> AuthToken<br/>
+            <b>string</b> MachineId<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessageHeader.UserId">
+            <summary>
+            用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessageHeader.MessageId">
+            <summary>
+            消息识别码
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessageHeader.SequenceId">
+            <summary>
+            消息序列号
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessageHeader.Timestamp">
+            <summary>
+            时间戳（毫秒）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessageHeader.MessageType">
+            <summary>
+            IM消息类型码
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessageHeader.ServiceType">
+            <summary>
+            IM服务类型
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessageHeader.Hash">
+            <summary>
+            消息哈希值
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessageHeader.Flags">
+            <summary>
+            消息标志位
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessageHeader.ExtensionData">
+            <summary>
+            扩展数据
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessageHeader.AuthToken">
+            <summary>
+            用户鉴权令牌
+            包含用户登录时间、机器ID与PassportId的加密数据，仅网关层或服务端层可解析验证
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessageHeader.MachineId">
+            <summary>
+            客户端机器唯一标识符（由客户端通过 MachineIdentifier.GetMachineGuid() 获取，用于令牌机器ID验证）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessageHeader.RequireResponse">
+            <summary>
+            是否需要响应
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessageHeader.IsResponse">
+            <summary>
+            是否是响应消息
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessageHeader.ResponseToMessageId">
+            <summary>
+            响应的消息ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessageHeader.Priority">
+            <summary>
+            消息优先级
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessageHeader.Version">
+            <summary>
+            消息版本
+            </summary>
+        </member>
+        <member name="M:Horizon.IM.Message.Network.IMMessageHeader.#ctor">
+            <summary>
+            构造函数
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMMessagePacket">
+            <summary>
+            IM消息包装类
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            <b>Horizon.IM.Message.Network.IMMessageHeader</b> Header<br/>
+            <b>Horizon.IM.Message.IMMessageUnion</b> Body<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessagePacket.ServiceType">
+            <summary>
+            IM服务类型
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessagePacket.Header">
+            <summary>
+            消息头
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessagePacket.Body">
+            <summary>
+            消息体
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessagePacket.RawData">
+            <summary>
+            原始数据
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMMessagePacket.Length">
+            <summary>
+            数据长度
+            </summary>
+        </member>
+        <member name="M:Horizon.IM.Message.Network.IMMessagePacket.#ctor">
+            <summary>
+            构造函数
+            </summary>
+        </member>
+        <member name="M:Horizon.IM.Message.Network.IMMessagePacket.#ctor(Horizon.IM.Message.IMMessageUnion)">
+            <summary>
+            构造函数
+            </summary>
+            <param name="body">消息体</param>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMPrivateChatSendMessage">
+            <summary>
+            私聊消息发送（熟人聊天）
+            已经是好友关系的用户之间发送消息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> SenderId<br/>
+            <b>string</b> SenderName<br/>
+            <b>string</b> SenderAvatar<br/>
+            <b>ulong</b> ReceiverId<br/>
+            <b>string</b> Content<br/>
+            <b>Horizon.IM.Message.Enums.IMContentType</b> ContentType<br/>
+            <b>string</b> ClientMessageId<br/>
+            <b>long</b> Timestamp<br/>
+            <b>System.Collections.Generic.List&lt;string&gt;</b> Attachments<br/>
+            <b>System.Collections.Generic.Dictionary&lt;string, string&gt;</b> ExtData<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatSendMessage.SenderId">
+            <summary>
+            发送者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatSendMessage.SenderName">
+            <summary>
+            发送者昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatSendMessage.SenderAvatar">
+            <summary>
+            发送者头像URL
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatSendMessage.ReceiverId">
+            <summary>
+            接收者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatSendMessage.Content">
+            <summary>
+            消息内容
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatSendMessage.ContentType">
+            <summary>
+            消息内容类型
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatSendMessage.ClientMessageId">
+            <summary>
+            客户端消息ID（用于去重和回执匹配）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatSendMessage.Timestamp">
+            <summary>
+            发送时间戳（毫秒）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatSendMessage.Attachments">
+            <summary>
+            附件URL列表（图片、文件等的URL）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatSendMessage.ExtData">
+            <summary>
+            扩展数据（用于自定义消息类型）
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMPrivateChatNotifyMessage">
+            <summary>
+            私聊消息通知（服务器推送给接收方）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> ServerMessageId<br/>
+            <b>ulong</b> SenderId<br/>
+            <b>string</b> SenderName<br/>
+            <b>string</b> SenderAvatar<br/>
+            <b>ulong</b> ReceiverId<br/>
+            <b>string</b> Content<br/>
+            <b>Horizon.IM.Message.Enums.IMContentType</b> ContentType<br/>
+            <b>long</b> Timestamp<br/>
+            <b>System.Collections.Generic.List&lt;string&gt;</b> Attachments<br/>
+            <b>System.Collections.Generic.Dictionary&lt;string, string&gt;</b> ExtData<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatNotifyMessage.ServerMessageId">
+            <summary>
+            服务器分配的消息ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatNotifyMessage.SenderId">
+            <summary>
+            发送者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatNotifyMessage.SenderName">
+            <summary>
+            发送者昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatNotifyMessage.SenderAvatar">
+            <summary>
+            发送者头像URL
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatNotifyMessage.ReceiverId">
+            <summary>
+            接收者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatNotifyMessage.Content">
+            <summary>
+            消息内容
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatNotifyMessage.ContentType">
+            <summary>
+            消息内容类型
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatNotifyMessage.Timestamp">
+            <summary>
+            服务器时间戳（毫秒）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatNotifyMessage.Attachments">
+            <summary>
+            附件URL列表
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMPrivateChatNotifyMessage.ExtData">
+            <summary>
+            扩展数据
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMChatAckMessage">
+            <summary>
+            消息回执（送达/已读确认）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> AckedMessageId<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageStatus</b> Status<br/>
+            <b>long</b> Timestamp<br/>
+            <b>ulong</b> UserId<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatAckMessage.AckedMessageId">
+            <summary>
+            被确认的消息ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatAckMessage.Status">
+            <summary>
+            消息状态
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatAckMessage.Timestamp">
+            <summary>
+            确认时间戳
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatAckMessage.UserId">
+            <summary>
+            确认者用户ID
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMChatRecallMessage">
+            <summary>
+            消息撤回
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> RecalledMessageId<br/>
+            <b>ulong</b> UserId<br/>
+            <b>ulong</b> PeerId<br/>
+            <b>Horizon.IM.Message.Enums.IMChatRelationType</b> ChatRelationType<br/>
+            <b>long</b> Timestamp<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatRecallMessage.RecalledMessageId">
+            <summary>
+            撤回的消息ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatRecallMessage.UserId">
+            <summary>
+            撤回者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatRecallMessage.PeerId">
+            <summary>
+            会话对方ID（私聊时为对方用户ID，群聊时为群组ID）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatRecallMessage.ChatRelationType">
+            <summary>
+            聊天关系类型
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatRecallMessage.Timestamp">
+            <summary>
+            撤回时间戳
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMChatReadReceiptMessage">
+            <summary>
+            已读回执
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>ulong</b> PeerId<br/>
+            <b>string</b> LastReadMessageId<br/>
+            <b>long</b> Timestamp<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatReadReceiptMessage.UserId">
+            <summary>
+            读取者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatReadReceiptMessage.PeerId">
+            <summary>
+            会话对方ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatReadReceiptMessage.LastReadMessageId">
+            <summary>
+            最后已读消息ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMChatReadReceiptMessage.Timestamp">
+            <summary>
+            已读时间戳
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMTypingIndicatorMessage">
+            <summary>
+            正在输入指示
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>ulong</b> PeerId<br/>
+            <b>bool</b> IsTyping<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMTypingIndicatorMessage.UserId">
+            <summary>
+            用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMTypingIndicatorMessage.PeerId">
+            <summary>
+            会话对方ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMTypingIndicatorMessage.IsTyping">
+            <summary>
+            是否正在输入
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMStrangerChatRequest">
+            <summary>
+            陌生人聊天请求
+            发起陌生人聊天前需要验证：
+            1. 发送方必须已实名认证（IdentityVerificationStatus != Unverified）
+            2. 发送方不能是失信人员、诈骗嫌疑人或犯罪分子（UserRiskLevel == Normal）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> SenderId<br/>
+            <b>string</b> SenderName<br/>
+            <b>string</b> SenderAvatar<br/>
+            <b>ulong</b> TargetUserId<br/>
+            <b>Horizon.IM.Message.Enums.IdentityVerificationStatus</b> SenderVerificationStatus<br/>
+            <b>Horizon.IM.Message.Enums.UserRiskLevel</b> SenderRiskLevel<br/>
+            <b>string</b> GreetingMessage<br/>
+            <b>long</b> Timestamp<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatRequest.SenderId">
+            <summary>
+            发送者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatRequest.SenderName">
+            <summary>
+            发送者昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatRequest.SenderAvatar">
+            <summary>
+            发送者头像URL
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatRequest.TargetUserId">
+            <summary>
+            目标用户ID（陌生人）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatRequest.SenderVerificationStatus">
+            <summary>
+            发送者实名认证状态
+            未实名认证的用户不能向陌生人发起聊天请求
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatRequest.SenderRiskLevel">
+            <summary>
+            发送者风险等级
+            被研判为失信人员、诈骗嫌疑人或犯罪分子的不允许发起陌生人聊天请求
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatRequest.GreetingMessage">
+            <summary>
+            打招呼消息（首次陌生人聊天的问候语）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatRequest.Timestamp">
+            <summary>
+            请求时间戳
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMStrangerChatResponse">
+            <summary>
+            陌生人聊天响应
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>bool</b> IsAllowed<br/>
+            <b>Horizon.IM.Message.Enums.StrangerChatDeniedReason</b> DeniedReason<br/>
+            <b>string</b> DeniedMessage<br/>
+            <b>ulong</b> SenderId<br/>
+            <b>ulong</b> TargetUserId<br/>
+            <b>string</b> SessionId<br/>
+            <b>long</b> Timestamp<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatResponse.IsAllowed">
+            <summary>
+            是否允许聊天
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatResponse.DeniedReason">
+            <summary>
+            拒绝原因
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatResponse.DeniedMessage">
+            <summary>
+            拒绝描述信息
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatResponse.SenderId">
+            <summary>
+            发送者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatResponse.TargetUserId">
+            <summary>
+            目标用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatResponse.SessionId">
+            <summary>
+            会话ID（允许聊天时由服务器分配）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatResponse.Timestamp">
+            <summary>
+            响应时间戳
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMStrangerChatSendMessage">
+            <summary>
+            陌生人聊天消息发送
+            只有通过验证并获得会话ID的用户才能发送陌生人消息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> SenderId<br/>
+            <b>string</b> SenderName<br/>
+            <b>string</b> SenderAvatar<br/>
+            <b>ulong</b> ReceiverId<br/>
+            <b>string</b> SessionId<br/>
+            <b>string</b> Content<br/>
+            <b>Horizon.IM.Message.Enums.IMContentType</b> ContentType<br/>
+            <b>string</b> ClientMessageId<br/>
+            <b>long</b> Timestamp<br/>
+            <b>System.Collections.Generic.List&lt;string&gt;</b> Attachments<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatSendMessage.SenderId">
+            <summary>
+            发送者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatSendMessage.SenderName">
+            <summary>
+            发送者昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatSendMessage.SenderAvatar">
+            <summary>
+            发送者头像URL
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatSendMessage.ReceiverId">
+            <summary>
+            接收者用户ID（陌生人）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatSendMessage.SessionId">
+            <summary>
+            陌生人会话ID（由StrangerChatResponse分配）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatSendMessage.Content">
+            <summary>
+            消息内容
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatSendMessage.ContentType">
+            <summary>
+            消息内容类型
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatSendMessage.ClientMessageId">
+            <summary>
+            客户端消息ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatSendMessage.Timestamp">
+            <summary>
+            发送时间戳
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatSendMessage.Attachments">
+            <summary>
+            附件URL列表
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMStrangerChatNotifyMessage">
+            <summary>
+            陌生人聊天消息通知（服务器推送给接收方）
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> ServerMessageId<br/>
+            <b>ulong</b> SenderId<br/>
+            <b>string</b> SenderName<br/>
+            <b>string</b> SenderAvatar<br/>
+            <b>ulong</b> ReceiverId<br/>
+            <b>string</b> SessionId<br/>
+            <b>string</b> Content<br/>
+            <b>Horizon.IM.Message.Enums.IMContentType</b> ContentType<br/>
+            <b>long</b> Timestamp<br/>
+            <b>System.Collections.Generic.List&lt;string&gt;</b> Attachments<br/>
+            <b>bool</b> IsStrangerMessage<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatNotifyMessage.ServerMessageId">
+            <summary>
+            服务器分配的消息ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatNotifyMessage.SenderId">
+            <summary>
+            发送者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatNotifyMessage.SenderName">
+            <summary>
+            发送者昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatNotifyMessage.SenderAvatar">
+            <summary>
+            发送者头像URL
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatNotifyMessage.ReceiverId">
+            <summary>
+            接收者用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatNotifyMessage.SessionId">
+            <summary>
+            陌生人会话ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatNotifyMessage.Content">
+            <summary>
+            消息内容
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatNotifyMessage.ContentType">
+            <summary>
+            消息内容类型
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatNotifyMessage.Timestamp">
+            <summary>
+            服务器时间戳
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatNotifyMessage.Attachments">
+            <summary>
+            附件URL列表
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMStrangerChatNotifyMessage.IsStrangerMessage">
+            <summary>
+            标记这是陌生人消息（用于客户端UI展示区分）
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMHeartbeatMessage">
+            <summary>
+            IM心跳消息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>ulong</b> UserId<br/>
+            <b>long</b> ClientTimestamp<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMHeartbeatMessage.UserId">
+            <summary>
+            用户ID
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMHeartbeatMessage.ClientTimestamp">
+            <summary>
+            客户端时间戳
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMHeartbeatResponse">
+            <summary>
+            IM心跳响应消息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>long</b> ServerTimestamp<br/>
+            <b>int</b> PendingMessageCount<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMHeartbeatResponse.ServerTimestamp">
+            <summary>
+            服务器时间戳
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMHeartbeatResponse.PendingMessageCount">
+            <summary>
+            待处理的离线消息数量
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMErrorMessage">
+            <summary>
+            IM错误消息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>Horizon.IM.Message.Enums.IMErrorCode</b> ErrorCode<br/>
+            <b>string</b> Message<br/>
+            <b>string</b> RelatedMessageId<br/>
+            <b>string</b> Details<br/>
+            <b>long</b> Timestamp<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMErrorMessage.ErrorCode">
+            <summary>
+            错误码
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMErrorMessage.Message">
+            <summary>
+            错误消息
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMErrorMessage.RelatedMessageId">
+            <summary>
+            关联的原始消息ID（如果有）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMErrorMessage.Details">
+            <summary>
+            错误详情
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMErrorMessage.Timestamp">
+            <summary>
+            时间戳
+            </summary>
+        </member>
+        <member name="T:Horizon.IM.Message.Network.IMSystemNotificationMessage">
+            <summary>
+            IM系统通知消息
+            </summary>
+            <remarks>
+            MemoryPack GenerateType: Object<br/>
+            <code>
+            <b>string</b> Title<br/>
+            <b>string</b> Content<br/>
+            <b>ulong</b> TargetUserId<br/>
+            <b>long</b> Timestamp<br/>
+            <b>byte</b> Priority<br/>
+            <b>Horizon.IM.Message.Enums.IMMessageType</b> Type<br/>
+            <b>Horizon.IM.Message.Enums.IMServiceType</b> ServiceType<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMSystemNotificationMessage.Title">
+            <summary>
+            通知标题
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMSystemNotificationMessage.Content">
+            <summary>
+            通知内容
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMSystemNotificationMessage.TargetUserId">
+            <summary>
+            目标用户ID（0表示全体用户）
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMSystemNotificationMessage.Timestamp">
+            <summary>
+            通知时间戳
+            </summary>
+        </member>
+        <member name="P:Horizon.IM.Message.Network.IMSystemNotificationMessage.Priority">
+            <summary>
+            通知优先级
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.GeneratorPropertyAttribute">
+            <summary>
+            标识源生成依赖属性。
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Core.GeneratorPropertyAttribute.TargetType">
+            <summary>
+            要生成依赖属性的目标类型名称。如果未设置，则表示当前属性所在的类型。
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Core.GeneratorPropertyAttribute.GenerationOptions">
+            <summary>
+            生成的属性类型。
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Core.GeneratorPropertyAttribute.ActionMode">
+            <summary>
+            是否使用Action模式生成Set扩展方法访问器。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.PropertyGenerationOptions">
+            <summary>
+            依赖属性生成选项。
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Core.PropertyGenerationOptions.All">
+            <summary>
+            生成所有访问器。
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Core.PropertyGenerationOptions.IncludeMethodGetter">
+            <summary>
+            包含方法形式的 Getter。
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Core.PropertyGenerationOptions.IncludeMethodSetter">
+            <summary>
+            包含方法形式的 Setter。
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Core.PropertyGenerationOptions.IncludePropertyGetter">
+            <summary>
+            包含属性形式的 Getter。
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Core.PropertyGenerationOptions.IncludePropertySetter">
+            <summary>
+            包含属性形式的 Setter。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.FastSerializableAttribute">
+            <summary>
+            标识源生成Fast序列化相关的实现。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.GeneratorPackageAttribute">
+            <summary>
+            标识源生成<see cref="T:TouchSocket.Core.IPackage"/>的实现。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.PackageMemberAttribute">
+            <summary>
+            标识源生成<see cref="T:TouchSocket.Core.IPackage"/>成员的特性。
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Core.PackageMemberAttribute.Behavior">
+            <summary>
+            生成行为。一般来说，对于非只读、非重写、且同时拥有get，set（可以私有）访问器的属性，会自动生成。
+            对于字段，均不会自动生成。所以可以使用该设置，来指示生成器的生成行为。
+            </summary>
+        </member>
+    </members>
+</doc>

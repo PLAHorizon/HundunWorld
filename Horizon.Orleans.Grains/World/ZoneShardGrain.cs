@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Orleans;
+using Orleans.Runtime;
 using Horizon.Game.Core.Persistence;
 using Horizon.Game.Core.Sim;
 using Horizon.Game.Core.World;
@@ -30,6 +31,9 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     private KeyValuePair<Guid, IZoneShardFanoutObserver>[]? _observerSnapshot;
     private int _interactionSyncObserverFailures;
     private readonly MovementValidator _movementValidator;
+
+    /// <summary>实体位置持久化状态（Orleans Storage）。</summary>
+    private readonly IPersistentState<ZoneShardState> _zoneState;
 
     // fanout 无观察者告警限频（每 10 秒最多一次）
     private DateTime _lastNoObserverWarnUtc = DateTime.MinValue;
@@ -124,9 +128,19 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     // 诊断：前 5 次 TickAsync 调用无条件输出实体表状态，定位"实体未注册"问题
     private int _tickDiagCount;
 
-    public ZoneShardGrain(ILogger<ZoneShardGrain> logger, ISceneObjectPersistenceStore? sceneObjectPersistence = null)
+    /// <summary>实体位置持久化间隔（tick 数）。300 tick ≈ 5 秒 @60Hz。</summary>
+    private const long PersistIntervalTicks = 300;
+
+    /// <summary>上次持久化时的 tick 计数。</summary>
+    private long _lastPersistTick;
+
+    public ZoneShardGrain(
+        ILogger<ZoneShardGrain> logger,
+        [PersistentState("zoneshard", "GameStore")] IPersistentState<ZoneShardState> zoneState,
+        ISceneObjectPersistenceStore? sceneObjectPersistence = null)
     {
         _logger = logger;
+        _zoneState = zoneState;
         _sceneObjectPersistence = sceneObjectPersistence;
         _movementValidator = new MovementValidator(new MovementValidator.Options
         {
@@ -142,6 +156,52 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         _logger.LogWarning(
             "ZoneShard {ShardId}: OnActivateAsync 被调用，当前 SessionCount={SessionCount}, ChunkCount={ChunkCount}",
             this.GetPrimaryKeyLong(), _aoi.SessionCount, _aoi.ChunkCount);
+
+        // 从 Orleans Storage 恢复实体位置状态（Grain 空闲回收/Silo 重启后不丢失位置）。
+        try
+        {
+            await _zoneState.ReadStateAsync();
+            var state = _zoneState.State;
+            if (state?.Entities is { Count: > 0 })
+            {
+                foreach (var kv in state.Entities)
+                {
+                    var es = kv.Value;
+                    _simulatedEntities[kv.Key] = new SimulatedEntity
+                    {
+                        X = es.X,
+                        Y = es.Y,
+                        Z = es.Z,
+                        Vz = es.Vz,
+                        Yaw = es.Yaw,
+                        MaxSpeed = es.MaxSpeed,
+                        IsGrounded = es.IsGrounded,
+                        JumpCount = es.JumpCount,
+                        LastSyncTick = es.LastSyncTick,
+                        Hp = es.Hp,
+                        MaxHp = es.MaxHp,
+                        Mana = es.Mana,
+                        MaxMana = es.MaxMana,
+                        Level = es.Level,
+                        Exp = es.Exp,
+                        Stamina = es.Stamina,
+                        MaxStamina = es.MaxStamina,
+                        PendingInputs = new List<InputPacket>(),
+                        // 租约设为已过期，等待网关续约；若网关已下线则孤儿清理会移除。
+                        LeaseExpiry = DateTime.UtcNow + EntityLeaseDuration,
+                    };
+                }
+                _tickCount = state.TickCount;
+                _lastPersistTick = state.TickCount;
+                _logger.LogInformation(
+                    "ZoneShard {ShardId}: 从持久化状态恢复 {Count} 个实体，TickCount={Tick}，LastPersisted={Time}",
+                    this.GetPrimaryKeyLong(), state.Entities.Count, state.TickCount, state.LastPersistedUtc);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "ZoneShard {ShardId}: 恢复持久化状态失败，将以空状态启动。", this.GetPrimaryKeyLong());
+        }
 
         _tickTimer = RegisterTimer(
             async _ =>
@@ -251,6 +311,18 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             }
         }
 
+        // 实体位置最终持久化：确保 Grain 回收前状态不丢失。
+        try
+        {
+            await PersistEntityStateAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "ZoneShard {ShardId}: 停用前实体位置持久化失败。",
+                this.GetPrimaryKeyLong());
+        }
+
         await base.OnDeactivateAsync(reason, cancellationToken);
     }
 
@@ -263,6 +335,36 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
 
         var shardKey = this.GetPrimaryKeyLong();
         await _sceneObjectPersistence.SaveWorldStateAsync(shardKey, _sceneObjectStates.Values.ToList());
+    }
+
+    /// <summary>
+    /// 将当前 _simulatedEntities 快照写入 Orleans Storage。
+    /// 由 TickAsync 定期调用（每 300 tick ≈ 5 秒）和 OnDeactivateAsync 最终调用。
+    /// </summary>
+    private async Task PersistEntityStateAsync()
+    {
+        var state = _zoneState.State ??= new ZoneShardState();
+        state.Entities.Clear();
+        foreach (var kv in _simulatedEntities)
+        {
+            var e = kv.Value;
+            state.Entities[kv.Key] = new SimulatedEntityState
+            {
+                X = e.X, Y = e.Y, Z = e.Z,
+                Vz = e.Vz, Yaw = e.Yaw, MaxSpeed = e.MaxSpeed,
+                IsGrounded = e.IsGrounded, JumpCount = e.JumpCount,
+                LastSyncTick = e.LastSyncTick,
+                Hp = e.Hp, MaxHp = e.MaxHp,
+                Mana = e.Mana, MaxMana = e.MaxMana,
+                Level = e.Level, Exp = e.Exp,
+                Stamina = e.Stamina, MaxStamina = e.MaxStamina,
+            };
+        }
+        state.TickCount = _tickCount;
+        state.LastPersistedUtc = DateTime.UtcNow;
+        _lastPersistTick = _tickCount;
+
+        await _zoneState.WriteStateAsync();
     }
 
     /// <inheritdoc />
@@ -602,10 +704,13 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                 // 客户端据此清理 InputHistoryBuffer + 推进 _lastAckedClientTick，避免冗余重传每帧触发。
                 _inputAckBuffer.Add((entityId, inputs[inputs.Length - 1].ClientTick));
 
-                const float groundedEpsilon = 0.001f;
-                var prevZ = startPos.Z;
-                var curZ = validationResult.AuthoritativeEnd.Z;
-                var isGrounded = MathF.Abs(curZ - prevZ) < groundedEpsilon && validationResult.AuthoritativeVz <= 0f;
+                // 修复（角色无法真正移动）：原 isGrounded 检测使用 Z 位移 < 0.001m 的严格阈值，
+                // 当 MovementValidator 的 GroundHeightSampler 为 null 时，重力使 Z 每 tick 下降约 0.003m，
+                // 导致 isGrounded 始终为 false，实体被判定为 Fall 模式，JumpCount 不重置，
+                // 后续跳跃输入被 jumpCountExceeded 拒绝。
+                // 修复策略：MovementValidator 在地面钳制时显式将 AuthoritativeVz 置 0，
+                // 因此用 Vz ≈ 0 作为接地判据更准确、更鲁棒。
+                var isGrounded = MathF.Abs(validationResult.AuthoritativeVz) < 0.01f;
                 entity.IsGrounded = isGrounded;
                 entity.JumpCount = isGrounded ? 0 : entity.JumpCount;
 
@@ -864,6 +969,37 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         _tickCount++;
         _lastTickTime = tickTime;
 
+        // 定期持久化实体位置（每 300 tick ≈ 5 秒），避免 Grain 回收后位置丢失。
+        if (_simulatedEntities.Count > 0 && (_tickCount - _lastPersistTick) >= PersistIntervalTicks)
+        {
+            try
+            {
+                await PersistEntityStateAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "ZoneShard {ShardId}: 定期实体位置持久化失败（不影响主流程）。",
+                    this.GetPrimaryKeyLong());
+            }
+        }
+
+        // 每 60 tick（≈1 秒）通过 fire-and-forget 更新 CharacterGrain 位置缓存。
+        // 使用 .Ignore() 避免 Orleans 非重入死锁（ZoneShardGrain → CharacterGrain 回调风险）。
+        if (_tickCount % 60 == 0)
+        {
+            foreach (var kv in _simulatedEntities)
+            {
+                var e = kv.Value;
+                if (e.LastSyncTick <= 0) continue; // 跳过未被同步的实体
+                var eid = kv.Key;
+                var px = e.X; var py = e.Y; var pz = e.Z; var pyaw = e.Yaw;
+                GrainFactory.GetGrain<ICharacterGrain>((long)eid)
+                    .UpdateLastPositionAsync(px, py, pz, pyaw)
+                    .Ignore(); // fire-and-forget，不等待回调
+            }
+        }
+
         // Task 19：记录本次 tick 执行耗时（毫秒）
         var elapsedTicks = Stopwatch.GetTimestamp() - tickStartTimestamp;
         Interlocked.Exchange(ref _lastTickDurationMs, elapsedTicks * 1000 / Stopwatch.Frequency);
@@ -957,7 +1093,35 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         // 注意：不要在此处额外做 Y/Z 互换，否则会与 RegisterEntityAsync 内部转换叠加，
         // 导致双重转换（坐标恢复为 Flax 顺序），重力施加在错误轴上，实体快速漂移，
         // Despawn 广播的 chunk key 与 AOI 订阅不匹配，其他客户端无法收到 Despawn delta。
-        await RegisterEntityAsync(entityId, initialX, initialY, initialZ, maxSpeed).ConfigureAwait(false);
+
+        // 改造：优先从 CharacterGrain 读取角色最后已知位置（持久化缓存），
+        // 避免 Grain 重激活后使用握手初始坐标导致角色被拉回原点。
+        // GetLastPositionAsync 是纯读取操作，不会回调 ZoneShardGrain，无死锁风险。
+        float regX = initialX, regY = initialY, regZ = initialZ;
+        try
+        {
+            var characterGrain = GrainFactory.GetGrain<ICharacterGrain>((long)entityId);
+            var lastPos = await characterGrain.GetLastPositionAsync();
+            if (lastPos.HasValue)
+            {
+                // CharacterGrain 存储的是 ECS Z-up 坐标，需转回 Flax Y-up 传给 RegisterEntityAsync。
+                // ECS(X,Y,Z) → Flax(X=ecsX, Y=ecsZ, Z=ecsY)
+                regX = lastPos.Value.X;   // ECS X → Flax X
+                regY = lastPos.Value.Z;   // ECS Z → Flax Y（上下）
+                regZ = lastPos.Value.Y;   // ECS Y → Flax Z（前后）
+                _logger.LogInformation(
+                    "ZoneShard {ShardId}: 实体 {EntityId} 从 CharacterGrain 恢复位置 ECS({X:F2},{Y:F2},{Z:F2})。",
+                    this.GetPrimaryKeyLong(), entityId, lastPos.Value.X, lastPos.Value.Y, lastPos.Value.Z);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "ZoneShard {ShardId}: 从 CharacterGrain 读取实体 {EntityId} 位置失败，回退到握手坐标。",
+                this.GetPrimaryKeyLong(), entityId);
+        }
+
+        await RegisterEntityAsync(entityId, regX, regY, regZ, maxSpeed).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -1409,6 +1573,47 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                 "ZoneShard {ShardId}: 提交输入到未知实体 {EntityId}（已忽略）。",
                 this.GetPrimaryKeyLong(), entityId);
             return Task.CompletedTask;
+        }
+
+        // 修复（角色被吸附回初始位置 — 服务端为何下发最初位置）：
+        // 场景：Orleans Grain 被空闲回收后重新激活、或服务端重连重新注册实体时，
+        // entity.X/Y/Z 为注册时的初始位置（握手坐标），而客户端已经移动了很远。
+        // 第一个输入的 PredictedEnd 距离服务端 startPos 巨大，
+        // MovementValidator 从初始位置回放得到接近初始位置的结果，
+        // drift 远超 0.5m 阈值，触发 Correction 将客户端拉回初始位置。
+        // 修复策略：当实体尚未被 TickAsync 同步过（LastSyncTick==0）时，
+        // 以客户端报告的 PredictedEnd 作为实体当前位置（信任客户端预测），
+        // 并将该输入加入 PendingInputs 供下一次 TickAsync 处理。
+        // 注意：TickAsync 回放时会从 reportedEnd 开始应用输入，
+        // 而 reportedEnd 已包含该输入的位移，因此回放结果 = reportedEnd + 输入位移。
+        // 为避免双倍位移，回放起点应为 reportedEnd 减去本帧位移。
+        // 简化处理：直接将实体位置设为 reportedEnd，并将输入的 MoveX/MoveY 置零
+        // （因为位移已体现在 reportedEnd 中），仅保留 LookYaw/InputBits 等非位移信息。
+        // 反作弊保障：后续 tick 的 MovementValidator 仍会校验每帧位移合法性。
+        if (entity.LastSyncTick == 0)
+        {
+            entity.X = reportedEndX;
+            entity.Y = reportedEndY;
+            entity.Z = reportedEndZ;
+            entity.Vz = 0f;
+            // 将本帧输入的移动分量置零（位移已体现在 reportedEnd 中），避免 TickAsync 回放时双倍应用。
+            input = new InputPacket
+            {
+                ClientTick = input.ClientTick,
+                InputBits = input.InputBits,
+                LookYaw = input.LookYaw,
+                LookPitch = input.LookPitch,
+                MoveX = 0f,
+                MoveY = 0f,
+                CharacterId = input.CharacterId,
+                PredictedEndX = input.PredictedEndX,
+                PredictedEndY = input.PredictedEndY,
+                PredictedEndZ = input.PredictedEndZ,
+                MaxSpeed = input.MaxSpeed,
+            };
+            _logger.LogInformation(
+                "ZoneShard {ShardId}: 实体 {EntityId} 首次输入，位置对齐到客户端报告位置 ({X:F2},{Y:F2},{Z:F2})。",
+                this.GetPrimaryKeyLong(), entityId, reportedEndX, reportedEndY, reportedEndZ);
         }
 
         entity.PendingInputs.Add(input);

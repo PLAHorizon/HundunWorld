@@ -359,7 +359,9 @@ public class SceneObjectPersistenceTests
     private static ZoneShardGrain CreateGrain(ISceneObjectPersistenceStore? persistence = null)
     {
         var mockLogger = new Mock<ILogger<ZoneShardGrain>>();
-        var grain = new ZoneShardGrain(mockLogger.Object, persistence);
+        var mockState = new Mock<global::Orleans.Runtime.IPersistentState<Horizon.Orleans.Grains.World.ZoneShardState>>();
+        mockState.SetupGet(s => s.State).Returns(new Horizon.Orleans.Grains.World.ZoneShardState());
+        var grain = new ZoneShardGrain(mockLogger.Object, mockState.Object, persistence);
 
         var grainId = GrainId.Create(GrainType.Create("ZoneShard"), "1");
         var mockContext = new Mock<IGrainContext>();

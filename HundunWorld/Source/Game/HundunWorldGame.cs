@@ -1055,12 +1055,13 @@ namespace HundunWorld.Game
         /// PlayerInputComponent + PredictedTransformComponent，不添加 InterpolatedTransformComponent
         /// （本地玩家走预测管线，不插值）。
         /// </summary>
-        public void CreateLocalPlayerEntity(ulong characterId, float initialX, float initialY, float initialZ)
+        /// <returns>地面对齐后的 Flax Y（上下）坐标，供握手包使用，确保服务端初始位置与客户端一致。</returns>
+        public float CreateLocalPlayerEntity(ulong characterId, float initialX, float initialY, float initialZ)
         {
             if (_archWorld == null)
             {
                 Debug.LogError("[HundunWorldGame] CreateLocalPlayerEntity 失败：Arch World 未初始化");
-                return;
+                return initialY;
             }
 
             // 初始位置对齐地面：防止开局 pred.Z 低于 Terrain，第一帧重力下落就穿透。
@@ -1126,6 +1127,12 @@ namespace HundunWorld.Game
             _archWorld.Add(entity, predicted);
 
             Debug.Log($"[HundunWorldGame] 已创建本地玩家 ECS 实体: CharacterId={characterId}, Pos=({initialX},{initialY},{initialZ}), GroundAlignedZ={finalEcsZ:F3}, Entity={entity}");
+
+            // 修复（角色无法真正移动）：返回地面对齐后的 Flax Y（上下）坐标。
+            // 握手包必须使用此值（而非原始 CharacterInfo.Position.Y），
+            // 否则服务端 RegisterEntityAsync 的初始 ECS.Z 与客户端 PredictedTransformComponent.Z 不一致，
+            // 导致首帧 drift 超阈值触发 Correction 风暴，角色被拉回服务端初始高度。
+            return finalEcsZ; // finalEcsZ 是 ECS.Z（= Flax.Y 上下）
         }
 
         /// <summary>

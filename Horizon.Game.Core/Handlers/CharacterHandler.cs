@@ -638,14 +638,19 @@ namespace Horizon.Game.Core.Handlers
             try
             {
                 MoveRequest moveRequest = message.Body as MoveRequest;
-                // 处理移动逻辑
+
+                // 同步更新 CharacterGrain 中的权威位置状态，确保后续快照/广播返回正确坐标，
+                // 避免因状态未持久化导致客户端被回拉到原点。
+                var characterGrain = _clusterClient.GetGrain<ICharacterGrain>((long)moveRequest.CharacterId);
+                var grainResponse = await characterGrain.MoveAsync(moveRequest);
+
                 var response = new MoveResponse
                 {
-                    Success = true,
-                    CharacterId = moveRequest.CharacterId,
-                    CurrentX = moveRequest.TargetX,
-                    CurrentY = moveRequest.TargetY,
-                    CurrentZ = moveRequest.TargetZ,
+                    Success = grainResponse.Success,
+                    CharacterId = grainResponse.CharacterId,
+                    CurrentX = grainResponse.CurrentX,
+                    CurrentY = grainResponse.CurrentY,
+                    CurrentZ = grainResponse.CurrentZ,
                     AcknowledgedSequence = moveRequest.SequenceNumber
                 };
                 var tem = CreateHorizonMessage(response);

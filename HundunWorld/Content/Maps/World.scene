@@ -316,6 +316,271 @@
 					]
 				}
 			]
+		},
+		{
+			"ID": "51c5c222407aedf48e6a92889b981942",
+			"TypeName": "FlaxEngine.StaticModel",
+			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
+			"Name": "Cube",
+			"Transform": {
+				"Translation": {
+					"X": -118.31719970703125,
+					"Y": 49.99998474121094,
+					"Z": -104.26142883300781
+				}
+			},
+			"Model": "b43f0f8f4aaba3f3156896a5a22ba493",
+			"Buffer": {
+				"Entries": [
+					{
+						"Material": "00000000000000000000000000000000",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					}
+				]
+			}
+		},
+		{
+			"ID": "a5d58a36431a80209b5ea09df31f0846",
+			"TypeName": "NarrativePro.Navigation.NavigationMarkerComponent",
+			"ParentID": "51c5c222407aedf48e6a92889b981942",
+			"V": {
+	"MarkerObject": {
+		"DefaultMarkerSettings": {
+			"bOverride_LocationDisplayName": false,
+			"bOverride_LocationIcon": false,
+			"bOverride_IconTint": false,
+			"bOverride_IconSize": false,
+			"bOverride_IconOffset": false,
+			"bOverride_bShowActorRotation": false,
+			"MarkerTitleText": "目标AAA",
+			"MarkerSubtitleText": "七零",
+			"LocationIconPath": "",
+			"IconTint": {
+				"R": 1.0,
+				"G": 1.0,
+				"B": 1.0,
+				"A": 1.0
+			},
+			"IconSize": {
+				"X": 20.0,
+				"Y": 20.0
+			},
+			"IconOffset": {
+				"X": 0.0,
+				"Y": 0.0,
+				"Z": 0.0
+			},
+			"bShowActorRotation": false
+		},
+		"WorldMapOverrideSettings": {
+			"bOverride_LocationDisplayName": false,
+			"bOverride_LocationIcon": false,
+			"bOverride_IconTint": false,
+			"bOverride_IconSize": false,
+			"bOverride_IconOffset": false,
+			"bOverride_bShowActorRotation": false,
+			"MarkerTitleText": "Location Marker",
+			"MarkerSubtitleText": "",
+			"LocationIconPath": "",
+			"IconTint": {
+				"R": 1.0,
+				"G": 1.0,
+				"B": 1.0,
+				"A": 1.0
+			},
+			"IconSize": {
+				"X": 20.0,
+				"Y": 20.0
+			},
+			"IconOffset": {
+				"X": 0.0,
+				"Y": 0.0,
+				"Z": 0.0
+			},
+			"bShowActorRotation": false
+		},
+		"MinimapOverrideSettings": {
+			"bOverride_LocationDisplayName": true,
+			"bOverride_LocationIcon": true,
+			"bOverride_IconTint": true,
+			"bOverride_IconSize": false,
+			"bOverride_IconOffset": false,
+			"bOverride_bShowActorRotation": false,
+			"MarkerTitleText": "目标AAA",
+			"MarkerSubtitleText": "七零",
+			"LocationIconPath": "8dd8fced431c3036988c10bf81d38504",
+			"IconTint": {
+				"R": 1.0,
+				"G": 1.0,
+				"B": 1.0,
+				"A": 1.0
+			},
+			"IconSize": {
+				"X": 20.0,
+				"Y": 20.0
+			},
+			"IconOffset": {
+				"X": 0.0,
+				"Y": 0.0,
+				"Z": 0.0
+			},
+			"bShowActorRotation": true
+		},
+		"CompassOverrideSettings": {
+			"bOverride_LocationDisplayName": false,
+			"bOverride_LocationIcon": true,
+			"bOverride_IconTint": false,
+			"bOverride_IconSize": false,
+			"bOverride_IconOffset": false,
+			"bOverride_bShowActorRotation": false,
+			"MarkerTitleText": "目标AAA",
+			"MarkerSubtitleText": "七零",
+			"LocationIconPath": "",
+			"IconTint": {
+				"R": 1.0,
+				"G": 0.30731112,
+				"B": 0.20799601,
+				"A": 1.0
+			},
+			"IconSize": {
+				"X": 20.0,
+				"Y": 20.0
+			},
+			"IconOffset": {
+				"X": 0.0,
+				"Y": 0.0,
+				"Z": 0.0
+			},
+			"bShowActorRotation": false
+		},
+		"ScreenspaceOverrideSettings": {
+			"bOverride_LocationDisplayName": false,
+			"bOverride_LocationIcon": false,
+			"bOverride_IconTint": false,
+			"bOverride_IconSize": false,
+			"bOverride_IconOffset": false,
+			"bOverride_bShowActorRotation": false,
+			"MarkerTitleText": "目标AAA",
+			"MarkerSubtitleText": "七零",
+			"LocationIconPath": "",
+			"IconTint": {
+				"R": 1.0,
+				"G": 1.0,
+				"B": 1.0,
+				"A": 1.0
+			},
+			"IconSize": {
+				"X": 20.0,
+				"Y": 20.0
+			},
+			"IconOffset": {
+				"X": 0.0,
+				"Y": 0.0,
+				"Z": 0.0
+			},
+			"bShowActorRotation": false
+		},
+		"MarkerTransform": {
+			"Translation": {
+				"X": 0.0,
+				"Y": 0.0,
+				"Z": 0.0
+			},
+			"Orientation": {
+				"X": 0.0,
+				"Y": 0.0,
+				"Z": 0.0,
+				"W": 1.0
+			},
+			"Scale": {
+				"X": 1.0,
+				"Y": 1.0,
+				"Z": 1.0
+			}
+		},
+		"ActorOwner": "51c5c222407aedf48e6a92889b981942",
+		"bWantsOnPaint": false,
+		"DefaultMarkerActionText": "",
+		"ZOrder": 0,
+		"bPinToMapEdge": true,
+		"MarkerStartFadeOutDistance": 5000.0,
+		"MarkerStartFadeInDistance": 10000.0,
+		"MarkerDomain": {},
+		"OwnerNavComp": null,
+		"bDrawBreadcrumbs": true,
+		"UpdateNavDistanceThreshhold": 200.0,
+		"DistanceBetweenPoints": 300.0,
+		"UpdateNavPathRate": 4.0,
+		"BreadcrumbColor": {
+			"R": 0.5019608,
+			"G": 0.5019608,
+			"B": 0.5019608,
+			"A": 1.0
+		},
+		"BreadcrumbThickness": 5.0,
+		"BreadcrumbDashLength": 10.0
+	}
+}
+		},
+		{
+			"ID": "e5a4cf33436e3dcb44953fb274d90411",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "006fd17d49d3d37e15ca689c2be555f2",
+			"Name": "MapTileBoundsActor"
+		},
+		{
+			"ID": "5c24525d4f45e591552a84bbe969b262",
+			"TypeName": "NarrativePro.Navigation.NavigationSubsystem",
+			"ParentID": "e5a4cf33436e3dcb44953fb274d90411",
+			"V": {}
+		},
+		{
+			"ID": "a8fcffef4db86e1bc11a13ae742de8b1",
+			"TypeName": "NarrativePro.Navigation.MapTileBoundsActor",
+			"ParentID": "e5a4cf33436e3dcb44953fb274d90411",
+			"V": {
+	"TileSet": {
+		"GridWidth": 512,
+		"TileImageSize": 512.0
+	},
+	"POIs": [
+		{
+			"POITag": {},
+			"LinkedPOIs": [],
+			"POILocation": {
+				"X": 0.0,
+				"Y": 0.0,
+				"Z": 0.0
+			},
+			"POIFastTravelSpot": {
+				"Translation": {
+					"X": 0.0,
+					"Y": 0.0,
+					"Z": 0.0
+				},
+				"Orientation": {
+					"X": 0.0,
+					"Y": 0.0,
+					"Z": 0.0,
+					"W": 1.0
+				},
+				"Scale": {
+					"X": 1.0,
+					"Y": 1.0,
+					"Z": 1.0
+				}
+			},
+			"bNeedsMapMarker": true,
+			"bSupportsFastTravel": true,
+			"bIsDiscoverable": false,
+			"MapMarkerIconPath": "",
+			"POIDisplayName": "Point of Interest",
+			"POISubtitle": "Location"
+		}
+	]
+}
 		}
 	]
 }

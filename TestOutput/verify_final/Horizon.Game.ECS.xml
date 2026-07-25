@@ -1,0 +1,104 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Horizon.Game.ECS</name>
+    </assembly>
+    <members>
+        <member name="T:Horizon.Game.ECS.Core.EcsComponentStore">
+            <summary>
+            组件存储容器，按组件类型分桶。
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Core.EcsEntity">
+            <summary>
+            ECS 实体标识。
+            </summary>
+        </member>
+        <member name="M:Horizon.Game.ECS.Core.EcsEntity.#ctor(System.Int32)">
+            <summary>
+            ECS 实体标识。
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Core.EcsWorld">
+            <summary>
+            最小可运行 ECS 世界。
+            </summary>
+        </member>
+        <member name="T:Horizon.Game.ECS.Core.IEcsSystem">
+            <summary>
+            ECS 系统执行接口。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.GeneratorPropertyAttribute">
+            <summary>
+            标识源生成依赖属性。
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Core.GeneratorPropertyAttribute.TargetType">
+            <summary>
+            要生成依赖属性的目标类型名称。如果未设置，则表示当前属性所在的类型。
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Core.GeneratorPropertyAttribute.GenerationOptions">
+            <summary>
+            生成的属性类型。
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Core.GeneratorPropertyAttribute.ActionMode">
+            <summary>
+            是否使用Action模式生成Set扩展方法访问器。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.PropertyGenerationOptions">
+            <summary>
+            依赖属性生成选项。
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Core.PropertyGenerationOptions.All">
+            <summary>
+            生成所有访问器。
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Core.PropertyGenerationOptions.IncludeMethodGetter">
+            <summary>
+            包含方法形式的 Getter。
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Core.PropertyGenerationOptions.IncludeMethodSetter">
+            <summary>
+            包含方法形式的 Setter。
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Core.PropertyGenerationOptions.IncludePropertyGetter">
+            <summary>
+            包含属性形式的 Getter。
+            </summary>
+        </member>
+        <member name="F:TouchSocket.Core.PropertyGenerationOptions.IncludePropertySetter">
+            <summary>
+            包含属性形式的 Setter。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.FastSerializableAttribute">
+            <summary>
+            标识源生成Fast序列化相关的实现。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.GeneratorPackageAttribute">
+            <summary>
+            标识源生成<see cref="T:TouchSocket.Core.IPackage"/>的实现。
+            </summary>
+        </member>
+        <member name="T:TouchSocket.Core.PackageMemberAttribute">
+            <summary>
+            标识源生成<see cref="T:TouchSocket.Core.IPackage"/>成员的特性。
+            </summary>
+        </member>
+        <member name="P:TouchSocket.Core.PackageMemberAttribute.Behavior">
+            <summary>
+            生成行为。一般来说，对于非只读、非重写、且同时拥有get，set（可以私有）访问器的属性，会自动生成。
+            对于字段，均不会自动生成。所以可以使用该设置，来指示生成器的生成行为。
+            </summary>
+        </member>
+    </members>
+</doc>
