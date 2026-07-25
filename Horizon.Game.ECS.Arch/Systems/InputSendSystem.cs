@@ -205,6 +205,12 @@ public sealed class InputSendSystem : ArchSystemBase
             InputSendQueue.Instance.Enqueue(packet);
             diagGeneratedPackets++;
 
+            // 修复「角色移动后回弹到原地」：将本帧输入写入 InputHistoryBuffer，
+            // 供 ReconciliationSystem.ProcessCorrection 在收到服务端修正时重放未确认输入。
+            // 此前 InputHistoryBuffer 从未被写入，导致修正后重放始终为空，
+            // 角色被吸附到服务端位置后无法恢复客户端已预测的移动。
+            InputHistoryBuffer.Instance.Add(packet);
+
             // 写入未确认环形缓冲，并检查冗余重传条件。
             // 加锁保证与 OnInputAck（网络线程）的并发安全。
             lock (_pendingLock)
