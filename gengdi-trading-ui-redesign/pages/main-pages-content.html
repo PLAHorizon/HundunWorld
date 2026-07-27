@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>主页内容模块 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   参照 quant-trading-ui 风格重构，零色值偏差
+   Dark mode is the primary experience (html.dark)
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #ff9800;
+  --gd-state-warning-surface: rgba(255, 152, 0, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #ef5350;
+  --gd-state-error-surface: rgba(239, 83, 80, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific (花卉价格波动涨跌色) ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #ef5350;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(239, 83, 80, 0.12);
+
+  /* ---------- Light Mode (default :root) ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode (html.dark — primary experience) ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <style id="critical-layout">
+      /* ========== 水平顶栏 + 副导航框架（匹配实际主界面） ========== */
+      .app-root { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background-color: var(--gd-background); color: var(--gd-foreground); }
+
+      /* ---------- 顶栏（主导航） ---------- */
+      .app-topbar { height: 56px; flex-shrink: 0; display: flex; align-items: center; gap: 24px; padding: 0 20px; background-color: var(--gd-card); border-bottom: 1px solid var(--gd-border); }
+      .topbar-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+      .topbar-main-nav { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+      .topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+      .main-nav-item { position: relative; display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--gd-radius-md); color: var(--gd-muted-foreground); font-size: 14px; font-weight: 500; cursor: pointer; transition: color 0.15s, background-color 0.15s; text-decoration: none; white-space: nowrap; }
+      .main-nav-item:hover { color: var(--gd-foreground); background-color: var(--gd-muted); }
+      .main-nav-item[data-active="true"] { color: var(--gd-primary); background-color: var(--gd-state-info-surface); }
+      .main-nav-item[data-active="true"]::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: -18px; height: 2px; background-color: var(--gd-primary); border-radius: 1px; }
+      .main-nav-icon { width: 16px; height: 16px; flex-shrink: 0; }
+
+      /* ---------- 副导航 ---------- */
+      .app-subnavbar { height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 2px; padding: 0 20px; background-color: var(--gd-card); border-bottom: 1px solid var(--gd-border); overflow-x: auto; overflow-y: hidden; }
+      .subnav-item { position: relative; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--gd-radius-sm); color: var(--gd-muted-foreground); font-size: 13px; font-weight: 500; cursor: pointer; transition: color 0.15s, background-color 0.15s; text-decoration: none; white-space: nowrap; flex-shrink: 0; }
+      .subnav-item:hover { color: var(--gd-foreground); background-color: var(--gd-muted); }
+      .subnav-item[data-active="true"] { color: var(--gd-primary); background-color: var(--gd-state-info-surface); }
+      .subnav-icon { width: 14px; height: 14px; flex-shrink: 0; }
+      .subnav-badge { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background-color: var(--gd-state-error); color: var(--gd-primary-foreground); font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+      .subnav-divider { width: 1px; height: 16px; background-color: var(--gd-border); flex-shrink: 0; margin: 0 4px; }
+
+      /* ---------- 内容区 ---------- */
+      .app-content { flex: 1; overflow-y: auto; overflow-x: hidden; }
+
+      /* ---------- 通用组件 ---------- */
+      .metric-card { background-color: var(--gd-card); border: 1px solid var(--gd-border); border-radius: var(--gd-radius-lg); padding: 20px; }
+      .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      .data-table th { text-align: left; padding: 10px 12px; font-weight: 500; color: var(--gd-muted-foreground); border-bottom: 1px solid var(--gd-border); white-space: nowrap; }
+      .data-table td { padding: 10px 12px; border-bottom: 1px solid var(--gd-border); }
+      .data-table tbody tr:hover { background-color: var(--gd-muted); }
+      .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--gd-radius-sm); font-size: 12px; font-weight: 500; }
+      .badge-success { background-color: var(--gd-state-success-surface); color: var(--gd-state-success); }
+      .badge-warning { background-color: var(--gd-state-warning-surface); color: var(--gd-state-warning); }
+      .badge-error { background-color: var(--gd-state-error-surface); color: var(--gd-state-error); }
+      .badge-info { background-color: var(--gd-state-info-surface); color: var(--gd-state-info); }
+      .num { font-family: var(--gd-font-mono); font-variant-numeric: tabular-nums; }
+      .header-icon-btn { width: 36px; height: 36px; border-radius: var(--gd-radius-md); display: flex; align-items: center; justify-content: center; color: var(--gd-muted-foreground); cursor: pointer; transition: background-color 0.15s, color 0.15s; border: none; background: transparent; position: relative; }
+      .header-icon-btn:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+
+      /* ---------- 窗口控制按钮 ---------- */
+      .win-btn { width: 36px; height: 36px; border-radius: var(--gd-radius-sm); display: flex; align-items: center; justify-content: center; color: var(--gd-muted-foreground); cursor: pointer; transition: background-color 0.15s, color 0.15s; border: none; background: transparent; }
+      .win-btn:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+      .win-btn-close:hover { background-color: var(--gd-state-error); color: var(--gd-primary-foreground); }
+
+      /* ---------- 页面专用样式 ---------- */
+      .gd-section-title { border-left: 3px solid var(--gd-primary); padding-left: 10px; font-size: 14px; font-weight: 600; margin-bottom: 16px; color: var(--gd-foreground); }
+      .gd-btn-ghost {
+        background: transparent;
+        color: var(--gd-muted-foreground);
+        padding: 8px 16px;
+        border-radius: var(--gd-radius-md);
+        border: 1px solid var(--gd-border);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.15s, color 0.15s;
+        font-family: var(--gd-font-sans);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .gd-btn-ghost:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+      .gd-btn-primary {
+        background-color: var(--gd-primary);
+        color: var(--gd-primary-foreground);
+        padding: 8px 16px;
+        border-radius: var(--gd-radius-md);
+        border: none;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.15s;
+        font-family: var(--gd-font-sans);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .gd-btn-primary:hover { background-color: var(--gd-brand-600); }
+      .gd-btn-danger {
+        background: transparent;
+        color: var(--gd-state-error);
+        padding: 8px 16px;
+        border-radius: var(--gd-radius-md);
+        border: 1px solid var(--gd-border);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        font-family: var(--gd-font-sans);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .gd-btn-danger:hover { background-color: var(--gd-state-error-surface); }
+
+      .gd-input {
+        background-color: var(--gd-muted);
+        border: 1px solid var(--gd-border);
+        border-radius: var(--gd-radius-md);
+        padding: 8px 12px;
+        color: var(--gd-foreground);
+        font-size: 13px;
+        font-family: var(--gd-font-sans);
+        outline: none;
+        transition: border-color 0.15s;
+        width: 100%;
+      }
+      .gd-input:focus { border-color: var(--gd-primary); }
+      .gd-input::placeholder { color: var(--gd-muted-foreground); }
+      .gd-textarea {
+        background-color: var(--gd-muted);
+        border: 1px solid var(--gd-border);
+        border-radius: var(--gd-radius-md);
+        padding: 10px 12px;
+        color: var(--gd-foreground);
+        font-size: 13px;
+        font-family: var(--gd-font-sans);
+        outline: none;
+        transition: border-color 0.15s;
+        width: 100%;
+        resize: vertical;
+        min-height: 80px;
+      }
+      .gd-textarea:focus { border-color: var(--gd-primary); }
+      .gd-select {
+        background-color: var(--gd-muted);
+        border: 1px solid var(--gd-border);
+        border-radius: var(--gd-radius-md);
+        padding: 8px 12px;
+        color: var(--gd-foreground);
+        font-size: 13px;
+        font-family: var(--gd-font-sans);
+        outline: none;
+        cursor: pointer;
+      }
+      .gd-pill {
+        padding: 6px 14px;
+        border-radius: var(--gd-radius-full);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.15s, color 0.15s;
+        font-family: var(--gd-font-sans);
+        border: 1px solid transparent;
+        white-space: nowrap;
+      }
+      .gd-pill-active { background-color: var(--gd-primary); color: var(--gd-primary-foreground); }
+      .gd-pill-ghost { background: transparent; color: var(--gd-muted-foreground); border: 1px solid var(--gd-border); }
+      .gd-pill-ghost:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+
+      /* ---------- Section Header ---------- */
+      .section-header { margin-bottom: 20px; }
+      .section-header-title { font-size: 18px; font-weight: 600; color: var(--gd-foreground); display: flex; align-items: center; gap: 10px; }
+      .section-header-subtitle { font-size: 13px; color: var(--gd-muted-foreground); margin-top: 6px; }
+      .section-header-source { display: inline-flex; align-items: center; gap: 6px; font-family: var(--gd-font-mono); font-size: 11px; color: var(--gd-muted-foreground); background-color: var(--gd-muted); border: 1px solid var(--gd-border); border-radius: var(--gd-radius-sm); padding: 3px 8px; margin-top: 8px; }
+
+      /* ---------- Toggle 开关 ---------- */
+      .gd-toggle { width: 38px; height: 22px; border-radius: var(--gd-radius-full); background-color: var(--gd-secondary); border: 1px solid var(--gd-border); position: relative; cursor: pointer; transition: background-color 0.15s; flex-shrink: 0; }
+      .gd-toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background-color: var(--gd-muted-foreground); transition: transform 0.15s, background-color 0.15s; }
+      .gd-toggle-active { background-color: var(--gd-primary); border-color: var(--gd-primary); }
+      .gd-toggle-active::after { transform: translateX(16px); background-color: var(--gd-primary-foreground); }
+
+      /* ---------- 进度条 ---------- */
+      .gd-progress { width: 100%; height: 6px; background-color: var(--gd-muted); border-radius: var(--gd-radius-full); overflow: hidden; }
+      .gd-progress-fill { height: 100%; background-color: var(--gd-primary); border-radius: var(--gd-radius-full); transition: width 0.3s; }
+      .gd-progress-fill-success { background-color: var(--gd-state-success); }
+      .gd-progress-fill-warning { background-color: var(--gd-state-warning); }
+
+      /* ---------- 滑块 ---------- */
+      .gd-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 4px; background-color: var(--gd-secondary); border-radius: var(--gd-radius-full); outline: none; }
+      .gd-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background-color: var(--gd-primary); cursor: pointer; border: 2px solid var(--gd-card); }
+
+      /* ---------- 单选 ---------- */
+      .gd-radio-group { display: flex; gap: 8px; }
+      .gd-radio-item { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: var(--gd-radius-md); border: 1px solid var(--gd-border); background-color: var(--gd-muted); color: var(--gd-muted-foreground); font-size: 13px; cursor: pointer; transition: all 0.15s; }
+      .gd-radio-item:hover { color: var(--gd-foreground); }
+      .gd-radio-item-checked { border-color: var(--gd-primary); background-color: var(--gd-state-info-surface); color: var(--gd-primary); }
+      .gd-radio-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--gd-muted-foreground); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+      .gd-radio-item-checked .gd-radio-dot { border-color: var(--gd-primary); }
+      .gd-radio-item-checked .gd-radio-dot::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background-color: var(--gd-primary); }
+
+      /* ---------- 游戏卡 ---------- */
+      .game-card { background-color: var(--gd-card); border: 1px solid var(--gd-border); border-radius: var(--gd-radius-lg); overflow: hidden; transition: border-color 0.15s, transform 0.15s; display: flex; flex-direction: column; }
+      .game-card:hover { border-color: var(--gd-primary); transform: translateY(-2px); }
+      .game-cover { height: 140px; display: flex; align-items: center; justify-content: center; position: relative; }
+
+      /* ---------- 新闻卡 ---------- */
+      .news-card { background-color: var(--gd-card); border: 1px solid var(--gd-border); border-radius: var(--gd-radius-lg); padding: 16px; display: flex; gap: 14px; cursor: pointer; transition: border-color 0.15s; }
+      .news-card:hover { border-color: var(--gd-primary); }
+      .news-thumb { width: 160px; height: 96px; border-radius: var(--gd-radius-md); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+
+      /* ---------- 下载行 ---------- */
+      .dl-row { display: grid; grid-template-columns: 48px 1fr auto; gap: 14px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--gd-border); }
+      .dl-row:last-child { border-bottom: none; }
+
+      /* ---------- 设置项 ---------- */
+      .setting-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--gd-border); }
+      .setting-row:last-child { border-bottom: none; }
+      .setting-label { font-size: 13px; font-weight: 500; color: var(--gd-foreground); }
+      .setting-desc { font-size: 12px; color: var(--gd-muted-foreground); margin-top: 3px; }
+
+      /* ---------- 设置侧导航 ---------- */
+      .settings-nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--gd-radius-md); color: var(--gd-muted-foreground); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+      .settings-nav-item:hover { color: var(--gd-foreground); background-color: var(--gd-muted); }
+      .settings-nav-item[data-active="true"] { color: var(--gd-primary); background-color: var(--gd-state-info-surface); }
+
+      /* ---------- 安全项 ---------- */
+      .security-item { display: flex; align-items: center; gap: 14px; padding: 16px; border: 1px solid var(--gd-border); border-radius: var(--gd-radius-lg); background-color: var(--gd-card); }
+
+      /* ---------- 通知项 ---------- */
+      .notif-item { display: flex; gap: 12px; padding: 14px; border-radius: var(--gd-radius-md); cursor: pointer; transition: background-color 0.15s; position: relative; }
+      .notif-item:hover { background-color: var(--gd-muted); }
+      .notif-item-read { opacity: 0.6; }
+      .notif-unread-dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--gd-state-error); flex-shrink: 0; margin-top: 6px; }
+
+      /* ---------- 社交气泡 ---------- */
+      .chat-bubble { max-width: 70%; padding: 10px 14px; border-radius: var(--gd-radius-lg); font-size: 13px; line-height: 1.5; word-break: break-word; position: relative; }
+      .chat-bubble-out { background-color: var(--gd-state-info-surface); color: var(--gd-primary-foreground); border-bottom-right-radius: var(--gd-radius-sm); align-self: flex-end; }
+      .chat-bubble-in { background-color: var(--gd-muted); color: var(--gd-foreground); border-bottom-left-radius: var(--gd-radius-sm); align-self: flex-start; }
+      .chat-time { font-size: 10px; color: var(--gd-muted-foreground); font-family: var(--gd-font-mono); margin-top: 4px; }
+
+      /* ---------- 头像 / 状态点 ---------- */
+      .gd-avatar { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--gd-primary-foreground); flex-shrink: 0; background-color: var(--gd-brand-500); }
+      .gd-status-dot { width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--gd-card); flex-shrink: 0; }
+      .gd-status-online { background-color: var(--gd-state-success); }
+      .gd-status-offline { background-color: var(--gd-muted-foreground); }
+
+      /* ---------- 好友项 ---------- */
+      .friend-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--gd-radius-md); cursor: pointer; transition: background-color 0.15s; }
+      .friend-item:hover { background-color: var(--gd-muted); }
+      .friend-item-active { background-color: var(--gd-state-info-surface); }
+
+      /* ---------- chip 小标签 ---------- */
+      .gd-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--gd-radius-sm); font-size: 11px; font-weight: 500; background-color: var(--gd-secondary); color: var(--gd-secondary-foreground); }
+
+      .page-content { padding: 24px; display: flex; flex-direction: column; gap: 36px; min-width: 1280px; }
+    </style>
+    <div class="app-root">
+      <!-- ================ 顶栏（主导航） ================ -->
+      <header class="app-topbar">
+        <div class="topbar-brand">
+          <div style="width:32px;height:32px;border-radius:var(--gd-radius-md);background:linear-gradient(135deg,var(--gd-brand-500),var(--gd-brand-700));display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="sprout" style="width:18px;height:18px;color:var(--gd-primary-foreground);"></i>
+          </div>
+          <span style="font-size:15px;font-weight:600;color:var(--gd-foreground);">耕地</span>
+        </div>
+        <nav class="topbar-main-nav">
+          <a class="main-nav-item" data-dom-id="nav-games" data-main-nav-key="games" data-active="true" href="#page-games">
+            <i data-lucide="gamepad-2" class="main-nav-icon"></i>
+            <span>游戏</span>
+          </a>
+          <a class="main-nav-item" data-dom-id="nav-news" data-main-nav-key="news" href="#page-news">
+            <i data-lucide="newspaper" class="main-nav-icon"></i>
+            <span>新闻</span>
+          </a>
+          <a class="main-nav-item" data-dom-id="nav-flower-market" data-main-nav-key="flower-market" href="#">
+            <i data-lucide="flower-2" class="main-nav-icon"></i>
+            <span>花卉市场</span>
+          </a>
+          <a class="main-nav-item" data-dom-id="nav-music" data-main-nav-key="music" href="#">
+            <i data-lucide="music" class="main-nav-icon"></i>
+            <span>音乐</span>
+          </a>
+          <a class="main-nav-item" data-dom-id="nav-more" data-main-nav-key="more" href="#">
+            <i data-lucide="more-horizontal" class="main-nav-icon"></i>
+            <span>更多</span>
+          </a>
+        </nav>
+        <div class="topbar-actions">
+          <button class="header-icon-btn" title="通知" style="position:relative;">
+            <i data-lucide="bell" style="width:18px;height:18px;"></i>
+            <span style="position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background-color:var(--gd-state-error);border:2px solid var(--gd-card);"></span>
+          </button>
+          <button class="header-icon-btn" title="主题切换">
+            <i data-lucide="moon" style="width:18px;height:18px;"></i>
+          </button>
+          <div style="width:1px;height:24px;background-color:var(--gd-border);margin:0 4px;"></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;background-color:var(--gd-muted);border-radius:var(--gd-radius-full);cursor:pointer;">
+            <div style="width:26px;height:26px;border-radius:50%;background-color:var(--gd-brand-500);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--gd-primary-foreground);">龙</div>
+            <div style="display:flex;flex-direction:column;line-height:1.2;">
+              <span style="font-size:12px;color:var(--gd-foreground);font-weight:500;">龙</span>
+              <span class="num" style="font-size:10px;color:var(--gd-muted-foreground);">1010776</span>
+            </div>
+          </div>
+          <div style="width:1px;height:24px;background-color:var(--gd-border);margin:0 4px;"></div>
+          <button class="win-btn" title="最小化">
+            <i data-lucide="minus" style="width:16px;height:16px;"></i>
+          </button>
+          <button class="win-btn" title="最大化">
+            <i data-lucide="square" style="width:14px;height:14px;"></i>
+          </button>
+          <button class="win-btn win-btn-close" title="关闭">
+            <i data-lucide="x" style="width:16px;height:16px;"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- ================ 副导航 ================ -->
+      <nav class="app-subnavbar no-scrollbar">
+        <a class="subnav-item" data-dom-id="subnav-overview" data-sub-nav-key="overview" data-active="true" href="#page-games">
+          <i data-lucide="layout-dashboard" class="subnav-icon"></i>
+          <span>总览</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-all-games" data-sub-nav-key="all-games" href="#page-games">
+          <i data-lucide="library" class="subnav-icon"></i>
+          <span>全部游戏</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-download" data-sub-nav-key="download" href="#page-downloads">
+          <i data-lucide="download" class="subnav-icon"></i>
+          <span>下载</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-settings" data-sub-nav-key="settings" href="#page-settings">
+          <i data-lucide="settings" class="subnav-icon"></i>
+          <span>设置</span>
+        </a>
+        <div class="subnav-divider"></div>
+        <a class="subnav-item" data-dom-id="subnav-news" data-sub-nav-key="news" href="#page-news">
+          <i data-lucide="newspaper" class="subnav-icon"></i>
+          <span>新闻</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-security" data-sub-nav-key="security" href="#page-security">
+          <i data-lucide="shield" class="subnav-icon"></i>
+          <span>安全</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-profile" data-sub-nav-key="profile" href="#page-profile">
+          <i data-lucide="user" class="subnav-icon"></i>
+          <span>资料</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-notification" data-sub-nav-key="notification" href="#page-notification">
+          <i data-lucide="bell-ring" class="subnav-icon"></i>
+          <span>通知</span>
+          <span class="subnav-badge">5</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-social" data-sub-nav-key="social" href="#page-social">
+          <i data-lucide="message-circle" class="subnav-icon"></i>
+          <span>社交</span>
+        </a>
+        <div class="subnav-divider"></div>
+        <a class="subnav-item" data-dom-id="subnav-discover" data-sub-nav-key="discover" href="#">
+          <i data-lucide="compass" class="subnav-icon"></i>
+          <span>发现</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-playlist" data-sub-nav-key="playlist" href="#">
+          <i data-lucide="list-music" class="subnav-icon"></i>
+          <span>歌单</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-search" data-sub-nav-key="search" href="#">
+          <i data-lucide="search" class="subnav-icon"></i>
+          <span>搜索</span>
+        </a>
+      </nav>
+
+      <!-- ================ 内容区 ================ -->
+      <main class="app-content">
+        <div class="page-content">
+
+          <!-- ============ Section 1: 游戏库 ============ -->
+          <section id="page-games">
+            <div class="section-header">
+              <div class="section-header-title">
+                <i data-lucide="gamepad-2" style="width:20px;height:20px;color:var(--gd-primary);"></i>
+                <span>游戏库</span>
+              </div>
+              <div class="section-header-subtitle">已安装游戏与全部游戏的网格展示，含安装状态标签与启动/安装操作。</div>
+              <span class="section-header-source"><i data-lucide="file-code" style="width:11px;height:11px;"></i>GamesView.axaml</span>
+            </div>
+
+            <!-- 筛选 chips -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+              <span class="gd-pill gd-pill-active">全部 <span class="num" style="margin-left:4px;">12</span></span>
+              <span class="gd-pill gd-pill-ghost">已安装 <span class="num" style="margin-left:4px;">5</span></span>
+              <span class="gd-pill gd-pill-ghost">未安装 <span class="num" style="margin-left:4px;">7</span></span>
+              <div style="flex:1;"></div>
+              <div style="display:flex;align-items:center;gap:6px;background-color:var(--gd-muted);border:1px solid var(--gd-border);border-radius:var(--gd-radius-md);padding:0 10px;">
+                <i data-lucide="search" style="width:15px;height:15px;color:var(--gd-muted-foreground);"></i>
+                <input type="text" class="gd-input" placeholder="搜索游戏..." style="background:transparent;border:none;width:200px;padding:7px 4px;">
+              </div>
+            </div>
+
+            <!-- 游戏网格 4列 -->
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+              <!-- 卡1 已安装 -->
+              <div class="game-card">
+                <div class="game-cover" style="background:linear-gradient(135deg,var(--gd-brand-600),var(--gd-brand-800));">
+                  <i data-lucide="gamepad-2" style="width:48px;height:48px;color:var(--gd-primary-foreground);opacity:0.9;"></i>
+                  <span class="badge badge-success" style="position:absolute;top:10px;left:10px;"><i data-lucide="check" style="width:11px;height:11px;"></i>已安装</span>
+                </div>
+                <div style="padding:14px;display:flex;flex-direction:column;gap:8px;flex:1;">
+                  <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);">星辰远征</div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);">开发商：银河工作室</div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--gd-muted-foreground);">
+                    <span class="num">v2.4.1</span>
+                    <span>·</span>
+                    <span>在线 <span class="num">12,453</span></span>
+                  </div>
+                  <div style="margin-top:auto;padding-top:8px;">
+                    <button class="gd-btn-primary" style="width:100%;justify-content:center;"><i data-lucide="play" style="width:14px;height:14px;"></i><span>启动</span></button>
+                  </div>
+                </div>
+              </div>
+              <!-- 卡2 未安装 -->
+              <div class="game-card">
+                <div class="game-cover" style="background:linear-gradient(135deg,var(--gd-brand-500),var(--gd-brand-700));">
+                  <i data-lucide="sword" style="width:48px;height:48px;color:var(--gd-primary-foreground);opacity:0.9;"></i>
+                  <span class="badge badge-info" style="position:absolute;top:10px;left:10px;">未安装</span>
+                </div>
+                <div style="padding:14px;display:flex;flex-direction:column;gap:8px;flex:1;">
+                  <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);">苍穹之剑</div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);">开发商：锋芒互娱</div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--gd-muted-foreground);">
+                    <span class="num">32.6 GB</span>
+                    <span>·</span>
+                    <span>累计 <span class="num">8,920</span></span>
+                  </div>
+                  <div style="margin-top:auto;padding-top:8px;">
+                    <button class="gd-btn-ghost" style="width:100%;justify-content:center;"><i data-lucide="download" style="width:14px;height:14px;"></i><span>安装</span></button>
+                  </div>
+                </div>
+              </div>
+              <!-- 卡3 更新中 -->
+              <div class="game-card">
+                <div class="game-cover" style="background:linear-gradient(135deg,var(--gd-brand-400),var(--gd-brand-600));">
+                  <i data-lucide="trees" style="width:48px;height:48px;color:var(--gd-primary-foreground);opacity:0.9;"></i>
+                  <span class="badge badge-warning" style="position:absolute;top:10px;left:10px;"><i data-lucide="refresh-cw" style="width:11px;height:11px;"></i>更新中</span>
+                </div>
+                <div style="padding:14px;display:flex;flex-direction:column;gap:8px;flex:1;">
+                  <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);">绿野物语</div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);">开发商：田园游戏</div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);">更新包 <span class="num">1.2 GB</span> · <span class="num">68%</span></div>
+                  <div class="gd-progress" style="margin-top:2px;"><div class="gd-progress-fill gd-progress-fill-warning" style="width:68%;"></div></div>
+                  <div style="margin-top:auto;padding-top:8px;">
+                    <button class="gd-btn-ghost" style="width:100%;justify-content:center;"><i data-lucide="loader" style="width:14px;height:14px;"></i><span>更新中</span></button>
+                  </div>
+                </div>
+              </div>
+              <!-- 卡4 已安装 -->
+              <div class="game-card">
+                <div class="game-cover" style="background:linear-gradient(135deg,var(--gd-brand-700),var(--gd-brand-900));">
+                  <i data-lucide="dices" style="width:48px;height:48px;color:var(--gd-primary-foreground);opacity:0.9;"></i>
+                  <span class="badge badge-success" style="position:absolute;top:10px;left:10px;"><i data-lucide="check" style="width:11px;height:11px;"></i>已安装</span>
+                </div>
+                <div style="padding:14px;display:flex;flex-direction:column;gap:8px;flex:1;">
+                  <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);">命运骰局</div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);">开发商：概率实验室</div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--gd-muted-foreground);">
+                    <span class="num">v1.0.8</span>
+                    <span>·</span>
+                    <span>在线 <span class="num">3,210</span></span>
+                  </div>
+                  <div style="margin-top:auto;padding-top:8px;">
+                    <button class="gd-btn-primary" style="width:100%;justify-content:center;"><i data-lucide="play" style="width:14px;height:14px;"></i><span>启动</span></button>
+                  </div>
+                </div>
+              </div>
+              <!-- 卡5 未安装 -->
+              <div class="game-card">
+                <div class="game-cover" style="background:linear-gradient(135deg,var(--gd-brand-500),var(--gd-brand-700));">
+                  <i data-lucide="rocket" style="width:48px;height:48px;color:var(--gd-primary-foreground);opacity:0.9;"></i>
+                  <span class="badge badge-info" style="position:absolute;top:10px;left:10px;">未安装</span>
+                </div>
+                <div style="padding:14px;display:flex;flex-direction:column;gap:8px;flex:1;">
+                  <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);">深空突围</div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);">开发商：轨道动力</div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--gd-muted-foreground);">
+                    <span class="num">45.2 GB</span>
+                    <span>·</span>
+                    <span>累计 <span class="num">15,672</span></span>
+                  </div>
+                  <div style="margin-top:auto;padding-top:8px;">
+                    <button class="gd-btn-ghost" style="width:100%;justify-content:center;"><i data-lucide="download" style="width:14px;height:14px;"></i><span>安装</span></button>
+                  </div>
+                </div>
+              </div>
+              <!-- 卡6 已安装 -->
+              <div class="game-card">
+                <div class="game-cover" style="background:linear-gradient(135deg,var(--gd-brand-600),var(--gd-brand-800));">
+                  <i data-lucide="puzzle" style="width:48px;height:48px;color:var(--gd-primary-foreground);opacity:0.9;"></i>
+                  <span class="badge badge-success" style="position:absolute;top:10px;left:10px;"><i data-lucide="check" style="width:11px;height:11px;"></i>已安装</span>
+                </div>
+                <div style="padding:14px;display:flex;flex-direction:column;gap:8px;flex:1;">
+                  <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);">迷阵拼图</div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);">开发商：智趣工坊</div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--gd-muted-foreground);">
+                    <span class="num">v3.2.0</span>
+                    <span>·</span>
+                    <span>在线 <span class="num">1,876</span></span>
+                  </div>
+                  <div style="margin-top:auto;padding-top:8px;">
+                    <button class="gd-btn-primary" style="width:100%;justify-content:center;"><i data-lucide="play" style="width:14px;height:14px;"></i><span>启动</span></button>
+                  </div>
+                </div>
+              </div>
+              <!-- 卡7 未安装 -->
+              <div class="game-card">
+                <div class="game-cover" style="background:linear-gradient(135deg,var(--gd-brand-400),var(--gd-brand-600));">
+                  <i data-lucide="anchor" style="width:48px;height:48px;color:var(--gd-primary-foreground);opacity:0.9;"></i>
+                  <span class="badge badge-info" style="position:absolute;top:10px;left:10px;">未安装</span>
+                </div>
+                <div style="padding:14px;display:flex;flex-direction:column;gap:8px;flex:1;">
+                  <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);">碧海航线</div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);">开发商：蓝鲸游戏</div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--gd-muted-foreground);">
+                    <span class="num">28.4 GB</span>
+                    <span>·</span>
+                    <span>累计 <span class="num">6,540</span></span>
+                  </div>
+                  <div style="margin-top:auto;padding-top:8px;">
+                    <button class="gd-btn-ghost" style="width:100%;justify-content:center;"><i data-lucide="download" style="width:14px;height:14px;"></i><span>安装</span></button>
+                  </div>
+                </div>
+              </div>
+              <!-- 卡8 已安装 -->
+              <div class="game-card">
+                <div class="game-cover" style="background:linear-gradient(135deg,var(--gd-brand-700),var(--gd-brand-900));">
+                  <i data-lucide="zap" style="width:48px;height:48px;color:var(--gd-primary-foreground);opacity:0.9;"></i>
+                  <span class="badge badge-success" style="position:absolute;top:10px;left:10px;"><i data-lucide="check" style="width:11px;height:11px;"></i>已安装</span>
+                </div>
+                <div style="padding:14px;display:flex;flex-direction:column;gap:8px;flex:1;">
+                  <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);">雷霆竞速</div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);">开发商：极速引擎</div>
+                  <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--gd-muted-foreground);">
+                    <span class="num">v5.1.2</span>
+                    <span>·</span>
+                    <span>在线 <span class="num">9,834</span></span>
+                  </div>
+                  <div style="margin-top:auto;padding-top:8px;">
+                    <button class="gd-btn-primary" style="width:100%;justify-content:center;"><i data-lucide="play" style="width:14px;height:14px;"></i><span>启动</span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============ Section 2: 新闻 ============ -->
+          <section id="page-news">
+            <div class="section-header">
+              <div class="section-header-title">
+                <i data-lucide="newspaper" style="width:20px;height:20px;color:var(--gd-primary);"></i>
+                <span>新闻</span>
+              </div>
+              <div class="section-header-subtitle">左侧分类筛选与右侧新闻图文卡列表，悬停高亮品牌色边框。</div>
+              <span class="section-header-source"><i data-lucide="file-code" style="width:11px;height:11px;"></i>NewsView.axaml</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:flex-start;">
+              <!-- 左侧分类筛选 -->
+              <div class="metric-card" style="padding:12px;">
+                <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);padding:6px 10px 10px;border-bottom:1px solid var(--gd-border);margin-bottom:8px;">分类筛选</div>
+                <div style="display:flex;flex-direction:column;gap:2px;">
+                  <div class="settings-nav-item" data-active="true"><i data-lucide="layers" style="width:15px;height:15px;"></i><span>全部</span><span class="num" style="margin-left:auto;color:var(--gd-muted-foreground);">48</span></div>
+                  <div class="settings-nav-item"><i data-lucide="megaphone" style="width:15px;height:15px;"></i><span>公告</span><span class="num" style="margin-left:auto;color:var(--gd-muted-foreground);">12</span></div>
+                  <div class="settings-nav-item"><i data-lucide="party-popper" style="width:15px;height:15px;"></i><span>活动</span><span class="num" style="margin-left:auto;color:var(--gd-muted-foreground);">15</span></div>
+                  <div class="settings-nav-item"><i data-lucide="refresh-cw" style="width:15px;height:15px;"></i><span>更新</span><span class="num" style="margin-left:auto;color:var(--gd-muted-foreground);">9</span></div>
+                  <div class="settings-nav-item"><i data-lucide="file-text" style="width:15px;height:15px;"></i><span>资讯</span><span class="num" style="margin-left:auto;color:var(--gd-muted-foreground);">12</span></div>
+                </div>
+              </div>
+
+              <!-- 右侧新闻图文卡列表 -->
+              <div style="display:flex;flex-direction:column;gap:14px;">
+                <!-- 新闻卡1 -->
+                <div class="news-card">
+                  <div class="news-thumb" style="background:linear-gradient(135deg,var(--gd-brand-500),var(--gd-brand-700));">
+                    <i data-lucide="megaphone" style="width:32px;height:32px;color:var(--gd-primary-foreground);opacity:0.9;"></i>
+                  </div>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <span class="gd-chip" style="background-color:var(--gd-state-info-surface);color:var(--gd-state-info);">公告</span>
+                      <span style="font-size:15px;font-weight:600;color:var(--gd-foreground);">星辰远征 v2.4 版本更新公告</span>
+                    </div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);line-height:1.6;">全新赛季「银河纪元」正式开启，新增 3 张星图地图、12 件传奇装备与跨服天梯排位赛玩法，平衡性调整涉及 8 个职业...</div>
+                    <div style="display:flex;align-items:center;gap:12px;font-size:11px;color:var(--gd-muted-foreground);margin-top:auto;">
+                      <span style="display:inline-flex;align-items:center;gap:4px;"><i data-lucide="user" style="width:11px;height:11px;"></i>官方运营</span>
+                      <span style="display:inline-flex;align-items:center;gap:4px;"><i data-lucide="clock" style="width:11px;height:11px;"></i><span class="num">2026-07-25 10:30</span></span>
+                      <span style="display:inline-flex;align-items:center;gap:4px;"><i data-lucide="eye" style="width:11px;height:11px;"></i><span class="num">12,453</span></span>
+                    </div>
+                  </div>
+                </div>
+                <!-- 新闻卡2 -->
+                <div class="news-card">
+                  <div class="news-thumb" style="background:linear-gradient(135deg,var(--gd-state-success),var(--gd-brand-600));">
+                    <i data-lucide="party-popper" style="width:32px;height:32px;color:var(--gd-primary-foreground);opacity:0.9;"></i>
+                  </div>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <span class="gd-chip" style="background-color:var(--gd-state-success-surface);color:var(--gd-state-success);">活动</span>
+                      <span style="font-size:15px;font-weight:600;color:var(--gd-foreground);">夏日花卉庆典限时活动开启</span>
+                    </div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);line-height:1.6;">登录即领限定花束头像框，参与种植挑战赢取稀有花卉种子，活动期间花卉市场交易手续费全免...</div>
+                    <div style="display:flex;align-items:center;gap:12px;font-size:11px;color:var(--gd-muted-foreground);margin-top:auto;">
+                      <span style="display:inline-flex;align-items:center;gap:4px;"><i data-lucide="user" style="width:11px;height:11px;"></i>活动中心</span>
+                      <span style="display:inline-flex;align-items:center;gap:4px;"><i data-lucide="clock" style="width:11px;height:11px;"></i><span class="num">2026-07-24 18:00</span></span>
+                      <span style="display:inline-flex;align-items:center;gap:4px;"><i data-lucide="eye" style="width:11px;height:11px;"></i><span class="num">8,920</span></span>
+                    </div>
+                  </div>
+                </div>
+                <!-- 新闻卡3 -->
+                <div class="news-card">
+                  <div class="news-thumb" style="background:linear-gradient(135deg,var(--gd-brand-400),var(--gd-brand-600));">
+                    <i data-lucide="refresh-cw" style="width:32px;height:32px;color:var(--gd-primary-foreground);opacity:0.9;"></i>
+                  </div>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <span class="gd-chip" style="background-color:var(--gd-state-warning-surface);color:var(--gd-state-warning);">更新</span>
+                      <span style="font-size:15px;font-weight:600;color:var(--gd-foreground);">绿野物语 v1.8 平衡性补丁</span>
+                    </div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);line-height:1.6;">修复了秋季收获计数异常的问题，优化了温室模块的渲染性能，调整了 5 种花卉的生长周期与收益曲线...</div>
+                    <div style="display:flex;align-items:center;gap:12px;font-size:11px;color:var(--gd-muted-foreground);margin-top:auto;">
+                      <span style="display:inline-flex;align-items:center;gap:4px;"><i data-lucide="user" style="width:11px;height:11px;"></i>开发团队</span>
+                      <span style="display:inline-flex;align-items:center;gap:4px;"><i data-lucide="clock" style="width:11px;height:11px;"></i><span class="num">2026-07-23 14:15</span></span>
+                      <span style="display:inline-flex;align-items:center;gap:4px;"><i data-lucide="eye" style="width:11px;height:11px;"></i><span class="num">5,672</span></span>
+                    </div>
+                  </div>
+                </div>
+                <!-- 新闻卡4 -->
+                <div class="news-card">
+                  <div class="news-thumb" style="background:linear-gradient(135deg,var(--gd-brand-600),var(--gd-brand-800));">
+                    <i data-lucide="file-text" style="width:32px;height:32px;color:var(--gd-primary-foreground);opacity:0.9;"></i>
+                  </div>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <span class="gd-chip">资讯</span>
+                      <span style="font-size:15px;font-weight:600;color:var(--gd-foreground);">2026 年上半年花卉市场行情回顾</span>
+                    </div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);line-height:1.6;">红玫瑰季度均价上涨 12%，百合供需趋于平衡，康乃馨出口订单创历史新高，详细数据图表与趋势分析...</div>
+                    <div style="display:flex;align-items:center;gap:12px;font-size:11px;color:var(--gd-muted-foreground);margin-top:auto;">
+                      <span style="display:inline-flex;align-items:center;gap:4px;"><i data-lucide="user" style="width:11px;height:11px;"></i>市场观察</span>
+                      <span style="display:inline-flex;align-items:center;gap:4px;"><i data-lucide="clock" style="width:11px;height:11px;"></i><span class="num">2026-07-22 09:00</span></span>
+                      <span style="display:inline-flex;align-items:center;gap:4px;"><i data-lucide="eye" style="width:11px;height:11px;"></i><span class="num">15,210</span></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============ Section 3: 下载 ============ -->
+          <section id="page-downloads">
+            <div class="section-header">
+              <div class="section-header-title">
+                <i data-lucide="download" style="width:20px;height:20px;color:var(--gd-primary);"></i>
+                <span>下载</span>
+              </div>
+              <div class="section-header-subtitle">下载任务列表与进度条，含速度、剩余时间、暂停/取消操作及完成态。</div>
+              <span class="section-header-source"><i data-lucide="file-code" style="width:11px;height:11px;"></i>DownloadsView.axaml</span>
+            </div>
+
+            <!-- 顶部统计 -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:18px;">
+              <div class="metric-card" style="padding:16px;display:flex;align-items:center;gap:14px;">
+                <div style="width:40px;height:40px;border-radius:var(--gd-radius-md);background-color:var(--gd-state-info-surface);display:flex;align-items:center;justify-content:center;"><i data-lucide="loader" style="width:20px;height:20px;color:var(--gd-state-info);"></i></div>
+                <div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);">活跃任务</div>
+                  <div class="num" style="font-size:22px;font-weight:600;color:var(--gd-foreground);">3</div>
+                </div>
+              </div>
+              <div class="metric-card" style="padding:16px;display:flex;align-items:center;gap:14px;">
+                <div style="width:40px;height:40px;border-radius:var(--gd-radius-md);background-color:var(--gd-state-success-surface);display:flex;align-items:center;justify-content:center;"><i data-lucide="gauge" style="width:20px;height:20px;color:var(--gd-state-success);"></i></div>
+                <div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);">总下载速度</div>
+                  <div class="num" style="font-size:22px;font-weight:600;color:var(--gd-foreground);">24.6 <span style="font-size:13px;color:var(--gd-muted-foreground);">MB/s</span></div>
+                </div>
+              </div>
+              <div class="metric-card" style="padding:16px;display:flex;align-items:center;gap:14px;">
+                <div style="width:40px;height:40px;border-radius:var(--gd-radius-md);background-color:var(--gd-state-warning-surface);display:flex;align-items:center;justify-content:center;"><i data-lucide="hard-drive" style="width:20px;height:20px;color:var(--gd-state-warning);"></i></div>
+                <div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);">已用空间</div>
+                  <div class="num" style="font-size:22px;font-weight:600;color:var(--gd-foreground);">186.4 <span style="font-size:13px;color:var(--gd-muted-foreground);">GB</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 下载任务列表 -->
+            <div class="metric-card">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                <div class="gd-section-title" style="margin-bottom:0;">下载任务</div>
+                <div style="display:flex;gap:8px;">
+                  <button class="gd-btn-ghost" style="padding:6px 12px;font-size:12px;"><i data-lucide="pause" style="width:13px;height:13px;"></i><span>全部暂停</span></button>
+                  <button class="gd-btn-ghost" style="padding:6px 12px;font-size:12px;"><i data-lucide="trash-2" style="width:13px;height:13px;"></i><span>清空已完成</span></button>
+                </div>
+              </div>
+
+              <!-- 任务1 进行中 -->
+              <div class="dl-row">
+                <div style="width:48px;height:48px;border-radius:var(--gd-radius-md);background:linear-gradient(135deg,var(--gd-brand-500),var(--gd-brand-700));display:flex;align-items:center;justify-content:center;"><i data-lucide="rocket" style="width:24px;height:24px;color:var(--gd-primary-foreground);"></i></div>
+                <div style="display:flex;flex-direction:column;gap:6px;min-width:0;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">深空突围</span>
+                    <span class="badge badge-info">下载中</span>
+                  </div>
+                  <div class="gd-progress"><div class="gd-progress-fill" style="width:64%;"></div></div>
+                  <div style="display:flex;align-items:center;gap:14px;font-size:11px;color:var(--gd-muted-foreground);">
+                    <span class="num">已下载 28.9 GB / 45.2 GB</span>
+                    <span>·</span>
+                    <span class="num">64%</span>
+                    <span>·</span>
+                    <span style="color:var(--gd-state-success);" class="num">12.3 MB/s</span>
+                    <span>·</span>
+                    <span>剩余 <span class="num">14 分 22 秒</span></span>
+                  </div>
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <button class="gd-btn-ghost" style="padding:6px 10px;font-size:12px;" title="暂停"><i data-lucide="pause" style="width:14px;height:14px;"></i></button>
+                  <button class="gd-btn-danger" style="padding:6px 10px;font-size:12px;" title="取消"><i data-lucide="x" style="width:14px;height:14px;"></i></button>
+                </div>
+              </div>
+
+              <!-- 任务2 进行中 -->
+              <div class="dl-row">
+                <div style="width:48px;height:48px;border-radius:var(--gd-radius-md);background:linear-gradient(135deg,var(--gd-brand-600),var(--gd-brand-800));display:flex;align-items:center;justify-content:center;"><i data-lucide="sword" style="width:24px;height:24px;color:var(--gd-primary-foreground);"></i></div>
+                <div style="display:flex;flex-direction:column;gap:6px;min-width:0;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">苍穹之剑</span>
+                    <span class="badge badge-info">下载中</span>
+                  </div>
+                  <div class="gd-progress"><div class="gd-progress-fill" style="width:38%;"></div></div>
+                  <div style="display:flex;align-items:center;gap:14px;font-size:11px;color:var(--gd-muted-foreground);">
+                    <span class="num">已下载 12.4 GB / 32.6 GB</span>
+                    <span>·</span>
+                    <span class="num">38%</span>
+                    <span>·</span>
+                    <span style="color:var(--gd-state-success);" class="num">9.8 MB/s</span>
+                    <span>·</span>
+                    <span>剩余 <span class="num">34 分 10 秒</span></span>
+                  </div>
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <button class="gd-btn-ghost" style="padding:6px 10px;font-size:12px;" title="暂停"><i data-lucide="pause" style="width:14px;height:14px;"></i></button>
+                  <button class="gd-btn-danger" style="padding:6px 10px;font-size:12px;" title="取消"><i data-lucide="x" style="width:14px;height:14px;"></i></button>
+                </div>
+              </div>
+
+              <!-- 任务3 暂停 -->
+              <div class="dl-row">
+                <div style="width:48px;height:48px;border-radius:var(--gd-radius-md);background:linear-gradient(135deg,var(--gd-brand-400),var(--gd-brand-600));display:flex;align-items:center;justify-content:center;"><i data-lucide="anchor" style="width:24px;height:24px;color:var(--gd-primary-foreground);"></i></div>
+                <div style="display:flex;flex-direction:column;gap:6px;min-width:0;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">碧海航线</span>
+                    <span class="badge badge-warning">已暂停</span>
+                  </div>
+                  <div class="gd-progress"><div class="gd-progress-fill gd-progress-fill-warning" style="width:21%;"></div></div>
+                  <div style="display:flex;align-items:center;gap:14px;font-size:11px;color:var(--gd-muted-foreground);">
+                    <span class="num">已下载 5.9 GB / 28.4 GB</span>
+                    <span>·</span>
+                    <span class="num">21%</span>
+                    <span>·</span>
+                    <span>已暂停于 <span class="num">2026-07-25 09:12</span></span>
+                  </div>
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <button class="gd-btn-primary" style="padding:6px 10px;font-size:12px;" title="继续"><i data-lucide="play" style="width:14px;height:14px;"></i></button>
+                  <button class="gd-btn-danger" style="padding:6px 10px;font-size:12px;" title="取消"><i data-lucide="x" style="width:14px;height:14px;"></i></button>
+                </div>
+              </div>
+
+              <!-- 任务4 已完成 -->
+              <div class="dl-row">
+                <div style="width:48px;height:48px;border-radius:var(--gd-radius-md);background:linear-gradient(135deg,var(--gd-brand-700),var(--gd-brand-900));display:flex;align-items:center;justify-content:center;"><i data-lucide="trees" style="width:24px;height:24px;color:var(--gd-primary-foreground);"></i></div>
+                <div style="display:flex;flex-direction:column;gap:6px;min-width:0;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">绿野物语</span>
+                    <span class="badge badge-success"><i data-lucide="check" style="width:11px;height:11px;"></i>已完成</span>
+                  </div>
+                  <div class="gd-progress"><div class="gd-progress-fill gd-progress-fill-success" style="width:100%;"></div></div>
+                  <div style="display:flex;align-items:center;gap:14px;font-size:11px;color:var(--gd-muted-foreground);">
+                    <span class="num">18.2 GB</span>
+                    <span>·</span>
+                    <span>完成于 <span class="num">2026-07-24 21:45</span></span>
+                  </div>
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <button class="gd-btn-primary" style="padding:6px 12px;font-size:12px;"><i data-lucide="folder-open" style="width:14px;height:14px;"></i><span>打开</span></button>
+                  <button class="gd-btn-danger" style="padding:6px 10px;font-size:12px;" title="删除"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============ Section 4: 设置 ============ -->
+          <section id="page-settings">
+            <div class="section-header">
+              <div class="section-header-title">
+                <i data-lucide="settings" style="width:20px;height:20px;color:var(--gd-primary);"></i>
+                <span>设置</span>
+              </div>
+              <div class="section-header-subtitle">左侧分组导航与右侧设置面板，含开关、下拉选择、输入框、滑块等控件。</div>
+              <span class="section-header-source"><i data-lucide="file-code" style="width:11px;height:11px;"></i>SettingsView.axaml</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:flex-start;">
+              <!-- 左侧分组导航 -->
+              <div class="metric-card" style="padding:12px;">
+                <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);padding:6px 10px 10px;border-bottom:1px solid var(--gd-border);margin-bottom:8px;">设置分组</div>
+                <div style="display:flex;flex-direction:column;gap:2px;">
+                  <div class="settings-nav-item"><i data-lucide="settings-2" style="width:15px;height:15px;"></i><span>通用</span></div>
+                  <div class="settings-nav-item" data-active="true"><i data-lucide="palette" style="width:15px;height:15px;"></i><span>外观</span></div>
+                  <div class="settings-nav-item"><i data-lucide="bell" style="width:15px;height:15px;"></i><span>通知</span></div>
+                  <div class="settings-nav-item"><i data-lucide="download" style="width:15px;height:15px;"></i><span>下载</span></div>
+                  <div class="settings-nav-item"><i data-lucide="terminal" style="width:15px;height:15px;"></i><span>高级</span></div>
+                  <div class="settings-nav-item"><i data-lucide="info" style="width:15px;height:15px;"></i><span>关于</span></div>
+                </div>
+              </div>
+
+              <!-- 右侧设置面板 -->
+              <div style="display:flex;flex-direction:column;gap:16px;">
+                <!-- 外观主题 -->
+                <div class="metric-card">
+                  <div class="gd-section-title">外观主题</div>
+                  <div class="setting-row">
+                    <div>
+                      <div class="setting-label">主题模式</div>
+                      <div class="setting-desc">选择应用的整体配色方案</div>
+                    </div>
+                    <div class="gd-radio-group">
+                      <span class="gd-radio-item"><span class="gd-radio-dot"></span>跟随系统</span>
+                      <span class="gd-radio-item"><span class="gd-radio-dot"></span>浅色</span>
+                      <span class="gd-radio-item gd-radio-item-checked"><span class="gd-radio-dot"></span>深色</span>
+                    </div>
+                  </div>
+                  <div class="setting-row">
+                    <div>
+                      <div class="setting-label">界面强调色</div>
+                      <div class="setting-desc">用于按钮、链接与高亮元素</div>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                      <span style="width:24px;height:24px;border-radius:50%;background-color:var(--gd-brand-500);border:2px solid var(--gd-foreground);cursor:pointer;"></span>
+                      <span style="width:24px;height:24px;border-radius:50%;background-color:var(--gd-state-success);border:2px solid var(--gd-border);cursor:pointer;"></span>
+                      <span style="width:24px;height:24px;border-radius:50%;background-color:var(--gd-state-warning);border:2px solid var(--gd-border);cursor:pointer;"></span>
+                      <span style="width:24px;height:24px;border-radius:50%;background-color:var(--gd-state-error);border:2px solid var(--gd-border);cursor:pointer;"></span>
+                    </div>
+                  </div>
+                  <div class="setting-row">
+                    <div>
+                      <div class="setting-label">字号缩放</div>
+                      <div class="setting-desc">调整界面文字基准大小</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;width:220px;">
+                      <span class="num" style="font-size:11px;color:var(--gd-muted-foreground);">小</span>
+                      <input type="range" class="gd-slider" min="80" max="140" value="100">
+                      <span class="num" style="font-size:13px;color:var(--gd-muted-foreground);">大</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 通用 -->
+                <div class="metric-card">
+                  <div class="gd-section-title">通用</div>
+                  <div class="setting-row">
+                    <div>
+                      <div class="setting-label">开机自启动</div>
+                      <div class="setting-desc">系统登录时自动启动耕地</div>
+                    </div>
+                    <div class="gd-toggle gd-toggle-active"></div>
+                  </div>
+                  <div class="setting-row">
+                    <div>
+                      <div class="setting-label">关闭到托盘</div>
+                      <div class="setting-desc">点击关闭按钮时最小化到系统托盘</div>
+                    </div>
+                    <div class="gd-toggle gd-toggle-active"></div>
+                  </div>
+                  <div class="setting-row">
+                    <div>
+                      <div class="setting-label">游戏安装目录</div>
+                      <div class="setting-desc">所有游戏的默认安装根目录</div>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                      <input type="text" class="gd-input" value="D:\HorizonGames" style="width:280px;" readonly>
+                      <button class="gd-btn-ghost"><i data-lucide="folder" style="width:14px;height:14px;"></i><span>浏览</span></button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 通知 -->
+                <div class="metric-card">
+                  <div class="gd-section-title">通知</div>
+                  <div class="setting-row">
+                    <div>
+                      <div class="setting-label">桌面通知</div>
+                      <div class="setting-desc">接收系统桌面弹窗通知</div>
+                    </div>
+                    <div class="gd-toggle gd-toggle-active"></div>
+                  </div>
+                  <div class="setting-row">
+                    <div>
+                      <div class="setting-label">声音提示</div>
+                      <div class="setting-desc">收到通知时播放提示音</div>
+                    </div>
+                    <div class="gd-toggle"></div>
+                  </div>
+                  <div class="setting-row">
+                    <div>
+                      <div class="setting-label">通知展示时长</div>
+                      <div class="setting-desc">桌面通知自动消失的秒数</div>
+                    </div>
+                    <select class="gd-select">
+                      <option>3 秒</option>
+                      <option selected>5 秒</option>
+                      <option>10 秒</option>
+                      <option>不自动消失</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============ Section 5: 安全 ============ -->
+          <section id="page-security">
+            <div class="section-header">
+              <div class="section-header-title">
+                <i data-lucide="shield" style="width:20px;height:20px;color:var(--gd-primary);"></i>
+                <span>安全</span>
+              </div>
+              <div class="section-header-subtitle">安全评分总览与安全项列表，含密码强度、二步验证、登录设备管理。</div>
+              <span class="section-header-source"><i data-lucide="file-code" style="width:11px;height:11px;"></i>SecurityView.axaml</span>
+            </div>
+
+            <!-- 安全评分总览 -->
+            <div class="metric-card" style="margin-bottom:16px;display:flex;align-items:center;gap:24px;">
+              <div style="position:relative;width:96px;height:96px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+                <svg width="96" height="96" viewBox="0 0 96 96" style="transform:rotate(-90deg);">
+                  <circle cx="48" cy="48" r="42" fill="none" stroke="var(--gd-muted)" stroke-width="8"></circle>
+                  <circle cx="48" cy="48" r="42" fill="none" stroke="var(--gd-state-success)" stroke-width="8" stroke-dasharray="263.9" stroke-dashoffset="65.9" stroke-linecap="round"></circle>
+                </svg>
+                <div style="position:absolute;display:flex;flex-direction:column;align-items:center;">
+                  <span class="num" style="font-size:24px;font-weight:600;color:var(--gd-foreground);">75</span>
+                  <span style="font-size:10px;color:var(--gd-muted-foreground);">/ 100</span>
+                </div>
+              </div>
+              <div style="flex:1;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                  <span style="font-size:16px;font-weight:600;color:var(--gd-foreground);">安全评分</span>
+                  <span class="badge badge-success"><i data-lucide="shield-check" style="width:12px;height:12px;"></i>良好</span>
+                </div>
+                <div style="font-size:12px;color:var(--gd-muted-foreground);line-height:1.6;">您的账号安全等级为「良好」，建议开启二步验证并定期更换密码以进一步提升安全性。已完成 3 项安全设置，还有 1 项建议完善。</div>
+              </div>
+              <button class="gd-btn-primary"><i data-lucide="shield" style="width:14px;height:14px;"></i><span>立即加固</span></button>
+            </div>
+
+            <!-- 安全项列表 -->
+            <div style="display:flex;flex-direction:column;gap:14px;">
+              <!-- 密码强度 -->
+              <div class="security-item">
+                <div style="width:44px;height:44px;border-radius:var(--gd-radius-md);background-color:var(--gd-state-warning-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i data-lucide="key-round" style="width:22px;height:22px;color:var(--gd-state-warning);"></i></div>
+                <div style="flex:1;">
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+                    <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">登录密码</span>
+                    <span class="badge badge-warning">中等强度</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+                    <div class="gd-progress" style="width:200px;"><div class="gd-progress-fill gd-progress-fill-warning" style="width:60%;"></div></div>
+                    <span class="num" style="font-size:11px;color:var(--gd-state-warning);">60 / 100</span>
+                  </div>
+                  <div style="font-size:12px;color:var(--gd-muted-foreground);">上次修改于 <span class="num">2026-05-12</span>，建议每 90 天更换一次密码</div>
+                </div>
+                <button class="gd-btn-ghost"><i data-lucide="edit-3" style="width:14px;height:14px;"></i><span>修改密码</span></button>
+              </div>
+
+              <!-- 二步验证 -->
+              <div class="security-item">
+                <div style="width:44px;height:44px;border-radius:var(--gd-radius-md);background-color:var(--gd-state-success-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i data-lucide="smartphone-charging" style="width:22px;height:22px;color:var(--gd-state-success);"></i></div>
+                <div style="flex:1;">
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+                    <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">二步验证</span>
+                    <span class="badge badge-success"><i data-lucide="check" style="width:12px;height:12px;"></i>已开启</span>
+                  </div>
+                  <div style="font-size:12px;color:var(--gd-muted-foreground);">已绑定 <span class="num">2</span> 台验证设备，登录时需输入动态验证码</div>
+                </div>
+                <div class="gd-toggle gd-toggle-active"></div>
+              </div>
+
+              <!-- 登录设备管理 -->
+              <div class="metric-card" style="padding:16px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:44px;height:44px;border-radius:var(--gd-radius-md);background-color:var(--gd-state-info-surface);display:flex;align-items:center;justify-content:center;"><i data-lucide="monitor-smartphone" style="width:22px;height:22px;color:var(--gd-state-info);"></i></div>
+                    <div>
+                      <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);">登录设备管理</div>
+                      <div style="font-size:12px;color:var(--gd-muted-foreground);">当前有 <span class="num">3</span> 台设备处于登录状态</div>
+                    </div>
+                  </div>
+                  <button class="gd-btn-danger"><i data-lucide="log-out" style="width:14px;height:14px;"></i><span>全部下线</span></button>
+                </div>
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>设备</th>
+                      <th>位置</th>
+                      <th>最后登录</th>
+                      <th>状态</th>
+                      <th style="text-align:right;">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><div style="display:flex;align-items:center;gap:8px;"><i data-lucide="laptop" style="width:15px;height:15px;color:var(--gd-muted-foreground);"></i><span style="font-weight:500;">Windows PC（当前）</span></td>
+                      <td>广东 深圳</td>
+                      <td class="num">2026-07-26 09:18</td>
+                      <td><span class="badge badge-success">在线</span></td>
+                      <td style="text-align:right;"><span style="font-size:12px;color:var(--gd-muted-foreground);">当前设备</span></td>
+                    </tr>
+                    <tr>
+                      <td><div style="display:flex;align-items:center;gap:8px;"><i data-lucide="smartphone" style="width:15px;height:15px;color:var(--gd-muted-foreground);"></i>iPhone 15 Pro</td>
+                      <td>广东 深圳</td>
+                      <td class="num">2026-07-25 22:40</td>
+                      <td><span class="badge badge-info">已记住</span></td>
+                      <td style="text-align:right;"><button class="gd-btn-danger" style="padding:4px 10px;font-size:12px;">移除</button></td>
+                    </tr>
+                    <tr>
+                      <td><div style="display:flex;align-items:center;gap:8px;"><i data-lucide="tablet" style="width:15px;height:15px;color:var(--gd-muted-foreground);"></i>iPad Air</td>
+                      <td>北京 朝阳</td>
+                      <td class="num">2026-07-20 14:05</td>
+                      <td><span class="badge badge-info">已记住</span></td>
+                      <td style="text-align:right;"><button class="gd-btn-danger" style="padding:4px 10px;font-size:12px;">移除</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============ Section 6: 资料 ============ -->
+          <section id="page-profile">
+            <div class="section-header">
+              <div class="section-header-title">
+                <i data-lucide="user" style="width:20px;height:20px;color:var(--gd-primary);"></i>
+                <span>资料</span>
+              </div>
+              <div class="section-header-subtitle">资料表单卡，含头像、昵称、签名、性别、生日、地区与邮箱。</div>
+              <span class="section-header-source"><i data-lucide="file-code" style="width:11px;height:11px;"></i>ProfileView.axaml</span>
+            </div>
+
+            <div class="metric-card" style="max-width:760px;">
+              <!-- 头像区 -->
+              <div style="display:flex;align-items:center;gap:18px;padding-bottom:20px;border-bottom:1px solid var(--gd-border);margin-bottom:20px;">
+                <div style="position:relative;">
+                  <div class="gd-avatar" style="width:80px;height:80px;font-size:30px;background:linear-gradient(135deg,var(--gd-brand-500),var(--gd-brand-700));">龙</div>
+                  <span class="gd-status-dot gd-status-online" style="position:absolute;bottom:2px;right:2px;"></span>
+                </div>
+                <div style="flex:1;">
+                  <div style="font-size:15px;font-weight:600;color:var(--gd-foreground);margin-bottom:6px;">头像</div>
+                  <div style="display:flex;gap:8px;margin-bottom:6px;">
+                    <button class="gd-btn-primary" style="padding:6px 12px;font-size:12px;"><i data-lucide="image" style="width:13px;height:13px;"></i><span>更换图片</span></button>
+                    <button class="gd-btn-ghost" style="padding:6px 12px;font-size:12px;"><i data-lucide="trash-2" style="width:13px;height:13px;"></i><span>移除</span></button>
+                  </div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);">支持 JPG、PNG、WEBP 格式，文件不超过 2MB，建议尺寸 240×240</div>
+                </div>
+              </div>
+
+              <!-- 表单字段 -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+                <div>
+                  <div style="font-size:12px;color:var(--gd-muted-foreground);margin-bottom:6px;">昵称</div>
+                  <input type="text" class="gd-input" value="龙" placeholder="请输入昵称">
+                </div>
+                <div>
+                  <div style="font-size:12px;color:var(--gd-muted-foreground);margin-bottom:6px;">通行证号</div>
+                  <input type="text" class="gd-input" value="1010776" readonly style="color:var(--gd-muted-foreground);">
+                </div>
+                <div style="grid-column:1 / -1;">
+                  <div style="font-size:12px;color:var(--gd-muted-foreground);margin-bottom:6px;">个性签名</div>
+                  <textarea class="gd-textarea" placeholder="请输入个性签名（选填）">种花养草，静待花开。海内存知己，天涯若比邻。</textarea>
+                </div>
+                <div>
+                  <div style="font-size:12px;color:var(--gd-muted-foreground);margin-bottom:6px;">性别</div>
+                  <div class="gd-radio-group">
+                    <span class="gd-radio-item gd-radio-item-checked"><span class="gd-radio-dot"></span>男</span>
+                    <span class="gd-radio-item"><span class="gd-radio-dot"></span>女</span>
+                    <span class="gd-radio-item"><span class="gd-radio-dot"></span>保密</span>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size:12px;color:var(--gd-muted-foreground);margin-bottom:6px;">生日</div>
+                  <input type="date" class="gd-input" value="1998-06-15">
+                </div>
+                <div>
+                  <div style="font-size:12px;color:var(--gd-muted-foreground);margin-bottom:6px;">所在地区</div>
+                  <div style="display:flex;gap:8px;">
+                    <select class="gd-select" style="flex:1;"><option>广东省</option><option>北京市</option><option>上海市</option></select>
+                    <select class="gd-select" style="flex:1;"><option>深圳市</option><option>广州市</option><option>珠海市</option></select>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size:12px;color:var(--gd-muted-foreground);margin-bottom:6px;">邮箱</div>
+                  <input type="email" class="gd-input" value="long@horizon.games" placeholder="请输入邮箱">
+                </div>
+                <div>
+                  <div style="font-size:12px;color:var(--gd-muted-foreground);margin-bottom:6px;">手机号</div>
+                  <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="tel" class="gd-input" value="138****6688" placeholder="请输入手机号">
+                    <span class="badge badge-success" style="flex-shrink:0;"><i data-lucide="check" style="width:11px;height:11px;"></i>已验证</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 底部按钮 -->
+              <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:24px;padding-top:18px;border-top:1px solid var(--gd-border);">
+                <button class="gd-btn-ghost"><i data-lucide="rotate-ccw" style="width:14px;height:14px;"></i><span>重置</span></button>
+                <button class="gd-btn-primary"><i data-lucide="save" style="width:14px;height:14px;"></i><span>保存资料</span></button>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============ Section 7: 通知 ============ -->
+          <section id="page-notification">
+            <div class="section-header">
+              <div class="section-header-title">
+                <i data-lucide="bell-ring" style="width:20px;height:20px;color:var(--gd-primary);"></i>
+                <span>通知</span>
+              </div>
+              <div class="section-header-subtitle">分类 tab 与通知列表，未读项以品牌错误色圆点标记，已读项弱化显示。</div>
+              <span class="section-header-source"><i data-lucide="file-code" style="width:11px;height:11px;"></i>NotificationView.axaml</span>
+            </div>
+
+            <div class="metric-card">
+              <!-- 分类 tab + 批量操作 -->
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                  <span class="gd-pill gd-pill-active">全部 <span class="num">12</span></span>
+                  <span class="gd-pill gd-pill-ghost">未读 <span class="num">5</span></span>
+                  <span class="gd-pill gd-pill-ghost">系统</span>
+                  <span class="gd-pill gd-pill-ghost">好友</span>
+                  <span class="gd-pill gd-pill-ghost">花卉</span>
+                  <span class="gd-pill gd-pill-ghost">音乐</span>
+                </div>
+                <div style="display:flex;gap:8px;">
+                  <button class="gd-btn-ghost" style="padding:6px 12px;font-size:12px;"><i data-lucide="check-check" style="width:13px;height:13px;"></i><span>全部已读</span></button>
+                  <button class="gd-btn-danger" style="padding:6px 12px;font-size:12px;"><i data-lucide="trash-2" style="width:13px;height:13px;"></i><span>清空</span></button>
+                </div>
+              </div>
+
+              <!-- 通知列表 -->
+              <div style="display:flex;flex-direction:column;gap:2px;">
+                <!-- 未读 -->
+                <div class="notif-item">
+                  <div class="notif-unread-dot"></div>
+                  <div style="width:36px;height:36px;border-radius:var(--gd-radius-md);background-color:var(--gd-state-info-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i data-lucide="megaphone" style="width:18px;height:18px;color:var(--gd-state-info);"></i></div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);">星辰远征 v2.4 版本更新已发布</div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);margin-top:2px;">全新赛季「银河纪元」正式开启，点击查看完整更新公告与赛季奖励...</div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:4px;"><span class="gd-chip" style="background-color:var(--gd-state-info-surface);color:var(--gd-state-info);">系统</span><span class="num" style="font-size:11px;color:var(--gd-muted-foreground);">2026-07-26 09:30</span></div>
+                  </div>
+                </div>
+                <!-- 未读 -->
+                <div class="notif-item">
+                  <div class="notif-unread-dot"></div>
+                  <div style="width:36px;height:36px;border-radius:var(--gd-radius-md);background-color:var(--gd-state-success-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i data-lucide="user-plus" style="width:18px;height:18px;color:var(--gd-state-success);"></i></div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);">云间月 请求添加你为好友</div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);margin-top:2px;">附言：在花卉市场认识的你，一起交流种植心得吧～</div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:6px;"><span class="gd-chip" style="background-color:var(--gd-state-success-surface);color:var(--gd-state-success);">好友</span><span class="num" style="font-size:11px;color:var(--gd-muted-foreground);">2026-07-26 08:15</span><button class="gd-btn-primary" style="padding:3px 10px;font-size:11px;margin-left:8px;">接受</button><button class="gd-btn-ghost" style="padding:3px 10px;font-size:11px;">忽略</button></div>
+                  </div>
+                </div>
+                <!-- 未读 -->
+                <div class="notif-item">
+                  <div class="notif-unread-dot"></div>
+                  <div style="width:36px;height:36px;border-radius:var(--gd-radius-md);background-color:var(--gd-state-warning-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i data-lucide="trending-up" style="width:18px;height:18px;color:var(--gd-state-warning);"></i></div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);">红玫瑰价格上涨 12%，已触发价格预警</div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);margin-top:2px;">你关注的红玫瑰当前均价 ¥58.00，高于设定阈值 ¥52.00</div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:4px;"><span class="gd-chip" style="background-color:var(--gd-state-warning-surface);color:var(--gd-state-warning);">花卉</span><span class="num" style="font-size:11px;color:var(--gd-muted-foreground);">2026-07-25 16:42</span></div>
+                  </div>
+                </div>
+                <!-- 未读 -->
+                <div class="notif-item">
+                  <div class="notif-unread-dot"></div>
+                  <div style="width:36px;height:36px;border-radius:var(--gd-radius-md);background-color:var(--gd-state-info-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i data-lucide="music" style="width:18px;height:18px;color:var(--gd-state-info);"></i></div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);">歌单「田园午后」有 3 首新歌更新</div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);margin-top:2px;">由 风信子 分享的歌单新增了适合种植时聆听的轻音乐...</div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:4px;"><span class="gd-chip">音乐</span><span class="num" style="font-size:11px;color:var(--gd-muted-foreground);">2026-07-25 11:20</span></div>
+                  </div>
+                </div>
+                <!-- 未读 -->
+                <div class="notif-item">
+                  <div class="notif-unread-dot"></div>
+                  <div style="width:36px;height:36px;border-radius:var(--gd-radius-md);background-color:var(--gd-state-error-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i data-lucide="alert-triangle" style="width:18px;height:18px;color:var(--gd-state-error);"></i></div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);">深空突围 下载任务已暂停</div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);margin-top:2px;">由于网络异常，下载已自动暂停，请检查网络后手动继续</div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:4px;"><span class="gd-chip" style="background-color:var(--gd-state-info-surface);color:var(--gd-state-info);">系统</span><span class="num" style="font-size:11px;color:var(--gd-muted-foreground);">2026-07-24 20:08</span></div>
+                  </div>
+                </div>
+                <!-- 已读 -->
+                <div class="notif-item notif-item-read">
+                  <div style="width:8px;flex-shrink:0;"></div>
+                  <div style="width:36px;height:36px;border-radius:var(--gd-radius-md);background-color:var(--gd-muted);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i data-lucide="gift" style="width:18px;height:18px;color:var(--gd-muted-foreground);"></i></div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:13px;font-weight:500;color:var(--gd-muted-foreground);">夏日花卉庆典活动奖励已发放</div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);margin-top:2px;">限定花束头像框已发放至你的账户，请前往资料页查看</div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:4px;"><span class="gd-chip" style="background-color:var(--gd-state-success-surface);color:var(--gd-state-success);">活动</span><span class="num" style="font-size:11px;color:var(--gd-muted-foreground);">2026-07-23 18:00</span></div>
+                  </div>
+                </div>
+                <!-- 已读 -->
+                <div class="notif-item notif-item-read">
+                  <div style="width:8px;flex-shrink:0;"></div>
+                  <div style="width:36px;height:36px;border-radius:var(--gd-radius-md);background-color:var(--gd-muted);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i data-lucide="message-circle" style="width:18px;height:18px;color:var(--gd-muted-foreground);"></i></div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:13px;font-weight:500;color:var(--gd-muted-foreground);">风信子 回复了你的动态</div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);margin-top:2px;">「这批百合开得真好，请问用的什么肥料？」</div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:4px;"><span class="gd-chip" style="background-color:var(--gd-state-success-surface);color:var(--gd-state-success);">好友</span><span class="num" style="font-size:11px;color:var(--gd-muted-foreground);">2026-07-22 14:30</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============ Section 8: 社交 ============ -->
+          <section id="page-social">
+            <div class="section-header">
+              <div class="section-header-title">
+                <i data-lucide="message-circle" style="width:20px;height:20px;color:var(--gd-primary);"></i>
+                <span>社交</span>
+              </div>
+              <div class="section-header-subtitle">三栏布局：好友列表、聊天面板、聊天信息。气泡严格区分进出方向。</div>
+              <span class="section-header-source"><i data-lucide="file-code" style="width:11px;height:11px;"></i>SocialView.axaml</span>
+            </div>
+
+            <div style="display:grid;grid-template-columns:240px 1fr 220px;gap:14px;height:520px;">
+              <!-- 左栏：好友列表 -->
+              <div class="metric-card" style="padding:0;display:flex;flex-direction:column;overflow:hidden;">
+                <div style="padding:12px 14px;border-bottom:1px solid var(--gd-border);display:flex;align-items:center;justify-content:space-between;">
+                  <span style="font-size:13px;font-weight:600;color:var(--gd-foreground);">通讯录</span>
+                  <button class="gd-btn-ghost" style="padding:4px 8px;font-size:11px;"><i data-lucide="user-plus" style="width:13px;height:13px;"></i></button>
+                </div>
+                <div style="padding:8px 10px;border-bottom:1px solid var(--gd-border);">
+                  <div style="display:flex;align-items:center;gap:6px;background-color:var(--gd-muted);border:1px solid var(--gd-border);border-radius:var(--gd-radius-md);padding:0 8px;">
+                    <i data-lucide="search" style="width:13px;height:13px;color:var(--gd-muted-foreground);"></i>
+                    <input type="text" class="gd-input" placeholder="搜索好友..." style="background:transparent;border:none;padding:6px 4px;">
+                  </div>
+                </div>
+                <div style="flex:1;overflow-y:auto;padding:6px;">
+                  <div style="font-size:11px;font-weight:600;color:var(--gd-muted-foreground);padding:6px 8px;">在线 · <span class="num">3</span></div>
+                  <div class="friend-item friend-item-active">
+                    <div style="position:relative;"><div class="gd-avatar" style="width:32px;height:32px;font-size:12px;background:linear-gradient(135deg,var(--gd-state-success),var(--gd-brand-600));">云</div><span class="gd-status-dot gd-status-online" style="position:absolute;bottom:0;right:0;"></span></div>
+                    <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:500;color:var(--gd-foreground);">云间月</div><div style="font-size:11px;color:var(--gd-muted-foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">种花养草，静待花开</div></div>
+                  </div>
+                  <div class="friend-item">
+                    <div style="position:relative;"><div class="gd-avatar" style="width:32px;height:32px;font-size:12px;background:linear-gradient(135deg,var(--gd-brand-500),var(--gd-brand-700));">风</div><span class="gd-status-dot gd-status-online" style="position:absolute;bottom:0;right:0;"></span></div>
+                    <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:500;color:var(--gd-foreground);">风信子</div><div style="font-size:11px;color:var(--gd-muted-foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">百合开了好大一片</div></div>
+                  </div>
+                  <div class="friend-item">
+                    <div style="position:relative;"><div class="gd-avatar" style="width:32px;height:32px;font-size:12px;background:linear-gradient(135deg,var(--gd-state-warning),var(--gd-brand-600));">墨</div><span class="gd-status-dot gd-status-online" style="position:absolute;bottom:0;right:0;"></span></div>
+                    <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:500;color:var(--gd-foreground);">墨白</div><div style="font-size:11px;color:var(--gd-muted-foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">在听《田园午后》</div></div>
+                  </div>
+                  <div style="font-size:11px;font-weight:600;color:var(--gd-muted-foreground);padding:6px 8px;margin-top:6px;">离线 · <span class="num">4</span></div>
+                  <div class="friend-item">
+                    <div style="position:relative;"><div class="gd-avatar" style="width:32px;height:32px;font-size:12px;background:var(--gd-muted);color:var(--gd-muted-foreground);">青</div><span class="gd-status-dot gd-status-offline" style="position:absolute;bottom:0;right:0;"></span></div>
+                    <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:500;color:var(--gd-muted-foreground);">青柠</div><div style="font-size:11px;color:var(--gd-muted-foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">离线 · 2 小时前</div></div>
+                  </div>
+                  <div class="friend-item">
+                    <div style="position:relative;"><div class="gd-avatar" style="width:32px;height:32px;font-size:12px;background:var(--gd-muted);color:var(--gd-muted-foreground);">星</div><span class="gd-status-dot gd-status-offline" style="position:absolute;bottom:0;right:0;"></span></div>
+                    <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:500;color:var(--gd-muted-foreground);">星河</div><div style="font-size:11px;color:var(--gd-muted-foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">离线 · 昨天</div></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 中栏：聊天面板 -->
+              <div class="metric-card" style="padding:0;display:flex;flex-direction:column;overflow:hidden;">
+                <!-- 聊天头部 -->
+                <div style="padding:12px 16px;border-bottom:1px solid var(--gd-border);display:flex;align-items:center;justify-content:space-between;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <div class="gd-avatar" style="width:32px;height:32px;font-size:12px;background:linear-gradient(135deg,var(--gd-state-success),var(--gd-brand-600));">云</div>
+                    <div><div style="font-size:14px;font-weight:600;color:var(--gd-foreground);">云间月</div><div style="font-size:11px;color:var(--gd-state-success);">在线</div></div>
+                  </div>
+                  <div style="display:flex;gap:4px;">
+                    <button class="header-icon-btn" style="width:32px;height:32px;" title="语音通话"><i data-lucide="phone" style="width:16px;height:16px;"></i></button>
+                    <button class="header-icon-btn" style="width:32px;height:32px;" title="视频通话"><i data-lucide="video" style="width:16px;height:16px;"></i></button>
+                    <button class="header-icon-btn" style="width:32px;height:32px;" title="更多"><i data-lucide="more-vertical" style="width:16px;height:16px;"></i></button>
+                  </div>
+                </div>
+                <!-- 消息气泡列表 -->
+                <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background-color:var(--gd-background);">
+                  <!-- 对方消息（入） -->
+                  <div class="chat-bubble chat-bubble-in">你好呀！听说你最近在种红玫瑰？长势怎么样？</div>
+                  <div class="chat-time" style="align-self:flex-start;"><span class="num">2026-07-26 09:12</span></div>
+                  <!-- 自己消息（出） -->
+                  <div class="chat-bubble chat-bubble-out">长得不错！这批高原红玫瑰开花率有 90%，花苞饱满色泽正。</div>
+                  <div class="chat-time" style="align-self:flex-end;"><span class="num">2026-07-26 09:14</span></div>
+                  <!-- 对方消息（入） -->
+                  <div class="chat-bubble chat-bubble-in">太棒了！我那批百合最近叶片有点发黄，你有什么经验吗？</div>
+                  <div class="chat-time" style="align-self:flex-start;"><span class="num">2026-07-26 09:16</span></div>
+                  <!-- 自己消息（出） -->
+                  <div class="chat-bubble chat-bubble-out">发黄可能是缺铁或者浇水过多，建议控水并补充一点硫酸亚铁，我之前用过效果不错。</div>
+                  <div class="chat-time" style="align-self:flex-end;"><span class="num">2026-07-26 09:18</span></div>
+                  <!-- 对方消息（入）图片 -->
+                  <div class="chat-bubble chat-bubble-in" style="padding:6px;"><div style="width:180px;height:110px;border-radius:var(--gd-radius-md);background:linear-gradient(135deg,var(--gd-state-success),var(--gd-brand-500));display:flex;align-items:center;justify-content:center;"><i data-lucide="image" style="width:28px;height:28px;color:var(--gd-primary-foreground);opacity:0.8;"></i></div></div>
+                  <div class="chat-time" style="align-self:flex-start;"><span class="num">2026-07-26 09:19</span></div>
+                  <!-- 自己消息（出） -->
+                  <div class="chat-bubble chat-bubble-out">看到了，确实有点发黄，先控水试试，过两天我给你带点硫酸亚铁。</div>
+                  <div class="chat-time" style="align-self:flex-end;"><span class="num">2026-07-26 09:21</span></div>
+                </div>
+                <!-- 输入框 -->
+                <div style="padding:12px 16px;border-top:1px solid var(--gd-border);display:flex;align-items:center;gap:8px;">
+                  <button class="header-icon-btn" style="width:32px;height:32px;" title="表情"><i data-lucide="smile" style="width:18px;height:18px;"></i></button>
+                  <button class="header-icon-btn" style="width:32px;height:32px;" title="图片"><i data-lucide="image" style="width:18px;height:18px;"></i></button>
+                  <input type="text" class="gd-input" placeholder="输入消息..." style="flex:1;">
+                  <button class="gd-btn-primary" style="padding:8px 16px;"><i data-lucide="send" style="width:14px;height:14px;"></i><span>发送</span></button>
+                </div>
+              </div>
+
+              <!-- 右栏：聊天信息 -->
+              <div class="metric-card" style="padding:0;display:flex;flex-direction:column;overflow:hidden;">
+                <div style="padding:16px;border-bottom:1px solid var(--gd-border);display:flex;flex-direction:column;align-items:center;gap:10px;">
+                  <div class="gd-avatar" style="width:56px;height:56px;font-size:20px;background:linear-gradient(135deg,var(--gd-state-success),var(--gd-brand-600));">云</div>
+                  <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);">云间月</div>
+                  <div style="font-size:11px;color:var(--gd-state-success);display:inline-flex;align-items:center;gap:4px;"><span class="gd-status-dot gd-status-online" style="width:7px;height:7px;border:none;"></span>在线</div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);text-align:center;line-height:1.5;">种花养草，静待花开。海内存知己，天涯若比邻。</div>
+                </div>
+                <div style="flex:1;overflow-y:auto;padding:12px;">
+                  <div style="font-size:11px;font-weight:600;color:var(--gd-muted-foreground);margin-bottom:8px;">共享文件</div>
+                  <div style="display:flex;flex-direction:column;gap:8px;">
+                    <div style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--gd-border);border-radius:var(--gd-radius-md);">
+                      <div style="width:32px;height:32px;border-radius:var(--gd-radius-sm);background-color:var(--gd-state-info-surface);display:flex;align-items:center;justify-content:center;"><i data-lucide="image" style="width:16px;height:16px;color:var(--gd-state-info);"></i></div>
+                      <div style="flex:1;min-width:0;"><div style="font-size:12px;color:var(--gd-foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">百合叶片.jpg</div><div class="num" style="font-size:10px;color:var(--gd-muted-foreground);">248 KB</div></div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--gd-border);border-radius:var(--gd-radius-md);">
+                      <div style="width:32px;height:32px;border-radius:var(--gd-radius-sm);background-color:var(--gd-state-success-surface);display:flex;align-items:center;justify-content:center;"><i data-lucide="file-text" style="width:16px;height:16px;color:var(--gd-state-success);"></i></div>
+                      <div style="flex:1;min-width:0;"><div style="font-size:12px;color:var(--gd-foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">种植笔记.pdf</div><div class="num" style="font-size:10px;color:var(--gd-muted-foreground);">1.2 MB</div></div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--gd-border);border-radius:var(--gd-radius-md);">
+                      <div style="width:32px;height:32px;border-radius:var(--gd-radius-sm);background-color:var(--gd-state-warning-surface);display:flex;align-items:center;justify-content:center;"><i data-lucide="music" style="width:16px;height:16px;color:var(--gd-state-warning);"></i></div>
+                      <div style="flex:1;min-width:0;"><div style="font-size:12px;color:var(--gd-foreground);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">田园午后.mp3</div><div class="num" style="font-size:10px;color:var(--gd-muted-foreground);">4.6 MB</div></div>
+                    </div>
+                  </div>
+                </div>
+                <div style="padding:12px;border-top:1px solid var(--gd-border);display:flex;flex-direction:column;gap:6px;">
+                  <button class="gd-btn-ghost" style="width:100%;justify-content:center;padding:6px;font-size:12px;"><i data-lucide="user-x" style="width:13px;height:13px;"></i><span>屏蔽消息</span></button>
+                  <button class="gd-btn-danger" style="width:100%;justify-content:center;padding:6px;font-size:12px;"><i data-lucide="user-minus" style="width:13px;height:13px;"></i><span>删除好友</span></button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </main>
+    </div>
+    <script>lucide.createIcons();</script>
+</body>
+</html>

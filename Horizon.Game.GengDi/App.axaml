@@ -6,7 +6,8 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceInclude Source="avares://Horizon.Game.GengDi/Assets/Styles/Resources.axaml" />
+                <!-- GdTheme 提供完整 gd token 体系（旧 Resources.axaml 已移除） -->
+                <ResourceInclude Source="avares://Horizon.Game.GengDi/Assets/Styles/GdTheme.axaml" />
             </ResourceDictionary.MergedDictionaries>
             <converters:WeatherIconConverter x:Key="WeatherIconConverter" />
             <converters:ToastBgConverter x:Key="ToastBgConverter" />
@@ -20,5 +21,7 @@
         <sty:FluentAvaloniaTheme PreferSystemTheme="True" PreferUserAccentColor="True" />
         <StyleInclude Source="avares://Horizon.Game.GengDi/Assets/Styles/Styles.xaml" />
         <StyleInclude Source="avares://Horizon.Game.GengDi/Assets/Styles/ControlsGalleryStyles.axaml" />
+        <!-- GdControls 最后加载，新 GalleryPage 轻量模板覆盖旧模板 -->
+        <StyleInclude Source="avares://Horizon.Game.GengDi/Assets/Styles/GdControls.axaml" />
     </Application.Styles>
 </Application>

@@ -1,66 +1,182 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-			 xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
-			 xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
-			 xmlns:model="using:Horizon.Game.GengDi.Models"
-			 x:Class="Horizon.Game.GengDi.Core.Views.NotificationView"
-			 x:DataType="vm:NotificationViewModel">
-	<controls:GalleryPage Title="通知中心"
-						  Subtitle="Horizon.Game.GengDi.Notifications"
-						  Description="通知页采用统一页头和列表卡片，修复原先字符串拼接文本与布尔颜色绑定等粗糙实现。"
-						  IconSource="{StaticResource NotificationsIcon}">
-		<controls:GalleryPage.HeaderActionContent>
-			<Button Content="全部已读"
-					Classes="QuietAction"
-					Command="{Binding MarkAllAsReadCommand}" />
-		</controls:GalleryPage.HeaderActionContent>
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             xmlns:model="using:Horizon.Game.GengDi.Models"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             x:Class="Horizon.Game.GengDi.Core.Views.NotificationView"
+             x:DataType="vm:NotificationViewModel">
+    <controls:GalleryPage Title="通知"
+                          Subtitle="Horizon.Game.GengDi.Notifications"
+                          Description="分类tab与通知列表，未读项以品牌错误色圆点标记，已读项弱化显示。"
+                          IconSource="{StaticResource NotificationsIcon}">
+        <controls:GalleryPage.HeaderActionContent>
+            <Button Content="全部已读"
+                    Classes="GdGhost"
+                    Command="{Binding MarkAllAsReadCommand}" />
+        </controls:GalleryPage.HeaderActionContent>
 
-		<Grid RowDefinitions="Auto,*"
-			  RowSpacing="20">
-			<Border Classes="SurfaceCard subtle">
-				<StackPanel Spacing="6">
-					<TextBlock Text="未读数量"
-							   Classes="PageEyebrow" />
-					<TextBlock Text="{Binding UnreadCount}"
-							   Theme="{StaticResource DisplayTextBlockStyle}"
-							   FontSize="26" />
-				</StackPanel>
-			</Border>
+        <StackPanel Spacing="16">
 
-			<Border Grid.Row="1"
-					Classes="SurfaceCard">
-				<ListBox ItemsSource="{Binding Notifications}"
-						 BorderThickness="0"
-						 Background="Transparent">
-					<ListBox.ItemTemplate>
-						<DataTemplate x:DataType="model:IMMessage">
-							<Border Classes="ListItemCard"
-									Margin="0 0 0 12">
-								<Grid ColumnDefinitions="Auto,*"
-									  ColumnSpacing="12">
-									<Ellipse Width="10"
-											 Height="10"
-											 Margin="0 6 0 0"
-											 Fill="{DynamicResource AccentFillColorDefaultBrush}"
-											 IsVisible="{Binding !IsRead}" />
-									<StackPanel Grid.Column="1"
-												Spacing="6">
-										<TextBlock Text="{Binding Content}"
-												   TextWrapping="Wrap" />
-										<StackPanel Orientation="Horizontal"
-													Spacing="12">
-											<TextBlock Text="{Binding Timestamp, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"
-													   Classes="SupportingText" />
-											<TextBlock Text="{Binding Type}"
-													   Classes="SupportingText" />
-										</StackPanel>
-									</StackPanel>
-								</Grid>
-							</Border>
-						</DataTemplate>
-					</ListBox.ItemTemplate>
-				</ListBox>
-			</Border>
-		</Grid>
-	</controls:GalleryPage>
+            <!-- ═══ 顶部统计行 + 分类pill组 ═══ -->
+            <Border Classes="GdMetricCard">
+                <Grid RowDefinitions="Auto,Auto"
+                      RowSpacing="14">
+
+                    <!-- 第一行：未读统计 + 操作按钮 -->
+                    <Grid ColumnDefinitions="Auto,*,Auto"
+                          ColumnSpacing="16">
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="未读数量"
+                                       Classes="GdMetricLabel" />
+                            <TextBlock Text="{Binding UnreadCount}"
+                                       FontSize="28"
+                                       FontWeight="SemiBold"
+                                       FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                       Foreground="{DynamicResource GdErrorBrush}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2"
+                                    Orientation="Horizontal"
+                                    Spacing="8">
+                            <Button Content="全部已读"
+                                    Classes="GdPrimary"
+                                    Command="{Binding MarkAllAsReadCommand}" />
+                            <Button Content="清空"
+                                    Classes="GdGhost" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- 第二行：分类pill组 -->
+                    <ScrollViewer Grid.Row="1"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Disabled">
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="8">
+                            <Button Classes="GdPill GdPillActive">
+                                <StackPanel Orientation="Horizontal"
+                                            Spacing="6">
+                                    <TextBlock Text="全部" />
+                                    <TextBlock Text="{Binding Notifications.Count}" />
+                                </StackPanel>
+                            </Button>
+                            <Button Classes="GdPill">
+                                <StackPanel Orientation="Horizontal"
+                                            Spacing="6">
+                                    <TextBlock Text="未读" />
+                                    <TextBlock Text="{Binding UnreadCount}" />
+                                </StackPanel>
+                            </Button>
+                            <Button Classes="GdPill"
+                                    Content="系统" />
+                            <Button Classes="GdPill"
+                                    Content="好友" />
+                            <Button Classes="GdPill"
+                                    Content="花卉" />
+                            <Button Classes="GdPill"
+                                    Content="音乐" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <!-- ═══ 通知列表 ═══ -->
+            <Border Classes="GdMetricCard"
+                    Padding="0">
+                <StackPanel>
+
+                    <!-- 列表头 -->
+                    <Border Padding="16 12">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="通知列表"
+                                       Classes="GdSectionTitle"
+                                       Margin="0" />
+                        </Grid>
+                    </Border>
+
+                    <!-- 通知项列表 -->
+                    <ItemsControl ItemsSource="{Binding Notifications}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="model:IMMessage">
+                                <Border Classes="GdListItem">
+                                    <Grid ColumnDefinitions="12,36,*"
+                                          ColumnSpacing="10">
+
+                                        <!-- 未读圆点（8px GdError色） -->
+                                        <Ellipse Width="8"
+                                                 Height="8"
+                                                 HorizontalAlignment="Center"
+                                                 VerticalAlignment="Center"
+                                                 Fill="{DynamicResource GdErrorBrush}"
+                                                 IsVisible="{Binding !IsRead}" />
+
+                                        <!-- 图标（未读态：状态色） -->
+                                        <Border Grid.Column="1"
+                                                Classes="GdStatIcon"
+                                                Width="36"
+                                                Height="36"
+                                                Background="{DynamicResource GdInfoSurfaceBrush}"
+                                                IsVisible="{Binding !IsRead}">
+                                            <ui:SymbolIcon Symbol="Alert"
+                                                           FontSize="18"
+                                                           Foreground="{DynamicResource GdInfoBrush}"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center" />
+                                        </Border>
+
+                                        <!-- 图标（已读态：GdMuted色） -->
+                                        <Border Grid.Column="1"
+                                                Classes="GdStatIcon"
+                                                Width="36"
+                                                Height="36"
+                                                Background="{DynamicResource GdMutedBrush}"
+                                                IsVisible="{Binding IsRead}">
+                                            <ui:SymbolIcon Symbol="Alert"
+                                                           FontSize="18"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                           HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center" />
+                                        </Border>
+
+                                        <!-- 内容区 -->
+                                        <StackPanel Grid.Column="2"
+                                                    Spacing="4">
+
+                                            <!-- 标题（未读态：GdForeground + SemiBold） -->
+                                            <TextBlock Text="{Binding Content}"
+                                                       FontSize="13"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource GdForegroundBrush}"
+                                                       TextWrapping="Wrap"
+                                                       IsVisible="{Binding !IsRead}" />
+
+                                            <!-- 标题（已读态：GdMutedForeground） -->
+                                            <TextBlock Text="{Binding Content}"
+                                                       FontSize="13"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                       TextWrapping="Wrap"
+                                                       IsVisible="{Binding IsRead}" />
+
+                                            <!-- 底部：Type chip + 时间 -->
+                                            <StackPanel Orientation="Horizontal"
+                                                        Spacing="8"
+                                                        VerticalAlignment="Center">
+                                                <Border Classes="GdChip">
+                                                    <TextBlock Text="{Binding Type}" />
+                                                </Border>
+                                                <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"
+                                                           FontSize="12"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </controls:GalleryPage>
 </UserControl>

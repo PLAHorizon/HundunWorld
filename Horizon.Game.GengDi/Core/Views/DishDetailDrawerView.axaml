@@ -5,36 +5,32 @@
              x:Class="Horizon.Game.GengDi.Core.Views.DishDetailDrawerView"
              x:DataType="vm:HomeViewModel">
 
-    <Border Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-            BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+    <Border Background="{DynamicResource GdPopoverBrush}"
+            BorderBrush="{DynamicResource GdBorderBrush}"
             BorderThickness="1 0 0 0"
             Width="420" MaxWidth="500"
             HorizontalAlignment="Right">
 
         <Grid RowDefinitions="Auto,*">
             <Border Grid.Row="0" Padding="20 16"
-                    BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                    BorderBrush="{DynamicResource GdBorderBrush}"
                     BorderThickness="0 0 0 1">
                 <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Spacing="4">
                         <TextBlock Text="节气食补" FontSize="18" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" />
+                                   Foreground="{DynamicResource GdForegroundBrush}" />
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <Border CornerRadius="4" Padding="4 1">
-                                <Border.Background>
-                                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-                                        <GradientStop Color="#25FFD700" Offset="0.0" />
-                                        <GradientStop Color="#20FF8A65" Offset="1.0" />
-                                    </LinearGradientBrush>
-                                </Border.Background>
+                            <Border CornerRadius="{DynamicResource GdRadiusSm}" Padding="4 1"
+                                    Background="{DynamicResource GdWarningSurfaceBrush}">
                                 <TextBlock Text="{Binding WeatherForecast.SolarTerm.Name}"
-                                           FontSize="11" FontWeight="SemiBold" Foreground="#FFD700" />
+                                           FontSize="11" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource GdWarningBrush}" />
                             </Border>
                             <TextBlock Text="{Binding WeatherForecast.SolarTerm.Season}" FontSize="12"
-                                       Foreground="{DynamicResource TextFillColorTertiaryBrush}" VerticalAlignment="Center" />
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </StackPanel>
-                    <Button Grid.Column="1" Classes="QuietAction" Padding="8"
+                    <Button Grid.Column="1" Classes="GdGhost" Padding="8"
                             Command="{Binding CloseDishDetailCommand}" ToolTip.Tip="关闭">
                         <ui:SymbolIcon Symbol="Cancel" FontSize="16" />
                     </Button>
@@ -46,78 +42,78 @@
                 <StackPanel Spacing="0">
 
                     <Border Padding="20 16"
-                            BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                            BorderBrush="{DynamicResource GdBorderBrush}"
                             BorderThickness="0 0 0 1">
                         <TextBlock Text="{Binding WeatherForecast.SolarTerm.Description}" FontSize="14"
                                    TextWrapping="Wrap" LineHeight="22"
-                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                   Foreground="{DynamicResource GdForegroundMutedBrush}" />
                     </Border>
 
                     <Border Padding="20 16"
-                            BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                            BorderBrush="{DynamicResource GdBorderBrush}"
                             BorderThickness="0 0 0 1">
                         <StackPanel Spacing="8">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <TextBlock Text="🍲" FontSize="14" VerticalAlignment="Center" />
                                 <TextBlock Text="推荐菜品" FontSize="14" FontWeight="SemiBold"
-                                           Foreground="#FFD700" VerticalAlignment="Center" />
+                                           Foreground="{DynamicResource GdWarningBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                             <TextBlock Text="{Binding WeatherForecast.SolarTerm.RecommendedDish}"
                                        FontSize="14" FontWeight="Medium"
-                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                       Foreground="{DynamicResource GdForegroundBrush}"
                                        TextWrapping="Wrap" />
                             <TextBlock Text="{Binding WeatherForecast.SolarTerm.DishReason}"
                                        FontSize="12"
-                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Foreground="{DynamicResource GdForegroundMutedBrush}"
                                        TextWrapping="Wrap" LineHeight="20" />
                         </StackPanel>
                     </Border>
 
                     <Border Padding="20 16"
-                            BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                            BorderBrush="{DynamicResource GdBorderBrush}"
                             BorderThickness="0 0 0 1">
                         <StackPanel Spacing="8">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <TextBlock Text="🥗" FontSize="14" VerticalAlignment="Center" />
                                 <TextBlock Text="推荐食材" FontSize="14" FontWeight="SemiBold"
-                                           Foreground="#5FD19B" VerticalAlignment="Center" />
+                                           Foreground="{DynamicResource GdUpBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                             <TextBlock Text="{Binding WeatherForecast.SolarTerm.Ingredients}"
                                        FontSize="13"
-                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                       Foreground="{DynamicResource GdForegroundBrush}"
                                        TextWrapping="Wrap" LineHeight="22" />
                         </StackPanel>
                     </Border>
 
                     <Border Padding="20 16"
-                            BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                            BorderBrush="{DynamicResource GdBorderBrush}"
                             BorderThickness="0 0 0 1">
                         <StackPanel Spacing="8">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <TextBlock Text="👨‍🍳" FontSize="14" VerticalAlignment="Center" />
                                 <TextBlock Text="推荐做法" FontSize="14" FontWeight="SemiBold"
-                                           Foreground="#A1C7FF" VerticalAlignment="Center" />
+                                           Foreground="{DynamicResource GdBrand400Brush}" VerticalAlignment="Center" />
                             </StackPanel>
                             <TextBlock Text="{Binding WeatherForecast.SolarTerm.CookingMethod}"
                                        FontSize="13"
-                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                       Foreground="{DynamicResource GdForegroundBrush}"
                                        TextWrapping="Wrap" LineHeight="22" />
                         </StackPanel>
                     </Border>
 
                     <Border Padding="20 16"
-                            BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+                            BorderBrush="{DynamicResource GdBorderBrush}"
                             BorderThickness="0 0 0 1">
                         <StackPanel Spacing="8">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <TextBlock Text="⚠️" FontSize="14" VerticalAlignment="Center" />
                                 <TextBlock Text="注意事项" FontSize="14" FontWeight="SemiBold"
-                                           Foreground="#FFD700" VerticalAlignment="Center" />
+                                           Foreground="{DynamicResource GdWarningBrush}" VerticalAlignment="Center" />
                             </StackPanel>
-                            <Border Background="#15FFD700" CornerRadius="8" Padding="12"
-                                    BorderBrush="#25FFD700" BorderThickness="1">
+                            <Border Background="{DynamicResource GdWarningSurfaceBrush}" CornerRadius="{DynamicResource GdRadiusMd}" Padding="12"
+                                    BorderBrush="{DynamicResource GdWarningBrush}" BorderThickness="1">
                                 <TextBlock Text="{Binding WeatherForecast.SolarTerm.Contraindications}"
-                                           FontSize="13" Foreground="#FFD700DD"
+                                           FontSize="13" Foreground="{DynamicResource GdWarningBrush}"
                                            TextWrapping="Wrap" LineHeight="22" />
                             </Border>
                         </StackPanel>
@@ -128,11 +124,11 @@
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <TextBlock Text="💡" FontSize="14" VerticalAlignment="Center" />
                                 <TextBlock Text="健康提示" FontSize="14" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                                           Foreground="{DynamicResource GdForegroundMutedBrush}" VerticalAlignment="Center" />
                             </StackPanel>
                             <TextBlock Text="{Binding WeatherForecast.SolarTerm.HealthTip}"
                                        FontSize="13"
-                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                       Foreground="{DynamicResource GdForegroundBrush}"
                                        TextWrapping="Wrap" LineHeight="22" />
                         </StackPanel>
                     </Border>

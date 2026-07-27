@@ -249,7 +249,7 @@ public class NetworkSyncHardeningTests
         InputSendQueue.Instance.Enqueue(new InputPacket { ClientTick = 999 });
         EventReceiveBuffer.Instance.Enqueue(new EventPacket { ServerTick = 999 });
         InputHistoryBuffer.Instance.Add(new InputPacket { ClientTick = 999 });
-        CorrectionReceiveBuffer.Instance.Add(new Horizon.Game.ECS.Arch.Network.CorrectionPacket { EntityId = 999 });
+        CorrectionReceiveBuffer.Instance.Add(new Horizon.Game.Core.Sim.CorrectionPacket { EntityId = 999 });
         InputAckReceiveBuffer.Instance.Latest = new InputAckPacket { LastProcessedClientTick = 999 };
 
         // 执行断线清空
@@ -433,6 +433,182 @@ public class NetworkSyncHardeningTests
         var persistedEntity = stateObj.Entities[entityId];
         Assert.True(persistedEntity.X > 0.9f, $"持久化 X 应 > 0.9m，实际={persistedEntity.X:F4}");
         Assert.True(stateObj.TickCount >= 10, $"持久化 TickCount 应 >= 10，实际={stateObj.TickCount}");
+    }
+
+    #endregion
+
+    #region 远程实体插值平滑性测试
+
+    /// <summary>
+    /// 验证 InterpolationSystem 在不均匀快照到达时输出位置连续无跳变。
+    /// 模拟场景：远程实体以 6m/s 移动，快照分别在第 1/4/7 帧到达（模拟 20Hz + 抒动），
+    /// 验证每帧位置变化量不超过合理上限（无瞬移）。
+    /// </summary>
+    [Fact]
+    public void InterpolationSystem_UnevenSnapshots_PositionContinuous()
+    {
+        var world = Arch.Core.World.Create();
+        var interpSystem = new Horizon.Game.ECS.Arch.Systems.InterpolationSystem();
+        interpSystem.UseAdaptiveSpeed = false; // 固定速度便于确定性验证
+        interpSystem.InterpolationSpeed = 10f; // 100ms 完成插值
+
+        // 创建远程实体
+        var entity = world.Create();
+        var interp = new Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent
+        {
+            X = 0f, Y = 0f, Z = 0f,
+            StartX = 0f, StartY = 0f, StartZ = 0f,
+            TargetX = 0f, TargetY = 0f, TargetZ = 0f,
+            Yaw = 0f, StartYaw = 0f, TargetYaw = 0f,
+            Alpha = 1f, ServerTick = 0, ReceivedTick = 0,
+            TimeSinceLastSnapshot = 0f,
+        };
+        world.Add(entity, interp);
+
+        var dt = TimeSpan.FromSeconds(1.0 / 60.0);
+        float prevX = 0f;
+        float maxJump = 0f;
+
+        // 模拟 30 帧，快照在第 1/4/7/10/13... 帧到达（每 3 帧一次 ≈ 20Hz）
+        for (int frame = 0; frame < 30; frame++)
+        {
+            // 快照到达：设置新目标（服务端位置以 6m/s 沿 X 轴移动）
+            if (frame % 3 == 0)
+            {
+                float serverX = (frame + 3) * (6f / 60f); // 3 帧后的服务端位置
+                ref var interpRef = ref world.Get<Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent>(entity);
+                interpRef.StartX = interpRef.X;
+                interpRef.StartY = interpRef.Y;
+                interpRef.StartZ = interpRef.Z;
+                interpRef.TargetX = serverX;
+                interpRef.TargetY = 0f;
+                interpRef.TargetZ = 0f;
+                interpRef.Alpha = 0f;
+                interpRef.TimeSinceLastSnapshot = 0f;
+            }
+
+            // 运行插值系统
+            interpSystem.Update(world, dt);
+
+            // 检查位置连续性
+            ref var interpAfter = ref world.Get<Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent>(entity);
+            float jump = MathF.Abs(interpAfter.X - prevX);
+            if (jump > maxJump) maxJump = jump;
+
+            // 每帧位移不应超过 6m/s * (1/60) * 3 = 0.3m（3 倍容差，含 dead reckoning）
+            Assert.True(jump < 0.35f,
+                $"帧 {frame}: 位置跳变 {jump:F4}m 超过上限 0.35m（prevX={prevX:F4}, curX={interpAfter.X:F4}）");
+
+            prevX = interpAfter.X;
+        }
+
+        // 最终位置应接近服务端最终位置（30 帧 * 6m/s / 60 = 3.0m）
+        ref var finalInterp = ref world.Get<Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent>(entity);
+        Assert.True(finalInterp.X > 2.0f,
+            $"最终 X 应 > 2.0m（接近 3.0m），实际={finalInterp.X:F4}");
+
+        Arch.Core.World.Destroy(world);
+    }
+
+    /// <summary>
+    /// 验证 Yaw 环绕插值：从 3.0 rad 到 -3.0 rad 应走最短路径（0.28 rad），而非反向旋转 6.0 rad。
+    /// </summary>
+    [Fact]
+    public void InterpolationSystem_YawWrapping_ShortestPath()
+    {
+        var world = Arch.Core.World.Create();
+        var interpSystem = new Horizon.Game.ECS.Arch.Systems.InterpolationSystem();
+        interpSystem.UseAdaptiveSpeed = false;
+        interpSystem.InterpolationSpeed = 10f;
+
+        var entity = world.Create();
+        var interp = new Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent
+        {
+            Yaw = 3.0f, StartYaw = 3.0f, TargetYaw = -3.0f, // 跨越 ±π 边界
+            Alpha = 0f,
+        };
+        world.Add(entity, interp);
+
+        var dt = TimeSpan.FromSeconds(1.0 / 60.0);
+        float prevYaw = 3.0f;
+
+        for (int frame = 0; frame < 10; frame++)
+        {
+            interpSystem.Update(world, dt);
+            ref var interpAfter = ref world.Get<Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent>(entity);
+
+            // 每帧 Yaw 变化应 < π/4（0.785 rad），确保平滑无突变
+            float yawChange = MathF.Abs(interpAfter.Yaw - prevYaw);
+            Assert.True(yawChange < MathF.PI / 4f,
+                $"帧 {frame}: Yaw 变化 {yawChange:F4}rad 超过 π/4（prev={prevYaw:F4}, cur={interpAfter.Yaw:F4}）");
+
+            prevYaw = interpAfter.Yaw;
+        }
+
+        // 最终 Yaw 应接近 -3.0 + 2π = 3.283 rad（最短路径终点）
+        ref var finalInterp = ref world.Get<Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent>(entity);
+        float expectedEnd = 3.0f + 0.28318f; // 3.0 + (2π - 6.0)
+        Assert.True(MathF.Abs(finalInterp.Yaw - expectedEnd) < 0.1f,
+            $"最终 Yaw 应接近 {expectedEnd:F4}rad，实际={finalInterp.Yaw:F4}");
+
+        Arch.Core.World.Destroy(world);
+    }
+
+    /// <summary>
+    /// 验证快照长时间未到达时 Lerp 插值行为：
+    /// 实体应平滑追赶目标位置并停留，而非原地冻结或突然跳变。
+    /// </summary>
+    [Fact]
+    public void InterpolationSystem_SnapshotDelay_LerpConverges()
+    {
+        var world = Arch.Core.World.Create();
+        var interpSystem = new Horizon.Game.ECS.Arch.Systems.InterpolationSystem();
+        interpSystem.UseAdaptiveSpeed = false;
+        interpSystem.InterpolationSpeed = 10f;
+
+        var entity = world.Create();
+        var interp = new Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent
+        {
+            X = 0f, Y = 0f, Z = 0f,
+            TargetX = 5f, TargetY = 0f, TargetZ = 0f,
+            Yaw = 0f, TargetYaw = 0f,
+            Alpha = 0f, TimeSinceLastSnapshot = 0f,
+        };
+        world.Add(entity, interp);
+
+        var dt = TimeSpan.FromSeconds(1.0 / 60.0);
+        float prevX = 0f;
+
+        // 模拟 60 帧（1 秒）无新快照
+        for (int frame = 0; frame < 60; frame++)
+        {
+            interpSystem.Update(world, dt);
+            ref var interpAfter = ref world.Get<Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent>(entity);
+
+            // 每帧位移应 < 1.0m（Lerp 追赶，帧间距离递减）
+            float jump = MathF.Abs(interpAfter.X - prevX);
+            Assert.True(jump < 1.0f,
+                $"帧 {frame}: 位置跳变 {jump:F4}m 超过上限（prev={prevX:F4}, cur={interpAfter.X:F4}）");
+
+            prevX = interpAfter.X;
+        }
+
+        // 1 秒后实体应接近目标位置（Lerp 收敛）
+        ref var finalInterp = ref world.Get<Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent>(entity);
+        Assert.True(MathF.Abs(finalInterp.X - 5f) < 0.01f,
+            $"1 秒后 X 应接近 5.0m（Lerp 收敛），实际={finalInterp.X:F4}");
+
+        // 收敛后位置不再变化
+        float xConverged = finalInterp.X;
+        for (int frame = 0; frame < 10; frame++)
+        {
+            interpSystem.Update(world, dt);
+        }
+        ref var afterMore = ref world.Get<Horizon.Game.ECS.Arch.Components.InterpolatedTransformComponent>(entity);
+        Assert.True(MathF.Abs(afterMore.X - xConverged) < 0.001f,
+            $"收敛后位置不应变化：{xConverged:F4} → {afterMore.X:F4}");
+
+        Arch.Core.World.Destroy(world);
     }
 
     #endregion

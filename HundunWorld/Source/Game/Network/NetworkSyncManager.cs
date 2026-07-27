@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using FlaxEngine;
-using Horizon.Game.Message.Sim;
+using Horizon.Game.Core.Sim;
 using Horizon.Game.Message.Network;
 using Horizon.Game.Message.Sync;
 using System.Threading.Tasks;

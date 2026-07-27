@@ -9,20 +9,20 @@
              d:DesignWidth="520"
              d:DesignHeight="320">
     <Border x:Name="InteractiveRoot"
-            CornerRadius="14"
+            CornerRadius="{DynamicResource GdRadiusLg}"
             MinWidth="380"
             Background="Transparent">
         <!-- MinWidth=380 ensures video controls and action buttons remain comfortably operable -->
         <Grid RowDefinitions="280,Auto"
-              Background="#08121C">
+              Background="{DynamicResource GdBackgroundBrush}">
             <Grid Grid.Row="0">
-                <Border Background="#08121C"
+                <Border Background="{DynamicResource GdBackgroundBrush}"
                         IsVisible="{Binding IsPreviewVisible}">
                     <Grid>
                         <Image Source="{Binding PreviewImage}"
                                Stretch="UniformToFill"
                                IsVisible="{Binding HasPreviewImage}" />
-                        <Border Background="#48000000" />
+                        <Border Background="{DynamicResource GdOverlayBrush}" />
                         <StackPanel VerticalAlignment="Center"
                                     HorizontalAlignment="Center"
                                     Spacing="8">
@@ -31,13 +31,14 @@
                                        FontWeight="SemiBold"
                                        HorizontalAlignment="Center" />
                             <TextBlock Text="{Binding CardHint}"
-                                       Classes="SupportingText"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
                                        HorizontalAlignment="Center" />
                         </StackPanel>
                     </Grid>
                 </Border>
 
-                <Border Background="#02050A"
+                <Border Background="{DynamicResource GdBackgroundBrush}"
                         IsVisible="{Binding IsInlinePlayerOpen}">
                     <ContentControl x:Name="PlaybackHost"
                                     Width="380"
@@ -51,15 +52,16 @@
 
             <Border Grid.Row="1"
                     Padding="14"
-                    Background="#0C1521">
+                    Background="{DynamicResource GdCardBrush}">
                 <StackPanel Spacing="6">
                     <TextBlock Text="{Binding CardProviderLabel}"
-                               Classes="PageEyebrow" />
+                               Classes="GdEyebrow" />
                     <TextBlock Text="{Binding PreviewTitle}"
                                FontWeight="SemiBold"
                                TextWrapping="Wrap" />
                     <TextBlock Text="{Binding PreviewSubtitle}"
-                               Classes="SupportingText"
+                               FontSize="12"
+                               Foreground="{DynamicResource GdMutedForegroundBrush}"
                                TextWrapping="Wrap"
                                IsVisible="{Binding HasPreviewSubtitle}" />
                 </StackPanel>

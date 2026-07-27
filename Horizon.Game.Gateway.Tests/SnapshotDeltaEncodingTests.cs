@@ -322,7 +322,7 @@ public class SnapshotDeltaEncodingTests
         // ===== 跳跃同步验证 =====
         // 提交跳跃输入（InputBits bit0=1），计算跳跃后的预测 Z 位置
         // 使用 MovementFormula.Step 计算与服务端一致的预测位置，避免 correction
-        var (_, _, predictedJumpZ, _) = Horizon.Game.Message.Sim.MovementFormula.Step(
+        var (_, _, predictedJumpZ, _) = Horizon.Game.Core.Sim.MovementFormula.Step(
             0f, 0f, ecsZ, 0f,  // 起始位置 ECS (0, 0, 8)
             0f, 0f,             // 不移动
             5.5f,               // 普通跳跃冲量

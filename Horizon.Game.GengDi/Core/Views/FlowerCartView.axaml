@@ -7,9 +7,9 @@
              x:DataType="vm:FlowerCartViewModel">
 
     <Grid RowDefinitions="*,Auto">
-        <ScrollViewer Background="{DynamicResource SystemChromeLowColor}">
+        <ScrollViewer Background="{DynamicResource GdBackgroundBrush}">
             <StackPanel Margin="24" Spacing="16" MaxWidth="900">
-                <TextBlock Text="🛒 购物车" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource LoginFormTextBrush}"/>
+                <TextBlock Text="🛒 购物车" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource GdForegroundBrush}"/>
 
                 <Panel IsVisible="{Binding IsLoading}">
                     <ProgressBar IsIndeterminate="True"/>
@@ -18,45 +18,77 @@
                 <Panel IsVisible="{Binding IsEmpty}">
                     <StackPanel HorizontalAlignment="Center" Spacing="12" Margin="0,60,0,0">
                         <TextBlock Text="🛒" FontSize="48" HorizontalAlignment="Center" Opacity="0.5"/>
-                        <TextBlock Text="购物车是空的" FontSize="16" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
-                        <TextBlock Text="去花卉商城逛逛吧" FontSize="13" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="购物车是空的" FontSize="16" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="去花卉商城逛逛吧" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Panel>
 
                 <ItemsControl ItemsSource="{Binding Items}" IsVisible="{Binding !IsEmpty}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="svc:CartItem">
-                            <Border Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="8" Padding="16" Margin="0,0,0,8">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <StackPanel Spacing="4" Grid.Column="0">
-                                        <TextBlock Text="{Binding ProductName}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource LoginFormTextBrush}"/>
-                                        <TextBlock Text="{Binding MerchantName}" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}"/>
-                                        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
-                                            <TextBlock Text="¥" FontSize="14" Foreground="{DynamicResource LoginErrorBrush}" FontWeight="Bold"/>
-                                            <TextBlock Text="{Binding Price}" FontSize="14" Foreground="{DynamicResource LoginErrorBrush}" FontWeight="Bold"/>
-                                            <TextBlock Text="×" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"/>
-                                            <TextBlock Text="{Binding Quantity}" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"/>
-                                            <TextBlock Text="库存:" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center"/>
-                                            <TextBlock Text="{Binding Stock}" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center"/>
+                            <Border Classes="GdMetricCard" Padding="16 20" Margin="0,0,0,12">
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                                    <!-- 设计稿：56x56 渐变图标区 -->
+                                    <Border Width="56" Height="56" CornerRadius="{DynamicResource GdRadiusMd}"
+                                            VerticalAlignment="Center">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                <GradientStop Color="{DynamicResource GdBrand600}" Offset="0" />
+                                                <GradientStop Color="{DynamicResource GdBrand400}" Offset="1" />
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                        <TextBlock Text="🌸" FontSize="28"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <!-- 商品信息 -->
+                                    <StackPanel Spacing="4" Grid.Column="1" Margin="16 0 0 0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding ProductName}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}"/>
+                                        <TextBlock FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}">
+                                            <Run Text="{Binding MerchantName}" />
+                                            <Run Text=" · 库存 " />
+                                            <Run Text="{Binding Stock}" />
+                                        </TextBlock>
+                                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
+                                            <TextBlock Text="{Binding Price, StringFormat='¥{0:F2}'}" FontSize="15" FontWeight="SemiBold"
+                                                       FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                                       Foreground="{DynamicResource GdErrorBrush}"/>
+                                            <TextBlock Text="×" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding Quantity}" FontSize="13"
+                                                       FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                                       Foreground="{DynamicResource GdForegroundBrush}" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </StackPanel>
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <!-- 数量步进器（设计稿：圆形按钮 + mono数字） -->
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="16 0">
                                         <Button Width="28" Height="28" CornerRadius="14"
+                                                BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="1"
+                                                Background="Transparent" Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                Content="−" FontSize="14" Padding="0"
+                                                HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                                                 Command="{Binding $parent[ItemsControl].((vm:FlowerCartViewModel)DataContext).DecreaseQuantityCommand}"
-                                                CommandParameter="{Binding ProductId}">
-                                            <ui:SymbolIcon Symbol="Remove" FontSize="14"/>
-                                        </Button>
+                                                CommandParameter="{Binding ProductId}"/>
+                                        <TextBlock Text="{Binding Quantity}" FontSize="13"
+                                                   FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                                   Foreground="{DynamicResource GdForegroundBrush}"
+                                                   MinWidth="36" TextAlignment="Center" VerticalAlignment="Center"/>
                                         <Button Width="28" Height="28" CornerRadius="14"
+                                                BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="1"
+                                                Background="Transparent" Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                Content="+" FontSize="14" Padding="0"
+                                                HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                                                 Command="{Binding $parent[ItemsControl].((vm:FlowerCartViewModel)DataContext).IncreaseQuantityCommand}"
-                                                CommandParameter="{Binding ProductId}">
-                                            <ui:SymbolIcon Symbol="Add" FontSize="14"/>
-                                        </Button>
-                                        <Button Width="28" Height="28" CornerRadius="14"
-                                                Command="{Binding $parent[ItemsControl].((vm:FlowerCartViewModel)DataContext).RemoveItemCommand}"
-                                                CommandParameter="{Binding ProductId}">
-                                            <ui:SymbolIcon Symbol="Delete" FontSize="14"/>
-                                        </Button>
+                                                CommandParameter="{Binding ProductId}"/>
                                     </StackPanel>
+                                    <!-- 删除按钮 -->
+                                    <Button Grid.Column="3" Classes="GdGhost" Padding="6 10" FontSize="12"
+                                            VerticalAlignment="Center"
+                                            Command="{Binding $parent[ItemsControl].((vm:FlowerCartViewModel)DataContext).RemoveItemCommand}"
+                                            CommandParameter="{Binding ProductId}">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <TextBlock Text="🗑️" FontSize="13" />
+                                            <TextBlock Text="删除" FontSize="12" />
+                                        </StackPanel>
+                                    </Button>
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -65,101 +97,119 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!-- 底部结算栏 -->
-        <Border Grid.Row="1" Background="{DynamicResource LoginFormBackgroundBrush}" Padding="24 16" IsVisible="{Binding !IsEmpty}">
+        <!-- 底部结算栏（设计稿：共 X 件 + 商品合计 + 清空/去结算） -->
+        <Border Grid.Row="1" Background="{DynamicResource GdCardBrush}"
+                BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="0 1 0 0"
+                Padding="24 16" IsVisible="{Binding !IsEmpty}">
             <Grid ColumnDefinitions="*,Auto">
-                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <TextBlock Text="商品合计:" FontSize="14" Foreground="{DynamicResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding ProductTotalDisplay}" FontSize="16" Foreground="{DynamicResource LoginErrorBrush}" FontWeight="Bold" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding TotalCount, StringFormat='{}{0}件'}" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
+                    <TextBlock FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center">
+                        <Run Text="共 " /><Run Text="{Binding TotalCount}" /><Run Text=" 件" />
+                    </TextBlock>
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Text="商品合计：" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding ProductTotalDisplay}" FontSize="16" FontWeight="Bold"
+                                   FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                   Foreground="{DynamicResource GdErrorBrush}" VerticalAlignment="Center" />
+                    </StackPanel>
                 </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                    <Button Content="清空" Classes="QuietAction" CornerRadius="8" Padding="16 8" FontSize="12"
-                            Command="{Binding ClearCartCommand}"/>
-                    <Button Content="去结算" Classes="PrimaryAction" CornerRadius="8" Padding="24 8" FontSize="14" FontWeight="SemiBold"
-                            Command="{Binding ShowSettlementCommand}"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                    <Button Classes="GdGhost" Padding="16 8" FontSize="13"
+                            Command="{Binding ClearCartCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="🗑️" FontSize="14" />
+                            <TextBlock Text="清空" />
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="GdPrimary" Padding="24 8" FontSize="14" FontWeight="SemiBold"
+                            Command="{Binding ShowSettlementCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="💳" FontSize="14" />
+                            <TextBlock Text="去结算" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </Grid>
         </Border>
 
         <!-- 结算面板（覆盖层） -->
-        <Border Grid.RowSpan="2" Background="#CC000000" IsVisible="{Binding ShowSettlement}" ZIndex="100">
-            <Border Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="16 16 0 0" VerticalAlignment="Bottom" MaxHeight="600" Padding="24 20">
+        <Border Grid.RowSpan="2" Background="{DynamicResource GdOverlayBrush}" IsVisible="{Binding ShowSettlement}" ZIndex="100">
+            <Border Background="{DynamicResource GdCardBrush}" CornerRadius="16 16 0 0" VerticalAlignment="Bottom" MaxHeight="600" Padding="24 20">
                 <StackPanel Spacing="16">
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Text="确认订单" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource LoginFormTextBrush}" />
-                        <Button Grid.Column="1" Content="✕" FontSize="18" Background="Transparent" Foreground="{DynamicResource LoginFormMutedBrush}"
+                        <TextBlock Text="确认订单" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource GdForegroundBrush}" />
+                        <Button Grid.Column="1" Content="✕" FontSize="18" Background="Transparent" Foreground="{DynamicResource GdMutedForegroundBrush}"
                                 Command="{Binding HideSettlementCommand}" />
                     </Grid>
 
                     <!-- 收货地址 -->
-                    <Border Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="10" Padding="16">
+                    <Border Background="{DynamicResource GdCardBrush}" CornerRadius="{DynamicResource GdRadiusMd}" Padding="16">
                         <StackPanel Spacing="8">
-                            <TextBlock Text="📍 收货地址" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource LoginFormTextBrush}" />
+                            <TextBlock Text="📍 收货地址" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
                             <ComboBox ItemsSource="{Binding Addresses}" SelectedItem="{Binding SelectedAddress}"
                                       IsVisible="{Binding HasAddresses}" PlaceholderText="选择收货地址" HorizontalAlignment="Stretch">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <TextBlock Text="{Binding ShipTo}" FontSize="13" />
-                                            <TextBlock Text="{Binding Phone}" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" />
-                                            <TextBlock Text="{Binding FullAddress}" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                            <TextBlock Text="{Binding Phone}" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                            <TextBlock Text="{Binding FullAddress}" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
                                         </StackPanel>
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
-                            <TextBlock Text="请先添加收货地址" FontSize="12" Foreground="{DynamicResource LoginErrorBrush}"
+                            <TextBlock Text="请先添加收货地址" FontSize="12" Foreground="{DynamicResource GdErrorBrush}"
                                        IsVisible="{Binding !HasAddresses}" />
                         </StackPanel>
                     </Border>
 
                     <!-- 优惠券 -->
-                    <Border Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="10" Padding="16">
+                    <Border Background="{DynamicResource GdCardBrush}" CornerRadius="{DynamicResource GdRadiusMd}" Padding="16">
                         <StackPanel Spacing="8">
-                            <TextBlock Text="🎫 优惠券" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource LoginFormTextBrush}" />
+                            <TextBlock Text="🎫 优惠券" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
                             <ComboBox ItemsSource="{Binding AvailableCoupons}" SelectedItem="{Binding SelectedCoupon}"
                                       IsVisible="{Binding HasCoupons}" PlaceholderText="选择优惠券" HorizontalAlignment="Stretch">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate>
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <TextBlock Text="{Binding DisplayName}" FontSize="13" />
-                                            <TextBlock Text="{Binding CouponName}" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" />
+                                            <TextBlock Text="{Binding CouponName}" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
                                         </StackPanel>
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>
-                            <TextBlock Text="暂无可用优惠券" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}"
+                            <TextBlock Text="暂无可用优惠券" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}"
                                        IsVisible="{Binding !HasCoupons}" />
                         </StackPanel>
                     </Border>
 
                     <!-- 费用明细 -->
-                    <Border Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="10" Padding="16">
+                    <Border Background="{DynamicResource GdCardBrush}" CornerRadius="{DynamicResource GdRadiusMd}" Padding="16">
                         <StackPanel Spacing="12">
-                            <TextBlock Text="💰 费用明细" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource LoginFormTextBrush}" />
+                            <TextBlock Text="💰 费用明细" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
                             <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
-                                <TextBlock Text="商品金额" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding ProductTotalDisplay}" FontSize="13" Foreground="{DynamicResource LoginFormTextBrush}" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Text="商品金额" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding ProductTotalDisplay}" FontSize="13" Foreground="{DynamicResource GdForegroundBrush}" Grid.Row="0" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                                 
-                                <TextBlock Text="运费" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding FreightDisplay}" FontSize="13" Foreground="{DynamicResource LoginFormTextBrush}" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Text="运费" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding FreightDisplay}" FontSize="13" Foreground="{DynamicResource GdForegroundBrush}" Grid.Row="1" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                                 
-                                <TextBlock Text="优惠券抵扣" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding DiscountDisplay}" FontSize="13" Foreground="{DynamicResource BattleNetPrimaryBrush}" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Text="优惠券抵扣" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding DiscountDisplay}" FontSize="13" Foreground="{DynamicResource GdPrimaryBrush}" Grid.Row="2" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                                 
-                                <TextBlock Text="满减优惠" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding FullDiscountDisplay}" FontSize="13" Foreground="{DynamicResource BattleNetPrimaryBrush}" Grid.Row="3" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Text="满减优惠" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}" Grid.Row="3" Grid.Column="0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding FullDiscountDisplay}" FontSize="13" Foreground="{DynamicResource GdPrimaryBrush}" Grid.Row="3" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                                 
-                                <Border Grid.Row="4" Grid.ColumnSpan="2" Height="1" Background="{DynamicResource LoginInfoCardBorderBrush}" Margin="0 8" />
+                                <Border Grid.Row="4" Grid.ColumnSpan="2" Height="1" Background="{DynamicResource GdBorderBrush}" Margin="0 8" />
                                 
-                                <TextBlock Text="应付总额" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource LoginFormTextBrush}" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding OrderTotalDisplay}" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource LoginErrorBrush}" Grid.Row="5" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                <TextBlock Text="应付总额" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource GdForegroundBrush}" Grid.Row="5" Grid.Column="0" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding OrderTotalDisplay}" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource GdErrorBrush}" Grid.Row="5" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                             </Grid>
                         </StackPanel>
                     </Border>
 
                     <!-- 提交订单 -->
-                    <Button Content="提交订单" Classes="PrimaryAction" CornerRadius="10" Padding="0 14"
+                    <Button Content="提交订单" Classes="GdPrimary" CornerRadius="{DynamicResource GdRadiusMd}" Padding="0 14"
                             FontSize="16" FontWeight="Bold" HorizontalAlignment="Stretch"
                             Command="{Binding CheckoutCommand}" />
                 </StackPanel>
@@ -168,40 +218,40 @@
 
         <!-- 支付对话框（覆盖层） -->
         <Panel Grid.RowSpan="2" IsVisible="{Binding ShowPaymentDialog}" ZIndex="200">
-            <Border Background="#CC0D0D0D" />
-            <Border Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="20" Padding="32" MaxWidth="560" MinWidth="480"
+            <Border Background="{DynamicResource GdOverlayBrush}" />
+            <Border Background="{DynamicResource GdCardBrush}" CornerRadius="{DynamicResource GdRadiusLg}" Padding="32" MaxWidth="560" MinWidth="480"
                     HorizontalAlignment="Center" VerticalAlignment="Center">
                 <StackPanel Spacing="24">
                     <!-- Header -->
                     <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                            <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource BattleNetPrimaryBrush}">
+                            <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource GdPrimaryBrush}">
                                 <TextBlock Text="💳" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
-                            <TextBlock Text="确认支付" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource LoginFormTextBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="确认支付" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource GdForegroundBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <Button Grid.Column="1" Content="✕" Classes="QuietAction" Padding="10 6" CornerRadius="8"
+                        <Button Grid.Column="1" Content="✕" Classes="GdGhost" Padding="10 6" CornerRadius="{DynamicResource GdRadiusMd}"
                                 Command="{Binding CancelPaymentCommand}" VerticalAlignment="Center"/>
                     </Grid>
 
                     <!-- Amount Card -->
-                    <Border Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="16" Padding="24 20">
+                    <Border Background="{DynamicResource GdCardBrush}" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24 20">
                         <StackPanel Spacing="8">
-                            <TextBlock Text="应付金额" FontSize="13" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                            <TextBlock Text="应付金额" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                             <TextBlock Text="{Binding PaymentAmount, StringFormat='¥{0:F2}'}" FontSize="32"
-                                       FontWeight="Bold" Foreground="{DynamicResource BattleNetPrimaryBrush}" HorizontalAlignment="Center" />
+                                       FontWeight="Bold" Foreground="{DynamicResource GdPrimaryBrush}" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Border>
 
                     <!-- Payment Method Card -->
-                    <Border Background="{DynamicResource LoginFormBackgroundBrush}" CornerRadius="16" Padding="24 20">
+                    <Border Background="{DynamicResource GdCardBrush}" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24 20">
                         <StackPanel Spacing="12">
-                            <TextBlock Text="支付方式" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Text="支付方式" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                             <ComboBox SelectedIndex="{Binding SelectedPaymentChannel}"
                                       HorizontalAlignment="Stretch"
-                                      Background="{DynamicResource LoginInputBackgroundBrush}"
-                                      BorderBrush="{DynamicResource LoginInputBorderBrush}"
-                                      Foreground="{DynamicResource LoginFormTextBrush}">
+                                      Background="{DynamicResource GdBackgroundBrush}"
+                                      BorderBrush="{DynamicResource GdBorderBrush}"
+                                      Foreground="{DynamicResource GdForegroundBrush}">
                                 <ComboBoxItem Content="微信支付" />
                                 <ComboBoxItem Content="支付宝" />
                             </ComboBox>
@@ -211,21 +261,21 @@
                     <!-- Processing Indicator -->
                     <StackPanel IsVisible="{Binding IsPaymentProcessing}" Spacing="12" HorizontalAlignment="Center">
                         <ProgressBar IsIndeterminate="True" Height="4"/>
-                        <TextBlock Text="正在支付，请稍候..." FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center" />
+                        <TextBlock Text="正在支付，请稍候..." FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center" />
                     </StackPanel>
 
                     <!-- Result Message -->
-                    <TextBlock Text="{Binding PaymentResultMessage}" FontSize="13" Foreground="{DynamicResource BattleNetPrimaryBrush}"
+                    <TextBlock Text="{Binding PaymentResultMessage}" FontSize="13" Foreground="{DynamicResource GdPrimaryBrush}"
                                HorizontalAlignment="Center"
                                IsVisible="{Binding PaymentResultMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
                     <!-- Action Buttons -->
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                        <Button Grid.Column="0" Content="取消" Classes="QuietAction" CornerRadius="12" Padding="0 14"
+                        <Button Grid.Column="0" Content="取消" Classes="GdGhost" CornerRadius="{DynamicResource GdRadiusLg}" Padding="0 14"
                                 HorizontalAlignment="Stretch" FontSize="14"
                                 Command="{Binding CancelPaymentCommand}"
                                 IsEnabled="{Binding !IsPaymentProcessing}" />
-                        <Button Grid.Column="1" Content="确认支付" Classes="PrimaryAction" CornerRadius="12" Padding="32 14"
+                        <Button Grid.Column="1" Content="确认支付" Classes="GdPrimary" CornerRadius="{DynamicResource GdRadiusLg}" Padding="32 14"
                                 HorizontalAlignment="Stretch" FontSize="14" FontWeight="SemiBold"
                                 Command="{Binding ConfirmPaymentCommand}"
                                 IsEnabled="{Binding !IsPaymentProcessing}" />

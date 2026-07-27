@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>覆盖层·天气抽屉 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   参照 quant-trading-ui 风格重构，零色值偏差
+   Dark mode is the primary experience (html.dark)
+   现状骨架：水平顶栏 + 副导航（匹配实际主界面）
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #ff9800;
+  --gd-state-warning-surface: rgba(255, 152, 0, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #ef5350;
+  --gd-state-error-surface: rgba(239, 83, 80, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific (花卉价格波动涨跌色) ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #ef5350;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(239, 83, 80, 0.12);
+
+  /* ---------- Light Mode (default :root) ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode (html.dark — primary experience) ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <style id="critical-layout">
+      /* ========== 水平顶栏 + 副导航框架（匹配实际主界面） ========== */
+      .app-root { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background-color: var(--gd-background); color: var(--gd-foreground); }
+
+      /* ---------- 顶栏（主导航） ---------- */
+      .app-topbar { height: 56px; flex-shrink: 0; display: flex; align-items: center; gap: 24px; padding: 0 20px; background-color: var(--gd-card); border-bottom: 1px solid var(--gd-border); }
+      .topbar-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+      .topbar-main-nav { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+      .topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+      .main-nav-item { position: relative; display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--gd-radius-md); color: var(--gd-muted-foreground); font-size: 14px; font-weight: 500; cursor: pointer; transition: color 0.15s, background-color 0.15s; text-decoration: none; white-space: nowrap; }
+      .main-nav-item:hover { color: var(--gd-foreground); background-color: var(--gd-muted); }
+      .main-nav-item[data-active="true"] { color: var(--gd-primary); background-color: var(--gd-state-info-surface); }
+      .main-nav-item[data-active="true"]::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: -18px; height: 2px; background-color: var(--gd-primary); border-radius: 1px; }
+      .main-nav-icon { width: 16px; height: 16px; flex-shrink: 0; }
+
+      /* ---------- 副导航 ---------- */
+      .app-subnavbar { height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 2px; padding: 0 20px; background-color: var(--gd-card); border-bottom: 1px solid var(--gd-border); overflow-x: auto; overflow-y: hidden; }
+      .subnav-item { position: relative; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--gd-radius-sm); color: var(--gd-muted-foreground); font-size: 13px; font-weight: 500; cursor: pointer; transition: color 0.15s, background-color 0.15s; text-decoration: none; white-space: nowrap; flex-shrink: 0; }
+      .subnav-item:hover { color: var(--gd-foreground); background-color: var(--gd-muted); }
+      .subnav-item[data-active="true"] { color: var(--gd-primary); background-color: var(--gd-state-info-surface); }
+      .subnav-icon { width: 14px; height: 14px; flex-shrink: 0; }
+      .subnav-badge { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background-color: var(--gd-state-error); color: #fff; font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+      .subnav-divider { width: 1px; height: 16px; background-color: var(--gd-border); flex-shrink: 0; margin: 0 4px; }
+
+      /* ---------- 内容区 ---------- */
+      .app-content { flex: 1; overflow-y: auto; overflow-x: hidden; }
+
+      /* ---------- 通用组件 ---------- */
+      .metric-card { background-color: var(--gd-card); border: 1px solid var(--gd-border); border-radius: var(--gd-radius-lg); padding: 20px; }
+      .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      .data-table th { text-align: left; padding: 10px 12px; font-weight: 500; color: var(--gd-muted-foreground); border-bottom: 1px solid var(--gd-border); white-space: nowrap; }
+      .data-table td { padding: 10px 12px; border-bottom: 1px solid var(--gd-border); }
+      .data-table tbody tr:hover { background-color: var(--gd-muted); }
+      .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--gd-radius-sm); font-size: 12px; font-weight: 500; }
+      .badge-success { background-color: var(--gd-state-success-surface); color: var(--gd-state-success); }
+      .badge-warning { background-color: var(--gd-state-warning-surface); color: var(--gd-state-warning); }
+      .badge-error { background-color: var(--gd-state-error-surface); color: var(--gd-state-error); }
+      .badge-info { background-color: var(--gd-state-info-surface); color: var(--gd-state-info); }
+      .num { font-family: var(--gd-font-mono); font-variant-numeric: tabular-nums; }
+      .header-icon-btn { width: 36px; height: 36px; border-radius: var(--gd-radius-md); display: flex; align-items: center; justify-content: center; color: var(--gd-muted-foreground); cursor: pointer; transition: background-color 0.15s, color 0.15s; border: none; background: transparent; position: relative; }
+      .header-icon-btn:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+
+      /* ---------- 窗口控制按钮 ---------- */
+      .win-btn { width: 36px; height: 36px; border-radius: var(--gd-radius-sm); display: flex; align-items: center; justify-content: center; color: var(--gd-muted-foreground); cursor: pointer; transition: background-color 0.15s, color 0.15s; border: none; background: transparent; }
+      .win-btn:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+      .win-btn-close:hover { background-color: var(--gd-state-error); color: #fff; }
+
+      /* ========== 抽屉范式：右侧滑出抽屉 ========== */
+      .weather-drawer-container { padding: 24px; }
+      .weather-drawer-row { display: flex; gap: 16px; align-items: flex-start; }
+      .weather-drawer {
+        width: 420px;
+        flex-shrink: 0;
+        height: 600px;
+        display: flex;
+        flex-direction: column;
+        background-color: var(--gd-popover);
+        border-left: 1px solid var(--gd-border);
+        border-top: none;
+        border-right: none;
+        border-bottom: none;
+        box-shadow: var(--gd-shadow-xl);
+      }
+      .weather-drawer-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--gd-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+      }
+      .weather-drawer-header-title { font-size: 16px; font-weight: 600; color: var(--gd-foreground); line-height: 1.3; }
+      .weather-drawer-header-subtitle { font-size: 12px; color: var(--gd-muted-foreground); margin-top: 2px; }
+      .weather-drawer-body {
+        padding: 16px 20px;
+        overflow-y: auto;
+        flex: 1;
+      }
+
+      /* ---------- 逐时预报 ---------- */
+      .section-label { font-size: 13px; font-weight: 600; color: var(--gd-foreground); margin-bottom: 8px; }
+      .temp-trend-canvas-wrap { background: rgba(255,255,255,0.02); border-radius: var(--gd-radius-md); padding: 8px; }
+      .temp-trend-canvas-wrap canvas { display: block; width: 100%; }
+      .hourly-scroll {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+      }
+      .hourly-card {
+        background-color: var(--gd-muted);
+        border-radius: var(--gd-radius-md);
+        padding: 10px;
+        min-width: 62px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+      .hourly-card .time { font-size: 11px; color: var(--gd-muted-foreground); }
+      .hourly-card .icon { color: var(--gd-brand-400); width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
+      .hourly-card .temp { font-size: 15px; font-weight: 600; font-family: var(--gd-font-mono); color: var(--gd-foreground); }
+      .hourly-card .rain { font-size: 9px; color: var(--gd-muted-foreground); }
+
+      /* ---------- 空气质量 ---------- */
+      .aqi-big { text-align: center; padding: 8px 0 4px; }
+      .aqi-big .value { font-size: 48px; font-weight: 300; font-family: var(--gd-font-mono); color: var(--gd-state-success); line-height: 1.1; }
+      .aqi-big .level { font-size: 16px; color: var(--gd-state-success); margin-top: 2px; }
+      .aqi-grade-wrap { margin-top: 16px; }
+      .aqi-grade-pointer {
+        width: 0; height: 0;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-bottom: 8px solid var(--gd-foreground);
+        margin-left: 15%;
+        margin-bottom: 2px;
+      }
+      .aqi-grade-bar {
+        height: 8px;
+        border-radius: var(--gd-radius-full);
+        background: linear-gradient(90deg, var(--gd-state-success), var(--gd-state-warning), var(--gd-state-error));
+      }
+      .pollutant-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 16px;
+      }
+      .pollutant-cell {
+        background-color: var(--gd-muted);
+        border-radius: var(--gd-radius-md);
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .pollutant-cell .name { font-size: 11px; color: var(--gd-muted-foreground); }
+      .pollutant-cell .value { font-size: 15px; font-family: var(--gd-font-mono); font-weight: 600; color: var(--gd-foreground); line-height: 1.2; }
+      .pollutant-cell .unit { font-size: 10px; color: var(--gd-muted-foreground); }
+
+      /* ---------- 生活指数 ---------- */
+      .life-index-list { display: flex; flex-direction: column; gap: 10px; }
+      .life-index-card {
+        background-color: var(--gd-muted);
+        border-radius: var(--gd-radius-md);
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .life-index-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: var(--gd-radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .life-index-text { flex: 1; min-width: 0; }
+      .life-index-title { font-size: 13px; font-weight: 500; color: var(--gd-foreground); }
+      .life-index-desc { font-size: 11px; color: var(--gd-muted-foreground); margin-top: 2px; }
+    </style>
+    <div class="app-root">
+      <!-- ================ 顶栏（主导航） ================ -->
+      <header class="app-topbar">
+        <div class="topbar-brand">
+          <div style="width:32px;height:32px;border-radius:var(--gd-radius-md);background:linear-gradient(135deg,var(--gd-brand-500),var(--gd-brand-700));display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="sprout" style="width:18px;height:18px;color:#fff;"></i>
+          </div>
+          <span style="font-size:15px;font-weight:600;color:var(--gd-foreground);">耕地</span>
+        </div>
+        <nav class="topbar-main-nav">
+          <a class="main-nav-item" data-dom-id="nav-games" data-main-nav-key="games" data-active="true" href="#">
+            <i data-lucide="gamepad-2" class="main-nav-icon"></i>
+            <span>游戏</span>
+          </a>
+          <a class="main-nav-item" data-dom-id="nav-news" data-main-nav-key="news" href="#">
+            <i data-lucide="newspaper" class="main-nav-icon"></i>
+            <span>新闻</span>
+          </a>
+          <a class="main-nav-item" data-dom-id="nav-flower-market" data-main-nav-key="flower-market" href="#">
+            <i data-lucide="flower-2" class="main-nav-icon"></i>
+            <span>花卉市场</span>
+          </a>
+          <a class="main-nav-item" data-dom-id="nav-music" data-main-nav-key="music" href="#">
+            <i data-lucide="music" class="main-nav-icon"></i>
+            <span>音乐</span>
+          </a>
+          <a class="main-nav-item" data-dom-id="nav-more" data-main-nav-key="more" href="#">
+            <i data-lucide="more-horizontal" class="main-nav-icon"></i>
+            <span>更多</span>
+          </a>
+        </nav>
+        <div class="topbar-actions">
+          <button class="header-icon-btn" title="通知" style="position:relative;">
+            <i data-lucide="bell" style="width:18px;height:18px;"></i>
+            <span style="position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background-color:var(--gd-state-error);border:2px solid var(--gd-card);"></span>
+          </button>
+          <button class="header-icon-btn" title="主题切换">
+            <i data-lucide="moon" style="width:18px;height:18px;"></i>
+          </button>
+          <div style="width:1px;height:24px;background-color:var(--gd-border);margin:0 4px;"></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;background-color:var(--gd-muted);border-radius:var(--gd-radius-full);cursor:pointer;">
+            <div style="width:26px;height:26px;border-radius:50%;background-color:var(--gd-brand-500);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;">龙</div>
+            <div style="display:flex;flex-direction:column;line-height:1.2;">
+              <span style="font-size:12px;color:var(--gd-foreground);font-weight:500;">龙</span>
+              <span style="font-size:10px;color:var(--gd-muted-foreground);font-family:var(--gd-font-mono);">1010776</span>
+            </div>
+          </div>
+          <div style="width:1px;height:24px;background-color:var(--gd-border);margin:0 4px;"></div>
+          <button class="win-btn" title="最小化">
+            <i data-lucide="minus" style="width:16px;height:16px;"></i>
+          </button>
+          <button class="win-btn" title="最大化">
+            <i data-lucide="square" style="width:14px;height:14px;"></i>
+          </button>
+          <button class="win-btn win-btn-close" title="关闭">
+            <i data-lucide="x" style="width:16px;height:16px;"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- ================ 副导航 ================ -->
+      <nav class="app-subnavbar no-scrollbar">
+        <a class="subnav-item" data-dom-id="subnav-overview" data-sub-nav-key="overview" data-active="true" href="#">
+          <i data-lucide="layout-dashboard" class="subnav-icon"></i>
+          <span>总览</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-all-games" data-sub-nav-key="all-games" href="#">
+          <i data-lucide="library" class="subnav-icon"></i>
+          <span>全部游戏</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-download" data-sub-nav-key="download" href="#">
+          <i data-lucide="download" class="subnav-icon"></i>
+          <span>下载</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-settings" data-sub-nav-key="settings" href="#">
+          <i data-lucide="settings" class="subnav-icon"></i>
+          <span>设置</span>
+        </a>
+        <div class="subnav-divider"></div>
+        <a class="subnav-item" data-dom-id="subnav-discover" data-sub-nav-key="discover" href="#">
+          <i data-lucide="compass" class="subnav-icon"></i>
+          <span>发现</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-playlist" data-sub-nav-key="playlist" href="#">
+          <i data-lucide="list-music" class="subnav-icon"></i>
+          <span>歌单</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-search" data-sub-nav-key="search" href="#">
+          <i data-lucide="search" class="subnav-icon"></i>
+          <span>搜索</span>
+        </a>
+        <div class="subnav-divider"></div>
+        <a class="subnav-item" data-dom-id="subnav-dashboard" data-sub-nav-key="dashboard" href="#">
+          <i data-lucide="gauge" class="subnav-icon"></i>
+          <span>行情仪表盘</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-market" data-sub-nav-key="market" href="#">
+          <i data-lucide="shopping-cart" class="subnav-icon"></i>
+          <span>市场</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-planting" data-sub-nav-key="planting" href="#">
+          <i data-lucide="sprout" class="subnav-icon"></i>
+          <span>种植建议</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-cart" data-sub-nav-key="cart" href="#">
+          <i data-lucide="shopping-bag" class="subnav-icon"></i>
+          <span>购物车</span>
+          <span class="subnav-badge">3</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-orders" data-sub-nav-key="orders" href="#">
+          <i data-lucide="file-text" class="subnav-icon"></i>
+          <span>订单</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-alerts" data-sub-nav-key="alerts" href="#">
+          <i data-lucide="bell-ring" class="subnav-icon"></i>
+          <span>预警</span>
+          <span class="subnav-badge">5</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-ai" data-sub-nav-key="ai" href="#">
+          <i data-lucide="brain" class="subnav-icon"></i>
+          <span>AI助手</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-datascreen" data-sub-nav-key="datascreen" href="#">
+          <i data-lucide="bar-chart-3" class="subnav-icon"></i>
+          <span>数据大屏</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-merchants" data-sub-nav-key="merchants" href="#">
+          <i data-lucide="store" class="subnav-icon"></i>
+          <span>商家</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-address" data-sub-nav-key="address" href="#">
+          <i data-lucide="map-pin" class="subnav-icon"></i>
+          <span>收货地址</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-profile" data-sub-nav-key="profile" href="#">
+          <i data-lucide="user" class="subnav-icon"></i>
+          <span>个人中心</span>
+        </a>
+      </nav>
+
+      <!-- ================ 内容区 ================ -->
+      <main class="app-content">
+        <div class="weather-drawer-container">
+          <div class="weather-drawer-row">
+
+            <!-- ============ 抽屉1：逐时预报 ============ -->
+            <section class="weather-drawer">
+              <header class="weather-drawer-header">
+                <div>
+                  <div class="weather-drawer-header-title">逐时预报</div>
+                  <div class="weather-drawer-header-subtitle">未来24小时</div>
+                </div>
+                <button class="header-icon-btn" title="关闭">
+                  <i data-lucide="x" style="width:18px;height:18px;"></i>
+                </button>
+              </header>
+              <div class="weather-drawer-body">
+                <!-- 温度趋势区 -->
+                <div class="section-label">温度趋势</div>
+                <div class="temp-trend-canvas-wrap">
+                  <canvas id="tempTrendChart" height="80"></canvas>
+                </div>
+
+                <!-- 逐时卡片横滑 -->
+                <div class="section-label" style="margin-top:16px;">逐时详情</div>
+                <div class="hourly-scroll no-scrollbar">
+                  <div class="hourly-card">
+                    <span class="time">现在</span>
+                    <span class="icon"><i data-lucide="cloud-rain" style="width:24px;height:24px;"></i></span>
+                    <span class="temp">26°</span>
+                    <span class="rain">💧 60%</span>
+                  </div>
+                  <div class="hourly-card">
+                    <span class="time">13:00</span>
+                    <span class="icon"><i data-lucide="cloud-rain" style="width:24px;height:24px;"></i></span>
+                    <span class="temp">27°</span>
+                    <span class="rain">💧 55%</span>
+                  </div>
+                  <div class="hourly-card">
+                    <span class="time">14:00</span>
+                    <span class="icon"><i data-lucide="cloud-rain" style="width:24px;height:24px;"></i></span>
+                    <span class="temp">29°</span>
+                    <span class="rain">💧 45%</span>
+                  </div>
+                  <div class="hourly-card">
+                    <span class="time">15:00</span>
+                    <span class="icon"><i data-lucide="cloud-rain" style="width:24px;height:24px;"></i></span>
+                    <span class="temp">28°</span>
+                    <span class="rain">💧 50%</span>
+                  </div>
+                  <div class="hourly-card">
+                    <span class="time">16:00</span>
+                    <span class="icon"><i data-lucide="cloud-rain" style="width:24px;height:24px;"></i></span>
+                    <span class="temp">28°</span>
+                    <span class="rain">💧 40%</span>
+                  </div>
+                  <div class="hourly-card">
+                    <span class="time">17:00</span>
+                    <span class="icon"><i data-lucide="cloud-rain" style="width:24px;height:24px;"></i></span>
+                    <span class="temp">25°</span>
+                    <span class="rain">💧 65%</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ 抽屉2：空气质量 ============ -->
+            <section class="weather-drawer">
+              <header class="weather-drawer-header">
+                <div>
+                  <div class="weather-drawer-header-title">空气质量</div>
+                  <div class="weather-drawer-header-subtitle">实时监测</div>
+                </div>
+                <button class="header-icon-btn" title="关闭">
+                  <i data-lucide="x" style="width:18px;height:18px;"></i>
+                </button>
+              </header>
+              <div class="weather-drawer-body">
+                <!-- AQI 大数字展示 -->
+                <div class="aqi-big">
+                  <div class="value">45</div>
+                  <div class="level">优</div>
+                </div>
+
+                <!-- AQI 分级条 -->
+                <div class="aqi-grade-wrap">
+                  <div class="aqi-grade-pointer"></div>
+                  <div class="aqi-grade-bar"></div>
+                </div>
+
+                <!-- 污染物网格 2x3 -->
+                <div class="pollutant-grid">
+                  <div class="pollutant-cell">
+                    <span class="name">PM2.5</span>
+                    <span class="value">12</span>
+                    <span class="unit">μg/m³</span>
+                  </div>
+                  <div class="pollutant-cell">
+                    <span class="name">PM10</span>
+                    <span class="value">28</span>
+                    <span class="unit">μg/m³</span>
+                  </div>
+                  <div class="pollutant-cell">
+                    <span class="name">O3</span>
+                    <span class="value">45</span>
+                    <span class="unit">μg/m³</span>
+                  </div>
+                  <div class="pollutant-cell">
+                    <span class="name">NO2</span>
+                    <span class="value">18</span>
+                    <span class="unit">μg/m³</span>
+                  </div>
+                  <div class="pollutant-cell">
+                    <span class="name">SO2</span>
+                    <span class="value">5</span>
+                    <span class="unit">μg/m³</span>
+                  </div>
+                  <div class="pollutant-cell">
+                    <span class="name">CO</span>
+                    <span class="value">0.6</span>
+                    <span class="unit">mg/m³</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ 抽屉3：生活指数 ============ -->
+            <section class="weather-drawer">
+              <header class="weather-drawer-header">
+                <div>
+                  <div class="weather-drawer-header-title">生活指数</div>
+                  <div class="weather-drawer-header-subtitle">今日建议</div>
+                </div>
+                <button class="header-icon-btn" title="关闭">
+                  <i data-lucide="x" style="width:18px;height:18px;"></i>
+                </button>
+              </header>
+              <div class="weather-drawer-body">
+                <div class="life-index-list">
+                  <!-- 紫外线指数 -->
+                  <div class="life-index-card">
+                    <div class="life-index-icon" style="background-color:var(--gd-state-warning-surface);color:var(--gd-state-warning);">
+                      <i data-lucide="sun" style="width:20px;height:20px;"></i>
+                    </div>
+                    <div class="life-index-text">
+                      <div class="life-index-title">紫外线指数</div>
+                      <div class="life-index-desc">很强 · 建议涂防晒</div>
+                    </div>
+                    <span class="badge badge-warning">极强</span>
+                  </div>
+
+                  <!-- 穿衣指数 -->
+                  <div class="life-index-card">
+                    <div class="life-index-icon" style="background-color:var(--gd-state-info-surface);color:var(--gd-state-info);">
+                      <i data-lucide="shirt" style="width:20px;height:20px;"></i>
+                    </div>
+                    <div class="life-index-text">
+                      <div class="life-index-title">穿衣指数</div>
+                      <div class="life-index-desc">炎热 · 穿短袖短裤</div>
+                    </div>
+                    <span class="badge badge-info">炎热</span>
+                  </div>
+
+                  <!-- 湿度指数 -->
+                  <div class="life-index-card">
+                    <div class="life-index-icon" style="background-color:var(--gd-state-success-surface);color:var(--gd-state-success);">
+                      <i data-lucide="droplets" style="width:20px;height:20px;"></i>
+                    </div>
+                    <div class="life-index-text">
+                      <div class="life-index-title">湿度指数</div>
+                      <div class="life-index-desc">潮湿 · 注意防潮</div>
+                    </div>
+                    <span class="badge badge-success">潮湿</span>
+                  </div>
+
+                  <!-- 运动指数 -->
+                  <div class="life-index-card">
+                    <div class="life-index-icon" style="background-color:var(--gd-state-error-surface);color:var(--gd-state-error);">
+                      <i data-lucide="activity" style="width:20px;height:20px;"></i>
+                    </div>
+                    <div class="life-index-text">
+                      <div class="life-index-title">运动指数</div>
+                      <div class="life-index-desc">不宜 · 天气闷热</div>
+                    </div>
+                    <span class="badge badge-error">不宜</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+          </div>
+        </div>
+      </main>
+    </div>
+    <script>
+lucide.createIcons();
+const ctx = document.getElementById('tempTrendChart');
+if (ctx) {
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['00','04','08','12','16','20'],
+      datasets: [{ label:'温度', data:[23,24,26,29,28,25], borderColor:'#2962ff', backgroundColor:'rgba(41,98,255,0.1)', fill:true, tension:0.4, pointRadius:0, borderWidth:2 }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#787b86',font:{size:9}}}, y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#787b86',font:{size:9}}} } }
+  });
+}
+</script>
+</body>
+</html>

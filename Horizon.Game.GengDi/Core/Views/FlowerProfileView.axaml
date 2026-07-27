@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
              xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
@@ -12,37 +12,37 @@
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="16" Margin="0 0 0 24">
 
-                <Border Classes="SurfaceCard" Padding="20">
+                <Border Classes="GdCard" Padding="20">
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
-                        <Border Grid.Column="0" Width="64" Height="64" CornerRadius="32" Background="{DynamicResource TextFillColorSecondaryBrush}">
+                        <Border Grid.Column="0" Width="64" Height="64" CornerRadius="32" Background="{DynamicResource GdMutedForegroundBrush}">
                             <TextBlock Text="👤" FontSize="28" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
                             <TextBlock Text="{Binding DisplayName}" FontSize="18" FontWeight="SemiBold"/>
-                            <TextBlock Text="{Binding PhoneNumber, StringFormat=' {0}'}" FontSize="13" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                            <TextBlock Text="{Binding PhoneNumber, StringFormat=' {0}'}" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                         </StackPanel>
                     </Grid>
                 </Border>
 
-                <Border Classes="SurfaceCard" Padding="16">
+                <Border Classes="GdCard" Padding="16">
                     <StackPanel Spacing="12">
-                        <TextBlock Text="订阅状态" Classes="PageEyebrow" />
+                        <TextBlock Text="订阅状态" Classes="GdEyebrow" />
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                             <StackPanel Spacing="6">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="当前等级：" FontSize="13" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                                    <TextBlock Text="当前等级：" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                                     <TextBlock Text="{Binding SubscriptionLevel}" FontSize="13" FontWeight="SemiBold"
                                                Foreground="{Binding SubscriptionLevelColor}"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <TextBlock Text="到期时间：" FontSize="13" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                                    <TextBlock Text="到期时间：" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                                     <TextBlock Text="{Binding ExpiryDate, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="13"/>
                                 </StackPanel>
                             </StackPanel>
-                            <Button Grid.Column="1" Content="升级订阅" Classes="PrimaryAction" Padding="14 6" CornerRadius="8" FontSize="12"
+                            <Button Grid.Column="1" Content="升级订阅" Classes="GdPrimary" Padding="14 6" CornerRadius="{DynamicResource GdRadiusMd}" FontSize="12"
                                     Command="{Binding UpgradeSubscriptionCommand}"/>
                         </Grid>
-                        <Border Classes="SurfaceCard subtle" Padding="12 8" CornerRadius="8">
+                        <Border Classes="GdCard" Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}">
                             <Grid ColumnDefinitions="*,Auto">
                                 <TextBlock Text="自动续费" FontSize="13" VerticalAlignment="Center"/>
                                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsAutoRenew}"
@@ -52,14 +52,14 @@
                     </StackPanel>
                 </Border>
 
-                <Border Classes="SurfaceCard" Padding="16">
+                <Border Classes="GdCard" Padding="16">
                     <StackPanel Spacing="12">
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Text="消息通知设置" Classes="PageEyebrow" />
-                            <Button Grid.Column="1" Content="保存设置" Classes="QuietAction" Padding="12 6" CornerRadius="8" FontSize="12"
+                            <TextBlock Text="消息通知设置" Classes="GdEyebrow" />
+                            <Button Grid.Column="1" Content="保存设置" Classes="GdGhost" Padding="12 6" CornerRadius="{DynamicResource GdRadiusMd}" FontSize="12"
                                     Command="{Binding SaveNotificationSettingsCommand}"/>
                         </Grid>
-                        <Border Classes="SurfaceCard subtle" Padding="12 8" CornerRadius="8">
+                        <Border Classes="GdCard" Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}">
                             <Grid ColumnDefinitions="*,Auto">
                                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                     <TextBlock Text="🔌" FontSize="14"/>
@@ -68,7 +68,7 @@
                                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsWebSocketEnabled}"/>
                             </Grid>
                         </Border>
-                        <Border Classes="SurfaceCard subtle" Padding="12 8" CornerRadius="8">
+                        <Border Classes="GdCard" Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}">
                             <Grid ColumnDefinitions="*,Auto">
                                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                     <TextBlock Text="📩" FontSize="14"/>
@@ -77,7 +77,7 @@
                                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsSmsEnabled}"/>
                             </Grid>
                         </Border>
-                        <Border Classes="SurfaceCard subtle" Padding="12 8" CornerRadius="8">
+                        <Border Classes="GdCard" Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}">
                             <Grid ColumnDefinitions="*,Auto">
                                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                     <TextBlock Text="💬" FontSize="14"/>
@@ -86,7 +86,7 @@
                                 <ToggleSwitch Grid.Column="1" IsChecked="{Binding IsWeChatEnabled}"/>
                             </Grid>
                         </Border>
-                        <Border Classes="SurfaceCard subtle" Padding="12 8" CornerRadius="8">
+                        <Border Classes="GdCard" Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}">
                             <Grid ColumnDefinitions="*,Auto">
                                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                     <TextBlock Text="📧" FontSize="14"/>
@@ -98,23 +98,23 @@
                     </StackPanel>
                 </Border>
 
-                <Border Classes="SurfaceCard" Padding="16">
-                    <Button Content="退出登录" Classes="QuietAction" HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center" Padding="12 8" CornerRadius="8" FontSize="13"
-                            Foreground="{DynamicResource LoginErrorBrush}"/>
+                <Border Classes="GdCard" Padding="16">
+                    <Button Content="退出登录" Classes="GdGhost" HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center" Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}" FontSize="13"
+                            Foreground="{DynamicResource GdErrorBrush}"/>
                 </Border>
 
-                <Border Classes="SurfaceCard" Padding="16">
+                <Border Classes="GdCard" Padding="16">
                     <StackPanel Spacing="12">
-                        <TextBlock Text="身份切换" Classes="PageEyebrow" />
-                        <Border Classes="SurfaceCard subtle" Padding="12 8" CornerRadius="8">
+                        <TextBlock Text="身份切换" Classes="GdEyebrow" />
+                        <Border Classes="GdCard" Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}">
                             <Grid ColumnDefinitions="*,Auto">
                                 <StackPanel Spacing="6">
                                     <TextBlock Text="{Binding MerchantToggleLabel}" FontSize="13"/>
-                                    <TextBlock Text="{Binding MerchantShopName}" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}"
+                                    <TextBlock Text="{Binding MerchantShopName}" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                IsVisible="{Binding IsMerchant}"/>
                                 </StackPanel>
-                                <Button Grid.Column="1" Content="切换" Classes="QuietAction" Padding="12 6" CornerRadius="8" FontSize="12"
+                                <Button Grid.Column="1" Content="切换" Classes="GdGhost" Padding="12 6" CornerRadius="{DynamicResource GdRadiusMd}" FontSize="12"
                                         Command="{Binding ToggleMerchantViewCommand}"/>
                             </Grid>
                         </Border>

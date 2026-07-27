@@ -1,0 +1,209 @@
+{
+	"ID": "0cebec9141fd5d5b970201964b3577ef",
+	"TypeName": "FlaxEngine.Prefab",
+	"EngineBuild": 6913,
+	"Data": [
+	{
+		"ID": "dd0db16a49ae6f0c671a95ace472df12",
+		"TypeName": "FlaxEngine.EmptyActor",
+		"Name": "CharacterRoot "
+	},
+	{
+		"ID": "0dfcdd704cb11ad458b386a5ae98c6cf",
+		"TypeName": "HundunWorld.Game.Rendering.CharacterAppearanceEditor",
+		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
+		"V": {
+	"SkinController": "82a0c3ae4686a03a5c32cea920117d5c",
+	"EyeController": "2df9f7164cb48cfe15761bbda6017db6",
+	"HairController": "a8443c424204348faadef5bed2257625"
+}
+	},
+	{
+		"ID": "2df9f7164cb48cfe15761bbda6017db6",
+		"TypeName": "HundunWorld.Game.Rendering.Materials.EyeMaterialController",
+		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
+		"V": {}
+	},
+	{
+		"ID": "a8443c424204348faadef5bed2257625",
+		"TypeName": "HundunWorld.Game.Rendering.Materials.HairMaterialController",
+		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
+		"V": {
+	"HairMaterialInstance": "56d25eac493c4e27b185e082ee35c688",
+	"DiffuseMap": "23e3274f459006a779b42a8618ce75a6",
+	"RootColor": {
+		"R": 0.009998289,
+		"G": 0.05,
+		"B": 0.014224735,
+		"A": 1.0
+	}
+}
+	},
+	{
+		"ID": "82a0c3ae4686a03a5c32cea920117d5c",
+		"TypeName": "HundunWorld.Game.Rendering.Materials.SkinMaterialController",
+		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
+		"V": {}
+	},
+	{
+		"ID": "555b055648bc9f3ae3df1c8622a7ac8e",
+		"TypeName": "HundunWorld.Game.Rendering.CharacterAppearancePreviewController",
+		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
+		"V": {}
+	},
+	{
+		"ID": "12626f4f4a396d38f67ea2b32a6eee88",
+		"TypeName": "HundunWorld.Game.PlayerController",
+		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
+		"V": {
+	"MoveSpeed": 500.0,
+	"JumpForce": 240.0
+}
+	},
+	{
+		"ID": "9e31e4dd4468decb8c864880a73eb093",
+		"TypeName": "Game.Combat.Skills.AnimationGraphController",
+		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
+		"V": {
+	"AnimatedModel": "b426c8ed4bd917a0200d08936be572e1",
+	"ShowDebug": true
+}
+	},
+	{
+		"ID": "faa03a72407fe36638c6afb11ed4263f",
+		"TypeName": "Game.Combat.Skills.SkillAnimationController",
+		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
+		"V": {
+	"AnimatedModel": "b426c8ed4bd917a0200d08936be572e1",
+	"GraphController": "9e31e4dd4468decb8c864880a73eb093",
+	"AnimationMapping": "583f2c6644fd885286fb1b835233a5e0",
+	"ShowDebug": true
+}
+	},
+	{
+		"ID": "3a24efe64a1210d1d872dfa3b7ee9177",
+		"TypeName": "Game.Combat.Skills.SkillAnimationStateMachine",
+		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
+		"V": {
+	"ShowDebug": true
+}
+	},
+	{
+		"ID": "583f2c6644fd885286fb1b835233a5e0",
+		"TypeName": "Game.Combat.Skills.SkillAnimationMapping",
+		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
+		"V": {
+	"SkillAnimations": [
+		{
+			"SkillId": 0,
+			"SkillName": null,
+			"AnimationName": null,
+			"StartupTime": 0.3,
+			"ActiveTime": 0.2,
+			"RecoveryTime": 0.3,
+			"Loop": false,
+			"PlaybackSpeed": 1.0,
+			"Element": 0,
+			"AnimationType": 0
+		}
+	]
+}
+	},
+	{
+		"ID": "55e5492b4989c22240397d9e738cbda1",
+		"TypeName": "Game.Combat.SkillAnimationSystemInitializer",
+		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
+		"V": {
+	"MappingInstance": "583f2c6644fd885286fb1b835233a5e0"
+}
+	},
+	{
+		"ID": "b975d66c421ebc31b01aae9f660ebfa9",
+		"TypeName": "Game.Combat.SkillAnimationDemo",
+		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
+		"V": {
+	"AnimationController": "faa03a72407fe36638c6afb11ed4263f",
+	"StateMachine": "3a24efe64a1210d1d872dfa3b7ee9177",
+	"AutoPlayDemo": true
+}
+	},
+	{
+		"ID": "c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6",
+		"TypeName": "HundunWorld.Game.Character.CharacterAnimationController",
+		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
+		"V": {
+	"AnimatedModel": "b426c8ed4bd917a0200d08936be572e1"
+}
+	},
+	{
+		"ID": "b31a940b468e9bcf889248b0b5061724",
+		"TypeName": "NarrativePro.Navigation.NarrativeNavigationComponent",
+		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
+		"V": {
+	"DiscoveredPOIs": {}
+}
+	},
+	{
+		"ID": "b0ebc5934eb359e1602c9cbfb56ca74f",
+		"TypeName": "NarrativePro.Camera.NarrativeCameraComponent",
+		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
+		"V": {}
+	},
+	{
+		"ID": "b426c8ed4bd917a0200d08936be572e1",
+		"TypeName": "FlaxEngine.AnimatedModel",
+		"ParentID": "dd0db16a49ae6f0c671a95ace472df12",
+		"Name": "Running",
+		"SkinnedModel": "c7c70820409088e4d96db396a43c410f",
+		"AnimationGraph": "ceded67f4bb2623f40b4dcb493b0d419",
+		"ShadowsMode": 1,
+		"RootMotionTarget": "dd0db16a49ae6f0c671a95ace472df12",
+		"Buffer": {
+			"Entries": [
+				{
+					"Material": "00000000000000000000000000000000",
+					"ShadowsMode": 3,
+					"Visible": true,
+					"ReceiveDecals": true
+				},
+				{
+					"Material": "00000000000000000000000000000000",
+					"ShadowsMode": 3,
+					"Visible": true,
+					"ReceiveDecals": true
+				},
+				{
+					"Material": "00000000000000000000000000000000",
+					"ShadowsMode": 3,
+					"Visible": true,
+					"ReceiveDecals": true
+				},
+				{
+					"Material": "00000000000000000000000000000000",
+					"ShadowsMode": 3,
+					"Visible": true,
+					"ReceiveDecals": true
+				},
+				{
+					"Material": "00000000000000000000000000000000",
+					"ShadowsMode": 3,
+					"Visible": true,
+					"ReceiveDecals": true
+				},
+				{
+					"Material": "00000000000000000000000000000000",
+					"ShadowsMode": 3,
+					"Visible": true,
+					"ReceiveDecals": true
+				},
+				{
+					"Material": "00000000000000000000000000000000",
+					"ShadowsMode": 3,
+					"Visible": true,
+					"ReceiveDecals": true
+				}
+			]
+		}
+	}
+]
+}

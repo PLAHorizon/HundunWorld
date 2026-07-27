@@ -10,18 +10,19 @@
         <converters:HexToBrushConverter x:Key="HexToBrushConverter" />
     </UserControl.Resources>
 
-    <Border Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-            BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+    <Border Background="{DynamicResource GdPopoverBrush}"
+            BorderBrush="{DynamicResource GdBorderBrush}"
             BorderThickness="1 0 0 0"
             Width="420" MaxWidth="500"
             HorizontalAlignment="Right">
         <Grid RowDefinitions="Auto,*">
-            <Border Grid.Row="0" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0 0 0 1" Padding="20 16">
+            <Border Grid.Row="0" BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="0 0 0 1" Padding="20 16">
                 <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <TextBlock Text="生活指数" FontSize="16" FontWeight="SemiBold" />
+                        <TextBlock Text="生活指数" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource GdForegroundBrush}" />
                     </StackPanel>
-                    <Button Grid.Column="1" Content="✕" Classes="QuietAction" Padding="8 4" FontSize="14"
+                    <Button Grid.Column="1" Content="✕" Classes="GdGhost" Padding="8 4" FontSize="14"
                             Command="{Binding CloseLifeIndexDetailCommand}" />
                 </Grid>
             </Border>
@@ -37,16 +38,16 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="models:LifeIndexItem">
-                                <Border Background="#12FFFFFF" CornerRadius="12" Padding="12 10" Margin="4">
+                                <Border Background="{DynamicResource GdMutedBrush}" CornerRadius="{DynamicResource GdRadiusLg}" Padding="12 10" Margin="4">
                                     <StackPanel Spacing="4" HorizontalAlignment="Center">
                                         <TextBlock Text="{Binding Icon}" FontSize="18" HorizontalAlignment="Center" />
-                                        <TextBlock Text="{Binding Name}" FontSize="10" Foreground="#FFFFFF88" HorizontalAlignment="Center" />
-                                        <Border Background="#18FFFFFF" CornerRadius="6" Padding="6 3" HorizontalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}" FontSize="10" Foreground="{DynamicResource GdForegroundMutedBrush}" HorizontalAlignment="Center" />
+                                        <Border Background="{DynamicResource GdSecondaryBrush}" CornerRadius="{DynamicResource GdRadiusSm}" Padding="6 3" HorizontalAlignment="Center">
                                             <TextBlock Text="{Binding Level}" FontSize="12" FontWeight="SemiBold"
                                                        Foreground="{Binding AccentColor, Converter={StaticResource HexToBrushConverter}}"
                                                        HorizontalAlignment="Center" />
                                         </Border>
-                                        <TextBlock Text="{Binding Description}" FontSize="9" Foreground="#FFFFFF77"
+                                        <TextBlock Text="{Binding Description}" FontSize="9" Foreground="{DynamicResource GdForegroundMutedBrush}"
                                                    TextWrapping="Wrap" MaxLines="2"
                                                    HorizontalAlignment="Center" TextAlignment="Center" />
                                     </StackPanel>

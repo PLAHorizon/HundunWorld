@@ -1,0 +1,218 @@
+{
+  "data": [
+    {
+      "id": "page-components",
+      "title": "组件展示",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785054353000,
+      "canvasData": {
+        "x": 0,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/components.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-home-preview",
+      "title": "主界面预览",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785056400000,
+      "canvasData": {
+        "x": 620,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/home-preview.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-overlays-dialogs",
+      "title": "覆盖层·弹窗与Toast",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785058000000,
+      "canvasData": {
+        "x": 1240,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/overlays-dialogs.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-overlays-drawer-weather",
+      "title": "覆盖层·天气类抽屉",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785058100000,
+      "canvasData": {
+        "x": 1860,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/overlays-drawer-weather.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-overlays-drawer-content",
+      "title": "覆盖层·内容类抽屉",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785058200000,
+      "canvasData": {
+        "x": 2480,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/overlays-drawer-content.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-chrome-fixedbar",
+      "title": "固定栏与物流控件",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785058300000,
+      "canvasData": {
+        "x": 3100,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/chrome-fixedbar.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-chrome-specialty",
+      "title": "天气地图与特殊控件",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785058400000,
+      "canvasData": {
+        "x": 3720,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/chrome-specialty.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-flower-market-data",
+      "title": "花卉行情数据",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785058500000,
+      "canvasData": {
+        "x": 4340,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/flower-market-data.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-flower-trade-flow",
+      "title": "花卉交易流程",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785058600000,
+      "canvasData": {
+        "x": 4960,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/flower-trade-flow.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-flower-manage",
+      "title": "花卉管理分析",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785058700000,
+      "canvasData": {
+        "x": 5580,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/flower-manage.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-music-module",
+      "title": "音乐模块",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785058800000,
+      "canvasData": {
+        "x": 6200,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/music-module.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-main-pages-content",
+      "title": "主页内容模块",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785058900000,
+      "canvasData": {
+        "x": 6820,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/main-pages-content.html",
+        "interactions": []
+      }
+    },
+    {
+      "id": "page-main-pages-auth",
+      "title": "认证模块",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785059000000,
+      "canvasData": {
+        "x": 7440,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/main-pages-auth.html",
+        "interactions": []
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "projectName": "耕地 UI 重构",
+    "designLibrary": null
+  }
+}

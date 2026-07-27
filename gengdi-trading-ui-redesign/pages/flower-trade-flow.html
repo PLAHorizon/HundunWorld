@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>花卉交易流程 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   参照 quant-trading-ui 风格重构，零色值偏差
+   Dark mode is the primary experience (html.dark)
+   现状骨架：水平顶栏 + 副导航（匹配实际主界面）
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #ff9800;
+  --gd-state-warning-surface: rgba(255, 152, 0, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #ef5350;
+  --gd-state-error-surface: rgba(239, 83, 80, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific (花卉价格波动涨跌色) ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #ef5350;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(239, 83, 80, 0.12);
+
+  /* ---------- Light Mode (default :root) ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode (html.dark — primary experience) ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <style id="critical-layout">
+      /* ========== 水平顶栏 + 副导航框架（匹配实际主界面） ========== */
+      .app-root { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background-color: var(--gd-background); color: var(--gd-foreground); }
+
+      /* ---------- 顶栏（主导航） ---------- */
+      .app-topbar { height: 56px; flex-shrink: 0; display: flex; align-items: center; gap: 24px; padding: 0 20px; background-color: var(--gd-card); border-bottom: 1px solid var(--gd-border); }
+      .topbar-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+      .topbar-main-nav { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+      .topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+      .main-nav-item { position: relative; display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--gd-radius-md); color: var(--gd-muted-foreground); font-size: 14px; font-weight: 500; cursor: pointer; transition: color 0.15s, background-color 0.15s; text-decoration: none; white-space: nowrap; }
+      .main-nav-item:hover { color: var(--gd-foreground); background-color: var(--gd-muted); }
+      .main-nav-item[data-active="true"] { color: var(--gd-primary); background-color: var(--gd-state-info-surface); }
+      .main-nav-item[data-active="true"]::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: -18px; height: 2px; background-color: var(--gd-primary); border-radius: 1px; }
+      .main-nav-icon { width: 16px; height: 16px; flex-shrink: 0; }
+
+      /* ---------- 副导航 ---------- */
+      .app-subnavbar { height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 2px; padding: 0 20px; background-color: var(--gd-card); border-bottom: 1px solid var(--gd-border); overflow-x: auto; overflow-y: hidden; }
+      .subnav-item { position: relative; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--gd-radius-sm); color: var(--gd-muted-foreground); font-size: 13px; font-weight: 500; cursor: pointer; transition: color 0.15s, background-color 0.15s; text-decoration: none; white-space: nowrap; flex-shrink: 0; }
+      .subnav-item:hover { color: var(--gd-foreground); background-color: var(--gd-muted); }
+      .subnav-item[data-active="true"] { color: var(--gd-primary); background-color: var(--gd-state-info-surface); }
+      .subnav-icon { width: 14px; height: 14px; flex-shrink: 0; }
+      .subnav-badge { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background-color: var(--gd-state-error); color: #fff; font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+      .subnav-divider { width: 1px; height: 16px; background-color: var(--gd-border); flex-shrink: 0; margin: 0 4px; }
+
+      /* ---------- 内容区 ---------- */
+      .app-content { flex: 1; overflow-y: auto; overflow-x: hidden; }
+
+      /* ---------- 通用组件 ---------- */
+      .metric-card { background-color: var(--gd-card); border: 1px solid var(--gd-border); border-radius: var(--gd-radius-lg); padding: 20px; }
+      .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      .data-table th { text-align: left; padding: 10px 12px; font-weight: 500; color: var(--gd-muted-foreground); border-bottom: 1px solid var(--gd-border); white-space: nowrap; }
+      .data-table td { padding: 10px 12px; border-bottom: 1px solid var(--gd-border); }
+      .data-table tbody tr:hover { background-color: var(--gd-muted); }
+      .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--gd-radius-sm); font-size: 12px; font-weight: 500; }
+      .badge-success { background-color: var(--gd-state-success-surface); color: var(--gd-state-success); }
+      .badge-warning { background-color: var(--gd-state-warning-surface); color: var(--gd-state-warning); }
+      .badge-error { background-color: var(--gd-state-error-surface); color: var(--gd-state-error); }
+      .badge-info { background-color: var(--gd-state-info-surface); color: var(--gd-state-info); }
+      .num { font-family: var(--gd-font-mono); font-variant-numeric: tabular-nums; }
+      .header-icon-btn { width: 36px; height: 36px; border-radius: var(--gd-radius-md); display: flex; align-items: center; justify-content: center; color: var(--gd-muted-foreground); cursor: pointer; transition: background-color 0.15s, color 0.15s; border: none; background: transparent; position: relative; }
+      .header-icon-btn:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+
+      /* ---------- 窗口控制按钮 ---------- */
+      .win-btn { width: 36px; height: 36px; border-radius: var(--gd-radius-sm); display: flex; align-items: center; justify-content: center; color: var(--gd-muted-foreground); cursor: pointer; transition: background-color 0.15s, color 0.15s; border: none; background: transparent; }
+      .win-btn:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+      .win-btn-close:hover { background-color: var(--gd-state-error); color: #fff; }
+
+      /* ---------- 花卉交易流程页面专用 ---------- */
+      .gd-section-title { border-left: 3px solid var(--gd-primary); padding-left: 10px; font-size: 14px; font-weight: 600; margin-bottom: 16px; color: var(--gd-foreground); }
+      .gd-btn-ghost {
+        background: transparent;
+        color: var(--gd-muted-foreground);
+        padding: 8px 16px;
+        border-radius: var(--gd-radius-md);
+        border: 1px solid var(--gd-border);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.15s, color 0.15s;
+        font-family: var(--gd-font-sans);
+      }
+      .gd-btn-ghost:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+      .gd-btn-primary {
+        background-color: var(--gd-primary);
+        color: var(--gd-primary-foreground);
+        padding: 8px 16px;
+        border-radius: var(--gd-radius-md);
+        border: none;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.15s;
+        font-family: var(--gd-font-sans);
+      }
+      .gd-btn-primary:hover { background-color: var(--gd-brand-600); }
+
+      .gd-input {
+        background-color: var(--gd-muted);
+        border: 1px solid var(--gd-border);
+        border-radius: var(--gd-radius-md);
+        padding: 8px 12px;
+        color: var(--gd-foreground);
+        font-size: 13px;
+        font-family: var(--gd-font-sans);
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .gd-input:focus { border-color: var(--gd-primary); }
+      .gd-select {
+        background-color: var(--gd-muted);
+        border: 1px solid var(--gd-border);
+        border-radius: var(--gd-radius-md);
+        padding: 8px 12px;
+        color: var(--gd-foreground);
+        font-size: 13px;
+        font-family: var(--gd-font-sans);
+        outline: none;
+        cursor: pointer;
+      }
+      .gd-pill {
+        padding: 6px 14px;
+        border-radius: var(--gd-radius-full);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.15s, color 0.15s;
+        font-family: var(--gd-font-sans);
+        border: 1px solid transparent;
+        white-space: nowrap;
+      }
+      .gd-pill-active {
+        background-color: var(--gd-primary);
+        color: var(--gd-primary-foreground);
+      }
+      .gd-pill-ghost {
+        background: transparent;
+        color: var(--gd-muted-foreground);
+        border: 1px solid var(--gd-border);
+      }
+      .gd-pill-ghost:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+
+      .gd-qty-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: var(--gd-radius-full);
+        border: 1px solid var(--gd-border);
+        background: transparent;
+        color: var(--gd-muted-foreground);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        transition: background-color 0.15s, color 0.15s;
+      }
+      .gd-qty-btn:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+      .gd-qty-value {
+        min-width: 36px;
+        text-align: center;
+        font-family: var(--gd-font-mono);
+        font-variant-numeric: tabular-nums;
+        font-size: 13px;
+        color: var(--gd-foreground);
+      }
+    </style>
+    <div class="app-root">
+      <!-- ================ 顶栏（主导航） ================ -->
+      <header class="app-topbar">
+        <div class="topbar-brand">
+          <div style="width:32px;height:32px;border-radius:var(--gd-radius-md);background:linear-gradient(135deg,var(--gd-brand-500),var(--gd-brand-700));display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="sprout" style="width:18px;height:18px;color:#fff;"></i>
+          </div>
+          <span style="font-size:15px;font-weight:600;color:var(--gd-foreground);">耕地</span>
+        </div>
+        <nav class="topbar-main-nav">
+          <a class="main-nav-item" data-dom-id="nav-games" data-main-nav-key="games" href="#">
+            <i data-lucide="gamepad-2" class="main-nav-icon"></i>
+            <span>游戏</span>
+          </a>
+          <a class="main-nav-item" data-dom-id="nav-news" data-main-nav-key="news" href="#">
+            <i data-lucide="newspaper" class="main-nav-icon"></i>
+            <span>新闻</span>
+          </a>
+          <a class="main-nav-item" data-dom-id="nav-flower-market" data-main-nav-key="flower-market" data-active="true" href="#">
+            <i data-lucide="flower-2" class="main-nav-icon"></i>
+            <span>花卉市场</span>
+          </a>
+          <a class="main-nav-item" data-dom-id="nav-music" data-main-nav-key="music" href="#">
+            <i data-lucide="music" class="main-nav-icon"></i>
+            <span>音乐</span>
+          </a>
+          <a class="main-nav-item" data-dom-id="nav-more" data-main-nav-key="more" href="#">
+            <i data-lucide="more-horizontal" class="main-nav-icon"></i>
+            <span>更多</span>
+          </a>
+        </nav>
+        <div class="topbar-actions">
+          <button class="header-icon-btn" title="通知" style="position:relative;">
+            <i data-lucide="bell" style="width:18px;height:18px;"></i>
+            <span style="position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background-color:var(--gd-state-error);border:2px solid var(--gd-card);"></span>
+          </button>
+          <button class="header-icon-btn" title="主题切换">
+            <i data-lucide="moon" style="width:18px;height:18px;"></i>
+          </button>
+          <div style="width:1px;height:24px;background-color:var(--gd-border);margin:0 4px;"></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;background-color:var(--gd-muted);border-radius:var(--gd-radius-full);cursor:pointer;">
+            <div style="width:26px;height:26px;border-radius:50%;background-color:var(--gd-brand-500);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;">龙</div>
+            <div style="display:flex;flex-direction:column;line-height:1.2;">
+              <span style="font-size:12px;color:var(--gd-foreground);font-weight:500;">龙</span>
+              <span style="font-size:10px;color:var(--gd-muted-foreground);font-family:var(--gd-font-mono);">1010776</span>
+            </div>
+          </div>
+          <div style="width:1px;height:24px;background-color:var(--gd-border);margin:0 4px;"></div>
+          <button class="win-btn" title="最小化">
+            <i data-lucide="minus" style="width:16px;height:16px;"></i>
+          </button>
+          <button class="win-btn" title="最大化">
+            <i data-lucide="square" style="width:14px;height:14px;"></i>
+          </button>
+          <button class="win-btn win-btn-close" title="关闭">
+            <i data-lucide="x" style="width:16px;height:16px;"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- ================ 副导航 ================ -->
+      <nav class="app-subnavbar no-scrollbar">
+        <a class="subnav-item" data-dom-id="subnav-overview" data-sub-nav-key="overview" href="#">
+          <i data-lucide="layout-dashboard" class="subnav-icon"></i>
+          <span>总览</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-all-games" data-sub-nav-key="all-games" href="#">
+          <i data-lucide="library" class="subnav-icon"></i>
+          <span>全部游戏</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-download" data-sub-nav-key="download" href="#">
+          <i data-lucide="download" class="subnav-icon"></i>
+          <span>下载</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-settings" data-sub-nav-key="settings" href="#">
+          <i data-lucide="settings" class="subnav-icon"></i>
+          <span>设置</span>
+        </a>
+        <div class="subnav-divider"></div>
+        <a class="subnav-item" data-dom-id="subnav-discover" data-sub-nav-key="discover" href="#">
+          <i data-lucide="compass" class="subnav-icon"></i>
+          <span>发现</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-playlist" data-sub-nav-key="playlist" href="#">
+          <i data-lucide="list-music" class="subnav-icon"></i>
+          <span>歌单</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-search" data-sub-nav-key="search" href="#">
+          <i data-lucide="search" class="subnav-icon"></i>
+          <span>搜索</span>
+        </a>
+        <div class="subnav-divider"></div>
+        <a class="subnav-item" data-dom-id="subnav-dashboard" data-sub-nav-key="dashboard" href="#">
+          <i data-lucide="gauge" class="subnav-icon"></i>
+          <span>行情仪表盘</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-market" data-sub-nav-key="market" data-active="true" href="#">
+          <i data-lucide="shopping-cart" class="subnav-icon"></i>
+          <span>市场</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-planting" data-sub-nav-key="planting" href="#">
+          <i data-lucide="sprout" class="subnav-icon"></i>
+          <span>种植建议</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-cart" data-sub-nav-key="cart" data-active="true" href="#">
+          <i data-lucide="shopping-bag" class="subnav-icon"></i>
+          <span>购物车</span>
+          <span class="subnav-badge">3</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-orders" data-sub-nav-key="orders" data-active="true" href="#">
+          <i data-lucide="file-text" class="subnav-icon"></i>
+          <span>订单</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-alerts" data-sub-nav-key="alerts" href="#">
+          <i data-lucide="bell-ring" class="subnav-icon"></i>
+          <span>预警</span>
+          <span class="subnav-badge">5</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-ai" data-sub-nav-key="ai" href="#">
+          <i data-lucide="brain" class="subnav-icon"></i>
+          <span>AI助手</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-datascreen" data-sub-nav-key="datascreen" href="#">
+          <i data-lucide="bar-chart-3" class="subnav-icon"></i>
+          <span>数据大屏</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-merchants" data-sub-nav-key="merchants" href="#">
+          <i data-lucide="store" class="subnav-icon"></i>
+          <span>商家</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-address" data-sub-nav-key="address" data-active="true" href="#">
+          <i data-lucide="map-pin" class="subnav-icon"></i>
+          <span>收货地址</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-profile" data-sub-nav-key="profile" href="#">
+          <i data-lucide="user" class="subnav-icon"></i>
+          <span>个人中心</span>
+        </a>
+      </nav>
+
+      <!-- ================ 内容区 ================ -->
+      <main class="app-content">
+        <div style="padding:24px;display:flex;flex-direction:column;gap:32px;">
+
+          <!-- ============ Section 1: 花卉商城 ============ -->
+          <section>
+            <h2 class="gd-section-title">花卉商城</h2>
+
+            <!-- 搜索栏 -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+              <div style="display:flex;align-items:center;gap:6px;background-color:var(--gd-muted);border:1px solid var(--gd-border);border-radius:var(--gd-radius-md);padding:0 10px;flex:1;min-width:240px;">
+                <i data-lucide="search" style="width:16px;height:16px;color:var(--gd-muted-foreground);"></i>
+                <input type="text" class="gd-input" placeholder="搜索花卉品种、商户、产地..." style="background:transparent;border:none;flex:1;padding:8px 4px;">
+              </div>
+              <button class="gd-btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
+                <i data-lucide="search" style="width:14px;height:14px;"></i>
+                <span>搜索</span>
+              </button>
+              <select class="gd-select">
+                <option>综合排序</option>
+                <option>价格升序</option>
+                <option>价格降序</option>
+                <option>销量优先</option>
+                <option>新品上架</option>
+              </select>
+              <button class="gd-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;">
+                <i data-lucide="package" style="width:14px;height:14px;"></i>
+                <span>批量采购</span>
+              </button>
+            </div>
+
+            <!-- 分类筛选标签 -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+              <span class="gd-pill gd-pill-active">全部</span>
+              <span class="gd-pill gd-pill-ghost">红玫瑰</span>
+              <span class="gd-pill gd-pill-ghost">百合</span>
+              <span class="gd-pill gd-pill-ghost">康乃馨</span>
+              <span class="gd-pill gd-pill-ghost">混合花束</span>
+              <span class="gd-pill gd-pill-ghost">红绿搭配</span>
+            </div>
+
+            <!-- 商品网格 -->
+            <div style="display:grid;grid-template-columns:repeat(3,300px);gap:16px;">
+
+              <!-- 商品卡 1 -->
+              <div class="metric-card" style="width:300px;padding:0;overflow:hidden;">
+                <div style="position:relative;height:180px;background:linear-gradient(135deg,var(--gd-brand-600),var(--gd-brand-400));display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:56px;line-height:1;">🌸</span>
+                  <span style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.5);color:var(--gd-primary-foreground);font-size:11px;padding:3px 8px;border-radius:var(--gd-radius-sm);display:inline-flex;align-items:center;gap:4px;">
+                    红玫瑰 <i data-lucide="trending-up" style="width:11px;height:11px;"></i>
+                  </span>
+                </div>
+                <div style="padding:14px;">
+                  <div style="font-size:15px;font-weight:600;color:var(--gd-foreground);margin-bottom:4px;">高原红玫瑰（20支/束）</div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);margin-bottom:10px;">云端花田直供</div>
+                  <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:12px;">
+                    <span class="num" style="font-size:20px;font-weight:600;color:var(--gd-state-error);">¥58.00</span>
+                    <span class="num" style="font-size:11px;color:var(--gd-muted-foreground);text-decoration:line-through;">¥68.00</span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <button class="gd-btn-ghost" style="padding:6px 12px;font-size:12px;display:inline-flex;align-items:center;gap:4px;">
+                      <i data-lucide="shopping-bag" style="width:13px;height:13px;"></i>
+                      <span>加入购物车</span>
+                    </button>
+                    <span class="num" style="font-size:10px;color:var(--gd-muted-foreground);">库存 1,280</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 商品卡 2 -->
+              <div class="metric-card" style="width:300px;padding:0;overflow:hidden;">
+                <div style="position:relative;height:180px;background:linear-gradient(135deg,var(--gd-brand-600),var(--gd-brand-400));display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:56px;line-height:1;">🌸</span>
+                  <span style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.5);color:var(--gd-primary-foreground);font-size:11px;padding:3px 8px;border-radius:var(--gd-radius-sm);display:inline-flex;align-items:center;gap:4px;">
+                    百合 <i data-lucide="trending-down" style="width:11px;height:11px;"></i>
+                  </span>
+                </div>
+                <div style="padding:14px;">
+                  <div style="font-size:15px;font-weight:600;color:var(--gd-foreground);margin-bottom:4px;">雪山白百合（10支/束）</div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);margin-bottom:10px;">春田花卉农场</div>
+                  <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:12px;">
+                    <span class="num" style="font-size:20px;font-weight:600;color:var(--gd-state-error);">¥42.50</span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <button class="gd-btn-ghost" style="padding:6px 12px;font-size:12px;display:inline-flex;align-items:center;gap:4px;">
+                      <i data-lucide="shopping-bag" style="width:13px;height:13px;"></i>
+                      <span>加入购物车</span>
+                    </button>
+                    <span class="num" style="font-size:10px;color:var(--gd-muted-foreground);">库存 860</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 商品卡 3 -->
+              <div class="metric-card" style="width:300px;padding:0;overflow:hidden;">
+                <div style="position:relative;height:180px;background:linear-gradient(135deg,var(--gd-brand-600),var(--gd-brand-400));display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:56px;line-height:1;">🌸</span>
+                  <span style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.5);color:var(--gd-primary-foreground);font-size:11px;padding:3px 8px;border-radius:var(--gd-radius-sm);display:inline-flex;align-items:center;gap:4px;">
+                    混合花束 <i data-lucide="trending-up" style="width:11px;height:11px;"></i>
+                  </span>
+                </div>
+                <div style="padding:14px;">
+                  <div style="font-size:15px;font-weight:600;color:var(--gd-foreground);margin-bottom:4px;">晨曦混合花束（含康乃馨）</div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);margin-bottom:10px;">花语工坊</div>
+                  <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:12px;">
+                    <span class="num" style="font-size:20px;font-weight:600;color:var(--gd-state-error);">¥88.00</span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <button class="gd-btn-ghost" style="padding:6px 12px;font-size:12px;display:inline-flex;align-items:center;gap:4px;">
+                      <i data-lucide="shopping-bag" style="width:13px;height:13px;"></i>
+                      <span>加入购物车</span>
+                    </button>
+                    <span class="num" style="font-size:10px;color:var(--gd-muted-foreground);">库存 320</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- ============ Section 2: 商品详情 ============ -->
+          <section>
+            <h2 class="gd-section-title">商品详情</h2>
+
+            <div style="display:flex;gap:24px;align-items:flex-start;">
+
+              <!-- 左侧大图区 -->
+              <div style="width:400px;height:400px;flex-shrink:0;background:linear-gradient(135deg,var(--gd-brand-600),var(--gd-brand-400));border-radius:var(--gd-radius-lg);display:flex;align-items:center;justify-content:center;position:relative;">
+                <span style="font-size:80px;line-height:1;">🌸</span>
+                <span style="position:absolute;top:14px;right:14px;background:rgba(0,0,0,0.5);color:var(--gd-primary-foreground);font-size:12px;padding:4px 10px;border-radius:var(--gd-radius-sm);">混合花束</span>
+              </div>
+
+              <!-- 右侧详情区 -->
+              <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                  <span style="font-size:22px;font-weight:600;color:var(--gd-foreground);">晨曦混合花束（含康乃馨）</span>
+                  <span class="badge badge-error">预售</span>
+                </div>
+                <div style="font-size:12px;color:var(--gd-muted-foreground);margin-bottom:14px;display:inline-flex;align-items:center;gap:4px;">
+                  <i data-lucide="store" style="width:13px;height:13px;"></i>
+                  <span>花语工坊 · 信誉等级 A+</span>
+                </div>
+
+                <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;">
+                  <span class="num" style="font-size:28px;font-weight:700;color:var(--gd-state-error);">¥88.00</span>
+                  <span class="num" style="font-size:13px;color:var(--gd-muted-foreground);text-decoration:line-through;">¥108.00</span>
+                </div>
+                <div style="font-size:12px;color:var(--gd-state-info);margin-bottom:14px;display:inline-flex;align-items:center;gap:4px;">
+                  <i data-lucide="layers" style="width:13px;height:13px;"></i>
+                  <span>阶梯价：满 10 束 ¥82.00 / 束，满 50 束 ¥76.00 / 束</span>
+                </div>
+                <div style="font-size:12px;color:var(--gd-muted-foreground);margin-bottom:18px;">
+                  库存 <span class="num" style="color:var(--gd-foreground);">320</span> 束 · 已售 <span class="num" style="color:var(--gd-foreground);">1,052</span> 束 · 限购 <span class="num" style="color:var(--gd-foreground);">50</span> 束/人
+                </div>
+
+                <table class="data-table" style="margin-bottom:20px;">
+                  <tbody>
+                    <tr><th style="width:90px;">产地</th><td>云南昆明斗南</td></tr>
+                    <tr><th>等级</th><td>A 级（花苞饱满，无病虫害）</td></tr>
+                    <tr><th>花期</th><td>7–10 天（正确水养）</td></tr>
+                    <tr><th>包装</th><td>瓦楞纸箱 + 冰袋保鲜 + 防压填充</td></tr>
+                  </tbody>
+                </table>
+
+                <div style="display:flex;gap:10px;">
+                  <button class="gd-btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
+                    <i data-lucide="shopping-bag" style="width:14px;height:14px;"></i>
+                    <span>加入购物车</span>
+                  </button>
+                  <button class="gd-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;">
+                    <i data-lucide="zap" style="width:14px;height:14px;"></i>
+                    <span>立即购买</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 价格走势图 -->
+            <div class="metric-card" style="height:200px;margin-top:20px;padding:16px 20px;display:flex;flex-direction:column;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <span style="font-size:13px;font-weight:600;color:var(--gd-foreground);">近 30 日价格走势</span>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <span style="font-size:11px;color:var(--gd-muted-foreground);display:inline-flex;align-items:center;gap:4px;">
+                    <span style="width:8px;height:8px;border-radius:50%;background-color:var(--gd-state-info);"></span>成交均价
+                  </span>
+                  <span class="num" style="font-size:12px;color:var(--gd-state-error);">-8.3%</span>
+                </div>
+              </div>
+              <div style="flex:1;position:relative;">
+                <canvas id="priceTrendChart"></canvas>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============ Section 3: 购物车 ============ -->
+          <section>
+            <h2 style="font-size:24px;font-weight:700;color:var(--gd-foreground);margin-bottom:16px;display:inline-flex;align-items:center;gap:8px;">🛒 购物车</h2>
+
+            <div style="display:flex;flex-direction:column;gap:12px;">
+
+              <!-- 购物车项 1 -->
+              <div class="metric-card" style="display:flex;align-items:center;gap:16px;padding:16px 20px;">
+                <div style="width:56px;height:56px;border-radius:var(--gd-radius-md);background:linear-gradient(135deg,var(--gd-brand-600),var(--gd-brand-400));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <span style="font-size:28px;line-height:1;">🌸</span>
+                </div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:15px;font-weight:600;color:var(--gd-foreground);margin-bottom:4px;">高原红玫瑰（20支/束）</div>
+                  <div style="font-size:12px;color:var(--gd-muted-foreground);margin-bottom:6px;">云端花田直供 · 库存 1,280</div>
+                  <div style="display:flex;align-items:baseline;gap:6px;">
+                    <span class="num" style="font-size:15px;font-weight:600;color:var(--gd-state-error);">¥58.00</span>
+                    <span style="font-size:12px;color:var(--gd-muted-foreground);">×</span>
+                    <span class="num" style="font-size:13px;color:var(--gd-foreground);">2</span>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <button class="gd-qty-btn">−</button>
+                  <span class="gd-qty-value">2</span>
+                  <button class="gd-qty-btn">+</button>
+                </div>
+                <button class="gd-btn-ghost" style="padding:6px 10px;font-size:12px;display:inline-flex;align-items:center;gap:4px;">
+                  <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                  <span>删除</span>
+                </button>
+              </div>
+
+              <!-- 购物车项 2 -->
+              <div class="metric-card" style="display:flex;align-items:center;gap:16px;padding:16px 20px;">
+                <div style="width:56px;height:56px;border-radius:var(--gd-radius-md);background:linear-gradient(135deg,var(--gd-brand-600),var(--gd-brand-400));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <span style="font-size:28px;line-height:1;">🌸</span>
+                </div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:15px;font-weight:600;color:var(--gd-foreground);margin-bottom:4px;">雪山白百合（10支/束）</div>
+                  <div style="font-size:12px;color:var(--gd-muted-foreground);margin-bottom:6px;">春田花卉农场 · 库存 860</div>
+                  <div style="display:flex;align-items:baseline;gap:6px;">
+                    <span class="num" style="font-size:15px;font-weight:600;color:var(--gd-state-error);">¥42.50</span>
+                    <span style="font-size:12px;color:var(--gd-muted-foreground);">×</span>
+                    <span class="num" style="font-size:13px;color:var(--gd-foreground);">1</span>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <button class="gd-qty-btn">−</button>
+                  <span class="gd-qty-value">1</span>
+                  <button class="gd-qty-btn">+</button>
+                </div>
+                <button class="gd-btn-ghost" style="padding:6px 10px;font-size:12px;display:inline-flex;align-items:center;gap:4px;">
+                  <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                  <span>删除</span>
+                </button>
+              </div>
+
+              <!-- 购物车项 3 -->
+              <div class="metric-card" style="display:flex;align-items:center;gap:16px;padding:16px 20px;">
+                <div style="width:56px;height:56px;border-radius:var(--gd-radius-md);background:linear-gradient(135deg,var(--gd-brand-600),var(--gd-brand-400));display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <span style="font-size:28px;line-height:1;">🌸</span>
+                </div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-size:15px;font-weight:600;color:var(--gd-foreground);margin-bottom:4px;">晨曦混合花束（含康乃馨）</div>
+                  <div style="font-size:12px;color:var(--gd-muted-foreground);margin-bottom:6px;">花语工坊 · 库存 320</div>
+                  <div style="display:flex;align-items:baseline;gap:6px;">
+                    <span class="num" style="font-size:15px;font-weight:600;color:var(--gd-state-error);">¥88.00</span>
+                    <span style="font-size:12px;color:var(--gd-muted-foreground);">×</span>
+                    <span class="num" style="font-size:13px;color:var(--gd-foreground);">3</span>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <button class="gd-qty-btn">−</button>
+                  <span class="gd-qty-value">3</span>
+                  <button class="gd-qty-btn">+</button>
+                </div>
+                <button class="gd-btn-ghost" style="padding:6px 10px;font-size:12px;display:inline-flex;align-items:center;gap:4px;">
+                  <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                  <span>删除</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 底部结算栏 -->
+            <div class="metric-card" style="margin-top:16px;display:flex;align-items:center;justify-content:space-between;padding:16px 20px;">
+              <div style="display:flex;align-items:center;gap:18px;">
+                <span style="font-size:13px;color:var(--gd-muted-foreground);">共 <span class="num" style="color:var(--gd-foreground);font-weight:600;">6</span> 件</span>
+                <span style="font-size:13px;color:var(--gd-muted-foreground);">商品合计：</span>
+                <span class="num" style="font-size:16px;font-weight:700;color:var(--gd-state-error);">¥446.50</span>
+              </div>
+              <div style="display:flex;gap:10px;">
+                <button class="gd-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;">
+                  <i data-lucide="trash" style="width:14px;height:14px;"></i>
+                  <span>清空</span>
+                </button>
+                <button class="gd-btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
+                  <i data-lucide="credit-card" style="width:14px;height:14px;"></i>
+                  <span>去结算</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============ Section 4: 订单中心 ============ -->
+          <section>
+            <h2 class="gd-section-title">订单中心</h2>
+
+            <!-- 订单状态筛选 -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+              <span class="gd-pill gd-pill-active">全部</span>
+              <span class="gd-pill gd-pill-ghost">待支付</span>
+              <span class="gd-pill gd-pill-ghost">已支付</span>
+              <span class="gd-pill gd-pill-ghost">已发货</span>
+              <span class="gd-pill gd-pill-ghost">已签收</span>
+              <span class="gd-pill gd-pill-ghost">已完成</span>
+              <span class="gd-pill gd-pill-ghost">已取消</span>
+              <span class="gd-pill gd-pill-ghost">退款中</span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:14px;">
+
+              <!-- 订单卡 1 -->
+              <div class="metric-card" style="padding:18px 20px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span class="num" style="font-size:13px;font-weight:600;color:var(--gd-foreground);">ORD20260726001</span>
+                    <span class="badge badge-warning">待支付</span>
+                  </div>
+                  <span style="font-size:11px;color:var(--gd-muted-foreground);" class="num">2026-07-26 09:24:18</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+                    <span style="font-size:18px;">🌸</span>
+                    <span style="flex:1;color:var(--gd-foreground);">高原红玫瑰（20支/束）</span>
+                    <span style="color:var(--gd-muted-foreground);" class="num">× 2</span>
+                    <span class="num" style="color:var(--gd-state-error);font-weight:600;min-width:80px;text-align:right;">¥116.00</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+                    <span style="font-size:18px;">🌸</span>
+                    <span style="flex:1;color:var(--gd-foreground);">晨曦混合花束（含康乃馨）</span>
+                    <span style="color:var(--gd-muted-foreground);" class="num">× 1</span>
+                    <span class="num" style="color:var(--gd-state-error);font-weight:600;min-width:80px;text-align:right;">¥88.00</span>
+                  </div>
+                </div>
+                <div style="height:1px;background-color:var(--gd-border);margin:14px 0;"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <span style="font-size:11px;color:var(--gd-muted-foreground);">合计 3 件 · 创建于 2026-07-26 09:24</span>
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">合计 <span class="num" style="color:var(--gd-state-error);">¥204.00</span></span>
+                    <button class="gd-btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
+                      <i data-lucide="credit-card" style="width:13px;height:13px;"></i>
+                      <span>立即支付</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 订单卡 2 -->
+              <div class="metric-card" style="padding:18px 20px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span class="num" style="font-size:13px;font-weight:600;color:var(--gd-foreground);">ORD20260725014</span>
+                    <span class="badge badge-info">已发货</span>
+                  </div>
+                  <span style="font-size:11px;color:var(--gd-muted-foreground);" class="num">2026-07-25 16:42:09</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+                    <span style="font-size:18px;">🌸</span>
+                    <span style="flex:1;color:var(--gd-foreground);">雪山白百合（10支/束）</span>
+                    <span style="color:var(--gd-muted-foreground);" class="num">× 3</span>
+                    <span class="num" style="color:var(--gd-state-error);font-weight:600;min-width:80px;text-align:right;">¥127.50</span>
+                  </div>
+                </div>
+                <div style="height:1px;background-color:var(--gd-border);margin:14px 0;"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <span style="font-size:11px;color:var(--gd-muted-foreground);">合计 3 件 · 物流单号 SF1234567890</span>
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">合计 <span class="num" style="color:var(--gd-state-error);">¥127.50</span></span>
+                    <button class="gd-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;">
+                      <i data-lucide="truck" style="width:13px;height:13px;"></i>
+                      <span>查看物流</span>
+                    </button>
+                    <button class="gd-btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
+                      <i data-lucide="package-check" style="width:13px;height:13px;"></i>
+                      <span>确认收货</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 订单卡 3 -->
+              <div class="metric-card" style="padding:18px 20px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span class="num" style="font-size:13px;font-weight:600;color:var(--gd-foreground);">ORD20260722008</span>
+                    <span class="badge badge-success">已完成</span>
+                  </div>
+                  <span style="font-size:11px;color:var(--gd-muted-foreground);" class="num">2026-07-22 11:08:33</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+                    <span style="font-size:18px;">🌸</span>
+                    <span style="flex:1;color:var(--gd-foreground);">晨曦混合花束（含康乃馨）</span>
+                    <span style="color:var(--gd-muted-foreground);" class="num">× 2</span>
+                    <span class="num" style="color:var(--gd-state-error);font-weight:600;min-width:80px;text-align:right;">¥176.00</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px;font-size:13px;">
+                    <span style="font-size:18px;">🌸</span>
+                    <span style="flex:1;color:var(--gd-foreground);">高原红玫瑰（20支/束）</span>
+                    <span style="color:var(--gd-muted-foreground);" class="num">× 1</span>
+                    <span class="num" style="color:var(--gd-state-error);font-weight:600;min-width:80px;text-align:right;">¥58.00</span>
+                  </div>
+                </div>
+                <div style="height:1px;background-color:var(--gd-border);margin:14px 0;"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <span style="font-size:11px;color:var(--gd-muted-foreground);">合计 3 件 · 签收于 2026-07-24</span>
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">合计 <span class="num" style="color:var(--gd-state-error);">¥234.00</span></span>
+                    <button class="gd-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;">
+                      <i data-lucide="truck" style="width:13px;height:13px;"></i>
+                      <span>查看物流</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============ Section 5: 收货地址 ============ -->
+          <section>
+            <h2 class="gd-section-title">收货地址</h2>
+
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px;">
+
+              <!-- 地址卡 1 -->
+              <div class="metric-card" style="padding:16px 18px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:15px;font-weight:600;color:var(--gd-foreground);">龙</span>
+                    <span class="num" style="font-size:12px;color:var(--gd-muted-foreground);">138****8856</span>
+                    <span class="badge badge-info">默认</span>
+                  </div>
+                </div>
+                <div style="font-size:13px;color:var(--gd-foreground);line-height:1.6;margin-bottom:14px;">
+                  云南省昆明市呈贡区斗南街道<br>花都路 88 号 斗南花卉交易市场 3 层 A-012 铺位
+                </div>
+                <div style="display:flex;gap:8px;">
+                  <button class="gd-btn-ghost" style="padding:6px 12px;font-size:12px;display:inline-flex;align-items:center;gap:4px;">
+                    <i data-lucide="pencil" style="width:13px;height:13px;"></i>
+                    <span>编辑</span>
+                  </button>
+                  <button class="gd-btn-ghost" style="padding:6px 12px;font-size:12px;display:inline-flex;align-items:center;gap:4px;">
+                    <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                    <span>删除</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 地址卡 2 -->
+              <div class="metric-card" style="padding:16px 18px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:15px;font-weight:600;color:var(--gd-foreground);">李云</span>
+                    <span class="num" style="font-size:12px;color:var(--gd-muted-foreground);">159****2048</span>
+                  </div>
+                </div>
+                <div style="font-size:13px;color:var(--gd-foreground);line-height:1.6;margin-bottom:14px;">
+                  上海市浦东新区张江高科技园区<br>博云路 2 号 软件园 5 号楼 1803 室
+                </div>
+                <div style="display:flex;gap:8px;">
+                  <button class="gd-btn-ghost" style="padding:6px 12px;font-size:12px;display:inline-flex;align-items:center;gap:4px;">
+                    <i data-lucide="pencil" style="width:13px;height:13px;"></i>
+                    <span>编辑</span>
+                  </button>
+                  <button class="gd-btn-ghost" style="padding:6px 12px;font-size:12px;display:inline-flex;align-items:center;gap:4px;">
+                    <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                    <span>删除</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 地址卡 3 -->
+              <div class="metric-card" style="padding:16px 18px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:15px;font-weight:600;color:var(--gd-foreground);">王芳</span>
+                    <span class="num" style="font-size:12px;color:var(--gd-muted-foreground);">186****6611</span>
+                  </div>
+                </div>
+                <div style="font-size:13px;color:var(--gd-foreground);line-height:1.6;margin-bottom:14px;">
+                  北京市朝阳区三里屯街道<br>工体北路 8 号 院 2 号楼 B 单元 1502
+                </div>
+                <div style="display:flex;gap:8px;">
+                  <button class="gd-btn-ghost" style="padding:6px 12px;font-size:12px;display:inline-flex;align-items:center;gap:4px;">
+                    <i data-lucide="pencil" style="width:13px;height:13px;"></i>
+                    <span>编辑</span>
+                  </button>
+                  <button class="gd-btn-ghost" style="padding:6px 12px;font-size:12px;display:inline-flex;align-items:center;gap:4px;">
+                    <i data-lucide="trash-2" style="width:13px;height:13px;"></i>
+                    <span>删除</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 新增地址表单 -->
+            <div class="metric-card">
+              <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);margin-bottom:16px;display:inline-flex;align-items:center;gap:6px;">
+                <i data-lucide="plus-circle" style="width:16px;height:16px;color:var(--gd-primary);"></i>
+                <span>新增收货地址</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+                <div>
+                  <label style="display:block;font-size:12px;color:var(--gd-muted-foreground);margin-bottom:6px;">收货人</label>
+                  <input type="text" class="gd-input" placeholder="请输入收货人姓名" style="width:100%;">
+                </div>
+                <div>
+                  <label style="display:block;font-size:12px;color:var(--gd-muted-foreground);margin-bottom:6px;">手机号</label>
+                  <input type="text" class="gd-input" placeholder="请输入 11 位手机号" style="width:100%;">
+                </div>
+                <div>
+                  <label style="display:block;font-size:12px;color:var(--gd-muted-foreground);margin-bottom:6px;">省 / 市 / 区</label>
+                  <select class="gd-select" style="width:100%;">
+                    <option>云南省 / 昆明市 / 呈贡区</option>
+                    <option>上海市 / 上海市 / 浦东新区</option>
+                    <option>北京市 / 北京市 / 朝阳区</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="display:block;font-size:12px;color:var(--gd-muted-foreground);margin-bottom:6px;">详细地址</label>
+                  <input type="text" class="gd-input" placeholder="街道、楼栋、门牌号" style="width:100%;">
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;">
+                <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--gd-foreground);cursor:pointer;">
+                  <input type="checkbox" style="accent-color:var(--gd-primary);">
+                  <span>设为默认收货地址</span>
+                </label>
+                <button class="gd-btn-primary" style="display:inline-flex;align-items:center;gap:6px;">
+                  <i data-lucide="save" style="width:14px;height:14px;"></i>
+                  <span>保存地址</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </main>
+    </div>
+    <script>
+      lucide.createIcons();
+      // 价格走势图（Chart.js）
+      window.addEventListener('load', function () {
+        var ctx = document.getElementById('priceTrendChart');
+        if (ctx && window.Chart) {
+          var labels = [];
+          var data = [];
+          var base = 96;
+          for (var i = 29; i >= 0; i--) {
+            labels.push('D-' + i);
+            base += (Math.random() - 0.55) * 2.4;
+            data.push(Number(base.toFixed(2)));
+          }
+          data[29] = 88.00;
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: labels,
+              datasets: [{
+                label: '成交均价',
+                data: data,
+                borderColor: 'rgba(41, 98, 255, 1)',
+                backgroundColor: 'rgba(41, 98, 255, 0.12)',
+                borderWidth: 1.5,
+                fill: true,
+                tension: 0.35,
+                pointRadius: 0,
+                pointHoverRadius: 3
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { display: false },
+                y: {
+                  grid: { color: 'rgba(42, 46, 57, 0.6)' },
+                  ticks: { color: 'var(--gd-muted-foreground)', font: { family: 'JetBrains Mono, monospace', size: 10 } }
+                }
+              }
+            }
+          });
+        }
+      });
+    </script>
+</body>
+</html>

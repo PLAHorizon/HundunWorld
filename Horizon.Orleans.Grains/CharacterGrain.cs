@@ -34,6 +34,7 @@ namespace Horizon.Orleans.Grains
         private readonly ILogger<CharacterGrain> _logger;
         private readonly IPersistentState<CharacterState> _characterState;
         private readonly ICharacterPresenceStore _presenceStore;
+        private readonly ICharacterPositionStore _positionStore;
         private readonly ICharacterFingerprintService _fingerprintService;
 
         private readonly IDataContext<GameEntityContext, UserEntity, long> _gameUserContext;
@@ -60,6 +61,7 @@ namespace Horizon.Orleans.Grains
             ILogger<CharacterGrain> logger,
             [PersistentState("character", "GameStore")] IPersistentState<CharacterState> characterState,
             ICharacterPresenceStore presenceStore,
+            ICharacterPositionStore positionStore,
             ICharacterFingerprintService fingerprintService,
 
             IDataContext<GameEntityContext, UserEntity, long> gameUserContext,
@@ -69,6 +71,7 @@ namespace Horizon.Orleans.Grains
             _logger = logger;
             _characterState = characterState;
             _presenceStore = presenceStore;
+            _positionStore = positionStore;
             _fingerprintService = fingerprintService;
 
             _mapper = mapper;
@@ -121,6 +124,31 @@ namespace Horizon.Orleans.Grains
                     _isOnline = false;
                 }
             }
+
+            // ===== 从 Redis 永久存储加载角色位置（双轨制架构） =====
+            // 服务器重启后 Grain 重新激活时，从 Redis 恢复角色最后位置到内存缓存。
+            // Redis 不可用时降级到 GrainState 中的旧值，加载失败不影响 Grain 激活。
+            try
+            {
+                var savedPosition = await _positionStore.GetPositionAsync((long)CharacterId);
+                if (savedPosition.HasValue)
+                {
+                    _characterState.State.LastPositionX = savedPosition.Value.X;
+                    _characterState.State.LastPositionY = savedPosition.Value.Y;
+                    _characterState.State.LastPositionZ = savedPosition.Value.Z;
+                    _characterState.State.LastYaw = savedPosition.Value.Yaw;
+                    _characterState.State.LastPositionUpdateUtc = DateTime.UtcNow;
+                    _logger.LogInformation(
+                        "CharacterGrain {CharacterId} 从 Redis 恢复位置：X={X}, Y={Y}, Z={Z}, Yaw={Yaw}",
+                        CharacterId, savedPosition.Value.X, savedPosition.Value.Y,
+                        savedPosition.Value.Z, savedPosition.Value.Yaw);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "CharacterGrain {CharacterId} 从 Redis 加载位置失败", CharacterId);
+            }
+
             await base.OnActivateAsync(cancellationToken);
         }
 
@@ -342,6 +370,13 @@ namespace Horizon.Orleans.Grains
 
                 // 7. 返回成功响应。必须设置 CharacterId 顶层字段，网关依赖此字段
                 //    注册 characterId → connection 映射，断线 Despawn 正确反查角色 ID。
+                //    [修复] 返回前调用 EnrichCharacterInfo 从 Redis 持久化存储读取离线位置，
+                //    填充到 CharacterInfo.Position，确保客户端使用服务端持久化的位置初始化角色，
+                //    而非数据库中可能过期的 Position 字段或默认 (0,0,0)。
+                //    客户端 EnterGameHandler 会用此 Position 创建本地 ECS 实体并发送握手包，
+                //    服务端 ZoneShardGrain.EnterWorldAsync 也会优先从 CharacterGrain.GetLastPositionAsync()
+                //    读取同一权威源，保证两端初始位置一致。
+                await EnrichCharacterInfo(_characterState.State.CharacterInfo);
                 return new EnterGameResponse
                 {
                     Success = true,
@@ -1166,24 +1201,55 @@ namespace Horizon.Orleans.Grains
         }
 
         /// <summary>
-        /// 丰富角色信息（添加额外的运时数据）
+        /// 丰富角色信息（添加额外的运时数据）。
+        /// 当前实现：从 Redis 永久存储读取角色离线位置，填充到 <see cref="CharacterInfo.Position"/>，
+        /// 供客户端在角色选择界面展示角色最后所在位置。
         /// </summary>
         private async Task EnrichCharacterInfo(CharacterInfo characterInfo)
         {
             try
             {
-                // 这里可以添加额外的角色信息填充，比如：
-                // - 当前装备信息
-                // - 在线状态
-                // - 等级排名
-                // - 等等
-                
-                // 暂时不做具体实现，留作后续扩展
-                await Task.CompletedTask;
+                // ===== 填充离线位置信息 =====
+                // ICharacterPositionStore 存储的是 ECS Z-up 坐标（X=左右, Y=前后, Z=上下）。
+                // CharacterInfo.Position 使用 Flax Y-up 坐标系（X=左右, Y=上下, Z=前后），
+                // 需做 Y/Z 互换：Flax Y = ECS Z, Flax Z = ECS Y。
+                try
+                {
+                    var savedPosition = await _positionStore.GetPositionAsync((long)characterInfo.CharacterId);
+                    if (savedPosition.HasValue)
+                    {
+                        characterInfo.Position = new Position
+                        {
+                            X = savedPosition.Value.X,   // 左右（不变）
+                            Y = savedPosition.Value.Z,   // ECS Z（上下）→ Flax Y
+                            Z = savedPosition.Value.Y,   // ECS Y（前后）→ Flax Z
+                            Yaw = savedPosition.Value.Yaw,
+                        };
+                        _logger.LogDebug(
+                            "EnrichCharacterInfo: 角色 {CharacterId} 离线位置 ECS({EX:F2},{EY:F2},{EZ:F2},Yaw={Yaw:F2}) → Flax({FX:F2},{FY:F2},{FZ:F2})",
+                            characterInfo.CharacterId,
+                            savedPosition.Value.X, savedPosition.Value.Y, savedPosition.Value.Z, savedPosition.Value.Yaw,
+                            characterInfo.Position.X, characterInfo.Position.Y, characterInfo.Position.Z);
+                    }
+                    else
+                    {
+                        // 无离线位置数据（首次创建的角色），Position 保持默认值 (0,0,0)
+                        _logger.LogDebug(
+                            "EnrichCharacterInfo: 角色 {CharacterId} 无离线位置数据（首次创建或未进入过游戏）",
+                            characterInfo.CharacterId);
+                    }
+                }
+                catch (Exception posEx)
+                {
+                    // Redis 不可用时降级：位置信息缺失不影响角色列表正常返回
+                    _logger.LogWarning(posEx,
+                        "EnrichCharacterInfo: 读取角色 {CharacterId} 离线位置失败，Position 将使用默认值",
+                        characterInfo.CharacterId);
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "丰富角色信息时发生异常: CharacterId={CharacterId}", 
+                _logger.LogError(ex, "丰富角色信息时发生异常: CharacterId={CharacterId}",
                     characterInfo.CharacterId);
             }
         }
@@ -1338,41 +1404,56 @@ namespace Horizon.Orleans.Grains
 
         #region 角色位置缓存
 
-        /// <summary>位置数据过期阈值（分钟）。超过此时间的位置数据视为无效，回退到握手坐标。</summary>
-        private const double PositionStaleMinutes = 5.0;
-
         /// <inheritdoc />
         public async Task UpdateLastPositionAsync(float x, float y, float z, float yaw)
         {
             var state = _characterState.State;
             if (state == null) return;
 
+            // 更新内存缓存（CharacterState.LastPosition*，作为 Redis 不可用时的降级兜底）
             state.LastPositionX = x;
             state.LastPositionY = y;
             state.LastPositionZ = z;
             state.LastYaw = yaw;
             state.LastPositionUpdateUtc = DateTime.UtcNow;
 
-            await _characterState.WriteStateAsync();
+            // 写入 Redis 永久存储（双轨制：不再调用 WriteStateAsync 持久化整个 CharacterState）
+            // CharacterState 含 CharacterInfo 大对象，每秒一次 WriteState 性能开销大且与业务数据写入争抢锁
+            try
+            {
+                await _positionStore.SavePositionAsync((long)CharacterId, x, y, z, yaw);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "CharacterGrain {CharacterId} 位置写入 Redis 失败，降级为仅内存缓存", CharacterId);
+            }
         }
 
         /// <inheritdoc />
-        public Task<(float X, float Y, float Z, float Yaw)?> GetLastPositionAsync()
+        public async Task<(float X, float Y, float Z, float Yaw)?> GetLastPositionAsync()
         {
+            // 优先从 Redis 读取（权威源，永久存储，无过期）
+            try
+            {
+                var redisPosition = await _positionStore.GetPositionAsync((long)CharacterId);
+                if (redisPosition.HasValue)
+                {
+                    return redisPosition;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "CharacterGrain {CharacterId} 从 Redis 读取位置失败，降级到内存缓存", CharacterId);
+            }
+
+            // 降级：Redis 不可用或无数据时，回退到内存缓存（CharacterState.LastPosition*）
             var state = _characterState.State;
             if (state == null || state.LastPositionUpdateUtc == default)
             {
-                return Task.FromResult<(float, float, float, float)?>(null);
+                return null;
             }
 
-            // 过期检查：超过 5 分钟的位置数据视为无效
-            if ((DateTime.UtcNow - state.LastPositionUpdateUtc).TotalMinutes > PositionStaleMinutes)
-            {
-                return Task.FromResult<(float, float, float, float)?>(null);
-            }
-
-            return Task.FromResult<(float, float, float, float)?>(
-                (state.LastPositionX, state.LastPositionY, state.LastPositionZ, state.LastYaw));
+            return (state.LastPositionX, state.LastPositionY, state.LastPositionZ, state.LastYaw);
         }
 
         #endregion

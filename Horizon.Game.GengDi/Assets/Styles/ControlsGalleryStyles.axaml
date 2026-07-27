@@ -102,7 +102,7 @@
     </Style>
 
     <Style Selector="Border.SurfaceCard.subtle">
-        <Setter Property="Background" Value="{DynamicResource BattleNetSurfaceTintBrush}" />
+        <Setter Property="Background" Value="{DynamicResource GdInfoSurfaceBrush}" />
         <Setter Property="BoxShadow" Value="0 1 4 0 #00000015" />
     </Style>
 
@@ -121,11 +121,11 @@
     </Style>
 
     <Style Selector="Border.ListItemCard:pointerover">
-        <Setter Property="Background" Value="{DynamicResource BattleNetSurfaceTintBrush}" />
+        <Setter Property="Background" Value="{DynamicResource GdInfoSurfaceBrush}" />
     </Style>
 
     <Style Selector="Border.SurfaceCard.subtle">
-        <Setter Property="Background" Value="{DynamicResource BattleNetSurfaceTintBrush}" />
+        <Setter Property="Background" Value="{DynamicResource GdInfoSurfaceBrush}" />
     </Style>
 
     <Style Selector="Border.SurfaceCard.QuickAccess">
@@ -138,12 +138,12 @@
     </Style>
 
     <Style Selector="Border.SurfaceCard.QuickAccess:pointerover">
-        <Setter Property="Background" Value="{DynamicResource BattleNetSurfaceTintBrush}" />
+        <Setter Property="Background" Value="{DynamicResource GdInfoSurfaceBrush}" />
     </Style>
 
     <Style Selector="TextBlock.PageEyebrow">
         <Setter Property="Theme" Value="{StaticResource CaptionTextBlockStyle}" />
-        <Setter Property="Foreground" Value="{StaticResource BattleNetPrimaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource GdPrimaryBrush}" />
         <Setter Property="FontStyle" Value="Italic" />
     </Style>
 
@@ -159,19 +159,19 @@
     </Style>
 
     <Style Selector="Button.PrimaryAction">
-        <Setter Property="Background" Value="{StaticResource BattleNetPrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource GdPrimaryBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
-        <Setter Property="BorderBrush" Value="{StaticResource BattleNetOutlineBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource GdBrand400Brush}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="Padding" Value="16 10" />
     </Style>
 
     <Style Selector="Button.PrimaryAction:pointerover">
-        <Setter Property="Background" Value="{StaticResource BattleNetPrimaryHoverBrush}" />
+        <Setter Property="Background" Value="{DynamicResource GdBrand400Brush}" />
     </Style>
 
     <Style Selector="Button.PrimaryAction:pressed">
-        <Setter Property="Background" Value="{StaticResource BattleNetPrimaryPressedBrush}" />
+        <Setter Property="Background" Value="{DynamicResource GdBrand600Brush}" />
     </Style>
 
     <Style Selector="Button.QuietAction">
@@ -180,7 +180,7 @@
     </Style>
 
     <Style Selector="Button.QuietAction:pointerover">
-        <Setter Property="Background" Value="{DynamicResource BattleNetSurfaceTintBrush}" />
+        <Setter Property="Background" Value="{DynamicResource GdInfoSurfaceBrush}" />
     </Style>
 
     <!-- ══════════════════════════════════════════════════════════
@@ -201,49 +201,48 @@
         </Setter>
     </Style>
     <Style Selector="Button.TitleBarBrand:pointerover">
-        <Setter Property="Background" Value="{DynamicResource TitleBarNavItemHoverBrush}" />
+        <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
     </Style>
 
-    <!-- 标题栏文本导航按钮 -->
+    <!-- 标题栏文本导航按钮（设计稿：图标+文字, pill圆角, active=primary+info-surface） -->
     <Style Selector="Button.TitleBarNavItem">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{DynamicResource TitleBarTextBrush}" />
-        <Setter Property="BorderThickness" Value="0 0 0 2" />
+        <Setter Property="Foreground" Value="{DynamicResource GdMutedForegroundBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
         <Setter Property="BorderBrush" Value="Transparent" />
-        <Setter Property="Padding" Value="12 6" />
-        <Setter Property="FontSize" Value="13" />
-        <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="14 7" />
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusMd}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Transitions">
             <Transitions>
                 <BrushTransition Property="Background" Duration="0:0:0.15" />
                 <BrushTransition Property="Foreground" Duration="0:0:0.15" />
-                <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
             </Transitions>
         </Setter>
     </Style>
     <Style Selector="Button.TitleBarNavItem:pointerover">
-        <Setter Property="Background" Value="{DynamicResource TitleBarNavItemHoverBrush}" />
-        <Setter Property="Foreground" Value="#FFFFFF" />
+        <Setter Property="Foreground" Value="{DynamicResource GdForegroundBrush}" />
+        <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
     </Style>
     <Style Selector="Button.TitleBarNavItem:pressed">
-        <Setter Property="Foreground" Value="{DynamicResource TitleBarNavItemSelectedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource GdPrimaryBrush}" />
     </Style>
-    <!-- 标题栏主导航项选中状态 -->
+    <!-- 标题栏主导航项选中状态（设计稿：primary色 + info-surface 背景） -->
     <Style Selector="Button.TitleBarNavItem.TitleBarNavSelected">
-        <Setter Property="Foreground" Value="{DynamicResource TitleBarNavItemSelectedBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource TitleBarNavItemSelectedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource GdPrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource GdInfoSurfaceBrush}" />
     </Style>
     <Style Selector="Button.TitleBarNavItem.TitleBarNavSelected:pointerover">
-        <Setter Property="Foreground" Value="#FFFFFF" />
-        <Setter Property="BorderBrush" Value="{DynamicResource TitleBarNavItemSelectedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource GdPrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource GdInfoSurfaceBrush}" />
     </Style>
 
     <!-- 标题栏图标按钮 -->
     <Style Selector="Button.TitleBarIconButton">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{DynamicResource TitleBarTextSecondaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource GdMutedForegroundBrush}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Padding" Value="8" />
         <Setter Property="CornerRadius" Value="6" />
@@ -258,7 +257,7 @@
         </Setter>
     </Style>
     <Style Selector="Button.TitleBarIconButton:pointerover">
-        <Setter Property="Background" Value="{DynamicResource TitleBarNavItemHoverBrush}" />
+        <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
         <Setter Property="Foreground" Value="#FFFFFF" />
     </Style>
 
@@ -273,41 +272,61 @@
         <Setter Property="Cursor" Value="Hand" />
     </Style>
     <Style Selector="Button.TitleBarUserButton:pointerover">
-        <Setter Property="Background" Value="{DynamicResource TitleBarNavItemHoverBrush}" />
+        <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
     </Style>
     <Style Selector="Button.TitleBarUserButton.TitleBarNavSelected">
-        <Setter Property="Background" Value="{DynamicResource TitleBarNavItemHoverBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource TitleBarNavItemSelectedBrush}" />
+        <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource GdPrimaryBrush}" />
     </Style>
 
     <!-- ══════════════════════════════════════════════════════════
-         副导航条样式
+         副导航条样式（设计稿：图标+文字13px, pill圆角radius-sm, active=primary+info-surface）
          ══════════════════════════════════════════════════════════ -->
     <Style Selector="Button.SubNavItem">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{DynamicResource TitleBarTextSecondaryBrush}" />
-        <Setter Property="BorderThickness" Value="0 0 0 2" />
+        <Setter Property="Foreground" Value="{DynamicResource GdMutedForegroundBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
         <Setter Property="BorderBrush" Value="Transparent" />
-        <Setter Property="Padding" Value="12 8" />
-        <Setter Property="FontSize" Value="12" />
-        <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="Padding" Value="12 6" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusSm}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Transitions">
             <Transitions>
                 <BrushTransition Property="Foreground" Duration="0:0:0.15" />
-                <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
                 <BrushTransition Property="Background" Duration="0:0:0.15" />
             </Transitions>
         </Setter>
     </Style>
     <Style Selector="Button.SubNavItem:pointerover">
-        <Setter Property="Background" Value="{DynamicResource SubNavItemHoverBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource TitleBarTextBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource GdForegroundBrush}" />
+        <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
     </Style>
     <Style Selector="Button.SubNavItem.SubNavSelected">
-        <Setter Property="Foreground" Value="{DynamicResource TitleBarNavItemSelectedBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource SubNavItemSelectedBorderBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource GdPrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource GdInfoSurfaceBrush}" />
+    </Style>
+    <Style Selector="Button.SubNavItem.SubNavSelected:pointerover">
+        <Setter Property="Foreground" Value="{DynamicResource GdPrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource GdInfoSurfaceBrush}" />
+    </Style>
+
+    <!-- 副导航 Badge（红色圆角小数字） -->
+    <Style Selector="Border.SubNavBadge">
+        <Setter Property="Background" Value="{DynamicResource GdErrorBrush}" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="MinWidth" Value="16" />
+        <Setter Property="Height" Value="16" />
+        <Setter Property="Padding" Value="4 0" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Border.SubNavBadge TextBlock">
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="#FFFFFFFF" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
     <Style Selector="controls|GalleryPage">
@@ -318,7 +337,7 @@
                 <DockPanel Name="Root"
                            Background="{DynamicResource SolidBackgroundFillColorTertiaryBrush}">
                     <Panel DockPanel.Dock="Top">
-                        <Border Background="{DynamicResource PageHeaderBackgroundBrush}"
+                        <Border Background="{DynamicResource GdCardBrush}"
                                 OpacityMask="{DynamicResource HeaderOpacityMaskBrush}"
                                 Height="88"
                                 VerticalAlignment="Top" />
@@ -378,7 +397,7 @@
                 <DockPanel Name="Root"
                            Background="{DynamicResource SolidBackgroundFillColorTertiaryBrush}">
                     <Panel DockPanel.Dock="Top">
-                        <Border Background="{DynamicResource PageHeaderBackgroundBrush}"
+                        <Border Background="{DynamicResource GdCardBrush}"
                                 OpacityMask="{DynamicResource HeaderOpacityMaskBrush}"
                                 Height="88"
                                 VerticalAlignment="Top" />

@@ -6,20 +6,26 @@
              x:DataType="vm:MiniPlayerViewModel"
              Height="64">
 
-    <Border Background="{DynamicResource MiniPlayerBackgroundBrush}"
-            BorderBrush="{DynamicResource TitleBarBorderBrush}"
+    <Border Background="{DynamicResource GdCardBrush}"
+            BorderBrush="{DynamicResource GdBorderBrush}"
             BorderThickness="0 1 0 0"
             Padding="12 0">
         <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center" IsVisible="{Binding HasSong}">
 
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
-                <Border Width="44" Height="44" CornerRadius="8"
-                        Background="{DynamicResource SocialAvatarBackgroundBrush}"
+                <!-- 设计稿：48x48 渐变封面 -->
+                <Border Width="48" Height="48" CornerRadius="{DynamicResource GdRadiusMd}"
                         ClipToBounds="True">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                            <GradientStop Color="{DynamicResource GdBrand500}" Offset="0" />
+                            <GradientStop Color="{DynamicResource GdBrand700}" Offset="1" />
+                        </LinearGradientBrush>
+                    </Border.Background>
                     <Panel>
-                        <TextBlock Text="♪" FontSize="20"
+                        <TextBlock Text="♪" FontSize="24"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource SocialAvatarTextBrush}"
+                                   Foreground="#FFFFFFFF"
                                    IsVisible="{Binding !ShowLoadingIndicator}" />
                         <ProgressBar IsIndeterminate="True" Width="24" Height="3"
                                      HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -28,24 +34,24 @@
                 </Border>
                 <StackPanel VerticalAlignment="Center" Spacing="2">
                     <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TitleBarTextBrush}"
+                               Foreground="{DynamicResource GdForegroundBrush}"
                                MaxWidth="200" TextTrimming="CharacterEllipsis" />
                     <StackPanel Orientation="Horizontal" Spacing="4">
                         <TextBlock Text="{Binding Artist}" FontSize="11"
-                                   Foreground="{DynamicResource TitleBarTextSecondaryBrush}"
+                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
                                    MaxWidth="160" TextTrimming="CharacterEllipsis"
                                    IsVisible="{Binding !ShowErrorStatus}" />
                         <StackPanel Orientation="Horizontal" Spacing="4"
                                     IsVisible="{Binding ShowErrorStatus}">
-                            <ui:SymbolIcon Symbol="Cancel" FontSize="10" Foreground="{DynamicResource LoginErrorBrush}" />
-                            <TextBlock Text="无法播放" FontSize="11" Foreground="{DynamicResource LoginErrorBrush}" />
+                            <ui:SymbolIcon Symbol="Cancel" FontSize="10" Foreground="{DynamicResource GdErrorBrush}" />
+                            <TextBlock Text="无法播放" FontSize="11" Foreground="{DynamicResource GdErrorBrush}" />
                             <Button Command="{Binding RetryCommand}" Padding="4 0" FontSize="10"
-                                    Classes="QuietAction" VerticalAlignment="Center">
+                                    Classes="GdGhost" VerticalAlignment="Center">
                                 <TextBlock Text="重试" FontSize="10" />
                             </Button>
                         </StackPanel>
                         <TextBlock FontSize="11"
-                                   Foreground="{DynamicResource TitleBarTextSecondaryBrush}"
+                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
                                    IsVisible="{Binding ShowLoadingIndicator}">
                             <Run Text="加载中..." />
                         </TextBlock>
@@ -56,24 +62,29 @@
             <StackPanel Grid.Column="1" Orientation="Horizontal"
                         HorizontalAlignment="Center" VerticalAlignment="Center"
                         Spacing="16">
-                <Button Classes="TitleBarIconButton"
+                <Button Classes="GdIcon"
                         Command="{Binding PreviousCommand}"
                         Width="32" Height="32"
                         PointerPressed="OnControlButtonPressed">
                     <ui:SymbolIcon Symbol="Previous" FontSize="14" />
                 </Button>
-                <Button Classes="TitleBarIconButton"
-                        Command="{Binding PlayPauseCommand}"
-                        Width="36" Height="36"
+                <!-- 设计稿：32px 圆形 brand-500 播放按钮 -->
+                <Button Command="{Binding PlayPauseCommand}"
+                        Width="32" Height="32" CornerRadius="16"
+                        Background="{DynamicResource GdPrimaryBrush}"
+                        Foreground="#FFFFFFFF"
+                        BorderThickness="0" Padding="0"
+                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                        Cursor="Hand"
                         PointerPressed="OnControlButtonPressed">
                     <Panel>
-                        <ui:SymbolIcon Symbol="Pause" FontSize="16"
+                        <ui:SymbolIcon Symbol="Pause" FontSize="14" Foreground="#FFFFFFFF"
                                        IsVisible="{Binding IsPlaying}" />
-                        <ui:SymbolIcon Symbol="Play" FontSize="16"
+                        <ui:SymbolIcon Symbol="Play" FontSize="14" Foreground="#FFFFFFFF"
                                        IsVisible="{Binding !IsPlaying}" />
                     </Panel>
                 </Button>
-                <Button Classes="TitleBarIconButton"
+                <Button Classes="GdIcon"
                         Command="{Binding NextCommand}"
                         Width="32" Height="32"
                         PointerPressed="OnControlButtonPressed">
@@ -81,16 +92,21 @@
                 </Button>
             </StackPanel>
 
+            <!-- 设计稿：进度条 + 时间标签 -->
             <StackPanel Grid.Column="2" Orientation="Horizontal"
                         VerticalAlignment="Center" Spacing="8">
                 <TextBlock Text="{Binding PositionText}" FontSize="11"
-                           Foreground="{DynamicResource TitleBarTextSecondaryBrush}"
+                           FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                           Foreground="{DynamicResource GdMutedForegroundBrush}"
                            VerticalAlignment="Center" />
                 <ProgressBar Value="{Binding Progress}" Maximum="1"
-                             Width="120" Height="4"
+                             Width="120" Height="3"
+                             Foreground="{DynamicResource GdPrimaryBrush}"
+                             Background="{DynamicResource GdBorderBrush}"
                              VerticalAlignment="Center" />
                 <TextBlock Text="{Binding DurationText}" FontSize="11"
-                           Foreground="{DynamicResource TitleBarTextSecondaryBrush}"
+                           FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                           Foreground="{DynamicResource GdMutedForegroundBrush}"
                            VerticalAlignment="Center" />
             </StackPanel>
         </Grid>

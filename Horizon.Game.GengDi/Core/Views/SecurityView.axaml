@@ -1,37 +1,320 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
              xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             xmlns:views="using:Horizon.Game.GengDi.Core.Views"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
              x:Class="Horizon.Game.GengDi.Core.Views.SecurityView"
              x:DataType="vm:SecurityViewModel">
     <UserControl.DataContext>
         <vm:SecurityViewModel />
     </UserControl.DataContext>
 
-    <Border Classes="SurfaceCard">
-        <StackPanel Spacing="16">
-            <!-- 返回按钮 -->
-            <Button Content="返回个人设置" Classes="QuietAction" HorizontalAlignment="Left" Command="{Binding NavigateToProfileCommand}" />
+    <controls:GalleryPage Title="安全"
+                          Subtitle="Horizon.Game.GengDi.Security"
+                          Description="安全评分总览与安全项列表，含密码强度、二步验证、登录设备管理。"
+                          IconSource="{StaticResource SecurityIcon}">
+        <controls:GalleryPage.HeaderActionContent>
+            <Button Content="返回个人设置"
+                    Classes="GdGhost"
+                    Command="{Binding NavigateToProfileCommand}" />
+        </controls:GalleryPage.HeaderActionContent>
 
-            <TextBlock Text="修改密码" Classes="SectionTitle" />
+        <StackPanel Spacing="14">
 
-            <StackPanel Spacing="6">
-                <TextBlock Text="原密码" Classes="PageEyebrow" />
-                <TextBox Text="{Binding OldPassword}" PasswordChar="*" Watermark="请输入原密码" />
-            </StackPanel>
+            <!-- ════════════════════════════════════════════════════════════
+                 1. 安全评分总览卡（水平布局：圆形进度环 + 标题/Badge + 加固按钮）
+                 ════════════════════════════════════════════════════════════ -->
+            <Border Classes="GdMetricCard">
+                <Grid ColumnDefinitions="Auto,*,Auto"
+                      ColumnSpacing="20">
 
-            <StackPanel Spacing="6">
-                <TextBlock Text="新密码" Classes="PageEyebrow" />
-                <TextBox Text="{Binding NewPassword}" PasswordChar="*" Watermark="请输入新密码" />
-            </StackPanel>
+                    <!-- 左：96x96 圆形进度环（两层嵌套 Border 模拟） -->
+                    <Border Width="96"
+                            Height="96"
+                            CornerRadius="48"
+                            Background="{DynamicResource GdSuccessSurfaceBrush}">
+                        <Border Width="74"
+                                Height="74"
+                                CornerRadius="37"
+                                Background="{DynamicResource GdCardBrush}"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center">
+                            <StackPanel HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Spacing="0">
+                                <TextBlock Text="75"
+                                           FontSize="26"
+                                           FontWeight="Bold"
+                                           FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                           Foreground="{DynamicResource GdSuccessBrush}"
+                                           HorizontalAlignment="Center" />
+                                <TextBlock Text="/ 100"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                           HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                    </Border>
 
-            <StackPanel Spacing="6">
-                <TextBlock Text="确认新密码" Classes="PageEyebrow" />
-                <TextBox Text="{Binding ConfirmPassword}" PasswordChar="*" Watermark="请再次输入新密码" />
-            </StackPanel>
+                    <!-- 中：标题 + Badge + 描述 -->
+                    <StackPanel Grid.Column="1"
+                                Spacing="6"
+                                VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="10"
+                                    VerticalAlignment="Center">
+                            <TextBlock Text="安全评分"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource GdForegroundBrush}" />
+                            <Border Classes="GdBadge GdSuccess">
+                                <TextBlock Text="良好" />
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="您的账号安全状况良好，建议持续开启二步验证并定期更换密码以进一步提升安全性。"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                   TextWrapping="Wrap"
+                                   MaxWidth="520" />
+                    </StackPanel>
 
-            <TextBlock Text="{Binding Message}" Foreground="SeaGreen" TextWrapping="Wrap" />
+                    <!-- 右：立即加固按钮 -->
+                    <Button Grid.Column="2"
+                            Content="立即加固"
+                            Classes="GdPrimary"
+                            VerticalAlignment="Center"
+                            Command="{Binding ChangePasswordCommand}" />
+                </Grid>
+            </Border>
 
-            <Button Content="修改密码" Classes="PrimaryAction" HorizontalAlignment="Left" Command="{Binding ChangePasswordCommand}" />
+            <!-- ════════════════════════════════════════════════════════════
+                 2. 密码强度项
+                 ════════════════════════════════════════════════════════════ -->
+            <Border Classes="GdMetricCard">
+                <StackPanel Spacing="12">
+                    <Grid ColumnDefinitions="44,*,Auto"
+                          ColumnSpacing="14">
+
+                        <!-- 图标（warning 色） -->
+                        <Border Classes="GdStatIcon"
+                                Width="44"
+                                Height="44"
+                                Background="{DynamicResource GdWarningSurfaceBrush}">
+                            <ui:SymbolIcon Symbol="ProtectedDocument"
+                                           FontSize="22"
+                                           Foreground="{DynamicResource GdWarningBrush}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                        </Border>
+
+                        <!-- 标题 + Badge + 描述 -->
+                        <StackPanel Grid.Column="1"
+                                    Spacing="6"
+                                    VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal"
+                                        Spacing="10"
+                                        VerticalAlignment="Center">
+                                <TextBlock Text="登录密码"
+                                           FontSize="14"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource GdForegroundBrush}" />
+                                <Border Classes="GdBadge GdWarning">
+                                    <TextBlock Text="中等强度" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="建议使用至少 8 位且包含字母、数字与符号的组合密码。"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <!-- 修改密码按钮 -->
+                        <Button Grid.Column="2"
+                                Content="修改密码"
+                                Classes="GdGhost"
+                                VerticalAlignment="Center"
+                                Command="{Binding ChangePasswordCommand}" />
+                    </Grid>
+
+                    <!-- 进度条 60% -->
+                    <Border Classes="GdProgress">
+                        <Grid ColumnDefinitions="60*,40*">
+                            <Border Classes="GdProgressFill GdWarning" />
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <!-- ════════════════════════════════════════════════════════════
+                 3. 二步验证项
+                 ════════════════════════════════════════════════════════════ -->
+            <Border Classes="GdMetricCard">
+                <Grid ColumnDefinitions="44,*,Auto"
+                      ColumnSpacing="14">
+
+                    <!-- 图标（success 色） -->
+                    <Border Classes="GdStatIcon"
+                            Width="44"
+                            Height="44"
+                            Background="{DynamicResource GdSuccessSurfaceBrush}">
+                        <ui:SymbolIcon Symbol="ProtectedDocument"
+                                       FontSize="22"
+                                       Foreground="{DynamicResource GdSuccessBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                    </Border>
+
+                    <!-- 标题 + Badge + 描述 -->
+                    <StackPanel Grid.Column="1"
+                                Spacing="6"
+                                VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="10"
+                                    VerticalAlignment="Center">
+                            <TextBlock Text="二步验证"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource GdForegroundBrush}" />
+                            <Border Classes="GdBadge GdSuccess">
+                                <TextBlock Text="已开启" />
+                            </Border>
+                        </StackPanel>
+                        <TextBlock Text="登录时将要求额外的验证码确认，已为您的账号启用。"
+                                   FontSize="12"
+                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <!-- Toggle 开关 -->
+                    <ToggleSwitch Grid.Column="2"
+                                  IsChecked="True"
+                                  VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+
+            <!-- ════════════════════════════════════════════════════════════
+                 4. 登录设备管理卡
+                 ════════════════════════════════════════════════════════════ -->
+            <Border Classes="GdMetricCard">
+                <StackPanel Spacing="12">
+
+                    <!-- 头部：标题 + 设备数 + 全部下线按钮 -->
+                    <Grid ColumnDefinitions="*,Auto"
+                          ColumnSpacing="12">
+                        <StackPanel Spacing="2">
+                            <StackPanel Orientation="Horizontal"
+                                        Spacing="10"
+                                        VerticalAlignment="Center">
+                                <TextBlock Text="登录设备"
+                                           FontSize="14"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource GdForegroundBrush}" />
+                                <Border Classes="GdBadge GdInfo">
+                                    <TextBlock Text="3 台设备" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="如发现可疑设备，请立即下线并修改密码。"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                        </StackPanel>
+                        <Button Grid.Column="1"
+                                Content="全部下线"
+                                Classes="GdDanger"
+                                VerticalAlignment="Center" />
+                    </Grid>
+
+                    <!-- 设备表格 -->
+                    <DataGrid Classes="GdDataTable"
+                              ItemsSource="{x:Static views:SecurityView.SampleDevices}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="Horizontal"
+                              CanUserResizeColumns="False"
+                              CanUserSortColumns="False"
+                              MinHeight="140">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="设备"
+                                                Binding="{Binding Device}"
+                                                Width="*" />
+                            <DataGridTextColumn Header="位置"
+                                                Binding="{Binding Location}"
+                                                Width="*" />
+                            <DataGridTextColumn Header="最后登录"
+                                                Binding="{Binding LastLogin}"
+                                                Width="*" />
+                            <DataGridTextColumn Header="状态"
+                                                Binding="{Binding Status}"
+                                                Width="Auto" />
+                            <DataGridTemplateColumn Header="操作"
+                                                    Width="Auto">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:DataType="views:DeviceRow">
+                                        <Button Content="下线"
+                                                Classes="GdGhost GdBtnSm"
+                                                Margin="0 2" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+
+            <!-- ════════════════════════════════════════════════════════════
+                 5. 修改密码表单（保留功能绑定）
+                 ════════════════════════════════════════════════════════════ -->
+            <Border Classes="GdCard">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="修改密码" Classes="GdSectionTitle" />
+
+                    <Grid ColumnDefinitions="*,*"
+                          ColumnSpacing="12">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="原密码" Classes="GdEyebrow" />
+                            <TextBox Text="{Binding OldPassword}"
+                                     PasswordChar="*"
+                                     Watermark="请输入原密码"
+                                     Classes="GdInput" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1"
+                                    Spacing="6">
+                            <TextBlock Text="新密码" Classes="GdEyebrow" />
+                            <TextBox Text="{Binding NewPassword}"
+                                     PasswordChar="*"
+                                     Watermark="请输入新密码"
+                                     Classes="GdInput" />
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="确认新密码" Classes="GdEyebrow" />
+                        <TextBox Text="{Binding ConfirmPassword}"
+                                 PasswordChar="*"
+                                 Watermark="请再次输入新密码"
+                                 Classes="GdInput" />
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal"
+                                Spacing="12"
+                                VerticalAlignment="Center">
+                        <Button Content="修改密码"
+                                Classes="GdPrimary"
+                                Command="{Binding ChangePasswordCommand}" />
+                        <TextBlock Text="正在修改..."
+                                   FontSize="12"
+                                   Foreground="{DynamicResource GdPrimaryBrush}"
+                                   IsVisible="{Binding IsLoading}"
+                                   VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Message}"
+                                   Foreground="{DynamicResource GdSuccessBrush}"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
         </StackPanel>
-    </Border>
+    </controls:GalleryPage>
 </UserControl>

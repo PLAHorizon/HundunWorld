@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
              xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
@@ -26,25 +26,25 @@
                                     <Border HorizontalAlignment="Right"
                                             MaxWidth="480"
                                             IsVisible="{Binding IsUser}"
-                                            CornerRadius="14"
+                                            CornerRadius="{DynamicResource GdRadiusLg}"
                                             Padding="14 10"
-                                            Background="{DynamicResource BattleNetOutlineBrush}">
+                                            Background="{DynamicResource GdBrand400Brush}">
                                         <StackPanel Spacing="4">
-                                            <TextBlock Text="{Binding Role}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                            <TextBlock Text="{Binding Content}" TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource LoginFormTextBrush}" />
-                                            <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Right" />
+                                            <TextBlock Text="{Binding Role}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                            <TextBlock Text="{Binding Content}" TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource GdForegroundBrush}" />
+                                            <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Right" />
                                         </StackPanel>
                                     </Border>
                                     <Border HorizontalAlignment="Left"
                                             MaxWidth="480"
                                             IsVisible="{Binding !IsUser}"
-                                            CornerRadius="14"
+                                            CornerRadius="{DynamicResource GdRadiusLg}"
                                             Padding="14 10"
-                                            Background="{DynamicResource LoginFormBackgroundBrush}">
+                                            Background="{DynamicResource GdCardBrush}">
                                         <StackPanel Spacing="4">
-                                            <TextBlock Text="{Binding Role}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" />
-                                            <TextBlock Text="{Binding Content}" TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
-                                            <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Right" />
+                                            <TextBlock Text="{Binding Role}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                            <TextBlock Text="{Binding Content}" TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                            <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Right" />
                                         </StackPanel>
                                     </Border>
                                 </Grid>
@@ -55,12 +55,12 @@
                     <!-- 加载指示器 -->
                     <Border IsVisible="{Binding IsGenerating}"
                             Padding="14 10"
-                            CornerRadius="14"
-                            Background="{DynamicResource LoginFormBackgroundBrush}"
+                            CornerRadius="{DynamicResource GdRadiusLg}"
+                            Background="{DynamicResource GdCardBrush}"
                             MaxWidth="200">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <ProgressBar IsIndeterminate="True" Width="40" Height="4" />
-                            <TextBlock Text="思考中..." FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="思考中..." FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                     </Border>
 
@@ -71,20 +71,20 @@
                             <TextBlock Text="🌸" FontSize="48" HorizontalAlignment="Center" />
                             <TextBlock Text="向AI助手提问花卉行情、种植建议"
                                        FontSize="15"
-                                       Foreground="{DynamicResource LoginFormMutedBrush}"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
                                        HorizontalAlignment="Center" />
                             <StackPanel Spacing="8" HorizontalAlignment="Center">
-                                <Border Background="{DynamicResource BattleNetSurfaceTintBrush}" CornerRadius="10" Padding="12 8" Cursor="Hand"
+                                <Border Background="{DynamicResource GdInfoSurfaceBrush}" CornerRadius="{DynamicResource GdRadiusMd}" Padding="12 8" Cursor="Hand"
                                         Tapped="OnSuggestionTapped">
-                                    <TextBlock Text="今天红玫瑰均价多少？" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock Text="今天红玫瑰均价多少？" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
                                 </Border>
-                                <Border Background="{DynamicResource BattleNetSurfaceTintBrush}" CornerRadius="10" Padding="12 8" Cursor="Hand"
+                                <Border Background="{DynamicResource GdInfoSurfaceBrush}" CornerRadius="{DynamicResource GdRadiusMd}" Padding="12 8" Cursor="Hand"
                                         Tapped="OnSuggestionTapped">
-                                    <TextBlock Text="推荐适合春季种植的花卉品种" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock Text="推荐适合春季种植的花卉品种" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
                                 </Border>
-                                <Border Background="{DynamicResource BattleNetSurfaceTintBrush}" CornerRadius="10" Padding="12 8" Cursor="Hand"
+                                <Border Background="{DynamicResource GdInfoSurfaceBrush}" CornerRadius="{DynamicResource GdRadiusMd}" Padding="12 8" Cursor="Hand"
                                         Tapped="OnSuggestionTapped">
-                                    <TextBlock Text="下周花卉价格走势预测" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock Text="下周花卉价格走势预测" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
                                 </Border>
                             </StackPanel>
                         </StackPanel>
@@ -94,25 +94,25 @@
 
             <!-- 输入区域 -->
             <Border Grid.Row="1"
-                    Classes="SurfaceCard"
+                    Classes="GdCard"
                     Padding="16 12"
-                    BorderBrush="{DynamicResource LoginInfoCardBorderBrush}"
+                    BorderBrush="{DynamicResource GdBorderBrush}"
                     BorderThickness="0 1 0 0">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                     <TextBox Text="{Binding InputText}"
                              Watermark="输入您的问题..."
                              Padding="12 10"
-                             CornerRadius="10"
-                             Background="{DynamicResource LoginFormBackgroundBrush}"
+                             CornerRadius="{DynamicResource GdRadiusMd}"
+                             Background="{DynamicResource GdCardBrush}"
                              BorderThickness="0"
-                             Foreground="{DynamicResource LoginFormTextBrush}"
+                             Foreground="{DynamicResource GdForegroundBrush}"
                              IsEnabled="{Binding !IsGenerating}"
                              KeyDown="OnInputKeyDown" />
                     <Button Grid.Column="1"
                             Content="发送"
-                            Classes="PrimaryAction"
+                            Classes="GdPrimary"
                             Padding="20 10"
-                            CornerRadius="10"
+                            CornerRadius="{DynamicResource GdRadiusMd}"
                             Command="{Binding SendMessageCommand}"
                             IsEnabled="{Binding CanSend}" />
                 </Grid>

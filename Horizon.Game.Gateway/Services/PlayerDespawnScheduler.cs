@@ -61,8 +61,16 @@ namespace Horizon.Game.Gateway.Services
         }
 
         /// <summary>
-        /// 立即 Despawn：向 ZoneShardGrain 注销实体并移除 AOI session。<br/>
-        /// 同一 characterId 重复调度会取消旧任务（避免重复注销）。
+        /// 延迟 Despawn：向 ZoneShardGrain 注销实体并移除 AOI session。<br/>
+        /// 同一 characterId 重复调度会取消旧任务（避免重复注销）。<br/>
+        /// <br/>
+        /// 修复 BUG（远程角色周期性地 Despawn+Spawn 循环 — 闪退）：<br/>
+        /// 原实现立即执行 Despawn（<see cref="DespawnImmediatelyAsync"/>），客户端短暂断线后重连时
+        /// 实体已被从 <c>_simulatedEntities</c> 移除，<c>EnterWorldAsync</c> 无法找到已存在的实体，<br/>
+        /// 走 <c>RegisterEntityAsync</c> 重新 Spawn，导致其他客户端看到远程角色闪退。<br/>
+        /// 修复：添加 15 秒宽限期延迟，客户端在宽限期内重连时 <see cref="CancelDespawn"/> 取消待执行的 Despawn，
+        /// <c>EnterWorldAsync</c> 发现实体仍存在，跳过 Despawn+Spawn 仅更新 AOI 订阅。<br/>
+        /// 宽限期结束后实体才被真正 Despawn，此时若客户端重连则走正常 Spawn 注册路径。
         /// </summary>
         /// <param name="characterId">离线角色的 characterId。</param>
         public void ScheduleDespawn(long characterId)
@@ -83,7 +91,7 @@ namespace Horizon.Game.Gateway.Services
                 return;
             }
 
-            _logger.LogInformation("角色 {CharacterId} 断线，立即广播 Despawn", characterId);
+            _logger.LogInformation("角色 {CharacterId} 断线，调度 Despawn（15秒宽限期）", characterId);
 
             // 后台执行注销（不阻塞调用方）
             _ = ExecuteDespawnAsync(characterId, cts.Token);
@@ -237,11 +245,31 @@ namespace Horizon.Game.Gateway.Services
         }
 
         /// <summary>
-        /// 立即执行 Despawn：调用 ZoneShardGrain 注销实体并移除 AOI session。
+        /// 宽限期时长：客户端断线后实体保留在 <c>_simulatedEntities</c> 中的时间。
+        /// 客户端在此时间内重连可取消 Despawn，避免 Despawn+Spawn 循环（闪退）。
+        /// 15 秒足够覆盖网络抖动/场景切换触发的短暂断线，且不会让远程角色长时间"假在线"。
+        /// </summary>
+        private static readonly TimeSpan DespawnGracePeriod = TimeSpan.FromSeconds(15);
+
+        /// <summary>
+        /// 延迟执行 Despawn：先等待宽限期，宽限期内客户端重连则取消 Despawn。<br/>
+        /// 宽限期结束后执行 <see cref="DoDespawnCoreAsync"/> 完成实体注销。
         /// </summary>
         private async Task ExecuteDespawnAsync(long characterId, CancellationToken ct)
         {
-            // 检查是否已被取消（重连场景）
+            try
+            {
+                // 等待宽限期（客户端重连时 CancelDespawn 会取消此 CancellationTokenSource）
+                // OperationCanceledException 由客户端重连触发，是正常取消，非异常行为。
+                await Task.Delay(DespawnGracePeriod, ct).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("角色 {CharacterId} 在宽限期内重连，Despawn 已取消", characterId);
+                return;
+            }
+
+            // 宽限期已过，二次检查：若已被取消则跳过
             if (ct.IsCancellationRequested) return;
 
             // 从挂起表移除
@@ -256,6 +284,7 @@ namespace Horizon.Game.Gateway.Services
                 return;
             }
 
+            _logger.LogInformation("角色 {CharacterId} 宽限期已过（{Seconds}秒），执行 Despawn", characterId, DespawnGracePeriod.TotalSeconds);
             await DoDespawnCoreAsync(characterId);
         }
 

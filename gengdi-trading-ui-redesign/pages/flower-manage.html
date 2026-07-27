@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>花卉管理 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   参照 quant-trading-ui 风格重构，零色值偏差
+   Dark mode is the primary experience (html.dark)
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #ff9800;
+  --gd-state-warning-surface: rgba(255, 152, 0, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #ef5350;
+  --gd-state-error-surface: rgba(239, 83, 80, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific (花卉价格波动涨跌色) ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #ef5350;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(239, 83, 80, 0.12);
+
+  /* ---------- Light Mode (default :root) ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode (html.dark — primary experience) ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <div class="app-root">
+      <!-- ================ 顶栏（主导航） ================ -->
+      <header class="app-topbar">
+        <div class="topbar-brand">
+          <div style="width:32px;height:32px;border-radius:var(--gd-radius-md);background:linear-gradient(135deg,var(--gd-brand-500),var(--gd-brand-700));display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="sprout" style="width:18px;height:18px;color:var(--gd-primary-foreground);"></i>
+          </div>
+          <span style="font-size:15px;font-weight:600;color:var(--gd-foreground);">耕地</span>
+        </div>
+        <nav class="topbar-main-nav">
+          <a class="main-nav-item" data-dom-id="nav-games" href="#"><i data-lucide="gamepad-2" class="main-nav-icon"></i><span>游戏</span></a>
+          <a class="main-nav-item" data-dom-id="nav-news" href="#"><i data-lucide="newspaper" class="main-nav-icon"></i><span>新闻</span></a>
+          <a class="main-nav-item" data-dom-id="nav-flower-market" data-active="true" href="#"><i data-lucide="flower-2" class="main-nav-icon"></i><span>花卉市场</span></a>
+          <a class="main-nav-item" data-dom-id="nav-music" href="#"><i data-lucide="music" class="main-nav-icon"></i><span>音乐</span></a>
+          <a class="main-nav-item" data-dom-id="nav-more" href="#"><i data-lucide="more-horizontal" class="main-nav-icon"></i><span>更多</span></a>
+        </nav>
+        <div class="topbar-actions">
+          <button class="header-icon-btn" title="通知" style="position:relative;">
+            <i data-lucide="bell" style="width:18px;height:18px;"></i>
+            <span style="position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background-color:var(--gd-state-error);border:2px solid var(--gd-card);"></span>
+          </button>
+          <button class="header-icon-btn" title="主题切换"><i data-lucide="moon" style="width:18px;height:18px;"></i></button>
+          <div style="width:1px;height:24px;background-color:var(--gd-border);margin:0 4px;"></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;background-color:var(--gd-muted);border-radius:var(--gd-radius-full);cursor:pointer;">
+            <div style="width:26px;height:26px;border-radius:50%;background-color:var(--gd-brand-500);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--gd-primary-foreground);">龙</div>
+            <div style="display:flex;flex-direction:column;line-height:1.2;">
+              <span style="font-size:12px;color:var(--gd-foreground);font-weight:500;">龙</span>
+              <span class="num" style="font-size:10px;color:var(--gd-muted-foreground);">1010776</span>
+            </div>
+          </div>
+          <div style="width:1px;height:24px;background-color:var(--gd-border);margin:0 4px;"></div>
+          <button class="win-btn" title="最小化"><i data-lucide="minus" style="width:16px;height:16px;"></i></button>
+          <button class="win-btn" title="最大化"><i data-lucide="square" style="width:14px;height:14px;"></i></button>
+          <button class="win-btn win-btn-close" title="关闭"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+        </div>
+      </header>
+
+      <!-- ================ 副导航 ================ -->
+      <nav class="app-subnavbar no-scrollbar">
+        <a class="subnav-item" href="#"><i data-lucide="layout-dashboard" class="subnav-icon"></i><span>总览</span></a>
+        <a class="subnav-item" href="#"><i data-lucide="library" class="subnav-icon"></i><span>全部游戏</span></a>
+        <a class="subnav-item" href="#"><i data-lucide="download" class="subnav-icon"></i><span>下载</span></a>
+        <a class="subnav-item" href="#"><i data-lucide="settings" class="subnav-icon"></i><span>设置</span></a>
+        <div class="subnav-divider"></div>
+        <a class="subnav-item" href="#"><i data-lucide="gauge" class="subnav-icon"></i><span>行情仪表盘</span></a>
+        <a class="subnav-item" href="#"><i data-lucide="shopping-cart" class="subnav-icon"></i><span>市场</span></a>
+        <a class="subnav-item" href="#"><i data-lucide="sprout" class="subnav-icon"></i><span>种植建议</span></a>
+        <a class="subnav-item" href="#"><i data-lucide="shopping-bag" class="subnav-icon"></i><span>购物车</span><span class="subnav-badge">3</span></a>
+        <a class="subnav-item" href="#"><i data-lucide="file-text" class="subnav-icon"></i><span>订单</span></a>
+        <a class="subnav-item" href="#"><i data-lucide="bell-ring" class="subnav-icon"></i><span>预警</span><span class="subnav-badge">5</span></a>
+        <a class="subnav-item" href="#"><i data-lucide="brain" class="subnav-icon"></i><span>AI助手</span></a>
+        <a class="subnav-item" href="#"><i data-lucide="bar-chart-3" class="subnav-icon"></i><span>数据大屏</span></a>
+        <a class="subnav-item" data-active="true" href="#"><i data-lucide="store" class="subnav-icon"></i><span>商家</span></a>
+        <a class="subnav-item" href="#"><i data-lucide="map-pin" class="subnav-icon"></i><span>收货地址</span></a>
+        <a class="subnav-item" href="#"><i data-lucide="user" class="subnav-icon"></i><span>个人中心</span></a>
+      </nav>
+
+      <!-- ================ 内容区 ================ -->
+      <main class="app-content">
+        <div style="padding:24px;display:flex;flex-direction:column;gap:32px;">
+
+          <!-- ============================================================ -->
+          <!-- Section 1: 商家管理（flower-merchant） -->
+          <!-- ============================================================ -->
+          <section id="flower-merchant">
+            <div class="gd-section-header">
+              <div class="gd-section-header-title">商家管理</div>
+              <div class="gd-section-header-sub">商家后台仪表盘 · 订单管理 · 商品管理 · 经营统计</div>
+              <div class="gd-section-header-file"><i data-lucide="file-code" style="width:12px;height:12px;"></i> FlowerMerchantView.axaml</div>
+            </div>
+
+            <!-- 商户信息卡 -->
+            <div class="metric-card" style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+              <div style="width:56px;height:56px;border-radius:50%;background-color:var(--gd-state-info-surface);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i data-lucide="store" style="width:26px;height:26px;color:var(--gd-state-info);"></i>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:18px;font-weight:600;color:var(--gd-foreground);">花语工坊</span>
+                  <span class="badge badge-success"><i data-lucide="badge-check" style="width:12px;height:12px;"></i>已认证</span>
+                  <span class="badge badge-info">信誉 A+</span>
+                </div>
+                <div style="font-size:12px;color:var(--gd-muted-foreground);">云南昆明斗南直供 · 企业商户 · 联系电话 138****6688</div>
+              </div>
+              <button class="gd-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;"><i data-lucide="refresh-cw" style="width:13px;height:13px;"></i><span>刷新</span></button>
+            </div>
+
+            <!-- 统计卡 4 列 -->
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px;">
+              <div class="gd-stat-card">
+                <span class="gd-stat-label"><i data-lucide="shopping-bag" style="width:13px;height:13px;"></i>今日订单</span>
+                <span class="num gd-stat-value" style="color:var(--gd-foreground);">12</span>
+                <span class="num gd-stat-delta text-up"><i data-lucide="trending-up" style="width:11px;height:11px;display:inline;"></i> +3 较昨日</span>
+              </div>
+              <div class="gd-stat-card">
+                <span class="gd-stat-label"><i data-lucide="banknote" style="width:13px;height:13px;"></i>今日营收</span>
+                <span class="num gd-stat-value" style="color:var(--gd-state-info);">¥3,860</span>
+                <span class="num gd-stat-delta text-up"><i data-lucide="trending-up" style="width:11px;height:11px;display:inline;"></i> +18.2%</span>
+              </div>
+              <div class="gd-stat-card">
+                <span class="gd-stat-label"><i data-lucide="truck" style="width:13px;height:13px;"></i>待发货</span>
+                <span class="num gd-stat-value" style="color:var(--gd-state-warning);">5</span>
+                <span class="gd-stat-delta" style="color:var(--gd-muted-foreground);">需 24h 内处理</span>
+              </div>
+              <div class="gd-stat-card">
+                <span class="gd-stat-label"><i data-lucide="package-x" style="width:13px;height:13px;"></i>库存预警</span>
+                <span class="num gd-stat-value" style="color:var(--gd-state-error);">2</span>
+                <span class="gd-stat-delta" style="color:var(--gd-muted-foreground);">雪山白百合 / 晨曦花束</span>
+              </div>
+            </div>
+
+            <!-- 订单管理 data-table -->
+            <div class="metric-card" style="margin-bottom:16px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">订单管理</span>
+                  <span class="badge badge-info">共 12 条</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span class="gd-pill gd-pill-active">全部</span>
+                  <span class="gd-pill gd-pill-ghost">待付款</span>
+                  <span class="gd-pill gd-pill-ghost">待发货</span>
+                  <span class="gd-pill gd-pill-ghost">已发货</span>
+                  <span class="gd-pill gd-pill-ghost">已完成</span>
+                </div>
+              </div>
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>订单号</th><th>买家</th><th>商品</th><th>数量</th><th>金额</th><th>状态</th><th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="num">GD20260726-0098</td>
+                    <td>云端花房</td>
+                    <td>高原红玫瑰（20支/束）</td>
+                    <td class="num">2</td>
+                    <td class="num" style="color:var(--gd-state-error);font-weight:600;">¥116.00</td>
+                    <td><span class="badge badge-warning">待发货</span></td>
+                    <td><a class="gd-link">发货</a> · <a class="gd-link">详情</a></td>
+                  </tr>
+                  <tr>
+                    <td class="num">GD20260726-0091</td>
+                    <td>春田花卉</td>
+                    <td>雪山白百合（10支/束）</td>
+                    <td class="num">1</td>
+                    <td class="num" style="color:var(--gd-state-error);font-weight:600;">¥42.50</td>
+                    <td><span class="badge badge-info">已发货</span></td>
+                    <td><a class="gd-link">物流</a> · <a class="gd-link">详情</a></td>
+                  </tr>
+                  <tr>
+                    <td class="num">GD20260725-0142</td>
+                    <td>花语工坊</td>
+                    <td>晨曦混合花束</td>
+                    <td class="num">3</td>
+                    <td class="num" style="color:var(--gd-state-error);font-weight:600;">¥264.00</td>
+                    <td><span class="badge badge-success">已完成</span></td>
+                    <td><a class="gd-link">详情</a></td>
+                  </tr>
+                  <tr>
+                    <td class="num">GD20260725-0138</td>
+                    <td>绿野花苑</td>
+                    <td>康乃馨花束（15支）</td>
+                    <td class="num">5</td>
+                    <td class="num" style="color:var(--gd-state-error);font-weight:600;">¥325.00</td>
+                    <td><span class="badge badge-warning">待发货</span></td>
+                    <td><a class="gd-link">发货</a> · <a class="gd-link">详情</a></td>
+                  </tr>
+                  <tr>
+                    <td class="num">GD20260725-0125</td>
+                    <td>晨曦花店</td>
+                    <td>高原红玫瑰（20支/束）</td>
+                    <td class="num">2</td>
+                    <td class="num" style="color:var(--gd-state-error);font-weight:600;">¥116.00</td>
+                    <td><span class="badge badge-success">已完成</span></td>
+                    <td><a class="gd-link">详情</a></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- 商品管理网格卡 -->
+            <div class="metric-card" style="margin-bottom:16px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">商品管理</span>
+                <button class="gd-btn-primary" style="display:inline-flex;align-items:center;gap:6px;"><i data-lucide="plus" style="width:13px;height:13px;"></i><span>发布商品</span></button>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+                <div class="metric-card" style="padding:14px;">
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                    <div style="width:40px;height:40px;border-radius:var(--gd-radius-md);background-color:var(--gd-state-error-surface);display:flex;align-items:center;justify-content:center;"><span style="font-size:20px;">🌸</span></div>
+                    <div style="flex:1;">
+                      <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);">高原红玫瑰</div>
+                      <div style="display:flex;gap:4px;margin-top:2px;"><span class="badge badge-success">已上架</span><span class="badge badge-info">已通过</span></div>
+                    </div>
+                  </div>
+                  <div style="display:flex;align-items:baseline;gap:6px;"><span class="num" style="font-size:16px;font-weight:600;color:var(--gd-state-error);">¥58.00</span><span class="num" style="font-size:11px;color:var(--gd-muted-foreground);">库存 1,280</span></div>
+                </div>
+                <div class="metric-card" style="padding:14px;">
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                    <div style="width:40px;height:40px;border-radius:var(--gd-radius-md);background-color:var(--gd-state-info-surface);display:flex;align-items:center;justify-content:center;"><span style="font-size:20px;">🌼</span></div>
+                    <div style="flex:1;">
+                      <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);">雪山白百合</div>
+                      <div style="display:flex;gap:4px;margin-top:2px;"><span class="badge badge-warning">待审核</span></div>
+                    </div>
+                  </div>
+                  <div style="display:flex;align-items:baseline;gap:6px;"><span class="num" style="font-size:16px;font-weight:600;color:var(--gd-state-error);">¥42.50</span><span class="num" style="font-size:11px;color:var(--gd-state-error);">库存 86</span></div>
+                </div>
+                <div class="metric-card" style="padding:14px;">
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                    <div style="width:40px;height:40px;border-radius:var(--gd-radius-md);background-color:var(--gd-state-warning-surface);display:flex;align-items:center;justify-content:center;"><span style="font-size:20px;">💐</span></div>
+                    <div style="flex:1;">
+                      <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);">晨曦混合花束</div>
+                      <div style="display:flex;gap:4px;margin-top:2px;"><span class="badge badge-error">下架</span></div>
+                    </div>
+                  </div>
+                  <div style="display:flex;align-items:baseline;gap:6px;"><span class="num" style="font-size:16px;font-weight:600;color:var(--gd-state-error);">¥88.00</span><span class="num" style="font-size:11px;color:var(--gd-state-error);">库存 32</span></div>
+                </div>
+                <div class="metric-card" style="padding:14px;">
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                    <div style="width:40px;height:40px;border-radius:var(--gd-radius-md);background-color:var(--gd-state-success-surface);display:flex;align-items:center;justify-content:center;"><span style="font-size:20px;">🌷</span></div>
+                    <div style="flex:1;">
+                      <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);">康乃馨花束</div>
+                      <div style="display:flex;gap:4px;margin-top:2px;"><span class="badge badge-success">已上架</span><span class="badge badge-info">已通过</span></div>
+                    </div>
+                  </div>
+                  <div style="display:flex;align-items:baseline;gap:6px;"><span class="num" style="font-size:16px;font-weight:600;color:var(--gd-state-error);">¥65.00</span><span class="num" style="font-size:11px;color:var(--gd-muted-foreground);">库存 540</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 数据统计区 -->
+            <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;">
+              <div class="metric-card" style="height:300px;display:flex;flex-direction:column;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                  <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">近 7 日营收趋势</span>
+                  <span class="num" style="font-size:12px;color:var(--gd-state-info);">累计 ¥21,480</span>
+                </div>
+                <div style="flex:1;position:relative;"><canvas id="merchantRevenueChart"></canvas></div>
+              </div>
+              <div class="metric-card" style="height:300px;display:flex;flex-direction:column;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                  <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">品类销售占比</span>
+                </div>
+                <div style="flex:1;position:relative;"><canvas id="merchantCategoryChart"></canvas></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================================================ -->
+          <!-- Section 2: 工作台看板（flower-workbench） -->
+          <!-- ============================================================ -->
+          <section id="flower-workbench">
+            <div class="gd-section-header">
+              <div class="gd-section-header-title">工作台看板</div>
+              <div class="gd-section-header-sub">角色切换 · 行情预报 / 种植管理 / 采收管理 / 销售管理 四象限</div>
+              <div class="gd-section-header-file"><i data-lucide="file-code" style="width:12px;height:12px;"></i> FlowerWorkbenchView.axaml</div>
+            </div>
+
+            <!-- 角色切换 -->
+            <div class="metric-card" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:12px 16px;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:12px;color:var(--gd-muted-foreground);">角色</span>
+                <span class="gd-role-tab gd-role-tab-active">种植户</span>
+                <span class="gd-role-tab">采购商</span>
+                <span class="gd-role-tab">商户</span>
+              </div>
+              <button class="gd-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;"><i data-lucide="refresh-cw" style="width:13px;height:13px;"></i><span>刷新</span></button>
+            </div>
+
+            <!-- 2x2 象限卡 -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+
+              <!-- 行情预报 -->
+              <div class="gd-quadrant">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                  <span class="gd-quadrant-title"><i data-lucide="trending-up" style="width:18px;height:18px;color:var(--gd-state-info);"></i>行情预报</span>
+                  <span class="badge badge-warning">5 条预警</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
+                  <div style="text-align:center;"><div style="font-size:11px;color:var(--gd-muted-foreground);">今日均价</div><div class="num" style="font-size:22px;font-weight:700;color:var(--gd-foreground);">¥2.86</div></div>
+                  <div style="text-align:center;"><div style="font-size:11px;color:var(--gd-muted-foreground);">涨跌幅</div><div class="num" style="font-size:22px;font-weight:700;color:var(--gd-state-success);">+3.2%</div></div>
+                  <div style="text-align:center;"><div style="font-size:11px;color:var(--gd-muted-foreground);">预警数</div><div class="num" style="font-size:22px;font-weight:700;color:var(--gd-state-warning);">5</div></div>
+                </div>
+                <div class="gd-divider" style="margin-bottom:10px;"></div>
+                <div style="font-size:11px;color:var(--gd-muted-foreground);margin-bottom:6px;">品种价格排行</div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;">🌸</span><span style="flex:1;font-size:13px;color:var(--gd-foreground);">红玫瑰</span><span class="num" style="font-size:13px;font-weight:600;">¥3.20</span><span class="num text-up" style="font-size:11px;">+2.4%</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;">🌼</span><span style="flex:1;font-size:13px;color:var(--gd-foreground);">百合</span><span class="num" style="font-size:13px;font-weight:600;">¥2.45</span><span class="num text-down" style="font-size:11px;">-1.1%</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;">🌷</span><span style="flex:1;font-size:13px;color:var(--gd-foreground);">康乃馨</span><span class="num" style="font-size:13px;font-weight:600;">¥1.80</span><span class="num text-up" style="font-size:11px;">+0.8%</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;">🌻</span><span style="flex:1;font-size:13px;color:var(--gd-foreground);">向日葵</span><span class="num" style="font-size:13px;font-weight:600;">¥4.10</span><span class="num text-up" style="font-size:11px;">+5.6%</span></div>
+                </div>
+              </div>
+
+              <!-- 种植管理 -->
+              <div class="gd-quadrant">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                  <span class="gd-quadrant-title"><i data-lucide="sprout" style="width:18px;height:18px;color:var(--gd-state-success);"></i>种植管理</span>
+                  <span class="badge badge-error">2 项异常</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
+                  <div style="text-align:center;"><div style="font-size:11px;color:var(--gd-muted-foreground);">在产地块</div><div class="num" style="font-size:22px;font-weight:700;color:var(--gd-foreground);">8</div></div>
+                  <div style="text-align:center;"><div style="font-size:11px;color:var(--gd-muted-foreground);">待处理建议</div><div class="num" style="font-size:22px;font-weight:700;color:var(--gd-state-warning);">3</div></div>
+                  <div style="text-align:center;"><div style="font-size:11px;color:var(--gd-muted-foreground);">传感器异常</div><div class="num" style="font-size:22px;font-weight:700;color:var(--gd-state-error);">2</div></div>
+                </div>
+                <div class="gd-divider" style="margin-bottom:10px;"></div>
+                <div style="font-size:11px;color:var(--gd-muted-foreground);margin-bottom:6px;">生长阶段分布</div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:50%;background-color:var(--gd-state-success);"></span><span style="flex:1;font-size:13px;color:var(--gd-foreground);">A-03 红玫瑰</span><span style="font-size:11px;color:var(--gd-state-success);">开花期</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:50%;background-color:var(--gd-state-info);"></span><span style="flex:1;font-size:13px;color:var(--gd-foreground);">B-01 百合</span><span style="font-size:11px;color:var(--gd-state-info);">育苗期</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:50%;background-color:var(--gd-state-warning);"></span><span style="flex:1;font-size:13px;color:var(--gd-foreground);">C-02 康乃馨</span><span style="font-size:11px;color:var(--gd-state-warning);">移栽期</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:50%;background-color:var(--gd-state-error);"></span><span style="flex:1;font-size:13px;color:var(--gd-foreground);">D-05 向日葵</span><span style="font-size:11px;color:var(--gd-state-error);">异常报警</span></div>
+                </div>
+              </div>
+
+              <!-- 采收管理 -->
+              <div class="gd-quadrant">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                  <span class="gd-quadrant-title"><i data-lucide="wheat" style="width:18px;height:18px;color:var(--gd-state-warning);"></i>采收管理</span>
+                  <span class="badge badge-warning">2 待上架</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
+                  <div style="text-align:center;"><div style="font-size:11px;color:var(--gd-muted-foreground);">待采批次</div><div class="num" style="font-size:22px;font-weight:700;color:var(--gd-state-warning);">4</div></div>
+                  <div style="text-align:center;"><div style="font-size:11px;color:var(--gd-muted-foreground);">7日采收量</div><div class="num" style="font-size:22px;font-weight:700;color:var(--gd-foreground);">1,280</div></div>
+                  <div style="text-align:center;"><div style="font-size:11px;color:var(--gd-muted-foreground);">待上架</div><div class="num" style="font-size:22px;font-weight:700;color:var(--gd-state-info);">2</div></div>
+                </div>
+                <div class="gd-divider" style="margin-bottom:10px;"></div>
+                <div style="font-size:11px;color:var(--gd-muted-foreground);margin-bottom:6px;">采收进度</div>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:var(--gd-foreground);">A-03 红玫瑰</span><span class="num" style="color:var(--gd-muted-foreground);">07-28 可采</span></div><div style="height:4px;border-radius:2px;background-color:var(--gd-muted);"><div style="height:100%;width:85%;border-radius:2px;background-color:var(--gd-state-success);"></div></div></div>
+                  <div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;"><span style="color:var(--gd-foreground);">C-02 康乃馨</span><span class="num" style="color:var(--gd-muted-foreground);">08-02 可采</span></div><div style="height:4px;border-radius:2px;background-color:var(--gd-muted);"><div style="height:100%;width:60%;border-radius:2px;background-color:var(--gd-state-info);"></div></div></div>
+                </div>
+              </div>
+
+              <!-- 销售管理 -->
+              <div class="gd-quadrant">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                  <span class="gd-quadrant-title"><i data-lucide="banknote" style="width:18px;height:18px;color:var(--gd-state-error);"></i>销售管理</span>
+                  <span class="badge badge-error">2 库存预警</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
+                  <div style="text-align:center;"><div style="font-size:11px;color:var(--gd-muted-foreground);">待发货</div><div class="num" style="font-size:22px;font-weight:700;color:var(--gd-state-warning);">5</div></div>
+                  <div style="text-align:center;"><div style="font-size:11px;color:var(--gd-muted-foreground);">今日营收</div><div class="num" style="font-size:22px;font-weight:700;color:var(--gd-state-info);">¥3,860</div></div>
+                  <div style="text-align:center;"><div style="font-size:11px;color:var(--gd-muted-foreground);">库存预警</div><div class="num" style="font-size:22px;font-weight:700;color:var(--gd-state-error);">2</div></div>
+                </div>
+                <div class="gd-divider" style="margin-bottom:10px;"></div>
+                <div style="font-size:11px;color:var(--gd-muted-foreground);margin-bottom:6px;">订单状态分布</div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:50%;background-color:var(--gd-state-warning);"></span><span style="flex:1;font-size:13px;color:var(--gd-foreground);">待发货</span><span class="num" style="font-size:13px;font-weight:600;">5</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:50%;background-color:var(--gd-state-info);"></span><span style="flex:1;font-size:13px;color:var(--gd-foreground);">已发货</span><span class="num" style="font-size:13px;font-weight:600;">3</span></div>
+                  <div style="display:flex;align-items:center;gap:8px;"><span style="width:8px;height:8px;border-radius:50%;background-color:var(--gd-state-success);"></span><span style="flex:1;font-size:13px;color:var(--gd-foreground);">已完成</span><span class="num" style="font-size:13px;font-weight:600;">4</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 快捷操作 -->
+            <div class="metric-card" style="display:flex;align-items:center;gap:12px;">
+              <span style="font-size:13px;font-weight:600;color:var(--gd-muted-foreground);">快捷操作</span>
+              <button class="gd-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;"><i data-lucide="wheat" style="width:14px;height:14px;"></i><span>记录采收</span></button>
+              <button class="gd-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;"><i data-lucide="package" style="width:14px;height:14px;"></i><span>上架商品</span></button>
+              <button class="gd-btn-ghost" style="display:inline-flex;align-items:center;gap:6px;"><i data-lucide="bell-ring" style="width:14px;height:14px;"></i><span>查看预警</span></button>
+              <button class="gd-btn-primary" style="display:inline-flex;align-items:center;gap:6px;"><i data-lucide="brain" style="width:14px;height:14px;"></i><span>AI助手</span></button>
+            </div>
+          </section>
+
+          <!-- ============================================================ -->
+          <!-- Section 3: 种植建议（flower-planting-advice） -->
+          <!-- ============================================================ -->
+          <section id="flower-planting-advice">
+            <div class="gd-section-header">
+              <div class="gd-section-header-title">种植建议</div>
+              <div class="gd-section-header-sub">品种推荐 · 农事日历 · IoT 传感器实时数据</div>
+              <div class="gd-section-header-file"><i data-lucide="file-code" style="width:12px;height:12px;"></i> FlowerPlantingAdviceView.axaml</div>
+            </div>
+
+            <!-- 品种筛选 chips -->
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+              <span class="gd-chip gd-chip-active">全部</span>
+              <span class="gd-chip">红玫瑰</span>
+              <span class="gd-chip">百合</span>
+              <span class="gd-chip">康乃馨</span>
+              <span class="gd-chip">向日葵</span>
+              <span class="gd-chip">混合花束</span>
+              <span style="margin-left:auto;font-size:11px;color:var(--gd-muted-foreground);">按建议评分排序</span>
+            </div>
+
+            <!-- 品种推荐卡网格 -->
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px;">
+              <div class="metric-card" style="padding:0;overflow:hidden;">
+                <div style="height:120px;background:linear-gradient(135deg,var(--gd-state-error),var(--gd-brand-500));display:flex;align-items:center;justify-content:center;"><span style="font-size:48px;">🌸</span></div>
+                <div style="padding:14px;">
+                  <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);margin-bottom:4px;">高原红玫瑰</div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);margin-bottom:8px;">适宜：春季 / 秋季</div>
+                  <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px;"><span class="num" style="font-size:16px;font-weight:600;color:var(--gd-state-success);">¥2,580</span><span style="font-size:11px;color:var(--gd-muted-foreground);">预计收益/亩</span></div>
+                  <div style="display:flex;align-items:center;gap:2px;"><span class="gd-star">★</span><span class="gd-star">★</span><span class="gd-star">★</span><span class="gd-star">★</span><span class="gd-star">★</span><span style="font-size:11px;color:var(--gd-muted-foreground);margin-left:6px;">5.0</span></div>
+                </div>
+              </div>
+              <div class="metric-card" style="padding:0;overflow:hidden;">
+                <div style="height:120px;background:linear-gradient(135deg,var(--gd-state-info),var(--gd-brand-400));display:flex;align-items:center;justify-content:center;"><span style="font-size:48px;">🌼</span></div>
+                <div style="padding:14px;">
+                  <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);margin-bottom:4px;">雪山白百合</div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);margin-bottom:8px;">适宜：春季 / 夏季</div>
+                  <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px;"><span class="num" style="font-size:16px;font-weight:600;color:var(--gd-state-success);">¥2,120</span><span style="font-size:11px;color:var(--gd-muted-foreground);">预计收益/亩</span></div>
+                  <div style="display:flex;align-items:center;gap:2px;"><span class="gd-star">★</span><span class="gd-star">★</span><span class="gd-star">★</span><span class="gd-star">★</span><span class="gd-star-empty">★</span><span style="font-size:11px;color:var(--gd-muted-foreground);margin-left:6px;">4.2</span></div>
+                </div>
+              </div>
+              <div class="metric-card" style="padding:0;overflow:hidden;">
+                <div style="height:120px;background:linear-gradient(135deg,var(--gd-state-warning),var(--gd-state-error));display:flex;align-items:center;justify-content:center;"><span style="font-size:48px;">🌻</span></div>
+                <div style="padding:14px;">
+                  <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);margin-bottom:4px;">金穗向日葵</div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);margin-bottom:8px;">适宜：夏季</div>
+                  <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px;"><span class="num" style="font-size:16px;font-weight:600;color:var(--gd-state-success);">¥3,100</span><span style="font-size:11px;color:var(--gd-muted-foreground);">预计收益/亩</span></div>
+                  <div style="display:flex;align-items:center;gap:2px;"><span class="gd-star">★</span><span class="gd-star">★</span><span class="gd-star">★</span><span class="gd-star">★</span><span class="gd-star">★</span><span style="font-size:11px;color:var(--gd-muted-foreground);margin-left:6px;">4.8</span></div>
+                </div>
+              </div>
+              <div class="metric-card" style="padding:0;overflow:hidden;">
+                <div style="height:120px;background:linear-gradient(135deg,var(--gd-state-success),var(--gd-state-info));display:flex;align-items:center;justify-content:center;"><span style="font-size:48px;">🌷</span></div>
+                <div style="padding:14px;">
+                  <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);margin-bottom:4px;">粉韵康乃馨</div>
+                  <div style="font-size:11px;color:var(--gd-muted-foreground);margin-bottom:8px;">适宜：四季</div>
+                  <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px;"><span class="num" style="font-size:16px;font-weight:600;color:var(--gd-state-success);">¥1,860</span><span style="font-size:11px;color:var(--gd-muted-foreground);">预计收益/亩</span></div>
+                  <div style="display:flex;align-items:center;gap:2px;"><span class="gd-star">★</span><span class="gd-star">★</span><span class="gd-star">★</span><span class="gd-star">★</span><span class="gd-star-empty">★</span><span style="font-size:11px;color:var(--gd-muted-foreground);margin-left:6px;">4.0</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 农事日历 -->
+            <div class="metric-card" style="margin-bottom:16px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">农事日历 · 2026 年 7 月</span>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <span style="font-size:11px;color:var(--gd-muted-foreground);display:inline-flex;align-items:center;gap:4px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-info);"></span>播种</span>
+                  <span style="font-size:11px;color:var(--gd-muted-foreground);display:inline-flex;align-items:center;gap:4px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-success);"></span>施肥</span>
+                  <span style="font-size:11px;color:var(--gd-muted-foreground);display:inline-flex;align-items:center;gap:4px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-warning);"></span>病虫害防治</span>
+                  <span style="font-size:11px;color:var(--gd-muted-foreground);display:inline-flex;align-items:center;gap:4px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-error);"></span>采收</span>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;">
+                <div style="font-size:11px;color:var(--gd-muted-foreground);text-align:center;padding:4px;">一</div>
+                <div style="font-size:11px;color:var(--gd-muted-foreground);text-align:center;padding:4px;">二</div>
+                <div style="font-size:11px;color:var(--gd-muted-foreground);text-align:center;padding:4px;">三</div>
+                <div style="font-size:11px;color:var(--gd-muted-foreground);text-align:center;padding:4px;">四</div>
+                <div style="font-size:11px;color:var(--gd-muted-foreground);text-align:center;padding:4px;">五</div>
+                <div style="font-size:11px;color:var(--gd-muted-foreground);text-align:center;padding:4px;">六</div>
+                <div style="font-size:11px;color:var(--gd-muted-foreground);text-align:center;padding:4px;">日</div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">
+                <div class="gd-cal-cell"><span class="gd-cal-day">29</span></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">30</span></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">1</span><div style="display:flex;gap:3px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-info);"></span></div></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">2</span><div style="display:flex;gap:3px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-success);"></span></div></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">3</span></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">4</span><div style="display:flex;gap:3px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-warning);"></span></div></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">5</span></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">6</span><div style="display:flex;gap:3px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-success);"></span><span class="gd-cal-dot" style="background-color:var(--gd-state-info);"></span></div></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">7</span></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">8</span><div style="display:flex;gap:3px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-warning);"></span></div></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">9</span><div style="display:flex;gap:3px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-error);"></span></div></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">10</span></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">11</span><div style="display:flex;gap:3px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-success);"></span></div></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">12</span></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">13</span><div style="display:flex;gap:3px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-info);"></span></div></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">14</span><div style="display:flex;gap:3px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-warning);"></span><span class="gd-cal-dot" style="background-color:var(--gd-state-success);"></span></div></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">15</span></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">16</span><div style="display:flex;gap:3px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-error);"></span></div></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">17</span></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">18</span><div style="display:flex;gap:3px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-success);"></span></div></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">19</span></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">20</span><div style="display:flex;gap:3px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-info);"></span></div></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">21</span></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">22</span><div style="display:flex;gap:3px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-warning);"></span></div></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">23</span></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">24</span><div style="display:flex;gap:3px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-error);"></span></div></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">25</span></div>
+                <div class="gd-cal-cell gd-cal-cell-today"><span class="gd-cal-day" style="color:var(--gd-primary);font-weight:600;">26</span><div style="display:flex;gap:3px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-success);"></span><span class="gd-cal-dot" style="background-color:var(--gd-state-info);"></span></div></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">27</span></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">28</span><div style="display:flex;gap:3px;"><span class="gd-cal-dot" style="background-color:var(--gd-state-error);"></span></div></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">29</span></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">30</span></div>
+                <div class="gd-cal-cell"><span class="gd-cal-day">31</span></div>
+              </div>
+            </div>
+
+            <!-- IoT 传感器数据卡组 -->
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+              <div class="gd-sensor-card">
+                <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;color:var(--gd-muted-foreground);display:inline-flex;align-items:center;gap:6px;"><i data-lucide="thermometer" style="width:13px;height:13px;"></i>土壤温度</span><span class="badge badge-success">正常</span></div>
+                <div style="display:flex;align-items:baseline;gap:4px;"><span class="num" style="font-size:26px;font-weight:700;color:var(--gd-state-warning);">22.4</span><span class="num" style="font-size:13px;color:var(--gd-muted-foreground);">℃</span></div>
+                <svg viewBox="0 0 100 24" style="width:100%;height:32px;"><polyline points="0,16 14,14 28,12 42,15 56,10 70,8 84,11 100,7" fill="none" stroke="var(--gd-state-warning)" stroke-width="1.5"/></svg>
+                <div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gd-muted-foreground);margin-bottom:4px;"><span>15℃</span><span>30℃</span></div><div class="gd-range-bar"><div class="gd-range-fill" style="width:49%;"></div><div class="gd-range-marker" style="left:49%;"></div></div></div>
+              </div>
+              <div class="gd-sensor-card">
+                <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;color:var(--gd-muted-foreground);display:inline-flex;align-items:center;gap:6px;"><i data-lucide="droplets" style="width:13px;height:13px;"></i>土壤湿度</span><span class="badge badge-success">正常</span></div>
+                <div style="display:flex;align-items:baseline;gap:4px;"><span class="num" style="font-size:26px;font-weight:700;color:var(--gd-state-info);">68.2</span><span class="num" style="font-size:13px;color:var(--gd-muted-foreground);">%</span></div>
+                <svg viewBox="0 0 100 24" style="width:100%;height:32px;"><polyline points="0,12 14,14 28,10 42,12 56,8 70,10 84,6 100,9" fill="none" stroke="var(--gd-state-info)" stroke-width="1.5"/></svg>
+                <div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gd-muted-foreground);margin-bottom:4px;"><span>50%</span><span>80%</span></div><div class="gd-range-bar"><div class="gd-range-fill" style="width:61%;"></div><div class="gd-range-marker" style="left:61%;"></div></div></div>
+              </div>
+              <div class="gd-sensor-card">
+                <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;color:var(--gd-muted-foreground);display:inline-flex;align-items:center;gap:6px;"><i data-lucide="sun" style="width:13px;height:13px;"></i>光照强度</span><span class="badge badge-warning">偏高</span></div>
+                <div style="display:flex;align-items:baseline;gap:4px;"><span class="num" style="font-size:26px;font-weight:700;color:var(--gd-state-warning);">38,500</span><span class="num" style="font-size:13px;color:var(--gd-muted-foreground);">lux</span></div>
+                <svg viewBox="0 0 100 24" style="width:100%;height:32px;"><polyline points="0,20 14,16 28,10 42,6 56,4 70,8 84,14 100,18" fill="none" stroke="var(--gd-state-warning)" stroke-width="1.5"/></svg>
+                <div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gd-muted-foreground);margin-bottom:4px;"><span>20k</span><span>35k</span></div><div class="gd-range-bar"><div class="gd-range-fill" style="width:88%;background-color:var(--gd-state-warning);"></div><div class="gd-range-marker" style="left:88%;"></div></div></div>
+              </div>
+              <div class="gd-sensor-card">
+                <div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;color:var(--gd-muted-foreground);display:inline-flex;align-items:center;gap:6px;"><i data-lucide="test-tube" style="width:13px;height:13px;"></i>土壤 PH 值</span><span class="badge badge-success">正常</span></div>
+                <div style="display:flex;align-items:baseline;gap:4px;"><span class="num" style="font-size:26px;font-weight:700;color:var(--gd-state-success);">6.3</span><span class="num" style="font-size:13px;color:var(--gd-muted-foreground);">pH</span></div>
+                <svg viewBox="0 0 100 24" style="width:100%;height:32px;"><polyline points="0,14 14,13 28,14 42,12 56,13 70,12 84,13 100,12" fill="none" stroke="var(--gd-state-success)" stroke-width="1.5"/></svg>
+                <div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gd-muted-foreground);margin-bottom:4px;"><span>5.5</span><span>7.0</span></div><div class="gd-range-bar"><div class="gd-range-fill" style="width:53%;"></div><div class="gd-range-marker" style="left:53%;"></div></div></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================================================ -->
+          <!-- Section 4: AI助手（flower-ai-assistant） -->
+          <!-- ============================================================ -->
+          <section id="flower-ai-assistant">
+            <div class="gd-section-header">
+              <div class="gd-section-header-title">AI 助手</div>
+              <div class="gd-section-header-sub">智能行情分析 · 种植建议 · 市场洞察</div>
+              <div class="gd-section-header-file"><i data-lucide="file-code" style="width:12px;height:12px;"></i> FlowerAIAssistantView.axaml</div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:240px 1fr;gap:16px;height:560px;">
+
+              <!-- 左侧快捷问题面板 -->
+              <div class="metric-card" style="padding:14px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;">
+                <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);">快捷问题</div>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <div>
+                    <div style="font-size:11px;color:var(--gd-muted-foreground);margin-bottom:6px;display:inline-flex;align-items:center;gap:4px;"><i data-lucide="trending-up" style="width:12px;height:12px;"></i>行情咨询</div>
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                      <div class="gd-chip">今天红玫瑰均价多少？</div>
+                      <div class="gd-chip">下周花卉价格走势</div>
+                      <div class="gd-chip">哪种花本周涨幅最大？</div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-size:11px;color:var(--gd-muted-foreground);margin-bottom:6px;display:inline-flex;align-items:center;gap:4px;"><i data-lucide="sprout" style="width:12px;height:12px;"></i>种植建议</div>
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                      <div class="gd-chip">推荐春季种植品种</div>
+                      <div class="gd-chip">白粉病防治方法</div>
+                      <div class="gd-chip">土壤 PH 偏高怎么办</div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-size:11px;color:var(--gd-muted-foreground);margin-bottom:6px;display:inline-flex;align-items:center;gap:4px;"><i data-lucide="shopping-bag" style="width:12px;height:12px;"></i>订单帮助</div>
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                      <div class="gd-chip">如何申请退款？</div>
+                      <div class="gd-chip">发货周期是多久</div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-size:11px;color:var(--gd-muted-foreground);margin-bottom:6px;display:inline-flex;align-items:center;gap:4px;"><i data-lucide="user" style="width:12px;height:12px;"></i>账户问题</div>
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                      <div class="gd-chip">如何升级会员？</div>
+                      <div class="gd-chip">修改绑定手机</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 主区对话 -->
+              <div class="metric-card" style="padding:0;display:flex;flex-direction:column;overflow:hidden;">
+                <!-- 对话气泡列表 -->
+                <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;">
+                  <!-- AI 气泡 -->
+                  <div style="display:flex;align-items:flex-start;gap:10px;">
+                    <div class="gd-chat-avatar"><i data-lucide="brain" style="width:18px;height:18px;color:var(--gd-primary-foreground);"></i></div>
+                    <div class="gd-chat-ai">
+                      <div style="font-size:10px;color:var(--gd-muted-foreground);margin-bottom:4px;">花卉AI助手 · 09:12</div>
+                      <div style="font-size:13px;color:var(--gd-foreground);line-height:1.6;">您好！我是花卉AI助手，可以为您提供行情分析、种植建议与市场洞察。请问有什么可以帮您？</div>
+                    </div>
+                  </div>
+                  <!-- 用户气泡 -->
+                  <div class="gd-chat-user">
+                    <div style="font-size:10px;color:var(--gd-state-info);margin-bottom:4px;">我 · 09:13</div>
+                    <div style="font-size:13px;line-height:1.6;">今天红玫瑰的均价是多少？下周走势如何？</div>
+                  </div>
+                  <!-- AI 气泡 + 数据卡片 -->
+                  <div style="display:flex;align-items:flex-start;gap:10px;">
+                    <div class="gd-chat-avatar"><i data-lucide="brain" style="width:18px;height:18px;color:var(--gd-primary-foreground);"></i></div>
+                    <div class="gd-chat-ai" style="max-width:560px;">
+                      <div style="font-size:10px;color:var(--gd-muted-foreground);margin-bottom:4px;">花卉AI助手 · 09:13</div>
+                      <div style="font-size:13px;color:var(--gd-foreground);line-height:1.6;margin-bottom:10px;">今日红玫瑰均价 <span class="num" style="color:var(--gd-state-success);font-weight:600;">¥3.20/支</span>，较昨日 <span class="num text-up">+2.4%</span>。预计下周延续上行，建议关注以下品种：</div>
+                      <!-- 数据卡片插入 -->
+                      <div style="background-color:var(--gd-card);border:1px solid var(--gd-border);border-radius:var(--gd-radius-md);overflow:hidden;margin-bottom:10px;">
+                        <div style="padding:8px 12px;background-color:var(--gd-muted);font-size:11px;font-weight:600;color:var(--gd-foreground);display:flex;align-items:center;gap:6px;"><i data-lucide="bar-chart-3" style="width:12px;height:12px;"></i>行情分析</div>
+                        <table class="data-table" style="font-size:12px;">
+                          <thead><tr><th>品种</th><th>均价</th><th>涨跌</th><th>建议</th></tr></thead>
+                          <tbody>
+                            <tr><td>红玫瑰</td><td class="num">¥3.20</td><td class="num text-up">+2.4%</td><td style="color:var(--gd-state-success);">增持</td></tr>
+                            <tr><td>百合</td><td class="num">¥2.45</td><td class="num text-down">-1.1%</td><td style="color:var(--gd-state-warning);">观望</td></tr>
+                            <tr><td>康乃馨</td><td class="num">¥1.80</td><td class="num text-up">+0.8%</td><td style="color:var(--gd-state-success);">持有</td></tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div style="font-size:12px;color:var(--gd-muted-foreground);">下周一红玫瑰预计冲高至 ¥3.35，建议本周完成备货。</div>
+                    </div>
+                  </div>
+                  <!-- 用户气泡 -->
+                  <div class="gd-chat-user">
+                    <div style="font-size:10px;color:var(--gd-state-info);margin-bottom:4px;">我 · 09:15</div>
+                    <div style="font-size:13px;line-height:1.6;">那推荐一个适合春季种植的品种</div>
+                  </div>
+                  <!-- AI 气泡 -->
+                  <div style="display:flex;align-items:flex-start;gap:10px;">
+                    <div class="gd-chat-avatar"><i data-lucide="brain" style="width:18px;height:18px;color:var(--gd-primary-foreground);"></i></div>
+                    <div class="gd-chat-ai">
+                      <div style="font-size:10px;color:var(--gd-muted-foreground);margin-bottom:4px;">花卉AI助手 · 09:15</div>
+                      <div style="font-size:13px;color:var(--gd-foreground);line-height:1.6;">综合收益与难度，推荐 <span style="color:var(--gd-primary);font-weight:600;">高原红玫瑰</span>：预计收益 ¥2,580/亩，建议评分 5.0，适宜春季种植，抗病性较强。</div>
+                    </div>
+                  </div>
+                </div>
+                <!-- 输入框 -->
+                <div style="border-top:1px solid var(--gd-border);padding:12px 16px;display:flex;align-items:center;gap:10px;background-color:var(--gd-card);">
+                  <button class="gd-btn-ghost" style="padding:8px 10px;display:inline-flex;align-items:center;"><i data-lucide="paperclip" style="width:15px;height:15px;"></i></button>
+                  <input type="text" class="gd-input" placeholder="输入您的问题..." style="flex:1;">
+                  <button class="gd-btn-primary" style="display:inline-flex;align-items:center;gap:6px;padding:8px 20px;"><i data-lucide="send" style="width:14px;height:14px;"></i><span>发送</span></button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================================================ -->
+          <!-- Section 5: 个人中心（flower-profile） -->
+          <!-- ============================================================ -->
+          <section id="flower-profile">
+            <div class="gd-section-header">
+              <div class="gd-section-header-title">个人中心</div>
+              <div class="gd-section-header-sub">资料卡 · 我的订单 · 我的收藏 · 地址簿 · 账户安全</div>
+              <div class="gd-section-header-file"><i data-lucide="file-code" style="width:12px;height:12px;"></i> FlowerProfileView.axaml</div>
+            </div>
+
+            <!-- 资料卡 -->
+            <div class="metric-card" style="display:flex;align-items:center;gap:20px;margin-bottom:16px;">
+              <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--gd-brand-500),var(--gd-brand-700));display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:600;color:var(--gd-primary-foreground);flex-shrink:0;">龙</div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <span style="font-size:18px;font-weight:600;color:var(--gd-foreground);">龙</span>
+                  <span class="badge badge-info"><i data-lucide="crown" style="width:12px;height:12px;"></i>VIP 会员</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:16px;font-size:12px;color:var(--gd-muted-foreground);">
+                  <span class="num">积分 2,580</span>
+                  <span>注册时间 2024-03-15</span>
+                  <span>手机 138****6688</span>
+                </div>
+              </div>
+              <button class="gd-btn-primary" style="display:inline-flex;align-items:center;gap:6px;"><i data-lucide="settings" style="width:13px;height:13px;"></i><span>账户设置</span></button>
+            </div>
+
+            <!-- Tab 切换 -->
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:16px;">
+              <span class="gd-tab gd-tab-active">我的订单</span>
+              <span class="gd-tab">我的收藏</span>
+              <span class="gd-tab">地址簿</span>
+              <span class="gd-tab">账户安全</span>
+            </div>
+
+            <!-- 我的订单 -->
+            <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;">
+              <div class="metric-card">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:14px;">
+                  <span class="gd-pill gd-pill-active">全部</span>
+                  <span class="gd-pill gd-pill-ghost">待付款</span>
+                  <span class="gd-pill gd-pill-ghost">待发货</span>
+                  <span class="gd-pill gd-pill-ghost">待收货</span>
+                  <span class="gd-pill gd-pill-ghost">已完成</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                  <div class="metric-card" style="padding:14px;border-color:var(--gd-border);">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                      <span class="num" style="font-size:12px;color:var(--gd-muted-foreground);">GD20260725-0142</span>
+                      <span class="badge badge-success">已完成</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px;">
+                      <div style="width:48px;height:48px;border-radius:var(--gd-radius-md);background-color:var(--gd-state-warning-surface);display:flex;align-items:center;justify-content:center;"><span style="font-size:22px;">💐</span></div>
+                      <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--gd-foreground);">晨曦混合花束</div><div style="font-size:11px;color:var(--gd-muted-foreground);">花语工坊 · 数量 3</div></div>
+                      <span class="num" style="font-size:15px;font-weight:600;color:var(--gd-state-error);">¥264.00</span>
+                    </div>
+                  </div>
+                  <div class="metric-card" style="padding:14px;border-color:var(--gd-border);">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                      <span class="num" style="font-size:12px;color:var(--gd-muted-foreground);">GD20260720-0089</span>
+                      <span class="badge badge-info">待收货</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px;">
+                      <div style="width:48px;height:48px;border-radius:var(--gd-radius-md);background-color:var(--gd-state-error-surface);display:flex;align-items:center;justify-content:center;"><span style="font-size:22px;">🌸</span></div>
+                      <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--gd-foreground);">高原红玫瑰（20支/束）</div><div style="font-size:11px;color:var(--gd-muted-foreground);">云端花田直供 · 数量 2</div></div>
+                      <span class="num" style="font-size:15px;font-weight:600;color:var(--gd-state-error);">¥116.00</span>
+                    </div>
+                  </div>
+                  <div class="metric-card" style="padding:14px;border-color:var(--gd-border);">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                      <span class="num" style="font-size:12px;color:var(--gd-muted-foreground);">GD20260718-0032</span>
+                      <span class="badge badge-warning">待发货</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px;">
+                      <div style="width:48px;height:48px;border-radius:var(--gd-radius-md);background-color:var(--gd-state-success-surface);display:flex;align-items:center;justify-content:center;"><span style="font-size:22px;">🌷</span></div>
+                      <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--gd-foreground);">粉韵康乃馨（15支）</div><div style="font-size:11px;color:var(--gd-muted-foreground);">春田花卉农场 · 数量 5</div></div>
+                      <span class="num" style="font-size:15px;font-weight:600;color:var(--gd-state-error);">¥325.00</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- 订单统计概览 -->
+              <div class="metric-card" style="display:flex;flex-direction:column;gap:12px;">
+                <span style="font-size:13px;font-weight:600;color:var(--gd-foreground);">订单概览</span>
+                <div class="gd-stat-card" style="border:none;padding:0;"><span class="gd-stat-label">本月订单</span><span class="num gd-stat-value" style="color:var(--gd-foreground);">18</span></div>
+                <div class="gd-stat-card" style="border:none;padding:0;"><span class="gd-stat-label">累计消费</span><span class="num gd-stat-value" style="color:var(--gd-state-info);">¥8,640</span></div>
+                <div class="gd-stat-card" style="border:none;padding:0;"><span class="gd-stat-label">待处理</span><span class="num gd-stat-value" style="color:var(--gd-state-warning);">2</span></div>
+              </div>
+            </div>
+
+            <!-- 我的收藏 -->
+            <div class="metric-card" style="margin-bottom:16px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">我的收藏</span>
+                <a class="gd-link" style="font-size:12px;">查看全部 ›</a>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+                <div class="metric-card" style="padding:12px;text-align:center;">
+                  <div style="height:80px;background:linear-gradient(135deg,var(--gd-state-error),var(--gd-brand-500));border-radius:var(--gd-radius-md);display:flex;align-items:center;justify-content:center;margin-bottom:8px;"><span style="font-size:36px;">🌸</span></div>
+                  <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);">高原红玫瑰</div>
+                  <div class="num" style="font-size:12px;color:var(--gd-state-error);">¥58.00</div>
+                </div>
+                <div class="metric-card" style="padding:12px;text-align:center;">
+                  <div style="height:80px;background:linear-gradient(135deg,var(--gd-state-info),var(--gd-brand-400));border-radius:var(--gd-radius-md);display:flex;align-items:center;justify-content:center;margin-bottom:8px;"><span style="font-size:36px;">🌼</span></div>
+                  <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);">雪山白百合</div>
+                  <div class="num" style="font-size:12px;color:var(--gd-state-error);">¥42.50</div>
+                </div>
+                <div class="metric-card" style="padding:12px;text-align:center;">
+                  <div style="height:80px;background:linear-gradient(135deg,var(--gd-state-warning),var(--gd-state-error));border-radius:var(--gd-radius-md);display:flex;align-items:center;justify-content:center;margin-bottom:8px;"><span style="font-size:36px;">🌻</span></div>
+                  <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);">金穗向日葵</div>
+                  <div class="num" style="font-size:12px;color:var(--gd-state-error);">¥75.00</div>
+                </div>
+                <div class="metric-card" style="padding:12px;text-align:center;">
+                  <div style="height:80px;background:linear-gradient(135deg,var(--gd-state-success),var(--gd-state-info));border-radius:var(--gd-radius-md);display:flex;align-items:center;justify-content:center;margin-bottom:8px;"><span style="font-size:36px;">🌷</span></div>
+                  <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);">粉韵康乃馨</div>
+                  <div class="num" style="font-size:12px;color:var(--gd-state-error);">¥65.00</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 地址簿 + 账户安全 -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+              <div class="metric-card">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                  <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">地址簿</span>
+                  <button class="gd-btn-ghost" style="padding:5px 10px;font-size:12px;display:inline-flex;align-items:center;gap:4px;"><i data-lucide="plus" style="width:12px;height:12px;"></i><span>新增</span></button>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <div class="metric-card" style="padding:12px;border-color:var(--gd-primary);">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                      <span style="font-size:13px;font-weight:600;color:var(--gd-foreground);">龙</span>
+                      <span class="num" style="font-size:12px;color:var(--gd-muted-foreground);">138****6688</span>
+                      <span class="badge badge-info">默认</span>
+                    </div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);">云南省昆明市呈贡区斗南街道花卉市场 A 区 128 号</div>
+                  </div>
+                  <div class="metric-card" style="padding:12px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                      <span style="font-size:13px;font-weight:600;color:var(--gd-foreground);">龙（公司）</span>
+                      <span class="num" style="font-size:12px;color:var(--gd-muted-foreground);">139****2233</span>
+                    </div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);">云南省昆明市官渡区春城路 88 号绿野大厦 12 楼</div>
+                  </div>
+                </div>
+              </div>
+              <div class="metric-card">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                  <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">账户安全</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background-color:var(--gd-muted);border-radius:var(--gd-radius-md);">
+                    <div style="display:flex;align-items:center;gap:8px;"><i data-lucide="shield-check" style="width:15px;height:15px;color:var(--gd-state-success);"></i><span style="font-size:13px;color:var(--gd-foreground);">登录密码</span></div>
+                    <span class="badge badge-success">已设置</span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background-color:var(--gd-muted);border-radius:var(--gd-radius-md);">
+                    <div style="display:flex;align-items:center;gap:8px;"><i data-lucide="smartphone" style="width:15px;height:15px;color:var(--gd-state-info);"></i><span style="font-size:13px;color:var(--gd-foreground);">手机绑定</span></div>
+                    <span class="badge badge-info">已绑定</span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background-color:var(--gd-muted);border-radius:var(--gd-radius-md);">
+                    <div style="display:flex;align-items:center;gap:8px;"><i data-lucide="mail" style="width:15px;height:15px;color:var(--gd-state-warning);"></i><span style="font-size:13px;color:var(--gd-foreground);">邮箱绑定</span></div>
+                    <span class="badge badge-warning">未绑定</span>
+                  </div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background-color:var(--gd-muted);border-radius:var(--gd-radius-md);">
+                    <div style="display:flex;align-items:center;gap:8px;"><i data-lucide="fingerprint" style="width:15px;height:15px;color:var(--gd-state-success);"></i><span style="font-size:13px;color:var(--gd-foreground);">实名认证</span></div>
+                    <span class="badge badge-success">已认证</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================================================ -->
+          <!-- Section 6: 品种详情百科（flower-species-detail） -->
+          <!-- ============================================================ -->
+          <section id="flower-species-detail">
+            <div class="gd-section-header">
+              <div class="gd-section-header-title">品种详情百科</div>
+              <div class="gd-section-header-sub">品种信息 · 种植指南 · 病虫害防治 · 生长周期</div>
+              <div class="gd-section-header-file"><i data-lucide="file-code" style="width:12px;height:12px;"></i> FlowerSpeciesDetailView.axaml</div>
+            </div>
+
+            <!-- 品种头部 -->
+            <div class="metric-card" style="display:flex;gap:24px;margin-bottom:16px;padding:0;overflow:hidden;">
+              <div style="width:280px;height:200px;flex-shrink:0;background:linear-gradient(135deg,var(--gd-state-error),var(--gd-brand-600));display:flex;align-items:center;justify-content:center;"><span style="font-size:88px;">🌸</span></div>
+              <div style="flex:1;padding:20px;display:flex;flex-direction:column;gap:8px;justify-content:center;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <span style="font-size:24px;font-weight:700;color:var(--gd-foreground);">高原红玫瑰</span>
+                  <span class="badge badge-success">A级</span>
+                </div>
+                <div style="font-size:13px;color:var(--gd-muted-foreground);font-style:italic;">学名：Rosa chinensis Jacq.</div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:12px;color:var(--gd-muted-foreground);">科属：</span>
+                  <span class="badge badge-info">蔷薇科</span>
+                  <span class="badge badge-info">蔷薇属</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:12px;color:var(--gd-muted-foreground);">别名：</span>
+                  <span class="gd-chip">月季</span>
+                  <span class="gd-chip">玫瑰</span>
+                  <span class="gd-chip">长春花</span>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:8px;margin-top:4px;">
+                  <span class="num" style="font-size:20px;font-weight:700;color:var(--gd-state-error);">¥3.20</span>
+                  <span class="num text-up" style="font-size:13px;">+2.4%</span>
+                  <span style="font-size:11px;color:var(--gd-muted-foreground);">/支 均价</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 参数表 + 种植指南时间线 -->
+            <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-bottom:16px;">
+              <!-- 参数表 -->
+              <div class="metric-card">
+                <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);margin-bottom:14px;">品种参数</div>
+                <table class="data-table">
+                  <tbody>
+                    <tr><th style="width:100px;">生长周期</th><td class="num">90 天</td></tr>
+                    <tr><th>株高</th><td class="num">60–100 cm</td></tr>
+                    <tr><th>花径</th><td class="num">8–12 cm</td></tr>
+                    <tr><th>适宜温度</th><td class="num">18–25 ℃</td></tr>
+                    <tr><th>光照需求</th><td>全日照（≥6h/日）</td></tr>
+                    <tr><th>土壤 PH</th><td class="num">6.0–6.5</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <!-- 种植指南时间线 -->
+              <div class="metric-card">
+                <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);margin-bottom:24px;">种植指南</div>
+                <div class="gd-timeline">
+                  <div class="gd-timeline-step">
+                    <div class="gd-timeline-line"></div>
+                    <div class="gd-timeline-node"><i data-lucide="seedling" style="width:16px;height:16px;"></i></div>
+                    <div style="font-size:12px;font-weight:600;color:var(--gd-foreground);">播种</div>
+                    <div style="font-size:10px;color:var(--gd-muted-foreground);text-align:center;">第 1–7 天<br>春季 3–4 月</div>
+                  </div>
+                  <div class="gd-timeline-step">
+                    <div class="gd-timeline-line"></div>
+                    <div class="gd-timeline-node"><i data-lucide="leaf" style="width:16px;height:16px;"></i></div>
+                    <div style="font-size:12px;font-weight:600;color:var(--gd-foreground);">育苗</div>
+                    <div style="font-size:10px;color:var(--gd-muted-foreground);text-align:center;">第 8–25 天<br>保湿遮阴</div>
+                  </div>
+                  <div class="gd-timeline-step">
+                    <div class="gd-timeline-line"></div>
+                    <div class="gd-timeline-node"><i data-lucide="sprout" style="width:16px;height:16px;"></i></div>
+                    <div style="font-size:12px;font-weight:600;color:var(--gd-foreground);">移栽</div>
+                    <div style="font-size:10px;color:var(--gd-muted-foreground);text-align:center;">第 26–40 天<br>定植大田</div>
+                  </div>
+                  <div class="gd-timeline-step">
+                    <div class="gd-timeline-line"></div>
+                    <div class="gd-timeline-node"><i data-lucide="flower" style="width:16px;height:16px;"></i></div>
+                    <div style="font-size:12px;font-weight:600;color:var(--gd-foreground);">开花</div>
+                    <div style="font-size:10px;color:var(--gd-muted-foreground);text-align:center;">第 60–75 天<br>加强水肥</div>
+                  </div>
+                  <div class="gd-timeline-step">
+                    <div class="gd-timeline-node"><i data-lucide="wheat" style="width:16px;height:16px;"></i></div>
+                    <div style="font-size:12px;font-weight:600;color:var(--gd-foreground);">采收</div>
+                    <div style="font-size:10px;color:var(--gd-muted-foreground);text-align:center;">第 85–90 天<br>清晨采收</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 病虫害防治卡 -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+              <div class="metric-card">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                  <i data-lucide="bug" style="width:16px;height:16px;color:var(--gd-state-error);"></i>
+                  <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">病害防治</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                  <div style="padding:12px;background-color:var(--gd-state-error-surface);border-radius:var(--gd-radius-md);">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="font-size:13px;font-weight:600;color:var(--gd-state-error);">白粉病</span><span class="badge badge-error">高发</span></div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);margin-bottom:4px;">症状：叶片表面出现白色粉状物，逐步蔓延至茎秆。</div>
+                    <div style="font-size:12px;color:var(--gd-foreground);">防治：喷施 25% 三唑酮可湿性粉剂 1500 倍液，7 天一次，连续 2–3 次。</div>
+                  </div>
+                  <div style="padding:12px;background-color:var(--gd-state-warning-surface);border-radius:var(--gd-radius-md);">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="font-size:13px;font-weight:600;color:var(--gd-state-warning);">黑斑病</span><span class="badge badge-warning">常见</span></div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);margin-bottom:4px;">症状：叶片出现紫黑色圆形斑点，边缘放射状。</div>
+                    <div style="font-size:12px;color:var(--gd-foreground);">防治：及时清除病叶，喷施 75% 百菌清 600 倍液。</div>
+                  </div>
+                </div>
+              </div>
+              <div class="metric-card">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+                  <i data-lucide="ant" style="width:16px;height:16px;color:var(--gd-state-warning);"></i>
+                  <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">虫害防治</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                  <div style="padding:12px;background-color:var(--gd-state-warning-surface);border-radius:var(--gd-radius-md);">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="font-size:13px;font-weight:600;color:var(--gd-state-warning);">蚜虫</span><span class="badge badge-warning">常见</span></div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);margin-bottom:4px;">症状：嫩芽、花苞聚集吸汁，导致卷叶畸形。</div>
+                    <div style="font-size:12px;color:var(--gd-foreground);">防治：喷施 10% 吡虫啉 2000 倍液，或释放瓢虫生物防治。</div>
+                  </div>
+                  <div style="padding:12px;background-color:var(--gd-state-error-surface);border-radius:var(--gd-radius-md);">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="font-size:13px;font-weight:600;color:var(--gd-state-error);">红蜘蛛</span><span class="badge badge-error">高发</span></div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);margin-bottom:4px;">症状：叶背出现红点，叶面失绿呈灰白斑点。</div>
+                    <div style="font-size:12px;color:var(--gd-foreground);">防治：喷施 20% 哒螨灵乳油 2000 倍液，保持湿度抑制繁殖。</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 生长周期图 -->
+            <div class="metric-card">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">生长周期图</span>
+                <span style="font-size:11px;color:var(--gd-muted-foreground);">总周期 90 天</span>
+              </div>
+              <div class="gd-growth-axis">
+                <div class="gd-growth-stage">
+                  <div class="gd-growth-bar" style="height:30%;background-color:var(--gd-state-info);"></div>
+                  <div style="font-size:11px;font-weight:600;color:var(--gd-foreground);">播种</div>
+                  <div class="num" style="font-size:10px;color:var(--gd-muted-foreground);">7 天</div>
+                </div>
+                <div class="gd-growth-stage">
+                  <div class="gd-growth-bar" style="height:50%;background-color:var(--gd-state-info);"></div>
+                  <div style="font-size:11px;font-weight:600;color:var(--gd-foreground);">育苗</div>
+                  <div class="num" style="font-size:10px;color:var(--gd-muted-foreground);">18 天</div>
+                </div>
+                <div class="gd-growth-stage">
+                  <div class="gd-growth-bar" style="height:70%;background-color:var(--gd-state-success);"></div>
+                  <div style="font-size:11px;font-weight:600;color:var(--gd-foreground);">移栽</div>
+                  <div class="num" style="font-size:10px;color:var(--gd-muted-foreground);">15 天</div>
+                </div>
+                <div class="gd-growth-stage">
+                  <div class="gd-growth-bar" style="height:90%;background-color:var(--gd-state-warning);"></div>
+                  <div style="font-size:11px;font-weight:600;color:var(--gd-foreground);">开花</div>
+                  <div class="num" style="font-size:10px;color:var(--gd-muted-foreground);">35 天</div>
+                </div>
+                <div class="gd-growth-stage">
+                  <div class="gd-growth-bar" style="height:100%;background-color:var(--gd-state-error);"></div>
+                  <div style="font-size:11px;font-weight:600;color:var(--gd-foreground);">采收</div>
+                  <div class="num" style="font-size:10px;color:var(--gd-muted-foreground);">15 天</div>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:8px;padding:0 12px;">
+                <span class="num" style="font-size:10px;color:var(--gd-muted-foreground);">第 0 天</span>
+                <span class="num" style="font-size:10px;color:var(--gd-muted-foreground);">第 25 天</span>
+                <span class="num" style="font-size:10px;color:var(--gd-muted-foreground);">第 50 天</span>
+                <span class="num" style="font-size:10px;color:var(--gd-muted-foreground);">第 75 天</span>
+                <span class="num" style="font-size:10px;color:var(--gd-muted-foreground);">第 90 天</span>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </main>
+    </div>
+    <script>
+      lucide.createIcons();
+
+      // 读取 gd token 变量，避免硬编码色值
+      function gdVar(name) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        var fg = gdVar('--gd-foreground');
+        var muted = gdVar('--gd-muted-foreground');
+        var border = gdVar('--gd-border');
+        var card = gdVar('--gd-card');
+        var brand = gdVar('--gd-brand-500');
+        var success = gdVar('--gd-state-success');
+        var warning = gdVar('--gd-state-warning');
+        var info = gdVar('--gd-state-info');
+        var error = gdVar('--gd-state-error');
+
+        Chart.defaults.color = muted;
+        Chart.defaults.borderColor = border;
+        Chart.defaults.font.family = gdVar('--gd-font-sans');
+
+        // 商家管理 — 营收折线图
+        var revCtx = document.getElementById('merchantRevenueChart');
+        if (revCtx) {
+          new Chart(revCtx, {
+            type: 'line',
+            data: {
+              labels: ['7-20', '7-21', '7-22', '7-23', '7-24', '7-25', '7-26'],
+              datasets: [{
+                label: '营收(¥)',
+                data: [2860, 3120, 2940, 3380, 3680, 4020, 3860],
+                borderColor: brand,
+                backgroundColor: gdVar('--gd-state-info-surface'),
+                borderWidth: 2,
+                tension: 0.35,
+                fill: true,
+                pointBackgroundColor: brand,
+                pointRadius: 3
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { grid: { color: border }, ticks: { color: muted } },
+                y: { grid: { color: border }, ticks: { color: muted, callback: function (v) { return '¥' + v; } } }
+              }
+            }
+          });
+        }
+
+        // 商家管理 — 品类饼图
+        var catCtx = document.getElementById('merchantCategoryChart');
+        if (catCtx) {
+          new Chart(catCtx, {
+            type: 'doughnut',
+            data: {
+              labels: ['红玫瑰', '百合', '康乃馨', '混合花束', '向日葵'],
+              datasets: [{
+                data: [38, 22, 18, 14, 8],
+                backgroundColor: [error, info, success, warning, brand],
+                borderColor: card,
+                borderWidth: 2
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { position: 'right', labels: { color: fg, boxWidth: 10, font: { size: 11 } } }
+              }
+            }
+          });
+        }
+      });
+    </script>
+
+    <style id="critical-layout">
+      /* ========== 框架壳（复用 project-shell.html） ========== */
+      .app-root { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background-color: var(--gd-background); color: var(--gd-foreground); }
+      .app-topbar { height: 56px; flex-shrink: 0; display: flex; align-items: center; gap: 24px; padding: 0 20px; background-color: var(--gd-card); border-bottom: 1px solid var(--gd-border); }
+      .topbar-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+      .topbar-main-nav { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+      .topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+      .main-nav-item { position: relative; display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--gd-radius-md); color: var(--gd-muted-foreground); font-size: 14px; font-weight: 500; cursor: pointer; transition: color 0.15s, background-color 0.15s; text-decoration: none; white-space: nowrap; }
+      .main-nav-item:hover { color: var(--gd-foreground); background-color: var(--gd-muted); }
+      .main-nav-item[data-active="true"] { color: var(--gd-primary); background-color: var(--gd-state-info-surface); }
+      .main-nav-item[data-active="true"]::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: -18px; height: 2px; background-color: var(--gd-primary); border-radius: 1px; }
+      .main-nav-icon { width: 16px; height: 16px; flex-shrink: 0; }
+      .app-subnavbar { height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 2px; padding: 0 20px; background-color: var(--gd-card); border-bottom: 1px solid var(--gd-border); overflow-x: auto; overflow-y: hidden; }
+      .subnav-item { position: relative; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--gd-radius-sm); color: var(--gd-muted-foreground); font-size: 13px; font-weight: 500; cursor: pointer; transition: color 0.15s, background-color 0.15s; text-decoration: none; white-space: nowrap; flex-shrink: 0; }
+      .subnav-item:hover { color: var(--gd-foreground); background-color: var(--gd-muted); }
+      .subnav-item[data-active="true"] { color: var(--gd-primary); background-color: var(--gd-state-info-surface); }
+      .subnav-icon { width: 14px; height: 14px; flex-shrink: 0; }
+      .subnav-badge { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background-color: var(--gd-state-error); color: var(--gd-primary-foreground); font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+      .subnav-divider { width: 1px; height: 16px; background-color: var(--gd-border); flex-shrink: 0; margin: 0 4px; }
+      .app-content { flex: 1; overflow-y: auto; overflow-x: hidden; min-width: 1280px; }
+
+      /* ========== 通用组件（复用 project-shell 语义） ========== */
+      .metric-card { background-color: var(--gd-card); border: 1px solid var(--gd-border); border-radius: var(--gd-radius-lg); padding: 20px; }
+      .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      .data-table th { text-align: left; padding: 10px 12px; font-weight: 500; color: var(--gd-muted-foreground); border-bottom: 1px solid var(--gd-border); white-space: nowrap; }
+      .data-table td { padding: 10px 12px; border-bottom: 1px solid var(--gd-border); }
+      .data-table tbody tr:hover { background-color: var(--gd-muted); }
+      .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--gd-radius-sm); font-size: 12px; font-weight: 500; }
+      .badge-success { background-color: var(--gd-state-success-surface); color: var(--gd-state-success); }
+      .badge-warning { background-color: var(--gd-state-warning-surface); color: var(--gd-state-warning); }
+      .badge-error { background-color: var(--gd-state-error-surface); color: var(--gd-state-error); }
+      .badge-info { background-color: var(--gd-state-info-surface); color: var(--gd-state-info); }
+      .num { font-family: var(--gd-font-mono); font-variant-numeric: tabular-nums; }
+      .header-icon-btn { width: 36px; height: 36px; border-radius: var(--gd-radius-md); display: flex; align-items: center; justify-content: center; color: var(--gd-muted-foreground); cursor: pointer; transition: background-color 0.15s, color 0.15s; border: none; background: transparent; position: relative; }
+      .header-icon-btn:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+      .win-btn { width: 36px; height: 36px; border-radius: var(--gd-radius-sm); display: flex; align-items: center; justify-content: center; color: var(--gd-muted-foreground); cursor: pointer; transition: background-color 0.15s, color 0.15s; border: none; background: transparent; }
+      .win-btn:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+      .win-btn-close:hover { background-color: var(--gd-state-error); color: var(--gd-primary-foreground); }
+
+      /* ========== 花卉管理页面专用 ========== */
+      .gd-section-header { display: flex; align-items: center; gap: 16px; padding: 16px 20px; background-color: var(--gd-card); border: 1px solid var(--gd-border); border-left: 4px solid var(--gd-primary); border-radius: var(--gd-radius-lg); }
+      .gd-section-header-title { font-size: 18px; font-weight: 600; color: var(--gd-foreground); }
+      .gd-section-header-sub { font-size: 12px; color: var(--gd-muted-foreground); flex: 1; }
+      .gd-section-header-file { font-size: 11px; color: var(--gd-muted-foreground); font-family: var(--gd-font-mono); display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background-color: var(--gd-muted); border-radius: var(--gd-radius-sm); }
+
+      .gd-btn-primary { background-color: var(--gd-primary); color: var(--gd-primary-foreground); padding: 8px 16px; border-radius: var(--gd-radius-md); border: none; font-size: 13px; font-weight: 500; cursor: pointer; transition: background-color 0.15s; font-family: var(--gd-font-sans); }
+      .gd-btn-primary:hover { background-color: var(--gd-brand-600); }
+      .gd-btn-ghost { background: transparent; color: var(--gd-muted-foreground); padding: 8px 16px; border-radius: var(--gd-radius-md); border: 1px solid var(--gd-border); font-size: 13px; font-weight: 500; cursor: pointer; transition: background-color 0.15s, color 0.15s; font-family: var(--gd-font-sans); }
+      .gd-btn-ghost:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+      .gd-input { background-color: var(--gd-muted); border: 1px solid var(--gd-border); border-radius: var(--gd-radius-md); padding: 8px 12px; color: var(--gd-foreground); font-size: 13px; font-family: var(--gd-font-sans); outline: none; transition: border-color 0.15s; }
+      .gd-input:focus { border-color: var(--gd-primary); }
+      .gd-select { background-color: var(--gd-muted); border: 1px solid var(--gd-border); border-radius: var(--gd-radius-md); padding: 8px 12px; color: var(--gd-foreground); font-size: 13px; font-family: var(--gd-font-sans); outline: none; cursor: pointer; }
+      .gd-pill { padding: 6px 14px; border-radius: var(--gd-radius-full); font-size: 13px; font-weight: 500; cursor: pointer; transition: background-color 0.15s, color 0.15s; font-family: var(--gd-font-sans); border: 1px solid transparent; white-space: nowrap; }
+      .gd-pill-active { background-color: var(--gd-primary); color: var(--gd-primary-foreground); }
+      .gd-pill-ghost { background: transparent; color: var(--gd-muted-foreground); border: 1px solid var(--gd-border); }
+      .gd-pill-ghost:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+      .gd-chip { padding: 4px 10px; border-radius: var(--gd-radius-sm); font-size: 11px; font-weight: 500; cursor: pointer; border: 1px solid var(--gd-border); color: var(--gd-muted-foreground); transition: all 0.15s; }
+      .gd-chip:hover { color: var(--gd-foreground); border-color: var(--gd-primary); }
+      .gd-chip-active { background-color: var(--gd-state-info-surface); color: var(--gd-state-info); border-color: var(--gd-state-info); }
+
+      .gd-tab { padding: 8px 16px; border-radius: var(--gd-radius-md); font-size: 13px; font-weight: 500; cursor: pointer; color: var(--gd-muted-foreground); border: 1px solid transparent; transition: all 0.15s; }
+      .gd-tab:hover { color: var(--gd-foreground); background-color: var(--gd-muted); }
+      .gd-tab-active { background-color: var(--gd-state-info-surface); color: var(--gd-primary); border-color: var(--gd-state-info); }
+      .gd-role-tab { padding: 7px 18px; border-radius: var(--gd-radius-full); font-size: 13px; font-weight: 500; cursor: pointer; color: var(--gd-muted-foreground); border: 1px solid var(--gd-border); transition: all 0.15s; }
+      .gd-role-tab:hover { color: var(--gd-foreground); }
+      .gd-role-tab-active { background-color: var(--gd-primary); color: var(--gd-primary-foreground); border-color: var(--gd-primary); }
+
+      .gd-stat-card { background-color: var(--gd-card); border: 1px solid var(--gd-border); border-radius: var(--gd-radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+      .gd-stat-label { font-size: 11px; color: var(--gd-muted-foreground); display: inline-flex; align-items: center; gap: 6px; }
+      .gd-stat-value { font-size: 24px; font-weight: 700; }
+      .gd-stat-delta { font-size: 11px; }
+
+      .gd-quadrant { background-color: var(--gd-card); border: 1px solid var(--gd-border); border-radius: var(--gd-radius-lg); padding: 20px; cursor: pointer; transition: border-color 0.15s, transform 0.15s; }
+      .gd-quadrant:hover { border-color: var(--gd-primary); }
+      .gd-quadrant-title { font-size: 15px; font-weight: 600; color: var(--gd-foreground); display: inline-flex; align-items: center; gap: 8px; }
+
+      .gd-star { color: var(--gd-state-warning); }
+      .gd-star-empty { color: var(--gd-border); }
+
+      .gd-cal-cell { aspect-ratio: 1; border: 1px solid var(--gd-border); border-radius: var(--gd-radius-sm); padding: 4px; display: flex; flex-direction: column; gap: 2px; cursor: pointer; transition: background-color 0.15s; min-height: 56px; }
+      .gd-cal-cell:hover { background-color: var(--gd-muted); }
+      .gd-cal-cell-today { border-color: var(--gd-primary); }
+      .gd-cal-day { font-size: 11px; color: var(--gd-muted-foreground); font-family: var(--gd-font-mono); }
+      .gd-cal-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+      .gd-sensor-card { background-color: var(--gd-card); border: 1px solid var(--gd-border); border-radius: var(--gd-radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+      .gd-range-bar { height: 4px; border-radius: 2px; background-color: var(--gd-muted); position: relative; }
+      .gd-range-fill { height: 100%; border-radius: 2px; background-color: var(--gd-state-success); }
+      .gd-range-marker { position: absolute; top: -3px; width: 2px; height: 10px; border-radius: 1px; background-color: var(--gd-foreground); }
+
+      .gd-chat-ai { align-self: flex-start; max-width: 560px; background-color: var(--gd-muted); border-radius: var(--gd-radius-lg); padding: 12px 14px; }
+      .gd-chat-user { align-self: flex-end; max-width: 460px; background-color: var(--gd-state-info-surface); color: var(--gd-foreground); border-radius: var(--gd-radius-lg); padding: 12px 14px; }
+      .gd-chat-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--gd-brand-500), var(--gd-brand-700)); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+      .gd-timeline { display: flex; gap: 0; align-items: stretch; }
+      .gd-timeline-step { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; padding: 0 8px; }
+      .gd-timeline-node { width: 36px; height: 36px; border-radius: 50%; background-color: var(--gd-card); border: 2px solid var(--gd-primary); display: flex; align-items: center; justify-content: center; color: var(--gd-primary); z-index: 1; }
+      .gd-timeline-line { position: absolute; top: 18px; left: 50%; width: 100%; height: 2px; background-color: var(--gd-border); z-index: 0; }
+      .gd-timeline-step:last-child .gd-timeline-line { display: none; }
+
+      .gd-growth-axis { display: flex; gap: 0; align-items: flex-end; height: 120px; padding: 0 12px; border-bottom: 1px solid var(--gd-border); }
+      .gd-growth-stage { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; justify-content: flex-end; }
+      .gd-growth-bar { width: 48px; border-radius: var(--gd-radius-sm) var(--gd-radius-sm) 0 0; }
+
+      .gd-link { color: var(--gd-primary); cursor: pointer; text-decoration: none; }
+      .gd-link:hover { text-decoration: underline; }
+      .gd-divider { height: 1px; background-color: var(--gd-border); }
+    </style>
+</body>
+</html>

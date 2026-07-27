@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
              xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
@@ -14,35 +14,35 @@
               RowSpacing="16">
 
             <!-- ===== 数据看板 ===== -->
-            <Border Classes="SurfaceCard" Padding="16">
+            <Border Classes="GdCard" Padding="16">
                 <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,*,*,Auto" ColumnSpacing="12" RowSpacing="12">
-                    <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10">
+                    <Border Classes="GdCard" Padding="12" CornerRadius="{DynamicResource GdRadiusMd}">
                         <StackPanel Spacing="4">
-                            <TextBlock Text="温室环境" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                            <TextBlock Text="温室环境" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                             <TextBlock Text="{Binding SensorData.Summary}" FontSize="13" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Border>
-                    <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10" Grid.Column="1">
+                    <Border Classes="GdCard" Padding="12" CornerRadius="{DynamicResource GdRadiusMd}" Grid.Column="1">
                         <StackPanel Spacing="4">
-                            <TextBlock Text="本月成本" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
-                            <TextBlock Text="{Binding MonthlyCost, StringFormat='¥{}{0:F0}'}" FontSize="13" FontWeight="SemiBold" Foreground="#FF7043"/>
+                            <TextBlock Text="本月成本" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                            <TextBlock Text="{Binding MonthlyCost, StringFormat='¥{}{0:F0}'}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdWarningBrush}"/>
                         </StackPanel>
                     </Border>
-                    <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10" Grid.Column="2">
+                    <Border Classes="GdCard" Padding="12" CornerRadius="{DynamicResource GdRadiusMd}" Grid.Column="2">
                         <StackPanel Spacing="4">
-                            <TextBlock Text="本月产量" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
-                            <TextBlock Text="{Binding MonthlyYield, StringFormat='{}{0:F0} 支'}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource BattleNetPrimaryBrush}"/>
+                            <TextBlock Text="本月产量" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                            <TextBlock Text="{Binding MonthlyYield, StringFormat='{}{0:F0} 支'}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdPrimaryBrush}"/>
                         </StackPanel>
                     </Border>
                     <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <Button Content="录入成本" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                        <Button Content="录入成本" Classes="GdGhost" Padding="10 6" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
                                 Command="{Binding AddCostCommand}"/>
-                        <Button Content="记录产量" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                        <Button Content="记录产量" Classes="GdGhost" Padding="10 6" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
                                 Command="{Binding AddYieldCommand}"/>
-                        <Button Content="刷新" Classes="PrimaryAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                        <Button Content="刷新" Classes="GdPrimary" Padding="10 6" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
                                 Command="{Binding RefreshCommand}"/>
                     </StackPanel>
-                    <Separator Grid.Row="1" Grid.ColumnSpan="4" Margin="0 4" Background="{DynamicResource BattleNetSurfaceTintBrush}"/>
+                    <Separator Grid.Row="1" Grid.ColumnSpan="4" Margin="0 4" Background="{DynamicResource GdInfoSurfaceBrush}"/>
                     <Grid Grid.Row="2" Grid.ColumnSpan="4" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                         <ComboBox ItemsSource="{Binding Batches}"
                                   SelectedItem="{Binding SelectedBatch}"
@@ -65,22 +65,22 @@
                                   SelectedItem="{Binding SelectedGreenhouse}"
                                   MinWidth="140"
                                   PlaceholderText="选择温室"/>
-                        <Button Grid.Column="2" Content="查看详情" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                        <Button Grid.Column="2" Content="查看详情" Classes="GdGhost" Padding="10 6" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
                                 Command="{Binding ShowBatchDetailCommand}"
                                 CommandParameter="{Binding SelectedBatch.Id}"/>
                     </Grid>
                 </Grid>
             </Border>
 
-            <Border Classes="SurfaceCard" Padding="12" CornerRadius="10" IsVisible="{Binding HasError}" Background="#1AFF5252" Margin="0,0,0,0">
+            <Border Classes="GdCard" Padding="12" CornerRadius="{DynamicResource GdRadiusMd}" IsVisible="{Binding HasError}" Background="{DynamicResource GdErrorSurfaceBrush}" Margin="0,0,0,0">
                 <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
-                    <TextBlock Text="{Binding ErrorMessage}" FontSize="12" Foreground="{DynamicResource LoginErrorBrush}" VerticalAlignment="Center"/>
-                    <Button Content="重试" Classes="QuietAction" Padding="8 4" FontSize="11" CornerRadius="6"
+                    <TextBlock Text="{Binding ErrorMessage}" FontSize="12" Foreground="{DynamicResource GdErrorBrush}" VerticalAlignment="Center"/>
+                    <Button Content="重试" Classes="GdGhost" Padding="8 4" FontSize="11" CornerRadius="{DynamicResource GdRadiusSm}"
                             Command="{Binding RetryCommand}"/>
                 </StackPanel>
             </Border>
 
-            <Border Classes="SurfaceCard" Grid.Row="1" Padding="0" ClipToBounds="True">
+            <Border Classes="GdCard" Grid.Row="1" Padding="0" ClipToBounds="True">
                 <TabControl SelectedIndex="{Binding SelectedTabIndex}"
                             Padding="0"
                             Background="Transparent"
@@ -90,71 +90,71 @@
                     <TabItem Header="实时环境">
                         <ScrollViewer Padding="16" HorizontalScrollBarVisibility="Disabled">
                             <StackPanel Spacing="16">
-                                <Border Classes="SurfaceCard subtle" Padding="10" CornerRadius="10">
+                                <Border Classes="GdCard" Padding="10" CornerRadius="{DynamicResource GdRadiusMd}">
                                     <StackPanel Orientation="Horizontal" Spacing="16">
                                         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                             <Ellipse Width="10" Height="10" Fill="{Binding MqttStatusDotBrush}"/>
                                             <TextBlock Text="{Binding MqttStatusText}" FontSize="12" VerticalAlignment="Center"/>
                                         </StackPanel>
-                                        <TextBlock Text="{Binding PushFrequencyText}" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center"/>
-                                        <Button Content="连接MQTT" Classes="QuietAction" Padding="8 4" FontSize="10" CornerRadius="6"
+                                        <TextBlock Text="{Binding PushFrequencyText}" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center"/>
+                                        <Button Content="连接MQTT" Classes="GdGhost" Padding="8 4" FontSize="10" CornerRadius="{DynamicResource GdRadiusSm}"
                                                 Command="{Binding ConnectMqttCommand}"/>
-                                        <Button Content="手动录入" Classes="QuietAction" Padding="8 4" FontSize="10" CornerRadius="6"
+                                        <Button Content="手动录入" Classes="GdGhost" Padding="8 4" FontSize="10" CornerRadius="{DynamicResource GdRadiusSm}"
                                                 Command="{Binding OpenManualReportCommand}" Margin="8,0,0,0"/>
                                     </StackPanel>
                                 </Border>
                                 <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="12">
-                                    <Border Classes="SurfaceCard subtle" Padding="14" CornerRadius="10">
+                                    <Border Classes="GdCard" Padding="14" CornerRadius="{DynamicResource GdRadiusMd}">
                                         <StackPanel Spacing="6" HorizontalAlignment="Center">
-                                            <TextBlock Text="温度" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="温度" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
                                             <TextBlock Text="{Binding SensorData.Temperature, StringFormat='{}{0:F1}℃'}"
-                                                       FontSize="22" FontWeight="Bold" Foreground="#FF7043" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="{Binding SensorData.TemperatureTrend}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
+                                                       FontSize="22" FontWeight="Bold" Foreground="{DynamicResource GdWarningBrush}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.TemperatureTrend}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
-                                    <Border Classes="SurfaceCard subtle" Padding="14" CornerRadius="10" Grid.Column="1">
+                                    <Border Classes="GdCard" Padding="14" CornerRadius="{DynamicResource GdRadiusMd}" Grid.Column="1">
                                         <StackPanel Spacing="6" HorizontalAlignment="Center">
-                                            <TextBlock Text="湿度" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="湿度" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
                                             <TextBlock Text="{Binding SensorData.Humidity, StringFormat='{}{0:F1}%'}"
-                                                       FontSize="22" FontWeight="Bold" Foreground="{DynamicResource BattleNetOutlineBrush}" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="{Binding SensorData.HumidityTrend}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
+                                                       FontSize="22" FontWeight="Bold" Foreground="{DynamicResource GdBrand400Brush}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.HumidityTrend}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
-                                    <Border Classes="SurfaceCard subtle" Padding="14" CornerRadius="10" Grid.Column="2">
+                                    <Border Classes="GdCard" Padding="14" CornerRadius="{DynamicResource GdRadiusMd}" Grid.Column="2">
                                         <StackPanel Spacing="6" HorizontalAlignment="Center">
-                                            <TextBlock Text="光照" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="光照" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
                                             <TextBlock Text="{Binding SensorData.LightIntensity, StringFormat='{}{0:F0} lux'}"
-                                                       FontSize="22" FontWeight="Bold" Foreground="#FFA726" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="{Binding SensorData.LightTrend}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
+                                                       FontSize="22" FontWeight="Bold" Foreground="{DynamicResource GdWarningBrush}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.LightTrend}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
-                                    <Border Classes="SurfaceCard subtle" Padding="14" CornerRadius="10" Grid.Column="3">
+                                    <Border Classes="GdCard" Padding="14" CornerRadius="{DynamicResource GdRadiusMd}" Grid.Column="3">
                                         <StackPanel Spacing="6" HorizontalAlignment="Center">
-                                            <TextBlock Text="CO₂" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="CO₂" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
                                             <TextBlock Text="{Binding SensorData.Co2Concentration, StringFormat='{}{0:F0} ppm'}"
-                                                       FontSize="22" FontWeight="Bold" Foreground="{DynamicResource BattleNetPrimaryBrush}" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="{Binding SensorData.Co2Trend}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
+                                                       FontSize="22" FontWeight="Bold" Foreground="{DynamicResource GdPrimaryBrush}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.Co2Trend}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
-                                    <Border Classes="SurfaceCard subtle" Padding="14" CornerRadius="10" Grid.Column="4">
+                                    <Border Classes="GdCard" Padding="14" CornerRadius="{DynamicResource GdRadiusMd}" Grid.Column="4">
                                         <StackPanel Spacing="6" HorizontalAlignment="Center">
-                                            <TextBlock Text="土壤" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="土壤" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
                                             <TextBlock Text="{Binding SensorData.SoilMoisture, StringFormat='{}{0:F1}%'}"
                                                        FontSize="22" FontWeight="Bold" Foreground="#8D6E63" HorizontalAlignment="Center"/>
-                                            <TextBlock Text="{Binding SensorData.SoilTrend}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding SensorData.SoilTrend}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
                                         </StackPanel>
                                     </Border>
                                 </Grid>
-                                <Border Classes="SurfaceCard subtle" Padding="20" CornerRadius="10" IsVisible="{Binding SensorEmptyHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                                    <TextBlock Text="{Binding SensorEmptyHint}" FontSize="13" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
+                                <Border Classes="GdCard" Padding="20" CornerRadius="{DynamicResource GdRadiusMd}" IsVisible="{Binding SensorEmptyHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                    <TextBlock Text="{Binding SensorEmptyHint}" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
                                 </Border>
-                                <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10">
+                                <Border Classes="GdCard" Padding="12" CornerRadius="{DynamicResource GdRadiusMd}">
                                     <StackPanel Spacing="8">
                                         <TextBlock Text="异常阈值提醒" FontSize="12" FontWeight="SemiBold"/>
                                         <ItemsControl ItemsSource="{Binding ThresholdAlerts}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
-                                                    <Border Background="#1AFF7043" Padding="10 8" CornerRadius="8" Margin="0 0 0 6">
+                                                    <Border Background="{DynamicResource GdWarningSurfaceBrush}" Padding="10 8" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 6">
                                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                                             <TextBlock Text="⚠" FontSize="12"/>
                                                             <TextBlock Text="{Binding Message}" FontSize="12"/>
@@ -163,7 +163,7 @@
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
-                                        <TextBlock Text="当前无异常" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}"
+                                        <TextBlock Text="当前无异常" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                    IsVisible="{Binding HasNoThresholdAlerts}"/>
                                     </StackPanel>
                                 </Border>
@@ -176,31 +176,31 @@
                         <ScrollViewer Padding="16" HorizontalScrollBarVisibility="Disabled">
                             <StackPanel Spacing="16">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <Button Content="24h" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                    <Button Content="24h" Classes="GdGhost" Padding="10 6" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
                                             Command="{Binding SetTimeRangeCommand}" CommandParameter="24h"/>
-                                    <Button Content="7天" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                    <Button Content="7天" Classes="GdGhost" Padding="10 6" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
                                             Command="{Binding SetTimeRangeCommand}" CommandParameter="7d"/>
-                                    <Button Content="30天" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                    <Button Content="30天" Classes="GdGhost" Padding="10 6" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
                                             Command="{Binding SetTimeRangeCommand}" CommandParameter="30d"/>
-                                    <TextBlock Text="{Binding CurrentTimeRangeDisplay}" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center" Margin="8,0,0,0"/>
-                                    <Button Content="导出CSV" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                    <TextBlock Text="{Binding CurrentTimeRangeDisplay}" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                    <Button Content="导出CSV" Classes="GdGhost" Padding="10 6" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
                                             Command="{Binding ExportDataCommand}"/>
                                 </StackPanel>
-                                <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10" Height="300">
+                                <Border Classes="GdCard" Padding="16" CornerRadius="{DynamicResource GdRadiusMd}" Height="300">
                                     <lvc:CartesianChart Series="{Binding HistorySeries}"
                                                         XAxes="{Binding HistoryXAxes}"
                                                         YAxes="{Binding HistoryYAxes}"/>
                                 </Border>
-                                <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10">
+                                <Border Classes="GdCard" Padding="16" CornerRadius="{DynamicResource GdRadiusMd}">
                                     <StackPanel Spacing="12">
                                         <TextBlock Text="数据分布" FontSize="12" FontWeight="SemiBold"/>
                                         <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
                                             <StackPanel Spacing="8">
-                                                <TextBlock Text="温度区间占比" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="温度区间占比" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
                                                 <lvc:PieChart Series="{Binding TemperaturePieSeries}" Height="180"/>
                                             </StackPanel>
                                             <StackPanel Grid.Column="1" Spacing="8">
-                                                <TextBlock Text="光照时段分布" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="光照时段分布" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
                                                 <lvc:PieChart Series="{Binding LightPieSeries}" Height="180"/>
                                             </StackPanel>
                                         </Grid>
@@ -216,17 +216,17 @@
                             <StackPanel Spacing="16">
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                     <TextBlock Text="种植成本" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                    <Button Grid.Column="1" Content="录入成本" Classes="PrimaryAction" Padding="12 6" FontSize="11" CornerRadius="8"
+                                    <Button Grid.Column="1" Content="录入成本" Classes="GdPrimary" Padding="12 6" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
                                             Command="{Binding AddCostCommand}"/>
                                 </Grid>
                                 <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
-                                    <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10">
+                                    <Border Classes="GdCard" Padding="16" CornerRadius="{DynamicResource GdRadiusMd}">
                                         <StackPanel Spacing="8">
                                             <TextBlock Text="成本分类占比" FontSize="12" FontWeight="SemiBold"/>
                                             <lvc:PieChart Series="{Binding CostPieSeries}" Height="220"/>
                                         </StackPanel>
                                     </Border>
-                                    <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10" Grid.Column="1">
+                                    <Border Classes="GdCard" Padding="16" CornerRadius="{DynamicResource GdRadiusMd}" Grid.Column="1">
                                         <StackPanel Spacing="8">
                                             <TextBlock Text="月度成本趋势" FontSize="12" FontWeight="SemiBold"/>
                                             <lvc:CartesianChart Series="{Binding CostBarSeries}"
@@ -239,18 +239,18 @@
                                 <ItemsControl ItemsSource="{Binding CostRecords}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="8" Margin="0 0 0 8">
+                                            <Border Classes="GdCard" Padding="12" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 8">
                                                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                                                    <Border Width="36" Height="36" CornerRadius="18" Background="{DynamicResource SubtleFillColorTertiaryBrush}">
+                                                    <Border Width="36" Height="36" CornerRadius="18" Background="{DynamicResource GdMutedBrush}">
                                                         <TextBlock Text="{Binding CategoryIcon}" FontSize="14"
                                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                     </Border>
                                                     <StackPanel Spacing="2" VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding CategoryDisplay}" FontSize="12" FontWeight="SemiBold"/>
-                                                        <TextBlock Text="{Binding CostDate, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                                                        <TextBlock Text="{Binding CostDate, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                                                     </StackPanel>
                                                     <TextBlock Grid.Column="2" Text="{Binding Amount, StringFormat='¥{}{0:F2}'}"
-                                                               FontSize="13" FontWeight="SemiBold" Foreground="#FF7043" VerticalAlignment="Center"/>
+                                                               FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdWarningBrush}" VerticalAlignment="Center"/>
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>
@@ -269,12 +269,12 @@
                                         <TextBlock Text="产量记录" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                         <CheckBox Content="全选" IsChecked="{Binding IsSelectAllYield}" Margin="8,0,0,0"/>
                                     </StackPanel>
-                                    <Button Grid.Column="1" Content="批量上架" Classes="QuietAction" Padding="12 6" FontSize="11" CornerRadius="8"
+                                    <Button Grid.Column="1" Content="批量上架" Classes="GdGhost" Padding="12 6" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
                                             Command="{Binding BatchListFromYieldCommand}"/>
-                                    <Button Grid.Column="2" Content="记录产量" Classes="PrimaryAction" Padding="12 6" FontSize="11" CornerRadius="8"
+                                    <Button Grid.Column="2" Content="记录产量" Classes="GdPrimary" Padding="12 6" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
                                             Command="{Binding AddYieldCommand}"/>
                                 </Grid>
-                                <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10">
+                                <Border Classes="GdCard" Padding="16" CornerRadius="{DynamicResource GdRadiusMd}">
                                     <StackPanel Spacing="8">
                                         <TextBlock Text="月度产量趋势" FontSize="12" FontWeight="SemiBold"/>
                                         <lvc:CartesianChart Series="{Binding YieldLineSeries}"
@@ -286,24 +286,24 @@
                                 <ItemsControl ItemsSource="{Binding YieldRecords}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="8" Margin="0 0 0 8">
+                                            <Border Classes="GdCard" Padding="12" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 8">
                                                 <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
                                                     <CheckBox IsChecked="{Binding IsSelected}" VerticalAlignment="Center"/>
-                                                    <Border Width="36" Height="36" CornerRadius="18" Background="{DynamicResource SubtleFillColorTertiaryBrush}" Grid.Column="1">
+                                                    <Border Width="36" Height="36" CornerRadius="18" Background="{DynamicResource GdMutedBrush}" Grid.Column="1">
                                                         <TextBlock Text="{Binding GradeIcon}" FontSize="14"
                                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                     </Border>
                                                     <StackPanel Grid.Column="2" Spacing="2" VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding SpeciesName}" FontSize="12" FontWeight="SemiBold"/>
-                                                        <TextBlock Text="{Binding HarvestDate, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                                                        <TextBlock Text="{Binding HarvestDate, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                                                     </StackPanel>
                                                     <TextBlock Grid.Column="3" Text="{Binding Quantity, StringFormat='{}{0:F0} 支'}"
-                                                               FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource BattleNetPrimaryBrush}" VerticalAlignment="Center"/>
-                                                    <Border Grid.Column="4" Background="{DynamicResource SubtleFillColorTertiaryBrush}"
-                                                            CornerRadius="4" Padding="6 2" VerticalAlignment="Center">
+                                                               FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdPrimaryBrush}" VerticalAlignment="Center"/>
+                                                    <Border Grid.Column="4" Background="{DynamicResource GdMutedBrush}"
+                                                            CornerRadius="{DynamicResource GdRadiusSm}" Padding="6 2" VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding Grade}" FontSize="10" FontWeight="SemiBold"/>
                                                     </Border>
-                                                    <Button Grid.Column="5" Content="上架销售" Classes="QuietAction" Padding="8 4" FontSize="10" CornerRadius="6"
+                                                    <Button Grid.Column="5" Content="上架销售" Classes="GdGhost" Padding="8 4" FontSize="10" CornerRadius="{DynamicResource GdRadiusSm}"
                                                             Command="{Binding $parent[UserControl].DataContext.ListFromYieldCommand}"
                                                             CommandParameter="{Binding}"/>
                                                 </Grid>
@@ -321,27 +321,27 @@
                             <StackPanel Spacing="16">
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <Button Content="全部" Classes="QuietAction" Padding="8 4" FontSize="11" CornerRadius="6"
+                                        <Button Content="全部" Classes="GdGhost" Padding="8 4" FontSize="11" CornerRadius="{DynamicResource GdRadiusSm}"
                                                 Command="{Binding FilterAdviceCommand}" CommandParameter="All"/>
-                                        <Button Content="采收期" Classes="QuietAction" Padding="8 4" FontSize="11" CornerRadius="6"
+                                        <Button Content="采收期" Classes="GdGhost" Padding="8 4" FontSize="11" CornerRadius="{DynamicResource GdRadiusSm}"
                                                 Command="{Binding FilterAdviceCommand}" CommandParameter="Harvest"/>
-                                        <Button Content="灌溉" Classes="QuietAction" Padding="8 4" FontSize="11" CornerRadius="6"
+                                        <Button Content="灌溉" Classes="GdGhost" Padding="8 4" FontSize="11" CornerRadius="{DynamicResource GdRadiusSm}"
                                                 Command="{Binding FilterAdviceCommand}" CommandParameter="Irrigation"/>
-                                        <Button Content="通风" Classes="QuietAction" Padding="8 4" FontSize="11" CornerRadius="6"
+                                        <Button Content="通风" Classes="GdGhost" Padding="8 4" FontSize="11" CornerRadius="{DynamicResource GdRadiusSm}"
                                                 Command="{Binding FilterAdviceCommand}" CommandParameter="Ventilation"/>
-                                        <Button Content="病虫害" Classes="QuietAction" Padding="8 4" FontSize="11" CornerRadius="6"
+                                        <Button Content="病虫害" Classes="GdGhost" Padding="8 4" FontSize="11" CornerRadius="{DynamicResource GdRadiusSm}"
                                                 Command="{Binding FilterAdviceCommand}" CommandParameter="Pest"/>
-                                        <Button Content="肥料" Classes="QuietAction" Padding="8 4" FontSize="11" CornerRadius="6"
+                                        <Button Content="肥料" Classes="GdGhost" Padding="8 4" FontSize="11" CornerRadius="{DynamicResource GdRadiusSm}"
                                                 Command="{Binding FilterAdviceCommand}" CommandParameter="Fertilizer"/>
                                     </StackPanel>
-                                    <Button Grid.Column="1" Content="生成建议" Classes="PrimaryAction" Padding="12 6" FontSize="11" CornerRadius="8"
+                                    <Button Grid.Column="1" Content="生成建议" Classes="GdPrimary" Padding="12 6" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
                                             Command="{Binding GenerateAdviceCommand}"/>
                                 </Grid>
 
                                 <ItemsControl ItemsSource="{Binding ActiveAdvices}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Classes="SurfaceCard subtle" Padding="14" CornerRadius="10" Margin="0 0 0 10">
+                                            <Border Classes="GdCard" Padding="14" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 10">
                                                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                                                     <Border Width="40" Height="40" CornerRadius="20"
                                                             Background="{Binding PriorityBackground}">
@@ -351,20 +351,20 @@
                                                     <StackPanel Grid.Column="1" Spacing="4">
                                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                                             <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"/>
-                                                            <Border Background="{Binding SourceBadgeBackground}" CornerRadius="4" Padding="6 2">
+                                                            <Border Background="{Binding SourceBadgeBackground}" CornerRadius="{DynamicResource GdRadiusSm}" Padding="6 2">
                                                                 <TextBlock Text="{Binding Source}" FontSize="9" Foreground="White"/>
                                                             </Border>
                                                         </StackPanel>
-                                                        <TextBlock Text="{Binding Content}" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                                                        <TextBlock Text="{Binding Content}" FontSize="12" TextWrapping="Wrap" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                                                         <TextBlock Text="{Binding GeneratedTime, StringFormat='生成于 {}{0:HH:mm}'}"
-                                                                   FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                                                                   FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                                                     </StackPanel>
                                                     <StackPanel Grid.Column="2" Spacing="4" VerticalAlignment="Center">
-                                                        <Button Content="已执行" Classes="QuietAction" Padding="8 4" FontSize="10" CornerRadius="6"
+                                                        <Button Content="已执行" Classes="GdGhost" Padding="8 4" FontSize="10" CornerRadius="{DynamicResource GdRadiusSm}"
                                                                 Command="{Binding $parent[UserControl].DataContext.MarkExecutedCommand}"
                                                                 CommandParameter="{Binding}"
                                                                 IsVisible="{Binding IsPending}"/>
-                                                        <TextBlock Text="已处理" FontSize="10" Foreground="{DynamicResource BattleNetPrimaryBrush}"
+                                                        <TextBlock Text="已处理" FontSize="10" Foreground="{DynamicResource GdPrimaryBrush}"
                                                                    IsVisible="{Binding IsExecuted}" HorizontalAlignment="Center"/>
                                                     </StackPanel>
                                                 </Grid>
@@ -372,12 +372,12 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <TextBlock Text="{Binding AdviceEmptyHint}" FontSize="13" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center" Margin="0,16,0,0"
+                                <TextBlock Text="{Binding AdviceEmptyHint}" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center" Margin="0,16,0,0"
                                            IsVisible="{Binding AdviceEmptyHint, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                <Border Classes="SurfaceCard" Padding="24" IsVisible="{Binding IsEmptyAdvice}">
+                                <Border Classes="GdCard" Padding="24" IsVisible="{Binding IsEmptyAdvice}">
                                     <StackPanel HorizontalAlignment="Center" Spacing="8">
                                         <TextBlock Text="📋" FontSize="24" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="暂无种植建议" FontSize="13" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="暂无种植建议" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -390,44 +390,44 @@
                             <StackPanel Spacing="16">
                                 <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="12">
                                     <TextBlock Text="设备管理" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                    <Button Grid.Column="1" Content="新建分组" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                    <Button Grid.Column="1" Content="新建分组" Classes="GdGhost" Padding="10 6" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
                                             Command="{Binding CreateGroupCommand}"/>
-                                    <Button Grid.Column="2" Content="添加设备" Classes="PrimaryAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                    <Button Grid.Column="2" Content="添加设备" Classes="GdPrimary" Padding="10 6" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
                                             Command="{Binding AddDeviceCommand}"/>
                                     <Button Grid.Column="3" Content="绑定设备" Command="{Binding BindDeviceCommand}" Margin="4,0" />
                                 </Grid>
                                 <ItemsControl ItemsSource="{Binding DeviceGroups}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Classes="SurfaceCard subtle" Padding="14" CornerRadius="10" Margin="0 0 0 12">
+                                            <Border Classes="GdCard" Padding="14" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 12">
                                                 <StackPanel Spacing="10">
                                                     <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
                                                         <TextBlock Text="{Binding GroupName}" FontSize="13" FontWeight="SemiBold"/>
                                                         <TextBlock Grid.Column="1" Text="{Binding DeviceCount, StringFormat='{}{0} 台设备'}"
-                                                                   FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center"/>
-                                                        <Button Grid.Column="2" Content="✏️" Classes="QuietAction" Padding="4 2" FontSize="10" CornerRadius="4"
+                                                                   FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center"/>
+                                                        <Button Grid.Column="2" Content="✏️" Classes="GdGhost" Padding="4 2" FontSize="10" CornerRadius="{DynamicResource GdRadiusSm}"
                                                                 Command="{Binding $parent[UserControl].DataContext.RenameGroupCommand}"
                                                                 CommandParameter="{Binding}"/>
-                                                        <Button Grid.Column="3" Content="🗑️" Classes="QuietAction" Padding="4 2" FontSize="10" CornerRadius="4"
+                                                        <Button Grid.Column="3" Content="🗑️" Classes="GdGhost" Padding="4 2" FontSize="10" CornerRadius="{DynamicResource GdRadiusSm}"
                                                                 Command="{Binding $parent[UserControl].DataContext.DeleteGroupCommand}"
                                                                 CommandParameter="{Binding}"/>
                                                     </Grid>
                                                     <ItemsControl ItemsSource="{Binding Devices}">
                                                         <ItemsControl.ItemTemplate>
                                                             <DataTemplate>
-                                                                <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}"
-                                                                        Padding="10 8" CornerRadius="8" Margin="0 0 0 6">
+                                                                <Border Background="{DynamicResource GdMutedBrush}"
+                                                                        Padding="10 8" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 6">
                                                                     <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
                                                                         <Ellipse Width="10" Height="10" Fill="{Binding StatusBrush}"/>
                                                                         <StackPanel Grid.Column="1" Spacing="2">
                                                                             <TextBlock Text="{Binding DeviceName}" FontSize="12" FontWeight="SemiBold"/>
-                                                                            <TextBlock Text="{Binding DeviceTypeDisplay}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}"/>
-                                                                            <TextBlock Text="{Binding DeviceCode, StringFormat='{}编码: {0}'}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" Margin="0,2,0,0"/>
-                                                                            <TextBlock Text="{Binding Location, StringFormat='{}位置: {0}'}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" Margin="0,2,0,0" IsVisible="{Binding Location, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-                                                                            <TextBlock Text="{Binding Protocol, StringFormat='{}协议: {0}'}" FontSize="10" Foreground="{DynamicResource LoginFormMutedBrush}" Margin="0,2,0,0"/>
+                                                                            <TextBlock Text="{Binding DeviceTypeDisplay}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                                                            <TextBlock Text="{Binding DeviceCode, StringFormat='{}编码: {0}'}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" Margin="0,2,0,0"/>
+                                                                            <TextBlock Text="{Binding Location, StringFormat='{}位置: {0}'}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" Margin="0,2,0,0" IsVisible="{Binding Location, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                                                                            <TextBlock Text="{Binding Protocol, StringFormat='{}协议: {0}'}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" Margin="0,2,0,0"/>
                                                                         </StackPanel>
                                                                         <TextBlock Grid.Column="2" Text="{Binding LastSeenText}"
-                                                                                   FontSize="9" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center"/>
+                                                                                   FontSize="9" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center"/>
                                                                         <StackPanel Grid.Column="3" Orientation="Horizontal" Margin="4,0">
                                                                             <TextBlock Text="{Binding BindingStatusDisplay}" Margin="0,0,8,0" VerticalAlignment="Center" />
                                                                             <Button Content="解绑" Command="{Binding $parent[UserControl].DataContext.UnbindDeviceCommand}" CommandParameter="{Binding}" Margin="0,0,4,0" FontSize="11" Padding="8,2" />
@@ -446,20 +446,20 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
 
-                                <Separator Background="{DynamicResource BattleNetSurfaceTintBrush}" Margin="0 4"/>
+                                <Separator Background="{DynamicResource GdInfoSurfaceBrush}" Margin="0 4"/>
 
                                 <TextBlock Text="远程控制" FontSize="14" FontWeight="SemiBold"/>
-                                <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10">
+                                <Border Classes="GdCard" Padding="16" CornerRadius="{DynamicResource GdRadiusMd}">
                                     <StackPanel Spacing="12">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <TextBlock Text="当前设备：" FontSize="12" VerticalAlignment="Center"/>
                                             <TextBlock Text="{Binding SelectedDeviceForControl.DeviceName}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                            <TextBlock Text="未选择设备" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center"
+                                            <TextBlock Text="未选择设备" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center"
                                                        IsVisible="{Binding !HasSelectedDevice}"/>
                                         </StackPanel>
                                         <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
                                             <StackPanel Grid.Column="0" Spacing="4" HorizontalAlignment="Stretch">
-                                                <Button Classes="PrimaryAction" Padding="14 10" CornerRadius="8"
+                                                <Button Classes="GdPrimary" Padding="14 10" CornerRadius="{DynamicResource GdRadiusMd}"
                                                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                                                         Command="{Binding SendIrrigationCommandCommand}"
                                                         IsEnabled="{Binding CanSendCommands}"
@@ -469,17 +469,17 @@
                                                         <TextBlock Text="灌溉" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                                     </StackPanel>
                                                 </Button>
-                                                <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" Padding="14 10" CornerRadius="8"
+                                                <Border Background="{DynamicResource GdMutedBrush}" Padding="14 10" CornerRadius="{DynamicResource GdRadiusMd}"
                                                         HorizontalAlignment="Stretch" IsVisible="{Binding IsSendingIrrigation}">
                                                     <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                                                         <ProgressBar IsIndeterminate="True" Width="60" Height="4" VerticalAlignment="Center"/>
-                                                        <TextBlock Text="发送中..." FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="发送中..." FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center"/>
                                                     </StackPanel>
                                                 </Border>
                                             </StackPanel>
 
                                             <StackPanel Grid.Column="1" Spacing="4" HorizontalAlignment="Stretch">
-                                                <Button Classes="QuietAction" Padding="14 10" CornerRadius="8"
+                                                <Button Classes="GdGhost" Padding="14 10" CornerRadius="{DynamicResource GdRadiusMd}"
                                                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                                                         Command="{Binding SendVentilationCommandCommand}"
                                                         IsEnabled="{Binding CanSendCommands}"
@@ -489,17 +489,17 @@
                                                         <TextBlock Text="通风" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                                     </StackPanel>
                                                 </Button>
-                                                <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" Padding="14 10" CornerRadius="8"
+                                                <Border Background="{DynamicResource GdMutedBrush}" Padding="14 10" CornerRadius="{DynamicResource GdRadiusMd}"
                                                         HorizontalAlignment="Stretch" IsVisible="{Binding IsSendingVentilation}">
                                                     <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                                                         <ProgressBar IsIndeterminate="True" Width="60" Height="4" VerticalAlignment="Center"/>
-                                                        <TextBlock Text="发送中..." FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="发送中..." FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center"/>
                                                     </StackPanel>
                                                 </Border>
                                             </StackPanel>
 
                                             <StackPanel Grid.Column="2" Spacing="4" HorizontalAlignment="Stretch">
-                                                <Button Classes="QuietAction" Padding="14 10" CornerRadius="8"
+                                                <Button Classes="GdGhost" Padding="14 10" CornerRadius="{DynamicResource GdRadiusMd}"
                                                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                                                         Command="{Binding SendLightingCommandCommand}"
                                                         IsEnabled="{Binding CanSendCommands}"
@@ -509,99 +509,99 @@
                                                         <TextBlock Text="补光" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                                     </StackPanel>
                                                 </Button>
-                                                <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" Padding="14 10" CornerRadius="8"
+                                                <Border Background="{DynamicResource GdMutedBrush}" Padding="14 10" CornerRadius="{DynamicResource GdRadiusMd}"
                                                         HorizontalAlignment="Stretch" IsVisible="{Binding IsSendingLighting}">
                                                     <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                                                         <ProgressBar IsIndeterminate="True" Width="60" Height="4" VerticalAlignment="Center"/>
-                                                        <TextBlock Text="发送中..." FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="发送中..." FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center"/>
                                                     </StackPanel>
                                                 </Border>
                                             </StackPanel>
                                         </Grid>
-                                        <TextBlock Text="请先选择设备并确保MQTT已连接" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"
+                                        <TextBlock Text="请先选择设备并确保MQTT已连接" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                    IsVisible="{Binding !CanSendCommands}" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
 
-                                <Separator Background="{DynamicResource BattleNetSurfaceTintBrush}" Margin="0 4"/>
+                                <Separator Background="{DynamicResource GdInfoSurfaceBrush}" Margin="0 4"/>
 
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                     <TextBlock Text="设备孪生" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                    <Button Grid.Column="1" Content="加载孪生数据" Classes="PrimaryAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                    <Button Grid.Column="1" Content="加载孪生数据" Classes="GdPrimary" Padding="10 6" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
                                             Command="{Binding LoadDeviceTwinCommand}"
                                             IsEnabled="{Binding HasSelectedDevice}"/>
                                 </Grid>
-                                <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10" IsVisible="{Binding IsDeviceTwinLoaded}">
+                                <Border Classes="GdCard" Padding="16" CornerRadius="{DynamicResource GdRadiusMd}" IsVisible="{Binding IsDeviceTwinLoaded}">
                                     <StackPanel Spacing="12">
                                         <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
                                             <StackPanel Spacing="8">
-                                                <TextBlock Text="期望属性 (Desired)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource BattleNetOutlineBrush}"/>
+                                                <TextBlock Text="期望属性 (Desired)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource GdBrand400Brush}"/>
                                                 <ItemsControl ItemsSource="{Binding DeviceTwinDesiredProperties}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
-                                                            <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" Padding="8 6" CornerRadius="6" Margin="0 0 0 4">
+                                                            <Border Background="{DynamicResource GdMutedBrush}" Padding="8 6" CornerRadius="{DynamicResource GdRadiusSm}" Margin="0 0 0 4">
                                                                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                                                                    <TextBlock Text="{Binding Key}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource BattleNetOutlineBrush}" VerticalAlignment="Center"/>
+                                                                    <TextBlock Text="{Binding Key}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource GdBrand400Brush}" VerticalAlignment="Center"/>
                                                                     <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="11" VerticalAlignment="Center"/>
                                                                 </Grid>
                                                             </Border>
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
-                                                <TextBlock Text="暂无期望属性" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"
+                                                <TextBlock Text="暂无期望属性" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                            IsVisible="{Binding HasNoDesiredProperties}"/>
                                             </StackPanel>
                                             <StackPanel Grid.Column="1" Spacing="8">
-                                                <TextBlock Text="报告属性 (Reported)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource BattleNetPrimaryBrush}"/>
+                                                <TextBlock Text="报告属性 (Reported)" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource GdPrimaryBrush}"/>
                                                 <ItemsControl ItemsSource="{Binding DeviceTwinReportedProperties}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
-                                                            <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" Padding="8 6" CornerRadius="6" Margin="0 0 0 4">
+                                                            <Border Background="{DynamicResource GdMutedBrush}" Padding="8 6" CornerRadius="{DynamicResource GdRadiusSm}" Margin="0 0 0 4">
                                                                 <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                                                                    <TextBlock Text="{Binding Key}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource BattleNetPrimaryBrush}" VerticalAlignment="Center"/>
+                                                                    <TextBlock Text="{Binding Key}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource GdPrimaryBrush}" VerticalAlignment="Center"/>
                                                                     <TextBlock Grid.Column="1" Text="{Binding Value}" FontSize="11" VerticalAlignment="Center"/>
                                                                 </Grid>
                                                             </Border>
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
-                                                <TextBlock Text="暂无报告属性" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"
+                                                <TextBlock Text="暂无报告属性" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                            IsVisible="{Binding HasNoReportedProperties}"/>
                                             </StackPanel>
                                         </Grid>
 
-                                        <Separator Background="{DynamicResource BattleNetSurfaceTintBrush}" Margin="0 4"/>
+                                        <Separator Background="{DynamicResource GdInfoSurfaceBrush}" Margin="0 4"/>
 
                                         <StackPanel Spacing="8">
-                                            <TextBlock Text="属性差异" FontSize="12" FontWeight="SemiBold" Foreground="#FFA726"/>
+                                            <TextBlock Text="属性差异" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource GdWarningBrush}"/>
                                             <ItemsControl ItemsSource="{Binding DeviceTwinDifferences}">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <Border Background="#1AFFA726" Padding="10 8" CornerRadius="8" Margin="0 0 0 6">
+                                                        <Border Background="{DynamicResource GdWarningSurfaceBrush}" Padding="10 8" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 6">
                                                             <Grid ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="12">
                                                                 <TextBlock Text="{Binding Key}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                                                 <StackPanel Grid.Column="1" Spacing="2">
-                                                                    <TextBlock Text="期望" FontSize="9" Foreground="{DynamicResource LoginFormMutedBrush}"/>
-                                                                    <TextBlock Text="{Binding DesiredValue}" FontSize="11" Foreground="{DynamicResource BattleNetOutlineBrush}"/>
+                                                                    <TextBlock Text="期望" FontSize="9" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                                                    <TextBlock Text="{Binding DesiredValue}" FontSize="11" Foreground="{DynamicResource GdBrand400Brush}"/>
                                                                 </StackPanel>
                                                                 <StackPanel Grid.Column="2" Spacing="2">
-                                                                    <TextBlock Text="报告" FontSize="9" Foreground="{DynamicResource LoginFormMutedBrush}"/>
-                                                                    <TextBlock Text="{Binding ReportedValue}" FontSize="11" Foreground="{DynamicResource BattleNetPrimaryBrush}"/>
+                                                                    <TextBlock Text="报告" FontSize="9" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                                                    <TextBlock Text="{Binding ReportedValue}" FontSize="11" Foreground="{DynamicResource GdPrimaryBrush}"/>
                                                                 </StackPanel>
                                                             </Grid>
                                                         </Border>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
-                                            <TextBlock Text="无属性差异" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"
+                                            <TextBlock Text="无属性差异" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                        IsVisible="{Binding HasNoTwinDifferences}"/>
                                         </StackPanel>
                                     </StackPanel>
                                 </Border>
-                                <Border Classes="SurfaceCard" Padding="24" IsVisible="{Binding !IsDeviceTwinLoaded}">
+                                <Border Classes="GdCard" Padding="24" IsVisible="{Binding !IsDeviceTwinLoaded}">
                                     <StackPanel HorizontalAlignment="Center" Spacing="8">
                                         <TextBlock Text="📡" FontSize="24" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="选择设备后点击&#x201C;加载孪生数据&#x201D;查看设备孪生" FontSize="13" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="选择设备后点击&#x201C;加载孪生数据&#x201D;查看设备孪生" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -614,7 +614,7 @@
                             <StackPanel Spacing="16">
                                 <Button Content="刷新分析数据" Command="{Binding LoadAnalysisCommand}" HorizontalAlignment="Left" />
 
-                                <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}" CornerRadius="8" Padding="16">
+                                <Border Background="{DynamicResource GdMutedBrush}" CornerRadius="{DynamicResource GdRadiusMd}" Padding="16">
                                     <StackPanel>
                                         <TextBlock Text="环境健康指数" FontSize="16" FontWeight="Bold" Margin="0,0,0,12" />
                                         <Grid ColumnDefinitions="*,*,*,*,*,*" RowDefinitions="Auto,Auto" Margin="0,0,0,8">
@@ -634,13 +634,13 @@
                                     </StackPanel>
                                 </Border>
 
-                                <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}" CornerRadius="8" Padding="16">
+                                <Border Background="{DynamicResource GdMutedBrush}" CornerRadius="{DynamicResource GdRadiusMd}" Padding="16">
                                     <StackPanel>
                                         <TextBlock Text="显著变化" FontSize="16" FontWeight="Bold" Margin="0,0,0,12" />
                                         <ItemsControl ItemsSource="{Binding SignificantChanges}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
-                                                    <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                                                    <Border BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource GdRadiusSm}" Padding="8" Margin="0,0,0,8">
                                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                                             <TextBlock Text="{Binding Time, StringFormat={}{0:MM-dd HH:mm}}" />
                                                             <TextBlock Text="{Binding Metric}" FontWeight="Bold" />
@@ -653,13 +653,13 @@
                                     </StackPanel>
                                 </Border>
 
-                                <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}" CornerRadius="8" Padding="16">
+                                <Border Background="{DynamicResource GdMutedBrush}" CornerRadius="{DynamicResource GdRadiusMd}" Padding="16">
                                     <StackPanel>
                                         <TextBlock Text="异常数据" FontSize="16" FontWeight="Bold" Margin="0,0,0,12" />
                                         <ItemsControl ItemsSource="{Binding Anomalies}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
-                                                    <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                                                    <Border BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource GdRadiusSm}" Padding="8" Margin="0,0,0,8">
                                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                                             <TextBlock Text="{Binding ReadingTime, StringFormat={}{0:MM-dd HH:mm}}" />
                                                             <TextBlock Text="{Binding Metric}" FontWeight="Bold" />
@@ -673,10 +673,10 @@
                                     </StackPanel>
                                 </Border>
 
-                                <Border Background="{DynamicResource SystemControlBackgroundAltHighBrush}" CornerRadius="8" Padding="16">
+                                <Border Background="{DynamicResource GdMutedBrush}" CornerRadius="{DynamicResource GdRadiusMd}" Padding="16">
                                     <StackPanel>
                                         <TextBlock Text="多设备对比" FontSize="16" FontWeight="Bold" Margin="0,0,0,12" />
-                                        <TextBlock Text="选择设备进行环境数据对比" FontSize="12" Foreground="{DynamicResource LoginFormMutedBrush}" Margin="0,0,0,8" />
+                                        <TextBlock Text="选择设备进行环境数据对比" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" Margin="0,0,0,8" />
                                         <ItemsControl ItemsSource="{Binding ComparisonDevices}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
@@ -684,33 +684,33 @@
                                                 </DataTemplate>
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
-                                        <Button Content="开始对比" Classes="PrimaryAction" Padding="10 6" FontSize="11" CornerRadius="8" Margin="0,8,0,0"
+                                        <Button Content="开始对比" Classes="GdPrimary" Padding="10 6" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0,8,0,0"
                                                 Command="{Binding LoadComparisonCommand}" HorizontalAlignment="Left"/>
-                                        <Border IsVisible="{Binding ComparisonResults.Count}" Background="{DynamicResource SubtleFillColorTertiaryBrush}" CornerRadius="6" Padding="12" Margin="0,12,0,0">
+                                        <Border IsVisible="{Binding ComparisonResults.Count}" Background="{DynamicResource GdMutedBrush}" CornerRadius="{DynamicResource GdRadiusSm}" Padding="12" Margin="0,12,0,0">
                                             <ItemsControl ItemsSource="{Binding ComparisonResults}">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <Border BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}" BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,8">
+                                                        <Border BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource GdRadiusSm}" Padding="8" Margin="0,0,0,8">
                                                             <StackPanel Spacing="4">
                                                                 <TextBlock Text="{Binding DeviceId}" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4"/>
                                                                 <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                                                                    <TextBlock Text="温度" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                                                                    <TextBlock Text="温度" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                                                                     <TextBlock Grid.Column="1" Text="{Binding AvgTemperature, StringFormat='{}{0:F1}℃'}" FontSize="11"/>
                                                                 </Grid>
                                                                 <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                                                                    <TextBlock Text="湿度" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                                                                    <TextBlock Text="湿度" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                                                                     <TextBlock Grid.Column="1" Text="{Binding AvgHumidity, StringFormat='{}{0:F1}%'}" FontSize="11"/>
                                                                 </Grid>
                                                                 <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                                                                    <TextBlock Text="光照" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                                                                    <TextBlock Text="光照" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                                                                     <TextBlock Grid.Column="1" Text="{Binding AvgLightIntensity, StringFormat='{}{0:F0} lux'}" FontSize="11"/>
                                                                 </Grid>
                                                                 <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                                                                    <TextBlock Text="CO₂" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                                                                    <TextBlock Text="CO₂" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                                                                     <TextBlock Grid.Column="1" Text="{Binding AvgCo2Level, StringFormat='{}{0:F0} ppm'}" FontSize="11"/>
                                                                 </Grid>
                                                                 <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                                                                    <TextBlock Text="土壤湿度" FontSize="11" Foreground="{DynamicResource LoginFormMutedBrush}"/>
+                                                                    <TextBlock Text="土壤湿度" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                                                                     <TextBlock Grid.Column="1" Text="{Binding AvgSoilMoisture, StringFormat='{}{0:F1}%'}" FontSize="11"/>
                                                                 </Grid>
                                                             </StackPanel>
@@ -730,7 +730,7 @@
 
             <!-- ===== 成本录入 Popup ===== -->
             <Popup IsOpen="{Binding IsCostDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
-                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="360" BoxShadow="0 8 24 0 #33000000">
+                <Border Background="{DynamicResource GdCardBrush}" BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24" MinWidth="360" BoxShadow="0 8 24 0 #33000000">
                     <StackPanel Spacing="16">
                         <TextBlock Text="录入成本" FontSize="18" FontWeight="SemiBold"/>
                         <StackPanel Spacing="8">
@@ -759,7 +759,7 @@
 
             <!-- ===== 产量记录 Popup ===== -->
             <Popup IsOpen="{Binding IsYieldDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
-                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="360" BoxShadow="0 8 24 0 #33000000">
+                <Border Background="{DynamicResource GdCardBrush}" BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24" MinWidth="360" BoxShadow="0 8 24 0 #33000000">
                     <StackPanel Spacing="16">
                         <TextBlock Text="记录产量" FontSize="18" FontWeight="SemiBold"/>
                         <StackPanel Spacing="8">
@@ -792,7 +792,7 @@
 
             <!-- ===== 设备输入 Popup ===== -->
             <Popup IsOpen="{Binding IsDeviceDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
-                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="360" BoxShadow="0 8 24 0 #33000000">
+                <Border Background="{DynamicResource GdCardBrush}" BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24" MinWidth="360" BoxShadow="0 8 24 0 #33000000">
                     <StackPanel Spacing="16">
                         <TextBlock Text="添加设备" FontSize="18" FontWeight="SemiBold"/>
                         <StackPanel Spacing="8">
@@ -841,7 +841,7 @@
 
             <!-- ===== 绑定设备 Popup ===== -->
             <Popup IsOpen="{Binding IsBindDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
-                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="360" BoxShadow="0 8 24 0 #33000000">
+                <Border Background="{DynamicResource GdCardBrush}" BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24" MinWidth="360" BoxShadow="0 8 24 0 #33000000">
                     <StackPanel Spacing="16">
                         <TextBlock Text="绑定设备" FontSize="18" FontWeight="SemiBold"/>
                         <StackPanel Spacing="8">
@@ -862,7 +862,7 @@
 
             <!-- ===== 分组输入 Popup ===== -->
             <Popup IsOpen="{Binding IsGroupDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
-                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="360" BoxShadow="0 8 24 0 #33000000">
+                <Border Background="{DynamicResource GdCardBrush}" BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24" MinWidth="360" BoxShadow="0 8 24 0 #33000000">
                     <StackPanel Spacing="16">
                         <TextBlock Text="新建分组" FontSize="18" FontWeight="SemiBold"/>
                         <StackPanel Spacing="8">
@@ -883,10 +883,10 @@
 
             <!-- ===== 上架确认 Popup ===== -->
             <Popup IsOpen="{Binding IsListingDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
-                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="400" BoxShadow="0 8 24 0 #33000000">
+                <Border Background="{DynamicResource GdCardBrush}" BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24" MinWidth="400" BoxShadow="0 8 24 0 #33000000">
                     <StackPanel Spacing="16">
                         <TextBlock Text="确认上架销售" FontSize="18" FontWeight="SemiBold"/>
-                        <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" CornerRadius="8" Padding="14">
+                        <Border Background="{DynamicResource GdMutedBrush}" CornerRadius="{DynamicResource GdRadiusMd}" Padding="14">
                             <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="8">
                                 <TextBlock Text="品种：" FontSize="13" Foreground="#888" VerticalAlignment="Center"/>
                                 <TextBlock Grid.Column="1" Text="{Binding ListingSpeciesName}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
@@ -895,7 +895,7 @@
                                 <TextBlock Grid.Row="2" Text="数量：" FontSize="13" Foreground="#888" VerticalAlignment="Center"/>
                                 <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ListingQuantity, StringFormat='{}{0:F0} 支'}" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 <TextBlock Grid.Row="3" Text="建议价：" FontSize="13" Foreground="#888" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ListingSuggestedPrice, StringFormat='¥{}{0:F2}/支'}" FontSize="13" FontWeight="SemiBold" Foreground="#FF7043" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ListingSuggestedPrice, StringFormat='¥{}{0:F2}/支'}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdWarningBrush}" VerticalAlignment="Center"/>
                             </Grid>
                         </Border>
                         <StackPanel Spacing="8">
@@ -912,17 +912,17 @@
 
             <!-- ===== 批次详情 Popup ===== -->
             <Popup IsOpen="{Binding IsBatchDetailDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
-                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="720" MaxWidth="800" MaxHeight="700" BoxShadow="0 8 24 0 #33000000">
+                <Border Background="{DynamicResource GdCardBrush}" BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24" MinWidth="720" MaxWidth="800" MaxHeight="700" BoxShadow="0 8 24 0 #33000000">
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                         <StackPanel Spacing="16">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <TextBlock Text="批次全生命周期" FontSize="18" FontWeight="SemiBold"/>
-                                <Button Grid.Column="1" Content="关闭" Classes="QuietAction" Padding="10 6" FontSize="11" CornerRadius="8"
+                                <Button Grid.Column="1" Content="关闭" Classes="GdGhost" Padding="10 6" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
                                         Command="{Binding CloseBatchDetailCommand}"/>
                             </Grid>
 
                             <!-- 批次基本信息 -->
-                            <Border Background="{DynamicResource SubtleFillColorTertiaryBrush}" CornerRadius="8" Padding="14">
+                            <Border Background="{DynamicResource GdMutedBrush}" CornerRadius="{DynamicResource GdRadiusMd}" Padding="14">
                                 <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="6">
                                     <TextBlock Text="批次名称：" FontSize="12" Foreground="#888" VerticalAlignment="Center"/>
                                     <TextBlock Grid.Column="1" Text="{Binding BatchLifecycle.BatchInfo.BatchName}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
@@ -939,21 +939,21 @@
 
                             <!-- 生命周期时间线 -->
                             <TextBlock Text="生命周期时间线" FontSize="14" FontWeight="SemiBold"/>
-                            <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10">
+                            <Border Classes="GdCard" Padding="16" CornerRadius="{DynamicResource GdRadiusMd}">
                                 <StackPanel Spacing="0">
                                     <!-- 种植 -->
                                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                                        <Ellipse Width="16" Height="16" Fill="#4CAF50" VerticalAlignment="Center"/>
+                                        <Ellipse Width="16" Height="16" Fill="{DynamicResource GdSuccessBrush}" VerticalAlignment="Center"/>
                                         <StackPanel Spacing="2">
                                             <TextBlock Text="🌱 种植" FontSize="12" FontWeight="SemiBold"/>
                                             <TextBlock Text="{Binding BatchLifecycle.BatchInfo.PlantingDate, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="10" Foreground="#888"/>
                                             <TextBlock Text="{Binding BatchLifecycle.BatchInfo.PlantingQuantity, StringFormat='种植数量: {}{0}'}" FontSize="10" Foreground="#888"/>
                                         </StackPanel>
                                     </Grid>
-                                    <Border Width="2" Height="20" Background="#4CAF50" Margin="7,0,0,0"/>
+                                    <Border Width="2" Height="20" Background="{DynamicResource GdSuccessBrush}" Margin="7,0,0,0"/>
                                     <!-- 监测 -->
                                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                                        <Ellipse Width="16" Height="16" Fill="#2196F3" VerticalAlignment="Center"/>
+                                        <Ellipse Width="16" Height="16" Fill="{DynamicResource GdBrand400Brush}" VerticalAlignment="Center"/>
                                         <StackPanel Spacing="2">
                                             <TextBlock Text="📡 环境监测" FontSize="12" FontWeight="SemiBold"/>
                                             <TextBlock FontSize="10" Foreground="#888">
@@ -967,25 +967,25 @@
                                             </TextBlock>
                                         </StackPanel>
                                     </Grid>
-                                    <Border Width="2" Height="20" Background="#2196F3" Margin="7,0,0,0"/>
+                                    <Border Width="2" Height="20" Background="{DynamicResource GdBrand400Brush}" Margin="7,0,0,0"/>
                                     <!-- 成本 -->
                                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                                        <Ellipse Width="16" Height="16" Fill="#FF9800" VerticalAlignment="Center"/>
+                                        <Ellipse Width="16" Height="16" Fill="{DynamicResource GdWarningBrush}" VerticalAlignment="Center"/>
                                         <StackPanel Spacing="2">
                                             <TextBlock Text="💰 成本投入" FontSize="12" FontWeight="SemiBold"/>
                                             <TextBlock Text="{Binding BatchLifecycle.TotalCost, StringFormat='总成本: ¥{}{0:F2}'}" FontSize="10" Foreground="#888"/>
                                         </StackPanel>
                                     </Grid>
-                                    <Border Width="2" Height="20" Background="#FF9800" Margin="7,0,0,0"/>
+                                    <Border Width="2" Height="20" Background="{DynamicResource GdWarningBrush}" Margin="7,0,0,0"/>
                                     <!-- 采收 -->
                                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                                        <Ellipse Width="16" Height="16" Fill="#66BB6A" VerticalAlignment="Center"/>
+                                        <Ellipse Width="16" Height="16" Fill="{DynamicResource GdSuccessBrush}" VerticalAlignment="Center"/>
                                         <StackPanel Spacing="2">
                                             <TextBlock Text="🌾 采收" FontSize="12" FontWeight="SemiBold"/>
                                             <TextBlock Text="{Binding BatchLifecycle.YieldRecords.Count, StringFormat='采收记录: {}{0}条'}" FontSize="10" Foreground="#888"/>
                                         </StackPanel>
                                     </Grid>
-                                    <Border Width="2" Height="20" Background="{DynamicResource BattleNetPrimaryBrush}" Margin="7,0,0,0"/>
+                                    <Border Width="2" Height="20" Background="{DynamicResource GdPrimaryBrush}" Margin="7,0,0,0"/>
                                     <!-- 上架 -->
                                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                                         <Ellipse Width="16" Height="16" Fill="#9C27B0" VerticalAlignment="Center"/>
@@ -997,13 +997,13 @@
                                     <Border Width="2" Height="20" Background="#9C27B0" Margin="7,0,0,0"/>
                                     <!-- 订单 -->
                                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                                        <Ellipse Width="16" Height="16" Fill="#F44336" VerticalAlignment="Center"/>
+                                        <Ellipse Width="16" Height="16" Fill="{DynamicResource GdErrorBrush}" VerticalAlignment="Center"/>
                                         <StackPanel Spacing="2">
                                             <TextBlock Text="📦 订单销售" FontSize="12" FontWeight="SemiBold"/>
                                             <TextBlock Text="{Binding BatchLifecycle.OrderSummaries.Count, StringFormat='关联订单: {}{0}条'}" FontSize="10" Foreground="#888"/>
                                         </StackPanel>
                                     </Grid>
-                                    <Border Width="2" Height="20" Background="#F44336" Margin="7,0,0,0"/>
+                                    <Border Width="2" Height="20" Background="{DynamicResource GdErrorBrush}" Margin="7,0,0,0"/>
                                     <!-- 结算 -->
                                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                                         <Ellipse Width="16" Height="16" Fill="#00BCD4" VerticalAlignment="Center"/>
@@ -1018,41 +1018,41 @@
                             <!-- 利润分析 -->
                             <TextBlock Text="利润分析" FontSize="14" FontWeight="SemiBold"/>
                             <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
-                                <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10">
+                                <Border Classes="GdCard" Padding="12" CornerRadius="{DynamicResource GdRadiusMd}">
                                     <StackPanel Spacing="4" HorizontalAlignment="Center">
                                         <TextBlock Text="总成本" FontSize="10" Foreground="#888" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="{Binding BatchProfitAnalysis.TotalCost, StringFormat='¥{}{0:F2}'}" FontSize="14" FontWeight="Bold" Foreground="#FF7043" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding BatchProfitAnalysis.TotalCost, StringFormat='¥{}{0:F2}'}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource GdWarningBrush}" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
-                                <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10" Grid.Column="1">
+                                <Border Classes="GdCard" Padding="12" CornerRadius="{DynamicResource GdRadiusMd}" Grid.Column="1">
                                     <StackPanel Spacing="4" HorizontalAlignment="Center">
                                         <TextBlock Text="总收入" FontSize="10" Foreground="#888" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="{Binding BatchProfitAnalysis.TotalRevenue, StringFormat='¥{}{0:F2}'}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BattleNetPrimaryBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding BatchProfitAnalysis.TotalRevenue, StringFormat='¥{}{0:F2}'}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource GdPrimaryBrush}" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
-                                <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10" Grid.Column="2">
+                                <Border Classes="GdCard" Padding="12" CornerRadius="{DynamicResource GdRadiusMd}" Grid.Column="2">
                                     <StackPanel Spacing="4" HorizontalAlignment="Center">
                                         <TextBlock Text="净利润" FontSize="10" Foreground="#888" HorizontalAlignment="Center"/>
                                         <TextBlock Text="{Binding BatchProfitAnalysis.NetProfit, StringFormat='¥{}{0:F2}'}" FontSize="14" FontWeight="Bold" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
-                                <Border Classes="SurfaceCard subtle" Padding="12" CornerRadius="10" Grid.Column="3">
+                                <Border Classes="GdCard" Padding="12" CornerRadius="{DynamicResource GdRadiusMd}" Grid.Column="3">
                                     <StackPanel Spacing="4" HorizontalAlignment="Center">
                                         <TextBlock Text="ROI" FontSize="10" Foreground="#888" HorizontalAlignment="Center"/>
-                                        <TextBlock Text="{Binding BatchProfitAnalysis.ROI, StringFormat='{}{0:F1}%'}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource BattleNetOutlineBrush}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding BatchProfitAnalysis.ROI, StringFormat='{}{0:F1}%'}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource GdBrand400Brush}" HorizontalAlignment="Center"/>
                                     </StackPanel>
                                 </Border>
                             </Grid>
 
                             <!-- 饼图 -->
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
-                                <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10">
+                                <Border Classes="GdCard" Padding="16" CornerRadius="{DynamicResource GdRadiusMd}">
                                     <StackPanel Spacing="8">
                                         <TextBlock Text="成本构成" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                                         <lvc:PieChart Series="{Binding ProfitCostPieSeries}" Height="200"/>
                                     </StackPanel>
                                 </Border>
-                                <Border Classes="SurfaceCard subtle" Padding="16" CornerRadius="10" Grid.Column="1">
+                                <Border Classes="GdCard" Padding="16" CornerRadius="{DynamicResource GdRadiusMd}" Grid.Column="1">
                                     <StackPanel Spacing="8">
                                         <TextBlock Text="收入构成" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                                         <lvc:PieChart Series="{Binding ProfitRevenuePieSeries}" Height="200"/>
@@ -1067,7 +1067,7 @@
 
             <!-- ===== 阈值设置 Popup ===== -->
             <Popup IsOpen="{Binding IsThresholdDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
-                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="400" BoxShadow="0 8 24 0 #33000000">
+                <Border Background="{DynamicResource GdCardBrush}" BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24" MinWidth="400" BoxShadow="0 8 24 0 #33000000">
                     <StackPanel Spacing="16">
                         <TextBlock Text="阈值设置" FontSize="18" FontWeight="SemiBold"/>
                         <StackPanel Spacing="8">
@@ -1102,7 +1102,7 @@
 
             <!-- ===== 手动录入传感器数据 Popup ===== -->
             <Popup IsOpen="{Binding IsManualReportDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
-                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="400" BoxShadow="0 8 24 0 #33000000">
+                <Border Background="{DynamicResource GdCardBrush}" BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24" MinWidth="400" BoxShadow="0 8 24 0 #33000000">
                     <StackPanel Spacing="16">
                         <TextBlock Text="手动录入传感器数据" FontSize="18" FontWeight="SemiBold"/>
                         <StackPanel Spacing="8">
@@ -1136,7 +1136,7 @@
             </Popup>
 
             <Popup IsOpen="{Binding IsChangeGroupDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
-                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="360" BoxShadow="0 8 24 0 #33000000">
+                <Border Background="{DynamicResource GdCardBrush}" BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24" MinWidth="360" BoxShadow="0 8 24 0 #33000000">
                     <StackPanel Spacing="16">
                         <TextBlock Text="变更设备分组" FontSize="18" FontWeight="SemiBold"/>
                         <StackPanel Spacing="8">
@@ -1152,7 +1152,7 @@
             </Popup>
 
             <Popup IsOpen="{Binding IsRenameGroupDialogOpen}" Placement="Center" PlacementTarget="{Binding #RootElement}">
-                <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="320" BoxShadow="0 8 24 0 #33000000">
+                <Border Background="{DynamicResource GdCardBrush}" BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="1" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24" MinWidth="320" BoxShadow="0 8 24 0 #33000000">
                     <StackPanel Spacing="16">
                         <TextBlock Text="重命名分组" FontSize="18" FontWeight="SemiBold"/>
                         <TextBox Text="{Binding RenameGroupNewName}" Watermark="输入新分组名称"/>

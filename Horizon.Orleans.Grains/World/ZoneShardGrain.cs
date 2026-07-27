@@ -765,6 +765,37 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             // 确保周期性全量快照（每 60 tick）也包含所有实体。
             bool includeInSnapshot = shouldBroadcast || forceFullThisTick;
 
+            // P2.6：加速度/瞬移检测（CheckAcceleration）
+            // 仅对"本 tick 有输入"的实体做检测，避免静止实体因速度归零触发误报。
+            if (entity.HadInputThisTick)
+            {
+                var prevPos = new WorldPosition(entity.PrevX, entity.PrevY, entity.PrevZ);
+                var curPos = new WorldPosition(entity.X, entity.Y, entity.Z);
+                var prevSpeed = MathF.Sqrt(entity.PrevVelocityXZ_X * entity.PrevVelocityXZ_X
+                    + entity.PrevVelocityXZ_Y * entity.PrevVelocityXZ_Y);
+                var curSpeed = MathF.Sqrt(velX * velX + velY * velY);
+                var accelResult = _movementValidator.CheckAcceleration(
+                    prevPos, curPos, prevSpeed, curSpeed, MovementFormulaStepDt);
+                if (!accelResult.IsValid)
+                {
+                    corrections.Add(new CorrectionPacket
+                    {
+                        EntityId = entityId,
+                        ServerTick = _tickCount,
+                        CorrectedX = entity.X,
+                        CorrectedY = entity.Y,
+                        CorrectedZ = entity.Z,
+                        CorrectedVz = entity.Vz,
+                        DriftMeters = accelResult.DistanceTraveled,
+                        Reason = accelResult.Violation == MovementValidator.AccelerationViolation.TeleportDetected
+                            ? CorrectionReason.TeleportDetected
+                            : CorrectionReason.AccelerationExceeded,
+                        LastProcessedClientTick = entity.LastSyncTick,
+                    });
+                    _correctionsIssued++;
+                }
+            }
+
             if (includeInSnapshot)
             {
                 var delta = new EntityDelta
@@ -846,6 +877,10 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             entity.PrevIsGrounded = entity.IsGrounded;
             entity.PrevVelocityXZ_X = velX;
             entity.PrevVelocityXZ_Y = velY;
+            entity.PrevX = entity.X;
+            entity.PrevY = entity.Y;
+            entity.PrevZ = entity.Z;
+            entity.PrevVz = entity.Vz;
             entity.HadInputThisTick = false;
 
             _simulatedEntities[entityId] = entity;
@@ -1027,6 +1062,10 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             PendingInputs = new List<InputPacket>(),
             LastSyncTick = 0,
             LeaseExpiry = DateTime.UtcNow + EntityLeaseDuration,
+            PrevX = ecsX,
+            PrevY = ecsY,
+            PrevZ = ecsZ,
+            PrevVz = 0f,
         };
 
         _logger.LogInformation(
@@ -1064,27 +1103,49 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     {
         ArgumentNullException.ThrowIfNull(initialInterestChunks);
 
-        // 幂等性修复：若实体已存在（重连场景），先清理旧实体和旧 AOI 订阅，避免：
-        // 1. 旧实体的 AOI chunk 订阅泄露（sessionToChunks 累积不清理）
-        // 2. 旧实体未广播 Despawn，其他客户端看到角色"瞬移"而非平滑过渡
-        // 3. 旧实体的 PendingInputs/Hp/Mana 等状态丢失
+        // 重连场景：实体已存在，跳过 Despawn+Spawn，仅更新 AOI 订阅。
+        //
+        // 修复 BUG（远程角色周期性地 Despawn+Spawn 循环 — 闪退）：
+        // 原实现调用 UnregisterEntityAsync（广播 Despawn）→ RegisterEntityAsync（广播 Spawn），
+        // 导致其他客户端看到远程角色先消失再出现（闪退）。该循环由客户端心跳超时（10秒）触发
+        // 断线重连引起：客户端重连后发送 HandshakePacket → EnterWorldAsync → 原实现 Despawn+Spawn。
+        //
+        // 正确做法：实体已存在且租约有效，说明只是客户端重连，实体状态（位置、血量、技能等）
+        // 仍然有效。仅更新 AOI 订阅即可，不需要销毁重建实体。其他客户端会通过正常的快照广播
+        // 持续收到该实体的位置更新，不会感知到重连事件。
+        //
+        // 注意：首次进入游戏时实体不存在，走下方的正常注册流程（RegisterEntityAsync）。
         if (_simulatedEntities.ContainsKey(entityId))
         {
             _logger.LogWarning(
-                "ZoneShard {ShardId}: EnterWorldAsync 实体 {EntityId} 已存在（重连场景），先清理旧实体和 AOI 订阅。",
+                "ZoneShard {ShardId}: EnterWorldAsync 实体 {EntityId} 已存在（重连场景），跳过 Despawn+Spawn，仅更新 AOI 订阅。",
                 this.GetPrimaryKeyLong(), entityId);
-            await UnregisterEntityAsync(entityId).ConfigureAwait(false);
+
+            // 先移除旧 AOI 订阅（sessionId = characterId = entityId，新旧 session 使用相同 ID）
             _aoi.RemoveSession(sessionId);
+            // 再添加新订阅（基于握手时的位置计算的新 chunk 集合）
+            var added = _aoi.Subscribe(sessionId, initialInterestChunks);
+
+            // 强制下一次广播全量快照，确保新订阅的 session 收到所有实体的完整状态
+            _forceFullSnapshotNextTick = true;
+
+            _logger.LogWarning(
+                "ZoneShard {ShardId}: [EnterWorld诊断-重连] sessionId={SessionId}, entityId={EntityId}, " +
+                "initialSubscriptions={Added}, ChunkCount={ChunkCount}, AllSubscribers=[{AllSubs}], TotalSubscriberCount={SubCount}",
+                this.GetPrimaryKeyLong(), sessionId, entityId, added, initialInterestChunks.Length,
+                string.Join(",", _aoi.GetAllSubscribers()), _aoi.SessionCount);
+
+            return;
         }
 
-        var added = _aoi.Subscribe(sessionId, initialInterestChunks);
+        var addedNew = _aoi.Subscribe(sessionId, initialInterestChunks);
         // 诊断日志（Despawn 丢失 BUG）：记录 B 进入游戏时订阅的 chunk 列表和当前所有订阅者，
         // 便于确认 B 的 AOI 订阅是否正确建立，以及 A 是否在订阅者列表中。
         _logger.LogWarning(
             "ZoneShard {ShardId}: [EnterWorld诊断] sessionId={SessionId}, entityId={EntityId}, " +
             "initialSubscriptions={Added}, ChunkCount={ChunkCount}, InitialChunks=[{Chunks}], " +
             "AllSubscribersAfterSubscribe=[{AllSubs}], TotalSubscriberCount={SubCount}",
-            this.GetPrimaryKeyLong(), sessionId, entityId, added, initialInterestChunks.Length,
+            this.GetPrimaryKeyLong(), sessionId, entityId, addedNew, initialInterestChunks.Length,
             string.Join(",", initialInterestChunks.Take(10)),
             string.Join(",", _aoi.GetAllSubscribers()), _aoi.SessionCount);
 
@@ -1268,6 +1329,11 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         foreach (var key in _simulatedEntities.Keys)
             ids[i++] = key;
         return Task.FromResult(ids);
+    }
+
+    public Task<bool> HasEntityAsync(ulong entityId)
+    {
+        return Task.FromResult(_simulatedEntities.ContainsKey(entityId));
     }
 
     /// <summary>
@@ -2749,6 +2815,14 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         public bool PrevIsGrounded;
         public float PrevVelocityXZ_X;
         public float PrevVelocityXZ_Y;
+        /// <summary>上一 tick 权威位置 X（用于 CheckAcceleration 瞬移/加速度检测）。</summary>
+        public float PrevX;
+        /// <summary>上一 tick 权威位置 Y。</summary>
+        public float PrevY;
+        /// <summary>上一 tick 权威位置 Z。</summary>
+        public float PrevZ;
+        /// <summary>上一 tick Z 方向速度。</summary>
+        public float PrevVz;
         public int PrevMana;
         public int PrevLevel;
         public long PrevExp;

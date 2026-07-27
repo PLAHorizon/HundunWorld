@@ -1,0 +1,115 @@
+﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ================================================================
+         GdTheme.axaml — 耕地暗色专业终端风格 token 体系
+         Brand Prefix: gd | 品牌蓝 #2962ff | 背景 #0a0e17
+         参照 gengdi-trading-ui-redesign HTML 原型零色值偏差
+         Dark mode is the primary experience
+         ================================================================ -->
+
+    <!-- ==== gd 品牌色阶（Blue Scale，两种模式共用） ==== -->
+    <Color x:Key="GdBrand50">#FFE8F0FF</Color>
+    <Color x:Key="GdBrand100">#FFC5D8FF</Color>
+    <Color x:Key="GdBrand200">#FF8FB4FF</Color>
+    <Color x:Key="GdBrand300">#FF5A90FF</Color>
+    <Color x:Key="GdBrand400">#FF3A78FF</Color>
+    <Color x:Key="GdBrand500">#FF2962FF</Color>
+    <Color x:Key="GdBrand600">#FF1F4FD6</Color>
+    <Color x:Key="GdBrand700">#FF1A40AD</Color>
+    <Color x:Key="GdBrand800">#FF163380</Color>
+    <Color x:Key="GdBrand900">#FF122659</Color>
+
+    <!-- ==== gd 状态色（两种模式共用） ==== -->
+    <Color x:Key="GdSuccess">#FF26A69A</Color>
+    <Color x:Key="GdWarning">#FFFF9800</Color>
+    <Color x:Key="GdError">#FFEF5350</Color>
+    <Color x:Key="GdInfo">#FF2962FF</Color>
+    <Color x:Key="GdUp">#FF26A69A</Color>
+    <Color x:Key="GdDown">#FFEF5350</Color>
+
+    <!-- ==== gd 状态色 Surface（12% 透明度） ==== -->
+    <Color x:Key="GdSuccessSurface">#1F26A69A</Color>
+    <Color x:Key="GdWarningSurface">#1FFF9800</Color>
+    <Color x:Key="GdErrorSurface">#1FEF5350</Color>
+    <Color x:Key="GdInfoSurface">#1F2962FF</Color>
+
+    <!-- ==== gd 圆角（两种模式共用） ==== -->
+    <CornerRadius x:Key="GdRadiusSm">4</CornerRadius>
+    <CornerRadius x:Key="GdRadiusMd">8</CornerRadius>
+    <CornerRadius x:Key="GdRadiusLg">12</CornerRadius>
+    <CornerRadius x:Key="GdRadiusFull">9999</CornerRadius>
+
+    <!-- ==== gd 字体（两种模式共用） ==== -->
+    <x:String x:Key="GdFontSans">Inter, Noto Sans SC, ui-sans-serif, system-ui, sans-serif</x:String>
+    <x:String x:Key="GdFontMono">JetBrains Mono, Cascadia Code, ui-monospace, monospace</x:String>
+
+    <!-- ================================================================
+         Dark Mode（默认，主要体验）
+         ================================================================ -->
+    <Color x:Key="GdBackground">#FF0A0E17</Color>
+    <Color x:Key="GdForeground">#FFE0E6ED</Color>
+    <Color x:Key="GdCard">#FF131722</Color>
+    <Color x:Key="GdCardForeground">#FFE0E6ED</Color>
+    <Color x:Key="GdPopover">#FF1A1F2E</Color>
+    <Color x:Key="GdPopoverForeground">#FFE0E6ED</Color>
+    <Color x:Key="GdPrimary">#FF2962FF</Color>
+    <Color x:Key="GdPrimaryForeground">#FFFFFFFF</Color>
+    <Color x:Key="GdSecondary">#FF2A2E39</Color>
+    <Color x:Key="GdSecondaryForeground">#FFE0E6ED</Color>
+    <Color x:Key="GdMuted">#FF1A1F2E</Color>
+    <Color x:Key="GdMutedForeground">#FF787B86</Color>
+    <Color x:Key="GdAccent">#FF1F4FD6</Color>
+    <Color x:Key="GdAccentForeground">#FFFFFFFF</Color>
+    <Color x:Key="GdDestructive">#FFEF5350</Color>
+    <Color x:Key="GdDestructiveForeground">#FFFFFFFF</Color>
+    <Color x:Key="GdBorder">#FF2A2E39</Color>
+    <Color x:Key="GdInput">#FF2A2E39</Color>
+    <Color x:Key="GdRing">#FF2962FF</Color>
+
+    <!-- ==== gd alpha 辅助色（Dark） ==== -->
+    <Color x:Key="GdForegroundMuted">#99E0E6ED</Color>
+    <Color x:Key="GdBorderSubtle">#802A2E39</Color>
+    <Color x:Key="GdOverlay">#80000000</Color>
+
+    <!-- ==== gd SolidColorBrush（Dark） ==== -->
+    <SolidColorBrush x:Key="GdBackgroundBrush" Color="{StaticResource GdBackground}" />
+    <SolidColorBrush x:Key="GdCardBrush" Color="{StaticResource GdCard}" />
+    <SolidColorBrush x:Key="GdPopoverBrush" Color="{StaticResource GdPopover}" />
+    <SolidColorBrush x:Key="GdForegroundBrush" Color="{StaticResource GdForeground}" />
+    <SolidColorBrush x:Key="GdMutedBrush" Color="{StaticResource GdMuted}" />
+    <SolidColorBrush x:Key="GdMutedForegroundBrush" Color="{StaticResource GdMutedForeground}" />
+    <SolidColorBrush x:Key="GdBorderBrush" Color="{StaticResource GdBorder}" />
+    <SolidColorBrush x:Key="GdPrimaryBrush" Color="{StaticResource GdPrimary}" />
+    <SolidColorBrush x:Key="GdPrimaryForegroundBrush" Color="{StaticResource GdPrimaryForeground}" />
+    <SolidColorBrush x:Key="GdSecondaryBrush" Color="{StaticResource GdSecondary}" />
+    <SolidColorBrush x:Key="GdSecondaryForegroundBrush" Color="{StaticResource GdSecondaryForeground}" />
+    <SolidColorBrush x:Key="GdUpBrush" Color="{StaticResource GdUp}" />
+    <SolidColorBrush x:Key="GdDownBrush" Color="{StaticResource GdDown}" />
+    <SolidColorBrush x:Key="GdSuccessBrush" Color="{StaticResource GdSuccess}" />
+    <SolidColorBrush x:Key="GdWarningBrush" Color="{StaticResource GdWarning}" />
+    <SolidColorBrush x:Key="GdErrorBrush" Color="{StaticResource GdError}" />
+    <SolidColorBrush x:Key="GdInfoBrush" Color="{StaticResource GdInfo}" />
+    <SolidColorBrush x:Key="GdSuccessSurfaceBrush" Color="{StaticResource GdSuccessSurface}" />
+    <SolidColorBrush x:Key="GdWarningSurfaceBrush" Color="{StaticResource GdWarningSurface}" />
+    <SolidColorBrush x:Key="GdErrorSurfaceBrush" Color="{StaticResource GdErrorSurface}" />
+    <SolidColorBrush x:Key="GdInfoSurfaceBrush" Color="{StaticResource GdInfoSurface}" />
+    <SolidColorBrush x:Key="GdForegroundMutedBrush" Color="{StaticResource GdForegroundMuted}" />
+    <SolidColorBrush x:Key="GdBorderSubtleBrush" Color="{StaticResource GdBorderSubtle}" />
+    <SolidColorBrush x:Key="GdOverlayBrush" Color="{StaticResource GdOverlay}" />
+    <!-- 品牌色阶 Brush（供按钮 hover/pressed 等状态使用） -->
+    <SolidColorBrush x:Key="GdBrand400Brush" Color="{StaticResource GdBrand400}" />
+    <SolidColorBrush x:Key="GdBrand500Brush" Color="{StaticResource GdBrand500}" />
+    <SolidColorBrush x:Key="GdBrand600Brush" Color="{StaticResource GdBrand600}" />
+    <SolidColorBrush x:Key="GdBrand700Brush" Color="{StaticResource GdBrand700}" />
+    <SolidColorBrush x:Key="GdBrand800Brush" Color="{StaticResource GdBrand800}" />
+
+    <LinearGradientBrush x:Key="HeaderOpacityMaskBrush"
+                         StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#CCFFFFFF" Offset="0" />
+        <GradientStop Color="#99FFFFFF" Offset="0.78" />
+        <GradientStop Color="#66FFFFFF" Offset="0.9" />
+        <GradientStop Color="#00FFFFFF" Offset="1" />
+    </LinearGradientBrush>
+
+</ResourceDictionary>

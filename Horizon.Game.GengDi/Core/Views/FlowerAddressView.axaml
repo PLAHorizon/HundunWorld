@@ -4,16 +4,16 @@
              x:Class="Horizon.Game.GengDi.Core.Views.FlowerAddressView"
              x:DataType="vm:FlowerAddressViewModel">
     <Grid RowDefinitions="Auto,*">
-        <Border Classes="SurfaceCard" Padding="16 12" CornerRadius="12" Margin="0 0 0 12">
+        <Border Classes="GdCard" Padding="16 12" CornerRadius="{DynamicResource GdRadiusLg}" Margin="0 0 0 12">
             <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Text="收货地址管理" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" />
-                <Button Grid.Column="1" Content="+ 新增地址" Classes="PrimaryAction" Padding="16 8"
-                        CornerRadius="8" FontSize="13" Click="OnAddAddressClick"
+                <Button Grid.Column="1" Content="+ 新增地址" Classes="GdPrimary" Padding="16 8"
+                        CornerRadius="{DynamicResource GdRadiusMd}" FontSize="13" Click="OnAddAddressClick"
                         IsVisible="{Binding !IsEditing}" />
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsEditing}">
-                    <Button Content="保存" Classes="PrimaryAction" Padding="16 8" CornerRadius="8"
+                    <Button Content="保存" Classes="GdPrimary" Padding="16 8" CornerRadius="{DynamicResource GdRadiusMd}"
                             FontSize="13" Click="OnSaveEditClick" />
-                    <Button Content="取消" Classes="QuietAction" Padding="16 8" CornerRadius="8"
+                    <Button Content="取消" Classes="GdGhost" Padding="16 8" CornerRadius="{DynamicResource GdRadiusMd}"
                             FontSize="13" Click="OnCancelEditClick" />
                 </StackPanel>
             </Grid>
@@ -22,7 +22,7 @@
         <ScrollViewer Grid.Row="1">
             <StackPanel Spacing="12" Margin="0">
                 <!-- 编辑表单 -->
-                <Border Classes="SurfaceCard" Padding="20" CornerRadius="12" IsVisible="{Binding IsEditing}">
+                <Border Classes="GdCard" Padding="20" CornerRadius="{DynamicResource GdRadiusLg}" IsVisible="{Binding IsEditing}">
                     <StackPanel Spacing="12">
                         <TextBlock Text="编辑地址" FontSize="14" FontWeight="SemiBold" />
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="8">
@@ -60,7 +60,7 @@
                             <TextBlock Grid.Row="3" Text="详细地址" FontSize="13" VerticalAlignment="Center" Width="64" />
                             <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                 <TextBox Text="{Binding EditAddress}" Watermark="请输入详细地址" />
-                                <Button Grid.Column="1" Content="🗺 地图选点" Classes="QuietAction" Padding="12 8" CornerRadius="8"
+                                <Button Grid.Column="1" Content="🗺 地图选点" Classes="GdGhost" Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}"
                                         FontSize="12" Click="OnMapSelectClick" />
                             </Grid>
 
@@ -73,24 +73,24 @@
                 <ItemsControl ItemsSource="{Binding Addresses}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Classes="SurfaceCard" Padding="16" CornerRadius="12" Margin="0 0 0 8">
+                            <Border Classes="GdCard" Padding="16" CornerRadius="{DynamicResource GdRadiusLg}" Margin="0 0 0 8">
                                 <Grid ColumnDefinitions="*,Auto">
                                     <StackPanel Spacing="4">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
                                             <TextBlock Text="{Binding ShipTo}" FontSize="14" FontWeight="SemiBold" />
-                                            <TextBlock Text="{Binding Phone}" FontSize="13" Foreground="{DynamicResource LoginFormMutedBrush}" VerticalAlignment="Center" />
-                                            <Border Background="{DynamicResource LoginErrorBrush}" CornerRadius="4" Padding="6 2" IsVisible="{Binding IsDefault}">
+                                            <TextBlock Text="{Binding Phone}" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
+                                            <Border Background="{DynamicResource GdErrorBrush}" CornerRadius="{DynamicResource GdRadiusSm}" Padding="6 2" IsVisible="{Binding IsDefault}">
                                                 <TextBlock Text="默认" FontSize="11" Foreground="White" />
                                             </Border>
                                         </StackPanel>
-                                        <TextBlock Text="{Binding FullAddress}" FontSize="13" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                        <TextBlock Text="{Binding FullAddress}" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                        <Button Content="编辑" Classes="QuietAction" Padding="12 6" CornerRadius="6"
+                                        <Button Content="编辑" Classes="GdGhost" Padding="12 6" CornerRadius="{DynamicResource GdRadiusSm}"
                                                 FontSize="12" Click="OnEditAddressClick" Tag="{Binding}" />
-                                        <Button Content="删除" Classes="QuietAction" Padding="12 6" CornerRadius="6"
+                                        <Button Content="删除" Classes="GdGhost" Padding="12 6" CornerRadius="{DynamicResource GdRadiusSm}"
                                                 FontSize="12" Click="OnDeleteAddressClick" Tag="{Binding}" />
-                                        <Button Content="设为默认" Classes="QuietAction" Padding="12 6" CornerRadius="6"
+                                        <Button Content="设为默认" Classes="GdGhost" Padding="12 6" CornerRadius="{DynamicResource GdRadiusSm}"
                                                 FontSize="12" Click="OnSetDefaultClick" Tag="{Binding}"
                                                 IsVisible="{Binding !IsDefault}" />
                                     </StackPanel>
@@ -101,12 +101,12 @@
                 </ItemsControl>
 
                 <!-- 空状态 -->
-                <Border Classes="SurfaceCard" Padding="40" CornerRadius="12"
+                <Border Classes="GdCard" Padding="40" CornerRadius="{DynamicResource GdRadiusLg}"
                         IsVisible="{Binding !HasAddresses}">
                     <StackPanel HorizontalAlignment="Center" Spacing="8">
                         <TextBlock Text="📍" FontSize="32" HorizontalAlignment="Center" />
-                        <TextBlock Text="暂无收货地址" FontSize="14" Foreground="{DynamicResource LoginFormMutedBrush}" HorizontalAlignment="Center" />
-                        <TextBlock Text="点击上方新增地址按钮添加" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center" />
+                        <TextBlock Text="暂无收货地址" FontSize="14" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center" />
+                        <TextBlock Text="点击上方新增地址按钮添加" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center" />
                     </StackPanel>
                 </Border>
             </StackPanel>

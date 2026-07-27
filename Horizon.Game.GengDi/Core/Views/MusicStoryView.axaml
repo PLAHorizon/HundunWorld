@@ -17,41 +17,48 @@
 
                 <StackPanel Spacing="20">
 
-                    <Border Classes="SurfaceCard" Padding="24">
+                    <Border Classes="GdCard" Padding="24">
                         <StackPanel Spacing="16">
                             <TextBlock Text="热门音乐故事" FontSize="20" FontWeight="SemiBold" />
-                            <TextBlock Text="探索最受欢迎的音乐故事" FontSize="13" Classes="SupportingText" />
+                            <TextBlock Text="探索最受欢迎的音乐故事" FontSize="13"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
 
                             <ItemsControl ItemsSource="{Binding StorySongs}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="models:Song">
-                                        <Border Padding="16 12" CornerRadius="8" Margin="0 0 0 8" Cursor="Hand"
-                                                Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                        <Border Padding="16 12" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 8" Cursor="Hand"
+                                                Background="{DynamicResource GdCardBrush}"
                                                 Tapped="SongStory_Tapped">
                                             <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
-                                                <Border Width="48" Height="48" CornerRadius="8"
-                                                        Background="{DynamicResource SocialAvatarBackgroundBrush}">
+                                                <Border Width="48" Height="48" CornerRadius="{DynamicResource GdRadiusMd}">
+                                                    <Border.Background>
+                                                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                            <GradientStop Color="{DynamicResource GdBrand600}" Offset="0" />
+                                                            <GradientStop Color="{DynamicResource GdBrand900}" Offset="1" />
+                                                        </LinearGradientBrush>
+                                                    </Border.Background>
                                                     <TextBlock Text="♪" FontSize="20"
                                                                HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                               Foreground="{DynamicResource SocialAvatarTextBrush}" />
+                                                               Foreground="#FFFFFFFF" />
                                                 </Border>
                                                 <StackPanel Grid.Column="1" Margin="16 0 0 0" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
-                                                    <TextBlock FontSize="12" Classes="SupportingText" TextTrimming="CharacterEllipsis">
+                                                    <TextBlock FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" TextTrimming="CharacterEllipsis">
                                                         <Run Text="{Binding DisplayArtist}" />
                                                         <Run Text=" · " />
                                                         <Run Text="{Binding DisplayAlbum}" />
                                                     </TextBlock>
                                                 </StackPanel>
                                                 <ui:SymbolIcon Grid.Column="2" Symbol="Document" FontSize="16"
-                                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                                                               Foreground="{DynamicResource GdMutedForegroundBrush}" />
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
 
-                            <TextBlock Text="暂无更多音乐故事" FontSize="14" Classes="SupportingText"
+                            <TextBlock Text="暂无更多音乐故事" FontSize="14"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
                                        HorizontalAlignment="Center" Margin="0 40"
                                        IsVisible="{Binding HasNoStories}" />
                         </StackPanel>

@@ -14,7 +14,6 @@ namespace Horizon.Game.GengDi.Core.Views
     public partial class MainView : UserControl
     {
         private MainViewModel _viewModel;
-        private readonly AutoCompleteBox _searchBox;
         private readonly StackPanel _subNavBar;
         private readonly StackPanel _titleBarNavPanel;
         private readonly Button _userButton;
@@ -22,14 +21,9 @@ namespace Horizon.Game.GengDi.Core.Views
         public MainView()
         {
             InitializeComponent();
-            _searchBox = this.FindControl<AutoCompleteBox>("SearchBox");
             _subNavBar = this.FindControl<StackPanel>("SubNavBar");
             _titleBarNavPanel = this.FindControl<StackPanel>("TitleBarNavPanel");
             _userButton = this.FindControl<Button>("UserButton");
-            if (_searchBox != null)
-            {
-                _searchBox.KeyUp += SearchBox_KeyUp;
-            }
         }
 
         private void InitializeComponent()
@@ -69,42 +63,7 @@ namespace Horizon.Game.GengDi.Core.Views
             }
         }
 
-        private void SearchBox_KeyUp(object sender, KeyEventArgs e)
-        {
-            if (e.Key != Key.Enter || DataContext is not MainViewModel vm)
-            {
-                return;
-            }
 
-            if (_searchBox?.SelectedItem is NavigationSearchItem selectedItem)
-            {
-                NavigateToSearchItem(selectedItem, vm);
-            }
-            else
-            {
-                var matchedItem = vm.FindSearchItem(_searchBox?.Text);
-                if (matchedItem != null)
-                {
-                    NavigateToSearchItem(matchedItem, vm);
-                }
-            }
-
-            e.Handled = true;
-        }
-
-        private void NavigateToSearchItem(NavigationSearchItem item, MainViewModel viewModel)
-        {
-            if (!viewModel.NavigateTo(item.Tag))
-            {
-                return;
-            }
-
-            if (_searchBox != null)
-            {
-                _searchBox.Text = string.Empty;
-                _searchBox.SelectedItem = null;
-            }
-        }
 
         private void AttachViewModel(MainViewModel viewModel)
         {
@@ -218,6 +177,11 @@ namespace Horizon.Game.GengDi.Core.Views
             {
                 "GAMES" or "HOME" or "DOWNLOADS" => "Games",
                 "NEWS" => "News",
+                "FLOWERSHOP" or "FLOWERDASHBOARD" or "FLOWERCART" or "FLOWERORDERCENTER"
+                    or "FLOWERALERTCENTER" or "FLOWERAIASSISTANT" or "FLOWERDATASCREEN"
+                    or "FLOWERMERCHANT" or "FLOWERADDRESS" or "FLOWERPROFILE"
+                    or "FLOWERPLANTINGADVICE" or "FLOWERSPECIESDETAIL" or "FLOWERPRODUCTDETAIL"
+                    or "FLOWERWORKBENCH" => "FlowerShop",
                 "MUSICDISCOVER" or "MUSICPLAYER" or "PLAYLISTMANAGE" or "MUSICSEARCH" or "MUSICSTORY" => "Music",
                 _ => null
             };

@@ -54,9 +54,7 @@
 			"ID": "f6a7b889d0e1f23456789abcdef01234",
 			"TypeName": "HundunWorld.Game.UI.GameSceneManager",
 			"ParentID": "a1b2c3d44e5f6a7890123456789abcde",
-			"V": {
-	"EnableTransitionEffect": true
-}
+			"V": {}
 		},
 		{
 			"ID": "b8c9d001f2a3b456789abcdef0123456",

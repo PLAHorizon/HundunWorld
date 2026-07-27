@@ -105,6 +105,29 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     /// <summary>累计清理的孤儿实体映射数（诊断用）。</summary>
     public long OrphanMappingsCleaned { get; private set; }
 
+    // ─── 远程实体超时清理（客户端兜底机制）───
+    // 问题：服务端检测异常断线（进程崩溃/断网）需 19~65 秒（TCP KeepAlive 19s 或心跳超时 60s+5s），
+    // 期间本地角色看到远程角色"卡住不动"，体验差。
+    // 修复：客户端每秒扫描远程实体，若 TimeSinceLastSnapshot 超过阈值则主动清理。
+    // 服务端全量快照每 1 秒发送一次（FullSnapshotIntervalTicks=60 @60Hz），
+    // 正常在线角色的 TimeSinceLastSnapshot 不会超过 1~2 秒，10 秒阈值足够安全。
+    // 误判风险极低：即使误清理，后续收到 Spawn delta 会重新创建实体。
+    private int _staleEntityCleanupCounter;
+    private const int StaleEntityCleanupInterval = 60; // 每 60 帧（约 1 秒 @60fps）扫描一次
+    private readonly List<ulong> _staleEntityIds = new();
+    /// <summary>
+    /// 远程实体超时阈值（秒）。超过此时间未收到任何快照更新的远程实体将被客户端主动清理。
+    /// 默认 60 秒：与服务端 IdleTimeoutSeconds（60s）匹配，确保只有在连接真正断开时才清理远程角色。
+    /// 服务端全量快照间隔 1 秒，60 秒内至少应有 50+ 次全量快照到达。
+    /// 设置为 60 秒以容忍网络抖动、服务端 tick 异常、fanout observer 重订阅、网关重连等场景，
+    /// 避免误清理在线角色导致"莫名离线"。
+    /// 修复（莫名离线）：原值 30 秒在 fanout observer 重订阅或网络分区场景下不够安全，
+    /// 增大到 60 秒与连接空闲超时一致，确保只有在连接真正断开时才清理。
+    /// </summary>
+    public float StaleEntityTimeoutSeconds { get; set; } = 60f;
+    /// <summary>累计因超时被清理的远程实体数（诊断用）。</summary>
+    public long StaleEntitiesCleaned { get; private set; }
+
     // Task 3：增量合并缓冲复用（实例方法 Update 使用），避免每帧分配 Dictionary/数组。
     private readonly Dictionary<ulong, EntityDelta> _deltaMergeBuffer = new();
     private readonly List<EntityDelta> _deltaMergeList = new();
@@ -160,7 +183,10 @@ public sealed class SnapshotApplySystem : ArchSystemBase
 
     /// <summary>
     /// [Phase C4] 计算当前自适应插值延迟（秒）。
-    /// 公式：targetDelay = avgInterval + 2 * jitter，clamp 到 [50ms, 200ms]。
+    /// 公式：targetDelay = avgInterval + 2 * jitter，clamp 到 [100ms, 300ms]。
+    /// 修复（远程角色闪移）：原实现 clamp 到 [50ms, 200ms]，最小 50ms 导致 Alpha 在 3 帧内到达 1，
+    /// 之后 dead reckoning 用过时速度推进位置，新快照到达时位置突变表现为闪移。
+    /// 增大最小延迟到 100ms（6 帧完成插值），让插值有足够时间平滑过渡，减少 dead reckoning 的影响。
     /// </summary>
     public static float AdaptiveInterpolationDelaySeconds
     {
@@ -180,7 +206,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 return FixedInterpolationDelaySeconds;
 
             var target = avg + 2f * jitter;
-            return Math.Clamp(target, 0.05f, 0.2f);
+            return Math.Clamp(target, 0.1f, 0.3f);
         }
     }
 
@@ -290,6 +316,15 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             CleanupOrphanMappings(world);
         }
 
+        // 远程实体超时清理（客户端兜底机制）：
+        // 每 1 秒扫描一次，检测 TimeSinceLastSnapshot 超过阈值的远程实体并主动清理。
+        // 解决"服务端异常断线检测需 19~65 秒，期间本地角色看到远程角色卡住不动"的问题。
+        if (++_staleEntityCleanupCounter >= StaleEntityCleanupInterval)
+        {
+            _staleEntityCleanupCounter = 0;
+            CleanupStaleEntities(world);
+        }
+
         _updateCallCount++;
         var consumedThisTick = 0;
         var deltasThisTick = 0;
@@ -328,26 +363,49 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 }
                 else
                 {
-                    // 合并 baseline 与 delta：以 baseline 为基础，用 delta 中变化的 EntityDelta 覆盖
-                    // Task 3：复用实例缓冲区，避免每帧分配新 Dictionary/数组。
+                    // 增量快照处理。
+                    //
+                    // 修复（远程角色固定间隔刷新/闪退/闪现 — 增量快照重新处理 baseline delta）：
+                    // 原实现将 baseline + delta 合并后处理所有 delta，导致每次增量快照都重新处理
+                    // baseline 中的所有旧 delta。95 个未变化实体的旧位置被重新应用到插值目标，
+                    // 角色被"拉回"到旧位置 → 闪现/闪退。只有全量快照（每秒一次）位置正确，
+                    // 表现为"固定时间间隔被强制刷新，非刷新时段无状态变化"。
+                    //
+                    // 正确做法：增量快照只处理本次增量中的 delta，不重新处理 baseline delta。
+                    // baseline 仅用于维护完整状态（供下次增量合并参考），不参与当前帧处理。
+                    // 实体状态已在 ECS 世界中维护（通过之前的 Spawn/Update），无需重复处理。
+                    toApply = snapshot; // 直接使用增量快照，只处理本次增量 delta
+
+                    // 更新 baseline：合并增量 delta 到 baseline（用于下次增量合并）
                     _deltaMergeBuffer.Clear();
+                    // 从 baseline 加载非 Despawn delta
                     foreach (var d in baseline.Deltas)
-                        _deltaMergeBuffer[d.EntityId] = d;
+                    {
+                        if (d.Kind != EntityDeltaKind.Despawn)
+                            _deltaMergeBuffer[d.EntityId] = d;
+                    }
+                    // 用增量 delta 更新 baseline
                     foreach (var d in snapshot.Deltas)
-                        _deltaMergeBuffer[d.EntityId] = d;
+                    {
+                        if (d.Kind == EntityDeltaKind.Despawn)
+                        {
+                            // Despawn delta：从 baseline 中移除该实体
+                            _deltaMergeBuffer.Remove(d.EntityId);
+                        }
+                        else
+                        {
+                            _deltaMergeBuffer[d.EntityId] = d;
+                        }
+                    }
 
-                    _deltaMergeList.Clear();
-                    foreach (var d in _deltaMergeBuffer.Values)
-                        _deltaMergeList.Add(d);
-
-                    toApply = new SnapshotPacket
+                    // 更新 baseline：只保留非 Despawn delta
+                    var newBaseline = new SnapshotPacket
                     {
                         ServerTick = snapshot.ServerTick,
-                        BaselineTick = 0, // 重建后视为全量
-                        Deltas = _deltaMergeList.ToArray(),
+                        BaselineTick = 0,
+                        Deltas = _deltaMergeBuffer.Values.ToArray(),
                     };
-
-                    Volatile.Write(ref _lastAppliedSnapshot, toApply);
+                    Volatile.Write(ref _lastAppliedSnapshot, newBaseline);
                 }
             }
 
@@ -511,17 +569,56 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             return;
         }
 
-        // 防止重复 Spawn：若该 EntityId 已存在实体，先销毁旧实体（避免泄露）。
+        // 防止重复 Spawn：若该 EntityId 已存在实体，根据实体类型决定处理方式。
         // 注意：本地玩家实体同样由 HandleSpawn 创建（参见 ZoneShardGrain 注释），
         // 因此不在此处按 EntityId == LocalPlayerOwnerId 跳过 Spawn，否则会破坏本地玩家创建链路。
         if (_entityIdToArchEntity.TryGetValue(delta.EntityId, out var existingEntity))
         {
+            // 修复（远程角色闪移/闪现 — 重复 Spawn 销毁重建）：
+            // 场景：PushImmediateFullSnapshotToObserver、网关重连、AOI 边界抖动等导致重复 Spawn。
+            // 远程实体（携带 InterpolatedTransformComponent）：转为插值目标更新，不销毁重建。
+            if (world.IsAlive(existingEntity) && world.Has<InterpolatedTransformComponent>(existingEntity))
+            {
+                ref var interp = ref world.Get<InterpolatedTransformComponent>(existingEntity);
+                if (delta.Transform != null)
+                {
+                    var newTransform = delta.Transform.Value;
+                    // Lerp 平滑追赶方案：只更新目标位置，与 HandleUpdate 保持一致。
+                    interp.TargetX = newTransform.X;
+                    interp.TargetY = newTransform.Y;
+                    interp.TargetZ = newTransform.Z;
+                    interp.TargetYaw = newTransform.Yaw;
+                    interp.ServerTick = serverTick;
+                    interp.TimeSinceLastSnapshot = 0f;
+                    newTransform.ServerTick = serverTick;
+                    world.Set(existingEntity, ref newTransform);
+                }
+                return; // 不销毁重建，保持平滑插值
+            }
+
+            // 修复（本地玩家重复 Spawn 保护）：
+            // 本地玩家实体（携带 PredictedTransformComponent + IsLocalPlayer）：仅更新 AuthTransform，不销毁。
+            if (world.IsAlive(existingEntity) && world.Has<Components.PredictedTransformComponent>(existingEntity))
+            {
+                ref var existNetId = ref world.Get<NetworkIdentityComponent>(existingEntity);
+                if (existNetId.IsLocalPlayer)
+                {
+                    if (delta.Transform != null)
+                    {
+                        var auth = delta.Transform.Value;
+                        auth.ServerTick = serverTick;
+                        world.Set(existingEntity, ref auth);
+                    }
+                    return; // 不销毁重建，保留本地预测状态
+                }
+            }
+
+            // 其他情况：销毁旧实体
             if (world.IsAlive(existingEntity))
             {
                 world.Destroy(existingEntity);
             }
             _entityIdToArchEntity.Remove(delta.EntityId);
-            // 通知外部系统（如 FlaxActorSyncSystem）销毁可能已创建的 Actor 等资源
             EntityDespawned?.Invoke(new EntityDespawnedEventArgs(delta.EntityId));
         }
 
@@ -701,22 +798,22 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                     Debug.WriteLine($"[SnapshotApplySystem] HandleUpdate#{updateCount} 远程实体插值更新: EntityId={delta.EntityId}, OldPos=({interp.X:F2},{interp.Y:F2},{interp.Z:F2}), NewTarget=({newTransform.X:F2},{newTransform.Y:F2},{newTransform.Z:F2}), Yaw={newTransform.Yaw:F2}, ServerTick={serverTick}");
                 }
 
-                // 修复 #5：插值起点 StartX/Y/Z 设为当前位置（interp.X/Y/Z，含 dead reckoning 偏移），
-                // 而非 oldAuth。否则 InterpolationSystem 航位推算推进的位置会在新快照到达时
-                // 回弹到 oldAuth 位置（见 InterpolationSystem.cs dead reckoning 逻辑），
-                // 导致远程角色可见的回弹抖动。
-                interp.StartX = interp.X;
-                interp.StartY = interp.Y;
-                interp.StartZ = interp.Z;
+                // Lerp 平滑追赶方案：只更新目标位置，不设置 Start，不重置 Alpha。
+                // InterpolationSystem 每帧执行 位置 += (目标 - 位置) * lerpFactor，
+                // 角色以指数衰减速度追赶目标，稳态速度与服务端速度一致。
+                //
+                // 修复（远程角色闪移/移动不可见 — Alpha 插值加速运动问题）：
+                // 原 Alpha 插值方案在快照到达频率（60Hz）高于插值完成时间（100ms）时，
+                // 无论是否重置 Alpha 都有问题：
+                // - 重置 Alpha → 角色永远无法到达目标，每帧只移动 17% 的距离
+                // - 不重置 Alpha → 帧间移动距离从 17% 到 183% 速度变化，加速运动
+                // Lerp 方案消除了这些问题，帧间移动距离变化温和（4倍范围内）。
                 interp.TargetX = newTransform.X;
                 interp.TargetY = newTransform.Y;
                 interp.TargetZ = newTransform.Z;
-                // Yaw 插值：起点为当前插值 Yaw，目标为服务端权威 Yaw
-                interp.StartYaw = interp.Yaw;
                 interp.TargetYaw = newTransform.Yaw;
-                interp.Alpha = 0f;
                 interp.ServerTick = serverTick;
-                interp.TimeSinceLastSnapshot = 0f; // [Phase C4] 重置 dead reckoning 计时
+                interp.TimeSinceLastSnapshot = 0f; // 重置快照计时
 
                 world.Set(archEntity, ref newTransform);
             }
@@ -893,6 +990,62 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             }
             OrphanMappingsCleaned += _orphanKeysToRemove.Count;
             Debug.WriteLine($"[SnapshotApplySystem] 孤儿实体清理: 移除 {_orphanKeysToRemove.Count} 个已失效映射，字典剩余 {_entityIdToArchEntity.Count}");
+        }
+    }
+
+    /// <summary>
+    /// 远程实体超时清理（客户端兜底机制）。
+    /// 扫描所有远程实体，若 <see cref="InterpolatedTransformComponent.TimeSinceLastSnapshot"/>
+    /// 超过 <see cref="StaleEntityTimeoutSeconds"/>，则主动销毁实体并触发 <see cref="EntityDespawned"/> 事件。
+    /// </summary>
+    /// <remarks>
+    /// <b>设计目的</b>：服务端检测异常断线（进程崩溃/断网）需要 19~65 秒
+    /// （TCP KeepAlive 19s 或应用层心跳超时 60s + 5s 定时器间隔），
+    /// 期间 Despawn delta 不会下发，本地角色看到远程角色"卡住不动"。
+    /// 本机制在客户端侧独立判定：若远程实体超过阈值时间未收到任何快照更新，主动清理。
+    /// <para>
+    /// <b>安全性</b>：服务端全量快照每 1 秒发送一次（FullSnapshotIntervalTicks=60 @60Hz），
+    /// 正常在线角色的 TimeSinceLastSnapshot 不会超过 1~2 秒。60 秒阈值意味着至少 50+ 次全量快照
+    /// 未到达才触发清理，误判风险极低。即使误清理，后续收到 Spawn delta 会重新创建实体。
+    /// </para>
+    /// <para>
+    /// <b>本地玩家保护</b>：本地玩家不携带 InterpolatedTransformComponent（使用 PredictedTransformComponent），
+    /// 不会被本机制清理。
+    /// </para>
+    /// </remarks>
+    private void CleanupStaleEntities(World world)
+    {
+        var timeout = StaleEntityTimeoutSeconds;
+        _staleEntityIds.Clear();
+
+        foreach (var kvp in _entityIdToArchEntity)
+        {
+            if (!world.IsAlive(kvp.Value))
+                continue;
+
+            // 仅检查携带 InterpolatedTransformComponent 的远程实体
+            if (world.TryGet<InterpolatedTransformComponent>(kvp.Value, out var interp))
+            {
+                if (interp.TimeSinceLastSnapshot > timeout)
+                {
+                    _staleEntityIds.Add(kvp.Key);
+                }
+            }
+        }
+
+        if (_staleEntityIds.Count == 0)
+            return;
+
+        foreach (var entityId in _staleEntityIds)
+        {
+            // 复用 HandleDespawn 的销毁逻辑：销毁 ECS 实体 + 移除字典映射 + 触发 EntityDespawned 事件
+            // 构造一个仅含 EntityId 的 EntityDelta（Kind=Despawn），其余字段对 HandleDespawn 无影响
+            var delta = new EntityDelta { EntityId = entityId, Kind = EntityDeltaKind.Despawn };
+            HandleDespawn(world, delta);
+            StaleEntitiesCleaned++;
+            Debug.WriteLine(
+                $"[SnapshotApplySystem] 超时清理: 实体 {entityId} 超过 {timeout:F0} 秒未收到快照，" +
+                $"判定为离线并主动清理（服务端 Despawn delta 可能尚未到达）");
         }
     }
 }

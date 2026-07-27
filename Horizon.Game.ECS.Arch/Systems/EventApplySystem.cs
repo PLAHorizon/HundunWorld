@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Arch.Core;
+using Horizon.Game.Core.Sim;
 using Horizon.Game.ECS.Arch.Components;
 using Horizon.Game.ECS.Arch.Core;
 using Horizon.Game.ECS.Arch.Network;

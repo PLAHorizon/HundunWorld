@@ -14,77 +14,102 @@
              x:DataType="vm:MainViewModel">
 
     <Grid RowDefinitions="Auto,*,Auto">
-        <!-- ══════════════════════════════════════════════════════════════════
-             战网风格标题栏：品牌 Logo + 水平导航 + 右侧工具区（搜索/通知/用户）
-             ══════════════════════════════════════════════════════════════════ -->
+        <!-- ══════════════════════════════════════════════════════════════
+             设计稿顶栏（56px）：品牌 Logo + 水平主导航 + 右侧工具区
+             ══════════════════════════════════════════════════════════════ -->
         <Border Name="TitleBarHost"
-                Background="{DynamicResource TitleBarBackgroundBrush}"
-                BorderBrush="{DynamicResource TitleBarBorderBrush}"
+                Background="{DynamicResource GdCardBrush}"
+                BorderBrush="{DynamicResource GdBorderBrush}"
                 BorderThickness="0 0 0 1">
-            <Grid ColumnDefinitions="Auto,*,Auto" MinHeight="48">
+            <Grid ColumnDefinitions="Auto,*,Auto" Height="56">
                 <!-- 左：品牌 Logo + 主导航项 -->
                 <StackPanel Name="TitleBarNavPanel"
                             Grid.Column="0"
                             Orientation="Horizontal"
-                            Spacing="2"
-                            Margin="12 0 0 0"
+                            Spacing="4"
+                            Margin="20 0 0 0"
                             VerticalAlignment="Center">
-                    <!-- Logo -->
+                    <!-- Logo: 32x32 渐变圆角方块 + "耕地"文字 -->
                     <Button Classes="TitleBarBrand"
                             uiw:AppWindow.AllowInteractionInTitleBar="True"
                             ToolTip.Tip="耕地"
                             Command="{Binding NavigateToHomeCommand}">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <Border Width="26" Height="26" CornerRadius="13"
-                                    Background="{DynamicResource BattleNetPrimaryBrush}">
-                                <Viewbox Margin="5">
-                                    <ui:IconSourceElement IconSource="{StaticResource BrandIcon}" />
-                                </Viewbox>
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Border Width="32" Height="32" CornerRadius="{DynamicResource GdRadiusMd}">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                        <GradientStop Color="{DynamicResource GdBrand500}" Offset="0" />
+                                        <GradientStop Color="{DynamicResource GdBrand700}" Offset="1" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <ui:IconSourceElement IconSource="{StaticResource SproutIcon}"
+                                                      Width="18" Height="18"
+                                                      Foreground="#FFFFFFFF" />
                             </Border>
+                            <TextBlock Text="耕地" FontSize="15" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource GdForegroundBrush}"
+                                       VerticalAlignment="Center" />
                         </StackPanel>
                     </Button>
 
-                    <Border Width="1" Height="20" Margin="6 0"
-                            Background="{DynamicResource TitleBarDividerBrush}" />
+                    <Border Width="1" Height="24" Margin="16 0"
+                            Background="{DynamicResource GdBorderBrush}" />
 
-                    <!-- 主导航项（水平文本链接） -->
+                    <!-- 主导航项（图标+文字） -->
                     <Button Classes="TitleBarNavItem"
                             Tag="Games"
-                            Content="游戏"
                             uiw:AppWindow.AllowInteractionInTitleBar="True"
-                            Command="{Binding NavigateToGamesCommand}" />
+                            Command="{Binding NavigateToGamesCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <ui:IconSourceElement IconSource="{StaticResource GamesIcon}" Width="16" Height="16" />
+                            <TextBlock Text="游戏" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
                     <Button Classes="TitleBarNavItem"
                             Tag="News"
-                            Content="新闻"
                             uiw:AppWindow.AllowInteractionInTitleBar="True"
-                            Command="{Binding NavigateToNewsCommand}" />
+                            Command="{Binding NavigateToNewsCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <ui:IconSourceElement IconSource="{StaticResource NewsIcon}" Width="16" Height="16" />
+                            <TextBlock Text="新闻" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
                     <Button Classes="TitleBarNavItem"
                             Tag="FlowerShop"
-                            Content="花卉市场"
                             uiw:AppWindow.AllowInteractionInTitleBar="True"
-                            Command="{Binding NavigateToFlowerShopCommand}" />
+                            Command="{Binding NavigateToFlowerShopCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <ui:IconSourceElement IconSource="{StaticResource FlowerIcon}" Width="16" Height="16" />
+                            <TextBlock Text="花卉市场" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
                     <Button Classes="TitleBarNavItem"
                             Tag="Music"
-                            Content="音乐"
                             uiw:AppWindow.AllowInteractionInTitleBar="True"
-                            Command="{Binding NavigateToMusicDiscoverCommand}" />
+                            Command="{Binding NavigateToMusicDiscoverCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <ui:IconSourceElement IconSource="{StaticResource MusicIcon}" Width="16" Height="16" />
+                            <TextBlock Text="音乐" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
                     <!-- 更多菜单 -->
                     <Button Classes="TitleBarNavItem"
-                            Content="···"
-                            uiw:AppWindow.AllowInteractionInTitleBar="True"
-                            FontSize="14"
-                            Padding="10 6">
+                            uiw:AppWindow.AllowInteractionInTitleBar="True">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <ui:IconSourceElement IconSource="{StaticResource MoreIcon}" Width="16" Height="16" />
+                            <TextBlock Text="更多" VerticalAlignment="Center" />
+                        </StackPanel>
                         <Button.Flyout>
                             <ui:FAMenuFlyout Placement="BottomEdgeAlignedLeft">
                                 <ui:MenuFlyoutItem Text="主页" IconSource="{StaticResource HomeIcon}"
                                                    Command="{Binding NavigateToHomeCommand}" />
-                                <ui:MenuFlyoutItem Text="花卉市场" IconSource="{StaticResource HomeIcon}"
+                                <ui:MenuFlyoutItem Text="花卉市场" IconSource="{StaticResource FlowerIcon}"
                                                    Command="{Binding NavigateToFlowerShopCommand}" />
-                                <ui:MenuFlyoutItem Text="购物车" IconSource="{StaticResource HomeIcon}"
+                                <ui:MenuFlyoutItem Text="购物车" IconSource="{StaticResource CartIcon}"
                                                    Command="{Binding NavigateToFlowerCartCommand}" />
-                                <ui:MenuFlyoutItem Text="订单" IconSource="{StaticResource HomeIcon}"
+                                <ui:MenuFlyoutItem Text="订单" IconSource="{StaticResource OrderIcon}"
                                                    Command="{Binding NavigateToFlowerOrderCenterCommand}" />
-                                <ui:MenuFlyoutItem Text="商家管理" IconSource="{StaticResource HomeIcon}"
+                                <ui:MenuFlyoutItem Text="商家管理" IconSource="{StaticResource StoreIcon}"
                                                    Command="{Binding NavigateToFlowerMerchantCommand}" />
                                 <ui:MenuFlyoutItem Text="Excel 工具" IconSource="{StaticResource SettingsIcon}"
                                                    Command="{Binding NavigateToExcelProcessorCommand}" />
@@ -102,58 +127,40 @@
                     </Button>
                 </StackPanel>
 
-                <!-- 中：搜索框 -->
-               <!-- <Border Grid.Column="1"
-                        Padding="12 6"
-                        HorizontalAlignment="Center"
-                        MaxWidth="400"
-                        VerticalAlignment="Center">
-                    <AutoCompleteBox Name="SearchBox"
-                                     Watermark="搜索页面"
-                                     MaxWidth="380"
-                                     uiw:AppWindow.AllowInteractionInTitleBar="True"
-                                     ValueMemberBinding="{Binding Title, DataType=vm:NavigationSearchItem}"
-                                     ItemsSource="{Binding SearchItems}">
-                        <AutoCompleteBox.ItemTemplate>
-                            <DataTemplate x:DataType="vm:NavigationSearchItem">
-                                <StackPanel>
-                                    <TextBlock Text="{Binding Title}" />
-                                    <TextBlock Text="{Binding Description}"
-                                               Theme="{StaticResource CaptionTextBlockStyle}"
-                                               Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
-                                               FontStyle="Italic" />
-                                </StackPanel>
-                            </DataTemplate>
-                        </AutoCompleteBox.ItemTemplate>
-                    </AutoCompleteBox>
-                </Border>-->
-
-                <!-- 右：工具按钮 + 用户头像 + 窗口按钮预留区 -->
+                <!-- 右：工具按钮 + 用户胶囊 + 窗口按钮预留区 -->
                 <StackPanel Grid.Column="2"
                             Orientation="Horizontal"
-                            Spacing="2"
+                            Spacing="8"
                             Margin="0 0 6 0"
                             VerticalAlignment="Center">
-                    <!-- 下载 -->
-                    <Button Classes="TitleBarIconButton"
-                            ToolTip.Tip="下载"
-                            uiw:AppWindow.AllowInteractionInTitleBar="True"
-                            Command="{Binding NavigateToDownloadsCommand}">
-                        <ui:IconSourceElement IconSource="{StaticResource DownloadsIcon}" Width="16" Height="16" />
-                    </Button>
-
-                    <!-- 通知 -->
+                    <!-- 通知（带红点） -->
                     <Button Classes="TitleBarIconButton"
                             ToolTip.Tip="通知"
                             uiw:AppWindow.AllowInteractionInTitleBar="True"
                             Command="{Binding NavigateToNotificationCommand}">
-                        <ui:IconSourceElement IconSource="{StaticResource NotificationsIcon}" Width="16" Height="16" />
+                        <Grid>
+                            <ui:IconSourceElement IconSource="{StaticResource BellIcon}" Width="18" Height="18" />
+                            <Border Width="8" Height="8" CornerRadius="4"
+                                    Background="{DynamicResource GdErrorBrush}"
+                                    BorderBrush="{DynamicResource GdCardBrush}"
+                                    BorderThickness="2"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Top" />
+                        </Grid>
                     </Button>
 
-                    <Border Width="1" Height="20" Margin="4 0"
-                            Background="{DynamicResource TitleBarDividerBrush}" />
+                    <!-- 主题切换 -->
+                    <Button Classes="TitleBarIconButton"
+                            ToolTip.Tip="主题切换"
+                            uiw:AppWindow.AllowInteractionInTitleBar="True"
+                            Command="{Binding SetDarkThemeCommand}">
+                        <ui:IconSourceElement IconSource="{StaticResource MoonIcon}" Width="18" Height="18" />
+                    </Button>
 
-                    <!-- 用户头像 + 名字/状态（点击展开下拉菜单） -->
+                    <Border Width="1" Height="24" Margin="4 0"
+                            Background="{DynamicResource GdBorderBrush}" />
+
+                    <!-- 用户胶囊（设计稿：26px头像+名字+ID, muted背景, radius-full） -->
                     <Button Name="UserButton"
                             Classes="TitleBarUserButton"
                             uiw:AppWindow.AllowInteractionInTitleBar="True">
@@ -177,41 +184,38 @@
                                                    Command="{Binding LogoutCommand}" />
                             </ui:FAMenuFlyout>
                         </Button.Flyout>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Grid Width="32" Height="32">
-                                <Border CornerRadius="16"
-                                        ClipToBounds="True"
-                                        Background="{DynamicResource SocialAvatarBackgroundBrush}">
-                                    <Panel>
-                                        <TextBlock Text="{Binding UserAvatarInitial}"
-                                                   HorizontalAlignment="Center"
-                                                   VerticalAlignment="Center"
-                                                   FontSize="14" FontWeight="SemiBold"
-                                                   Foreground="{DynamicResource SocialAvatarTextBrush}"
-                                                   IsVisible="{Binding !UserHasAvatarBitmap}" />
-                                        <Image Source="{Binding UserAvatarBitmap}"
-                                               Stretch="UniformToFill"
-                                               IsVisible="{Binding UserHasAvatarBitmap}" />
-                                    </Panel>
-                                </Border>
-                                <!-- 在线指示点 -->
-                                <Border Width="10" Height="10"
-                                        CornerRadius="5"
-                                        Background="{DynamicResource SocialOnlineBadgeBrush}"
-                                        BorderBrush="{DynamicResource TitleBarBackgroundBrush}"
-                                        BorderThickness="2"
-                                        HorizontalAlignment="Right"
-                                        VerticalAlignment="Bottom" />
-                            </Grid>
-                            <StackPanel VerticalAlignment="Center" Spacing="0">
-                                <TextBlock Text="{Binding UserDisplayName}"
-                                           FontSize="12" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource TitleBarTextBrush}" />
-                                <TextBlock Text="{Binding UserPassportId}"
-                                           FontSize="10"
-                                           Foreground="{DynamicResource TitleBarTextSecondaryBrush}" />
+                        <Border Background="{DynamicResource GdMutedBrush}"
+                                CornerRadius="{DynamicResource GdRadiusFull}"
+                                Padding="5 5 12 5">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Grid Width="26" Height="26">
+                                    <Border CornerRadius="13"
+                                            ClipToBounds="True"
+                                            Background="{DynamicResource GdPrimaryBrush}">
+                                        <Panel>
+                                            <TextBlock Text="{Binding UserAvatarInitial}"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center"
+                                                       FontSize="11" FontWeight="SemiBold"
+                                                       Foreground="#FFFFFFFF"
+                                                       IsVisible="{Binding !UserHasAvatarBitmap}" />
+                                            <Image Source="{Binding UserAvatarBitmap}"
+                                                   Stretch="UniformToFill"
+                                                   IsVisible="{Binding UserHasAvatarBitmap}" />
+                                        </Panel>
+                                    </Border>
+                                </Grid>
+                                <StackPanel VerticalAlignment="Center" Spacing="0">
+                                    <TextBlock Text="{Binding UserDisplayName}"
+                                               FontSize="12" FontWeight="Medium"
+                                               Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <TextBlock Text="{Binding UserPassportId}"
+                                               FontSize="10"
+                                               FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                </StackPanel>
                             </StackPanel>
-                        </StackPanel>
+                        </Border>
                     </Button>
 
                     <!-- 窗口控制按钮预留空间 -->
@@ -220,104 +224,138 @@
             </Grid>
         </Border>
 
-        <!-- ══════════════════════════════════════════════════════════════════
-             内容区域 + 底部游戏导航栏（类似战网副导航条）
-             ══════════════════════════════════════════════════════════════════ -->
+        <!-- ══════════════════════════════════════════════════════════════
+             设计稿副导航（44px）：图标+文字, pill圆角, badge, 分隔线
+             ══════════════════════════════════════════════════════════════ -->
         <Grid Grid.Row="1" RowDefinitions="Auto,*">
-            <!-- 副导航条：当前页上下文切换栏 -->
             <Border Grid.Row="0"
-                    Background="{DynamicResource SubNavBarBackgroundBrush}"
-                    BorderBrush="{DynamicResource TitleBarBorderBrush}"
+                    Background="{DynamicResource GdCardBrush}"
+                    BorderBrush="{DynamicResource GdBorderBrush}"
                     BorderThickness="0 0 0 1"
-                    Padding="16 0"
-                    MinHeight="42">
-                <StackPanel Name="SubNavBar"
-                            Orientation="Horizontal"
-                            Spacing="4"
-                            VerticalAlignment="Center">
-                    <Button Classes="SubNavItem SubNavSelected"
-                            Tag="Home"
-                            Content="总览"
-                            Command="{Binding NavigateToHomeCommand}" />
-                    <Button Classes="SubNavItem"
-                            Tag="Games"
-                            Content="全部游戏"
-                            Command="{Binding NavigateToGamesCommand}" />
-                    <Button Classes="SubNavItem"
-                            Tag="Downloads"
-                            Content="下载"
-                            Command="{Binding NavigateToDownloadsCommand}" />
-                    <Button Classes="SubNavItem"
-                            Tag="Settings"
-                            Content="设置"
-                            Command="{Binding NavigateToSettingsCommand}" />
-                    <Border Width="1" Height="20" Margin="12 0"
-                            Background="{DynamicResource TitleBarDividerBrush}" />
-                    <Button Classes="SubNavItem"
-                            Tag="MusicDiscover"
-                            Content="发现"
-                            Command="{Binding NavigateToMusicDiscoverCommand}" />
-                    <Button Classes="SubNavItem"
-                            Tag="PlaylistManage"
-                            Content="歌单"
-                            Command="{Binding NavigateToPlaylistManageCommand}" />
-                    <Button Classes="SubNavItem"
-                            Tag="MusicSearch"
-                            Content="搜索"
-                            Command="{Binding NavigateToMusicSearchCommand}" />
-                    <!--<Button Classes="SubNavItem"
-                            Tag="MusicStory"
-                            Content="背后故事"
-                            Command="{Binding NavigateToMusicStoryCommand}" />-->
-                    <Border Width="1" Height="20" Margin="12 0"
-                            Background="{DynamicResource TitleBarDividerBrush}" />
-                    <Button Classes="SubNavItem"
-                            Tag="FlowerDashboard"
-                            Content="行情仪表盘"
-                            Command="{Binding NavigateToFlowerDashboardCommand}" />
-                    <Button Classes="SubNavItem"
-                            Tag="FlowerShop"
-                            Content="市场"
-                            Command="{Binding NavigateToFlowerShopCommand}" />
-                    <Button Classes="SubNavItem"
-                            Tag="FlowerPlantingAdvice"
-                            Content="种植建议"
-                            Command="{Binding NavigateToFlowerPlantingAdviceCommand}" />
-                    <Button Classes="SubNavItem"
-                            Tag="FlowerCart"
-                            Content="购物车"
-                            Command="{Binding NavigateToFlowerCartCommand}" />
-                    <Button Classes="SubNavItem"
-                            Tag="FlowerOrderCenter"
-                            Content="订单"
-                            Command="{Binding NavigateToFlowerOrderCenterCommand}" />
-                    <Button Classes="SubNavItem"
-                            Tag="FlowerAlertCenter"
-                            Content="预警"
-                            Command="{Binding NavigateToFlowerAlertCenterCommand}" />
-                    <Button Classes="SubNavItem"
-                            Tag="FlowerAIAssistant"
-                            Content="AI助手"
-                            Command="{Binding NavigateToFlowerAIAssistantCommand}" />
-                    <Button Classes="SubNavItem"
-                            Tag="FlowerDataScreen"
-                            Content="数据大屏"
-                            Command="{Binding NavigateToFlowerDataScreenCommand}" />
-                    <Border Width="1" Height="20" Margin="12 0"
-                            Background="{DynamicResource TitleBarDividerBrush}" />
-                    <Button Classes="SubNavItem"
-                            Tag="FlowerMerchant"
-                            Content="商家"
-                            Command="{Binding NavigateToFlowerMerchantCommand}" />
-                    <Button Classes="SubNavItem"
-                            Tag="FlowerAddress"
-                            Content="收货地址"
-                            Command="{Binding NavigateToFlowerAddressCommand}" />
-                    <Button Classes="SubNavItem"
-                            Tag="FlowerProfile"
-                            Content="个人中心"
-                            Command="{Binding NavigateToFlowerProfileCommand}" />
-                </StackPanel>
+                    Height="44">
+                <ScrollViewer HorizontalScrollBarVisibility="Hidden"
+                              VerticalScrollBarVisibility="Disabled"
+                              VerticalAlignment="Center">
+                    <StackPanel Name="SubNavBar"
+                                Orientation="Horizontal"
+                                Spacing="2"
+                                Margin="20 0"
+                                VerticalAlignment="Center">
+                        <Button Classes="SubNavItem SubNavSelected" Tag="Home" Command="{Binding NavigateToHomeCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:IconSourceElement IconSource="{StaticResource DashboardIcon}" Width="14" Height="14" />
+                                <TextBlock Text="总览" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Classes="SubNavItem" Tag="Games" Command="{Binding NavigateToGamesCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:IconSourceElement IconSource="{StaticResource LibraryIcon}" Width="14" Height="14" />
+                                <TextBlock Text="全部游戏" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Classes="SubNavItem" Tag="Downloads" Command="{Binding NavigateToDownloadsCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:IconSourceElement IconSource="{StaticResource DownloadsIcon}" Width="14" Height="14" />
+                                <TextBlock Text="下载" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Classes="SubNavItem" Tag="Settings" Command="{Binding NavigateToSettingsCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:IconSourceElement IconSource="{StaticResource SettingsIcon}" Width="14" Height="14" />
+                                <TextBlock Text="设置" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Border Width="1" Height="16" Margin="4 0" Background="{DynamicResource GdBorderBrush}" />
+                        <Button Classes="SubNavItem" Tag="MusicDiscover" Command="{Binding NavigateToMusicDiscoverCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:IconSourceElement IconSource="{StaticResource CompassIcon}" Width="14" Height="14" />
+                                <TextBlock Text="发现" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Classes="SubNavItem" Tag="PlaylistManage" Command="{Binding NavigateToPlaylistManageCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:IconSourceElement IconSource="{StaticResource PlaylistIcon}" Width="14" Height="14" />
+                                <TextBlock Text="歌单" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Classes="SubNavItem" Tag="MusicSearch" Command="{Binding NavigateToMusicSearchCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:IconSourceElement IconSource="{StaticResource SearchIcon}" Width="14" Height="14" />
+                                <TextBlock Text="搜索" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Border Width="1" Height="16" Margin="4 0" Background="{DynamicResource GdBorderBrush}" />
+                        <Button Classes="SubNavItem" Tag="FlowerDashboard" Command="{Binding NavigateToFlowerDashboardCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:IconSourceElement IconSource="{StaticResource GaugeIcon}" Width="14" Height="14" />
+                                <TextBlock Text="行情仪表盘" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Classes="SubNavItem" Tag="FlowerShop" Command="{Binding NavigateToFlowerShopCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:IconSourceElement IconSource="{StaticResource MarketIcon}" Width="14" Height="14" />
+                                <TextBlock Text="市场" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Classes="SubNavItem" Tag="FlowerPlantingAdvice" Command="{Binding NavigateToFlowerPlantingAdviceCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:IconSourceElement IconSource="{StaticResource SproutIcon}" Width="14" Height="14" />
+                                <TextBlock Text="种植建议" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Classes="SubNavItem" Tag="FlowerCart" Command="{Binding NavigateToFlowerCartCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:IconSourceElement IconSource="{StaticResource CartIcon}" Width="14" Height="14" />
+                                <TextBlock Text="购物车" VerticalAlignment="Center" />
+                                <Border Classes="SubNavBadge"><TextBlock Text="3" /></Border>
+                            </StackPanel>
+                        </Button>
+                        <Button Classes="SubNavItem" Tag="FlowerOrderCenter" Command="{Binding NavigateToFlowerOrderCenterCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:IconSourceElement IconSource="{StaticResource OrderIcon}" Width="14" Height="14" />
+                                <TextBlock Text="订单" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Classes="SubNavItem" Tag="FlowerAlertCenter" Command="{Binding NavigateToFlowerAlertCenterCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:IconSourceElement IconSource="{StaticResource AlertIcon}" Width="14" Height="14" />
+                                <TextBlock Text="预警" VerticalAlignment="Center" />
+                                <Border Classes="SubNavBadge"><TextBlock Text="5" /></Border>
+                            </StackPanel>
+                        </Button>
+                        <Button Classes="SubNavItem" Tag="FlowerAIAssistant" Command="{Binding NavigateToFlowerAIAssistantCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:IconSourceElement IconSource="{StaticResource AIIcon}" Width="14" Height="14" />
+                                <TextBlock Text="AI助手" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Classes="SubNavItem" Tag="FlowerDataScreen" Command="{Binding NavigateToFlowerDataScreenCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:IconSourceElement IconSource="{StaticResource DataScreenIcon}" Width="14" Height="14" />
+                                <TextBlock Text="数据大屏" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Border Width="1" Height="16" Margin="4 0" Background="{DynamicResource GdBorderBrush}" />
+                        <Button Classes="SubNavItem" Tag="FlowerMerchant" Command="{Binding NavigateToFlowerMerchantCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:IconSourceElement IconSource="{StaticResource StoreIcon}" Width="14" Height="14" />
+                                <TextBlock Text="商家" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Classes="SubNavItem" Tag="FlowerAddress" Command="{Binding NavigateToFlowerAddressCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:IconSourceElement IconSource="{StaticResource AddressIcon}" Width="14" Height="14" />
+                                <TextBlock Text="收货地址" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <Button Classes="SubNavItem" Tag="FlowerProfile" Command="{Binding NavigateToFlowerProfileCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:IconSourceElement IconSource="{StaticResource ProfileIcon}" Width="14" Height="14" />
+                                <TextBlock Text="个人中心" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </ScrollViewer>
             </Border>
 
             <!-- 主内容 -->
@@ -336,7 +374,7 @@
 
         <Panel Grid.RowSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                IsVisible="{Binding Source={x:Static vm:MusicStoryViewModel.Instance}, Path=IsOpen}">
-            <Border Background="#80000000" Tapped="StoryOverlay_Tapped" />
+            <Border Background="{DynamicResource GdOverlayBrush}" Tapped="StoryOverlay_Tapped" />
             <views:MusicStoryDrawerView HorizontalAlignment="Right" VerticalAlignment="Stretch">
                 <views:MusicStoryDrawerView.Transitions>
                     <Transitions>

@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>账户认证 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   参照 quant-trading-ui 风格重构，零色值偏差
+   Dark mode is the primary experience (html.dark)
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #ff9800;
+  --gd-state-warning-surface: rgba(255, 152, 0, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #ef5350;
+  --gd-state-error-surface: rgba(239, 83, 80, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific (花卉价格波动涨跌色) ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #ef5350;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(239, 83, 80, 0.12);
+
+  /* ---------- Light Mode (default :root) ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode (html.dark — primary experience) ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <div class="app-root">
+      <!-- ================ 顶栏（主导航，认证页：导航均不选中） ================ -->
+      <header class="app-topbar">
+        <div class="topbar-brand">
+          <div style="width:32px;height:32px;border-radius:var(--gd-radius-md);background:linear-gradient(135deg,var(--gd-brand-500),var(--gd-brand-700));display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="sprout" style="width:18px;height:18px;color:var(--gd-primary-foreground);"></i>
+          </div>
+          <span style="font-size:15px;font-weight:600;color:var(--gd-foreground);">耕地</span>
+        </div>
+        <nav class="topbar-main-nav">
+          <a class="main-nav-item" data-dom-id="nav-games" data-main-nav-key="games" href="#">
+            <i data-lucide="gamepad-2" class="main-nav-icon"></i>
+            <span>游戏</span>
+          </a>
+          <a class="main-nav-item" data-dom-id="nav-news" data-main-nav-key="news" href="#">
+            <i data-lucide="newspaper" class="main-nav-icon"></i>
+            <span>新闻</span>
+          </a>
+          <a class="main-nav-item" data-dom-id="nav-flower-market" data-main-nav-key="flower-market" href="#">
+            <i data-lucide="flower-2" class="main-nav-icon"></i>
+            <span>花卉市场</span>
+          </a>
+          <a class="main-nav-item" data-dom-id="nav-music" data-main-nav-key="music" href="#">
+            <i data-lucide="music" class="main-nav-icon"></i>
+            <span>音乐</span>
+          </a>
+          <a class="main-nav-item" data-dom-id="nav-more" data-main-nav-key="more" href="#">
+            <i data-lucide="more-horizontal" class="main-nav-icon"></i>
+            <span>更多</span>
+          </a>
+        </nav>
+        <!-- 认证页特殊：仅保留主题切换 + 窗口控制，无用户头像/通知 -->
+        <div class="topbar-actions">
+          <button class="header-icon-btn" title="主题切换">
+            <i data-lucide="moon" style="width:18px;height:18px;"></i>
+          </button>
+          <div style="width:1px;height:24px;background-color:var(--gd-border);margin:0 4px;"></div>
+          <button class="win-btn" title="最小化">
+            <i data-lucide="minus" style="width:16px;height:16px;"></i>
+          </button>
+          <button class="win-btn" title="最大化">
+            <i data-lucide="square" style="width:14px;height:14px;"></i>
+          </button>
+          <button class="win-btn win-btn-close" title="关闭">
+            <i data-lucide="x" style="width:16px;height:16px;"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- ================ 副导航（认证页简化） ================ -->
+      <nav class="app-subnavbar no-scrollbar">
+        <a class="subnav-item" href="#">
+          <i data-lucide="shield-user" class="subnav-icon"></i>
+          <span>账户中心</span>
+        </a>
+        <div class="subnav-divider"></div>
+        <a class="subnav-item" data-dom-id="subnav-login" data-sub-nav-key="login" data-active="true" href="#page-login">
+          <i data-lucide="log-in" class="subnav-icon"></i>
+          <span>登录</span>
+        </a>
+        <a class="subnav-item" data-dom-id="subnav-register" data-sub-nav-key="register" href="#page-register">
+          <i data-lucide="user-plus" class="subnav-icon"></i>
+          <span>注册</span>
+        </a>
+        <div class="subnav-divider"></div>
+        <a class="subnav-item" href="#">
+          <i data-lucide="life-buoy" class="subnav-icon"></i>
+          <span>账号帮助</span>
+        </a>
+        <a class="subnav-item" href="#">
+          <i data-lucide="shield-check" class="subnav-icon"></i>
+          <span>隐私与安全</span>
+        </a>
+      </nav>
+
+      <!-- ================ 内容区 ================ -->
+      <main class="app-content">
+        <div style="padding:32px 28px;display:flex;flex-direction:column;gap:48px;min-width:1280px;">
+
+          <!-- ============================ Section 1: 登录 ============================ -->
+          <section id="page-login">
+            <div class="section-header">
+              <div class="section-header-top">
+                <h2 class="gd-section-title" style="margin:0;font-size:20px;">登录</h2>
+                <span class="section-header-file">LoginView.axaml</span>
+              </div>
+              <p class="section-header-sub">双栏布局：左 hero 品牌展示区（60%） + 右 表单区（40%）。对照 Avalonia 源 LoginView 的 Grid(*,440) 结构，表单包含账号、密码、记住我、登录按钮、第三方登录与注册入口。</p>
+            </div>
+
+            <!-- 登录主体：左 hero + 右表单 -->
+            <div style="display:flex;border:1px solid var(--gd-border);border-radius:var(--gd-radius-lg);overflow:hidden;min-height:620px;box-shadow:var(--gd-shadow-lg);">
+
+              <!-- ============ 左：Hero 区（60%） ============ -->
+              <div class="auth-hero" style="flex:3;">
+                <!-- 装饰几何图形 -->
+                <div class="auth-hero-decor" style="width:340px;height:340px;top:-90px;left:-80px;background:color-mix(in srgb, var(--gd-primary-foreground) 10%, transparent);"></div>
+                <div class="auth-hero-decor" style="width:220px;height:220px;bottom:-60px;right:40px;background:color-mix(in srgb, var(--gd-primary-foreground) 7%, transparent);"></div>
+                <div class="auth-hero-decor" style="width:120px;height:120px;top:120px;right:120px;background:color-mix(in srgb, var(--gd-primary-foreground) 12%, transparent);"></div>
+                <!-- 背景大图标水印 -->
+                <i data-lucide="sprout" style="position:absolute;right:-30px;bottom:-40px;width:280px;height:280px;color:color-mix(in srgb, var(--gd-primary-foreground) 8%, transparent);"></i>
+
+                <div style="position:relative;z-index:1;">
+                  <div class="auth-hero-logo">
+                    <i data-lucide="sprout" style="width:32px;height:32px;color:var(--gd-primary-foreground);"></i>
+                  </div>
+                  <div class="auth-hero-title">欢迎回到耕地</div>
+                  <div class="auth-hero-sub">登录账户，继续你的花卉交易与游戏之旅。专业暗色终端，为每一位种植者与商人而生。</div>
+
+                  <div class="auth-hero-chips">
+                    <div class="auth-hero-chip">
+                      <div class="auth-hero-chip-title"><i data-lucide="cloud-sun" style="width:13px;height:13px;"></i>今日天气</div>
+                      <div class="auth-hero-chip-value">晴 22°C</div>
+                    </div>
+                    <div class="auth-hero-chip">
+                      <div class="auth-hero-chip-title"><i data-lucide="flower-2" style="width:13px;height:13px;"></i>花卉推荐</div>
+                      <div class="auth-hero-chip-value">红玫瑰</div>
+                    </div>
+                    <div class="auth-hero-chip">
+                      <div class="auth-hero-chip-title"><i data-lucide="trending-up" style="width:13px;height:13px;"></i>市场指数</div>
+                      <div class="auth-hero-chip-value">+3.2%</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ============ 右：表单区（40%） ============ -->
+              <div style="flex:2;background-color:var(--gd-card);padding:48px 40px;display:flex;flex-direction:column;justify-content:center;">
+                <div style="max-width:380px;width:100%;margin:0 auto;">
+
+                  <!-- Logo + 标题 -->
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                    <div style="width:28px;height:28px;border-radius:var(--gd-radius-sm);background:linear-gradient(135deg,var(--gd-brand-500),var(--gd-brand-700));display:flex;align-items:center;justify-content:center;">
+                      <i data-lucide="sprout" style="width:16px;height:16px;color:var(--gd-primary-foreground);"></i>
+                    </div>
+                    <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">耕地</span>
+                  </div>
+                  <h3 style="font-size:26px;font-weight:700;color:var(--gd-foreground);margin:0 0 6px;">登录</h3>
+                  <p style="font-size:13px;color:var(--gd-muted-foreground);margin:0 0 28px;">使用已注册账户进入客户端</p>
+
+                  <!-- 账号输入框 -->
+                  <div style="margin-bottom:18px;">
+                    <label class="auth-field-label">账号</label>
+                    <div class="auth-input-wrap">
+                      <span class="auth-input-icon"><i data-lucide="user" style="width:18px;height:18px;"></i></span>
+                      <input type="text" placeholder="请输入用户名或手机号" autocomplete="username">
+                    </div>
+                  </div>
+
+                  <!-- 密码输入框 -->
+                  <div style="margin-bottom:16px;">
+                    <label class="auth-field-label">密码</label>
+                    <div class="auth-input-wrap">
+                      <span class="auth-input-icon"><i data-lucide="lock" style="width:18px;height:18px;"></i></span>
+                      <input type="password" placeholder="请输入密码" autocomplete="current-password" value="password-demo">
+                      <button class="auth-input-suffix" title="显示/隐藏密码">
+                        <i data-lucide="eye-off" style="width:18px;height:18px;"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- 记住我 + 忘记密码 -->
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
+                    <label class="gd-checkbox-wrap">
+                      <input type="checkbox" class="gd-checkbox" checked>
+                      <span>记住登录信息</span>
+                    </label>
+                    <a class="gd-link" href="#">忘记密码？</a>
+                  </div>
+
+                  <!-- 登录按钮（gd-primary 全宽） -->
+                  <button class="gd-btn-primary" style="width:100%;height:46px;font-size:15px;">
+                    <i data-lucide="log-in" style="width:18px;height:18px;"></i>
+                    <span>登录</span>
+                  </button>
+
+                  <!-- 加载态预览 -->
+                  <div style="display:flex;align-items:center;gap:10px;margin-top:12px;">
+                    <span style="font-size:11px;color:var(--gd-muted-foreground);white-space:nowrap;">加载态</span>
+                    <button class="gd-btn-primary" disabled style="height:34px;padding:0 16px;font-size:13px;">
+                      <span class="gd-spinner"></span>
+                      <span>登录中...</span>
+                    </button>
+                    <span style="font-size:11px;color:var(--gd-muted-foreground);">点击登录后触发，按钮禁用并显示 spinner</span>
+                  </div>
+
+                  <!-- 分隔线 -->
+                  <div class="auth-divider" style="margin:24px 0 18px;">或</div>
+
+                  <!-- 第三方登录按钮组（gd-ghost 样式） -->
+                  <div style="display:flex;gap:10px;margin-bottom:24px;">
+                    <button class="social-btn">
+                      <i data-lucide="message-circle" style="width:16px;height:16px;"></i>
+                      <span>微信</span>
+                    </button>
+                    <button class="social-btn">
+                      <i data-lucide="message-square" style="width:16px;height:16px;"></i>
+                      <span>QQ</span>
+                    </button>
+                    <button class="social-btn">
+                      <i data-lucide="qr-code" style="width:16px;height:16px;"></i>
+                      <span>扫码</span>
+                    </button>
+                  </div>
+
+                  <!-- 底部注册链接 -->
+                  <div style="text-align:center;font-size:13px;color:var(--gd-muted-foreground);">
+                    还没有账号？<a class="gd-link" href="#page-register" style="font-weight:600;">立即注册</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================ Section 2: 注册 ============================ -->
+          <section id="page-register">
+            <div class="section-header">
+              <div class="section-header-top">
+                <h2 class="gd-section-title" style="margin:0;font-size:20px;">注册</h2>
+                <span class="section-header-file">RegisterView.axaml</span>
+              </div>
+              <p class="section-header-sub">分步表单：手机号 → 验证码 → 设置密码 → 完成。对照 Avalonia 源 RegisterView 重构为四步流程，顶部步骤指示器标识进度，下方依次呈现各步骤界面。</p>
+            </div>
+
+            <div class="center-col">
+
+              <!-- ===== 步骤指示器（当前步：步骤3，已完成1/2，未到4） ===== -->
+              <div class="metric-card" style="padding:24px 32px;margin-bottom:24px;">
+                <div class="step-indicator">
+                  <div class="step-item" data-state="done">
+                    <div class="step-circle"><i data-lucide="check" style="width:18px;height:18px;"></i></div>
+                    <div class="step-label">手机号</div>
+                  </div>
+                  <div class="step-connector" data-state="done"></div>
+                  <div class="step-item" data-state="done">
+                    <div class="step-circle"><i data-lucide="check" style="width:18px;height:18px;"></i></div>
+                    <div class="step-label">验证码</div>
+                  </div>
+                  <div class="step-connector"></div>
+                  <div class="step-item" data-state="active">
+                    <div class="step-circle">3</div>
+                    <div class="step-label">设置密码</div>
+                  </div>
+                  <div class="step-connector"></div>
+                  <div class="step-item" data-state="pending">
+                    <div class="step-circle">4</div>
+                    <div class="step-label">完成</div>
+                  </div>
+                </div>
+                <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--gd-border);font-size:12px;color:var(--gd-muted-foreground);display:flex;align-items:center;gap:6px;">
+                  <i data-lucide="info" style="width:13px;height:13px;"></i>
+                  <span>原型展示：进度停在步骤 3，下方依次呈现各步骤界面以便审阅。</span>
+                </div>
+              </div>
+
+              <!-- ===== 步骤 1：手机号 ===== -->
+              <div class="step-card" style="margin-bottom:16px;">
+                <div class="step-card-head">
+                  <div>
+                    <div class="step-card-title">
+                      <span class="step-card-num">1</span>
+                      <span>手机号</span>
+                    </div>
+                    <div class="step-card-desc">输入手机号并同意服务协议</div>
+                  </div>
+                  <span class="badge badge-success"><i data-lucide="check" style="width:12px;height:12px;"></i>已完成</span>
+                </div>
+
+                <div style="margin-bottom:18px;">
+                  <label class="auth-field-label">手机号</label>
+                  <div class="auth-input-wrap">
+                    <span class="auth-input-prefix">+86</span>
+                    <span class="auth-input-icon"><i data-lucide="smartphone" style="width:18px;height:18px;"></i></span>
+                    <input type="tel" placeholder="请输入手机号" value="138 0013 8000">
+                  </div>
+                </div>
+
+                <label class="gd-checkbox-wrap" style="margin-bottom:22px;display:flex;align-items:flex-start;gap:8px;">
+                  <input type="checkbox" class="gd-checkbox" checked style="margin-top:2px;">
+                  <span>我已阅读并同意 <a class="gd-link" href="#">《用户协议》</a> 和 <a class="gd-link" href="#">《隐私政策》</a></span>
+                </label>
+
+                <div style="display:flex;gap:10px;">
+                  <button class="gd-btn-ghost" style="flex:1;">
+                    <i data-lucide="arrow-left" style="width:15px;height:15px;"></i>
+                    <span>上一步</span>
+                  </button>
+                  <button class="gd-btn-primary" style="flex:2;">
+                    <span>获取验证码</span>
+                    <i data-lucide="arrow-right" style="width:15px;height:15px;"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- ===== 步骤 2：验证码 ===== -->
+              <div class="step-card" style="margin-bottom:16px;">
+                <div class="step-card-head">
+                  <div>
+                    <div class="step-card-title">
+                      <span class="step-card-num">2</span>
+                      <span>验证码</span>
+                    </div>
+                    <div class="step-card-desc">输入短信收到的 6 位验证码</div>
+                  </div>
+                  <span class="badge badge-success"><i data-lucide="check" style="width:12px;height:12px;"></i>已完成</span>
+                </div>
+
+                <div style="margin-bottom:18px;">
+                  <label class="auth-field-label">验证码</label>
+                  <div class="otp-group">
+                    <input class="otp-box filled" maxlength="1" value="8">
+                    <input class="otp-box filled" maxlength="1" value="2">
+                    <input class="otp-box filled" maxlength="1" value="3">
+                    <input class="otp-box filled" maxlength="1" value="5">
+                    <input class="otp-box" maxlength="1" placeholder="-">
+                    <input class="otp-box" maxlength="1" placeholder="-">
+                  </div>
+                </div>
+
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;font-size:12px;color:var(--gd-muted-foreground);">
+                  <span style="display:inline-flex;align-items:center;gap:6px;">
+                    <i data-lucide="message-circle" style="width:13px;height:13px;"></i>
+                    验证码已发送至 +86 138 0013 8000
+                  </span>
+                  <button class="gd-btn-ghost" style="padding:5px 12px;font-size:12px;height:30px;" disabled>
+                    <span>59s 后重新发送</span>
+                  </button>
+                </div>
+
+                <div style="display:flex;gap:10px;">
+                  <button class="gd-btn-ghost" style="flex:1;">
+                    <i data-lucide="arrow-left" style="width:15px;height:15px;"></i>
+                    <span>上一步</span>
+                  </button>
+                  <button class="gd-btn-primary" style="flex:2;">
+                    <span>下一步</span>
+                    <i data-lucide="arrow-right" style="width:15px;height:15px;"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- ===== 步骤 3：设置密码（当前步） ===== -->
+              <div class="step-card" data-active="true" style="margin-bottom:16px;">
+                <div class="step-card-head">
+                  <div>
+                    <div class="step-card-title">
+                      <span class="step-card-num">3</span>
+                      <span>设置密码</span>
+                    </div>
+                    <div class="step-card-desc">为账户设置一个安全的密码</div>
+                  </div>
+                  <span class="badge badge-info"><i data-lucide="loader" style="width:12px;height:12px;"></i>进行中</span>
+                </div>
+
+                <div style="margin-bottom:18px;">
+                  <label class="auth-field-label">密码</label>
+                  <div class="auth-input-wrap">
+                    <span class="auth-input-icon"><i data-lucide="lock" style="width:18px;height:18px;"></i></span>
+                    <input type="password" placeholder="8-20 位，建议字母数字组合" value="Gd2026!x">
+                    <button class="auth-input-suffix" title="显示/隐藏密码">
+                      <i data-lucide="eye" style="width:18px;height:18px;"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 密码强度指示器 -->
+                <div style="margin-bottom:18px;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                    <span style="font-size:12px;color:var(--gd-muted-foreground);">密码强度</span>
+                    <span style="font-size:12px;font-weight:600;color:var(--gd-state-warning);">中等</span>
+                  </div>
+                  <div class="strength-bar" style="margin-bottom:8px;">
+                    <div class="strength-seg" data-level="weak"></div>
+                    <div class="strength-seg" data-level="medium"></div>
+                    <div class="strength-seg"></div>
+                  </div>
+                  <div style="display:flex;gap:14px;font-size:11px;color:var(--gd-muted-foreground);">
+                    <span style="display:inline-flex;align-items:center;gap:4px;color:var(--gd-state-success);"><i data-lucide="check" style="width:11px;height:11px;"></i>8 位以上</span>
+                    <span style="display:inline-flex;align-items:center;gap:4px;color:var(--gd-state-success);"><i data-lucide="check" style="width:11px;height:11px;"></i>含字母</span>
+                    <span style="display:inline-flex;align-items:center;gap:4px;color:var(--gd-muted-foreground);"><i data-lucide="circle" style="width:11px;height:11px;"></i>含特殊符号</span>
+                  </div>
+                </div>
+
+                <div style="margin-bottom:22px;">
+                  <label class="auth-field-label">确认密码</label>
+                  <div class="auth-input-wrap">
+                    <span class="auth-input-icon"><i data-lucide="lock" style="width:18px;height:18px;"></i></span>
+                    <input type="password" placeholder="请再次输入密码" value="Gd2026!x">
+                    <button class="auth-input-suffix" title="显示/隐藏密码">
+                      <i data-lucide="eye-off" style="width:18px;height:18px;"></i>
+                    </button>
+                  </div>
+                  <div style="font-size:11px;color:var(--gd-state-success);margin-top:8px;display:inline-flex;align-items:center;gap:4px;">
+                    <i data-lucide="check-circle-2" style="width:13px;height:13px;"></i>
+                    <span>两次密码一致</span>
+                  </div>
+                </div>
+
+                <div style="display:flex;gap:10px;">
+                  <button class="gd-btn-ghost" style="flex:1;">
+                    <i data-lucide="arrow-left" style="width:15px;height:15px;"></i>
+                    <span>上一步</span>
+                  </button>
+                  <button class="gd-btn-primary" style="flex:2;">
+                    <i data-lucide="check" style="width:15px;height:15px;"></i>
+                    <span>完成注册</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- ===== 步骤 4：完成 ===== -->
+              <div class="step-card">
+                <div class="step-card-head">
+                  <div>
+                    <div class="step-card-title">
+                      <span class="step-card-num">4</span>
+                      <span>完成</span>
+                    </div>
+                    <div class="step-card-desc">账户创建成功</div>
+                  </div>
+                  <span class="badge badge-muted">最终态</span>
+                </div>
+
+                <div style="text-align:center;padding:24px 0 28px;">
+                  <div class="success-circle">
+                    <i data-lucide="check" style="width:40px;height:40px;color:var(--gd-state-success);"></i>
+                  </div>
+                  <div style="font-size:20px;font-weight:700;color:var(--gd-foreground);margin-bottom:8px;">注册成功</div>
+                  <div style="font-size:13px;color:var(--gd-muted-foreground);max-width:360px;margin:0 auto;line-height:1.6;">
+                    你的耕地账户已创建成功，现在可以使用账号密码登录，开启花卉交易与游戏之旅。
+                  </div>
+                </div>
+
+                <div style="display:flex;gap:10px;justify-content:center;">
+                  <button class="gd-btn-primary" style="min-width:200px;">
+                    <i data-lucide="log-in" style="width:15px;height:15px;"></i>
+                    <span>返回登录</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+        </div>
+      </main>
+    </div>
+    <script>lucide.createIcons();</script>
+
+    <style id="critical-layout">
+      /* ========== 水平顶栏 + 副导航框架（复用 project-shell.html） ========== */
+      .app-root { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background-color: var(--gd-background); color: var(--gd-foreground); }
+
+      /* ---------- 顶栏（主导航） ---------- */
+      .app-topbar { height: 56px; flex-shrink: 0; display: flex; align-items: center; gap: 24px; padding: 0 20px; background-color: var(--gd-card); border-bottom: 1px solid var(--gd-border); }
+      .topbar-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+      .topbar-main-nav { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+      .topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+      .main-nav-item { position: relative; display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--gd-radius-md); color: var(--gd-muted-foreground); font-size: 14px; font-weight: 500; cursor: pointer; transition: color 0.15s, background-color 0.15s; text-decoration: none; white-space: nowrap; }
+      .main-nav-item:hover { color: var(--gd-foreground); background-color: var(--gd-muted); }
+      .main-nav-item[data-active="true"] { color: var(--gd-primary); background-color: var(--gd-state-info-surface); }
+      .main-nav-item[data-active="true"]::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: -18px; height: 2px; background-color: var(--gd-primary); border-radius: 1px; }
+      .main-nav-icon { width: 16px; height: 16px; flex-shrink: 0; }
+
+      /* ---------- 副导航 ---------- */
+      .app-subnavbar { height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 2px; padding: 0 20px; background-color: var(--gd-card); border-bottom: 1px solid var(--gd-border); overflow-x: auto; overflow-y: hidden; }
+      .subnav-item { position: relative; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--gd-radius-sm); color: var(--gd-muted-foreground); font-size: 13px; font-weight: 500; cursor: pointer; transition: color 0.15s, background-color 0.15s; text-decoration: none; white-space: nowrap; flex-shrink: 0; }
+      .subnav-item:hover { color: var(--gd-foreground); background-color: var(--gd-muted); }
+      .subnav-item[data-active="true"] { color: var(--gd-primary); background-color: var(--gd-state-info-surface); }
+      .subnav-icon { width: 14px; height: 14px; flex-shrink: 0; }
+      .subnav-divider { width: 1px; height: 16px; background-color: var(--gd-border); flex-shrink: 0; margin: 0 4px; }
+
+      /* ---------- 内容区 ---------- */
+      .app-content { flex: 1; overflow-y: auto; overflow-x: hidden; }
+
+      /* ---------- 通用组件 ---------- */
+      .metric-card { background-color: var(--gd-card); border: 1px solid var(--gd-border); border-radius: var(--gd-radius-lg); padding: 20px; }
+      .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--gd-radius-sm); font-size: 12px; font-weight: 500; }
+      .badge-success { background-color: var(--gd-state-success-surface); color: var(--gd-state-success); }
+      .badge-info { background-color: var(--gd-state-info-surface); color: var(--gd-state-info); }
+      .badge-muted { background-color: var(--gd-muted); color: var(--gd-muted-foreground); }
+      .num { font-family: var(--gd-font-mono); font-variant-numeric: tabular-nums; }
+      .header-icon-btn { width: 36px; height: 36px; border-radius: var(--gd-radius-md); display: flex; align-items: center; justify-content: center; color: var(--gd-muted-foreground); cursor: pointer; transition: background-color 0.15s, color 0.15s; border: none; background: transparent; position: relative; }
+      .header-icon-btn:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+
+      /* ---------- 窗口控制按钮 ---------- */
+      .win-btn { width: 36px; height: 36px; border-radius: var(--gd-radius-sm); display: flex; align-items: center; justify-content: center; color: var(--gd-muted-foreground); cursor: pointer; transition: background-color 0.15s, color 0.15s; border: none; background: transparent; }
+      .win-btn:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+      .win-btn-close:hover { background-color: var(--gd-state-error); color: var(--gd-state-error-foreground); }
+
+      /* ============================================================
+         认证页专用组件
+         ============================================================ */
+      .gd-section-title { border-left: 3px solid var(--gd-primary); padding-left: 10px; font-size: 14px; font-weight: 600; color: var(--gd-foreground); }
+
+      /* section-header（标题 + 副标题 + Avalonia 文件名） */
+      .section-header { margin-bottom: 20px; }
+      .section-header-top { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+      .section-header-title { font-size: 20px; font-weight: 700; color: var(--gd-foreground); line-height: 1.2; }
+      .section-header-file { font-family: var(--gd-font-mono); font-size: 11px; color: var(--gd-muted-foreground); background-color: var(--gd-muted); padding: 3px 8px; border-radius: var(--gd-radius-sm); border: 1px solid var(--gd-border); }
+      .section-header-sub { font-size: 13px; color: var(--gd-muted-foreground); }
+
+      /* 按钮 */
+      .gd-btn-primary {
+        background-color: var(--gd-primary);
+        color: var(--gd-primary-foreground);
+        padding: 10px 16px;
+        border-radius: var(--gd-radius-md);
+        border: none;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.15s;
+        font-family: var(--gd-font-sans);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .gd-btn-primary:hover { background-color: var(--gd-brand-600); }
+      .gd-btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+      .gd-btn-ghost {
+        background: transparent;
+        color: var(--gd-muted-foreground);
+        padding: 10px 16px;
+        border-radius: var(--gd-radius-md);
+        border: 1px solid var(--gd-border);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+        font-family: var(--gd-font-sans);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .gd-btn-ghost:hover { background-color: var(--gd-muted); color: var(--gd-foreground); border-color: var(--gd-muted-foreground); }
+
+      /* 认证输入框（带图标前缀，focus 态 gd-ring） */
+      .auth-field-label { font-size: 13px; font-weight: 500; color: var(--gd-foreground); margin-bottom: 8px; display: block; }
+      .auth-input-wrap {
+        display: flex; align-items: center; gap: 10px;
+        background-color: var(--gd-muted);
+        border: 1px solid var(--gd-border);
+        border-radius: var(--gd-radius-md);
+        padding: 0 12px;
+        transition: border-color 0.15s, box-shadow 0.15s;
+      }
+      .auth-input-wrap:focus-within {
+        border-color: var(--gd-primary);
+        box-shadow: 0 0 0 3px var(--gd-state-info-surface);
+      }
+      .auth-input-icon { color: var(--gd-muted-foreground); flex-shrink: 0; display: inline-flex; }
+      .auth-input-wrap input {
+        flex: 1; min-width: 0; background: transparent; border: none; outline: none;
+        color: var(--gd-foreground); font-size: 14px; font-family: var(--gd-font-sans);
+        padding: 12px 0;
+      }
+      .auth-input-wrap input::placeholder { color: var(--gd-muted-foreground); }
+      .auth-input-suffix { background: transparent; border: none; color: var(--gd-muted-foreground); cursor: pointer; padding: 4px; display: inline-flex; align-items: center; }
+      .auth-input-suffix:hover { color: var(--gd-foreground); }
+      .auth-input-prefix { color: var(--gd-foreground); font-size: 14px; font-weight: 500; padding-right: 10px; border-right: 1px solid var(--gd-border); margin-right: 2px; font-family: var(--gd-font-mono); }
+
+      /* 登录 hero（gd-brand 渐变） */
+      .auth-hero {
+        background: linear-gradient(135deg, var(--gd-brand-500), var(--gd-brand-700));
+        border-radius: var(--gd-radius-lg);
+        position: relative;
+        overflow: hidden;
+        display: flex; flex-direction: column; justify-content: center;
+        padding: 48px;
+        color: var(--gd-primary-foreground);
+      }
+      .auth-hero-decor { position: absolute; border-radius: 50%; background: color-mix(in srgb, var(--gd-primary-foreground) 8%, transparent); pointer-events: none; }
+      .auth-hero-logo {
+        width: 64px; height: 64px; border-radius: var(--gd-radius-lg);
+        background: color-mix(in srgb, var(--gd-primary-foreground) 15%, transparent);
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 24px;
+        border: 1px solid color-mix(in srgb, var(--gd-primary-foreground) 25%, transparent);
+      }
+      .auth-hero-title { font-size: 34px; font-weight: 700; color: var(--gd-primary-foreground); margin-bottom: 12px; letter-spacing: 0.5px; }
+      .auth-hero-sub { font-size: 15px; color: color-mix(in srgb, var(--gd-primary-foreground) 85%, transparent); max-width: 440px; line-height: 1.7; }
+      .auth-hero-chips { display: flex; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
+      .auth-hero-chip {
+        background: color-mix(in srgb, var(--gd-primary-foreground) 12%, transparent);
+        border: 1px solid color-mix(in srgb, var(--gd-primary-foreground) 18%, transparent);
+        border-radius: var(--gd-radius-md);
+        padding: 12px 14px; min-width: 150px;
+      }
+      .auth-hero-chip-title { font-size: 11px; color: color-mix(in srgb, var(--gd-primary-foreground) 70%, transparent); margin-bottom: 6px; display: inline-flex; align-items: center; gap: 6px; }
+      .auth-hero-chip-value { font-size: 18px; font-weight: 600; color: var(--gd-primary-foreground); font-family: var(--gd-font-mono); }
+
+      /* 分隔线 "或" */
+      .auth-divider { display: flex; align-items: center; gap: 12px; color: var(--gd-muted-foreground); font-size: 12px; }
+      .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background-color: var(--gd-border); }
+
+      /* 复选框 */
+      .gd-checkbox-wrap { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--gd-muted-foreground); user-select: none; }
+      .gd-checkbox {
+        appearance: none; -webkit-appearance: none;
+        width: 16px; height: 16px; border: 1.5px solid var(--gd-border);
+        border-radius: var(--gd-radius-sm); background-color: var(--gd-muted);
+        cursor: pointer; position: relative; flex-shrink: 0;
+        transition: background-color 0.15s, border-color 0.15s;
+      }
+      .gd-checkbox:checked { background-color: var(--gd-primary); border-color: var(--gd-primary); }
+      .gd-checkbox:checked::after { content: ""; position: absolute; left: 4px; top: 1px; width: 5px; height: 9px; border: solid var(--gd-primary-foreground); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+
+      /* 链接 */
+      .gd-link { color: var(--gd-primary); text-decoration: none; font-size: 13px; cursor: pointer; }
+      .gd-link:hover { text-decoration: underline; }
+
+      /* 加载态 spinner */
+      .gd-spinner { width: 16px; height: 16px; border: 2px solid color-mix(in srgb, var(--gd-primary-foreground) 35%, transparent); border-top-color: var(--gd-primary-foreground); border-radius: 50%; animation: gd-spin 0.7s linear infinite; display: inline-block; }
+      @keyframes gd-spin { to { transform: rotate(360deg); } }
+
+      /* 第三方登录圆形图标按钮 */
+      .social-btn {
+        flex: 1; height: 44px; border-radius: var(--gd-radius-md);
+        border: 1px solid var(--gd-border); background: transparent;
+        color: var(--gd-muted-foreground); cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        font-size: 13px; font-weight: 500;
+        transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+        font-family: var(--gd-font-sans);
+      }
+      .social-btn:hover { background-color: var(--gd-muted); color: var(--gd-foreground); border-color: var(--gd-muted-foreground); }
+
+      /* ---------- 注册分步表单：步骤指示器 ---------- */
+      .step-indicator { display: flex; align-items: flex-start; gap: 0; }
+      .step-item { display: flex; flex-direction: column; align-items: center; gap: 10px; flex-shrink: 0; position: relative; z-index: 1; }
+      .step-circle {
+        width: 40px; height: 40px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 14px; font-weight: 600; font-family: var(--gd-font-mono);
+        transition: all 0.2s;
+        border: 2px solid var(--gd-border); background-color: var(--gd-card); color: var(--gd-muted-foreground);
+      }
+      .step-item[data-state="done"] .step-circle { background-color: var(--gd-state-success); border-color: var(--gd-state-success); color: var(--gd-state-success-foreground); }
+      .step-item[data-state="active"] .step-circle { background-color: var(--gd-primary); border-color: var(--gd-primary); color: var(--gd-primary-foreground); box-shadow: 0 0 0 4px var(--gd-state-info-surface); }
+      .step-item[data-state="pending"] .step-circle { background-color: var(--gd-muted); border-color: var(--gd-border); color: var(--gd-muted-foreground); }
+      .step-label { font-size: 12px; font-weight: 500; color: var(--gd-muted-foreground); white-space: nowrap; text-align: center; }
+      .step-item[data-state="active"] .step-label { color: var(--gd-primary); font-weight: 600; }
+      .step-item[data-state="done"] .step-label { color: var(--gd-foreground); }
+      .step-connector { flex: 1; height: 2px; background-color: var(--gd-border); margin-top: 19px; border-radius: 1px; min-width: 24px; }
+      .step-connector[data-state="done"] { background-color: var(--gd-state-success); }
+
+      /* ---------- OTP 6 位验证码 ---------- */
+      .otp-group { display: flex; gap: 10px; }
+      .otp-box {
+        width: 48px; height: 56px; text-align: center;
+        font-size: 22px; font-weight: 600; font-family: var(--gd-font-mono);
+        background-color: var(--gd-muted); border: 1px solid var(--gd-border);
+        border-radius: var(--gd-radius-md); color: var(--gd-foreground);
+        outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+      }
+      .otp-box:focus { border-color: var(--gd-primary); box-shadow: 0 0 0 3px var(--gd-state-info-surface); }
+      .otp-box.filled { border-color: var(--gd-primary); background-color: var(--gd-state-info-surface); }
+
+      /* ---------- 密码强度指示器 ---------- */
+      .strength-bar { display: flex; gap: 4px; }
+      .strength-seg { flex: 1; height: 5px; border-radius: 3px; background-color: var(--gd-border); transition: background-color 0.2s; }
+      .strength-seg[data-level="weak"] { background-color: var(--gd-state-error); }
+      .strength-seg[data-level="medium"] { background-color: var(--gd-state-warning); }
+      .strength-seg[data-level="strong"] { background-color: var(--gd-state-success); }
+
+      /* ---------- 步骤卡片 ---------- */
+      .step-card { background-color: var(--gd-card); border: 1px solid var(--gd-border); border-radius: var(--gd-radius-lg); padding: 24px; transition: border-color 0.15s, box-shadow 0.15s; }
+      .step-card[data-active="true"] { border-color: var(--gd-primary); box-shadow: 0 0 0 1px var(--gd-primary), var(--gd-shadow-lg); }
+      .step-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
+      .step-card-title { font-size: 15px; font-weight: 600; color: var(--gd-foreground); display: inline-flex; align-items: center; gap: 10px; }
+      .step-card-num { width: 26px; height: 26px; border-radius: 50%; background-color: var(--gd-state-info-surface); color: var(--gd-primary); font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-family: var(--gd-font-mono); }
+      .step-card[data-active="true"] .step-card-num { background-color: var(--gd-primary); color: var(--gd-primary-foreground); }
+      .step-card-desc { font-size: 12px; color: var(--gd-muted-foreground); margin-top: 2px; }
+
+      /* ---------- 完成步骤成功图标 ---------- */
+      .success-circle {
+        width: 80px; height: 80px; border-radius: 50%;
+        background-color: var(--gd-state-success-surface);
+        display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 20px;
+        border: 2px solid var(--gd-state-success);
+      }
+
+      .center-col { max-width: 760px; margin: 0 auto; }
+    </style>
+</body>
+</html>

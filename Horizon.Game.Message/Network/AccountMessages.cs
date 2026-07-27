@@ -475,7 +475,7 @@ namespace Horizon.Game.Message.Network
     }
 
     /// <summary>
-    /// 位置信息
+    /// 位置信息（Flax Y-up 坐标系：X=左右, Y=上下, Z=前后）
     /// </summary>
     [MemoryPackable]
     [GenerateSerializer]
@@ -501,6 +501,13 @@ namespace Horizon.Game.Message.Network
         [MemoryPackOrder(2)]
         [Id(2)]
         public float Z { get; set; }
+
+        /// <summary>
+        /// 朝向（弧度）。新增字段，旧客户端反序列化时默认为 0。
+        /// </summary>
+        [MemoryPackOrder(5)]
+        [Id(5)]
+        public float Yaw { get; set; }
 
         [MemoryPackOrder(3)]
         [Id(3)]

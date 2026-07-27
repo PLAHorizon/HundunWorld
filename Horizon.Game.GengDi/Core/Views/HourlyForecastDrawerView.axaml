@@ -6,18 +6,19 @@
              x:Class="Horizon.Game.GengDi.Core.Views.HourlyForecastDrawerView"
              x:DataType="vm:HomeViewModel">
 
-    <Border Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-            BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+    <Border Background="{DynamicResource GdPopoverBrush}"
+            BorderBrush="{DynamicResource GdBorderBrush}"
             BorderThickness="1 0 0 0"
             Width="420" MaxWidth="500"
             HorizontalAlignment="Right">
         <Grid RowDefinitions="Auto,*">
-            <Border Grid.Row="0" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0 0 0 1" Padding="20 16">
+            <Border Grid.Row="0" BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="0 0 0 1" Padding="20 16">
                 <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <TextBlock Text="逐时预报" FontSize="16" FontWeight="SemiBold" />
+                        <TextBlock Text="逐时预报" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource GdForegroundBrush}" />
                     </StackPanel>
-                    <Button Grid.Column="1" Content="✕" Classes="QuietAction" Padding="8 4" FontSize="14"
+                    <Button Grid.Column="1" Content="✕" Classes="GdGhost" Padding="8 4" FontSize="14"
                             Command="{Binding CloseHourlyDetailCommand}" />
                 </Grid>
             </Border>
@@ -28,12 +29,12 @@
                     <StackPanel Spacing="8">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Text="🌡️" FontSize="12" VerticalAlignment="Center" />
-                            <TextBlock Text="温度趋势" FontSize="13" FontWeight="SemiBold" Foreground="#FFFFFFBB" VerticalAlignment="Center" />
+                            <TextBlock Text="温度趋势" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundMutedBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                         <Canvas Width="800" Height="80" ClipToBounds="True"
                                 IsVisible="{Binding HourlyTemperaturePoints, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                            <Polygon Points="{Binding HourlyTemperatureFillPoints}" Fill="#1A7AA9FF" />
-                            <Polyline Points="{Binding HourlyTemperaturePoints}" Stroke="{DynamicResource BattleNetOutlineBrush}" StrokeThickness="2" />
+                            <Polygon Points="{Binding HourlyTemperatureFillPoints}" Fill="{DynamicResource GdInfoSurfaceBrush}" />
+                            <Polyline Points="{Binding HourlyTemperaturePoints}" Stroke="{DynamicResource GdBrand400Brush}" StrokeThickness="2" />
                         </Canvas>
                         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                             <ItemsControl ItemsSource="{Binding WeatherForecast.Hourly}">
@@ -45,18 +46,18 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="models:HourlyForecast">
                                         <Panel>
-                                            <Border Background="#1A7AA9FF" CornerRadius="12" IsVisible="{Binding IsCurrentHour}" />
-                                            <Border Background="#14FFFFFF" CornerRadius="12" Padding="10 10" MinWidth="62">
+                                            <Border Background="{DynamicResource GdInfoSurfaceBrush}" CornerRadius="{DynamicResource GdRadiusLg}" IsVisible="{Binding IsCurrentHour}" />
+                                            <Border Background="{DynamicResource GdMutedBrush}" CornerRadius="{DynamicResource GdRadiusLg}" Padding="10 10" MinWidth="62">
                                                 <StackPanel Spacing="4" HorizontalAlignment="Center">
                                                     <Panel>
-                                                        <TextBlock Text="现在" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource BattleNetOutlineBrush}" HorizontalAlignment="Center" IsVisible="{Binding IsCurrentHour}" />
-                                                        <TextBlock Text="{Binding Time, StringFormat='{}{0:HH}:00'}" FontSize="11" Foreground="#FFFFFF88" HorizontalAlignment="Center" IsVisible="{Binding !IsCurrentHour}" />
+                                                        <TextBlock Text="现在" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource GdBrand400Brush}" HorizontalAlignment="Center" IsVisible="{Binding IsCurrentHour}" />
+                                                        <TextBlock Text="{Binding Time, StringFormat='{}{0:HH}:00'}" FontSize="11" Foreground="{DynamicResource GdForegroundMutedBrush}" HorizontalAlignment="Center" IsVisible="{Binding !IsCurrentHour}" />
                                                     </Panel>
                                                     <controls:WeatherIconControl WmoCode="{Binding WmoCode}" Width="30" Height="30" HorizontalAlignment="Center" />
-                                                    <TextBlock Text="{Binding Temperature, StringFormat='{}{0}°'}" FontSize="15" FontWeight="SemiBold" Foreground="#FFFFFF" HorizontalAlignment="Center" />
+                                                    <TextBlock Text="{Binding Temperature, StringFormat='{}{0}°'}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" HorizontalAlignment="Center" />
                                                     <StackPanel Orientation="Horizontal" Spacing="1" HorizontalAlignment="Center">
                                                         <TextBlock Text="💧" FontSize="8" VerticalAlignment="Center" />
-                                                        <TextBlock Text="{Binding Precipitation, StringFormat='{}{0:F0}%'}" FontSize="9" Foreground="{DynamicResource BattleNetOutlineBrush}" VerticalAlignment="Center" />
+                                                        <TextBlock Text="{Binding Precipitation, StringFormat='{}{0:F0}%'}" FontSize="9" Foreground="{DynamicResource GdBrand400Brush}" VerticalAlignment="Center" />
                                                     </StackPanel>
                                                 </StackPanel>
                                             </Border>
@@ -67,12 +68,12 @@
                         </ScrollViewer>
                     </StackPanel>
 
-                    <Border BorderBrush="#1AFFFFFF" BorderThickness="0 1 0 0" IsVisible="{Binding HasPrecipitation}" />
+                    <Border BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="0 1 0 0" IsVisible="{Binding HasPrecipitation}" />
 
                     <StackPanel Spacing="8" IsVisible="{Binding HasPrecipitation}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <TextBlock Text="🌧️" FontSize="12" VerticalAlignment="Center" />
-                            <TextBlock Text="降水概率" FontSize="13" FontWeight="SemiBold" Foreground="#FFFFFFBB" VerticalAlignment="Center" />
+                            <TextBlock Text="降水概率" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundMutedBrush}" VerticalAlignment="Center" />
                         </StackPanel>
                         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                             <ItemsControl ItemsSource="{Binding WeatherForecast.PrecipitationTimeline}">
@@ -84,10 +85,10 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="models:PrecipitationTimelineItem">
                                         <StackPanel Spacing="3" HorizontalAlignment="Center" Width="24">
-                                            <Border Background="#14FFFFFF" CornerRadius="2" Height="60" Width="8" HorizontalAlignment="Center" ClipToBounds="True">
-                                                <Border Background="{DynamicResource BattleNetOutlineBrush}" CornerRadius="2" VerticalAlignment="Bottom" Height="{Binding Probability}" Width="8" />
+                                            <Border Background="{DynamicResource GdMutedBrush}" CornerRadius="2" Height="60" Width="8" HorizontalAlignment="Center" ClipToBounds="True">
+                                                <Border Background="{DynamicResource GdBrand400Brush}" CornerRadius="2" VerticalAlignment="Bottom" Height="{Binding Probability}" Width="8" />
                                             </Border>
-                                            <TextBlock Text="{Binding TimeLabel}" FontSize="8" Foreground="#FFFFFF66" HorizontalAlignment="Center" />
+                                            <TextBlock Text="{Binding TimeLabel}" FontSize="8" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center" />
                                         </StackPanel>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>

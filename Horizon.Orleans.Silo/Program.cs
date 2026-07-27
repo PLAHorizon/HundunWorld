@@ -608,6 +608,16 @@ namespace Horizon.Orleans.Silo
                 return new RedisCharacterPresenceStore(redisConnection, logger);
             });
 
+            // ===== 角色位置 Redis 永久存储（双轨制架构） =====
+            // 使用独立 Redis Key 永久存储角色最后位置（无 TTL），服务器重启激活 Grain 时从此处恢复。
+            // Key: character:position:{characterId} → Hash { x, y, z, yaw, updatedAt }
+            services.AddSingleton<Horizon.Game.Core.Sim.Server.ICharacterPositionStore>(provider =>
+            {
+                var redisConnection = provider.GetRequiredService<RedisConnection>();
+                var logger = provider.GetService<ILogger<RedisCharacterPositionStore>>();
+                return new RedisCharacterPositionStore(redisConnection, logger);
+            });
+
             // 注册角色指纹服务（Silo 端，复用 RedisConnection 单例）。
             // 修复 BUG：CharacterGrain.GoOfflineAsync 需要清理 character:fingerprint:{id} key（TTL 5min），
             // 否则角色离线后 Redis 中仍残留 fingerprint key，外部观察"角色在线信息未及时更新"。

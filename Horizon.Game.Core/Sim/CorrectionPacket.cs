@@ -78,5 +78,10 @@ public enum CorrectionReason : byte
     SpeedHackSuspected = 2,
     /// <summary>客户端试图穿越不可行走区域（本包暂未使用；P1-b 之后的碰撞校验会启用）。</summary>
     CollisionOverride = 3,
+    /// <summary>跳跃次数超限（服务端权威回放判定）。</summary>
     JumpCountExceeded = 4,
+    /// <summary>瞬移检测：相邻两次权威位置距离超过 TeleportDistanceThreshold。</summary>
+    TeleportDetected = 5,
+    /// <summary>加速度超限：速度变化率超过 MaxAcceleration，疑似变速外挂。</summary>
+    AccelerationExceeded = 6,
 }

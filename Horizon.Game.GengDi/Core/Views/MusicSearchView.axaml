@@ -8,12 +8,12 @@
 
     <Grid RowDefinitions="Auto,*" Margin="24">
 
-        <Border Grid.Row="0" Classes="SurfaceCard" Padding="16" Margin="0 0 0 16">
+        <Border Grid.Row="0" Classes="GdCard" Padding="16" Margin="0 0 0 16">
             <Grid ColumnDefinitions="*,Auto">
                 <TextBox Text="{Binding SearchText}" Watermark="搜索歌曲、艺术家、专辑、歌单..."
                          FontSize="14" Padding="10 8"
                          KeyDown="SearchBox_KeyDown" />
-                <Button Grid.Column="1" Content="搜索" Classes="PrimaryAction" Padding="16 8"
+                <Button Grid.Column="1" Content="搜索" Classes="GdPrimary" Padding="16 8"
                         Margin="12 0 0 0" Command="{Binding SearchCommand}" />
             </Grid>
         </Border>
@@ -22,11 +22,13 @@
             <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsSearching}"
                          VerticalAlignment="Top" Height="2" />
 
-            <TextBlock Text="输入关键词开始搜索" FontSize="16" Classes="SupportingText"
+            <TextBlock Text="输入关键词开始搜索" FontSize="16"
+                       Foreground="{DynamicResource GdMutedForegroundBrush}"
                        HorizontalAlignment="Center" Margin="0 80"
                        IsVisible="{Binding !HasSearched}" />
 
-            <TextBlock Text="未找到相关结果" FontSize="16" Classes="SupportingText"
+            <TextBlock Text="未找到相关结果" FontSize="16"
+                       Foreground="{DynamicResource GdMutedForegroundBrush}"
                        HorizontalAlignment="Center" Margin="0 80"
                        IsVisible="{Binding HasNoResults}" />
 
@@ -39,32 +41,37 @@
                         <ItemsControl ItemsSource="{Binding SongResults}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="models:Song">
-                                    <Border Padding="12 8" CornerRadius="8" Margin="0 0 0 4" Cursor="Hand"
-                                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                    <Border Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 4" Cursor="Hand"
+                                            Background="{DynamicResource GdMutedBrush}"
                                             Tapped="SongItem_Tapped">
                                         <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
-                                            <Border Width="40" Height="40" CornerRadius="6"
-                                                    Background="{DynamicResource SocialAvatarBackgroundBrush}">
-                                                <TextBlock Text="♪" FontSize="16"
+                                            <Border Width="36" Height="36" CornerRadius="{DynamicResource GdRadiusSm}">
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                        <GradientStop Color="{DynamicResource GdBrand400}" Offset="0" />
+                                                        <GradientStop Color="{DynamicResource GdBrand700}" Offset="1" />
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+                                                <TextBlock Text="♪" FontSize="14"
                                                            HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource SocialAvatarTextBrush}" />
+                                                           Foreground="#FFFFFFFF" />
                                             </Border>
                                             <StackPanel Grid.Column="1" Margin="12 0 0 0" VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding Title}" FontSize="14" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock FontSize="12" Classes="SupportingText" TextTrimming="CharacterEllipsis">
+                                                <TextBlock FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" TextTrimming="CharacterEllipsis">
                                                     <Run Text="{Binding DisplayArtist}" />
                                                     <Run Text=" - " />
                                                     <Run Text="{Binding DisplayAlbum}" />
                                                 </TextBlock>
                                             </StackPanel>
                                             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding DurationText}" FontSize="12" Classes="SupportingText" VerticalAlignment="Center" />
-                                                <Button Classes="QuietAction" Padding="4"
+                                                <TextBlock Text="{Binding DurationText}" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
+                                                <Button Classes="GdGhost" Padding="4"
                                                         Tapped="StoryButton_Tapped"
                                                         ToolTip.Tip="音乐故事">
                                                     <ui:SymbolIcon Symbol="MusicInfo" FontSize="12" />
                                                 </Button>
-                                                <Button Classes="QuietAction" Padding="4"
+                                                <Button Classes="GdGhost" Padding="4"
                                                         Command="{Binding $parent[UserControl].DataContext.ToggleFavoriteCommand}"
                                                         CommandParameter="{Binding}"
                                                         ToolTip.Tip="喜欢">
@@ -73,10 +80,10 @@
                                                                        IsVisible="{Binding !IsFavorite}" />
                                                         <ui:SymbolIcon Symbol="Favorite" FontSize="12"
                                                                        IsVisible="{Binding IsFavorite}"
-                                                                       Foreground="{DynamicResource BattleNetPrimaryBrush}" />
+                                                                       Foreground="{DynamicResource GdPrimaryBrush}" />
                                                     </Panel>
                                                 </Button>
-                                                <Button Classes="QuietAction" Padding="4"
+                                                <Button Classes="GdGhost" Padding="4"
                                                         Command="{Binding $parent[UserControl].DataContext.AddToPlaylistCommand}"
                                                         CommandParameter="{Binding}"
                                                         ToolTip.Tip="添加到歌单">
@@ -95,30 +102,35 @@
                         <ItemsControl ItemsSource="{Binding NetworkSongResults}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="models:Song">
-                                    <Border Padding="12 8" CornerRadius="8" Margin="0 0 0 4" Cursor="Hand"
-                                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                    <Border Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 4" Cursor="Hand"
+                                            Background="{DynamicResource GdMutedBrush}"
                                             Tapped="SongItem_Tapped">
                                         <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
-                                            <Border Width="40" Height="40" CornerRadius="6"
-                                                    Background="{DynamicResource SocialAvatarBackgroundBrush}">
-                                                <TextBlock Text="♪" FontSize="16"
+                                            <Border Width="36" Height="36" CornerRadius="{DynamicResource GdRadiusSm}">
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                        <GradientStop Color="{DynamicResource GdBrand400}" Offset="0" />
+                                                        <GradientStop Color="{DynamicResource GdBrand700}" Offset="1" />
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+                                                <TextBlock Text="♪" FontSize="14"
                                                            HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource SocialAvatarTextBrush}" />
+                                                           Foreground="#FFFFFFFF" />
                                             </Border>
                                             <StackPanel Grid.Column="1" Margin="12 0 0 0" VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding Title}" FontSize="14" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock FontSize="12" Classes="SupportingText" TextTrimming="CharacterEllipsis">
+                                                <TextBlock FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" TextTrimming="CharacterEllipsis">
                                                     <Run Text="{Binding DisplayArtist}" />
                                                 </TextBlock>
                                             </StackPanel>
                                             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding DurationText}" FontSize="12" Classes="SupportingText" VerticalAlignment="Center" />
-                                                <Button Classes="QuietAction" Padding="4"
+                                                <TextBlock Text="{Binding DurationText}" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
+                                                <Button Classes="GdGhost" Padding="4"
                                                         Tapped="StoryButton_Tapped"
                                                         ToolTip.Tip="音乐故事">
                                                     <ui:SymbolIcon Symbol="MusicInfo" FontSize="12" />
                                                 </Button>
-                                                <Button Classes="QuietAction" Padding="4"
+                                                <Button Classes="GdGhost" Padding="4"
                                                         Command="{Binding $parent[UserControl].DataContext.AddToPlaylistCommand}"
                                                         CommandParameter="{Binding}"
                                                         ToolTip.Tip="添加到歌单">
@@ -137,19 +149,19 @@
                         <ItemsControl ItemsSource="{Binding UserPlaylistResults}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="models:Playlist">
-                                    <Border Padding="12 8" CornerRadius="8" Margin="0 0 0 4" Cursor="Hand"
-                                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                    <Border Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 4" Cursor="Hand"
+                                            Background="{DynamicResource GdCardBrush}"
                                             Tapped="PlaylistItem_Tapped">
                                         <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
-                                            <Border Width="40" Height="40" CornerRadius="6"
-                                                    Background="{DynamicResource SocialAvatarBackgroundBrush}">
+                                            <Border Width="40" Height="40" CornerRadius="{DynamicResource GdRadiusSm}"
+                                                    Background="{DynamicResource GdSecondaryBrush}">
                                                 <TextBlock Text="♫" FontSize="16"
                                                            HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource SocialAvatarTextBrush}" />
+                                                           Foreground="{DynamicResource GdForegroundBrush}" />
                                             </Border>
                                             <StackPanel Grid.Column="1" Margin="12 0 0 0" VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock FontSize="12" Classes="SupportingText" TextTrimming="CharacterEllipsis">
+                                                <TextBlock FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" TextTrimming="CharacterEllipsis">
                                                     <Run Text="{Binding SongCount}" /><Run Text=" 首" />
                                                     <Run Text=" · " /><Run Text="{Binding CreatorName}" />
                                                 </TextBlock>
@@ -166,19 +178,19 @@
                         <ItemsControl ItemsSource="{Binding NetworkPlaylistResults}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="models:Playlist">
-                                    <Border Padding="12 8" CornerRadius="8" Margin="0 0 0 4" Cursor="Hand"
-                                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                    <Border Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 4" Cursor="Hand"
+                                            Background="{DynamicResource GdCardBrush}"
                                             Tapped="PlaylistItem_Tapped">
                                         <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
-                                            <Border Width="40" Height="40" CornerRadius="6"
-                                                    Background="{DynamicResource SocialAvatarBackgroundBrush}">
+                                            <Border Width="40" Height="40" CornerRadius="{DynamicResource GdRadiusSm}"
+                                                    Background="{DynamicResource GdSecondaryBrush}">
                                                 <TextBlock Text="♫" FontSize="16"
                                                            HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource SocialAvatarTextBrush}" />
+                                                           Foreground="{DynamicResource GdForegroundBrush}" />
                                             </Border>
                                             <StackPanel Grid.Column="1" Margin="12 0 0 0" VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock Text="{Binding Description}" FontSize="12" Classes="SupportingText" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" TextTrimming="CharacterEllipsis" />
                                             </StackPanel>
                                         </Grid>
                                     </Border>
@@ -191,12 +203,12 @@
             </ScrollViewer>
         </Grid>
 
-        <Border Grid.RowSpan="2" Background="#60000000"
+        <Border Grid.RowSpan="2" Background="{DynamicResource GdOverlayBrush}"
                 IsVisible="{Binding IsLoadingPlaylist}"
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
                 <ProgressBar IsIndeterminate="True" Width="160" Height="4"
-                             Foreground="{DynamicResource BattleNetPrimaryBrush}" />
+                             Foreground="{DynamicResource GdPrimaryBrush}" />
                 <TextBlock FontSize="14" Foreground="White" HorizontalAlignment="Center">
                     <Run Text="正在加载 " />
                     <Run Text="{Binding LoadingPlaylistName}" FontWeight="SemiBold" />
@@ -207,14 +219,14 @@
 
         <Popup Grid.RowSpan="2" IsOpen="{Binding IsAddToPlaylistDialogOpen}"
                Placement="Center" HorizontalOffset="0" VerticalOffset="0">
-            <Border Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-                    BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
-                    BorderThickness="1" CornerRadius="12" Padding="24" MinWidth="360" MaxHeight="500"
+            <Border Background="{DynamicResource GdPopoverBrush}"
+                    BorderBrush="{DynamicResource GdBorderBrush}"
+                    BorderThickness="1" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24" MinWidth="360" MaxHeight="500"
                     BoxShadow="0 8 32 0 #00000044">
                 <StackPanel Spacing="16">
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Text="添加到歌单" FontSize="18" FontWeight="SemiBold" />
-                        <Button Grid.Column="1" Classes="QuietAction" Padding="4"
+                        <Button Grid.Column="1" Classes="GdGhost" Padding="4"
                                 Command="{Binding CloseAddToPlaylistDialogCommand}">
                             <ui:SymbolIcon Symbol="Cancel" FontSize="14" />
                         </Button>
@@ -223,20 +235,20 @@
                         <ItemsControl ItemsSource="{Binding AvailablePlaylists}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="models:Playlist">
-                                    <Border Padding="12 8" CornerRadius="8" Margin="0 0 0 4" Cursor="Hand"
-                                            Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                    <Border Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 4" Cursor="Hand"
+                                            Background="{DynamicResource GdCardBrush}"
                                             Tapped="AddToPlaylistItem_Tapped">
                                         <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
-                                            <Border Width="36" Height="36" CornerRadius="6"
-                                                    Background="{DynamicResource SocialAvatarBackgroundBrush}">
+                                            <Border Width="36" Height="36" CornerRadius="{DynamicResource GdRadiusSm}"
+                                                    Background="{DynamicResource GdSecondaryBrush}">
                                                 <TextBlock Text="♪" FontSize="14"
                                                            HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource SocialAvatarTextBrush}" />
+                                                           Foreground="{DynamicResource GdForegroundBrush}" />
                                             </Border>
                                             <StackPanel Grid.Column="1" Margin="10 0 0 0" VerticalAlignment="Center">
                                                 <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="Medium"
                                                            TextTrimming="CharacterEllipsis" />
-                                                <TextBlock FontSize="11" Classes="SupportingText">
+                                                <TextBlock FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}">
                                                     <Run Text="{Binding SongCount}" /><Run Text=" 首" />
                                                 </TextBlock>
                                             </StackPanel>

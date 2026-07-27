@@ -54,10 +54,10 @@ namespace HundunWorld.Game.Network.Sync
 
         [Header("AOI范围配置")]
         [Tooltip("视野范围半径(米)")]
-        public float ViewRadius = 100f;
+        public float ViewRadius = 160f;
 
         [Tooltip("缓冲范围半径(米) - 防止频繁加卸载")]
-        public float BufferRadius = 120f;
+        public float BufferRadius = 192f;
 
         [Tooltip("更新频率(秒)")]
         public float UpdateInterval = 1.0f;
@@ -126,7 +126,7 @@ namespace HundunWorld.Game.Network.Sync
         public bool EnableDynamicViewRange = true;
 
         [Tooltip("最小视野范围（米）")]
-        public float MinViewRadius = 50f;
+        public float MinViewRadius = 80f;
 
         [Tooltip("最大视野范围（米）")]
         public float MaxViewRadius = 200f;

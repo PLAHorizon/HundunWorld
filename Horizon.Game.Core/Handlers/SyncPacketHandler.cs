@@ -114,8 +114,8 @@ public sealed class SyncPacketHandler : MessageHandlerBase
     // private const long DefaultShardId = 0;  // 已由 IShardRouter 替代
 
     /// <summary>首次进入 World 时订阅出生 chunk 周围的 AOI 半径（与客户端 OnPlayerChunkChanged 的 ViewRadiusChunks 保持一致）。
-    /// radius=5 → 11×11×11=1331 chunks，覆盖约 176m×176m×176m，视距约 80m，满足 MMORPG 视野需求。</summary>
-    private const int InitialAoiRadiusChunks = 5;
+    /// radius=10 → 21×21×21=9261 chunks，覆盖约 336m×336m×336m，视距约 160m，满足 MMORPG 视野需求。</summary>
+    private const int InitialAoiRadiusChunks = 10;
 
     /// <summary>交互意图速率限制：每个 interactorId 每秒最多请求数。</summary>
     private const int InteractionRateLimitPerSecond = 10;
@@ -545,13 +545,15 @@ public sealed class SyncPacketHandler : MessageHandlerBase
             return false;
         }
 
-        // TODO（Task 8.6c / 阶段 2 对接后补全）：interactableId 存在性校验。
-        // 当前 IZoneShardGrain 未暴露 EntityExistsAsync / HasEntityAsync 等查询接口，
-        // 无法在不下发权威状态的前提下校验 interactableId 是否已注册。
-        // 待 IZoneShardGrain 扩展实体存在性查询后，在此追加：
-        //   var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(DefaultShardId);
-        //   if (!await zoneShard.EntityExistsAsync((ulong)interactableId)) { ... return false; }
-        // 当前存在身份伪造风险：客户端可对不存在的 interactableId 触发交互同步。
+        // --- 校验：interactableId 存在性（防止身份伪造） ---
+        var zoneShardForInteractable = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(interactorId));
+        if (!await zoneShardForInteractable.HasEntityAsync((ulong)interactableId))
+        {
+            Logger.LogWarning(
+                "交互意图校验失败：interactableId 不存在。InteractorId={InteractorId}, InteractableId={InteractableId}, SlotIdx={SlotIdx}",
+                interactorId, interactableId, slotIdx);
+            return false;
+        }
 
         // --- 校验：会话绑定（防止身份伪造） ---
         // Phase 2 安全补全：验证 interactorId 是否与当前 TCP 连接绑定的 characterId 一致。
@@ -577,8 +579,7 @@ public sealed class SyncPacketHandler : MessageHandlerBase
             return false;
         }
 
-        // TODO（阶段 2 对接后补全）：检查交互槽是否空闲、玩家是否在 AOI 范围内等深度合法性。
-
+        // 交互槽状态/AOI 等深度校验由 ZoneShardGrain.GenerateInteractionSync 在服务端完成。
         // 根据意图类型映射 StateBits（占位编码，客户端按阶段 1 协议解释）。
         byte stateBits = intentType switch
         {

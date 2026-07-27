@@ -64,21 +64,21 @@ public class AdaptiveInterpolationTests : IDisposable
     [Fact]
     public void AdaptiveDelay_FixedInterval_ConvergesToInterval()
     {
-        // 模拟固定 50ms 间隔的快照到达
+        // 模拟固定 150ms 间隔的快照到达
         for (int i = 0; i < 20; i++)
         {
             SnapshotApplySystem.RecordSnapshotArrival();
-            Thread.Sleep(50);
+            Thread.Sleep(150);
         }
 
         var delay = SnapshotApplySystem.AdaptiveInterpolationDelaySeconds;
-        // 固定间隔 → jitter ≈ 0，delay ≈ avgInterval ≈ 50ms
-        Assert.True(delay >= 0.04f && delay <= 0.08f,
-            $"Delay should converge to ~50ms but was {delay * 1000:F1}ms");
+        // 固定间隔 → jitter ≈ 0，delay ≈ avgInterval ≈ 150ms
+        Assert.True(delay >= 0.12f && delay <= 0.20f,
+            $"Delay should converge to ~150ms but was {delay * 1000:F1}ms");
     }
 
     [Fact]
-    public void AdaptiveDelay_ClampedTo_Min50ms_Max200ms()
+    public void AdaptiveDelay_ClampedTo_Min100ms_Max300ms()
     {
         // 直接设置极端 avgInterval 值来测试 clamp
         var avgField = typeof(SnapshotApplySystem)
@@ -86,15 +86,15 @@ public class AdaptiveInterpolationTests : IDisposable
         var jitterField = typeof(SnapshotApplySystem)
             .GetField("_adaptiveJitter", BindingFlags.NonPublic | BindingFlags.Static);
 
-        // 极低间隔 → 应 clamp 到 50ms
+        // 极低间隔 → 应 clamp 到 100ms
         avgField?.SetValue(null, 0.01f); // 10ms
         jitterField?.SetValue(null, 0f);
-        Assert.Equal(0.05f, SnapshotApplySystem.AdaptiveInterpolationDelaySeconds, 0.001f);
+        Assert.Equal(0.1f, SnapshotApplySystem.AdaptiveInterpolationDelaySeconds, 0.001f);
 
-        // 极高间隔 → 应 clamp 到 200ms
+        // 极高间隔 → 应 clamp 到 300ms
         avgField?.SetValue(null, 0.5f); // 500ms
         jitterField?.SetValue(null, 0f);
-        Assert.Equal(0.2f, SnapshotApplySystem.AdaptiveInterpolationDelaySeconds, 0.001f);
+        Assert.Equal(0.3f, SnapshotApplySystem.AdaptiveInterpolationDelaySeconds, 0.001f);
     }
 
     [Fact]
@@ -114,142 +114,106 @@ public class AdaptiveInterpolationTests : IDisposable
 }
 
 /// <summary>
-/// Phase C4 验证：Dead Reckoning 速度衰减（200ms 后开始衰减，500ms 完全停止）。
+/// Lerp 平滑追赶插值系统测试（替代原 Dead Reckoning 测试）。
 /// </summary>
-public class DeadReckoningDecayTests
+public class LerpInterpolationTests
 {
-    private World CreateWorldWithEntity(out Entity entity, float velX, float velY, float timeSinceSnapshot)
+    private World CreateWorldWithEntity(out Entity entity, float targetX, float targetY, float targetZ)
     {
         var world = World.Create();
         var interp = new InterpolatedTransformComponent
         {
             X = 0f, Y = 0f, Z = 0f,
-            TargetX = 0f, TargetY = 0f, TargetZ = 0f,
-            StartX = 0f, StartY = 0f, StartZ = 0f,
-            Alpha = 1f, // 已到达目标，进入 dead reckoning
-            TimeSinceLastSnapshot = timeSinceSnapshot,
+            TargetX = targetX, TargetY = targetY, TargetZ = targetZ,
+            Yaw = 0f, TargetYaw = 0f,
+            Alpha = 0f,
+            TimeSinceLastSnapshot = 0f,
         };
-        var movement = new MovementStateAuthComponent
-        {
-            VelocityXZ_X = velX,
-            VelocityXZ_Y = velY,
-        };
-        entity = world.Create(interp, movement);
+        entity = world.Create(interp);
         return world;
     }
 
     [Fact]
-    public void DeadReckoning_Within200ms_FullSpeed()
+    public void Lerp_MovesTowardTarget()
     {
-        // TimeSinceLastSnapshot = 0.1s (< 0.2s)，速度不衰减
-        var world = CreateWorldWithEntity(out var entity, velX: 5f, velY: 0f, timeSinceSnapshot: 0.1f);
-        var system = new InterpolationSystem { EnableDeadReckoningDecay = true };
+        var world = CreateWorldWithEntity(out var entity, targetX: 1f, targetY: 0f, targetZ: 0f);
+        var system = new InterpolationSystem { UseAdaptiveSpeed = false, InterpolationSpeed = 10f };
 
-        system.Update(world, TimeSpan.FromSeconds(0.016)); // 1 frame
+        system.Update(world, TimeSpan.FromSeconds(1.0 / 60.0));
 
         var interp = world.Get<InterpolatedTransformComponent>(entity);
-        // 应以全速 5 m/s 推进 X：delta = 5 * 0.016 = 0.08
-        Assert.True(interp.X > 0.07f, $"X should advance ~0.08 but was {interp.X:F4}");
-        Assert.True(interp.X < 0.09f, $"X should advance ~0.08 but was {interp.X:F4}");
+        // lerpFactor = (1/60) * 10 = 0.167，X 应从 0 移动到 ~0.167
+        Assert.True(interp.X > 0.1f && interp.X < 0.2f,
+            $"X should be ~0.167 but was {interp.X:F4}");
         World.Destroy(world);
     }
 
     [Fact]
-    public void DeadReckoning_At350ms_HalfDecay()
+    public void Lerp_ConvergesToTarget()
     {
-        // TimeSinceLastSnapshot = 0.35s → decayFactor = 1 - (0.35-0.2)/(0.5-0.2) = 1 - 0.5 = 0.5
-        var world = CreateWorldWithEntity(out var entity, velX: 10f, velY: 0f, timeSinceSnapshot: 0.35f);
-        var system = new InterpolationSystem { EnableDeadReckoningDecay = true };
+        var world = CreateWorldWithEntity(out var entity, targetX: 5f, targetY: 0f, targetZ: 0f);
+        var system = new InterpolationSystem { UseAdaptiveSpeed = false, InterpolationSpeed = 10f };
 
-        system.Update(world, TimeSpan.FromSeconds(0.016));
+        // 运行 60 帧（1 秒）
+        for (int i = 0; i < 60; i++)
+            system.Update(world, TimeSpan.FromSeconds(1.0 / 60.0));
 
         var interp = world.Get<InterpolatedTransformComponent>(entity);
-        // 速度衰减到 50%：delta = 10 * 0.016 * 0.5 = 0.08
-        Assert.True(interp.X > 0.06f && interp.X < 0.10f,
-            $"X should advance ~0.08 (50% decay) but was {interp.X:F4}");
+        // 1 秒后应接近目标（指数衰减，剩余距离 < 0.01%）
+        Assert.True(MathF.Abs(interp.X - 5f) < 0.01f,
+            $"X should converge to 5.0 but was {interp.X:F4}");
         World.Destroy(world);
     }
 
     [Fact]
-    public void DeadReckoning_Beyond500ms_NoMovement()
+    public void Lerp_TeleportThreshold_JumpsDirectly()
     {
-        // TimeSinceLastSnapshot = 0.6s (> 0.5s)，速度完全衰减到 0
-        var world = CreateWorldWithEntity(out var entity, velX: 10f, velY: 5f, timeSinceSnapshot: 0.6f);
-        var system = new InterpolationSystem { EnableDeadReckoningDecay = true };
+        // 目标距离 > 10m → 直接跳到目标
+        var world = CreateWorldWithEntity(out var entity, targetX: 50f, targetY: 0f, targetZ: 0f);
+        var system = new InterpolationSystem { UseAdaptiveSpeed = false, InterpolationSpeed = 10f, TeleportThresholdMeters = 10f };
 
-        system.Update(world, TimeSpan.FromSeconds(0.016));
+        system.Update(world, TimeSpan.FromSeconds(1.0 / 60.0));
 
         var interp = world.Get<InterpolatedTransformComponent>(entity);
-        Assert.Equal(0f, interp.X, 0.001f);
-        Assert.Equal(0f, interp.Z, 0.001f);
+        Assert.Equal(50f, interp.X, 0.001f);
         World.Destroy(world);
     }
 
     [Fact]
-    public void DeadReckoning_DecayDisabled_FullSpeedAlways()
+    public void Lerp_IsPaused_NoMovement()
     {
-        // 禁用衰减 → 即使超过 500ms 也全速推进
-        var world = CreateWorldWithEntity(out var entity, velX: 10f, velY: 0f, timeSinceSnapshot: 1.0f);
-        var system = new InterpolationSystem { EnableDeadReckoningDecay = false };
-
-        system.Update(world, TimeSpan.FromSeconds(0.016));
-
-        var interp = world.Get<InterpolatedTransformComponent>(entity);
-        // 全速：delta = 10 * 0.016 = 0.16
-        Assert.True(interp.X > 0.15f, $"X should advance ~0.16 (no decay) but was {interp.X:F4}");
-        World.Destroy(world);
-    }
-
-    [Fact]
-    public void DeadReckoning_NewSnapshot_ResetsTimeAndRestoresSpeed()
-    {
-        // 模拟：先衰减到 0，然后新快照重置 TimeSinceLastSnapshot
-        var world = CreateWorldWithEntity(out var entity, velX: 5f, velY: 0f, timeSinceSnapshot: 0.6f);
-        var system = new InterpolationSystem { EnableDeadReckoningDecay = true };
-
-        // 第一帧：超过 500ms，不移动
-        system.Update(world, TimeSpan.FromSeconds(0.016));
-        var interp = world.Get<InterpolatedTransformComponent>(entity);
-        Assert.Equal(0f, interp.X, 0.001f);
-
-        // 模拟新快照到达：重置 TimeSinceLastSnapshot = 0, Alpha = 1
-        interp.TimeSinceLastSnapshot = 0f;
-        interp.Alpha = 1f;
-        world.Set(entity, interp);
-
-        // 第二帧：速度恢复
-        system.Update(world, TimeSpan.FromSeconds(0.016));
-        interp = world.Get<InterpolatedTransformComponent>(entity);
-        Assert.True(interp.X > 0.07f, $"X should advance after snapshot reset but was {interp.X:F4}");
-        World.Destroy(world);
-    }
-
-    [Fact]
-    public void Interpolation_IsPaused_NoMovement()
-    {
-        // IsPaused=true → 不推进任何位置
-        var world = CreateWorldWithEntity(out var entity, velX: 10f, velY: 10f, timeSinceSnapshot: 0f);
+        var world = CreateWorldWithEntity(out var entity, targetX: 10f, targetY: 10f, targetZ: 10f);
         var system = new InterpolationSystem { IsPaused = true };
 
         system.Update(world, TimeSpan.FromSeconds(0.1));
 
         var interp = world.Get<InterpolatedTransformComponent>(entity);
         Assert.Equal(0f, interp.X, 0.001f);
+        Assert.Equal(0f, interp.Y, 0.001f);
         Assert.Equal(0f, interp.Z, 0.001f);
         World.Destroy(world);
     }
 
     [Fact]
-    public void Interpolation_BelowThreshold_NoMovement()
+    public void Lerp_YawWrapping_ShortestPath()
     {
-        // 速度低于阈值 (0.1 m/s) → 不进行 dead reckoning
-        var world = CreateWorldWithEntity(out var entity, velX: 0.05f, velY: 0.05f, timeSinceSnapshot: 0f);
-        var system = new InterpolationSystem { EnableDeadReckoningDecay = true };
+        var world = World.Create();
+        var interp = new InterpolatedTransformComponent
+        {
+            X = 0f, Y = 0f, Z = 0f,
+            TargetX = 0f, TargetY = 0f, TargetZ = 0f,
+            Yaw = 3.0f, TargetYaw = -3.0f, // 跨越 ±π 边界
+            Alpha = 0f,
+        };
+        var entity = world.Create(interp);
+        var system = new InterpolationSystem { UseAdaptiveSpeed = false, InterpolationSpeed = 10f };
 
-        system.Update(world, TimeSpan.FromSeconds(0.016));
+        system.Update(world, TimeSpan.FromSeconds(1.0 / 60.0));
 
-        var interp = world.Get<InterpolatedTransformComponent>(entity);
-        Assert.Equal(0f, interp.X, 0.001f);
+        var result = world.Get<InterpolatedTransformComponent>(entity);
+        // 最短路径：从 3.0 向 +π 方向移动（而非向 -3.0 方向移动 6.0 rad）
+        Assert.True(result.Yaw > 3.0f,
+            $"Yaw should increase from 3.0 (toward π) but was {result.Yaw:F4}");
         World.Destroy(world);
     }
 }

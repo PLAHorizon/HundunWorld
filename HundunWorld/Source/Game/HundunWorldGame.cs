@@ -264,14 +264,21 @@ namespace HundunWorld.Game
                 }
             }
 
-            // 重连成功：清理断线期间的残留实体/Actor，然后恢复插值
+            // 重连成功：恢复插值系统，让服务端全量快照更新现有实体。
+            //
+            // 修复（远程角色闪退 — Actor 反复销毁重建）：
+            // 原实现调用 ClearLocalEntitiesOnDisconnect() 销毁所有 Actor 后等待服务端重建，
+            // 导致 Actor 销毁→重建的视觉闪退。该方案在连接频繁抖动时尤为严重。
+            //
+            // 正确做法：不清理现有 Actor/ECS 实体，仅恢复暂停的系统。
+            // 服务端重连后发送的全量快照会更新已有实体的位置数据。
+            // SnapshotApplySystem 处理已存在的 Spawn 为 Update（不销毁重建），
+            // FlaxActorSyncSystem 处理已存在的 EntityId 跳过（不复用重建）。
+            // 在断线期间被服务端 Despawn 的实体，通过 Despawn delta 或 StaleEntityTimeout 清理。
             if (status == ConnectionStatus.Connected && _wasReconnecting)
             {
                 _wasReconnecting = false;
-                Debug.Log("[HundunWorldGame] 重连成功，清理断线期间残留实体并恢复同步");
-
-                // 清理所有远程 Actor 和 ECS 实体映射（服务端会重新发送全量快照重建）
-                ClearLocalEntitiesOnDisconnect();
+                Debug.Log("[HundunWorldGame] 重连成功，恢复同步（不清除 Actor，让全量快照更新现有实体）");
 
                 // 恢复 FlaxActorSyncSystem
                 var flaxSync = FlaxActorSyncSystem.Instance;
@@ -287,22 +294,41 @@ namespace HundunWorld.Game
                 }
             }
 
-            // 断线时立即清理本地所有远程角色实体和 Actor，避免离线期间角色残留。
-            // 服务端的 Despawn delta 在断线期间无法到达客户端，必须主动清理。
-            // 重连后服务端会重新发送 Spawn delta 重建所有可见实体。
+            // 断线时不清除远程角色 Actor 和 ECS 实体，也不切换场景。
+            //
+            // 修复（远程角色闪退 — Actor 反复销毁重建）：
+            // 原实现立即切换场景（CharacterSelection），导致 GameWorld 场景被卸载，
+            // 所有远程 Actor 和 ECS 实体被销毁。当 ReconnectionManager 快速重连成功后，
+            // 同步系统已不存在（场景已卸载），无法恢复，导致以下循环：
+            //   1) 断线 → 场景切换 → Actor 销毁
+            //   2) 重连成功 → 同步系统已不存，无法恢复
+            //   3) 用户重新进入游戏 → 新 Actor 创建
+            //   4) 再次断线 → 场景切换 → Actor 再次销毁
+            //   每 ~35 秒循环一次，表现为"闪退"。
+            //
+            // 正确做法：断线时不切换场景，让 ReconnectionManager 在后台处理重连。
+            // - ReconnectionManager 在后台以指数退避策略重试（最多 10 次，~104 秒）
+            // - 重连成功 → Reconnecting 状态已暂停的同步系统被恢复 → 游戏继续
+            // - 重连失败 → Failed 状态触发场景切换 → 回到角色选择界面
             if (status == ConnectionStatus.Disconnected)
             {
-                _wasReconnecting = false;
-                ClearLocalEntitiesOnDisconnect();
+                Debug.Log("[HundunWorldGame] 网关离线，ReconnectionManager 正在后台重连...");
+                // 不切换场景，不销毁 Actor，让 ReconnectionManager 处理重连。
+                // Reconnecting 状态会暂停同步系统，Connected 状态会恢复同步系统。
+                // Failed 状态会触发场景切换到角色选择界面。
+            }
 
-                // 网关离线时，若当前处于游戏世界中，退出到角色选择界面。
-                // 必须回到角色选择界面重新进入游戏，因为服务端已清理该角色的实体和 AOI 订阅，
-                // 客户端无法通过简单重连恢复游戏状态。
+            // 重连失败：所有重试都已耗尽，切换回角色选择界面。
+            // 此时 GameWorld 场景保留（因为 Disconnected 时未切换），
+            // 需要主动切换场景卸载 GameWorld，防止 UI 状态混乱。
+            if (status == ConnectionStatus.Failed)
+            {
+                _wasReconnecting = false;
+
                 var gameState = HundunWorld.Game.Core.GameStateManager.Instance;
                 if (gameState != null && gameState.IsInGame)
                 {
-                    Debug.Log("[HundunWorldGame] 网关离线，退出游戏世界，返回角色选择界面");
-                    // 切换到主线程执行场景切换（场景操作必须在主线程）
+                    Debug.Log("[HundunWorldGame] 重连失败，退出游戏世界，返回角色选择界面");
                     Scripting.InvokeOnUpdate(() =>
                     {
                         var sceneManager = HundunWorld.Game.UI.GameSceneManager.Instance;
@@ -902,7 +928,7 @@ namespace HundunWorld.Game
         {
             try
             {
-                const int ViewRadiusChunks = 5;
+                const int ViewRadiusChunks = 10;
                 const float MetresPerChunkCell = 16f;
 
                 // 滞后防抖：计算当前 chunk 坐标，与上次订阅中心比较。
@@ -1061,6 +1087,23 @@ namespace HundunWorld.Game
             if (_archWorld == null)
             {
                 Debug.LogError("[HundunWorldGame] CreateLocalPlayerEntity 失败：Arch World 未初始化");
+                return initialY;
+            }
+
+            // 修复（角色无法移动 — 重复本地玩家实体）：
+            // 若 Arch World 中已存在同 EntityId 的本地玩家实体（由 HandleSpawn 收养逻辑创建），
+            // 不重复创建，避免 InputSendSystem 每帧多发全零输入包导致服务端零输入覆盖正确输入。
+            var checkQuery = new Arch.Core.QueryDescription()
+                .WithAll<NetworkIdentityComponent, PlayerInputComponent, Horizon.Game.ECS.Arch.Components.PredictedTransformComponent>();
+            bool alreadyExists = false;
+            _archWorld.Query(in checkQuery, (Arch.Core.Entity e, ref NetworkIdentityComponent nid) =>
+            {
+                if (nid.EntityId == characterId && nid.IsLocalPlayer)
+                    alreadyExists = true;
+            });
+            if (alreadyExists)
+            {
+                Debug.Log($"[HundunWorldGame] CreateLocalPlayerEntity 跳过：CharacterId={characterId} 的本地玩家实体已存在");
                 return initialY;
             }
 

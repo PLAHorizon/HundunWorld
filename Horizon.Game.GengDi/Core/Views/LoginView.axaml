@@ -1,303 +1,253 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-			 xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
-			 xmlns:models="using:Horizon.Game.GengDi.Models"
-			 xmlns:ui="using:FluentAvalonia.UI.Controls"
-			 xmlns:media="using:Avalonia.Media"
-			 x:Class="Horizon.Game.GengDi.Core.Views.LoginView"
-			 x:DataType="vm:LoginDashboardViewModel">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             xmlns:models="using:Horizon.Game.GengDi.Models"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             x:Class="Horizon.Game.GengDi.Core.Views.LoginView"
+             x:DataType="vm:LoginDashboardViewModel">
 
-	<UserControl.Styles>
-		<!-- 登录信息卡片样式 -->
-		<Style Selector="Border.InfoCard">
-			<Setter Property="Background" Value="{DynamicResource LoginInfoCardBackgroundBrush}" />
-			<Setter Property="CornerRadius" Value="16" />
-			<Setter Property="Padding" Value="20" />
-			<Setter Property="BorderBrush" Value="{DynamicResource LoginInfoCardBorderBrush}" />
-			<Setter Property="BorderThickness" Value="1" />
-		</Style>
-		<Style Selector="Border.InfoCard TextBlock.CardTitle">
-			<Setter Property="FontSize" Value="14" />
-			<Setter Property="FontWeight" Value="SemiBold" />
-			<Setter Property="Foreground" Value="{DynamicResource LoginInfoCardTitleBrush}" />
-		</Style>
-		<Style Selector="Border.InfoCard TextBlock.CardText">
-			<Setter Property="FontSize" Value="12" />
-			<Setter Property="Foreground" Value="{DynamicResource LoginInfoCardTextBrush}" />
-			<Setter Property="TextWrapping" Value="Wrap" />
-		</Style>
-		<Style Selector="Border.InfoCard TextBlock.CardValue">
-			<Setter Property="FontSize" Value="28" />
-			<Setter Property="FontWeight" Value="SemiBold" />
-			<Setter Property="Foreground" Value="{DynamicResource LoginFormTextBrush}" />
-		</Style>
-		<Style Selector="Border.InfoCard TextBlock.CardLoading">
-			<Setter Property="FontSize" Value="11" />
-			<Setter Property="Foreground" Value="{DynamicResource LoginInfoCardLoadingBrush}" />
-		</Style>
+    <Grid ColumnDefinitions="3*,2*">
+        <!-- ==================== LEFT: Hero 品牌展示区（设计稿：brand-600背景 + 装饰几何 + 信息chip） ==================== -->
+        <Border Grid.Column="0" ClipToBounds="True">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Color="{DynamicResource GdBrand600}" Offset="0" />
+                    <GradientStop Color="{DynamicResource GdBrand800}" Offset="1" />
+                </LinearGradientBrush>
+            </Border.Background>
+            <Panel>
+                <!-- 装饰几何图形 -->
+                <Canvas ClipToBounds="True">
+                    <Ellipse Width="340" Height="340" Canvas.Left="-80" Canvas.Top="-90"
+                             Fill="#1AFFFFFF" />
+                    <Ellipse Width="220" Height="220" Canvas.Left="400" Canvas.Top="380"
+                             Fill="#12FFFFFF" />
+                    <Ellipse Width="120" Height="120" Canvas.Left="350" Canvas.Top="80"
+                             Fill="#1FFFFFFF" />
+                </Canvas>
 
-		<!-- 登录输入框样式 -->
-		<Style Selector="Border.LoginInputBox">
-			<Setter Property="Background" Value="{DynamicResource LoginInputBackgroundBrush}" />
-			<Setter Property="CornerRadius" Value="12" />
-			<Setter Property="BorderBrush" Value="{DynamicResource LoginInputBorderBrush}" />
-			<Setter Property="BorderThickness" Value="1" />
-			<Setter Property="Padding" Value="12,12,12,12" />
-		</Style>
-		<Style Selector="Border.LoginInputBox TextBox">
-			<Setter Property="Background" Value="Transparent" />
-			<Setter Property="BorderThickness" Value="0" />
-			<Setter Property="Foreground" Value="{DynamicResource LoginFormTextBrush}" />
-			<Setter Property="FontSize" Value="14" />
-			<Setter Property="FontWeight" Value="Normal" />
-		</Style>
-		<Style Selector="Border.LoginInputBox TextBlock.InputIcon">
-			<Setter Property="Foreground" Value="{DynamicResource LoginFormMutedBrush}" />
-			<Setter Property="FontSize" Value="18" />
-			<Setter Property="VerticalAlignment" Value="Center" />
-		</Style>
+                <!-- 品牌内容 -->
+                <StackPanel VerticalAlignment="Center" Margin="60" Spacing="24">
+                    <!-- Logo -->
+                    <Border Width="56" Height="56" CornerRadius="{DynamicResource GdRadiusMd}"
+                            Background="#33FFFFFF" HorizontalAlignment="Left">
+                        <ui:IconSourceElement IconSource="{StaticResource SproutIcon}"
+                                              Width="32" Height="32"
+                                              Foreground="#FFFFFFFF"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                    </Border>
 
-		<!-- 登录按钮样式 -->
-		<Style Selector="Button.LoginPrimary">
-			<Setter Property="Background" Value="{DynamicResource BattleNetPrimaryBrush}" />
-			<Setter Property="Foreground" Value="White" />
-			<Setter Property="CornerRadius" Value="12" />
-			<Setter Property="Height" Value="48" />
-			<Setter Property="FontSize" Value="14" />
-			<Setter Property="FontWeight" Value="SemiBold" />
-			<Setter Property="HorizontalAlignment" Value="Stretch" />
-		</Style>
-		<Style Selector="Button.LoginPrimary:pointerover">
-			<Setter Property="Background" Value="{DynamicResource BattleNetPrimaryHoverBrush}" />
-		</Style>
-		<Style Selector="Button.LoginPrimary:pressed">
-			<Setter Property="Background" Value="{DynamicResource BattleNetPrimaryPressedBrush}" />
-		</Style>
+                    <TextBlock Text="欢迎回到耕地"
+                               FontSize="32" FontWeight="Bold"
+                               Foreground="#FFFFFFFF" />
+                    <TextBlock Text="登录账户，继续你的花卉交易与游戏之旅。专业暗色终端，为每一位种植者与商人而生。"
+                               FontSize="14" Foreground="#CCFFFFFF"
+                               TextWrapping="Wrap" MaxWidth="420" />
 
-		<Style Selector="Button.LoginSecondary">
-			<Setter Property="Background" Value="Transparent" />
-			<Setter Property="Foreground" Value="{DynamicResource LoginFormSubtitleBrush}" />
-			<Setter Property="CornerRadius" Value="12" />
-			<Setter Property="Height" Value="48" />
-			<Setter Property="FontSize" Value="14" />
-			<Setter Property="FontWeight" Value="Medium" />
-			<Setter Property="BorderBrush" Value="{DynamicResource BattleNetOutlineBrush}" />
-			<Setter Property="BorderThickness" Value="1" />
-			<Setter Property="HorizontalAlignment" Value="Stretch" />
-		</Style>
-		<Style Selector="Button.LoginSecondary:pointerover">
-			<Setter Property="BorderBrush" Value="{DynamicResource BattleNetPrimaryBrush}" />
-			<Setter Property="Foreground" Value="{DynamicResource LoginInfoCardTitleBrush}" />
-		</Style>
+                    <!-- 信息 Chip -->
+                    <StackPanel Orientation="Horizontal" Spacing="12" Margin="0 16 0 0">
+                        <Border Background="#1AFFFFFF" CornerRadius="{DynamicResource GdRadiusMd}" Padding="14 10">
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="☀️" FontSize="13" />
+                                    <TextBlock Text="今日天气" FontSize="12" Foreground="#AAFFFFFF" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding WeatherSummary}" FontSize="14"
+                                           FontWeight="SemiBold" Foreground="#FFFFFFFF" />
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#1AFFFFFF" CornerRadius="{DynamicResource GdRadiusMd}" Padding="14 10">
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="🌸" FontSize="13" />
+                                    <TextBlock Text="花卉推荐" FontSize="12" Foreground="#AAFFFFFF" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding FlowerSummary}" FontSize="14"
+                                           FontWeight="SemiBold" Foreground="#FFFFFFFF" />
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#1AFFFFFF" CornerRadius="{DynamicResource GdRadiusMd}" Padding="14 10">
+                            <StackPanel Spacing="4">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="📈" FontSize="13" />
+                                    <TextBlock Text="市场指数" FontSize="12" Foreground="#AAFFFFFF" />
+                                </StackPanel>
+                                <TextBlock Text="+3.2%" FontSize="14"
+                                           FontWeight="SemiBold" Foreground="#FFFFFFFF" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </Panel>
+        </Border>
 
-		<!-- 标签样式 -->
-		<Style Selector="TextBlock.LoginLabel">
-			<Setter Property="FontSize" Value="14" />
-			<Setter Property="FontWeight" Value="Medium" />
-			<Setter Property="Foreground" Value="{DynamicResource LoginFormTitleBrush}" />
-			<Setter Property="Margin" Value="0,0,0,8" />
-		</Style>
-	</UserControl.Styles>
+        <!-- ==================== RIGHT: 表单区（设计稿：card背景, 居中表单） ==================== -->
+        <Border Grid.Column="1"
+                Background="{DynamicResource GdCardBrush}"
+                Padding="40 48">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel VerticalAlignment="Center"
+                            Spacing="0"
+                            MaxWidth="380"
+                            HorizontalAlignment="Stretch">
 
-	<Grid ColumnDefinitions="*,440"
-		  Margin="0">
-		<!-- ==================== LEFT: Hero Area ==================== -->
-		<Border Grid.Column="0"
-				Background="{DynamicResource BattleNetHeroBackgroundBrush}"
-				CornerRadius="0"
-				Padding="0"
-				ClipToBounds="True">
-			<Panel>
-				<Border Background="{DynamicResource LoginHeroOverlayBrush}" />
-				<Image Source="/Assets/Images/wuxia-atmosphere.jpg"
-					   Stretch="UniformToFill"
-					   Opacity="0.55" />
+                    <!-- Logo + 品牌名 -->
+                    <StackPanel Orientation="Horizontal" Spacing="10" Margin="0 0 0 6">
+                        <Border Width="28" Height="28" CornerRadius="{DynamicResource GdRadiusSm}">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                    <GradientStop Color="{DynamicResource GdBrand500}" Offset="0" />
+                                    <GradientStop Color="{DynamicResource GdBrand700}" Offset="1" />
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <ui:IconSourceElement IconSource="{StaticResource SproutIcon}"
+                                                  Width="16" Height="16"
+                                                  Foreground="#FFFFFFFF"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock Text="耕地" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource GdForegroundBrush}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
 
-				<Canvas ClipToBounds="True" Opacity="0.35">
-					<Ellipse Width="320" Height="320" Canvas.Left="-70" Canvas.Top="-40"
-							 Fill="{DynamicResource LoginDecorCircleBrush}" />
-					<Ellipse Width="220" Height="220" Canvas.Left="300" Canvas.Top="320"
-							 Fill="{DynamicResource LoginDecorCircleBrush}" />
-				</Canvas>
+                    <!-- 标题 -->
+                    <TextBlock Text="登录" FontSize="26" FontWeight="Bold"
+                               Foreground="{DynamicResource GdForegroundBrush}"
+                               Margin="0 0 0 6" />
+                    <TextBlock Text="使用已注册账户进入客户端" FontSize="13"
+                               Foreground="{DynamicResource GdMutedForegroundBrush}"
+                               Margin="0 0 0 28" />
 
-				<Grid VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="760">
-					<StackPanel Spacing="20" HorizontalAlignment="Center">
-						<Border Width="76" Height="76" CornerRadius="38"
-								Background="{DynamicResource BattleNetPrimaryBrush}"
-								HorizontalAlignment="Center">
-							<Image Source="/Assets/Images/white-dove.jpg"
-								   Stretch="UniformToFill"
-								   ClipToBounds="True"
-								   Margin="8" />
-						</Border>
+                    <!-- 账号输入框 -->
+                    <StackPanel Spacing="8" Margin="0 0 0 18">
+                        <TextBlock Text="账号" FontSize="13" FontWeight="Medium"
+                                   Foreground="{DynamicResource GdForegroundBrush}" />
+                        <Border Background="{DynamicResource GdMutedBrush}"
+                                CornerRadius="{DynamicResource GdRadiusMd}"
+                                BorderBrush="{DynamicResource GdBorderBrush}"
+                                BorderThickness="1" Padding="12 10">
+                            <Grid ColumnDefinitions="Auto,*">
+                                <ui:IconSourceElement IconSource="{StaticResource LoginUserIcon}"
+                                                      Width="18" Height="18" Margin="0 0 10 0"
+                                                      Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                <TextBox Grid.Column="1"
+                                         Text="{Binding LoginVm.Username}"
+                                         Watermark="请输入用户名或手机号"
+                                         Background="Transparent" BorderThickness="0"
+                                         Foreground="{DynamicResource GdForegroundBrush}"
+                                         FontSize="14" />
+                            </Grid>
+                        </Border>
+                    </StackPanel>
 
-						<TextBlock Text="元阳游戏方舟"
-								   FontSize="36"
-								   FontWeight="Bold"
-								   HorizontalAlignment="Center"
-								   Foreground="{DynamicResource LoginTitleGradientBrush}" />
-						<TextBlock Text="探索无限可能的游戏世界"
-								   FontSize="16"
-								   FontWeight="Light"
-								   Foreground="{DynamicResource LoginFormSubtitleBrush}"
-								   HorizontalAlignment="Center"
-								   TextAlignment="Center"
-								   TextWrapping="Wrap"
-								   Margin="0,0,0,24" />
+                    <!-- 密码输入框 -->
+                    <StackPanel Spacing="8" Margin="0 0 0 16">
+                        <TextBlock Text="密码" FontSize="13" FontWeight="Medium"
+                                   Foreground="{DynamicResource GdForegroundBrush}" />
+                        <Border Background="{DynamicResource GdMutedBrush}"
+                                CornerRadius="{DynamicResource GdRadiusMd}"
+                                BorderBrush="{DynamicResource GdBorderBrush}"
+                                BorderThickness="1" Padding="12 10">
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <ui:IconSourceElement IconSource="{StaticResource LoginLockIcon}"
+                                                      Width="18" Height="18" Margin="0 0 10 0"
+                                                      Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                <TextBox Grid.Column="1"
+                                         Text="{Binding LoginVm.Password}"
+                                         PasswordChar="*"
+                                         Watermark="请输入密码"
+                                         Background="Transparent" BorderThickness="0"
+                                         Foreground="{DynamicResource GdForegroundBrush}"
+                                         FontSize="14" />
+                                <Button Grid.Column="2" Background="Transparent" BorderThickness="0"
+                                        Padding="4" Cursor="Hand">
+                                    <ui:IconSourceElement IconSource="{StaticResource LoginEyeOffIcon}"
+                                                          Width="18" Height="18"
+                                                          Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                </Button>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
 
-						<StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Center">
-							<Border Classes="InfoCard" Width="220">
-								<StackPanel Spacing="10">
-									<StackPanel Orientation="Horizontal" Spacing="8">
-										<Border Width="34" Height="34" CornerRadius="8" Background="{DynamicResource LoginInfoCardIconBgBrush}">
-											<Viewbox Margin="7">
-												<ui:IconSourceElement IconSource="{StaticResource LoginWeatherIcon}" />
-											</Viewbox>
-										</Border>
-										<TextBlock Text="天气预报" Classes="CardTitle" VerticalAlignment="Center" />
-									</StackPanel>
-									<TextBlock Text="{Binding WeatherSummary}" Classes="CardValue" />
-									<TextBlock Text="加载中..." Classes="CardLoading" IsVisible="{Binding IsLoading}" />
-								</StackPanel>
-							</Border>
+                    <!-- 记住我 + 忘记密码 -->
+                    <Grid ColumnDefinitions="*,Auto" Margin="0 0 0 22">
+                        <CheckBox Content="记住登录信息"
+                                  IsChecked="{Binding LoginVm.RememberLogin}"
+                                  Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                  FontSize="13" />
+                        <Button Grid.Column="1" Classes="GdGhost" Padding="4 2"
+                                Content="忘记密码？" FontSize="13"
+                                Foreground="{DynamicResource GdPrimaryBrush}" />
+                    </Grid>
 
-							<Border Classes="InfoCard" Width="220">
-								<StackPanel Spacing="10">
-									<StackPanel Orientation="Horizontal" Spacing="8">
-										<Border Width="34" Height="34" CornerRadius="8" Background="{DynamicResource LoginInfoCardIconBgBrush}">
-											<Viewbox Margin="7">
-												<ui:IconSourceElement IconSource="{StaticResource LoginFlowerIcon}" />
-											</Viewbox>
-										</Border>
-										<TextBlock Text="花卉推荐" Classes="CardTitle" VerticalAlignment="Center" />
-									</StackPanel>
-									<TextBlock Text="{Binding FlowerSummary}" Classes="CardValue" />
-									<TextBlock Text="加载中..." Classes="CardLoading" IsVisible="{Binding IsLoading}" />
-								</StackPanel>
-							</Border>
+                    <!-- 错误信息 -->
+                    <TextBlock Text="{Binding LoginVm.ErrorMessage}"
+                               Foreground="{DynamicResource GdErrorBrush}"
+                               FontSize="13" TextWrapping="Wrap" Margin="0 0 0 12"
+                               IsVisible="{Binding LoginVm.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
-							<Border Classes="InfoCard" Width="220">
-								<StackPanel Spacing="10">
-									<StackPanel Orientation="Horizontal" Spacing="8">
-										<Border Width="34" Height="34" CornerRadius="8" Background="{DynamicResource LoginInfoCardIconBgBrush}">
-											<Viewbox Margin="7">
-												<ui:IconSourceElement IconSource="{StaticResource LoginGameIcon}" />
-											</Viewbox>
-										</Border>
-										<TextBlock Text="推荐游戏" Classes="CardTitle" VerticalAlignment="Center" />
-									</StackPanel>
-									<ItemsControl ItemsSource="{Binding RecommendedGames}">
-										<ItemsControl.ItemTemplate>
-											<DataTemplate x:DataType="models:GameInfo">
-												<TextBlock Text="{Binding Name}"
-														   FontSize="12"
-														   Foreground="{DynamicResource LoginFormTextBrush}"
-														   Margin="0,2"
-														   TextWrapping="Wrap" />
-											</DataTemplate>
-										</ItemsControl.ItemTemplate>
-									</ItemsControl>
-									<TextBlock Text="加载中..." Classes="CardLoading" IsVisible="{Binding IsLoading}" />
-								</StackPanel>
-							</Border>
-						</StackPanel>
-					</StackPanel>
-				</Grid>
-			</Panel>
-		</Border>
+                    <!-- 登录按钮（全宽 46px） -->
+                    <Button Classes="GdPrimary" Height="46" FontSize="15"
+                            HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                            Command="{Binding LoginVm.LoginCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <ui:IconSourceElement IconSource="{StaticResource LoginArrowIcon}"
+                                                  Width="18" Height="18" />
+                            <TextBlock Text="登录" />
+                        </StackPanel>
+                    </Button>
 
-		<!-- ==================== RIGHT: Login Form ==================== -->
-		<Border Grid.Column="1"
-				Background="{DynamicResource LoginFormBackgroundBrush}"
-				Padding="44,32,44,32">
-			<Border >
-				<StackPanel VerticalAlignment="Center"
-							Spacing="20"
-							MaxWidth="360"
-							HorizontalAlignment="Stretch">
+                    <!-- 分隔线 "或" -->
+                    <Grid ColumnDefinitions="*,Auto,*" Margin="0 24 0 18">
+                        <Border Background="{DynamicResource GdBorderBrush}" Height="1"
+                                VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="或" FontSize="12"
+                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                   Margin="12 0" VerticalAlignment="Center" />
+                        <Border Grid.Column="2" Background="{DynamicResource GdBorderBrush}" Height="1"
+                                VerticalAlignment="Center" />
+                    </Grid>
 
-					<TextBlock Text="登录"
-							   FontSize="30"
-							   FontWeight="Bold"
-							   Foreground="{DynamicResource LoginFormTitleBrush}" />
-					<TextBlock Text="使用已注册账户进入客户端"
-							   FontSize="14"
-							   Foreground="{DynamicResource LoginFormSubtitleBrush}"
-							   TextWrapping="Wrap" />
+                    <!-- 第三方登录按钮组 -->
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10" Margin="0 0 0 24">
+                        <Button Classes="GdOutline" HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center" Padding="8 10">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="💬" FontSize="14" />
+                                <TextBlock Text="微信" FontSize="13" />
+                            </StackPanel>
+                        </Button>
+                        <Button Grid.Column="1" Classes="GdOutline" HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center" Padding="8 10">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="🐧" FontSize="14" />
+                                <TextBlock Text="QQ" FontSize="13" />
+                            </StackPanel>
+                        </Button>
+                        <Button Grid.Column="2" Classes="GdOutline" HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center" Padding="8 10">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="📷" FontSize="14" />
+                                <TextBlock Text="扫码" FontSize="13" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
 
-					<!-- 用户名 -->
-					<StackPanel Spacing="8">
-					<TextBlock Text="用户名" Classes="LoginLabel" />
-					<Border Classes="LoginInputBox">
-						<Grid ColumnDefinitions="Auto,*">
-							<Viewbox Grid.Column="0"
-									Width="18" Height="18"
-									Margin="0,0,10,0"
-									VerticalAlignment="Center">
-								<ui:IconSourceElement IconSource="{StaticResource LoginUserIcon}"
-													  Foreground="{DynamicResource LoginFormMutedBrush}" />
-							</Viewbox>
-							<TextBox Grid.Column="1"
-									 Text="{Binding LoginVm.Username}"
-									 Watermark="请输入用户名" />
-						</Grid>
-					</Border>
-				</StackPanel>
+                    <!-- 底部注册链接 -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+                        <TextBlock Text="还没有账号？" FontSize="13"
+                                   Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                        <Button Classes="GdGhost" Padding="4 2"
+                                Command="{Binding LoginVm.NavigateToRegisterCommand}">
+                            <TextBlock Text="立即注册" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource GdPrimaryBrush}" />
+                        </Button>
+                    </StackPanel>
 
-				<!-- 密码 -->
-				<StackPanel Spacing="8">
-					<TextBlock Text="密码" Classes="LoginLabel" />
-					<Border Classes="LoginInputBox">
-						<Grid ColumnDefinitions="Auto,*,Auto">
-							<Viewbox Grid.Column="0"
-									Width="18" Height="18"
-									Margin="0,0,10,0"
-									VerticalAlignment="Center">
-								<ui:IconSourceElement IconSource="{StaticResource LoginLockIcon}"
-													  Foreground="{DynamicResource LoginFormMutedBrush}" />
-							</Viewbox>
-							<TextBox Grid.Column="1"
-									 Text="{Binding LoginVm.Password}"
-									 PasswordChar="*"
-									 Watermark="请输入密码" />
-							<Button Grid.Column="2"
-									Background="Transparent"
-									BorderThickness="0"
-									VerticalAlignment="Center"
-									Padding="4"
-									Cursor="Hand">
-								<Viewbox Width="18" Height="18">
-									<ui:IconSourceElement IconSource="{StaticResource LoginEyeOffIcon}" />
-								</Viewbox>
-							</Button>
-						</Grid>
-					</Border>
-				</StackPanel>
-
-					<!-- 记住登录信息 -->
-					<CheckBox Content="记住登录信息"
-							  IsChecked="{Binding LoginVm.RememberLogin}"
-							  Foreground="{DynamicResource LoginFormSubtitleBrush}" />
-
-					<!-- 错误信息 -->
-					<TextBlock Text="{Binding LoginVm.ErrorMessage}"
-							   Foreground="{DynamicResource LoginErrorBrush}"
-							   FontSize="13"
-							   TextWrapping="Wrap"
-							   IsVisible="{Binding LoginVm.ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-
-					<!-- 按钮区（全宽堆叠） -->
-					<StackPanel Spacing="16">
-						<Button Content="登录"
-								Classes="LoginPrimary"
-								Command="{Binding LoginVm.LoginCommand}" />
-						<Button Content="注册"
-								Classes="LoginSecondary"
-								Command="{Binding LoginVm.NavigateToRegisterCommand}" />
-					</StackPanel>
-
-				</StackPanel>
-			</Border>
-		</Border>
-	</Grid>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
 </UserControl>

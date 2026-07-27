@@ -332,7 +332,7 @@
     <SolidColorBrush x:Key="BattleNetOutlineBrush" Color="#FF4A90D9" />
 
     <ui:SymbolIconSource x:Key="HomeIcon" Symbol="Home" />
-    <ui:SymbolIconSource x:Key="GamesIcon" Symbol="Library" />
+    <ui:SymbolIconSource x:Key="GamesIcon" Symbol="Games" />
     <ui:SymbolIconSource x:Key="NewsIcon" Symbol="Document" />
     <ui:SymbolIconSource x:Key="SocialIcon" Symbol="People" />
     <ui:SymbolIconSource x:Key="DownloadsIcon" Symbol="Download" />
@@ -353,4 +353,26 @@
     <ui:SymbolIconSource x:Key="LoginArrowIcon" Symbol="Forward" />
     <ui:SymbolIconSource x:Key="MusicIcon" Symbol="Audio" />
     <ui:SymbolIconSource x:Key="MusicInfoIcon" Symbol="MusicInfo" />
+    <ui:SymbolIconSource x:Key="CheckIcon" Symbol="Accept" />
+    <ui:SymbolIconSource x:Key="PlayIcon" Symbol="Play" />
+    <ui:SymbolIconSource x:Key="RefreshIcon" Symbol="Refresh" />
+    <!-- 导航图标（设计稿 lucide → FluentAvalonia Symbol 映射） -->
+    <ui:SymbolIconSource x:Key="FlowerIcon" Symbol="Favorite" />
+    <ui:SymbolIconSource x:Key="MoreIcon" Symbol="More" />
+    <ui:SymbolIconSource x:Key="DashboardIcon" Symbol="Home" />
+    <ui:SymbolIconSource x:Key="LibraryIcon" Symbol="Library" />
+    <ui:SymbolIconSource x:Key="CompassIcon" Symbol="Map" />
+    <ui:SymbolIconSource x:Key="PlaylistIcon" Symbol="MusicInfo" />
+    <ui:SymbolIconSource x:Key="GaugeIcon" Symbol="ReportHacked" />
+    <ui:SymbolIconSource x:Key="MarketIcon" Symbol="Shop" />
+    <ui:SymbolIconSource x:Key="SproutIcon" Symbol="WeatherSunny" />
+    <ui:SymbolIconSource x:Key="CartIcon" Symbol="Shop" />
+    <ui:SymbolIconSource x:Key="OrderIcon" Symbol="Page" />
+    <ui:SymbolIconSource x:Key="AlertIcon" Symbol="Important" />
+    <ui:SymbolIconSource x:Key="AIIcon" Symbol="Star" />
+    <ui:SymbolIconSource x:Key="DataScreenIcon" Symbol="PreviewLink" />
+    <ui:SymbolIconSource x:Key="StoreIcon" Symbol="Shop" />
+    <ui:SymbolIconSource x:Key="AddressIcon" Symbol="MapPin" />
+    <ui:SymbolIconSource x:Key="BellIcon" Symbol="Alert" />
+    <ui:SymbolIconSource x:Key="MoonIcon" Symbol="DarkTheme" />
 </ResourceDictionary>

@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
              x:Class="Horizon.Game.GengDi.Core.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
@@ -8,113 +9,310 @@
         <vm:SettingsViewModel />
     </UserControl.DataContext>
 
-    <Grid ColumnDefinitions="*,*" ColumnSpacing="20">
-        <Border Classes="SurfaceCard">
-            <StackPanel Spacing="16">
-                <TextBlock Text="通用设置" Classes="SectionTitle" />
-                <TransitioningContentControl Name="InstallPathPreviewHost" Content="{Binding InstallPathPreview}">
-                    <TransitioningContentControl.PageTransition>
-                        <CrossFade Duration="0:0:0.25" />
-                    </TransitioningContentControl.PageTransition>
-                    <TransitioningContentControl.ContentTemplate>
-                        <DataTemplate x:DataType="vm:SettingsPreviewState">
-                            <Border Classes="ListItemCard" Margin="0 0 0 4">
-                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-                                    <Border Width="56" Height="56" CornerRadius="16" Background="{DynamicResource BattleNetSurfaceTintBrush}">
-                                        <Viewbox Margin="12">
-                                            <ui:IconSourceElement IconSource="{Binding Icon}" />
-                                        </Viewbox>
+    <controls:GalleryPage Title="设置"
+                          Subtitle="Horizon.Game.GengDi.Settings"
+                          Description="左侧分组导航与右侧设置面板，含开关、下拉选择、输入框等控件。"
+                          IconSource="{StaticResource SettingsIcon}">
+
+        <!-- ═══ 原型布局：200px 左导航 + 1fr 右侧设置面板 ═══ -->
+        <Grid ColumnDefinitions="200,*" ColumnSpacing="16">
+
+            <!-- ═══ 左侧分组导航 ═══ -->
+            <Border Classes="GdMetricCard"
+                    Padding="12"
+                    VerticalAlignment="Stretch">
+                <StackPanel Spacing="2">
+                    <Border Padding="6,6,10,0"
+                            BorderBrush="{DynamicResource GdBorderBrush}"
+                            BorderThickness="0 0 0 1"
+                            Margin="0 0 0 8">
+                        <TextBlock Text="设置分组"
+                                   FontSize="13"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource GdForegroundBrush}" />
+                    </Border>
+
+                    <Button Classes="GdNavItem" HorizontalAlignment="Stretch">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <ui:IconSourceElement Grid.Column="0" IconSource="{StaticResource SettingsIcon}" Width="15" Height="15" />
+                            <TextBlock Grid.Column="1" Text="通用" Margin="8 0 0 0" />
+                        </Grid>
+                    </Button>
+
+                    <Button Classes="GdNavItem GdNavItemActive" HorizontalAlignment="Stretch">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <ui:IconSourceElement Grid.Column="0" IconSource="{StaticResource ThemeIcon}" Width="15" Height="15" />
+                            <TextBlock Grid.Column="1" Text="外观" Margin="8 0 0 0" />
+                        </Grid>
+                    </Button>
+
+                    <Button Classes="GdNavItem" HorizontalAlignment="Stretch">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <ui:IconSourceElement Grid.Column="0" IconSource="{StaticResource NotificationsIcon}" Width="15" Height="15" />
+                            <TextBlock Grid.Column="1" Text="通知" Margin="8 0 0 0" />
+                        </Grid>
+                    </Button>
+
+                    <Button Classes="GdNavItem" HorizontalAlignment="Stretch">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <ui:IconSourceElement Grid.Column="0" IconSource="{StaticResource DownloadsIcon}" Width="15" Height="15" />
+                            <TextBlock Grid.Column="1" Text="下载" Margin="8 0 0 0" />
+                        </Grid>
+                    </Button>
+
+                    <Button Classes="GdNavItem" HorizontalAlignment="Stretch">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <ui:IconSourceElement Grid.Column="0" IconSource="{StaticResource SecurityIcon}" Width="15" Height="15" />
+                            <TextBlock Grid.Column="1" Text="高级" Margin="8 0 0 0" />
+                        </Grid>
+                    </Button>
+
+                    <Button Classes="GdNavItem" HorizontalAlignment="Stretch">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <ui:IconSourceElement Grid.Column="0" IconSource="{StaticResource BrandIcon}" Width="15" Height="15" />
+                            <TextBlock Grid.Column="1" Text="关于" Margin="8 0 0 0" />
+                        </Grid>
+                    </Button>
+                </StackPanel>
+            </Border>
+
+            <!-- ═══ 右侧设置面板 ═══ -->
+            <StackPanel Grid.Column="1" Spacing="16">
+
+                <!-- ───── 外观主题卡 ───── -->
+                <Border Classes="GdMetricCard">
+                    <StackPanel Spacing="0">
+                        <TextBlock Text="外观主题" Classes="GdSectionTitle" Margin="0 0 0 4" />
+
+                        <!-- 主题预览 -->
+                        <TransitioningContentControl Name="ThemePreviewHost" Content="{Binding ThemePreview}" Margin="0 12 0 0">
+                            <TransitioningContentControl.PageTransition>
+                                <CrossFade Duration="0:0:0.25" />
+                            </TransitioningContentControl.PageTransition>
+                            <TransitioningContentControl.ContentTemplate>
+                                <DataTemplate x:DataType="vm:SettingsPreviewState">
+                                    <Border Classes="GdListItem" Margin="0 0 0 4">
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                                            <Border Width="56" Height="56" CornerRadius="{DynamicResource GdRadiusLg}" Background="{DynamicResource GdInfoSurfaceBrush}">
+                                                <Viewbox Margin="12">
+                                                    <ui:IconSourceElement IconSource="{Binding Icon}" />
+                                                </Viewbox>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Spacing="4">
+                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                                <TextBlock Text="{Binding Detail}" Classes="GdMetricLabel" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </Grid>
                                     </Border>
-                                    <StackPanel Grid.Column="1" Spacing="4">
-                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                                        <TextBlock Text="{Binding Description}" Classes="SupportingText" />
-                                        <TextBlock Text="{Binding Detail}" Classes="PageEyebrow" TextWrapping="Wrap" />
-                                    </StackPanel>
+                                </DataTemplate>
+                            </TransitioningContentControl.ContentTemplate>
+                        </TransitioningContentControl>
+
+                        <!-- 主题模式 -->
+                        <Border BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="0 0 0 1" Padding="0 12" Margin="0 12 0 0">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="主题模式" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <TextBlock Text="选择应用界面配色方案" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                    <Button Content="跟随系统" Classes="GdPrimary" Command="{Binding UseSystemThemeCommand}" />
+                                    <Button x:Name="LightThemeButton" Content="浅色" Classes="GdGhost" Command="{Binding UseLightThemeCommand}" />
+                                    <Button x:Name="DarkThemeButton" Content="深色" Classes="GdGhost" Command="{Binding UseDarkThemeCommand}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- 强调色 -->
+                        <Border BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="0 0 0 1" Padding="0 12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="强调色" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <TextBlock Text="用于按钮、链接等交互元素" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <Border Width="22" Height="22" CornerRadius="{DynamicResource GdRadiusFull}" Background="{DynamicResource GdPrimaryBrush}" BorderBrush="{DynamicResource GdForegroundBrush}" BorderThickness="2" />
+                                    <Border Width="22" Height="22" CornerRadius="{DynamicResource GdRadiusFull}" Background="{DynamicResource GdSuccessBrush}" />
+                                    <Border Width="22" Height="22" CornerRadius="{DynamicResource GdRadiusFull}" Background="{DynamicResource GdWarningBrush}" />
+                                    <Border Width="22" Height="22" CornerRadius="{DynamicResource GdRadiusFull}" Background="{DynamicResource GdErrorBrush}" />
+                                    <Border Width="22" Height="22" CornerRadius="{DynamicResource GdRadiusFull}" Background="{DynamicResource GdUpBrush}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- 界面字号 -->
+                        <Border Padding="0 12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="界面字号" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <TextBlock Text="调整全局文字大小" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                    <TextBlock Text="小" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
+                                    <Slider Minimum="12" Maximum="18" Value="14" TickFrequency="1" IsSnapToTickEnabled="True" Width="140" />
+                                    <TextBlock Text="大" FontSize="16" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- ───── 通用卡 ───── -->
+                <Border Classes="GdMetricCard">
+                    <StackPanel Spacing="0">
+                        <TextBlock Text="通用" Classes="GdSectionTitle" Margin="0 0 0 4" />
+
+                        <!-- 开机自启 -->
+                        <Border BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="0 0 0 1" Padding="0 12" Margin="0 4 0 0">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="开机自启" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <TextBlock Text="登录系统时自动启动应用" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="False" VerticalAlignment="Center" OnContent="" OffContent="" />
+                            </Grid>
+                        </Border>
+
+                        <!-- 关闭到托盘 -->
+                        <Border BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="0 0 0 1" Padding="0 12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="关闭到托盘" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <TextBlock Text="关闭窗口时最小化到系统托盘" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="True" VerticalAlignment="Center" OnContent="" OffContent="" />
+                            </Grid>
+                        </Border>
+
+                        <!-- 安装路径预览 -->
+                        <TransitioningContentControl Name="InstallPathPreviewHost" Content="{Binding InstallPathPreview}" Margin="0 12 0 0">
+                            <TransitioningContentControl.PageTransition>
+                                <CrossFade Duration="0:0:0.25" />
+                            </TransitioningContentControl.PageTransition>
+                            <TransitioningContentControl.ContentTemplate>
+                                <DataTemplate x:DataType="vm:SettingsPreviewState">
+                                    <Border Classes="GdListItem" Margin="0 0 0 4">
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+                                            <Border Width="56" Height="56" CornerRadius="{DynamicResource GdRadiusLg}" Background="{DynamicResource GdInfoSurfaceBrush}">
+                                                <Viewbox Margin="12">
+                                                    <ui:IconSourceElement IconSource="{Binding Icon}" />
+                                                </Viewbox>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Spacing="4">
+                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                                <TextBlock Text="{Binding Detail}" Classes="GdMetricLabel" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </TransitioningContentControl.ContentTemplate>
+                        </TransitioningContentControl>
+
+                        <!-- 安装目录模式 -->
+                        <Border BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="0 0 0 1" Padding="0 12" Margin="0 12 0 0">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="安装目录模式" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <TextBlock Text="选择默认或自定义游戏安装路径" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                    <Button Content="默认路径" Classes="GdGhost" Command="{Binding UseDefaultInstallPathCommand}" />
+                                    <Button Content="自定义路径" Classes="GdGhost" Command="{Binding UseCustomInstallPathCommand}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- 自定义安装目录输入 -->
+                        <Border BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="0 0 0 1" Padding="0 12">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="自定义安装目录" Classes="GdMetricLabel" />
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <TextBox Classes="GdInput" Text="{Binding CustomInstallPath}" IsEnabled="{Binding IsCustomInstallPathMode}" Watermark="选择自定义安装目录" />
+                                    <Button Grid.Column="1" Content="浏览并保存" Classes="GdGhost" IsEnabled="{Binding IsCustomInstallPathMode}" Click="BrowseInstallPathButton_Click" />
                                 </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </TransitioningContentControl.ContentTemplate>
-                </TransitioningContentControl>
+                            </StackPanel>
+                        </Border>
 
-                <StackPanel Orientation="Horizontal" Spacing="10">
-                    <Button Content="使用默认路径" Classes="QuietAction" Command="{Binding UseDefaultInstallPathCommand}" />
-                    <Button Content="使用自定义路径" Classes="QuietAction" Command="{Binding UseCustomInstallPathCommand}" />
-                </StackPanel>
+                        <!-- 当前生效路径 -->
+                        <Border Padding="0 12">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="当前生效路径" Classes="GdMetricLabel" />
+                                <TextBlock Text="{Binding ResolvedInstallPath}" TextWrapping="Wrap" FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace" FontSize="12" Foreground="{DynamicResource GdForegroundBrush}" />
+                                <TextBlock Text="默认路径会使用文档目录下的 HorizonGames；切换到自定义模式后，保存的路径会直接作为游戏安装根目录。" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
 
-                <StackPanel Spacing="6">
-                    <TextBlock Text="游戏安装目录" Classes="PageEyebrow" />
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                        <TextBox Text="{Binding CustomInstallPath}" IsEnabled="{Binding IsCustomInstallPathMode}" Watermark="选择自定义安装目录" />
-                        <Button Grid.Column="1" Content="浏览并保存" Classes="QuietAction" IsEnabled="{Binding IsCustomInstallPathMode}" Click="BrowseInstallPathButton_Click" />
-                    </Grid>
-                </StackPanel>
+                <!-- ───── 通知卡 ───── -->
+                <Border Classes="GdMetricCard">
+                    <StackPanel Spacing="0">
+                        <TextBlock Text="通知" Classes="GdSectionTitle" Margin="0 0 0 4" />
 
-                <Border Classes="SurfaceCard subtle">
+                        <!-- 桌面通知 -->
+                        <Border BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="0 0 0 1" Padding="0 12" Margin="0 4 0 0">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="桌面通知" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <TextBlock Text="接收消息时显示系统桌面通知" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="True" VerticalAlignment="Center" OnContent="" OffContent="" />
+                            </Grid>
+                        </Border>
+
+                        <!-- 通知声音 -->
+                        <Border BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="0 0 0 1" Padding="0 12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="通知声音" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <TextBlock Text="收到通知时播放提示音" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" IsChecked="True" VerticalAlignment="Center" OnContent="" OffContent="" />
+                            </Grid>
+                        </Border>
+
+                        <!-- 展示时长 -->
+                        <Border Padding="0 12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="展示时长" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <TextBlock Text="桌面通知停留时间" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                </StackPanel>
+                                <ComboBox Grid.Column="1" SelectedIndex="1" VerticalAlignment="Center" MinWidth="120">
+                                    <ComboBoxItem Content="3 秒" />
+                                    <ComboBoxItem Content="5 秒" />
+                                    <ComboBoxItem Content="10 秒" />
+                                </ComboBox>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- ───── 软件更新卡 ───── -->
+                <Border Classes="GdMetricCard">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="软件更新" Classes="GdSectionTitle" Margin="0" />
+                        <TextBlock Text="{Binding UpdateStatusMessage}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                        <ProgressBar IsVisible="{Binding IsDownloadingUpdate}" Value="{Binding UpdateDownloadProgress}" Minimum="0" Maximum="100" />
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Button Content="检查更新" Classes="GdGhost" Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsCheckingForUpdate}" />
+                            <Button Content="下载并安装" Classes="GdPrimary" Command="{Binding DownloadAndApplyUpdateCommand}" IsVisible="{Binding IsUpdateAvailable}" IsEnabled="{Binding !IsDownloadingUpdate}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- ───── 关于卡 ───── -->
+                <Border Classes="GdMetricCard">
                     <StackPanel Spacing="6">
-                        <TextBlock Text="当前生效路径" Classes="PageEyebrow" />
-                        <TextBlock Text="{Binding ResolvedInstallPath}" TextWrapping="Wrap" />
-                        <TextBlock Text="默认路径会使用文档目录下的 HorizonGames；切换到自定义模式后，保存的路径会直接作为游戏安装根目录。" Classes="SupportingText" />
+                        <TextBlock Text="关于" Classes="GdSectionTitle" Margin="0" />
+                        <TextBlock Text="Horizon Game GengDi" Classes="GdMetricLabel" />
+                        <TextBlock Text="{Binding CurrentVersion, StringFormat='版本 {0}'}" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                        <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" Margin="0 4 0 0" />
                     </StackPanel>
                 </Border>
             </StackPanel>
-        </Border>
-
-        <StackPanel Grid.Column="1" Spacing="20">
-            <Border Classes="SurfaceCard subtle">
-                <StackPanel Spacing="16">
-                    <TextBlock Text="主题" Classes="SectionTitle" />
-                    <TransitioningContentControl Name="ThemePreviewHost" Content="{Binding ThemePreview}">
-                        <TransitioningContentControl.PageTransition>
-                            <CrossFade Duration="0:0:0.25" />
-                        </TransitioningContentControl.PageTransition>
-                        <TransitioningContentControl.ContentTemplate>
-                            <DataTemplate x:DataType="vm:SettingsPreviewState">
-                                <Border Classes="ListItemCard" Margin="0 0 0 4">
-                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-                                        <Border Width="56" Height="56" CornerRadius="16" Background="{DynamicResource BattleNetSurfaceTintBrush}">
-                                            <Viewbox Margin="12">
-                                                <ui:IconSourceElement IconSource="{Binding Icon}" />
-                                            </Viewbox>
-                                        </Border>
-                                        <StackPanel Grid.Column="1" Spacing="4">
-                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
-                                            <TextBlock Text="{Binding Description}" Classes="SupportingText" />
-                                            <TextBlock Text="{Binding Detail}" Classes="PageEyebrow" TextWrapping="Wrap" />
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </TransitioningContentControl.ContentTemplate>
-                    </TransitioningContentControl>
-
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button Content="跟随系统" Classes="PrimaryAction" Command="{Binding UseSystemThemeCommand}" />
-                        <Button x:Name="LightThemeButton" Content="浅色" Classes="QuietAction" Command="{Binding UseLightThemeCommand}" />
-                        <Button x:Name="DarkThemeButton" Content="深色" Classes="QuietAction" Command="{Binding UseDarkThemeCommand}" />
-                    </StackPanel>
-                </StackPanel>
-            </Border>
-
-            <Border Classes="SurfaceCard">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="状态与说明" Classes="SectionTitle" />
-                    <TextBlock Text="{Binding StatusMessage}" TextWrapping="Wrap" />
-                    <TextBlock Text="Horizon Game GengDi" Classes="PageEyebrow" />
-                    <TextBlock Text="{Binding CurrentVersion, StringFormat='版本 {0}'}" Classes="SupportingText" />
-                </StackPanel>
-            </Border>
-
-            <Border Classes="SurfaceCard">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="软件更新" Classes="SectionTitle" />
-                    <TextBlock Text="{Binding UpdateStatusMessage}" TextWrapping="Wrap" Classes="SupportingText" />
-                    <ProgressBar IsVisible="{Binding IsDownloadingUpdate}" Value="{Binding UpdateDownloadProgress}" Minimum="0" Maximum="100" />
-                    <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button Content="检查更新" Classes="QuietAction" Command="{Binding CheckForUpdatesCommand}" IsEnabled="{Binding !IsCheckingForUpdate}" />
-                        <Button Content="下载并安装" Classes="PrimaryAction" Command="{Binding DownloadAndApplyUpdateCommand}" IsVisible="{Binding IsUpdateAvailable}" IsEnabled="{Binding !IsDownloadingUpdate}" />
-                    </StackPanel>
-                </StackPanel>
-            </Border>
-        </StackPanel>
-    </Grid>
+        </Grid>
+    </controls:GalleryPage>
 </UserControl>

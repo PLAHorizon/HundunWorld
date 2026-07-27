@@ -5,18 +5,19 @@
              x:Class="Horizon.Game.GengDi.Core.Views.WeatherNewsDrawerView"
              x:DataType="vm:HomeViewModel">
 
-    <Border Background="{DynamicResource SolidBackgroundFillColorBaseBrush}"
-            BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}"
+    <Border Background="{DynamicResource GdPopoverBrush}"
+            BorderBrush="{DynamicResource GdBorderBrush}"
             BorderThickness="1 0 0 0"
             Width="420" MaxWidth="500"
             HorizontalAlignment="Right">
         <Grid RowDefinitions="Auto,*">
-            <Border Grid.Row="0" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" BorderThickness="0 0 0 1" Padding="20 16">
+            <Border Grid.Row="0" BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="0 0 0 1" Padding="20 16">
                 <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <TextBlock Text="天气资讯" FontSize="16" FontWeight="SemiBold" />
+                        <TextBlock Text="天气资讯" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource GdForegroundBrush}" />
                     </StackPanel>
-                    <Button Grid.Column="1" Content="✕" Classes="QuietAction" Padding="8 4" FontSize="14"
+                    <Button Grid.Column="1" Content="✕" Classes="GdGhost" Padding="8 4" FontSize="14"
                             Command="{Binding CloseNewsDetailCommand}" />
                 </Grid>
             </Border>
@@ -27,20 +28,20 @@
                     <ItemsControl ItemsSource="{Binding WeatherForecast.News}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="models:WeatherNews">
-                                <Border Padding="10 8" CornerRadius="10" Margin="0 0 0 4" Background="#0AFFFFFF">
+                                <Border Padding="10 8" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 4" Background="{DynamicResource GdMutedBrush}">
                                     <StackPanel Spacing="4">
                                         <StackPanel Orientation="Horizontal" Spacing="5">
                                             <TextBlock Text="{Binding SourceIcon}" FontSize="10" />
-                                            <TextBlock Text="{Binding Source}" FontSize="9" Foreground="#FFFFFF77" />
-                                            <TextBlock Text="·" FontSize="9" Foreground="#FFFFFF33" />
-                                            <TextBlock Text="{Binding TimeText}" FontSize="9" Foreground="#FFFFFF55" />
-                                            <Border Background="#1A7AA9FF" CornerRadius="4" Padding="4 1" Margin="4 0 0 0">
-                                                <TextBlock Text="{Binding Category}" FontSize="8" Foreground="{DynamicResource BattleNetOutlineBrush}" />
+                                            <TextBlock Text="{Binding Source}" FontSize="9" Foreground="{DynamicResource GdForegroundMutedBrush}" />
+                                            <TextBlock Text="·" FontSize="9" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                            <TextBlock Text="{Binding TimeText}" FontSize="9" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                            <Border Background="{DynamicResource GdInfoSurfaceBrush}" CornerRadius="{DynamicResource GdRadiusSm}" Padding="4 1" Margin="4 0 0 0">
+                                                <TextBlock Text="{Binding Category}" FontSize="8" Foreground="{DynamicResource GdBrand400Brush}" />
                                             </Border>
                                         </StackPanel>
                                         <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="Medium"
-                                                   Foreground="#FFFFFFEE" TextWrapping="Wrap" MaxLines="2" />
-                                        <TextBlock Text="{Binding Summary}" FontSize="10" Foreground="#FFFFFF88"
+                                                   Foreground="{DynamicResource GdForegroundBrush}" TextWrapping="Wrap" MaxLines="2" />
+                                        <TextBlock Text="{Binding Summary}" FontSize="10" Foreground="{DynamicResource GdForegroundMutedBrush}"
                                                    TextWrapping="Wrap" MaxLines="2" />
                                     </StackPanel>
                                 </Border>

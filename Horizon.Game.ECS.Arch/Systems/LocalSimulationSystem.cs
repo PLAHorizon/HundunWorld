@@ -5,10 +5,8 @@ using Horizon.Game.Core.Sim;
 using Horizon.Game.Core.World;
 using Horizon.Game.ECS.Arch.Components;
 using Horizon.Game.ECS.Arch.Core;
-using Horizon.Game.Message.Sim;
-// 消除 MovementFormula 歧义：Horizon.Game.Core.Sim 与 Horizon.Game.Message.Sim 均存在同名类型，
-// 添加 Horizon.Game.Core 引用后产生冲突。保持原有行为，统一使用 Message 版本。
-using MovementFormula = Horizon.Game.Message.Sim.MovementFormula;
+// MovementFormula 统一使用 Horizon.Game.Core.Sim 版本（原 Message 副本已删除）。
+using MovementFormula = Horizon.Game.Core.Sim.MovementFormula;
 
 namespace Horizon.Game.ECS.Arch.Systems;
 

@@ -8,14 +8,16 @@
         MinHeight="360"
         WindowStartupLocation="CenterOwner"
         CanResize="True"
-        ShowInTaskbar="False">
+        ShowInTaskbar="False"
+        Classes="GdDialog"
+        Background="{DynamicResource GdPopoverBrush}">
 
     <Grid RowDefinitions="*, Auto">
 
         <!-- 图片显示区域 + Canvas 框选覆盖层 -->
         <Grid Grid.Row="0"
               x:Name="ImageContainer"
-              Background="#111111"
+              Background="{DynamicResource GdBackgroundBrush}"
               ClipToBounds="True">
 
             <Image x:Name="SourceImage"
@@ -32,8 +34,8 @@
         <!-- 底部操作栏 -->
         <Border Grid.Row="1"
                 Padding="16 12"
-                Background="{DynamicResource SystemFillColorNeutralBackgroundBrush}"
-                BorderBrush="{DynamicResource SystemFillColorNeutralBrush}"
+                Background="{DynamicResource GdCardBrush}"
+                BorderBrush="{DynamicResource GdBorderBrush}"
                 BorderThickness="0 1 0 0">
             <Grid ColumnDefinitions="*, Auto, Auto"
                   ColumnSpacing="8">
@@ -42,19 +44,19 @@
                            x:Name="HintText"
                            Text="按住鼠标左键拖动，框选需要保留的区域"
                            VerticalAlignment="Center"
-                           Opacity="0.65"
+                           Foreground="{DynamicResource GdMutedForegroundBrush}"
                            FontSize="12"
                            TextWrapping="Wrap" />
 
                 <Button Grid.Column="1"
                         Content="取消"
-                        Classes="QuietAction"
+                        Classes="GdGhost"
                         Click="CancelButton_Click" />
 
                 <Button Grid.Column="2"
                         x:Name="ConfirmButton"
                         Content="确认裁剪"
-                        Classes="PrimaryAction"
+                        Classes="GdPrimary"
                         IsEnabled="False"
                         Click="ConfirmButton_Click" />
             </Grid>

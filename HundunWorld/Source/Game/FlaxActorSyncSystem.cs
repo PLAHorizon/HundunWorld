@@ -649,11 +649,12 @@ namespace HundunWorld.Game
                     }
 #endif
 
-                    // 2) 同步朝向（从 AuthTransformComponent.Yaw，弧度）
-                    // 服务端 Yaw 为弧度，Flax 旋转用 Yaw/Pitch/Roll（度）
-                    // TODO: 待 Horizon.Game.ECS.Arch.dll 部署更新后，改用 interp.Yaw 实现平滑朝向插值
-                    // （InterpolatedTransformComponent 已新增 Yaw/StartYaw/TargetYaw 字段）
-                    float yawDeg = auth.Yaw * (180.0f / (float)Math.PI);
+                    // 2) 同步朝向（从 InterpolatedTransformComponent.Yaw，已经由 InterpolationSystem 平滑插值）
+                    // 修复（远程角色闪移）：原实现从 auth.Yaw 读取（每帧瞬移到服务端值），
+                    // 导致远程角色朝向突变，视觉上表现为“闪移”。
+                    // InterpolationSystem 已对 Yaw 做最短路径插值（处理±180°环绕），
+                    // 直接读取 interp.Yaw 即可获得平滑朝向。
+                    float yawDeg = interp.Yaw * (180.0f / (float)Math.PI);
                     if (_entityIdToLastYaw.TryGetValue(entityId, out var lastYaw))
                     {
                         if (Math.Abs(yawDeg - lastYaw) > 0.1f)

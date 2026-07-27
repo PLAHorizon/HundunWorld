@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音乐模块 — 耕地</title>
+    <style id="theme-vars">
+/* ============================================================
+   耕地（Horizon.Game.GengDi）— 暗色专业终端风格
+   Brand Prefix: gd
+   参照 quant-trading-ui 风格重构，零色值偏差
+   Dark mode is the primary experience (html.dark)
+   ============================================================ */
+
+/* ---------- Brand Primary Scale (Blue) ---------- */
+:root {
+  --gd-brand-50:  #e8f0ff;
+  --gd-brand-100: #c5d8ff;
+  --gd-brand-200: #8fb4ff;
+  --gd-brand-300: #5a90ff;
+  --gd-brand-400: #3a78ff;
+  --gd-brand-500: #2962ff;
+  --gd-brand-600: #1f4fd6;
+  --gd-brand-700: #1a40ad;
+  --gd-brand-800: #163380;
+  --gd-brand-900: #122659;
+
+  /* ---------- State Colors ---------- */
+  --gd-state-success: #26a69a;
+  --gd-state-success-surface: rgba(38, 166, 154, 0.12);
+  --gd-state-success-foreground: #ffffff;
+  --gd-state-warning: #ff9800;
+  --gd-state-warning-surface: rgba(255, 152, 0, 0.12);
+  --gd-state-warning-foreground: #ffffff;
+  --gd-state-error: #ef5350;
+  --gd-state-error-surface: rgba(239, 83, 80, 0.12);
+  --gd-state-error-foreground: #ffffff;
+  --gd-state-info: #2962ff;
+  --gd-state-info-surface: rgba(41, 98, 255, 0.12);
+  --gd-state-info-foreground: #ffffff;
+
+  /* ---------- Radius ---------- */
+  --gd-radius-sm: 4px;
+  --gd-radius-md: 8px;
+  --gd-radius-lg: 12px;
+  --gd-radius-full: 9999px;
+
+  /* ---------- Typography ---------- */
+  --gd-font-sans: "Inter", "Noto Sans SC", ui-sans-serif, system-ui, sans-serif;
+  --gd-font-mono: "JetBrains Mono", "Cascadia Code", ui-monospace, monospace;
+
+  /* ---------- Trading-specific (花卉价格波动涨跌色) ---------- */
+  --gd-up: #26a69a;
+  --gd-down: #ef5350;
+  --gd-up-surface: rgba(38, 166, 154, 0.12);
+  --gd-down-surface: rgba(239, 83, 80, 0.12);
+
+  /* ---------- Light Mode (default :root) ---------- */
+  --gd-background: #f7f8fa;
+  --gd-foreground: #1a1f2e;
+  --gd-card: #ffffff;
+  --gd-card-foreground: #1a1f2e;
+  --gd-popover: #ffffff;
+  --gd-popover-foreground: #1a1f2e;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #e0e3eb;
+  --gd-secondary-foreground: #1a1f2e;
+  --gd-muted: #f2f3f5;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #e0e3eb;
+  --gd-input: #e0e3eb;
+  --gd-ring: var(--gd-brand-500);
+
+  /* ---------- Shadows ---------- */
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.05);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.10), 0 8px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- Dark Mode (html.dark — primary experience) ---------- */
+html.dark {
+  --gd-background: #0a0e17;
+  --gd-foreground: #e0e6ed;
+  --gd-card: #131722;
+  --gd-card-foreground: #e0e6ed;
+  --gd-popover: #1a1f2e;
+  --gd-popover-foreground: #e0e6ed;
+  --gd-primary: var(--gd-brand-500);
+  --gd-primary-foreground: #ffffff;
+  --gd-secondary: #2a2e39;
+  --gd-secondary-foreground: #e0e6ed;
+  --gd-muted: #1a1f2e;
+  --gd-muted-foreground: #787b86;
+  --gd-accent: var(--gd-brand-600);
+  --gd-accent-foreground: #ffffff;
+  --gd-destructive: var(--gd-state-error);
+  --gd-destructive-foreground: #ffffff;
+  --gd-border: #2a2e39;
+  --gd-input: #2a2e39;
+  --gd-ring: var(--gd-brand-500);
+
+  --gd-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --gd-shadow-md: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --gd-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --gd-shadow-xl: 0 16px 40px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Typography Classes ---------- */
+.font-sans { font-family: var(--gd-font-sans); }
+.font-mono { font-family: var(--gd-font-mono); }
+
+/* ---------- Trading Utility Classes ---------- */
+.text-up { color: var(--gd-up); }
+.text-down { color: var(--gd-down); }
+.bg-up-surface { background-color: var(--gd-up-surface); }
+.bg-down-surface { background-color: var(--gd-down-surface); }
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+body {
+  font-family: var(--gd-font-sans);
+  background-color: var(--gd-background);
+  color: var(--gd-foreground);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.1/dist/index.global.js"></script>
+    <script src="https://unpkg.com/lucide@1.8.0/dist/umd/lucide.min.js"></script>
+    <style type="text/tailwindcss">
+  @theme inline {
+    --color-background: var(--gd-background);
+    --color-foreground: var(--gd-foreground);
+    --color-card: var(--gd-card);
+    --color-card-foreground: var(--gd-card-foreground);
+    --color-popover: var(--gd-popover);
+    --color-popover-foreground: var(--gd-popover-foreground);
+    --color-primary: var(--gd-primary);
+    --color-primary-foreground: var(--gd-primary-foreground);
+    --color-secondary: var(--gd-secondary);
+    --color-secondary-foreground: var(--gd-secondary-foreground);
+    --color-muted: var(--gd-muted);
+    --color-muted-foreground: var(--gd-muted-foreground);
+    --color-accent: var(--gd-accent);
+    --color-accent-foreground: var(--gd-accent-foreground);
+    --color-destructive: var(--gd-destructive);
+    --color-destructive-foreground: var(--gd-destructive-foreground);
+    --color-border: var(--gd-border);
+    --color-input: var(--gd-input);
+    --color-ring: var(--gd-ring);
+    --radius-sm: var(--gd-radius-sm);
+    --radius-md: var(--gd-radius-md);
+    --radius-lg: var(--gd-radius-lg);
+  }
+  @layer base {
+    body { background: var(--gd-background); color: var(--gd-foreground); }
+    td, th { @apply break-words; word-break: break-all; word-break: auto-phrase; }
+    th { @apply whitespace-nowrap; }
+  }
+    </style>
+    <style id="semantic-token-fallback">
+      .bg-background { background-color: var(--gd-background); }
+      .text-background { color: var(--gd-background); }
+      .border-background { border-color: var(--gd-background); }
+      .ring-background { --tw-ring-color: var(--gd-background); }
+      .bg-foreground { background-color: var(--gd-foreground); }
+      .text-foreground { color: var(--gd-foreground); }
+      .border-foreground { border-color: var(--gd-foreground); }
+      .ring-foreground { --tw-ring-color: var(--gd-foreground); }
+      .bg-card { background-color: var(--gd-card); }
+      .text-card { color: var(--gd-card); }
+      .border-card { border-color: var(--gd-card); }
+      .ring-card { --tw-ring-color: var(--gd-card); }
+      .bg-card-foreground { background-color: var(--gd-card-foreground); }
+      .text-card-foreground { color: var(--gd-card-foreground); }
+      .border-card-foreground { border-color: var(--gd-card-foreground); }
+      .ring-card-foreground { --tw-ring-color: var(--gd-card-foreground); }
+      .bg-popover { background-color: var(--gd-popover); }
+      .text-popover { color: var(--gd-popover); }
+      .border-popover { border-color: var(--gd-popover); }
+      .ring-popover { --tw-ring-color: var(--gd-popover); }
+      .bg-popover-foreground { background-color: var(--gd-popover-foreground); }
+      .text-popover-foreground { color: var(--gd-popover-foreground); }
+      .border-popover-foreground { border-color: var(--gd-popover-foreground); }
+      .ring-popover-foreground { --tw-ring-color: var(--gd-popover-foreground); }
+      .bg-primary { background-color: var(--gd-primary); }
+      .text-primary { color: var(--gd-primary); }
+      .border-primary { border-color: var(--gd-primary); }
+      .ring-primary { --tw-ring-color: var(--gd-primary); }
+      .bg-primary-foreground { background-color: var(--gd-primary-foreground); }
+      .text-primary-foreground { color: var(--gd-primary-foreground); }
+      .border-primary-foreground { border-color: var(--gd-primary-foreground); }
+      .ring-primary-foreground { --tw-ring-color: var(--gd-primary-foreground); }
+      .bg-secondary { background-color: var(--gd-secondary); }
+      .text-secondary { color: var(--gd-secondary); }
+      .border-secondary { border-color: var(--gd-secondary); }
+      .ring-secondary { --tw-ring-color: var(--gd-secondary); }
+      .bg-secondary-foreground { background-color: var(--gd-secondary-foreground); }
+      .text-secondary-foreground { color: var(--gd-secondary-foreground); }
+      .border-secondary-foreground { border-color: var(--gd-secondary-foreground); }
+      .ring-secondary-foreground { --tw-ring-color: var(--gd-secondary-foreground); }
+      .bg-muted { background-color: var(--gd-muted); }
+      .text-muted { color: var(--gd-muted); }
+      .border-muted { border-color: var(--gd-muted); }
+      .ring-muted { --tw-ring-color: var(--gd-muted); }
+      .bg-muted-foreground { background-color: var(--gd-muted-foreground); }
+      .text-muted-foreground { color: var(--gd-muted-foreground); }
+      .border-muted-foreground { border-color: var(--gd-muted-foreground); }
+      .ring-muted-foreground { --tw-ring-color: var(--gd-muted-foreground); }
+      .bg-accent { background-color: var(--gd-accent); }
+      .text-accent { color: var(--gd-accent); }
+      .border-accent { border-color: var(--gd-accent); }
+      .ring-accent { --tw-ring-color: var(--gd-accent); }
+      .bg-accent-foreground { background-color: var(--gd-accent-foreground); }
+      .text-accent-foreground { color: var(--gd-accent-foreground); }
+      .border-accent-foreground { border-color: var(--gd-accent-foreground); }
+      .ring-accent-foreground { --tw-ring-color: var(--gd-accent-foreground); }
+      .bg-destructive { background-color: var(--gd-destructive); }
+      .text-destructive { color: var(--gd-destructive); }
+      .border-destructive { border-color: var(--gd-destructive); }
+      .ring-destructive { --tw-ring-color: var(--gd-destructive); }
+      .bg-destructive-foreground { background-color: var(--gd-destructive-foreground); }
+      .text-destructive-foreground { color: var(--gd-destructive-foreground); }
+      .border-destructive-foreground { border-color: var(--gd-destructive-foreground); }
+      .ring-destructive-foreground { --tw-ring-color: var(--gd-destructive-foreground); }
+      .bg-border { background-color: var(--gd-border); }
+      .text-border { color: var(--gd-border); }
+      .border-border { border-color: var(--gd-border); }
+      .ring-border { --tw-ring-color: var(--gd-border); }
+      .bg-input { background-color: var(--gd-input); }
+      .text-input { color: var(--gd-input); }
+      .border-input { border-color: var(--gd-input); }
+      .ring-input { --tw-ring-color: var(--gd-input); }
+      .bg-ring { background-color: var(--gd-ring); }
+      .text-ring { color: var(--gd-ring); }
+      .border-ring { border-color: var(--gd-ring); }
+      .ring-ring { --tw-ring-color: var(--gd-ring); }
+    </style>
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+    <div class="app-root">
+      <!-- ================ 顶栏（主导航） ================ -->
+      <header class="app-topbar">
+        <div class="topbar-brand">
+          <div style="width:32px;height:32px;border-radius:var(--gd-radius-md);background:linear-gradient(135deg,var(--gd-brand-500),var(--gd-brand-700));display:flex;align-items:center;justify-content:center;">
+            <i data-lucide="sprout" style="width:18px;height:18px;color:var(--gd-primary-foreground);"></i>
+          </div>
+          <span style="font-size:15px;font-weight:600;color:var(--gd-foreground);">耕地</span>
+        </div>
+        <nav class="topbar-main-nav">
+          <a class="main-nav-item" data-main-nav-key="games" href="#"><i data-lucide="gamepad-2" class="main-nav-icon"></i><span>游戏</span></a>
+          <a class="main-nav-item" data-main-nav-key="news" href="#"><i data-lucide="newspaper" class="main-nav-icon"></i><span>新闻</span></a>
+          <a class="main-nav-item" data-main-nav-key="flower-market" href="#"><i data-lucide="flower-2" class="main-nav-icon"></i><span>花卉市场</span></a>
+          <a class="main-nav-item" data-main-nav-key="music" data-active="true" href="#"><i data-lucide="music" class="main-nav-icon"></i><span>音乐</span></a>
+          <a class="main-nav-item" data-main-nav-key="more" href="#"><i data-lucide="more-horizontal" class="main-nav-icon"></i><span>更多</span></a>
+        </nav>
+        <div class="topbar-actions">
+          <button class="header-icon-btn" title="通知" style="position:relative;">
+            <i data-lucide="bell" style="width:18px;height:18px;"></i>
+            <span style="position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background-color:var(--gd-state-error);border:2px solid var(--gd-card);"></span>
+          </button>
+          <button class="header-icon-btn" title="主题切换"><i data-lucide="moon" style="width:18px;height:18px;"></i></button>
+          <div style="width:1px;height:24px;background-color:var(--gd-border);margin:0 4px;"></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;background-color:var(--gd-muted);border-radius:var(--gd-radius-full);cursor:pointer;">
+            <div style="width:26px;height:26px;border-radius:50%;background-color:var(--gd-brand-500);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--gd-primary-foreground);">龙</div>
+            <div style="display:flex;flex-direction:column;line-height:1.2;">
+              <span style="font-size:12px;color:var(--gd-foreground);font-weight:500;">龙</span>
+              <span class="num" style="font-size:10px;color:var(--gd-muted-foreground);">1010776</span>
+            </div>
+          </div>
+          <div style="width:1px;height:24px;background-color:var(--gd-border);margin:0 4px;"></div>
+          <button class="win-btn" title="最小化"><i data-lucide="minus" style="width:16px;height:16px;"></i></button>
+          <button class="win-btn" title="最大化"><i data-lucide="square" style="width:14px;height:14px;"></i></button>
+          <button class="win-btn win-btn-close" title="关闭"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+        </div>
+      </header>
+
+      <!-- ================ 副导航 ================ -->
+      <nav class="app-subnavbar no-scrollbar">
+        <a class="subnav-item" data-sub-nav-key="overview" href="#"><i data-lucide="layout-dashboard" class="subnav-icon"></i><span>总览</span></a>
+        <a class="subnav-item" data-sub-nav-key="all-games" href="#"><i data-lucide="library" class="subnav-icon"></i><span>全部游戏</span></a>
+        <a class="subnav-item" data-sub-nav-key="download" href="#"><i data-lucide="download" class="subnav-icon"></i><span>下载</span></a>
+        <a class="subnav-item" data-sub-nav-key="settings" href="#"><i data-lucide="settings" class="subnav-icon"></i><span>设置</span></a>
+        <div class="subnav-divider"></div>
+        <a class="subnav-item" data-sub-nav-key="discover" data-active="true" href="#"><i data-lucide="compass" class="subnav-icon"></i><span>发现</span></a>
+        <a class="subnav-item" data-sub-nav-key="playlist" href="#"><i data-lucide="list-music" class="subnav-icon"></i><span>歌单</span></a>
+        <a class="subnav-item" data-sub-nav-key="search" href="#"><i data-lucide="search" class="subnav-icon"></i><span>搜索</span></a>
+        <a class="subnav-item" data-sub-nav-key="story" href="#"><i data-lucide="book-open" class="subnav-icon"></i><span>音乐故事</span></a>
+        <div class="subnav-divider"></div>
+        <a class="subnav-item" data-sub-nav-key="dashboard" href="#"><i data-lucide="gauge" class="subnav-icon"></i><span>行情仪表盘</span></a>
+        <a class="subnav-item" data-sub-nav-key="market" href="#"><i data-lucide="shopping-cart" class="subnav-icon"></i><span>市场</span></a>
+        <a class="subnav-item" data-sub-nav-key="ai" href="#"><i data-lucide="brain" class="subnav-icon"></i><span>AI助手</span></a>
+      </nav>
+
+      <!-- ================ 内容区 ================ -->
+      <main class="app-content">
+        <div class="page-container">
+
+          <!-- ============================================================ -->
+          <!-- 1. 播放器 -->
+          <!-- ============================================================ -->
+          <section id="music-player">
+            <div class="section-header">
+              <div>
+                <h2 class="section-title"><span class="idx">1</span>播放器</h2>
+                <p class="section-subtitle">全屏播放器范式：大圆形封面 + 歌曲信息 + 歌词/曲谱切换 + 进度条 + 播放控制按钮组</p>
+              </div>
+              <span class="src-tag">MusicPlayerView.axaml</span>
+            </div>
+
+            <div class="player-screen">
+              <!-- 顶部栏 -->
+              <div style="height:52px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid var(--gd-border);">
+                <button class="header-icon-btn" title="返回"><i data-lucide="chevron-left" style="width:18px;height:18px;"></i></button>
+                <span style="font-size:14px;color:var(--gd-muted-foreground);">正在播放</span>
+                <div style="display:flex;gap:4px;">
+                  <button class="header-icon-btn" title="音乐故事"><i data-lucide="book-open" style="width:18px;height:18px;"></i></button>
+                  <button class="header-icon-btn" title="添加到歌单"><i data-lucide="list-plus" style="width:18px;height:18px;"></i></button>
+                </div>
+              </div>
+
+              <!-- 中央内容 -->
+              <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:22px;padding:28px 48px;" class="no-scrollbar">
+                <!-- 大圆形封面 -->
+                <div style="width:260px;height:260px;border-radius:130px;background:linear-gradient(135deg,var(--gd-brand-400),var(--gd-brand-800));display:flex;align-items:center;justify-content:center;box-shadow:var(--gd-shadow-xl);">
+                  <span style="font-size:72px;color:var(--gd-primary-foreground);">♪</span>
+                </div>
+
+                <!-- 歌曲信息 -->
+                <div style="text-align:center;display:flex;flex-direction:column;gap:6px;">
+                  <h3 style="font-size:22px;font-weight:600;color:var(--gd-foreground);margin:0;">星河入梦</h3>
+                  <span style="font-size:14px;color:var(--gd-muted-foreground);">云水谣</span>
+                  <span style="font-size:12px;color:var(--gd-muted-foreground);">专辑《长河落日》</span>
+                </div>
+
+                <!-- 歌词区 -->
+                <div style="width:100%;max-width:560px;background-color:var(--gd-muted);border:1px solid var(--gd-border);border-radius:var(--gd-radius-lg);padding:16px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <span style="font-size:14px;font-weight:600;color:var(--gd-foreground);">歌词</span>
+                    <div style="display:flex;gap:6px;">
+                      <button class="gd-tab-btn is-active">歌词</button>
+                      <button class="gd-tab-btn">曲谱</button>
+                    </div>
+                  </div>
+                  <div style="max-height:240px;overflow-y:auto;display:flex;flex-direction:column;" class="no-scrollbar">
+                    <p class="lyric-line">夜色如墨 染透了窗棂</p>
+                    <p class="lyric-line">远山隐入 雾霭的影</p>
+                    <p class="lyric-line current">星河入梦 携一身清冷</p>
+                    <p class="lyric-line">落笔成诗 写不尽平生</p>
+                    <p class="lyric-line">风过松林 惊起旧时影</p>
+                    <p class="lyric-line">谁在长河 等一盏归灯</p>
+                    <p class="lyric-line">月落乌啼 霜满长亭</p>
+                    <p class="lyric-line">此去经年 山高水长</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 底部控制栏 -->
+              <div style="flex-shrink:0;padding:16px 24px;border-top:1px solid var(--gd-border);background-color:var(--gd-popover);">
+                <!-- 进度条 -->
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+                  <span class="num" style="font-size:12px;color:var(--gd-muted-foreground);min-width:40px;text-align:right;">01:23</span>
+                  <div class="progress-track">
+                    <div class="progress-fill" style="width:34%;">
+                      <div class="progress-knob"></div>
+                    </div>
+                  </div>
+                  <span class="num" style="font-size:12px;color:var(--gd-muted-foreground);min-width:40px;">04:05</span>
+                </div>
+                <!-- 控制按钮组：左 模式/收藏 | 中 上一首/播放/下一首 | 右 音量 -->
+                <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;">
+                  <div style="display:flex;align-items:center;gap:8px;justify-content:flex-end;">
+                    <button class="ctrl-btn" title="播放模式：列表循环"><i data-lucide="repeat" style="width:18px;height:18px;"></i></button>
+                    <button class="ctrl-btn is-fav" title="已收藏"><i data-lucide="heart" style="width:18px;height:18px;"></i></button>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:20px;justify-content:center;">
+                    <button class="ctrl-btn" title="上一首"><i data-lucide="skip-back" style="width:20px;height:20px;"></i></button>
+                    <button class="play-btn-main" title="播放/暂停"><i data-lucide="pause" style="width:24px;height:24px;"></i></button>
+                    <button class="ctrl-btn" title="下一首"><i data-lucide="skip-forward" style="width:20px;height:20px;"></i></button>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;justify-content:flex-start;">
+                    <button class="ctrl-btn" title="音量"><i data-lucide="volume-2" style="width:18px;height:18px;"></i></button>
+                    <div style="width:80px;height:3px;background-color:var(--gd-border);border-radius:2px;position:relative;">
+                      <div style="width:60%;height:100%;background-color:var(--gd-primary);border-radius:2px;"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================================================ -->
+          <!-- 2. 发现音乐 -->
+          <!-- ============================================================ -->
+          <section id="music-discover">
+            <div class="section-header">
+              <div>
+                <h2 class="section-title"><span class="idx">2</span>发现音乐</h2>
+                <p class="section-subtitle">三段式布局：为你推荐网格 + 热门歌单网格 + 排行榜列表（热门/新歌/飙升 tab）</p>
+              </div>
+              <span class="src-tag">MusicDiscoverView.axaml</span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:20px;">
+              <!-- 为你推荐 -->
+              <div class="metric-card">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+                  <div>
+                    <h3 style="font-size:20px;font-weight:600;color:var(--gd-foreground);margin:0;">为你推荐</h3>
+                    <p style="font-size:13px;color:var(--gd-muted-foreground);margin:4px 0 0 0;">根据你的喜好，为你精选的音乐</p>
+                  </div>
+                  <button class="gd-ghost-btn"><i data-lucide="upload" style="width:14px;height:14px;"></i>导入本地歌曲</button>
+                </div>
+                <div class="song-grid">
+                  <div class="song-card">
+                    <div class="cover grad-a">♪</div>
+                    <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);margin-top:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">星河入梦</div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">云水谣</div>
+                  </div>
+                  <div class="song-card">
+                    <div class="cover grad-b">♫</div>
+                    <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);margin-top:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">长河落日</div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">山川客</div>
+                  </div>
+                  <div class="song-card">
+                    <div class="cover grad-c">♪</div>
+                    <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);margin-top:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">雾里看花</div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">林深</div>
+                  </div>
+                  <div class="song-card">
+                    <div class="cover grad-d">♫</div>
+                    <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);margin-top:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">归途</div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">青衫</div>
+                  </div>
+                  <div class="song-card">
+                    <div class="cover grad-e">♪</div>
+                    <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);margin-top:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">山有木兮</div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">木兮</div>
+                  </div>
+                  <div class="song-card">
+                    <div class="cover grad-f">♫</div>
+                    <div style="font-size:14px;font-weight:600;color:var(--gd-foreground);margin-top:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">晚风</div>
+                    <div style="font-size:12px;color:var(--gd-muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">陌上</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 热门歌单 -->
+              <div class="metric-card">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                  <h3 style="font-size:20px;font-weight:600;color:var(--gd-foreground);margin:0;">热门歌单</h3>
+                  <span style="font-size:12px;color:var(--gd-muted-foreground);display:inline-flex;align-items:center;gap:4px;"><i data-lucide="cloud" style="width:12px;height:12px;"></i>来自网易云音乐</span>
+                </div>
+                <div class="song-grid">
+                  <div class="song-card">
+                    <div class="cover grad-a">♫</div>
+                    <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);margin-top:10px;line-height:18px;">华语经典怀旧合集</div>
+                    <div style="font-size:11px;color:var(--gd-muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">音乐收藏家 · <span class="num">128.5万</span> 次播放</div>
+                  </div>
+                  <div class="song-card">
+                    <div class="cover grad-c">♫</div>
+                    <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);margin-top:10px;line-height:18px;">深夜电台 · 助眠白噪音</div>
+                    <div style="font-size:11px;color:var(--gd-muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">夜归人 · <span class="num">89.3万</span> 次播放</div>
+                  </div>
+                  <div class="song-card">
+                    <div class="cover grad-b">♫</div>
+                    <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);margin-top:10px;line-height:18px;">古风国韵精选</div>
+                    <div style="font-size:11px;color:var(--gd-muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">风雅集 · <span class="num">215.7万</span> 次播放</div>
+                  </div>
+                  <div class="song-card">
+                    <div class="cover grad-d">♫</div>
+                    <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);margin-top:10px;line-height:18px;">通勤路上的轻音乐</div>
+                    <div style="font-size:11px;color:var(--gd-muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">通勤族 · <span class="num">56.2万</span> 次播放</div>
+                  </div>
+                  <div class="song-card">
+                    <div class="cover grad-e">♫</div>
+                    <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);margin-top:10px;line-height:18px;">影视原声大盘点</div>
+                    <div style="font-size:11px;color:var(--gd-muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">影迷之家 · <span class="num">178.9万</span> 次播放</div>
+                  </div>
+                  <div class="song-card">
+                    <div class="cover grad-f">♫</div>
+                    <div style="font-size:13px;font-weight:600;color:var(--gd-foreground);margin-top:10px;line-height:18px;">民谣拾遗</div>
+                    <div style="font-size:11px;color:var(--gd-muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">拾光者 · <span class="num">43.1万</span> 次播放</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 排行榜 -->
+              <div class="metric-card">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                  <h3 style="font-size:20px;font-weight:600;color:var(--gd-foreground);margin:0;">排行榜</h3>
+                  <div style="display:flex;gap:6px;">
+                    <button class="gd-tab-btn is-active">热门</button>
+                    <button class="gd-tab-btn">新歌</button>
+                    <button class="gd-tab-btn">飙升</button>
+                  </div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                  <div class="gd-row">
+                    <span class="rk">1</span>
+                    <div class="mini-cover md grad-a">♪</div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="display:flex;align-items:center;gap:6px;">
+                        <span style="font-size:14px;color:var(--gd-foreground);font-weight:500;">星河入梦</span>
+                        <span class="badge badge-info">本地</span>
+                      </div>
+                      <span style="font-size:12px;color:var(--gd-muted-foreground);">云水谣</span>
+                    </div>
+                    <span class="num" style="font-size:12px;color:var(--gd-muted-foreground);">04:05</span>
+                    <button class="header-icon-btn" title="音乐故事" style="width:28px;height:28px;"><i data-lucide="book-open" style="width:14px;height:14px;"></i></button>
+                  </div>
+                  <div class="gd-row">
+                    <span class="rk">2</span>
+                    <div class="mini-cover md grad-b">♫</div>
+                    <div style="flex:1;min-width:0;">
+                      <span style="font-size:14px;color:var(--gd-foreground);font-weight:500;">长河落日</span>
+                      <span style="font-size:12px;color:var(--gd-muted-foreground);display:block;">山川客</span>
+                    </div>
+                    <span class="num" style="font-size:12px;color:var(--gd-muted-foreground);">03:48</span>
+                    <button class="header-icon-btn" title="音乐故事" style="width:28px;height:28px;"><i data-lucide="book-open" style="width:14px;height:14px;"></i></button>
+                  </div>
+                  <div class="gd-row">
+                    <span class="rk">3</span>
+                    <div class="mini-cover md grad-c">♪</div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="display:flex;align-items:center;gap:6px;">
+                        <span style="font-size:14px;color:var(--gd-foreground);font-weight:500;">雾里看花</span>
+                        <span class="badge badge-info">本地</span>
+                      </div>
+                      <span style="font-size:12px;color:var(--gd-muted-foreground);">林深</span>
+                    </div>
+                    <span class="num" style="font-size:12px;color:var(--gd-muted-foreground);">04:22</span>
+                    <button class="header-icon-btn" title="音乐故事" style="width:28px;height:28px;"><i data-lucide="book-open" style="width:14px;height:14px;"></i></button>
+                  </div>
+                  <div class="gd-row">
+                    <span class="rk">4</span>
+                    <div class="mini-cover md grad-d">♫</div>
+                    <div style="flex:1;min-width:0;">
+                      <span style="font-size:14px;color:var(--gd-foreground);font-weight:500;">归途</span>
+                      <span style="font-size:12px;color:var(--gd-muted-foreground);display:block;">青衫</span>
+                    </div>
+                    <span class="num" style="font-size:12px;color:var(--gd-muted-foreground);">03:15</span>
+                    <button class="header-icon-btn" title="音乐故事" style="width:28px;height:28px;"><i data-lucide="book-open" style="width:14px;height:14px;"></i></button>
+                  </div>
+                  <div class="gd-row">
+                    <span class="rk">5</span>
+                    <div class="mini-cover md grad-e">♪</div>
+                    <div style="flex:1;min-width:0;">
+                      <span style="font-size:14px;color:var(--gd-foreground);font-weight:500;">山有木兮</span>
+                      <span style="font-size:12px;color:var(--gd-muted-foreground);display:block;">木兮</span>
+                    </div>
+                    <span class="num" style="font-size:12px;color:var(--gd-muted-foreground);">04:50</span>
+                    <button class="header-icon-btn" title="音乐故事" style="width:28px;height:28px;"><i data-lucide="book-open" style="width:14px;height:14px;"></i></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================================================ -->
+          <!-- 3. 搜索 -->
+          <!-- ============================================================ -->
+          <section id="music-search">
+            <div class="section-header">
+              <div>
+                <h2 class="section-title"><span class="idx">3</span>搜索</h2>
+                <p class="section-subtitle">搜索栏 + 热搜词云 + 历史搜索 + 结果 tab（歌曲/歌单/歌手）+ 空状态推荐</p>
+              </div>
+              <span class="src-tag">MusicSearchView.axaml</span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:20px;">
+              <!-- 搜索栏 -->
+              <div class="metric-card" style="padding:16px;">
+                <div style="display:flex;gap:12px;align-items:center;">
+                  <div style="flex:1;display:flex;align-items:center;gap:8px;background-color:var(--gd-muted);border:1px solid var(--gd-border);border-radius:var(--gd-radius-md);padding:10px 14px;">
+                    <i data-lucide="search" style="width:16px;height:16px;color:var(--gd-muted-foreground);"></i>
+                    <input type="text" placeholder="搜索歌曲、艺术家、专辑、歌单..." style="flex:1;background:transparent;border:none;outline:none;font-size:14px;color:var(--gd-foreground);" />
+                  </div>
+                  <button class="gd-primary-btn">搜索</button>
+                </div>
+              </div>
+
+              <!-- 热搜词云 + 历史搜索 -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                <div class="metric-card">
+                  <h3 style="font-size:16px;font-weight:600;color:var(--gd-foreground);margin:0 0 14px 0;display:flex;align-items:center;gap:6px;"><i data-lucide="flame" style="width:16px;height:16px;color:var(--gd-state-warning);"></i>热门搜索</h3>
+                  <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                    <span class="gd-chip top"><span class="rank">1</span>星河入梦</span>
+                    <span class="gd-chip top"><span class="rank">2</span>古风合集</span>
+                    <span class="gd-chip top"><span class="rank">3</span>深夜电台</span>
+                    <span class="gd-chip"><span class="rank">4</span>云水谣</span>
+                    <span class="gd-chip"><span class="rank">5</span>助眠白噪音</span>
+                    <span class="gd-chip"><span class="rank">6</span>长河落日</span>
+                    <span class="gd-chip"><span class="rank">7</span>民谣</span>
+                    <span class="gd-chip"><span class="rank">8</span>影视原声</span>
+                    <span class="gd-chip"><span class="rank">9</span>山川客</span>
+                    <span class="gd-chip"><span class="rank">10</span>轻音乐</span>
+                  </div>
+                </div>
+                <div class="metric-card">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                    <h3 style="font-size:16px;font-weight:600;color:var(--gd-foreground);margin:0;display:flex;align-items:center;gap:6px;"><i data-lucide="history" style="width:16px;height:16px;color:var(--gd-muted-foreground);"></i>历史搜索</h3>
+                    <button class="gd-ghost-btn" style="padding:4px 10px;font-size:12px;"><i data-lucide="trash-2" style="width:12px;height:12px;"></i>清空</button>
+                  </div>
+                  <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                    <span class="gd-chip">星河入梦</span>
+                    <span class="gd-chip">云水谣</span>
+                    <span class="gd-chip">古风</span>
+                    <span class="gd-chip">助眠白噪音</span>
+                    <span class="gd-chip">山川客</span>
+                    <span class="gd-chip">长河落日</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 搜索结果 -->
+              <div class="metric-card">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:1px solid var(--gd-border);padding-bottom:12px;">
+                  <div style="display:flex;gap:6px;">
+                    <button class="gd-tab-btn is-active">歌曲 <span style="opacity:0.7;">12</span></button>
+                    <button class="gd-tab-btn">歌单 <span style="opacity:0.7;">4</span></button>
+                    <button class="gd-tab-btn">歌手 <span style="opacity:0.7;">3</span></button>
+                  </div>
+                  <span style="font-size:12px;color:var(--gd-muted-foreground);">搜索 “星河” 共找到 <span class="num" style="color:var(--gd-primary);">19</span> 条结果</span>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                  <div class="gd-row">
+                    <button class="header-icon-btn" title="播放" style="width:32px;height:32px;background-color:var(--gd-primary);color:var(--gd-primary-foreground);"><i data-lucide="play" style="width:14px;height:14px;"></i></button>
+                    <div class="mini-cover md grad-a">♪</div>
+                    <div style="flex:1;min-width:0;">
+                      <span style="font-size:14px;color:var(--gd-foreground);font-weight:500;">星河入梦</span>
+                      <span style="font-size:12px;color:var(--gd-muted-foreground);display:block;">云水谣 - 专辑《长河落日》</span>
+                    </div>
+                    <span class="num" style="font-size:12px;color:var(--gd-muted-foreground);">04:05</span>
+                    <button class="header-icon-btn" title="音乐故事" style="width:28px;height:28px;"><i data-lucide="book-open" style="width:14px;height:14px;"></i></button>
+                    <button class="header-icon-btn" title="收藏" style="width:28px;height:28px;"><i data-lucide="heart" style="width:14px;height:14px;"></i></button>
+                    <button class="header-icon-btn" title="添加到歌单" style="width:28px;height:28px;"><i data-lucide="list-plus" style="width:14px;height:14px;"></i></button>
+                  </div>
+                  <div class="gd-row">
+                    <button class="header-icon-btn" title="播放" style="width:32px;height:32px;"><i data-lucide="play" style="width:14px;height:14px;"></i></button>
+                    <div class="mini-cover md grad-b">♫</div>
+                    <div style="flex:1;min-width:0;">
+                      <span style="font-size:14px;color:var(--gd-foreground);font-weight:500;">星河之外</span>
+                      <span style="font-size:12px;color:var(--gd-muted-foreground);display:block;">陌上 - 专辑《夜航船》</span>
+                    </div>
+                    <span class="num" style="font-size:12px;color:var(--gd-muted-foreground);">03:52</span>
+                    <button class="header-icon-btn" title="音乐故事" style="width:28px;height:28px;"><i data-lucide="book-open" style="width:14px;height:14px;"></i></button>
+                    <button class="header-icon-btn" title="收藏" style="width:28px;height:28px;"><i data-lucide="heart" style="width:14px;height:14px;"></i></button>
+                    <button class="header-icon-btn" title="添加到歌单" style="width:28px;height:28px;"><i data-lucide="list-plus" style="width:14px;height:14px;"></i></button>
+                  </div>
+                  <div class="gd-row">
+                    <button class="header-icon-btn" title="播放" style="width:32px;height:32px;"><i data-lucide="play" style="width:14px;height:14px;"></i></button>
+                    <div class="mini-cover md grad-c">♪</div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="display:flex;align-items:center;gap:6px;">
+                        <span style="font-size:14px;color:var(--gd-foreground);font-weight:500;">满天星河</span>
+                        <span class="badge badge-info">本地</span>
+                      </div>
+                      <span style="font-size:12px;color:var(--gd-muted-foreground);display:block;">青衫 - 专辑《归途》</span>
+                    </div>
+                    <span class="num" style="font-size:12px;color:var(--gd-muted-foreground);">04:18</span>
+                    <button class="header-icon-btn" title="音乐故事" style="width:28px;height:28px;"><i data-lucide="book-open" style="width:14px;height:14px;"></i></button>
+                    <button class="header-icon-btn" title="收藏" style="width:28px;height:28px;"><i data-lucide="heart" style="width:14px;height:14px;"></i></button>
+                    <button class="header-icon-btn" title="添加到歌单" style="width:28px;height:28px;"><i data-lucide="list-plus" style="width:14px;height:14px;"></i></button>
+                  </div>
+                </div>
+
+                <!-- 空状态提示 -->
+                <div style="margin-top:20px;padding:16px;background-color:var(--gd-muted);border:1px dashed var(--gd-border);border-radius:var(--gd-radius-md);display:flex;align-items:center;gap:10px;">
+                  <i data-lucide="info" style="width:16px;height:16px;color:var(--gd-muted-foreground);"></i>
+                  <span style="font-size:12px;color:var(--gd-muted-foreground);">搜索前将显示推荐内容；未找到结果时显示空状态提示。</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================================================ -->
+          <!-- 4. 歌单管理 -->
+          <!-- ============================================================ -->
+          <section id="playlist-manage">
+            <div class="section-header">
+              <div>
+                <h2 class="section-title"><span class="idx">4</span>歌单管理</h2>
+                <p class="section-subtitle">左侧我的歌单列表 + 右侧歌单详情 + 歌曲表（拖拽排序 + 批量选择）+ 批量操作工具栏</p>
+              </div>
+              <span class="src-tag">PlaylistManageView.axaml</span>
+            </div>
+
+            <div class="playlist-layout">
+              <!-- 左侧：我的歌单列表 -->
+              <div class="playlist-list-panel">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                  <h3 style="font-size:16px;font-weight:600;color:var(--gd-foreground);margin:0;">我的歌单</h3>
+                  <button class="header-icon-btn" title="创建歌单" style="width:28px;height:28px;"><i data-lucide="plus" style="width:16px;height:16px;"></i></button>
+                </div>
+                <div>
+                  <div class="playlist-item is-active">
+                    <div class="mini-cover md grad-a">♪</div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:13px;font-weight:500;color:var(--gd-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">我的收藏</div>
+                      <div style="font-size:11px;color:var(--gd-muted-foreground);" class="num">28 首</div>
+                    </div>
+                  </div>
+                  <div class="playlist-item">
+                    <div class="mini-cover md grad-b">♫</div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:13px;font-weight:500;color:var(--gd-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">深夜电台</div>
+                      <div style="font-size:11px;color:var(--gd-muted-foreground);" class="num">15 首</div>
+                    </div>
+                    <button class="header-icon-btn" title="删除" style="width:24px;height:24px;"><i data-lucide="trash-2" style="width:12px;height:12px;"></i></button>
+                  </div>
+                  <div class="playlist-item">
+                    <div class="mini-cover md grad-c">♪</div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:13px;font-weight:500;color:var(--gd-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">古风国韵</div>
+                      <div style="font-size:11px;color:var(--gd-muted-foreground);" class="num">42 首</div>
+                    </div>
+                    <button class="header-icon-btn" title="删除" style="width:24px;height:24px;"><i data-lucide="trash-2" style="width:12px;height:12px;"></i></button>
+                  </div>
+                  <div class="playlist-item">
+                    <div class="mini-cover md grad-d">♫</div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:13px;font-weight:500;color:var(--gd-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">通勤路上</div>
+                      <div style="font-size:11px;color:var(--gd-muted-foreground);" class="num">19 首</div>
+                    </div>
+                    <button class="header-icon-btn" title="删除" style="width:24px;height:24px;"><i data-lucide="trash-2" style="width:12px;height:12px;"></i></button>
+                  </div>
+                  <div class="playlist-item">
+                    <div class="mini-cover md grad-e">♪</div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:13px;font-weight:500;color:var(--gd-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">助眠白噪音</div>
+                      <div style="font-size:11px;color:var(--gd-muted-foreground);" class="num">8 首</div>
+                    </div>
+                    <button class="header-icon-btn" title="删除" style="width:24px;height:24px;"><i data-lucide="trash-2" style="width:12px;height:12px;"></i></button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 右侧：歌单详情 -->
+              <div class="playlist-detail">
+                <!-- 歌单头部 -->
+                <div style="display:flex;gap:24px;margin-bottom:20px;">
+                  <div style="width:160px;height:160px;border-radius:var(--gd-radius-lg);background:linear-gradient(135deg,var(--gd-brand-500),var(--gd-brand-800));display:flex;align-items:center;justify-content:center;color:var(--gd-primary-foreground);font-size:56px;flex-shrink:0;">♪</div>
+                  <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;">
+                    <span class="badge badge-info" style="align-self:flex-start;margin-bottom:8px;">歌单</span>
+                    <h3 style="font-size:26px;font-weight:600;color:var(--gd-foreground);margin:0 0 8px 0;">我的收藏</h3>
+                    <p style="font-size:13px;color:var(--gd-muted-foreground);margin:0 0 12px 0;">收藏那些一听再听的旋律，每一首都是心头好。</p>
+                    <div style="display:flex;align-items:center;gap:12px;font-size:12px;color:var(--gd-muted-foreground);">
+                      <span>创建者：龙</span>
+                      <span>·</span>
+                      <span class="num">28 首</span>
+                      <span>·</span>
+                      <span class="num">2 小时 14 分</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div style="display:flex;gap:8px;margin-bottom:16px;">
+                  <button class="gd-primary-btn"><i data-lucide="play" style="width:14px;height:14px;"></i>播放全部</button>
+                  <button class="gd-ghost-btn"><i data-lucide="plus" style="width:14px;height:14px;"></i>添加歌曲</button>
+                  <button class="gd-ghost-btn"><i data-lucide="upload" style="width:14px;height:14px;"></i>导入本地</button>
+                  <button class="gd-ghost-btn"><i data-lucide="arrow-up-down" style="width:14px;height:14px;"></i>排序</button>
+                </div>
+
+                <!-- 批量操作工具栏 -->
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background-color:var(--gd-popover);border:1px solid var(--gd-primary);border-radius:var(--gd-radius-md);margin-bottom:8px;">
+                  <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <span class="gd-check checked"></span>
+                      <span style="font-size:13px;color:var(--gd-foreground);">已选 <span class="num" style="color:var(--gd-primary);font-weight:600;">2</span> 项</span>
+                    </div>
+                    <button class="gd-ghost-btn" style="padding:4px 10px;font-size:12px;">全选</button>
+                  </div>
+                  <div style="display:flex;gap:8px;">
+                    <button class="gd-ghost-btn" style="padding:4px 10px;font-size:12px;"><i data-lucide="list-plus" style="width:12px;height:12px;"></i>添加到队列</button>
+                    <button class="gd-ghost-btn" style="padding:4px 10px;font-size:12px;color:var(--gd-destructive);border-color:var(--gd-destructive);"><i data-lucide="trash-2" style="width:12px;height:12px;"></i>删除</button>
+                  </div>
+                </div>
+
+                <!-- 歌曲列表表 -->
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th style="width:40px;"><span class="gd-check checked"></span></th>
+                      <th style="width:40px;"></th>
+                      <th style="width:40px;">#</th>
+                      <th>标题</th>
+                      <th>歌手</th>
+                      <th>专辑</th>
+                      <th style="width:64px;">时长</th>
+                      <th style="width:96px;">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><span class="gd-check checked"></span></td>
+                      <td><span class="drag-handle"><i data-lucide="grip-vertical" style="width:14px;height:14px;"></i></span></td>
+                      <td class="num" style="color:var(--gd-muted-foreground);">1</td>
+                      <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                          <div class="mini-cover sm grad-a">♪</div>
+                          <div>
+                            <div style="display:flex;align-items:center;gap:6px;"><span style="color:var(--gd-primary);">星河入梦</span> <span class="badge badge-info">本地</span></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style="color:var(--gd-muted-foreground);">云水谣</td>
+                      <td style="color:var(--gd-muted-foreground);">长河落日</td>
+                      <td class="num" style="color:var(--gd-muted-foreground);">04:05</td>
+                      <td>
+                        <div style="display:flex;gap:2px;">
+                          <button class="header-icon-btn" title="音乐故事" style="width:26px;height:26px;"><i data-lucide="book-open" style="width:13px;height:13px;"></i></button>
+                          <button class="header-icon-btn" title="收藏" style="width:26px;height:26px;"><i data-lucide="heart" style="width:13px;height:13px;color:var(--gd-primary);"></i></button>
+                          <button class="header-icon-btn" title="移除" style="width:26px;height:26px;"><i data-lucide="trash-2" style="width:13px;height:13px;"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><span class="gd-check"></span></td>
+                      <td><span class="drag-handle"><i data-lucide="grip-vertical" style="width:14px;height:14px;"></i></span></td>
+                      <td class="num" style="color:var(--gd-muted-foreground);">2</td>
+                      <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                          <div class="mini-cover sm grad-b">♫</div>
+                          <span>长河落日</span>
+                        </div>
+                      </td>
+                      <td style="color:var(--gd-muted-foreground);">山川客</td>
+                      <td style="color:var(--gd-muted-foreground);">长河落日</td>
+                      <td class="num" style="color:var(--gd-muted-foreground);">03:48</td>
+                      <td>
+                        <div style="display:flex;gap:2px;">
+                          <button class="header-icon-btn" title="音乐故事" style="width:26px;height:26px;"><i data-lucide="book-open" style="width:13px;height:13px;"></i></button>
+                          <button class="header-icon-btn" title="收藏" style="width:26px;height:26px;"><i data-lucide="heart" style="width:13px;height:13px;"></i></button>
+                          <button class="header-icon-btn" title="移除" style="width:26px;height:26px;"><i data-lucide="trash-2" style="width:13px;height:13px;"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><span class="gd-check checked"></span></td>
+                      <td><span class="drag-handle"><i data-lucide="grip-vertical" style="width:14px;height:14px;"></i></span></td>
+                      <td class="num" style="color:var(--gd-muted-foreground);">3</td>
+                      <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                          <div class="mini-cover sm grad-c">♪</div>
+                          <div>
+                            <div style="display:flex;align-items:center;gap:6px;"><span>雾里看花</span> <span class="badge badge-info">本地</span></div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style="color:var(--gd-muted-foreground);">林深</td>
+                      <td style="color:var(--gd-muted-foreground);">山林集</td>
+                      <td class="num" style="color:var(--gd-muted-foreground);">04:22</td>
+                      <td>
+                        <div style="display:flex;gap:2px;">
+                          <button class="header-icon-btn" title="音乐故事" style="width:26px;height:26px;"><i data-lucide="book-open" style="width:13px;height:13px;"></i></button>
+                          <button class="header-icon-btn" title="收藏" style="width:26px;height:26px;"><i data-lucide="heart" style="width:13px;height:13px;"></i></button>
+                          <button class="header-icon-btn" title="移除" style="width:26px;height:26px;"><i data-lucide="trash-2" style="width:13px;height:13px;"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><span class="gd-check"></span></td>
+                      <td><span class="drag-handle"><i data-lucide="grip-vertical" style="width:14px;height:14px;"></i></span></td>
+                      <td class="num" style="color:var(--gd-muted-foreground);">4</td>
+                      <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                          <div class="mini-cover sm grad-d">♫</div>
+                          <span>归途</span>
+                        </div>
+                      </td>
+                      <td style="color:var(--gd-muted-foreground);">青衫</td>
+                      <td style="color:var(--gd-muted-foreground);">归途</td>
+                      <td class="num" style="color:var(--gd-muted-foreground);">03:15</td>
+                      <td>
+                        <div style="display:flex;gap:2px;">
+                          <button class="header-icon-btn" title="音乐故事" style="width:26px;height:26px;"><i data-lucide="book-open" style="width:13px;height:13px;"></i></button>
+                          <button class="header-icon-btn" title="收藏" style="width:26px;height:26px;"><i data-lucide="heart" style="width:13px;height:13px;"></i></button>
+                          <button class="header-icon-btn" title="移除" style="width:26px;height:26px;"><i data-lucide="trash-2" style="width:13px;height:13px;"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><span class="gd-check"></span></td>
+                      <td><span class="drag-handle"><i data-lucide="grip-vertical" style="width:14px;height:14px;"></i></span></td>
+                      <td class="num" style="color:var(--gd-muted-foreground);">5</td>
+                      <td>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                          <div class="mini-cover sm grad-e">♪</div>
+                          <span>山有木兮</span>
+                        </div>
+                      </td>
+                      <td style="color:var(--gd-muted-foreground);">木兮</td>
+                      <td style="color:var(--gd-muted-foreground);">山有木兮</td>
+                      <td class="num" style="color:var(--gd-muted-foreground);">04:50</td>
+                      <td>
+                        <div style="display:flex;gap:2px;">
+                          <button class="header-icon-btn" title="音乐故事" style="width:26px;height:26px;"><i data-lucide="book-open" style="width:13px;height:13px;"></i></button>
+                          <button class="header-icon-btn" title="收藏" style="width:26px;height:26px;"><i data-lucide="heart" style="width:13px;height:13px;"></i></button>
+                          <button class="header-icon-btn" title="移除" style="width:26px;height:26px;"><i data-lucide="trash-2" style="width:13px;height:13px;"></i></button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- ============================================================ -->
+          <!-- 5. 音乐故事 -->
+          <!-- ============================================================ -->
+          <section id="music-story">
+            <div class="section-header">
+              <div>
+                <h2 class="section-title"><span class="idx">5</span>音乐故事</h2>
+                <p class="section-subtitle">故事列表网格 + 故事详情（时间线叙事 + 图文混排 + 音频播放器 + 关联歌曲推荐）</p>
+              </div>
+              <span class="src-tag">MusicStoryView.axaml</span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:24px;">
+              <!-- 故事列表 -->
+              <div class="metric-card">
+                <div style="margin-bottom:16px;">
+                  <h3 style="font-size:20px;font-weight:600;color:var(--gd-foreground);margin:0;">热门音乐故事</h3>
+                  <p style="font-size:13px;color:var(--gd-muted-foreground);margin:4px 0 0 0;">探索最受欢迎的音乐故事</p>
+                </div>
+                <div class="story-grid">
+                  <div class="story-card">
+                    <div class="story-cover grad-a">♪</div>
+                    <div style="padding:14px 16px;">
+                      <h4 style="font-size:15px;font-weight:600;color:var(--gd-foreground);margin:0 0 6px 0;">星河入梦：写给深夜的歌</h4>
+                      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gd-muted-foreground);margin-bottom:6px;">
+                        <i data-lucide="music" style="width:12px;height:12px;"></i><span>关联《星河入梦》· 云水谣</span>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--gd-muted-foreground);">
+                        <i data-lucide="clock" style="width:12px;height:12px;"></i><span class="num">2026-07-18</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="story-card">
+                    <div class="story-cover grad-b">♫</div>
+                    <div style="padding:14px 16px;">
+                      <h4 style="font-size:15px;font-weight:600;color:var(--gd-foreground);margin:0 0 6px 0;">长河落日背后的山川</h4>
+                      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gd-muted-foreground);margin-bottom:6px;">
+                        <i data-lucide="music" style="width:12px;height:12px;"></i><span>关联《长河落日》· 山川客</span>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--gd-muted-foreground);">
+                        <i data-lucide="clock" style="width:12px;height:12px;"></i><span class="num">2026-07-12</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="story-card">
+                    <div class="story-cover grad-c">♪</div>
+                    <div style="padding:14px 16px;">
+                      <h4 style="font-size:15px;font-weight:600;color:var(--gd-foreground);margin:0 0 6px 0;">雾里看花：林深的创作手记</h4>
+                      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gd-muted-foreground);margin-bottom:6px;">
+                        <i data-lucide="music" style="width:12px;height:12px;"></i><span>关联《雾里看花》· 林深</span>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--gd-muted-foreground);">
+                        <i data-lucide="clock" style="width:12px;height:12px;"></i><span class="num">2026-07-05</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="story-card">
+                    <div class="story-cover grad-d">♫</div>
+                    <div style="padding:14px 16px;">
+                      <h4 style="font-size:15px;font-weight:600;color:var(--gd-foreground);margin:0 0 6px 0;">归途：一个旅人的独白</h4>
+                      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gd-muted-foreground);margin-bottom:6px;">
+                        <i data-lucide="music" style="width:12px;height:12px;"></i><span>关联《归途》· 青衫</span>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--gd-muted-foreground);">
+                        <i data-lucide="clock" style="width:12px;height:12px;"></i><span class="num">2026-06-28</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 故事详情 -->
+              <div class="metric-card" style="padding:0;overflow:hidden;">
+                <!-- 头部大图 -->
+                <div style="height:200px;background:linear-gradient(135deg,var(--gd-brand-600),var(--gd-brand-900));display:flex;align-items:center;justify-content:center;color:var(--gd-primary-foreground);font-size:64px;position:relative;">
+                  ♪
+                  <div style="position:absolute;bottom:0;left:0;right:0;padding:24px 32px;background:linear-gradient(to top,color-mix(in srgb, var(--gd-background) 90%, transparent),transparent);">
+                    <h3 style="font-size:26px;font-weight:600;color:var(--gd-primary-foreground);margin:0;">星河入梦：写给深夜的歌</h3>
+                    <p style="font-size:14px;color:var(--gd-primary-foreground);margin:6px 0 0 0;">一首在失眠夜里诞生的旋律，藏着创作者最柔软的心事</p>
+                  </div>
+                </div>
+
+                <!-- 发布信息 -->
+                <div style="display:flex;align-items:center;gap:16px;padding:16px 32px;border-bottom:1px solid var(--gd-border);font-size:12px;color:var(--gd-muted-foreground);">
+                  <span style="display:flex;align-items:center;gap:6px;"><i data-lucide="user" style="width:14px;height:14px;"></i>作者：龙</span>
+                  <span style="display:flex;align-items:center;gap:6px;"><i data-lucide="clock" style="width:14px;height:14px;"></i><span class="num">2026-07-18</span></span>
+                  <span style="display:flex;align-items:center;gap:6px;"><i data-lucide="eye" style="width:14px;height:14px;"></i><span class="num">3.2万</span> 阅读</span>
+                  <span style="display:flex;align-items:center;gap:6px;"><i data-lucide="music" style="width:14px;height:14px;"></i>关联《星河入梦》· 云水谣</span>
+                </div>
+
+                <!-- 正文：时间线叙事 -->
+                <div style="padding:28px 32px;">
+                  <div class="timeline">
+                    <div class="timeline-node">
+                      <h4 style="font-size:16px;font-weight:600;color:var(--gd-primary);margin:0 0 8px 0;">一、深夜的灵感</h4>
+                      <p style="font-size:14px;color:var(--gd-foreground);line-height:1.8;margin:0 0 12px 0;">凌晨三点，城市的灯火已经稀疏。云水谣坐在窗前，看着远处隐入雾霭的山影，一个旋律在脑海中浮现。他说，那是一个"携一身清冷"的调子，像星河倒映在湖面，安静却深邃。</p>
+                      <div style="background-color:var(--gd-muted);border:1px solid var(--gd-border);border-radius:var(--gd-radius-md);padding:12px 16px;font-size:13px;color:var(--gd-muted-foreground);font-style:italic;border-left:3px solid var(--gd-primary);">
+                        "夜色如墨，染透了窗棂；远山隐入，雾霭的影。" —— 歌词手稿片段
+                      </div>
+                    </div>
+                    <div class="timeline-node">
+                      <h4 style="font-size:16px;font-weight:600;color:var(--gd-primary);margin:0 0 8px 0;">二、落笔成诗</h4>
+                      <p style="font-size:14px;color:var(--gd-foreground);line-height:1.8;margin:0 0 12px 0;">天亮时分，整首歌的骨架已经成型。云水谣习惯用文字先记录情绪，再让旋律去贴合文字的呼吸。他认为"星河入梦"四个字，承载的是一种在喧嚣世界中寻找内心宁静的渴望。</p>
+                      <p style="font-size:14px;color:var(--gd-foreground);line-height:1.8;margin:0;">编曲上，他选择了古筝与电子音色的融合——古老的弦音代表传统与根基，而合成器的铺底则象征现代都市的疏离感。两者交织，恰如每个人在夜晚面对自我时的真实状态。</p>
+                    </div>
+                    <div class="timeline-node">
+                      <h4 style="font-size:16px;font-weight:600;color:var(--gd-primary);margin:0 0 8px 0;">三、共鸣与回响</h4>
+                      <p style="font-size:14px;color:var(--gd-foreground);line-height:1.8;margin:0;">歌曲发布后，意外地在深夜电台和助眠歌单中走红。许多听众留言说，这首歌陪伴他们度过了无数个失眠的夜晚。云水谣说，这正是他创作时未曾预料、却最为珍视的回响。</p>
+                    </div>
+                  </div>
+
+                  <!-- 音频播放器条 -->
+                  <div style="margin-top:28px;background-color:var(--gd-muted);border:1px solid var(--gd-border);border-radius:var(--gd-radius-lg);padding:16px 20px;display:flex;align-items:center;gap:16px;">
+                    <button class="play-btn-main" style="width:44px;height:44px;border-radius:22px;" title="播放"><i data-lucide="play" style="width:20px;height:20px;"></i></button>
+                    <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;">
+                      <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:13px;color:var(--gd-foreground);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">星河入梦 · 创作demo片段</span>
+                        <span class="num" style="font-size:11px;color:var(--gd-muted-foreground);">01:12 / 03:24</span>
+                      </div>
+                      <div class="waveform">
+                        <span class="wave-bar played" style="height:30%;"></span>
+                        <span class="wave-bar played" style="height:55%;"></span>
+                        <span class="wave-bar played" style="height:70%;"></span>
+                        <span class="wave-bar played" style="height:45%;"></span>
+                        <span class="wave-bar played" style="height:80%;"></span>
+                        <span class="wave-bar played" style="height:60%;"></span>
+                        <span class="wave-bar played" style="height:90%;"></span>
+                        <span class="wave-bar played" style="height:50%;"></span>
+                        <span class="wave-bar played" style="height:75%;"></span>
+                        <span class="wave-bar played" style="height:40%;"></span>
+                        <span class="wave-bar played" style="height:65%;"></span>
+                        <span class="wave-bar played" style="height:85%;"></span>
+                        <span class="wave-bar" style="height:55%;"></span>
+                        <span class="wave-bar" style="height:70%;"></span>
+                        <span class="wave-bar" style="height:40%;"></span>
+                        <span class="wave-bar" style="height:60%;"></span>
+                        <span class="wave-bar" style="height:80%;"></span>
+                        <span class="wave-bar" style="height:50%;"></span>
+                        <span class="wave-bar" style="height:75%;"></span>
+                        <span class="wave-bar" style="height:45%;"></span>
+                        <span class="wave-bar" style="height:65%;"></span>
+                        <span class="wave-bar" style="height:90%;"></span>
+                        <span class="wave-bar" style="height:35%;"></span>
+                        <span class="wave-bar" style="height:55%;"></span>
+                        <span class="wave-bar" style="height:70%;"></span>
+                        <span class="wave-bar" style="height:50%;"></span>
+                        <span class="wave-bar" style="height:60%;"></span>
+                        <span class="wave-bar" style="height:40%;"></span>
+                        <span class="wave-bar" style="height:75%;"></span>
+                        <span class="wave-bar" style="height:45%;"></span>
+                      </div>
+                    </div>
+                    <button class="header-icon-btn" title="下载"><i data-lucide="download" style="width:16px;height:16px;"></i></button>
+                  </div>
+
+                  <!-- 关联歌曲推荐 -->
+                  <div style="margin-top:24px;">
+                    <h4 style="font-size:15px;font-weight:600;color:var(--gd-foreground);margin:0 0 12px 0;display:flex;align-items:center;gap:6px;"><i data-lucide="link" style="width:15px;height:15px;color:var(--gd-primary);"></i>关联歌曲推荐</h4>
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                      <div class="gd-row">
+                        <div class="mini-cover md grad-a">♪</div>
+                        <div style="flex:1;min-width:0;">
+                          <span style="font-size:14px;color:var(--gd-primary);font-weight:500;">星河入梦</span>
+                          <span style="font-size:12px;color:var(--gd-muted-foreground);display:block;">云水谣 · 专辑《长河落日》</span>
+                        </div>
+                        <button class="gd-primary-btn" style="padding:6px 12px;font-size:12px;"><i data-lucide="play" style="width:12px;height:12px;"></i>播放</button>
+                      </div>
+                      <div class="gd-row">
+                        <div class="mini-cover md grad-b">♫</div>
+                        <div style="flex:1;min-width:0;">
+                          <span style="font-size:14px;color:var(--gd-foreground);font-weight:500;">长河落日</span>
+                          <span style="font-size:12px;color:var(--gd-muted-foreground);display:block;">山川客 · 专辑《长河落日》</span>
+                        </div>
+                        <button class="gd-ghost-btn" style="padding:6px 12px;font-size:12px;"><i data-lucide="plus" style="width:12px;height:12px;"></i>添加</button>
+                      </div>
+                      <div class="gd-row">
+                        <div class="mini-cover md grad-c">♪</div>
+                        <div style="flex:1;min-width:0;">
+                          <span style="font-size:14px;color:var(--gd-foreground);font-weight:500;">归途</span>
+                          <span style="font-size:12px;color:var(--gd-muted-foreground);display:block;">青衫 · 专辑《归途》</span>
+                        </div>
+                        <button class="gd-ghost-btn" style="padding:6px 12px;font-size:12px;"><i data-lucide="plus" style="width:12px;height:12px;"></i>添加</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </main>
+    </div>
+    <script>lucide.createIcons();</script>
+
+    <style id="critical-layout">
+      /* ========== 框架壳：水平顶栏 + 副导航 ========== */
+      .app-root { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background-color: var(--gd-background); color: var(--gd-foreground); }
+      .app-topbar { height: 56px; flex-shrink: 0; display: flex; align-items: center; gap: 24px; padding: 0 20px; background-color: var(--gd-card); border-bottom: 1px solid var(--gd-border); }
+      .topbar-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+      .topbar-main-nav { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+      .topbar-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+      .main-nav-item { position: relative; display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--gd-radius-md); color: var(--gd-muted-foreground); font-size: 14px; font-weight: 500; cursor: pointer; transition: color 0.15s, background-color 0.15s; text-decoration: none; white-space: nowrap; }
+      .main-nav-item:hover { color: var(--gd-foreground); background-color: var(--gd-muted); }
+      .main-nav-item[data-active="true"] { color: var(--gd-primary); background-color: var(--gd-state-info-surface); }
+      .main-nav-item[data-active="true"]::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: -18px; height: 2px; background-color: var(--gd-primary); border-radius: 1px; }
+      .main-nav-icon { width: 16px; height: 16px; flex-shrink: 0; }
+      .app-subnavbar { height: 44px; flex-shrink: 0; display: flex; align-items: center; gap: 2px; padding: 0 20px; background-color: var(--gd-card); border-bottom: 1px solid var(--gd-border); overflow-x: auto; overflow-y: hidden; }
+      .subnav-item { position: relative; display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--gd-radius-sm); color: var(--gd-muted-foreground); font-size: 13px; font-weight: 500; cursor: pointer; transition: color 0.15s, background-color 0.15s; text-decoration: none; white-space: nowrap; flex-shrink: 0; }
+      .subnav-item:hover { color: var(--gd-foreground); background-color: var(--gd-muted); }
+      .subnav-item[data-active="true"] { color: var(--gd-primary); background-color: var(--gd-state-info-surface); }
+      .subnav-icon { width: 14px; height: 14px; flex-shrink: 0; }
+      .subnav-badge { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background-color: var(--gd-state-error); color: var(--gd-state-error-foreground); font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+      .subnav-divider { width: 1px; height: 16px; background-color: var(--gd-border); flex-shrink: 0; margin: 0 4px; }
+      .app-content { flex: 1; overflow-y: auto; overflow-x: auto; }
+
+      /* ---------- 通用组件 ---------- */
+      .metric-card { background-color: var(--gd-card); border: 1px solid var(--gd-border); border-radius: var(--gd-radius-lg); padding: 20px; }
+      .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      .data-table th { text-align: left; padding: 10px 12px; font-weight: 500; color: var(--gd-muted-foreground); border-bottom: 1px solid var(--gd-border); white-space: nowrap; }
+      .data-table td { padding: 10px 12px; border-bottom: 1px solid var(--gd-border); }
+      .data-table tbody tr:hover { background-color: var(--gd-muted); }
+      .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--gd-radius-sm); font-size: 12px; font-weight: 500; }
+      .badge-success { background-color: var(--gd-state-success-surface); color: var(--gd-state-success); }
+      .badge-warning { background-color: var(--gd-state-warning-surface); color: var(--gd-state-warning); }
+      .badge-error { background-color: var(--gd-state-error-surface); color: var(--gd-state-error); }
+      .badge-info { background-color: var(--gd-state-info-surface); color: var(--gd-state-info); }
+      .num { font-family: var(--gd-font-mono); font-variant-numeric: tabular-nums; }
+      .header-icon-btn { width: 36px; height: 36px; border-radius: var(--gd-radius-md); display: flex; align-items: center; justify-content: center; color: var(--gd-muted-foreground); cursor: pointer; transition: background-color 0.15s, color 0.15s; border: none; background: transparent; position: relative; }
+      .header-icon-btn:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+      .win-btn { width: 36px; height: 36px; border-radius: var(--gd-radius-sm); display: flex; align-items: center; justify-content: center; color: var(--gd-muted-foreground); cursor: pointer; transition: background-color 0.15s, color 0.15s; border: none; background: transparent; }
+      .win-btn:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+      .win-btn-close:hover { background-color: var(--gd-state-error); color: var(--gd-state-error-foreground); }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+      /* ---------- 音乐模块专用 ---------- */
+      .page-container { padding: 28px 24px 48px; display: flex; flex-direction: column; gap: 36px; min-width: 1280px; max-width: 1440px; margin: 0 auto; }
+      .section-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--gd-border); }
+      .section-title { font-size: 22px; font-weight: 600; color: var(--gd-foreground); margin: 0; display: flex; align-items: center; gap: 10px; }
+      .section-title .idx { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: var(--gd-radius-md); background-color: var(--gd-state-info-surface); color: var(--gd-primary); font-size: 14px; font-family: var(--gd-font-mono); }
+      .section-subtitle { font-size: 13px; color: var(--gd-muted-foreground); margin: 6px 0 0 0; }
+      .src-tag { font-family: var(--gd-font-mono); font-size: 11px; color: var(--gd-muted-foreground); background-color: var(--gd-muted); padding: 5px 10px; border-radius: var(--gd-radius-sm); border: 1px solid var(--gd-border); white-space: nowrap; }
+
+      .gd-tab-btn { padding: 6px 14px; border-radius: var(--gd-radius-sm); font-size: 13px; font-weight: 500; color: var(--gd-muted-foreground); background: transparent; border: 1px solid var(--gd-border); cursor: pointer; transition: all 0.15s; }
+      .gd-tab-btn:hover { color: var(--gd-foreground); background-color: var(--gd-muted); }
+      .gd-tab-btn.is-active { color: var(--gd-primary-foreground); background-color: var(--gd-primary); border-color: var(--gd-primary); }
+
+      .gd-chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--gd-radius-full); font-size: 13px; color: var(--gd-muted-foreground); background-color: var(--gd-muted); border: 1px solid var(--gd-border); cursor: pointer; transition: all 0.15s; }
+      .gd-chip:hover { color: var(--gd-primary); border-color: var(--gd-primary); }
+      .gd-chip .rank { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 4px; background-color: var(--gd-secondary); color: var(--gd-muted-foreground); font-size: 11px; font-weight: 600; font-family: var(--gd-font-mono); }
+      .gd-chip.top .rank { background-color: var(--gd-state-error); color: var(--gd-state-error-foreground); }
+
+      .gd-ghost-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: var(--gd-radius-md); font-size: 13px; font-weight: 500; color: var(--gd-muted-foreground); background: transparent; border: 1px solid var(--gd-border); cursor: pointer; transition: all 0.15s; }
+      .gd-ghost-btn:hover { color: var(--gd-foreground); background-color: var(--gd-muted); }
+      .gd-primary-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--gd-radius-md); font-size: 13px; font-weight: 500; color: var(--gd-primary-foreground); background-color: var(--gd-primary); border: none; cursor: pointer; transition: opacity 0.15s; }
+      .gd-primary-btn:hover { opacity: 0.9; }
+
+      .gd-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--gd-radius-md); background-color: var(--gd-muted); transition: background-color 0.15s; border: 1px solid transparent; }
+      .gd-row:hover { background-color: var(--gd-popover); border-color: var(--gd-border); }
+      .gd-row .rk { width: 32px; text-align: center; font-size: 16px; font-weight: 700; color: var(--gd-primary); font-family: var(--gd-font-mono); font-variant-numeric: tabular-nums; }
+
+      .song-grid { display: grid; grid-template-columns: repeat(auto-fill, 200px); gap: 12px; }
+      .song-card { width: 200px; background-color: var(--gd-muted); border: 1px solid var(--gd-border); border-radius: var(--gd-radius-lg); padding: 12px; cursor: pointer; transition: border-color 0.15s, transform 0.15s; }
+      .song-card:hover { border-color: var(--gd-primary); transform: translateY(-2px); }
+      .song-card .cover { width: 176px; height: 120px; border-radius: var(--gd-radius-md); display: flex; align-items: center; justify-content: center; color: var(--gd-primary-foreground); font-size: 36px; overflow: hidden; }
+
+      .mini-cover { width: 40px; height: 40px; border-radius: var(--gd-radius-sm); display: flex; align-items: center; justify-content: center; color: var(--gd-primary-foreground); flex-shrink: 0; }
+      .mini-cover.lg { width: 48px; height: 48px; border-radius: var(--gd-radius-md); font-size: 20px; }
+      .mini-cover.md { width: 40px; height: 40px; font-size: 16px; }
+      .mini-cover.sm { width: 36px; height: 36px; font-size: 14px; }
+
+      .grad-a { background: linear-gradient(135deg, var(--gd-brand-400), var(--gd-brand-700)); }
+      .grad-b { background: linear-gradient(135deg, var(--gd-brand-500), var(--gd-brand-800)); }
+      .grad-c { background: linear-gradient(135deg, var(--gd-brand-600), var(--gd-brand-900)); }
+      .grad-d { background: linear-gradient(135deg, var(--gd-state-success), var(--gd-brand-700)); }
+      .grad-e { background: linear-gradient(135deg, var(--gd-state-warning), var(--gd-brand-700)); }
+      .grad-f { background: linear-gradient(135deg, var(--gd-brand-300), var(--gd-brand-600)); }
+
+      .player-screen { height: 760px; background-color: var(--gd-card); border: 1px solid var(--gd-border); border-radius: var(--gd-radius-lg); overflow: hidden; display: flex; flex-direction: column; }
+      .lyric-line { font-size: 14px; color: var(--gd-muted-foreground); margin: 0; padding: 5px 0; line-height: 20px; text-align: center; }
+      .lyric-line.current { font-size: 16px; font-weight: 600; color: var(--gd-primary); line-height: 22px; }
+      .progress-track { flex: 1; height: 4px; background-color: var(--gd-border); border-radius: 2px; position: relative; cursor: pointer; }
+      .progress-fill { height: 100%; background-color: var(--gd-primary); border-radius: 2px; position: relative; }
+      .progress-knob { position: absolute; right: -6px; top: 50%; transform: translateY(-50%); width: 12px; height: 12px; border-radius: 50%; background-color: var(--gd-primary); box-shadow: 0 0 0 3px var(--gd-card); }
+      .play-btn-main { width: 56px; height: 56px; border-radius: 28px; background-color: var(--gd-primary); color: var(--gd-primary-foreground); border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: opacity 0.15s; }
+      .play-btn-main:hover { opacity: 0.9; }
+      .ctrl-btn { width: 44px; height: 44px; border-radius: 22px; display: flex; align-items: center; justify-content: center; color: var(--gd-muted-foreground); cursor: pointer; transition: background-color 0.15s, color 0.15s; border: none; background: transparent; }
+      .ctrl-btn:hover { background-color: var(--gd-muted); color: var(--gd-foreground); }
+      .ctrl-btn.is-fav { color: var(--gd-primary); }
+
+      .playlist-layout { display: grid; grid-template-columns: 280px 1fr; gap: 0; background-color: var(--gd-card); border: 1px solid var(--gd-border); border-radius: var(--gd-radius-lg); overflow: hidden; min-height: 640px; }
+      .playlist-list-panel { background-color: var(--gd-muted); border-right: 1px solid var(--gd-border); padding: 16px; overflow-y: auto; }
+      .playlist-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--gd-radius-md); cursor: pointer; transition: background-color 0.15s; margin-bottom: 4px; }
+      .playlist-item:hover { background-color: var(--gd-popover); }
+      .playlist-item.is-active { background-color: var(--gd-state-info-surface); }
+      .playlist-detail { padding: 24px; overflow-y: auto; }
+
+      .drag-handle { color: var(--gd-muted-foreground); cursor: grab; display: flex; align-items: center; }
+      .drag-handle:hover { color: var(--gd-foreground); }
+      .gd-check { width: 16px; height: 16px; border-radius: 3px; border: 1px solid var(--gd-border); background-color: var(--gd-muted); cursor: pointer; flex-shrink: 0; }
+      .gd-check.checked { background-color: var(--gd-primary); border-color: var(--gd-primary); position: relative; }
+      .gd-check.checked::after { content: ""; position: absolute; left: 4px; top: 1px; width: 5px; height: 9px; border: solid var(--gd-primary-foreground); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+
+      .story-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+      .story-card { background-color: var(--gd-muted); border: 1px solid var(--gd-border); border-radius: var(--gd-radius-lg); overflow: hidden; cursor: pointer; transition: border-color 0.15s, transform 0.15s; }
+      .story-card:hover { border-color: var(--gd-primary); transform: translateY(-2px); }
+      .story-cover { height: 140px; display: flex; align-items: center; justify-content: center; color: var(--gd-primary-foreground); font-size: 40px; }
+
+      .timeline { position: relative; padding-left: 28px; }
+      .timeline::before { content: ""; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background-color: var(--gd-border); }
+      .timeline-node { position: relative; margin-bottom: 24px; }
+      .timeline-node::before { content: ""; position: absolute; left: -28px; top: 4px; width: 16px; height: 16px; border-radius: 50%; background-color: var(--gd-card); border: 3px solid var(--gd-primary); }
+
+      .waveform { display: flex; align-items: center; gap: 2px; flex: 1; height: 32px; }
+      .wave-bar { flex: 1; background-color: var(--gd-border); border-radius: 1px; min-width: 2px; }
+      .wave-bar.played { background-color: var(--gd-primary); }
+    </style>
+</body>
+</html>

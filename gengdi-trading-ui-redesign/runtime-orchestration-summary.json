@@ -1,0 +1,73 @@
+{
+  "project": {
+    "projectName": "耕地 UI 重构",
+    "projectPath": "c:\\Works\\GitHubProjects\\HundunWorld\\gengdi-trading-ui-redesign",
+    "deviceType": "desktop",
+    "resolvedLane": "existing_edit_add_comparison",
+    "mutationMode": "in-place-reconstruct",
+    "mutationReason": "用户上传实际 GengDi 主界面截图，确认 Batch 0 风格方向微调为'现状骨架+交易视觉'：保留水平顶栏+副导航+天气大卡片等内容结构，视觉换交易系统暗色专业风",
+    "selectedIntentWorkflowRead": true,
+    "contextRequirementsLoaded": [
+      { "path": "intent-workflows/intent-project-mutation/INTENT_WORKFLOW.md", "readStatus": "loaded", "bodyRead": true },
+      { "path": "intent-workflows/intent-project-complex-build/INTENT_WORKFLOW.md", "readStatus": "loaded", "bodyRead": true },
+      { "path": "shared-runtime/design-artifact-formats/design-project-file-format.md", "readStatus": "loaded", "bodyRead": true }
+    ],
+    "contextReadScope": "project-mutation-lane",
+    "validationRunDiscipline": "validate-design-workspace + validate-finish-readiness",
+    "lowValueCallWatchdog": {
+      "noProgressNextAction": "proceed-to-validation",
+      "lastProgressCheckpoint": "direction-revision-started"
+    },
+    "generationTree": {
+      "root": {
+        "nodeId": "gen-project-shell",
+        "kind": "project-shell",
+        "pageIds": ["page-components", "page-home-preview"],
+        "output": "partials/project-shell.html",
+        "sharedRegions": ["top-titlebar", "subnavbar", "root-frame", "brand-css-link", "dark-mode-class"],
+        "privateRegions": [],
+        "mutableSlots": ["SLOT:activeMainNav", "SLOT:activeSubNav", "SLOT:pageTitle", "SLOT:pageContent"],
+        "status": "completed",
+        "children": [
+          {
+            "nodeId": "gen-page-components",
+            "kind": "page-leaf",
+            "pageIds": ["page-components"],
+            "output": "pages/components.html",
+            "sharedRegions": [],
+            "privateRegions": ["brand-color-scale", "state-colors", "semantic-surfaces", "typography", "metric-cards", "badges", "buttons", "period-buttons", "form-elements", "progress-bars", "data-table", "weather-card-preview"],
+            "mutableSlots": ["SLOT:activeMainNav", "SLOT:activeSubNav", "SLOT:pageTitle", "SLOT:pageContent"],
+            "status": "completed",
+            "children": []
+          },
+          {
+            "nodeId": "gen-page-home-preview",
+            "kind": "page-leaf",
+            "pageIds": ["page-home-preview"],
+            "output": "pages/home-preview.html",
+            "sharedRegions": [],
+            "privateRegions": ["hero-header", "weather-card", "quick-access", "solar-term-banner"],
+            "mutableSlots": ["SLOT:activeMainNav", "SLOT:activeSubNav", "SLOT:pageTitle", "SLOT:pageContent"],
+            "status": "completed",
+            "children": []
+          }
+        ]
+      }
+    },
+    "batchPhase": "batch-0-revision",
+    "batchDescription": "Batch 0 风格方向微调：现状骨架（水平顶栏+副导航）+ 交易视觉",
+    "brandPrefix": "gd",
+    "referenceDesign": "C:\\Works\\GitHubProjects\\HundunLive\\quant-trading-ui",
+    "actualUIReference": "用户上传的 GengDi 实际主界面截图（水平顶栏+副导航+天气大卡片+快速访问）",
+    "expectedDispatches": []
+  },
+  "designSource": {
+    "operatingMode": "free-exploration",
+    "libraryIdentity": null
+  },
+  "skillProvenance": {
+    "name": "solo-design",
+    "version": "builtin",
+    "version_source": "builtin-design-hebe"
+  }
+}

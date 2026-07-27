@@ -1,0 +1,157 @@
+{
+  "root": {
+    "nodeId": "gen-project-shell",
+    "kind": "project-shell",
+    "pageIds": ["page-components", "page-home-preview", "page-overlays-dialogs", "page-overlays-drawer-weather", "page-overlays-drawer-content", "page-chrome-fixedbar", "page-chrome-specialty", "page-flower-market-data", "page-flower-trade-flow", "page-flower-manage", "page-music-module", "page-main-pages-content", "page-main-pages-auth"],
+    "output": "partials/project-shell.html",
+    "sharedRegions": ["top-titlebar", "subnavbar", "root-frame", "brand-css-link", "dark-mode-class"],
+    "privateRegions": [],
+    "mutableSlots": ["SLOT:activeMainNav", "SLOT:activeSubNav", "SLOT:pageTitle", "SLOT:pageContent"],
+    "status": "completed",
+    "children": [
+      {
+        "nodeId": "gen-page-components",
+        "kind": "page-leaf",
+        "pageIds": ["page-components"],
+        "output": "pages/components.html",
+        "sharedRegions": [],
+        "privateRegions": ["brand-color-scale", "state-colors", "semantic-surfaces", "typography", "metric-cards", "badges", "buttons", "period-buttons", "form-elements", "progress-bars", "data-table", "weather-card-preview"],
+        "mutableSlots": ["SLOT:activeMainNav", "SLOT:activeSubNav", "SLOT:pageTitle", "SLOT:pageContent"],
+        "status": "completed",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-home-preview",
+        "kind": "page-leaf",
+        "pageIds": ["page-home-preview"],
+        "output": "pages/home-preview.html",
+        "sharedRegions": [],
+        "privateRegions": ["hero-header", "weather-card", "quick-access", "solar-term-banner"],
+        "mutableSlots": ["SLOT:activeMainNav", "SLOT:activeSubNav", "SLOT:pageTitle", "SLOT:pageContent"],
+        "status": "completed",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-overlays-dialogs",
+        "kind": "page-leaf",
+        "pageIds": ["page-overlays-dialogs"],
+        "output": "pages/overlays-dialogs.html",
+        "sharedRegions": [],
+        "privateRegions": ["modal-dialog", "tool-window", "toast-stack"],
+        "mutableSlots": ["SLOT:activeMainNav", "SLOT:activeSubNav", "SLOT:pageTitle", "SLOT:pageContent"],
+        "status": "completed",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-overlays-drawer-weather",
+        "kind": "page-leaf",
+        "pageIds": ["page-overlays-drawer-weather"],
+        "output": "pages/overlays-drawer-weather.html",
+        "sharedRegions": [],
+        "privateRegions": ["hourly-forecast-drawer", "weather-detail-drawer", "life-index-drawer", "air-quality-drawer", "weather-news-drawer"],
+        "mutableSlots": ["SLOT:activeMainNav", "SLOT:activeSubNav", "SLOT:pageTitle", "SLOT:pageContent"],
+        "status": "completed",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-overlays-drawer-content",
+        "kind": "page-leaf",
+        "pageIds": ["page-overlays-drawer-content"],
+        "output": "pages/overlays-drawer-content.html",
+        "sharedRegions": [],
+        "privateRegions": ["dish-detail-drawer", "music-story-drawer"],
+        "mutableSlots": ["SLOT:activeMainNav", "SLOT:activeSubNav", "SLOT:pageTitle", "SLOT:pageContent"],
+        "status": "completed",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-chrome-fixedbar",
+        "kind": "page-leaf",
+        "pageIds": ["page-chrome-fixedbar"],
+        "output": "pages/chrome-fixedbar.html",
+        "sharedRegions": [],
+        "privateRegions": ["mini-player", "logistics-map", "video-message-card"],
+        "mutableSlots": ["SLOT:activeMainNav", "SLOT:activeSubNav", "SLOT:pageTitle", "SLOT:pageContent"],
+        "status": "completed",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-chrome-specialty",
+        "kind": "page-leaf",
+        "pageIds": ["page-chrome-specialty"],
+        "output": "pages/chrome-specialty.html",
+        "sharedRegions": [],
+        "privateRegions": ["weather-map", "weather-icon-matrix", "excel-processor"],
+        "mutableSlots": ["SLOT:activeMainNav", "SLOT:activeSubNav", "SLOT:pageTitle", "SLOT:pageContent"],
+        "status": "completed",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-flower-market-data",
+        "kind": "page-leaf",
+        "pageIds": ["page-flower-market-data"],
+        "output": "pages/flower-market-data.html",
+        "sharedRegions": [],
+        "privateRegions": ["flower-dashboard", "flower-data-screen", "flower-alert-center"],
+        "mutableSlots": ["SLOT:activeMainNav", "SLOT:activeSubNav", "SLOT:pageTitle", "SLOT:pageContent"],
+        "status": "completed",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-flower-trade-flow",
+        "kind": "page-leaf",
+        "pageIds": ["page-flower-trade-flow"],
+        "output": "pages/flower-trade-flow.html",
+        "sharedRegions": [],
+        "privateRegions": ["flower-shop", "flower-product-detail", "flower-cart", "flower-order-center", "flower-address"],
+        "mutableSlots": ["SLOT:activeMainNav", "SLOT:activeSubNav", "SLOT:pageTitle", "SLOT:pageContent"],
+        "status": "completed",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-flower-manage",
+        "kind": "page-leaf",
+        "pageIds": ["page-flower-manage"],
+        "output": "pages/flower-manage.html",
+        "sharedRegions": [],
+        "privateRegions": ["flower-merchant", "flower-workbench", "flower-planting-advice", "flower-ai-assistant", "flower-profile", "flower-species-detail"],
+        "mutableSlots": ["SLOT:activeMainNav", "SLOT:activeSubNav", "SLOT:pageTitle", "SLOT:pageContent"],
+        "status": "completed",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-music-module",
+        "kind": "page-leaf",
+        "pageIds": ["page-music-module"],
+        "output": "pages/music-module.html",
+        "sharedRegions": [],
+        "privateRegions": ["music-player", "music-discover", "music-search", "playlist-manage", "music-story"],
+        "mutableSlots": ["SLOT:activeMainNav", "SLOT:activeSubNav", "SLOT:pageTitle", "SLOT:pageContent"],
+        "status": "completed",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-main-content",
+        "kind": "page-leaf",
+        "pageIds": ["page-main-content"],
+        "output": "pages/main-pages-content.html",
+        "sharedRegions": [],
+        "privateRegions": ["page-games", "page-news", "page-downloads", "page-settings", "page-security", "page-profile", "page-notification", "page-social"],
+        "mutableSlots": ["SLOT:activeMainNav", "SLOT:activeSubNav", "SLOT:pageTitle", "SLOT:pageContent"],
+        "status": "completed",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-main-pages-auth",
+        "kind": "page-leaf",
+        "pageIds": ["page-main-pages-auth"],
+        "output": "pages/main-pages-auth.html",
+        "sharedRegions": [],
+        "privateRegions": ["page-login", "page-register"],
+        "mutableSlots": ["SLOT:activeMainNav", "SLOT:activeSubNav", "SLOT:pageTitle", "SLOT:pageContent"],
+        "status": "completed",
+        "children": []
+      }
+    ]
+  }
+}

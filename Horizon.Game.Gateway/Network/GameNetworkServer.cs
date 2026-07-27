@@ -568,11 +568,17 @@ namespace Horizon.Game.Gateway.Network
                 // 从连接管理器移除。返回 false 说明连接已被并发清理（Closed 事件与定时检测竞态）。
                 bool removed = await _connectionManager.RemoveConnectionAsync(connectionId);
 
-                // 修复 BUG（两周未解决的核心根因）：原实现使用 fire-and-forget 的 ScheduleDespawn，
-                // ExecuteDespawnAsync 异步执行时可能因二次确认误判、异常吞掉、进程重启等原因从未完成，
-                // 导致 GoOfflineAsync 从未被调用，CharacterGrain 持久化状态 IsOnline 永久卡在 true。
-                // 修复：改为 await DespawnImmediatelyAsync 同步执行，确保 UnregisterEntityAsync +
-                // RemoveSessionAsync + GoOfflineAsync 全部完成后再返回。
+                // 修复 BUG（远程角色周期性地 Despawn+Spawn 循环 — 闪退）：
+                // 原实现使用 DespawnImmediatelyAsync 立即执行 Despawn，客户端短暂断线后重连时
+                // 实体已被从 ZoneShardGrain._simulatedEntities 移除，EnterWorldAsync 无法找到
+                // 已存在的实体，走 RegisterEntityAsync 重新 Spawn，导致其他客户端看到远程角色闪退。
+                // 修复：改用 ScheduleDespawn（带 15 秒宽限期），客户端在宽限期内重连时
+                // StageCharacterMappingAndPresence 会调用 CancelDespawn 取消待执行的 Despawn，
+                // EnterWorldAsync 发现实体仍存在，跳过 Despawn+Spawn 仅更新 AOI 订阅。
+                //
+                // GoOfflineAsync 的实现在 DoDespawnCoreAsync 的 finally 块中，即使 Despawn 被取消
+                // 也不会执行（因为 DoDespawnCoreAsync 不会被调用）。但客户端重连时 StageResponseIntercept
+                // 会重新进入游戏，CharacterGrain 的 IsOnline 状态保持为 true，这是正确的行为。
                 if (characterIdsToDespawn.Count > 0)
                 {
                     foreach (var characterId in characterIdsToDespawn)
@@ -580,42 +586,11 @@ namespace Horizon.Game.Gateway.Network
                         // 清理 presence 兜底刷新时间记录，避免内存泄漏
                         _presenceRefreshService.RemoveCharacter(characterId);
 
-                        try
-                        {
-                            await _despawnScheduler.DespawnImmediatelyAsync(characterId);
-                        }
-                        catch (Exception despawnEx)
-                        {
-                            _logger.LogWarning(despawnEx, "同步 Despawn 失败: 角色={CharacterId}", characterId);
-                            // 兜底：Despawn 失败时直接清理 Redis 中所有角色在线持久化点，
-                            // 避免角色在线状态残留。CharacterPresenceMonitorHostedService 也会在
-                            // 90 秒后扫描过期 presence 兜底。
-                            // 修复 BUG：原实现只清理 presence（90s TTL），未清理 fingerprint（5min TTL），
-                            // 导致角色离线后 Redis 中仍残留 fingerprint key 长达 5 分钟。
-                            try
-                            {
-                                await _presenceStore.SetOfflineAsync(characterId);
-                            }
-                            catch (Exception presenceEx)
-                            {
-                                _logger.LogWarning(presenceEx,
-                                    "Despawn 失败后清理 presence 也失败: 角色={CharacterId}（依赖 Monitor 兜底）",
-                                    characterId);
-                            }
-                            try
-                            {
-                                if (_fingerprintService != null)
-                                {
-                                    await _fingerprintService.ReleaseAsync(characterId);
-                                }
-                            }
-                            catch (Exception fpEx)
-                            {
-                                _logger.LogWarning(fpEx,
-                                    "Despawn 失败后清理 fingerprint 也失败: 角色={CharacterId}（依赖 TTL 5min 兜底过期）",
-                                    characterId);
-                            }
-                        }
+                        // 使用 ScheduleDespawn（带宽限期）替代 DespawnImmediatelyAsync，避免闪退循环。
+                        // ScheduleDespawn 是 fire-and-forget，不会 throw，因此不需要 try-catch。
+                        // 宽限期（15秒）内客户端重连可取消 Despawn，宽限期后执行 DoDespawnCoreAsync
+                        // 完成 UnregisterEntityAsync + RemoveSessionAsync + GoOfflineAsync。
+                        _despawnScheduler.ScheduleDespawn(characterId);
                     }
                     _logger.LogInformation(
                         "连接 {Id} 清理完成（来源: {Source}, removed={Removed}），已完成 {Count} 个角色 Despawn",

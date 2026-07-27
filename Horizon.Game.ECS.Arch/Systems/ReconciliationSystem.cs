@@ -5,11 +5,9 @@ using Horizon.Game.Core.Sim;
 using Horizon.Game.ECS.Arch.Components;
 using Horizon.Game.ECS.Arch.Core;
 using Horizon.Game.ECS.Arch.Network;
-using Horizon.Game.Message.Sim;
 using Horizon.Game.Message.Sync;
-// 消除 MovementFormula 歧义：Horizon.Game.Core.Sim 与 Horizon.Game.Message.Sim 均存在同名类型，
-// 添加 Horizon.Game.Core 引用后产生冲突。保持原有行为，统一使用 Message 版本。
-using MovementFormula = Horizon.Game.Message.Sim.MovementFormula;
+// MovementFormula 统一使用 Horizon.Game.Core.Sim 版本（原 Message 副本已删除）。
+using MovementFormula = Horizon.Game.Core.Sim.MovementFormula;
 
 namespace Horizon.Game.ECS.Arch.Systems;
 
@@ -167,9 +165,8 @@ public sealed class ReconciliationSystem : ArchSystemBase
         // Drain 所有待处理的修正包，仅保留最新的一个：
         // 修复 #13：修正包可能比 FixedUpdate 周期密集，CorrectionReceiveBuffer 是覆盖式存储，
         // 过早到达的修正包会被新包覆盖。Drain 到最新一包可避免丢失所有修正。
-        // 使用全限定名避免 CorrectionPacket 在 Horizon.Game.ECS.Arch.Network 与
-        // Horizon.Game.Core.Sim 两个命名空间下的歧义。
-        Horizon.Game.ECS.Arch.Network.CorrectionPacket? correction = null;
+        // 全限定名；CorrectionPacket 统一使用 Horizon.Game.Core.Sim 版本。
+        Horizon.Game.Core.Sim.CorrectionPacket? correction = null;
         while (CorrectionReceiveBuffer.Instance.TryTake(out var peek) && peek != null)
         {
             correction = peek;

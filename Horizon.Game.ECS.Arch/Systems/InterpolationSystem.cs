@@ -7,117 +7,106 @@ using Horizon.Game.Message.Sync.Components;
 namespace Horizon.Game.ECS.Arch.Systems;
 
 /// <summary>
-/// 插值系统：在 Render 阶段对非玩家实体进行位置插值，平滑网络抖动。
+/// 插值系统：在 Render 阶段对非玩家实体进行位置 Lerp 平滑追赶，平滑网络抖动。
 /// </summary>
 /// <remarks>
 /// 查询所有携带 <see cref="InterpolatedTransformComponent"/> 的实体，
-/// 根据 <see cref="TimeSpan"/> 递推 <see cref="InterpolatedTransformComponent.Alpha"/>，
-/// 将当前位置向目标位置线性插值。
-/// <para>Task B.6.2：当实体携带 <see cref="MovementStateAuthComponent"/> 时，在到达目标位置后
-/// 使用服务器下发的速度向量进行 dead reckoning（航位推算），沿速度方向继续推进位置，
-/// 避免在两个快照之间角色“卡顿”，实现速度向量的平滑过渡。</para>
-/// <para>[Phase C4] 支持自适应插值延迟（基于快照到达间隔 jitter）和 dead reckoning 速度衰减
-/// （超过 200ms 无新快照时速度线性衰减到 0，避免角色无限滑行）。</para>
+/// 每帧将当前位置向目标位置进行指数平滑追赶（Lerp）。
+/// <para>
+/// 修复（远程角色闪移/移动不可见 — Alpha 插值加速运动问题）：
+/// 原 Alpha 插值方案在快照到达频率（60Hz）高于插值完成时间（100ms）时，
+/// Alpha 不断被重置或目标不断更新，导致帧间移动距离从 17% 到 183% 速度变化，
+/// 视觉表现为"慢启动后突然加速"的加速运动。
+/// </para>
+/// <para>
+/// Lerp 平滑追赶方案：
+/// 位置 += (目标 - 位置) * lerpFactor，其中 lerpFactor = dt * speed。
+/// 角色以指数衰减速度追赶目标，稳态速度与服务端速度一致，稳态滞后 = v / speed。
+/// 帧间移动距离变化温和（4倍范围内），视觉上更自然。
+/// </para>
+/// <para>
+/// 传送保护：当目标位置与当前位置距离超过 <see cref="TeleportThresholdMeters"/> 时，
+/// 直接跳到目标位置，避免长距离 Lerp 导致角色"飞过去"。
+/// </para>
 /// <para>本地玩家实体不携带此组件，不受本系统影响（由 <see cref="LocalSimulationSystem"/> 驱动）。</para>
 /// </remarks>
 [ArchSystem(SystemGroup.Render, order: 0)]
 public sealed class InterpolationSystem : ArchSystemBase
 {
-    /// <summary>插值速度系数（每秒推进 Alpha 的速率）。当 UseAdaptiveSpeed=true 时每帧从自适应延迟计算。</summary>
-    public float InterpolationSpeed { get; set; } = 1f / 0.1f;
+    /// <summary>Lerp 平滑追赶速度系数（每秒追赶比例）。当 UseAdaptiveSpeed=true 时从自适应延迟计算。</summary>
+    /// <remarks>
+    /// speed=10 → lerpFactor=0.167/帧 → 稳态滞后=v/speed=0.6m（100ms 延迟 @6m/s）
+    /// speed=20 → lerpFactor=0.333/帧 → 稳态滞后=0.3m（50ms 延迟）
+    /// </remarks>
+    public float InterpolationSpeed { get; set; } = 1f / 0.1f; // 默认 10（100ms 延迟）
 
-    /// <summary>[Phase C4] 是否使用自适应插值速度（从 SnapshotApplySystem.AdaptiveInterpolationDelaySeconds 计算）。</summary>
-    public bool UseAdaptiveSpeed { get; set; } = false;
-
-    /// <summary>[Phase C4] 是否启用 dead reckoning 速度衰减（默认开启）。</summary>
-    public bool EnableDeadReckoningDecay { get; set; } = true;
-
-    /// <summary>
-    /// Dead reckoning 速度阈值（m/s）。水平速度低于此值视为静止，不进行航位推算。
-    /// </summary>
-    private const float DeadReckonSpeedThreshold = 0.1f;
+    /// <summary>是否使用自适应插值速度（从 SnapshotApplySystem.AdaptiveInterpolationDelaySeconds 计算）。</summary>
+    public bool UseAdaptiveSpeed { get; set; } = true;
 
     /// <summary>
-    /// [Phase C4] Dead reckoning 衰减启动时间（秒）。超过此时间无新快照时，速度开始线性衰减。
+    /// 传送阈值（米）。当目标位置与当前位置距离超过此值时，直接跳到目标位置。
+    /// 避免 Lerp 在长距离移动（如传送、复活）时角色"飞过去"的不自然视觉效果。
     /// </summary>
-    private const float DecayStartTime = 0.2f; // 200ms
+    public float TeleportThresholdMeters { get; set; } = 10f;
 
-    /// <summary>
-    /// [Phase C4] Dead reckoning 衰减完成时间（秒）。超过此时间速度完全为 0。
-    /// </summary>
-    private const float DecayEndTime = 0.5f; // 500ms
-
-    /// <summary>[Phase C4] 断线期间暂停插值推进（避免无新数据时 dead reckoning 漂移）。</summary>
+    /// <summary>断线期间暂停插值推进（避免无新数据时角色漂移）。</summary>
     public bool IsPaused { get; set; } = false;
 
     /// <inheritdoc />
     public override void Update(World world, TimeSpan deltaTime)
     {
-        // [Phase C5] 断线期间暂停插值推进
         if (IsPaused)
             return;
 
         var query = new QueryDescription().WithAll<InterpolatedTransformComponent>();
         var dt = (float)deltaTime.TotalSeconds;
 
-        // [Phase C4] 自适应插值速度
+        // Lerp 平滑追赶速度
         var speed = UseAdaptiveSpeed
             ? 1f / SnapshotApplySystem.AdaptiveInterpolationDelaySeconds
             : InterpolationSpeed;
 
+        // lerpFactor = dt * speed，限制在 [0, 1]
+        // 60fps + speed=10 → lerpFactor=0.167（每帧追赶 16.7% 的距离）
+        var lerpFactor = Math.Clamp(dt * speed, 0f, 1f);
+        var teleportThresholdSq = TeleportThresholdMeters * TeleportThresholdMeters;
+
         world.Query(in query, (Entity entity, ref InterpolatedTransformComponent interp) =>
         {
-            // [Phase C4] 累计自上次快照以来的时间
+            // 累计自上次快照以来的时间（供诊断和外部系统使用）
             interp.TimeSinceLastSnapshot += dt;
 
-            interp.Alpha += dt * speed;
-            if (interp.Alpha >= 1f)
+            // 计算当前位置与目标位置的距离平方
+            var dx = interp.TargetX - interp.X;
+            var dy = interp.TargetY - interp.Y;
+            var dz = interp.TargetZ - interp.Z;
+            var distSq = dx * dx + dy * dy + dz * dz;
+
+            if (distSq > teleportThresholdSq)
             {
-                interp.Alpha = 1f;
+                // 传送：直接跳到目标位置，避免长距离 Lerp
                 interp.X = interp.TargetX;
                 interp.Y = interp.TargetY;
                 interp.Z = interp.TargetZ;
-
-                // Task B.6.2 + [Phase C4]：速度向量平滑过渡 + 衰减
-                if (world.TryGet<MovementStateAuthComponent>(entity, out var movement))
-                {
-                    var velX = movement.VelocityXZ_X;
-                    var velY = movement.VelocityXZ_Y;
-                    var speedSquared = velX * velX + velY * velY;
-                    if (speedSquared > DeadReckonSpeedThreshold * DeadReckonSpeedThreshold)
-                    {
-                        // [Phase C4] 速度衰减：超过 DecayStartTime 后线性衰减，到 DecayEndTime 完全停止
-                        float decayFactor = 1f;
-                        if (EnableDeadReckoningDecay && interp.TimeSinceLastSnapshot > DecayStartTime)
-                        {
-                            decayFactor = 1f - Math.Clamp(
-                                (interp.TimeSinceLastSnapshot - DecayStartTime) / (DecayEndTime - DecayStartTime),
-                                0f, 1f);
-                        }
-
-                        if (decayFactor > 0f)
-                        {
-                            // VelocityXZ_X/Y 为 ECS Z-up 水平速度（X=左右, Y=前后）。
-                            // interp 为 Flax Y-up（X=左右, Y=上下, Z=前后），故 velY 应用到 Z 轴。
-                            interp.X += velX * dt * decayFactor;
-                            interp.Z += velY * dt * decayFactor;
-                        }
-                    }
-                }
+                interp.Yaw = interp.TargetYaw;
+                interp.Alpha = 1f; // 标记已到达目标
             }
             else
             {
-                var t = interp.Alpha;
-                interp.X = interp.StartX + (interp.TargetX - interp.StartX) * t;
-                interp.Y = interp.StartY + (interp.TargetY - interp.StartY) * t;
-                interp.Z = interp.StartZ + (interp.TargetZ - interp.StartZ) * t;
+                // Lerp 平滑追赶：位置 += (目标 - 位置) * lerpFactor
+                interp.X += dx * lerpFactor;
+                interp.Y += dy * lerpFactor;
+                interp.Z += dz * lerpFactor;
 
-                // Yaw 插值：最短路径插值，避免 359°→0° 时反向旋转 359°
-                var yawDelta = interp.TargetYaw - interp.StartYaw;
-                // 归一化到 [-180, 180] 范围
-                if (yawDelta > 180f) yawDelta -= 360f;
-                else if (yawDelta < -180f) yawDelta += 360f;
-                interp.Yaw = interp.StartYaw + yawDelta * t;
+                // Yaw 最短路径插值，避免 ±π 跨界时反向旋转
+                var yawDelta = interp.TargetYaw - interp.Yaw;
+                if (yawDelta > MathF.PI) yawDelta -= 2f * MathF.PI;
+                else if (yawDelta < -MathF.PI) yawDelta += 2f * MathF.PI;
+                interp.Yaw += yawDelta * lerpFactor;
+
+                // Alpha 用于标记追赶进度（供外部诊断，不参与位置计算）
+                // distSq 越小 Alpha 越接近 1
+                interp.Alpha = 1f - Math.Clamp(distSq / teleportThresholdSq, 0f, 1f);
             }
         });
     }

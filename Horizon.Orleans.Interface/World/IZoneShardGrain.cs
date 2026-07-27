@@ -211,6 +211,13 @@ public interface IZoneShardGrain : IGrainWithIntegerKey
     /// 然后重新调用 EnterWorldAsync 恢复实体。
     /// </summary>
     Task<ulong[]> GetRegisteredEntityIdsAsync();
+
+    /// <summary>
+    /// 查询指定实体 ID 是否已在当前分片中注册（用于交互等场景的身份防伪校验）。
+    /// </summary>
+    /// <param name="entityId">实体网络 ID。</param>
+    /// <returns>true 表示该实体已注册。</returns>
+    Task<bool> HasEntityAsync(ulong entityId);
 }
 
 /// <summary>扇出结果：一个 session 收到哪些 diff（按原 <c>diffs</c> 数组下标表示）。</summary>

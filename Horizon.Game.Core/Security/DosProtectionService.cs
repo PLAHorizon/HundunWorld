@@ -57,8 +57,10 @@ namespace Horizon.Game.Core.Security
                     rateLimitData.Block(now, TimeSpan.FromMinutes(5)); // 阻止5分钟
                     _logger.LogWarning("客户端 {ClientId} 因检测到DOS攻击模式被封禁5分钟", clientId);
 
-                    // 异步通知安全事件
-                    _ = Task.Run(() => NotifySecurityEvent(clientId, "DOS_ATTACK_DETECTED", endpoint));
+                    // 异步通知安全事件（fire-and-forget 但记录异常）
+                    _ = Task.Run(() => NotifySecurityEvent(clientId, "DOS_ATTACK_DETECTED", endpoint))
+                        .ContinueWith(t => _logger.LogError(t.Exception, "通知安全事件 DOS_ATTACK_DETECTED 失败"),
+                            TaskContinuationOptions.OnlyOnFaulted);
 
                     return Task.FromResult(RateLimitResult.Rejected("检测到DOS攻击，客户端已被封禁"));
                 }
@@ -90,7 +92,9 @@ namespace Horizon.Game.Core.Security
                 rateLimitData.Block(DateTime.UtcNow, TimeSpan.FromMinutes(10));
                 _logger.LogError("客户端 {ClientId} 因重复恶意行为被封禁10分钟", clientId);
 
-                _ = Task.Run(() => NotifySecurityEvent(clientId, "REPEATED_MALICIOUS_ACTIVITY", details));
+                _ = Task.Run(() => NotifySecurityEvent(clientId, "REPEATED_MALICIOUS_ACTIVITY", details))
+                    .ContinueWith(t => _logger.LogError(t.Exception, "通知安全事件 REPEATED_MALICIOUS_ACTIVITY 失败"),
+                        TaskContinuationOptions.OnlyOnFaulted);
             }
         }
 

@@ -4,12 +4,12 @@
     <Grid>
         <ContentControl x:Name="MapHost" />
         <Border x:Name="FallbackHost" IsVisible="False"
-                Background="#0AFFFFFF" CornerRadius="10"
+                Background="{DynamicResource GdBorderSubtleBrush}" CornerRadius="10"
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6">
-                <TextBlock x:Name="FallbackCityText" FontSize="14" FontWeight="SemiBold" Foreground="#FFFFFFCC" HorizontalAlignment="Center" />
-                <TextBlock x:Name="FallbackCoordText" FontSize="11" Foreground="#FFFFFF88" HorizontalAlignment="Center" />
-                <TextBlock Text="🗺️ 地图不可用" FontSize="11" Foreground="#FFFFFF66" HorizontalAlignment="Center" />
+                <TextBlock x:Name="FallbackCityText" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" HorizontalAlignment="Center" />
+                <TextBlock x:Name="FallbackCoordText" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center" />
+                <TextBlock Text="🗺️ 地图不可用" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center" />
             </StackPanel>
         </Border>
     </Grid>

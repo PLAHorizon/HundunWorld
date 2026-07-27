@@ -291,6 +291,651 @@
       "devMetadata": {
         "htmlSrc": ""
       }
+    },
+    {
+      "id": "pending-page-_components",
+      "title": "_components",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 5580,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-main",
+      "title": "main",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 6200,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-login",
+      "title": "login",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 6820,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-register",
+      "title": "register",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 7440,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-home",
+      "title": "home",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 8060,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-games",
+      "title": "games",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 8680,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-news",
+      "title": "news",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 9300,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-notification",
+      "title": "notification",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 9920,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-downloads",
+      "title": "downloads",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 10540,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-flower-dashboard",
+      "title": "flower-dashboard",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 11160,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-flower-datascreen",
+      "title": "flower-datascreen",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 11780,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-flower-alert",
+      "title": "flower-alert",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 12400,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-flower-ai-assistant",
+      "title": "flower-ai-assistant",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 13020,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-flower-planting-advice",
+      "title": "flower-planting-advice",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 13640,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-flower-shop",
+      "title": "flower-shop",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 14260,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-flower-product-detail",
+      "title": "flower-product-detail",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 14880,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-flower-cart",
+      "title": "flower-cart",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 15500,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-flower-order",
+      "title": "flower-order",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 16120,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-flower-merchant",
+      "title": "flower-merchant",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 16740,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-music-discover",
+      "title": "music-discover",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 17360,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-music-player",
+      "title": "music-player",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 17980,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-music-search",
+      "title": "music-search",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 18600,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-music-story",
+      "title": "music-story",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 19220,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-music-story-drawer",
+      "title": "music-story-drawer",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 19840,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-mini-player",
+      "title": "mini-player",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 20460,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-playlist-manage",
+      "title": "playlist-manage",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 21080,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-profile",
+      "title": "profile",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 21700,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-security",
+      "title": "security",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 22320,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-settings",
+      "title": "settings",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 22940,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-social",
+      "title": "social",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 23560,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-flower-profile",
+      "title": "flower-profile",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 24180,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-flower-workbench",
+      "title": "flower-workbench",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 24800,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-flower-address",
+      "title": "flower-address",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 25420,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-flower-species-detail",
+      "title": "flower-species-detail",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 26040,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-weather-detail-drawer",
+      "title": "weather-detail-drawer",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 26660,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-air-quality-drawer",
+      "title": "air-quality-drawer",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 27280,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-hourly-forecast-drawer",
+      "title": "hourly-forecast-drawer",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 27900,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-life-index-drawer",
+      "title": "life-index-drawer",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 28520,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-weather-news-drawer",
+      "title": "weather-news-drawer",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 29140,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-dish-detail-drawer",
+      "title": "dish-detail-drawer",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 29760,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-forward-message-dialog",
+      "title": "forward-message-dialog",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 30380,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-avatar-crop",
+      "title": "avatar-crop",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 31000,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
+    },
+    {
+      "id": "pending-page-excel-processor",
+      "title": "excel-processor",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1785053933685,
+      "canvasData": {
+        "x": 31620,
+        "y": 377,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": ""
+      }
     }
   ],
   "config": {
