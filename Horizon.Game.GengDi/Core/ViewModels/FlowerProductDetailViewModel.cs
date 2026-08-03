@@ -1,11 +1,14 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Horizon.Game.GengDi.Core.Controls;
+using Horizon.Game.GengDi.Core.Helpers;
 using Horizon.Game.GengDi.Core.Services;
 using Horizon.Game.Message.Network;
+using LiveChartsCore;
+using LiveChartsCore.SkiaSharpView;
 
 namespace Horizon.Game.GengDi.Core.ViewModels
 {
@@ -29,6 +32,9 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private bool _isActive;
         private string _merchantName = "";
         private long _merchantId;
+        private string _creditRating = "";
+        private int _soldCount;
+        private int _purchaseLimit;
         private int _selectedQuantity = 1;
         private string _selectedSkuCode = "";
         private string _selectedColor = "";
@@ -47,6 +53,9 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private ObservableCollection<CompareProductOption> _compareProductOptions = new();
         private long _selectedCompareProductId;
         private int _speciesId;
+        private ISeries[] _priceTrendSeries = Array.Empty<ISeries>();
+        private Axis[] _priceTrendXAxes = new[] { new Axis() };
+        private Axis[] _priceTrendYAxes = new[] { new Axis() };
 
         public bool IsLoading { get => _isLoading; set => SetProperty(ref _isLoading, value); }
         public bool HasProduct { get => _hasProduct; set => SetProperty(ref _hasProduct, value); }
@@ -60,6 +69,15 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public bool IsActive { get => _isActive; set => SetProperty(ref _isActive, value); }
         public string MerchantName { get => _merchantName; set => SetProperty(ref _merchantName, value); }
         public long MerchantId { get => _merchantId; set => SetProperty(ref _merchantId, value); }
+        public string CreditRating { get => _creditRating; set => SetProperty(ref _creditRating, value); }
+        public int SoldCount { get => _soldCount; set => SetProperty(ref _soldCount, value); }
+        public int PurchaseLimit { get => _purchaseLimit; set => SetProperty(ref _purchaseLimit, value); }
+        public string MerchantInfoText => string.IsNullOrEmpty(_creditRating)
+            ? _merchantName
+            : $"{_merchantName} · 信誉等级 {_creditRating}";
+        public string StockInfoText => PurchaseLimit > 0
+            ? $"库存 {_stock} {_unit} · 已售 {_soldCount:N0} {_unit} · 限购 {_purchaseLimit} {_unit}/人"
+            : $"库存 {_stock} {_unit} · 已售 {_soldCount:N0} {_unit}";
         public int SelectedQuantity { get => _selectedQuantity; set { if (SetProperty(ref _selectedQuantity, value)) UpdateLadderPrice(); } }
         public string SelectedSkuCode { get => _selectedSkuCode; set => SetProperty(ref _selectedSkuCode, value); }
         public string SelectedColor { get => _selectedColor; set { if (SetProperty(ref _selectedColor, value)) RefreshSkuSelection(); } }
@@ -120,6 +138,24 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             set => SetProperty(ref _speciesId, value);
         }
 
+        public ISeries[] PriceTrendSeries
+        {
+            get => _priceTrendSeries;
+            set => SetProperty(ref _priceTrendSeries, value);
+        }
+
+        public Axis[] PriceTrendXAxes
+        {
+            get => _priceTrendXAxes;
+            set => SetProperty(ref _priceTrendXAxes, value);
+        }
+
+        public Axis[] PriceTrendYAxes
+        {
+            get => _priceTrendYAxes;
+            set => SetProperty(ref _priceTrendYAxes, value);
+        }
+
         public decimal CurrentPrice => HasSku && SelectedSkuPrice > 0 ? SelectedSkuPrice : Price;
         public string PriceDisplay => $"¥{CurrentPrice:F2}";
         public string MarketPriceDisplay => MarketPrice > 0 ? $"¥{MarketPrice:F2}" : "";
@@ -174,10 +210,22 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             var merchant = await _merchantService.GetMerchantAsync(product.MerchantId);
             if (merchant != null) MerchantName = merchant.ShopName;
 
+            // 模拟数据：信誉等级、已售、限购（原型展示用，后续接入真实数据后替换）
+            CreditRating = "A+";
+            SoldCount = 1052;
+            PurchaseLimit = 50;
+            OnPropertyChanged(nameof(MerchantInfoText));
+            OnPropertyChanged(nameof(StockInfoText));
+
             var related = await _marketService.GetRelatedProductsAsync((int)_productId);
             if (related != null) RelatedProducts = new ObservableCollection<RelatedProduct>(related);
 
             UpdatePriceDisplay();
+
+            // 近 30 日价格走势图（LiveChartsCore 2.0）
+            PriceTrendSeries = FlowerChartHelper.CreateProductPriceTrendSeries();
+            PriceTrendXAxes = FlowerChartHelper.CreateLabelAxis(FlowerChartHelper.ProductPriceTrendLabels);
+            PriceTrendYAxes = FlowerChartHelper.CreateValueAxis();
         }
 
         private async Task LoadCompareOptionsAsync()

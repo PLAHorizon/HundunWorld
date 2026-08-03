@@ -60,7 +60,7 @@
                                                     </Border.Background>
                                                     <TextBlock Text="♪" FontSize="36"
                                                                HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                               Foreground="#FFFFFFFF" />
+                                                               Foreground="{DynamicResource GdPrimaryForegroundBrush}" />
                                                 </Border>
                                                 <TextBlock Text="{Binding Title}" FontSize="14" FontWeight="SemiBold"
                                                            TextTrimming="CharacterEllipsis" MaxLines="1" />
@@ -111,7 +111,7 @@
                                                                IsVisible="{Binding CoverUrl, Converter={x:Static views:StringNotEmptyConverter.Instance}}" />
                                                         <TextBlock Text="♫" FontSize="36"
                                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                                   Foreground="#FFFFFFFF"
+                                                                   Foreground="{DynamicResource GdPrimaryForegroundBrush}"
                                                                    IsVisible="{Binding CoverUrl, Converter={x:Static views:StringNotEmptyConverter.Instance}, ConverterParameter=invert}" />
                                                     </Panel>
                                                 </Border>
@@ -182,7 +182,7 @@
                                                     </Border.Background>
                                                     <TextBlock Text="♪" FontSize="16"
                                                                HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                               Foreground="#FFFFFFFF" />
+                                                               Foreground="{DynamicResource GdPrimaryForegroundBrush}" />
                                                 </Border>
                                                 <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="12 0 0 0">
                                                     <StackPanel Orientation="Horizontal" Spacing="6">

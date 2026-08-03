@@ -13,7 +13,8 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private readonly FlowerShopService _shopService;
         private Guid _userId;
         private bool _isLoading;
-        private ObservableCollection<ShippingAddressInfo> _addresses = new();
+        // 初始化为模拟数据（与设计原型一致），真实用户登录后由 LoadAddressesAsync 覆盖
+        private ObservableCollection<ShippingAddressInfo> _addresses = CreateMockAddresses();
         private ShippingAddressInfo _selectedAddress;
         private bool _isEditing;
         private long _editingAddressId;
@@ -78,6 +79,36 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             _ = LoadAddressesAsync();
         }
 
+        /// <summary>
+        /// 构造与设计原型一致的模拟地址数据，用于预览/设计态展示。
+        /// 真实用户登录后会被 <see cref="LoadAddressesAsync"/> 加载的服务端数据覆盖。
+        /// </summary>
+        private static ObservableCollection<ShippingAddressInfo> CreateMockAddresses()
+            => new ObservableCollection<ShippingAddressInfo>
+        {
+            new ShippingAddressInfo
+            {
+                Id = 1, ShipTo = "龙", Phone = "138****8856",
+                ProvinceName = "云南省", CityName = "昆明市", DistrictName = "呈贡区",
+                Address = "斗南街道 花都路 88 号 斗南花卉交易市场 3 层 A-012 铺位",
+                IsDefault = true
+            },
+            new ShippingAddressInfo
+            {
+                Id = 2, ShipTo = "李云", Phone = "159****2048",
+                ProvinceName = "上海市", CityName = "上海市", DistrictName = "浦东新区",
+                Address = "张江高科技园区 博云路 2 号 软件园 5 号楼 1803 室",
+                IsDefault = false
+            },
+            new ShippingAddressInfo
+            {
+                Id = 3, ShipTo = "王芳", Phone = "186****6611",
+                ProvinceName = "北京市", CityName = "北京市", DistrictName = "朝阳区",
+                Address = "三里屯街道 工体北路 8 号 院 2 号楼 B 单元 1502",
+                IsDefault = false
+            },
+        };
+
         public async Task LoadAddressesAsync()
         {
             IsLoading = true;
@@ -85,7 +116,9 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             {
                 if (_userId == Guid.Empty)
                 {
-                    Addresses = new ObservableCollection<ShippingAddressInfo>();
+                    // 无用户上下文（预览/设计态）时使用模拟数据，保证与设计原型一致
+                    Addresses = CreateMockAddresses();
+                    OnPropertyChanged(nameof(HasAddresses));
                     return;
                 }
 

@@ -1,55 +1,366 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
              xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
              x:Class="Horizon.Game.GengDi.Core.Views.FlowerProductDetailView"
              x:DataType="vm:FlowerProductDetailViewModel">
 
-    <ScrollViewer>
-        <StackPanel Margin="24 16" Spacing="16" MaxWidth="1200" HorizontalAlignment="Center">
+    <!--
+        FlowerProductDetailView.axaml
+        100% 还原设计原型 flower-trade-flow.html 第 671-743 行 "商品详情" section。
+        - GalleryPage 包裹（Title/Subtitle/Description + HeaderActionContent 承载分屏对比开关）
+        - 左侧 400x400 渐变大图 + 右侧详情（标题/预售徽章/商户/价格/阶梯价/库存/属性表/操作按钮）
+        - 近 30 日价格走势 metric-card
+        - 保留全部已有数据绑定与 code-behind 事件处理（OnDecreaseQuantity/OnIncreaseQuantity/OnAddToCart/OnBuyNow/OnCompareProductSelected）
+    -->
 
-            <Border Classes="GdCard" Padding="20" CornerRadius="{DynamicResource GdRadiusLg}" IsVisible="{Binding IsLoading}">
-                <TextBlock Text="加载中..." HorizontalAlignment="Center" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+    <UserControl.Resources>
+        <!-- 原型 data-lucide 图标几何（本页专用，Path.GdLucideIcon 描边渲染） -->
+        <StreamGeometry x:Key="LucideStoreGeometry">m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7 M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8 M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4 M2 7h20</StreamGeometry>
+        <StreamGeometry x:Key="LucideLayersGeometry">m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65 m22 5-9.17 4.16a2 2 0 0 1-1.66 0L2 22.65</StreamGeometry>
+        <StreamGeometry x:Key="LucideShoppingBagGeometry">M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z M3 6h18 M16 10a4 4 0 0 1-8 0</StreamGeometry>
+        <StreamGeometry x:Key="LucideZapGeometry">M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z</StreamGeometry>
+
+        <!-- 商品主图渐变（brand-600 → brand-400，135deg） -->
+        <LinearGradientBrush x:Key="GdProductImageBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+            <GradientStop Color="{DynamicResource GdBrand600}" Offset="0" />
+            <GradientStop Color="{DynamicResource GdBrand400}" Offset="1" />
+        </LinearGradientBrush>
+    </UserControl.Resources>
+
+    <controls:GalleryPage Title="商品详情"
+                          Subtitle="Horizon.Game.GengDi.FlowerProductDetail"
+                          Description="查看花卉商品详细信息、阶梯价与近 30 日价格走势，支持加入购物车、立即购买与分屏对比。"
+                          IconSource="{StaticResource StoreIcon}">
+
+        <controls:GalleryPage.HeaderActionContent>
+            <ToggleButton Content="分屏对比"
+                          Classes="GdGhost"
+                          IsChecked="{Binding IsCompareMode}"
+                          Padding="16 8"
+                          CornerRadius="{DynamicResource GdRadiusMd}"
+                          FontSize="12" />
+        </controls:GalleryPage.HeaderActionContent>
+
+        <StackPanel Spacing="16" Margin="0 0 0 24"
+                    MaxWidth="1200" HorizontalAlignment="Center">
+
+            <!-- ============ 加载中 ============ -->
+            <Border Classes="GdCard" Margin="0" IsVisible="{Binding IsLoading}">
+                <TextBlock Text="加载中..." HorizontalAlignment="Center"
+                           Foreground="{DynamicResource GdMutedForegroundBrush}" />
             </Border>
 
-            <Border Classes="GdCard" Padding="20" CornerRadius="{DynamicResource GdRadiusLg}" IsVisible="{Binding !HasProduct}">
-                <StackPanel HorizontalAlignment="Center" Spacing="8">
-                    <TextBlock Text="商品不存在或已下架" HorizontalAlignment="Center" Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                </StackPanel>
+            <!-- ============ 商品不存在 ============ -->
+            <Border Classes="GdCard" Margin="0" IsVisible="{Binding !HasProduct}">
+                <TextBlock Text="商品不存在或已下架" HorizontalAlignment="Center"
+                           Foreground="{DynamicResource GdMutedForegroundBrush}" />
             </Border>
 
-            <Border Classes="GdCard" Padding="24" CornerRadius="{DynamicResource GdRadiusLg}" IsVisible="{Binding HasProduct}">
+            <!-- ============ 商品详情主卡 ============ -->
+            <Border Classes="GdCard" Margin="0" Padding="24" IsVisible="{Binding HasProduct}">
                 <StackPanel Spacing="20">
 
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                        <TextBlock Text="{Binding ProductName}" FontSize="20" FontWeight="Bold" VerticalAlignment="Center" />
-                        <ToggleButton Grid.Column="1" Content="分屏对比"
-                                      IsChecked="{Binding IsCompareMode}"
-                                      Padding="16 8" CornerRadius="{DynamicResource GdRadiusMd}" FontSize="12" />
-                    </Grid>
+                    <!-- ============================================================
+                         单品视图（原型 "商品详情" section 主体）
+                         ============================================================ -->
+                    <StackPanel Spacing="20" IsVisible="{Binding ShowSingleView}">
 
-                    <Border Classes="GdCard" Padding="24" CornerRadius="{DynamicResource GdRadiusLg}" IsVisible="{Binding ShowSingleView}">
-                        <StackPanel Spacing="20">
+                        <!-- ===== 主行：左侧大图 + 右侧详情（flex gap 24） ===== -->
+                        <Grid ColumnDefinitions="400,*" ColumnSpacing="24">
 
-                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="20">
-                                <Border Width="160" Height="160" CornerRadius="{DynamicResource GdRadiusLg}">
-                                    <Border.Background>
-                                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                                            <GradientStop Color="{DynamicResource GdBrand600}" Offset="0" />
-                                            <GradientStop Color="{DynamicResource GdBrand400}" Offset="1" />
-                                        </LinearGradientBrush>
-                                    </Border.Background>
-                                    <TextBlock Text="🌸" FontSize="64" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                </Border>
-                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8">
-                                    <TextBlock Text="{Binding ProductName}" FontSize="20" FontWeight="Bold" />
-                                    <TextBlock Text="{Binding MerchantName}" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                                    <StackPanel Orientation="Horizontal" Spacing="12">
-                                        <TextBlock Text="{Binding PriceDisplay}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource GdErrorBrush}" />
-                                        <TextBlock Text="{Binding MarketPriceDisplay}" FontSize="14" Foreground="{DynamicResource GdMutedForegroundBrush}"
+                            <!-- 左侧大图区：400x400 渐变 + 居中花朵 + 右上角分类徽章 -->
+                            <Border Width="400" Height="400"
+                                    Background="{StaticResource GdProductImageBrush}"
+                                    CornerRadius="{DynamicResource GdRadiusLg}"
+                                    ClipToBounds="True">
+                                <Grid>
+                                    <TextBlock Text="🌸" FontSize="80"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" />
+                                    <!-- 右上角分类标签（rgba(0,0,0,0.5) + 白字 + radius-sm） -->
+                                    <Border Background="#80000000"
+                                            CornerRadius="{DynamicResource GdRadiusSm}"
+                                            Padding="10 4"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Top"
+                                            Margin="14">
+                                        <TextBlock Text="混合花束" FontSize="12"
+                                                   Foreground="{DynamicResource GdPrimaryForegroundBrush}" />
+                                    </Border>
+                                </Grid>
+                            </Border>
+
+                            <!-- 右侧详情区 -->
+                            <StackPanel Grid.Column="1" MinWidth="0">
+
+                                <!-- 标题行：22px 商品名 + 预售徽章 -->
+                                <StackPanel Orientation="Horizontal" Spacing="10"
+                                            Margin="0 0 0 8">
+                                    <TextBlock Text="{Binding ProductName}"
+                                               FontSize="22" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <Border Classes="GdBadge GdError">
+                                        <TextBlock Text="预售" />
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- 商户信息：store 图标 + 商户名 + 信誉等级 -->
+                                <StackPanel Orientation="Horizontal" Spacing="4"
+                                            Margin="0 0 0 14">
+                                    <Path Data="{StaticResource LucideStoreGeometry}"
+                                          Classes="GdLucideIcon"
+                                          Width="13" Height="13"
+                                          Stroke="{DynamicResource GdMutedForegroundBrush}" />
+                                    <TextBlock Text="{Binding MerchantInfoText}" FontSize="12"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                </StackPanel>
+
+                                <!-- 价格行：28px 现价 + 13px 划线原价 -->
+                                <StackPanel Orientation="Horizontal" Spacing="10"
+                                            Margin="0 0 0 8">
+                                    <TextBlock Classes="GdNum"
+                                               Text="{Binding PriceDisplay}"
+                                               FontSize="28" FontWeight="Bold"
+                                               Foreground="{DynamicResource GdErrorBrush}" />
+                                    <TextBlock Classes="GdNum"
+                                               Text="{Binding MarketPriceDisplay}"
+                                               FontSize="13"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                               TextDecorations="Strikethrough"
+                                               IsVisible="{Binding HasMarketPrice}" />
+                                </StackPanel>
+
+                                <!-- 阶梯价：layers 图标 + 阶梯明细（info 色） -->
+                                <StackPanel Orientation="Horizontal" Spacing="4"
+                                            Margin="0 0 0 14"
+                                            IsVisible="{Binding HasLadderPrices}">
+                                    <Path Data="{StaticResource LucideLayersGeometry}"
+                                          Classes="GdLucideIcon"
+                                          Width="13" Height="13"
+                                          Stroke="{DynamicResource GdInfoBrush}" />
+                                    <TextBlock Text="阶梯价：" FontSize="12"
+                                               Foreground="{DynamicResource GdInfoBrush}" />
+                                    <ItemsControl ItemsSource="{Binding LadderPrices}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal" Spacing="8" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Display}" FontSize="12"
+                                                           Foreground="{DynamicResource GdInfoBrush}" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+
+                                <!-- 库存/已售/限购信息行 -->
+                                <TextBlock FontSize="12"
+                                           Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                           Margin="0 0 0 18">
+                                    <Run Text="库存 " />
+                                    <Run Text="{Binding Stock}" Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <Run Text=" " />
+                                    <Run Text="{Binding Unit}" />
+                                    <Run Text=" · 已售 " />
+                                    <Run Text="{Binding SoldCount}" Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <Run Text=" " />
+                                    <Run Text="{Binding Unit}" />
+                                    <Run Text=" · 限购 " />
+                                    <Run Text="{Binding PurchaseLimit}" Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <Run Text=" " />
+                                    <Run Text="{Binding Unit}" />
+                                    <Run Text="/人" />
+                                </TextBlock>
+
+                                <!-- 属性表 data-table（产地/等级/花期/包装） -->
+                                <StackPanel Margin="0 0 0 20">
+                                    <Border BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="0 0 0 1">
+                                        <Grid ColumnDefinitions="90,*">
+                                            <TextBlock Text="产地" FontSize="13" FontWeight="Medium"
+                                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                       Padding="10 12" />
+                                            <TextBlock Grid.Column="1" Text="云南昆明斗南" FontSize="13"
+                                                       Foreground="{DynamicResource GdForegroundBrush}"
+                                                       Padding="10 12" />
+                                        </Grid>
+                                    </Border>
+                                    <Border BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="0 0 0 1">
+                                        <Grid ColumnDefinitions="90,*">
+                                            <TextBlock Text="等级" FontSize="13" FontWeight="Medium"
+                                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                       Padding="10 12" />
+                                            <TextBlock Grid.Column="1" Text="A 级（花苞饱满，无病虫害）" FontSize="13"
+                                                       Foreground="{DynamicResource GdForegroundBrush}"
+                                                       Padding="10 12" />
+                                        </Grid>
+                                    </Border>
+                                    <Border BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="0 0 0 1">
+                                        <Grid ColumnDefinitions="90,*">
+                                            <TextBlock Text="花期" FontSize="13" FontWeight="Medium"
+                                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                       Padding="10 12" />
+                                            <TextBlock Grid.Column="1" Text="7–10 天（正确水养）" FontSize="13"
+                                                       Foreground="{DynamicResource GdForegroundBrush}"
+                                                       Padding="10 12" />
+                                        </Grid>
+                                    </Border>
+                                    <Border BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="0 0 0 1">
+                                        <Grid ColumnDefinitions="90,*">
+                                            <TextBlock Text="包装" FontSize="13" FontWeight="Medium"
+                                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                       Padding="10 12" />
+                                            <TextBlock Grid.Column="1" Text="瓦楞纸箱 + 冰袋保鲜 + 防压填充" FontSize="13"
+                                                       Foreground="{DynamicResource GdForegroundBrush}"
+                                                       Padding="10 12" />
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- 操作按钮行：数量步进 + 加入购物车(primary) + 立即购买(ghost) -->
+                                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <TextBlock Text="数量" FontSize="13" VerticalAlignment="Center" />
+                                        <Button Content="-" Padding="8 4"
+                                                CornerRadius="{DynamicResource GdRadiusSm}" FontSize="14"
+                                                Click="OnDecreaseQuantity" />
+                                        <TextBlock Text="{Binding SelectedQuantity}" FontSize="14" Width="32"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        <Button Content="+" Padding="8 4"
+                                                CornerRadius="{DynamicResource GdRadiusSm}" FontSize="14"
+                                                Click="OnIncreaseQuantity" />
+                                    </StackPanel>
+                                    <Button Classes="GdPrimary" Click="OnAddToCart">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <Path Data="{StaticResource LucideShoppingBagGeometry}"
+                                                  Classes="GdLucideIcon" Width="14" Height="14" />
+                                            <TextBlock Text="加入购物车" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Classes="GdGhost" Click="OnBuyNow">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <Path Data="{StaticResource LucideZapGeometry}"
+                                                  Classes="GdLucideIcon" Width="14" Height="14" />
+                                            <TextBlock Text="立即购买" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- ===== 近 30 日价格走势 metric-card ===== -->
+                        <Border Classes="GdMetricCard" Height="200" Padding="16 20" Margin="0">
+                            <Grid RowDefinitions="Auto,*">
+                                <!-- 卡片头：标题 + 图例 + 跌幅 -->
+                                <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0 0 0 8">
+                                    <TextBlock Text="近 30 日价格走势" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <Ellipse Width="8" Height="8"
+                                                     Fill="{DynamicResource GdInfoBrush}"
+                                                     VerticalAlignment="Center" />
+                                            <TextBlock Text="成交均价" FontSize="11"
+                                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                        </StackPanel>
+                                        <TextBlock Classes="GdNum" Text="-8.3%" FontSize="12"
+                                                   Foreground="{DynamicResource GdErrorBrush}" />
+                                    </StackPanel>
+                                </Grid>
+                                <!-- 走势图区域（LiveChartsCore 2.0 折线图） -->
+                                <lvc:CartesianChart Grid.Row="1"
+                                                    Series="{Binding PriceTrendSeries}"
+                                                    XAxes="{Binding PriceTrendXAxes}"
+                                                    YAxes="{Binding PriceTrendYAxes}"
+                                                    MinHeight="140" />
+                            </Grid>
+                        </Border>
+
+                        <!-- ===== 商品描述（保留 Description 绑定） ===== -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="GdSectionHeader" Text="商品描述" />
+                            <TextBlock Text="{Binding Description}" FontSize="13"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                       TextWrapping="Wrap"
+                                       IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                            <TextBlock Text="暂无描述" FontSize="13"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                       IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
+                        </StackPanel>
+
+                        <!-- ===== 推荐商品（保留 RelatedProducts 绑定） ===== -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="GdSectionHeader" Text="推荐商品"
+                                       IsVisible="{Binding RelatedProducts.Count}" />
+                            <ItemsControl ItemsSource="{Binding RelatedProducts}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel Orientation="Horizontal" ItemWidth="180" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource GdInfoSurfaceBrush}"
+                                                CornerRadius="{DynamicResource GdRadiusMd}"
+                                                Padding="12" Margin="0 0 8 8">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Text="{Binding ProductName}" FontSize="12" />
+                                                <TextBlock Text="{Binding Price, StringFormat='¥{0:F2}'}" FontSize="11"
+                                                           Foreground="{DynamicResource GdErrorBrush}" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                    </StackPanel>
+
+                    <!-- ============================================================
+                         分屏对比视图（保留 CompareProductOptions / CompareProduct 等绑定）
+                         ============================================================ -->
+                    <StackPanel Spacing="16" IsVisible="{Binding ShowCompareView}">
+
+                        <ComboBox ItemsSource="{Binding CompareProductOptions}"
+                                  SelectedIndex="-1"
+                                  PlaceholderText="选择对比商品..."
+                                  HorizontalAlignment="Stretch"
+                                  SelectionChanged="OnCompareProductSelected">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding ProductName}" FontSize="13" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                            <!-- 当前商品 -->
+                            <Border Classes="GdCard" Margin="0" Padding="16" CornerRadius="{DynamicResource GdRadiusMd}">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="当前商品" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource GdPrimaryBrush}" />
+                                    <Border Width="120" Height="120" CornerRadius="{DynamicResource GdRadiusMd}"
+                                            Background="{StaticResource GdProductImageBrush}"
+                                            ClipToBounds="True">
+                                        <TextBlock Text="🌸" FontSize="48"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Text="{Binding ProductName}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding MerchantName}" FontSize="11"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="{Binding PriceDisplay}" FontSize="20" FontWeight="Bold"
+                                                   Foreground="{DynamicResource GdErrorBrush}" />
+                                        <TextBlock Text="{Binding MarketPriceDisplay}" FontSize="12"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                    IsVisible="{Binding HasMarketPrice}"
                                                    TextDecorations="Strikethrough" VerticalAlignment="Center" />
                                     </StackPanel>
-                                    <TextBlock FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}">
+                                    <TextBlock FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}">
                                         <TextBlock.Text>
                                             <MultiBinding StringFormat="库存: {0} {1}">
                                                 <Binding Path="Stock" />
@@ -57,191 +368,92 @@
                                             </MultiBinding>
                                         </TextBlock.Text>
                                     </TextBlock>
+                                    <TextBlock Text="{Binding Description}" FontSize="12"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                               TextWrapping="Wrap" MaxLines="4"
+                                               IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                 </StackPanel>
-                            </Grid>
+                            </Border>
 
-                            <Border Height="1" Background="{DynamicResource GdInfoSurfaceBrush}" />
-
-                            <StackPanel Spacing="8">
-                                <TextBlock Text="商品描述" FontSize="14" FontWeight="SemiBold" />
-                                <TextBlock Text="{Binding Description}" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}"
-                                           TextWrapping="Wrap" IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                                <TextBlock Text="暂无描述" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}"
-                                           IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
-                            </StackPanel>
-
-                            <Border Height="1" Background="{DynamicResource GdInfoSurfaceBrush}" />
-
-                            <StackPanel Spacing="8">
-                                <TextBlock Text="阶梯价格" FontSize="14" FontWeight="SemiBold"
-                                           IsVisible="{Binding HasLadderPrices}" />
-                                <ItemsControl ItemsSource="{Binding LadderPrices}" IsVisible="{Binding HasLadderPrices}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border Background="{DynamicResource GdInfoSurfaceBrush}" CornerRadius="{DynamicResource GdRadiusSm}" Padding="10 6" Margin="0 2">
-                                                <TextBlock Text="{Binding Display}" FontSize="12" Foreground="{DynamicResource GdPrimaryBrush}" />
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-
-                            <Border Height="1" Background="{DynamicResource GdInfoSurfaceBrush}" />
-
-                            <StackPanel Spacing="8">
-                                <TextBlock Text="推荐商品" FontSize="14" FontWeight="SemiBold"
-                                           IsVisible="{Binding RelatedProducts.Count}" />
-                                <ItemsControl ItemsSource="{Binding RelatedProducts}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <WrapPanel Orientation="Horizontal" ItemWidth="180" />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border Background="{DynamicResource GdInfoSurfaceBrush}" CornerRadius="{DynamicResource GdRadiusMd}" Padding="12" Margin="0 0 8 8">
-                                                <StackPanel Spacing="4">
-                                                    <TextBlock Text="{Binding ProductName}" FontSize="12" />
-                                                    <TextBlock Text="{Binding Price, StringFormat='¥{0:F2}'}" FontSize="11" Foreground="{DynamicResource GdErrorBrush}" />
-                                                </StackPanel>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-
-                            <Border Height="1" Background="{DynamicResource GdInfoSurfaceBrush}" />
-
-                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
-                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                    <TextBlock Text="数量" FontSize="13" VerticalAlignment="Center" />
-                                    <Button Content="-" Padding="8 4" CornerRadius="{DynamicResource GdRadiusSm}" FontSize="14"
-                                            Click="OnDecreaseQuantity" />
-                                    <TextBlock Text="{Binding SelectedQuantity}" FontSize="14" Width="32"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    <Button Content="+" Padding="8 4" CornerRadius="{DynamicResource GdRadiusSm}" FontSize="14"
-                                            Click="OnIncreaseQuantity" />
-                                </StackPanel>
-                                <Button Grid.Column="1" Content="加入购物车" Classes="GdGhost" Padding="20 10"
-                                        CornerRadius="{DynamicResource GdRadiusMd}" FontSize="13" Click="OnAddToCart" />
-                                <Button Grid.Column="2" Content="立即购买" Classes="GdPrimary" Padding="20 10"
-                                        CornerRadius="{DynamicResource GdRadiusMd}" FontSize="13" Click="OnBuyNow" />
-                            </Grid>
-
-                        </StackPanel>
-                    </Border>
-
-                    <Border Classes="GdCard" Padding="24" CornerRadius="{DynamicResource GdRadiusLg}" IsVisible="{Binding ShowCompareView}">
-                        <StackPanel Spacing="16">
-                            <ComboBox ItemsSource="{Binding CompareProductOptions}"
-                                      SelectedIndex="-1"
-                                      PlaceholderText="选择对比商品..."
-                                      HorizontalAlignment="Stretch"
-                                      SelectionChanged="OnCompareProductSelected">
-                                <ComboBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding ProductName}" FontSize="13" />
-                                    </DataTemplate>
-                                </ComboBox.ItemTemplate>
-                            </ComboBox>
-
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
-                                <Border Classes="GdCard" Padding="16" CornerRadius="{DynamicResource GdRadiusMd}">
-                                    <StackPanel Spacing="12">
-                                        <TextBlock Text="当前商品" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdPrimaryBrush}" />
-                                        <Border Width="120" Height="120" CornerRadius="{DynamicResource GdRadiusMd}">
-                                            <Border.Background>
-                                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                                                    <GradientStop Color="{DynamicResource GdBrand600}" Offset="0" />
-                                                    <GradientStop Color="{DynamicResource GdBrand400}" Offset="1" />
-                                                </LinearGradientBrush>
-                                            </Border.Background>
-                                            <TextBlock Text="🌸" FontSize="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                        </Border>
-                                        <TextBlock Text="{Binding ProductName}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
-                                        <TextBlock Text="{Binding MerchantName}" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <TextBlock Text="{Binding PriceDisplay}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource GdErrorBrush}" />
-                                            <TextBlock Text="{Binding MarketPriceDisplay}" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}"
-                                                       IsVisible="{Binding HasMarketPrice}"
-                                                       TextDecorations="Strikethrough" VerticalAlignment="Center" />
-                                        </StackPanel>
-                                        <TextBlock FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}">
-                                            <TextBlock.Text>
-                                                <MultiBinding StringFormat="库存: {0} {1}">
-                                                    <Binding Path="Stock" />
-                                                    <Binding Path="Unit" />
-                                                </MultiBinding>
-                                            </TextBlock.Text>
-                                        </TextBlock>
-                                        <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}"
-                                                   TextWrapping="Wrap" MaxLines="4"
-                                                   IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                            <!-- 对比商品 -->
+                            <Border Grid.Column="1" Classes="GdCard" Margin="0" Padding="16" CornerRadius="{DynamicResource GdRadiusMd}">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Text="对比商品" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource GdBrand400Brush}" />
+                                    <Border Width="120" Height="120" CornerRadius="{DynamicResource GdRadiusMd}"
+                                            Background="{StaticResource GdProductImageBrush}"
+                                            ClipToBounds="True">
+                                        <TextBlock Text="🌸" FontSize="48"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Text="{Binding CompareProduct.ProductName}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"
+                                               IsVisible="{Binding CompareProduct, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                    <TextBlock Text="请选择对比商品" FontSize="14"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                               IsVisible="{Binding CompareProduct, Converter={x:Static ObjectConverters.IsNull}}" />
+                                    <TextBlock Text="{Binding CompareProduct.MerchantName}" FontSize="11"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                               IsVisible="{Binding CompareProduct, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8"
+                                                IsVisible="{Binding CompareProduct, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                        <TextBlock Text="{Binding CompareProduct.PriceDisplay}" FontSize="20" FontWeight="Bold"
+                                                   Foreground="{DynamicResource GdErrorBrush}" />
+                                        <TextBlock Text="{Binding CompareProduct.MarketPriceDisplay}" FontSize="12"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                   IsVisible="{Binding CompareProduct.HasMarketPrice}"
+                                                   TextDecorations="Strikethrough" VerticalAlignment="Center" />
                                     </StackPanel>
-                                </Border>
-
-                                <Border Grid.Column="1" Classes="GdCard" Padding="16" CornerRadius="{DynamicResource GdRadiusMd}">
-                                    <StackPanel Spacing="12">
-                                        <TextBlock Text="对比商品" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdBrand400Brush}" />
-                                        <Border Width="120" Height="120" CornerRadius="{DynamicResource GdRadiusMd}">
-                                            <Border.Background>
-                                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                                                    <GradientStop Color="{DynamicResource GdBrand500}" Offset="0" />
-                                                    <GradientStop Color="{DynamicResource GdBrand800}" Offset="1" />
-                                                </LinearGradientBrush>
-                                            </Border.Background>
-                                            <TextBlock Text="🌸" FontSize="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                        </Border>
-                                        <TextBlock Text="{Binding CompareProduct.ProductName}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap"
-                                                   IsVisible="{Binding CompareProduct, Converter={x:Static ObjectConverters.IsNotNull}}" />
-                                        <TextBlock Text="请选择对比商品" FontSize="14" Foreground="{DynamicResource GdMutedForegroundBrush}"
-                                                   IsVisible="{Binding CompareProduct, Converter={x:Static ObjectConverters.IsNull}}" />
-                                        <TextBlock Text="{Binding CompareProduct.MerchantName}" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"
-                                                   IsVisible="{Binding CompareProduct, Converter={x:Static ObjectConverters.IsNotNull}}" />
-                                        <StackPanel Orientation="Horizontal" Spacing="8"
-                                                    IsVisible="{Binding CompareProduct, Converter={x:Static ObjectConverters.IsNotNull}}">
-                                            <TextBlock Text="{Binding CompareProduct.PriceDisplay}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource GdErrorBrush}" />
-                                            <TextBlock Text="{Binding CompareProduct.MarketPriceDisplay}" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}"
-                                                       IsVisible="{Binding CompareProduct.HasMarketPrice}"
-                                                       TextDecorations="Strikethrough" VerticalAlignment="Center" />
-                                        </StackPanel>
-                                        <TextBlock FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"
-                                                   IsVisible="{Binding CompareProduct, Converter={x:Static ObjectConverters.IsNotNull}}">
-                                            <TextBlock.Text>
-                                                <MultiBinding StringFormat="库存: {0} {1}">
-                                                    <Binding Path="CompareProduct.Stock" />
-                                                    <Binding Path="CompareProduct.Unit" />
-                                                </MultiBinding>
-                                            </TextBlock.Text>
-                                        </TextBlock>
-                                        <TextBlock Text="{Binding CompareProduct.Description}" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}"
-                                                   TextWrapping="Wrap" MaxLines="4"
-                                                   IsVisible="{Binding CompareProduct, Converter={x:Static ObjectConverters.IsNotNull}}" />
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-
-                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
-                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                    <TextBlock Text="数量" FontSize="13" VerticalAlignment="Center" />
-                                    <Button Content="-" Padding="8 4" CornerRadius="{DynamicResource GdRadiusSm}" FontSize="14"
-                                            Click="OnDecreaseQuantity" />
-                                    <TextBlock Text="{Binding SelectedQuantity}" FontSize="14" Width="32"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    <Button Content="+" Padding="8 4" CornerRadius="{DynamicResource GdRadiusSm}" FontSize="14"
-                                            Click="OnIncreaseQuantity" />
+                                    <TextBlock FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                               IsVisible="{Binding CompareProduct, Converter={x:Static ObjectConverters.IsNotNull}}">
+                                        <TextBlock.Text>
+                                            <MultiBinding StringFormat="库存: {0} {1}">
+                                                <Binding Path="CompareProduct.Stock" />
+                                                <Binding Path="CompareProduct.Unit" />
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding CompareProduct.Description}" FontSize="12"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                               TextWrapping="Wrap" MaxLines="4"
+                                               IsVisible="{Binding CompareProduct, Converter={x:Static ObjectConverters.IsNotNull}}" />
                                 </StackPanel>
-                                <Button Grid.Column="1" Content="加入购物车" Classes="GdGhost" Padding="20 10"
-                                        CornerRadius="{DynamicResource GdRadiusMd}" FontSize="13" Click="OnAddToCart" />
-                                <Button Grid.Column="2" Content="立即购买" Classes="GdPrimary" Padding="20 10"
-                                        CornerRadius="{DynamicResource GdRadiusMd}" FontSize="13" Click="OnBuyNow" />
-                            </Grid>
-                        </StackPanel>
-                    </Border>
+                            </Border>
+                        </Grid>
+
+                        <!-- 对比模式操作行 -->
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock Text="数量" FontSize="13" VerticalAlignment="Center" />
+                                <Button Content="-" Padding="8 4"
+                                        CornerRadius="{DynamicResource GdRadiusSm}" FontSize="14"
+                                        Click="OnDecreaseQuantity" />
+                                <TextBlock Text="{Binding SelectedQuantity}" FontSize="14" Width="32"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                <Button Content="+" Padding="8 4"
+                                        CornerRadius="{DynamicResource GdRadiusSm}" FontSize="14"
+                                        Click="OnIncreaseQuantity" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="GdGhost" Click="OnAddToCart">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <Path Data="{StaticResource LucideShoppingBagGeometry}"
+                                          Classes="GdLucideIcon" Width="14" Height="14" />
+                                    <TextBlock Text="加入购物车" />
+                                </StackPanel>
+                            </Button>
+                            <Button Grid.Column="2" Classes="GdPrimary" Click="OnBuyNow">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <Path Data="{StaticResource LucideZapGeometry}"
+                                          Classes="GdLucideIcon" Width="14" Height="14" />
+                                    <TextBlock Text="立即购买" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                    </StackPanel>
 
                 </StackPanel>
             </Border>
 
         </StackPanel>
-    </ScrollViewer>
+    </controls:GalleryPage>
 </UserControl>

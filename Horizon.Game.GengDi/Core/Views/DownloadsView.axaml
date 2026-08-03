@@ -4,9 +4,15 @@
              xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
              xmlns:models="using:Horizon.Game.GengDi.Models"
              xmlns:enums="using:Horizon.Game.GengDi.Enums"
+             xmlns:converters="using:Horizon.Game.GengDi.Core.Converters"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
              x:Class="Horizon.Game.GengDi.Core.Views.DownloadsView"
              x:DataType="vm:DownloadsViewModel">
+
+    <UserControl.Resources>
+        <converters:DownloadTaskIconConverter x:Key="TaskIconConverter" />
+        <converters:DownloadTaskGradientConverter x:Key="TaskGradientConverter" />
+    </UserControl.Resources>
 
     <controls:GalleryPage Title="下载"
                           Subtitle="Horizon.Game.GengDi.Downloads"
@@ -26,11 +32,13 @@
                                 Spacing="14">
                         <Border Classes="GdStatIcon"
                                 Background="{DynamicResource GdInfoSurfaceBrush}">
-                            <ui:SymbolIcon Symbol="Sync"
-                                           FontSize="20"
-                                           Foreground="{DynamicResource GdInfoBrush}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center" />
+                            <Path Classes="GdLucideIcon"
+                                  Width="20"
+                                  Height="20"
+                                  Data="{StaticResource LucideLoaderGeometry}"
+                                  Stroke="{DynamicResource GdInfoBrush}"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
                         </Border>
                         <StackPanel Spacing="0">
                             <TextBlock Text="活跃任务"
@@ -53,28 +61,32 @@
                                 Spacing="14">
                         <Border Classes="GdStatIcon"
                                 Background="{DynamicResource GdSuccessSurfaceBrush}">
-                            <ui:SymbolIcon Symbol="Refresh"
-                                           FontSize="20"
-                                           Foreground="{DynamicResource GdSuccessBrush}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center" />
+                            <Path Classes="GdLucideIcon"
+                                  Width="20"
+                                  Height="20"
+                                  Data="{StaticResource LucideGaugeGeometry}"
+                                  Stroke="{DynamicResource GdSuccessBrush}"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
                         </Border>
                         <StackPanel Spacing="0">
                             <TextBlock Text="总下载速度"
                                        FontSize="11"
                                        Foreground="{DynamicResource GdMutedForegroundBrush}" />
                             <StackPanel Orientation="Horizontal"
-                                        VerticalAlignment="Bottom">
-                                <TextBlock Text="—"
+                                        Spacing="4">
+                                <TextBlock Text="{Binding TotalDownloadSpeedValue}"
                                            FontSize="22"
                                            FontWeight="SemiBold"
                                            FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
                                            Foreground="{DynamicResource GdForegroundBrush}" />
-                                <TextBlock Text=" MB/s"
+                                <TextBlock Text="{Binding TotalDownloadSpeedUnit}"
                                            FontSize="13"
+                                           FontWeight="SemiBold"
+                                           FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
                                            Foreground="{DynamicResource GdMutedForegroundBrush}"
                                            VerticalAlignment="Bottom"
-                                           Margin="2 0 0 2" />
+                                           Margin="0 0 0 3" />
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
@@ -88,23 +100,33 @@
                                 Spacing="14">
                         <Border Classes="GdStatIcon"
                                 Background="{DynamicResource GdWarningSurfaceBrush}">
-                            <ui:SymbolIcon Symbol="Globe"
-                                           FontSize="20"
-                                           Foreground="{DynamicResource GdWarningBrush}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center" />
+                            <Path Classes="GdLucideIcon"
+                                  Width="20"
+                                  Height="20"
+                                  Data="{StaticResource LucideHardDriveGeometry}"
+                                  Stroke="{DynamicResource GdWarningBrush}"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
                         </Border>
                         <StackPanel Spacing="0">
-                            <TextBlock Text="保存目录"
+                            <TextBlock Text="已用空间"
                                        FontSize="11"
                                        Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                            <TextBlock Text="{Binding DownloadPackageDirectory}"
-                                       FontSize="13"
-                                       FontWeight="SemiBold"
-                                       FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
-                                       Foreground="{DynamicResource GdForegroundBrush}"
-                                       TextTrimming="CharacterEllipsis"
-                                       MaxWidth="180" />
+                            <StackPanel Orientation="Horizontal"
+                                        Spacing="4">
+                                <TextBlock Text="{Binding UsedDiskSpaceValue}"
+                                           FontSize="22"
+                                           FontWeight="SemiBold"
+                                           FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                           Foreground="{DynamicResource GdForegroundBrush}" />
+                                <TextBlock Text="{Binding UsedDiskSpaceUnit}"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                           Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                           VerticalAlignment="Bottom"
+                                           Margin="0 0 0 3" />
+                            </StackPanel>
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -115,24 +137,49 @@
                     Padding="0">
                 <StackPanel>
 
-                    <!-- 列表头：标题 + 操作按钮 -->
+                    <!-- 列表头：标题（左边框3px品牌色） + 操作按钮（带图标） -->
                     <Border Padding="16,12">
                         <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Text="下载任务"
-                                       Classes="GdSectionTitle"
-                                       Margin="0" />
+                            <Border BorderBrush="{DynamicResource GdPrimaryBrush}"
+                                    BorderThickness="3 0 0 0"
+                                    Padding="10 0 0 0"
+                                    Height="20">
+                                <TextBlock Text="下载任务"
+                                           FontSize="14"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource GdForegroundBrush}"
+                                           VerticalAlignment="Center" />
+                            </Border>
                             <StackPanel Grid.Column="1"
                                         Orientation="Horizontal"
                                         Spacing="8">
                                 <Button Classes="GdGhost GdBtnSm"
-                                        Content="全部暂停" />
+                                        Command="{Binding PauseAllCommand}">
+                                    <StackPanel Orientation="Horizontal"
+                                                Spacing="6">
+                                        <Path Classes="GdLucideIcon"
+                                              Width="13"
+                                              Height="13"
+                                              Data="{StaticResource LucidePauseGeometry}" />
+                                        <TextBlock Text="全部暂停" />
+                                    </StackPanel>
+                                </Button>
                                 <Button Classes="GdGhost GdBtnSm"
-                                        Content="清空已完成" />
+                                        Command="{Binding ClearCompletedCommand}">
+                                    <StackPanel Orientation="Horizontal"
+                                                Spacing="6">
+                                        <Path Classes="GdLucideIcon"
+                                              Width="13"
+                                              Height="13"
+                                              Data="{StaticResource LucideTrash2Geometry}" />
+                                        <TextBlock Text="清空已完成" />
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
                         </Grid>
                     </Border>
 
-                    <!-- 活跃任务列表 -->
+                    <!-- 活跃任务列表（下载中 / 暂停 / 等待中） -->
                     <ItemsControl ItemsSource="{Binding DownloadTasks}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="models:DownloadTask">
@@ -140,19 +187,16 @@
                                     <Grid ColumnDefinitions="48,*,Auto"
                                           ColumnSpacing="14">
 
-                                        <!-- 任务图标 -->
-                                        <Border Classes="GdDlIcon">
-                                            <Border.Background>
-                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                                    <GradientStop Color="{DynamicResource GdBrand500}" Offset="0" />
-                                                    <GradientStop Color="{DynamicResource GdBrand700}" Offset="1" />
-                                                </LinearGradientBrush>
-                                            </Border.Background>
-                                            <ui:SymbolIcon Symbol="Download"
-                                                           FontSize="24"
-                                                           Foreground="{DynamicResource GdPrimaryForegroundBrush}"
-                                                           HorizontalAlignment="Center"
-                                                           VerticalAlignment="Center" />
+                                        <!-- 任务图标（渐变背景 + Lucide 图标，按 IconKey 差异化） -->
+                                        <Border Classes="GdDlIcon"
+                                                Background="{Binding GradientIndex, Converter={StaticResource TaskGradientConverter}}">
+                                            <Path Classes="GdLucideIcon"
+                                                  Width="24"
+                                                  Height="24"
+                                                  Data="{Binding IconKey, Converter={StaticResource TaskIconConverter}}"
+                                                  Stroke="{DynamicResource GdPrimaryForegroundBrush}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center" />
                                         </Border>
 
                                         <!-- 任务信息 -->
@@ -166,24 +210,52 @@
                                                            FontSize="14"
                                                            FontWeight="SemiBold"
                                                            Foreground="{DynamicResource GdForegroundBrush}" />
-                                                <Border Classes="GdBadge GdInfo">
-                                                    <TextBlock Text="{Binding Status}" />
+                                                <!-- 下载中 badge -->
+                                                <Border Classes="GdBadge GdInfo"
+                                                        IsVisible="{Binding IsDownloading}">
+                                                    <TextBlock Text="{Binding StatusDisplayText}" />
+                                                </Border>
+                                                <!-- 已暂停 badge -->
+                                                <Border Classes="GdBadge GdWarning"
+                                                        IsVisible="{Binding IsPaused}">
+                                                    <TextBlock Text="{Binding StatusDisplayText}" />
+                                                </Border>
+                                                <!-- 等待中 badge -->
+                                                <Border Classes="GdBadge GdInfo"
+                                                        IsVisible="{Binding IsPending}">
+                                                    <TextBlock Text="{Binding StatusDisplayText}" />
                                                 </Border>
                                             </StackPanel>
 
-                                            <!-- 进度条 -->
-                                            <ProgressBar Value="{Binding Progress}"
-                                                         Maximum="100"
-                                                         IsIndeterminate="{Binding IsProgressIndeterminate}"
-                                                         Height="6"
-                                                         CornerRadius="999"
-                                                         Background="{DynamicResource GdMutedBrush}"
-                                                         Foreground="{DynamicResource GdPrimaryBrush}" />
+                                            <!-- 进度条（按状态切换颜色：下载中=品牌色，暂停=warning，等待=品牌色） -->
+                                            <Grid Height="6">
+                                                <ProgressBar IsVisible="{Binding IsDownloading}"
+                                                             Value="{Binding Progress}"
+                                                             Maximum="100"
+                                                             Height="6"
+                                                             CornerRadius="999"
+                                                             Background="{DynamicResource GdMutedBrush}"
+                                                             Foreground="{DynamicResource GdPrimaryBrush}" />
+                                                <ProgressBar IsVisible="{Binding IsPaused}"
+                                                             Value="{Binding Progress}"
+                                                             Maximum="100"
+                                                             Height="6"
+                                                             CornerRadius="999"
+                                                             Background="{DynamicResource GdMutedBrush}"
+                                                             Foreground="{DynamicResource GdWarningBrush}" />
+                                                <ProgressBar IsVisible="{Binding IsPending}"
+                                                             Value="{Binding Progress}"
+                                                             Maximum="100"
+                                                             Height="6"
+                                                             CornerRadius="999"
+                                                             Background="{DynamicResource GdMutedBrush}"
+                                                             Foreground="{DynamicResource GdPrimaryBrush}" />
+                                            </Grid>
 
-                                            <!-- 详情：已下载 · 百分比 · 速度 -->
+                                            <!-- 详情行：11px muted-foreground + mono 字体 + "·" 分隔 -->
                                             <StackPanel Orientation="Horizontal"
                                                         Spacing="14">
-                                                <TextBlock Text="{Binding TransferStatusText}"
+                                                <TextBlock Text="{Binding FormattedSizeText}"
                                                            FontSize="11"
                                                            Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                            FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace" />
@@ -194,26 +266,98 @@
                                                            FontSize="11"
                                                            Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                            FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace" />
+                                                <!-- 下载中：速度 + 剩余时间 -->
+                                                <TextBlock Text="·"
+                                                           FontSize="11"
+                                                           IsVisible="{Binding IsDownloading}"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                                <TextBlock Text="{Binding SpeedText}"
+                                                           FontSize="11"
+                                                           IsVisible="{Binding IsDownloading}"
+                                                           Foreground="{DynamicResource GdSuccessBrush}"
+                                                           FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace" />
+                                                <TextBlock Text="·"
+                                                           FontSize="11"
+                                                           IsVisible="{Binding IsDownloading}"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                                <TextBlock IsVisible="{Binding IsDownloading}"
+                                                           FontSize="11"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}">
+                                                    <Run Text="剩余 " />
+                                                    <Run Text="{Binding RemainingTimeText}"
+                                                         FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace" />
+                                                </TextBlock>
+                                                <!-- 暂停状态：暂停时间 -->
+                                                <TextBlock Text="·"
+                                                           FontSize="11"
+                                                           IsVisible="{Binding IsPaused}"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                                <TextBlock Text="{Binding PausedTimeText}"
+                                                           FontSize="11"
+                                                           IsVisible="{Binding IsPaused}"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                           FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace" />
                                             </StackPanel>
                                         </StackPanel>
 
-                                        <!-- 操作按钮 -->
+                                        <!-- 操作按钮（按状态显示，带 Lucide 图标） -->
                                         <StackPanel Grid.Column="2"
                                                     Orientation="Horizontal"
                                                     Spacing="6"
                                                     VerticalAlignment="Center">
+                                            <!-- 下载中：暂停（ghost + pause图标） + 取消（danger + x图标） -->
                                             <Button Classes="GdGhost GdBtnSm"
-                                                    Content="暂停"
+                                                    IsVisible="{Binding IsDownloading}"
                                                     Command="{Binding $parent[ItemsControl].DataContext.PauseDownloadCommand}"
-                                                    CommandParameter="{Binding Id}" />
-                                            <Button Classes="GdGhost GdBtnSm"
-                                                    Content="继续"
-                                                    Command="{Binding $parent[ItemsControl].DataContext.ResumeDownloadCommand}"
-                                                    CommandParameter="{Binding Id}" />
+                                                    CommandParameter="{Binding Id}"
+                                                    ToolTip.Tip="暂停">
+                                                <Path Classes="GdLucideIcon"
+                                                      Width="14"
+                                                      Height="14"
+                                                      Data="{StaticResource LucidePauseGeometry}" />
+                                            </Button>
                                             <Button Classes="GdDanger GdBtnSm"
-                                                    Content="取消"
+                                                    IsVisible="{Binding IsDownloading}"
                                                     Command="{Binding $parent[ItemsControl].DataContext.CancelDownloadCommand}"
-                                                    CommandParameter="{Binding Id}" />
+                                                    CommandParameter="{Binding Id}"
+                                                    ToolTip.Tip="取消">
+                                                <Path Classes="GdLucideIcon"
+                                                      Width="14"
+                                                      Height="14"
+                                                      Data="{StaticResource LucideXGeometry}" />
+                                            </Button>
+                                            <!-- 暂停：继续（primary + play图标） + 取消（danger + x图标） -->
+                                            <Button Classes="GdPrimary GdBtnSm"
+                                                    IsVisible="{Binding IsPaused}"
+                                                    Command="{Binding $parent[ItemsControl].DataContext.ResumeDownloadCommand}"
+                                                    CommandParameter="{Binding Id}"
+                                                    ToolTip.Tip="继续">
+                                                <Path Classes="GdLucideIcon"
+                                                      Width="14"
+                                                      Height="14"
+                                                      Data="{StaticResource LucidePlayGeometry}" />
+                                            </Button>
+                                            <Button Classes="GdDanger GdBtnSm"
+                                                    IsVisible="{Binding IsPaused}"
+                                                    Command="{Binding $parent[ItemsControl].DataContext.CancelDownloadCommand}"
+                                                    CommandParameter="{Binding Id}"
+                                                    ToolTip.Tip="取消">
+                                                <Path Classes="GdLucideIcon"
+                                                      Width="14"
+                                                      Height="14"
+                                                      Data="{StaticResource LucideXGeometry}" />
+                                            </Button>
+                                            <!-- 等待中：取消（danger + x图标） -->
+                                            <Button Classes="GdDanger GdBtnSm"
+                                                    IsVisible="{Binding IsPending}"
+                                                    Command="{Binding $parent[ItemsControl].DataContext.CancelDownloadCommand}"
+                                                    CommandParameter="{Binding Id}"
+                                                    ToolTip.Tip="取消">
+                                                <Path Classes="GdLucideIcon"
+                                                      Width="14"
+                                                      Height="14"
+                                                      Data="{StaticResource LucideXGeometry}" />
+                                            </Button>
                                         </StackPanel>
                                     </Grid>
                                 </Border>
@@ -221,7 +365,7 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <!-- 已完成任务列表 -->
+                    <!-- 已完成任务列表（已完成 / 失败 / 已取消），与活跃任务连续渲染为单一列表 -->
                     <ItemsControl ItemsSource="{Binding CompletedTasks}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="models:DownloadTask">
@@ -229,24 +373,22 @@
                                     <Grid ColumnDefinitions="48,*,Auto"
                                           ColumnSpacing="14">
 
-                                        <!-- 任务图标 -->
-                                        <Border Classes="GdDlIcon">
-                                            <Border.Background>
-                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                                    <GradientStop Color="{DynamicResource GdBrand700}" Offset="0" />
-                                                    <GradientStop Color="{DynamicResource GdBrand900}" Offset="1" />
-                                                </LinearGradientBrush>
-                                            </Border.Background>
-                                            <ui:SymbolIcon Symbol="Accept"
-                                                           FontSize="24"
-                                                           Foreground="{DynamicResource GdPrimaryForegroundBrush}"
-                                                           HorizontalAlignment="Center"
-                                                           VerticalAlignment="Center" />
+                                        <!-- 任务图标（渐变背景 + Lucide 图标） -->
+                                        <Border Classes="GdDlIcon"
+                                                Background="{Binding GradientIndex, Converter={StaticResource TaskGradientConverter}}">
+                                            <Path Classes="GdLucideIcon"
+                                                  Width="24"
+                                                  Height="24"
+                                                  Data="{Binding IconKey, Converter={StaticResource TaskIconConverter}}"
+                                                  Stroke="{DynamicResource GdPrimaryForegroundBrush}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center" />
                                         </Border>
 
                                         <!-- 任务信息 -->
                                         <StackPanel Grid.Column="1"
                                                     Spacing="6">
+                                            <!-- 标题 + 状态 badge -->
                                             <StackPanel Orientation="Horizontal"
                                                         Spacing="10"
                                                         VerticalAlignment="Center">
@@ -254,43 +396,114 @@
                                                            FontSize="14"
                                                            FontWeight="SemiBold"
                                                            Foreground="{DynamicResource GdForegroundBrush}" />
-                                                <Border Classes="GdBadge GdSuccess">
-                                                    <TextBlock Text="{Binding Status}" />
+                                                <!-- 已完成 badge（带 check 图标） -->
+                                                <Border Classes="GdBadge GdSuccess"
+                                                        IsVisible="{Binding IsCompleted}">
+                                                    <StackPanel Orientation="Horizontal"
+                                                                Spacing="4">
+                                                        <Path Classes="GdLucideIcon"
+                                                              Width="11"
+                                                              Height="11"
+                                                              Data="{StaticResource LucideCheckGeometry}" />
+                                                        <TextBlock Text="{Binding StatusDisplayText}" />
+                                                    </StackPanel>
+                                                </Border>
+                                                <!-- 失败 badge -->
+                                                <Border Classes="GdBadge GdError"
+                                                        IsVisible="{Binding IsFailed}">
+                                                    <TextBlock Text="{Binding StatusDisplayText}" />
+                                                </Border>
+                                                <!-- 已取消 badge -->
+                                                <Border Classes="GdBadge GdWarning"
+                                                        IsVisible="{Binding IsCancelled}">
+                                                    <TextBlock Text="{Binding StatusDisplayText}" />
                                                 </Border>
                                             </StackPanel>
 
-                                            <ProgressBar Value="100"
-                                                         Maximum="100"
-                                                         Height="6"
-                                                         CornerRadius="999"
-                                                         Background="{DynamicResource GdMutedBrush}"
-                                                         Foreground="{DynamicResource GdSuccessBrush}" />
+                                            <!-- 进度条（已完成=success绿，失败=error红，已取消=muted灰） -->
+                                            <Grid Height="6">
+                                                <ProgressBar IsVisible="{Binding IsCompleted}"
+                                                             Value="{Binding Progress}"
+                                                             Maximum="100"
+                                                             Height="6"
+                                                             CornerRadius="999"
+                                                             Background="{DynamicResource GdMutedBrush}"
+                                                             Foreground="{DynamicResource GdSuccessBrush}" />
+                                                <ProgressBar IsVisible="{Binding IsFailed}"
+                                                             Value="{Binding Progress}"
+                                                             Maximum="100"
+                                                             Height="6"
+                                                             CornerRadius="999"
+                                                             Background="{DynamicResource GdMutedBrush}"
+                                                             Foreground="{DynamicResource GdErrorBrush}" />
+                                                <ProgressBar IsVisible="{Binding IsCancelled}"
+                                                             Value="{Binding Progress}"
+                                                             Maximum="100"
+                                                             Height="6"
+                                                             CornerRadius="999"
+                                                             Background="{DynamicResource GdMutedBrush}"
+                                                             Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                            </Grid>
 
+                                            <!-- 详情行 -->
                                             <StackPanel Orientation="Horizontal"
                                                         Spacing="14">
-                                                <TextBlock Text="{Binding TransferStatusText}"
+                                                <TextBlock Text="{Binding FormattedDownloadedSizeText}"
                                                            FontSize="11"
                                                            Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                            FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace" />
                                                 <TextBlock Text="·"
                                                            FontSize="11"
                                                            Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                                                <TextBlock Text="{Binding EndTime, StringFormat='完成于 {0:yyyy-MM-dd HH:mm}'}"
+                                                <!-- 已完成：完成时间 -->
+                                                <TextBlock Text="{Binding CompletedTimeText}"
                                                            FontSize="11"
+                                                           IsVisible="{Binding IsCompleted}"
                                                            Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                            FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace" />
+                                                <!-- 失败：错误信息 -->
+                                                <TextBlock Text="{Binding ErrorMessage}"
+                                                           FontSize="11"
+                                                           IsVisible="{Binding IsFailed}"
+                                                           Foreground="{DynamicResource GdErrorBrush}"
+                                                           TextTrimming="CharacterEllipsis" />
+                                                <!-- 已取消 -->
+                                                <TextBlock Text="已取消"
+                                                           FontSize="11"
+                                                           IsVisible="{Binding IsCancelled}"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}" />
                                             </StackPanel>
                                         </StackPanel>
 
-                                        <!-- 操作按钮 -->
+                                        <!-- 操作按钮（带 Lucide 图标） -->
                                         <StackPanel Grid.Column="2"
                                                     Orientation="Horizontal"
                                                     Spacing="6"
                                                     VerticalAlignment="Center">
+                                            <!-- 已完成：打开（primary + folder-open图标 + 文字） -->
                                             <Button Classes="GdPrimary GdBtnSm"
-                                                    Content="打开" />
+                                                    IsVisible="{Binding IsCompleted}"
+                                                    Command="{Binding $parent[ItemsControl].DataContext.OpenFolderCommand}"
+                                                    CommandParameter="{Binding Id}">
+                                                <StackPanel Orientation="Horizontal"
+                                                            Spacing="6">
+                                                    <Path Classes="GdLucideIcon"
+                                                          Width="14"
+                                                          Height="14"
+                                                          Data="{StaticResource LucideFolderOpenGeometry}" />
+                                                    <TextBlock Text="打开" />
+                                                </StackPanel>
+                                            </Button>
+                                            <!-- 删除（danger + trash-2图标） -->
                                             <Button Classes="GdDanger GdBtnSm"
-                                                    Content="删除" />
+                                                    Command="{Binding $parent[ItemsControl].DataContext.DeleteTaskCommand}"
+                                                    CommandParameter="{Binding Id}"
+                                                    ToolTip.Tip="删除">
+                                                <Path Classes="GdLucideIcon"
+                                                      Width="14"
+                                                      Height="14"
+                                                      Data="{StaticResource LucideTrash2Geometry}" />
+                                            </Button>
                                         </StackPanel>
                                     </Grid>
                                 </Border>

@@ -34,8 +34,10 @@ public static class SyncProtocolVersion
     ///        客户端每帧把当帧目标速度（含 Run/Sprint/Crouch 倍数）随输入上送，服务端权威回放
     ///        与客户端本地预测都用此值调用 <c>MovementFormula.Step</c>。修复"PlayerController.MoveSpeed
     ///        未进入网络同步链路，链路两端固定用 DefaultMaxSpeed=6 m/s 推进"的问题。
+    ///   v7 = 新增 <see cref="BaselineResyncRequestPacket"/>：客户端 delta 解码时 baseline 不匹配，
+    ///        主动请求服务端重传全量快照，替代原"直接应用 delta 兜底"，保证 baseline 一致性。
     /// </summary>
-    public const int Current = 6;
+    public const int Current = 7;
 
     /// <summary>
     /// 服务器支持的最低协议版本。低于此版本的客户端握手将被拒绝并收到 <see cref="HandshakeRejectPacket"/>，
@@ -76,6 +78,8 @@ public enum SyncPacketKind : byte
     Damage = 14,
     /// <summary>P1.4：死亡通知（服务器→客户端，实体死亡/击杀者/死亡类型）。</summary>
     Death = 15,
+    /// <summary>客户端→服务器：baseline 缺失重传请求（delta 解码时 baseline 不匹配，请求服务端下发全量快照）。</summary>
+    BaselineResyncRequest = 16,
 }
 
 /// <summary>
@@ -111,6 +115,9 @@ public enum SyncPacketKind : byte
 [MemoryPackUnion(12, typeof(CombatActionPacket))]
 [MemoryPackUnion(13, typeof(DamagePacket))]
 [MemoryPackUnion(14, typeof(DeathPacket))]
+// BaselineResyncRequestPacket：tag 15 对应 SyncPacketKind.BaselineResyncRequest=16（枚举中 Unknown=0 占位导致偏移 1）。
+// 紧跟 DeathPacket 的 tag 14，保持 0..15 连续递增。
+[MemoryPackUnion(15, typeof(BaselineResyncRequestPacket))]
 public abstract partial class SyncPacket
 {
     /// <summary>包种类（冗余字段，便于不解码 union 时也能识别）。</summary>
@@ -905,4 +912,32 @@ public sealed partial class DeathPacket : SyncPacket
     public long ServerTick { get; set; }
 
     public DeathPacket() { Kind = SyncPacketKind.Death; }
+}
+
+// ---------------------------------------------------------------------------
+// baseline 缺失重传请求：客户端 delta 解码时发现 baseline 不匹配，主动请求服务端下发全量快照。
+// 走可靠通道，服务端收到后下一 tick 强制下发全量快照（baseline）给该 session。
+// ---------------------------------------------------------------------------
+
+/// <summary>
+/// 客户端→服务器：baseline 缺失重传请求。
+/// 当客户端收到 delta 帧但本地缺失对应 baseline（或 baseline tick 不匹配）时上送本包，
+/// 服务端收到后设置 <c>_forceFullSnapshotNextTick = true</c>，下一 tick 强制下发全量快照。
+/// 走可靠通道，保证重传请求必达。
+/// </summary>
+[MemoryPackable]
+[GenerateSerializer]
+public sealed partial class BaselineResyncRequestPacket : SyncPacket
+{
+    /// <summary>delta 帧期望的 baseline tick（客户端据此告知服务端需要哪个 baseline）。</summary>
+    [MemoryPackOrder(2)]
+    [Id(0)]
+    public long ExpectedBaselineTick { get; set; }
+
+    /// <summary>客户端最后已应用的 baseline tick（0 表示无任何 baseline，便于服务端诊断）。</summary>
+    [MemoryPackOrder(3)]
+    [Id(1)]
+    public long ClientLastAppliedTick { get; set; }
+
+    public BaselineResyncRequestPacket() { Kind = SyncPacketKind.BaselineResyncRequest; }
 }

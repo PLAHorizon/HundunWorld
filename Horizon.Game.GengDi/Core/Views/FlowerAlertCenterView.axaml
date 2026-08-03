@@ -3,6 +3,7 @@
              xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
              xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
              xmlns:converters="using:Horizon.Game.GengDi.Core.Converters"
+             xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
              x:Class="Horizon.Game.GengDi.Core.Views.FlowerAlertCenterView"
              x:DataType="vm:FlowerAlertCenterViewModel">
 
@@ -14,28 +15,59 @@
                           Description="查看花卉价格预警和异常波动通知。"
                           IconSource="{StaticResource NotificationsIcon}">
 
-        <Grid RowDefinitions="Auto,Auto,*"
+        <Grid RowDefinitions="Auto,Auto,*,Auto"
               RowSpacing="16">
 
-            <!-- 统计卡片（设计稿：图标容器 + 标签 + 大数字） -->
-            <Border Classes="GdCard" Padding="16 20">
+            <!-- ============ 顶部统计栏（原型 metric-card：待处理预警 + 分类计数 + 操作按钮） ============ -->
+            <Border Classes="GdCard" Padding="16 20" Margin="0">
                 <Grid ColumnDefinitions="*,Auto">
-                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                        <Border Width="40" Height="40" CornerRadius="{DynamicResource GdRadiusMd}"
-                                Background="{DynamicResource GdWarningSurfaceBrush}">
-                            <TextBlock Text="🔔" FontSize="20"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
+                    <StackPanel Orientation="Horizontal" Spacing="20" VerticalAlignment="Center">
+                        <!-- 待处理预警（图标容器 + 标签 + 大数字，warning 主题） -->
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <Border Width="40" Height="40" CornerRadius="{DynamicResource GdRadiusMd}"
+                                    Background="{DynamicResource GdWarningSurfaceBrush}">
+                                <TextBlock Text="🔔" FontSize="20"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource GdWarningBrush}" />
+                            </Border>
+                            <StackPanel Spacing="2">
+                                <TextBlock Text="待处理预警" FontSize="12"
+                                           Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                <TextBlock Text="{Binding PendingAlertCount}" FontSize="22" FontWeight="Bold"
+                                           FontFamily="{DynamicResource GdFontMono}"
+                                           Foreground="{DynamicResource GdWarningBrush}" LineHeight="24" />
+                            </StackPanel>
+                        </StackPanel>
+                        <!-- 分隔线 -->
+                        <Border Width="1" Height="36" Background="{DynamicResource GdBorderBrush}" />
+                        <!-- 价格突破 -->
                         <StackPanel Spacing="2">
-                            <TextBlock Text="待处理预警" FontSize="12"
+                            <TextBlock Text="价格突破" FontSize="12"
                                        Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                            <TextBlock Text="{Binding PendingAlertCount}" FontSize="22" FontWeight="Bold"
-                                       FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
-                                       Foreground="{DynamicResource GdWarningBrush}" LineHeight="24" />
+                            <TextBlock Text="{Binding PriceBreakthroughCount}" FontSize="14" FontWeight="SemiBold"
+                                       FontFamily="{DynamicResource GdFontMono}"
+                                       Foreground="{DynamicResource GdErrorBrush}" />
+                        </StackPanel>
+                        <!-- 库存不足 -->
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="库存不足" FontSize="12"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                            <TextBlock Text="{Binding LowStockCount}" FontSize="14" FontWeight="SemiBold"
+                                       FontFamily="{DynamicResource GdFontMono}"
+                                       Foreground="{DynamicResource GdWarningBrush}" />
+                        </StackPanel>
+                        <!-- 异常波动 -->
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="异常波动" FontSize="12"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                            <TextBlock Text="{Binding AnomalyCount}" FontSize="14" FontWeight="SemiBold"
+                                       FontFamily="{DynamicResource GdFontMono}"
+                                       Foreground="{DynamicResource GdErrorBrush}" />
                         </StackPanel>
                     </StackPanel>
+                    <!-- 右侧操作按钮 -->
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <Button Classes="GdOutline" Padding="12 6" FontSize="12"
+                        <Button Classes="GdGhost" Padding="12 6" FontSize="12"
                                 Command="{Binding RefreshCommand}">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <TextBlock Text="🔄" FontSize="12" VerticalAlignment="Center" />
@@ -53,7 +85,7 @@
                 </Grid>
             </Border>
 
-            <!-- 品种筛选（设计稿：pill圆角标签） -->
+            <!-- ============ 品种筛选标签栏（原型 filter-pill） ============ -->
             <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Grid.Row="1">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <Button Content="全部品种" Classes="GdPill GdPillActive" Click="OnSpeciesFilterClick" Tag="0"/>
@@ -65,21 +97,22 @@
                 </StackPanel>
             </ScrollViewer>
 
-            <!-- 预警列表 -->
+            <!-- ============ 预警列表（原型 alert-card） ============ -->
             <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="8" Margin="0 0 0 24">
+                <StackPanel Spacing="12" Margin="0 0 0 8">
                     <ItemsControl ItemsSource="{Binding Alerts}">
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Classes="GdCard" Padding="16" CornerRadius="{DynamicResource GdRadiusLg}" Margin="0 0 0 12">
+                            <DataTemplate x:DataType="vm:AlertDisplayItem">
+                                <Border Classes="GdCard" Padding="16" CornerRadius="{DynamicResource GdRadiusLg}" Margin="0">
                                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
-                                        <!-- 设计稿 alert-icon-wrap：36x36 表面色容器 -->
-                                        <Border Width="36" Height="36" CornerRadius="{DynamicResource GdRadiusMd}"
+                                        <!-- alert-icon-wrap：表面色容器 + 业务图标 -->
+                                        <Border Width="40" Height="40" CornerRadius="{DynamicResource GdRadiusMd}"
                                                 Background="{Binding AlertLevel, Converter={StaticResource AlertSurfaceConverter}}"
                                                 VerticalAlignment="Top">
-                                            <TextBlock Text="{Binding LevelIcon}" FontSize="18"
+                                            <TextBlock Text="{Binding AlertIcon}" FontSize="18"
                                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
                                         </Border>
+                                        <!-- 中间内容：标题 + badge + 品种 / 描述 / 触发信息 -->
                                         <StackPanel Grid.Column="1" Spacing="4">
                                             <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <TextBlock Text="{Binding AlertTypeDisplay}" FontSize="14" FontWeight="SemiBold"
@@ -93,17 +126,27 @@
                                             </StackPanel>
                                             <TextBlock Text="{Binding Message}" TextWrapping="Wrap" FontSize="13"
                                                        Foreground="{DynamicResource GdForegroundBrush}" LineHeight="20"/>
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <TextBlock Text="{Binding TriggeredValue, StringFormat='触发值：{0:F2}'}" FontSize="12"
-                                                           FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <TextBlock Text="{Binding TriggerLabel, StringFormat='{}{0}：'}" FontSize="12"
+                                                           FontFamily="{DynamicResource GdFontMono}"
                                                            Foreground="{DynamicResource GdMutedForegroundBrush}"/>
-                                                <TextBlock Text="{Binding ThresholdValue, StringFormat='/ 阈值 {0:F2}'}" FontSize="12"
-                                                           FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                                <TextBlock Text="{Binding TriggeredValueDisplay}" FontSize="12"
+                                                           FontFamily="{DynamicResource GdFontMono}"
+                                                           Foreground="{Binding TriggeredValueColor}"/>
+                                                <TextBlock Text="{Binding ThresholdLabel, StringFormat=' / {0} '}" FontSize="12"
+                                                           FontFamily="{DynamicResource GdFontMono}"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                                <TextBlock Text="{Binding ThresholdValueDisplay}" FontSize="12"
+                                                           FontFamily="{DynamicResource GdFontMono}"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                                <TextBlock Text="{Binding Timestamp, StringFormat='· 触发于 {0}'}" FontSize="12"
+                                                           FontFamily="{DynamicResource GdFontMono}"
                                                            Foreground="{DynamicResource GdMutedForegroundBrush}"/>
                                             </StackPanel>
                                         </StackPanel>
+                                        <!-- 已读按钮 -->
                                         <Button Grid.Column="2" Content="{Binding ReadIcon}"
-                                                Classes="GdOutline" Padding="10 6" FontSize="11" CornerRadius="{DynamicResource GdRadiusSm}"
+                                                Classes="GdGhost" Padding="10 6" FontSize="11" CornerRadius="{DynamicResource GdRadiusSm}"
                                                 VerticalAlignment="Center"
                                                 Command="{Binding $parent[ItemsControl].((vm:FlowerAlertCenterViewModel)DataContext).MarkAsReadCommand}"
                                                 CommandParameter="{Binding}"/>
@@ -122,6 +165,24 @@
                     </Border>
                 </StackPanel>
             </ScrollViewer>
+
+            <!-- ============ 预警趋势图占位区 ============ -->
+            <Border Grid.Row="3" Classes="GdCard" Padding="20" Height="180" Margin="0">
+                <Grid RowDefinitions="Auto,*" RowSpacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Text="📊" FontSize="16" VerticalAlignment="Center"/>
+                        <TextBlock Text="预警趋势" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource GdForegroundBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text="（近 7 日预警分布）" FontSize="12"
+                                   Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <!-- 图表区域：近 7 日预警趋势柱状图 -->
+                    <lvc:CartesianChart Grid.Row="1"
+                                        Series="{Binding AlertTrendSeries}"
+                                        XAxes="{Binding AlertXAxes}"
+                                        YAxes="{Binding AlertYAxes}" />
+                </Grid>
+            </Border>
         </Grid>
     </controls:GalleryPage>
 </UserControl>

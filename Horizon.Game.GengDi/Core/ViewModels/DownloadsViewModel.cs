@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -18,12 +20,20 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private readonly AsyncRelayCommand<string> _pauseDownloadCommand;
         private readonly AsyncRelayCommand<string> _resumeDownloadCommand;
         private readonly AsyncRelayCommand<string> _cancelDownloadCommand;
+        private readonly AsyncRelayCommand<string> _deleteTaskCommand;
+        private readonly AsyncRelayCommand<string> _openFolderCommand;
         private readonly AsyncRelayCommand _checkForUpdatesCommand;
+        private readonly AsyncRelayCommand _pauseAllCommand;
+        private readonly AsyncRelayCommand _clearCompletedCommand;
         private ObservableCollection<DownloadTask> _downloadTasks;
         private ObservableCollection<DownloadTask> _completedTasks;
         private string _downloadSpeedLimit;
         private string _maxConcurrentDownloads;
         private string _downloadPackageDirectory;
+        private string _totalDownloadSpeedValue = "—";
+        private string _totalDownloadSpeedUnit = "MB/s";
+        private string _usedDiskSpaceValue = "—";
+        private string _usedDiskSpaceUnit = "GB";
         private bool _isLoading;
         private bool _isInitialized;
 
@@ -89,10 +99,42 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             }
         }
 
+        /// <summary>总下载速度数值（如 "24.6"）</summary>
+        public string TotalDownloadSpeedValue
+        {
+            get => _totalDownloadSpeedValue;
+            private set => SetProperty(ref _totalDownloadSpeedValue, value);
+        }
+
+        /// <summary>总下载速度单位（如 "MB/s"）</summary>
+        public string TotalDownloadSpeedUnit
+        {
+            get => _totalDownloadSpeedUnit;
+            private set => SetProperty(ref _totalDownloadSpeedUnit, value);
+        }
+
+        /// <summary>已用磁盘空间数值（如 "186.4"）</summary>
+        public string UsedDiskSpaceValue
+        {
+            get => _usedDiskSpaceValue;
+            private set => SetProperty(ref _usedDiskSpaceValue, value);
+        }
+
+        /// <summary>已用磁盘空间单位（如 "GB"）</summary>
+        public string UsedDiskSpaceUnit
+        {
+            get => _usedDiskSpaceUnit;
+            private set => SetProperty(ref _usedDiskSpaceUnit, value);
+        }
+
         public ICommand PauseDownloadCommand { get; }
         public ICommand ResumeDownloadCommand { get; }
         public ICommand CancelDownloadCommand { get; }
+        public ICommand DeleteTaskCommand { get; }
+        public ICommand OpenFolderCommand { get; }
         public ICommand CheckForUpdatesCommand { get; }
+        public ICommand PauseAllCommand { get; }
+        public ICommand ClearCompletedCommand { get; }
 
         public DownloadsViewModel()
         {
@@ -108,12 +150,20 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             _pauseDownloadCommand = new AsyncRelayCommand<string>(PauseDownloadAsync, CanManageDownloads);
             _resumeDownloadCommand = new AsyncRelayCommand<string>(ResumeDownloadAsync, CanManageDownloads);
             _cancelDownloadCommand = new AsyncRelayCommand<string>(CancelDownloadAsync, CanManageDownloads);
+            _deleteTaskCommand = new AsyncRelayCommand<string>(DeleteTaskAsync, CanManageDownloads);
+            _openFolderCommand = new AsyncRelayCommand<string>(OpenFolderAsync, CanManageDownloads);
             _checkForUpdatesCommand = new AsyncRelayCommand(CheckForUpdatesAsync, CanManageDownloads);
+            _pauseAllCommand = new AsyncRelayCommand(PauseAllAsync, CanManageDownloads);
+            _clearCompletedCommand = new AsyncRelayCommand(ClearCompletedAsync, CanManageDownloads);
 
             PauseDownloadCommand = _pauseDownloadCommand;
             ResumeDownloadCommand = _resumeDownloadCommand;
             CancelDownloadCommand = _cancelDownloadCommand;
+            DeleteTaskCommand = _deleteTaskCommand;
+            OpenFolderCommand = _openFolderCommand;
             CheckForUpdatesCommand = _checkForUpdatesCommand;
+            PauseAllCommand = _pauseAllCommand;
+            ClearCompletedCommand = _clearCompletedCommand;
         }
 
         public async Task InitializeAsync()
@@ -144,7 +194,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
 
             foreach (var task in allTasks)
             {
-                if (task.Status == DownloadStatus.Completed || task.Status == DownloadStatus.Failed)
+                if (task.Status == DownloadStatus.Completed || task.Status == DownloadStatus.Failed || task.Status == DownloadStatus.Cancelled)
                 {
                     CompletedTasks.Add(task);
                 }
@@ -152,6 +202,82 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 {
                     DownloadTasks.Add(task);
                 }
+            }
+
+            RefreshStatistics();
+        }
+
+        /// <summary>
+        /// 刷新总下载速度和已用磁盘空间统计。
+        /// </summary>
+        private void RefreshStatistics()
+        {
+            // 总下载速度 = 所有活跃任务速度之和
+            var totalSpeed = DownloadTasks.Sum(t => t.Speed);
+            if (totalSpeed > 0)
+            {
+                var mbSpeed = totalSpeed / 1024.0 / 1024.0;
+                if (mbSpeed >= 1)
+                {
+                    TotalDownloadSpeedValue = $"{mbSpeed:F1}";
+                    TotalDownloadSpeedUnit = "MB/s";
+                }
+                else
+                {
+                    var kbSpeed = totalSpeed / 1024.0;
+                    TotalDownloadSpeedValue = $"{kbSpeed:F0}";
+                    TotalDownloadSpeedUnit = "KB/s";
+                }
+            }
+            else
+            {
+                TotalDownloadSpeedValue = "—";
+                TotalDownloadSpeedUnit = "MB/s";
+            }
+
+            // 已用空间 = 下载目录占用的磁盘空间
+            CalculateUsedDiskSpace();
+        }
+
+        /// <summary>
+        /// 计算下载包目录的已用磁盘空间，设置分离的数值与单位属性。
+        /// </summary>
+        private void CalculateUsedDiskSpace()
+        {
+            try
+            {
+                var dir = _downloadService.GetDownloadPackageDirectory();
+                if (!Directory.Exists(dir))
+                {
+                    UsedDiskSpaceValue = "0";
+                    UsedDiskSpaceUnit = "GB";
+                    return;
+                }
+
+                long totalBytes = 0;
+                var dirInfo = new DirectoryInfo(dir);
+                foreach (var file in dirInfo.GetFiles("*", SearchOption.AllDirectories))
+                {
+                    totalBytes += file.Length;
+                }
+
+                var gb = totalBytes / 1024.0 / 1024.0 / 1024.0;
+                if (gb >= 1)
+                {
+                    UsedDiskSpaceValue = $"{gb:F1}";
+                    UsedDiskSpaceUnit = "GB";
+                }
+                else
+                {
+                    var mb = totalBytes / 1024.0 / 1024.0;
+                    UsedDiskSpaceValue = $"{mb:F0}";
+                    UsedDiskSpaceUnit = "MB";
+                }
+            }
+            catch
+            {
+                UsedDiskSpaceValue = "—";
+                UsedDiskSpaceUnit = "GB";
             }
         }
 
@@ -165,6 +291,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                     var index = DownloadTasks.IndexOf(existingTask);
                     DownloadTasks[index] = task;
                 }
+                RefreshStatistics();
             });
         }
 
@@ -212,6 +339,80 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private async Task CancelDownloadAsync(string taskId)
         {
             await _downloadService.CancelDownloadAsync(taskId);
+            await LoadTasksAsync();
+        }
+
+        /// <summary>
+        /// 删除指定的已完成 / 已取消 / 已失败任务记录。
+        /// </summary>
+        private async Task DeleteTaskAsync(string taskId)
+        {
+            await _downloadService.DeleteTaskAsync(taskId);
+            await LoadTasksAsync();
+        }
+
+        /// <summary>
+        /// 打开已完成任务所在文件夹。
+        /// </summary>
+        private async Task OpenFolderAsync(string taskId)
+        {
+            var task = CompletedTasks.FirstOrDefault(t => t.Id == taskId)
+                ?? DownloadTasks.FirstOrDefault(t => t.Id == taskId);
+            if (task == null || string.IsNullOrWhiteSpace(task.SavePath)) return;
+
+            try
+            {
+                var dir = Path.GetDirectoryName(task.SavePath);
+                if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
+                {
+                    // 选中目标文件（如果存在）
+                    var fileName = Path.GetFileName(task.SavePath);
+                    var process = new ProcessStartInfo
+                    {
+                        FileName = "explorer.exe",
+                        Arguments = File.Exists(task.SavePath) ? $"/select,\"{task.SavePath}\"" : $"\"{dir}\"",
+                        UseShellExecute = true
+                    };
+                    Process.Start(process);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[DownloadsViewModel] 打开文件夹失败: {ex}");
+            }
+
+            await Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// 暂停所有活跃下载任务。
+        /// </summary>
+        private async Task PauseAllAsync()
+        {
+            var activeIds = DownloadTasks
+                .Where(t => t.Status == DownloadStatus.Downloading || t.Status == DownloadStatus.Pending)
+                .Select(t => t.Id)
+                .ToList();
+
+            foreach (var id in activeIds)
+            {
+                await _downloadService.PauseDownloadAsync(id);
+            }
+
+            await LoadTasksAsync();
+        }
+
+        /// <summary>
+        /// 清空所有已完成 / 已取消 / 已失败的任务记录。
+        /// </summary>
+        private async Task ClearCompletedAsync()
+        {
+            var completedIds = CompletedTasks.Select(t => t.Id).ToList();
+            foreach (var id in completedIds)
+            {
+                await _downloadService.DeleteTaskAsync(id);
+            }
+
             await LoadTasksAsync();
         }
 
@@ -266,7 +467,11 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             _pauseDownloadCommand.RaiseCanExecuteChanged();
             _resumeDownloadCommand.RaiseCanExecuteChanged();
             _cancelDownloadCommand.RaiseCanExecuteChanged();
+            _deleteTaskCommand.RaiseCanExecuteChanged();
+            _openFolderCommand.RaiseCanExecuteChanged();
             _checkForUpdatesCommand.RaiseCanExecuteChanged();
+            _pauseAllCommand.RaiseCanExecuteChanged();
+            _clearCompletedCommand.RaiseCanExecuteChanged();
         }
     }
 }

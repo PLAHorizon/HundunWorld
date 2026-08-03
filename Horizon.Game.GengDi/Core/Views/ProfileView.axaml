@@ -21,86 +21,121 @@
             </StackPanel>
         </controls:GalleryPage.HeaderActionContent>
 
-        <!-- 资料表单卡容器（max-width 760，对应 HTML 原型） -->
+        <!-- 资料表单卡容器（max-width 760，对应 HTML 原型 metric-card） -->
         <StackPanel Spacing="16" MaxWidth="760" HorizontalAlignment="Stretch">
 
-            <!-- ════════════════════════════════════════════════════════════
-                 基本信息（含头像区 + 2列网格表单 + 底部按钮行）
-                 ══════════════════════════════════════════════════════════════ -->
-            <Border Classes="GdCard" Margin="0">
-                <StackPanel Spacing="16">
+            <Border Classes="GdMetricCard" Padding="24">
+                <StackPanel Spacing="20">
 
-                    <TextBlock Text="基本信息" Classes="GdSectionTitle" />
+                    <!-- ═══ 头像区（水平）：80x80 渐变头像 + 在线状态点 + 右侧标题/按钮/提示 ═══ -->
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="18">
+                        <Grid Grid.Column="0" Width="80" Height="80">
+                            <Border Width="80"
+                                    Height="80"
+                                    CornerRadius="40"
+                                    ClipToBounds="True">
+                                <Border.Background>
+                                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                        <GradientStop Offset="0" Color="{StaticResource GdBrand500}" />
+                                        <GradientStop Offset="1" Color="{StaticResource GdBrand700}" />
+                                    </LinearGradientBrush>
+                                </Border.Background>
+                                <Panel>
+                                    <Image x:Name="AvatarPreviewImage"
+                                           Stretch="UniformToFill"
+                                           IsVisible="{Binding AvatarIsLoaded}" />
+                                    <TextBlock Text="{Binding NickNameInitial}"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"
+                                               FontSize="30"
+                                               FontWeight="SemiBold"
+                                               Foreground="White"
+                                               IsVisible="{Binding !AvatarIsLoaded}" />
+                                </Panel>
+                            </Border>
+                            <Ellipse Width="14"
+                                     Height="14"
+                                     Fill="{DynamicResource GdSuccessBrush}"
+                                     Stroke="{DynamicResource GdCardBrush}"
+                                     StrokeThickness="2"
+                                     HorizontalAlignment="Right"
+                                     VerticalAlignment="Bottom"
+                                     Margin="0,0,2,2" />
+                        </Grid>
 
-                    <!-- 头像区（水平）：80x80 圆形头像 + 右侧标题/按钮/提示 -->
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
-                        <!-- 80x80 圆形头像（渐变背景 + 首字母占位） -->
-                        <Border Grid.Column="0"
-                                Width="80"
-                                Height="80"
-                                CornerRadius="40"
-                                ClipToBounds="True">
-                            <Border.Background>
-                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                                    <GradientStop Offset="0" Color="{DynamicResource GdBrand400}" />
-                                    <GradientStop Offset="1" Color="{DynamicResource GdBrand600}" />
-                                </LinearGradientBrush>
-                            </Border.Background>
-                            <Panel>
-                                <Image x:Name="AvatarPreviewImage"
-                                       Stretch="UniformToFill"
-                                       IsVisible="{Binding AvatarIsLoaded}" />
-                                <TextBlock Text="{Binding NickNameInitial}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"
-                                           FontSize="32"
-                                           FontWeight="SemiBold"
-                                           Foreground="{DynamicResource GdPrimaryForegroundBrush}"
-                                           IsVisible="{Binding !AvatarIsLoaded}" />
-                            </Panel>
-                        </Border>
-
-                        <!-- 右侧：标题"头像" + 更换图片按钮 + 头像URL + 提示文字 -->
-                        <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
-                            <TextBlock Text="头像" Classes="GdSectionTitle" Margin="0" />
+                        <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                            <TextBlock Text="头像"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Foreground="{DynamicResource GdForegroundBrush}" />
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button Content="选择图片" Classes="GdGhost" Command="{Binding PickAvatarCommand}" />
+                                <Button Classes="GdPrimary"
+                                        Command="{Binding PickAvatarCommand}"
+                                        FontSize="12"
+                                        Padding="12,6">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <Path Classes="GdLucideIcon"
+                                              Width="13"
+                                              Height="13"
+                                              Data="{StaticResource LucideImageGeometry}" />
+                                        <TextBlock Text="更换图片" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Classes="GdGhost"
+                                        Command="{Binding RemoveAvatarCommand}"
+                                        FontSize="12"
+                                        Padding="12,6">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <Path Classes="GdLucideIcon"
+                                              Width="13"
+                                              Height="13"
+                                              Data="{StaticResource LucideTrash2Geometry}" />
+                                        <TextBlock Text="移除" />
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
-                            <TextBox Text="{Binding Avatar}"
-                                     Watermark="或直接输入头像 URL"
-                                     Classes="GdInput" />
-                            <TextBlock Text="支持 JPG、PNG 等格式，建议正方形图片。"
-                                       FontSize="12"
+                            <TextBlock Text="支持 JPG、PNG、WEBP 格式，文件不超过 2MB，建议尺寸 240×240"
+                                       FontSize="11"
                                        Foreground="{DynamicResource GdMutedForegroundBrush}" />
                         </StackPanel>
                     </Grid>
 
-                    <!-- 底部分隔线 -->
-                    <Border Classes="GdDivider" />
+                    <!-- 分隔线 -->
+                    <Border Height="1"
+                            Background="{DynamicResource GdBorderBrush}" />
 
-                    <!-- 2列网格表单（gap 18） -->
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="18" RowSpacing="14">
-                        <!-- 昵称 -->
-                        <StackPanel Spacing="6">
-                            <TextBlock Text="昵称" Classes="GdEyebrow" />
+                    <!-- ═══ 表单字段（2列网格，5行，gap 18） ═══ -->
+                    <Grid ColumnDefinitions="*,*"
+                          RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                          ColumnSpacing="18"
+                          RowSpacing="18">
+
+                        <!-- Row 0: 昵称 | 通行证号 -->
+                        <StackPanel Grid.Row="0" Grid.Column="0" Spacing="6">
+                            <TextBlock Text="昵称"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
                             <TextBox Text="{Binding NickName}"
                                      Watermark="请输入昵称"
                                      MaxLength="32"
                                      Classes="GdInput" />
                         </StackPanel>
-
-                        <!-- 通行证号（只读） -->
-                        <StackPanel Grid.Column="1" Spacing="6">
-                            <TextBlock Text="通行证号" Classes="GdEyebrow" />
+                        <StackPanel Grid.Row="0" Grid.Column="1" Spacing="6">
+                            <TextBlock Text="通行证号"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
                             <TextBox Text="{Binding PassportId}"
                                      IsReadOnly="True"
                                      Watermark="—"
-                                     Classes="GdInput" />
+                                     Classes="GdInput"
+                                     Foreground="{DynamicResource GdMutedForegroundBrush}" />
                         </StackPanel>
 
-                        <!-- 个性签名（跨2列，多行） -->
-                        <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Spacing="6">
-                            <TextBlock Text="个性签名" Classes="GdEyebrow" />
+                        <!-- Row 1: 个性签名（跨2列） -->
+                        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Spacing="6">
+                            <TextBlock Text="个性签名"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
                             <TextBox Text="{Binding Bio}"
                                      AcceptsReturn="True"
                                      TextWrapping="Wrap"
@@ -109,6 +144,79 @@
                                      MaxLength="200"
                                      Classes="GdInput" />
                         </StackPanel>
+
+                        <!-- Row 2: 性别 | 生日 -->
+                        <StackPanel Grid.Row="2" Grid.Column="0" Spacing="6">
+                            <TextBlock Text="性别"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                            <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                                <RadioButton Content="男"
+                                             GroupName="Gender"
+                                             IsChecked="{Binding IsMale}" />
+                                <RadioButton Content="女"
+                                             GroupName="Gender"
+                                             IsChecked="{Binding IsFemale}" />
+                                <RadioButton Content="保密"
+                                             GroupName="Gender"
+                                             IsChecked="{Binding IsSecret}" />
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel Grid.Row="2" Grid.Column="1" Spacing="6">
+                            <TextBlock Text="生日"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                            <CalendarDatePicker SelectedDate="{Binding Birthday}"
+                                                HorizontalAlignment="Stretch" />
+                        </StackPanel>
+
+                        <!-- Row 3: 所在地区 | 邮箱 -->
+                        <StackPanel Grid.Row="3" Grid.Column="0" Spacing="6">
+                            <TextBlock Text="所在地区"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <ComboBox Grid.Column="0"
+                                          ItemsSource="{Binding ProvinceOptions}"
+                                          SelectedItem="{Binding Province}"
+                                          HorizontalAlignment="Stretch" />
+                                <ComboBox Grid.Column="1"
+                                          ItemsSource="{Binding CityOptions}"
+                                          SelectedItem="{Binding City}"
+                                          HorizontalAlignment="Stretch" />
+                            </Grid>
+                        </StackPanel>
+                        <StackPanel Grid.Row="3" Grid.Column="1" Spacing="6">
+                            <TextBlock Text="邮箱"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                            <TextBox Text="{Binding Email}"
+                                     Watermark="请输入邮箱"
+                                     MaxLength="100"
+                                     Classes="GdInput" />
+                        </StackPanel>
+
+                        <!-- Row 4: 手机号（含已验证 badge） -->
+                        <StackPanel Grid.Row="4" Grid.Column="0" Spacing="6">
+                            <TextBlock Text="手机号"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <TextBox Text="{Binding Phone}"
+                                         Watermark="请输入手机号"
+                                         MaxLength="20"
+                                         Classes="GdInput" />
+                                <Border Grid.Column="1" Classes="GdBadge GdSuccess">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <Path Classes="GdLucideIcon"
+                                              Width="11"
+                                              Height="11"
+                                              Data="{StaticResource LucideCheckGeometry}" />
+                                        <TextBlock Text="已验证" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
                     </Grid>
 
                     <!-- 状态消息 -->
@@ -116,133 +224,32 @@
                                Foreground="{Binding BasicInfoMessageBrush}"
                                TextWrapping="Wrap" />
 
-                    <!-- 底部按钮行（右对齐） -->
+                    <!-- 底部分隔线 -->
+                    <Border Height="1"
+                            Background="{DynamicResource GdBorderBrush}" />
+
+                    <!-- 底部按钮行（右对齐：重置 + 保存资料） -->
                     <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
-                        <Button Content="保存资料" Classes="GdPrimary" Command="{Binding UpdateBasicInfoCommand}" />
-                    </StackPanel>
-                </StackPanel>
-            </Border>
-
-            <!-- ════════════════════════════════════════════════════════════
-                 头衔管理
-                 ══════════════════════════════════════════════════════════════ -->
-            <Border Classes="GdCard" Margin="0">
-                <StackPanel Spacing="16">
-                    <TextBlock Text="头衔管理" Classes="GdSectionTitle" />
-                    <TextBlock Text="自定义头衔将展示在您的个人名片与聊天界面中。"
-                               FontSize="12"
-                               Foreground="{DynamicResource GdMutedForegroundBrush}" />
-
-                    <!-- 2列网格表单 -->
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="18" RowSpacing="14">
-                        <!-- 当前头衔（跨2列） -->
-                        <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Spacing="6">
-                            <TextBlock Text="当前头衔" Classes="GdEyebrow" />
-                            <TextBox Text="{Binding Title}"
-                                     Watermark="请输入头衔（选填，最多16字）"
-                                     MaxLength="16"
-                                     Classes="GdInput" />
-                        </StackPanel>
-                    </Grid>
-
-                    <TextBlock Text="{Binding TitleMessage}"
-                               Foreground="{Binding TitleMessageBrush}"
-                               TextWrapping="Wrap" />
-
-                    <!-- 底部按钮行（右对齐） -->
-                    <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
-                        <Button Content="保存头衔" Classes="GdPrimary" Command="{Binding UpdateTitleCommand}" />
-                    </StackPanel>
-                </StackPanel>
-            </Border>
-
-            <!-- ════════════════════════════════════════════════════════════
-                 账号绑定
-                 ══════════════════════════════════════════════════════════════ -->
-            <Border Classes="GdCard" Margin="0">
-                <StackPanel Spacing="16">
-                    <TextBlock Text="账号绑定" Classes="GdSectionTitle" />
-                    <TextBlock Text="绑定手机号和邮箱后，可用于找回密码及接收重要通知。"
-                               FontSize="12"
-                               Foreground="{DynamicResource GdMutedForegroundBrush}" />
-
-                    <!-- 2列网格表单 -->
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="18" RowSpacing="14">
-                        <!-- 手机号 + 已验证 badge -->
-                        <StackPanel Spacing="6">
-                            <TextBlock Text="手机号" Classes="GdEyebrow" />
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                <TextBox Text="{Binding Phone}"
-                                         Watermark="请输入手机号（选填）"
-                                         MaxLength="20"
-                                         Classes="GdInput" />
-                                <Border Grid.Column="1" Classes="GdBadge GdSuccess">
-                                    <TextBlock Text="已验证" />
-                                </Border>
-                            </Grid>
-                        </StackPanel>
-
-                        <!-- 邮箱 -->
-                        <StackPanel Grid.Column="1" Spacing="6">
-                            <TextBlock Text="邮箱" Classes="GdEyebrow" />
-                            <TextBox Text="{Binding Email}"
-                                     Watermark="请输入邮箱地址（选填）"
-                                     MaxLength="100"
-                                     Classes="GdInput" />
-                        </StackPanel>
-                    </Grid>
-
-                    <TextBlock Text="{Binding ContactInfoMessage}"
-                               Foreground="{Binding ContactInfoMessageBrush}"
-                               TextWrapping="Wrap" />
-
-                    <!-- 底部按钮行（右对齐） -->
-                    <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
-                        <Button Content="保存绑定信息" Classes="GdPrimary" Command="{Binding UpdateContactInfoCommand}" />
-                    </StackPanel>
-                </StackPanel>
-            </Border>
-
-            <!-- ════════════════════════════════════════════════════════════
-                 实名认证
-                 ══════════════════════════════════════════════════════════════ -->
-            <Border Classes="GdCard" Margin="0">
-                <StackPanel Spacing="16">
-                    <TextBlock Text="实名认证" Classes="GdSectionTitle" />
-                    <TextBlock Text="当前阶段仅保存信息，不进行真实性验证。请确保填写真实有效的信息。"
-                               FontSize="12"
-                               Foreground="{DynamicResource GdMutedForegroundBrush}"
-                               TextWrapping="Wrap" />
-
-                    <!-- 2列网格表单 -->
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="18" RowSpacing="14">
-                        <!-- 真实姓名 -->
-                        <StackPanel Spacing="6">
-                            <TextBlock Text="真实姓名" Classes="GdEyebrow" />
-                            <TextBox Text="{Binding RealName}"
-                                     Watermark="请输入真实姓名"
-                                     MaxLength="32"
-                                     Classes="GdInput" />
-                        </StackPanel>
-
-                        <!-- 身份证号 -->
-                        <StackPanel Grid.Column="1" Spacing="6">
-                            <TextBlock Text="身份证号" Classes="GdEyebrow" />
-                            <TextBox Text="{Binding IdCard}"
-                                     PasswordChar="*"
-                                     Watermark="请输入身份证号"
-                                     MaxLength="18"
-                                     Classes="GdInput" />
-                        </StackPanel>
-                    </Grid>
-
-                    <TextBlock Text="{Binding RealNameMessage}"
-                               Foreground="{Binding RealNameMessageBrush}"
-                               TextWrapping="Wrap" />
-
-                    <!-- 底部按钮行（右对齐） -->
-                    <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
-                        <Button Content="保存实名信息" Classes="GdPrimary" Command="{Binding UpdateRealNameCommand}" />
+                        <Button Classes="GdGhost"
+                                Command="{Binding ResetCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Path Classes="GdLucideIcon"
+                                      Width="14"
+                                      Height="14"
+                                      Data="{StaticResource LucideRotateCcwGeometry}" />
+                                <TextBlock Text="重置" />
+                            </StackPanel>
+                        </Button>
+                        <Button Classes="GdPrimary"
+                                Command="{Binding UpdateBasicInfoCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Path Classes="GdLucideIcon"
+                                      Width="14"
+                                      Height="14"
+                                      Data="{StaticResource LucideSaveGeometry}" />
+                                <TextBlock Text="保存资料" />
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                 </StackPanel>
             </Border>

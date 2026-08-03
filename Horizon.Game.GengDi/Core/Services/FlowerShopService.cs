@@ -40,6 +40,24 @@ namespace Horizon.Game.GengDi.Core.Services
         public string MerchantName { get; set; } = "";
         public long MerchantId { get; set; }
         public int Stock { get; set; }
+
+        /// <summary>是否被勾选（用于结算选择）</summary>
+        public bool IsSelected { get; set; } = true;
+
+        /// <summary>商品别名，等价于 ProductName</summary>
+        public string Name { get => ProductName; set => ProductName = value; }
+
+        /// <summary>规格摘要，如 "20支/束"</summary>
+        public string Spec { get; set; } = "";
+
+        /// <summary>列表展示用的 emoji 图标</summary>
+        public string IconEmoji { get; set; } = "🌸";
+
+        /// <summary>单价别名，等价于 Price</summary>
+        public decimal UnitPrice { get => Price; set => Price = value; }
+
+        /// <summary>小计 = 单价 × 数量</summary>
+        public decimal Subtotal => Price * Quantity;
     }
 
     public class ProductSKUInfo

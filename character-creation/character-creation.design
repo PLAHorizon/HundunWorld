@@ -109,7 +109,7 @@
       "createdAt": 1782487200000,
       "canvasData": {
         "x": 0,
-        "y": 754
+        "y": 765
       },
       "devMetadata": {
         "imageSrc": "assets/wuxia-bg-atmosphere.jpg"
@@ -123,7 +123,7 @@
       "createdAt": 1782487201000,
       "canvasData": {
         "x": 620,
-        "y": 754
+        "y": 765
       },
       "devMetadata": {
         "imageSrc": "assets/male-warrior-silhouette.jpg"
@@ -137,7 +137,7 @@
       "createdAt": 1782487202000,
       "canvasData": {
         "x": 1240,
-        "y": 754
+        "y": 765
       },
       "devMetadata": {
         "imageSrc": "assets/female-warrior-silhouette.jpg"
@@ -151,7 +151,7 @@
       "createdAt": 1782487203000,
       "canvasData": {
         "x": 1860,
-        "y": 754
+        "y": 765
       },
       "devMetadata": {
         "imageSrc": "assets/face-preview-male.jpg"
@@ -728,8 +728,8 @@
       }
     },
     {
-      "id": "pending-page-social",
-      "title": "social",
+      "id": "page-social",
+      "title": "社交聊天",
       "type": "page",
       "version": 1,
       "createdAt": 1785053933685,
@@ -739,7 +739,8 @@
         "group": 0
       },
       "devMetadata": {
-        "htmlSrc": ""
+        "htmlSrc": "pages/social.html",
+        "interactions": []
       }
     },
     {

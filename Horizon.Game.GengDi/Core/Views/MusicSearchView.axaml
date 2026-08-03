@@ -6,203 +6,401 @@
              x:Class="Horizon.Game.GengDi.Core.Views.MusicSearchView"
              x:DataType="vm:MusicSearchViewModel">
 
+    <UserControl.Resources>
+        <!-- 歌曲/歌手结果行模板（共享）：播放按钮 + 封面 + 标题/艺术家-专辑 + 时长 + 音乐故事 + 收藏 + 添加到歌单 -->
+        <DataTemplate x:Key="SongRowTemplate" x:DataType="models:Song">
+            <Border Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 4" Cursor="Hand"
+                    Background="{DynamicResource GdMutedBrush}"
+                    Tapped="SongItem_Tapped">
+                <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto" VerticalAlignment="Center">
+                    <!-- 播放按钮（圆形主色） -->
+                    <Button Grid.Column="0" Classes="GdPrimary" Width="28" Height="28" CornerRadius="14"
+                            Padding="0" Margin="0 0 12 0"
+                            Command="{Binding $parent[UserControl].DataContext.PlaySongCommand}"
+                            CommandParameter="{Binding}"
+                            ToolTip.Tip="播放">
+                        <ui:SymbolIcon Symbol="Play" FontSize="12" />
+                    </Button>
+                    <!-- mini 封面（40x40 圆角渐变） -->
+                    <Border Grid.Column="1" Width="40" Height="40" CornerRadius="{DynamicResource GdRadiusSm}">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                <GradientStop Color="{DynamicResource GdBrand400}" Offset="0" />
+                                <GradientStop Color="{DynamicResource GdBrand700}" Offset="1" />
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <TextBlock Text="♪" FontSize="14"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource GdPrimaryForegroundBrush}" />
+                    </Border>
+                    <!-- 标题 / 艺术家-专辑 -->
+                    <StackPanel Grid.Column="2" Margin="12 0 0 0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Title}" FontSize="14" TextTrimming="CharacterEllipsis" />
+                        <TextBlock FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" TextTrimming="CharacterEllipsis">
+                            <Run Text="{Binding DisplayArtist}" />
+                            <Run Text=" - " />
+                            <Run Text="{Binding DisplayAlbum}" />
+                        </TextBlock>
+                    </StackPanel>
+                    <!-- 时长 -->
+                    <TextBlock Grid.Column="3" Text="{Binding DurationText}" FontSize="12"
+                               Foreground="{DynamicResource GdMutedForegroundBrush}"
+                               VerticalAlignment="Center" Margin="12 0 0 0" />
+                    <!-- 音乐故事按钮 -->
+                    <Button Grid.Column="4" Classes="GdGhost" Padding="4" Margin="8 0 0 0"
+                            Tapped="StoryButton_Tapped"
+                            ToolTip.Tip="音乐故事">
+                        <ui:SymbolIcon Symbol="MusicInfo" FontSize="12" />
+                    </Button>
+                    <!-- 收藏按钮 -->
+                    <Button Grid.Column="5" Classes="GdGhost" Padding="4" Margin="4 0 0 0"
+                            Command="{Binding $parent[UserControl].DataContext.ToggleFavoriteCommand}"
+                            CommandParameter="{Binding}"
+                            ToolTip.Tip="喜欢">
+                        <Panel>
+                            <ui:SymbolIcon Symbol="UnFavorite" FontSize="12"
+                                           IsVisible="{Binding !IsFavorite}" />
+                            <ui:SymbolIcon Symbol="Favorite" FontSize="12"
+                                           IsVisible="{Binding IsFavorite}"
+                                           Foreground="{DynamicResource GdPrimaryBrush}" />
+                        </Panel>
+                    </Button>
+                    <!-- 添加到歌单按钮 -->
+                    <Button Grid.Column="6" Classes="GdGhost" Padding="4" Margin="4 0 0 0"
+                            Command="{Binding $parent[UserControl].DataContext.AddToPlaylistCommand}"
+                            CommandParameter="{Binding}"
+                            ToolTip.Tip="添加到歌单">
+                        <ui:SymbolIcon Symbol="StarAdd" FontSize="12" />
+                    </Button>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- 歌单结果行模板（共享）：播放按钮 + 封面 + 名称/信息 -->
+        <DataTemplate x:Key="PlaylistRowTemplate" x:DataType="models:Playlist">
+            <Border Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 4" Cursor="Hand"
+                    Background="{DynamicResource GdCardBrush}"
+                    Tapped="PlaylistItem_Tapped">
+                <Grid ColumnDefinitions="Auto,Auto,*" VerticalAlignment="Center">
+                    <Button Grid.Column="0" Classes="GdPrimary" Width="28" Height="28" CornerRadius="14"
+                            Padding="0" Margin="0 0 12 0"
+                            Command="{Binding $parent[UserControl].DataContext.PlayPlaylistCommand}"
+                            CommandParameter="{Binding}"
+                            ToolTip.Tip="播放">
+                        <ui:SymbolIcon Symbol="Play" FontSize="12" />
+                    </Button>
+                    <Border Grid.Column="1" Width="40" Height="40" CornerRadius="{DynamicResource GdRadiusSm}"
+                            Background="{DynamicResource GdSecondaryBrush}">
+                        <TextBlock Text="♫" FontSize="16"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource GdForegroundBrush}" />
+                    </Border>
+                    <StackPanel Grid.Column="2" Margin="12 0 0 0" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis" />
+                        <TextBlock FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" TextTrimming="CharacterEllipsis">
+                            <Run Text="{Binding SongCount}" /><Run Text=" 首" />
+                            <Run Text=" · " /><Run Text="{Binding CreatorName}" />
+                        </TextBlock>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
     <Grid RowDefinitions="Auto,*" Margin="24">
 
-        <Border Grid.Row="0" Classes="GdCard" Padding="16" Margin="0 0 0 16">
-            <Grid ColumnDefinitions="*,Auto">
-                <TextBox Text="{Binding SearchText}" Watermark="搜索歌曲、艺术家、专辑、歌单..."
-                         FontSize="14" Padding="10 8"
+        <!-- 1. 搜索栏 -->
+        <Border Grid.Row="0" Classes="GdCard" CornerRadius="{DynamicResource GdRadiusLg}" Padding="6" Margin="0 0 0 16">
+            <Grid ColumnDefinitions="Auto,*,Auto">
+                <ui:SymbolIcon Grid.Column="0" Symbol="Find" FontSize="16" Margin="12 0 0 0"
+                               Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                <TextBox Grid.Column="1" Text="{Binding SearchText}"
+                         Watermark="搜索歌曲、艺术家、专辑、歌单..."
+                         FontSize="14" Padding="8 8"
+                         BorderThickness="0" Background="Transparent"
                          KeyDown="SearchBox_KeyDown" />
-                <Button Grid.Column="1" Content="搜索" Classes="GdPrimary" Padding="16 8"
-                        Margin="12 0 0 0" Command="{Binding SearchCommand}" />
+                <Button Grid.Column="2" Content="搜索" Classes="GdPrimary" Padding="16 8"
+                        Margin="4 0 0 0" Command="{Binding SearchCommand}" />
             </Grid>
         </Border>
 
-        <Grid Grid.Row="1">
-            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsSearching}"
-                         VerticalAlignment="Top" Height="2" />
+        <!-- 2 & 3. 内容区 -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <Grid>
 
-            <TextBlock Text="输入关键词开始搜索" FontSize="16"
-                       Foreground="{DynamicResource GdMutedForegroundBrush}"
-                       HorizontalAlignment="Center" Margin="0 80"
-                       IsVisible="{Binding !HasSearched}" />
+                <!-- 2. 热搜词云 + 历史搜索（未搜索时显示） -->
+                <StackPanel IsVisible="{Binding !HasSearched}" Spacing="16">
 
-            <TextBlock Text="未找到相关结果" FontSize="16"
-                       Foreground="{DynamicResource GdMutedForegroundBrush}"
-                       HorizontalAlignment="Center" Margin="0 80"
-                       IsVisible="{Binding HasNoResults}" />
+                    <Grid ColumnDefinitions="*,*" Margin="0 0 0 4">
 
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                          IsVisible="{Binding HasSearched}">
-                <StackPanel Spacing="20">
+                        <!-- 左栏：热门搜索 -->
+                        <Border Grid.Column="0" Classes="GdCard" Padding="16" Margin="0 0 8 0"
+                                CornerRadius="{DynamicResource GdRadiusLg}">
+                            <StackPanel Spacing="12">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <ui:SymbolIcon Symbol="Important" FontSize="16"
+                                                   Foreground="{DynamicResource GdWarningBrush}" />
+                                    <TextBlock Text="热门搜索" FontSize="16" FontWeight="SemiBold" />
+                                </StackPanel>
+                                <ItemsControl ItemsSource="{Binding HotSearchItems}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:HotSearchItem">
+                                            <Button Classes="GdGhost" Cursor="Hand"
+                                                    CornerRadius="14" Padding="10 5" Margin="0 0 8 8"
+                                                    Command="{Binding $parent[UserControl].DataContext.SearchKeywordCommand}"
+                                                    CommandParameter="{Binding Keyword}"
+                                                    ToolTip.Tip="搜索">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <!-- 前 3 名排名高亮 -->
+                                                    <TextBlock Text="{Binding RankText}" FontSize="12" FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource GdWarningBrush}"
+                                                               IsVisible="{Binding IsTop}" />
+                                                    <TextBlock Text="{Binding RankText}" FontSize="12"
+                                                               Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                               IsVisible="{Binding !IsTop}" />
+                                                    <TextBlock Text="{Binding Keyword}" FontSize="13" />
+                                                </StackPanel>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
 
-                    <StackPanel Spacing="12" IsVisible="{Binding HasSongResults}">
-                        <TextBlock Text="本地歌曲" FontSize="18" FontWeight="SemiBold" />
-                        <ItemsControl ItemsSource="{Binding SongResults}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="models:Song">
-                                    <Border Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 4" Cursor="Hand"
-                                            Background="{DynamicResource GdMutedBrush}"
-                                            Tapped="SongItem_Tapped">
-                                        <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
-                                            <Border Width="36" Height="36" CornerRadius="{DynamicResource GdRadiusSm}">
-                                                <Border.Background>
-                                                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                                                        <GradientStop Color="{DynamicResource GdBrand400}" Offset="0" />
-                                                        <GradientStop Color="{DynamicResource GdBrand700}" Offset="1" />
-                                                    </LinearGradientBrush>
-                                                </Border.Background>
-                                                <TextBlock Text="♪" FontSize="14"
-                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                           Foreground="#FFFFFFFF" />
-                                            </Border>
-                                            <StackPanel Grid.Column="1" Margin="12 0 0 0" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Title}" FontSize="14" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" TextTrimming="CharacterEllipsis">
-                                                    <Run Text="{Binding DisplayArtist}" />
-                                                    <Run Text=" - " />
-                                                    <Run Text="{Binding DisplayAlbum}" />
-                                                </TextBlock>
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding DurationText}" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
-                                                <Button Classes="GdGhost" Padding="4"
-                                                        Tapped="StoryButton_Tapped"
-                                                        ToolTip.Tip="音乐故事">
-                                                    <ui:SymbolIcon Symbol="MusicInfo" FontSize="12" />
-                                                </Button>
-                                                <Button Classes="GdGhost" Padding="4"
-                                                        Command="{Binding $parent[UserControl].DataContext.ToggleFavoriteCommand}"
-                                                        CommandParameter="{Binding}"
-                                                        ToolTip.Tip="喜欢">
-                                                    <Panel>
-                                                        <ui:SymbolIcon Symbol="UnFavorite" FontSize="12"
-                                                                       IsVisible="{Binding !IsFavorite}" />
-                                                        <ui:SymbolIcon Symbol="Favorite" FontSize="12"
-                                                                       IsVisible="{Binding IsFavorite}"
-                                                                       Foreground="{DynamicResource GdPrimaryBrush}" />
-                                                    </Panel>
-                                                </Button>
-                                                <Button Classes="GdGhost" Padding="4"
-                                                        Command="{Binding $parent[UserControl].DataContext.AddToPlaylistCommand}"
-                                                        CommandParameter="{Binding}"
-                                                        ToolTip.Tip="添加到歌单">
-                                                    <ui:SymbolIcon Symbol="StarAdd" FontSize="12" />
-                                                </Button>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
+                        <!-- 右栏：历史搜索 -->
+                        <Border Grid.Column="1" Classes="GdCard" Padding="16" Margin="8 0 0 0"
+                                CornerRadius="{DynamicResource GdRadiusLg}">
+                            <StackPanel Spacing="12">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                                        <ui:SymbolIcon Symbol="Clock" FontSize="16"
+                                                       Foreground="{DynamicResource GdForegroundMutedBrush}" />
+                                        <TextBlock Text="历史搜索" FontSize="16" FontWeight="SemiBold" />
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Classes="GdGhost" Cursor="Hand" Padding="6 4"
+                                            Command="{Binding ClearHistoryCommand}"
+                                            IsVisible="{Binding HasSearchHistory}"
+                                            ToolTip.Tip="清空历史">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <ui:SymbolIcon Symbol="Delete" FontSize="12" />
+                                            <TextBlock Text="清空" FontSize="12" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
 
-                    <StackPanel Spacing="12" IsVisible="{Binding HasNetworkSongResults}">
-                        <TextBlock Text="网络歌曲" FontSize="18" FontWeight="SemiBold" />
-                        <ItemsControl ItemsSource="{Binding NetworkSongResults}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="models:Song">
-                                    <Border Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 4" Cursor="Hand"
-                                            Background="{DynamicResource GdMutedBrush}"
-                                            Tapped="SongItem_Tapped">
-                                        <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
-                                            <Border Width="36" Height="36" CornerRadius="{DynamicResource GdRadiusSm}">
-                                                <Border.Background>
-                                                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                                                        <GradientStop Color="{DynamicResource GdBrand400}" Offset="0" />
-                                                        <GradientStop Color="{DynamicResource GdBrand700}" Offset="1" />
-                                                    </LinearGradientBrush>
-                                                </Border.Background>
-                                                <TextBlock Text="♪" FontSize="14"
-                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                           Foreground="#FFFFFFFF" />
-                                            </Border>
-                                            <StackPanel Grid.Column="1" Margin="12 0 0 0" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Title}" FontSize="14" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" TextTrimming="CharacterEllipsis">
-                                                    <Run Text="{Binding DisplayArtist}" />
-                                                </TextBlock>
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding DurationText}" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
-                                                <Button Classes="GdGhost" Padding="4"
-                                                        Tapped="StoryButton_Tapped"
-                                                        ToolTip.Tip="音乐故事">
-                                                    <ui:SymbolIcon Symbol="MusicInfo" FontSize="12" />
-                                                </Button>
-                                                <Button Classes="GdGhost" Padding="4"
-                                                        Command="{Binding $parent[UserControl].DataContext.AddToPlaylistCommand}"
-                                                        CommandParameter="{Binding}"
-                                                        ToolTip.Tip="添加到歌单">
-                                                    <ui:SymbolIcon Symbol="StarAdd" FontSize="12" />
-                                                </Button>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
+                                <!-- 有历史时显示词云 -->
+                                <ItemsControl ItemsSource="{Binding SearchHistory}"
+                                              IsVisible="{Binding HasSearchHistory}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel Orientation="Horizontal" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="x:String">
+                                            <Button Classes="GdGhost" Cursor="Hand"
+                                                    CornerRadius="14" Padding="10 5" Margin="0 0 8 8"
+                                                    Command="{Binding $parent[UserControl].DataContext.SearchKeywordCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    ToolTip.Tip="搜索">
+                                                <TextBlock Text="{Binding}" FontSize="13" />
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
 
-                    <StackPanel Spacing="12" IsVisible="{Binding HasUserPlaylistResults}">
-                        <TextBlock Text="我的歌单" FontSize="18" FontWeight="SemiBold" />
-                        <ItemsControl ItemsSource="{Binding UserPlaylistResults}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="models:Playlist">
-                                    <Border Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 4" Cursor="Hand"
-                                            Background="{DynamicResource GdCardBrush}"
-                                            Tapped="PlaylistItem_Tapped">
-                                        <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
-                                            <Border Width="40" Height="40" CornerRadius="{DynamicResource GdRadiusSm}"
-                                                    Background="{DynamicResource GdSecondaryBrush}">
-                                                <TextBlock Text="♫" FontSize="16"
-                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource GdForegroundBrush}" />
-                                            </Border>
-                                            <StackPanel Grid.Column="1" Margin="12 0 0 0" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" TextTrimming="CharacterEllipsis">
-                                                    <Run Text="{Binding SongCount}" /><Run Text=" 首" />
-                                                    <Run Text=" · " /><Run Text="{Binding CreatorName}" />
-                                                </TextBlock>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-
-                    <StackPanel Spacing="12" IsVisible="{Binding HasNetworkPlaylistResults}">
-                        <TextBlock Text="网络歌单" FontSize="18" FontWeight="SemiBold" />
-                        <ItemsControl ItemsSource="{Binding NetworkPlaylistResults}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="models:Playlist">
-                                    <Border Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 4" Cursor="Hand"
-                                            Background="{DynamicResource GdCardBrush}"
-                                            Tapped="PlaylistItem_Tapped">
-                                        <Grid ColumnDefinitions="Auto,*" VerticalAlignment="Center">
-                                            <Border Width="40" Height="40" CornerRadius="{DynamicResource GdRadiusSm}"
-                                                    Background="{DynamicResource GdSecondaryBrush}">
-                                                <TextBlock Text="♫" FontSize="16"
-                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource GdForegroundBrush}" />
-                                            </Border>
-                                            <StackPanel Grid.Column="1" Margin="12 0 0 0" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis" />
-                                                <TextBlock Text="{Binding Description}" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" TextTrimming="CharacterEllipsis" />
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-
+                                <!-- 无历史时的空提示 -->
+                                <TextBlock Text="暂无搜索历史" FontSize="13"
+                                           Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                           IsVisible="{Binding !HasSearchHistory}" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
                 </StackPanel>
-            </ScrollViewer>
-        </Grid>
 
+                <!-- 3. 搜索结果（已搜索时显示） -->
+                <StackPanel IsVisible="{Binding HasSearched}" Spacing="16">
+
+                    <!-- 顶部 tab 栏 + 结果计数 -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="2">
+                            <!-- 歌曲 tab -->
+                            <Grid Margin="0 0 4 0">
+                                <Button Classes="GdGhost" Cursor="Hand" Padding="12 8"
+                                        Command="{Binding SelectResultTabCommand}"
+                                        CommandParameter="{x:Static vm:SearchResultTab.Song}"
+                                        ToolTip.Tip="歌曲">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock Text="歌曲" FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource GdForegroundBrush}"
+                                                   IsVisible="{Binding IsSongTab}" />
+                                        <TextBlock Text="歌曲" FontSize="14"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                   IsVisible="{Binding !IsSongTab}" />
+                                        <TextBlock Text="{Binding SongResultCount}" FontSize="12"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                                <Border Height="2" Background="{DynamicResource GdPrimaryBrush}"
+                                        VerticalAlignment="Bottom" Margin="12 0"
+                                        CornerRadius="1" IsVisible="{Binding IsSongTab}" />
+                            </Grid>
+
+                            <!-- 歌单 tab -->
+                            <Grid Margin="0 0 4 0">
+                                <Button Classes="GdGhost" Cursor="Hand" Padding="12 8"
+                                        Command="{Binding SelectResultTabCommand}"
+                                        CommandParameter="{x:Static vm:SearchResultTab.Playlist}"
+                                        ToolTip.Tip="歌单">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock Text="歌单" FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource GdForegroundBrush}"
+                                                   IsVisible="{Binding IsPlaylistTab}" />
+                                        <TextBlock Text="歌单" FontSize="14"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                   IsVisible="{Binding !IsPlaylistTab}" />
+                                        <TextBlock Text="{Binding PlaylistResultCount}" FontSize="12"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                                <Border Height="2" Background="{DynamicResource GdPrimaryBrush}"
+                                        VerticalAlignment="Bottom" Margin="12 0"
+                                        CornerRadius="1" IsVisible="{Binding IsPlaylistTab}" />
+                            </Grid>
+
+                            <!-- 歌手 tab -->
+                            <Grid>
+                                <Button Classes="GdGhost" Cursor="Hand" Padding="12 8"
+                                        Command="{Binding SelectResultTabCommand}"
+                                        CommandParameter="{x:Static vm:SearchResultTab.Artist}"
+                                        ToolTip.Tip="歌手">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock Text="歌手" FontSize="14"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource GdForegroundBrush}"
+                                                   IsVisible="{Binding IsArtistTab}" />
+                                        <TextBlock Text="歌手" FontSize="14"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                   IsVisible="{Binding !IsArtistTab}" />
+                                        <TextBlock Text="{Binding ArtistResultCount}" FontSize="12"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                                <Border Height="2" Background="{DynamicResource GdPrimaryBrush}"
+                                        VerticalAlignment="Bottom" Margin="12 0"
+                                        CornerRadius="1" IsVisible="{Binding IsArtistTab}" />
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- 右侧结果计数 -->
+                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontSize="12"
+                                   Foreground="{DynamicResource GdMutedForegroundBrush}">
+                            <Run Text="搜索 '" />
+                            <Run Text="{Binding SearchKeyword}" />
+                            <Run Text="' 共找到 " />
+                            <Run Text="{Binding TotalResultCount}" />
+                            <Run Text=" 条结果" />
+                        </TextBlock>
+                    </Grid>
+
+                    <!-- 搜索中进度条 -->
+                    <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsSearching}"
+                                 Height="2" VerticalAlignment="Top" />
+
+                    <!-- 歌曲 tab 内容 -->
+                    <StackPanel Spacing="12" IsVisible="{Binding IsSongTab}">
+                        <ItemsControl ItemsSource="{Binding SongResults}"
+                                      ItemTemplate="{StaticResource SongRowTemplate}"
+                                      IsVisible="{Binding HasSongResults}" />
+                        <ItemsControl ItemsSource="{Binding NetworkSongResults}"
+                                      ItemTemplate="{StaticResource SongRowTemplate}"
+                                      IsVisible="{Binding HasNetworkSongResults}" />
+                    </StackPanel>
+
+                    <!-- 歌单 tab 内容 -->
+                    <StackPanel Spacing="12" IsVisible="{Binding IsPlaylistTab}">
+                        <ItemsControl ItemsSource="{Binding UserPlaylistResults}"
+                                      ItemTemplate="{StaticResource PlaylistRowTemplate}"
+                                      IsVisible="{Binding HasUserPlaylistResults}" />
+                        <ItemsControl ItemsSource="{Binding NetworkPlaylistResults}"
+                                      ItemTemplate="{StaticResource PlaylistRowTemplate}"
+                                      IsVisible="{Binding HasNetworkPlaylistResults}" />
+                    </StackPanel>
+
+                    <!-- 歌手 tab 内容（按艺术家分组） -->
+                    <StackPanel Spacing="12" IsVisible="{Binding IsArtistTab}">
+                        <ItemsControl ItemsSource="{Binding ArtistResults}"
+                                      IsVisible="{Binding HasArtistResults}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ArtistGroup">
+                                    <StackPanel Spacing="8" Margin="0 0 0 16">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                                            <Border Grid.Column="0" Width="44" Height="44"
+                                                    CornerRadius="{DynamicResource GdRadiusSm}">
+                                                <Border.Background>
+                                                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                        <GradientStop Color="{DynamicResource GdBrand400}" Offset="0" />
+                                                        <GradientStop Color="{DynamicResource GdBrand900}" Offset="1" />
+                                                    </LinearGradientBrush>
+                                                </Border.Background>
+                                                <TextBlock Text="♪" FontSize="16"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource GdPrimaryForegroundBrush}" />
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Margin="12 0 0 0" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding ArtistName}" FontSize="15" FontWeight="SemiBold"
+                                                           TextTrimming="CharacterEllipsis" />
+                                                <TextBlock FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}">
+                                                    <Run Text="{Binding SongCount}" /><Run Text=" 首作品" />
+                                                </TextBlock>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2" Text="艺术家" FontSize="11"
+                                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                       VerticalAlignment="Center" />
+                                        </Grid>
+                                        <ItemsControl ItemsSource="{Binding Songs}"
+                                                      ItemTemplate="{StaticResource SongRowTemplate}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- 空状态提示框 -->
+                    <Border IsVisible="{Binding HasNoResults}"
+                            Background="{DynamicResource GdInfoSurfaceBrush}"
+                            BorderBrush="{DynamicResource GdInfoBrush}"
+                            BorderThickness="1" CornerRadius="{DynamicResource GdRadiusMd}"
+                            Padding="20 16" Margin="0 8 0 0">
+                        <StackPanel Spacing="8">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <ui:SymbolIcon Symbol="Important" FontSize="18"
+                                               Foreground="{DynamicResource GdInfoBrush}" />
+                                <TextBlock Text="未找到相关结果" FontSize="15" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource GdForegroundBrush}" />
+                            </StackPanel>
+                            <TextBlock Text="搜索前将显示推荐内容；未找到结果时显示空状态提示。"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+            </Grid>
+        </ScrollViewer>
+
+        <!-- 加载歌单遮罩 -->
         <Border Grid.RowSpan="2" Background="{DynamicResource GdOverlayBrush}"
                 IsVisible="{Binding IsLoadingPlaylist}"
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -217,6 +415,7 @@
             </StackPanel>
         </Border>
 
+        <!-- 添加到歌单对话框 -->
         <Popup Grid.RowSpan="2" IsOpen="{Binding IsAddToPlaylistDialogOpen}"
                Placement="Center" HorizontalOffset="0" VerticalOffset="0">
             <Border Background="{DynamicResource GdPopoverBrush}"

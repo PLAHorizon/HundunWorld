@@ -126,8 +126,10 @@ namespace HundunWorld.Game
 
             // 周期性补偿检查：确保所有远程实体都有对应的 Flax Actor。
             // 覆盖场景：事件订阅时序竞态、网络抖动导致 Spawn 事件丢失、重连后实体重建。
-            // 每 120 帧（≈2秒）检查一次，开销极低（仅字典计数比较）。
-            if (_eventsSubscribed && _archWorld != null && frameCount % 120 == 60)
+            // 修复（进入游戏时观测不到远程角色）：原间隔 120 帧（≈2秒）过长，
+            // 新玩家进入游戏后首批 Spawn 事件若被错过，需等待 2 秒才能补创建 Actor，
+            // 表现为"进入场景后看不到其他玩家"。缩短到 30 帧（≈0.5秒），大幅缩短不可见窗口。
+            if (_eventsSubscribed && _archWorld != null && frameCount % 30 == 15)
             {
                 ReconcileMissingActors();
             }
@@ -624,7 +626,11 @@ namespace HundunWorld.Game
                     if (_entityIdToLastPosition.TryGetValue(entityId, out var lastPos))
                     {
                         float distSquared = (newPos - lastPos).LengthSquared;
-                        if (distSquared > 0.0001f)
+                        // 修复（远程角色移动不明显 — 位置更新阈值过严）：
+                        // 原值 0.0001（1cm²）在 Lerp 接近目标时每帧移动 < 1cm，Actor 不更新，
+                        // 视觉上角色"卡住不动"。降到 0.000001（0.01cm² = 0.1mm²），
+                        // 让微小追赶也能反映到 Actor 位置。
+                        if (distSquared > 0.000001f)
                         {
                             actor.Position = newPos;
                             _entityIdToLastPosition[entityId] = newPos;

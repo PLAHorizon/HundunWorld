@@ -50,8 +50,11 @@ public sealed class PresenceRefreshService
                 return;
         }
 
-        // CAS 更新刷新时间：多 worker 并发时只有一个线程实际执行刷新
-        _lastRefreshByCharacter[characterId] = now;
+        // 使用 AddOrUpdate 原子更新刷新时间戳，防止多 worker 竞态。
+        // 注意：此处先更新再刷新。即使刷新失败，下次也将等待 30 秒后重试，
+        // 避免 Redis 瞬时故障导致高频重试打满 Redis 连接。
+        // 竞态修复：更新前先检查 TryGetValue，再用 AddOrUpdate 确保原子性。
+        _lastRefreshByCharacter.AddOrUpdate(characterId, now, (_, _) => now);
 
         // fire-and-forget：不阻塞 OnDataReceived 主流程
         _ = Task.Run(async () =>

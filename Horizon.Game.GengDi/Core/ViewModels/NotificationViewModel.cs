@@ -17,11 +17,22 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private Horizon.Game.GengDi.Models.IMMessage _selectedNotification;
         private bool _isLoading;
         private int _unreadCount;
+        private ObservableCollection<NotificationItemViewModel> _sampleNotifications;
 
         public ObservableCollection<Horizon.Game.GengDi.Models.IMMessage> Notifications
         {
             get => _notifications;
             set => SetProperty(ref _notifications, value);
+        }
+
+        /// <summary>
+        /// 示例通知数据集合（对应设计稿 7 条通知：5 未读 + 2 已读）。
+        /// 用于设计时预览和无网络时的占位展示。
+        /// </summary>
+        public ObservableCollection<NotificationItemViewModel> SampleNotifications
+        {
+            get => _sampleNotifications;
+            set => SetProperty(ref _sampleNotifications, value);
         }
 
         public Horizon.Game.GengDi.Models.IMMessage SelectedNotification
@@ -65,6 +76,11 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             Notifications = new ObservableCollection<Horizon.Game.GengDi.Models.IMMessage>();
             _markAllAsReadCommand = new AsyncRelayCommand(MarkAllAsReadCurrentUserAsync, CanMarkAllAsRead);
             MarkAllAsReadCommand = _markAllAsReadCommand;
+
+            // 加载设计稿示例数据（7条：5未读 + 2已读）
+            SampleNotifications = new ObservableCollection<NotificationItemViewModel>(
+                NotificationItemViewModel.CreateSampleData());
+            UnreadCount = SampleNotifications.Count(n => !n.IsRead);
         }
 
         public async Task LoadNotificationsAsync(string userId)

@@ -73,6 +73,9 @@ namespace Horizon.Game.GengDi.Models
                     OnPropertyChanged(nameof(CanStart));
                     OnPropertyChanged(nameof(CanUpdate));
                     OnPropertyChanged(nameof(CanUninstall));
+                    OnPropertyChanged(nameof(IsUpdating));
+                    OnPropertyChanged(nameof(ShowInstalledBadge));
+                    OnPropertyChanged(nameof(ShowNotInstalledBadge));
                 }
             }
         }
@@ -160,6 +163,18 @@ namespace Horizon.Game.GengDi.Models
         /// <summary>卸载按钮是否可用：仅在 Installed 状态下允许。</summary>
         [LiteDB.BsonIgnore]
         public bool CanUninstall => State == GameLifecycleState.Installed;
+
+        /// <summary>是否正在更新中（State == Updating），驱动 UI 更新中 badge 和进度条。</summary>
+        [LiteDB.BsonIgnore]
+        public bool IsUpdating => State == GameLifecycleState.Updating;
+
+        /// <summary>UI badge: 显示"已安装"（已安装且非更新中）</summary>
+        [LiteDB.BsonIgnore]
+        public bool ShowInstalledBadge => IsInstalled && State != GameLifecycleState.Updating;
+
+        /// <summary>UI badge: 显示"未安装"（未安装且非更新中）</summary>
+        [LiteDB.BsonIgnore]
+        public bool ShowNotInstalledBadge => !IsInstalled && State != GameLifecycleState.Updating;
 
         public string ScreenshotsJson { get; set; } = JsonConvert.SerializeObject(new List<string>());
         public string VideosJson { get; set; } = JsonConvert.SerializeObject(new List<string>());

@@ -44,6 +44,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private decimal _salesTodayRevenue;
         private int _salesStockAlerts;
         private ObservableCollection<SalesOrderSummaryItem> _pendingShipList = new();
+        private ObservableCollection<OrderStatusDistributionItem> _orderStatusDistribution = new();
 
         public bool IsLoading
         {
@@ -195,6 +196,12 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         {
             get => _pendingShipList;
             set => SetProperty(ref _pendingShipList, value);
+        }
+
+        public ObservableCollection<OrderStatusDistributionItem> OrderStatusDistribution
+        {
+            get => _orderStatusDistribution;
+            set => SetProperty(ref _orderStatusDistribution, value);
         }
 
         public ICommand RefreshCommand { get; }
@@ -378,7 +385,9 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                         {
                             BatchName = b.BatchName,
                             SpeciesName = b.SpeciesName,
-                            ExpectedHarvestDate = b.ExpectedHarvestDate
+                            ExpectedHarvestDate = b.ExpectedHarvestDate,
+                            Progress = b.Status == "HarvestReady" ? 85 : 60,
+                            ProgressColor = b.Status == "HarvestReady" ? "#26A69A" : "#2962FF"
                         }));
 
                     decimal totalYield = 0;
@@ -434,6 +443,17 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                     if (allOrders != null)
                     {
                         SalesTodayRevenue = allOrders.Where(o => o.CreatedAt.Date == DateTime.Today).Sum(o => o.TotalAmount);
+
+                        var pendingShip = allOrders.Count(o => o.Status == 1);
+                        var shipped = allOrders.Count(o => o.Status == 2);
+                        var completed = allOrders.Count(o => o.Status == 3);
+
+                        OrderStatusDistribution = new ObservableCollection<OrderStatusDistributionItem>
+                        {
+                            new() { StatusName = "待发货", Count = pendingShip, DotColor = "#FF9800" },
+                            new() { StatusName = "已发货", Count = shipped, DotColor = "#2962FF" },
+                            new() { StatusName = "已完成", Count = completed, DotColor = "#26A69A" }
+                        };
                     }
 
                     var products = await _shopService.GetMerchantProductsAsync(merchant.MerchantId).ConfigureAwait(false);
@@ -447,6 +467,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             {
                 Debug.WriteLine($"[FlowerWorkbenchViewModel] {nameof(LoadSalesQuadrantAsync)}: {ex.Message}");
                 PendingShipList = new ObservableCollection<SalesOrderSummaryItem>();
+                OrderStatusDistribution = new ObservableCollection<OrderStatusDistributionItem>();
             }
         }
 
@@ -514,6 +535,8 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public string SpeciesName { get; set; } = "";
         public DateTime? ExpectedHarvestDate { get; set; }
         public string ExpectedDateDisplay => ExpectedHarvestDate?.ToString("MM/dd") ?? "-";
+        public int Progress { get; set; } = 50;
+        public string ProgressColor { get; set; } = "#26A69A";
     }
 
     public class SalesOrderSummaryItem
@@ -522,5 +545,12 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public decimal TotalAmount { get; set; }
         public DateTime CreatedAt { get; set; }
         public string CreatedDisplay => CreatedAt.ToString("MM/dd HH:mm");
+    }
+
+    public class OrderStatusDistributionItem
+    {
+        public string StatusName { get; set; } = "";
+        public int Count { get; set; }
+        public string DotColor { get; set; } = "#FF9800";
     }
 }

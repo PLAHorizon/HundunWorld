@@ -3,17 +3,21 @@
              xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
              x:Class="Horizon.Game.GengDi.Core.Views.MiniPlayerView"
-             x:DataType="vm:MiniPlayerViewModel"
-             Height="64">
+             x:DataType="vm:MiniPlayerViewModel">
 
+    <!-- ═══ 设计稿：固定底栏播放器（MiniPlayerView） ═══
+         card 背景 + border-top，padding 12px 20px
+         三段式：左 260px 曲目信息 / 中 max 480px 控制与进度 / 右 200px 音量与列表 -->
     <Border Background="{DynamicResource GdCardBrush}"
             BorderBrush="{DynamicResource GdBorderBrush}"
             BorderThickness="0 1 0 0"
-            Padding="12 0">
-        <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center" IsVisible="{Binding HasSong}">
+            Padding="20 12">
+        <Grid ColumnDefinitions="260,*,200" VerticalAlignment="Center">
 
-            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12">
-                <!-- 设计稿：48x48 渐变封面 -->
+            <!-- ═══ 左侧：曲目信息（260px） ═══ -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12"
+                        IsVisible="{Binding HasSong}">
+                <!-- 48x48 渐变封面 brand-500→brand-700 -->
                 <Border Width="48" Height="48" CornerRadius="{DynamicResource GdRadiusMd}"
                         ClipToBounds="True">
                     <Border.Background>
@@ -23,17 +27,17 @@
                         </LinearGradientBrush>
                     </Border.Background>
                     <Panel>
-                        <TextBlock Text="♪" FontSize="24"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Foreground="#FFFFFFFF"
-                                   IsVisible="{Binding !ShowLoadingIndicator}" />
+                        <ui:SymbolIcon Symbol="Audio" FontSize="24"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource GdPrimaryForegroundBrush}"
+                                       IsVisible="{Binding !ShowLoadingIndicator}" />
                         <ProgressBar IsIndeterminate="True" Width="24" Height="3"
                                      HorizontalAlignment="Center" VerticalAlignment="Center"
                                      IsVisible="{Binding ShowLoadingIndicator}" />
                     </Panel>
                 </Border>
                 <StackPanel VerticalAlignment="Center" Spacing="2">
-                    <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
+                    <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="Medium"
                                Foreground="{DynamicResource GdForegroundBrush}"
                                MaxWidth="200" TextTrimming="CharacterEllipsis" />
                     <StackPanel Orientation="Horizontal" Spacing="4">
@@ -46,7 +50,8 @@
                             <ui:SymbolIcon Symbol="Cancel" FontSize="10" Foreground="{DynamicResource GdErrorBrush}" />
                             <TextBlock Text="无法播放" FontSize="11" Foreground="{DynamicResource GdErrorBrush}" />
                             <Button Command="{Binding RetryCommand}" Padding="4 0" FontSize="10"
-                                    Classes="GdGhost" VerticalAlignment="Center">
+                                    Classes="GdGhost" VerticalAlignment="Center"
+                                    PointerPressed="OnControlButtonPressed">
                                 <TextBlock Text="重试" FontSize="10" />
                             </Button>
                         </StackPanel>
@@ -59,55 +64,114 @@
                 </StackPanel>
             </StackPanel>
 
-            <StackPanel Grid.Column="1" Orientation="Horizontal"
-                        HorizontalAlignment="Center" VerticalAlignment="Center"
-                        Spacing="16">
-                <Button Classes="GdIcon"
-                        Command="{Binding PreviousCommand}"
-                        Width="32" Height="32"
-                        PointerPressed="OnControlButtonPressed">
-                    <ui:SymbolIcon Symbol="Previous" FontSize="14" />
-                </Button>
-                <!-- 设计稿：32px 圆形 brand-500 播放按钮 -->
-                <Button Command="{Binding PlayPauseCommand}"
-                        Width="32" Height="32" CornerRadius="16"
-                        Background="{DynamicResource GdPrimaryBrush}"
-                        Foreground="#FFFFFFFF"
-                        BorderThickness="0" Padding="0"
-                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
-                        Cursor="Hand"
-                        PointerPressed="OnControlButtonPressed">
-                    <Panel>
-                        <ui:SymbolIcon Symbol="Pause" FontSize="14" Foreground="#FFFFFFFF"
-                                       IsVisible="{Binding IsPlaying}" />
-                        <ui:SymbolIcon Symbol="Play" FontSize="14" Foreground="#FFFFFFFF"
-                                       IsVisible="{Binding !IsPlaying}" />
-                    </Panel>
-                </Button>
-                <Button Classes="GdIcon"
-                        Command="{Binding NextCommand}"
-                        Width="32" Height="32"
-                        PointerPressed="OnControlButtonPressed">
-                    <ui:SymbolIcon Symbol="Next" FontSize="14" />
-                </Button>
+            <!-- 空状态占位 -->
+            <TextBlock Grid.Column="0" Text="未在播放" FontSize="13"
+                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                       VerticalAlignment="Center"
+                       IsVisible="{Binding !HasSong}" />
+
+            <!-- ═══ 中间：控制与进度（max 480px） ═══ -->
+            <StackPanel Grid.Column="1" MaxWidth="480" HorizontalAlignment="Center"
+                        Spacing="6" IsVisible="{Binding HasSong}">
+                <!-- 控制按钮组 gap:16 -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="16">
+                    <!-- shuffle 随机播放 16px -->
+                    <Button Classes="GdGhost" Command="{Binding TogglePlayModeCommand}"
+                            ToolTip.Tip="{Binding PlayModeText}" Padding="6"
+                            PointerPressed="OnControlButtonPressed">
+                        <Panel>
+                            <ui:SymbolIcon Symbol="Shuffle" FontSize="16"
+                                           Foreground="{DynamicResource GdPrimaryBrush}"
+                                           IsVisible="{Binding IsShuffleMode}" />
+                            <ui:SymbolIcon Symbol="Shuffle" FontSize="16"
+                                           Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                           IsVisible="{Binding !IsShuffleMode}" />
+                        </Panel>
+                    </Button>
+                    <!-- 上一首 skip-back 18px -->
+                    <Button Classes="GdGhost" Command="{Binding PreviousCommand}" Padding="6"
+                            PointerPressed="OnControlButtonPressed">
+                        <ui:SymbolIcon Symbol="Previous" FontSize="18"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                    </Button>
+                    <!-- 播放/暂停 32px 圆形 brand-500 -->
+                    <Button Command="{Binding PlayPauseCommand}"
+                            Width="32" Height="32" CornerRadius="16"
+                            Background="{DynamicResource GdBrand500}"
+                            Foreground="{DynamicResource GdPrimaryForegroundBrush}"
+                            BorderThickness="0" Padding="0"
+                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                            Cursor="Hand"
+                            PointerPressed="OnControlButtonPressed">
+                        <Panel>
+                            <ui:SymbolIcon Symbol="Pause" FontSize="16" Foreground="{DynamicResource GdPrimaryForegroundBrush}"
+                                           IsVisible="{Binding IsPlaying}" />
+                            <ui:SymbolIcon Symbol="Play" FontSize="16" Foreground="{DynamicResource GdPrimaryForegroundBrush}"
+                                           IsVisible="{Binding !IsPlaying}" />
+                        </Panel>
+                    </Button>
+                    <!-- 下一首 skip-forward 18px -->
+                    <Button Classes="GdGhost" Command="{Binding NextCommand}" Padding="6"
+                            PointerPressed="OnControlButtonPressed">
+                        <ui:SymbolIcon Symbol="Next" FontSize="18"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                    </Button>
+                    <!-- repeat 循环 16px -->
+                    <Button Classes="GdGhost" Command="{Binding TogglePlayModeCommand}"
+                            ToolTip.Tip="{Binding PlayModeText}" Padding="6"
+                            PointerPressed="OnControlButtonPressed">
+                        <Panel>
+                            <ui:SymbolIcon Symbol="RepeatAll" FontSize="16"
+                                           Foreground="{DynamicResource GdPrimaryBrush}"
+                                           IsVisible="{Binding IsLoopAllMode}" />
+                            <ui:SymbolIcon Symbol="RepeatOne" FontSize="16"
+                                           Foreground="{DynamicResource GdPrimaryBrush}"
+                                           IsVisible="{Binding IsLoopOneMode}" />
+                            <ui:SymbolIcon Symbol="RepeatAll" FontSize="16"
+                                           Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                           IsVisible="{Binding !IsRepeatMode}" />
+                        </Panel>
+                    </Button>
+                </StackPanel>
+                <!-- 进度行 gap:8 width:100% -->
+                <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding PositionText}" FontSize="11"
+                               FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                               Foreground="{DynamicResource GdMutedForegroundBrush}"
+                               VerticalAlignment="Center" />
+                    <ProgressBar Grid.Column="1" Value="{Binding Progress}" Maximum="1"
+                                 Height="3" Margin="8 0"
+                                 Foreground="{DynamicResource GdBrand500}"
+                                 Background="{DynamicResource GdBorderBrush}"
+                                 CornerRadius="{DynamicResource GdRadiusFull}"
+                                 VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="2" Text="{Binding DurationText}" FontSize="11"
+                               FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                               Foreground="{DynamicResource GdMutedForegroundBrush}"
+                               VerticalAlignment="Center" />
+                </Grid>
             </StackPanel>
 
-            <!-- 设计稿：进度条 + 时间标签 -->
-            <StackPanel Grid.Column="2" Orientation="Horizontal"
-                        VerticalAlignment="Center" Spacing="8">
-                <TextBlock Text="{Binding PositionText}" FontSize="11"
-                           FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
-                           Foreground="{DynamicResource GdMutedForegroundBrush}"
-                           VerticalAlignment="Center" />
-                <ProgressBar Value="{Binding Progress}" Maximum="1"
-                             Width="120" Height="3"
-                             Foreground="{DynamicResource GdPrimaryBrush}"
-                             Background="{DynamicResource GdBorderBrush}"
-                             VerticalAlignment="Center" />
-                <TextBlock Text="{Binding DurationText}" FontSize="11"
-                           FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
-                           Foreground="{DynamicResource GdMutedForegroundBrush}"
-                           VerticalAlignment="Center" />
+            <!-- ═══ 右侧：音量与列表（200px） ═══ -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12"
+                        HorizontalAlignment="Right" VerticalAlignment="Center"
+                        IsVisible="{Binding HasSong}">
+                <!-- 音量 volume-2 16px -->
+                <Button Classes="GdGhost" Padding="6" ToolTip.Tip="音量"
+                        PointerPressed="OnControlButtonPressed">
+                    <ui:SymbolIcon Symbol="Volume" FontSize="16"
+                                   Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                </Button>
+                <!-- 80px 音量条 3px -->
+                <Slider Value="{Binding Volume}" Minimum="0" Maximum="1"
+                        Width="80" VerticalAlignment="Center" />
+                <!-- 播放列表/展开 list-music 16px -->
+                <Button Classes="GdGhost" Command="{Binding ExpandCommand}"
+                        ToolTip.Tip="展开播放器" Padding="6"
+                        PointerPressed="OnControlButtonPressed">
+                    <ui:SymbolIcon Symbol="MusicInfo" FontSize="16"
+                                   Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                </Button>
             </StackPanel>
         </Grid>
     </Border>

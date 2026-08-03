@@ -1,29 +1,441 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
              xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
              x:Class="Horizon.Game.GengDi.Core.Views.FlowerProfileView"
              x:DataType="vm:FlowerProfileViewModel">
+
+    <UserControl.Styles>
+        <!-- 覆盖 GdCard 默认底部外边距，由外层 StackPanel.Spacing 统一控制间距 -->
+        <Style Selector="Border.GdCard">
+            <Setter Property="Margin" Value="0" />
+        </Style>
+    </UserControl.Styles>
+
     <controls:GalleryPage Title="个人中心"
-                          Subtitle="Horizon.Game.GengDi.FlowerProfile"
-                          Description="管理账户信息与订阅设置。"
+                          Subtitle="资料卡 · 我的订单 · 我的收藏 · 地址簿 · 账户安全"
+                          Description="管理账户信息、订单收藏与账户安全。"
                           IconSource="{StaticResource NotificationsIcon}">
 
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="16" Margin="0 0 0 24">
 
+                <!-- ========== 资料卡 ========== -->
                 <Border Classes="GdCard" Padding="20">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
-                        <Border Grid.Column="0" Width="64" Height="64" CornerRadius="32" Background="{DynamicResource GdMutedForegroundBrush}">
-                            <TextBlock Text="👤" FontSize="28" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
+                        <!-- 头像（品牌渐变 + 首字） -->
+                        <Border Grid.Column="0" Width="64" Height="64" CornerRadius="32"
+                                Background="{StaticResource GdDlGradient0}"
+                                ToolTip.Tip="{Binding AvatarUrl}">
+                            <TextBlock Text="{Binding AvatarText}" FontSize="26" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource GdPrimaryForegroundBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
+                        <!-- 用户信息 -->
                         <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding DisplayName}" FontSize="18" FontWeight="SemiBold"/>
-                            <TextBlock Text="{Binding PhoneNumber, StringFormat=' {0}'}" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{Binding DisplayName}" FontSize="18" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource GdForegroundBrush}"/>
+                                <Border Classes="GdBadge GdBadgeInfo">
+                                    <TextBlock Text="{Binding UserRole, StringFormat='👑 {0}'}"/>
+                                </Border>
+                                <Border Classes="GdBadge GdBadgeSuccess" IsVisible="{Binding IsVerified}">
+                                    <TextBlock Text="已认证"/>
+                                </Border>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="16">
+                                <TextBlock Text="{Binding AccountId, StringFormat='账号 {0}'}" FontSize="12"
+                                           FontFamily="{DynamicResource GdFontMono}"
+                                           Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                <TextBlock Text="注册时间 2024-03-15" FontSize="12"
+                                           Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="16">
+                                <TextBlock Text="积分 2,580" FontSize="12"
+                                           FontFamily="{DynamicResource GdFontMono}"
+                                           Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                <TextBlock Text="{Binding PhoneNumber, StringFormat='手机 {0}'}" FontSize="12"
+                                           Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                            </StackPanel>
                         </StackPanel>
+                        <!-- 账户设置 -->
+                        <Button Grid.Column="2" Classes="GdPrimary" Content="⚙ 账户设置"
+                                Padding="14 8" FontSize="12" VerticalAlignment="Center"/>
                     </Grid>
                 </Border>
 
+                <!-- ========== 快捷功能菜单 ========== -->
+                <Border Classes="GdCard" Padding="16">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="快捷功能" Classes="GdEyebrow"/>
+                        <ItemsControl ItemsSource="{Binding MenuItems}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="8"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ProfileMenuItem">
+                                    <Border Background="{DynamicResource GdMutedBrush}"
+                                            CornerRadius="{DynamicResource GdRadiusMd}" Padding="12 10">
+                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                            <Border Grid.Column="0" Width="34" Height="34"
+                                                    CornerRadius="{DynamicResource GdRadiusSm}"
+                                                    Background="{DynamicResource GdInfoSurfaceBrush}">
+                                                <TextBlock Text="{Binding Icon}" FontSize="16"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource GdForegroundBrush}"/>
+                                                <TextBlock Text="{Binding Subtitle}" FontSize="11"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="2" Text="›" FontSize="20"
+                                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                       VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- ========== Tab 切换 ========== -->
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <Border Classes="GdRoleTab GdRoleTabActive"><TextBlock Text="我的订单"/></Border>
+                    <Border Classes="GdRoleTab"><TextBlock Text="我的收藏"/></Border>
+                    <Border Classes="GdRoleTab"><TextBlock Text="地址簿"/></Border>
+                    <Border Classes="GdRoleTab"><TextBlock Text="账户安全"/></Border>
+                </StackPanel>
+
+                <!-- ========== 我的订单 + 订单概览 ========== -->
+                <Grid ColumnDefinitions="2*,*" ColumnSpacing="16">
+                    <!-- 我的订单 -->
+                    <Border Grid.Column="0" Classes="GdCard" Padding="16">
+                        <StackPanel Spacing="12">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Border Classes="GdChip GdChipActive"><TextBlock Text="全部"/></Border>
+                                <Border Classes="GdChip"><TextBlock Text="待付款"/></Border>
+                                <Border Classes="GdChip"><TextBlock Text="待发货"/></Border>
+                                <Border Classes="GdChip"><TextBlock Text="待收货"/></Border>
+                                <Border Classes="GdChip"><TextBlock Text="已完成"/></Border>
+                            </StackPanel>
+
+                            <!-- 订单 1 -->
+                            <Border Classes="GdCard" Padding="14" CornerRadius="{DynamicResource GdRadiusMd}">
+                                <StackPanel Spacing="8">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Grid.Column="0" Text="GD20260725-0142" FontSize="12"
+                                                   FontFamily="{DynamicResource GdFontMono}"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                        <Border Grid.Column="1" Classes="GdBadge GdBadgeSuccess"><TextBlock Text="已完成"/></Border>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                        <Border Grid.Column="0" Width="48" Height="48"
+                                                CornerRadius="{DynamicResource GdRadiusMd}"
+                                                Background="{DynamicResource GdWarningSurfaceBrush}">
+                                            <TextBlock Text="💐" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="晨曦混合花束" FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource GdForegroundBrush}"/>
+                                            <TextBlock Text="花语工坊 · 数量 3" FontSize="11"
+                                                       Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="¥264.00" FontSize="15" FontWeight="Bold"
+                                                   FontFamily="{DynamicResource GdFontMono}"
+                                                   Foreground="{DynamicResource GdErrorBrush}"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- 订单 2 -->
+                            <Border Classes="GdCard" Padding="14" CornerRadius="{DynamicResource GdRadiusMd}">
+                                <StackPanel Spacing="8">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Grid.Column="0" Text="GD20260720-0089" FontSize="12"
+                                                   FontFamily="{DynamicResource GdFontMono}"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                        <Border Grid.Column="1" Classes="GdBadge GdBadgeInfo"><TextBlock Text="待收货"/></Border>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                        <Border Grid.Column="0" Width="48" Height="48"
+                                                CornerRadius="{DynamicResource GdRadiusMd}"
+                                                Background="{DynamicResource GdErrorSurfaceBrush}">
+                                            <TextBlock Text="🌸" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="高原红玫瑰（20支/束）" FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource GdForegroundBrush}"/>
+                                            <TextBlock Text="云端花田直供 · 数量 2" FontSize="11"
+                                                       Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="¥116.00" FontSize="15" FontWeight="Bold"
+                                                   FontFamily="{DynamicResource GdFontMono}"
+                                                   Foreground="{DynamicResource GdErrorBrush}"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- 订单 3 -->
+                            <Border Classes="GdCard" Padding="14" CornerRadius="{DynamicResource GdRadiusMd}">
+                                <StackPanel Spacing="8">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Grid.Column="0" Text="GD20260718-0032" FontSize="12"
+                                                   FontFamily="{DynamicResource GdFontMono}"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                        <Border Grid.Column="1" Classes="GdBadge GdBadgeWarning"><TextBlock Text="待发货"/></Border>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                        <Border Grid.Column="0" Width="48" Height="48"
+                                                CornerRadius="{DynamicResource GdRadiusMd}"
+                                                Background="{DynamicResource GdSuccessSurfaceBrush}">
+                                            <TextBlock Text="🌷" FontSize="22" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="粉韵康乃馨（15支）" FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource GdForegroundBrush}"/>
+                                            <TextBlock Text="春田花卉农场 · 数量 5" FontSize="11"
+                                                       Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="¥325.00" FontSize="15" FontWeight="Bold"
+                                                   FontFamily="{DynamicResource GdFontMono}"
+                                                   Foreground="{DynamicResource GdErrorBrush}"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 订单概览（ProfileStats） -->
+                    <Border Grid.Column="1" Classes="GdCard" Padding="16">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="订单概览" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource GdForegroundBrush}"/>
+                            <ItemsControl ItemsSource="{Binding ProfileStats}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Spacing="14"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ProfileStatItem">
+                                        <StackPanel Spacing="2">
+                                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                                <TextBlock Text="{Binding Icon}" FontSize="12" VerticalAlignment="Center"/>
+                                                <TextBlock Text="{Binding Label}" FontSize="11"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding Value}" FontSize="22" FontWeight="Bold"
+                                                       FontFamily="{DynamicResource GdFontMono}"
+                                                       Foreground="{DynamicResource GdForegroundBrush}"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- ========== 我的收藏 ========== -->
+                <Border Classes="GdCard" Padding="16">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0" Text="我的收藏" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource GdForegroundBrush}"/>
+                            <Button Grid.Column="1" Classes="GdGhost" Content="查看全部 ›" Padding="8 4" FontSize="12"/>
+                        </Grid>
+                        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
+                            <!-- 收藏 1 -->
+                            <Border Grid.Column="0" Classes="GdCard" Padding="12" CornerRadius="{DynamicResource GdRadiusMd}">
+                                <StackPanel Spacing="6">
+                                    <Border Height="80" CornerRadius="{DynamicResource GdRadiusMd}">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                <GradientStop Color="{StaticResource GdError}" Offset="0"/>
+                                                <GradientStop Color="{StaticResource GdBrand500}" Offset="1"/>
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                        <TextBlock Text="🌸" FontSize="36" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Text="高原红玫瑰" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource GdForegroundBrush}"/>
+                                    <TextBlock Text="¥58.00" FontSize="12" FontWeight="Bold"
+                                               FontFamily="{DynamicResource GdFontMono}"
+                                               Foreground="{DynamicResource GdErrorBrush}"/>
+                                </StackPanel>
+                            </Border>
+                            <!-- 收藏 2 -->
+                            <Border Grid.Column="1" Classes="GdCard" Padding="12" CornerRadius="{DynamicResource GdRadiusMd}">
+                                <StackPanel Spacing="6">
+                                    <Border Height="80" CornerRadius="{DynamicResource GdRadiusMd}">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                <GradientStop Color="{StaticResource GdInfo}" Offset="0"/>
+                                                <GradientStop Color="{StaticResource GdBrand400}" Offset="1"/>
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                        <TextBlock Text="🌼" FontSize="36" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Text="雪山白百合" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource GdForegroundBrush}"/>
+                                    <TextBlock Text="¥42.50" FontSize="12" FontWeight="Bold"
+                                               FontFamily="{DynamicResource GdFontMono}"
+                                               Foreground="{DynamicResource GdErrorBrush}"/>
+                                </StackPanel>
+                            </Border>
+                            <!-- 收藏 3 -->
+                            <Border Grid.Column="2" Classes="GdCard" Padding="12" CornerRadius="{DynamicResource GdRadiusMd}">
+                                <StackPanel Spacing="6">
+                                    <Border Height="80" CornerRadius="{DynamicResource GdRadiusMd}">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                <GradientStop Color="{StaticResource GdWarning}" Offset="0"/>
+                                                <GradientStop Color="{StaticResource GdError}" Offset="1"/>
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                        <TextBlock Text="🌻" FontSize="36" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Text="金穗向日葵" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource GdForegroundBrush}"/>
+                                    <TextBlock Text="¥75.00" FontSize="12" FontWeight="Bold"
+                                               FontFamily="{DynamicResource GdFontMono}"
+                                               Foreground="{DynamicResource GdErrorBrush}"/>
+                                </StackPanel>
+                            </Border>
+                            <!-- 收藏 4 -->
+                            <Border Grid.Column="3" Classes="GdCard" Padding="12" CornerRadius="{DynamicResource GdRadiusMd}">
+                                <StackPanel Spacing="6">
+                                    <Border Height="80" CornerRadius="{DynamicResource GdRadiusMd}">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                <GradientStop Color="{StaticResource GdSuccess}" Offset="0"/>
+                                                <GradientStop Color="{StaticResource GdInfo}" Offset="1"/>
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                        <TextBlock Text="🌷" FontSize="36" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Text="粉韵康乃馨" FontSize="13" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource GdForegroundBrush}"/>
+                                    <TextBlock Text="¥65.00" FontSize="12" FontWeight="Bold"
+                                               FontFamily="{DynamicResource GdFontMono}"
+                                               Foreground="{DynamicResource GdErrorBrush}"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- ========== 地址簿 + 账户安全 ========== -->
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                    <!-- 地址簿 -->
+                    <Border Grid.Column="0" Classes="GdCard" Padding="16">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Grid.Column="0" Text="地址簿" FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource GdForegroundBrush}"/>
+                                <Button Grid.Column="1" Classes="GdGhost" Content="+ 新增" Padding="8 4" FontSize="12"/>
+                            </Grid>
+                            <!-- 默认地址 -->
+                            <Border Classes="GdCard" Padding="12" CornerRadius="{DynamicResource GdRadiusMd}"
+                                    BorderBrush="{DynamicResource GdPrimaryBrush}">
+                                <StackPanel Spacing="6">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="龙" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource GdForegroundBrush}"/>
+                                        <TextBlock Text="138****6688" FontSize="12"
+                                                   FontFamily="{DynamicResource GdFontMono}"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                        <Border Classes="GdBadge GdBadgeInfo"><TextBlock Text="默认"/></Border>
+                                    </StackPanel>
+                                    <TextBlock Text="云南省昆明市呈贡区斗南街道花卉市场 A 区 128 号" FontSize="12"
+                                               TextWrapping="Wrap"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                </StackPanel>
+                            </Border>
+                            <!-- 公司地址 -->
+                            <Border Classes="GdCard" Padding="12" CornerRadius="{DynamicResource GdRadiusMd}">
+                                <StackPanel Spacing="6">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="龙（公司）" FontSize="13" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource GdForegroundBrush}"/>
+                                        <TextBlock Text="139****2233" FontSize="12"
+                                                   FontFamily="{DynamicResource GdFontMono}"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                    </StackPanel>
+                                    <TextBlock Text="云南省昆明市官渡区春城路 88 号绿野大厦 12 楼" FontSize="12"
+                                               TextWrapping="Wrap"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 账户安全 -->
+                    <Border Grid.Column="1" Classes="GdCard" Padding="16">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="账户安全" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource GdForegroundBrush}"/>
+                            <!-- 登录密码 -->
+                            <Border Background="{DynamicResource GdMutedBrush}"
+                                    CornerRadius="{DynamicResource GdRadiusMd}" Padding="10 12">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="🛡️" FontSize="15"/>
+                                        <TextBlock Text="登录密码" FontSize="13"
+                                                   Foreground="{DynamicResource GdForegroundBrush}"/>
+                                    </StackPanel>
+                                    <Border Grid.Column="1" Classes="GdBadge GdBadgeSuccess"><TextBlock Text="已设置"/></Border>
+                                </Grid>
+                            </Border>
+                            <!-- 手机绑定 -->
+                            <Border Background="{DynamicResource GdMutedBrush}"
+                                    CornerRadius="{DynamicResource GdRadiusMd}" Padding="10 12">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="📱" FontSize="15"/>
+                                        <TextBlock Text="手机绑定" FontSize="13"
+                                                   Foreground="{DynamicResource GdForegroundBrush}"/>
+                                    </StackPanel>
+                                    <Border Grid.Column="1" Classes="GdBadge GdBadgeInfo"><TextBlock Text="已绑定"/></Border>
+                                </Grid>
+                            </Border>
+                            <!-- 邮箱绑定 -->
+                            <Border Background="{DynamicResource GdMutedBrush}"
+                                    CornerRadius="{DynamicResource GdRadiusMd}" Padding="10 12">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="📧" FontSize="15"/>
+                                        <TextBlock Text="邮箱绑定" FontSize="13"
+                                                   Foreground="{DynamicResource GdForegroundBrush}"/>
+                                    </StackPanel>
+                                    <Border Grid.Column="1" Classes="GdBadge GdBadgeWarning"><TextBlock Text="未绑定"/></Border>
+                                </Grid>
+                            </Border>
+                            <!-- 实名认证（绑定 IsVerified） -->
+                            <Border Background="{DynamicResource GdMutedBrush}"
+                                    CornerRadius="{DynamicResource GdRadiusMd}" Padding="10 12">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="🔐" FontSize="15"/>
+                                        <TextBlock Text="实名认证" FontSize="13"
+                                                   Foreground="{DynamicResource GdForegroundBrush}"/>
+                                    </StackPanel>
+                                    <Border Grid.Column="1" Classes="GdBadge GdBadgeSuccess" IsVisible="{Binding IsVerified}">
+                                        <TextBlock Text="已认证"/>
+                                    </Border>
+                                    <Border Grid.Column="1" Classes="GdBadge GdBadgeWarning" IsVisible="{Binding !IsVerified}">
+                                        <TextBlock Text="未认证"/>
+                                    </Border>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- ========== 订阅状态（保留已有绑定） ========== -->
                 <Border Classes="GdCard" Padding="16">
                     <StackPanel Spacing="12">
                         <TextBlock Text="订阅状态" Classes="GdEyebrow" />
@@ -39,7 +451,7 @@
                                     <TextBlock Text="{Binding ExpiryDate, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="13"/>
                                 </StackPanel>
                             </StackPanel>
-                            <Button Grid.Column="1" Content="升级订阅" Classes="GdPrimary" Padding="14 6" CornerRadius="{DynamicResource GdRadiusMd}" FontSize="12"
+                            <Button Grid.Column="1" Content="升级订阅" Classes="GdPrimary" Padding="14 6" FontSize="12"
                                     Command="{Binding UpgradeSubscriptionCommand}"/>
                         </Grid>
                         <Border Classes="GdCard" Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}">
@@ -52,11 +464,12 @@
                     </StackPanel>
                 </Border>
 
+                <!-- ========== 消息通知设置（保留已有绑定） ========== -->
                 <Border Classes="GdCard" Padding="16">
                     <StackPanel Spacing="12">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Text="消息通知设置" Classes="GdEyebrow" />
-                            <Button Grid.Column="1" Content="保存设置" Classes="GdGhost" Padding="12 6" CornerRadius="{DynamicResource GdRadiusMd}" FontSize="12"
+                            <Button Grid.Column="1" Content="保存设置" Classes="GdGhost" Padding="12 6" FontSize="12"
                                     Command="{Binding SaveNotificationSettingsCommand}"/>
                         </Grid>
                         <Border Classes="GdCard" Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}">
@@ -98,12 +511,7 @@
                     </StackPanel>
                 </Border>
 
-                <Border Classes="GdCard" Padding="16">
-                    <Button Content="退出登录" Classes="GdGhost" HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center" Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}" FontSize="13"
-                            Foreground="{DynamicResource GdErrorBrush}"/>
-                </Border>
-
+                <!-- ========== 身份切换（保留已有绑定） ========== -->
                 <Border Classes="GdCard" Padding="16">
                     <StackPanel Spacing="12">
                         <TextBlock Text="身份切换" Classes="GdEyebrow" />
@@ -114,11 +522,19 @@
                                     <TextBlock Text="{Binding MerchantShopName}" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                IsVisible="{Binding IsMerchant}"/>
                                 </StackPanel>
-                                <Button Grid.Column="1" Content="切换" Classes="GdGhost" Padding="12 6" CornerRadius="{DynamicResource GdRadiusMd}" FontSize="12"
+                                <Button Grid.Column="1" Content="切换" Classes="GdGhost" Padding="12 6" FontSize="12"
                                         Command="{Binding ToggleMerchantViewCommand}"/>
                             </Grid>
                         </Border>
                     </StackPanel>
+                </Border>
+
+                <!-- ========== 退出登录 ========== -->
+                <Border Classes="GdCard" Padding="16">
+                    <Button Content="退出登录" Classes="GdGhost" HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center" Padding="12 8" FontSize="13"
+                            Foreground="{DynamicResource GdErrorBrush}"
+                            Command="{Binding LogoutCommand}"/>
                 </Border>
 
             </StackPanel>

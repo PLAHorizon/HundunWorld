@@ -87,6 +87,7 @@ public sealed class SyncPacketHandler : MessageHandlerBase
                 SceneObjectSyncPacket sceneObject => await HandleSceneObjectUplinkAsync(sceneObject),
                 SubscriptionUpdatePacket subscription => await HandleSubscriptionUpdateAsync(subscription, (long)message.Header.CharacterId),
                 CombatActionPacket combatAction => await HandleCombatActionAsync(combatAction),
+                BaselineResyncRequestPacket resync => await HandleBaselineResyncAsync(resync, (long)message.Header.CharacterId),
                 _ => await HandleUnknownPacketAsync(packet),
             };
 
@@ -491,6 +492,26 @@ public sealed class SyncPacketHandler : MessageHandlerBase
             acceptResult);
 
         return ackPacket;
+    }
+
+    /// <summary>
+    /// 处理客户端 baseline 重传请求（<see cref="BaselineResyncRequestPacket"/>）。
+    /// 转发到 <see cref="IZoneShardGrain.RequestBaselineResyncAsync"/>，强制下一 tick 下发全量快照。无需响应包。
+    /// </summary>
+    private async Task<SyncPacket?> HandleBaselineResyncAsync(BaselineResyncRequestPacket resync, long characterId)
+    {
+        try
+        {
+            var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(characterId));
+            await zoneShard.RequestBaselineResyncAsync((ulong)characterId, resync.ExpectedBaselineTick, resync.ClientLastAppliedTick);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex,
+                "转发 baseline 重传请求到 ZoneShard 失败。CharacterId={CharacterId}, ExpectedBaselineTick={ExpectedTick}",
+                characterId, resync.ExpectedBaselineTick);
+        }
+        return null;
     }
 
     /// <summary>

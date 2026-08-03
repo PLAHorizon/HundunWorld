@@ -13,6 +13,7 @@ namespace Horizon.Game.Gateway.Services
         private readonly Lazy<RedisCache> _redisCacheLazy;
         private readonly ILogger<CharacterFingerprintService> _logger;
         private readonly string _gatewayId;
+        private readonly IConnectionManager? _connectionManager;
         private readonly TimeSpan _fingerprintExpiry = TimeSpan.FromMinutes(5);
         private const int MaxRetryAttempts = 3;
         private static readonly TimeSpan RetryDelay = TimeSpan.FromMilliseconds(300);
@@ -20,17 +21,19 @@ namespace Horizon.Game.Gateway.Services
 
         private RedisCache RedisCache => _redisCacheLazy.Value;
 
-        public CharacterFingerprintService(RedisCache redisCache, ILogger<CharacterFingerprintService> logger, string gatewayId = "")
+        public CharacterFingerprintService(RedisCache redisCache, ILogger<CharacterFingerprintService> logger, string gatewayId = "", IConnectionManager? connectionManager = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _gatewayId = gatewayId ?? string.Empty;
+            _connectionManager = connectionManager;
             _redisCacheLazy = new Lazy<RedisCache>(() => redisCache);
         }
 
-        public CharacterFingerprintService(string connectionString, ILogger<CharacterFingerprintService> logger, string gatewayId = "")
+        public CharacterFingerprintService(string connectionString, ILogger<CharacterFingerprintService> logger, string gatewayId = "", IConnectionManager? connectionManager = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _gatewayId = gatewayId ?? string.Empty;
+            _connectionManager = connectionManager;
             _redisCacheLazy = new Lazy<RedisCache>(() =>
             {
                 try
@@ -78,10 +81,36 @@ namespace Horizon.Game.Gateway.Services
                             }
                             else if (existingFingerprint.ConnectionId != connectionId)
                             {
-                                _logger.LogWarning(
-                                    "角色 {CharacterId} 已被另一会话占用: Gateway={GatewayId}, Connection={ConnectionId}",
-                                    characterId, existingFingerprint.GatewayId, existingFingerprint.ConnectionId);
-                                return false;
+                                // 修复 BUG（客户端无限重连循环 — 旧连接已断开但 fingerprint 未释放）：
+                                // 当旧连接属于同一网关时，检查该连接是否仍然存活。
+                                // 若旧连接已断开（IsConnected=false 或连接不存在），说明是残留指纹，
+                                // 允许新连接抢占，避免客户端因"角色已在其他会话中在线"而无限重连。
+                                bool oldConnectionAlive = false;
+                                if (existingFingerprint.GatewayId == effectiveGatewayId && _connectionManager != null)
+                                {
+                                    var oldConn = _connectionManager.GetConnection(existingFingerprint.ConnectionId);
+                                    oldConnectionAlive = oldConn != null && oldConn.IsConnected;
+                                }
+                                else if (existingFingerprint.GatewayId != effectiveGatewayId)
+                                {
+                                    // 跨网关场景：无法本地检查，保守拒绝（依赖 5 分钟过期抢占）
+                                    oldConnectionAlive = true;
+                                }
+
+                                if (oldConnectionAlive)
+                                {
+                                    _logger.LogWarning(
+                                        "角色 {CharacterId} 已被另一会话占用: Gateway={GatewayId}, Connection={ConnectionId}",
+                                        characterId, existingFingerprint.GatewayId, existingFingerprint.ConnectionId);
+                                    return false;
+                                }
+                                else
+                                {
+                                    _logger.LogWarning(
+                                        "角色 {CharacterId} 的旧连接 {OldConnectionId} 已断开，允许新连接 {NewConnectionId} 抢占指纹",
+                                        characterId, existingFingerprint.ConnectionId, connectionId);
+                                    // 旧连接已死，继续执行创建新指纹的逻辑（覆盖旧指纹）
+                                }
                             }
                         }
                     }

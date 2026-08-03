@@ -3,113 +3,177 @@
              xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
              x:Class="Horizon.Game.GengDi.Core.Views.FlowerAddressView"
              x:DataType="vm:FlowerAddressViewModel">
-    <Grid RowDefinitions="Auto,*">
-        <Border Classes="GdCard" Padding="16 12" CornerRadius="{DynamicResource GdRadiusLg}" Margin="0 0 0 12">
-            <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Text="收货地址管理" FontSize="16" FontWeight="Bold" VerticalAlignment="Center" />
-                <Button Grid.Column="1" Content="+ 新增地址" Classes="GdPrimary" Padding="16 8"
-                        CornerRadius="{DynamicResource GdRadiusMd}" FontSize="13" Click="OnAddAddressClick"
-                        IsVisible="{Binding !IsEditing}" />
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsEditing}">
-                    <Button Content="保存" Classes="GdPrimary" Padding="16 8" CornerRadius="{DynamicResource GdRadiusMd}"
-                            FontSize="13" Click="OnSaveEditClick" />
-                    <Button Content="取消" Classes="GdGhost" Padding="16 8" CornerRadius="{DynamicResource GdRadiusMd}"
-                            FontSize="13" Click="OnCancelEditClick" />
+    <ScrollViewer Padding="0">
+        <StackPanel Spacing="18" Margin="0">
+
+            <!-- ============ Section Header: 收货地址 ============ -->
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <StackPanel Classes="GdSectionHeader" Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock Classes="GdSectionHeaderTitle" Text="收货地址" />
+                    <TextBlock Classes="GdSectionHeaderSub" Text="管理鲜花交易收货地址，支持设置默认地址" />
                 </StackPanel>
+                <Button Grid.Column="1" Classes="PrimaryAction" Click="OnAddAddressClick"
+                        VerticalAlignment="Center" CornerRadius="{DynamicResource GdRadiusMd}"
+                        Padding="16 8" IsVisible="{Binding !IsEditing}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="+" FontSize="16" FontWeight="Bold" />
+                        <TextBlock Text="新增地址" FontSize="13" />
+                    </StackPanel>
+                </Button>
             </Grid>
-        </Border>
 
-        <ScrollViewer Grid.Row="1">
-            <StackPanel Spacing="12" Margin="0">
-                <!-- 编辑表单 -->
-                <Border Classes="GdCard" Padding="20" CornerRadius="{DynamicResource GdRadiusLg}" IsVisible="{Binding IsEditing}">
-                    <StackPanel Spacing="12">
-                        <TextBlock Text="编辑地址" FontSize="14" FontWeight="SemiBold" />
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="8">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" Text="收货人" FontSize="13" VerticalAlignment="Center" Width="64" />
-                            <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding EditShipTo}" Watermark="请输入收货人姓名" />
-
-                            <TextBlock Grid.Row="1" Text="手机号" FontSize="13" VerticalAlignment="Center" Width="64" />
-                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding EditPhone}" Watermark="请输入手机号" />
-
-                            <TextBlock Grid.Row="2" Text="省/市/区" FontSize="13" VerticalAlignment="Center" Width="64" />
-                            <StackPanel Grid.Row="2" Grid.Column="1" Spacing="8">
+            <!-- ============ 地址卡片列表（3 列均匀网格） ============ -->
+            <ItemsControl ItemsSource="{Binding Addresses}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="3" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Classes="GdStatCard" Padding="16 18" Margin="7">
+                            <StackPanel Spacing="10">
+                                <!-- 顶部：收货人 + 手机号 + 默认标签 -->
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <ComboBox ItemsSource="{Binding Provinces}" SelectedItem="{Binding EditProvinceName}"
-                                              PlaceholderText="省" Width="120" />
-                                    <ComboBox ItemsSource="{Binding Cities}" SelectedItem="{Binding EditCityName}"
-                                              PlaceholderText="市" Width="120" />
-                                    <ComboBox ItemsSource="{Binding Districts}" SelectedItem="{Binding EditDistrictName}"
-                                              PlaceholderText="区" Width="120" />
+                                    <TextBlock Text="{Binding ShipTo}" FontSize="15" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource GdForegroundBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding Phone}" FontSize="12"
+                                               FontFamily="{DynamicResource GdFontMono}"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
+                                    <Border Classes="GdBadge GdBadgeInfo" IsVisible="{Binding IsDefault}">
+                                        <TextBlock Text="默认" />
+                                    </Border>
                                 </StackPanel>
+
+                                <!-- 完整地址 -->
+                                <TextBlock Text="{Binding FullAddress}" FontSize="13" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource GdForegroundBrush}"
+                                           LineHeight="20" Margin="0 0 0 4" />
+
+                                <!-- 操作按钮 -->
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <ComboBox ItemsSource="{Binding Streets}" SelectedItem="{Binding EditStreetName}"
-                                              PlaceholderText="街道/镇" Width="120" />
-                                    <ComboBox ItemsSource="{Binding Communities}" SelectedItem="{Binding EditCommunityName}"
-                                              PlaceholderText="社区/村" Width="120" />
+                                    <Button Classes="QuietAction" Click="OnEditAddressClick" Tag="{Binding}"
+                                            Padding="12 6" CornerRadius="{DynamicResource GdRadiusSm}" FontSize="12">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <TextBlock Text="✎" FontSize="12" />
+                                            <TextBlock Text="编辑" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Classes="QuietAction" Click="OnDeleteAddressClick" Tag="{Binding}"
+                                            Padding="12 6" CornerRadius="{DynamicResource GdRadiusSm}" FontSize="12">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <TextBlock Text="✕" FontSize="12" />
+                                            <TextBlock Text="删除" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Classes="QuietAction" Click="OnSetDefaultClick" Tag="{Binding}"
+                                            Padding="12 6" CornerRadius="{DynamicResource GdRadiusSm}" FontSize="12"
+                                            IsVisible="{Binding !IsDefault}">
+                                        <TextBlock Text="设为默认" />
+                                    </Button>
                                 </StackPanel>
                             </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
 
-                            <TextBlock Grid.Row="3" Text="详细地址" FontSize="13" VerticalAlignment="Center" Width="64" />
-                            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                <TextBox Text="{Binding EditAddress}" Watermark="请输入详细地址" />
-                                <Button Grid.Column="1" Content="🗺 地图选点" Classes="GdGhost" Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}"
-                                        FontSize="12" Click="OnMapSelectClick" />
+            <!-- 空状态 -->
+            <Border Classes="GdStatCard" Padding="40" IsVisible="{Binding !HasAddresses}">
+                <StackPanel HorizontalAlignment="Center" Spacing="8">
+                    <TextBlock Text="📭" FontSize="32" HorizontalAlignment="Center" />
+                    <TextBlock Text="暂无收货地址" FontSize="14"
+                               Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center" />
+                    <TextBlock Text="点击上方新增地址按钮添加" FontSize="12"
+                               Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============ 新增收货地址表单 ============ -->
+            <Border Classes="GdStatCard" Padding="20">
+                <StackPanel Spacing="16">
+                    <!-- 表单标题 -->
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="+" FontSize="16" FontWeight="Bold"
+                                   Foreground="{DynamicResource GdPrimaryBrush}" />
+                        <TextBlock Text="新增收货地址" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource GdForegroundBrush}" />
+                    </StackPanel>
+
+                    <!-- 2x2 表单网格 -->
+                    <Grid ColumnDefinitions="1*,1*" RowDefinitions="Auto,Auto" ColumnSpacing="14" RowSpacing="14">
+                        <!-- 收货人 -->
+                        <StackPanel Grid.Row="0" Grid.Column="0" Spacing="6">
+                            <TextBlock Text="收货人" FontSize="12"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                            <TextBox Text="{Binding EditShipTo}" Watermark="请输入收货人姓名" />
+                        </StackPanel>
+
+                        <!-- 手机号 -->
+                        <StackPanel Grid.Row="0" Grid.Column="1" Spacing="6">
+                            <TextBlock Text="手机号" FontSize="12"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                            <TextBox Text="{Binding EditPhone}" Watermark="请输入 11 位手机号" />
+                        </StackPanel>
+
+                        <!-- 省 / 市 / 区 -->
+                        <StackPanel Grid.Row="1" Grid.Column="0" Spacing="6">
+                            <TextBlock Text="省 / 市 / 区" FontSize="12"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                            <StackPanel Spacing="8">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <ComboBox ItemsSource="{Binding Provinces}" SelectedItem="{Binding EditProvinceName}"
+                                              PlaceholderText="省" MinWidth="90" />
+                                    <ComboBox ItemsSource="{Binding Cities}" SelectedItem="{Binding EditCityName}"
+                                              PlaceholderText="市" MinWidth="90" />
+                                    <ComboBox ItemsSource="{Binding Districts}" SelectedItem="{Binding EditDistrictName}"
+                                              PlaceholderText="区" MinWidth="90" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <ComboBox ItemsSource="{Binding Streets}" SelectedItem="{Binding EditStreetName}"
+                                              PlaceholderText="街道/镇" MinWidth="120" />
+                                    <ComboBox ItemsSource="{Binding Communities}" SelectedItem="{Binding EditCommunityName}"
+                                              PlaceholderText="社区/村" MinWidth="120" />
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- 详细地址 -->
+                        <StackPanel Grid.Row="1" Grid.Column="1" Spacing="6">
+                            <TextBlock Text="详细地址" FontSize="12"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                <TextBox Text="{Binding EditAddress}" Watermark="街道、楼栋、门牌号" />
+                                <Button Grid.Column="1" Classes="QuietAction" Click="OnMapSelectClick"
+                                        Padding="12 8" CornerRadius="{DynamicResource GdRadiusMd}"
+                                        FontSize="12" Content="地图选点" />
                             </Grid>
+                        </StackPanel>
+                    </Grid>
 
-                            <CheckBox Grid.Row="4" Grid.Column="1" Content="设为默认地址" IsChecked="{Binding EditIsDefault}" Margin="0 4 0 0" />
-                        </Grid>
-                    </StackPanel>
-                </Border>
+                    <!-- 底部：设为默认 + 保存/取消 -->
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <CheckBox Grid.Column="0" Content="设为默认收货地址" IsChecked="{Binding EditIsDefault}"
+                                  FontSize="13" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                            <Button Classes="QuietAction" Click="OnCancelEditClick" Content="取消"
+                                    Padding="16 8" CornerRadius="{DynamicResource GdRadiusMd}"
+                                    FontSize="13" IsVisible="{Binding IsEditing}" />
+                            <Button Classes="PrimaryAction" Click="OnSaveEditClick"
+                                    Padding="16 8" CornerRadius="{DynamicResource GdRadiusMd}" FontSize="13">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="✓" FontSize="14" />
+                                    <TextBlock Text="保存地址" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
 
-                <!-- 地址列表 -->
-                <ItemsControl ItemsSource="{Binding Addresses}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Classes="GdCard" Padding="16" CornerRadius="{DynamicResource GdRadiusLg}" Margin="0 0 0 8">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <StackPanel Spacing="4">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <TextBlock Text="{Binding ShipTo}" FontSize="14" FontWeight="SemiBold" />
-                                            <TextBlock Text="{Binding Phone}" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
-                                            <Border Background="{DynamicResource GdErrorBrush}" CornerRadius="{DynamicResource GdRadiusSm}" Padding="6 2" IsVisible="{Binding IsDefault}">
-                                                <TextBlock Text="默认" FontSize="11" Foreground="White" />
-                                            </Border>
-                                        </StackPanel>
-                                        <TextBlock Text="{Binding FullAddress}" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                        <Button Content="编辑" Classes="GdGhost" Padding="12 6" CornerRadius="{DynamicResource GdRadiusSm}"
-                                                FontSize="12" Click="OnEditAddressClick" Tag="{Binding}" />
-                                        <Button Content="删除" Classes="GdGhost" Padding="12 6" CornerRadius="{DynamicResource GdRadiusSm}"
-                                                FontSize="12" Click="OnDeleteAddressClick" Tag="{Binding}" />
-                                        <Button Content="设为默认" Classes="GdGhost" Padding="12 6" CornerRadius="{DynamicResource GdRadiusSm}"
-                                                FontSize="12" Click="OnSetDefaultClick" Tag="{Binding}"
-                                                IsVisible="{Binding !IsDefault}" />
-                                    </StackPanel>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-
-                <!-- 空状态 -->
-                <Border Classes="GdCard" Padding="40" CornerRadius="{DynamicResource GdRadiusLg}"
-                        IsVisible="{Binding !HasAddresses}">
-                    <StackPanel HorizontalAlignment="Center" Spacing="8">
-                        <TextBlock Text="📍" FontSize="32" HorizontalAlignment="Center" />
-                        <TextBlock Text="暂无收货地址" FontSize="14" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center" />
-                        <TextBlock Text="点击上方新增地址按钮添加" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center" />
-                    </StackPanel>
-                </Border>
-            </StackPanel>
-        </ScrollViewer>
-    </Grid>
+            <!-- 底部提示文字 -->
+            <TextBlock Classes="GdSectionHeaderSub" Margin="2 0 0 0"
+                       Text="提示：默认地址将作为下单时的首选收货地址，最多可保留 20 条地址记录。" />
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>

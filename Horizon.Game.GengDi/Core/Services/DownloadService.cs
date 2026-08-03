@@ -240,6 +240,23 @@ namespace Horizon.Game.GengDi.Core.Services
             return Path.Combine(AppSettingsService.Instance.GetResolvedInstallDirectory(), "Packages");
         }
 
+        /// <summary>
+        /// 删除指定任务记录（仅适用于已完成 / 已取消 / 已失败的任务）。
+        /// 同时尝试清理残留的 .partial 文件。
+        /// </summary>
+        public async Task DeleteTaskAsync(string taskId)
+        {
+            var task = await ClientAsyncDispatcher.RunLiteDbAsync(() => _repository.GetById(taskId)).ConfigureAwait(false);
+            if (task == null) return;
+
+            await ClientAsyncDispatcher.RunBackgroundAsync(() =>
+            {
+                TryDeleteFile(task.SavePath + ".partial");
+            }).ConfigureAwait(false);
+
+            await ClientAsyncDispatcher.RunLiteDbAsync(() => _repository.Delete(taskId)).ConfigureAwait(false);
+        }
+
         public string BuildDefaultPackageSavePath(string gameName)
         {
             var normalizedName = NormalizeFileName(string.IsNullOrWhiteSpace(gameName) ? "download-package" : gameName);

@@ -40,6 +40,10 @@ namespace ManagedHundunWorld.Network.Handlers
                 {
                     var rttMs = (float)((Stopwatch.GetTimestamp() - sentTimestamp) * 1000.0 / Stopwatch.Frequency);
                     ClientSyncMetrics.RecordRtt(rttMs);
+                    // [A2] 将 RTT 样本输入插值系统的自适应延迟：
+                    // RTT 抬升（弱网）时自动加大插值窗口防快照缓冲抽干，
+                    // 消除"周期性卡顿/瞬移"；RTT 低时窗口维持紧凑，降低延迟感。
+                    Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem.RecordRttSample(rttMs);
 #if DEBUG
                     FlaxEngine.Debug.Log($"心跳响应 - RTT: {rttMs:F1}ms (服务端报告延迟: {response.Latency}ms)");
 #endif

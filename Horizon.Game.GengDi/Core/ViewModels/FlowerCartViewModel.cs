@@ -33,6 +33,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private bool _isPaymentProcessing;
         private string _paymentResultMessage;
         private long? _pendingOrderId;
+        private bool _isAllSelected = true;
 
         public ObservableCollection<CartItem> Items { get => _items; set => SetProperty(ref _items, value); }
         public bool IsLoading { get => _isLoading; set => SetProperty(ref _isLoading, value); }
@@ -56,6 +57,22 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public bool IsPaymentProcessing { get => _isPaymentProcessing; set => SetProperty(ref _isPaymentProcessing, value); }
         public string PaymentResultMessage { get => _paymentResultMessage; set => SetProperty(ref _paymentResultMessage, value); }
         public long? PendingOrderId { get => _pendingOrderId; set => SetProperty(ref _pendingOrderId, value); }
+
+        /// <summary>全选状态</summary>
+        public bool IsAllSelected
+        {
+            get => _isAllSelected;
+            set
+            {
+                if (SetProperty(ref _isAllSelected, value))
+                {
+                    foreach (var item in _items) item.IsSelected = value;
+                }
+            }
+        }
+
+        /// <summary>合计金额别名，等价于 ProductTotalAmount</summary>
+        public decimal TotalAmount => ProductTotalAmount;
         public string FreightDisplay => FreightAmount > 0 ? $"¥{FreightAmount:F2}" : "免运费";
         public string DiscountDisplay => DiscountAmount > 0 ? $"-¥{DiscountAmount:F2}" : "¥0.00";
         public string FullDiscountDisplay => FullDiscountAmount > 0 ? $"-¥{FullDiscountAmount:F2}" : "¥0.00";
@@ -74,6 +91,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public ICommand HideSettlementCommand { get; }
         public ICommand ConfirmPaymentCommand { get; }
         public ICommand CancelPaymentCommand { get; }
+        public ICommand SelectAllCommand { get; }
 
         public FlowerCartViewModel() : this(Guid.Empty) { }
 
@@ -93,6 +111,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             HideSettlementCommand = new AsyncCommand(() => { ShowSettlement = false; return Task.CompletedTask; });
             ConfirmPaymentCommand = new AsyncCommand(ConfirmPaymentAsync);
             CancelPaymentCommand = new RelayCommand(CancelPayment);
+            SelectAllCommand = new RelayCommand(() => IsAllSelected = !IsAllSelected);
             _ = LoadCartAsync();
         }
 
@@ -104,7 +123,14 @@ namespace Horizon.Game.GengDi.Core.ViewModels
 
         private async Task LoadCartAsync()
         {
-            if (_userId == Guid.Empty) return;
+            if (_userId == Guid.Empty)
+            {
+                // 设计期/演示用模拟数据（参考原型：红玫瑰 / 百合 / 混合花束）
+                Items = new ObservableCollection<CartItem>(GetMockCartItems());
+                NotifyTotalsChanged();
+                await Task.CompletedTask;
+                return;
+            }
             IsLoading = true;
             try
             {
@@ -116,6 +142,58 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             }
             catch { }
             finally { IsLoading = false; }
+        }
+
+        /// <summary>
+        /// 返回原型中的 3 个模拟购物车项（红玫瑰 / 百合 / 混合花束）。
+        /// </summary>
+        private static List<CartItem> GetMockCartItems()
+        {
+            return new List<CartItem>
+            {
+                new CartItem
+                {
+                    CartItemId = 1,
+                    ProductId = 1001,
+                    ProductName = "高原红玫瑰（20支/束）",
+                    Price = 58.00m,
+                    Quantity = 2,
+                    MerchantName = "云端花田直供",
+                    MerchantId = 1,
+                    Stock = 1280,
+                    IconEmoji = "🌹",
+                    Spec = "20支/束",
+                    IsSelected = true
+                },
+                new CartItem
+                {
+                    CartItemId = 2,
+                    ProductId = 1002,
+                    ProductName = "雪山白百合（10支/束）",
+                    Price = 42.50m,
+                    Quantity = 1,
+                    MerchantName = "春田花卉农场",
+                    MerchantId = 2,
+                    Stock = 860,
+                    IconEmoji = "🌸",
+                    Spec = "10支/束",
+                    IsSelected = true
+                },
+                new CartItem
+                {
+                    CartItemId = 3,
+                    ProductId = 1003,
+                    ProductName = "晨曦混合花束（含康乃馨）",
+                    Price = 88.00m,
+                    Quantity = 3,
+                    MerchantName = "花语工坊",
+                    MerchantId = 3,
+                    Stock = 320,
+                    IconEmoji = "🌻",
+                    Spec = "含康乃馨",
+                    IsSelected = true
+                }
+            };
         }
 
         private async Task RemoveItemAsync(long productId)
@@ -347,10 +425,12 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private void NotifyTotalsChanged()
         {
             OnPropertyChanged(nameof(ProductTotalAmount));
+            OnPropertyChanged(nameof(TotalAmount));
             OnPropertyChanged(nameof(TotalCount));
             OnPropertyChanged(nameof(IsEmpty));
             OnPropertyChanged(nameof(CanCheckout));
             OnPropertyChanged(nameof(ProductTotalDisplay));
+            OnPropertyChanged(nameof(IsAllSelected));
         }
 
         private async Task ConfirmPaymentAsync()

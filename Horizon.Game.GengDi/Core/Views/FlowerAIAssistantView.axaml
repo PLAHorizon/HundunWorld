@@ -1,122 +1,324 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
              xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
              x:Class="Horizon.Game.GengDi.Core.Views.FlowerAIAssistantView"
-             x:DataType="vm:FlowerAIAssistantViewModel">
+             x:DataType="vm:FlowerAIAssistantViewModel"
+             Background="{DynamicResource GdBackgroundBrush}"
+             Foreground="{DynamicResource GdForegroundBrush}">
 
-    <controls:GalleryPage Title="AI 花卉助手"
-                          Subtitle="Horizon.Game.GengDi.FlowerAI"
-                          Description="智能行情分析、种植建议与市场洞察。"
-                          IconSource="{StaticResource NotificationsIcon}">
+    <!--
+        FlowerAIAssistantView.axaml
+        100% 还原设计原型 flower-manage.html 第 778-888 行 "AI助手" section。
+        - Section Header：AI 助手 / 智能行情分析 · 种植建议 · 市场洞察 / FlowerAIAssistantView.axaml
+        - 左侧 240px 快捷问题面板（行情咨询 / 种植建议 / 订单帮助 / 账户问题 分组 chip）
+        - 右侧 AI 对话区：顶部 AI 标识 + 中间消息列表（AI 气泡 / 用户气泡 / 行情数据卡片）+ 底部输入框
+        - 保留全部已有数据绑定与 code-behind 事件处理（OnInputKeyDown / OnSuggestionTapped）
+    -->
 
-        <Grid RowDefinitions="*,Auto"
-              RowSpacing="0">
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled"
+                  Padding="0">
+        <StackPanel Spacing="16" Margin="20 16 20 24"
+                    MaxWidth="1200" HorizontalAlignment="Stretch">
 
-            <!-- 对话消息列表 -->
-            <ScrollViewer Grid.Row="0"
-                          VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled"
-                          x:Name="MessageScrollViewer">
-                <StackPanel Spacing="12" Margin="20 16">
-                    <ItemsControl ItemsSource="{Binding Messages}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Margin="0 0 0 8">
-                                    <Border HorizontalAlignment="Right"
-                                            MaxWidth="480"
-                                            IsVisible="{Binding IsUser}"
-                                            CornerRadius="{DynamicResource GdRadiusLg}"
-                                            Padding="14 10"
-                                            Background="{DynamicResource GdBrand400Brush}">
-                                        <StackPanel Spacing="4">
-                                            <TextBlock Text="{Binding Role}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                                            <TextBlock Text="{Binding Content}" TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource GdForegroundBrush}" />
-                                            <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Right" />
+            <!-- ============ Section Header ============ -->
+            <StackPanel Classes="GdSectionHeader">
+                <TextBlock Classes="GdSectionHeaderTitle" Text="AI 助手" />
+                <TextBlock Classes="GdSectionHeaderSub" Text="智能行情分析 · 种植建议 · 市场洞察" />
+                <TextBlock Classes="GdSectionHeaderFile" Text="FlowerAIAssistantView.axaml" />
+            </StackPanel>
+
+            <!-- ============ 主区：左快捷问题 + 右AI对话 ============ -->
+            <Grid ColumnDefinitions="240,*" ColumnSpacing="16" Height="560">
+
+                <!-- ===== 左侧快捷问题面板 ===== -->
+                <Border Grid.Column="0" Classes="GdStatCard" Padding="14">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Spacing="12">
+                            <TextBlock Text="快捷问题" FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource GdForegroundBrush}" />
+
+                            <ItemsControl ItemsSource="{Binding QuickActionGroups}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Spacing="6" Margin="0 0 0 6">
+                                            <!-- 分组标题 -->
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <TextBlock Text="{Binding IconEmoji}" FontSize="11"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding GroupTitle}" FontSize="11"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                           VerticalAlignment="Center" />
+                                            </StackPanel>
+                                            <!-- 分组下的快捷问题 chip -->
+                                            <ItemsControl ItemsSource="{Binding Items}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Classes="GdChip" Margin="0 0 0 4"
+                                                                Cursor="Hand"
+                                                                Tapped="OnSuggestionTapped">
+                                                            <TextBlock Text="{Binding Text}" />
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
                                         </StackPanel>
-                                    </Border>
-                                    <Border HorizontalAlignment="Left"
-                                            MaxWidth="480"
-                                            IsVisible="{Binding !IsUser}"
-                                            CornerRadius="{DynamicResource GdRadiusLg}"
-                                            Padding="14 10"
-                                            Background="{DynamicResource GdCardBrush}">
-                                        <StackPanel Spacing="4">
-                                            <TextBlock Text="{Binding Role}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                                            <TextBlock Text="{Binding Content}" TextWrapping="Wrap" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                                            <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Right" />
-                                        </StackPanel>
-                                    </Border>
-                                </Grid>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <!-- 加载指示器 -->
-                    <Border IsVisible="{Binding IsGenerating}"
-                            Padding="14 10"
-                            CornerRadius="{DynamicResource GdRadiusLg}"
-                            Background="{DynamicResource GdCardBrush}"
-                            MaxWidth="200">
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <ProgressBar IsIndeterminate="True" Width="40" Height="4" />
-                            <TextBlock Text="思考中..." FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
-                    </Border>
+                    </ScrollViewer>
+                </Border>
 
-                    <!-- 空状态 -->
-                    <Border IsVisible="{Binding IsEmpty}"
-                            Padding="40 60">
-                        <StackPanel HorizontalAlignment="Center" Spacing="16">
-                            <TextBlock Text="🌸" FontSize="48" HorizontalAlignment="Center" />
-                            <TextBlock Text="向AI助手提问花卉行情、种植建议"
-                                       FontSize="15"
-                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
-                                       HorizontalAlignment="Center" />
-                            <StackPanel Spacing="8" HorizontalAlignment="Center">
-                                <Border Background="{DynamicResource GdInfoSurfaceBrush}" CornerRadius="{DynamicResource GdRadiusMd}" Padding="12 8" Cursor="Hand"
-                                        Tapped="OnSuggestionTapped">
-                                    <TextBlock Text="今天红玫瑰均价多少？" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                <!-- ===== 右侧 AI 对话区 ===== -->
+                <Border Grid.Column="1" Classes="GdStatCard" Padding="0">
+                    <Grid RowDefinitions="Auto,*,Auto">
+
+                        <!-- ===== 顶部 AI 标识区 ===== -->
+                        <Border Grid.Row="0" Padding="14 12"
+                                BorderBrush="{DynamicResource GdBorderBrush}"
+                                BorderThickness="0 0 0 1"
+                                Background="{DynamicResource GdCardBrush}">
+                            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                <!-- AI 头像 -->
+                                <Border Width="36" Height="36"
+                                        CornerRadius="{DynamicResource GdRadiusFull}"
+                                        Background="{DynamicResource GdPrimaryBrush}">
+                                    <TextBlock Text="🧠" FontSize="18"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" />
                                 </Border>
-                                <Border Background="{DynamicResource GdInfoSurfaceBrush}" CornerRadius="{DynamicResource GdRadiusMd}" Padding="12 8" Cursor="Hand"
-                                        Tapped="OnSuggestionTapped">
-                                    <TextBlock Text="推荐适合春季种植的花卉品种" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                                </Border>
-                                <Border Background="{DynamicResource GdInfoSurfaceBrush}" CornerRadius="{DynamicResource GdRadiusMd}" Padding="12 8" Cursor="Hand"
-                                        Tapped="OnSuggestionTapped">
-                                    <TextBlock Text="下周花卉价格走势预测" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                                </Border>
+                                <StackPanel Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock Text="花卉AI助手" FontSize="14" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                        <Ellipse Width="6" Height="6"
+                                                 Fill="{DynamicResource GdSuccessBrush}" />
+                                        <TextBlock Text="在线 · 随时为您服务" FontSize="11"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                    </StackPanel>
+                                </StackPanel>
                             </StackPanel>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
+                        </Border>
 
-            <!-- 输入区域 -->
-            <Border Grid.Row="1"
-                    Classes="GdCard"
-                    Padding="16 12"
-                    BorderBrush="{DynamicResource GdBorderBrush}"
-                    BorderThickness="0 1 0 0">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                    <TextBox Text="{Binding InputText}"
-                             Watermark="输入您的问题..."
-                             Padding="12 10"
-                             CornerRadius="{DynamicResource GdRadiusMd}"
-                             Background="{DynamicResource GdCardBrush}"
-                             BorderThickness="0"
-                             Foreground="{DynamicResource GdForegroundBrush}"
-                             IsEnabled="{Binding !IsGenerating}"
-                             KeyDown="OnInputKeyDown" />
-                    <Button Grid.Column="1"
-                            Content="发送"
-                            Classes="GdPrimary"
-                            Padding="20 10"
-                            CornerRadius="{DynamicResource GdRadiusMd}"
-                            Command="{Binding SendMessageCommand}"
-                            IsEnabled="{Binding CanSend}" />
-                </Grid>
-            </Border>
-        </Grid>
-    </controls:GalleryPage>
+                        <!-- ===== 中间聊天消息列表 ===== -->
+                        <ScrollViewer Grid.Row="1"
+                                      x:Name="MessageScrollViewer"
+                                      VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel Spacing="16" Margin="20">
+
+                                <ItemsControl ItemsSource="{Binding Messages}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0 0 0 0">
+
+                                                <!-- ===== AI 消息气泡 ===== -->
+                                                <StackPanel IsVisible="{Binding !IsUser}"
+                                                            Orientation="Horizontal"
+                                                            Spacing="10"
+                                                            HorizontalAlignment="Left"
+                                                            VerticalAlignment="Top">
+                                                    <!-- AI 头像 -->
+                                                    <Border Width="32" Height="32"
+                                                            CornerRadius="{DynamicResource GdRadiusFull}"
+                                                            Background="{DynamicResource GdPrimaryBrush}">
+                                                        <TextBlock Text="{Binding AvatarEmoji}" FontSize="16"
+                                                                   HorizontalAlignment="Center"
+                                                                   VerticalAlignment="Center" />
+                                                    </Border>
+                                                    <!-- AI 气泡 -->
+                                                    <Border MaxWidth="560"
+                                                            CornerRadius="{DynamicResource GdRadiusMd}"
+                                                            Background="{DynamicResource GdMutedBrush}"
+                                                            Padding="12 10">
+                                                        <StackPanel Spacing="6">
+                                                            <!-- 头部：名称 · 时间 -->
+                                                            <TextBlock FontSize="10"
+                                                                       Foreground="{DynamicResource GdMutedForegroundBrush}">
+                                                                <Run Text="{Binding Role}" /><Run Text=" · " /><Run Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" />
+                                                            </TextBlock>
+                                                            <!-- 内容 -->
+                                                            <TextBlock Text="{Binding Content}" TextWrapping="Wrap"
+                                                                       FontSize="13"
+                                                                       Foreground="{DynamicResource GdForegroundBrush}" />
+
+                                                            <!-- 行情数据卡片 -->
+                                                            <Border IsVisible="{Binding HasMarketData}"
+                                                                    Background="{DynamicResource GdCardBrush}"
+                                                                    BorderBrush="{DynamicResource GdBorderBrush}"
+                                                                    BorderThickness="1"
+                                                                    CornerRadius="{DynamicResource GdRadiusMd}"
+                                                                    Margin="0 4 0 2">
+                                                                <StackPanel>
+                                                                    <!-- 卡片标题栏 -->
+                                                                    <Border Padding="8 12"
+                                                                            Background="{DynamicResource GdMutedBrush}">
+                                                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                                                            <TextBlock Text="📊" FontSize="12" />
+                                                                            <TextBlock Text="{Binding MarketDataHeader}" FontSize="11"
+                                                                                       FontWeight="SemiBold"
+                                                                                       Foreground="{DynamicResource GdForegroundBrush}" />
+                                                                        </StackPanel>
+                                                                    </Border>
+                                                                    <!-- 表头 -->
+                                                                    <Grid ColumnDefinitions="1.4*,1*,1*,1*"
+                                                                          Margin="10 6 10 4">
+                                                                        <TextBlock Grid.Column="0" Text="品种" FontSize="11"
+                                                                                   Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                                                        <TextBlock Grid.Column="1" Text="均价" FontSize="11"
+                                                                                   Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                                                        <TextBlock Grid.Column="2" Text="涨跌" FontSize="11"
+                                                                                   Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                                                        <TextBlock Grid.Column="3" Text="建议" FontSize="11"
+                                                                                   Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                                                    </Grid>
+                                                                    <!-- 数据行 -->
+                                                                    <ItemsControl ItemsSource="{Binding MarketDataItems}">
+                                                                        <ItemsControl.ItemTemplate>
+                                                                            <DataTemplate>
+                                                                                <Border BorderBrush="{DynamicResource GdBorderBrush}"
+                                                                                        BorderThickness="0 1 0 0">
+                                                                                    <Grid ColumnDefinitions="1.4*,1*,1*,1*"
+                                                                                          Margin="10 4">
+                                                                                    <TextBlock Grid.Column="0" Text="{Binding Variety}" FontSize="12"
+                                                                                               Foreground="{DynamicResource GdForegroundBrush}"
+                                                                                               VerticalAlignment="Center" />
+                                                                                    <TextBlock Grid.Column="1" Text="{Binding Price}" FontSize="12"
+                                                                                               FontFamily="{DynamicResource GdFontMono}"
+                                                                                               Foreground="{DynamicResource GdForegroundBrush}"
+                                                                                               VerticalAlignment="Center" />
+                                                                                    <!-- 涨跌：涨绿跌红（双 TextBlock 切换） -->
+                                                                                    <TextBlock Grid.Column="2" Text="{Binding Change}" FontSize="12"
+                                                                                               FontFamily="{DynamicResource GdFontMono}"
+                                                                                               Foreground="{DynamicResource GdSuccessBrush}"
+                                                                                               IsVisible="{Binding IsUp}"
+                                                                                               VerticalAlignment="Center" />
+                                                                                    <TextBlock Grid.Column="2" Text="{Binding Change}" FontSize="12"
+                                                                                               FontFamily="{DynamicResource GdFontMono}"
+                                                                                               Foreground="{DynamicResource GdErrorBrush}"
+                                                                                               IsVisible="{Binding !IsUp}"
+                                                                                               VerticalAlignment="Center" />
+                                                                                    <!-- 建议：涨绿跌黄 -->
+                                                                                    <TextBlock Grid.Column="3" Text="{Binding Suggestion}" FontSize="12"
+                                                                                               Foreground="{DynamicResource GdSuccessBrush}"
+                                                                                               IsVisible="{Binding IsUp}"
+                                                                                               VerticalAlignment="Center" />
+                                                                                    <TextBlock Grid.Column="3" Text="{Binding Suggestion}" FontSize="12"
+                                                                                               Foreground="{DynamicResource GdWarningBrush}"
+                                                                                               IsVisible="{Binding !IsUp}"
+                                                                                               VerticalAlignment="Center" />
+                                                                                    </Grid>
+                                                                                </Border>
+                                                                            </DataTemplate>
+                                                                        </ItemsControl.ItemTemplate>
+                                                                    </ItemsControl>
+                                                                </StackPanel>
+                                                            </Border>
+
+                                                            <!-- 数据卡片总结 -->
+                                                            <TextBlock IsVisible="{Binding HasMarketData}"
+                                                                       Text="{Binding MarketSummary}" TextWrapping="Wrap"
+                                                                       FontSize="12"
+                                                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                                        </StackPanel>
+                                                    </Border>
+                                                </StackPanel>
+
+                                                <!-- ===== 用户消息气泡 ===== -->
+                                                <Border IsVisible="{Binding IsUser}"
+                                                        HorizontalAlignment="Right"
+                                                        MaxWidth="480"
+                                                        CornerRadius="{DynamicResource GdRadiusMd}"
+                                                        Background="{DynamicResource GdPrimaryBrush}"
+                                                        Padding="12 10">
+                                                    <StackPanel Spacing="4">
+                                                        <TextBlock FontSize="10"
+                                                                   Foreground="{DynamicResource GdPrimaryForegroundBrush}"
+                                                                   Opacity="0.85">
+                                                            <Run Text="{Binding Role}" /><Run Text=" · " /><Run Text="{Binding Timestamp, StringFormat='{}{0:HH:mm}'}" />
+                                                        </TextBlock>
+                                                        <TextBlock Text="{Binding Content}" TextWrapping="Wrap"
+                                                                   FontSize="13"
+                                                                   Foreground="{DynamicResource GdPrimaryForegroundBrush}" />
+                                                    </StackPanel>
+                                                </Border>
+
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!-- 加载指示器 -->
+                                <Border IsVisible="{Binding IsGenerating}"
+                                        HorizontalAlignment="Left"
+                                        MaxWidth="220"
+                                        CornerRadius="{DynamicResource GdRadiusMd}"
+                                        Background="{DynamicResource GdMutedBrush}"
+                                        Padding="12 10">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <ProgressBar IsIndeterminate="True" Width="40" Height="4" />
+                                        <TextBlock Text="思考中..." FontSize="12"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- 空状态 -->
+                                <Border IsVisible="{Binding IsEmpty}"
+                                        Padding="40 60">
+                                    <StackPanel HorizontalAlignment="Center" Spacing="16">
+                                        <TextBlock Text="🌸" FontSize="48" HorizontalAlignment="Center" />
+                                        <TextBlock Text="向AI助手提问花卉行情、种植建议"
+                                                   FontSize="15"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                   HorizontalAlignment="Center" />
+                                    </StackPanel>
+                                </Border>
+
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <!-- ===== 底部输入区 ===== -->
+                        <Border Grid.Row="2"
+                                Padding="12 16"
+                                BorderBrush="{DynamicResource GdBorderBrush}"
+                                BorderThickness="0 1 0 0"
+                                Background="{DynamicResource GdCardBrush}">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                                <!-- 附件按钮 -->
+                                <Button Grid.Column="0" Classes="GdGhost"
+                                        Padding="10 8"
+                                        CornerRadius="{DynamicResource GdRadiusMd}"
+                                        FontSize="15"
+                                        Content="📎" />
+                                <!-- 输入框 -->
+                                <TextBox Grid.Column="1"
+                                         Text="{Binding InputText}"
+                                         Watermark="输入您的问题..."
+                                         Padding="12 10"
+                                         CornerRadius="{DynamicResource GdRadiusMd}"
+                                         Background="{DynamicResource GdMutedBrush}"
+                                         BorderThickness="0"
+                                         Foreground="{DynamicResource GdForegroundBrush}"
+                                         IsEnabled="{Binding !IsGenerating}"
+                                         KeyDown="OnInputKeyDown" />
+                                <!-- 发送按钮 -->
+                                <Button Grid.Column="2"
+                                        Classes="GdPrimary"
+                                        Padding="20 10"
+                                        CornerRadius="{DynamicResource GdRadiusMd}"
+                                        Command="{Binding SendMessageCommand}"
+                                        IsEnabled="{Binding CanSend}"
+                                        Content="发送" />
+                            </Grid>
+                        </Border>
+
+                    </Grid>
+                </Border>
+
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>

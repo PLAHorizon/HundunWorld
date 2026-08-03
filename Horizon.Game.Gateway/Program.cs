@@ -198,6 +198,7 @@ namespace Horizon.Game.Gateway
                     services.Configure<NetworkOptions>(context.Configuration.GetSection("Network"));
                     services.Configure<OrleansOptions>(context.Configuration.GetSection("Orleans"));
                     services.Configure<OrleansClusteringDbOptions>(context.Configuration.GetSection("ClusteringSiloOptions"));
+                    services.Configure<SyncReconciliationOptions>(context.Configuration.GetSection("SyncReconciliation"));
 
                     // 注册安全和认证服务
                     services.AddSingleton<AuthenticationValidator>();
@@ -258,9 +259,10 @@ namespace Horizon.Game.Gateway
                     {
                         var gatewayOpts = provider.GetRequiredService<IOptionsMonitor<Configuration.GatewayOptions>>();
                         var fpLogger = provider.GetRequiredService<ILogger<Services.CharacterFingerprintService>>();
+                        var connMgr = provider.GetRequiredService<IConnectionManager>();
                         var connectionString = gatewayOpts.CurrentValue.RedisConnectionString ?? "localhost:6379";
                         var gatewayId = gatewayOpts.CurrentValue.GatewayId ?? "Unknown";
-                        return new Services.CharacterFingerprintService(connectionString, fpLogger, gatewayId);
+                        return new Services.CharacterFingerprintService(connectionString, fpLogger, gatewayId, connMgr);
                     });
 
                     services.AddAllMessageHandlers(

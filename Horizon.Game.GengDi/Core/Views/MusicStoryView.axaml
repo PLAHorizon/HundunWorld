@@ -4,63 +4,422 @@
              xmlns:models="using:Horizon.Game.GengDi.Models"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
+             xmlns:views="using:Horizon.Game.GengDi.Core.Views"
              x:Class="Horizon.Game.GengDi.Core.Views.MusicStoryView"
              x:DataType="vm:MusicStoryListViewModel">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel Spacing="20" Margin="24">
 
-            <controls:GalleryPage Title="音乐背后故事"
-                                  Subtitle="探索音乐背后的故事"
+            <controls:GalleryPage Title="热门音乐故事"
+                                  Subtitle="探索最受欢迎的音乐故事"
                                   Description="了解你喜爱的音乐背后的创作故事、歌手经历和专辑历史。"
-                                  IconSource="{StaticResource MusicInfoIcon}">
+                                  IconSource="{StaticResource MusicInfoIcon}"
+                                  IsPageScrollingEnabled="False">
 
                 <StackPanel Spacing="20">
 
-                    <Border Classes="GdCard" Padding="24">
-                        <StackPanel Spacing="16">
-                            <TextBlock Text="热门音乐故事" FontSize="20" FontWeight="SemiBold" />
-                            <TextBlock Text="探索最受欢迎的音乐故事" FontSize="13"
-                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
-
-                            <ItemsControl ItemsSource="{Binding StorySongs}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="models:Song">
-                                        <Border Padding="16 12" CornerRadius="{DynamicResource GdRadiusMd}" Margin="0 0 0 8" Cursor="Hand"
-                                                Background="{DynamicResource GdCardBrush}"
-                                                Tapped="SongStory_Tapped">
-                                            <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
-                                                <Border Width="48" Height="48" CornerRadius="{DynamicResource GdRadiusMd}">
-                                                    <Border.Background>
-                                                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                                                            <GradientStop Color="{DynamicResource GdBrand600}" Offset="0" />
-                                                            <GradientStop Color="{DynamicResource GdBrand900}" Offset="1" />
-                                                        </LinearGradientBrush>
-                                                    </Border.Background>
-                                                    <TextBlock Text="♪" FontSize="20"
-                                                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                               Foreground="#FFFFFFFF" />
-                                                </Border>
-                                                <StackPanel Grid.Column="1" Margin="16 0 0 0" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="Medium" TextTrimming="CharacterEllipsis" />
-                                                    <TextBlock FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" TextTrimming="CharacterEllipsis">
-                                                        <Run Text="{Binding DisplayArtist}" />
-                                                        <Run Text=" · " />
-                                                        <Run Text="{Binding DisplayAlbum}" />
-                                                    </TextBlock>
-                                                </StackPanel>
-                                                <ui:SymbolIcon Grid.Column="2" Symbol="Document" FontSize="16"
-                                                               Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                                            </Grid>
+                    <!-- ============================================================ -->
+                    <!-- 1. 故事列表网格（卡片网格，WrapPanel 4列）                    -->
+                    <!-- ============================================================ -->
+                    <ItemsControl ItemsSource="{Binding StorySongs}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" ItemWidth="220" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:Song">
+                                <!-- 故事卡片：封面区 + 信息区 -->
+                                <Border Margin="0 0 12 12"
+                                        Background="{DynamicResource GdCardBrush}"
+                                        BorderBrush="{DynamicResource GdBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="{DynamicResource GdRadiusLg}"
+                                        ClipToBounds="True"
+                                        Cursor="Hand"
+                                        HorizontalAlignment="Stretch"
+                                        Tapped="StoryCard_Tapped">
+                                    <StackPanel>
+                                        <!-- 封面区：渐变背景 + 居中♪ 48px -->
+                                        <Border Height="120">
+                                            <Border.Background>
+                                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                    <GradientStop Color="{DynamicResource GdBrand500}" Offset="0" />
+                                                    <GradientStop Color="{DynamicResource GdBrand800}" Offset="1" />
+                                                </LinearGradientBrush>
+                                            </Border.Background>
+                                            <TextBlock Text="♪" FontSize="48"
+                                                       Foreground="#CCFFFFFF"
+                                                       HorizontalAlignment="Center"
+                                                       VerticalAlignment="Center" />
                                         </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                                        <!-- 信息区 -->
+                                        <StackPanel Margin="14 16" Spacing="6">
+                                            <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis" MaxLines="1"
+                                                       Foreground="{DynamicResource GdForegroundBrush}" />
+                                            <!-- 关联歌曲行 -->
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <ui:SymbolIcon Symbol="Audio" FontSize="12"
+                                                               Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                               VerticalAlignment="Center" />
+                                                <TextBlock FontSize="12" TextTrimming="CharacterEllipsis" MaxLines="1"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                           VerticalAlignment="Center">
+                                                    <Run Text="关联《" /><Run Text="{Binding Title}" /><Run Text="》· " /><Run Text="{Binding DisplayArtist}" />
+                                                </TextBlock>
+                                            </StackPanel>
+                                            <!-- 日期行 -->
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <ui:SymbolIcon Symbol="Clock" FontSize="12"
+                                                               Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                               VerticalAlignment="Center" />
+                                                <TextBlock FontSize="12"
+                                                           Text="{Binding AddedDate, StringFormat=\{0:yyyy-MM-dd\}}"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                           VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
-                            <TextBlock Text="暂无更多音乐故事" FontSize="14"
-                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
-                                       HorizontalAlignment="Center" Margin="0 40"
-                                       IsVisible="{Binding HasNoStories}" />
+                    <!-- 空状态 -->
+                    <TextBlock Text="暂无更多音乐故事" FontSize="14"
+                               Foreground="{DynamicResource GdMutedForegroundBrush}"
+                               HorizontalAlignment="Center" Margin="0 40"
+                               IsVisible="{Binding HasNoStories}" />
+
+                    <!-- ============================================================ -->
+                    <!-- 2. 故事详情（选中故事后显示在列表下方）                        -->
+                    <!-- ============================================================ -->
+                    <Border IsVisible="{Binding IsDetailOpen}"
+                            Background="{DynamicResource GdCardBrush}"
+                            BorderBrush="{DynamicResource GdBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{DynamicResource GdRadiusLg}"
+                            ClipToBounds="True"
+                            HorizontalAlignment="Stretch">
+
+                        <StackPanel>
+                            <!-- 详情加载中 -->
+                            <StackPanel IsVisible="{Binding IsDetailLoading}"
+                                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                                        Spacing="12" Margin="0 60">
+                                <ProgressBar IsIndeterminate="True" Width="200" />
+                                <TextBlock Text="正在加载音乐故事..." FontSize="13"
+                                           HorizontalAlignment="Center"
+                                           Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                            </StackPanel>
+
+                            <!-- 详情内容 -->
+                            <StackPanel IsVisible="{Binding !IsDetailLoading}">
+
+                                <!-- a. 头部大图：渐变背景 + ♪ 64px + 底部叠加标题/副标题 + 右上角关闭按钮 -->
+                                <Grid Height="200">
+                                    <!-- 渐变背景 + 居中♪ -->
+                                    <Border>
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                <GradientStop Color="{DynamicResource GdBrand600}" Offset="0" />
+                                                <GradientStop Color="{DynamicResource GdBrand900}" Offset="1" />
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                        <TextBlock Text="♪" FontSize="64"
+                                                   Foreground="#99FFFFFF"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center" />
+                                    </Border>
+                                    <!-- 关闭按钮（叠加在头部右上角） -->
+                                    <Button Padding="8"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Top"
+                                            Margin="0 12 12 0"
+                                            CornerRadius="{DynamicResource GdRadiusSm}"
+                                            Background="#66000000"
+                                            BorderThickness="0"
+                                            Command="{Binding CloseDetailCommand}"
+                                            ToolTip.Tip="关闭详情"
+                                            ZIndex="10"
+                                            Cursor="Hand">
+                                        <ui:SymbolIcon Symbol="Cancel" FontSize="16" Foreground="{DynamicResource GdPrimaryForegroundBrush}" />
+                                    </Button>
+                                    <!-- 底部渐变遮罩 + 标题/副标题 -->
+                                    <Border VerticalAlignment="Bottom" Padding="24 16">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0%,100%" EndPoint="0%,0%">
+                                                <GradientStop Color="#CC000000" Offset="0" />
+                                                <GradientStop Color="#66000000" Offset="0.6" />
+                                                <GradientStop Color="Transparent" Offset="1" />
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                        <StackPanel Spacing="6" MaxWidth="820">
+                                            <TextBlock Text="{Binding DetailTitle}" FontSize="26" FontWeight="Bold"
+                                                       Foreground="{DynamicResource GdPrimaryForegroundBrush}" TextWrapping="Wrap"
+                                                       TextTrimming="CharacterEllipsis" MaxLines="2" />
+                                            <TextBlock Text="{Binding DetailSummary}" FontSize="13"
+                                                       Foreground="#CCFFFFFF" TextWrapping="Wrap"
+                                                       TextTrimming="CharacterEllipsis" MaxLines="2" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <!-- b. 发布信息行：作者 / 日期 / 阅读 / 关联歌曲 -->
+                                <WrapPanel Orientation="Horizontal" Margin="24 16">
+                                    <!-- 作者 -->
+                                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0 0 20 8" VerticalAlignment="Center">
+                                        <ui:SymbolIcon Symbol="Contact" FontSize="14"
+                                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                       VerticalAlignment="Center" />
+                                        <TextBlock FontSize="13" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}">
+                                            <Run Text="作者：" /><Run Text="{Binding DetailAuthor}" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <!-- 日期 -->
+                                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0 0 20 8" VerticalAlignment="Center">
+                                        <ui:SymbolIcon Symbol="Clock" FontSize="14"
+                                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                       VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding DetailDate}" FontSize="13" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                    </StackPanel>
+                                    <!-- 阅读量 -->
+                                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0 0 20 8" VerticalAlignment="Center">
+                                        <ui:SymbolIcon Symbol="View" FontSize="14"
+                                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                       VerticalAlignment="Center" />
+                                        <TextBlock FontSize="13" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}">
+                                            <Run Text="{Binding DetailReadCount}" /><Run Text=" 阅读" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <!-- 关联歌曲 -->
+                                    <StackPanel Orientation="Horizontal" Spacing="6" Margin="0 0 0 8" VerticalAlignment="Center">
+                                        <ui:SymbolIcon Symbol="Audio" FontSize="14"
+                                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                       VerticalAlignment="Center" />
+                                        <TextBlock FontSize="13" VerticalAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis" MaxWidth="320"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}">
+                                            <Run Text="关联《" /><Run Text="{Binding DetailTitle}" /><Run Text="》· " /><Run Text="{Binding DetailArtist}" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                </WrapPanel>
+
+                                <!-- 无故事空状态 -->
+                                <StackPanel IsVisible="{Binding !HasDetailStory}" Margin="24 24" Spacing="12">
+                                    <TextBlock Text="📖" FontSize="40" HorizontalAlignment="Center" />
+                                    <TextBlock Text="暂无音乐故事" FontSize="16"
+                                               HorizontalAlignment="Center"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                    <TextBlock Text="这首歌曲的故事还在整理中，敬请期待。"
+                                               FontSize="13" HorizontalAlignment="Center"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <!-- c. 正文时间线叙事 -->
+                                <StackPanel IsVisible="{Binding HasDetailStory}" Margin="24 8">
+                                    <ItemsControl ItemsSource="{Binding DetailSections}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="models:MusicStorySection">
+                                                <Grid ColumnDefinitions="24,*" Margin="0 0 0 8">
+                                                    <!-- 左侧时间线：圆点 + 竖线 -->
+                                                    <Grid Grid.Column="0" RowDefinitions="Auto,*">
+                                                        <Ellipse Grid.Row="0" Width="10" Height="10"
+                                                                 Fill="{DynamicResource GdPrimaryBrush}"
+                                                                 HorizontalAlignment="Center"
+                                                                 Margin="0 6 0 0" />
+                                                        <Border Grid.Row="1" Width="2"
+                                                                Background="{DynamicResource GdBorderBrush}"
+                                                                HorizontalAlignment="Center" />
+                                                    </Grid>
+
+                                                    <!-- 右侧内容 -->
+                                                    <StackPanel Grid.Column="1" Margin="16 0 0 16" Spacing="10">
+                                                        <!-- header 类型：节点标题（16px 600 主色） -->
+                                                        <TextBlock IsVisible="{Binding Type, Converter={x:Static views:StorySectionTypeConverter.Instance}, ConverterParameter=header}"
+                                                                   Text="{Binding Content}" FontSize="16" FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource GdPrimaryBrush}"
+                                                                   TextWrapping="Wrap" />
+                                                        <!-- info 类型：信息文本 -->
+                                                        <TextBlock IsVisible="{Binding Type, Converter={x:Static views:StorySectionTypeConverter.Instance}, ConverterParameter=info}"
+                                                                   Text="{Binding Content}" FontSize="14" LineHeight="25.2"
+                                                                   TextWrapping="Wrap"
+                                                                   Foreground="{DynamicResource GdForegroundMutedBrush}" />
+                                                        <!-- text 类型：正文段落（14px 1.8行高） -->
+                                                        <TextBlock IsVisible="{Binding Type, Converter={x:Static views:StorySectionTypeConverter.Instance}, ConverterParameter=text}"
+                                                                   Text="{Binding Content}" FontSize="14" LineHeight="25.2"
+                                                                   TextWrapping="Wrap"
+                                                                   Foreground="{DynamicResource GdForegroundMutedBrush}" />
+                                                        <!-- quote 类型：引用块（灰背景 + 左边框3px主色 + 斜体13px） -->
+                                                        <Border IsVisible="{Binding Type, Converter={x:Static views:StorySectionTypeConverter.Instance}, ConverterParameter=quote}"
+                                                                Background="{DynamicResource GdMutedBrush}"
+                                                                BorderBrush="{DynamicResource GdPrimaryBrush}"
+                                                                BorderThickness="3 0 0 0"
+                                                                Padding="12 16"
+                                                                CornerRadius="{DynamicResource GdRadiusSm}">
+                                                            <StackPanel Spacing="4">
+                                                                <TextBlock Text="{Binding Quote}" FontSize="13" FontStyle="Italic"
+                                                                           TextWrapping="Wrap" LineHeight="22"
+                                                                           Foreground="{DynamicResource GdForegroundBrush}" />
+                                                                <TextBlock IsVisible="{Binding QuoteAuthor, Converter={x:Static views:StringNotEmptyConverter.Instance}}"
+                                                                           Text="{Binding QuoteAuthor}" FontSize="12"
+                                                                           Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                                            </StackPanel>
+                                                        </Border>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+
+                                <!-- d. 音频播放器条：圆角卡片 -->
+                                <Border IsVisible="{Binding HasDetailStory}"
+                                        Margin="24 8"
+                                        Background="{DynamicResource GdMutedBrush}"
+                                        BorderBrush="{DynamicResource GdBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="{DynamicResource GdRadiusMd}"
+                                        Padding="16">
+                                    <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="16" VerticalAlignment="Center">
+                                        <!-- 播放按钮（44x44 圆形主色） -->
+                                        <Button Grid.Column="0" Width="44" Height="44"
+                                                CornerRadius="22" Padding="0"
+                                                Background="{DynamicResource GdPrimaryBrush}"
+                                                Foreground="{DynamicResource GdPrimaryForegroundBrush}"
+                                                BorderThickness="0"
+                                                Cursor="Hand"
+                                                HorizontalContentAlignment="Center"
+                                                VerticalContentAlignment="Center"
+                                                Click="DetailPlay_Click">
+                                            <ui:SymbolIcon Symbol="Play" FontSize="18"
+                                                           Foreground="{DynamicResource GdPrimaryForegroundBrush}" />
+                                        </Button>
+                                        <!-- 歌曲名 + 时长 -->
+                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding DetailTitle}" FontSize="13" FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis" MaxWidth="160"
+                                                       Foreground="{DynamicResource GdForegroundBrush}" />
+                                            <TextBlock Text="{Binding SelectedStorySong.DurationText}" FontSize="11"
+                                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                        </StackPanel>
+                                        <!-- 波形条：已播放（主色）+ 未播放（灰色） -->
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2"
+                                                    VerticalAlignment="Center" HorizontalAlignment="Stretch">
+                                            <ItemsControl ItemsSource="{Binding WaveformPlayedBars}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Orientation="Horizontal" Spacing="2" />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="x:Int32">
+                                                        <Border Width="3" Height="{Binding}"
+                                                                Background="{DynamicResource GdPrimaryBrush}"
+                                                                CornerRadius="1"
+                                                                VerticalAlignment="Center" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <ItemsControl ItemsSource="{Binding WaveformRemainingBars}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <StackPanel Orientation="Horizontal" Spacing="2" />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="x:Int32">
+                                                        <Border Width="3" Height="{Binding}"
+                                                                Background="{DynamicResource GdBorderBrush}"
+                                                                CornerRadius="1"
+                                                                VerticalAlignment="Center" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                        <!-- 下载按钮 -->
+                                        <Button Grid.Column="3" Classes="GdGhost" Padding="8"
+                                                Cursor="Hand" ToolTip.Tip="下载"
+                                                Click="DetailDownload_Click">
+                                            <ui:SymbolIcon Symbol="Download" FontSize="16"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                        </Button>
+                                    </Grid>
+                                </Border>
+
+                                <!-- e. 关联歌曲推荐 -->
+                                <StackPanel IsVisible="{Binding HasDetailStory}" Margin="24 8 24 24" Spacing="12">
+                                    <!-- 标题 -->
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <ui:SymbolIcon Symbol="Link" FontSize="16"
+                                                       Foreground="{DynamicResource GdPrimaryBrush}"
+                                                       VerticalAlignment="Center" />
+                                        <TextBlock Text="关联歌曲推荐" FontSize="15" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource GdForegroundBrush}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <!-- 推荐列表 -->
+                                    <ItemsControl ItemsSource="{Binding RelatedSongs}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="models:Song">
+                                                <Border Padding="10 10" Margin="0 0 0 6"
+                                                        Background="{DynamicResource GdCardBrush}"
+                                                        BorderBrush="{DynamicResource GdBorderBrush}"
+                                                        BorderThickness="1"
+                                                        CornerRadius="{DynamicResource GdRadiusMd}">
+                                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" VerticalAlignment="Center">
+                                                        <!-- mini 封面 -->
+                                                        <Border Grid.Column="0" Width="40" Height="40"
+                                                                CornerRadius="{DynamicResource GdRadiusSm}">
+                                                            <Border.Background>
+                                                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                                    <GradientStop Color="{DynamicResource GdBrand500}" Offset="0" />
+                                                                    <GradientStop Color="{DynamicResource GdBrand800}" Offset="1" />
+                                                                </LinearGradientBrush>
+                                                            </Border.Background>
+                                                            <TextBlock Text="♪" FontSize="16"
+                                                                       Foreground="#CCFFFFFF"
+                                                                       HorizontalAlignment="Center"
+                                                                       VerticalAlignment="Center" />
+                                                        </Border>
+                                                        <!-- 歌曲名（主色）+ 艺术家·专辑 -->
+                                                        <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Title}" FontSize="13" FontWeight="SemiBold"
+                                                                       Foreground="{DynamicResource GdPrimaryBrush}"
+                                                                       TextTrimming="CharacterEllipsis" MaxLines="1" />
+                                                            <TextBlock FontSize="11" TextTrimming="CharacterEllipsis" MaxLines="1"
+                                                                       Foreground="{DynamicResource GdMutedForegroundBrush}">
+                                                                <Run Text="{Binding DisplayArtist}" /><Run Text=" · " /><Run Text="{Binding DisplayAlbum}" />
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                        <!-- 播放按钮（主色，未收藏时显示） -->
+                                                        <Button Grid.Column="2" Classes="GdPrimary" Padding="12 6"
+                                                                FontSize="12" Cursor="Hand"
+                                                                IsVisible="{Binding !IsFavorite}"
+                                                                Click="RelatedPlay_Click">
+                                                            <TextBlock Text="播放" FontSize="12" />
+                                                        </Button>
+                                                        <!-- 添加按钮（ghost，已收藏时显示） -->
+                                                        <Button Grid.Column="2" Classes="GdGhost" Padding="12 6"
+                                                                FontSize="12" Cursor="Hand"
+                                                                IsVisible="{Binding IsFavorite}"
+                                                                Click="RelatedAdd_Click">
+                                                            <TextBlock Text="添加" FontSize="12" />
+                                                        </Button>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 

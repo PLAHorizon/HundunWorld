@@ -9,6 +9,8 @@ using Horizon.Game.Core.Sim.Server;
 using Horizon.Game.Core.World;
 using Horizon.Orleans.Interface;
 using Horizon.Orleans.Interface.World;
+using Orleans.Runtime;
+using Orleans.Runtime.Messaging;
 
 namespace Horizon.Game.Gateway.Services
 {
@@ -36,6 +38,7 @@ namespace Horizon.Game.Gateway.Services
         private readonly IConnectionManager _connectionManager;
         private readonly ICharacterPresenceStore _presenceStore;
         private readonly ICharacterFingerprintService _fingerprintService;
+        private readonly PresenceRefreshService? _presenceRefreshService;
         private readonly ILogger<PlayerDespawnScheduler> _logger;
         private readonly IShardRouter _shardRouter;
 
@@ -48,7 +51,8 @@ namespace Horizon.Game.Gateway.Services
             ICharacterPresenceStore presenceStore,
             ICharacterFingerprintService fingerprintService,
             ILogger<PlayerDespawnScheduler> logger,
-            IShardRouter? shardRouter = null)
+            IShardRouter? shardRouter = null,
+            PresenceRefreshService? presenceRefreshService = null)
         {
             _clusterClient = clusterClient ?? throw new ArgumentNullException(nameof(clusterClient));
             _connectionManager = connectionManager ?? throw new ArgumentNullException(nameof(connectionManager));
@@ -56,6 +60,7 @@ namespace Horizon.Game.Gateway.Services
             _fingerprintService = fingerprintService ?? throw new ArgumentNullException(nameof(fingerprintService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _shardRouter = shardRouter ?? new ZoneBasedShardRouter(1);
+            _presenceRefreshService = presenceRefreshService;
 
             _logger.LogInformation("PlayerDespawnScheduler 初始化完成，断线立即 Despawn。ShardCount={ShardCount}", _shardRouter.ShardCount);
         }
@@ -75,6 +80,16 @@ namespace Horizon.Game.Gateway.Services
         /// <param name="characterId">离线角色的 characterId。</param>
         public void ScheduleDespawn(long characterId)
         {
+            // 修复 BUG（ObjectDisposedException at ScheduleDespawn:line 97）：
+            // 原实现在 TryAdd 之后才读取 cts.Token，并发的 CancelDespawn(characterId) 可在
+            // TryAdd 与 cts.Token 之间移除并 Dispose 该 CTS，导致 cts.Token 抛 ObjectDisposedException。
+            // 修复：先创建 CTS 并捕获 Token（值类型拷贝，不再依赖 CTS 实例），
+            // 然后 TryAdd。即使 CancelDespawn 随后 Dispose 了 CTS，
+            // 已捕获的 token 仍可安全传递给 ExecuteDespawnAsync（CancellationToken 是 struct，
+            // 持有的是 CTS 内部状态快照，CTS 被 Dispose 后 token.IsCancellationRequested 仍可读）。
+            var cts = new CancellationTokenSource();
+            var token = cts.Token;
+
             // 取消已存在的同 characterId 任务（避免重复注销）
             if (_pendingDespawns.TryRemove(characterId, out var existingCts))
             {
@@ -82,7 +97,6 @@ namespace Horizon.Game.Gateway.Services
                 existingCts.Dispose();
             }
 
-            var cts = new CancellationTokenSource();
             if (!_pendingDespawns.TryAdd(characterId, cts))
             {
                 // 极端竞态：并发添加失败，放弃本次调度
@@ -93,8 +107,8 @@ namespace Horizon.Game.Gateway.Services
 
             _logger.LogInformation("角色 {CharacterId} 断线，调度 Despawn（15秒宽限期）", characterId);
 
-            // 后台执行注销（不阻塞调用方）
-            _ = ExecuteDespawnAsync(characterId, cts.Token);
+            // 后台执行注销（不阻塞调用方）。使用已捕获的 token，避免并发 Dispose 引发的 ObjectDisposedException。
+            _ = ExecuteDespawnAsync(characterId, token);
         }
 
         /// <summary>
@@ -106,8 +120,14 @@ namespace Horizon.Game.Gateway.Services
         {
             if (_pendingDespawns.TryRemove(characterId, out var cts))
             {
+                // 修复 BUG（ExecuteDespawnAsync ObjectDisposedException）：
+                // 原实现 Cancel() + Dispose()，若 ScheduleDespawn 刚捕获 token 但还未进入
+                // Task.Delay(delay, token)，Dispose 会让 Task.Delay 内部的 token.Register 抛
+                // ObjectDisposedException（当 Cancel 未真正完成时）。
+                // 修复：只 Cancel，不 Dispose。ExecuteDespawnAsync 在退出前会 Dispose。
+                // 注意：Cancel() 后 token.IsCancellationRequested=true，Task.Delay 立即抛
+                // TaskCanceledException（OperationCanceledException 子类），不会触发 Register。
                 try { cts.Cancel(); } catch { /* 忽略 */ }
-                cts.Dispose();
                 _logger.LogInformation(
                     "角色 {CharacterId} 重连，取消 Despawn",
                     characterId);
@@ -214,21 +234,69 @@ namespace Horizon.Game.Gateway.Services
                     }
                 }
 
-                // 注意：不执行实体丢失检测/重新注册。
-                // 原实现用默认出生点 (0, 100, 0) 重新注册"丢失"的实体，会导致：
-                // 1) 实体位置被重置到错误坐标，AOI 订阅不覆盖 → 其他玩家看不到该角色
-                // 2) 与角色进入游戏的两阶段流程产生交互效应：
-                //    EnterGameAsync（阶段1）→ EnterWorldAsync（阶段2，HandshakePacket 触发）之间
-                //    实体可能暂时不在 ZoneShard 中，续约恰好触发会误判实体丢失，
-                //    用错误位置重新注册 → AOI 不匹配 → 角色永久不可见（"角色无法看到彼此"根因）
-                // ZoneShardGrain 已配置无限生命周期（TimeSpan.MaxValue）防止状态丢失，
-                // 且 EnterWorldAsync 的幂等性检查已处理重连场景的旧实体清理。
+                // 修复 BUG（ConnectionManager 过期角色映射残留）：
+                // 当续约发现实体不在 ZoneShardGrain 中，且该角色有在线连接，说明 ConnectionManager
+                // 中保留了过期映射（实体已从 ZoneShard 消失但映射未清理）。这会导致：
+                // 1) 续约日志持续显示 0/1，PresenceRefreshService 每 30 秒尝试刷新已不存在的 Redis key
+                // 2) 客户端重连循环，每 ~10 秒创建幽灵连接（因为客户端认为角色仍在线但实际上无法进入游戏）
+                // 3) 日志噪音污染（Warning 日志每 20 秒刷一次，持续数分钟）
+                //
+                // 修复方案：当续约数量 < 预期时，查询 ZoneShardGrain 确认哪些实体缺失，
+                // 对确认缺失的实体清理 ConnectionManager 映射并触发 Despawn。
+                // 注意：不做重新注册（避免位置错乱），只清理过期映射。
                 if (renewed < validEntityIds.Count)
                 {
-                    _logger.LogWarning(
-                        "续约 {Renewed}/{Expected} 个实体（部分实体不在 ZoneShardGrain 中，" +
-                        "可能正在重新进入游戏/正在 Despawn，不做自动重新注册以避免位置错乱）。",
-                        renewed, validEntityIds.Count);
+                    try
+                    {
+                        // 获取 ZoneShardGrain 中实际注册的所有实体 ID
+                        var registeredEntityIds = await zoneShard.GetRegisteredEntityIdsAsync().ConfigureAwait(false);
+                        var registeredSet = new HashSet<ulong>(registeredEntityIds);
+
+                        foreach (var entityId in validEntityIds)
+                        {
+                            if (!registeredSet.Contains(entityId))
+                            {
+                                // 实体确认不在 ZoneShardGrain 中，但 ConnectionManager 中仍有映射。
+                                // 二次确认：使用 HasEntityAsync 避免并发竞态（GetRegisteredEntityIdsAsync 返回的
+                                // 是快照，实体可能在快照后刚被注册）。
+                                var stillMissing = !await zoneShard.HasEntityAsync(entityId).ConfigureAwait(false);
+                                if (stillMissing)
+                                {
+                                    var characterId = (long)entityId;
+                                    _logger.LogWarning(
+                                        "实体 {EntityId} 不在 ZoneShardGrain 中但 ConnectionManager 仍有映射，关闭客户端连接并立即 Despawn",
+                                        entityId);
+
+                                    // 修复 BUG（重连死循环：每 20 秒一次的"关闭连接→重连→再关闭"循环）：
+                                    // 原实现使用 ScheduleDespawn（15 秒宽限期），客户端在宽限期内重连时
+                                    // StageCharacterMappingAndPresence 会 CancelDespawn + RegisterCharacter，
+                                    // 但实体已不在 ZoneShardGrain 中，无法恢复，下次续约再次检测到→循环。
+                                    // 修复：使用 DespawnImmediatelyAsync 立即完成 Despawn（UnregisterEntity +
+                                    // GoOffline + 清理 Redis + UnregisterCharacter），_pendingDespawns 中
+                                    // 不会有挂起任务，客户端重连时 CancelDespawn 无效果，必须走完整的
+                                    // EnterWorld 流程重新 Spawn 实体到 ZoneShardGrain。
+                                    var conn = _connectionManager.GetConnectionByCharacterId(characterId);
+                                    if (conn != null)
+                                    {
+                                        _ = conn.CloseAsync("实体已从 ZoneShardGrain 消失，关闭连接");
+                                    }
+
+                                    // 清理 PresenceRefreshService 中的刷新记录
+                                    _presenceRefreshService?.RemoveCharacter(characterId);
+
+                                    // 立即执行 Despawn（不使用宽限期），DoDespawnCoreAsync 的 finally 块
+                                    // 会清理 ConnectionManager 映射 + Redis presence/fingerprint + GoOfflineAsync。
+                                    await DespawnImmediatelyAsync(characterId).ConfigureAwait(false);
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception detectEx)
+                    {
+                        _logger.LogWarning(detectEx,
+                            "查询实体丢失状态失败，跳过清理（下次续约重试）。Renewed={Renewed}/{Expected}",
+                            renewed, validEntityIds.Count);
+                    }
                 }
 
                 if (skippedCount > 0)
@@ -301,6 +369,12 @@ namespace Horizon.Game.Gateway.Services
         ///   <item>GameServerGrain.PlayerOfflineAsync（兜底清理持久化在线列表）</item>
         ///   <item>UnregisterCharacter（清理 ConnectionManager 角色映射）</item>
         /// </list>
+        /// 修复 BUG（Orleans 瞬时不可达时 Despawn 完全失败）：<br/>
+        /// 原实现无重试逻辑，当 Silo 短暂不可达（ConnectionFailedException）或重启（OrleansMessageRejectionException）时，
+        /// UnregisterEntity/GoOffline/PlayerOffline 全部失败，导致：<br/>
+        /// 1) 角色在线状态永久卡在 true（幽灵角色）<br/>
+        /// 2) ZoneShardGrain AOI 订阅未清理，GatewaySyncDispatcher 持续向已离线 session 发包（totalDropped 持续增长）<br/>
+        /// 修复：对 Orleans grain 调用增加重试（最多 3 次，指数退避 1s→2s→4s），覆盖瞬时网络故障。
         /// </summary>
         private async Task DoDespawnCoreAsync(long characterId)
         {
@@ -310,10 +384,14 @@ namespace Horizon.Game.Gateway.Services
                 var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(characterId));
 
                 // 1) 注销实体并广播 Despawn delta 给所有在线客户端。
-                await zoneShard.UnregisterEntityAsync((ulong)characterId).ConfigureAwait(false);
+                await ExecuteWithRetryAsync(
+                    () => zoneShard.UnregisterEntityAsync((ulong)characterId),
+                    $"UnregisterEntity({characterId})").ConfigureAwait(false);
 
                 // 2) 移除 AOI session（清理该角色在服务端的订阅与可见性表）
-                await zoneShard.RemoveSessionAsync(characterId).ConfigureAwait(false);
+                await ExecuteWithRetryAsync(
+                    () => zoneShard.RemoveSessionAsync(characterId),
+                    $"RemoveSession({characterId})").ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -325,7 +403,9 @@ namespace Horizon.Game.Gateway.Services
                 try
                 {
                     var characterGrain = _clusterClient.GetGrain<ICharacterGrain>(characterId);
-                    var offlineResult = await characterGrain.GoOfflineAsync().ConfigureAwait(false);
+                    var offlineResult = await ExecuteWithRetryAsync(
+                        () => characterGrain.GoOfflineAsync(),
+                        $"GoOffline({characterId})").ConfigureAwait(false);
                     goOfflineCompleted = true;
                     if (!offlineResult)
                     {
@@ -368,7 +448,9 @@ namespace Horizon.Game.Gateway.Services
                 try
                 {
                     var gameServerGrain = _clusterClient.GetGrain<IGameServerGrain>(1L);
-                    await gameServerGrain.PlayerOfflineAsync(characterId).ConfigureAwait(false);
+                    await ExecuteWithRetryAsync(
+                        () => gameServerGrain.PlayerOfflineAsync(characterId),
+                        $"PlayerOffline({characterId})").ConfigureAwait(false);
                 }
                 catch (Exception gameServerEx)
                 {
@@ -393,6 +475,57 @@ namespace Horizon.Game.Gateway.Services
             _logger.LogInformation(
                 "角色 {CharacterId} Despawn 完成（goOfflineCompleted={GoOfflineCompleted}）",
                 characterId, goOfflineCompleted);
+        }
+
+        /// <summary>
+        /// 对 Orleans grain 调用执行带重试的包装。<br/>
+        /// 修复 BUG（Orleans 瞬时不可达时 Despawn 完全失败）：<br/>
+        /// 当 Silo 短暂不可达（ConnectionFailedException）或正在重启（OrleansMessageRejectionException）时，
+        /// grain 调用会抛出瞬时异常。原实现无重试，导致 Despawn 链路全部失败，
+        /// 角色在线状态永久卡在 true，AOI 订阅未清理，GatewaySyncDispatcher 持续丢包。<br/>
+        /// 重试策略：最多 3 次，指数退避（1s → 2s → 4s）。
+        /// </summary>
+        private async Task<T> ExecuteWithRetryAsync<T>(Func<Task<T>> action, string context)
+        {
+            const int maxRetries = 3;
+            var retryDelay = TimeSpan.FromSeconds(1);
+
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    return await action().ConfigureAwait(false);
+                }
+                catch (Exception ex) when (attempt < maxRetries && IsTransientOrleansException(ex))
+                {
+                    _logger.LogWarning(
+                        "Despawn grain 调用失败（Silo 可能正在重启/不可达），{Delay}s 后重试。Context={Context}, Attempt={Attempt}/{Max}, Error={Error}",
+                        retryDelay.TotalSeconds, context, attempt + 1, maxRetries, ex.Message);
+                    await Task.Delay(retryDelay).ConfigureAwait(false);
+                    retryDelay = TimeSpan.FromTicks(retryDelay.Ticks * 2);
+                }
+            }
+        }
+
+        /// <summary>无返回值的重载。</summary>
+        private async Task ExecuteWithRetryAsync(Func<Task> action, string context)
+        {
+            await ExecuteWithRetryAsync(async () => { await action().ConfigureAwait(false); return true; }, context).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// 判断异常是否为 Orleans 瞬时故障（可重试）。
+        /// 覆盖：Silo 重启（OrleansMessageRejectionException）、Silo 不可达（ConnectionFailedException）、
+        /// 以及它们的内部异常包装形式。
+        /// </summary>
+        private static bool IsTransientOrleansException(Exception ex)
+        {
+            if (ex is OrleansMessageRejectionException) return true;
+            if (ex is ConnectionFailedException) return true;
+            // 检查内部异常（Orleans 有时将瞬时故障包装在 OrleansException 中）
+            if (ex is OrleansException && ex.InnerException is not null)
+                return IsTransientOrleansException(ex.InnerException);
+            return false;
         }
     }
 }

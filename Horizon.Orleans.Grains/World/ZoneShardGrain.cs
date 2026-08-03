@@ -54,6 +54,20 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     // Task 10：TickAsync 复用缓冲，避免每次 tick 分配 List/Dictionary
     private readonly List<EntityDelta> _deltaBuffer = new();
     private readonly List<CorrectionPacket> _correctionBuffer = new();
+
+    /// <summary>per-player 修正风暴追踪器（修正计数滑动窗口 + 告警限频）。</summary>
+    private readonly Dictionary<ulong, StormTracker> _correctionStormTrackers = new();
+    private const int CorrectionStormThreshold = 5;
+    private const float CorrectionStormWindowSeconds = 2.0f;
+    private const float CorrectionStormAlertCooldownSeconds = 10.0f;
+
+    private struct StormTracker
+    {
+        public float[] Timestamps;
+        public int Index;
+        public int Count;
+        public float LastAlertSec;
+    }
     private readonly Dictionary<ulong, EntityDelta> _baselineDictBuffer = new();
     private readonly List<EntityDelta> _changedDeltasBuffer = new();
     private readonly EntityDelta[] _singleDeltaArray = new EntityDelta[1];  // Task 11 用
@@ -686,6 +700,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                     entity.Vz = validationResult.AuthoritativeVz;
 
                     _correctionsIssued++;
+                    RecordCorrectionAndCheckStorm(validationResult.Correction!.EntityId);
                 }
                 else
                 {
@@ -753,7 +768,13 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
 
             bool hasInput = entity.HadInputThisTick;
             bool hasPendingAnimation = entity.PendingAnimationEvents is not null && entity.PendingAnimationEvents.Count > 0;
-            bool updateHeartbeatDue = (_tickCount - entity.LastUpdateBroadcastTick) >= 60;
+            // 修复（补发数据间隔过多导致远程角色移动不平滑）：
+            // 原值 60 tick（1 秒）让静止实体每秒才下发一次心跳，客户端在 1 秒内收不到任何数据，
+            // 状态机从 Active → Idle，移动恢复时需要追赶 1 秒累积的位置变化，表现为"加速过快"。
+            // 降到 6 tick（100ms），静止实体每 100ms 下发一次心跳，客户端 TimeSinceLastSnapshot
+            // 始终 < 0.5s，保持 Active 状态，移动恢复时无追赶延迟。
+            // 带宽开销：100 个静止实体 × 10 次/秒 × 100 字节 = 100KB/s = 800Kbps，可接受。
+            bool updateHeartbeatDue = (_tickCount - entity.LastUpdateBroadcastTick) >= 6;
 
             bool shouldBroadcast = hasInput || hasPositionChanged || hasYawChanged || hasMovementChanged
                 || hasPendingAnimation || updateHeartbeatDue;
@@ -793,6 +814,8 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                         LastProcessedClientTick = entity.LastSyncTick,
                     });
                     _correctionsIssued++;
+
+                    RecordCorrectionAndCheckStorm(entityId);
                 }
             }
 
@@ -962,11 +985,17 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             {
                 Interlocked.Exchange(ref _broadcastInProgress, 0);
             }
-            // _lastSnapshot 必须保存完整状态（所有实体的最新 delta），供下次增量比对。
-            // 修复：原实现直接 _lastSnapshot = snapshot，但增量 tick 的 snapshot 仅含变化实体，
-            // 导致 baseline 丢失未变化实体 → BuildDeltaSnapshot 的 EntityDeltaChanged 比对不完整，
-            // 未在 baseline 中的实体被当作"新 Spawn"无条件纳入（虽然不丢数据，但破坏比对语义）。
-            // 正确做法：增量 tick 时将当前 deltas 合并到上次 baseline，保持完整状态。
+            // _lastSnapshot 必须保存"客户端实际收到的状态"，供下次增量比对。
+            // 修复（心跳保护失效导致闪现/不动/莫名离线）：
+            // 原实现合并 `deltas`（所有进入 deltas 列表的实体，包括被 BuildDeltaSnapshot 过滤的），
+            // 导致被过滤实体的 Transform.ServerTick 每次都被更新为当前 tick。
+            // 下次 BuildDeltaSnapshot 时 ct.ServerTick - bt.ServerTick 永远是 1，
+            // 心跳保护条件 >= 6 永远不触发 → 静止实体 delta 永远被 EntityDeltaChanged 过滤 →
+            // 客户端收不到静止实体数据 → "不动" → 超时清理 → "莫名离线" → 恢复移动 → "闪现"。
+            //
+            // 正确做法：只合并 snapshot.Deltas（实际发送到客户端的 deltas）。
+            // 被过滤的实体不更新 baseline → 下次 ct.ServerTick - bt.ServerTick 正确反映距上次发送的 tick 数
+            // → 心跳保护 6 tick 后强制纳入 → 客户端每 100ms 收到一次静止实体 delta → 保持 Active 状态。
             if (isFullSnapshot)
             {
                 // 全量快照已包含所有实体（forceFullThisTick 确保）
@@ -974,14 +1003,15 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             }
             else
             {
-                // 增量 tick：合并当前 deltas 到上次 baseline，复用 _baselineDictBuffer 避免分配
+                // 增量 tick：只合并实际发送的 snapshot.Deltas，复用 _baselineDictBuffer 避免分配
                 var mergeDict = _baselineDictBuffer; mergeDict.Clear();
                 if (_lastSnapshot != null)
                 {
                     foreach (var d in _lastSnapshot.Deltas)
                         mergeDict[d.EntityId] = d;
                 }
-                foreach (var d in deltas)
+                // 修复：只合并 snapshot.Deltas（实际发送的），不合并 deltas（包含被过滤的）
+                foreach (var d in snapshot.Deltas)
                     mergeDict[d.EntityId] = d; // 更新或添加
                 _lastSnapshot = new SnapshotPacket
                 {
@@ -1628,6 +1658,51 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             return WorldCoord.ToChunkMortonKey(entity.X, entity.Y, entity.Z);
         }
         return null;
+    }
+
+    /// <summary>
+    /// 客户端请求 baseline 重传：收到 <see cref="BaselineResyncRequestPacket"/> 后强制下一 tick 下发全量快照。
+    /// 服务端收到后无条件强制全量，不报错，客户端短暂等待即恢复同步。
+    /// </summary>
+    /// <param name="entityId">请求客户端的角色实体 ID（用于日志定位）。</param>
+    /// <param name="expectedBaselineTick">客户端期望的 baseline tick。</param>
+    /// <param name="clientLastAppliedTick">客户端最后已应用的 baseline tick。</param>
+    public Task RequestBaselineResyncAsync(ulong entityId, long expectedBaselineTick, long clientLastAppliedTick)
+    {
+        _forceFullSnapshotNextTick = true;
+        _logger.LogInformation(
+            "ZoneShard {ShardId}: 收到实体 {EntityId} baseline 重传请求（Expected={ExpectedTick}, ClientLastApplied={ClientLastTick}），下一 tick 强制全量快照。",
+            this.GetPrimaryKeyLong(), entityId, expectedBaselineTick, clientLastAppliedTick);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 记录一次修正并检测修正风暴：某玩家 2 秒内修正次数超阈值时输出结构化告警（限频 10 秒）。
+    /// </summary>
+    private void RecordCorrectionAndCheckStorm(ulong entityId)
+    {
+        var nowSec = Environment.TickCount64 / 1000f;
+        if (!_correctionStormTrackers.TryGetValue(entityId, out var tracker))
+        {
+            tracker = new StormTracker { Timestamps = new float[CorrectionStormThreshold] };
+        }
+        tracker.Timestamps[tracker.Index] = nowSec;
+        tracker.Index = (tracker.Index + 1) % CorrectionStormThreshold;
+        if (tracker.Count < CorrectionStormThreshold) tracker.Count++;
+
+        if (tracker.Count >= CorrectionStormThreshold)
+        {
+            var oldest = tracker.Timestamps[tracker.Index % CorrectionStormThreshold];
+            if (nowSec - oldest < CorrectionStormWindowSeconds
+                && nowSec - tracker.LastAlertSec >= CorrectionStormAlertCooldownSeconds)
+            {
+                tracker.LastAlertSec = nowSec;
+                _logger.LogWarning(
+                    "ZoneShard {ShardId}: 修正风暴告警 PlayerId={PlayerId} Count={Count} Window={Window}s",
+                    this.GetPrimaryKeyLong(), entityId, CorrectionStormThreshold, CorrectionStormWindowSeconds);
+            }
+        }
+        _correctionStormTrackers[entityId] = tracker;
     }
 
     /// <inheritdoc />
@@ -2483,6 +2558,24 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         {
             if (baselineDict.TryGetValue(current.EntityId, out var baseDelta))
             {
+                // 修复（莫名离线/闪现/不动 — 心跳被增量比对过滤）：
+                // 服务端 TickAsync 中 updateHeartbeatDue（每 6 tick=100ms）使静止实体进入 deltas，
+                // 但原实现 EntityDeltaChanged 对位置未变的静止实体返回 false → 心跳 delta 被过滤，
+                // 客户端收不到静止实体的任何 delta → TimeSinceLastSnapshot 累积 → 状态转为 Idle/Stale →
+                // "不动"；恢复移动时位置突变 → "闪现"。
+                //
+                // 修复：心跳保护 — 若该实体距上次被纳入快照已超过 6 tick（100ms，与服务端心跳间隔一致），
+                // 强制纳入增量，绕过 EntityDeltaChanged 比对。这确保客户端每 100ms 收到一次静止实体的 delta，
+                // 重置 TimeSinceLastSnapshot，保持 Active 状态。
+                // 副作用：每秒每个静止实体增加 10 个 delta（约 1KB），100 个静止实体 = 100KB/s = 800Kbps，可接受。
+                const long HeartbeatProtectionTicks = 6;
+                if (baseDelta.Transform is { } bt && current.Transform is { } ct
+                    && ct.ServerTick - bt.ServerTick >= HeartbeatProtectionTicks)
+                {
+                    changedDeltas.Add(current);
+                    continue;
+                }
+
                 // 仅当关键字段变化超过阈值时纳入增量
                 if (EntityDeltaChanged(baseDelta, current))
                     changedDeltas.Add(current);

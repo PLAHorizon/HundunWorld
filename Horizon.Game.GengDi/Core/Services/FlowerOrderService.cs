@@ -27,6 +27,12 @@ namespace Horizon.Game.GengDi.Core.Services
         public string ExpressCompanyName { get; set; } = "";
         public string ShipOrderNumber { get; set; } = "";
         public List<OrderItemDisplay> Items { get; set; } = new();
+
+        /// <summary>首个商品名称（空集合时返回空字符串，避免 XAML 索引绑定越界）</summary>
+        public string FirstProductName => Items.Count > 0 ? Items[0].ProductName : "";
+        /// <summary>首个商品数量（空集合时返回 0，避免 XAML 索引绑定越界）</summary>
+        public int FirstItemQuantity => Items.Count > 0 ? Items[0].Quantity : 0;
+
         public bool CanShip => Status == 1;
         public bool CanViewLogistics => Status == 2;
     }

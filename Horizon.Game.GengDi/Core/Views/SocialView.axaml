@@ -33,8 +33,8 @@
                         Padding="0"
                         ClipToBounds="True">
                     <Grid RowDefinitions="Auto,Auto,*,Auto">
-                        <!-- 标题栏：通讯录 + 在线计数 -->
-                        <Border Padding="12,10"
+                        <!-- 标题栏：通讯录 + 添加好友 -->
+                        <Border Padding="12,14"
                                 BorderBrush="{DynamicResource GdBorderBrush}"
                                 BorderThickness="0,0,0,1">
                             <Grid ColumnDefinitions="*,Auto"
@@ -43,35 +43,45 @@
                                            FontSize="13"
                                            FontWeight="SemiBold"
                                            VerticalAlignment="Center" />
-                                <Border Grid.Column="1"
-                                        Classes="GdBadge GdSuccess">
-                                    <StackPanel Orientation="Horizontal"
-                                                Spacing="4">
-                                        <TextBlock Text="在线" />
-                                        <TextBlock Text="{Binding OnlineFriendsCount}" />
-                                    </StackPanel>
-                                </Border>
+                                <Button Grid.Column="1"
+                                        ToolTip.Tip="添加好友"
+                                        Classes="GdGhost"
+                                        Padding="8 4"
+                                        FontSize="11"
+                                        Command="{Binding SendFriendRequestCommand}">
+                                    <Path Classes="GdLucideIcon"
+                                          Width="13"
+                                          Height="13"
+                                          Data="{StaticResource LucideUserPlusGeometry}" />
+                                </Button>
                             </Grid>
                         </Border>
 
-                        <!-- 添加好友输入 -->
+                        <!-- 搜索 / 添加好友输入 -->
                         <Border Grid.Row="1"
-                                Padding="10,8"
+                                Padding="8,10"
                                 BorderBrush="{DynamicResource GdBorderBrush}"
                                 BorderThickness="0,0,0,1">
-                            <Grid ColumnDefinitions="*,Auto"
-                                  ColumnSpacing="6">
-                                <TextBox Text="{Binding FriendRequestUsername}"
-                                         Watermark="输入通行证号"
-                                         Classes="GdInput"
-                                         Padding="8,6"
-                                         FontSize="12" />
-                                <Button Grid.Column="1"
-                                        Content="添加"
-                                        Command="{Binding SendFriendRequestCommand}"
-                                        Classes="GdPrimary GdBtnSm"
-                                        Padding="10,6" />
-                            </Grid>
+                            <Border Classes="GdSearchBar">
+                                <Grid ColumnDefinitions="Auto,*"
+                                      ColumnSpacing="6">
+                                    <Path Grid.Column="0"
+                                          Classes="GdLucideIcon"
+                                          Width="13"
+                                          Height="13"
+                                          Data="{StaticResource LucideSearchGeometry}"
+                                          Stroke="{DynamicResource GdMutedForegroundBrush}"
+                                          VerticalAlignment="Center" />
+                                    <TextBox Grid.Column="1"
+                                             Text="{Binding FriendRequestUsername}"
+                                             Watermark="搜索好友 / 通行证号"
+                                             Classes="GdInput"
+                                             Padding="4,6"
+                                             FontSize="12"
+                                             BorderThickness="0"
+                                             Background="Transparent" />
+                                </Grid>
+                            </Border>
                         </Border>
 
                         <!-- 滚动列表区 -->
@@ -104,13 +114,18 @@
                                                           ColumnSpacing="8">
                                                         <Border Width="32"
                                                                 Height="32"
-                                                                CornerRadius="16"
-                                                                Background="{DynamicResource GdMutedBrush}">
+                                                                CornerRadius="16">
+                                                            <Border.Background>
+                                                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                                    <GradientStop Offset="0" Color="{StaticResource GdBrand500}" />
+                                                                    <GradientStop Offset="1" Color="{StaticResource GdBrand700}" />
+                                                                </LinearGradientBrush>
+                                                            </Border.Background>
                                                             <Panel>
                                                                 <TextBlock Text="{Binding AvatarInitial}"
                                                                            FontWeight="Bold"
                                                                            FontSize="11"
-                                                                           Foreground="{StaticResource GdPrimaryBrush}"
+                                                                           Foreground="White"
                                                                            VerticalAlignment="Center"
                                                                            HorizontalAlignment="Center"
                                                                            IsVisible="{Binding !HasAvatarBitmap}" />
@@ -182,12 +197,17 @@
                                                           ColumnSpacing="8">
                                                         <Border Width="32"
                                                                 Height="32"
-                                                                CornerRadius="16"
-                                                                Background="{DynamicResource GdMutedBrush}">
+                                                                CornerRadius="16">
+                                                            <Border.Background>
+                                                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                                    <GradientStop Offset="0" Color="{StaticResource GdBrand500}" />
+                                                                    <GradientStop Offset="1" Color="{StaticResource GdBrand700}" />
+                                                                </LinearGradientBrush>
+                                                            </Border.Background>
                                                             <TextBlock Text="{Binding DisplayInitial}"
                                                                        FontWeight="Bold"
                                                                        FontSize="11"
-                                                                       Foreground="{StaticResource GdPrimaryBrush}"
+                                                                       Foreground="White"
                                                                        VerticalAlignment="Center"
                                                                        HorizontalAlignment="Center" />
                                                         </Border>
@@ -261,7 +281,7 @@
                                                                         Spacing="6">
                                                                 <Border Width="3"
                                                                         Height="14"
-                                                                        Background="{StaticResource GdPrimaryBrush}"
+                                                                        Background="{DynamicResource GdPrimaryBrush}"
                                                                         CornerRadius="2"
                                                                         VerticalAlignment="Center"
                                                                         IsVisible="{Binding IsExpanded}" />
@@ -337,36 +357,34 @@
                                                                                 VerticalContentAlignment="Center" />
                                                                     </controls:SwipeRevealPanel.ActionContent>
                                                                     <Panel>
-                                                                        <Border Background="{DynamicResource GdMutedBrush}"
-                                                                                IsVisible="{Binding IsSelected}"
-                                                                                CornerRadius="4" />
-                                                                        <Border Width="3"
-                                                                                HorizontalAlignment="Left"
-                                                                                Background="{StaticResource GdPrimaryBrush}"
-                                                                                CornerRadius="2"
-                                                                                IsVisible="{Binding IsSelected}"
-                                                                                Margin="0,4" />
-                                                                        <Border BorderBrush="{DynamicResource GdBorderBrush}"
-                                                                                BorderThickness="0,0,0,1"
-                                                                                Padding="8,8"
+                                                                        <Border Classes="GdFriendItem"
+                                                                                Classes.GdFriendItemActive="{Binding IsSelected}"
+                                                                                Margin="0,0,0,2"
                                                                                 Cursor="Hand"
                                                                                 PointerPressed="FriendItem_PointerPressed"
                                                                                 PointerMoved="FriendItem_PointerMoved"
                                                                                 PointerReleased="FriendItem_PointerReleased">
                                                                             <Grid ColumnDefinitions="Auto,*"
-                                                                                  ColumnSpacing="8">
-                                                                                <Grid Width="36"
-                                                                                      Height="36">
-                                                                                    <Border Width="36"
-                                                                                            Height="36"
-                                                                                            CornerRadius="18"
+                                                                                  ColumnSpacing="10">
+                                                                                <Grid Width="32"
+                                                                                      Height="32">
+                                                                                    <!-- 在线头像（渐变背景 + 白字） -->
+                                                                                    <Border Width="32"
+                                                                                            Height="32"
+                                                                                            CornerRadius="16"
                                                                                             ClipToBounds="True"
-                                                                                            Background="{DynamicResource GdMutedBrush}">
+                                                                                            IsVisible="{Binding IsAvailable}">
+                                                                                        <Border.Background>
+                                                                                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                                                                <GradientStop Offset="0" Color="{StaticResource GdSuccess}" />
+                                                                                                <GradientStop Offset="1" Color="{StaticResource GdBrand600}" />
+                                                                                            </LinearGradientBrush>
+                                                                                        </Border.Background>
                                                                                         <Panel>
                                                                                             <TextBlock Text="{Binding AvatarInitial}"
                                                                                                        FontWeight="Bold"
                                                                                                        FontSize="12"
-                                                                                                       Foreground="{StaticResource GdPrimaryBrush}"
+                                                                                                       Foreground="White"
                                                                                                        VerticalAlignment="Center"
                                                                                                        HorizontalAlignment="Center"
                                                                                                        IsVisible="{Binding !HasAvatarBitmap}" />
@@ -375,14 +393,45 @@
                                                                                                    IsVisible="{Binding HasAvatarBitmap}" />
                                                                                         </Panel>
                                                                                     </Border>
-                                                                                    <Ellipse Width="10"
-                                                                                             Height="10"
-                                                                                             Fill="{StaticResource GdSuccessBrush}"
-                                                                                             Stroke="White"
+                                                                                    <!-- 离线头像（muted 背景 + muted-foreground 字） -->
+                                                                                    <Border Width="32"
+                                                                                            Height="32"
+                                                                                            CornerRadius="16"
+                                                                                            ClipToBounds="True"
+                                                                                            Background="{DynamicResource GdMutedBrush}"
+                                                                                            IsVisible="{Binding !IsAvailable}">
+                                                                                        <Panel>
+                                                                                            <TextBlock Text="{Binding AvatarInitial}"
+                                                                                                       FontWeight="Bold"
+                                                                                                       FontSize="12"
+                                                                                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                                                                       VerticalAlignment="Center"
+                                                                                                       HorizontalAlignment="Center"
+                                                                                                       IsVisible="{Binding !HasAvatarBitmap}" />
+                                                                                            <Image Source="{Binding AvatarBitmap}"
+                                                                                                   Stretch="UniformToFill"
+                                                                                                   IsVisible="{Binding HasAvatarBitmap}" />
+                                                                                        </Panel>
+                                                                                    </Border>
+                                                                                    <!-- 在线状态点（success） -->
+                                                                                    <Ellipse Width="9"
+                                                                                             Height="9"
+                                                                                             Fill="{DynamicResource GdSuccessBrush}"
+                                                                                             Stroke="{DynamicResource GdCardBrush}"
                                                                                              StrokeThickness="2"
                                                                                              HorizontalAlignment="Right"
                                                                                              VerticalAlignment="Bottom"
                                                                                              IsVisible="{Binding IsAvailable}" />
+                                                                                    <!-- 离线状态点（muted-foreground） -->
+                                                                                    <Ellipse Width="9"
+                                                                                             Height="9"
+                                                                                             Fill="{DynamicResource GdMutedForegroundBrush}"
+                                                                                             Stroke="{DynamicResource GdCardBrush}"
+                                                                                             StrokeThickness="2"
+                                                                                             HorizontalAlignment="Right"
+                                                                                             VerticalAlignment="Bottom"
+                                                                                             IsVisible="{Binding !IsAvailable}" />
+                                                                                    <!-- 未读消息徽章 -->
                                                                                     <Border Background="{StaticResource GdErrorBrush}"
                                                                                             CornerRadius="8"
                                                                                             Padding="4,1"
@@ -403,8 +452,8 @@
                                                                                     <Grid ColumnDefinitions="*,Auto"
                                                                                           ColumnSpacing="6">
                                                                                         <TextBlock Text="{Binding DisplayName}"
-                                                                                                   FontSize="12"
-                                                                                                   FontWeight="SemiBold"
+                                                                                                   FontSize="13"
+                                                                                                   FontWeight="Medium"
                                                                                                    TextTrimming="CharacterEllipsis" />
                                                                                         <TextBlock Grid.Column="1"
                                                                                                    Text="{Binding DisplayStatus}"
@@ -414,7 +463,7 @@
                                                                                                    Foreground="{DynamicResource GdMutedForegroundBrush}" />
                                                                                     </Grid>
                                                                                     <TextBlock Text="{Binding SocialSummary}"
-                                                                                               FontSize="10"
+                                                                                               FontSize="11"
                                                                                                TextWrapping="Wrap"
                                                                                                MaxLines="1"
                                                                                                Foreground="{DynamicResource GdMutedForegroundBrush}" />
@@ -477,7 +526,7 @@
                                                 <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
                                             </Style>
                                             <Style Selector="ListBoxItem:selected">
-                                                <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
+                                                <Setter Property="Background" Value="{DynamicResource GdInfoSurfaceBrush}" />
                                             </Style>
                                         </ListBox.Styles>
                                         <ListBox.ItemTemplate>
@@ -508,12 +557,17 @@
                                                                   Height="34">
                                                                 <Border Width="34"
                                                                         Height="34"
-                                                                        CornerRadius="17"
-                                                                        Background="{DynamicResource GdMutedBrush}">
+                                                                        CornerRadius="17">
+                                                                    <Border.Background>
+                                                                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                                            <GradientStop Offset="0" Color="{StaticResource GdBrand500}" />
+                                                                            <GradientStop Offset="1" Color="{StaticResource GdBrand700}" />
+                                                                        </LinearGradientBrush>
+                                                                    </Border.Background>
                                                                     <TextBlock Text="{Binding DisplayInitial}"
                                                                                FontWeight="Bold"
                                                                                FontSize="12"
-                                                                               Foreground="{StaticResource GdPrimaryBrush}"
+                                                                               Foreground="White"
                                                                                VerticalAlignment="Center"
                                                                                HorizontalAlignment="Center" />
                                                                 </Border>
@@ -605,64 +659,93 @@
                                         <!-- 对话头 -->
                                         <Border BorderBrush="{DynamicResource GdBorderBrush}"
                                                 BorderThickness="0,0,0,1"
-                                                Padding="14,12">
-                                            <Grid ColumnDefinitions="*,Auto,Auto,Auto"
-                                                  ColumnSpacing="8">
-                                                <StackPanel Spacing="2">
-                                                    <TextBlock Text="{Binding Category}"
-                                                               Classes="GdEyebrow" />
+                                                Padding="16,12">
+                                            <Grid ColumnDefinitions="Auto,*,Auto"
+                                                  ColumnSpacing="10">
+                                                <!-- 头像（32x32 渐变背景 + 首字） -->
+                                                <Border Width="32"
+                                                        Height="32"
+                                                        CornerRadius="16"
+                                                        ClipToBounds="True">
+                                                    <Border.Background>
+                                                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                            <GradientStop Offset="0" Color="{StaticResource GdSuccess}" />
+                                                            <GradientStop Offset="1" Color="{StaticResource GdBrand600}" />
+                                                        </LinearGradientBrush>
+                                                    </Border.Background>
+                                                    <TextBlock Text="{Binding AvatarInitial}"
+                                                               FontSize="12"
+                                                               FontWeight="Bold"
+                                                               Foreground="White"
+                                                               VerticalAlignment="Center"
+                                                               HorizontalAlignment="Center" />
+                                                </Border>
+
+                                                <!-- 昵称 + 在线状态 -->
+                                                <StackPanel Grid.Column="1"
+                                                            Spacing="2"
+                                                            VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding Title}"
-                                                               FontSize="15"
+                                                               FontSize="14"
                                                                FontWeight="SemiBold"
                                                                TextTrimming="CharacterEllipsis" />
-                                                    <TextBlock Text="{Binding Description}"
-                                                               TextWrapping="Wrap"
-                                                               MaxLines="1"
-                                                               FontSize="10"
-                                                               Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                                    <TextBlock Text="{Binding OnlineStatusText}"
+                                                               FontSize="11"
+                                                               Foreground="{DynamicResource GdSuccessBrush}" />
                                                 </StackPanel>
 
-                                                <Button Grid.Column="1"
-                                                        Content="邀请好友"
-                                                        ToolTip.Tip="邀请好友入群"
-                                                        Classes="GdGhost GdBtnSm"
-                                                        Padding="8,4"
-                                                        FontSize="11"
-                                                        VerticalAlignment="Top"
-                                                        IsVisible="{Binding $parent[UserControl].DataContext.IsGroupConversationActive}"
-                                                        Command="{Binding $parent[UserControl].DataContext.InviteToGroupCommand}" />
+                                                <!-- 右侧操作按钮组（间距4px，对应设计稿 gap:4px） -->
+                                                <StackPanel Grid.Column="2"
+                                                            Orientation="Horizontal"
+                                                            Spacing="4"
+                                                            VerticalAlignment="Center">
+                                                    <Button ToolTip.Tip="语音通话"
+                                                            Classes="GdHeaderIconBtn"
+                                                            IsVisible="{Binding !$parent[UserControl].DataContext.IsGroupConversationActive}">
+                                                        <Path Classes="GdLucideIcon"
+                                                              Width="16"
+                                                              Height="16"
+                                                              Data="{StaticResource LucidePhoneGeometry}" />
+                                                    </Button>
 
-                                                <Button Grid.Column="2"
-                                                        ToolTip.Tip="群成员"
-                                                        Classes="GdGhost GdBtnSm"
-                                                        Padding="8,4"
-                                                        FontSize="11"
-                                                        VerticalAlignment="Top"
-                                                        IsVisible="{Binding $parent[UserControl].DataContext.IsGroupConversationActive}"
-                                                        Command="{Binding $parent[UserControl].DataContext.ToggleGroupMembersPanelCommand}">
-                                                    <StackPanel Orientation="Horizontal"
-                                                                Spacing="4">
-                                                        <TextBlock Text="👥"
-                                                                   FontSize="12"
-                                                                   VerticalAlignment="Center" />
-                                                        <TextBlock Text="{Binding $parent[UserControl].DataContext.GroupMemberCountText}"
-                                                                   VerticalAlignment="Center" />
-                                                    </StackPanel>
-                                                </Button>
+                                                    <Button ToolTip.Tip="视频通话"
+                                                            Classes="GdHeaderIconBtn"
+                                                            IsVisible="{Binding !$parent[UserControl].DataContext.IsGroupConversationActive}">
+                                                        <Path Classes="GdLucideIcon"
+                                                              Width="16"
+                                                              Height="16"
+                                                              Data="{StaticResource LucideVideoGeometry}" />
+                                                    </Button>
 
-                                                <Button Grid.Column="3"
-                                                        ToolTip.Tip="清理聊天记录"
-                                                        Classes="GdGhost GdBtnSm"
-                                                        Width="30"
-                                                        Height="30"
-                                                        Padding="0"
-                                                        Command="{Binding $parent[UserControl].DataContext.ClearChatCommand}"
-                                                        VerticalAlignment="Top">
-                                                    <TextBlock Text="🗑"
-                                                               FontSize="13"
-                                                               HorizontalAlignment="Center"
-                                                               VerticalAlignment="Center" />
-                                                </Button>
+                                                    <Button ToolTip.Tip="邀请好友入群"
+                                                            Classes="GdHeaderIconBtn"
+                                                            IsVisible="{Binding $parent[UserControl].DataContext.IsGroupConversationActive}"
+                                                            Command="{Binding $parent[UserControl].DataContext.InviteToGroupCommand}">
+                                                        <Path Classes="GdLucideIcon"
+                                                              Width="16"
+                                                              Height="16"
+                                                              Data="{StaticResource LucideUserPlusGeometry}" />
+                                                    </Button>
+
+                                                    <Button ToolTip.Tip="群成员"
+                                                            Classes="GdHeaderIconBtn"
+                                                            IsVisible="{Binding $parent[UserControl].DataContext.IsGroupConversationActive}"
+                                                            Command="{Binding $parent[UserControl].DataContext.ToggleGroupMembersPanelCommand}">
+                                                        <Path Classes="GdLucideIcon"
+                                                              Width="16"
+                                                              Height="16"
+                                                              Data="{StaticResource LucideUsersGeometry}" />
+                                                    </Button>
+
+                                                    <Button ToolTip.Tip="清理聊天记录"
+                                                            Classes="GdHeaderIconBtn"
+                                                            Command="{Binding $parent[UserControl].DataContext.ClearChatCommand}">
+                                                        <Path Classes="GdLucideIcon"
+                                                              Width="16"
+                                                              Height="16"
+                                                              Data="{StaticResource LucideTrash2Geometry}" />
+                                                    </Button>
+                                                </StackPanel>
                                             </Grid>
                                         </Border>
 
@@ -674,38 +757,35 @@
                                                           MinHeight="0"
                                                           HorizontalScrollBarVisibility="Disabled"
                                                           VerticalScrollBarVisibility="Auto"
-                                                          ClipToBounds="True">
+                                                          ClipToBounds="True"
+                                                          Background="{DynamicResource GdBackgroundBrush}">
                                                 <ItemsControl ItemsSource="{Binding Messages}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate x:DataType="vm:ChatMessageItemViewModel">
                                                             <StackPanel Margin="0,0,0,8"
                                                                         Spacing="4">
-                                                                <!-- 消息头：昵称 + 时间 -->
+                                                                <!-- 消息头：昵称（仅群聊显示） -->
                                                                 <StackPanel Orientation="Horizontal"
                                                                             Spacing="8"
                                                                             HorizontalAlignment="{Binding BubbleAlignment}"
-                                                                            IsVisible="{Binding !IsEmoji}">
+                                                                            IsVisible="{Binding $parent[UserControl].DataContext.IsGroupConversationActive}">
                                                                     <TextBlock Text="{Binding SenderDisplayName}"
                                                                                Classes="GdEyebrow"
                                                                                FontSize="10" />
-                                                                    <TextBlock Text="{Binding TimestampText}"
-                                                                               FontSize="9"
-                                                                               Foreground="{DynamicResource GdMutedForegroundBrush}" />
                                                                 </StackPanel>
 
-                                                                <Border CornerRadius="12"
+                                                                <Border Classes="GdChatBubble"
+                                                                        CornerRadius="{Binding BubbleCornerRadius}"
                                                                         Background="{Binding BubbleBackground}"
                                                                         BorderBrush="{Binding BubbleBorder}"
-                                                                        BorderThickness="1"
-                                                                        Padding="12,9"
-                                                                        MaxWidth="420"
+                                                                        BorderThickness="0"
                                                                         HorizontalAlignment="{Binding BubbleAlignment}"
                                                                         IsVisible="{Binding !IsEmoji}">
                                                                     <StackPanel Spacing="8">
                                                                         <TextBlock Text="{Binding Text}"
                                                                                    TextWrapping="Wrap"
                                                                                    IsVisible="{Binding HasText}"
-                                                                                   FontSize="12" />
+                                                                                   Foreground="{Binding BubbleForeground}" />
                                                                         <Border IsVisible="{Binding HasFileCard}"
                                                                                 Cursor="Hand"
                                                                                 PointerPressed="MediaCard_Tapped"
@@ -771,6 +851,12 @@
                                                                         </UniformGrid>
                                                                     </StackPanel>
                                                                 </Border>
+
+                                                                <!-- 时间戳（气泡下方） -->
+                                                                <TextBlock Text="{Binding TimestampText}"
+                                                                           Classes="GdChatTime"
+                                                                           HorizontalAlignment="{Binding BubbleAlignment}"
+                                                                           IsVisible="{Binding !IsEmoji}" />
 
                                                                 <TextBlock Text="{Binding Text}"
                                                                            TextWrapping="Wrap"
@@ -854,7 +940,7 @@
                                         <Border Grid.Row="2"
                                                 BorderBrush="{DynamicResource GdBorderBrush}"
                                                 BorderThickness="0,1,0,0"
-                                                Padding="12,10">
+                                                Padding="16,12">
                                             <StackPanel Spacing="8">
                                                 <Border Background="{DynamicResource GdMutedBrush}"
                                                         CornerRadius="{DynamicResource GdRadiusSm}"
@@ -881,7 +967,7 @@
                                                                             <Grid>
                                                                                 <TextBlock Text="{Binding KindLabel}"
                                                                                            FontSize="9"
-                                                                                           Foreground="{StaticResource GdPrimaryBrush}"
+                                                                                           Foreground="{DynamicResource GdPrimaryBrush}"
                                                                                            HorizontalAlignment="Center"
                                                                                            VerticalAlignment="Center" />
                                                                                 <Button Width="18"
@@ -927,53 +1013,14 @@
 
                                                 <!-- 操作按钮行 -->
                                                 <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto"
-                                                      ColumnSpacing="6">
-                                                    <Button ToolTip.Tip="发送图片"
-                                                            Classes="GdGhost GdBtnSm"
-                                                            Padding="6"
-                                                            CornerRadius="{DynamicResource GdRadiusSm}"
-                                                            Click="AttachImageButton_Click">
-                                                        <PathIcon Data="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"
-                                                                  Width="15"
-                                                                  Height="15"
-                                                                  HorizontalAlignment="Center"
-                                                                  VerticalAlignment="Center" />
-                                                    </Button>
-                                                    <Button Grid.Column="1"
-                                                            ToolTip.Tip="发送视频"
-                                                            Classes="GdGhost GdBtnSm"
-                                                            Padding="6"
-                                                            CornerRadius="{DynamicResource GdRadiusSm}"
-                                                            Click="AttachVideoButton_Click">
-                                                        <PathIcon Data="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"
-                                                                  Width="15"
-                                                                  Height="15"
-                                                                  HorizontalAlignment="Center"
-                                                                  VerticalAlignment="Center" />
-                                                    </Button>
-                                                    <Button Grid.Column="2"
-                                                            ToolTip.Tip="发送文件"
-                                                            Classes="GdGhost GdBtnSm"
-                                                            Padding="6"
-                                                            CornerRadius="{DynamicResource GdRadiusSm}"
-                                                            Click="AttachFileButton_Click">
-                                                        <PathIcon Data="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"
-                                                                  Width="15"
-                                                                  Height="15"
-                                                                  HorizontalAlignment="Center"
-                                                                  VerticalAlignment="Center" />
-                                                    </Button>
-                                                    <Button Grid.Column="3"
-                                                            ToolTip.Tip="表情"
-                                                            Classes="GdGhost GdBtnSm"
-                                                            Padding="6"
-                                                            CornerRadius="{DynamicResource GdRadiusSm}"
+                                                      ColumnSpacing="8">
+                                                    <Button ToolTip.Tip="表情"
+                                                            Classes="GdHeaderIconBtn"
                                                             Click="EmojiPickerButton_Click">
-                                                        <PathIcon Data="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"
-                                                                  Width="15"
-                                                                  Height="15"
-                                                                  HorizontalAlignment="Center"
-                                                                  VerticalAlignment="Center" />
+                                                        <Path Classes="GdLucideIcon"
+                                                              Width="18"
+                                                              Height="18"
+                                                              Data="{StaticResource LucideSmileGeometry}" />
                                                         <Button.Flyout>
                                                             <Flyout Placement="Top">
                                                                 <ScrollViewer MaxWidth="260"
@@ -985,17 +1032,52 @@
                                                             </Flyout>
                                                         </Button.Flyout>
                                                     </Button>
+                                                    <Button Grid.Column="1"
+                                                            ToolTip.Tip="发送图片"
+                                                            Classes="GdHeaderIconBtn"
+                                                            Click="AttachImageButton_Click">
+                                                        <Path Classes="GdLucideIcon"
+                                                              Width="18"
+                                                              Height="18"
+                                                              Data="{StaticResource LucideImageGeometry}" />
+                                                    </Button>
+                                                    <Button Grid.Column="2"
+                                                            ToolTip.Tip="发送视频"
+                                                            Classes="GdHeaderIconBtn"
+                                                            Click="AttachVideoButton_Click">
+                                                        <Path Classes="GdLucideIcon"
+                                                              Width="18"
+                                                              Height="18"
+                                                              Data="{StaticResource LucideVideoGeometry}" />
+                                                    </Button>
+                                                    <Button Grid.Column="3"
+                                                            ToolTip.Tip="发送文件"
+                                                            Classes="GdHeaderIconBtn"
+                                                            Click="AttachFileButton_Click">
+                                                        <Path Classes="GdLucideIcon"
+                                                              Width="18"
+                                                              Height="18"
+                                                              Data="{StaticResource LucideFileTextGeometry}" />
+                                                    </Button>
                                                     <TextBlock Grid.Column="4"
                                                                FontSize="9"
                                                                Text="Enter 发送 | Alt+Enter 换行"
                                                                VerticalAlignment="Center"
                                                                Foreground="{DynamicResource GdMutedForegroundBrush}" />
                                                     <Button Grid.Column="5"
-                                                            Content="{Binding $parent[UserControl].DataContext.SendButtonLabel}"
-                                                            Classes="GdPrimary GdBtnSm"
-                                                            Padding="16,6"
-                                                            FontSize="12"
-                                                            Command="{Binding $parent[UserControl].DataContext.SendMessageCommand}" />
+                                                            Classes="GdPrimary"
+                                                            Padding="16,8"
+                                                            FontSize="13"
+                                                            Command="{Binding $parent[UserControl].DataContext.SendMessageCommand}">
+                                                        <StackPanel Orientation="Horizontal"
+                                                                    Spacing="6">
+                                                            <Path Classes="GdLucideIcon"
+                                                                  Width="14"
+                                                                  Height="14"
+                                                                  Data="{StaticResource LucideSendGeometry}" />
+                                                            <TextBlock Text="{Binding $parent[UserControl].DataContext.SendButtonLabel}" />
+                                                        </StackPanel>
+                                                    </Button>
                                                 </Grid>
                                             </StackPanel>
                                         </Border>
@@ -1190,7 +1272,7 @@
                                                             <TextBlock Text="{Binding AvatarInitial}"
                                                                        FontWeight="Bold"
                                                                        FontSize="10"
-                                                                       Foreground="{StaticResource GdPrimaryBrush}"
+                                                                       Foreground="{DynamicResource GdPrimaryBrush}"
                                                                        VerticalAlignment="Center"
                                                                        HorizontalAlignment="Center"
                                                                        IsVisible="{Binding !HasAvatarBitmap}" />
@@ -1243,24 +1325,46 @@
                             ClipToBounds="True">
                         <Grid RowDefinitions="Auto,*,Auto">
                             <!-- 头像 + 昵称 + 状态 + 签名 -->
-                            <Border Padding="14,16"
+                            <Border Padding="16,16"
                                     BorderBrush="{DynamicResource GdBorderBrush}"
                                     BorderThickness="0,0,0,1">
-                                <StackPanel Spacing="8"
+                                <StackPanel Spacing="10"
                                             HorizontalAlignment="Center">
-                                    <Border Width="52"
-                                            Height="52"
-                                            CornerRadius="26"
-                                            Background="{DynamicResource GdMutedBrush}">
-                                        <TextBlock Text="友"
+                                    <!-- 在线大头像（渐变背景 + 白字） -->
+                                    <Border Width="56"
+                                            Height="56"
+                                            CornerRadius="28"
+                                            ClipToBounds="True"
+                                            IsVisible="{Binding ActiveConversationState.IsOnline}">
+                                        <Border.Background>
+                                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                                <GradientStop Offset="0" Color="{StaticResource GdSuccess}" />
+                                                <GradientStop Offset="1" Color="{StaticResource GdBrand600}" />
+                                            </LinearGradientBrush>
+                                        </Border.Background>
+                                        <TextBlock Text="{Binding ActiveConversationState.AvatarInitial}"
                                                    FontSize="20"
                                                    FontWeight="Bold"
-                                                   Foreground="{StaticResource GdPrimaryBrush}"
+                                                   Foreground="White"
+                                                   VerticalAlignment="Center"
+                                                   HorizontalAlignment="Center" />
+                                    </Border>
+                                    <!-- 离线大头像（muted 背景 + muted-foreground 字） -->
+                                    <Border Width="56"
+                                            Height="56"
+                                            CornerRadius="28"
+                                            ClipToBounds="True"
+                                            Background="{DynamicResource GdMutedBrush}"
+                                            IsVisible="{Binding !ActiveConversationState.IsOnline}">
+                                        <TextBlock Text="{Binding ActiveConversationState.AvatarInitial}"
+                                                   FontSize="20"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
                                                    VerticalAlignment="Center"
                                                    HorizontalAlignment="Center" />
                                     </Border>
                                     <TextBlock Text="{Binding ActiveConversationState.Title}"
-                                               FontSize="13"
+                                               FontSize="14"
                                                FontWeight="SemiBold"
                                                HorizontalAlignment="Center"
                                                TextWrapping="Wrap"
@@ -1270,64 +1374,169 @@
                                                 Spacing="4">
                                         <Ellipse Width="7"
                                                  Height="7"
-                                                 Fill="{StaticResource GdSuccessBrush}" />
-                                        <TextBlock Text="{Binding ActiveConversationState.Category}"
-                                                   FontSize="10"
-                                                   Foreground="{DynamicResource GdSuccessBrush}" />
+                                                 Fill="{DynamicResource GdSuccessBrush}"
+                                                 IsVisible="{Binding ActiveConversationState.IsOnline}" />
+                                        <Ellipse Width="7"
+                                                 Height="7"
+                                                 Fill="{DynamicResource GdMutedForegroundBrush}"
+                                                 IsVisible="{Binding !ActiveConversationState.IsOnline}" />
+                                        <TextBlock Text="{Binding ActiveConversationState.OnlineStatusText}"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource GdSuccessBrush}"
+                                                   IsVisible="{Binding ActiveConversationState.IsOnline}" />
+                                        <TextBlock Text="{Binding ActiveConversationState.OnlineStatusText}"
+                                                   FontSize="11"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                   IsVisible="{Binding !ActiveConversationState.IsOnline}" />
                                     </StackPanel>
                                     <TextBlock Text="{Binding ActiveConversationState.Description}"
-                                               FontSize="10"
+                                               FontSize="11"
                                                TextWrapping="Wrap"
                                                TextAlignment="Center"
+                                               LineHeight="17"
                                                Foreground="{DynamicResource GdMutedForegroundBrush}" />
                                 </StackPanel>
                             </Border>
 
-                            <!-- 共享文件占位 -->
+                            <!-- 共享文件列表（对应设计稿3个文件卡：图片/文档/音乐） -->
                             <ScrollViewer Grid.Row="1"
                                           VerticalScrollBarVisibility="Auto"
                                           HorizontalScrollBarVisibility="Disabled"
-                                          Padding="12,10">
+                                          Padding="12">
                                 <StackPanel Spacing="8">
                                     <TextBlock Text="共享文件"
                                                Classes="GdSectionHeader"
                                                FontSize="11" />
-                                    <Border BorderBrush="{DynamicResource GdBorderBrush}"
-                                            BorderThickness="1"
-                                            CornerRadius="{DynamicResource GdRadiusSm}"
-                                            Padding="10,8">
-                                        <StackPanel Spacing="4"
-                                                    HorizontalAlignment="Center">
-                                            <TextBlock Text="📁"
-                                                       FontSize="20"
-                                                       HorizontalAlignment="Center" />
-                                            <TextBlock Text="暂无共享文件"
-                                                       FontSize="11"
-                                                       HorizontalAlignment="Center"
-                                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                                        </StackPanel>
+                                    <!-- 图片文件卡（info-surface + image 图标） -->
+                                    <Border Classes="GdSharedFileCard">
+                                        <Grid ColumnDefinitions="Auto,*"
+                                              ColumnSpacing="8">
+                                            <Border Grid.Column="0"
+                                                    Width="32"
+                                                    Height="32"
+                                                    CornerRadius="{DynamicResource GdRadiusSm}"
+                                                    Background="{DynamicResource GdInfoSurfaceBrush}">
+                                                <Path Classes="GdLucideIcon"
+                                                      Width="16"
+                                                      Height="16"
+                                                      Data="{StaticResource LucideImageGeometry}"
+                                                      Stroke="{DynamicResource GdInfoBrush}"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center" />
+                                            </Border>
+                                            <StackPanel Grid.Column="1"
+                                                        VerticalAlignment="Center"
+                                                        Spacing="2">
+                                                <TextBlock Text="百合叶片.jpg"
+                                                           FontSize="12"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Foreground="{DynamicResource GdForegroundBrush}" />
+                                                <TextBlock Text="248 KB"
+                                                           FontSize="10"
+                                                           FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                    <!-- 文档文件卡（success-surface + file-text 图标） -->
+                                    <Border Classes="GdSharedFileCard">
+                                        <Grid ColumnDefinitions="Auto,*"
+                                              ColumnSpacing="8">
+                                            <Border Grid.Column="0"
+                                                    Width="32"
+                                                    Height="32"
+                                                    CornerRadius="{DynamicResource GdRadiusSm}"
+                                                    Background="{DynamicResource GdSuccessSurfaceBrush}">
+                                                <Path Classes="GdLucideIcon"
+                                                      Width="16"
+                                                      Height="16"
+                                                      Data="{StaticResource LucideFileTextGeometry}"
+                                                      Stroke="{DynamicResource GdSuccessBrush}"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center" />
+                                            </Border>
+                                            <StackPanel Grid.Column="1"
+                                                        VerticalAlignment="Center"
+                                                        Spacing="2">
+                                                <TextBlock Text="种植笔记.pdf"
+                                                           FontSize="12"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Foreground="{DynamicResource GdForegroundBrush}" />
+                                                <TextBlock Text="1.2 MB"
+                                                           FontSize="10"
+                                                           FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                    <!-- 音乐文件卡（warning-surface + music 图标） -->
+                                    <Border Classes="GdSharedFileCard">
+                                        <Grid ColumnDefinitions="Auto,*"
+                                              ColumnSpacing="8">
+                                            <Border Grid.Column="0"
+                                                    Width="32"
+                                                    Height="32"
+                                                    CornerRadius="{DynamicResource GdRadiusSm}"
+                                                    Background="{DynamicResource GdWarningSurfaceBrush}">
+                                                <Path Classes="GdLucideIcon"
+                                                      Width="16"
+                                                      Height="16"
+                                                      Data="{StaticResource LucideMusicGeometry}"
+                                                      Stroke="{DynamicResource GdWarningBrush}"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center" />
+                                            </Border>
+                                            <StackPanel Grid.Column="1"
+                                                        VerticalAlignment="Center"
+                                                        Spacing="2">
+                                                <TextBlock Text="田园午后.mp3"
+                                                           FontSize="12"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Foreground="{DynamicResource GdForegroundBrush}" />
+                                                <TextBlock Text="4.6 MB"
+                                                           FontSize="10"
+                                                           FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                            </StackPanel>
+                                        </Grid>
                                     </Border>
                                 </StackPanel>
                             </ScrollViewer>
 
                             <!-- 操作按钮区 -->
                             <Border Grid.Row="2"
-                                    Padding="12,10"
+                                    Padding="12"
                                     BorderBrush="{DynamicResource GdBorderBrush}"
                                     BorderThickness="0,1,0,0">
                                 <StackPanel Spacing="6">
-                                    <Button Content="屏蔽消息"
-                                            Classes="GdGhost GdBtnSm"
-                                            Padding="0,6"
-                                            FontSize="11"
+                                    <Button Classes="GdGhost"
+                                            Padding="6"
+                                            FontSize="12"
                                             HorizontalAlignment="Stretch"
-                                            HorizontalContentAlignment="Center" />
-                                    <Button Content="删除好友"
-                                            Classes="GdDanger GdBtnSm"
-                                            Padding="0,6"
-                                            FontSize="11"
+                                            HorizontalContentAlignment="Center">
+                                        <StackPanel Orientation="Horizontal"
+                                                    Spacing="6">
+                                            <Path Classes="GdLucideIcon"
+                                                  Width="13"
+                                                  Height="13"
+                                                  Data="{StaticResource LucideUserXGeometry}" />
+                                            <TextBlock Text="屏蔽消息" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Classes="GdDanger"
+                                            Padding="6"
+                                            FontSize="12"
                                             HorizontalAlignment="Stretch"
-                                            HorizontalContentAlignment="Center" />
+                                            HorizontalContentAlignment="Center">
+                                        <StackPanel Orientation="Horizontal"
+                                                    Spacing="6">
+                                            <Path Classes="GdLucideIcon"
+                                                  Width="13"
+                                                  Height="13"
+                                                  Data="{StaticResource LucideUserMinusGeometry}" />
+                                            <TextBlock Text="删除好友" />
+                                        </StackPanel>
+                                    </Button>
                                 </StackPanel>
                             </Border>
                         </Grid>

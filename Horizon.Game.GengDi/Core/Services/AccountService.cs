@@ -273,6 +273,45 @@ namespace Horizon.Game.GengDi.Core.Services
             return ClientAsyncDispatcher.RunLiteDbAsync(() => UpdateProfile(userId, nickName, bio, avatar));
         }
 
+        /// <summary>
+        /// 扩展版资料更新：同时保存性别、生日、地区、邮箱、手机号。
+        /// </summary>
+        public bool UpdateProfile(string userId, string nickName, string bio, string avatar,
+            string gender, DateTime? birthday, string province, string city, string email, string phone)
+        {
+            var user = _userRepository.GetById(userId);
+            if (user == null)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(nickName))
+            {
+                user.Username = nickName.Trim();
+            }
+
+            user.Bio = bio;
+            user.Avatar = avatar;
+            user.Gender = gender;
+            user.Birthday = birthday;
+            user.Province = province;
+            user.City = city;
+            user.Email = email;
+            user.Phone = phone;
+            _userRepository.Update(user);
+            return true;
+        }
+
+        /// <summary>
+        /// 扩展版资料更新（异步）。
+        /// </summary>
+        public Task<bool> UpdateProfileAsync(string userId, string nickName, string bio, string avatar,
+            string gender, DateTime? birthday, string province, string city, string email, string phone)
+        {
+            return ClientAsyncDispatcher.RunLiteDbAsync(() =>
+                UpdateProfile(userId, nickName, bio, avatar, gender, birthday, province, city, email, phone));
+        }
+
         public bool UpdateTitle(string userId, string title)
         {
             var user = _userRepository.GetById(userId);

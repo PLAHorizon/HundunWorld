@@ -33,6 +33,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private bool _isPaymentProcessing;
         private string _paymentResultMessage = "";
         private long _pendingPayOrderId;
+        private bool _usingMockData;
 
         public ObservableCollection<OrderListItem> FilteredOrders
         {
@@ -233,13 +234,74 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 new() { Status = 5, DisplayName = "已取消" },
                 new() { Status = 6, DisplayName = "退款中" }
             };
+
+            LoadMockData();
+        }
+
+        /// <summary>
+        /// 加载与设计原型一致的模拟订单数据，便于界面预览；
+        /// 当真实用户身份就绪（SetUserId）后会被实际数据覆盖。
+        /// </summary>
+        private void LoadMockData()
+        {
+            _orders = new ObservableCollection<OrderListItem>
+            {
+                new OrderListItem
+                {
+                    OrderId = 20260726001L,
+                    OrderNo = "ORD20260726001",
+                    Status = 0,
+                    TotalAmount = 204.00m,
+                    OrderTotalAmount = 204.00m,
+                    CreatedAt = new DateTime(2026, 7, 26, 9, 24, 18),
+                    Items = new ObservableCollection<OrderItemDisplay>
+                    {
+                        new OrderItemDisplay { ProductName = "高原红玫瑰（20支/束）", Quantity = 2, Subtotal = 116.00m },
+                        new OrderItemDisplay { ProductName = "晨曦混合花束（含康乃馨）", Quantity = 1, Subtotal = 88.00m }
+                    }
+                },
+                new OrderListItem
+                {
+                    OrderId = 20260725014L,
+                    OrderNo = "ORD20260725014",
+                    Status = 2,
+                    TotalAmount = 127.50m,
+                    OrderTotalAmount = 127.50m,
+                    CreatedAt = new DateTime(2026, 7, 25, 16, 42, 9),
+                    ExpressCompanyName = "顺丰速运",
+                    ShipOrderNumber = "SF1234567890",
+                    Items = new ObservableCollection<OrderItemDisplay>
+                    {
+                        new OrderItemDisplay { ProductName = "雪山白百合（10支/束）", Quantity = 3, Subtotal = 127.50m }
+                    }
+                },
+                new OrderListItem
+                {
+                    OrderId = 20260722008L,
+                    OrderNo = "ORD20260722008",
+                    Status = 4,
+                    TotalAmount = 234.00m,
+                    OrderTotalAmount = 234.00m,
+                    CreatedAt = new DateTime(2026, 7, 22, 11, 8, 33),
+                    Items = new ObservableCollection<OrderItemDisplay>
+                    {
+                        new OrderItemDisplay { ProductName = "晨曦混合花束（含康乃馨）", Quantity = 2, Subtotal = 176.00m },
+                        new OrderItemDisplay { ProductName = "高原红玫瑰（20支/束）", Quantity = 1, Subtotal = 58.00m }
+                    }
+                }
+            };
+            _usingMockData = true;
+            ApplyFilter();
         }
 
         public void SetUserId(Guid userId)
         {
             _userId = userId;
-            if (_orders.Count == 0)
+            if (_orders.Count == 0 || _usingMockData)
+            {
+                _usingMockData = false;
                 _ = LoadOrdersAsync();
+            }
         }
 
         internal async Task LoadOrdersAsync()
@@ -316,6 +378,13 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 : _orders.Where(o => o.Status == _selectedStatusFilter);
 
             FilteredOrders = new ObservableCollection<OrderListItem>(filtered);
+
+            foreach (var f in StatusFilters)
+            {
+                f.Count = f.Status < 0 ? _orders.Count : _orders.Count(o => o.Status == f.Status);
+                f.IsSelected = f.Status == _selectedStatusFilter;
+            }
+
             OnPropertyChanged(nameof(IsEmpty));
         }
 
@@ -552,6 +621,22 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             6 => "#FF7043",
             _ => "#888888"
         };
+        public bool IsStatusWarning => Status == 0 || Status == 6;
+        public bool IsStatusInfo => Status == 1 || Status == 2;
+        public bool IsStatusSuccess => Status == 3 || Status == 4;
+        public bool IsStatusError => Status == 5;
+        public int TotalItemCount => Items?.Sum(i => i.Quantity) ?? 0;
+        public string FooterSummary => Status switch
+        {
+            2 => !string.IsNullOrEmpty(ShipOrderNumber)
+                ? $"合计 {TotalItemCount} 件 · 物流单号 {ShipOrderNumber}"
+                : $"合计 {TotalItemCount} 件 · 已发货",
+            3 => $"合计 {TotalItemCount} 件 · 已签收",
+            4 => $"合计 {TotalItemCount} 件 · 已完成",
+            5 => $"合计 {TotalItemCount} 件 · 已取消",
+            6 => $"合计 {TotalItemCount} 件 · 退款处理中",
+            _ => $"合计 {TotalItemCount} 件 · 创建于 {CreatedAt:yyyy-MM-dd HH:mm}"
+        };
         public decimal TotalAmount { get; set; }
         public decimal OrderTotalAmount { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -585,6 +670,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
     public class StatusFilterItem : ViewModelBase
     {
         private bool _isSelected;
+        private int _count;
 
         public int Status { get; set; }
         public string DisplayName { get; set; } = "";
@@ -593,6 +679,12 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         {
             get => _isSelected;
             set => SetProperty(ref _isSelected, value);
+        }
+
+        public int Count
+        {
+            get => _count;
+            set => SetProperty(ref _count, value);
         }
     }
 

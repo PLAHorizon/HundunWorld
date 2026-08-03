@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -14,7 +16,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private readonly MusicPlayerService _playerService;
         private List<Playlist> _playlists;
         private Playlist _selectedPlaylist;
-        private List<Song> _playlistSongs;
+        private ObservableCollection<PlaylistSongEntry> _playlistSongs;
         private bool _isCreateDialogOpen;
         private string _newPlaylistName;
         private string _newPlaylistDescription;
@@ -43,6 +45,12 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             ToggleFavoriteCommand = new RelayCommand<Song>(ToggleSongFavorite);
             OpenLocalImportDialogCommand = new RelayCommand(OpenLocalImportDialog);
 
+            // 批量选择相关命令
+            SelectAllCommand = new RelayCommand(SelectAll);
+            DeleteSelectedCommand = new AsyncRelayCommand(DeleteSelectedAsync);
+            AddSelectedToQueueCommand = new RelayCommand(AddSelectedToQueue);
+            ToggleSongSelectionCommand = new RelayCommand<PlaylistSongEntry>(ToggleSongSelection);
+
             _localImportViewModel = new LocalMusicImportViewModel();
         }
 
@@ -58,10 +66,41 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             set => SetProperty(ref _selectedPlaylist, value);
         }
 
-        public List<Song> PlaylistSongs
+        /// <summary>当前歌单的歌曲条目集合（带序号与选中状态）。</summary>
+        public ObservableCollection<PlaylistSongEntry> PlaylistSongs
         {
             get => _playlistSongs;
-            set => SetProperty(ref _playlistSongs, value);
+            set
+            {
+                if (SetProperty(ref _playlistSongs, value))
+                {
+                    OnPropertyChanged(nameof(TotalDurationText));
+                    OnPropertyChanged(nameof(HasSongs));
+                    OnSongSelectionChanged();
+                }
+            }
+        }
+
+        /// <summary>当前已选中的歌曲数量（派生属性）。</summary>
+        public int SelectedCount => PlaylistSongs?.Count(x => x.IsSelected) ?? 0;
+
+        /// <summary>是否处于批量操作模式：存在选中项时为 true（派生属性）。</summary>
+        public bool IsBatchMode => SelectedCount > 0;
+
+        /// <summary>当前歌单是否存在歌曲（派生属性，用于空状态提示）。</summary>
+        public bool HasSongs => PlaylistSongs != null && PlaylistSongs.Count > 0;
+
+        /// <summary>歌单总时长文本，格式"N 小时 N 分"（派生属性）。</summary>
+        public string TotalDurationText
+        {
+            get
+            {
+                if (PlaylistSongs == null || PlaylistSongs.Count == 0) return "0 分";
+                var total = TimeSpan.FromSeconds(PlaylistSongs.Sum(e => e.Song.Duration.TotalSeconds));
+                var hours = (int)total.TotalHours;
+                var mins = total.Minutes;
+                return hours > 0 ? $"{hours} 小时 {mins} 分" : $"{mins} 分";
+            }
         }
 
         public bool IsCreateDialogOpen
@@ -132,6 +171,15 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public ICommand ToggleFavoriteCommand { get; }
         public ICommand OpenLocalImportDialogCommand { get; }
 
+        /// <summary>全选/取消全选当前歌单歌曲。</summary>
+        public ICommand SelectAllCommand { get; }
+        /// <summary>删除所有选中的歌曲。</summary>
+        public ICommand DeleteSelectedCommand { get; }
+        /// <summary>将选中歌曲添加到播放队列。</summary>
+        public ICommand AddSelectedToQueueCommand { get; }
+        /// <summary>切换单个歌曲条目的选中状态。</summary>
+        public ICommand ToggleSongSelectionCommand { get; }
+
         public void Initialize()
         {
             LoadPlaylistsAsync();
@@ -196,12 +244,53 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             SelectedPlaylist = playlist;
             if (playlist != null)
             {
-                PlaylistSongs = await _libraryService.GetPlaylistSongsAsync(playlist.Id);
+                var songs = await _libraryService.GetPlaylistSongsAsync(playlist.Id);
+                BuildPlaylistSongs(songs);
             }
             else
             {
                 PlaylistSongs = null;
             }
+        }
+
+        /// <summary>将原始歌曲列表包装为带序号与选中状态的条目集合。</summary>
+        private void BuildPlaylistSongs(List<Song> songs)
+        {
+            // 解除旧集合的事件订阅，避免内存泄漏
+            if (_playlistSongs != null)
+            {
+                foreach (var entry in _playlistSongs)
+                    entry.PropertyChanged -= OnEntryPropertyChanged;
+            }
+
+            var entries = new ObservableCollection<PlaylistSongEntry>();
+            if (songs != null)
+            {
+                int index = 1;
+                foreach (var song in songs)
+                {
+                    var entry = new PlaylistSongEntry { Index = index++, Song = song };
+                    entry.PropertyChanged += OnEntryPropertyChanged;
+                    entries.Add(entry);
+                }
+            }
+            PlaylistSongs = entries;
+        }
+
+        /// <summary>歌曲条目属性变化时同步刷新选中相关派生属性。</summary>
+        private void OnEntryPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(PlaylistSongEntry.IsSelected))
+            {
+                OnSongSelectionChanged();
+            }
+        }
+
+        /// <summary>刷新选中数量与批量模式状态（供外部/绑定调用）。</summary>
+        public void OnSongSelectionChanged()
+        {
+            OnPropertyChanged(nameof(SelectedCount));
+            OnPropertyChanged(nameof(IsBatchMode));
         }
 
         private void PlayPlaylist(Playlist playlist)
@@ -224,7 +313,8 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         {
             if (song == null || SelectedPlaylist == null) return;
             _libraryService.RemoveSongFromPlaylist(SelectedPlaylist.Id, song.Id);
-            PlaylistSongs = await _libraryService.GetPlaylistSongsAsync(SelectedPlaylist.Id);
+            var songs = await _libraryService.GetPlaylistSongsAsync(SelectedPlaylist.Id);
+            BuildPlaylistSongs(songs);
             Playlists = await _libraryService.GetAllPlaylistsAsync();
         }
 
@@ -243,7 +333,8 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         {
             if (song == null || SelectedPlaylist == null) return;
             _libraryService.AddSongToPlaylist(SelectedPlaylist.Id, song.Id);
-            PlaylistSongs = await _libraryService.GetPlaylistSongsAsync(SelectedPlaylist.Id);
+            var songs = await _libraryService.GetPlaylistSongsAsync(SelectedPlaylist.Id);
+            BuildPlaylistSongs(songs);
             Playlists = await _libraryService.GetAllPlaylistsAsync();
             AvailableSongs = AvailableSongs.Where(s => s.Id != song.Id).ToList();
         }
@@ -252,9 +343,9 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         {
             if (song == null) return;
             _libraryService.ToggleSongFavorite(song.Id);
-            if (PlaylistSongs != null)
+            if (PlaylistSongs != null && SelectedPlaylist != null)
             {
-                PlaylistSongs = _libraryService.GetPlaylistSongs(SelectedPlaylist.Id);
+                BuildPlaylistSongs(_libraryService.GetPlaylistSongs(SelectedPlaylist.Id));
             }
         }
 
@@ -269,7 +360,8 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         {
             if (SelectedPlaylist != null)
             {
-                PlaylistSongs = await _libraryService.GetPlaylistSongsAsync(SelectedPlaylist.Id);
+                var songs = await _libraryService.GetPlaylistSongsAsync(SelectedPlaylist.Id);
+                BuildPlaylistSongs(songs);
                 Playlists = await _libraryService.GetAllPlaylistsAsync();
             }
         }
@@ -289,6 +381,53 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             }
 
             AvailableSongs = allSongs.ToList();
+        }
+
+        /// <summary>全选/取消全选切换：若已全部选中则取消全选，否则全选。</summary>
+        private void SelectAll()
+        {
+            if (PlaylistSongs == null || PlaylistSongs.Count == 0) return;
+            var allSelected = PlaylistSongs.All(x => x.IsSelected);
+            foreach (var entry in PlaylistSongs)
+            {
+                entry.IsSelected = !allSelected;
+            }
+            OnSongSelectionChanged();
+        }
+
+        /// <summary>删除所有选中的歌曲。</summary>
+        private async Task DeleteSelectedAsync()
+        {
+            if (PlaylistSongs == null || SelectedPlaylist == null) return;
+            var selected = PlaylistSongs.Where(x => x.IsSelected).Select(x => x.Song).ToList();
+            if (selected.Count == 0) return;
+            foreach (var song in selected)
+            {
+                _libraryService.RemoveSongFromPlaylist(SelectedPlaylist.Id, song.Id);
+            }
+            var songs = await _libraryService.GetPlaylistSongsAsync(SelectedPlaylist.Id);
+            BuildPlaylistSongs(songs);
+            Playlists = await _libraryService.GetAllPlaylistsAsync();
+        }
+
+        /// <summary>将选中歌曲添加到播放队列。</summary>
+        private void AddSelectedToQueue()
+        {
+            if (PlaylistSongs == null) return;
+            var selected = PlaylistSongs.Where(x => x.IsSelected).Select(x => x.Song).ToList();
+            if (selected.Count == 0) return;
+            foreach (var song in selected)
+            {
+                _playerService.Queue.AddSong(song);
+            }
+        }
+
+        /// <summary>切换单个歌曲条目的选中状态。</summary>
+        private void ToggleSongSelection(PlaylistSongEntry entry)
+        {
+            if (entry == null) return;
+            entry.IsSelected = !entry.IsSelected;
+            OnSongSelectionChanged();
         }
 
         private static List<Playlist> BuildSamplePlaylists()

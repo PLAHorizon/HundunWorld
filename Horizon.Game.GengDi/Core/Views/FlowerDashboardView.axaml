@@ -2,198 +2,246 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
              xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
+             xmlns:converters="using:Horizon.Game.GengDi.Core.Converters"
              x:Class="Horizon.Game.GengDi.Core.Views.FlowerDashboardView"
              x:DataType="vm:FlowerDashboardViewModel"
              Background="{DynamicResource GdBackgroundBrush}"
              Foreground="{DynamicResource GdForegroundBrush}">
+
+    <UserControl.Resources>
+        <converters:AlertLevelToSurfaceConverter x:Key="AlertSurfaceConverter" />
+    </UserControl.Resources>
 
     <controls:GalleryPage Title="行情仪表盘"
                           Subtitle="Horizon.Game.GengDi.FlowerDashboard"
                           Description="花卉市场实时行情概览与预警监控。"
                           IconSource="{StaticResource NotificationsIcon}">
 
-        <ScrollViewer VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled">
-            <StackPanel Spacing="20" Margin="0 0 0 24">
+        <StackPanel Spacing="20" Margin="0 0 0 24">
 
-                <!-- 指标卡（设计稿：图标+标签+数值+副文本） -->
-                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="16">
-                    <Border Classes="GdCard" Padding="20" Margin="0">
-                        <StackPanel Spacing="8">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <TextBlock Text="📈" FontSize="14" VerticalAlignment="Center" />
-                                <TextBlock Text="今日均价" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
-                            </StackPanel>
-                            <TextBlock Text="{Binding AvgPrice, StringFormat='¥{0:F2}'}" FontSize="26" FontWeight="Bold"
-                                       FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
-                                       Foreground="{DynamicResource GdForegroundBrush}" />
-                            <TextBlock Text="较昨日 +¥0.28" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                        </StackPanel>
-                    </Border>
-                    <Border Grid.Column="1" Classes="GdCard" Padding="20" Margin="0">
-                        <StackPanel Spacing="8">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <TextBlock Text="📊" FontSize="14" VerticalAlignment="Center" />
-                                <TextBlock Text="涨跌幅" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <TextBlock Text="{Binding PriceChangeDirection}" FontSize="20" FontWeight="Bold" VerticalAlignment="Center"
-                                           Foreground="{DynamicResource GdUpBrush}" />
-                                <TextBlock Text="{Binding PriceChangePercent, StringFormat='{}{0:F2}%'}" FontSize="26" FontWeight="Bold"
-                                           FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
-                                           Foreground="{DynamicResource GdUpBrush}" VerticalAlignment="Center" />
-                            </StackPanel>
-                            <TextBlock Text="市场整体偏强" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                        </StackPanel>
-                    </Border>
-                    <Border Grid.Column="2" Classes="GdCard" Padding="20" Margin="0"
-                            BorderBrush="{DynamicResource GdWarningBrush}" BorderThickness="3 0 0 0">
-                        <StackPanel Spacing="8">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <TextBlock Text="🔔" FontSize="14" VerticalAlignment="Center" />
-                                <TextBlock Text="预警数" FontSize="12" Foreground="{DynamicResource GdWarningBrush}" VerticalAlignment="Center" />
-                            </StackPanel>
-                            <TextBlock Text="{Binding AlertCount}" FontSize="26" FontWeight="Bold"
-                                       FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
-                                       Foreground="{DynamicResource GdWarningBrush}" />
-                            <TextBlock Text="待处理预警" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                        </StackPanel>
-                    </Border>
-                </Grid>
+            <!-- ============================================================ -->
+            <!-- 1. 指标卡（3 列：今日均价 / 涨跌幅 / 预警数）                  -->
+            <!--    对应原型 metric-card grid-template-columns:repeat(3,1fr)   -->
+            <!-- ============================================================ -->
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="16">
 
-                <!-- 品种价格走势标题栏 -->
-                <Grid ColumnDefinitions="*,Auto" Margin="0 0 0 4">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="📉" FontSize="16" VerticalAlignment="Center" />
-                        <TextBlock Text="品种价格走势" FontSize="15" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource GdForegroundBrush}" VerticalAlignment="Center" />
-                    </StackPanel>
-                    <Button Grid.Column="1" Classes="GdOutline" Padding="12 6" FontSize="12"
-                            Command="{Binding RefreshCommand}">
+                <!-- 今日均价 -->
+                <Border Classes="GdCard" Padding="20" Margin="0">
+                    <StackPanel Spacing="8">
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <TextBlock Text="🔄" FontSize="12" VerticalAlignment="Center" />
-                            <TextBlock Text="刷新" VerticalAlignment="Center" />
+                            <TextBlock Text="📈" FontSize="14" VerticalAlignment="Center" />
+                            <TextBlock Classes="GdMetricLabel" Text="今日均价" VerticalAlignment="Center" />
                         </StackPanel>
-                    </Button>
-                </Grid>
-
-                <Border Classes="GdCard" Padding="20" Background="{DynamicResource GdCardBrush}">
-                    <StackPanel Spacing="12">
-                        <Grid ColumnDefinitions="*,Auto,Auto,Auto">
-                            <TextBlock Text="品种" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" FontWeight="SemiBold" />
-                            <TextBlock Grid.Column="1" Text="价格" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" FontWeight="SemiBold" MinWidth="80" TextAlignment="Right" />
-                            <TextBlock Grid.Column="2" Text="涨跌幅" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" FontWeight="SemiBold" MinWidth="80" TextAlignment="Right" />
-                            <TextBlock Grid.Column="3" Text="趋势" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" FontWeight="SemiBold" MinWidth="40" TextAlignment="Center" />
-                        </Grid>
-                        <ItemsControl ItemsSource="{Binding TopSpecies}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Padding="0 8" BorderBrush="{DynamicResource GdInfoSurfaceBrush}" BorderThickness="0 0 0 1">
-                                        <Grid ColumnDefinitions="*,Auto,Auto,Auto">
-                                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding SpeciesIcon}" FontSize="16" VerticalAlignment="Center" />
-                                                <TextBlock Text="{Binding SpeciesName}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" />
-                                                <Border Background="{DynamicResource GdInfoSurfaceBrush}"
-                                                        CornerRadius="{DynamicResource GdRadiusSm}"
-                                                        Padding="6 2"
-                                                        IsVisible="{Binding IsExpandSuggestion}"
-                                                        VerticalAlignment="Center">
-                                                    <TextBlock Text="建议扩种" FontSize="10" Foreground="{DynamicResource GdPrimaryBrush}" FontWeight="SemiBold" />
-                                                </Border>
-                                                <Border Background="{DynamicResource GdInfoSurfaceBrush}"
-                                                        CornerRadius="{DynamicResource GdRadiusSm}"
-                                                        Padding="6 2"
-                                                        IsVisible="{Binding IsEarlyHarvestSuggestion}"
-                                                        VerticalAlignment="Center">
-                                                    <TextBlock Text="建议提前采收" FontSize="10" Foreground="{DynamicResource GdErrorBrush}" FontWeight="SemiBold" />
-                                                </Border>
-                                            </StackPanel>
-                                            <TextBlock Grid.Column="1"
-                                                       Text="{Binding Price, StringFormat='¥{0:F2}'}"
-                                                       FontSize="14"
-                                                       FontWeight="SemiBold"
-                                                       MinWidth="80"
-                                                       TextAlignment="Right"
-                                                       VerticalAlignment="Center" />
-                                            <TextBlock Grid.Column="2"
-                                                       Text="{Binding ChangePercent, StringFormat='{}{0:F2}%'}"
-                                                       FontSize="14"
-                                                       FontWeight="SemiBold"
-                                                       MinWidth="80"
-                                                       TextAlignment="Right"
-                                                       VerticalAlignment="Center">
-                                                <TextBlock.Foreground>
-                                                    <MultiBinding StringFormat="{}">
-                                                        <Binding Path="IsPositive" />
-                                                    </MultiBinding>
-                                                </TextBlock.Foreground>
-                                            </TextBlock>
-                                            <TextBlock Grid.Column="3"
-                                                       Text="{Binding ForecastTrendDisplay}"
-                                                       FontSize="12"
-                                                       MinWidth="40"
-                                                       TextAlignment="Center"
-                                                       VerticalAlignment="Center"
-                                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </Border>
-
-                <Border Classes="GdCard" Padding="20" Background="{DynamicResource GdCardBrush}">
-                    <StackPanel Spacing="12">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Text="最新预警" FontSize="16" FontWeight="SemiBold" />
-                            <TextBlock Grid.Column="1"
-                                       Text="{Binding AlertCount, StringFormat='共 {0} 条'}"
-                                       FontSize="12"
+                        <TextBlock Classes="GdMetricValue"
+                                   Text="{Binding AvgPrice, StringFormat='¥{0:F2}'}" />
+                        <StackPanel Orientation="Horizontal" Spacing="2">
+                            <TextBlock Text="较昨日" FontSize="12"
                                        Foreground="{DynamicResource GdMutedForegroundBrush}"
                                        VerticalAlignment="Center" />
-                        </Grid>
-                        <ItemsControl ItemsSource="{Binding RecentAlerts}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Padding="12 8" Margin="0 0 0 8" Background="{DynamicResource GdCardBrush}" CornerRadius="{DynamicResource GdRadiusMd}">
-                                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                                            <TextBlock Text="{Binding LevelIcon}" FontSize="18" VerticalAlignment="Center" />
-                                            <StackPanel Grid.Column="1" Spacing="4">
-                                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                                    <TextBlock Text="{Binding AlertTypeDisplay}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource GdWarningBrush}" />
-                                                    <TextBlock Text="{Binding SpeciesName}" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                                                </StackPanel>
-                                                <TextBlock Text="{Binding Message}" TextWrapping="Wrap" FontSize="13" />
+                            <TextBlock Text="{Binding PriceChangeAbsoluteDisplay}" FontSize="12" FontWeight="SemiBold"
+                                       FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                       Foreground="{Binding PriceChangeColor}"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- 涨跌幅 -->
+                <Border Grid.Column="1" Classes="GdCard" Padding="20" Margin="0">
+                    <StackPanel Spacing="8">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="📊" FontSize="14" VerticalAlignment="Center" />
+                            <TextBlock Classes="GdMetricLabel" Text="涨跌幅" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <TextBlock Text="{Binding PriceChangeDirection}" FontSize="28" FontWeight="SemiBold"
+                                       Foreground="{Binding PriceChangeColor}" VerticalAlignment="Center" />
+                            <TextBlock Classes="GdMetricValue"
+                                       Text="{Binding PriceChangePercent, StringFormat='{}{0:F2}%'}"
+                                       Foreground="{Binding PriceChangeColor}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Text="市场整体偏强" FontSize="12"
+                                   Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 预警数（左边框 3px warning，对应原型 border-left:3px solid warning） -->
+                <Border Grid.Column="2" Classes="GdCard" Padding="20" Margin="0"
+                        BorderBrush="{DynamicResource GdWarningBrush}" BorderThickness="3 0 0 0">
+                    <StackPanel Spacing="8">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="🔔" FontSize="14" VerticalAlignment="Center" />
+                            <TextBlock Classes="GdMetricLabel" Text="预警数"
+                                       Foreground="{DynamicResource GdWarningBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock Classes="GdMetricValue"
+                                   Text="{Binding AlertCount}"
+                                   Foreground="{DynamicResource GdWarningBrush}" />
+                        <TextBlock Text="待处理预警" FontSize="12"
+                                   Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <!-- ============================================================ -->
+            <!-- 2. 品种价格走势（标题栏 + 排行表格）                          -->
+            <!--    对应原型 metric-card > header + data-table                 -->
+            <!-- ============================================================ -->
+            <Border Classes="GdCard" Padding="20" Margin="0">
+                <StackPanel Spacing="14">
+
+                    <!-- 标题栏：标题 + 刷新按钮 -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="📉" FontSize="16" VerticalAlignment="Center" />
+                            <TextBlock Text="品种价格走势" FontSize="15" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource GdForegroundBrush}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <Button Grid.Column="1" Classes="GdGhost" Padding="12 6" FontSize="12"
+                                Command="{Binding RefreshCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="🔄" FontSize="12" VerticalAlignment="Center" />
+                                <TextBlock Text="刷新" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <!-- 表头 -->
+                    <Grid ColumnDefinitions="*,100,80,48">
+                        <TextBlock Classes="GdMetricLabel" Text="品种" />
+                        <TextBlock Grid.Column="1" Classes="GdMetricLabel" Text="价格" TextAlignment="Right" />
+                        <TextBlock Grid.Column="2" Classes="GdMetricLabel" Text="涨跌幅" TextAlignment="Right" />
+                        <TextBlock Grid.Column="3" Classes="GdMetricLabel" Text="趋势" TextAlignment="Center" />
+                    </Grid>
+
+                    <!-- 行列表（品种价格排行） -->
+                    <ItemsControl ItemsSource="{Binding TopSpecies}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{DynamicResource GdBorderBrush}" BorderThickness="0 0 0 1"
+                                        Padding="0 10">
+                                    <Grid ColumnDefinitions="*,100,80,48">
+                                        <!-- 品种：图标 + 名称 + 预测建议徽章 -->
+                                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding SpeciesIcon}" FontSize="16" VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding SpeciesName}" FontSize="14" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource GdForegroundBrush}" VerticalAlignment="Center" />
+                                            <Border Classes="GdBadge GdSuccess" IsVisible="{Binding IsExpandSuggestion}"
+                                                    VerticalAlignment="Center">
+                                                <TextBlock Text="建议扩种" />
+                                            </Border>
+                                            <Border Classes="GdBadge GdWarning" IsVisible="{Binding IsEarlyHarvestSuggestion}"
+                                                    VerticalAlignment="Center">
+                                                <TextBlock Text="建议提前采收" />
+                                            </Border>
+                                        </StackPanel>
+                                        <!-- 价格 -->
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding Price, StringFormat='¥{0:F2}'}"
+                                                   FontSize="14" FontWeight="SemiBold"
+                                                   FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                                   Foreground="{DynamicResource GdForegroundBrush}"
+                                                   TextAlignment="Right" VerticalAlignment="Center" />
+                                        <!-- 涨跌幅（上涨用 GdUp/ChangeColor，下跌用 GdDown/ChangeColor） -->
+                                        <TextBlock Grid.Column="2"
+                                                   Text="{Binding ChangePercent, StringFormat='{}{0:F2}%'}"
+                                                   FontSize="14" FontWeight="SemiBold"
+                                                   FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                                   Foreground="{Binding ChangeColor}"
+                                                   TextAlignment="Right" VerticalAlignment="Center" />
+                                        <!-- 趋势箭头 -->
+                                        <TextBlock Grid.Column="3"
+                                                   Text="{Binding ForecastTrendDisplay}"
+                                                   FontSize="16" FontWeight="SemiBold"
+                                                   Foreground="{Binding ChangeColor}"
+                                                   TextAlignment="Center" VerticalAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- ============================================================ -->
+            <!-- 3. 最新预警（标题 + 3 列预警卡）                              -->
+            <!--    对应原型 最新预警 h3 + grid repeat(3,1fr) alert-card        -->
+            <!-- ============================================================ -->
+            <StackPanel Spacing="14">
+
+                <!-- 标题 -->
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="🔔" FontSize="16" VerticalAlignment="Center" />
+                    <TextBlock Text="最新预警" FontSize="15" FontWeight="SemiBold"
+                               Foreground="{DynamicResource GdForegroundBrush}" VerticalAlignment="Center" />
+                </StackPanel>
+
+                <!-- 预警卡列表（3 列均匀网格） -->
+                <ItemsControl ItemsSource="{Binding RecentAlerts}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="3" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Classes="GdCard" Padding="16" Margin="7">
+                                <StackPanel Spacing="8">
+                                    <!-- 徽章 + 品种名 -->
+                                    <StackPanel Orientation="Horizontal" Spacing="10">
+                                        <Border Classes="GdBadge"
+                                                Background="{Binding AlertLevel, Converter={StaticResource AlertSurfaceConverter}}">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <TextBlock Text="{Binding LevelIcon}" VerticalAlignment="Center" />
+                                                <TextBlock Text="{Binding AlertTypeDisplay}" VerticalAlignment="Center" />
                                             </StackPanel>
-                                            <TextBlock Grid.Column="2"
-                                                       Text="{Binding TriggeredValue, StringFormat='¥{0:F2}'}"
-                                                       FontSize="14"
-                                                       FontWeight="SemiBold"
-                                                       Foreground="{DynamicResource GdErrorBrush}"
-                                                       VerticalAlignment="Center" />
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </Border>
-
-                <Border Classes="GdCard"
-                        Padding="40"
-                        Background="{DynamicResource GdCardBrush}"
-                        IsVisible="{Binding IsLoading}">
-                    <StackPanel HorizontalAlignment="Center" Spacing="12">
-                        <ProgressBar IsIndeterminate="True" Height="4" />
-                        <TextBlock Text="加载行情数据中..."
-                                   FontSize="13"
-                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
-                                   HorizontalAlignment="Center" />
-                    </StackPanel>
-                </Border>
-
+                                        </Border>
+                                        <TextBlock Text="{Binding SpeciesName}" FontSize="13"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <!-- 预警描述 -->
+                                    <TextBlock Text="{Binding Message}" FontSize="13"
+                                               Foreground="{DynamicResource GdForegroundBrush}"
+                                               TextWrapping="Wrap" LineHeight="20" />
+                                    <!-- 触发值 / 阈值（标签和颜色因预警类型而异） -->
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <TextBlock Text="{Binding TriggerLabel, StringFormat='{}{0}：'}" FontSize="12"
+                                                   FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding TriggeredValueDisplay}" FontSize="12"
+                                                   FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                                   Foreground="{Binding TriggeredValueColor}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding ThresholdLabel, StringFormat=' / {0} '}" FontSize="12"
+                                                   FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding ThresholdValueDisplay}" FontSize="12"
+                                                   FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </StackPanel>
-        </ScrollViewer>
+
+            <!-- ============================================================ -->
+            <!-- 4. 加载层（IsLoading 时显示）                                 -->
+            <!-- ============================================================ -->
+            <Border Classes="GdCard" Padding="40" Margin="0" IsVisible="{Binding IsLoading}">
+                <StackPanel HorizontalAlignment="Center" Spacing="12">
+                    <ProgressBar IsIndeterminate="True" Height="4" />
+                    <TextBlock Text="加载行情数据中..." FontSize="13"
+                               Foreground="{DynamicResource GdMutedForegroundBrush}"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
     </controls:GalleryPage>
 </UserControl>

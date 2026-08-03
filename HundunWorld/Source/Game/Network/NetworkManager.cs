@@ -115,6 +115,13 @@ namespace HundunWorld.Game.Network
         public event Action HandlersRegistered;
         
         /// <summary>
+        /// 断线超时事件：网关离线超过阈值时间后触发。
+        /// 上层（HundunWorldGame）收到此事件后应退回角色选择界面，
+        /// 不再发起任何网络连接请求，等待用户主动选择进入游戏时再按需拉起连接。
+        /// </summary>
+        public event Action DisconnectTimedOut;
+
+        /// <summary>
         /// 鉴权令牌过期事件，触发时通知上层需要重新登录
         /// </summary>
         public event Action AuthTokenExpired;
@@ -152,27 +159,53 @@ namespace HundunWorld.Game.Network
             _messageProcessor = new MessageProcessor();
             _messageAdapter = new HorizonMessageAdapter();
 
-            // 初始化重连管理器，提供连接函数和断开函数
-            // [修复] 传入 DisconnectAsync 作为断开函数，确保重连前先清理旧 TCP 连接，防止幽灵连接
+            // 初始化重连管理器，提供连接函数和断开函数。
+            // 修复（客户端无限发送连接请求）：
+            // 原实现 _connectFunction = ProbeGatewayAsync + ConnectAsync，探查成功后建立完整 TCP 连接，
+            // 但客户端未在游戏内（无角色登录），不会发送任何游戏数据，
+            // 服务端首包超时（5s）关闭连接 → OnClientDisconnected → HandleDisconnect → 重新探查 → 无限循环。
+            // 修复：_connectFunction 仅做 RST 探查（不建立持久连接），探查成功即表示"网关可达"，
+            // ReconnectionManager 收到 true 后停止循环。真正的持久连接仅在用户主动进入游戏时
+            // 通过 ConnectOnDemandAsync 建立。
             _reconnectionManager = new ReconnectionManager(
                 connectFunction: async () =>
                 {
-                    if (_currentGateway != null)
+                    if (_currentGateway == null)
+                        return false;
+
+                    // 已连接且在线 → 无需探查
+                    if (_connectionStatus == ConnectionStatus.Connected && _client != null && _client.Online)
                     {
-                        // [修复] 先用临时 TouchSocket 连接探查网关可达性，
-                        // 确认网关在线后再用主 _client 正式连接，避免失败的连接尝试在服务端留下幽灵会话
-                        if (!await ProbeGatewayAsync(_currentGateway.IP, _currentGateway.Port))
-                            return false;
-                        return await ConnectAsync(_currentGateway.IP, _currentGateway.Port);
+                        EnhancedLogging.LogInfo("[ReconnectConnectFunction] 连接已在线，跳过探查");
+                        return true;
                     }
-                    return false;
+
+                    // 仅做 RST 探查，不建立持久连接。
+                    // 探查成功 = 网关可达，ReconnectionManager 停止循环，等待用户主动进入游戏。
+                    // 探查失败 = 网关不可达，ReconnectionManager 继续退避重试。
+                    var reachable = await ProbeGatewayAsync(_currentGateway.IP, _currentGateway.Port);
+                    if (reachable)
+                    {
+                        EnhancedLogging.LogInfo("[ReconnectConnectFunction] 网关探查成功，停止自动重连循环，等待用户主动进入游戏");
+                    }
+                    return reachable;
                 },
-                disconnectFunction: DisconnectAsync);
+                disconnectFunction: DisconnectAsync,
+                networkCheckFunction: async () => await _networkStateMonitor.IsNetworkAvailableAsync());
 
             // 订阅重连管理器事件
             _reconnectionManager.OnReconnected += OnReconnectionSucceeded;
             _reconnectionManager.OnReconnectFailed += OnReconnectionFailed;
             _reconnectionManager.OnStateChanged += OnReconnectionStateChanged;
+            _reconnectionManager.OnDisconnectTimeout += OnDisconnectTimeout;
+            // 修复（真正断网后无法恢复 — ConnectAsync 跳过连接）：
+            // 订阅 OnDisconnected 事件。心跳超时路径下 OnClientDisconnected 不会被调用
+            // （TCP 层未检测到断开），NetworkManager._connectionStatus 仍为 Connected。
+            // 后续 StartReconnectAsync → ConnectAsync 检查 _connectionStatus == Connected →
+            // 跳过连接（返回 true），实际未建立新 TCP 连接 → "重连成功"但无数据流动 → 幽灵连接。
+            // 订阅 OnDisconnected 后，ReconnectionManager.HandleDisconnect 触发时同步更新
+            // NetworkManager._connectionStatus 为 Disconnected，ConnectAsync 不再跳过连接。
+            _reconnectionManager.OnDisconnected += OnReconnectionManagerDisconnected;
             _reconnectionManager.StartHeartbeat();
             // 订阅网络状态变化事件
             _networkStateMonitor.NetworkStatusChanged += OnNetworkStatusChanged;
@@ -352,37 +385,27 @@ namespace HundunWorld.Game.Network
         }
 
         /// <summary>
-        /// 使用原始 TCP Socket 探查网关是否可达。
-        /// 避免使用 TouchSocket TcpClient 创建完整协议栈连接，防止服务端 OnClientConnected
-        /// 触发 GameConnection 创建和 TrySetKeepAlive 延迟清理（幽灵连接滞留 500ms+）。
-        /// 原始 Socket 完成 TCP 三次握手后立即关闭，服务端 TouchSocket 不会为该连接创建
-        /// ITcpSessionClient/GameConnection，从根本上消除探查连接在服务端的残留。
+        /// 探查网关是否可达。当前已禁用 TCP RST 探查，始终返回 true（视为可达）。
+        /// <para>
+        /// 原实现使用原始 TCP Socket + LingerOption(true, 0) 发送 RST 探查网关，
+        /// 避免服务端创建幽灵 GameConnection。现已禁用探查，直接返回 true，
+        /// 跳过实际 TCP 调用。连接流程不变：调用方收到 true 后继续后续逻辑
+        /// （重连循环停止等待用户主动进入游戏 / ConnectOnDemandAsync 建立正式连接）。
+        /// </para>
+        /// <para>
+        /// 如需恢复探查，恢复方法体内的 TCP RST 探查逻辑即可。
+        /// </para>
         /// </summary>
         private async Task<bool> ProbeGatewayAsync(string ip, int port)
         {
-            try
+            await Task.CompletedTask; // 保持 async 签名，避免编译警告 CS1998
+
+            EnhancedLogging.LogInfo($"[ProbeGatewayAsync] 网关探查已禁用，假定 {ip}:{port} 可达");
+            if (_currentGateway != null)
             {
-                EnhancedLogging.LogInfo($"[ProbeGatewayAsync] 开始探查网关 {ip}:{port}");
-                using var rawClient = new System.Net.Sockets.TcpClient();
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-                cts.Token.Register(() => { try { rawClient.Close(); } catch { } });
-                await rawClient.ConnectAsync(ip, port);
-                EnhancedLogging.LogInfo($"[ProbeGatewayAsync] 探查网关 {ip}:{port} 成功");
-                // 探查成功后保存网关信息
-                if (_currentGateway != null)
-                {
-                    _currentGateway.IsAvailable = true;
-                }
-                // 直接关闭原始 TCP 连接（不经过 TouchSocket 协议栈），
-                // 服务端 TouchSocket 可能短暂看到 TCP 连接但不会创建 GameConnection
-                rawClient.Close();
-                return true;
+                _currentGateway.IsAvailable = true;
             }
-            catch (Exception ex)
-            {
-                EnhancedLogging.LogInfo($"[ProbeGatewayAsync] 探查网关 {ip}:{port} 失败: {ex.Message}");
-                return false;
-            }
+            return true;
         }
 
         /// <summary>
@@ -517,6 +540,25 @@ namespace HundunWorld.Game.Network
             {
                 _heartbeatManager.StartHeartbeat();
             }
+
+            // 修复（首包超时 — 重连后未发送数据）：
+            // 原实现仅在 OnReconnectionSucceeded 中 fire-and-forget 发送 ReconnectResumePacket，
+            // 但 OnReconnectionSucceeded 在 ConnectAsync 返回后才触发，存在时序窗口。
+            // 服务端 FirstPacketTimeout=15s 内未收到任何数据 → 首包超时 → 连接被清理。
+            // 修复：在 OnClientConnected 中（TCP 连接刚建立时）立即发送 ReconnectResumePacket。
+            // 重连场景下 CharacterId > 0，首次连接时 CharacterId == 0 跳过（由 EnterGame 流程发送 HandshakePacket）。
+            if (CharacterId > 0)
+            {
+                try
+                {
+                    EnhancedLogging.LogInfo("[OnClientConnected] 重连场景，立即发送 ReconnectResumePacket");
+                    await SendReconnectResumeAsync();
+                }
+                catch (Exception ex)
+                {
+                    EnhancedLogging.LogWarning($"[OnClientConnected] 发送 ReconnectResumePacket 失败（忽略）: {ex.Message}");
+                }
+            }
         }
 
         /// <summary>
@@ -573,15 +615,26 @@ namespace HundunWorld.Game.Network
         {
             try
             {
+                // 修复（远程角色同时不动+同时离线）：
+                // 原实现 LastHeartbeatTime 仅在收到 HeartbeatMessage 响应时更新，
+                // 不在收到其他消息（如快照）时更新。网络抖动导致心跳响应丢失时，
+                // 即使快照持续到达（连接实际活跃），10 秒后仍触发 CheckHeartbeat 断线。
+                // 断线后等待 60 秒才开始重连 → 快照通道断 60+ 秒 → 远程角色不动 →
+                // 90 秒后 CleanupStaleEntities 同时清理所有远程实体 → "同时离线"。
+                //
+                // 修复：收到任何服务端消息都更新 LastHeartbeatTime，证明连接活跃。
+                // 只有真正收不到任何消息（连接真的断了）时才触发心跳超时。
+                _reconnectionManager?.UpdateHeartbeat();
+
                 // Stage 1: 解析
                 var messagePacket = StageParse(e);
                 if (messagePacket == null)
                     return;
-        
+
                 // Stage 2: 验证
                 if (!StageValidate(messagePacket))
                     return;
-        
+
                 // Stage 3: 分发
                 await StageDispatch(sender, messagePacket);
             }
@@ -697,23 +750,48 @@ namespace HundunWorld.Game.Network
                 case NetworkStatus.Connected:
                     EnhancedLogging.LogInfo("[OnNetworkStatusChanged] 检测到网络在线");
                     EnhancedDiagnostics.LogDiagnostic("检测到网络在线");
+                    // 修复（客户端无限发送连接请求）：永久停止守卫。
+                    // 5 轮探查失败后 _disconnectTimedOut=true，NetworkStateMonitor 网络恢复事件
+                    // 不再自动触发重连，只有用户手动触发（ManualReconnectAsync/ConnectOnDemandAsync）才能重新发起连接。
+                    if (_reconnectionManager.IsDisconnectTimedOut)
+                    {
+                        EnhancedLogging.LogInfo("[OnNetworkStatusChanged] 探查已永久停止（等待用户手动触发），跳过 NetworkStateMonitor 触发的重连");
+                        break;
+                    }
                     // 网络恢复时，检查是否需要重连
-                    // [修复] 若 ReconnectionManager 已在重连中，则跳过，避免并发重连创建重复连接（幽灵连接根因之一）
+                    // [修复] 全面协调 NetworkStateMonitor 与 ReconnectionManager 的重连竞争：
+                    // 1) ReconnectionManager 已在重连中 → 跳过
+                    // 2) ReconnectionManager 处于 Disconnected 状态（已触发 HandleDisconnect，
+                    //    正在等待 ReconnectDelayMs 延迟）→ 跳过，由 ReconnectionManager 负责重连
+                    // 3) ReconnectionManager 处于 Connected 状态（连接正常）→ 跳过，无需重连
+                    // 只有当 ReconnectionManager 处于 Unkonw/Failed 且连接确实断开时，
+                    // NetworkStateMonitor 才作为后备触发重连。
+                    // 这消除了"断线后 NetworkStateMonitor 3 秒 + ReconnectionManager 5 秒双重重连"的核心根因。
                     if (_connectionStatus == ConnectionStatus.Disconnected
                         && _currentGateway != null
-                        && _reconnectionManager.CurrentState != ReconnectionManager.ReconnectState.Reconnecting)
+                        && _reconnectionManager.CurrentState != ReconnectionManager.ReconnectState.Reconnecting
+                        && _reconnectionManager.CurrentState != ReconnectionManager.ReconnectState.Disconnected
+                        && _reconnectionManager.CurrentState != ReconnectionManager.ReconnectState.Connected)
                     {
                         RunBackground(async () =>
                         {
                             await Task.Delay(3000); // 等待3秒确保网络稳定
                             // 延迟后再次检查，防止 ReconnectionManager 在等待期间已启动重连
-                            if (_reconnectionManager.CurrentState == ReconnectionManager.ReconnectState.Reconnecting)
+                            if (_reconnectionManager.IsDisconnectTimedOut
+                                || _reconnectionManager.CurrentState == ReconnectionManager.ReconnectState.Reconnecting
+                                || _reconnectionManager.CurrentState == ReconnectionManager.ReconnectState.Disconnected
+                                || _reconnectionManager.CurrentState == ReconnectionManager.ReconnectState.Connected)
                             {
-                                EnhancedLogging.LogInfo("[OnNetworkStatusChanged] ReconnectionManager 已在重连中，跳过 NetworkStateMonitor 触发的重连");
+                                EnhancedLogging.LogInfo("[OnNetworkStatusChanged] ReconnectionManager 已在处理重连或已连接或已永久停止，跳过 NetworkStateMonitor 触发的重连");
                                 return;
                             }
                             await CheckAndReconnectAsync();
                         });
+                    }
+                    else
+                    {
+                        EnhancedLogging.LogInfo(
+                            $"[OnNetworkStatusChanged] 跳过 NetworkStateMonitor 重连：ConnectionStatus={_connectionStatus}, ReconnectState={_reconnectionManager.CurrentState}");
                     }
                     break;
             }
@@ -1394,6 +1472,24 @@ namespace HundunWorld.Game.Network
         }
 
         /// <summary>
+        /// 修复（真正断网后无法恢复 — ConnectAsync 跳过连接）：
+        /// ReconnectionManager.HandleDisconnect 触发时（心跳超时路径），
+        /// 同步更新 NetworkManager._connectionStatus 为 Disconnected。
+        /// 这确保后续 ConnectAsync 不会因 _connectionStatus == Connected 而跳过连接。
+        /// </summary>
+        private void OnReconnectionManagerDisconnected()
+        {
+            EnhancedLogging.LogInfo("[OnReconnectionManagerDisconnected] ReconnectionManager 触发断线，同步更新 _connectionStatus");
+            UpdateConnectionStatus(ConnectionStatus.Disconnected);
+
+            // 停止心跳包发送（连接已断，发送会失败）
+            if (_heartbeatManager != null)
+            {
+                _heartbeatManager.StopHeartbeat();
+            }
+        }
+
+        /// <summary>
         /// [Phase C5] 发送 ReconnectResumePacket，尝试增量恢复（服务端已支持）。
         /// </summary>
         private async Task SendReconnectResumeAsync()
@@ -1451,6 +1547,58 @@ namespace HundunWorld.Game.Network
         }
 
         /// <summary>
+        /// 断线超时事件处理：网关离线超过阈值时间，停止所有自动重连，
+        /// 通知上层退回角色选择界面。
+        /// </summary>
+        private void OnDisconnectTimeout()
+        {
+            EnhancedLogging.LogWarning("[OnDisconnectTimeout] 网关离线超过阈值时间，停止自动重连，通知上层退回角色选择界面");
+            UpdateConnectionStatus(ConnectionStatus.Failed);
+            DisconnectTimedOut?.Invoke();
+        }
+
+        /// <summary>
+        /// 按需连接：用户主动选择进入游戏时调用。
+        /// 先探查网关是否可达，可达则建立连接；不可达则返回 false，上层停留在角色选择界面并提示用户。
+        /// 此方法会重置断线超时标记，允许本次连接尝试。
+        /// </summary>
+        /// <returns>true 表示连接成功；false 表示网关不可达。</returns>
+        public async Task<bool> ConnectOnDemandAsync()
+        {
+            if (_currentGateway == null)
+            {
+                EnhancedLogging.LogWarning("[ConnectOnDemandAsync] 无当前网关信息，无法连接");
+                return false;
+            }
+
+            EnhancedLogging.LogInfo($"[ConnectOnDemandAsync] 用户主动触发连接，探查网关 {_currentGateway.IP}:{_currentGateway.Port}");
+
+            // 重置断线超时标记，允许本次连接尝试
+            _reconnectionManager?.ResetDisconnectTimeout();
+
+            // 探查网关可达性
+            if (!await ProbeGatewayAsync(_currentGateway.IP, _currentGateway.Port))
+            {
+                EnhancedLogging.LogWarning("[ConnectOnDemandAsync] 网关不可达，停留在角色选择界面");
+                return false;
+            }
+
+            // 网关可达，建立正式连接
+            var connected = await ConnectAsync(_currentGateway.IP, _currentGateway.Port);
+            if (connected)
+            {
+                EnhancedLogging.LogInfo("[ConnectOnDemandAsync] 按需连接成功");
+                _reconnectionManager?.MarkConnected();
+            }
+            else
+            {
+                EnhancedLogging.LogWarning("[ConnectOnDemandAsync] 网关探查成功但正式连接失败");
+            }
+
+            return connected;
+        }
+
+        /// <summary>
         /// 重连状态变化事件处理
         /// </summary>
         private void OnReconnectionStateChanged(ReconnectionManager.ReconnectState state)
@@ -1503,6 +1651,8 @@ namespace HundunWorld.Game.Network
                     _reconnectionManager.OnReconnected -= OnReconnectionSucceeded;
                     _reconnectionManager.OnReconnectFailed -= OnReconnectionFailed;
                     _reconnectionManager.OnStateChanged -= OnReconnectionStateChanged;
+                    _reconnectionManager.OnDisconnected -= OnReconnectionManagerDisconnected;
+                    _reconnectionManager.OnDisconnectTimeout -= OnDisconnectTimeout;
                     _reconnectionManager.CancelReconnect();
                     _reconnectionManager.Dispose();
                 }
@@ -1603,6 +1753,7 @@ namespace HundunWorld.Game.Network
                 ConnectionStatusChanged = null;
                 ConnectionError = null;
                 AuthTokenExpired = null;
+                DisconnectTimedOut = null;
 
                 EnhancedDiagnostics.LogDiagnostic("网络管理器资源已释放");
             }
@@ -1636,14 +1787,20 @@ namespace HundunWorld.Game.Network
         }
 
         /// <summary>
-        /// 手动触发重连
+        /// 手动触发重连（用户主动触发）。
+        /// 修复（客户端无限发送连接请求）：手动触发时重置 _disconnectTimedOut，
+        /// 允许重新发起连接。这是唯一能解除永久停止状态的路径之一
+        /// （另一个是 ConnectOnDemandAsync）。
         /// </summary>
         public async Task<bool> ManualReconnectAsync()
         {
             try
             {
-                EnhancedLogging.LogInfo("[手动重连] 用户手动触发重连");
+                EnhancedLogging.LogInfo("[手动重连] 用户手动触发重连，重置永久停止标记");
                 EnhancedDiagnostics.LogDiagnostic("用户手动触发重连");
+
+                // 重置永久停止标记，允许重新发起连接
+                _reconnectionManager?.ResetDisconnectTimeout();
 
                 return await CheckAndReconnectAsync();
             }

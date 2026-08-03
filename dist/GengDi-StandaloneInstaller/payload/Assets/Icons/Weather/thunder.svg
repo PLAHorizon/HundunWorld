@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="cloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#808090"/>
+      <stop offset="50%" style="stop-color:#606070"/>
+      <stop offset="100%" style="stop-color:#505060"/>
+    </linearGradient>
+    <linearGradient id="boltGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFEB3B"/>
+      <stop offset="100%" style="stop-color:#FFC107"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(0,0)">
+    <animateTransform attributeName="transform" type="translate" values="0,0;2,0;0,0" dur="3s" repeatCount="indefinite"/>
+    <ellipse cx="50" cy="36" rx="26" ry="14" fill="url(#cloudGrad)"/>
+    <ellipse cx="37" cy="27" rx="17" ry="12" fill="url(#cloudGrad)"/>
+    <ellipse cx="63" cy="28" rx="15" ry="10" fill="url(#cloudGrad)"/>
+    <ellipse cx="50" cy="32" rx="20" ry="9" fill="#707080" opacity="0.6"/>
+  </g>
+  <polyline points="52,48 45,62 52,62 46,78" fill="none" stroke="url(#boltGrad)" stroke-width="3" stroke-linejoin="round">
+    <animate attributeName="opacity" values="1;0;1" dur="1.5s" repeatCount="indefinite"/>
+  </polyline>
+  <polyline points="52,48 45,62 52,62 46,78" fill="none" stroke="#FFFFFF" stroke-width="1" stroke-linejoin="round" opacity="0.5">
+    <animate attributeName="opacity" values="0.5;0;0.5" dur="1.5s" repeatCount="indefinite"/>
+  </polyline>
+</svg>

@@ -32,20 +32,17 @@ namespace Horizon.Game.GengDi.Core.Views
 
         private static void UpdateFilterButtonStyle(Button selectedBtn)
         {
-            if (selectedBtn.Parent is StackPanel panel)
+            if (selectedBtn.Parent is Panel panel)
             {
                 foreach (var child in panel.Children)
                 {
                     if (child is Button childBtn)
                     {
-                        childBtn.Classes.Remove("PrimaryAction");
-                        if (!childBtn.Classes.Contains("QuietAction"))
-                            childBtn.Classes.Add("QuietAction");
+                        childBtn.Classes.Remove("GdPillActive");
                     }
                 }
-                selectedBtn.Classes.Remove("QuietAction");
-                if (!selectedBtn.Classes.Contains("PrimaryAction"))
-                    selectedBtn.Classes.Add("PrimaryAction");
+                if (!selectedBtn.Classes.Contains("GdPillActive"))
+                    selectedBtn.Classes.Add("GdPillActive");
             }
         }
     }

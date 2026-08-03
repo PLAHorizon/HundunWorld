@@ -1,5 +1,169 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
              x:Class="Horizon.Game.GengDi.Core.Controls.LogisticsMapView">
-    <ContentControl x:Name="MapHost" />
+
+    <!-- ═══ 设计稿：物流地图（LogisticsMapView） ═══
+         card 背景 + border + radius-lg + overflow-hidden + height:360px(flex)
+         双栏：左侧地图区(flex:1) + 右侧物流时间线(280px) -->
+    <Border Background="{DynamicResource GdCardBrush}"
+            BorderBrush="{DynamicResource GdBorderBrush}"
+            BorderThickness="1"
+            CornerRadius="{DynamicResource GdRadiusLg}"
+            ClipToBounds="True">
+        <Grid ColumnDefinitions="*,280">
+
+            <!-- ═══ 左侧：地图区 ═══ -->
+            <Panel Grid.Column="0" Background="{DynamicResource GdMutedBrush}">
+
+                <!-- WebView 地图宿主（动态高德地图） -->
+                <ContentControl x:Name="MapHost" />
+
+                <!-- SVG fallback：WebView 不可用时显示静态示意图 -->
+                <!-- 路径线（虚线） -->
+                <Canvas IsHitTestVisible="False" Opacity="0.8">
+                    <Path Data="M 20 280 L 50 175 L 80 70"
+                          Stroke="{DynamicResource GdBrand500}"
+                          StrokeThickness="2"
+                          StrokeDashArray="6,4"
+                          StrokeLineCap="Round" />
+                </Canvas>
+
+                <!-- 站点标记：起点（左下） -->
+                <Border Width="12" Height="12" CornerRadius="6"
+                        Background="{DynamicResource GdBrand500}"
+                        BorderBrush="{DynamicResource GdCardBrush}"
+                        BorderThickness="2"
+                        HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                        Margin="20 0 0 20" IsHitTestVisible="False" />
+
+                <!-- 站点标记：当前（中心） -->
+                <Border Width="12" Height="12" CornerRadius="6"
+                        Background="{DynamicResource GdSuccessBrush}"
+                        BorderBrush="{DynamicResource GdCardBrush}"
+                        BorderThickness="2"
+                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                        IsHitTestVisible="False" />
+
+                <!-- 站点标记：终点（右上） -->
+                <Border Width="12" Height="12" CornerRadius="6"
+                        Background="{DynamicResource GdBrand500}"
+                        BorderBrush="{DynamicResource GdCardBrush}"
+                        BorderThickness="2"
+                        HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Margin="0 20 20 0" IsHitTestVisible="False" />
+
+                <!-- 右上角图层切换按钮组 -->
+                <Border HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Margin="0 12 12 0"
+                        Background="{DynamicResource GdCardBrush}"
+                        CornerRadius="{DynamicResource GdRadiusMd}" Padding="4">
+                    <StackPanel Orientation="Horizontal" Spacing="2">
+                        <Border Padding="6" CornerRadius="{DynamicResource GdRadiusSm}"
+                                Background="{DynamicResource GdInfoSurfaceBrush}">
+                            <ui:SymbolIcon Symbol="MapPin" FontSize="16"
+                                           Foreground="{DynamicResource GdBrand500}" />
+                        </Border>
+                        <Border Padding="6" CornerRadius="{DynamicResource GdRadiusSm}">
+                            <ui:SymbolIcon Symbol="OutlineStar" FontSize="16"
+                                           Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                        </Border>
+                        <Border Padding="6" CornerRadius="{DynamicResource GdRadiusSm}">
+                            <ui:SymbolIcon Symbol="Forward" FontSize="16"
+                                           Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!-- 左下角图例 -->
+                <Border HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                        Margin="12 0 0 12"
+                        Background="{DynamicResource GdCardBrush}"
+                        BorderBrush="{DynamicResource GdBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource GdRadiusMd}" Padding="12 8">
+                    <StackPanel Spacing="4">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Border Width="8" Height="8" CornerRadius="4"
+                                    Background="{DynamicResource GdBrand500}" />
+                            <TextBlock Text="起点" FontSize="11"
+                                       Foreground="{DynamicResource GdForegroundBrush}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Border Width="8" Height="8" CornerRadius="4"
+                                    Background="{DynamicResource GdSuccessBrush}" />
+                            <TextBlock Text="当前" FontSize="11"
+                                       Foreground="{DynamicResource GdForegroundBrush}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Border Width="8" Height="8" CornerRadius="4"
+                                    Background="{DynamicResource GdMutedForegroundBrush}" />
+                            <TextBlock Text="终点" FontSize="11"
+                                       Foreground="{DynamicResource GdForegroundBrush}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Panel>
+
+            <!-- ═══ 右侧：物流时间线（280px） ═══ -->
+            <Border Grid.Column="1"
+                    BorderBrush="{DynamicResource GdBorderBrush}"
+                    BorderThickness="1 0 0 0" Padding="16">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Spacing="0">
+                        <TextBlock Text="物流跟踪" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource GdForegroundBrush}"
+                                   Margin="0 0 0 16" />
+
+                        <ItemsControl ItemsSource="{Binding TimelineNodes, RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=controls:LogisticsMapView}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="controls:DisplayLogisticsNode">
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <!-- 左列：状态圆点 + 连接竖线 -->
+                                        <StackPanel Width="20" VerticalAlignment="Stretch"
+                                                    HorizontalAlignment="Center">
+                                            <!-- 已完成：success 圆 + check -->
+                                            <Border Width="20" Height="20" CornerRadius="10"
+                                                    Background="{DynamicResource GdSuccessBrush}"
+                                                    HorizontalAlignment="Center"
+                                                    IsVisible="{Binding IsCompleted}">
+                                                <ui:SymbolIcon Symbol="Accept" FontSize="12"
+                                                               Foreground="{DynamicResource GdPrimaryForegroundBrush}"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center" />
+                                            </Border>
+                                            <!-- 未完成：空圆 -->
+                                            <Border Width="20" Height="20" CornerRadius="10"
+                                                    BorderBrush="{DynamicResource GdBorderBrush}"
+                                                    BorderThickness="2"
+                                                    Background="Transparent"
+                                                    HorizontalAlignment="Center"
+                                                    IsVisible="{Binding !IsCompleted}" />
+                                            <!-- 连接竖线（最后一个无竖线） -->
+                                            <Border Width="1" HorizontalAlignment="Center"
+                                                    Background="{DynamicResource GdBorderBrush}"
+                                                    IsVisible="{Binding !IsLast}"
+                                                    MinHeight="16" />
+                                        </StackPanel>
+                                        <!-- 右列：状态信息 -->
+                                        <StackPanel Spacing="2" Margin="0 0 0 16">
+                                            <TextBlock Text="{Binding Status}" FontSize="13" FontWeight="Medium"
+                                                       Foreground="{DynamicResource GdForegroundBrush}" />
+                                            <TextBlock Text="{Binding TimeText}" FontSize="11"
+                                                       FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                            <TextBlock Text="{Binding Location}" FontSize="11"
+                                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Border>
 </UserControl>

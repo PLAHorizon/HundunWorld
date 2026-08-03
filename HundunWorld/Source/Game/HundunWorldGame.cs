@@ -195,6 +195,7 @@ namespace HundunWorld.Game
                 _networkManager.ConnectionStatusChanged += OnConnectionStatusChanged;
                //_networkManager.MessageReceived += OnMessageReceived;
                 _networkManager.ConnectionError += OnConnectionError;
+                _networkManager.DisconnectTimedOut += OnDisconnectTimedOut;
 
                 // 订阅同步包事件：将服务端快照桥接到 SnapshotReceiveBuffer
                 // 这是同步链路的关键桥接：SyncPacketMessageHandler -> SnapshotReceiveBuffer -> SnapshotApplySystem
@@ -247,21 +248,19 @@ namespace HundunWorld.Game
         {
             Debug.Log($"网络连接状态变化: {status}");
 
-            // 重连中：冻结远程实体插值和 Actor 位置更新，避免无新数据时 dead reckoning 漂移
+            // 重连中：不暂停插值和 Actor 同步。
+            // 修复（远程角色同时不动+同时离线）：
+            // 原实现在 Reconnecting 状态暂停 InterpolationSystem 和 FlaxActorSyncSystem，
+            // 导致断线期间所有远程角色完全不动。即使快照队列中有积压的快照也无法处理。
+            // 正确做法：不暂停任何系统。InterpolationSystem 继续用最后已知 Target 插值
+            // （通常已到达目标，位置不变），FlaxActorSyncSystem 继续同步位置/朝向/动画。
+            // 恢复连接后新快照更新 Target，无缝衔接。
+            // 只有真正断线（30 秒无任何消息）时 HeartbeatTimeout 才触发，此时快照队列已空，
+            // InterpolationSystem 自然保持当前位置（Target 已到达），无需暂停。
             if (status == ConnectionStatus.Reconnecting)
             {
                 _wasReconnecting = true;
-                var flaxSync = FlaxActorSyncSystem.Instance;
-                if (flaxSync != null) flaxSync.IsPaused = true;
-
-                // 暂停 InterpolationSystem
-                if (_archWorldHost != null)
-                {
-                    var interpSys = _archWorldHost.GetSystems(Horizon.Game.ECS.Arch.Core.SystemGroup.Render)
-                        .OfType<Horizon.Game.ECS.Arch.Systems.InterpolationSystem>()
-                        .FirstOrDefault();
-                    if (interpSys != null) interpSys.IsPaused = true;
-                }
+                // 不暂停任何系统，让插值和同步继续运行
             }
 
             // 重连成功：恢复插值系统，让服务端全量快照更新现有实体。
@@ -307,20 +306,20 @@ namespace HundunWorld.Game
             //   每 ~35 秒循环一次，表现为"闪退"。
             //
             // 正确做法：断线时不切换场景，让 ReconnectionManager 在后台处理重连。
-            // - ReconnectionManager 在后台以指数退避策略重试（最多 10 次，~104 秒）
+            // - 断线后等待 60 秒再拉起网关探查，避免网络抖动时频繁探查
+            // - ReconnectionManager 在后台以指数退避策略重试（最多 10 次）
             // - 重连成功 → Reconnecting 状态已暂停的同步系统被恢复 → 游戏继续
-            // - 重连失败 → Failed 状态触发场景切换 → 回到角色选择界面
+            // - 重连失败（探查超过10次）→ Failed 状态触发场景切换 → 回到登录界面
             if (status == ConnectionStatus.Disconnected)
             {
                 Debug.Log("[HundunWorldGame] 网关离线，ReconnectionManager 正在后台重连...");
                 // 不切换场景，不销毁 Actor，让 ReconnectionManager 处理重连。
                 // Reconnecting 状态会暂停同步系统，Connected 状态会恢复同步系统。
-                // Failed 状态会触发场景切换到角色选择界面。
+                // Failed 状态（探查超过10次）会触发场景切换到登录界面。
             }
 
-            // 重连失败：所有重试都已耗尽，切换回角色选择界面。
-            // 此时 GameWorld 场景保留（因为 Disconnected 时未切换），
-            // 需要主动切换场景卸载 GameWorld，防止 UI 状态混乱。
+            // 重连失败：探查超过 MaxReconnectAttempts 次仍连接不上，或断线超过阈值时间，
+            // 退出回角色选择场景（而非登录场景），等待用户主动选择进入游戏时再按需拉起连接。
             if (status == ConnectionStatus.Failed)
             {
                 _wasReconnecting = false;
@@ -328,7 +327,7 @@ namespace HundunWorld.Game
                 var gameState = HundunWorld.Game.Core.GameStateManager.Instance;
                 if (gameState != null && gameState.IsInGame)
                 {
-                    Debug.Log("[HundunWorldGame] 重连失败，退出游戏世界，返回角色选择界面");
+                    Debug.Log("[HundunWorldGame] 网关离线超过阈值时间，退出游戏世界，返回角色选择界面");
                     Scripting.InvokeOnUpdate(() =>
                     {
                         var sceneManager = HundunWorld.Game.UI.GameSceneManager.Instance;
@@ -340,6 +339,31 @@ namespace HundunWorld.Game
                     });
                 }
             }
+        }
+
+        /// <summary>
+        /// 断线超时事件处理：网关离线超过阈值时间（60s），ReconnectionManager 停止所有自动重连后触发。
+        /// 退回角色选择界面，等待用户主动选择进入游戏时再按需拉起连接。
+        /// </summary>
+        private void OnDisconnectTimedOut()
+        {
+            Debug.LogWarning("[HundunWorldGame] 断线超时，网关长时间不可达，退回角色选择界面");
+            _wasReconnecting = false;
+
+            Scripting.InvokeOnUpdate(() =>
+            {
+                var gameState = HundunWorld.Game.Core.GameStateManager.Instance;
+                var sceneManager = HundunWorld.Game.UI.GameSceneManager.Instance;
+
+                if (sceneManager != null)
+                {
+                    sceneManager.TransitionTo(Horizon.Game.Message.Enums.SceneType.CharacterSelection);
+                }
+                if (gameState != null)
+                {
+                    gameState.ChangeState(HundunWorld.Game.Core.GameState.CharacterSelect);
+                }
+            });
         }
 
         /// <summary>
@@ -2213,6 +2237,7 @@ namespace HundunWorld.Game
                 {
                     _networkManager.ConnectionStatusChanged -= OnConnectionStatusChanged;
                     _networkManager.ConnectionError -= OnConnectionError;
+                    _networkManager.DisconnectTimedOut -= OnDisconnectTimedOut;
                 }
 
                 // 释放各个系统组件

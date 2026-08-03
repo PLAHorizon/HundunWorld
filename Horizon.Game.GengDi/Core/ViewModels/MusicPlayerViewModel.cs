@@ -91,6 +91,9 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                     RebuildDisplayLyrics();
                     UpdateScoreText();
                     break;
+                case nameof(MusicPlayerService.Volume):
+                    OnPropertyChanged(nameof(Volume));
+                    break;
             }
         }
 
@@ -114,6 +117,11 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public bool ShowLoadingIndicator => _playerService.IsLoading && _playerService.HasCurrentSong;
         public bool ShowErrorBanner => _playerService.IsError && _playerService.HasCurrentSong;
         public double Progress => _playerService.Progress;
+        public double Volume
+        {
+            get => _playerService.Volume;
+            set => _playerService.Volume = value;
+        }
         public string PositionText => _playerService.CurrentPositionText;
         public string DurationText => _playerService.TotalDurationText;
         public bool HasLyrics => _playerService.HasLyrics;

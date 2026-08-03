@@ -85,6 +85,12 @@ namespace Game.Network
         private Quaternion serverRotation;
         private float lastServerUpdateTime;
 
+        // 改进项 1：插值缓冲区最新状态的时间戳（与服务端下发时间轴对齐）。
+        // InterpolateToServerState 的 targetTime 基于此值而非 Time.GameTime，
+        // 避免网络抖动时接收间隔不均匀导致插值速度忽快忽慢。
+        // 0 表示尚无服务端状态，回退到 Time.GameTime 轴。
+        private float latestServerTimestamp;
+
         // 统计信息
         private int predictedFrameCount = 0;
         private int correctionCount = 0;
@@ -290,7 +296,14 @@ namespace Game.Network
         /// </summary>
         private void InterpolateToServerState()
         {
-            float targetTime = Time.GameTime - InterpolationDelay;
+            // 改进项 1：targetTime 基于缓冲区最新服务端时间戳而非客户端帧时间。
+            // 原实现用 Time.GameTime - InterpolationDelay，当网络抖动导致接收间隔不均匀时，
+            // 插值速度会忽快忽慢（接收密集时插值超前、稀疏时滞后）。
+            // 改用 latestServerTimestamp 后，插值延迟相对于"最新已知服务端状态"，
+            // 与缓冲区 Timestamp 同一时间轴，抖动鲁棒。
+            // latestServerTimestamp==0 表示尚无服务端状态，回退到客户端时间轴。
+            float referenceNow = latestServerTimestamp > 0f ? latestServerTimestamp : Time.GameTime;
+            float targetTime = referenceNow - InterpolationDelay;
 
             if (interpolationBuffer.Count < 2)
             {
@@ -354,6 +367,14 @@ namespace Game.Network
                 // 所有状态都已过时，向最新状态跟随
                 Actor.Position = Vector3.Lerp(Actor.Position, previous.Position, InterpolationSpeed * Time.DeltaTime);
                 Actor.Orientation = Quaternion.Slerp(Actor.Orientation, previous.Rotation, InterpolationSpeed * Time.DeltaTime);
+
+                // 修复 BUG（插值缓冲区泄漏 + O(n) 遍历）：原实现在此分支不清理过时状态，
+                // 导致 interpolationBuffer 持续累积已过时的 ServerState（最多 20 个），
+                // 每次 OnUpdate 都要 O(n) 遍历整个队列才能定位 previous（最新过时状态）。
+                // 此处清空队列仅保留 previous（最新），后续帧只需 O(1) 定位，且新到的
+                // 服务端状态会正常入队参与插值。
+                interpolationBuffer.Clear();
+                interpolationBuffer.Enqueue(previous);
             }
         }
 
@@ -449,12 +470,18 @@ namespace Game.Network
         /// 接收服务端位置校验
         /// [重构 Phase C1] 本地玩家的 reconciliation 已由 ECS ReconciliationSystem 负责，
         /// 本方法仅记录预测误差统计，不再执行 CorrectPrediction。
+        /// [改进项 1] <paramref name="serverTimestamp"/> 为服务端下发该状态的时间戳（秒，与 Time.GameTime 同单位）。
+        /// 调用方应优先传入服务端时间戳以使插值缓冲区与服务端时间轴对齐，提升抖动鲁棒性；
+        /// 传 0 或不传则回退到客户端接收时间（Time.GameTime），保持向后兼容。
         /// </summary>
-        public void OnServerPositionUpdate(Vector3 position, Quaternion rotation, int sequenceNumber)
+        public void OnServerPositionUpdate(Vector3 position, Quaternion rotation, int sequenceNumber, float serverTimestamp = 0f)
         {
             serverPosition = position;
             serverRotation = rotation;
             lastServerUpdateTime = Time.GameTime;
+
+            // 改进项 1：计算本状态的时间戳，优先用服务端时间，回退到客户端接收时间。
+            float stateTimestamp = serverTimestamp > 0f ? serverTimestamp : Time.GameTime;
 
             if (IsLocalPlayer && EnablePrediction)
             {
@@ -476,11 +503,18 @@ namespace Game.Network
                 {
                     interpolationBuffer.Enqueue(new ServerState
                     {
-                        Timestamp = Time.GameTime,
+                        Timestamp = stateTimestamp,
                         Position = position,
                         Rotation = rotation,
                         Velocity = Vector3.Zero
                     });
+
+                    // 改进项 1：更新最新服务端时间戳，供 InterpolateToServerState 计算 targetTime。
+                    // 取 max 防御乱序包导致时间轴回退。
+                    if (stateTimestamp > latestServerTimestamp)
+                    {
+                        latestServerTimestamp = stateTimestamp;
+                    }
 
                     // 限制缓冲区大小
                     while (interpolationBuffer.Count > 20)
@@ -727,6 +761,7 @@ namespace Game.Network
             serverPosition = currentPosition;
             serverRotation = currentRotation;
             _verticalVelocity = 0f;
+            latestServerTimestamp = 0f;
         }
     }
 }

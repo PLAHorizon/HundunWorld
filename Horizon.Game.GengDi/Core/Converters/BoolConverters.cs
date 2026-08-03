@@ -95,6 +95,21 @@ namespace Horizon.Game.GengDi.Core.Converters
         }
     }
 
+    public class EqualToThreeConverter : IValueConverter
+    {
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            if (value is int intValue)
+                return intValue == 3;
+            return false;
+        }
+
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     public class BoolToIntEqualOneConverter : IValueConverter
     {
         public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)

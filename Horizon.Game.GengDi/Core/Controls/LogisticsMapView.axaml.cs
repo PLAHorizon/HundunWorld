@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -11,6 +12,11 @@ using WebViewControl;
 
 namespace Horizon.Game.GengDi.Core.Controls
 {
+    /// <summary>
+    /// 物流地图视图：左侧地图区（WebView 高德地图 / 静态 SVG fallback）
+    /// + 右上角图层切换按钮组 + 左下角图例 + 右侧 280px 物流时间线。
+    /// 按设计稿 chrome-fixedbar.html 物流地图（LogisticsMapView）100% 还原。
+    /// </summary>
     public partial class LogisticsMapView : UserControl
     {
         private static bool _webViewUnavailable;
@@ -29,8 +35,14 @@ namespace Horizon.Game.GengDi.Core.Controls
             {
                 SetAndRaise(MapDataProperty, ref _mapData, value);
                 UpdateMap();
+                RebuildTimeline();
             }
         }
+
+        /// <summary>
+        /// 物流时间线展示节点，供右侧时间线 ItemsControl 绑定。
+        /// </summary>
+        public ObservableCollection<DisplayLogisticsNode> TimelineNodes { get; } = new();
 
         public LogisticsMapView()
         {
@@ -43,6 +55,33 @@ namespace Horizon.Game.GengDi.Core.Controls
         private void InitializeComponent()
         {
             AvaloniaXamlLoader.Load(this);
+        }
+
+        /// <summary>
+        /// 根据 MapData.Nodes 构建时间线展示节点。
+        /// 除最后一个节点外均为已完成（success 圆 + check）；最后一个节点根据签收状态判断。
+        /// </summary>
+        private void RebuildTimeline()
+        {
+            TimelineNodes.Clear();
+            if (_mapData == null || _mapData.Nodes == null || _mapData.Nodes.Count == 0) return;
+
+            var totalCount = _mapData.Nodes.Count;
+            var isSigned = _mapData.LogisticsStatus >= 4;
+
+            for (int i = 0; i < totalCount; i++)
+            {
+                var node = _mapData.Nodes[i];
+                var isLast = i == totalCount - 1;
+                TimelineNodes.Add(new DisplayLogisticsNode
+                {
+                    Status = node.Description,
+                    TimeText = node.Time.ToString("MM-dd HH:mm"),
+                    Location = node.Location,
+                    IsCompleted = !isLast || isSigned,
+                    IsLast = isLast,
+                });
+            }
         }
 
         private void UpdateMap()
@@ -234,5 +273,22 @@ map.setFitView();
             if (string.IsNullOrEmpty(value)) return "";
             return value.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "");
         }
+    }
+
+    /// <summary>
+    /// 物流时间线展示节点，映射 LogisticsMapNodeInfo 并附加展示状态。
+    /// </summary>
+    public class DisplayLogisticsNode
+    {
+        /// <summary>状态描述（已揽收/运输中/已到达/待派送等）</summary>
+        public string Status { get; set; } = "";
+        /// <summary>格式化时间（MM-dd HH:mm）</summary>
+        public string TimeText { get; set; } = "";
+        /// <summary>地点</summary>
+        public string Location { get; set; } = "";
+        /// <summary>是否已完成（已完成显示 success 圆+check，否则空圆）</summary>
+        public bool IsCompleted { get; set; }
+        /// <summary>是否最后一个节点（最后一个无连接竖线）</summary>
+        public bool IsLast { get; set; }
     }
 }

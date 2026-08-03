@@ -3,11 +3,11 @@
 > 本文档基于已落地协议代码逆向梳理，作为网络同步迁移 spec 的阶段 0 基线。
 > 所有事实均与当前代码库对齐，后续协议演进以本文档为参照。
 
-## 1. 概述（协议版本 v5）
+## 1. 概述（协议版本 v7）
 
 HundunWorld 同步协议（SyncPacket）是独立于 `MessageUnion`（用户主动请求/响应消息）的系统自主同步消息体系，承担快照、输入、事件、世界 diff 等高频实时数据的传输。
 
-**当前协议版本：`SyncProtocolVersion.Current = 5`**
+**当前协议版本：`SyncProtocolVersion.Current = 7`**（`MinimumSupported = 5`，允许 v5/v6/v7 并存过渡）
 
 版本演进历史：
 
@@ -19,6 +19,8 @@ HundunWorld 同步协议（SyncPacket）是独立于 `MessageUnion`（用户主�
 | v4 | 修复 `SyncPacketHandler` 单例下 `_characterId` 被多连接共享覆盖的 bug：`InputPacket` 新增 `CharacterId` 字段，服务端直接从输入包读取角色 ID，不再依赖握手时缓存的实例字段。 |
 | v4+ | 交互同步扩展：新增 `InteractionSyncPacket`（Kind=9）/ `InteractionSyncComponent` / `SyncEventKind` 交互事件（InteractStart=7/InteractEnd=8/InteractStolen=9）；复用 `WorldChunkDiffPacket` 信封承载（新增 `PayloadType` 字段区分内部类型）；`InteractionStateBits` 常量类统一状态位编码。 |
 | v5 | 阶段 B/C/D 同步协议扩展：<br/>• 新增 `MovementStateAuthComponent`（`MovementMode` + `VelocityXZ_X/Y` + `IsGrounded`）<br/>• 新增 `AnimationStateAuthComponent`（`AnimMontageId` + `AnimInstanceId` + `PlayRate` + `TimePosition` + `IsLooping`）<br/>• `EntityStateAuthComponent` 扩展（`Mana`/`MaxMana`/`Level`/`Exp`/`Stamina`/`MaxStamina`，[Id] 从 3 起连续编号，旧字段不变）<br/>• 新增 `SceneObjectSyncPacket`（`SyncPacketKind=10`，MemoryPackUnion 编号 9）<br/>• 新增 `SceneObjectStateAuthComponent` + `SceneObjectTransformComponent`<br/>• `SyncProtocolVersion.Current = 5`，服务端 `HandleHandshakeAsync` 严格拒绝旧版本<br/>• `InputPacket` 冗余重传（客户端未确认队列容量 64 + 落后 5 tick 触发重传）+ 服务端 per-characterId 去重<br/>• `SnapshotPacket` 增量压缩（`BaselineTick` 非 0 时为 delta 帧，60 tick 强制全量）<br/>• `WorldChunkDiffPayloadType` 新增 `SceneObjectSync = 4` |
+| v6 | `InputPacket` 新增 `MaxSpeed` 字段：客户端每帧把当帧目标速度（含 Run/Sprint/Crouch 倍数）随输入上送，服务端权威回放与客户端本地预测都用此值调用 `MovementFormula.Step`。修复"PlayerController.MoveSpeed 未进入网络同步链路，链路两端固定用 DefaultMaxSpeed=6 m/s 推进"的问题。 |
+| v7 | 新增 `BaselineResyncRequestPacket`（`SyncPacketKind=16`，MemoryPackUnion 编号 15）：客户端 delta 解码时 baseline 不匹配，主动请求服务端重传全量快照，替代原"直接应用 delta 兜底"，保证 baseline 一致性。服务端收到后设置 `_forceFullSnapshotNextTick=true`，下一 tick 强制下发全量快照。走可靠通道保证必达。 |
 
 版本号递增规则：每次 `SnapshotPacket` / `InputPacket` / 组件 schema 变更时递增。客户端 `HandshakePacket` 携带本地版本，服务器据此拒绝不兼容连接。
 
@@ -67,6 +69,7 @@ HundunWorld 同步协议（SyncPacket）是独立于 `MessageUnion`（用户主�
 | 7 | `InputAck` | S→C | 服务器对客户端 input 的确认（携带 LastProcessedClientTick，用于 reconciliation） | `LastProcessedClientTick`, `ServerTick`, `EchoClientTick` |
 | 8 | `ReconnectResume` | C→S | 断线重连 resume 握手（携带 lastApplied tick / diff seq / patch version） | `LocalCharacterId`, `LastAppliedSnapshotTick`, `LastAppliedDiffSeq`, `BaselineVersion`, `WorldPatchVersion` |
 | 9 | `InteractionSync` | S→C（及 C→S 上行意图） | 交互槽状态同步（占用/释放/抢占）+ 客户端交互意图上行 | `SlotIdx`, `InteractableId`, `InteractorId`, `StateBits`, `ServerTick` |
+| 16 | `BaselineResyncRequest` | C→S | baseline 缺失重传请求（delta 解码时 baseline 不匹配，请求服务端下发全量快照） | `ExpectedBaselineTick`, `ClientLastAppliedTick` |
 
 ### 3.1 各包字段详解
 
@@ -160,6 +163,17 @@ HundunWorld 同步协议（SyncPacket）是独立于 `MessageUnion`（用户主�
 
 - 下行状态位掩码 `StateMask = 0x07`，上行意图位掩码 `IntentMask = 0xC0`。
 - 说明：同一包类型复用为上行意图载体，服务端 `HandleInteractionIntent` 通过高位区分意图位与下行状态位。
+
+#### BaselineResyncRequestPacket（Kind=16，v7 新增）
+客户端 delta 解码时发现 baseline 不匹配（持有的 baseline tick 与 delta 期望的 `BaselineTick` 不一致），主动请求服务端重传全量快照。走可靠通道保证必达。
+- `ExpectedBaselineTick`（long）：delta 帧期望的 baseline tick（客户端据此告知服务端需要哪个 baseline）。
+- `ClientLastAppliedTick`（long）：客户端最后已应用的 baseline tick（0 表示无任何 baseline，便于服务端诊断）。
+
+**处理链路**：
+1. 客户端 `SnapshotApplySystem` delta 解码时检测 `baseline.ServerTick != delta.BaselineTick` → 构造 `BaselineResyncRequestPacket` 入队（限流 16 避免队列爆炸）。
+2. `ECSUpdateDriver.FlushPendingResyncRequests` 每帧消费队列，编码为 `SyncFrameMessage` 发送服务端。
+3. 服务端 `ZoneShardGrain.RequestBaselineResyncAsync` 收到后设置 `_forceFullSnapshotNextTick = true`，下一 tick 强制下发全量快照（`BaselineTick=0`）。
+4. 客户端收到全量快照后恢复同步，后续 delta 匹配不再请求重传。
 
 ## 4. 编解码流程（SyncPacketCodec）
 
@@ -327,6 +341,7 @@ public sealed partial class XxxPacket : SyncPacket
 [MemoryPackUnion(6, typeof(InputAckPacket))]
 [MemoryPackUnion(7, typeof(ReconnectResumePacket))]
 [MemoryPackUnion(8, typeof(InteractionSyncPacket))]
+[MemoryPackUnion(15, typeof(BaselineResyncRequestPacket))]
 public abstract partial class SyncPacket { ... }
 ```
 
@@ -343,6 +358,7 @@ MemoryPackUnion 编号与 `SyncPacketKind` 枚举值的对应关系（注意 off
 | 6 | InputAckPacket | InputAck = 7 |
 | 7 | ReconnectResumePacket | ReconnectResume = 8 |
 | 8 | InteractionSyncPacket | InteractionSync = 9 |
+| 15 | BaselineResyncRequestPacket | BaselineResyncRequest = 16 |
 
 > 注意：MemoryPackUnion 编号从 0 开始，而 `SyncPacketKind` 从 1 开始（0 = Unknown）。两者是独立编号空间，帧头 Kind 字段用 `SyncPacketKind`，union 内部判别用 MemoryPackUnion 编号。
 >

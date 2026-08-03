@@ -69,10 +69,13 @@ namespace Horizon.Game.Gateway.Configuration
         /// 连接空闲超时时间（秒）。<br/>
         /// 当连接超过此时间未收到任何数据（含心跳）时，判定为客户端非正常断开并主动清理。<br/>
         /// 这是检测客户端非正常断开（关进程/断网）的最可靠机制，不依赖 TCP KeepAlive 和 TouchSocket Online 属性。<br/>
-        /// 客户端心跳间隔约 20 秒，建议设置为心跳间隔的 3 倍（默认 60 秒）。
+        /// 修复（重连后"角色已在线" — 旧连接清理太慢）：
+        /// 原值 60 秒，客户端心跳超时 30 秒 + 重连延迟 5 秒 = 35 秒后重连，
+        /// 但服务端 60 秒后才清理旧连接，期间旧 fingerprint（TTL 5min）未释放。
+        /// 降到 30 秒，与客户端心跳超时一致，确保旧连接在新连接到达前被清理。
         /// </summary>
         [Range(10, 600)]
-        public int IdleTimeoutSeconds { get; set; } = 60;
+        public int IdleTimeoutSeconds { get; set; } = 30;
 
         /// <summary>
         /// 首包超时时间（秒）。<br/>
@@ -83,7 +86,7 @@ namespace Horizon.Game.Gateway.Configuration
         /// 正常客户端连接后会立即发送登录请求，建议设置较短（默认 10 秒）。
         /// </summary>
         [Range(3, 60)]
-        public int FirstPacketTimeoutSeconds { get; set; } = 10;
+        public int FirstPacketTimeoutSeconds { get; set; } = 5;
 
         /// <summary>
         /// 是否启用SSL/TLS

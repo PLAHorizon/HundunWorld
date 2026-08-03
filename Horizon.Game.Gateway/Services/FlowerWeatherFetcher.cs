@@ -4,6 +4,7 @@ using MemoryPack;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Orleans;
+using Orleans.Runtime;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -127,7 +128,14 @@ namespace Horizon.Game.Gateway.Services
                         ModelVersion = "",
                         Confidence = null
                     };
-                    await dataPoolGrain.WriteAsync(dataPoolEntry);
+
+                    // 修复 BUG（Silo 重启时瞬时失败）：
+                    // 原实现无重试逻辑，Silo 重启时 grain 调用抛出 OrleansMessageRejectionException
+                    // （"The target silo is no longer active"），导致数据写入失败。
+                    // 修复：包装 grain 调用，遇到 OrleansMessageRejectionException 时短暂延迟后重试。
+                    await ExecuteGrainCallWithRetryAsync(
+                        () => dataPoolGrain.WriteAsync(dataPoolEntry),
+                        $"Region={region}");
                 }
                 catch (Exception ex)
                 {
@@ -136,6 +144,54 @@ namespace Horizon.Game.Gateway.Services
             }
 
             _logger.LogInformation("花卉产区天气数据抓取完成，共 {Count} 个产区", ProductionRegions.Length);
+        }
+
+        /// <summary>
+        /// 执行 Grain 调用并在 Silo 重启/不可达时自动重试。<br/>
+        /// 修复 BUG（Silo 重启时瞬时失败）：
+        /// Silo 重启过程中，grain 调用会抛出 <see cref="OrleansMessageRejectionException"/>，
+        /// 提示 "The target silo is no longer active"。这是瞬时故障，短暂等待后重试即可成功。<br/>
+        /// 修复 BUG（Silo 完全不可达时无重试）：
+        /// 当 Silo 进程崩溃或网络中断时，grain 调用抛出 <c>ConnectionFailedException</c>
+        /// （"Unable to connect to S..."），原实现未捕获此异常导致整批数据丢失。<br/>
+        /// 重试策略：最多 3 次，指数退避（2s → 4s → 8s）。
+        /// </summary>
+        private async Task ExecuteGrainCallWithRetryAsync(Func<Task> action, string context)
+        {
+            const int maxRetries = 3;
+            var retryDelay = TimeSpan.FromSeconds(2);
+
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    await action();
+                    return;
+                }
+                catch (Exception ex) when (attempt < maxRetries && IsTransientOrleansException(ex))
+                {
+                    _logger.LogWarning(
+                        "Grain 调用失败（Silo 可能正在重启/不可达），{Delay} 秒后重试。Context={Context}, Attempt={Attempt}/{Max}, Error={Error}",
+                        retryDelay.TotalSeconds, context, attempt + 1, maxRetries, ex.Message);
+                    await Task.Delay(retryDelay).ConfigureAwait(false);
+                    retryDelay = TimeSpan.FromTicks(retryDelay.Ticks * 2);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 判断异常是否为 Orleans 瞬时故障（可重试）。
+        /// 覆盖：Silo 重启（OrleansMessageRejectionException）、Silo 不可达（ConnectionFailedException）、
+        /// 以及它们的内部异常包装形式。
+        /// </summary>
+        private static bool IsTransientOrleansException(Exception ex)
+        {
+            if (ex is OrleansMessageRejectionException) return true;
+            if (ex is global::Orleans.Runtime.Messaging.ConnectionFailedException) return true;
+            // 检查内部异常（Orleans 有时将瞬时故障包装在 OrleansException 中）
+            if (ex is OrleansException && ex.InnerException is not null)
+                return IsTransientOrleansException(ex.InnerException);
+            return false;
         }
 
         private static WeatherData GenerateMockWeatherData(Random random, string region)

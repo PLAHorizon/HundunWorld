@@ -1,6 +1,6 @@
 ﻿# MMORPG 网络同步性能基线报告
 
-> 生成时间：2026-07-25 16:57:51
+> 生成时间：2026-08-02 22:22:56
 > 由 `NetworkPerformanceBaselineReportTests.GeneratePerformanceBaselineReport` 自动生成。
 
 ## 1. 测试环境
@@ -8,8 +8,8 @@
 | 项 | 值 |
 | --- | --- |
 | 操作系统 | Microsoft Windows NT 10.0.19045.0 |
-| .NET 运行时 | 10.0.9 |
-| 处理器核心数 | 16 |
+| .NET 运行时 | 10.0.10 |
+| 处理器核心数 | 8 |
 | 64 位系统 | True |
 | 64 位进程 | True |
 | 测试机器名 | LONGMAC |
@@ -40,16 +40,16 @@
 | SessionCount | 100 |
 | DurationTicks | 600 |
 | DurationSeconds | 10.00 |
-| TotalBytesSent | 12,916,622 |
-| TotalBytesReceived | 12,916,622 |
+| TotalBytesSent | 12,916,679 |
+| TotalBytesReceived | 12,916,679 |
 | AvgBandwidthKbps | 100.91 |
 | MaxBandwidthKbps | 103.33 |
 | AvgLatencyMs | 33.33 |
 | MaxLatencyMs | 33.33 |
 | TotalPacketsEncoded | 80,000 |
 | TotalPacketsDecoded | 80,000 |
-| PacketsEncodedPerSecond | 37107 |
-| ElapsedMs（墙钟） | 2155.9 |
+| PacketsEncodedPerSecond | 66083 |
+| ElapsedMs（墙钟） | 1210.6 |
 
 ## 4. 弱网压测数据
 

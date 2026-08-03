@@ -41,8 +41,32 @@ namespace HundunWorld.Game
     /// <summary>[Phase C2] 上次采集的 ReconciliationSystem 修正计数，用于计算增量。</summary>
     private int _lastCorrectionCount;
 
-    /// <summary>[Phase C6] 上次采集的 SnapshotApplySystem 溢出计数。</summary>
-    private long _lastOverflowCount;
+        /// <summary>[Phase C6] 上次采集的 SnapshotApplySystem 溢出计数。</summary>
+        private long _lastOverflowCount;
+
+        /// <summary>上次采集的 SnapshotApplySystem Stale 实体清理计数，用于增量转发。</summary>
+        private long _lastStaleEntitiesCleaned;
+
+        /// <summary>诊断 Sink 是否已注入到各同步系统（一次性注入标志）。</summary>
+        private bool _diagnosticsInjected;
+
+        /// <summary>
+        /// 修正风暴检测窗口内允许的最大修正次数（配置外化注入）。
+        /// 为 null 时使用 ReconciliationSystem 默认值 5。由外部配置加载逻辑在启动时设置。
+        /// </summary>
+        public int? ReconciliationStormThreshold { get; set; }
+
+        /// <summary>
+        /// 修正风暴检测窗口（秒，配置外化注入）。
+        /// 为 null 时使用 ReconciliationSystem 默认值 2.0f。由外部配置加载逻辑在启动时设置。
+        /// </summary>
+        public float? ReconciliationStormWindowSeconds { get; set; }
+
+        /// <summary>
+        /// 修正风暴冷却时间（秒，配置外化注入）。
+        /// 为 null 时使用 ReconciliationSystem 默认值 1.0f。由外部配置加载逻辑在启动时设置。
+        /// </summary>
+        public float? ReconciliationStormCooldownSeconds { get; set; }
 
         public override void OnStart()
         {
@@ -87,6 +111,31 @@ namespace HundunWorld.Game
                     var archHost = HundunWorldGame.Instance.ArchHost;
                     if (archHost != null)
                     {
+                        // 一次性注入诊断 Sink 到各同步系统（ISyncDiagnosticsSink → SyncDiagnosticsSinkImpl）
+                        if (!_diagnosticsInjected)
+                        {
+                            var sink = new SyncDiagnosticsSinkImpl();
+                            SnapshotApplySystem.Diagnostics = sink;
+                            foreach (var sys in archHost.GetSystems(Horizon.Game.ECS.Arch.Core.SystemGroup.Render))
+                                if (sys is InterpolationSystem interp) interp.Diagnostics = sink;
+                            foreach (var sys in archHost.GetSystems(Horizon.Game.ECS.Arch.Core.SystemGroup.FixedUpdate))
+                            {
+                                if (sys is ReconciliationSystem recon)
+                                {
+                                    recon.Diagnostics = sink;
+
+                                    // 配置外化注入：风暴检测参数（由外部配置加载逻辑在启动时设置）
+                                    if (ReconciliationStormThreshold.HasValue)
+                                        recon.StormThreshold = ReconciliationStormThreshold.Value;
+                                    if (ReconciliationStormWindowSeconds.HasValue)
+                                        recon.StormWindowSeconds = ReconciliationStormWindowSeconds.Value;
+                                    if (ReconciliationStormCooldownSeconds.HasValue)
+                                        recon.StormCooldownSeconds = ReconciliationStormCooldownSeconds.Value;
+                                }
+                            }
+                            _diagnosticsInjected = true;
+                        }
+
                         archHost.Tick(TimeSpan.FromSeconds(Time.DeltaTime));
 
                         // 消费 InputSendQueue：将 ECS 管线产生的 InputPacket 发送到服务端
@@ -172,8 +221,51 @@ namespace HundunWorld.Game
                 }
             }
 
+            // 上送 baseline 重传请求（SnapshotApplySystem 产生，delta 解码时 baseline 不匹配）
+            FlushPendingResyncRequests();
+
             // [Phase C2] 转发 ECS 系统指标到 ClientSyncMetrics
             ForwardEcsMetrics();
+        }
+
+        /// <summary>
+        /// 消费 SnapshotApplySystem 产生的 baseline 重传请求，编码为 SyncFrameMessage 发送服务端。
+        /// 走可靠通道（SyncFrameMessage），服务端收到后强制下发全量快照。
+        /// </summary>
+        private void FlushPendingResyncRequests()
+        {
+            var networkManager = HundunWorldGame.Instance?.NetworkManager;
+            if (networkManager == null || !networkManager.CanSendMessage() || !networkManager.IsSyncHandshakeComplete)
+                return;
+
+            BaselineResyncRequestPacket? req;
+            while ((req = SnapshotApplySystem.TakePendingResyncRequest()) != null)
+            {
+                try
+                {
+                    SyncPacketCodec.Encode(req, out var frame, out var frameLength);
+                    try
+                    {
+                        var payload = new byte[frameLength];
+                        System.Buffer.BlockCopy(frame, 0, payload, 0, frameLength);
+                        var syncFrame = new SyncFrameMessage
+                        {
+                            Frame = payload,
+                            PacketKind = (byte)req.Kind,
+                            ProtocolVersion = req.ProtocolVersion,
+                        };
+                        _ = networkManager.SendAsync(syncFrame);
+                    }
+                    finally
+                    {
+                        SyncPacketCodec.ReturnFrame(frame);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[ECSUpdateDriver] 发送 baseline 重传请求失败: {ex.Message}");
+                }
+            }
         }
 
         /// <summary>
@@ -227,6 +319,39 @@ namespace HundunWorld.Game
                         for (long i = 0; i < deltaOverflow; i++)
                             ClientSyncMetrics.RecordSnapshotOverflow();
                         _lastOverflowCount = currentOverflow;
+
+                        // 转发自适应插值延迟（秒→内部转 ms）
+                        ClientSyncMetrics.RecordInterpolationDelay(SnapshotApplySystem.AdaptiveInterpolationDelaySeconds);
+
+                        // 转发 Stale 实体清理计数增量（避免重复计数）
+                        long currentStaleCleaned = snapshotSys.StaleEntitiesCleaned;
+                        var deltaStale = currentStaleCleaned - _lastStaleEntitiesCleaned;
+                        for (long i = 0; i < deltaStale; i++)
+                            ClientSyncMetrics.RecordStaleEntityCleaned();
+                        _lastStaleEntitiesCleaned = currentStaleCleaned;
+                        break;
+                    }
+                }
+
+                // 转发 InterpolationSystem 平滑度采样 + 拼接策略组合
+                var renderSystems = archHost.GetSystems(Horizon.Game.ECS.Arch.Core.SystemGroup.Render);
+                foreach (var sys in renderSystems)
+                {
+                    if (sys is InterpolationSystem interpSys)
+                    {
+                        if (interpSys.HasNewSmoothnessSample)
+                        {
+                            ClientSyncMetrics.RecordSmoothnessSample(
+                                interpSys.LastFrameSmoothnessPositionDeltaMeters,
+                                interpSys.LastFrameSmoothnessFrameTimeSeconds);
+                        }
+
+                        // 拼接策略组合（插值延迟 + 网络质量等级 + Dead Reckoning 状态 + 平滑度采样），供运维查询对比不同网络环境表现
+                        var delayMs = SnapshotApplySystem.AdaptiveInterpolationDelaySeconds * 1000f;
+                        var quality = SnapshotApplySystem.CurrentNetworkQualityLevel;
+                        var deadReckoning = quality != Horizon.Game.ECS.Arch.Diagnostics.NetworkQualityLevel.Strong ? "Lerp+DeadReckoning" : "Lerp";
+                        ClientSyncMetrics.SetCurrentStrategyCombo(
+                            $"Active|{deadReckoning}|{quality}|{delayMs:F0}ms|SmoothSample={(interpSys.HasNewSmoothnessSample ? "Y" : "N")}");
                         break;
                     }
                 }

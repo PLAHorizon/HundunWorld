@@ -11,262 +11,358 @@
                           IconSource="{StaticResource HomeIcon}">
 
         <Grid>
-        <Grid RowDefinitions="Auto,Auto,*" RowSpacing="16">
+            <Grid RowDefinitions="Auto,*" RowSpacing="14">
 
-            <!-- 订单状态筛选（设计稿：pill圆角标签） -->
-            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button Content="全部" Classes="GdPill GdPillActive" Click="OnStatusFilterClick" Tag="-1"/>
-                    <Button Content="待支付" Classes="GdPill" Click="OnStatusFilterClick" Tag="0"/>
-                    <Button Content="已支付" Classes="GdPill" Click="OnStatusFilterClick" Tag="1"/>
-                    <Button Content="已发货" Classes="GdPill" Click="OnStatusFilterClick" Tag="2"/>
-                    <Button Content="已签收" Classes="GdPill" Click="OnStatusFilterClick" Tag="3"/>
-                    <Button Content="已完成" Classes="GdPill" Click="OnStatusFilterClick" Tag="4"/>
-                    <Button Content="已取消" Classes="GdPill" Click="OnStatusFilterClick" Tag="5"/>
-                    <Button Content="退款中" Classes="GdPill" Click="OnStatusFilterClick" Tag="6"/>
-                </StackPanel>
-            </ScrollViewer>
-
-            <!-- 操作栏 -->
-            <Border Classes="GdCard" Padding="12 8" Grid.Row="1">
-                <Grid ColumnDefinitions="*,Auto">
-                    <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="{DynamicResource GdBrand400Brush}" VerticalAlignment="Center"/>
-                    <Button Grid.Column="1" Content="刷新" Classes="GdGhost" Padding="12 6" CornerRadius="{DynamicResource GdRadiusMd}" FontSize="12"
-                            Command="{Binding RefreshCommand}"/>
-                </Grid>
-            </Border>
-
-            <!-- 订单列表 -->
-            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-                <StackPanel Spacing="12" Margin="0 0 0 24">
-                    <ItemsControl ItemsSource="{Binding FilteredOrders}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Classes="GdCard" Padding="16" CornerRadius="{DynamicResource GdRadiusLg}">
-                                    <StackPanel Spacing="10">
-                                        <Grid ColumnDefinitions="*,Auto">
-                                            <TextBlock Text="{Binding OrderNo}" FontSize="13" FontWeight="SemiBold" />
-                                            <Border Grid.Column="1"
-                                                    Background="{DynamicResource GdInfoSurfaceBrush}"
-                                                    CornerRadius="{DynamicResource GdRadiusMd}"
-                                                    Padding="8 4">
-                                                <TextBlock Text="{Binding StatusText}" FontSize="11" Foreground="{DynamicResource GdWarningBrush}" />
-                                            </Border>
-                                        </Grid>
-
-                                        <ItemsControl ItemsSource="{Binding Items}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Grid ColumnDefinitions="Auto,*,Auto" Margin="0 4 0 0">
-                                                        <Border Width="40" Height="40"
-                                                                CornerRadius="{DynamicResource GdRadiusMd}">
-                                                            <Border.Background>
-                                                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                                                                    <GradientStop Color="{DynamicResource GdBrand600}" Offset="0" />
-                                                                    <GradientStop Color="{DynamicResource GdBrand400}" Offset="1" />
-                                                                </LinearGradientBrush>
-                                                            </Border.Background>
-                                                            <TextBlock Text="🌸" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                                        </Border>
-                                                        <StackPanel Grid.Column="1" Margin="10 0 0 0" VerticalAlignment="Center">
-                                                            <TextBlock Text="{Binding ProductName}" FontSize="12" />
-                                                            <TextBlock Text="{Binding Quantity, StringFormat='x{0}'}" FontSize="10" Foreground="{DynamicResource GdMutedForegroundBrush}" />
-                                                        </StackPanel>
-                                                        <TextBlock Grid.Column="2"
-                                                                   Text="{Binding Subtotal, StringFormat='¥{0:F2}'}"
-                                                                   FontSize="13"
-                                                                   FontWeight="SemiBold"
-                                                                   VerticalAlignment="Center" />
-                                                    </Grid>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-
-                                        <Border Height="1" Background="{DynamicResource GdBorderBrush}" Margin="0 4" />
-
-                                        <Grid ColumnDefinitions="*,Auto">
-                                            <TextBlock Text="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"
-                                                       FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
-                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                                                <TextBlock Text="{Binding TotalAmount, StringFormat='合计: ¥{0:F2}'}"
-                                                           FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0 0 8 0" />
-
-                                                <Button Content="支付" Classes="GdPrimary" Padding="10 5" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
-                                                        IsVisible="{Binding CanPay}"
-                                                        Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).PayOrderCommand}"
-                                                        CommandParameter="{Binding OrderId}"/>
-                                                <Button Content="确认收货" Classes="GdPrimary" Padding="10 5" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
-                                                        IsVisible="{Binding CanConfirmDelivery}"
-                                                        Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).ConfirmDeliveryCommand}"
-                                                        CommandParameter="{Binding OrderId}"/>
-                                                <Button Content="确认完成" Classes="GdPrimary" Padding="10 5" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
-                                                        IsVisible="{Binding CanComplete}"
-                                                        Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).CompleteOrderCommand}"
-                                                        CommandParameter="{Binding OrderId}"/>
-                                                <Button Content="取消" Classes="GdGhost" Padding="10 5" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
-                                                        IsVisible="{Binding CanCancel}"
-                                                        Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).CancelOrderCommand}"
-                                                        CommandParameter="{Binding OrderId}"/>
-                                                <Button Content="退款" Classes="GdGhost" Padding="10 5" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
-                                                        IsVisible="{Binding CanRefund}"
-                                                        Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).RequestRefundCommand}"
-                                                        CommandParameter="{Binding OrderId}"/>
-                                                <Button Content="评价" Classes="GdPrimary" Padding="10 5" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
-                                                        IsVisible="{Binding CanReview}"
-                                                        Click="OnReviewClick" Tag="{Binding OrderId}"/>
-                                                <Button Content="查看物流" Classes="GdGhost" Padding="10 5" FontSize="11" CornerRadius="{DynamicResource GdRadiusMd}"
-                                                        IsVisible="{Binding CanViewLogistics}"
-                                                        Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).ViewLogisticsCommand}"
-                                                        CommandParameter="{Binding OrderId}"/>
-                                            </StackPanel>
-                                        </Grid>
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <!-- 空状态 -->
-                    <Border Classes="GdCard" Padding="40" IsVisible="{Binding IsEmpty}">
-                        <StackPanel HorizontalAlignment="Center" Spacing="12">
-                            <TextBlock Text="📦" FontSize="32" HorizontalAlignment="Center" />
-                            <TextBlock Text="暂无订单" FontSize="14" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </ScrollViewer>
-        </Grid>
-
-        <Panel IsVisible="{Binding ShowLogisticsDialog}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ZIndex="1000">
-            <Border Background="{DynamicResource GdOverlayBrush}" />
-            <Border HorizontalAlignment="Center" VerticalAlignment="Center"
-                    Background="{DynamicResource GdCardBrush}" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24" MaxWidth="620" MaxHeight="1003">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Spacing="16">
-                        <Grid ColumnDefinitions="*,Auto">
-                            <TextBlock Text="物流跟踪" FontSize="16" FontWeight="SemiBold"/>
-                            <Button Grid.Column="1" Content="✕" Classes="GdGhost" Padding="8 4" CornerRadius="{DynamicResource GdRadiusMd}"
-                                    Command="{Binding CloseLogisticsDialogCommand}"/>
-                        </Grid>
-
-                        <Border Background="{DynamicResource GdInfoSurfaceBrush}" CornerRadius="{DynamicResource GdRadiusMd}" Padding="12">
-                            <StackPanel Spacing="4">
-                                <TextBlock FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}">
-                                    <Run Text="快递公司："/>
-                                    <Run Text="{Binding LogisticsMapData.ExpressCompanyName}" Foreground="{DynamicResource GdForegroundBrush}"/>
-                                </TextBlock>
-                                <TextBlock FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}">
-                                    <Run Text="运单号："/>
-                                    <Run Text="{Binding LogisticsMapData.ShipOrderNumber}" Foreground="{DynamicResource GdForegroundBrush}"/>
-                                </TextBlock>
-                            </StackPanel>
-                        </Border>
-
-                        <StackPanel IsVisible="{Binding IsLoadingLogistics}" HorizontalAlignment="Center" Spacing="8" Margin="0 20">
-                            <TextBlock Text="⏳" FontSize="24" HorizontalAlignment="Center"/>
-                            <TextBlock Text="正在查询物流信息..." FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
-                        </StackPanel>
-
-                        <StackPanel IsVisible="{Binding HasNoLogistics}" HorizontalAlignment="Center" Spacing="8" Margin="0 20">
-                            <TextBlock Text="📦" FontSize="24" HorizontalAlignment="Center"/>
-                            <TextBlock Text="暂无物流信息" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
-                        </StackPanel>
-
-                        <controls:LogisticsMapView MapData="{Binding LogisticsMapData}" Height="250" IsVisible="{Binding HasLogisticsNodes}"/>
-
-                        <ItemsControl ItemsSource="{Binding LogisticsMapData.Nodes}" IsVisible="{Binding HasLogisticsNodes}">
+                <!-- ============ 订单状态筛选（gd-pill 圆角标签）+ 刷新 ============ -->
+                <StackPanel Spacing="8">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <ItemsControl ItemsSource="{Binding StatusFilters}" Grid.Column="0">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid ColumnDefinitions="Auto,12,*" Margin="0 0 0 0">
-                                        <StackPanel Width="20" VerticalAlignment="Stretch">
-                                            <Border Width="10" Height="10" CornerRadius="5" HorizontalAlignment="Center"
-                                                    Background="{DynamicResource GdPrimaryBrush}" Margin="0 4 0 0"/>
-                                            <Border Width="2" Background="{DynamicResource GdInfoSurfaceBrush}" HorizontalAlignment="Center"
-                                                    Margin="0 2 0 0" VerticalAlignment="Stretch"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="2" Spacing="2" Margin="0 0 0 16">
-                                            <TextBlock Text="{Binding Time, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"
-                                                       FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
-                                            <TextBlock Text="{Binding Description}" FontSize="12" TextWrapping="Wrap"/>
-                                            <TextBlock Text="{Binding Location}" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
-                                        </StackPanel>
-                                    </Grid>
+                                    <Panel Margin="0 0 8 8">
+                                        <!-- 选中态：填充主色 -->
+                                        <Button Classes="GdPill GdPillActive"
+                                                IsVisible="{Binding IsSelected}"
+                                                Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).SelectStatusFilterCommand}"
+                                                CommandParameter="{Binding Status}">
+                                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding DisplayName}" />
+                                                <TextBlock Text="{Binding Count, StringFormat='({0})'}" FontSize="11" Opacity="0.85" />
+                                            </StackPanel>
+                                        </Button>
+                                        <!-- 未选中态：ghost 描边 -->
+                                        <Button Classes="GdPill"
+                                                IsVisible="{Binding !IsSelected}"
+                                                Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).SelectStatusFilterCommand}"
+                                                CommandParameter="{Binding Status}">
+                                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding DisplayName}" />
+                                                <TextBlock Text="{Binding Count, StringFormat='({0})'}" FontSize="11" Opacity="0.7" />
+                                            </StackPanel>
+                                        </Button>
+                                    </Panel>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+
+                        <Button Grid.Column="1" Classes="GdGhost" VerticalAlignment="Top"
+                                CornerRadius="{DynamicResource GdRadiusMd}" Padding="10 6" FontSize="12"
+                                Command="{Binding RefreshCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <TextBlock Text="↻" FontSize="13" />
+                                <TextBlock Text="刷新" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+
+                    <TextBlock Text="{Binding StatusMessage}" FontSize="11"
+                               Foreground="{DynamicResource GdMutedForegroundBrush}"
+                               IsVisible="{Binding !!StatusMessage}" />
+                </StackPanel>
+
+                <!-- ============ 订单卡片列表 ============ -->
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="14" Margin="0 2 0 24">
+                        <ItemsControl ItemsSource="{Binding FilteredOrders}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Classes="GdCard" Padding="20 18" Margin="0">
+                                        <StackPanel Spacing="12">
+
+                                            <!-- 订单头：订单号 + 状态badge（左） / 下单时间（右） -->
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding OrderNo}" FontSize="13" FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource GdForegroundBrush}"
+                                                               FontFamily="{DynamicResource GdFontMono}" />
+                                                    <Panel>
+                                                        <Border Classes="GdBadge GdBadgeWarning" Padding="8 2" IsVisible="{Binding IsStatusWarning}">
+                                                            <TextBlock Text="{Binding StatusText}" FontSize="11" />
+                                                        </Border>
+                                                        <Border Classes="GdBadge GdBadgeInfo" Padding="8 2" IsVisible="{Binding IsStatusInfo}">
+                                                            <TextBlock Text="{Binding StatusText}" FontSize="11" />
+                                                        </Border>
+                                                        <Border Classes="GdBadge GdBadgeSuccess" Padding="8 2" IsVisible="{Binding IsStatusSuccess}">
+                                                            <TextBlock Text="{Binding StatusText}" FontSize="11" />
+                                                        </Border>
+                                                        <Border Classes="GdBadge GdBadgeError" Padding="8 2" IsVisible="{Binding IsStatusError}">
+                                                            <TextBlock Text="{Binding StatusText}" FontSize="11" />
+                                                        </Border>
+                                                    </Panel>
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="1"
+                                                           Text="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"
+                                                           FontSize="11"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                           FontFamily="{DynamicResource GdFontMono}"
+                                                           VerticalAlignment="Center" />
+                                            </Grid>
+
+                                            <!-- 商品列表 -->
+                                            <ItemsControl ItemsSource="{Binding Items}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="0 4">
+                                                            <TextBlock Text="🌸" FontSize="18" VerticalAlignment="Center" />
+                                                            <TextBlock Grid.Column="1" Text="{Binding ProductName}" FontSize="13"
+                                                                       Foreground="{DynamicResource GdForegroundBrush}"
+                                                                       VerticalAlignment="Center" Margin="10 0 0 0" />
+                                                            <TextBlock Grid.Column="2"
+                                                                       Text="{Binding Quantity, StringFormat='× {0}'}"
+                                                                       FontSize="13"
+                                                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                                       FontFamily="{DynamicResource GdFontMono}"
+                                                                       VerticalAlignment="Center" Margin="10 0 0 0" />
+                                                            <TextBlock Grid.Column="3"
+                                                                       Text="{Binding Subtotal, StringFormat='¥{0:F2}'}"
+                                                                       FontSize="13" FontWeight="SemiBold"
+                                                                       Foreground="{DynamicResource GdErrorBrush}"
+                                                                       FontFamily="{DynamicResource GdFontMono}"
+                                                                       VerticalAlignment="Center" Margin="10 0 0 0"
+                                                                       MinWidth="80" TextAlignment="Right" />
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+
+                                            <!-- 分隔线 -->
+                                            <Border Classes="GdDivider" Margin="0 2" />
+
+                                            <!-- 订单底栏：合计信息（左） / 合计金额 + 操作按钮（右） -->
+                                            <Grid ColumnDefinitions="*,Auto">
+                                                <TextBlock Text="{Binding FooterSummary}" FontSize="11"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                           VerticalAlignment="Center" />
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                        <TextBlock Text="合计" FontSize="14" FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource GdForegroundBrush}"
+                                                                   VerticalAlignment="Center" />
+                                                        <TextBlock Text="{Binding TotalAmount, StringFormat='¥{0:F2}'}"
+                                                                   FontSize="14" FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource GdErrorBrush}"
+                                                                   FontFamily="{DynamicResource GdFontMono}"
+                                                                   VerticalAlignment="Center" />
+                                                    </StackPanel>
+
+                                                    <Button Classes="GdPrimary" CornerRadius="{DynamicResource GdRadiusMd}" Padding="10 5"
+                                                            IsVisible="{Binding CanPay}"
+                                                            Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).PayOrderCommand}"
+                                                            CommandParameter="{Binding OrderId}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                            <TextBlock Text="💳" FontSize="13" />
+                                                            <TextBlock Text="立即支付" FontSize="12" />
+                                                        </StackPanel>
+                                                    </Button>
+                                                    <Button Classes="GdGhost" CornerRadius="{DynamicResource GdRadiusMd}" Padding="10 5"
+                                                            IsVisible="{Binding CanViewLogistics}"
+                                                            Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).ViewLogisticsCommand}"
+                                                            CommandParameter="{Binding OrderId}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                            <TextBlock Text="🚚" FontSize="13" />
+                                                            <TextBlock Text="查看物流" FontSize="12" />
+                                                        </StackPanel>
+                                                    </Button>
+                                                    <Button Classes="GdPrimary" CornerRadius="{DynamicResource GdRadiusMd}" Padding="10 5"
+                                                            IsVisible="{Binding CanConfirmDelivery}"
+                                                            Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).ConfirmDeliveryCommand}"
+                                                            CommandParameter="{Binding OrderId}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                            <TextBlock Text="📦" FontSize="13" />
+                                                            <TextBlock Text="确认收货" FontSize="12" />
+                                                        </StackPanel>
+                                                    </Button>
+                                                    <Button Classes="GdPrimary" CornerRadius="{DynamicResource GdRadiusMd}" Padding="10 5"
+                                                            IsVisible="{Binding CanComplete}"
+                                                            Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).CompleteOrderCommand}"
+                                                            CommandParameter="{Binding OrderId}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                            <TextBlock Text="✓" FontSize="13" />
+                                                            <TextBlock Text="确认完成" FontSize="12" />
+                                                        </StackPanel>
+                                                    </Button>
+                                                    <Button Classes="GdPrimary" CornerRadius="{DynamicResource GdRadiusMd}" Padding="10 5"
+                                                            IsVisible="{Binding CanReview}"
+                                                            Click="OnReviewClick" Tag="{Binding OrderId}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                            <TextBlock Text="⭐" FontSize="13" />
+                                                            <TextBlock Text="评价" FontSize="12" />
+                                                        </StackPanel>
+                                                    </Button>
+                                                    <Button Classes="GdGhost" CornerRadius="{DynamicResource GdRadiusMd}" Padding="10 5"
+                                                            IsVisible="{Binding CanCancel}"
+                                                            Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).CancelOrderCommand}"
+                                                            CommandParameter="{Binding OrderId}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                            <TextBlock Text="✕" FontSize="13" />
+                                                            <TextBlock Text="取消" FontSize="12" />
+                                                        </StackPanel>
+                                                    </Button>
+                                                    <Button Classes="GdGhost" CornerRadius="{DynamicResource GdRadiusMd}" Padding="10 5"
+                                                            IsVisible="{Binding CanRefund}"
+                                                            Command="{Binding $parent[ItemsControl].((vm:FlowerOrderCenterViewModel)DataContext).RequestRefundCommand}"
+                                                            CommandParameter="{Binding OrderId}">
+                                                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                                            <TextBlock Text="↩" FontSize="13" />
+                                                            <TextBlock Text="退款" FontSize="12" />
+                                                        </StackPanel>
+                                                    </Button>
+                                                </StackPanel>
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- 空状态 -->
+                        <Border Classes="GdCard" Padding="40" Margin="0" IsVisible="{Binding IsEmpty}">
+                            <StackPanel HorizontalAlignment="Center" Spacing="12">
+                                <TextBlock Text="📦" FontSize="32" HorizontalAlignment="Center" />
+                                <TextBlock Text="暂无订单" FontSize="14" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </ScrollViewer>
-            </Border>
-        </Panel>
+            </Grid>
 
-        <Panel IsVisible="{Binding ShowPaymentDialog}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ZIndex="1000">
-            <Border Background="{DynamicResource GdOverlayBrush}" />
-            <Border HorizontalAlignment="Center" VerticalAlignment="Center"
-                    Background="{DynamicResource GdCardBrush}" CornerRadius="{DynamicResource GdRadiusLg}" Padding="32" MaxWidth="560" MinWidth="480">
-                <StackPanel Spacing="24">
-                    <!-- Header -->
-                    <Grid ColumnDefinitions="*,Auto">
-                        <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                            <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource GdPrimaryBrush}">
-                                <TextBlock Text="💳" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <!-- ============ 物流跟踪弹窗（保留原有绑定） ============ -->
+            <Panel IsVisible="{Binding ShowLogisticsDialog}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ZIndex="1000">
+                <Border Background="{DynamicResource GdOverlayBrush}" />
+                <Border HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Background="{DynamicResource GdCardBrush}" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24" MaxWidth="620" MaxHeight="1003">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="16">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="物流跟踪" FontSize="16" FontWeight="SemiBold"/>
+                                <Button Grid.Column="1" Content="✕" Classes="GdGhost" Padding="8 4" CornerRadius="{DynamicResource GdRadiusMd}"
+                                        Command="{Binding CloseLogisticsDialogCommand}"/>
+                            </Grid>
+
+                            <Border Background="{DynamicResource GdInfoSurfaceBrush}" CornerRadius="{DynamicResource GdRadiusMd}" Padding="12">
+                                <StackPanel Spacing="4">
+                                    <TextBlock FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}">
+                                        <Run Text="快递公司："/>
+                                        <Run Text="{Binding LogisticsMapData.ExpressCompanyName}" Foreground="{DynamicResource GdForegroundBrush}"/>
+                                    </TextBlock>
+                                    <TextBlock FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}">
+                                        <Run Text="运单号："/>
+                                        <Run Text="{Binding LogisticsMapData.ShipOrderNumber}" Foreground="{DynamicResource GdForegroundBrush}"/>
+                                    </TextBlock>
+                                </StackPanel>
                             </Border>
-                            <TextBlock Text="确认支付" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource GdForegroundBrush}" VerticalAlignment="Center"/>
-                        </StackPanel>
-                        <Button Grid.Column="1" Content="✕" Classes="GdGhost" Padding="10 6" CornerRadius="{DynamicResource GdRadiusMd}"
-                                Command="{Binding CancelPaymentCommand}" VerticalAlignment="Center"/>
-                    </Grid>
 
-                    <!-- Amount Card -->
-                    <Border Background="{DynamicResource GdCardBrush}" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24 20">
-                        <StackPanel Spacing="8">
-                            <TextBlock Text="应付金额" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
-                            <TextBlock FontSize="32" FontWeight="Bold" Foreground="{DynamicResource GdPrimaryBrush}"
-                                       Text="{Binding PaymentAmount, StringFormat='¥{0:F2}'}"/>
-                        </StackPanel>
-                    </Border>
+                            <StackPanel IsVisible="{Binding IsLoadingLogistics}" HorizontalAlignment="Center" Spacing="8" Margin="0 20">
+                                <TextBlock Text="⏳" FontSize="24" HorizontalAlignment="Center"/>
+                                <TextBlock Text="正在查询物流信息..." FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
+                            </StackPanel>
 
-                    <!-- Payment Method Card -->
-                    <Border Background="{DynamicResource GdCardBrush}" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24 20">
-                        <StackPanel Spacing="12">
-                            <TextBlock Text="支付方式" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
-                            <ComboBox SelectedIndex="{Binding SelectedPaymentChannel}"
-                                      HorizontalAlignment="Stretch"
-                                      Background="{DynamicResource GdBackgroundBrush}"
-                                      BorderBrush="{DynamicResource GdBorderBrush}"
-                                      Foreground="{DynamicResource GdForegroundBrush}">
-                                <ComboBox.Items>
-                                    <ComboBoxItem Content="微信支付"/>
-                                    <ComboBoxItem Content="支付宝"/>
-                                </ComboBox.Items>
-                            </ComboBox>
-                        </StackPanel>
-                    </Border>
+                            <StackPanel IsVisible="{Binding HasNoLogistics}" HorizontalAlignment="Center" Spacing="8" Margin="0 20">
+                                <TextBlock Text="📦" FontSize="24" HorizontalAlignment="Center"/>
+                                <TextBlock Text="暂无物流信息" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
+                            </StackPanel>
 
-                    <!-- Processing Indicator -->
-                    <StackPanel IsVisible="{Binding IsPaymentProcessing}" HorizontalAlignment="Center" Spacing="12" Margin="0 4">
-                        <ProgressBar IsIndeterminate="True" Height="4"/>
-                        <TextBlock Text="正在支付，请稍候..." FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
+                            <controls:LogisticsMapView MapData="{Binding LogisticsMapData}" Height="250" IsVisible="{Binding HasLogisticsNodes}"/>
+
+                            <ItemsControl ItemsSource="{Binding LogisticsMapData.Nodes}" IsVisible="{Binding HasLogisticsNodes}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnDefinitions="Auto,12,*" Margin="0 0 0 0">
+                                            <StackPanel Width="20" VerticalAlignment="Stretch">
+                                                <Border Width="10" Height="10" CornerRadius="5" HorizontalAlignment="Center"
+                                                        Background="{DynamicResource GdPrimaryBrush}" Margin="0 4 0 0"/>
+                                                <Border Width="2" Background="{DynamicResource GdInfoSurfaceBrush}" HorizontalAlignment="Center"
+                                                        Margin="0 2 0 0" VerticalAlignment="Stretch"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="2" Spacing="2" Margin="0 0 0 16">
+                                                <TextBlock Text="{Binding Time, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}"
+                                                           FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                                <TextBlock Text="{Binding Description}" FontSize="12" TextWrapping="Wrap"/>
+                                                <TextBlock Text="{Binding Location}" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Border>
+            </Panel>
+
+            <!-- ============ 支付弹窗（保留原有绑定） ============ -->
+            <Panel IsVisible="{Binding ShowPaymentDialog}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ZIndex="1000">
+                <Border Background="{DynamicResource GdOverlayBrush}" />
+                <Border HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Background="{DynamicResource GdCardBrush}" CornerRadius="{DynamicResource GdRadiusLg}" Padding="32" MaxWidth="560" MinWidth="480">
+                    <StackPanel Spacing="24">
+                        <!-- Header -->
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource GdPrimaryBrush}">
+                                    <TextBlock Text="💳" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <TextBlock Text="确认支付" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource GdForegroundBrush}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <Button Grid.Column="1" Content="✕" Classes="GdGhost" Padding="10 6" CornerRadius="{DynamicResource GdRadiusMd}"
+                                    Command="{Binding CancelPaymentCommand}" VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <!-- Amount Card -->
+                        <Border Background="{DynamicResource GdCardBrush}" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24 20">
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="应付金额" FontSize="13" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                <TextBlock FontSize="32" FontWeight="Bold" Foreground="{DynamicResource GdPrimaryBrush}"
+                                           Text="{Binding PaymentAmount, StringFormat='¥{0:F2}'}"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Payment Method Card -->
+                        <Border Background="{DynamicResource GdCardBrush}" CornerRadius="{DynamicResource GdRadiusLg}" Padding="24 20">
+                            <StackPanel Spacing="12">
+                                <TextBlock Text="支付方式" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource GdMutedForegroundBrush}"/>
+                                <ComboBox SelectedIndex="{Binding SelectedPaymentChannel}"
+                                          HorizontalAlignment="Stretch"
+                                          Background="{DynamicResource GdBackgroundBrush}"
+                                          BorderBrush="{DynamicResource GdBorderBrush}"
+                                          Foreground="{DynamicResource GdForegroundBrush}">
+                                    <ComboBox.Items>
+                                        <ComboBoxItem Content="微信支付"/>
+                                        <ComboBoxItem Content="支付宝"/>
+                                    </ComboBox.Items>
+                                </ComboBox>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Processing Indicator -->
+                        <StackPanel IsVisible="{Binding IsPaymentProcessing}" HorizontalAlignment="Center" Spacing="12" Margin="0 4">
+                            <ProgressBar IsIndeterminate="True" Height="4"/>
+                            <TextBlock Text="正在支付，请稍候..." FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center"/>
+                        </StackPanel>
+
+                        <!-- Result Message -->
+                        <TextBlock Text="{Binding PaymentResultMessage}" FontSize="13" Foreground="{DynamicResource GdPrimaryBrush}"
+                                   HorizontalAlignment="Center"
+                                   IsVisible="{Binding !!PaymentResultMessage}"/>
+
+                        <!-- Action Buttons -->
+                        <Grid ColumnDefinitions="120,*" ColumnSpacing="12">
+                            <Button Content="取消" Classes="GdGhost" CornerRadius="{DynamicResource GdRadiusLg}" Padding="0 14"
+                                    HorizontalAlignment="Stretch" FontSize="14"
+                                    Command="{Binding CancelPaymentCommand}"
+                                    IsEnabled="{Binding !IsPaymentProcessing}"/>
+                            <Button Grid.Column="1" Content="确认支付" Classes="GdPrimary" CornerRadius="{DynamicResource GdRadiusLg}" Padding="0 14"
+                                    HorizontalAlignment="Stretch" FontSize="14" FontWeight="SemiBold"
+                                    Command="{Binding ConfirmPaymentCommand}"
+                                    IsEnabled="{Binding !IsPaymentProcessing}"/>
+                        </Grid>
                     </StackPanel>
-
-                    <!-- Result Message -->
-                    <TextBlock Text="{Binding PaymentResultMessage}" FontSize="13" Foreground="{DynamicResource GdPrimaryBrush}"
-                               HorizontalAlignment="Center"
-                               IsVisible="{Binding !!PaymentResultMessage}"/>
-
-                    <!-- Action Buttons -->
-                    <Grid ColumnDefinitions="120,*" ColumnSpacing="12">
-                        <Button Content="取消" Classes="GdGhost" CornerRadius="{DynamicResource GdRadiusLg}" Padding="0 14"
-                                HorizontalAlignment="Stretch" FontSize="14"
-                                Command="{Binding CancelPaymentCommand}"
-                                IsEnabled="{Binding !IsPaymentProcessing}"/>
-                        <Button Grid.Column="1" Content="确认支付" Classes="GdPrimary" CornerRadius="{DynamicResource GdRadiusLg}" Padding="0 14"
-                                HorizontalAlignment="Stretch" FontSize="14" FontWeight="SemiBold"
-                                Command="{Binding ConfirmPaymentCommand}"
-                                IsEnabled="{Binding !IsPaymentProcessing}"/>
-                    </Grid>
-                </StackPanel>
-            </Border>
-        </Panel>
+                </Border>
+            </Panel>
         </Grid>
     </controls:GalleryPage>
 </UserControl>

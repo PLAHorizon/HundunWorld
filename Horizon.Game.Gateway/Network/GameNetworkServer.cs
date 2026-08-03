@@ -149,13 +149,18 @@ namespace Horizon.Game.Gateway.Network
                 _logger.LogInformation("游戏网络服务器启动成功，监听 {IpAddress}:{Port}",
                     _networkOptions.CurrentValue.IpAddress, _networkOptions.CurrentValue.TcpPort);
 
-                // 启动断线检测定时器：每 5 秒遍历所有连接，检测 IsConnected==false 的连接并主动清理。
+                // 启动断线检测定时器：每 1 秒遍历所有连接，检测 IsConnected==false 的连接并主动清理。
                 // TouchSocket 的 Closed 事件在客户端非正常断开（直接关进程/断网）时可能不被及时触发，
                 // 此定时器作为后备机制，确保断线角色最终被 Despawn。
+                // 修复 BUG（首包超时检测耗时 11-12 秒而非 5 秒）：
+                // 原实现间隔 5 秒 + 严格 > 比较，当连接建立时间恰好使 sinceConnect 在第一次检测时
+                // 等于 FirstPacketTimeoutSeconds（5s）时，5>5=false 不触发，需等到下一次检测（10s），
+                // 加上连接建立与定时器触发的偏移，实测 11-12 秒。
+                // 修复：间隔改为 1 秒（更及时），配合 >= 比较运算符，确保检测延迟不超过 1 秒。
                 _disconnectCheckTimer = new Timer(
                     CheckDisconnectedConnections, null,
-                    TimeSpan.FromSeconds(5),
-                    TimeSpan.FromSeconds(5));
+                    TimeSpan.FromSeconds(1),
+                    TimeSpan.FromSeconds(1));
 
                 // 启动实体租约续约定时器：每 20 秒批量续约所有在线角色的实体租约。
                 // ZoneShardGrain 会自动清理超过 90 秒未续约的孤儿实体（网关崩溃/断线未清理的残留实体）。
@@ -212,16 +217,14 @@ namespace Horizon.Game.Gateway.Network
         }
 
         /// <summary>
-        /// 客户端连接中事件
+        /// 客户端连接中事件。
         /// </summary>
         private Task OnClientConnecting(ITcpSessionClient client, ConnectingEventArgs e)
         {
             try
             {
-                _logger.LogDebug($"客户端正在连接: {client.IP}:{client.Port}");
-
-                // 可以在这里进行连接前的验证，例如IP白名单检查
-                // e.IsPermitOperation = false; // 拒绝连接
+                var ip = client.IP ?? "unknown";
+                _logger.LogDebug($"客户端正在连接: {ip}:{client.Port}");
 
                 return Task.CompletedTask;
             }
@@ -294,7 +297,11 @@ namespace Horizon.Game.Gateway.Network
                     // 注意：绝对不能主动关闭连接！此前逻辑在重试失败后执行 client.CloseAsync()，
                     // 导致所有 FindSocketMember 反射查找失败的连接在 500ms 后被服务端主动关闭，
                     // 客户端因此陷入「重连成功→500ms 断线→重连」的死循环。
-                    _logger.LogWarning(
+                    // 修复 BUG（日志噪音）：TouchSocket 4.x 的 TcpSessionClient 内部结构变化，
+                    // 反射查找 Socket 路径不匹配，每条连接必现此警告。由于 TCP KeepAlive 是辅助机制
+                    // （核心断线检测依赖 CheckDisconnectedConnections 的应用层心跳超时），
+                    // 将日志级别降为 Debug，避免日志噪音。
+                    _logger.LogDebug(
                         "客户端 {Id} 未找到底层 Socket，TCP KeepAlive 设置失败（反射路径不匹配），"
                         + "断线检测降级到应用层心跳超时",
                         client.Id);
@@ -462,15 +469,18 @@ namespace Horizon.Game.Gateway.Network
                     }
 
                     // 检测 2：首包超时判定（幽灵连接检测）
-                    // 连接建立后从未收到数据（LastActiveTime ≈ ConnectedTime），且超过首包超时时间，
+                    // 连接建立后从未收到数据（LastActiveTime ≈ ConnectedTime），且达到首包超时时间，
                     // 判定为幽灵连接（探测/错误连接/客户端崩溃后未关闭 Socket），立即清理。
                     // 使用容差比较而非严格相等：即使 GameConnection 构造函数中只用了一次 DateTime.UtcNow
                     // 同时赋值给两者，DateTime 精度在跨平台/高负载下仍可能出现亚毫秒级偏差，严格相等可能误判。
+                    // 修复 BUG（首包超时检测耗时 11-12 秒）：
+                    // 原实现使用 > 严格比较，sinceConnect 恰好等于 FirstPacketTimeoutSeconds 时不触发，
+                    // 需等待下一次定时器触发。改为 >= 后，达到阈值立即触发。
                     bool neverReceivedData = (connection.LastActiveTime - connection.ConnectedTime).TotalMilliseconds < 100;
                     if (neverReceivedData)
                     {
                         var sinceConnect = now - connection.ConnectedTime;
-                        if (sinceConnect > firstPacketTimeout)
+                        if (sinceConnect >= firstPacketTimeout)
                         {
                             _logger.LogWarning(
                                 "连接 {Id} 首包超时（{Seconds:F0}秒未收到任何数据），判定为幽灵连接并清理。Connected={Connected:O}, Remote={Remote}",
@@ -481,10 +491,11 @@ namespace Horizon.Game.Gateway.Network
                     }
 
                     // 检测 3：应用层心跳超时判定（最可靠，不依赖 TCP KeepAlive）
-                    // 客户端心跳间隔约 20 秒，超过 IdleTimeoutSeconds（默认 60 秒）未收到任何数据，
+                    // 客户端心跳间隔约 20 秒，超过 IdleTimeoutSeconds（默认 30 秒）未收到任何数据，
                     // 说明客户端已非正常断开（关进程/断网），需要主动清理。
+                    // 修复：使用 >= 替代 >，达到阈值立即触发，避免额外一个定时器周期的延迟。
                     var idleDuration = now - connection.LastActiveTime;
-                    if (idleDuration > idleTimeout)
+                    if (idleDuration >= idleTimeout)
                     {
                         _logger.LogWarning(
                             "连接 {Id} 空闲超时（{Seconds:F0}秒无数据），判定为离线并清理。LastActive={LastActive:O}, Remote={Remote}",
@@ -702,7 +713,7 @@ namespace Horizon.Game.Gateway.Network
         /// <summary>
         /// Stage 3: 角色映射注册（从请求体提取 CharacterId 并注册映射）+ Presence TTL 兜底刷新。
         /// </summary>
-        private void StageCharacterMappingAndPresence(IGameConnection connection, HorizonMessagePacket messagePacket)
+        private async void StageCharacterMappingAndPresence(IGameConnection connection, HorizonMessagePacket messagePacket)
         {
             // 后备角色映射注册：从请求体中提取 CharacterId 并注册映射。
             // SyncPacket 消息的 Header.CharacterId 通常为 0（CharacterId 在 InputPacket 载荷中），
@@ -740,13 +751,56 @@ namespace Horizon.Game.Gateway.Network
                         && TryDecodeAsHandshake(hsFrame);
                     bool existingStillAlive = existingConn is { IsConnected: true };
 
-                    if (!existingStillAlive || isHandshake || existingConn == null)
+                    // 修复 BUG（重连死循环：每 20 秒一次的"关闭连接→重连→再关闭"循环）：
+                    // 原条件 `!existingStillAlive || isHandshake || existingConn == null` 在
+                    // existingConn==null 时任何消息都会补注册映射。当实体已从 ZoneShardGrain
+                    // 中消失（被 DespawnImmediatelyAsync 清理）后，客户端重连发送 InputPacket
+                    // 仍会补注册映射，下次续约再次检测到"实体不在 ZoneShardGrain 中但
+                    // ConnectionManager 仍有映射"→关闭连接→客户端重连→循环。
+                    // 修复：existingConn==null 时，只有 HandshakePacket 才补注册映射
+                    // （握手会触发 EnterWorldAsync 重新 Spawn 实体到 ZoneShardGrain）。
+                    // InputPacket 等其他消息不补注册，客户端必须重新握手才能恢复。
+                    bool shouldRegister = isHandshake
+                        || (existingConn != null && !existingStillAlive);
+
+                    if (shouldRegister)
                     {
                         _connectionManager.RegisterCharacter(fallbackCharacterId, connection);
                         _despawnScheduler.CancelDespawn(fallbackCharacterId);
+
+                        // 修复（重连后"角色已在线" — 旧 fingerprint 未释放）：
+                        // 真正断网后客户端 30s 心跳超时触发重连，但服务端 IdleTimeout=30s 可能尚未清理旧连接。
+                        // 旧连接的 fingerprint（TTL 5min）仍存在于 Redis 中，新连接 EnterGame 时 TryAcquire 失败。
+                        // HandshakePacket 是新会话的权威信号，此处主动释放旧 fingerprint，
+                        // 确保后续 EnterGame 的 TryAcquire 能成功。
+                        if (isHandshake && _fingerprintService != null)
+                        {
+                            try
+                            {
+                                await _fingerprintService.ReleaseAsync(fallbackCharacterId);
+                                _logger.LogInformation(
+                                    "HandshakePacket 触发释放旧 fingerprint: CharacterId={CharacterId}",
+                                    fallbackCharacterId);
+                            }
+                            catch (Exception fpEx)
+                            {
+                                _logger.LogWarning(fpEx,
+                                    "HandshakePacket 释放旧 fingerprint 失败（忽略）: CharacterId={CharacterId}",
+                                    fallbackCharacterId);
+                            }
+                        }
                         _logger.LogInformation(
                             "请求体补注册角色映射: CharacterId={CharacterId}, ConnectionId={ConnectionId}, MessageType={MessageType}, IsHandshake={IsHandshake}",
                             fallbackCharacterId, connection.ConnectionId, messagePacket.Header.MessageType, isHandshake);
+                    }
+                    else
+                    {
+                        // 映射不存在且非握手：拒绝补注册。
+                        // 实体可能已从 ZoneShardGrain 中消失（DespawnImmediatelyAsync 已清理映射），
+                        // 客户端必须重新握手才能恢复（握手会触发 EnterWorldAsync 重新 Spawn 实体）。
+                        _logger.LogWarning(
+                            "角色映射不存在且非握手消息，拒绝补注册（需重新握手）。CharacterId={CharacterId}, ConnectionId={ConnectionId}, MessageType={MessageType}",
+                            fallbackCharacterId, connection.ConnectionId, messagePacket.Header.MessageType);
                     }
                 }
 
@@ -1021,7 +1075,23 @@ namespace Horizon.Game.Gateway.Network
                 };
 
                 var buff = _adapter.PackPacket(responsePacket);
-                await client.SendAsync(buff);
+
+                // 修复 BUG（Writing is not allowed after writer was completed）：
+                // 原实现直接调用 client.SendAsync，绕过了 GameConnection._sendLock，
+                // 与并发的 GameConnection.SendAsync（如快照分发/心跳推送）冲突，导致并发写入
+                // TouchSocket pipeline，触发 InvalidOperationException。
+                // 修复：通过 GameConnection.SendAsync 发送，复用其 _sendLock 串行化保护。
+                // 连接在 StageConnectionEnsureAsync 中已确保注册，此处直接查询。
+                var connection = _connectionManager.GetConnection(client.Id);
+                if (connection != null)
+                {
+                    await connection.SendAsync(buff);
+                }
+                else
+                {
+                    // 极端场景：连接已被清理，直接发送（可能失败，但鉴权错误本身可忽略）
+                    await client.SendAsync(buff);
+                }
             }
             catch (Exception ex)
             {
@@ -1030,4 +1100,5 @@ namespace Horizon.Game.Gateway.Network
         }
 
     }
-}
+
+    }

@@ -220,13 +220,30 @@ namespace Game.UI.Character
             {
                 _stateManager.SetLoadingState(true);
 
-                // 0. 检查网关连接状态：网关不在线时禁止进入游戏，停留在角色选择界面
+                // 0. 检查网关连接状态：网关不在线时尝试按需拉起连接
+                // 断线超时后客户端退回角色选择界面，不再自动重连。
+                // 用户主动选择进入游戏时，先探查网关是否可达：
+                //   - 网关不可达 → 停留在角色选择界面并提示用户
+                //   - 网关可达 → 建立连接后继续进入游戏世界
                 var networkManager = HundunWorldGame.Instance.NetworkManager;
-                if (networkManager == null || !networkManager.CanSendMessage())
+                if (networkManager == null)
                 {
-                    FlaxEngine.Debug.LogError("[CharacterManager] 网关不在线，无法进入游戏，停留在角色选择界面");
-                    _errorHandler.HandleError(UIErrorType.Network, "服务器连接已断开，无法进入游戏。请检查网络后重试。", null, "enter_game_gateway_offline");
+                    FlaxEngine.Debug.LogError("[CharacterManager] NetworkManager 为空，无法进入游戏");
+                    _errorHandler.HandleError(UIErrorType.Network, "网络模块未初始化，无法进入游戏。", null, "enter_game_network_null");
                     return false;
+                }
+
+                if (!networkManager.CanSendMessage())
+                {
+                    FlaxEngine.Debug.Log("[CharacterManager] 网关不在线，尝试按需拉起连接...");
+                    var connected = await networkManager.ConnectOnDemandAsync();
+                    if (!connected)
+                    {
+                        FlaxEngine.Debug.LogWarning("[CharacterManager] 网关不可达，停留在角色选择界面");
+                        _errorHandler.HandleError(UIErrorType.Network, "服务器当前不在线，无法进入游戏。请稍后重试。", null, "enter_game_gateway_offline");
+                        return false;
+                    }
+                    FlaxEngine.Debug.Log("[CharacterManager] 按需连接成功，继续进入游戏");
                 }
 
                 // 1. 发送进入游戏请求（通知服务器）

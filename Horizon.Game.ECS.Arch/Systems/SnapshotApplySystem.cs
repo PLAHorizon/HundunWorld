@@ -4,6 +4,7 @@ using System.Diagnostics;
 using Arch.Core;
 using Horizon.Game.ECS.Arch.Components;
 using Horizon.Game.ECS.Arch.Core;
+using Horizon.Game.ECS.Arch.Diagnostics;
 using Horizon.Game.ECS.Arch.Network;
 using Horizon.Game.Message.Sync;
 using Horizon.Game.Message.Sync.Components;
@@ -117,14 +118,14 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     private readonly List<ulong> _staleEntityIds = new();
     /// <summary>
     /// 远程实体超时阈值（秒）。超过此时间未收到任何快照更新的远程实体将被客户端主动清理。
-    /// 默认 60 秒：与服务端 IdleTimeoutSeconds（60s）匹配，确保只有在连接真正断开时才清理远程角色。
-    /// 服务端全量快照间隔 1 秒，60 秒内至少应有 50+ 次全量快照到达。
-    /// 设置为 60 秒以容忍网络抖动、服务端 tick 异常、fanout observer 重订阅、网关重连等场景，
-    /// 避免误清理在线角色导致"莫名离线"。
-    /// 修复（莫名离线）：原值 30 秒在 fanout observer 重订阅或网络分区场景下不够安全，
-    /// 增大到 60 秒与连接空闲超时一致，确保只有在连接真正断开时才清理。
+    /// 默认 90 秒：在服务端心跳强制下发（修复后）保证下，远程静止实体每秒至少收到一次 delta，
+    /// TimeSinceLastSnapshot 不会超过 1 秒。90 秒阈值容忍 90 秒的网络抖动/服务端 tick 异常/
+    /// fanout observer 重订阅失败/网关重连等极端场景，避免误清理在线角色。
+    /// 修复（莫名离线）：原值 60 秒在网络分区或服务端 tick 卡顿场景下不够安全，
+    /// 增大到 90 秒，给服务端心跳兜底机制（FullSnapshotIntervalTicks=60 tick=1 秒强制心跳）
+    /// 留出 30 秒容差窗口。
     /// </summary>
-    public float StaleEntityTimeoutSeconds { get; set; } = 60f;
+    public float StaleEntityTimeoutSeconds { get; set; } = 90f;
     /// <summary>累计因超时被清理的远程实体数（诊断用）。</summary>
     public long StaleEntitiesCleaned { get; private set; }
 
@@ -159,8 +160,15 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     /// <summary>Update 方法被调用的总次数。</summary>
     public int UpdateCallCount => _updateCallCount;
 
-    /// <summary>Task 2：单帧最多消费的快照包数量，超出部分留待下一帧处理。默认 8。</summary>
-    public int MaxSnapshotsPerFrame { get; set; } = 8;
+    /// <summary>Task 2：单帧最多消费的快照包数量，超出部分留待下一帧处理。默认 32。</summary>
+    /// <remarks>
+    /// 修复（快照积压导致位置回退/不动）：
+    /// 原值 8 在网络抖动时不够。服务端 60Hz tick，每 tick 可能发快照，
+    /// 200ms 抖动积压 12 个快照。原值 8 需 2 帧处理完，第 1 帧处理旧 8 个，
+    /// Target 被设置为第 8 个快照的位置（非最新），Lerp 追赶旧位置 → "不动"。
+    /// 增大到 32，覆盖 500ms 抖动，绝大多数场景一帧处理完。
+    /// </remarks>
+    public int MaxSnapshotsPerFrame { get; set; } = 32;
 
     /// <summary>[Phase C6] 累计单帧快照消费溢出次数（供游戏层转发到 ClientSyncMetrics）。</summary>
     public long OverflowCount { get; private set; }
@@ -181,12 +189,76 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     private static long _adaptiveLastArrivalTimestamp;
     private static readonly object _adaptiveLock = new();
 
+    // [A2] RTT 输入：心跳/InputAck 测量的网络往返延迟（秒）与抖动（秒）。
+    // 到达间隔统计（_adaptiveAvgInterval/_adaptiveJitter）反映的是"包到达节奏"，
+    // 无法感知整体链路延迟抬升（如 4G/WiFi 切换后 RTT 从 40ms 涨到 180ms，
+    // 包间隔仍可保持 50ms 但排队延迟增大）。引入 RTT 下限：插值窗口不得小于
+    // RTT/2 + rttJitter，否则快照尚在途中插值缓冲已耗尽，表现为周期性卡顿。
+    private static float _adaptiveRttSeconds;
+    private static float _adaptiveRttJitterSeconds;
+    private const float RttEwmaAlpha = 0.125f;   // EWMA 平滑因子（与 TCP RTT 估计一致）
+    private const float RttJitterBeta = 0.25f;
+
+    /// <summary>自适应插值延迟下限（秒）：避免窗口过小导致 dead reckoning 突跳（闪移修复，见 Phase C4 注释）。</summary>
+    public static float AdaptiveDelayMinSeconds { get; set; } = 0.1f;
+
+    /// <summary>自适应插值延迟上限（秒）：弱网兜底，避免窗口无限增大导致远端角色"慢半拍"。
+    /// 修复（远程角色甚至不动 — 上限过大导致 speed 过低）：原值 0.4s 在弱网下 speed=2.5，
+    /// lerpFactor=0.042，每帧仅追赶 4.2%，稳态滞后 v/speed=2.4m，角色严重滞后视觉上"不动"。
+    /// 降到 0.2s，弱网下 speed≥5，lerpFactor≥0.083，稳态滞后≤1.2m，角色仍可见移动。
+    /// 真正的弱网兜底由 Dead Reckoning 惯性外推负责，不依赖加大插值窗口。</summary>
+    public static float AdaptiveDelayMaxSeconds { get; set; } = 0.2f;
+
     /// <summary>
-    /// [Phase C4] 计算当前自适应插值延迟（秒）。
-    /// 公式：targetDelay = avgInterval + 2 * jitter，clamp 到 [100ms, 300ms]。
+    /// 诊断事件汇（可选，静态）。由游戏层 DI 注入，null 时不输出诊断日志，保证零开销。
+    /// 设为静态以便 <see cref="AdaptiveInterpolationDelaySeconds"/> 静态 getter 内访问。
+    /// </summary>
+    public static ISyncDiagnosticsSink? Diagnostics { get; set; }
+
+    /// <summary>上次报告的自适应延迟（秒），用于检测显著变化触发诊断事件。</summary>
+    private static float _lastReportedDelay;
+
+    /// <summary>
+    /// 当前网络质量等级（基于 EWMA 平滑 RTT 滞回切换）。供 InterpolationSystem 驱动策略选择。
+    /// </summary>
+    public static NetworkQualityLevel CurrentNetworkQualityLevel => _currentNetworkQualityLevel;
+
+    private static NetworkQualityLevel _currentNetworkQualityLevel = NetworkQualityLevel.Strong;
+
+    /// <summary>
+    /// 待上送的 baseline 重传请求队列（由 ECSUpdateDriver 消费并通过 NetworkManager 发送服务端）。
+    /// </summary>
+    private static readonly Queue<BaselineResyncRequestPacket> _pendingResyncRequests = new();
+    private static readonly object _resyncLock = new();
+
+    /// <summary>入队一个 baseline 重传请求（限流 16 避免队列爆炸）。</summary>
+    private static void EnqueueResyncRequest(BaselineResyncRequestPacket req)
+    {
+        lock (_resyncLock)
+        {
+            if (_pendingResyncRequests.Count < 16)
+                _pendingResyncRequests.Enqueue(req);
+        }
+    }
+
+    /// <summary>取出一个待上送的 baseline 重传请求（无则返回 null），供 ECSUpdateDriver 消费发送。</summary>
+    public static BaselineResyncRequestPacket? TakePendingResyncRequest()
+    {
+        lock (_resyncLock)
+        {
+            return _pendingResyncRequests.Count > 0 ? _pendingResyncRequests.Dequeue() : null;
+        }
+    }
+
+    /// <summary>
+    /// [Phase C4 + A2] 计算当前自适应插值延迟（秒）。
+    /// 公式：targetDelay = max(avgInterval + 2 * jitter, rtt/2 + rttJitter)，clamp 到
+    /// [<see cref="AdaptiveDelayMinSeconds"/>, <see cref="AdaptiveDelayMaxSeconds"/>]。
     /// 修复（远程角色闪移）：原实现 clamp 到 [50ms, 200ms]，最小 50ms 导致 Alpha 在 3 帧内到达 1，
     /// 之后 dead reckoning 用过时速度推进位置，新快照到达时位置突变表现为闪移。
     /// 增大最小延迟到 100ms（6 帧完成插值），让插值有足够时间平滑过渡，减少 dead reckoning 的影响。
+    /// [A2] 引入 RTT 下限：RTT 抬升时（弱网）自动加大窗口防缓冲抽干；
+    /// RTT 较低且到达节奏稳定时维持原公式，不引入额外延迟感。
     /// </summary>
     public static float AdaptiveInterpolationDelaySeconds
     {
@@ -195,18 +267,88 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             if (!UseAdaptiveDelay)
                 return FixedInterpolationDelaySeconds;
 
-            float avg, jitter;
+            float avg, jitter, rtt, rttJitter;
             lock (_adaptiveLock)
             {
                 avg = _adaptiveAvgInterval;
                 jitter = _adaptiveJitter;
+                rtt = _adaptiveRttSeconds;
+                rttJitter = _adaptiveRttJitterSeconds;
+
+                // 网络质量等级滞回切换（基于 EWMA 平滑后的 RTT，边界带滞回避免反复切换）
+                var rttMs = rtt * 1000f;
+                switch (_currentNetworkQualityLevel)
+                {
+                    case NetworkQualityLevel.Strong:
+                        if (rttMs > 50f) _currentNetworkQualityLevel = NetworkQualityLevel.Medium;
+                        break;
+                    case NetworkQualityLevel.Medium:
+                        if (rttMs > 200f) _currentNetworkQualityLevel = NetworkQualityLevel.Weak;
+                        else if (rttMs < 30f) _currentNetworkQualityLevel = NetworkQualityLevel.Strong;
+                        break;
+                    case NetworkQualityLevel.Weak:
+                        if (rttMs < 150f) _currentNetworkQualityLevel = NetworkQualityLevel.Medium;
+                        break;
+                }
             }
 
-            if (avg <= 0f)
+            if (avg <= 0f && rtt <= 0f)
                 return FixedInterpolationDelaySeconds;
 
-            var target = avg + 2f * jitter;
-            return Math.Clamp(target, 0.1f, 0.3f);
+            // 到达节奏估计：avgInterval + 2*jitter（原 Phase C4 公式）
+            var arrivalBased = avg > 0f ? avg + 2f * jitter : 0f;
+            // [A2] RTT 下限：单向延迟 + 抖动，快照在途时间超过窗口即抽干
+            var rttFloor = rtt > 0f ? rtt * 0.5f + rttJitter : 0f;
+
+            var target = Math.Max(arrivalBased, rttFloor);
+            if (target <= 0f)
+                return FixedInterpolationDelaySeconds;
+            var result = Math.Clamp(target, AdaptiveDelayMinSeconds, AdaptiveDelayMaxSeconds);
+
+            // 诊断：窗口值显著变化（>20ms）时报告，供运维追踪自适应调整
+            var lastReported = _lastReportedDelay;
+            if (Diagnostics != null && Math.Abs(result - lastReported) > 0.02f)
+            {
+                _lastReportedDelay = result;
+                Diagnostics.OnAdaptiveWindowAdjusted(lastReported, result, rtt, jitter);
+            }
+            return result;
+        }
+    }
+
+    /// <summary>
+    /// [A2] 记录一次 RTT 样本（毫秒），更新 EWMA 与抖动估计，驱动 <see cref="AdaptiveInterpolationDelaySeconds"/> 的 RTT 下限。
+    /// 由客户端网络层在收到 HeartbeatResponse / InputAck 时调用
+    /// （HundunWorld 侧接 ClientSyncMetrics.RecordRtt 的同一调用点）。
+    /// </summary>
+    /// <param name="rttMs">本次测量的往返延迟（毫秒），负值被忽略。</param>
+    public static void RecordRttSample(float rttMs)
+    {
+        if (rttMs < 0f) return;
+        var rttSec = rttMs / 1000f;
+        lock (_adaptiveLock)
+        {
+            _adaptiveRttSeconds = _adaptiveRttSeconds == 0f
+                ? rttSec
+                : _adaptiveRttSeconds + RttEwmaAlpha * (rttSec - _adaptiveRttSeconds);
+            var deviation = Math.Abs(rttSec - _adaptiveRttSeconds);
+            _adaptiveRttJitterSeconds = _adaptiveRttJitterSeconds == 0f
+                ? deviation
+                : _adaptiveRttJitterSeconds + RttJitterBeta * (deviation - _adaptiveRttJitterSeconds);
+        }
+    }
+
+    /// <summary>[A2] 重置 RTT/到达间隔统计（断线重连/测试场景使用，避免旧网络状态污染新连接）。</summary>
+    public static void ResetAdaptiveDelayStats()
+    {
+        lock (_adaptiveLock)
+        {
+            _adaptiveAvgInterval = 0f;
+            _adaptiveJitter = 0f;
+            _adaptiveLastArrivalTimestamp = 0;
+            _adaptiveRttSeconds = 0f;
+            _adaptiveRttJitterSeconds = 0f;
+            _currentNetworkQualityLevel = NetworkQualityLevel.Strong;
         }
     }
 
@@ -332,6 +474,22 @@ public sealed class SnapshotApplySystem : ArchSystemBase
         var updatesThisTick = 0;
         var despawnsThisTick = 0;
 
+        // 修复（快照积压导致位置回退/不动）：
+        // 如果队列积压超过 MaxSnapshotsPerFrame，丢弃旧快照只保留最新的几个。
+        // 旧快照的位置已被后续快照覆盖，处理它们只会浪费 CPU 并导致 Target 被旧位置覆盖。
+        // 保留策略：保留最近 MaxSnapshotsPerFrame 个快照，丢弃更早的。
+        var queueCount = SnapshotReceiveBuffer.Instance.Count;
+        if (queueCount > MaxSnapshotsPerFrame)
+        {
+            var toDrop = queueCount - MaxSnapshotsPerFrame;
+            for (int i = 0; i < toDrop; i++)
+            {
+                if (!SnapshotReceiveBuffer.Instance.TryDequeue(out _))
+                    break;
+            }
+            OverflowCount++; // 记录积压丢弃事件
+        }
+
         while (consumedThisTick < MaxSnapshotsPerFrame && SnapshotReceiveBuffer.Instance.TryDequeue(out var snapshot))
         {
             consumedThisTick++;
@@ -354,12 +512,17 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 if (baseline == null ||
                     baseline.ServerTick != snapshot.BaselineTick)
                 {
-                    // 修复：baseline 不匹配时不再静默跳过，而是直接应用收到的 delta（作为部分更新）。
-                    // 原实现 `continue` 导致新加入玩家在等待全量快照期间（最多 1 秒）收不到任何更新，
-                    // 表现为“远程角色冻结不动”。直接应用增量 delta 可确保移动/旋转/跳跃立即生效，
-                    // 即使缺少 baseline 也不会比跳过更差（最坏情况是某些实体位置延迟到下一个全量快照才同步）。
-                    toApply = snapshot;
-                    Volatile.Write(ref _lastAppliedSnapshot, snapshot);
+                    // 诊断：baseline 不匹配，报告期望与实际持有的 baseline tick
+                    Diagnostics?.OnBaselineResyncRequested(snapshot.BaselineTick, baseline?.ServerTick ?? 0);
+
+                    // baseline 不匹配：构造重传请求入队（由 ECSUpdateDriver 上送服务端），
+                    // 跳过本次 delta 应用，等待服务端强制下发全量快照后恢复同步。
+                    EnqueueResyncRequest(new BaselineResyncRequestPacket
+                    {
+                        ExpectedBaselineTick = snapshot.BaselineTick,
+                        ClientLastAppliedTick = baseline?.ServerTick ?? 0
+                    });
+                    continue;
                 }
                 else
                 {
@@ -590,6 +753,8 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                     interp.TargetYaw = newTransform.Yaw;
                     interp.ServerTick = serverTick;
                     interp.TimeSinceLastSnapshot = 0f;
+                    // 重复 Spawn 视为收到 Update delta：重置为 Active 状态
+                    interp.State = RemoteEntityState.Active;
                     newTransform.ServerTick = serverTick;
                     world.Set(existingEntity, ref newTransform);
                 }
@@ -727,6 +892,9 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 Alpha = 1f,
                 ServerTick = serverTick,
                 ReceivedTick = 0,
+                // 初始状态为 Initializing：等待首个 Update delta 到达后转为 Active。
+                // 避免新实体在收到首个 delta 前被当作"移动中"处理导致位置漂移。
+                State = RemoteEntityState.Initializing,
             };
             world.Add(archEntity, interp);
         }
@@ -795,25 +963,31 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 var interpCount = Interlocked.Increment(ref _handleUpdateRemoteInterpCount);
                 if (interpCount <= 5 || interpCount % 120 == 1)
                 {
-                    Debug.WriteLine($"[SnapshotApplySystem] HandleUpdate#{updateCount} 远程实体插值更新: EntityId={delta.EntityId}, OldPos=({interp.X:F2},{interp.Y:F2},{interp.Z:F2}), NewTarget=({newTransform.X:F2},{newTransform.Y:F2},{newTransform.Z:F2}), Yaw={newTransform.Yaw:F2}, ServerTick={serverTick}");
+                    Debug.WriteLine($"[SnapshotApplySystem] HandleUpdate#{updateCount} 远程实体插值更新: EntityId={delta.EntityId}, State={interp.State}, OldPos=({interp.X:F2},{interp.Y:F2},{interp.Z:F2}), NewTarget=({newTransform.X:F2},{newTransform.Y:F2},{newTransform.Z:F2}), Yaw={newTransform.Yaw:F2}, ServerTick={serverTick}");
                 }
+
+                // 状态机分支：按远程实体当前状态精确控制行为
+                // - Active/Initializing：更新目标位置，保持 Active 状态
+                // - Idle/Stale：收到 Update delta 表示远程角色恢复移动，转为 Active
+                // - Offline/TimeoutDespawn：理论上不会到达（实体已销毁），防御性处理为 Active
+                interp.State = RemoteEntityState.Active;
 
                 // Lerp 平滑追赶方案：只更新目标位置，不设置 Start，不重置 Alpha。
                 // InterpolationSystem 每帧执行 位置 += (目标 - 位置) * lerpFactor，
                 // 角色以指数衰减速度追赶目标，稳态速度与服务端速度一致。
-                //
-                // 修复（远程角色闪移/移动不可见 — Alpha 插值加速运动问题）：
-                // 原 Alpha 插值方案在快照到达频率（60Hz）高于插值完成时间（100ms）时，
-                // 无论是否重置 Alpha 都有问题：
-                // - 重置 Alpha → 角色永远无法到达目标，每帧只移动 17% 的距离
-                // - 不重置 Alpha → 帧间移动距离从 17% 到 183% 速度变化，加速运动
-                // Lerp 方案消除了这些问题，帧间移动距离变化温和（4倍范围内）。
                 interp.TargetX = newTransform.X;
                 interp.TargetY = newTransform.Y;
                 interp.TargetZ = newTransform.Z;
                 interp.TargetYaw = newTransform.Yaw;
                 interp.ServerTick = serverTick;
                 interp.TimeSinceLastSnapshot = 0f; // 重置快照计时
+
+                // 记录水平速度，供 Idle/Stale 状态下做 dead reckoning（保持原速度推进）
+                if (delta.MovementState != null)
+                {
+                    interp.LastVelocityXZ_X = delta.MovementState.Value.VelocityXZ_X;
+                    interp.LastVelocityXZ_Y = delta.MovementState.Value.VelocityXZ_Y;
+                }
 
                 world.Set(archEntity, ref newTransform);
             }
@@ -837,6 +1011,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                     Yaw = newTransform.Yaw, StartYaw = newTransform.Yaw, TargetYaw = newTransform.Yaw,
                     Alpha = 1f, ServerTick = serverTick, ReceivedTick = 0,
                     TimeSinceLastSnapshot = 0f, // [Phase C4]
+                    State = RemoteEntityState.Active, // 补加后视为 Active，立即开始追赶
                 };
                 world.Add(archEntity, recoveryInterp);
 
@@ -938,6 +1113,12 @@ public sealed class SnapshotApplySystem : ArchSystemBase
         {
             if (world.IsAlive(archEntity))
             {
+                // 标记状态为 Offline：区分"主动离线"（服务端 Despawn delta）与"超时清理"（兜底机制）
+                if (world.TryGet<InterpolatedTransformComponent>(archEntity, out var interp))
+                {
+                    interp.State = RemoteEntityState.Offline;
+                    world.Set(archEntity, interp);
+                }
                 world.Destroy(archEntity);
             }
             _entityIdToArchEntity.Remove(delta.EntityId);
@@ -994,23 +1175,22 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     }
 
     /// <summary>
-    /// 远程实体超时清理（客户端兜底机制）。
-    /// 扫描所有远程实体，若 <see cref="InterpolatedTransformComponent.TimeSinceLastSnapshot"/>
-    /// 超过 <see cref="StaleEntityTimeoutSeconds"/>，则主动销毁实体并触发 <see cref="EntityDespawned"/> 事件。
+    /// 远程实体状态机推进与超时清理（客户端兜底机制）。
+    /// 扫描所有远程实体，根据 <see cref="InterpolatedTransformComponent.TimeSinceLastSnapshot"/>
+    /// 推进 <see cref="RemoteEntityState"/> 状态机，并对超时实体执行清理。
     /// </summary>
     /// <remarks>
-    /// <b>设计目的</b>：服务端检测异常断线（进程崩溃/断网）需要 19~65 秒
-    /// （TCP KeepAlive 19s 或应用层心跳超时 60s + 5s 定时器间隔），
-    /// 期间 Despawn delta 不会下发，本地角色看到远程角色"卡住不动"。
-    /// 本机制在客户端侧独立判定：若远程实体超过阈值时间未收到任何快照更新，主动清理。
+    /// <b>状态转移规则</b>：
+    /// <list type="bullet">
+    /// <item>Initializing → Active：收到首个 Update delta（由 HandleUpdate 处理）</item>
+    /// <item>Active → Idle：TimeSinceLastSnapshot 超过 0.5 秒（远程角色停止移动）</item>
+    /// <item>Idle → Stale：TimeSinceLastSnapshot 超过 5 秒（疑似异常，但保留实体）</item>
+    /// <item>Stale → TimeoutDespawn：TimeSinceLastSnapshot 超过 90 秒（兜底清理）</item>
+    /// <item>Offline：由 HandleDespawn 直接销毁，不进入此方法</item>
+    /// </list>
     /// <para>
-    /// <b>安全性</b>：服务端全量快照每 1 秒发送一次（FullSnapshotIntervalTicks=60 @60Hz），
-    /// 正常在线角色的 TimeSinceLastSnapshot 不会超过 1~2 秒。60 秒阈值意味着至少 50+ 次全量快照
-    /// 未到达才触发清理，误判风险极低。即使误清理，后续收到 Spawn delta 会重新创建实体。
-    /// </para>
-    /// <para>
-    /// <b>本地玩家保护</b>：本地玩家不携带 InterpolatedTransformComponent（使用 PredictedTransformComponent），
-    /// 不会被本机制清理。
+    /// <b>设计目的</b>：区分"主动离线"（服务端 Despawn delta）与"静止不动"（远程玩家未输入但在线），
+    /// 避免静止实体被误清理导致"莫名离线"。
     /// </para>
     /// </remarks>
     private void CleanupStaleEntities(World world)
@@ -1026,7 +1206,28 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             // 仅检查携带 InterpolatedTransformComponent 的远程实体
             if (world.TryGet<InterpolatedTransformComponent>(kvp.Value, out var interp))
             {
-                if (interp.TimeSinceLastSnapshot > timeout)
+                // 状态机推进：根据 TimeSinceLastSnapshot 转移状态
+                var newState = interp.State;
+                if (interp.State == RemoteEntityState.Active && interp.TimeSinceLastSnapshot > 0.5f)
+                {
+                    // Active → Idle：0.5 秒未收到新 delta，远程角色停止移动
+                    newState = RemoteEntityState.Idle;
+                }
+                else if (interp.State == RemoteEntityState.Idle && interp.TimeSinceLastSnapshot > 5f)
+                {
+                    // Idle → Stale：5 秒未收到新 delta，疑似异常
+                    newState = RemoteEntityState.Stale;
+                }
+
+                if (newState != interp.State)
+                {
+                    interp.State = newState;
+                    world.Set(kvp.Value, interp);
+                }
+
+                // 超时清理：仅在 Stale 状态下达到 timeout 阈值时触发
+                // 避免 Active/Idle 状态的实体被误清理
+                if (interp.State == RemoteEntityState.Stale && interp.TimeSinceLastSnapshot > timeout)
                 {
                     _staleEntityIds.Add(kvp.Key);
                 }
@@ -1044,7 +1245,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             HandleDespawn(world, delta);
             StaleEntitiesCleaned++;
             Debug.WriteLine(
-                $"[SnapshotApplySystem] 超时清理: 实体 {entityId} 超过 {timeout:F0} 秒未收到快照，" +
+                $"[SnapshotApplySystem] 超时清理: 实体 {entityId} 超过 {timeout:F0} 秒未收到快照（Stale 状态），" +
                 $"判定为离线并主动清理（服务端 Despawn delta 可能尚未到达）");
         }
     }

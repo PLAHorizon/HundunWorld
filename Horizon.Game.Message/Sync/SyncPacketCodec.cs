@@ -135,7 +135,9 @@ public static class SyncPacketCodec
 
                         // 首次 hint 过小，用更大尺寸重试。
                         // 修复 #6：重试时复用 ArrayPool 避免 new byte[] GC 压力。
-                        ArrayPool<byte>.Shared.Return(rented);
+                        // 修复 BUG（双重归还）：此处不再显式 Return(rented)，
+                        // 外层 finally 会统一归还 rented，避免同一缓冲区被归还两次
+                        // 导致 ArrayPool 内部 freelist 损坏、同一数组被多次借出引发数据竞争。
                         var biggerSize = Math.Max(hint * 4, payloadLength * 16);
                         if (biggerSize > MaxDecompressedSize)
                             throw new InvalidOperationException($"LZ4 decompressed size exceeds limit ({MaxDecompressedSize} bytes). Possible decompression bomb.");

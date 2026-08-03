@@ -3,6 +3,7 @@
              xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
              xmlns:models="using:Horizon.Game.GengDi.Models"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
              x:Class="Horizon.Game.GengDi.Core.Views.LoginView"
              x:DataType="vm:LoginDashboardViewModel">
 
@@ -33,48 +34,100 @@
                             Background="#33FFFFFF" HorizontalAlignment="Left">
                         <ui:IconSourceElement IconSource="{StaticResource SproutIcon}"
                                               Width="32" Height="32"
-                                              Foreground="#FFFFFFFF"
+                                              Foreground="{DynamicResource GdPrimaryForegroundBrush}"
                                               HorizontalAlignment="Center"
                                               VerticalAlignment="Center" />
                     </Border>
 
                     <TextBlock Text="欢迎回到耕地"
                                FontSize="32" FontWeight="Bold"
-                               Foreground="#FFFFFFFF" />
+                               Foreground="{DynamicResource GdPrimaryForegroundBrush}" />
                     <TextBlock Text="登录账户，继续你的花卉交易与游戏之旅。专业暗色终端，为每一位种植者与商人而生。"
                                FontSize="14" Foreground="#CCFFFFFF"
                                TextWrapping="Wrap" MaxWidth="420" />
 
-                    <!-- 信息 Chip -->
-                    <StackPanel Orientation="Horizontal" Spacing="12" Margin="0 16 0 0">
-                        <Border Background="#1AFFFFFF" CornerRadius="{DynamicResource GdRadiusMd}" Padding="14 10">
-                            <StackPanel Spacing="4">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <TextBlock Text="☀️" FontSize="13" />
-                                    <TextBlock Text="今日天气" FontSize="12" Foreground="#AAFFFFFF" />
-                                </StackPanel>
-                                <TextBlock Text="{Binding WeatherSummary}" FontSize="14"
-                                           FontWeight="SemiBold" Foreground="#FFFFFFFF" />
+                    <!-- 天气卡片预览 · Weather Widget（设计稿 100% 还原）
+                         适配暗色品牌背景: 半透明白色渐变 + 半透明白色边框/文字 -->
+                    <Border MaxWidth="280" CornerRadius="{DynamicResource GdRadiusLg}"
+                            Padding="20" BorderBrush="#33FFFFFF" BorderThickness="1"
+                            Margin="0 16 0 0" HorizontalAlignment="Left">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                <GradientStop Color="#1AFFFFFF" Offset="0" />
+                                <GradientStop Color="#0DFFFFFF" Offset="1" />
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <StackPanel Spacing="12">
+                            <!-- weather-location: 地图图标 + 位置 -->
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <ui:SymbolIcon Symbol="MapPin" FontSize="14"
+                                               Foreground="{DynamicResource GdPrimaryForegroundBrush}" />
+                                <TextBlock Text="{Binding WeatherLocation}" FontSize="13"
+                                           Foreground="#AAFFFFFF" VerticalAlignment="Center" />
                             </StackPanel>
-                        </Border>
-                        <Border Background="#1AFFFFFF" CornerRadius="{DynamicResource GdRadiusMd}" Padding="14 10">
-                            <StackPanel Spacing="4">
+
+                            <!-- weather-main: 左列(状况+风) + 右列(温度) -->
+                            <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Center">
+                                    <!-- weather-condition: 天气图标 + 状况文本 -->
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <controls:WeatherIconControl
+                                            WmoCode="{Binding CurrentWeather.Current.WmoCode}"
+                                            WeatherCondition="{Binding CurrentWeather.Current.ConditionText}"
+                                            Width="18" Height="18" />
+                                        <TextBlock Text="{Binding CurrentWeather.Current.ConditionText}"
+                                                   FontSize="14" FontWeight="Medium"
+                                                   Foreground="{DynamicResource GdPrimaryForegroundBrush}" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                    <!-- weather-meta: 风图标 + 风向风力 -->
+                                    <StackPanel Orientation="Horizontal" Spacing="3">
+                                        <TextBlock Text="🌬" FontSize="11"
+                                                   Foreground="#AAFFFFFF" VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding CurrentWeather.Current.WindDescription}"
+                                                   FontSize="12" Foreground="#AAFFFFFF"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </StackPanel>
+                                <!-- weather-temp: 当前温度 -->
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding CurrentWeather.Current.Temperature, StringFormat={}{0}°}"
+                                           FontSize="42" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource GdPrimaryForegroundBrush}" LineHeight="42"
+                                           VerticalAlignment="Center" />
+                            </Grid>
+
+                            <!-- weather-forecast: 预报摘要（顶部分隔线） -->
+                            <Border BorderBrush="#33FFFFFF" BorderThickness="0 1 0 0"
+                                    Padding="0 10 0 0">
+                                <TextBlock Text="{Binding WeatherForecastSummary}"
+                                           FontSize="12" Foreground="#AAFFFFFF"
+                                           FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace" />
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 信息 Chip（花卉推荐 + 市场指数） -->
+                    <StackPanel Orientation="Horizontal" Spacing="12" Margin="0 12 0 0">
+                        <Border Background="#1AFFFFFF" CornerRadius="{DynamicResource GdRadiusMd}"
+                                Width="172" Height="68" Padding="14 10">
+                            <StackPanel Spacing="4" VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <TextBlock Text="🌸" FontSize="13" />
                                     <TextBlock Text="花卉推荐" FontSize="12" Foreground="#AAFFFFFF" />
                                 </StackPanel>
                                 <TextBlock Text="{Binding FlowerSummary}" FontSize="14"
-                                           FontWeight="SemiBold" Foreground="#FFFFFFFF" />
+                                           FontWeight="SemiBold" Foreground="{DynamicResource GdPrimaryForegroundBrush}" />
                             </StackPanel>
                         </Border>
-                        <Border Background="#1AFFFFFF" CornerRadius="{DynamicResource GdRadiusMd}" Padding="14 10">
-                            <StackPanel Spacing="4">
+                        <Border Background="#1AFFFFFF" CornerRadius="{DynamicResource GdRadiusMd}"
+                                Width="172" Height="68" Padding="14 10">
+                            <StackPanel Spacing="4" VerticalAlignment="Center">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <TextBlock Text="📈" FontSize="13" />
                                     <TextBlock Text="市场指数" FontSize="12" Foreground="#AAFFFFFF" />
                                 </StackPanel>
                                 <TextBlock Text="+3.2%" FontSize="14"
-                                           FontWeight="SemiBold" Foreground="#FFFFFFFF" />
+                                           FontWeight="SemiBold" Foreground="{DynamicResource GdPrimaryForegroundBrush}" />
                             </StackPanel>
                         </Border>
                     </StackPanel>
@@ -103,7 +156,7 @@
                             </Border.Background>
                             <ui:IconSourceElement IconSource="{StaticResource SproutIcon}"
                                                   Width="16" Height="16"
-                                                  Foreground="#FFFFFFFF"
+                                                  Foreground="{DynamicResource GdPrimaryForegroundBrush}"
                                                   HorizontalAlignment="Center"
                                                   VerticalAlignment="Center" />
                         </Border>

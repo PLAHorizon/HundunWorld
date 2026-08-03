@@ -1,11 +1,12 @@
-﻿<ResourceDictionary xmlns="https://github.com/avaloniaui"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="using:FluentAvalonia.UI.Controls">
 
     <!-- ================================================================
-         GdTheme.axaml — 耕地暗色专业终端风格 token 体系
-         Brand Prefix: gd | 品牌蓝 #2962ff | 背景 #0a0e17
+         GdTheme.axaml — 耕地专业终端风格 token 体系
+         Brand Prefix: gd | 品牌蓝 #2962ff
          参照 gengdi-trading-ui-redesign HTML 原型零色值偏差
-         Dark mode is the primary experience
+         Dark mode is the primary experience, Light mode fully supported
          ================================================================ -->
 
     <!-- ==== gd 品牌色阶（Blue Scale，两种模式共用） ==== -->
@@ -28,7 +29,7 @@
     <Color x:Key="GdUp">#FF26A69A</Color>
     <Color x:Key="GdDown">#FFEF5350</Color>
 
-    <!-- ==== gd 状态色 Surface（12% 透明度） ==== -->
+    <!-- ==== gd 状态色 Surface（两种模式共用，12% 透明度） ==== -->
     <Color x:Key="GdSuccessSurface">#1F26A69A</Color>
     <Color x:Key="GdWarningSurface">#1FFF9800</Color>
     <Color x:Key="GdErrorSurface">#1FEF5350</Color>
@@ -41,49 +42,17 @@
     <CornerRadius x:Key="GdRadiusFull">9999</CornerRadius>
 
     <!-- ==== gd 字体（两种模式共用） ==== -->
-    <x:String x:Key="GdFontSans">Inter, Noto Sans SC, ui-sans-serif, system-ui, sans-serif</x:String>
-    <x:String x:Key="GdFontMono">JetBrains Mono, Cascadia Code, ui-monospace, monospace</x:String>
+    <FontFamily x:Key="GdFontSans">Inter, Noto Sans SC, ui-sans-serif, system-ui, sans-serif</FontFamily>
+    <FontFamily x:Key="GdFontMono">JetBrains Mono, Cascadia Code, ui-monospace, monospace</FontFamily>
 
-    <!-- ================================================================
-         Dark Mode（默认，主要体验）
-         ================================================================ -->
-    <Color x:Key="GdBackground">#FF0A0E17</Color>
-    <Color x:Key="GdForeground">#FFE0E6ED</Color>
-    <Color x:Key="GdCard">#FF131722</Color>
-    <Color x:Key="GdCardForeground">#FFE0E6ED</Color>
-    <Color x:Key="GdPopover">#FF1A1F2E</Color>
-    <Color x:Key="GdPopoverForeground">#FFE0E6ED</Color>
-    <Color x:Key="GdPrimary">#FF2962FF</Color>
-    <Color x:Key="GdPrimaryForeground">#FFFFFFFF</Color>
-    <Color x:Key="GdSecondary">#FF2A2E39</Color>
-    <Color x:Key="GdSecondaryForeground">#FFE0E6ED</Color>
-    <Color x:Key="GdMuted">#FF1A1F2E</Color>
-    <Color x:Key="GdMutedForeground">#FF787B86</Color>
-    <Color x:Key="GdAccent">#FF1F4FD6</Color>
-    <Color x:Key="GdAccentForeground">#FFFFFFFF</Color>
-    <Color x:Key="GdDestructive">#FFEF5350</Color>
-    <Color x:Key="GdDestructiveForeground">#FFFFFFFF</Color>
-    <Color x:Key="GdBorder">#FF2A2E39</Color>
-    <Color x:Key="GdInput">#FF2A2E39</Color>
-    <Color x:Key="GdRing">#FF2962FF</Color>
+    <!-- ==== gd 品牌色阶 Brush（两种模式共用，供按钮 hover/pressed 状态使用） ==== -->
+    <SolidColorBrush x:Key="GdBrand400Brush" Color="{StaticResource GdBrand400}" />
+    <SolidColorBrush x:Key="GdBrand500Brush" Color="{StaticResource GdBrand500}" />
+    <SolidColorBrush x:Key="GdBrand600Brush" Color="{StaticResource GdBrand600}" />
+    <SolidColorBrush x:Key="GdBrand700Brush" Color="{StaticResource GdBrand700}" />
+    <SolidColorBrush x:Key="GdBrand800Brush" Color="{StaticResource GdBrand800}" />
 
-    <!-- ==== gd alpha 辅助色（Dark） ==== -->
-    <Color x:Key="GdForegroundMuted">#99E0E6ED</Color>
-    <Color x:Key="GdBorderSubtle">#802A2E39</Color>
-    <Color x:Key="GdOverlay">#80000000</Color>
-
-    <!-- ==== gd SolidColorBrush（Dark） ==== -->
-    <SolidColorBrush x:Key="GdBackgroundBrush" Color="{StaticResource GdBackground}" />
-    <SolidColorBrush x:Key="GdCardBrush" Color="{StaticResource GdCard}" />
-    <SolidColorBrush x:Key="GdPopoverBrush" Color="{StaticResource GdPopover}" />
-    <SolidColorBrush x:Key="GdForegroundBrush" Color="{StaticResource GdForeground}" />
-    <SolidColorBrush x:Key="GdMutedBrush" Color="{StaticResource GdMuted}" />
-    <SolidColorBrush x:Key="GdMutedForegroundBrush" Color="{StaticResource GdMutedForeground}" />
-    <SolidColorBrush x:Key="GdBorderBrush" Color="{StaticResource GdBorder}" />
-    <SolidColorBrush x:Key="GdPrimaryBrush" Color="{StaticResource GdPrimary}" />
-    <SolidColorBrush x:Key="GdPrimaryForegroundBrush" Color="{StaticResource GdPrimaryForeground}" />
-    <SolidColorBrush x:Key="GdSecondaryBrush" Color="{StaticResource GdSecondary}" />
-    <SolidColorBrush x:Key="GdSecondaryForegroundBrush" Color="{StaticResource GdSecondaryForeground}" />
+    <!-- ==== gd 状态色 Brush（两种模式共用） ==== -->
     <SolidColorBrush x:Key="GdUpBrush" Color="{StaticResource GdUp}" />
     <SolidColorBrush x:Key="GdDownBrush" Color="{StaticResource GdDown}" />
     <SolidColorBrush x:Key="GdSuccessBrush" Color="{StaticResource GdSuccess}" />
@@ -94,15 +63,239 @@
     <SolidColorBrush x:Key="GdWarningSurfaceBrush" Color="{StaticResource GdWarningSurface}" />
     <SolidColorBrush x:Key="GdErrorSurfaceBrush" Color="{StaticResource GdErrorSurface}" />
     <SolidColorBrush x:Key="GdInfoSurfaceBrush" Color="{StaticResource GdInfoSurface}" />
-    <SolidColorBrush x:Key="GdForegroundMutedBrush" Color="{StaticResource GdForegroundMuted}" />
-    <SolidColorBrush x:Key="GdBorderSubtleBrush" Color="{StaticResource GdBorderSubtle}" />
-    <SolidColorBrush x:Key="GdOverlayBrush" Color="{StaticResource GdOverlay}" />
-    <!-- 品牌色阶 Brush（供按钮 hover/pressed 等状态使用） -->
-    <SolidColorBrush x:Key="GdBrand400Brush" Color="{StaticResource GdBrand400}" />
-    <SolidColorBrush x:Key="GdBrand500Brush" Color="{StaticResource GdBrand500}" />
-    <SolidColorBrush x:Key="GdBrand600Brush" Color="{StaticResource GdBrand600}" />
-    <SolidColorBrush x:Key="GdBrand700Brush" Color="{StaticResource GdBrand700}" />
-    <SolidColorBrush x:Key="GdBrand800Brush" Color="{StaticResource GdBrand800}" />
+
+    <!-- ================================================================
+         ThemeDictionaries — 暗色/浅色模式各自的面板色与画刷
+         品牌蓝、状态色、圆角、字体等共用资源已在上方定义
+         ================================================================ -->
+    <ResourceDictionary.ThemeDictionaries>
+
+        <!-- ════════════════════════════════════════════════════════════
+             Dark Mode（默认，主要体验）
+             背景 #0a0e17 | 前景 #e0e6ed | 卡片 #131722
+             ════════════════════════════════════════════════════════════ -->
+        <ResourceDictionary x:Key="Dark">
+            <Color x:Key="GdBackground">#FF0A0E17</Color>
+            <Color x:Key="GdForeground">#FFE0E6ED</Color>
+            <Color x:Key="GdCard">#FF131722</Color>
+            <Color x:Key="GdCardForeground">#FFE0E6ED</Color>
+            <Color x:Key="GdPopover">#FF1A1F2E</Color>
+            <Color x:Key="GdPopoverForeground">#FFE0E6ED</Color>
+            <Color x:Key="GdPrimary">#FF2962FF</Color>
+            <Color x:Key="GdPrimaryForeground">#FFFFFFFF</Color>
+            <Color x:Key="GdSecondary">#FF2A2E39</Color>
+            <Color x:Key="GdSecondaryForeground">#FFE0E6ED</Color>
+            <Color x:Key="GdMuted">#FF1A1F2E</Color>
+            <Color x:Key="GdMutedForeground">#FF787B86</Color>
+            <Color x:Key="GdAccent">#FF1F4FD6</Color>
+            <Color x:Key="GdAccentForeground">#FFFFFFFF</Color>
+            <Color x:Key="GdDestructive">#FFEF5350</Color>
+            <Color x:Key="GdDestructiveForeground">#FFFFFFFF</Color>
+            <Color x:Key="GdBorder">#FF2A2E39</Color>
+            <Color x:Key="GdInput">#FF2A2E39</Color>
+            <Color x:Key="GdRing">#FF2962FF</Color>
+
+            <!-- Dark alpha 辅助色 -->
+            <Color x:Key="GdForegroundMuted">#99E0E6ED</Color>
+            <Color x:Key="GdBorderSubtle">#802A2E39</Color>
+            <Color x:Key="GdOverlay">#80000000</Color>
+
+            <!-- Dark SolidColorBrush -->
+            <SolidColorBrush x:Key="GdBackgroundBrush" Color="{StaticResource GdBackground}" />
+            <SolidColorBrush x:Key="GdCardBrush" Color="{StaticResource GdCard}" />
+            <SolidColorBrush x:Key="GdPopoverBrush" Color="{StaticResource GdPopover}" />
+            <SolidColorBrush x:Key="GdForegroundBrush" Color="{StaticResource GdForeground}" />
+            <SolidColorBrush x:Key="GdMutedBrush" Color="{StaticResource GdMuted}" />
+            <SolidColorBrush x:Key="GdMutedForegroundBrush" Color="{StaticResource GdMutedForeground}" />
+            <SolidColorBrush x:Key="GdBorderBrush" Color="{StaticResource GdBorder}" />
+            <SolidColorBrush x:Key="GdPrimaryBrush" Color="{StaticResource GdPrimary}" />
+            <SolidColorBrush x:Key="GdPrimaryForegroundBrush" Color="{StaticResource GdPrimaryForeground}" />
+            <SolidColorBrush x:Key="GdSecondaryBrush" Color="{StaticResource GdSecondary}" />
+            <SolidColorBrush x:Key="GdSecondaryForegroundBrush" Color="{StaticResource GdSecondaryForeground}" />
+            <SolidColorBrush x:Key="GdForegroundMutedBrush" Color="{StaticResource GdForegroundMuted}" />
+            <SolidColorBrush x:Key="GdBorderSubtleBrush" Color="{StaticResource GdBorderSubtle}" />
+            <SolidColorBrush x:Key="GdOverlayBrush" Color="{StaticResource GdOverlay}" />
+        </ResourceDictionary>
+
+        <!-- ════════════════════════════════════════════════════════════
+             Light Mode（浅色模式）
+             背景 #f8f9fb | 前景 #1a1f2e | 卡片 #ffffff
+             ════════════════════════════════════════════════════════════ -->
+        <ResourceDictionary x:Key="Light">
+            <Color x:Key="GdBackground">#FFF8F9FB</Color>
+            <Color x:Key="GdForeground">#FF1A1F2E</Color>
+            <Color x:Key="GdCard">#FFFFFFFF</Color>
+            <Color x:Key="GdCardForeground">#FF1A1F2E</Color>
+            <Color x:Key="GdPopover">#FFFFFFFF</Color>
+            <Color x:Key="GdPopoverForeground">#FF1A1F2E</Color>
+            <Color x:Key="GdPrimary">#FF2962FF</Color>
+            <Color x:Key="GdPrimaryForeground">#FFFFFFFF</Color>
+            <Color x:Key="GdSecondary">#FFF0F2F5</Color>
+            <Color x:Key="GdSecondaryForeground">#FF1A1F2E</Color>
+            <Color x:Key="GdMuted">#FFF0F2F5</Color>
+            <Color x:Key="GdMutedForeground">#FF6B7280</Color>
+            <Color x:Key="GdAccent">#FF1F4FD6</Color>
+            <Color x:Key="GdAccentForeground">#FFFFFFFF</Color>
+            <Color x:Key="GdDestructive">#FFEF5350</Color>
+            <Color x:Key="GdDestructiveForeground">#FFFFFFFF</Color>
+            <Color x:Key="GdBorder">#FFE0E3E8</Color>
+            <Color x:Key="GdInput">#FFE0E3E8</Color>
+            <Color x:Key="GdRing">#FF2962FF</Color>
+
+            <!-- Light alpha 辅助色 -->
+            <Color x:Key="GdForegroundMuted">#991A1F2E</Color>
+            <Color x:Key="GdBorderSubtle">#80C5CAD3</Color>
+            <Color x:Key="GdOverlay">#80000000</Color>
+
+            <!-- Light SolidColorBrush -->
+            <SolidColorBrush x:Key="GdBackgroundBrush" Color="{StaticResource GdBackground}" />
+            <SolidColorBrush x:Key="GdCardBrush" Color="{StaticResource GdCard}" />
+            <SolidColorBrush x:Key="GdPopoverBrush" Color="{StaticResource GdPopover}" />
+            <SolidColorBrush x:Key="GdForegroundBrush" Color="{StaticResource GdForeground}" />
+            <SolidColorBrush x:Key="GdMutedBrush" Color="{StaticResource GdMuted}" />
+            <SolidColorBrush x:Key="GdMutedForegroundBrush" Color="{StaticResource GdMutedForeground}" />
+            <SolidColorBrush x:Key="GdBorderBrush" Color="{StaticResource GdBorder}" />
+            <SolidColorBrush x:Key="GdPrimaryBrush" Color="{StaticResource GdPrimary}" />
+            <SolidColorBrush x:Key="GdPrimaryForegroundBrush" Color="{StaticResource GdPrimaryForeground}" />
+            <SolidColorBrush x:Key="GdSecondaryBrush" Color="{StaticResource GdSecondary}" />
+            <SolidColorBrush x:Key="GdSecondaryForegroundBrush" Color="{StaticResource GdSecondaryForeground}" />
+            <SolidColorBrush x:Key="GdForegroundMutedBrush" Color="{StaticResource GdForegroundMuted}" />
+            <SolidColorBrush x:Key="GdBorderSubtleBrush" Color="{StaticResource GdBorderSubtle}" />
+            <SolidColorBrush x:Key="GdOverlayBrush" Color="{StaticResource GdOverlay}" />
+        </ResourceDictionary>
+
+    </ResourceDictionary.ThemeDictionaries>
+
+    <!-- ================================================================
+         共用非主题资源（从 Resources.axaml 迁移，确保运行时可用）
+         ================================================================ -->
+    <Thickness x:Key="NavigationViewContentMargin">0,0,0,0</Thickness>
+    <Thickness x:Key="SampleAppPageMargin">24,24,24,0</Thickness>
+    <CornerRadius x:Key="HorizonLargeCornerRadius">16</CornerRadius>
+
+    <SolidColorBrush x:Key="LoginErrorBrush" Color="#FFEF4444" />
+    <SolidColorBrush x:Key="BattleNetPrimaryBrush" Color="#FF5C7A3A" />
+    <SolidColorBrush x:Key="BattleNetPrimaryHoverBrush" Color="#FF6E8E4A" />
+    <SolidColorBrush x:Key="BattleNetPrimaryPressedBrush" Color="#FF4A6430" />
+    <SolidColorBrush x:Key="BattleNetOutlineBrush" Color="#FF4A90D9" />
+
+    <!-- ==== 图标定义（SymbolIconSource，颜色继承父级 Foreground） ==== -->
+    <ui:SymbolIconSource x:Key="HomeIcon" Symbol="Home" />
+    <ui:SymbolIconSource x:Key="GamesIcon" Symbol="Games" />
+    <ui:SymbolIconSource x:Key="NewsIcon" Symbol="Document" />
+    <ui:SymbolIconSource x:Key="SocialIcon" Symbol="People" />
+    <ui:SymbolIconSource x:Key="DownloadsIcon" Symbol="Download" />
+    <ui:SymbolIconSource x:Key="NotificationsIcon" Symbol="Alert" />
+    <ui:SymbolIconSource x:Key="ProfileIcon" Symbol="Contact" />
+    <ui:SymbolIconSource x:Key="SettingsIcon" Symbol="Settings" />
+    <ui:SymbolIconSource x:Key="SearchIcon" Symbol="Find" />
+    <ui:SymbolIconSource x:Key="ThemeIcon" Symbol="DarkTheme" />
+    <ui:SymbolIconSource x:Key="LightThemeIcon" Symbol="WeatherSunny" />
+    <ui:SymbolIconSource x:Key="SecurityIcon" Symbol="ProtectedDocument" />
+    <ui:SymbolIconSource x:Key="BrandIcon" Symbol="Globe" />
+    <ui:SymbolIconSource x:Key="LoginWeatherIcon" Symbol="WeatherSunny" />
+    <ui:SymbolIconSource x:Key="LoginFlowerIcon" Symbol="Favorite" />
+    <ui:SymbolIconSource x:Key="LoginGameIcon" Symbol="Games" />
+    <ui:SymbolIconSource x:Key="LoginUserIcon" Symbol="Contact" />
+    <ui:SymbolIconSource x:Key="LoginLockIcon" Symbol="Permissions" />
+    <ui:SymbolIconSource x:Key="LoginEyeOffIcon" Symbol="HideBcc" />
+    <ui:SymbolIconSource x:Key="LoginArrowIcon" Symbol="Forward" />
+    <ui:SymbolIconSource x:Key="MusicIcon" Symbol="Audio" />
+    <ui:SymbolIconSource x:Key="MusicInfoIcon" Symbol="MusicInfo" />
+    <ui:SymbolIconSource x:Key="CheckIcon" Symbol="Accept" />
+    <ui:SymbolIconSource x:Key="PlayIcon" Symbol="Play" />
+    <ui:SymbolIconSource x:Key="RefreshIcon" Symbol="Refresh" />
+    <ui:SymbolIconSource x:Key="FlowerIcon" Symbol="Favorite" />
+    <ui:SymbolIconSource x:Key="MoreIcon" Symbol="More" />
+    <ui:SymbolIconSource x:Key="DashboardIcon" Symbol="Home" />
+    <ui:SymbolIconSource x:Key="LibraryIcon" Symbol="Library" />
+    <ui:SymbolIconSource x:Key="CompassIcon" Symbol="Map" />
+    <ui:SymbolIconSource x:Key="PlaylistIcon" Symbol="MusicInfo" />
+    <ui:SymbolIconSource x:Key="GaugeIcon" Symbol="ReportHacked" />
+    <ui:SymbolIconSource x:Key="MarketIcon" Symbol="Shop" />
+    <ui:SymbolIconSource x:Key="SproutIcon" Symbol="WeatherSunny" />
+    <ui:SymbolIconSource x:Key="CartIcon" Symbol="Shop" />
+    <ui:SymbolIconSource x:Key="OrderIcon" Symbol="Page" />
+    <ui:SymbolIconSource x:Key="AlertIcon" Symbol="Important" />
+    <ui:SymbolIconSource x:Key="AIIcon" Symbol="Star" />
+    <ui:SymbolIconSource x:Key="DataScreenIcon" Symbol="PreviewLink" />
+    <ui:SymbolIconSource x:Key="StoreIcon" Symbol="Shop" />
+    <ui:SymbolIconSource x:Key="AddressIcon" Symbol="MapPin" />
+    <ui:SymbolIconSource x:Key="BellIcon" Symbol="Alert" />
+    <ui:SymbolIconSource x:Key="MoonIcon" Symbol="DarkTheme" />
+
+    <!-- ==== 下载任务图标渐变背景（4种，对应设计稿每个任务不同渐变） ==== -->
+    <LinearGradientBrush x:Key="GdDlGradient0" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="{StaticResource GdBrand500}" Offset="0" />
+        <GradientStop Color="{StaticResource GdBrand700}" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="GdDlGradient1" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="{StaticResource GdBrand600}" Offset="0" />
+        <GradientStop Color="{StaticResource GdBrand800}" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="GdDlGradient2" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="{StaticResource GdBrand400}" Offset="0" />
+        <GradientStop Color="{StaticResource GdBrand600}" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="GdDlGradient3" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="{StaticResource GdBrand700}" Offset="0" />
+        <GradientStop Color="{StaticResource GdBrand900}" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- ==== Lucide 图标几何数据（用于 Path 描边渲染，100%匹配设计原型图标） ==== -->
+    <StreamGeometry x:Key="LucideRocketGeometry">M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5 M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09 M9 12a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.4 22.4 0 0 1-4 2z M9 12H4s.55-3.03 2-4c1.62-1.08 5 .05 5 .05</StreamGeometry>
+    <StreamGeometry x:Key="LucideSwordGeometry">M11 19l-6-6 M5 21l-2-2 M8 16l-4 4 M9.5 17.5L21 6V3h-3L6.5 14.5</StreamGeometry>
+    <StreamGeometry x:Key="LucideAnchorGeometry">M12 6v16 M19 13l2-1a9 9 0 0 1-18 0l2 1 M9 11h6 M10 4a2 2 0 1 1 4 0a2 2 0 1 1-4 0</StreamGeometry>
+    <StreamGeometry x:Key="LucideTreesGeometry">M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z M7 16v6 M13 19v3 M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5</StreamGeometry>
+    <StreamGeometry x:Key="LucideGaugeGeometry">M12 14l4-4 M3.34 19a10 10 0 1 1 17.32 0</StreamGeometry>
+    <StreamGeometry x:Key="LucideHardDriveGeometry">M10 16h.01 M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z M21.946 12.013H2.054 M6 16h.01</StreamGeometry>
+    <StreamGeometry x:Key="LucidePauseGeometry">M15 3h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z M6 3h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z</StreamGeometry>
+    <StreamGeometry x:Key="LucideXGeometry">M18 6L6 18 M6 6l12 12</StreamGeometry>
+    <StreamGeometry x:Key="LucidePlayGeometry">M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z</StreamGeometry>
+    <StreamGeometry x:Key="LucideFolderOpenGeometry">M6 14l1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2</StreamGeometry>
+    <StreamGeometry x:Key="LucideTrash2Geometry">M10 11v6 M14 11v6 M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6 M3 6h18 M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2</StreamGeometry>
+    <StreamGeometry x:Key="LucideCheckGeometry">M20 6L9 17l-5-5</StreamGeometry>
+    <StreamGeometry x:Key="LucideImageGeometry">M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 13.5l2.5 3 3.5-4.5 4.5 6H5z</StreamGeometry>
+    <StreamGeometry x:Key="LucideRotateCcwGeometry">M1 4v6h6 M3.51 15a9 9 0 1 0 2.13-9.36L1 10</StreamGeometry>
+    <StreamGeometry x:Key="LucideSaveGeometry">M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8 M7 3v5h8</StreamGeometry>
+    <StreamGeometry x:Key="LucideLoaderGeometry">M12 2v4 M16.2 7.8l2.9-2.9 M18 12h4 M16.2 16.2l2.9 2.9 M12 18v4 M4.9 19.1l2.9-2.9 M2 12h4 M4.9 4.9l2.9 2.9</StreamGeometry>
+    <StreamGeometry x:Key="LucideDownloadGeometry">M12 15V3 M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5</StreamGeometry>
+
+    <!-- ==== 社交区 Lucide 图标几何 ==== -->
+    <StreamGeometry x:Key="LucideMessageCircleGeometry">M7.9 20A9 9 0 1 0 4 16.1L2 22z</StreamGeometry>
+    <StreamGeometry x:Key="LucideUserPlusGeometry">M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 7a4 4 0 1 0 0 .01 M19 8v6 M22 11h-6</StreamGeometry>
+    <StreamGeometry x:Key="LucideSearchGeometry">M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z M21 21l-4.35-4.35</StreamGeometry>
+    <StreamGeometry x:Key="LucidePhoneGeometry">M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z</StreamGeometry>
+    <StreamGeometry x:Key="LucideVideoGeometry">M23 7l-7 5 7 5V7z M14 5H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z</StreamGeometry>
+    <StreamGeometry x:Key="LucideMoreVerticalGeometry">M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z M12 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2z M12 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2z</StreamGeometry>
+    <StreamGeometry x:Key="LucideSmileGeometry">M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M8 14s1.5 2 4 2 4-2 4-2 M9 9h.01 M15 9h.01</StreamGeometry>
+    <StreamGeometry x:Key="LucideSendGeometry">M22 2L11 13 M22 2l-7 20-4-9-9-4 20-7z</StreamGeometry>
+    <StreamGeometry x:Key="LucideUserXGeometry">M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 7a4 4 0 1 0 0 .01 M17 8l5 5 M22 8l-5 5</StreamGeometry>
+    <StreamGeometry x:Key="LucideUserMinusGeometry">M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 7a4 4 0 1 0 0 .01 M19 8h-6</StreamGeometry>
+    <StreamGeometry x:Key="LucideUsersGeometry">M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-.01 M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75</StreamGeometry>
+    <StreamGeometry x:Key="LucideFileTextGeometry">M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8</StreamGeometry>
+    <StreamGeometry x:Key="LucideMusicGeometry">M9 18V5l12-2v13 M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0z M21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z</StreamGeometry>
+    <StreamGeometry x:Key="LucideBellRingGeometry">M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9 M10.3 21a1.94 1.94 0 0 0 3.4 0 M4 2C2.8 3.7 2 5.7 2 8 M22 8c0-2.3-.8-4.3-2-6</StreamGeometry>
+    <StreamGeometry x:Key="LucideMegaphoneGeometry">M3 11l18-5v12L3 14v-3z M11.6 16.8a3 3 0 1 1-5.8-1.6</StreamGeometry>
+    <StreamGeometry x:Key="LucideTrendingUpGeometry">M23 6l-9.5 9.5-5-5L1 18 M17 6h6v6</StreamGeometry>
+    <StreamGeometry x:Key="LucideAlertTriangleGeometry">M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z M12 9v4 M12 17h.01</StreamGeometry>
+    <StreamGeometry x:Key="LucideGiftGeometry">M20 12v10H4V12 M2 7h20v5H2z M12 22V7 M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z</StreamGeometry>
+    <StreamGeometry x:Key="LucideCheckCheckGeometry">M18 6L7 17l-5-5 M22 10l-7.5 7.5L13 16</StreamGeometry>
+
+    <!-- 安全页面图标 -->
+    <StreamGeometry x:Key="LucideShieldGeometry">M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z</StreamGeometry>
+    <StreamGeometry x:Key="LucideShieldCheckGeometry">M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z M9 12l2 2 4-4</StreamGeometry>
+    <StreamGeometry x:Key="LucideKeyRoundGeometry">M2 18v3c0 .6.4 1 1 1h4l9.5-9.5a3.5 3.5 0 0 0-5-5L2 18z M15 6a3.5 3.5 0 1 1 5 5</StreamGeometry>
+    <StreamGeometry x:Key="LucideSmartphoneGeometry">M5 2h14a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z M12 18h.01</StreamGeometry>
+    <StreamGeometry x:Key="LucideLaptopGeometry">M3 5h18a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z M2 17h20</StreamGeometry>
+    <StreamGeometry x:Key="LucideTabletGeometry">M5 2h14a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z M12 18h.01</StreamGeometry>
+    <StreamGeometry x:Key="LucideLogOutGeometry">M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4 M16 17l5-5-5-5 M21 12H9</StreamGeometry>
+    <StreamGeometry x:Key="LucideEdit3Geometry">M12 20h9 M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z</StreamGeometry>
+    <StreamGeometry x:Key="LucideMonitorSmartphoneGeometry">M18 4H2a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1z M2 17h16 M9 21h6 M22 8h-2a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1z</StreamGeometry>
+    <StreamGeometry x:Key="LucideSettings2Geometry">M20 7h-9 M14 17H5 M17 17a3 3 0 1 0 6 0 3 3 0 1 0-6 0 M7 7a3 3 0 1 0 6 0 3 3 0 1 0-6 0</StreamGeometry>
+    <StreamGeometry x:Key="LucidePaletteGeometry">M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z</StreamGeometry>
+    <StreamGeometry x:Key="LucideTerminalGeometry">M4 17l6-6-6-6 M12 19h8</StreamGeometry>
+    <StreamGeometry x:Key="LucideInfoGeometry">M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 16v-4 M12 8h.01</StreamGeometry>
 
     <LinearGradientBrush x:Key="HeaderOpacityMaskBrush"
                          StartPoint="0,0" EndPoint="0,1">

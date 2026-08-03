@@ -165,6 +165,101 @@ namespace HundunWorld.Game.Network
 
         public static void RecordSnapshotOverflow() => Interlocked.Increment(ref _snapshotOverflowCount);
 
+        // ─── 插值延迟（远程角色移动平滑性可观测） ───
+
+        /// <summary>当前自适应插值延迟（ms），由 ECSUpdateDriver 每帧从 SnapshotApplySystem 采集转发。</summary>
+        public static float CurrentInterpolationDelayMs => Volatile.Read(ref _currentInterpolationDelayMs);
+        private static float _currentInterpolationDelayMs;
+
+        /// <summary>记录当前插值延迟（秒），内部转 ms 存储。</summary>
+        public static void RecordInterpolationDelay(float delaySeconds)
+        {
+            Volatile.Write(ref _currentInterpolationDelayMs, delaySeconds * 1000f);
+        }
+
+        // ─── Stale 实体清理计数 ───
+
+        /// <summary>累计因超时（90 秒未收到快照）被兜底清理的远程实体数。</summary>
+        public static long StaleEntitiesCleaned => Interlocked.Read(ref _staleEntitiesCleaned);
+        private static long _staleEntitiesCleaned;
+
+        public static void RecordStaleEntityCleaned() => Interlocked.Increment(ref _staleEntitiesCleaned);
+
+        // ─── 平滑度评分（60 帧滑动窗口：位移标准差 + 帧时间抖动综合评分） ───
+
+        /// <summary>
+        /// 远程角色移动平滑度评分（0..100，越大越平滑）。
+        /// 基于 60 帧滑动窗口的位移 delta 标准差与帧时间标准差综合计算：
+        /// 匀速移动（delta 稳定、帧时间稳定）→ 评分高；卡顿/跳跃（delta 波动大）→ 评分低。
+        /// </summary>
+        public static float SmoothnessScore => Volatile.Read(ref _smoothnessScore);
+        private static float _smoothnessScore;
+        private static readonly object _smoothnessLock = new();
+        private static readonly float[] _smoothnessPositionDeltas = new float[60];
+        private static readonly float[] _smoothnessFrameTimes = new float[60];
+        private static int _smoothnessSampleIndex;
+        private static int _smoothnessSampleCount;
+
+        /// <summary>
+        /// 记录一帧平滑度采样（位置 delta + 帧时间），维护 60 帧滑动窗口并更新综合评分。
+        /// </summary>
+        /// <param name="positionDeltaMeters">本帧远程角色平均渲染位置 delta（米）。</param>
+        /// <param name="frameTimeSeconds">本帧帧时间（秒）。</param>
+        public static void RecordSmoothnessSample(float positionDeltaMeters, float frameTimeSeconds)
+        {
+            lock (_smoothnessLock)
+            {
+                _smoothnessPositionDeltas[_smoothnessSampleIndex] = positionDeltaMeters;
+                _smoothnessFrameTimes[_smoothnessSampleIndex] = frameTimeSeconds;
+                _smoothnessSampleIndex = (_smoothnessSampleIndex + 1) % 60;
+                if (_smoothnessSampleCount < 60) _smoothnessSampleCount++;
+
+                if (_smoothnessSampleCount < 2)
+                {
+                    Volatile.Write(ref _smoothnessScore, 100f);
+                    return;
+                }
+
+                // 计算位移 delta 的均值与标准差
+                float sumDelta = 0f, sumFrame = 0f;
+                for (int i = 0; i < _smoothnessSampleCount; i++)
+                {
+                    sumDelta += _smoothnessPositionDeltas[i];
+                    sumFrame += _smoothnessFrameTimes[i];
+                }
+                var meanDelta = sumDelta / _smoothnessSampleCount;
+                var meanFrame = sumFrame / _smoothnessSampleCount;
+
+                float varDelta = 0f, varFrame = 0f;
+                for (int i = 0; i < _smoothnessSampleCount; i++)
+                {
+                    var dd = _smoothnessPositionDeltas[i] - meanDelta;
+                    var ff = _smoothnessFrameTimes[i] - meanFrame;
+                    varDelta += dd * dd;
+                    varFrame += ff * ff;
+                }
+                var stdDelta = MathF.Sqrt(varDelta / _smoothnessSampleCount);
+                var stdFrame = MathF.Sqrt(varFrame / _smoothnessSampleCount);
+
+                // 评分 = 100 / (1 + stdDelta * 5 + stdFrame * 200)
+                // stdDelta 单位米（卡顿时位移跳变大使标准差大），stdFrame 单位秒（帧时间抖动）
+                var score = 100f / (1f + stdDelta * 5f + stdFrame * 200f);
+                Volatile.Write(ref _smoothnessScore, score);
+            }
+        }
+
+        // ─── 当前策略组合（供运维查询对比不同网络环境下的方案表现） ───
+
+        /// <summary>当前同步策略组合描述（如 "Active|Lerp+DeadReckoning|Medium|180ms|20Hz"）。</summary>
+        public static string CurrentStrategyCombo => Volatile.Read(ref _currentStrategyCombo);
+        private static string _currentStrategyCombo = string.Empty;
+
+        /// <summary>设置当前策略组合描述。</summary>
+        public static void SetCurrentStrategyCombo(string combo)
+        {
+            Volatile.Write(ref _currentStrategyCombo, combo ?? string.Empty);
+        }
+
         // ─── 重置（断线重连时可选调用） ───
 
         /// <summary>重置所有指标（重连时调用）。</summary>
@@ -187,6 +282,20 @@ namespace HundunWorld.Game.Network
             Interlocked.Exchange(ref _unknownPackets, 0);
             Interlocked.Exchange(ref _positionOverrideCount, 0);
             Interlocked.Exchange(ref _snapshotOverflowCount, 0);
+            Volatile.Write(ref _currentInterpolationDelayMs, 0f);
+            Interlocked.Exchange(ref _staleEntitiesCleaned, 0);
+            lock (_smoothnessLock)
+            {
+                _smoothnessSampleIndex = 0;
+                _smoothnessSampleCount = 0;
+                for (int i = 0; i < 60; i++)
+                {
+                    _smoothnessPositionDeltas[i] = 0f;
+                    _smoothnessFrameTimes[i] = 0f;
+                }
+            }
+            Volatile.Write(ref _smoothnessScore, 0f);
+            Volatile.Write(ref _currentStrategyCombo, string.Empty);
         }
     }
 }

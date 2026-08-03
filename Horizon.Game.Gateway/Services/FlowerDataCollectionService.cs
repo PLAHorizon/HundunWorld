@@ -45,10 +45,15 @@ namespace Horizon.Game.Gateway.Services
             var enableTcpCollector = _configuration.GetValue<bool>("FlowerIoT:EnableTcpCollector", false);
             if (!enableTcpCollector)
             {
-                _logger.LogWarning("TCP 数据采集模式已弃用，建议迁移到 MQTT。如需启用，请设置 FlowerIoT:EnableTcpCollector=true");
+                // 修复 BUG（日志噪音）：原实现每次启动都打 LogWarning，
+                // 但默认配置就是 false（未启用 TCP collector），用户可能根本不打算用 TCP 模式。
+                // 降为 Debug，仅在显式启用时才打 info 提示已启用。
+                _logger.LogDebug("未启用 TCP 数据采集模式（默认）。如需启用，请设置 FlowerIoT:EnableTcpCollector=true");
                 await Task.Delay(Timeout.Infinite, stoppingToken);
                 return;
             }
+
+            _logger.LogInformation("TCP 数据采集模式已启用（注意：此模式已弃用，建议迁移到 MQTT）");
 
             try
             {

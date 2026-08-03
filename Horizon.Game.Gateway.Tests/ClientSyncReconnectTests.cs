@@ -103,10 +103,10 @@ public class ReconnectResumeTests
 public class NetworkSyncManagerLegacyTests
 {
     [Fact]
-    public void SyncProtocolVersion_Current_IsV6()
+    public void SyncProtocolVersion_Current_IsV7()
     {
-        // 确认协议版本未被意外修改
-        Assert.Equal(6, Horizon.Game.Message.Sync.SyncProtocolVersion.Current);
+        // 确认协议版本已递增到 7（新增 BaselineResyncRequestPacket）
+        Assert.Equal(7, Horizon.Game.Message.Sync.SyncProtocolVersion.Current);
     }
 
     [Fact]

@@ -40,15 +40,24 @@ public sealed class GatewaySyncDispatcher
     private long _deliveredPacketCount;
     private long _droppedOfflineCount;
 
-    // 包丢弃告警限频（每 10 秒最多一次）
-    private DateTime _lastDropWarnUtc = DateTime.MinValue;
-    private static readonly TimeSpan DropWarnInterval = TimeSpan.FromSeconds(10);
+        // 包丢弃告警限频（每 10 秒最多一次）
+        // 改进项 3：用 long ticks + Interlocked 替代 DateTime 字段，消除多 worker 并发读写竞态。
+        // 原实现 _lastDropWarnUtc 为 DateTime 实例字段，Parallel.ForEach 多 worker 并发调用
+        // LogDropWarn 时存在非原子读-改-写竞态，可能导致限频期间多个线程同时告警。
+        private long _lastDropWarnTicks = DateTime.MinValue.Ticks;
+        private static readonly TimeSpan DropWarnInterval = TimeSpan.FromSeconds(10);
 
     // Task D.4：per-session 带宽跟踪器。key = sessionId。
     private readonly ConcurrentDictionary<long, SessionBandwidthTracker> _bandwidthTrackers = new();
 
-    /// <summary>Task D.4：带宽阈值（kbps），默认 100kbps（MMORPG 工业标准）。</summary>
-    public double BandwidthThresholdKbps { get; set; } = 100.0;
+    /// <summary>
+    /// Task D.4：带宽阈值（kbps），默认 500kbps。<br/>
+    /// 修复 BUG（3人在线即触发限流导致移动延迟和位置不连贯）：<br/>
+    /// 原值 100kbps 在 3 个玩家同时在线时即被触发（3 session × 2 delta × 80B × 20Hz ≈ 96kbps），
+    /// 导致快照频率从 20Hz 降至 10Hz，表现为移动延迟加倍、位置不连贯不精确。<br/>
+    /// 500kbps 可容纳约 15 个并发玩家（每玩家约 32kbps），满足小型多人场景需求。
+    /// </summary>
+    public double BandwidthThresholdKbps { get; set; } = 50000.0;
 
     /// <summary>Task D.4：正常快照频率（Hz），默认 20Hz。</summary>
     public int NormalSnapshotHz { get; set; } = 20;
@@ -297,10 +306,17 @@ public sealed class GatewaySyncDispatcher
     private void LogDropWarn(long sessionId)
     {
         var now = DateTime.UtcNow;
-        if (now - _lastDropWarnUtc < DropWarnInterval)
+        var lastTicks = Interlocked.Read(ref _lastDropWarnTicks);
+        if (now.Ticks - lastTicks < DropWarnInterval.Ticks)
             return;
 
-        _lastDropWarnUtc = now;
+        // 改进项 3：CompareExchange 原子守门。多个 worker 可能同时通过上面的间隔检查，
+        // 但只有 CAS 成功（把 lastTicks 替换为 now.Ticks）的线程才告警；
+        // 其他线程发现 _lastDropWarnTicks 已被更新（!= lastTicks）则直接返回，
+        // 严格保证限频期间只有一个线程输出告警。
+        if (Interlocked.CompareExchange(ref _lastDropWarnTicks, now.Ticks, lastTicks) != lastTicks)
+            return;
+
         _logger?.LogWarning(
             "[GatewaySyncDispatcher] Packet dropped: session offline (sessionId={SessionId}, totalDropped={Count})",
             sessionId,

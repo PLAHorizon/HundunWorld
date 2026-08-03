@@ -11,7 +11,11 @@ namespace HundunWorld.Game.Network
     public static class NetworkConnectionHelper
     {
         /// <summary>
-        /// 执行TCP连接操作并正确处理所有可能的异常
+        /// 执行TCP连接操作并正确处理所有可能的异常。当前已禁用 TCP 探查，始终返回 true（可达）。
+        /// <para>
+        /// 原实现创建原始 TcpClient 连接测试可达性，服务端可能 Accept 并创建短暂 GameConnection → 幽灵连接。
+        /// 现已禁用，直接返回 true。如需恢复，恢复方法体内的 TCP 连接逻辑。
+        /// </para>
         /// </summary>
         /// <param name="host">主机地址</param>
         /// <param name="port">端口号</param>
@@ -19,106 +23,17 @@ namespace HundunWorld.Game.Network
         /// <returns>连接是否成功</returns>
         public static async Task<bool> ConnectWithExceptionHandlingAsync(string host, int port, int timeoutMs = 5000)
         {
-            TcpClient tcpClient = null;
-
-            try
-            {
-                tcpClient = new TcpClient();
-                var connectTask = tcpClient.ConnectAsync(host, port);
-                var timeoutTask = Task.Delay(timeoutMs);
-
-                var completedTask = await Task.WhenAny(connectTask, timeoutTask);
-
-                if (completedTask == connectTask && !connectTask.IsFaulted)
-                {
-                    // 检查连接是否成功建立
-                    if (tcpClient.Client != null && tcpClient.Client.Connected)
-                    {
-                        // 正常关闭连接
-                        tcpClient.Close();
-                        EnhancedDiagnostics.LogNetworkOperation("TCP连接", $"{host}:{port}", true);
-                        return true;
-                    }
-                    else
-                    {
-                        EnhancedDiagnostics.LogNetworkOperation("TCP连接", $"{host}:{port}", false, "连接未建立");
-                        return false;
-                    }
-                }
-                else
-                {
-                    // 如果是超时，取消连接任务
-                    if (completedTask == timeoutTask && !connectTask.IsCompleted)
-                    {
-                        try
-                        {
-                            // 尝试取消连接任务
-                            tcpClient?.Close();
-                        }
-                        catch (Exception ex)
-                        {
-                            EnhancedDiagnostics.LogException(ex, $"取消连接任务 {host}:{port}");
-                            // 忽略取消连接时的异常
-                        }
-                    }
-                    EnhancedDiagnostics.LogNetworkOperation("TCP连接", $"{host}:{port}", false, "连接超时或失败");
-                    return false;
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // 操作被取消，这是正常的，不需要记录为Warning
-                EnhancedDiagnostics.LogNetworkOperation("TCP连接", $"{host}:{port}", false, "操作被取消");
-                return false;
-            }
-            catch (ObjectDisposedException)
-            {
-                // 对象已被释放，这是正常的，不需要记录为Warning
-                EnhancedDiagnostics.LogNetworkOperation("TCP连接", $"{host}:{port}", false, "对象已被释放");
-                return false;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[TCP连接] 连接到 {host}:{port} 时发生异常: {ex.Message}");
-                EnhancedDiagnostics.LogException(ex, $"TCP连接 {host}:{port}");
-                //专门处理Socket异常，特别是I / O操作中止的情况
-                if (ex.HResult == 995) // WSA_OPERATION_ABORTED - 由于线程退出或应用程序请求，已中止 I/O 操作
-                {
-                    // I/O操作被中止是正常的取消操作，不需要记录为Warning
-                    EnhancedDiagnostics.LogNetworkOperation("TCP连接", $"{host}:{port}", false, $"I/O操作被中止 (错误码: {ex.HResult})");
-                    return false;
-                }
-                else if (ex.HResult == 10060) // WSAETIMEDOUT - 连接超时
-                {
-                    EnhancedDiagnostics.LogNetworkOperation("TCP连接", $"{host}:{port}", false, $"连接超时 (错误码: {ex.HResult})");
-                    return false;
-                }
-                else
-                {
-                    Debug.LogWarning($"[TCP连接] 连接到 {host}:{port} 时发生Socket异常: {ex.Message}");
-                    EnhancedDiagnostics.LogNetworkOperation("TCP连接", $"{host}:{port}", false, $"Socket异常 (错误码: {ex.HResult})");
-                    return false;
-                }
-            }
-            finally
-            {
-                // 确保资源被正确释放
-                if (tcpClient != null)
-                {
-                    try
-                    {
-                        tcpClient.Close();
-                    }
-                    catch (Exception ex)
-                    {
-                        EnhancedDiagnostics.LogException(ex, $"释放TCP客户端 {host}:{port}");
-                    }
-                }
-            }
+            await Task.CompletedTask; // 保持 async 签名
+            EnhancedDiagnostics.LogNetworkOperation("TCP连接(已禁用)", $"{host}:{port}", true, "探查已禁用，假定可达");
+            return true;
         }
 
         /// <summary>
-        /// 测量TCP连接延迟并正确处理所有可能的异常
+        /// 测量TCP连接延迟并正确处理所有可能的异常。当前已禁用 TCP 探查，始终返回固定延迟 1ms。
+        /// <para>
+        /// 原实现创建原始 TcpClient 连接测量延迟，服务端可能 Accept 并创建短暂 GameConnection → 幽灵连接。
+        /// 现已禁用，直接返回 1ms。如需恢复，恢复方法体内的 TCP 连接测延迟逻辑。
+        /// </para>
         /// </summary>
         /// <param name="host">主机地址</param>
         /// <param name="port">端口号</param>
@@ -126,94 +41,9 @@ namespace HundunWorld.Game.Network
         /// <returns>连接延迟（毫秒），如果连接失败则返回long.MaxValue</returns>
         public static async Task<long> MeasureLatencyWithExceptionHandlingAsync(string host, int port, int timeoutMs = 5000)
         {
-            
-
-            try
-            {
-                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-               using TcpClient tcpClient = new TcpClient();
-                var connectTask = tcpClient.ConnectAsync(host, port);
-                var timeoutTask = Task.Delay(timeoutMs);
-
-                var completedTask = await Task.WhenAny(connectTask, timeoutTask);
-                stopwatch.Stop();
-
-                if (completedTask == connectTask && !connectTask.IsFaulted)
-                {
-                    // 检查连接是否成功建立
-                    if (tcpClient.Client != null && tcpClient.Client.Connected)
-                    {
-                        // 正常关闭连接
-                        tcpClient.Close();
-                        EnhancedDiagnostics.LogNetworkOperation("延迟测量", $"{host}:{port}", true, $"延迟: {stopwatch.ElapsedMilliseconds}ms");
-                        return stopwatch.ElapsedMilliseconds;
-                    }
-                    else
-                    {
-                        EnhancedDiagnostics.LogNetworkOperation("延迟测量", $"{host}:{port}", false, "连接未建立");
-                        return long.MaxValue;
-                    }
-                }
-                else
-                {
-                    // 如果是超时，取消连接任务
-                    if (completedTask == timeoutTask && !connectTask.IsCompleted)
-                    {
-                        try
-                        {
-                            // 尝试取消连接任务
-                            tcpClient?.Close();
-                        }
-                        catch (Exception ex)
-                        {
-                            EnhancedDiagnostics.LogException(ex, $"取消连接任务 {host}:{port}");
-                            // 忽略取消连接时的异常
-                        }
-                    }
-                    EnhancedDiagnostics.LogNetworkOperation("延迟测量", $"{host}:{port}", false, "连接超时或失败");
-                    return long.MaxValue;
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // 操作被取消，这是正常的，不需要记录为Warning
-                EnhancedDiagnostics.LogNetworkOperation("延迟测量", $"{host}:{port}", false, "操作被取消");
-                return long.MaxValue;
-            }
-            catch (ObjectDisposedException)
-            {
-                // 对象已被释放，这是正常的，不需要记录为Warning
-                EnhancedDiagnostics.LogNetworkOperation("延迟测量", $"{host}:{port}", false, "对象已被释放");
-                return long.MaxValue;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[延迟测量] 测量 {host}:{port} 延迟时发生异常: {ex.Message}");
-                EnhancedDiagnostics.LogException(ex, $"延迟测量 {host}:{port}");
-                // 专门处理Socket异常，特别是I/O操作中止的情况
-                if (ex.HResult == 995) // WSA_OPERATION_ABORTED - 由于线程退出或应用程序请求，已中止 I/O 操作
-                {
-                    // I/O操作被中止是正常的取消操作，不需要记录为Warning
-                    EnhancedDiagnostics.LogNetworkOperation("延迟测量", $"{host}:{port}", false, $"I/O操作被中止 (错误码: {ex.HResult})");
-                    return long.MaxValue;
-                }
-                else if (ex.HResult == 10060) // WSAETIMEDOUT - 连接超时
-                {
-                    EnhancedDiagnostics.LogNetworkOperation("延迟测量", $"{host}:{port}", false, $"连接超时 (错误码: {ex.HResult})");
-                    return long.MaxValue;
-                }
-                else
-                {
-                    Debug.LogWarning($"[延迟测量] 测量 {host}:{port} 延迟时发生Socket异常: {ex.Message}");
-                    EnhancedDiagnostics.LogNetworkOperation("延迟测量", $"{host}:{port}", false, $"Socket异常 (错误码: {ex.HResult})");
-                    return long.MaxValue;
-                }
-            }
-            finally
-            {
-                // 确保资源被正确释放
-                EnhancedDiagnostics.LogNetworkOperation( "释放测试连接",$"释放TCP客户端 {host}:{port}",false);
-            }
+            await Task.CompletedTask; // 保持 async 签名
+            EnhancedDiagnostics.LogNetworkOperation("延迟测量(已禁用)", $"{host}:{port}", true, "探查已禁用，固定延迟 1ms");
+            return 1;
         }
     }
 }

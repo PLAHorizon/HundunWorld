@@ -54,6 +54,15 @@ namespace Horizon.Game.Gateway.Network
         private long _lastFailedSendTimestamp;
 
         /// <summary>
+        /// 发送锁：串行化所有 SendAsync 调用，避免并发写入 TouchSocket 管道。<br/>
+        /// 修复 BUG（Writing is not allowed after writer was completed）：<br/>
+        /// 原实现无并发保护，多个线程（快照分发/心跳/输入转发）同时调用 SendAsync 时，<br/>
+        /// 一个线程完成 writer 后另一线程尝试写入抛 InvalidOperationException。<br/>
+        /// 虽然有 IsFatalSendException 处理，但日志刷屏且可能误杀连接。
+        /// </summary>
+        private readonly SemaphoreSlim _sendLock = new(1, 1);
+
+        /// <summary>
         /// 连接ID
         /// </summary>
         public string ConnectionId => _client.Id;
@@ -121,6 +130,9 @@ namespace Horizon.Game.Gateway.Network
         /// </summary>
         public async Task SendAsync(byte[] data)
         {
+            // 修复（Writing is not allowed after writer was completed）：
+            // 串行化所有发送调用，避免并发写入 TouchSocket 管道
+            await _sendLock.WaitAsync().ConfigureAwait(false);
             try
             {
                 if (!IsConnected)
@@ -141,7 +153,7 @@ namespace Horizon.Game.Gateway.Network
                     }
                 }
 
-                await _client.SendAsync(data);
+                await _client.SendAsync(data).ConfigureAwait(false);
                 // 修复 BUG：移除 SendAsync 中的 LastActiveTime 更新。
                 // LastActiveTime 应该只在接收客户端数据时更新（GameNetworkServer.OnDataReceived），
                 // 准确反映客户端的活跃状态。如果发送数据时也更新，会导致：
@@ -205,6 +217,10 @@ namespace Horizon.Game.Gateway.Network
                     }
                     throw;
                 }
+            }
+            finally
+            {
+                _sendLock.Release();
             }
         }
 

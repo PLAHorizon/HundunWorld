@@ -17,6 +17,8 @@ namespace Horizon.Game.GengDi.Core.Views
         private readonly StackPanel _subNavBar;
         private readonly StackPanel _titleBarNavPanel;
         private readonly Button _userButton;
+        private MiniPlayerViewModel _miniPlayerVm;
+        private MusicPlayerViewModel _currentPlayerVm;
 
         public MainView()
         {
@@ -35,10 +37,13 @@ namespace Horizon.Game.GengDi.Core.Views
         {
             base.OnAttachedToVisualTree(e);
             AttachViewModel(DataContext as MainViewModel);
+            AttachMiniPlayer();
         }
 
         protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
         {
+            DetachMiniPlayer();
+            DetachCurrentPlayer();
             DetachViewModel();
             base.OnDetachedFromVisualTree(e);
         }
@@ -61,6 +66,9 @@ namespace Horizon.Game.GengDi.Core.Views
                     rightInset.Width = appWindow.TitleBar.RightInset;
                 }
             }
+
+            // 兜底：OnAttachedToVisualTree 阶段 FindControl 可能尚未就绪，此处确保迷你播放器事件已订阅
+            AttachMiniPlayer();
         }
 
 
@@ -95,13 +103,74 @@ namespace Horizon.Game.GengDi.Core.Views
             }
         }
 
+        /// <summary>
+        /// 订阅迷你播放器的展开事件，点击展开按钮时导航到独立音乐播放器页面。幂等：已订阅则跳过。
+        /// </summary>
+        private void AttachMiniPlayer()
+        {
+            if (_miniPlayerVm != null) return;
+            var miniPlayer = this.FindControl<MiniPlayerView>("MiniPlayer");
+            if (miniPlayer?.DataContext is MiniPlayerViewModel vm)
+            {
+                _miniPlayerVm = vm;
+                _miniPlayerVm.ExpandRequested += MiniPlayer_ExpandRequested;
+            }
+        }
+
+        private void DetachMiniPlayer()
+        {
+            if (_miniPlayerVm != null)
+            {
+                _miniPlayerVm.ExpandRequested -= MiniPlayer_ExpandRequested;
+                _miniPlayerVm = null;
+            }
+        }
+
+        private void MiniPlayer_ExpandRequested(object sender, EventArgs e)
+        {
+            _viewModel?.NavigateToMusicPlayer();
+        }
+
+        /// <summary>
+        /// 订阅当前音乐播放器视图的关闭（返回）事件。CurrentView 切换到 MusicPlayerView 时绑定，切换走时解绑。
+        /// </summary>
+        private void AttachCurrentPlayer(MusicPlayerView view)
+        {
+            DetachCurrentPlayer();
+            if (view?.DataContext is MusicPlayerViewModel vm)
+            {
+                _currentPlayerVm = vm;
+                _currentPlayerVm.CloseRequested += Player_CloseRequested;
+            }
+        }
+
+        private void DetachCurrentPlayer()
+        {
+            if (_currentPlayerVm != null)
+            {
+                _currentPlayerVm.CloseRequested -= Player_CloseRequested;
+                _currentPlayerVm = null;
+            }
+        }
+
+        private void Player_CloseRequested(object sender, EventArgs e)
+        {
+            _viewModel?.NavigateBackFromPlayer();
+        }
+
         private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e.PropertyName == nameof(MainViewModel.CurrentNavigationTag) && sender is MainViewModel viewModel)
+            if (!(sender is MainViewModel viewModel)) return;
+
+            if (e.PropertyName == nameof(MainViewModel.CurrentNavigationTag))
             {
                 UpdateSubNavSelection(viewModel.CurrentNavigationTag);
                 UpdateTitleBarNavSelection(viewModel.CurrentNavigationTag);
                 UpdateUserButtonSelection(viewModel.CurrentNavigationTag);
+            }
+            else if (e.PropertyName == nameof(MainViewModel.CurrentView))
+            {
+                AttachCurrentPlayer(viewModel.CurrentView as MusicPlayerView);
             }
         }
 

@@ -850,7 +850,9 @@ body {
         background: color-mix(in srgb, var(--gd-primary-foreground) 12%, transparent);
         border: 1px solid color-mix(in srgb, var(--gd-primary-foreground) 18%, transparent);
         border-radius: var(--gd-radius-md);
-        padding: 12px 14px; min-width: 150px;
+        padding: 12px 14px; width: 172px; height: 68px;
+        display: flex; flex-direction: column; justify-content: center;
+        box-sizing: border-box;
       }
       .auth-hero-chip-title { font-size: 11px; color: color-mix(in srgb, var(--gd-primary-foreground) 70%, transparent); margin-bottom: 6px; display: inline-flex; align-items: center; gap: 6px; }
       .auth-hero-chip-value { font-size: 18px; font-weight: 600; color: var(--gd-primary-foreground); font-family: var(--gd-font-mono); }

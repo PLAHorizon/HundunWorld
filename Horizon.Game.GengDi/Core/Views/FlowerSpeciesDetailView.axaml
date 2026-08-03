@@ -1,4 +1,4 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
              xmlns:vm="using:Horizon.Game.GengDi.Core.ViewModels"
@@ -8,23 +8,451 @@
 
     <controls:GalleryPage Title="{Binding SpeciesName, StringFormat='{}{0} 行情详情'}"
                           Subtitle="Horizon.Game.GengDi.FlowerSpecies"
-                          Description="查看品类历史价格走势、预测区间和关联商品。"
+                          Description="品种详情百科 · 种植指南 · 病虫害防治 · 生长周期与行情走势。"
                           IconSource="{StaticResource NotificationsIcon}">
 
         <ScrollViewer VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled">
-            <StackPanel Spacing="20" Margin="0 0 0 24">
+            <StackPanel Spacing="16" Margin="16">
 
-                <!-- 价格概览卡片 -->
-                <Grid ColumnDefinitions="*,*,*,*"
-                      ColumnSpacing="16">
-                    <Border Classes="GdCard" Padding="20">
+                <!-- ============================================================ -->
+                <!-- Section Header：品种详情百科 -->
+                <!-- ============================================================ -->
+                <StackPanel Classes="GdSectionHeader">
+                    <TextBlock Classes="GdSectionHeaderTitle" Text="品种详情百科"/>
+                    <TextBlock Classes="GdSectionHeaderSub" Text="品种信息 · 种植指南 · 病虫害防治 · 生长周期"/>
+                    <TextBlock Classes="GdSectionHeaderFile" Text="📄 FlowerSpeciesDetailView.axaml"/>
+                </StackPanel>
+
+                <!-- ============================================================ -->
+                <!-- 品种头部信息卡 -->
+                <!-- ============================================================ -->
+                <Border Classes="GdCard" Margin="0" Padding="0" ClipToBounds="True">
+                    <Grid ColumnDefinitions="280,*">
+                        <!-- 左侧：渐变色块 + 品种图标 -->
+                        <Border Grid.Column="0" Width="280" Height="200">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                                    <GradientStop Color="{DynamicResource GdError}" Offset="0" />
+                                    <GradientStop Color="{DynamicResource GdBrand600}" Offset="1" />
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <TextBlock Text="🌸" FontSize="88" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+
+                        <!-- 右侧：品种信息 -->
+                        <StackPanel Grid.Column="1" Margin="20" Spacing="8" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Spacing="10">
+                                <TextBlock Text="{Binding SpeciesName}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource GdForegroundBrush}" />
+                                <Border Classes="GdBadge GdBadgeSuccess" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding GradeLevel}" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="{Binding ScientificName, StringFormat='学名：{}{0}'}"
+                                       FontSize="13" FontStyle="Italic"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                            <!-- 科属 -->
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="科属：" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
+                                <ItemsControl ItemsSource="{Binding FamilyTags}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="8" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Classes="GdBadge GdBadgeInfo">
+                                                <TextBlock Text="{Binding}" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                            <!-- 别名 -->
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="别名：" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
+                                <ItemsControl ItemsSource="{Binding AliasChips}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="8" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Classes="GdChip">
+                                                <TextBlock Text="{Binding}" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                            <!-- 价格 -->
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0 4 0 0">
+                                <TextBlock Text="{Binding CurrentPrice}" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource GdErrorBrush}" />
+                                <TextBlock Text="{Binding PriceChangeDirection}" FontSize="16" Foreground="{DynamicResource GdSuccessBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding PriceChange}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdSuccessBrush}" VerticalAlignment="Center" />
+                                <TextBlock Text="/支 均价" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- ============================================================ -->
+                <!-- 基本信息卡（原产地/花语/适宜季节/花期/颜色/难度等级） -->
+                <!-- ============================================================ -->
+                <Border Classes="GdCard" Margin="0">
+                    <StackPanel Spacing="14">
+                        <TextBlock Text="基本信息" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                        <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="24" RowSpacing="14">
+                            <StackPanel Grid.Column="0" Grid.Row="0" Spacing="2">
+                                <TextBlock Text="原产地" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                <TextBlock Text="{Binding Origin}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Grid.Row="0" Spacing="2">
+                                <TextBlock Text="花语" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                <TextBlock Text="{Binding FlowerLanguage}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Grid.Row="0" Spacing="2">
+                                <TextBlock Text="适宜季节" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                <TextBlock Text="{Binding SuitableSeason}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="0" Grid.Row="1" Spacing="2">
+                                <TextBlock Text="花期" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                <TextBlock Text="{Binding FloweringPeriod}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Grid.Row="1" Spacing="2">
+                                <TextBlock Text="颜色" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                <TextBlock Text="{Binding Colors}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Grid.Row="1" Spacing="2">
+                                <TextBlock Text="难度等级" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="{Binding DifficultyLevel}" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" VerticalAlignment="Center" />
+                                    <Border Classes="GdBadge GdBadgeWarning" VerticalAlignment="Center">
+                                        <TextBlock Text="中等" />
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- ============================================================ -->
+                <!-- 品种筛选 / 搜索区 -->
+                <!-- ============================================================ -->
+                <Border Classes="GdCard" Margin="0">
+                    <StackPanel Spacing="14">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBox Text="{Binding SearchKeyword}" Watermark="搜索品种名称或关键词..."
+                                     FontSize="13" Padding="12 8" />
+                            <Button Grid.Column="1" Content="搜索" Classes="GdPrimary" Margin="12 0 0 0" Padding="16 8"
+                                    FontSize="12"
+                                    Command="{Binding $parent[UserControl].DataContext.SearchCommand}" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding CategoryChips}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Content="{Binding}"
+                                            Command="{Binding $parent[UserControl].((vm:FlowerSpeciesDetailViewModel)DataContext).SelectCategoryCommand}"
+                                            CommandParameter="{Binding}"
+                                            Background="{DynamicResource GdMutedBrush}"
+                                            Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                            CornerRadius="{DynamicResource GdRadiusFull}"
+                                            Padding="12 6" FontSize="12"
+                                            BorderThickness="0"
+                                            Margin="0 0 8 8" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- ============================================================ -->
+                <!-- 品种百科列表 -->
+                <!-- ============================================================ -->
+                <ItemsControl ItemsSource="{Binding SpeciesList}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Width="280" Margin="0 0 16 16"
+                                    Background="{DynamicResource GdCardBrush}"
+                                    BorderBrush="{DynamicResource GdBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="{DynamicResource GdRadiusLg}"
+                                    ClipToBounds="True"
+                                    BoxShadow="0 2 8 0 #00000022">
+                                <StackPanel>
+                                    <Border Height="110" Background="{Binding HeaderBrush}">
+                                        <TextBlock Text="{Binding IconEmoji}" FontSize="48"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <Border Padding="14">
+                                        <StackPanel Spacing="6">
+                                            <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource GdForegroundBrush}" />
+                                            <TextBlock Text="{Binding Description}" FontSize="11"
+                                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                       TextWrapping="Wrap" />
+                                            <ItemsControl ItemsSource="{Binding Tags}" Margin="0 2 0 4">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <WrapPanel Orientation="Horizontal" />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Border Classes="GdChip" Margin="0 0 6 4">
+                                                            <TextBlock Text="{Binding}" />
+                                                        </Border>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <Button Content="查看详情" Classes="GdPrimary"
+                                                    Padding="12 6" FontSize="12"
+                                                    HorizontalAlignment="Stretch"
+                                                    Command="{Binding $parent[UserControl].((vm:FlowerSpeciesDetailViewModel)DataContext).ViewSpeciesDetailCommand}"
+                                                    CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- ============================================================ -->
+                <!-- 参数表 + 种植指南时间线 -->
+                <!-- ============================================================ -->
+                <Grid ColumnDefinitions="1*,2*" ColumnSpacing="16">
+                    <!-- 参数表 -->
+                    <Border Grid.Column="0" Classes="GdCard" Margin="0">
+                        <StackPanel Spacing="14">
+                            <TextBlock Text="品种参数" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                            <StackPanel Spacing="0">
+                                <Grid ColumnDefinitions="100,*" Margin="0 6 0 6">
+                                    <TextBlock Grid.Column="0" Text="生长周期" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                    <TextBlock Grid.Column="1" Text="90 天" FontSize="12" Foreground="{DynamicResource GdForegroundBrush}" />
+                                </Grid>
+                                <Border Classes="GdDivider" />
+                                <Grid ColumnDefinitions="100,*" Margin="0 6 0 6">
+                                    <TextBlock Grid.Column="0" Text="株高" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                    <TextBlock Grid.Column="1" Text="60–100 cm" FontSize="12" Foreground="{DynamicResource GdForegroundBrush}" />
+                                </Grid>
+                                <Border Classes="GdDivider" />
+                                <Grid ColumnDefinitions="100,*" Margin="0 6 0 6">
+                                    <TextBlock Grid.Column="0" Text="花径" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                    <TextBlock Grid.Column="1" Text="8–12 cm" FontSize="12" Foreground="{DynamicResource GdForegroundBrush}" />
+                                </Grid>
+                                <Border Classes="GdDivider" />
+                                <Grid ColumnDefinitions="100,*" Margin="0 6 0 6">
+                                    <TextBlock Grid.Column="0" Text="适宜温度" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                    <TextBlock Grid.Column="1" Text="18–25 ℃" FontSize="12" Foreground="{DynamicResource GdForegroundBrush}" />
+                                </Grid>
+                                <Border Classes="GdDivider" />
+                                <Grid ColumnDefinitions="100,*" Margin="0 6 0 6">
+                                    <TextBlock Grid.Column="0" Text="光照需求" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                    <TextBlock Grid.Column="1" Text="全日照（≥6h/日）" FontSize="12" Foreground="{DynamicResource GdForegroundBrush}" />
+                                </Grid>
+                                <Border Classes="GdDivider" />
+                                <Grid ColumnDefinitions="100,*" Margin="0 6 0 6">
+                                    <TextBlock Grid.Column="0" Text="土壤 PH" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                    <TextBlock Grid.Column="1" Text="6.0–6.5" FontSize="12" Foreground="{DynamicResource GdForegroundBrush}" />
+                                </Grid>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 种植指南时间线 -->
+                    <Border Grid.Column="1" Classes="GdCard" Margin="0">
+                        <StackPanel Spacing="20">
+                            <TextBlock Text="种植指南" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                            <Grid ColumnDefinitions="*,*,*,*,*">
+                                <!-- 连接线 -->
+                                <Border Grid.ColumnSpan="5" Height="2" Background="{DynamicResource GdBorderBrush}"
+                                        VerticalAlignment="Top" Margin="36 16 36 0" />
+                                <!-- 播种 -->
+                                <StackPanel Grid.Column="0" Spacing="4" HorizontalAlignment="Center">
+                                    <Border Width="32" Height="32" CornerRadius="{DynamicResource GdRadiusFull}"
+                                            Background="{DynamicResource GdInfoSurfaceBrush}" HorizontalAlignment="Center">
+                                        <TextBlock Text="🌱" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Text="播种" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <TextBlock Text="第 1–7 天" FontSize="10" HorizontalAlignment="Center" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                    <TextBlock Text="春季 3–4 月" FontSize="10" HorizontalAlignment="Center" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                </StackPanel>
+                                <!-- 育苗 -->
+                                <StackPanel Grid.Column="1" Spacing="4" HorizontalAlignment="Center">
+                                    <Border Width="32" Height="32" CornerRadius="{DynamicResource GdRadiusFull}"
+                                            Background="{DynamicResource GdInfoSurfaceBrush}" HorizontalAlignment="Center">
+                                        <TextBlock Text="🌿" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Text="育苗" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <TextBlock Text="第 8–25 天" FontSize="10" HorizontalAlignment="Center" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                    <TextBlock Text="保湿遮阴" FontSize="10" HorizontalAlignment="Center" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                </StackPanel>
+                                <!-- 移栽 -->
+                                <StackPanel Grid.Column="2" Spacing="4" HorizontalAlignment="Center">
+                                    <Border Width="32" Height="32" CornerRadius="{DynamicResource GdRadiusFull}"
+                                            Background="{DynamicResource GdSuccessSurfaceBrush}" HorizontalAlignment="Center">
+                                        <TextBlock Text="🌾" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Text="移栽" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <TextBlock Text="第 26–40 天" FontSize="10" HorizontalAlignment="Center" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                    <TextBlock Text="定植大田" FontSize="10" HorizontalAlignment="Center" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                </StackPanel>
+                                <!-- 开花 -->
+                                <StackPanel Grid.Column="3" Spacing="4" HorizontalAlignment="Center">
+                                    <Border Width="32" Height="32" CornerRadius="{DynamicResource GdRadiusFull}"
+                                            Background="{DynamicResource GdWarningSurfaceBrush}" HorizontalAlignment="Center">
+                                        <TextBlock Text="🌸" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Text="开花" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <TextBlock Text="第 60–75 天" FontSize="10" HorizontalAlignment="Center" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                    <TextBlock Text="加强水肥" FontSize="10" HorizontalAlignment="Center" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                </StackPanel>
+                                <!-- 采收 -->
+                                <StackPanel Grid.Column="4" Spacing="4" HorizontalAlignment="Center">
+                                    <Border Width="32" Height="32" CornerRadius="{DynamicResource GdRadiusFull}"
+                                            Background="{DynamicResource GdErrorSurfaceBrush}" HorizontalAlignment="Center">
+                                        <TextBlock Text="🧺" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <TextBlock Text="采收" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <TextBlock Text="第 85–90 天" FontSize="10" HorizontalAlignment="Center" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                    <TextBlock Text="清晨采收" FontSize="10" HorizontalAlignment="Center" Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- ============================================================ -->
+                <!-- 病虫害防治卡 -->
+                <!-- ============================================================ -->
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                    <!-- 病害防治 -->
+                    <Border Grid.Column="0" Classes="GdCard" Margin="0">
+                        <StackPanel Spacing="14">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="🐛" FontSize="16" VerticalAlignment="Center" Foreground="{DynamicResource GdErrorBrush}" />
+                                <TextBlock Text="病害防治" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                            </StackPanel>
+                            <StackPanel Spacing="12">
+                                <!-- 白粉病 -->
+                                <Border Padding="12" Background="{DynamicResource GdErrorSurfaceBrush}" CornerRadius="{DynamicResource GdRadiusMd}">
+                                    <StackPanel Spacing="4">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="白粉病" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdErrorBrush}" />
+                                            <Border Classes="GdBadge GdBadgeError"><TextBlock Text="高发" /></Border>
+                                        </StackPanel>
+                                        <TextBlock Text="症状：叶片表面出现白色粉状物，逐步蔓延至茎秆。" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" TextWrapping="Wrap" />
+                                        <TextBlock Text="防治：喷施 25% 三唑酮可湿性粉剂 1500 倍液，7 天一次，连续 2–3 次。" FontSize="12" Foreground="{DynamicResource GdForegroundBrush}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                                <!-- 黑斑病 -->
+                                <Border Padding="12" Background="{DynamicResource GdWarningSurfaceBrush}" CornerRadius="{DynamicResource GdRadiusMd}">
+                                    <StackPanel Spacing="4">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="黑斑病" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdWarningBrush}" />
+                                            <Border Classes="GdBadge GdBadgeWarning"><TextBlock Text="常见" /></Border>
+                                        </StackPanel>
+                                        <TextBlock Text="症状：叶片出现紫黑色圆形斑点，边缘放射状。" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" TextWrapping="Wrap" />
+                                        <TextBlock Text="防治：及时清除病叶，喷施 75% 百菌清 600 倍液。" FontSize="12" Foreground="{DynamicResource GdForegroundBrush}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <!-- 虫害防治 -->
+                    <Border Grid.Column="1" Classes="GdCard" Margin="0">
+                        <StackPanel Spacing="14">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="🐜" FontSize="16" VerticalAlignment="Center" Foreground="{DynamicResource GdWarningBrush}" />
+                                <TextBlock Text="虫害防治" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                            </StackPanel>
+                            <StackPanel Spacing="12">
+                                <!-- 蚜虫 -->
+                                <Border Padding="12" Background="{DynamicResource GdWarningSurfaceBrush}" CornerRadius="{DynamicResource GdRadiusMd}">
+                                    <StackPanel Spacing="4">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="蚜虫" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdWarningBrush}" />
+                                            <Border Classes="GdBadge GdBadgeWarning"><TextBlock Text="常见" /></Border>
+                                        </StackPanel>
+                                        <TextBlock Text="症状：嫩芽、花苞聚集吸汁，导致卷叶畸形。" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" TextWrapping="Wrap" />
+                                        <TextBlock Text="防治：喷施 10% 吡虫啉 2000 倍液，或释放瓢虫生物防治。" FontSize="12" Foreground="{DynamicResource GdForegroundBrush}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                                <!-- 红蜘蛛 -->
+                                <Border Padding="12" Background="{DynamicResource GdErrorSurfaceBrush}" CornerRadius="{DynamicResource GdRadiusMd}">
+                                    <StackPanel Spacing="4">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock Text="红蜘蛛" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource GdErrorBrush}" />
+                                            <Border Classes="GdBadge GdBadgeError"><TextBlock Text="高发" /></Border>
+                                        </StackPanel>
+                                        <TextBlock Text="症状：叶背出现红点，叶面失绿呈灰白斑点。" FontSize="12" Foreground="{DynamicResource GdMutedForegroundBrush}" TextWrapping="Wrap" />
+                                        <TextBlock Text="防治：喷施 20% 哒螨灵乳油 2000 倍液，保持湿度抑制繁殖。" FontSize="12" Foreground="{DynamicResource GdForegroundBrush}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- ============================================================ -->
+                <!-- 生长周期图（占位 Border 柱状图） -->
+                <!-- ============================================================ -->
+                <Border Classes="GdCard" Margin="0">
+                    <StackPanel Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="生长周期图" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource GdForegroundBrush}" />
+                            <TextBlock Grid.Column="1" Text="总周期 90 天" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" VerticalAlignment="Center" />
+                        </Grid>
+                        <lvc:CartesianChart Series="{Binding GrowthCycleSeries}"
+                                            XAxes="{Binding GrowthCycleXAxes}"
+                                            YAxes="{Binding GrowthCycleYAxes}"
+                                            Height="200" />
+                    </StackPanel>
+                </Border>
+
+                <!-- ============================================================ -->
+                <!-- 市场行情：时间范围选择 + K线 + 预测（保留已有数据绑定） -->
+                <!-- ============================================================ -->
+                <Border Classes="GdCard" Margin="0" Padding="16 12">
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="时间范围" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
+                        <Button Content="7天" Classes="GdGhost" Padding="12 6" FontSize="12"
+                                Command="{Binding $parent[UserControl].DataContext.SelectTimeRangeCommand}"
+                                CommandParameter="7" />
+                        <Button Content="30天" Classes="GdPrimary" Padding="12 6" FontSize="12"
+                                Command="{Binding $parent[UserControl].DataContext.SelectTimeRangeCommand}"
+                                CommandParameter="30" />
+                        <Button Content="90天" Classes="GdGhost" Padding="12 6" FontSize="12"
+                                Command="{Binding $parent[UserControl].DataContext.SelectTimeRangeCommand}"
+                                CommandParameter="90" />
+                        <Button Content="180天" Classes="GdGhost" Padding="12 6" FontSize="12"
+                                Command="{Binding $parent[UserControl].DataContext.SelectTimeRangeCommand}"
+                                CommandParameter="180" />
+                    </StackPanel>
+                </Border>
+
+                <!-- 价格概览卡片（保留已有数据绑定） -->
+                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="16">
+                    <Border Classes="GdCard" Margin="0" Padding="20">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="当前均价" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center" />
                             <TextBlock Text="{Binding CurrentPrice}" FontSize="24" FontWeight="SemiBold" HorizontalAlignment="Center" />
                         </StackPanel>
                     </Border>
-                    <Border Grid.Column="1" Classes="GdCard" Padding="20">
+                    <Border Grid.Column="1" Classes="GdCard" Margin="0" Padding="20">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="涨跌幅" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center" />
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
@@ -33,13 +461,13 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
-                    <Border Grid.Column="2" Classes="GdCard" Padding="20">
+                    <Border Grid.Column="2" Classes="GdCard" Margin="0" Padding="20">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="成交情况" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center" />
                             <TextBlock Text="{Binding VolumeInfo}" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Center" TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
-                    <Border Grid.Column="3" Classes="GdCard" Padding="20">
+                    <Border Grid.Column="3" Classes="GdCard" Margin="0" Padding="20">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="预测置信度" FontSize="11" Foreground="{DynamicResource GdMutedForegroundBrush}" HorizontalAlignment="Center" />
                             <TextBlock Text="{Binding ForecastConfidence}" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" />
@@ -47,39 +475,8 @@
                     </Border>
                 </Grid>
 
-                <!-- 时间范围选择 -->
-                <Border Classes="GdCard" Padding="16 12">
-                    <StackPanel Orientation="Horizontal" Spacing="12">
-                        <TextBlock Text="时间范围" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" />
-                        <Button Content="7天"
-                                Classes="GdGhost"
-                                Padding="12 6"
-                                FontSize="12"
-                                Command="{Binding $parent[UserControl].DataContext.SelectTimeRangeCommand}"
-                                CommandParameter="7" />
-                        <Button Content="30天"
-                                Classes="GdPrimary"
-                                Padding="12 6"
-                                FontSize="12"
-                                Command="{Binding $parent[UserControl].DataContext.SelectTimeRangeCommand}"
-                                CommandParameter="30" />
-                        <Button Content="90天"
-                                Classes="GdGhost"
-                                Padding="12 6"
-                                FontSize="12"
-                                Command="{Binding $parent[UserControl].DataContext.SelectTimeRangeCommand}"
-                                CommandParameter="90" />
-                        <Button Content="180天"
-                                Classes="GdGhost"
-                                Padding="12 6"
-                                FontSize="12"
-                                Command="{Binding $parent[UserControl].DataContext.SelectTimeRangeCommand}"
-                                CommandParameter="180" />
-                    </StackPanel>
-                </Border>
-
-                <!-- K线图 -->
-                <Border Classes="GdCard" Padding="20" IsVisible="{Binding HasData}">
+                <!-- K线图（保留已有数据绑定） -->
+                <Border Classes="GdCard" Margin="0" Padding="20" IsVisible="{Binding HasData}">
                     <StackPanel Spacing="12">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Text="K线走势" FontSize="16" FontWeight="SemiBold" />
@@ -97,8 +494,8 @@
                     </StackPanel>
                 </Border>
 
-                <!-- 预测区间图 -->
-                <Border Classes="GdCard" Padding="20" IsVisible="{Binding HasData}">
+                <!-- 预测区间图（保留已有数据绑定） -->
+                <Border Classes="GdCard" Margin="0" Padding="20" IsVisible="{Binding HasData}">
                     <StackPanel Spacing="12">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Text="价格预测" FontSize="16" FontWeight="SemiBold" />
@@ -132,8 +529,8 @@
                     </StackPanel>
                 </Border>
 
-                <!-- 关联商品列表 -->
-                <Border Classes="GdCard" Padding="20" IsVisible="{Binding RelatedProducts.Count}">
+                <!-- 关联商品列表（保留已有数据绑定） -->
+                <Border Classes="GdCard" Margin="0" Padding="20" IsVisible="{Binding RelatedProducts.Count}">
                     <StackPanel Spacing="12">
                         <Grid ColumnDefinitions="*,Auto">
                             <TextBlock Text="关联商品" FontSize="16" FontWeight="SemiBold" />
@@ -195,10 +592,50 @@
                     </StackPanel>
                 </Border>
 
-                <!-- 加载状态 -->
-                <Border Classes="GdCard"
-                        Padding="40"
-                        IsVisible="{Binding IsLoading}">
+                <!-- ============================================================ -->
+                <!-- 相关品种推荐 -->
+                <!-- ============================================================ -->
+                <Border Classes="GdCard" Margin="0" Padding="20" IsVisible="{Binding RelatedSpecies.Count}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="相关品种推荐" FontSize="16" FontWeight="SemiBold" />
+                        <ItemsControl ItemsSource="{Binding RelatedSpecies}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Width="220" Margin="0 0 16 16"
+                                            Background="{DynamicResource GdSecondaryBrush}"
+                                            BorderBrush="{DynamicResource GdBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="{DynamicResource GdRadiusLg}"
+                                            ClipToBounds="True">
+                                        <StackPanel>
+                                            <Border Height="70" Background="{Binding HeaderBrush}">
+                                                <TextBlock Text="{Binding IconEmoji}" FontSize="32"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <Border Padding="12">
+                                                <StackPanel Spacing="4">
+                                                    <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource GdForegroundBrush}" />
+                                                    <TextBlock Text="{Binding Description}" FontSize="11"
+                                                               Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                               TextWrapping="Wrap" />
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- 加载状态（保留已有数据绑定） -->
+                <Border Classes="GdCard" Margin="0" Padding="40" IsVisible="{Binding IsLoading}">
                     <StackPanel HorizontalAlignment="Center" Spacing="12">
                         <ProgressBar IsIndeterminate="True" Height="4" />
                         <TextBlock Text="加载行情数据中..."
@@ -208,10 +645,8 @@
                     </StackPanel>
                 </Border>
 
-                <!-- 无数据状态 -->
-                <Border Classes="GdCard"
-                        Padding="40"
-                        IsVisible="{Binding !HasData}">
+                <!-- 无数据状态（保留已有数据绑定） -->
+                <Border Classes="GdCard" Margin="0" Padding="40" IsVisible="{Binding !HasData}">
                     <StackPanel HorizontalAlignment="Center" Spacing="12">
                         <TextBlock Text="📊"
                                    FontSize="32"

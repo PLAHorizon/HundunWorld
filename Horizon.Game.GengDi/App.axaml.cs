@@ -7,6 +7,7 @@ using Avalonia.Markup.Xaml;
 using Horizon.Game.GengDi.Core.Views;
 using Horizon.Game.GengDi.Core.ViewModels;
 using Horizon.Game.GengDi.Core.Services;
+using Horizon.Game.GengDi.Core.Helpers;
 using Horizon.Game.GengDi.Models;
 using System.Threading.Tasks;
 
@@ -65,6 +66,9 @@ public partial class App : Application
 
     public override async void OnFrameworkInitializationCompleted()
     {
+        // 全局设置 LiveCharts2 中文字体，避免图表中文标签渲染为方块
+        FlowerChartFontConfigurator.Configure();
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var mainWindow = new MainWindow

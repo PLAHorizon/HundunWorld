@@ -78,19 +78,41 @@ namespace Horizon.Game.Gateway.Services
                 return;
             }
 
+            // 修复 BUG（日志噪音）：原实现每次心跳都打 LogInformation，
+            // 每 30 秒一条，长时间运行导致日志刷屏（33 分钟内 66+ 条相同日志）。
+            // 修复：首次注册成功打 info（确认服务正常启动），后续心跳降为 debug。
+            // 注册失败仍打 error，恢复成功时打 info（提示从故障恢复）。
+            bool isFirstSuccess = true;
+            bool wasLastSuccess = false;
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
                     var registration = BuildRegistration();
                     await _registry.RegisterAsync(registration).ConfigureAwait(false);
-                    _logger.LogInformation(
-                        "Game 网关已注册/心跳: {InstanceId}, {Address}:{Port}, Cluster={ClusterId}",
-                        registration.InstanceId, registration.Address, registration.Port, registration.ClusterId);
+
+                    if (isFirstSuccess || !wasLastSuccess)
+                    {
+                        // 首次成功 或 从故障恢复：打 info
+                        _logger.LogInformation(
+                            "Game 网关已注册/心跳: {InstanceId}, {Address}:{Port}, Cluster={ClusterId}",
+                            registration.InstanceId, registration.Address, registration.Port, registration.ClusterId);
+                        isFirstSuccess = false;
+                    }
+                    else
+                    {
+                        // 稳态心跳：降为 debug，避免日志刷屏
+                        _logger.LogDebug(
+                            "Game 网关心跳: {InstanceId}, {Address}:{Port}, Cluster={ClusterId}",
+                            registration.InstanceId, registration.Address, registration.Port, registration.ClusterId);
+                    }
+                    wasLastSuccess = true;
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "注册 Game 网关到 Redis 失败: {InstanceId}", _instanceId);
+                    wasLastSuccess = false;
                 }
 
                 try

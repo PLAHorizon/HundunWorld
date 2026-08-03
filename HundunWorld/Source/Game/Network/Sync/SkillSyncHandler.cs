@@ -281,8 +281,15 @@ namespace HundunWorld.Game.Network.Sync
 
             foreach (var prediction in _predictedSkills)
             {
+                // 改进项 2：原匹配条件仅检查 (SkillId, CasterId)，未排除已验证/已回滚的预测。
+                // 当同一施法者连续施放同一技能时，首次验证后预测仍留在队列中（由 OnUpdate 清理），
+                // 第二次服务端响应会重复匹配到同一已验证预测，导致 IsVerified 重复置位、
+                // _successfulPredictions 虚高、成功率统计失真。
+                // 增加 !IsVerified && !IsRolledBack 守门，只匹配待验证预测，
+                // 与 HandleSyncSkillCast 的匹配逻辑保持一致。
                 if (prediction.SkillId == serverCast.SkillId && 
-                    prediction.CasterId == serverCast.CasterId)
+                    prediction.CasterId == serverCast.CasterId &&
+                    !prediction.IsVerified && !prediction.IsRolledBack)
                 {
                     matchedPrediction = prediction;
                     break;

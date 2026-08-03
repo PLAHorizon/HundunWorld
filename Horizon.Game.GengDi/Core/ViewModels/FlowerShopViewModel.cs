@@ -233,6 +233,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                         ProductId = p.ProductId,
                         ProductName = p.ProductName,
                         Price = p.Price,
+                        MarketPrice = p.MarketPrice ?? 0,
                         MerchantName = p.MerchantName,
                         Stock = p.Stock,
                         SpeciesId = p.SpeciesId,
@@ -491,10 +492,14 @@ namespace Horizon.Game.GengDi.Core.ViewModels
 
         public string TrendColor => _forecastTrend switch
         {
-            "↑" => "#4CAF50",
-            "↓" => "#F44336",
-            _ => "#FFC107"
+            "↑" => "#FF26A69A",
+            "↓" => "#FFEF5350",
+            _ => "#FF787B86"
         };
+
+        public string MarketPriceDisplay => MarketPrice > 0 ? $"¥{MarketPrice:F2}" : "";
+
+        public bool HasMarketPrice => MarketPrice > 0 && MarketPrice > Price;
 
         public bool IsPresale { get; set; }
 

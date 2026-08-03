@@ -1,4 +1,4 @@
-﻿<Styles xmlns="https://github.com/avaloniaui"
+<Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="using:Horizon.Game.GengDi.Core.Controls"
         xmlns:ui="using:FluentAvalonia.UI.Controls">
@@ -70,9 +70,9 @@
         <Setter Property="Foreground" Value="{DynamicResource GdPrimaryForegroundBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource GdPrimaryBrush}" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="16 10" />
-        <Setter Property="FontSize" Value="14" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Padding" Value="16 8" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Medium" />
         <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusMd}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Transitions">
@@ -97,9 +97,9 @@
         <Setter Property="Foreground" Value="{DynamicResource GdSecondaryForegroundBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource GdBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="Padding" Value="16 10" />
-        <Setter Property="FontSize" Value="14" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Padding" Value="16 8" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Medium" />
         <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusMd}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Transitions">
@@ -112,24 +112,27 @@
         <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
     </Style>
 
-    <!-- 幽灵按钮（透明 + hover gd-muted） -->
+    <!-- 幽灵按钮（透明 + 1px border + hover gd-muted/gd-foreground，对应设计稿 gd-btn-ghost） -->
     <Style Selector="Button.GdGhost">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{DynamicResource GdForegroundBrush}" />
-        <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="14 10" />
-        <Setter Property="FontSize" Value="14" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource GdMutedForegroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource GdBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="16 8" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Medium" />
         <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusMd}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Transitions">
             <Transitions>
                 <BrushTransition Property="Background" Duration="0:0:0.15" />
+                <BrushTransition Property="Foreground" Duration="0:0:0.15" />
             </Transitions>
         </Setter>
     </Style>
     <Style Selector="Button.GdGhost:pointerover">
         <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource GdForegroundBrush}" />
     </Style>
 
     <!-- 图标按钮（36x36 + 透明 + hover gd-muted） -->
@@ -156,14 +159,15 @@
         <Setter Property="Foreground" Value="{DynamicResource GdForegroundBrush}" />
     </Style>
 
-    <!-- 危险按钮（gd-error 背景） -->
+    <!-- 危险按钮（透明 + 红字 + 1px border + hover error-surface，对应设计稿 gd-btn-danger） -->
     <Style Selector="Button.GdDanger">
-        <Setter Property="Background" Value="{DynamicResource GdErrorBrush}" />
-        <Setter Property="Foreground" Value="#FFFFFFFF" />
-        <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="16 10" />
-        <Setter Property="FontSize" Value="14" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource GdErrorBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource GdBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="16 8" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontWeight" Value="Medium" />
         <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusMd}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Transitions">
@@ -173,7 +177,7 @@
         </Setter>
     </Style>
     <Style Selector="Button.GdDanger:pointerover">
-        <Setter Property="Opacity" Value="0.9" />
+        <Setter Property="Background" Value="{DynamicResource GdErrorSurfaceBrush}" />
     </Style>
 
     <!-- ══════════════════════════════════════════════════════════════
@@ -216,16 +220,16 @@
         <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
     </Style>
 
-    <!-- 副导航项（44px 高，active 下边框 gd-primary） -->
+    <!-- 副导航项（对应 subnav-item：active 态 primary 文字 + info-surface 背景） -->
     <Style Selector="Button.GdSubNav">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{DynamicResource GdMutedForegroundBrush}" />
         <Setter Property="BorderBrush" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="0 0 0 2" />
+        <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Padding" Value="12 8" />
         <Setter Property="FontSize" Value="12" />
-        <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusMd}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Transitions">
             <Transitions>
@@ -240,8 +244,12 @@
         <Setter Property="Foreground" Value="{DynamicResource GdForegroundBrush}" />
     </Style>
     <Style Selector="Button.GdSubNav.GdSubNavActive">
+        <Setter Property="Background" Value="{DynamicResource GdInfoSurfaceBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource GdPrimaryBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource GdPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.GdSubNav.GdSubNavActive:pointerover">
+        <Setter Property="Background" Value="{DynamicResource GdInfoSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource GdPrimaryBrush}" />
     </Style>
 
     <!-- ══════════════════════════════════════════════════════════════
@@ -418,14 +426,14 @@
 
     <!-- 通用 Badge 基础（小圆角 + 紧凑 padding） -->
     <Style Selector="Border.GdBadge">
-        <Setter Property="Padding" Value="4 8" />
+        <Setter Property="Padding" Value="8 2" />
         <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusSm}" />
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
     <!-- Badge 内部文字（Border 无 FontSize/FontWeight/Foreground，需作用于子 TextBlock） -->
     <Style Selector="Border.GdBadge TextBlock">
         <Setter Property="FontSize" Value="12" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontWeight" Value="Medium" />
     </Style>
 
     <!-- Success 徽章 -->
@@ -460,6 +468,20 @@
         <Setter Property="Foreground" Value="{DynamicResource GdInfoBrush}" />
     </Style>
 
+    <!-- Badge 内 Path 图标颜色（与 badge 文字色一致，Avalonia Path 无 Foreground，用 Stroke） -->
+    <Style Selector="Border.GdBadge.GdSuccess Path">
+        <Setter Property="Stroke" Value="{DynamicResource GdSuccessBrush}" />
+    </Style>
+    <Style Selector="Border.GdBadge.GdWarning Path">
+        <Setter Property="Stroke" Value="{DynamicResource GdWarningBrush}" />
+    </Style>
+    <Style Selector="Border.GdBadge.GdError Path">
+        <Setter Property="Stroke" Value="{DynamicResource GdErrorBrush}" />
+    </Style>
+    <Style Selector="Border.GdBadge.GdInfo Path">
+        <Setter Property="Stroke" Value="{DynamicResource GdInfoBrush}" />
+    </Style>
+
     <!-- ══════════════════════════════════════════════════════════════
          SectionTitle 区块标题（左边框 3px primary）
          ══════════════════════════════════════════════════════════════ -->
@@ -467,16 +489,13 @@
         <Setter Property="FontSize" Value="14" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Foreground" Value="{DynamicResource GdForegroundBrush}" />
-        <Setter Property="Margin" Value="0 0 0 16" />
     </Style>
 
-    <!-- 用 Border 实现左边框效果的区块标题容器 -->
+    <!-- 用 Border 实现左边框效果的区块标题容器（对应原型 border-left:3px solid primary） -->
     <Style Selector="Border.GdSectionTitleBar">
         <Setter Property="BorderBrush" Value="{DynamicResource GdPrimaryBrush}" />
         <Setter Property="BorderThickness" Value="3 0 0 0" />
         <Setter Property="Padding" Value="10 0 0 0" />
-        <Setter Property="Margin" Value="0 0 0 16" />
-        <Setter Property="Height" Value="20" />
     </Style>
 
     <!-- ══════════════════════════════════════════════════════════════
@@ -591,7 +610,7 @@
         <Setter Property="Background" Value="{DynamicResource GdCardBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource GdMutedForegroundBrush}" />
         <Setter Property="FontSize" Value="12" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontWeight" Value="Medium" />
         <Setter Property="Padding" Value="12 10" />
         <Setter Property="BorderBrush" Value="{DynamicResource GdBorderBrush}" />
         <Setter Property="BorderThickness" Value="0 0 0 1" />
@@ -606,6 +625,10 @@
         <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
     </Style>
     <Style Selector="DataGridRow.GdDataTable:selected">
+        <Setter Property="Background" Value="{DynamicResource GdInfoSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource GdForegroundBrush}" />
+    </Style>
+    <Style Selector="DataGridRow.GdDataTable:selected:pointerover">
         <Setter Property="Background" Value="{DynamicResource GdInfoSurfaceBrush}" />
     </Style>
 
@@ -653,29 +676,40 @@
     </Style>
 
     <!-- ================================================================
-         Pill 筛选标签（对应 HTML 原型 gd-pill）
+         Pill 筛选标签（对应 HTML 原型 filter-pill / gd-pill）
+         圆角胶囊按钮：transparent 背景 + border 边框 + hover 变色
+         激活态：primary 填充 + 白色文字
          ================================================================ -->
     <Style Selector="Button.GdPill">
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{DynamicResource GdMutedForegroundBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource GdBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="Padding" Value="10 5" />
+        <Setter Property="Padding" Value="14 6" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="MinWidth" Value="0" />
         <Setter Property="FontSize" Value="13" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontWeight" Value="Medium" />
         <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusFull}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Transitions">
             <Transitions>
                 <BrushTransition Property="Background" Duration="0:0:0.15" />
                 <BrushTransition Property="Foreground" Duration="0:0:0.15" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
             </Transitions>
         </Setter>
     </Style>
+    <!-- hover：匹配原型 filter-pill:hover — 只改文字色+边框色，不改背景 -->
     <Style Selector="Button.GdPill:pointerover">
-        <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
+        <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{DynamicResource GdForegroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource GdPrimaryBrush}" />
     </Style>
+    <Style Selector="Button.GdPill:pressed">
+        <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
+    </Style>
+    <!-- 激活态：primary 填充 + 白色文字 + primary 边框 -->
     <Style Selector="Button.GdPill.GdPillActive">
         <Setter Property="Background" Value="{DynamicResource GdPrimaryBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource GdPrimaryForegroundBrush}" />
@@ -684,6 +718,7 @@
     <Style Selector="Button.GdPill.GdPillActive:pointerover">
         <Setter Property="Background" Value="{DynamicResource GdBrand400Brush}" />
         <Setter Property="Foreground" Value="{DynamicResource GdPrimaryForegroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource GdBrand400Brush}" />
     </Style>
 
     <!-- ===== Progress 进度条（对应 HTML 原型 gd-progress） ===== -->
@@ -712,6 +747,7 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusLg}" />
         <Setter Property="ClipToBounds" Value="True" />
+        <Setter Property="Height" Value="450" />
         <Setter Property="Transitions">
             <Transitions>
                 <BrushTransition Property="BorderBrush" Duration="0:0:0.15" />
@@ -722,7 +758,7 @@
         <Setter Property="BorderBrush" Value="{DynamicResource GdPrimaryBrush}" />
     </Style>
     <Style Selector="Border.GdGameCover">
-        <Setter Property="Height" Value="140" />
+        <Setter Property="Height" Value="180" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="VerticalAlignment" Value="Stretch" />
     </Style>
@@ -761,8 +797,45 @@
     </Style>
     <Style Selector="Border.GdChip TextBlock">
         <Setter Property="FontSize" Value="11" />
-        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="FontWeight" Value="Medium" />
         <Setter Property="Foreground" Value="{DynamicResource GdSecondaryForegroundBrush}" />
+    </Style>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         通知区样式（对应 HTML 原型 notification section）
+         ══════════════════════════════════════════════════════════════ -->
+
+    <!-- GdNotifItem 通知列表项（对应 notif-item：padding 14px, radius md, cursor hand, hover muted） -->
+    <Style Selector="Border.GdNotifItem">
+        <Setter Property="Padding" Value="14" />
+        <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusMd}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Border.GdNotifItem:pointerover">
+        <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
+    </Style>
+    <!-- 已读态：opacity 0.6 弱化 -->
+    <Style Selector="Border.GdNotifItem.GdNotifItemRead">
+        <Setter Property="Opacity" Value="0.6" />
+    </Style>
+
+    <!-- GdNotifDot 未读圆点（8px error 色，对应 notif-unread-dot） -->
+    <Style Selector="Ellipse.GdNotifDot">
+        <Setter Property="Width" Value="8" />
+        <Setter Property="Height" Value="8" />
+        <Setter Property="Fill" Value="{DynamicResource GdErrorBrush}" />
+    </Style>
+
+    <!-- GdNotifIcon 通知图标盒（36x36, radius md） -->
+    <Style Selector="Border.GdNotifIcon">
+        <Setter Property="Width" Value="36" />
+        <Setter Property="Height" Value="36" />
+        <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusMd}" />
     </Style>
     <Style Selector="TextBlock.GdPageTitle">
         <Setter Property="FontSize" Value="18" />
@@ -851,10 +924,10 @@
         <Setter Property="Foreground" Value="{DynamicResource GdMutedForegroundBrush}" />
         <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="10 8" />
+        <Setter Property="Padding" Value="12 10" />
         <Setter Property="FontSize" Value="13" />
-        <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusSm}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusMd}" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Margin" Value="0 1" />
@@ -870,6 +943,10 @@
         <Setter Property="Foreground" Value="{DynamicResource GdForegroundBrush}" />
     </Style>
     <Style Selector="Button.GdNavItem.GdNavItemActive">
+        <Setter Property="Background" Value="{DynamicResource GdInfoSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource GdPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.GdNavItem.GdNavItemActive:pointerover">
         <Setter Property="Background" Value="{DynamicResource GdInfoSurfaceBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource GdPrimaryBrush}" />
     </Style>
@@ -917,8 +994,155 @@
     <Style Selector="Button.GdBtnSm">
         <Setter Property="Padding" Value="10 6" />
         <Setter Property="FontSize" Value="12" />
-        <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusSm}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusMd}" />
         <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         Lucide 图标 Path 样式（对应 HTML 原型 data-lucide 图标渲染）
+         fill=none + stroke=currentColor + stroke-width=2 + round caps
+         Stroke 绑定到自身 Foreground，实现颜色继承父级
+         ══════════════════════════════════════════════════════════════ -->
+    <!-- Lucide 图标 Path 基础样式：fill=none + stroke-width=1.5 + round caps -->
+    <!-- 默认 Stroke=GdMutedForegroundBrush，确保即使不在 Button 内也能可见 -->
+    <!-- 更具体的样式（Button/Badge/显式 Stroke）会覆盖此默认值 -->
+    <Style Selector="Path.GdLucideIcon">
+        <Setter Property="Fill" Value="Transparent" />
+        <Setter Property="Stroke" Value="{DynamicResource GdMutedForegroundBrush}" />
+        <Setter Property="StrokeThickness" Value="1.5" />
+        <Setter Property="StrokeLineCap" Value="Round" />
+        <Setter Property="StrokeJoin" Value="Round" />
+        <Setter Property="Stretch" Value="Uniform" />
+    </Style>
+
+    <!-- 按钮内 Lucide 图标：Stroke 绑定到父级 Button.Foreground，
+         自动跟随按钮 hover/pressed 前景色变化。
+         使用 $parent[Button] 语法确保在 DataTemplate 中也能正确解析 -->
+    <Style Selector="Button Path.GdLucideIcon">
+        <Setter Property="Stroke" Value="{Binding $parent[Button].Foreground}" />
+    </Style>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         社交区样式（对应 HTML 原型 social section）
+         ══════════════════════════════════════════════════════════════ -->
+
+    <!-- GdHeaderIconBtn 头部图标按钮（32x32 透明 + hover muted，对应 header-icon-btn） -->
+    <Style Selector="Button.GdHeaderIconBtn">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource GdMutedForegroundBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Width" Value="32" />
+        <Setter Property="Height" Value="32" />
+        <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusMd}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15" />
+                <BrushTransition Property="Foreground" Duration="0:0:0.15" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Button.GdHeaderIconBtn:pointerover">
+        <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource GdForegroundBrush}" />
+    </Style>
+
+    <!-- GdChatBubble 聊天气泡基础（对应 chat-bubble：max-width 70%, padding 10px 14px, radius 12px, font-size 13px） -->
+    <Style Selector="Border.GdChatBubble">
+        <Setter Property="Padding" Value="10 14" />
+        <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusLg}" />
+        <Setter Property="MaxWidth" Value="420" />
+    </Style>
+    <Style Selector="Border.GdChatBubble TextBlock">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="LineHeight" Value="20" />
+    </Style>
+
+    <!-- GdChatBubbleIn 入方向气泡（muted bg + foreground 文字 + 左下角小圆角） -->
+    <Style Selector="Border.GdChatBubble.GdChatBubbleIn">
+        <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
+        <Setter Property="CornerRadius" Value="12,12,4,12" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
+    <Style Selector="Border.GdChatBubble.GdChatBubbleIn TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource GdForegroundBrush}" />
+    </Style>
+
+    <!-- GdChatBubbleOut 出方向气泡（info-surface bg + 白色文字 + 右下角小圆角） -->
+    <Style Selector="Border.GdChatBubble.GdChatBubbleOut">
+        <Setter Property="Background" Value="{DynamicResource GdInfoSurfaceBrush}" />
+        <Setter Property="CornerRadius" Value="12,12,12,4" />
+        <Setter Property="HorizontalAlignment" Value="Right" />
+    </Style>
+    <Style Selector="Border.GdChatBubble.GdChatBubbleOut TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource GdPrimaryForegroundBrush}" />
+    </Style>
+
+    <!-- GdChatTime 聊天时间戳（10px mono + muted-foreground，对应 chat-time） -->
+    <Style Selector="TextBlock.GdChatTime">
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="FontFamily" Value="JetBrains Mono, Cascadia Code, ui-monospace, monospace" />
+        <Setter Property="Foreground" Value="{DynamicResource GdMutedForegroundBrush}" />
+        <Setter Property="Margin" Value="0 4 0 0" />
+    </Style>
+
+    <!-- GdFriendItem 好友列表项（对应 friend-item：padding 8px 10px, radius md, cursor hand, hover muted） -->
+    <Style Selector="Border.GdFriendItem">
+        <Setter Property="Padding" Value="8 10" />
+        <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusMd}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.15" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="Border.GdFriendItem:pointerover">
+        <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
+    </Style>
+    <Style Selector="Border.GdFriendItem.GdFriendItemActive">
+        <Setter Property="Background" Value="{DynamicResource GdInfoSurfaceBrush}" />
+    </Style>
+    <Style Selector="Border.GdFriendItem.GdFriendItemActive:pointerover">
+        <Setter Property="Background" Value="{DynamicResource GdInfoSurfaceBrush}" />
+    </Style>
+
+    <!-- GdStatusDot 状态指示点（9x9 圆形 + 2px card 边框，对应 gd-status-dot） -->
+    <Style Selector="Ellipse.GdStatusDot">
+        <Setter Property="Width" Value="9" />
+        <Setter Property="Height" Value="9" />
+        <Setter Property="Stroke" Value="{DynamicResource GdCardBrush}" />
+        <Setter Property="StrokeThickness" Value="2" />
+    </Style>
+
+    <!-- GdSocialSearchBar 搜索栏容器（muted bg + border + radius md） -->
+    <Style Selector="Border.GdSearchBar">
+        <Setter Property="Background" Value="{DynamicResource GdMutedBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource GdBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusMd}" />
+        <Setter Property="Padding" Value="0 8" />
+    </Style>
+
+    <!-- GdSharedFileCard 共享文件卡（border + radius md + padding 8px） -->
+    <Style Selector="Border.GdSharedFileCard">
+        <Setter Property="BorderBrush" Value="{DynamicResource GdBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusMd}" />
+        <Setter Property="Padding" Value="8" />
+    </Style>
+
+    <!-- GdSecurityItem 安全项（对应 .security-item：flex, gap 14px, padding 16px, border, radius-lg, card bg） -->
+    <Style Selector="Border.GdSecurityItem">
+        <Setter Property="Background" Value="{DynamicResource GdCardBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource GdBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource GdRadiusLg}" />
+        <Setter Property="Padding" Value="16" />
     </Style>
 
 </Styles>

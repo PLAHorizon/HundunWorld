@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <g>
+    <animateTransform attributeName="transform" type="translate" values="-5,0;5,0;-5,0" dur="4s" repeatCount="indefinite"/>
+    <line x1="20" y1="30" x2="80" y2="30" stroke="#E0E0E0" stroke-width="4" stroke-linecap="round" opacity="0.8">
+      <animate attributeName="opacity" values="0.8;0.3;0.8" dur="3s" repeatCount="indefinite"/>
+    </line>
+    <line x1="15" y1="45" x2="85" y2="45" stroke="#F0F0F0" stroke-width="4" stroke-linecap="round" opacity="0.7">
+      <animate attributeName="opacity" values="0.7;0.9;0.7" dur="3s" repeatCount="indefinite"/>
+    </line>
+    <line x1="18" y1="60" x2="82" y2="60" stroke="#E0E0E0" stroke-width="4" stroke-linecap="round" opacity="0.6">
+      <animate attributeName="opacity" values="0.6;0.8;0.6" dur="3s" repeatCount="indefinite"/>
+    </line>
+    <line x1="22" y1="75" x2="78" y2="75" stroke="#D0D0D0" stroke-width="4" stroke-linecap="round" opacity="0.5">
+      <animate attributeName="opacity" values="0.5;0.7;0.5" dur="3s" repeatCount="indefinite"/>
+    </line>
+  </g>
+</svg>

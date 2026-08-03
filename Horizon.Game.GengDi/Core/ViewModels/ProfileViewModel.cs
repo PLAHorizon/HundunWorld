@@ -21,6 +21,10 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private string _bio;
         private string _avatar;
         private string _passportId;
+        private string _gender;
+        private DateTime? _birthday;
+        private string _province;
+        private string _city;
 
         // 头衔
         private string _title;
@@ -42,6 +46,17 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         // 状态消息颜色（成功为绿色，失败为红色）
         private static readonly IBrush SuccessBrush = Brushes.SeaGreen;
         private static readonly IBrush ErrorBrush = Brushes.OrangeRed;
+
+        // 重置用原始值快照
+        private string _origNickName;
+        private string _origBio;
+        private string _origAvatar;
+        private string _origGender;
+        private DateTime? _origBirthday;
+        private string _origProvince;
+        private string _origCity;
+        private string _origEmail;
+        private string _origPhone;
 
         private IBrush _basicInfoMessageBrush = SuccessBrush;
         private IBrush _titleMessageBrush = SuccessBrush;
@@ -138,6 +153,99 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             get => _basicInfoMessageBrush;
             private set => SetProperty(ref _basicInfoMessageBrush, value);
         }
+
+        /// <summary>性别（"男"/"女"/"保密"）</summary>
+        public string Gender
+        {
+            get => _gender;
+            set
+            {
+                if (SetProperty(ref _gender, value))
+                {
+                    OnPropertyChanged(nameof(IsMale));
+                    OnPropertyChanged(nameof(IsFemale));
+                    OnPropertyChanged(nameof(IsSecret));
+                    _updateBasicInfoCommand.RaiseCanExecuteChanged();
+                }
+            }
+        }
+
+        /// <summary>生日</summary>
+        public DateTime? Birthday
+        {
+            get => _birthday;
+            set
+            {
+                if (SetProperty(ref _birthday, value))
+                    _updateBasicInfoCommand.RaiseCanExecuteChanged();
+            }
+        }
+
+        /// <summary>所在省份</summary>
+        public string Province
+        {
+            get => _province;
+            set
+            {
+                if (SetProperty(ref _province, value))
+                {
+                    OnPropertyChanged(nameof(CityOptions));
+                    // 省份变化后，若当前城市不在新选项中则清空
+                    if (CityOptions != null && Array.IndexOf(CityOptions, City) < 0)
+                        City = null;
+                    _updateBasicInfoCommand.RaiseCanExecuteChanged();
+                }
+            }
+        }
+
+        /// <summary>所在城市</summary>
+        public string City
+        {
+            get => _city;
+            set
+            {
+                if (SetProperty(ref _city, value))
+                    _updateBasicInfoCommand.RaiseCanExecuteChanged();
+            }
+        }
+
+        /// <summary>性别"男"是否选中（支持双向绑定）</summary>
+        public bool IsMale
+        {
+            get => Gender == "男";
+            set { if (value) Gender = "男"; }
+        }
+        /// <summary>性别"女"是否选中（支持双向绑定）</summary>
+        public bool IsFemale
+        {
+            get => Gender == "女";
+            set { if (value) Gender = "女"; }
+        }
+        /// <summary>性别"保密"是否选中（支持双向绑定）</summary>
+        public bool IsSecret
+        {
+            get => Gender == "保密";
+            set { if (value) Gender = "保密"; }
+        }
+
+        /// <summary>省份选项列表</summary>
+        public string[] ProvinceOptions { get; } = { "北京市", "上海市", "广东省", "浙江省", "江苏省", "河南省", "四川省", "湖北省", "湖南省", "福建省" };
+
+        /// <summary>城市选项列表（根据省份动态变化）</summary>
+        public string[] CityOptions => Province switch
+        {
+            "北京市" => new[] { "东城区", "西城区", "海淀区", "朝阳区", "丰台区" },
+            "上海市" => new[] { "黄浦区", "徐汇区", "浦东新区", "静安区", "长宁区" },
+            "广东省" => new[] { "深圳市", "广州市", "珠海市", "佛山市", "东莞市" },
+            "浙江省" => new[] { "杭州市", "宁波市", "温州市", "嘉兴市", "绍兴市" },
+            "江苏省" => new[] { "南京市", "苏州市", "无锡市", "常州市", "南通市" },
+            "河南省" => new[] { "郑州市", "洛阳市", "开封市", "新乡市", "南阳市" },
+            "四川省" => new[] { "成都市", "绵阳市", "德阳市", "宜宾市", "南充市" },
+            "湖北省" => new[] { "武汉市", "宜昌市", "襄阳市", "荆州市", "黄冈市" },
+            "湖南省" => new[] { "长沙市", "株洲市", "湘潭市", "衡阳市", "岳阳市" },
+            "福建省" => new[] { "福州市", "厦门市", "泉州市", "漳州市", "莆田市" },
+            _ => new[] { "—" }
+        };
 
         #endregion
 
@@ -270,6 +378,8 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public ICommand UpdateRealNameCommand { get; }
         public ICommand NavigateToSecurityCommand { get; }
         public ICommand LogoutCommand { get; }
+        public ICommand RemoveAvatarCommand { get; }
+        public ICommand ResetCommand { get; }
 
         private ICommand _pickAvatarCommand;
 
@@ -297,6 +407,8 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             UpdateRealNameCommand = _updateRealNameCommand;
             NavigateToSecurityCommand = new RelayCommand(NavigateToSecurity);
             LogoutCommand = new RelayCommand(Logout);
+            RemoveAvatarCommand = new RelayCommand(RemoveAvatar);
+            ResetCommand = new RelayCommand(Reset);
         }
 
         public async Task InitializeAsync()
@@ -327,11 +439,18 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                     NickName = user.Username ?? string.Empty;
                     Bio = user.Bio ?? string.Empty;
                     Avatar = user.Avatar ?? string.Empty;
+                    Gender = user.Gender ?? string.Empty;
+                    Birthday = user.Birthday;
+                    Province = user.Province ?? string.Empty;
+                    City = user.City ?? string.Empty;
                     Title = user.Title ?? string.Empty;
                     Phone = user.Phone ?? string.Empty;
                     Email = user.Email ?? string.Empty;
                     RealName = user.RealName ?? string.Empty;
                     IdCard = user.IdCard ?? string.Empty;
+
+                    // 保存原始快照用于重置
+                    SnapshotOriginalValues();
                 }
             }
             finally
@@ -368,12 +487,17 @@ namespace Horizon.Game.GengDi.Core.ViewModels
 
             try
             {
-                var success = await _accountService.UpdateProfileAsync(App.CurrentUser.Id, NickName, Bio, Avatar);
+                var success = await _accountService.UpdateProfileAsync(
+                    App.CurrentUser.Id, NickName, Bio, Avatar,
+                    Gender, Birthday, Province, City, Email, Phone);
                 if (success)
                 {
                     App.CurrentUser = await _accountService.GetUserByIdAsync(App.CurrentUser.Id);
-                    BasicInfoMessage = "基本信息更新成功";
+                    BasicInfoMessage = "资料保存成功";
                     BasicInfoMessageBrush = SuccessBrush;
+
+                    // 保存最新快照（保存成功后重置基准更新为当前值）
+                    SnapshotOriginalValues();
 
                     // 延迟 3 秒后向所有在线好友广播资料变更，使好友客户端静默更新（用户无感知）
                     ScheduleProfileBroadcastAsync(NickName?.Trim(), Avatar?.Trim(), Bio?.Trim());
@@ -579,6 +703,47 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private void NavigateToSecurity()
         {
             NavigationService.Instance.NavigateToSecurity();
+        }
+
+        /// <summary>
+        /// 移除头像（清空 Avatar 字段）。
+        /// </summary>
+        private void RemoveAvatar()
+        {
+            Avatar = string.Empty;
+        }
+
+        /// <summary>
+        /// 重置表单为上次加载/保存时的原始值。
+        /// </summary>
+        private void Reset()
+        {
+            NickName = _origNickName;
+            Bio = _origBio;
+            Avatar = _origAvatar;
+            Gender = _origGender;
+            Birthday = _origBirthday;
+            Province = _origProvince;
+            City = _origCity;
+            Email = _origEmail;
+            Phone = _origPhone;
+            BasicInfoMessage = string.Empty;
+        }
+
+        /// <summary>
+        /// 将当前所有可编辑字段保存为原始快照，供 Reset 命令恢复。
+        /// </summary>
+        private void SnapshotOriginalValues()
+        {
+            _origNickName = NickName;
+            _origBio = Bio;
+            _origAvatar = Avatar;
+            _origGender = Gender;
+            _origBirthday = Birthday;
+            _origProvince = Province;
+            _origCity = City;
+            _origEmail = Email;
+            _origPhone = Phone;
         }
 
         private void Logout()

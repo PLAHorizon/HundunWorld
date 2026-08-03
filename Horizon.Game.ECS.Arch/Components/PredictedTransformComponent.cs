@@ -28,4 +28,22 @@ public struct PredictedTransformComponent
 
     /// <summary>是否需要服务器校正（收到 correction 后标记为 true）。</summary>
     public bool NeedsReconciliation;
+
+    /// <summary>
+    /// 阻尼平滑追平期间的 X 方向速度状态（米/秒）。
+    /// 仅在修正追平期间使用，追平完成后清零，不污染正常预测路径。
+    /// </summary>
+    public float ReconcileVelX;
+
+    /// <summary>
+    /// 阻尼平滑追平期间的 Y 方向速度状态（米/秒）。
+    /// 仅在修正追平期间使用，追平完成后清零，不污染正常预测路径。
+    /// </summary>
+    public float ReconcileVelY;
+
+    /// <summary>
+    /// 阻尼平滑追平期间的 Z 方向速度状态（米/秒）。
+    /// 仅在修正追平期间使用，追平完成后清零，不污染正常预测路径。
+    /// </summary>
+    public float ReconcileVelZ;
 }

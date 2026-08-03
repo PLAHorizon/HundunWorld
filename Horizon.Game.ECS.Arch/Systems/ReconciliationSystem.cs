@@ -4,6 +4,7 @@ using Arch.Core;
 using Horizon.Game.Core.Sim;
 using Horizon.Game.ECS.Arch.Components;
 using Horizon.Game.ECS.Arch.Core;
+using Horizon.Game.ECS.Arch.Diagnostics;
 using Horizon.Game.ECS.Arch.Network;
 using Horizon.Game.Message.Sync;
 // MovementFormula 统一使用 Horizon.Game.Core.Sim 版本（原 Message 副本已删除）。
@@ -48,6 +49,11 @@ public sealed class ReconciliationSystem : ArchSystemBase
     /// </summary>
     public float SmoothCorrectionSpeed { get; set; } = 15f;
 
+    /// <summary>
+    /// 诊断事件汇（可选）。由游戏层 DI 注入，null 时不输出诊断日志，保证零开销。
+    /// </summary>
+    public ISyncDiagnosticsSink? Diagnostics { get; set; }
+
     /// <summary>累计修正次数（诊断用）。</summary>
     public int TotalCorrectionsApplied { get; private set; }
 
@@ -72,16 +78,16 @@ public sealed class ReconciliationSystem : ArchSystemBase
     /// 修正风暴检测窗口内允许的最大修正次数。
     /// 超过此次数进入冷却期，跳过后续修正避免角色反复抽搐。
     /// </summary>
-    private const int StormThreshold = 5;
+    public int StormThreshold { get; set; } = 5;
 
     /// <summary>修正风暴检测窗口（秒）。</summary>
-    private const float StormWindowSeconds = 2.0f;
+    public float StormWindowSeconds { get; set; } = 2.0f;
 
     /// <summary>修正风暴冷却时间（秒）。进入风暴模式后跳过修正的时长。</summary>
-    private const float StormCooldownSeconds = 1.0f;
+    public float StormCooldownSeconds { get; set; } = 1.0f;
 
     /// <summary>最近修正时间戳环形缓冲（用于风暴检测）。</summary>
-    private readonly float[] _recentCorrectionTimes = new float[StormThreshold];
+    private readonly float[] _recentCorrectionTimes = new float[5];
     private int _recentCorrectionIndex;
     private int _recentCorrectionCount;
     private float _stormCooldownUntil; // 基于 Environment.TickCount64 的秒数
@@ -223,6 +229,7 @@ public sealed class ReconciliationSystem : ArchSystemBase
                         _stormCooldownUntil = nowSec + StormCooldownSeconds;
                         _recentCorrectionCount = 0;
                         StormSuppressedCount++;
+                        Diagnostics?.OnCorrectionStormTriggered(netId.EntityId, StormThreshold, StormWindowSeconds);
                         return; // 跳过本次修正
                     }
                 }
@@ -258,6 +265,7 @@ public sealed class ReconciliationSystem : ArchSystemBase
                 if (lastProcessedTick < _lastAckedClientTick)
                 {
                     // 过期 Correction：服务端已 Ack 到更新的 tick，本 Correction 的重放数据已不完整，跳过。
+                    Diagnostics?.OnStaleCorrectionSkipped(netId.EntityId, lastProcessedTick, _lastAckedClientTick);
                     return;
                 }
 
@@ -373,11 +381,65 @@ public sealed class ReconciliationSystem : ArchSystemBase
                 // 重放结果 = 服务端权威位置 + 未确认输入重放，是客户端应有的正确预测位置。
                 // 视觉平滑由 FlaxActorSyncSystem/LocalPlayerActorSyncSystem 在 Actor 层处理，
                 // ECS 逻辑层必须立即对齐，否则下一帧预测从错误位置继续，导致校正死循环。
-                pred.X = replayX;
-                pred.Y = replayY;
-                pred.Z = replayZ;
+                // 阻尼平滑追平（SmoothDamp）：替代瞬移，临界阻尼弹簧使追平更自然（首帧位移小、渐增、无过冲）。
+                // smoothTime = 1 / SmoothCorrectionSpeed ≈ 0.067s（约 4 帧 @60fps 追平）。
+                var smoothTime = 1f / SmoothCorrectionSpeed;
+                SmoothDamp3(
+                    ref pred.X, ref pred.Y, ref pred.Z,
+                    ref pred.ReconcileVelX, ref pred.ReconcileVelY, ref pred.ReconcileVelZ,
+                    replayX, replayY, replayZ,
+                    smoothTime, dt);
                 pred.Vz = replayVz;
+
+                // 追平完成后（剩余漂移 < 0.001m）清零速度状态并完全对齐，避免速度残留污染正常预测
+                var remainingDrift = MovementFormula.Distance3D(pred.X, pred.Y, pred.Z, replayX, replayY, replayZ);
+                if (remainingDrift < 0.001f)
+                {
+                    pred.X = replayX;
+                    pred.Y = replayY;
+                    pred.Z = replayZ;
+                    pred.ReconcileVelX = 0f;
+                    pred.ReconcileVelY = 0f;
+                    pred.ReconcileVelZ = 0f;
+                }
             }
         });
+    }
+
+    /// <summary>
+    /// 临界阻尼弹簧三维平滑（位置 + 速度双状态）。用于修正后预测位置平滑追平重放结果，避免瞬移抽搐。
+    /// </summary>
+    /// <param name="x">当前位置 X（引用，更新为平滑后位置）。</param>
+    /// <param name="y">当前位置 Y（引用）。</param>
+    /// <param name="z">当前位置 Z（引用）。</param>
+    /// <param name="vx">速度状态 X（引用，更新为平滑后速度）。</param>
+    /// <param name="vy">速度状态 Y（引用）。</param>
+    /// <param name="vz">速度状态 Z（引用）。</param>
+    /// <param name="targetX">目标位置 X。</param>
+    /// <param name="targetY">目标位置 Y。</param>
+    /// <param name="targetZ">目标位置 Z。</param>
+    /// <param name="smoothTime">平滑时间（秒），越大越平滑越慢。</param>
+    /// <param name="dt">本帧时间步长（秒）。</param>
+    private static void SmoothDamp3(
+        ref float x, ref float y, ref float z,
+        ref float vx, ref float vy, ref float vz,
+        float targetX, float targetY, float targetZ,
+        float smoothTime, float dt)
+    {
+        // 临界阻尼弹簧：ω = 2/smoothTime
+        var omega = 2f / smoothTime;
+        var expTerm = MathF.Exp(-omega * dt);
+        var xDiff = x - targetX;
+        var yDiff = y - targetY;
+        var zDiff = z - targetZ;
+        var tempX = (vx + omega * xDiff) * dt;
+        var tempY = (vy + omega * yDiff) * dt;
+        var tempZ = (vz + omega * zDiff) * dt;
+        vx = (vx - omega * tempX) * expTerm;
+        vy = (vy - omega * tempY) * expTerm;
+        vz = (vz - omega * tempZ) * expTerm;
+        x = targetX + (xDiff + tempX) * expTerm;
+        y = targetY + (yDiff + tempY) * expTerm;
+        z = targetZ + (zDiff + tempZ) * expTerm;
     }
 }

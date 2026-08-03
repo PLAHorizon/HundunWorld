@@ -116,6 +116,15 @@ public interface IZoneShardGrain : IGrainWithIntegerKey
     /// <param name="reportedEndZ">客户端报告的终点 Z。</param>
     Task SubmitInputAsync(ulong entityId, InputPacket input, float reportedEndX, float reportedEndY, float reportedEndZ);
 
+    /// <summary>
+    /// 客户端请求 baseline 重传（收到 <see cref="BaselineResyncRequestPacket"/> 时由 Gateway 路由调用）。
+    /// 服务端收到后强制下一 tick 下发全量快照。
+    /// </summary>
+    /// <param name="entityId">请求客户端的角色实体 ID。</param>
+    /// <param name="expectedBaselineTick">客户端期望的 baseline tick。</param>
+    /// <param name="clientLastAppliedTick">客户端最后已应用的 baseline tick。</param>
+    Task RequestBaselineResyncAsync(ulong entityId, long expectedBaselineTick, long clientLastAppliedTick);
+
     Task SubmitSkillCastAsync(ulong entityId, int skillId, ulong targetId);
 
     Task CompleteSkillCastAsync(ulong entityId, float damage, ulong targetId, bool isCritical);

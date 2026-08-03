@@ -80,11 +80,15 @@ public sealed class ZoneShardAoi
     /// <returns>被移除的订阅条数。</returns>
     public int RemoveSession(long sessionId)
     {
-        if (!_sessionToChunks.TryGetValue(sessionId, out var chunks)) return 0;
+        // 修复（NullReferenceException — RemoveSession 第 87 行 NRE）：
+        // 在极端场景下（grain 激活/反激活时序、内存压力）可能出现字典状态不一致。
+        // 增加防御性 null 检查，避免 NRE 中断清理流程导致会话残留。
+        if (_sessionToChunks == null || _chunkToSessions == null) return 0;
+        if (!_sessionToChunks.TryGetValue(sessionId, out var chunks) || chunks == null) return 0;
         int removed = 0;
         foreach (var key in chunks)
         {
-            if (_chunkToSessions.TryGetValue(key, out var sessions) && sessions.Remove(sessionId))
+            if (_chunkToSessions.TryGetValue(key, out var sessions) && sessions != null && sessions.Remove(sessionId))
             {
                 removed++;
                 if (sessions.Count == 0) _chunkToSessions.Remove(key);

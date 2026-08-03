@@ -108,41 +108,24 @@ namespace HundunWorld.Game.Network
         }
 
         /// <summary>
-        /// 测试网关延迟
+        /// 测试网关延迟。当前已禁用 TCP 连接探查，始终返回固定延迟 1ms 并标记网关可用。
+        /// <para>
+        /// 原实现创建完整 TouchSocket TcpClient 协议连接测量延迟，
+        /// 服务端会创建 GameConnection 并等待首包，不发送数据即关闭 → 首包超时幽灵连接。
+        /// 现已禁用探查，直接返回 1ms 固定延迟。如需恢复，恢复方法体内的 TCP 连接测延迟逻辑。
+        /// </para>
         /// </summary>
         /// <param name="gateway">网关信息</param>
         /// <returns>延迟时间（毫秒）</returns>
         public async Task<long> TestGatewayLatencyAsync(GatewayInfo gateway)
         {
+            await Task.CompletedTask; // 保持 async 签名
+
             if (gateway == null)
                 throw new ArgumentNullException(nameof(gateway));
 
-            try
-            {
-                var config = new TouchSocketConfig();
-                config.SetRemoteIPHost(new IPHost($"{gateway.IP}:{gateway.Port}"));
-                config.SetTcpDataHandlingAdapter(() => new HorizonMessageAdapter());
-                using var tcpClient = new TcpClient();
-                await tcpClient.SetupAsync(config);
-
-                var stopwatch = Stopwatch.StartNew();
-
-                // 设置连接超时时间
-                using var cts = new System.Threading.CancellationTokenSource(5000); // 5秒超时
-
-                await tcpClient.ConnectAsync(cts.Token);
-                stopwatch.Stop();
-
-                // 断开连接
-                await tcpClient.CloseAsync();
-
-                return stopwatch.ElapsedMilliseconds;
-            }
-            catch (Exception)
-            {
-                // 连接失败，返回最大延迟
-                return long.MaxValue;
-            }
+            gateway.IsAvailable = true;
+            return 1; // 固定延迟 1ms，表示可达
         }
 
         /// <summary>

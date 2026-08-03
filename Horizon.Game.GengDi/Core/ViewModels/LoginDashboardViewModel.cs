@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using Horizon.Game.GengDi.Core.Services;
@@ -15,6 +16,8 @@ namespace Horizon.Game.GengDi.Core.ViewModels
 
         private WeatherForecast _currentWeather;
         private string _weatherSummary;
+        private string _weatherLocation;
+        private string _weatherForecastSummary;
         private FlowerPriceForecast _flowerForecast;
         private string _flowerSummary;
         private ObservableCollection<GameInfo> _recommendedGames;
@@ -37,6 +40,24 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         {
             get => _weatherSummary;
             set => SetProperty(ref _weatherSummary, value);
+        }
+
+        /// <summary>
+        /// 天气位置文本，格式 "省·市"（设计稿 weather-location）。
+        /// </summary>
+        public string WeatherLocation
+        {
+            get => _weatherLocation;
+            set => SetProperty(ref _weatherLocation, value);
+        }
+
+        /// <summary>
+        /// 天气预报摘要，格式 "雷暴·降水8%·23/30°"（设计稿 weather-forecast）。
+        /// </summary>
+        public string WeatherForecastSummary
+        {
+            get => _weatherForecastSummary;
+            set => SetProperty(ref _weatherForecastSummary, value);
         }
 
         public FlowerPriceForecast FlowerForecast
@@ -70,6 +91,23 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             _gameService =  GameService.Instance;
             _recommendedGames = new ObservableCollection<GameInfo>();
             _loginVm = new LoginViewModel();
+
+            // 初始化默认天气数据，确保天气卡片在数据加载前也有内容显示
+            _currentWeather = new WeatherForecast
+            {
+                City = "加载中",
+                Province = "",
+                Current = new CurrentWeather
+                {
+                    Temperature = 0,
+                    ConditionText = "--",
+                    WindDirection = "",
+                    WindSpeed = 0,
+                    WmoCode = 0
+                }
+            };
+            _weatherLocation = "定位中";
+            _weatherForecastSummary = "--";
         }
 
         public async Task LoadDashboardData()
@@ -103,12 +141,55 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 {
                     CurrentWeather = weather;
                     WeatherSummary = _weatherService.GetWeatherSummary(weather);
+                    WeatherLocation = BuildWeatherLocation(weather);
+                    WeatherForecastSummary = BuildForecastSummary(weather);
                 }
             }
             catch
             {
                 // 忽略异常
             }
+        }
+
+        /// <summary>
+        /// 构建天气位置文本，格式 "省·市"（如 "河南·郑州"）。
+        /// </summary>
+        private static string BuildWeatherLocation(WeatherForecast weather)
+        {
+            if (weather == null) return "";
+            var province = weather.Province?.TrimEnd('省') ?? "";
+            return string.IsNullOrEmpty(province)
+                ? (weather.City ?? "")
+                : $"{province}·{weather.City}";
+        }
+
+        /// <summary>
+        /// 构建天气预报摘要，格式 "雷暴·降水8%·23/30°"（设计稿 weather-forecast）。
+        /// </summary>
+        private static string BuildForecastSummary(WeatherForecast weather)
+        {
+            if (weather == null || weather.Current == null) return "";
+
+            var parts = new List<string>();
+
+            // 天气状况
+            parts.Add(weather.Current.ConditionText ?? "--");
+
+            // 降水概率 + 温度范围（来自每日预报）
+            if (weather.Daily != null && weather.Daily.Count > 0)
+            {
+                var today = weather.Daily[0];
+
+                // 降水概率：若值 <= 1 视为比例，否则视为百分比
+                var precip = today.Precipitation;
+                var precipPercent = precip <= 1.0 ? (int)(precip * 100) : (int)precip;
+                parts.Add($"降水{precipPercent}%");
+
+                // 最低 / 最高温度
+                parts.Add($"{today.TemperatureMin}/{today.TemperatureMax}°");
+            }
+
+            return string.Join("·", parts);
         }
 
         private async Task LoadFlowerData()

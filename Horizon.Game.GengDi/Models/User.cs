@@ -135,6 +135,19 @@ namespace Horizon.Game.GengDi.Models
 
         public string Bio { get; set; }
         public string GroupName { get; set; }
+
+        /// <summary>性别（"男"/"女"/"保密"）</summary>
+        public string Gender { get; set; }
+
+        /// <summary>生日（可为 null）</summary>
+        public DateTime? Birthday { get; set; }
+
+        /// <summary>所在省份</summary>
+        public string Province { get; set; }
+
+        /// <summary>所在城市</summary>
+        public string City { get; set; }
+
         /// <summary>
         /// 头衔（可自定义的荣誉称号）
         /// </summary>

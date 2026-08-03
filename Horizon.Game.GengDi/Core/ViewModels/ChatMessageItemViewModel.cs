@@ -16,10 +16,13 @@ namespace Horizon.Game.GengDi.Core.ViewModels
 {
     public sealed class ChatMessageItemViewModel : ViewModelBase
     {
-        private static readonly IBrush OutgoingBackgroundBrush = new SolidColorBrush(Color.Parse("#1F6FEB"));
-        private static readonly IBrush IncomingBackgroundBrush = new SolidColorBrush(Color.Parse("#2D2D30"));
-        private static readonly IBrush OutgoingBorderBrush = new SolidColorBrush(Color.Parse("#2A7FFF"));
-        private static readonly IBrush IncomingBorderBrush = new SolidColorBrush(Color.Parse("#3E3E42"));
+        // 设计稿：chat-bubble-out = gd-state-info-surface (#1F2962FF) + gd-primary-foreground 文字
+        // 设计稿：chat-bubble-in  = gd-muted (#1A1F2E) + gd-foreground 文字
+        // 无边框，圆角 12px（出方向右下角 4px，入方向左下角 4px）
+        private static readonly IBrush OutgoingBackgroundBrush = new SolidColorBrush(Color.Parse("#1F2962FF"));
+        private static readonly IBrush IncomingBackgroundBrush = new SolidColorBrush(Color.Parse("#1A1F2E"));
+        private static readonly IBrush OutgoingBorderBrush = new SolidColorBrush(Colors.Transparent);
+        private static readonly IBrush IncomingBorderBrush = new SolidColorBrush(Colors.Transparent);
 
         private readonly RichMessageContent _content;
         private Bitmap _previewImage;
@@ -58,9 +61,15 @@ namespace Horizon.Game.GengDi.Core.ViewModels
 
         public Thickness BubbleMargin => IsOutgoing ? new Thickness(140, 0, 0, 14) : new Thickness(0, 0, 140, 14);
 
+        /// <summary>气泡圆角：出方向右下角 4px（12,12,12,4），入方向左下角 4px（12,12,4,12），严格区分进出方向。</summary>
+        public CornerRadius BubbleCornerRadius => IsOutgoing ? new CornerRadius(12, 12, 12, 4) : new CornerRadius(12, 12, 4, 12);
+
         public IBrush BubbleBackground => IsOutgoing ? OutgoingBackgroundBrush : IncomingBackgroundBrush;
 
         public IBrush BubbleBorder => IsOutgoing ? OutgoingBorderBrush : IncomingBorderBrush;
+
+        /// <summary>气泡文字颜色：出方向=白色(primary-foreground)，入方向=前景色</summary>
+        public IBrush BubbleForeground => IsOutgoing ? Brushes.White : new SolidColorBrush(Color.Parse("#FFE0E6ED"));
 
         public string TimestampText => Message.Timestamp.ToString("yyyy-MM-dd HH:mm");
 

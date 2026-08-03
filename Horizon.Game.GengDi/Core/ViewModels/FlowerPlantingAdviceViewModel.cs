@@ -44,6 +44,10 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private PlantingBatchInfo _selectedBatch;
         private string _adviceFilter = "All";
         private string _speciesFilter = "";
+        private ObservableCollection<SpeciesRecommendCardItem> _recommendCards = new();
+        private ObservableCollection<CalendarDayItem> _calendarDays = new();
+        private ObservableCollection<string> _filterChips = new() { "全部", "红玫瑰", "百合", "康乃馨", "向日葵", "混合花束" };
+        private string _selectedFilterChip = "全部";
         private bool _isCostDialogOpen;
         private bool _isYieldDialogOpen;
         private bool _isDeviceDialogOpen;
@@ -464,6 +468,15 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             set => SetProperty(ref _speciesFilter, value);
         }
 
+        /// <summary>品种推荐卡集合（种植建议 section 模拟数据）</summary>
+        public ObservableCollection<SpeciesRecommendCardItem> RecommendCards { get => _recommendCards; set => SetProperty(ref _recommendCards, value); }
+        /// <summary>农事日历日期集合（种植建议 section 模拟数据）</summary>
+        public ObservableCollection<CalendarDayItem> CalendarDays { get => _calendarDays; set => SetProperty(ref _calendarDays, value); }
+        /// <summary>品种筛选 chips 集合</summary>
+        public ObservableCollection<string> FilterChips { get => _filterChips; set => SetProperty(ref _filterChips, value); }
+        /// <summary>当前选中的筛选 chip</summary>
+        public string SelectedFilterChip { get => _selectedFilterChip; set => SetProperty(ref _selectedFilterChip, value); }
+
         public ISeries[] HistorySeries { get; set; }
         public Axis[] HistoryXAxes { get; set; }
         public Axis[] HistoryYAxes { get; set; }
@@ -580,7 +593,165 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             SubmitRenameGroupCommand = new AsyncCommand(SubmitRenameGroupAsync);
             CancelRenameGroupCommand = new AsyncCommand(() => { IsRenameGroupDialogOpen = false; return Task.CompletedTask; });
             InitializeMqtt();
+            InitializePlantingAdviceMockData();
             _ = LoadDataAsync();
+        }
+
+        /// <summary>
+        /// 初始化种植建议 section 的模拟数据（品种推荐卡、农事日历）。
+        /// 对应设计原型 flower-manage.html 的"种植建议"区块。
+        /// </summary>
+        private void InitializePlantingAdviceMockData()
+        {
+            // 品种推荐卡（4 张，对应原型品种推荐卡网格）
+            RecommendCards = new ObservableCollection<SpeciesRecommendCardItem>
+            {
+                new SpeciesRecommendCardItem
+                {
+                    SpeciesName = "高原红玫瑰",
+                    IconEmoji = "🌸",
+                    Season = "春季 / 秋季",
+                    EstProfit = "¥2,580",
+                    Rating = 5,
+                    RatingCount = "5.0",
+                    HeaderGradientStart = "GdErrorBrush",
+                    HeaderGradientEnd = "GdBrand500Brush",
+                    HeaderBrush = ResolveThemeBrush("GdErrorBrush"),
+                    HeaderGradientBrush = ResolveThemeGradientBrush("GdErrorBrush", "GdBrand500Brush"),
+                    StarsFilled = "★★★★★",
+                    StarsEmpty = ""
+                },
+                new SpeciesRecommendCardItem
+                {
+                    SpeciesName = "雪山白百合",
+                    IconEmoji = "🌼",
+                    Season = "春季 / 夏季",
+                    EstProfit = "¥2,120",
+                    Rating = 4,
+                    RatingCount = "4.2",
+                    HeaderGradientStart = "GdInfoBrush",
+                    HeaderGradientEnd = "GdBrand400Brush",
+                    HeaderBrush = ResolveThemeBrush("GdInfoBrush"),
+                    HeaderGradientBrush = ResolveThemeGradientBrush("GdInfoBrush", "GdBrand400Brush"),
+                    StarsFilled = "★★★★",
+                    StarsEmpty = "☆"
+                },
+                new SpeciesRecommendCardItem
+                {
+                    SpeciesName = "金穗向日葵",
+                    IconEmoji = "🌻",
+                    Season = "夏季",
+                    EstProfit = "¥3,100",
+                    Rating = 5,
+                    RatingCount = "4.8",
+                    HeaderGradientStart = "GdWarningBrush",
+                    HeaderGradientEnd = "GdErrorBrush",
+                    HeaderBrush = ResolveThemeBrush("GdWarningBrush"),
+                    HeaderGradientBrush = ResolveThemeGradientBrush("GdWarningBrush", "GdErrorBrush"),
+                    StarsFilled = "★★★★★",
+                    StarsEmpty = ""
+                },
+                new SpeciesRecommendCardItem
+                {
+                    SpeciesName = "粉韵康乃馨",
+                    IconEmoji = "🌷",
+                    Season = "四季",
+                    EstProfit = "¥1,860",
+                    Rating = 4,
+                    RatingCount = "4.0",
+                    HeaderGradientStart = "GdSuccessBrush",
+                    HeaderGradientEnd = "GdInfoBrush",
+                    HeaderBrush = ResolveThemeBrush("GdSuccessBrush"),
+                    HeaderGradientBrush = ResolveThemeGradientBrush("GdSuccessBrush", "GdInfoBrush"),
+                    StarsFilled = "★★★★",
+                    StarsEmpty = "☆"
+                }
+            };
+
+            // 农事日历 2026 年 7 月（周一起始，含 6 月 29/30 日补位，今日为 26 日）
+            CalendarDays = new ObservableCollection<CalendarDayItem>
+            {
+                new() { Day = "29", IsCurrentMonth = false },
+                new() { Day = "30", IsCurrentMonth = false },
+                new() { Day = "1", HasSowing = true },
+                new() { Day = "2", HasFertilizing = true },
+                new() { Day = "3" },
+                new() { Day = "4", HasPestControl = true },
+                new() { Day = "5" },
+                new() { Day = "6", HasFertilizing = true, HasSowing = true },
+                new() { Day = "7" },
+                new() { Day = "8", HasPestControl = true },
+                new() { Day = "9", HasHarvest = true },
+                new() { Day = "10" },
+                new() { Day = "11", HasFertilizing = true },
+                new() { Day = "12" },
+                new() { Day = "13", HasSowing = true },
+                new() { Day = "14", HasPestControl = true, HasFertilizing = true },
+                new() { Day = "15" },
+                new() { Day = "16", HasHarvest = true },
+                new() { Day = "17" },
+                new() { Day = "18", HasFertilizing = true },
+                new() { Day = "19" },
+                new() { Day = "20", HasSowing = true },
+                new() { Day = "21" },
+                new() { Day = "22", HasPestControl = true },
+                new() { Day = "23" },
+                new() { Day = "24", HasHarvest = true },
+                new() { Day = "25" },
+                new() { Day = "26", IsToday = true, HasFertilizing = true, HasSowing = true },
+                new() { Day = "27" },
+                new() { Day = "28", HasHarvest = true },
+                new() { Day = "29" },
+                new() { Day = "30" },
+                new() { Day = "31" }
+            };
+        }
+
+        /// <summary>
+        /// 从应用主题资源中解析画刷（GdTheme token），失败时回退到 SlateGray。
+        /// 用于品种推荐卡头部背景，确保颜色统一使用主题 token。
+        /// </summary>
+        private static Avalonia.Media.IBrush ResolveThemeBrush(string resourceKey)
+        {
+            if (Avalonia.Application.Current?.TryGetResource(resourceKey, null, out var res) == true
+                && res is Avalonia.Media.IBrush b)
+            {
+                return b;
+            }
+            return Avalonia.Media.Brushes.SlateGray;
+        }
+
+        /// <summary>
+        /// 从两个主题 token 资源 key 创建对角线渐变画刷（左上 → 右下），
+        /// 用于品种推荐卡头部背景，还原设计原型的渐变色效果。
+        /// </summary>
+        private static Avalonia.Media.IBrush ResolveThemeGradientBrush(string startKey, string endKey)
+        {
+            var startColor = ResolveThemeColor(startKey);
+            var endColor = ResolveThemeColor(endKey);
+            return new Avalonia.Media.LinearGradientBrush
+            {
+                StartPoint = new Avalonia.RelativePoint(0, 0, Avalonia.RelativeUnit.Relative),
+                EndPoint = new Avalonia.RelativePoint(1, 1, Avalonia.RelativeUnit.Relative),
+                GradientStops = new Avalonia.Media.GradientStops
+                {
+                    new Avalonia.Media.GradientStop { Color = startColor, Offset = 0 },
+                    new Avalonia.Media.GradientStop { Color = endColor, Offset = 1 }
+                }
+            };
+        }
+
+        /// <summary>从主题资源中解析 Color，失败时回退到 SlateGray</summary>
+        private static Avalonia.Media.Color ResolveThemeColor(string resourceKey)
+        {
+            if (Avalonia.Application.Current?.TryGetResource(resourceKey, null, out var res) == true)
+            {
+                if (res is Avalonia.Media.ISolidColorBrush sb)
+                    return sb.Color;
+                if (res is Avalonia.Media.IBrush b && Avalonia.Media.Brushes.SlateGray is Avalonia.Media.ISolidColorBrush fallback)
+                    return fallback.Color;
+            }
+            return Avalonia.Media.Colors.SlateGray;
         }
 
         public async Task LoadDataAsync()
@@ -2178,6 +2349,8 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private string _lightTrend = "";
         private string _co2Trend = "";
         private string _soilTrend = "";
+        private double _soilPH;
+        private string _soilPHTrend = "";
 
         public double Temperature { get => _temperature; set => SetProperty(ref _temperature, value); }
         public double Humidity { get => _humidity; set => SetProperty(ref _humidity, value); }
@@ -2190,6 +2363,8 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public string LightTrend { get => _lightTrend; set => SetProperty(ref _lightTrend, value); }
         public string Co2Trend { get => _co2Trend; set => SetProperty(ref _co2Trend, value); }
         public string SoilTrend { get => _soilTrend; set => SetProperty(ref _soilTrend, value); }
+        public double SoilPH { get => _soilPH; set => SetProperty(ref _soilPH, value); }
+        public string SoilPHTrend { get => _soilPHTrend; set => SetProperty(ref _soilPHTrend, value); }
     }
 
     public class HarvestAdviceItem : ViewModelBase
@@ -2403,5 +2578,65 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public double AvgLightIntensity { get => _avgLightIntensity; set => SetProperty(ref _avgLightIntensity, value); }
         public double AvgCo2Level { get => _avgCo2Level; set => SetProperty(ref _avgCo2Level, value); }
         public double AvgSoilMoisture { get => _avgSoilMoisture; set => SetProperty(ref _avgSoilMoisture, value); }
+    }
+
+    /// <summary>
+    /// 品种推荐卡数据项（种植建议 section 品种推荐卡网格）。
+    /// HeaderGradientStart/End 保存主题 token 的资源 key（如 GdErrorBrush），
+    /// HeaderBrush 为运行时从主题资源解析得到的实际画刷，供 XAML 头部背景绑定。
+    /// </summary>
+    public class SpeciesRecommendCardItem : ViewModelBase
+    {
+        private string _speciesName = "";
+        private string _iconEmoji = "";
+        private string _season = "";
+        private string _estProfit = "";
+        private int _rating;
+        private string _ratingCount = "";
+        private string _headerGradientStart = "";
+        private string _headerGradientEnd = "";
+        private Avalonia.Media.IBrush _headerBrush = Avalonia.Media.Brushes.SlateGray;
+        private Avalonia.Media.IBrush _headerGradientBrush = Avalonia.Media.Brushes.SlateGray;
+        private string _starsFilled = "";
+        private string _starsEmpty = "";
+
+        public string SpeciesName { get => _speciesName; set => SetProperty(ref _speciesName, value); }
+        public string IconEmoji { get => _iconEmoji; set => SetProperty(ref _iconEmoji, value); }
+        public string Season { get => _season; set => SetProperty(ref _season, value); }
+        public string EstProfit { get => _estProfit; set => SetProperty(ref _estProfit, value); }
+        public int Rating { get => _rating; set => SetProperty(ref _rating, value); }
+        public string RatingCount { get => _ratingCount; set => SetProperty(ref _ratingCount, value); }
+        public string HeaderGradientStart { get => _headerGradientStart; set => SetProperty(ref _headerGradientStart, value); }
+        public string HeaderGradientEnd { get => _headerGradientEnd; set => SetProperty(ref _headerGradientEnd, value); }
+        public Avalonia.Media.IBrush HeaderBrush { get => _headerBrush; set => SetProperty(ref _headerBrush, value); }
+        /// <summary>品种推荐卡头部渐变画刷（由 HeaderGradientStart/End 两个主题 token 合成）</summary>
+        public Avalonia.Media.IBrush HeaderGradientBrush { get => _headerGradientBrush; set => SetProperty(ref _headerGradientBrush, value); }
+        /// <summary>实心星字符串（如 "★★★★★"），用 GdStar 样式渲染</summary>
+        public string StarsFilled { get => _starsFilled; set => SetProperty(ref _starsFilled, value); }
+        /// <summary>空心星字符串（如 "☆"），用 GdStarEmpty 样式渲染</summary>
+        public string StarsEmpty { get => _starsEmpty; set => SetProperty(ref _starsEmpty, value); }
+    }
+
+    /// <summary>
+    /// 农事日历单日数据项（种植建议 section 农事日历）。
+    /// Has* 布尔标记对应不同农事类型的彩色圆点。
+    /// </summary>
+    public class CalendarDayItem : ViewModelBase
+    {
+        private string _day = "";
+        private bool _isToday;
+        private bool _isCurrentMonth = true;
+        private bool _hasSowing;
+        private bool _hasFertilizing;
+        private bool _hasPestControl;
+        private bool _hasHarvest;
+
+        public string Day { get => _day; set => SetProperty(ref _day, value); }
+        public bool IsToday { get => _isToday; set => SetProperty(ref _isToday, value); }
+        public bool IsCurrentMonth { get => _isCurrentMonth; set => SetProperty(ref _isCurrentMonth, value); }
+        public bool HasSowing { get => _hasSowing; set => SetProperty(ref _hasSowing, value); }
+        public bool HasFertilizing { get => _hasFertilizing; set => SetProperty(ref _hasFertilizing, value); }
+        public bool HasPestControl { get => _hasPestControl; set => SetProperty(ref _hasPestControl, value); }
+        public bool HasHarvest { get => _hasHarvest; set => SetProperty(ref _hasHarvest, value); }
     }
 }

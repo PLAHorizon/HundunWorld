@@ -1,9 +1,12 @@
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Horizon.Game.GengDi.Core.Helpers;
 using Horizon.Game.GengDi.Core.Services;
+using LiveChartsCore;
+using LiveChartsCore.SkiaSharpView;
 
 namespace Horizon.Game.GengDi.Core.ViewModels
 {
@@ -24,6 +27,18 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private bool _isAutoRefresh;
         private bool _isLoading;
         private readonly AsyncRelayCommand _refreshCommand;
+
+        // ==== LiveChartsCore 图表数据 ====
+        private ISeries[] _priceTrendSeries = Array.Empty<ISeries>();
+        private ISeries[] _screenCategoryPieSeries = Array.Empty<ISeries>();
+        private ISeries[] _regionColumnSeries = Array.Empty<ISeries>();
+        private ISeries[] _tradeFlowSeries = Array.Empty<ISeries>();
+        private Axis[] _priceTrendXAxes = new[] { new Axis() };
+        private Axis[] _priceTrendYAxes = new[] { new Axis() };
+        private Axis[] _regionXAxes = new[] { new Axis() };
+        private Axis[] _regionYAxes = new[] { new Axis() };
+        private Axis[] _tradeFlowXAxes = new[] { new Axis() };
+        private Axis[] _tradeFlowYAxes = new[] { new Axis() };
 
         public decimal TodayTradeAmount
         {
@@ -91,12 +106,124 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             }
         }
 
+        // ==== LiveChartsCore 图表数据属性 ====
+        public ISeries[] PriceTrendSeries
+        {
+            get => _priceTrendSeries;
+            set => SetProperty(ref _priceTrendSeries, value);
+        }
+
+        public ISeries[] ScreenCategoryPieSeries
+        {
+            get => _screenCategoryPieSeries;
+            set => SetProperty(ref _screenCategoryPieSeries, value);
+        }
+
+        public ISeries[] RegionColumnSeries
+        {
+            get => _regionColumnSeries;
+            set => SetProperty(ref _regionColumnSeries, value);
+        }
+
+        public ISeries[] TradeFlowSeries
+        {
+            get => _tradeFlowSeries;
+            set => SetProperty(ref _tradeFlowSeries, value);
+        }
+
+        public Axis[] PriceTrendXAxes
+        {
+            get => _priceTrendXAxes;
+            set => SetProperty(ref _priceTrendXAxes, value);
+        }
+
+        public Axis[] PriceTrendYAxes
+        {
+            get => _priceTrendYAxes;
+            set => SetProperty(ref _priceTrendYAxes, value);
+        }
+
+        public Axis[] RegionXAxes
+        {
+            get => _regionXAxes;
+            set => SetProperty(ref _regionXAxes, value);
+        }
+
+        public Axis[] RegionYAxes
+        {
+            get => _regionYAxes;
+            set => SetProperty(ref _regionYAxes, value);
+        }
+
+        public Axis[] TradeFlowXAxes
+        {
+            get => _tradeFlowXAxes;
+            set => SetProperty(ref _tradeFlowXAxes, value);
+        }
+
+        public Axis[] TradeFlowYAxes
+        {
+            get => _tradeFlowYAxes;
+            set => SetProperty(ref _tradeFlowYAxes, value);
+        }
+
         public ICommand RefreshCommand => _refreshCommand;
 
         public FlowerDataScreenViewModel()
         {
             _refreshCommand = new AsyncRelayCommand(RefreshAsync, () => !IsLoading);
+            InitMockData();
             LoadDataAsync();
+        }
+
+        /// <summary>
+        /// 用模拟数据初始化数据大屏（参考设计原型 flower-market-data.html Section 2）。
+        /// 服务返回有效数据后会覆盖这些值。
+        /// </summary>
+        private void InitMockData()
+        {
+            TodayTradeAmount = 1256830m;
+            TradeCount = 1856;
+            OnlineMerchantCount = 248;
+            ActiveSpeciesCount = 32;
+
+            // ==== LiveChartsCore 图表数据初始化 ====
+            PriceTrendSeries = FlowerChartHelper.CreatePriceTrendSeries();
+            PriceTrendXAxes = FlowerChartHelper.CreateLabelAxis(FlowerChartHelper.PriceTrendLabels);
+            PriceTrendYAxes = FlowerChartHelper.CreateValueAxis();
+            ScreenCategoryPieSeries = FlowerChartHelper.CreateScreenCategoryPieSeries();
+            RegionColumnSeries = FlowerChartHelper.CreateRegionColumnSeries();
+            RegionXAxes = FlowerChartHelper.CreateLabelAxis(FlowerChartHelper.RegionLabels);
+            RegionYAxes = FlowerChartHelper.CreateValueAxis();
+            TradeFlowSeries = FlowerChartHelper.CreateTradeFlowSeries();
+            TradeFlowXAxes = FlowerChartHelper.CreateLabelAxis(FlowerChartHelper.TradeFlowLabels);
+            TradeFlowYAxes = FlowerChartHelper.CreateValueAxis();
+
+            RegionHeatmapData = new ObservableCollection<RegionHeatItem>
+            {
+                new RegionHeatItem { RegionName = "华北", DemandIndex = 32 },
+                new RegionHeatItem { RegionName = "华东", DemandIndex = 48 },
+                new RegionHeatItem { RegionName = "华南", DemandIndex = 26 },
+                new RegionHeatItem { RegionName = "西南", DemandIndex = 18 },
+                new RegionHeatItem { RegionName = "西北", DemandIndex = 12 },
+                new RegionHeatItem { RegionName = "东北", DemandIndex = 14 },
+            };
+
+            SupplyDemandData = new ObservableCollection<SupplyDemandItem>
+            {
+                new SupplyDemandItem { SpeciesName = "红玫瑰", Supply = 1200, Demand = 980, SupplyDemandRatio = 1.22m },
+                new SupplyDemandItem { SpeciesName = "百合", Supply = 850, Demand = 920, SupplyDemandRatio = 0.92m },
+                new SupplyDemandItem { SpeciesName = "康乃馨", Supply = 600, Demand = 550, SupplyDemandRatio = 1.09m },
+                new SupplyDemandItem { SpeciesName = "混合花束", Supply = 450, Demand = 680, SupplyDemandRatio = 0.66m },
+                new SupplyDemandItem { SpeciesName = "绿植", Supply = 720, Demand = 480, SupplyDemandRatio = 1.50m },
+            };
+
+            RecentTrades = new ObservableCollection<TradeFlowItem>
+            {
+                new TradeFlowItem { TradeTime = "14:38:21", SpeciesName = "红玫瑰", Price = 8.52m, Quantity = 100, Market = "成交", ChangeAmount = 0.02m },
+                new TradeFlowItem { TradeTime = "14:38:18", SpeciesName = "百合", Price = 15.18m, Quantity = 50, Market = "成交", ChangeAmount = -0.02m },
+                new TradeFlowItem { TradeTime = "14:38:15", SpeciesName = "混合花束", Price = 25.10m, Quantity = 30, Market = "成交", ChangeAmount = 0.10m },
+            };
         }
 
         private void UpdateAutoRefreshTimer()
@@ -154,7 +281,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 }
 
                 var regional = regionalTask.Result;
-                if (regional != null)
+                if (regional != null && regional.Count > 0)
                 {
                     RegionHeatmapData = new ObservableCollection<RegionHeatItem>(
                         regional.Select(r => new RegionHeatItem
@@ -165,7 +292,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 }
 
                 var supplyDemand = supplyDemandTask.Result;
-                if (supplyDemand != null)
+                if (supplyDemand != null && supplyDemand.Count > 0)
                 {
                     SupplyDemandData = new ObservableCollection<SupplyDemandItem>(
                         supplyDemand.Select(s => new SupplyDemandItem
@@ -178,7 +305,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 }
 
                 var transactions = transactionsTask.Result;
-                if (transactions != null)
+                if (transactions != null && transactions.Count > 0)
                 {
                     RecentTrades = new ObservableCollection<TradeFlowItem>(
                         transactions.Select(t => new TradeFlowItem
@@ -187,7 +314,8 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                             SpeciesName = t.SpeciesName,
                             Price = t.Price,
                             Quantity = t.Quantity,
-                            Market = t.Market
+                            Market = t.Market,
+                            ChangeAmount = 0
                         }));
                 }
             }
@@ -283,6 +411,8 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             private decimal _price;
             private int _quantity;
             private string _market = "";
+            private decimal _changeAmount;
+            private string _changeColor = "#26A69A";
 
             public string TradeTime
             {
@@ -313,6 +443,30 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 get => _market;
                 set => SetProperty(ref _market, value);
             }
+
+            /// <summary>价格变动量（如 +0.02 / -0.02），对应原型 ticker-row 涨跌列。</summary>
+            public decimal ChangeAmount
+            {
+                get => _changeAmount;
+                set
+                {
+                    if (SetProperty(ref _changeAmount, value))
+                    {
+                        ChangeColor = value >= 0 ? "#26A69A" : "#EF5350";
+                        OnPropertyChanged(nameof(ChangeDisplay));
+                    }
+                }
+            }
+
+            /// <summary>涨跌颜色（text-up #26A69A / text-down #EF5350）。</summary>
+            public string ChangeColor
+            {
+                get => _changeColor;
+                set => SetProperty(ref _changeColor, value);
+            }
+
+            /// <summary>涨跌显示文本（如 +0.02 / -0.02）。</summary>
+            public string ChangeDisplay => _changeAmount >= 0 ? $"+{_changeAmount:F2}" : $"{_changeAmount:F2}";
         }
     }
 }

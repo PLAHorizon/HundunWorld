@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
@@ -6,7 +6,10 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia.Threading;
 using Horizon.Game.GengDi.Core.Controls;
+using Horizon.Game.GengDi.Core.Helpers;
 using Horizon.Game.GengDi.Core.Services;
+using LiveChartsCore;
+using LiveChartsCore.SkiaSharpView;
 
 namespace Horizon.Game.GengDi.Core.ViewModels
 {
@@ -58,6 +61,8 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private int _pendingShipCount;
         private int _totalProducts;
         private decimal _totalRevenue;
+        private int _lowStockCount;
+        private string _lowStockProductNames = "";
 
         private string _searchKeyword = "";
         private CategoryInfo _selectedCategory;
@@ -382,6 +387,47 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         {
             get => _totalRevenue;
             set => SetProperty(ref _totalRevenue, value);
+        }
+
+        // ===== LiveChartsCore 图表数据 =====
+        private ISeries[] _revenueTrendSeries = Array.Empty<ISeries>();
+        public ISeries[] RevenueTrendSeries
+        {
+            get => _revenueTrendSeries;
+            set => SetProperty(ref _revenueTrendSeries, value);
+        }
+
+        private ISeries[] _categoryPieSeries = Array.Empty<ISeries>();
+        public ISeries[] CategoryPieSeries
+        {
+            get => _categoryPieSeries;
+            set => SetProperty(ref _categoryPieSeries, value);
+        }
+
+        private Axis[] _revenueXAxes = new[] { new Axis() };
+        public Axis[] RevenueXAxes
+        {
+            get => _revenueXAxes;
+            set => SetProperty(ref _revenueXAxes, value);
+        }
+
+        private Axis[] _revenueYAxes = new[] { new Axis() };
+        public Axis[] RevenueYAxes
+        {
+            get => _revenueYAxes;
+            set => SetProperty(ref _revenueYAxes, value);
+        }
+
+        public int LowStockCount
+        {
+            get => _lowStockCount;
+            set => SetProperty(ref _lowStockCount, value);
+        }
+
+        public string LowStockProductNames
+        {
+            get => _lowStockProductNames;
+            set => SetProperty(ref _lowStockProductNames, value);
         }
 
         public string SearchKeyword
@@ -1111,6 +1157,12 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                         UpdateStatistics();
                     });
 
+                    // 初始化 LiveChartsCore 图表数据（营收趋势 + 品类占比）
+                    RevenueTrendSeries = FlowerChartHelper.CreateRevenueTrendSeries();
+                    RevenueXAxes = FlowerChartHelper.CreateLabelAxis(FlowerChartHelper.RevenueTrendLabels);
+                    RevenueYAxes = FlowerChartHelper.CreateValueAxis();
+                    CategoryPieSeries = FlowerChartHelper.CreateCategoryPieSeries();
+
                     await Task.WhenAll(
                         LoadProductsAsync(),
                         LoadOrdersAsync(),
@@ -1156,6 +1208,9 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                     ReassignProductCodes();
                     TotalProducts = _products.Count;
                     PendingShipCount = _orders.Count(o => o.Status == 1);
+                    var lowStockProducts = _products.Where(p => p.Stock < 100).ToList();
+                    LowStockCount = lowStockProducts.Count;
+                    LowStockProductNames = string.Join(" / ", lowStockProducts.Select(p => p.ProductName));
                     OnPropertyChanged(nameof(HasProducts));
                     UpdateStatistics();
                 });
@@ -1361,6 +1416,8 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             OnPropertyChanged(nameof(TodayRevenue));
             OnPropertyChanged(nameof(PendingShipCount));
             OnPropertyChanged(nameof(TotalRevenue));
+            OnPropertyChanged(nameof(LowStockCount));
+            OnPropertyChanged(nameof(LowStockProductNames));
             OnPropertyChanged(nameof(MerchantTypeDisplay));
             OnPropertyChanged(nameof(ShopGradeDisplay));
         }

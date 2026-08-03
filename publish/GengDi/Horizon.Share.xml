@@ -1,0 +1,2894 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Horizon.Share</name>
+    </assembly>
+    <members>
+        <member name="T:Horizon.Share.Commones.ConfigExtesion">
+            <summary>
+            配置扩展
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Commones.ConfigExtesion.ConfigFileName">
+            <summary>
+            配置文件的名称
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Commones.ConfigExtesion.Config">
+            <summary>
+            配置信息
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Commones.IMessage">
+            <summary>
+            消息
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Commones.ErrorCodes">
+            <summary>
+            错误码
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Commones.ErrorCodes.INVALID_USER">
+            <summary>
+            无效用户
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Commones.ErrorCodes.LIMITED_USER">
+            <summary>
+            受限用户
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Commones.ErrorCodes.TIMELIMITED_USER">
+            <summary>
+            时限受限用户
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Commones.MessagePacket.Checkbit">
+            <summary>
+            包头标志，用于校验 4byte
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Commones.MessagePacket.Length">
+            <summary>
+            4个byte表示package长度
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Commones.MessagePacket.CommandId">
+            <summary>
+            4个byte表示commandId
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Commones.MessagePacket.Body">
+            <summary>
+            package内容
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Commones.PageItems`1">
+            <summary>
+            数据分页类
+            </summary>
+            <typeparam name="T">数据类型类型参数</typeparam>
+        </member>
+        <member name="P:Horizon.Share.Commones.PageItems`1.Total">
+            <summary>
+            数据总条数
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Commones.PageItems`1.Items">
+            <summary>
+            数据集合
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Commones.PageQuery">
+            <summary>
+            分页数据查询Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Commones.PageQuery.PageSize">
+            <summary>
+            每页条目数量
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Commones.PageQuery.PageNumber">
+            <summary>
+            页码
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Commones.PageQuery.SearchKey">
+            <summary>
+            搜索关键字
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Commones.PositionAndRotateMessage">
+            <summary>
+            角色位置信息
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Commones.PositionAndRotateMessage.NetworkId">
+            <summary>
+            网络Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Commones.PositionAndRotateMessage.UserRoleId">
+            <summary>
+            用户角色Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Commones.PositionAndRotateMessage.Position">
+            <summary>
+            位置
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Commones.PositionAndRotateMessage.Rotate">
+            <summary>
+            转向
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Commones.SelectItem">
+            <summary>
+            选择项
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Commones.SelectItem.Id">
+            <summary>
+            标识
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Commones.SelectItem.Name">
+            <summary>
+            显示名
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Commones.SelectItem.NotAvailable">
+            <summary>
+            不可选择
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.CreateArticleCategoryDto">
+            <summary>
+            新建文章类型Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleCategoryDto.ParentId">
+            <summary>
+            父级Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleCategoryDto.Name">
+            <summary>
+            文章类型名
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.UpdateArticleCategoryDto">
+            <summary>
+            修改文章类型Dto
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.ArticleCategoryDto">
+            <summary>
+            文章类型Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleCategoryDto.ParentId">
+            <summary>
+            父级Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleCategoryDto.Name">
+            <summary>
+            文章类型名
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.ArticleCategoryQueryDto">
+            <summary>
+            查询
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.CreateArticleChaptersDto">
+            <summary>
+            新建文章章节Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleChaptersDto.ArticleId">
+            <summary>
+            文章Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleChaptersDto.Name">
+            <summary>
+            章节名
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleChaptersDto.Cover">
+            <summary>
+            章节封面
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleChaptersDto.Description">
+            <summary>
+            简介
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleChaptersDto.Content">
+            <summary>
+            内容
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleChaptersDto.Status">
+            <summary>
+            状态
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleChaptersDto.Price">
+            <summary>
+            价格
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleChaptersDto.Mode">
+            <summary>
+            阅读付费模式
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleChaptersDto.ExpireIn">
+            <summary>
+            时间区间收费过期时间,单位:天
+            </summary>       
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleChaptersDto.ContentKind">
+            <summary>
+            内容类型
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.UpdateArticleChaptersDto">
+            <summary>
+            修改文章章节Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleChaptersDto.Name">
+            <summary>
+            章节名
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleChaptersDto.Cover">
+            <summary>
+            章节封面
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleChaptersDto.Description">
+            <summary>
+            简介
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleChaptersDto.Content">
+            <summary>
+            内容
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleChaptersDto.Status">
+            <summary>
+            状态
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleChaptersDto.Price">
+            <summary>
+            价格
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleChaptersDto.Mode">
+            <summary>
+            阅读付费模式
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleChaptersDto.ExpireIn">
+            <summary>
+            时间区间收费过期时间,单位:天
+            </summary>       
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleChaptersDto.ContentKind">
+            <summary>
+            内容类型
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.ArticleChaptersDto">
+            <summary>
+            文章章节Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersDto.ArticleId">
+            <summary>
+            文章Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersDto.Name">
+            <summary>
+            章节名
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersDto.Cover">
+            <summary>
+            章节封面
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersDto.Description">
+            <summary>
+            简介
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersDto.Content">
+            <summary>
+            内容
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersDto.Views">
+            <summary>
+            阅读数
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersDto.Index">
+            <summary>
+            序号
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersDto.SupportCount">
+            <summary>
+            支持数
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersDto.UnSupportCount">
+            <summary>
+            反对数
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersDto.StartDate">
+            <summary>
+            开篇时间
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersDto.CompleteDate">
+            <summary>
+            完成时间
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersDto.Status">
+            <summary>
+            状态
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersDto.AuditStatus">
+            <summary>
+            审核状态
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersDto.Price">
+            <summary>
+            价格
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersDto.Mode">
+            <summary>
+            阅读付费模式
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersDto.ExpireIn">
+            <summary>
+            时间区间收费过期时间,单位:天
+            </summary>       
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersDto.ContentKind">
+            <summary>
+            内容类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersItemDto.ArticleId">
+            <summary>
+            文章Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersItemDto.Name">
+            <summary>
+            章节名
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersItemDto.Description">
+            <summary>
+            简介
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersItemDto.Views">
+            <summary>
+            阅读数
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersItemDto.Index">
+            <summary>
+            序号
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersItemDto.IsEnd">
+            <summary>
+            是否是最后一章节
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersItemDto.WordCount">
+            <summary>
+            字数
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleChaptersItemDto.SupportCount">
+            <summary>
+            获赞数
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.ArticleChaptersQueryDto">
+            <summary>
+            查询
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.CreateArticleCommentDto">
+            <summary>
+            新建文章Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleCommentDto.ChapterId">
+            <summary>
+            章节Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleCommentDto.CommentKind">
+            <summary>
+            评论类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleCommentDto.Passport">
+            <summary>
+            用户Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleCommentDto.Name">
+            <summary>
+            用户
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleCommentDto.Avatar">
+            <summary>
+            头像
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleCommentDto.QuoteId">
+            <summary>
+            引用Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleCommentDto.MediaAddress">
+            <summary>
+            媒体地址(图片、视频、音频等)
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleCommentDto.Content">
+            <summary>
+            评论内容
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.UpdateArticleCommentDto">
+            <summary>
+            修改文章Dto
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.ArticleCommentDto">
+            <summary>
+            文章Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleCommentDto.ChapterId">
+            <summary>
+            章节Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleCommentDto.CommentKind">
+            <summary>
+            评论类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleCommentDto.AuditStatus">
+            <summary>
+            审核状态
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleCommentDto.Passport">
+            <summary>
+            用户Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleCommentDto.Name">
+            <summary>
+            用户
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleCommentDto.Avatar">
+            <summary>
+            头像
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleCommentDto.Floor">
+            <summary>
+            楼层
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleCommentDto.FloorLevel">
+            <summary>
+            层内楼层
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleCommentDto.QuoteId">
+            <summary>
+            引用Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleCommentDto.MediaAddress">
+            <summary>
+            媒体地址(图片、视频、音频等)
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleCommentDto.Content">
+            <summary>
+            评论内容
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleCommentDto.SupportCount">
+            <summary>
+            支持数
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleCommentDto.UnSupportCount">
+            <summary>
+            反对数
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.ArticleCommentQueryDto">
+            <summary>
+            查询
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleCommentQueryDto.ChapterId">
+            <summary>
+            文章章节Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleCommentQueryDto.ArticleId">
+            <summary>
+            文章Id
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.CreateArticleDescriptionDto">
+            <summary>
+            新建文章注释Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDescriptionDto.Name">
+            <summary>
+            用户
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDescriptionDto.Avatar">
+            <summary>
+            头像
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDescriptionDto.ArticleId">
+            <summary>
+            文章Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDescriptionDto.ChapterId">
+            <summary>
+            章节Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDescriptionDto.Description">
+            <summary>
+            文章注释
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDescriptionDto.IsShare">
+            <summary>
+            是否共享此注释
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDescriptionDto.StartPoint">
+            <summary>
+            注释标记起始位置
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDescriptionDto.EndPoint">
+            <summary>
+            注释结束位置
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDescriptionDto.Kind">
+            <summary>
+            注释类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDescriptionDto.ContentKind">
+            <summary>
+            注释内容类型
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.UpdateArticleDescriptionDto">
+            <summary>
+            修改文章注释Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleDescriptionDto.Description">
+            <summary>
+            文章注释
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleDescriptionDto.IsShare">
+            <summary>
+            是否共享此注释
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleDescriptionDto.StartPoint">
+            <summary>
+            注释标记起始位置
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleDescriptionDto.EndPoint">
+            <summary>
+            注释结束位置
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleDescriptionDto.Kind">
+            <summary>
+            注释类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleDescriptionDto.ContentKind">
+            <summary>
+            注释内容类型
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.ArticleDescriptionDto">
+            <summary>
+            文章注释Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDescriptionDto.Name">
+            <summary>
+            用户
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDescriptionDto.Avatar">
+            <summary>
+            头像
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDescriptionDto.ArticleId">
+            <summary>
+            文章Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDescriptionDto.ChapterId">
+            <summary>
+            章节Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDescriptionDto.Description">
+            <summary>
+            文章注释
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDescriptionDto.IsShare">
+            <summary>
+            是否共享此注释
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDescriptionDto.SupportCount">
+            <summary>
+            支持数
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDescriptionDto.UnSupportCount">
+            <summary>
+            反对数
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDescriptionDto.StartPoint">
+            <summary>
+            注释标记起始位置
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDescriptionDto.EndPoint">
+            <summary>
+            注释结束位置
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDescriptionDto.IsValid">
+            <summary>
+            是否有效
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDescriptionDto.Kind">
+            <summary>
+            注释类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDescriptionDto.ContentKind">
+            <summary>
+            注释内容类型
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.ArticleDescriptionQueryDto">
+            <summary>
+            查询注释
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDescriptionQueryDto.ChapterId">
+            <summary>
+            文章章节Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDescriptionQueryDto.ArticleId">
+            <summary>
+            文章Id
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.CreateArticleDto">
+            <summary>
+            新建文章Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDto.CategoryId">
+            <summary>
+            文体类型Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDto.Name">
+            <summary>
+            文章名
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDto.Mode">
+            <summary>
+            阅读付费模式
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDto.ExpireIn">
+            <summary>
+            时间区间收费过期时间,单位:天
+            </summary>       
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDto.AuthorId">
+            <summary>
+            作者Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDto.Cover">
+            <summary>
+            文章封面
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDto.Description">
+            <summary>
+            简介
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDto.Dynasty">
+            <summary>
+            朝代
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDto.CopyrightType">
+            <summary>
+            版权类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleDto.Passport">
+            <summary>
+            创建人通行证
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.UpdateArticleDto">
+            <summary>
+            修改文章Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleDto.CategoryId">
+            <summary>
+            文体类型Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleDto.Name">
+            <summary>
+            文章名
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleDto.Mode">
+            <summary>
+            阅读付费模式
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleDto.ExpireIn">
+            <summary>
+            时间区间收费过期时间,单位:天
+            </summary>       
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleDto.Cover">
+            <summary>
+            文章封面
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleDto.Description">
+            <summary>
+            简介
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleDto.Dynasty">
+            <summary>
+            朝代
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleDto.CompleteDate">
+            <summary>
+            完成时间
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleDto.Status">
+            <summary>
+            状态
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleDto.AuditStatus">
+            <summary>
+            审核状态
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.UpdateArticleDto.CopyrightType">
+            <summary>
+            版权类型
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.ArticleDto">
+            <summary>
+            文章Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDto.CategoryId">
+            <summary>
+            文体类型Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDto.Name">
+            <summary>
+            文章名
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDto.Views">
+            <summary>
+            阅读次数
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDto.Mode">
+            <summary>
+            阅读付费模式
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDto.ExpireIn">
+            <summary>
+            时间区间收费过期时间,单位:天
+            </summary>       
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDto.AuthorId">
+            <summary>
+            作者Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDto.Author">
+            <summary>
+            作者
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDto.Avatar">
+            <summary>
+            作者头像
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDto.Cover">
+            <summary>
+            文章封面
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDto.Description">
+            <summary>
+            简介
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDto.Dynasty">
+            <summary>
+            朝代
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDto.StartDate">
+            <summary>
+            开篇时间
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDto.CompleteDate">
+            <summary>
+            完成时间
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDto.Status">
+            <summary>
+            状态
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDto.AuditStatus">
+            <summary>
+            审核状态
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDto.CopyrightType">
+            <summary>
+            版权类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDto.SupportCount">
+            <summary>
+            支持数
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleDto.UnSupportCount">
+            <summary>
+            反对数
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.ArticleQueryDto">
+            <summary>
+            查询
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleQueryDto.CategoryId">
+            <summary>
+            文体类型Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleQueryDto.Name">
+            <summary>
+            文章名
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleQueryDto.Mode">
+            <summary>
+            阅读付费模式
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleQueryDto.AuthorId">
+            <summary>
+            作者
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleQueryDto.Dynasty">
+            <summary>
+            朝代
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleQueryDto.StartDate">
+            <summary>
+            开篇时间
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleQueryDto.CompleteDate">
+            <summary>
+            完成时间
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleQueryDto.Status">
+            <summary>
+            状态
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleQueryDto.AuditStatus">
+            <summary>
+            审核状态
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleQueryDto.CopyrightType">
+            <summary>
+            版权类型
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.CreateArticleReadDto">
+            <summary>
+            新建文章阅读进度Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleReadDto.ArticleId">
+            <summary>
+            文章Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleReadDto.ChapterId">
+            <summary>
+            章节Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleReadDto.Index">
+            <summary>
+            章节序号
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleReadDto.IsNext">
+            <summary>
+            是否可以继续阅读下一章节
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateArticleReadDto.IsEnd">
+            <summary>
+            是否是最后一章节
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.UpdateArticleReadDto">
+            <summary>
+            修改文章阅读进度Dto
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.ArticleReadDto">
+            <summary>
+            文章阅读进度Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleReadDto.ReadTime">
+            <summary>
+            阅读时间
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleReadDto.Progress">
+            <summary>
+            阅读进度
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.ArticleReadQueryDto">
+            <summary>
+            查询阅读进度
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleReadQueryDto.ChapterId">
+            <summary>
+            文章章节Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.ArticleReadQueryDto.ArticleId">
+            <summary>
+            文章Id
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.CreateAuthorDto">
+            <summary>
+            新建作者Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateAuthorDto.Name">
+            <summary>
+            作者别名
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateAuthorDto.Avatar">
+            <summary>
+            作者头像
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateAuthorDto.Country">
+            <summary>
+            国家
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateAuthorDto.CountryCode">
+            <summary>
+            国家代码
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateAuthorDto.AreaCode">
+            <summary>
+            区域码
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateAuthorDto.Province">
+            <summary>
+            省
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateAuthorDto.City">
+            <summary>
+            市
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateAuthorDto.Area">
+            <summary>
+            区
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateAuthorDto.Gender">
+            <summary>
+            性别
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateAuthorDto.Email">
+            <summary>
+            邮箱
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateAuthorDto.Phone">
+            <summary>
+            手机号
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateAuthorDto.AuditStatus">
+            <summary>
+            审核状态
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateAuthorDto.Description">
+            <summary>
+            简介
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.CreateAuthorDto.ShortDescription">
+            <summary>
+            简介
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.UpdateAuthorDto">
+            <summary>
+            修改作者Dto
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.AuthorDto">
+            <summary>
+            作者Dto
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Articles.AuthorQueryDto">
+            <summary>
+            查询作者
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.AuthorQueryDto.AreaCode">
+            <summary>
+            区域码
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.AuthorQueryDto.Email">
+            <summary>
+            邮箱
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.AuthorQueryDto.Phone">
+            <summary>
+            手机号
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Articles.AuthorQueryDto.Description">
+            <summary>
+            简介
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.CommonDelectDto`1">
+            <summary>
+            通用数据删除Dto
+            </summary>
+            <typeparam name="T"></typeparam>
+        </member>
+        <member name="P:Horizon.Share.Dtos.CommonDelectDto`1.Ids">
+            <summary>
+            数据键
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.CharacterSpawnerDto">
+            <summary>
+            角色出生信息
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.CharacterSpawnerDto.WorldId">
+            <summary>
+            世界Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.CharacterSpawnerDto.SceneId">
+            <summary>
+            场景Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.CharacterSpawnerDto.Position">
+            <summary>
+            位置
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.CharacterSpawnerDto.Rotate">
+            <summary>
+            转向
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.ChatMessageDto">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.ChatMessageDto.NetworkIdentity">
+            <summary>
+            通信客户端网络Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.ChatMessageDto.UserRoleId">
+            <summary>
+            用户游戏角色Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.ChatMessageDto.UserRoleNickName">
+            <summary>
+            角色名称
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.ChatMessageDto.Kind">
+            <summary>
+            聊天类型,默认公频聊天
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.ChatMessageDto.Message">
+            <summary>
+            聊天文本内容
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.EquipmentInfoDto">
+            <summary>
+            装备信息
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentInfoDto.Id">
+            <summary>
+            装备Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentInfoDto.Name">
+            <summary>
+            装备名称
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentInfoDto.Description">
+            <summary>
+            装备描述
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentInfoDto.EquipmentType">
+            <summary>
+            装备类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentInfoDto.IconId">
+            <summary>
+            装备图标编号
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentInfoDto.PrefixName">
+            <summary>
+            图标前缀,文件系统的存储也依循此前缀作为文件夹来组织文件
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentInfoDto.IsCustomize">
+            <summary>
+            是否是自制
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentInfoDto.CustomizeInfo">
+            <summary>
+            自制信息
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentInfoDto.Durability">
+            <summary>
+            耐久度
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentInfoDto.MaxDurability">
+            <summary>
+            最大耐久度
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentInfoDto.MinDurability">
+            <summary>
+            最小耐久度
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentInfoDto.Weight">
+            <summary>
+            重量
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentInfoDto.Quality">
+            <summary>
+            装备品质
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentInfoDto.Level">
+            <summary>
+            装备等级
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentInfoDto.Attachs">
+            <summary>
+            附加属性
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentInfoDto.EquipmnetSlots">
+            <summary>
+            插槽属性
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.EquipmentAttachDto">
+            <summary>
+            装备附加属性
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentAttachDto.AttachAttributKind">
+            <summary>
+            附加属性类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentAttachDto.AttachValue">
+            <summary>
+            附加值
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentAttachDto.AttachRemark">
+            <summary>
+            附加值说明
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.EquipmnetSlotDto">
+            <summary>
+            装备插槽属性
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmnetSlotDto.Kind">
+            <summary>
+            插槽类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmnetSlotDto.Attachs">
+            <summary>
+            插槽物品的附加属性
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.EquipmentInfoQueryDto">
+            <summary>
+            查询装备信息
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentInfoQueryDto.GameId">
+            <summary>
+            游戏Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentInfoQueryDto.AreaId">
+            <summary>
+            游戏分区Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentInfoQueryDto.ServerId">
+            <summary>
+            游戏服务器Id
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.RoleEquipmentInfoQueryDto">
+            <summary>
+            查询角色装备信息
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.RoleEquipmentInfoQueryDto.UserRoleId">
+            <summary>
+            游戏角色Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.RoleEquipmentInfoQueryDto.Index">
+            <summary>
+            角色序号
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.EquipmentIdQueryDto">
+             <summary>
+            通过Id 查询装备信息
+             </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.EquipmentIdQueryDto.EquipmentId">
+            <summary>
+            游戏角色Id
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.GameInfoDto">
+            <summary>
+            游戏信息DTO
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameInfoDto.id">
+            <summary>
+            游戏ID
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameInfoDto.name">
+            <summary>
+            游戏名称
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameInfoDto.description">
+            <summary>
+            游戏描述
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameInfoDto.version">
+            <summary>
+            游戏版本
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameInfoDto.genre">
+            <summary>
+            游戏类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameInfoDto.platform">
+            <summary>
+            平台
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameInfoDto.developer">
+            <summary>
+            开发商
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameInfoDto.publisher">
+            <summary>
+            发行商
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameInfoDto.coverUrl">
+            <summary>
+            封面图URL
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameInfoDto.downloadUrl">
+            <summary>
+            下载URL
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameInfoDto.tags">
+            <summary>
+            标签
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameInfoDto.features">
+            <summary>
+            特性
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameInfoDto.screenshots">
+            <summary>
+            截图
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameQueryDto.GameId">
+            <summary>
+            游戏Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameQueryDto.AreaId">
+            <summary>
+            游戏分区Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameQueryDto.ServerId">
+            <summary>
+            游戏服务器Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameQueryDto.GameUserId">
+            <summary>
+            游戏用户Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameQueryDto.CharacterId">
+            <summary>
+            角色Id
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.GameRoleDto">
+            <summary>
+            游戏内用户游戏角色
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleDto.Index">
+            <summary>
+            角色序号
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleDto.GameId">
+            <summary>
+            游戏Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleDto.AreaId">
+            <summary>
+            游戏分区Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleDto.ServerId">
+            <summary>
+            游戏服务器Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleDto.GameUserId">
+            <summary>
+            游戏用户Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleDto.UserRoleId">
+            <summary>
+            游戏角色Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleDto.RoleNickName">
+            <summary>
+            游戏角色名称
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleDto.RoleNormalId">
+            <summary>
+            游戏角色基础信息Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleDto.CustomRoleData">
+            <summary>
+            预留自定义角色数据信息
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleDto.UserRoleAvatar">
+            <summary>
+            角色头像
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleDto.RoleEquipments">
+            <summary>
+            角色当前装备
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.GameRoleNormalDto">
+            <summary>
+            游戏基础角色
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.RoleNormalId">
+            <summary>
+            角色的默认编号，游戏中创建角色、游戏进行的基础，以：100001 为起始，同类型角色编号增加位数
+            如：100001 是男性的同一职业角色，而1000011是女性角色，1000012是萌娃角色
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.Name">
+            <summary>
+            角色名称
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.SchoolId">
+            <summary>
+            门派Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.Gender">
+            <summary>
+            角色性别
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.Figure">
+            <summary>
+            角色体形
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.Head">
+            <summary>
+            头部
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.Face">
+            <summary>
+            面部
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.Necklace">
+            <summary>
+            项链
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.Clothes">
+            <summary>
+            衣服
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.Belt">
+            <summary>
+            腰带
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.Trousers">
+            <summary>
+            裤子
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.Shoes">
+            <summary>
+            鞋子
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.LeftHand">
+            <summary>
+            左手
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.RightHand">
+            <summary>
+            右手
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.LeftRing">
+            <summary>
+            左戒指
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.RightRing">
+            <summary>
+            右戒指
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.BeltOrnament">
+            <summary>
+            腰坠
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.Weapon">
+            <summary>
+            武器
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.SecondaryWeapon">
+            <summary>
+            副手武器
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.OtherWeapon">
+            <summary>
+            副手武器
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleNormalDto.NormalSkills">
+            <summary>
+            默认技能列表，技能编号集合
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.GameRoleQueryDto">
+            <summary>
+            游戏角色查询
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleQueryDto.Id">
+            <summary>
+            游戏Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleQueryDto.Kind">
+            <summary>
+            角色类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleQueryDto.RoleNormalId">
+            <summary>
+            游戏角色Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleQueryDto.UserRoleId">
+            <summary>
+            用户游戏角色Id
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.GameRoleWorldInfoDto">
+            <summary>
+            游戏角色在游戏世界中的地理信息
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameRoleWorldInfoDto.IsLive">
+            <summary>
+            是否活着
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.GameServersDto">
+            <summary>
+            游戏服务器组
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameServersDto.AppType">
+            <summary>
+            应用类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameServersDto.AppId">
+            <summary>
+            应用Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameServersDto.AppName">
+            <summary>
+            应用名称
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameServersDto.AppDescritpion">
+            <summary>
+            应用简要说明
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameServersDto.Areas">
+            <summary>
+            应用服务器组
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.ServerAreaDto.Id">
+            <summary>
+            分区Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.ServerAreaDto.Name">
+            <summary>
+            分区名称
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.ServerAreaDto.Description">
+            <summary>
+            分区简述
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.ServerDto">
+            <summary>
+            服务器组信息
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.ServerDto.AreaId">
+             <summary>
+            游戏分区Id
+             </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.ServerDto.GameId">
+            <summary>
+            游戏Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.ServerDto.Id">
+            <summary>
+            服务其Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.ServerDto.Name">
+            <summary>
+            服务器名称
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.ServerDto.Description">
+            <summary>
+            服务器简述
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.ServerDto.Ip">
+            <summary>
+            服务器Ip
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.ServerDto.Port">
+            <summary>
+            服务器端口
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.ServerDto.Status">
+            <summary>
+            区服状态
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.GameAreaServerStatus">
+            <summary>
+            区服状态
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Dtos.Games.GameAreaServerStatus.New">
+            <summary>
+            新开服
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Dtos.Games.GameAreaServerStatus.Normal">
+            <summary>
+            正常
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Dtos.Games.GameAreaServerStatus.Busy">
+            <summary>
+            繁忙
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Dtos.Games.GameAreaServerStatus.Idle">
+            <summary>
+            畅通
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Dtos.Games.GameAreaServerStatus.Full">
+            <summary>
+            爆满
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Dtos.Games.GameAreaServerStatus.Unopen">
+            <summary>
+            未开通
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Dtos.Games.GameAreaServerStatus.Disabled">
+            <summary>
+            不可用
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameUserQeuryDto.PassportId">
+            <summary>
+            通行证Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameUserQeuryDto.GameId">
+            <summary>
+            游戏Id
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.GameUserRoleInfoDto">
+            <summary>
+            游戏用户角色概要信息
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.RoleEquipmentDto">
+            <summary>
+            游戏角色装备
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.RoleEquipmentDto.EquipmentIndex">
+            <summary>
+            装备在角色身上的第几套索引
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.RoleEquipmentDto.Head">
+            <summary>
+            头部
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.RoleEquipmentDto.Face">
+            <summary>
+            面部
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.RoleEquipmentDto.Necklace">
+            <summary>
+            颈链
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.RoleEquipmentDto.Clothes">
+            <summary>
+            衣服
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.RoleEquipmentDto.Belt">
+            <summary>
+            腰带
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.RoleEquipmentDto.Trousers">
+            <summary>
+            裤子
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.RoleEquipmentDto.Shoes">
+            <summary>
+            鞋子
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.RoleEquipmentDto.LeftHand">
+            <summary>
+            左手
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.RoleEquipmentDto.RightHand">
+            <summary>
+            右手
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.RoleEquipmentDto.LeftRing">
+            <summary>
+            左戒指
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.RoleEquipmentDto.RightRing">
+            <summary>
+            右戒指
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.RoleEquipmentDto.BeltOrnament">
+            <summary>
+            腰坠
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.RoleEquipmentDto.Weapon">
+            <summary>
+            武器
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.RoleEquipmentDto.SecondaryWeapon">
+            <summary>
+            副手武器
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.RoleEquipmentDto.OtherWeapon">
+            <summary>
+            副手武器
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameUserRoleDto.GameId">
+            <summary>
+            游戏Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameUserRoleDto.AreaId">
+            <summary>
+            游戏分区Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameUserRoleDto.ServerId">
+            <summary>
+            游戏服务器Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameUserRoleDto.GameUserId">
+            <summary>
+            游戏用户Id
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.GameUserRoleQueryDto">
+            <summary>
+            游戏用户角色查询
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.GameUserRoleQueryDto.UserRoleId">
+            <summary>
+            用户游戏角色Id
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Games.PlayerDto">
+            <summary>
+            游戏玩家信息
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.PlayerDto.NetworkIdentity">
+            <summary>
+            网络Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.PlayerDto.UserRoleId">
+            <summary>
+            游戏角色Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.PlayerDto.PostionX">
+            <summary>
+            玩家X坐标
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.PlayerDto.PostionY">
+            <summary>
+            玩家Y坐标
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.PlayerDto.PostionZ">
+            <summary>
+            玩家Z坐标
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.PlayerDto.PostionW">
+            <summary>
+            玩家W坐标
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Games.PlayerDto.Rotation">
+            <summary>
+            玩家角度
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.PassportSupportDto.SupportId">
+            <summary>
+            评论Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.PassportSupportDto.Passport">
+            <summary>
+            用户Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.PassportSupportDto.IsSupport">
+            <summary>
+            是否支持
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.SimpleUpdateDataDto">
+            <summary>
+            更新数据值
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.SimpleUpdateDataDto.Id">
+            <summary>
+            数据主键Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.SimpleUpdateDataDto.UpdateValue">
+            <summary>
+            需要更新数据的新值
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.SimpleUpdateDataDto.FieldName">
+            <summary>
+            数据字段名
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.User.ChangePasswordDto">
+            <summary>
+            修改密码
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.ChangePasswordDto.AppId">
+            <summary>
+            应用Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.ChangePasswordDto.AppType">
+            <summary>
+            应用类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.ChangePasswordDto.PassportType">
+            <summary>
+            通行证类型
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.User.ChangeUserInfo">
+            <summary>
+            修改用户信息
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.ChangeUserInfo.Type">
+            <summary>
+            修改类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.ChangeUserInfo.Value">
+            <summary>
+            变更值 
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.User.UserInfoType">
+            <summary>
+            用户信息数据类型
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Dtos.User.UserInfoType.IdCard">
+            <summary>
+            身份证号
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Dtos.User.UserInfoType.Phone">
+            <summary>
+            手机号
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Dtos.User.UserInfoType.Email">
+            <summary>
+            邮箱
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Dtos.User.UserInfoType.Avatar">
+            <summary>
+            头像
+            </summary>  
+        </member>
+        <member name="T:Horizon.Share.Dtos.User.LoginDto">
+            <summary>
+            登录数据模型类
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.LoginDto.PassportId">
+            <summary>
+            通行证号
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.LoginDto.Password">
+            <summary>
+            密码
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.LoginDto.VerifyCode">
+            <summary>
+            验证码
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.LoginDto.Phone">
+            <summary>
+            手机号
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.LoginDto.Email">
+            <summary>
+            邮箱
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.LoginDto.AppId">
+            <summary>
+            应用Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.LoginDto.AppType">
+            <summary>
+            应用类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.LoginDto.PassportType">
+            <summary>
+            通行证类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.LoginDto.GameContext">
+            <summary>
+            游戏上下文信息
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.LoginDto.MachineId">
+            <summary>
+            客户端机器唯一标识符（由客户端通过 MachineIdentifier.GetMachineGuid() 获取后上传，用于令牌绑定）
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.User.GameLoginContextDto">
+            <summary>
+            登录时的游戏上下文信息
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.GameLoginContextDto.Ip">
+            <summary>
+            客户端IP
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.GameLoginContextDto.PlatformId">
+            <summary>
+            平台Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.GameLoginContextDto.DeviceId">
+            <summary>
+            设备Id
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.User.LoginResultDto">
+            <summary>
+            登录授权返回Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.LoginResultDto.AccessToken">
+            <summary>
+            访问令牌
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.LoginResultDto.RefreshToken">
+            <summary>
+            刷新令牌
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.LoginResultDto.ExpiresIn">
+            <summary>
+            有效时间（秒）
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.LoginResultDto.ExpiresTime">
+            <summary>
+            过期时间
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.LoginResultDto.ImAuthToken">
+            <summary>
+            IM网关鉴权令牌（AES-256-CBC加密，用于IM Gateway身份验证）
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.LoginResultDto.UserId">
+            <summary>
+            用户ID（用于角色列表请求等后续操作）
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.OpenUserDto.PassportId">
+            <summary>
+            通行证
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.OpenUserDto.NickName">
+            <summary>
+            昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.OpenUserDto.Avatar">
+            <summary>
+            头像
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.OpenUserDto.Phone">
+            <summary>
+            手机号
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.OpenUserDto.Email">
+            <summary>
+            邮箱
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.OpenUserDto.RealNameAuthStatus">
+            <summary>
+            实名状态
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.PassportInfoDto.PassportId">
+            <summary>
+            通行证
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.PassportInfoDto.Name">
+            <summary>
+            姓名
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.PassportInfoDto.Avatar">
+            <summary>
+            头像
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.PassportInfoDto.Phone">
+            <summary>
+            手机号
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.PassportInfoDto.Email">
+            <summary>
+            邮箱
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.PassportInfoDto.AppId">
+            <summary>
+            应用Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.PassportInfoDto.AppType">
+            <summary>
+            应用类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.PassportInfoDto.PassportType">
+            <summary>
+            通行证类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.PassportInfoDto.OrganizationId">
+            <summary>
+            机构Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.PassportInfoDto.UserId">
+            <summary>
+            用户Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.PassportInfoDto.SessionToken">
+            <summary>
+            会话令牌
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.GameUserInfoDto.PassportId">
+            <summary>
+            通行证
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.GameUserInfoDto.Name">
+            <summary>
+            姓名
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.GameUserInfoDto.Avatar">
+            <summary>
+            头像
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.GameUserInfoDto.Phone">
+            <summary>
+            手机号
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.GameUserInfoDto.Email">
+            <summary>
+            邮箱
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.GameUserInfoDto.GameUserId">
+            <summary>
+            游戏内用户Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.GameUserInfoDto.GameId">
+            <summary>
+            游戏Id
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.User.RegisterDto">
+            <summary>
+            注册通行证Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.RegisterDto.Password">
+            <summary>
+            密码
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.RegisterDto.Phone">
+            <summary>
+            手机号
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.RegisterDto.Email">
+            <summary>
+            邮箱
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.RegisterDto.AppId">
+            <summary>
+            应用Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.RegisterDto.AppType">
+            <summary>
+            应用类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.RegisterDto.PassportType">
+            <summary>
+            通行证类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.RegisterDto.NickName">
+            <summary>
+            昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.RegisterDto.MachineId">
+            <summary>
+            客户端机器唯一标识符（由客户端通过 MachineIdentifier.GetMachineGuid() 获取后上传，用于令牌绑定）
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.User.GameRegisterDto">
+            <summary>
+            在游戏内注册通信证
+            同时提供游戏内用户
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.GameRegisterDto.GameId">
+            <summary>
+            游戏Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.UserDto.UserId">
+            <summary>
+            用户Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.UserDto.PassportId">
+            <summary>
+            通行证
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.UserDto.AppId">
+            <summary>
+            应用Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.UserDto.AppType">
+            <summary>
+            应用类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.UserDto.PassportType">
+            <summary>
+            通行证类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.UserDto.OrganizationId">
+            <summary>
+            机构Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.UserDto.Organization">
+            <summary>
+            组织机构名
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.UserDto.Name">
+            <summary>
+            姓名
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.UserDto.NickName">
+            <summary>
+            昵称
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.UserDto.Avatar">
+            <summary>
+            头像
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.UserDto.Phone">
+            <summary>
+            手机号
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.UserDto.Email">
+            <summary>
+            邮箱
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.UserDto.RealNameAuthStatus">
+            <summary>
+            实名状态
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.User.UserQueryDto">
+            <summary>
+            查询用户信息 Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.UserQueryDto.PassportId">
+            <summary>
+            通行证
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.UserQueryDto.AppId">
+            <summary>
+            应用Id
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.UserQueryDto.AppType">
+            <summary>
+            应用类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.UserQueryDto.PassportType">
+            <summary>
+            通行证类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.UserQueryDto.OrganizationId">
+            <summary>
+            机构Id
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.User.WxLoginDto">
+            <summary>
+            微信小程序登录dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.WxLoginDto.WxAppId">
+            <summary>
+            微信小程序 appid
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.WxLoginDto.AppSecret">
+            <summary>
+            微信小程序密钥(前端不用传)
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.User.WxLoginDto.Code">
+            <summary>
+            微信小程序请求码
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Verification.VerificationResultDto">
+            <summary>
+            验证返回数据
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Dtos.Verification.VerificationUserDataDto">
+            <summary>
+            验证数据Dto
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Verification.VerificationUserDataDto.PassportId">
+            <summary>
+            通行证
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Verification.VerificationUserDataDto.Type">
+            <summary>
+            用户数据类型
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Verification.VerificationUserDataDto.Value">
+            <summary>
+            待验证数据
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.Dtos.Verification.VerificationUserDataDto.Token">
+            <summary>
+            服务端验证值
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Enums.Game.ChatKind">
+            <summary>
+            游戏内聊天种类
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.ChatKind.ChatP2P">
+            <summary>
+            聊天/私聊
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.ChatKind.ChatP2G">
+            <summary>
+            聊天/团队聊天
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.ChatKind.ChatP2SG">
+            <summary>
+            聊天/团队聊天
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.ChatKind.ChatWorld">
+            <summary>
+            聊天/世界范围
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.ChatKind.ChatLocal">
+            <summary>
+            聊天/本地
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Enums.Game.EquipmentType">
+            <summary>
+            装备/物品 类型
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentType.Head">
+            <summary>
+            头部
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentType.Face">
+            <summary>
+            披风
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentType.Necklace">
+            <summary>
+            项链
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentType.Clothes">
+            <summary>
+            衣服
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentType.Belt">
+            <summary>
+            腰带
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentType.Trousers">
+            <summary>
+            裤子
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentType.Shoes">
+            <summary>
+            鞋子
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentType.Hand">
+            <summary>
+            手
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentType.LeftRing">
+            <summary>
+            左戒指
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentType.RightRing">
+            <summary>
+            右戒指
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentType.BeltOrnament">
+            <summary>
+            腰坠
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentType.Weapon">
+            <summary>
+            武器
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentType.SecondaryWeapon">
+            <summary>
+            副手武器
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentType.Other">
+            <summary>
+            其它装备
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentType.Inlaid">
+            <summary>
+            可镶嵌物品
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentType.MagicPointConsume">
+            <summary>
+            魔法药水
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentType.HealthPointConsume">
+            <summary>
+            生命药水
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Enums.Game.EquipmentAttachAttributKind">
+            <summary>
+            装备附加属性类型
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentAttachAttributKind.Health">
+            <summary>
+            生命
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentAttachAttributKind.InternalForce">
+            <summary>
+            内力
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentAttachAttributKind.RootBone">
+            <summary>
+            根骨
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentAttachAttributKind.Wisdom">
+            <summary>
+            智慧
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentAttachAttributKind.Agile">
+            <summary>
+            敏捷
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentAttachAttributKind.Endurance">
+            <summary>
+            耐力
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentAttachAttributKind.Speed">
+            <summary>
+            速度
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentAttachAttributKind.ExplosivePower">
+            <summary>
+            爆发力
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Enums.Game.EquipmentAttachSlotKind">
+            <summary>
+            装备插槽类型
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentAttachSlotKind.Gold">
+            <summary>
+            金
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentAttachSlotKind.Wood">
+            <summary>
+            木
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentAttachSlotKind.Water">
+            <summary>
+            水
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentAttachSlotKind.Fire">
+            <summary>
+            火
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentAttachSlotKind.Soil">
+            <summary>
+            土
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Enums.Game.EquipmentQuality">
+            <summary>
+            装备品质
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentQuality.White">
+            <summary>
+            白
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentQuality.Green">
+            <summary>
+            绿
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentQuality.Blue">
+            <summary>
+            蓝
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentQuality.Purple">
+            <summary>
+            紫
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentQuality.Red">
+            <summary>
+            红
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentQuality.Orange">
+            <summary>
+            橙
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.EquipmentQuality.Brown">
+            <summary>
+            褐
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Enums.Game.GameRoleKind">
+            <summary>
+            游戏角色类型
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.GameRoleKind.Player">
+            <summary>
+            玩家
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.GameRoleKind.NPC">
+            <summary>
+            游戏NPC
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.GameRoleKind.Neutrality">
+            <summary>
+            中立生物
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.GameRoleKind.Monster">
+            <summary>
+            怪物
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.GameRoleKind.Enemy">
+            <summary>
+            敌人
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Enums.Game.GameMessageCode">
+            <summary>
+            消息码
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.GameMessageCode.Connection">
+            <summary>
+            建立连接
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.GameMessageCode.Position">
+            <summary>
+            位置
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.GameMessageCode.Rotation">
+            <summary>
+            朝向
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.GameMessageCode.Animation">
+            <summary>
+            动画
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.GameMessageCode.Equipment">
+            <summary>
+            装备
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.GameMessageCode.Chat">
+            <summary>
+            聊天
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.Game.GameMessageCode.DisConnection">
+            <summary>
+            断开连接
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.Enums.StarsType">
+            <summary>
+            星光类型枚举
+            </summary>
+        </member>
+        <member name="F:Horizon.Share.Enums.StarsType.Normal">
+            <summary>
+            点赞
+            </summary>
+        </member>
+        <member name="T:Horizon.Share.VMs.ResultVM`1">
+            <summary>
+            数据返回类
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.VMs.ResultVM`1.Code">
+            <summary>
+            状态码
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.VMs.ResultVM`1.ErrorMessage">
+            <summary>
+            错误消息
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.VMs.ResultVM`1.IsSuccess">
+            <summary>
+            执行是否成功
+            </summary>
+        </member>
+        <member name="P:Horizon.Share.VMs.ResultVM`1.Data">
+            <summary>
+            返回的数据
+            </summary>
+        </member>
+        <member name="M:THorizon.Share.Utils.EncryptionUtil.Verification(System.String,System.String,System.String,System.Int64)">
+            <summary>
+            验证
+            </summary>
+            <param name="hashValue">密文前10位</param>
+            <param name="nonce">随机字符串</param>
+            <param name="sign">约定字符</param>
+            <param name="time">时间</param>
+            <returns></returns>
+        </member>
+        <member name="M:THorizon.Share.Utils.EncryptionUtil.Nonce">
+            <summary>
+            创建随机字符串
+            本代码来自开源微信SDK项目：https://github.com/night-king/weixinSDK
+            </summary>
+            <returns></returns>
+        </member>
+    </members>
+</doc>

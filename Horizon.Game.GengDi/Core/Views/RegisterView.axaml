@@ -32,12 +32,12 @@
                             Background="#33FFFFFF" HorizontalAlignment="Left">
                         <ui:IconSourceElement IconSource="{StaticResource SproutIcon}"
                                               Width="32" Height="32"
-                                              Foreground="#FFFFFFFF"
+                                              Foreground="{DynamicResource GdPrimaryForegroundBrush}"
                                               HorizontalAlignment="Center"
                                               VerticalAlignment="Center" />
                     </Border>
                     <TextBlock Text="加入耕地" FontSize="32" FontWeight="Bold"
-                               Foreground="#FFFFFFFF" />
+                               Foreground="{DynamicResource GdPrimaryForegroundBrush}" />
                     <TextBlock Text="创建新账户，开启花卉交易与游戏之旅。专业暗色终端，为每一位种植者与商人而生。"
                                FontSize="14" Foreground="#CCFFFFFF"
                                TextWrapping="Wrap" MaxWidth="420" />
@@ -64,7 +64,7 @@
                             </Border.Background>
                             <ui:IconSourceElement IconSource="{StaticResource SproutIcon}"
                                                   Width="16" Height="16"
-                                                  Foreground="#FFFFFFFF"
+                                                  Foreground="{DynamicResource GdPrimaryForegroundBrush}"
                                                   HorizontalAlignment="Center"
                                                   VerticalAlignment="Center" />
                         </Border>

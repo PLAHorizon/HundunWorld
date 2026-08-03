@@ -27,35 +27,43 @@
                  ════════════════════════════════════════════════════════════ -->
             <Border Classes="GdMetricCard">
                 <Grid ColumnDefinitions="Auto,*,Auto"
-                      ColumnSpacing="20">
+                      ColumnSpacing="24">
 
-                    <!-- 左：96x96 圆形进度环（两层嵌套 Border 模拟） -->
-                    <Border Width="96"
-                            Height="96"
-                            CornerRadius="48"
-                            Background="{DynamicResource GdSuccessSurfaceBrush}">
-                        <Border Width="74"
-                                Height="74"
-                                CornerRadius="37"
-                                Background="{DynamicResource GdCardBrush}"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center">
-                            <StackPanel HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        Spacing="0">
-                                <TextBlock Text="75"
-                                           FontSize="26"
-                                           FontWeight="Bold"
-                                           FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
-                                           Foreground="{DynamicResource GdSuccessBrush}"
-                                           HorizontalAlignment="Center" />
-                                <TextBlock Text="/ 100"
-                                           FontSize="11"
-                                           Foreground="{DynamicResource GdMutedForegroundBrush}"
-                                           HorizontalAlignment="Center" />
-                            </StackPanel>
-                        </Border>
-                    </Border>
+                    <!-- 左：96x96 圆形进度环（Ellipse 背景轨道 + Path 进度弧） -->
+                    <Panel Width="96"
+                            Height="96">
+                        <!-- 背景轨道（muted 色 8px 描边圆） -->
+                        <Ellipse Width="84"
+                                 Height="84"
+                                 Stroke="{DynamicResource GdMutedBrush}"
+                                 StrokeThickness="8"
+                                 Fill="Transparent"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+                        <!-- 进度弧 75%（success 色 8px 描边，从顶部顺时针绘制 270°） -->
+                        <Path Data="M 48 6 A 42 42 0 1 1 6 48"
+                              Stroke="{DynamicResource GdSuccessBrush}"
+                              StrokeThickness="8"
+                              StrokeLineCap="Round"
+                              Fill="Transparent"
+                              Width="96"
+                              Height="96" />
+                        <!-- 中心文字 -->
+                        <StackPanel HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Spacing="0">
+                            <TextBlock Text="75"
+                                       FontSize="24"
+                                       FontWeight="SemiBold"
+                                       FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                       Foreground="{DynamicResource GdForegroundBrush}"
+                                       HorizontalAlignment="Center" />
+                            <TextBlock Text="/ 100"
+                                       FontSize="10"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                       HorizontalAlignment="Center" />
+                        </StackPanel>
+                    </Panel>
 
                     <!-- 中：标题 + Badge + 描述 -->
                     <StackPanel Grid.Column="1"
@@ -69,48 +77,66 @@
                                        FontWeight="SemiBold"
                                        Foreground="{DynamicResource GdForegroundBrush}" />
                             <Border Classes="GdBadge GdSuccess">
-                                <TextBlock Text="良好" />
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <Path Classes="GdLucideIcon"
+                                          Width="12"
+                                          Height="12"
+                                          Data="{StaticResource LucideShieldCheckGeometry}" />
+                                    <TextBlock Text="良好" />
+                                </StackPanel>
                             </Border>
                         </StackPanel>
-                        <TextBlock Text="您的账号安全状况良好，建议持续开启二步验证并定期更换密码以进一步提升安全性。"
+                        <TextBlock Text="您的账号安全等级为「良好」，建议开启二步验证并定期更换密码以进一步提升安全性。已完成 3 项安全设置，还有 1 项建议完善。"
                                    FontSize="12"
                                    Foreground="{DynamicResource GdMutedForegroundBrush}"
                                    TextWrapping="Wrap"
-                                   MaxWidth="520" />
+                                   MaxWidth="520"
+                                   LineHeight="19" />
                     </StackPanel>
 
-                    <!-- 右：立即加固按钮 -->
+                    <!-- 右：立即加固按钮（shield 图标 + 文字） -->
                     <Button Grid.Column="2"
-                            Content="立即加固"
                             Classes="GdPrimary"
                             VerticalAlignment="Center"
-                            Command="{Binding ChangePasswordCommand}" />
+                            Command="{Binding ChangePasswordCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Path Classes="GdLucideIcon"
+                                  Width="14"
+                                  Height="14"
+                                  Data="{StaticResource LucideShieldGeometry}" />
+                            <TextBlock Text="立即加固" />
+                        </StackPanel>
+                    </Button>
                 </Grid>
             </Border>
 
             <!-- ════════════════════════════════════════════════════════════
-                 2. 密码强度项
+                 2. 安全项列表
                  ════════════════════════════════════════════════════════════ -->
-            <Border Classes="GdMetricCard">
-                <StackPanel Spacing="12">
+            <StackPanel Spacing="14">
+
+                <!-- 2a. 密码强度项 -->
+                <Border Classes="GdSecurityItem">
                     <Grid ColumnDefinitions="44,*,Auto"
                           ColumnSpacing="14">
 
-                        <!-- 图标（warning 色） -->
+                        <!-- 图标盒（44x44 warning-surface + KeyRound 22x22） -->
                         <Border Classes="GdStatIcon"
                                 Width="44"
                                 Height="44"
                                 Background="{DynamicResource GdWarningSurfaceBrush}">
-                            <ui:SymbolIcon Symbol="ProtectedDocument"
-                                           FontSize="22"
-                                           Foreground="{DynamicResource GdWarningBrush}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center" />
+                            <Path Classes="GdLucideIcon"
+                                  Width="22"
+                                  Height="22"
+                                  Data="{StaticResource LucideKeyRoundGeometry}"
+                                  Stroke="{DynamicResource GdWarningBrush}"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
                         </Border>
 
-                        <!-- 标题 + Badge + 描述 -->
+                        <!-- 标题 + Badge + 进度条 + 描述 -->
                         <StackPanel Grid.Column="1"
-                                    Spacing="6"
+                                    Spacing="4"
                                     VerticalAlignment="Center">
                             <StackPanel Orientation="Horizontal"
                                         Spacing="10"
@@ -123,151 +149,244 @@
                                     <TextBlock Text="中等强度" />
                                 </Border>
                             </StackPanel>
-                            <TextBlock Text="建议使用至少 8 位且包含字母、数字与符号的组合密码。"
-                                       FontSize="12"
-                                       Foreground="{DynamicResource GdMutedForegroundBrush}"
-                                       TextWrapping="Wrap" />
-                        </StackPanel>
-
-                        <!-- 修改密码按钮 -->
-                        <Button Grid.Column="2"
-                                Content="修改密码"
-                                Classes="GdGhost"
-                                VerticalAlignment="Center"
-                                Command="{Binding ChangePasswordCommand}" />
-                    </Grid>
-
-                    <!-- 进度条 60% -->
-                    <Border Classes="GdProgress">
-                        <Grid ColumnDefinitions="60*,40*">
-                            <Border Classes="GdProgressFill GdWarning" />
-                        </Grid>
-                    </Border>
-                </StackPanel>
-            </Border>
-
-            <!-- ════════════════════════════════════════════════════════════
-                 3. 二步验证项
-                 ════════════════════════════════════════════════════════════ -->
-            <Border Classes="GdMetricCard">
-                <Grid ColumnDefinitions="44,*,Auto"
-                      ColumnSpacing="14">
-
-                    <!-- 图标（success 色） -->
-                    <Border Classes="GdStatIcon"
-                            Width="44"
-                            Height="44"
-                            Background="{DynamicResource GdSuccessSurfaceBrush}">
-                        <ui:SymbolIcon Symbol="ProtectedDocument"
-                                       FontSize="22"
-                                       Foreground="{DynamicResource GdSuccessBrush}"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center" />
-                    </Border>
-
-                    <!-- 标题 + Badge + 描述 -->
-                    <StackPanel Grid.Column="1"
-                                Spacing="6"
-                                VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal"
-                                    Spacing="10"
-                                    VerticalAlignment="Center">
-                            <TextBlock Text="二步验证"
-                                       FontSize="14"
-                                       FontWeight="SemiBold"
-                                       Foreground="{DynamicResource GdForegroundBrush}" />
-                            <Border Classes="GdBadge GdSuccess">
-                                <TextBlock Text="已开启" />
-                            </Border>
-                        </StackPanel>
-                        <TextBlock Text="登录时将要求额外的验证码确认，已为您的账号启用。"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource GdMutedForegroundBrush}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
-
-                    <!-- Toggle 开关 -->
-                    <ToggleSwitch Grid.Column="2"
-                                  IsChecked="True"
-                                  VerticalAlignment="Center" />
-                </Grid>
-            </Border>
-
-            <!-- ════════════════════════════════════════════════════════════
-                 4. 登录设备管理卡
-                 ════════════════════════════════════════════════════════════ -->
-            <Border Classes="GdMetricCard">
-                <StackPanel Spacing="12">
-
-                    <!-- 头部：标题 + 设备数 + 全部下线按钮 -->
-                    <Grid ColumnDefinitions="*,Auto"
-                          ColumnSpacing="12">
-                        <StackPanel Spacing="2">
+                            <!-- 进度条 + 数值 -->
                             <StackPanel Orientation="Horizontal"
                                         Spacing="10"
                                         VerticalAlignment="Center">
-                                <TextBlock Text="登录设备"
-                                           FontSize="14"
-                                           FontWeight="SemiBold"
-                                           Foreground="{DynamicResource GdForegroundBrush}" />
-                                <Border Classes="GdBadge GdInfo">
-                                    <TextBlock Text="3 台设备" />
+                                <Border Classes="GdProgress"
+                                        Width="200">
+                                    <Grid ColumnDefinitions="60*,40*">
+                                        <Border Classes="GdProgressFill GdWarning" />
+                                    </Grid>
                                 </Border>
+                                <TextBlock Text="60 / 100"
+                                           FontSize="11"
+                                           FontFamily="JetBrains Mono, Cascadia Code, ui-monospace, monospace"
+                                           Foreground="{DynamicResource GdWarningBrush}" />
                             </StackPanel>
-                            <TextBlock Text="如发现可疑设备，请立即下线并修改密码。"
+                            <TextBlock Text="上次修改于 2026-05-12，建议每 90 天更换一次密码"
                                        FontSize="12"
                                        Foreground="{DynamicResource GdMutedForegroundBrush}" />
                         </StackPanel>
-                        <Button Grid.Column="1"
-                                Content="全部下线"
-                                Classes="GdDanger"
-                                VerticalAlignment="Center" />
-                    </Grid>
 
-                    <!-- 设备表格 -->
-                    <DataGrid Classes="GdDataTable"
-                              ItemsSource="{x:Static views:SecurityView.SampleDevices}"
-                              AutoGenerateColumns="False"
-                              IsReadOnly="True"
-                              HeadersVisibility="Column"
-                              GridLinesVisibility="Horizontal"
-                              CanUserResizeColumns="False"
-                              CanUserSortColumns="False"
-                              MinHeight="140">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="设备"
-                                                Binding="{Binding Device}"
-                                                Width="*" />
-                            <DataGridTextColumn Header="位置"
-                                                Binding="{Binding Location}"
-                                                Width="*" />
-                            <DataGridTextColumn Header="最后登录"
-                                                Binding="{Binding LastLogin}"
-                                                Width="*" />
-                            <DataGridTextColumn Header="状态"
-                                                Binding="{Binding Status}"
-                                                Width="Auto" />
-                            <DataGridTemplateColumn Header="操作"
-                                                    Width="Auto">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate x:DataType="views:DeviceRow">
-                                        <Button Content="下线"
-                                                Classes="GdGhost GdBtnSm"
-                                                Margin="0 2" />
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </StackPanel>
-            </Border>
+                        <!-- 修改密码按钮（edit-3 图标 + 文字） -->
+                        <Button Grid.Column="2"
+                                Classes="GdGhost"
+                                VerticalAlignment="Center"
+                                Command="{Binding ChangePasswordCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Path Classes="GdLucideIcon"
+                                      Width="14"
+                                      Height="14"
+                                      Data="{StaticResource LucideEdit3Geometry}" />
+                                <TextBlock Text="修改密码" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Border>
+
+                <!-- 2b. 二步验证项 -->
+                <Border Classes="GdSecurityItem">
+                    <Grid ColumnDefinitions="44,*,Auto"
+                          ColumnSpacing="14">
+
+                        <!-- 图标盒（44x44 success-surface + Smartphone 22x22） -->
+                        <Border Classes="GdStatIcon"
+                                Width="44"
+                                Height="44"
+                                Background="{DynamicResource GdSuccessSurfaceBrush}">
+                            <Path Classes="GdLucideIcon"
+                                  Width="22"
+                                  Height="22"
+                                  Data="{StaticResource LucideSmartphoneGeometry}"
+                                  Stroke="{DynamicResource GdSuccessBrush}"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
+                        </Border>
+
+                        <!-- 标题 + Badge + 描述 -->
+                        <StackPanel Grid.Column="1"
+                                    Spacing="4"
+                                    VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal"
+                                        Spacing="10"
+                                        VerticalAlignment="Center">
+                                <TextBlock Text="二步验证"
+                                           FontSize="14"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource GdForegroundBrush}" />
+                                <Border Classes="GdBadge GdSuccess">
+                                    <StackPanel Orientation="Horizontal" Spacing="4">
+                                        <Path Classes="GdLucideIcon"
+                                              Width="12"
+                                              Height="12"
+                                              Data="{StaticResource LucideCheckGeometry}" />
+                                        <TextBlock Text="已开启" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="已绑定 2 台验证设备，登录时需输入动态验证码"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                        </StackPanel>
+
+                        <!-- Toggle 开关 -->
+                        <ToggleSwitch Grid.Column="2"
+                                      IsChecked="True"
+                                      VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+
+                <!-- 2c. 登录设备管理卡 -->
+                <Border Classes="GdMetricCard">
+                    <StackPanel Spacing="12">
+
+                        <!-- 头部：图标 + 标题/描述 + 全部下线按钮 -->
+                        <Grid ColumnDefinitions="*,Auto"
+                              ColumnSpacing="12">
+                            <StackPanel Orientation="Horizontal"
+                                        Spacing="10"
+                                        VerticalAlignment="Center">
+                                <!-- 图标盒（44x44 info-surface + MonitorSmartphone 22x22） -->
+                                <Border Classes="GdStatIcon"
+                                        Width="44"
+                                        Height="44"
+                                        Background="{DynamicResource GdInfoSurfaceBrush}">
+                                    <Path Classes="GdLucideIcon"
+                                          Width="22"
+                                          Height="22"
+                                          Data="{StaticResource LucideMonitorSmartphoneGeometry}"
+                                          Stroke="{DynamicResource GdInfoBrush}"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                                </Border>
+                                <StackPanel Spacing="2">
+                                    <TextBlock Text="登录设备管理"
+                                               FontSize="14"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource GdForegroundBrush}" />
+                                    <TextBlock Text="当前有 3 台设备处于登录状态"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource GdMutedForegroundBrush}" />
+                                </StackPanel>
+                            </StackPanel>
+                            <Button Grid.Column="1"
+                                    Classes="GdDanger"
+                                    VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <Path Classes="GdLucideIcon"
+                                          Width="14"
+                                          Height="14"
+                                          Data="{StaticResource LucideLogOutGeometry}" />
+                                    <TextBlock Text="全部下线" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <!-- 设备表格 -->
+                        <DataGrid Classes="GdDataTable"
+                                  ItemsSource="{x:Static views:SecurityView.SampleDevices}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal"
+                                  CanUserResizeColumns="False"
+                                  CanUserSortColumns="False"
+                                  MinHeight="140">
+                            <DataGrid.Columns>
+                                <!-- 设备列（图标 + 名称） -->
+                                <DataGridTemplateColumn Header="设备" Width="*">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="views:DeviceRow">
+                                            <StackPanel Orientation="Horizontal"
+                                                        Spacing="8"
+                                                        VerticalAlignment="Center">
+                                                <Path Classes="GdLucideIcon"
+                                                      Width="15"
+                                                      Height="15"
+                                                      Data="{StaticResource LucideLaptopGeometry}"
+                                                      Stroke="{DynamicResource GdMutedForegroundBrush}"
+                                                      IsVisible="{Binding IsLaptop}" />
+                                                <Path Classes="GdLucideIcon"
+                                                      Width="15"
+                                                      Height="15"
+                                                      Data="{StaticResource LucideSmartphoneGeometry}"
+                                                      Stroke="{DynamicResource GdMutedForegroundBrush}"
+                                                      IsVisible="{Binding IsSmartphone}" />
+                                                <Path Classes="GdLucideIcon"
+                                                      Width="15"
+                                                      Height="15"
+                                                      Data="{StaticResource LucideTabletGeometry}"
+                                                      Stroke="{DynamicResource GdMutedForegroundBrush}"
+                                                      IsVisible="{Binding IsTablet}" />
+                                                <TextBlock Text="{Binding Device}"
+                                                           FontWeight="Medium"
+                                                           VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <!-- 位置列 -->
+                                <DataGridTextColumn Header="位置"
+                                                    Binding="{Binding Location}"
+                                                    Width="*" />
+                                <!-- 最后登录列 -->
+                                <DataGridTextColumn Header="最后登录"
+                                                    Binding="{Binding LastLogin}"
+                                                    Width="*" />
+                                <!-- 状态列（徽章） -->
+                                <DataGridTemplateColumn Header="状态" Width="Auto">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="views:DeviceRow">
+                                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                                <Border Classes="GdBadge GdSuccess"
+                                                        IsVisible="{Binding IsOnline}">
+                                                    <TextBlock Text="{Binding Status}" />
+                                                </Border>
+                                                <Border Classes="GdBadge GdInfo"
+                                                        IsVisible="{Binding IsRemembered}">
+                                                    <TextBlock Text="{Binding Status}" />
+                                                </Border>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <!-- 操作列 -->
+                                <DataGridTemplateColumn Header="操作" Width="Auto">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="views:DeviceRow">
+                                            <StackPanel Orientation="Horizontal"
+                                                        HorizontalAlignment="Right"
+                                                        Spacing="4">
+                                                <TextBlock Text="当前设备"
+                                                           FontSize="12"
+                                                           Foreground="{DynamicResource GdMutedForegroundBrush}"
+                                                           VerticalAlignment="Center"
+                                                           IsVisible="{Binding IsCurrentDevice}" />
+                                                <Button Classes="GdDanger GdBtnSm"
+                                                        Padding="4 10"
+                                                        FontSize="12"
+                                                        IsVisible="{Binding !IsCurrentDevice}">
+                                                    <TextBlock Text="移除" />
+                                                </Button>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
 
             <!-- ════════════════════════════════════════════════════════════
-                 5. 修改密码表单（保留功能绑定）
+                 3. 修改密码表单（保留功能绑定）
                  ════════════════════════════════════════════════════════════ -->
             <Border Classes="GdCard">
                 <StackPanel Spacing="14">
-                    <TextBlock Text="修改密码" Classes="GdSectionTitle" />
+                    <Border Classes="GdSectionTitleBar">
+                        <TextBlock Text="修改密码" Classes="GdSectionTitle" />
+                    </Border>
 
                     <Grid ColumnDefinitions="*,*"
                           ColumnSpacing="12">

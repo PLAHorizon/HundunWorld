@@ -405,6 +405,7 @@
     <Compile Include="Game\Network\Sync\NetworkSyncIntegration.cs" />
     <Compile Include="Game\Network\Sync\NpcSyncManager.cs" />
     <Compile Include="Game\Network\Sync\SkillSyncHandler.cs" />
+    <Compile Include="Game\Network\SyncDiagnosticsSinkImpl.cs" />
     <Compile Include="Game\NetworkDiagnosticsScript.cs" />
     <Compile Include="Game\Performance\MemoryOptimizer.cs" />
     <Compile Include="Game\Performance\NetworkOptimizer.cs" />

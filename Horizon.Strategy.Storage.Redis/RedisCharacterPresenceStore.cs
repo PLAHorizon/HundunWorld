@@ -129,8 +129,10 @@ namespace Horizon.Strategy.Storage.Redis
                 var exists = await database.KeyExistsAsync(key);
                 if (!exists)
                 {
-                    _logger?.LogWarning(
-                        "RefreshHeartbeatAsync: character {CharacterId} presence key not found, possible stale heartbeat",
+                    // 修复 BUG（日志噪音）：角色正常离线后 Redis key 被删除，此时兜底刷新发现 key 不存在
+                    // 是正常行为（角色已下线），不应产生 Warning 日志。降低为 Debug 级别。
+                    _logger?.LogDebug(
+                        "RefreshHeartbeatAsync: character {CharacterId} presence key not found (normal for offline characters)",
                         characterId);
                     return false;
                 }

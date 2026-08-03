@@ -28,6 +28,15 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private ObservableCollection<FrequentProductInfo> _frequentProducts = new();
         private Guid _userId;
 
+        // 个人中心扩展字段
+        private string _userName = "龙";
+        private string _userRole = "VIP 会员";
+        private string _avatarUrl = "https://cdn.horizon.game/avatar/long.png";
+        private string _accountId = "1000086";
+        private bool _isVerified = true;
+        private ObservableCollection<ProfileStatItem> _profileStats = new();
+        private ObservableCollection<ProfileMenuItem> _menuItems = new();
+
         public string DisplayName
         {
             get => _displayName;
@@ -120,6 +129,57 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             set => SetProperty(ref _userId, value);
         }
 
+        public string UserName
+        {
+            get => _userName;
+            set
+            {
+                if (SetProperty(ref _userName, value))
+                    OnPropertyChanged(nameof(AvatarText));
+            }
+        }
+
+        public string UserRole
+        {
+            get => _userRole;
+            set => SetProperty(ref _userRole, value);
+        }
+
+        public string AvatarUrl
+        {
+            get => _avatarUrl;
+            set => SetProperty(ref _avatarUrl, value);
+        }
+
+        public string AccountId
+        {
+            get => _accountId;
+            set => SetProperty(ref _accountId, value);
+        }
+
+        public bool IsVerified
+        {
+            get => _isVerified;
+            set => SetProperty(ref _isVerified, value);
+        }
+
+        public ObservableCollection<ProfileStatItem> ProfileStats
+        {
+            get => _profileStats;
+            set => SetProperty(ref _profileStats, value);
+        }
+
+        public ObservableCollection<ProfileMenuItem> MenuItems
+        {
+            get => _menuItems;
+            set => SetProperty(ref _menuItems, value);
+        }
+
+        /// <summary>
+        /// 头像首字（取 UserName 首字符），用于渐变头像内的文字。
+        /// </summary>
+        public string AvatarText => string.IsNullOrEmpty(UserName) ? "U" : UserName.Substring(0, 1);
+
         public string MerchantToggleLabel => IsMerchant ? "切换为买家视图" : "切换为商户视图";
 
         public string SubscriptionLevelColor => SubscriptionLevel switch
@@ -134,6 +194,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public ICommand SaveNotificationSettingsCommand { get; }
         public ICommand ToggleMerchantViewCommand { get; }
         public ICommand LoadFrequentProductsCommand { get; }
+        public ICommand LogoutCommand { get; }
 
         public FlowerProfileViewModel()
         {
@@ -142,7 +203,9 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             SaveNotificationSettingsCommand = new AsyncCommand(SaveNotificationSettingsAsync);
             ToggleMerchantViewCommand = new AsyncCommand(ToggleMerchantViewAsync);
             LoadFrequentProductsCommand = new AsyncCommand(LoadFrequentProductsAsync);
+            LogoutCommand = new AsyncCommand(LogoutAsync);
 
+            InitProfileMockData();
             _ = LoadProfileAsync();
         }
 
@@ -156,6 +219,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 {
                     DisplayName = !string.IsNullOrWhiteSpace(user.Username) ? user.Username : user.PassportId ?? "";
                     PhoneNumber = !string.IsNullOrWhiteSpace(user.Email) ? MaskString(user.Email) : "";
+                    UserName = DisplayName;
                 }
 
                 var subTask = _subscriptionService.GetSubscriptionInfoAsync();
@@ -367,6 +431,50 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             _ = LoadFrequentProductsAsync();
         }
 
+        /// <summary>
+        /// 初始化个人中心模拟数据（资料卡、统计指标、功能菜单）。
+        /// 真实数据接入后可替换为服务端返回值。
+        /// </summary>
+        private void InitProfileMockData()
+        {
+            UserName = "龙";
+            UserRole = "VIP 会员";
+            AccountId = "1000086";
+            AvatarUrl = "https://cdn.horizon.game/avatar/long.png";
+            IsVerified = true;
+
+            ProfileStats = new ObservableCollection<ProfileStatItem>
+            {
+                new ProfileStatItem { Icon = "📦", Label = "本月订单", Value = "18" },
+                new ProfileStatItem { Icon = "💰", Label = "累计消费", Value = "¥8,640" },
+                new ProfileStatItem { Icon = "⏳", Label = "待处理", Value = "2" },
+            };
+
+            MenuItems = new ObservableCollection<ProfileMenuItem>
+            {
+                new ProfileMenuItem { Icon = "⚙️", Title = "账户设置", Subtitle = "资料与偏好设置" },
+                new ProfileMenuItem { Icon = "📦", Title = "我的订单", Subtitle = "查看交易记录" },
+                new ProfileMenuItem { Icon = "❤️", Title = "我的收藏", Subtitle = "关注的商品" },
+                new ProfileMenuItem { Icon = "📍", Title = "地址管理", Subtitle = "收货地址簿" },
+                new ProfileMenuItem { Icon = "🔔", Title = "消息通知", Subtitle = "推送与提醒设置" },
+                new ProfileMenuItem { Icon = "🛡️", Title = "安全中心", Subtitle = "账户与认证安全" },
+            };
+        }
+
+        private async Task LogoutAsync()
+        {
+            IsLoading = true;
+            try
+            {
+                await Task.Delay(200).ConfigureAwait(false);
+                ToastService.Instance.Success("已退出登录");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+
         private static string MaskString(string input)
         {
             if (string.IsNullOrEmpty(input) || input.Length <= 4)
@@ -376,5 +484,35 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             var suffix = input.Substring(input.Length - 4);
             return $"{prefix}****{suffix}";
         }
+    }
+
+    /// <summary>
+    /// 个人中心统计指标项（订单概览等）。
+    /// </summary>
+    public class ProfileStatItem : ViewModelBase
+    {
+        private string _icon = "";
+        private string _label = "";
+        private string _value = "";
+
+        public string Icon { get => _icon; set => SetProperty(ref _icon, value); }
+        public string Label { get => _label; set => SetProperty(ref _label, value); }
+        public string Value { get => _value; set => SetProperty(ref _value, value); }
+    }
+
+    /// <summary>
+    /// 个人中心功能菜单项（账户设置/我的订单/我的收藏等）。
+    /// </summary>
+    public class ProfileMenuItem : ViewModelBase
+    {
+        private string _icon = "";
+        private string _title = "";
+        private string _subtitle = "";
+        private ICommand _command;
+
+        public string Icon { get => _icon; set => SetProperty(ref _icon, value); }
+        public string Title { get => _title; set => SetProperty(ref _title, value); }
+        public string Subtitle { get => _subtitle; set => SetProperty(ref _subtitle, value); }
+        public ICommand Command { get => _command; set => SetProperty(ref _command, value); }
     }
 }

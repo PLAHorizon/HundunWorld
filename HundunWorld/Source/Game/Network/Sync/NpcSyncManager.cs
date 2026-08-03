@@ -427,7 +427,11 @@ namespace HundunWorld.Game.Network.Sync
                 Vector3 targetPos = syncData.PatrolPath[nextIndex];
 
                 // 简单的线性插值移动
-                Vector3 direction = (targetPos - syncData.Position).Normalized;
+                // 修复 BUG（NaN 传播）：当 NPC 已抵达 targetPos 时，(targetPos - Position) 为零向量，
+                // 零向量归一化会产生 NaN，进而污染 Velocity 与后续 Position，导致 NPC 位置变为 NaN
+                // 并向 AOI/同步管线扩散。归一化前先检查长度平方，零向量时速度置零。
+                Vector3 toTarget = targetPos - syncData.Position;
+                Vector3 direction = toTarget.LengthSquared > 1e-8f ? toTarget.Normalized : Vector3.Zero;
                 float moveSpeed = 2.0f;  // 假设巡逻速度为2m/s
                 syncData.Velocity = direction * moveSpeed;
 
@@ -466,7 +470,10 @@ namespace HundunWorld.Game.Network.Sync
             if (_player != null)
             {
                 Vector3 followPos = _player.Position - _player.Transform.Forward * 3.0f;  // 跟随在玩家后方3米
-                syncData.Velocity = (followPos - syncData.Position).Normalized * 3.0f;
+                // 修复 BUG（NaN 传播）：当 NPC 已处于跟随点时，(followPos - Position) 为零向量，
+                // 归一化产生 NaN 并污染 Velocity/Position。归一化前检查长度平方，零向量时速度置零。
+                Vector3 toFollow = followPos - syncData.Position;
+                syncData.Velocity = toFollow.LengthSquared > 1e-8f ? toFollow.Normalized * 3.0f : Vector3.Zero;
             }
         }
 

@@ -27,6 +27,8 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         private AppThemePreference _themePreference;
         private Control _currentView;
         private string _currentNavigationTag;
+        // 进入音乐播放器前的导航标签，用于从播放器返回原入口页面
+        private string _prePlayerNavigationTag;
         private string _gameStatus = "Ready";
 
         public MainViewModel(GameService gameService, NavigationService navigationService, string initialTag = "Home")
@@ -419,7 +421,23 @@ namespace Horizon.Game.GengDi.Core.ViewModels
 
         public void NavigateToMusicPlayer()
         {
+            // 记录进入播放器前的页面，供返回使用（避免重复记录 MusicPlayer 自身）
+            if (!string.IsNullOrEmpty(CurrentNavigationTag) &&
+                !string.Equals(CurrentNavigationTag, "MusicPlayer", StringComparison.OrdinalIgnoreCase))
+            {
+                _prePlayerNavigationTag = CurrentNavigationTag;
+            }
             NavigateTo("MusicPlayer");
+        }
+
+        /// <summary>
+        /// 从音乐播放器返回原入口页面；若无记录则回到发现音乐。
+        /// </summary>
+        public void NavigateBackFromPlayer()
+        {
+            var target = string.IsNullOrEmpty(_prePlayerNavigationTag) ? "MusicDiscover" : _prePlayerNavigationTag;
+            _prePlayerNavigationTag = null;
+            NavigateTo(target);
         }
 
         public void NavigateToPlaylistManage()

@@ -3219,7 +3219,9 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                     "群组会话",
                     description,
                     _groupMessageItems,
-                    "输入群消息，或直接粘贴视频链接自动解析");
+                    "输入群消息，或直接粘贴视频链接自动解析",
+                    string.IsNullOrWhiteSpace(title) ? "" : title[..1],
+                    false);
                 return;
             }
 
@@ -3236,6 +3238,7 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                 {
                     _activeConversationState.Title = title;
                     _activeConversationState.Description = description;
+                    _activeConversationState.IsOnline = _selectedFriend.IsAvailable;
                     return;
                 }
 
@@ -3244,7 +3247,9 @@ namespace Horizon.Game.GengDi.Core.ViewModels
                     "好友会话",
                     description,
                     _messageItems,
-                    "输入消息，或发送图片、视频与链接卡片");
+                    "输入消息，或发送图片、视频与链接卡片",
+                    _selectedFriend.AvatarInitial,
+                    _selectedFriend.IsAvailable);
                 return;
             }
 
@@ -3382,19 +3387,24 @@ namespace Horizon.Game.GengDi.Core.ViewModels
     {
         private string _title;
         private string _description;
+        private bool _isOnline;
 
         public ConversationViewState(
             string title,
             string category,
             string description,
             ObservableCollection<ChatMessageItemViewModel> messages,
-            string inputWatermark)
+            string inputWatermark,
+            string avatarInitial = "",
+            bool isOnline = false)
         {
             _title = title ?? string.Empty;
             Category = category;
             _description = description ?? string.Empty;
             Messages = messages;
             InputWatermark = inputWatermark;
+            AvatarInitial = avatarInitial;
+            _isOnline = isOnline;
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -3436,6 +3446,27 @@ namespace Horizon.Game.GengDi.Core.ViewModels
         public ObservableCollection<ChatMessageItemViewModel> Messages { get; }
 
         public string InputWatermark { get; }
+
+        /// <summary>头像首字（用于聊天头部32x32头像显示）</summary>
+        public string AvatarInitial { get; }
+
+        /// <summary>是否在线（用于聊天头部在线状态文字显示）</summary>
+        public bool IsOnline
+        {
+            get => _isOnline;
+            set
+            {
+                if (_isOnline != value)
+                {
+                    _isOnline = value;
+                    OnPropertyChanged(nameof(IsOnline));
+                    OnPropertyChanged(nameof(OnlineStatusText));
+                }
+            }
+        }
+
+        /// <summary>在线状态文字："在线"/"离线"</summary>
+        public string OnlineStatusText => IsOnline ? "在线" : "离线";
 
         private void OnPropertyChanged(string propertyName)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
