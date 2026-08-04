@@ -16,7 +16,6 @@ namespace HundunWorld.Game.Worlds
     {
         private readonly NetworkManager _networkManager;
         private readonly World _ecsWorld;
-        private readonly EntitySynchronizationManager _entitySyncManager;
         
         // 世界状态
         private bool _isSynchronizing = false;
@@ -37,8 +36,6 @@ namespace HundunWorld.Game.Worlds
         {
             _networkManager = networkManager ?? throw new ArgumentNullException(nameof(networkManager));
             _ecsWorld = ecsWorld ?? throw new ArgumentNullException(nameof(ecsWorld));
-            
-            _entitySyncManager = new EntitySynchronizationManager(networkManager, ecsWorld);
             
             Debug.Log("[WorldState] 世界状态管理器已初始化");
         }
@@ -173,7 +170,6 @@ namespace HundunWorld.Game.Worlds
             if (!_isSynchronizing) return;
             
             _isSynchronizing = false;
-            _entitySyncManager.Dispose();
             
             Debug.Log("[WorldState] 停止世界同步");
         }
@@ -184,9 +180,6 @@ namespace HundunWorld.Game.Worlds
         public void Update(float deltaTime)
         {
             if (!_isSynchronizing) return;
-            
-            // 更新实体同步
-            _entitySyncManager.Update(deltaTime);
             
             // 更新同步统计
             UpdateSyncStatistics(deltaTime);
@@ -211,12 +204,10 @@ namespace HundunWorld.Game.Worlds
         /// <summary>
         /// 注册实体到同步系统
         /// </summary>
-        public void RegisterEntityForSync(ulong entityId, EntitySynchronizationManager.EntityType entityType, Entity entity)
+        public void RegisterEntityForSync(ulong entityId, Entity entity)
         {
-            if (_isSynchronizing)
-            {
-                _entitySyncManager.RegisterEntity(entityId, entityType, entity);
-            }
+            // 实体注册与生命周期由权威 ECS 同步链路（SnapshotApplySystem / FlaxActorSyncSystem）承载，
+            // 旧脚本同步链路（EntitySynchronizationManager）已随重构物理删除。
         }
         
         /// <summary>
@@ -224,7 +215,7 @@ namespace HundunWorld.Game.Worlds
         /// </summary>
         public void UnregisterEntityFromSync(ulong entityId)
         {
-            _entitySyncManager.UnregisterEntity(entityId);
+            // 实体注册与生命周期由权威 ECS 同步链路承载（见 RegisterEntityForSync 说明）。
         }
         
         /// <summary>
@@ -310,8 +301,7 @@ namespace HundunWorld.Game.Worlds
                 ["CurrentWorldId"] = _currentWorldId,
                 ["CurrentWorldName"] = _currentWorldName,
                 ["WorldPropertiesCount"] = _worldProperties.Count,
-                ["AverageSyncInterval"] = _averageSyncInterval,
-                ["EntitySyncStats"] = _entitySyncManager.GetSyncStatistics()
+                ["AverageSyncInterval"] = _averageSyncInterval
             };
             
             return stats;
@@ -323,9 +313,6 @@ namespace HundunWorld.Game.Worlds
         public void Dispose()
         {
             StopSynchronization();
-            
-            // 确保即使同步已停止，EntitySynchronizationManager 也被释放
-            _entitySyncManager?.Dispose();
             
             _worldProperties.Clear();
             

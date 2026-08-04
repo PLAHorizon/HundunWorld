@@ -1,0 +1,224 @@
+﻿  姝ｅ湪纭畾瑕佽繕鍘熺殑椤圭洰鈥?
+C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway\Horizon.Game.Gateway.csproj : warning NU1510: PackageReference System.Text.Json 灏嗕笉浼氬垹闄ゃ€傝鑰冭檻浠庝緷璧栭」涓Щ闄ゆ鍖咃紝鍥犱负鍙兘涓嶉渶瑕佸畠銆?[C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\Horizon.Game.Gateway.Tests.csproj]
+C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway\Horizon.Game.Gateway.csproj : warning NU1510: PackageReference System.Diagnostics.DiagnosticSource 灏嗕笉浼氬垹闄ゃ€傝鑰冭檻浠庝緷璧栭」涓Щ闄ゆ鍖咃紝鍥犱负鍙兘涓嶉渶瑕佸畠銆?[C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\Horizon.Game.Gateway.Tests.csproj]
+C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway\Horizon.Game.Gateway.csproj : warning NU1510: PackageReference System.Threading.Channels 灏嗕笉浼氬垹闄ゃ€傝鑰冭檻浠庝緷璧栭」涓Щ闄ゆ鍖咃紝鍥犱负鍙兘涓嶉渶瑕佸畠銆?[C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\Horizon.Game.Gateway.Tests.csproj]
+  鎵€鏈夐」鐩潎鏄渶鏂扮殑锛屾棤娉曡繕鍘熴€?
+C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway\Horizon.Game.Gateway.csproj : warning NU1510: PackageReference System.Text.Json 灏嗕笉浼氬垹闄ゃ€傝鑰冭檻浠庝緷璧栭」涓Щ闄ゆ鍖咃紝鍥犱负鍙兘涓嶉渶瑕佸畠銆?
+C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway\Horizon.Game.Gateway.csproj : warning NU1510: PackageReference System.Diagnostics.DiagnosticSource 灏嗕笉浼氬垹闄ゃ€傝鑰冭檻浠庝緷璧栭」涓Щ闄ゆ鍖咃紝鍥犱负鍙兘涓嶉渶瑕佸畠銆?
+C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway\Horizon.Game.Gateway.csproj : warning NU1510: PackageReference System.Threading.Channels 灏嗕笉浼氬垹闄ゃ€傝鑰冭檻浠庝緷璧栭」涓Щ闄ゆ鍖咃紝鍥犱负鍙兘涓嶉渶瑕佸畠銆?
+  Horizon.Game.Message -> C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Message\bin\Debug\net10.0\Horizon.Game.Message.dll
+  Horizon.Core.Abstract -> C:\Works\GitHubProjects\HundunWorld\Horizon.Core.Abstract\bin\Debug\net10.0\Horizon.Core.Abstract.dll
+  姝ｅ湪澶嶅埗 Horizon.Game.Message 鍙婂鎴风渚濊禆锟?Flax 鐩綍...
+  Horizon.IM.Message -> C:\Works\GitHubProjects\HundunWorld\Horizon.IM.Message\bin\Debug\net10.0\Horizon.IM.Message.dll
+C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Message\Horizon.Game.Message.csproj(71,5): warning MSB3021: 鏃犳硶灏嗘枃浠垛€淐:\Works\GitHubProjects\HundunWorld\Horizon.Game.Message\bin\Debug\net10.0\Horizon.Game.Message.xml鈥濆鍒跺埌鈥淐:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Message.xml鈥濄€侫ccess to the path 'C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Message.xml' is denied.
+C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Message\Horizon.Game.Message.csproj(71,5): warning MSB3021: 鏃犳硶灏嗘枃浠垛€淐:\Works\GitHubProjects\HundunWorld\Horizon.Game.Message\bin\Debug\net10.0\Horizon.Game.Message.pdb鈥濆鍒跺埌鈥淐:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Message.pdb鈥濄€侫ccess to the path 'C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Message.pdb' is denied.
+C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Message\Horizon.Game.Message.csproj(71,5): warning MSB3021: 鏃犳硶灏嗘枃浠垛€淐:\Works\GitHubProjects\HundunWorld\Horizon.Game.Message\bin\Debug\net10.0\TouchSocket.dll鈥濆鍒跺埌鈥淐:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\TouchSocket.dll鈥濄€侫ccess to the path 'C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\TouchSocket.dll' is denied.
+C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Message\Horizon.Game.Message.csproj(71,5): warning MSB3021: 鏃犳硶灏嗘枃浠垛€淐:\Works\GitHubProjects\HundunWorld\Horizon.Game.Message\bin\Debug\net10.0\MemoryPack.Core.dll鈥濆鍒跺埌鈥淐:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\MemoryPack.Core.dll鈥濄€侫ccess to the path 'C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\MemoryPack.Core.dll' is denied.
+C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Message\Horizon.Game.Message.csproj(71,5): warning MSB3021: 鏃犳硶灏嗘枃浠垛€淐:\Works\GitHubProjects\HundunWorld\Horizon.Game.Message\bin\Debug\net10.0\K4os.Compression.LZ4.dll鈥濆鍒跺埌鈥淐:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\K4os.Compression.LZ4.dll鈥濄€侫ccess to the path 'C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\K4os.Compression.LZ4.dll' is denied.
+C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Message\Horizon.Game.Message.csproj(71,5): warning MSB3021: 鏃犳硶灏嗘枃浠垛€淐:\Works\GitHubProjects\HundunWorld\Horizon.Game.Message\bin\Debug\net10.0\Horizon.Game.Message.dll鈥濆鍒跺埌鈥淐:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Message.dll鈥濄€侫ccess to the path 'C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Message.dll' is denied.
+C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Message\Horizon.Game.Message.csproj(71,5): warning MSB3021: 鏃犳硶灏嗘枃浠垛€淐:\Works\GitHubProjects\HundunWorld\Horizon.Game.Message\bin\Debug\net10.0\TouchSocket.Core.dll鈥濆鍒跺埌鈥淐:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\TouchSocket.Core.dll鈥濄€侫ccess to the path 'C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\TouchSocket.Core.dll' is denied.
+  鎴愬姛澶嶅埗鏂囦欢锟?Flax 鐩綍
+  Horizon.Core -> C:\Works\GitHubProjects\HundunWorld\Horizon.Core\bin\Debug\net10.0\Horizon.Core.dll
+  Horizon.Share -> C:\Works\GitHubProjects\HundunWorld\Horizon.Share\bin\Debug\net10.0\Horizon.Share.dll
+  Horizon.AI.Kernel -> C:\Works\GitHubProjects\HundunWorld\Horizon.AI.Kernel\bin\Debug\net10.0\Horizon.AI.Kernel.dll
+  Horizon.Game.ECS -> C:\Works\GitHubProjects\HundunWorld\Horizon.Game.ECS\bin\Debug\net10.0\Horizon.Game.ECS.dll
+  姝ｅ湪澶嶅埗 Horizon.Game.ECS 鏂囦欢锟?Flax 鐩綍...
+C:\Works\GitHubProjects\HundunWorld\Horizon.Game.ECS\Horizon.Game.ECS.csproj(28,5): warning MSB3021: 鏃犳硶灏嗘枃浠垛€淐:\Works\GitHubProjects\HundunWorld\Horizon.Game.ECS\bin\Debug\net10.0\Horizon.Game.ECS.xml鈥濆鍒跺埌鈥淐:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.xml鈥濄€侫ccess to the path 'C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.xml' is denied.
+C:\Works\GitHubProjects\HundunWorld\Horizon.Game.ECS\Horizon.Game.ECS.csproj(28,5): warning MSB3021: 鏃犳硶灏嗘枃浠垛€淐:\Works\GitHubProjects\HundunWorld\Horizon.Game.ECS\bin\Debug\net10.0\Horizon.Game.ECS.pdb鈥濆鍒跺埌鈥淐:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.pdb鈥濄€侫ccess to the path 'C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.pdb' is denied.
+C:\Works\GitHubProjects\HundunWorld\Horizon.Game.ECS\Horizon.Game.ECS.csproj(28,5): warning MSB3021: 鏃犳硶灏嗘枃浠垛€淐:\Works\GitHubProjects\HundunWorld\Horizon.Game.ECS\bin\Debug\net10.0\Horizon.Game.ECS.dll鈥濆鍒跺埌鈥淐:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.dll鈥濄€侫ccess to the path 'C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.dll' is denied.
+  鎴愬姛澶嶅埗鏂囦欢: 
+  Horizon.Orleans.Interface -> C:\Works\GitHubProjects\HundunWorld\Horizon.Orleans.Interface\bin\Debug\net10.0\Horizon.Orleans.Interface.dll
+  Horizon.Model -> C:\Works\GitHubProjects\HundunWorld\Horizon.Model\bin\Debug\net10.0\Horizon.Model.dll
+  Horizon.Mapper -> C:\Works\GitHubProjects\HundunWorld\Horizon.Mapper\bin\Debug\net10.0\Horizon.Mapper.dll
+  Horizon.Entities -> C:\Works\GitHubProjects\HundunWorld\Horizon.Entities\bin\Debug\net10.0\Horizon.Entities.dll
+  Horizon.Game.Core -> C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Core\bin\Debug\net10.0\Horizon.Game.Core.dll
+  姝ｅ湪澶嶅埗 Horizon.Game.Core 鍙婁緷璧栧埌 Flax 鐩綍...
+C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Core\Horizon.Game.Core.csproj(70,5): warning MSB3030: 鏃犳硶澶嶅埗鏂囦欢鈥淐:\Works\GitHubProjects\HundunWorld\Horizon.Game.Core\bin\Debug\net10.0\Horizon.Game.Core.xml鈥濓紝鍘熷洜鏄壘涓嶅埌璇ユ枃浠躲€?
+  鎴愬姛澶嶅埗鏂囦欢: C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Core.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Core.pdb;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\AutoMapper.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Azure.Core.Amqp.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Azure.Core.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Azure.Data.Tables.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Azure.Messaging.EventHubs.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Consul.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\DotNetty.Buffers.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\DotNetty.Common.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\FlatSharp.Runtime.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Core.Abstract.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Core.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Core.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Message.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.IM.Message.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Orleans.Interface.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Share.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Humanizer.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\K4os.Compression.LZ4.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\log4net.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\MemoryPack.Core.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.AspNetCore.Connections.Abstractions.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Azure.Amqp.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Bcl.AsyncInterfaces.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Caching.Abstractions.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Caching.Memory.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Caching.StackExchangeRedis.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Configuration.Abstractions.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Configuration.Binder.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Configuration.CommandLine.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Configuration.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Configuration.EnvironmentVariables.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Configuration.FileExtensions.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Configuration.Json.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Configuration.UserSecrets.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.DependencyInjection.Abstractions.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.DependencyInjection.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.DependencyModel.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Diagnostics.Abstractions.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Diagnostics.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Features.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.FileProviders.Abstractions.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.FileProviders.Physical.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.FileSystemGlobbing.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Hosting.Abstractions.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Hosting.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Logging.Abstractions.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Logging.Configuration.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Logging.Console.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Logging.Debug.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Logging.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Logging.EventLog.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Logging.EventSource.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.ObjectPool.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Options.ConfigurationExtensions.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Options.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.Extensions.Primitives.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.IdentityModel.Abstractions.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.IdentityModel.JsonWebTokens.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.IdentityModel.Logging.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Microsoft.IdentityModel.Tokens.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Newtonsoft.Json.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Orleans.Clustering.AdoNet.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Orleans.Clustering.Redis.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Orleans.Core.Abstractions.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Orleans.Core.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Orleans.Persistence.Redis.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Orleans.Runtime.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Orleans.Serialization.Abstractions.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Orleans.Serialization.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Orleans.Serialization.NewtonsoftJson.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Orleans.Streaming.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Orleans.Streaming.EventHubs.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Pipelines.Sockets.Unofficial.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\protobuf-net.Core.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\protobuf-net.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\StackExchange.Redis.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\System.ClientModel.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\System.CodeDom.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\System.Composition.AttributedModel.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\System.Composition.Convention.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\System.Composition.Hosting.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\System.Composition.Runtime.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\System.Composition.TypedParts.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\System.Configuration.ConfigurationManager.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\System.Data.SqlClient.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\System.Diagnostics.EventLog.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\System.IO.Hashing.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\System.Management.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\System.Memory.Data.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\System.Security.Cryptography.ProtectedData.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\System.Security.Permissions.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\TouchSocket.Core.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\TouchSocket.dll;C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\TouchSocket.Rpc.dll
+  Horizon.Game.ECS.Arch -> C:\Works\GitHubProjects\HundunWorld\Horizon.Game.ECS.Arch\bin\Debug\net10.0\Horizon.Game.ECS.Arch.dll
+  姝ｅ湪澶嶅埗 Horizon.Game.ECS.Arch 鍙婂鎴风渚濊禆?Flax 鐩綍...
+  鎴愬姛澶嶅埗鏂囦欢锟?Flax 鐩綍
+  Horizon.Strategy.Storage.Redis -> C:\Works\GitHubProjects\HundunWorld\Horizon.Strategy.Storage.Redis\bin\Debug\net10.0\Horizon.Strategy.Storage.Redis.dll
+  Horizon.IoT.MQTT -> C:\Works\GitHubProjects\HundunWorld\Horizon.IoT.MQTT\bin\Debug\net10.0\Horizon.IoT.MQTT.dll
+  Horizon.Orleans.Grains -> C:\Works\GitHubProjects\HundunWorld\Horizon.Orleans.Grains\bin\Debug\net10.0\Horizon.Orleans.Grains.dll
+  Horizon.Game.Gateway -> C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway\bin\Debug\net10.0\Horizon.Game.Gateway.dll
+  Horizon.Orleans.Silo -> C:\Works\GitHubProjects\HundunWorld\Horizon.Orleans.Silo\bin\Debug\net10.0\Horizon.Orleans.Silo.dll
+  Horizon.Game.Gateway.Tests -> C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\bin\Debug\net10.0\Horizon.Game.Gateway.Tests.dll
+C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\bin\Debug\net10.0\Horizon.Game.Gateway.Tests.dll (.NETCoreApp,Version=v10.0)鐨勬祴璇曡繍琛?
+鎬诲叡 1 涓祴璇曟枃浠朵笌鎸囧畾妯″紡鐩稿尮閰嶃€?
+[xUnit.net 00:00:00.77]     Horizon.Game.Gateway.Tests.InteractionApplySystemTests.EmptyQueue_NoOp [SKIP]
+[xUnit.net 00:00:00.78]     Horizon.Game.Gateway.Tests.InteractionApplySystemTests.Despawn_Entity_OnEndState [SKIP]
+[xUnit.net 00:00:00.78]     Horizon.Game.Gateway.Tests.InteractionApplySystemTests.Despawn_Entity_OnStolenState [SKIP]
+[xUnit.net 00:00:00.78]     Horizon.Game.Gateway.Tests.InteractionApplySystemTests.NotifySink_CallbackInvoked [SKIP]
+[xUnit.net 00:00:00.78]     Horizon.Game.Gateway.Tests.InteractionApplySystemTests.MultiplePackets_ProcessedInOrder [SKIP]
+[xUnit.net 00:00:00.78]     Horizon.Game.Gateway.Tests.InteractionApplySystemTests.Spawn_Entity_OnFirstPacket [SKIP]
+[xUnit.net 00:00:00.78]     Horizon.Game.Gateway.Tests.InteractionApplySystemTests.Update_Entity_OnSubsequentPacket [SKIP]
+  宸茶烦杩?Horizon.Game.Gateway.Tests.InteractionApplySystemTests.EmptyQueue_NoOp [1 ms]
+  宸茶烦杩?Horizon.Game.Gateway.Tests.InteractionApplySystemTests.Despawn_Entity_OnEndState [1 ms]
+  宸茶烦杩?Horizon.Game.Gateway.Tests.InteractionApplySystemTests.Despawn_Entity_OnStolenState [1 ms]
+  宸茶烦杩?Horizon.Game.Gateway.Tests.InteractionApplySystemTests.NotifySink_CallbackInvoked [1 ms]
+  宸茶烦杩?Horizon.Game.Gateway.Tests.InteractionApplySystemTests.MultiplePackets_ProcessedInOrder [1 ms]
+  宸茶烦杩?Horizon.Game.Gateway.Tests.InteractionApplySystemTests.Spawn_Entity_OnFirstPacket [1 ms]
+  宸茶烦杩?Horizon.Game.Gateway.Tests.InteractionApplySystemTests.Update_Entity_OnSubsequentPacket [1 ms]
+[xUnit.net 00:00:00.78]     Horizon.Game.Gateway.Tests.InteractionApplySystemTests.StateBits_AppliedCorrectly [SKIP]
+  宸茶烦杩?Horizon.Game.Gateway.Tests.InteractionApplySystemTests.StateBits_AppliedCorrectly [1 ms]
+dotnet : [xUnit.net 00:00:00.83]     Horizon.Game.Gateway.Tests.MessageHandlerBaseResponseTests.HandleAsync_ResponsePac
+ketPreservesRequestCorrelationAndRoutingHeaders [FAIL]
+所在位置 行:1 字符: 1
++ dotnet test Horizon.Game.Gateway.Tests/Horizon.Game.Gateway.Tests.csp ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([xUnit.net 00:0...gHeaders [FAIL]:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[xUnit.net 00:00:00.83]     Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.StateBits_Mapping_Start [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.MessageHandlerBaseResponseTests.HandleAsync_ResponsePacketPreservesRequestCorrelationAndRoutingHeaders [145 ms]
+  閿欒娑堟伅:
+   Assert.True() Failure
+Expected: True
+Actual:   False
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.MessageHandlerBaseResponseTests.HandleAsync_ResponsePacketPreservesRequestCorrelationAndRoutingHeaders() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\MessageHandlerBaseResponseTests.cs:line 50
+--- End of stack trace from previous location ---
+  澶辫触 Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.StateBits_Mapping_Start [23 ms]
+  閿欒娑堟伅:
+   Assert.True() Failure
+Expected: True
+Actual:   False
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.StateBits_Mapping_Start() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\HandleInteractionIntentTests.cs:line 68
+--- End of stack trace from previous location ---
+[xUnit.net 00:00:00.84]     Horizon.Game.Gateway.Tests.MessageHandlerBaseResponseTests.HandleAsync_WhenRouteHandlerThro
+ws_SendsFallbackErrorResponse [FAIL]
+[xUnit.net 00:00:00.84]     Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.StateBits_Mapping_Stolen [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.MessageHandlerBaseResponseTests.HandleAsync_WhenRouteHandlerThrows_SendsFallbackErrorResponse [6 ms]
+  閿欒娑堟伅:
+   Assert.IsType() Failure: Value is null
+Expected: typeof(Horizon.Game.Message.Network.ErrorMessage)
+Actual:   null
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.MessageHandlerBaseResponseTests.HandleAsync_WhenRouteHandlerThrows_SendsFallbackErrorResponse() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\MessageHandlerBaseResponseTests.cs:line 90
+--- End of stack trace from previous location ---
+  澶辫触 Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.StateBits_Mapping_Stolen [2 ms]
+  閿欒娑堟伅:
+   Assert.True() Failure
+Expected: True
+Actual:   False
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.StateBits_Mapping_Stolen() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\HandleInteractionIntentTests.cs:line 86
+--- End of stack trace from previous location ---
+[xUnit.net 00:00:00.86]     Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.RateLimit_Isolated_PerInteractorId 
+[FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.RateLimit_Isolated_PerInteractorId [2 ms]
+  閿欒娑堟伅:
+   Assert.True() Failure
+Expected: True
+Actual:   False
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.RateLimit_Isolated_PerInteractorId() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\HandleInteractionIntentTests.cs:line 111
+--- End of stack trace from previous location ---
+[xUnit.net 00:00:00.87]     Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.RateLimit_Enforced [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.RateLimit_Enforced [2 ms]
+  閿欒娑堟伅:
+   Assert.True() Failure
+Expected: True
+Actual:   False
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.RateLimit_Enforced() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\HandleInteractionIntentTests.cs:line 100
+--- End of stack trace from previous location ---
+[xUnit.net 00:00:00.88]     Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.StateBits_Mapping_End [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.StateBits_Mapping_End [1 ms]
+  閿欒娑堟伅:
+   Assert.True() Failure
+Expected: True
+Actual:   False
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.StateBits_Mapping_End() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\HandleInteractionIntentTests.cs:line 77
+--- End of stack trace from previous location ---
+娲诲姩鐨勬祴璇曡繍琛屽凡涓銆傚師鍥? 娴嬭瘯涓绘満杩涚▼宕╂簝 : Fatal error.
+Internal CLR error. (0x80131506)
+   at Horizon.Game.ECS.Arch.Systems.InterpolationSystem.Update(Arch.Core.World, System.TimeSpan)
+   at Horizon.Game.Gateway.Tests.InterpolationSystemSmoothStepTests.SmoothStep_SingleInstanceCpu_Under001ms()
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(System.Object, IntPtr*)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(System.Object, System.Reflection.BindingFlags)
+   at System.Reflection.RuntimeMethodInfo.Invoke(System.Object, System.Reflection.BindingFlags, System.Reflection.Binde
+r, System.Object[], System.Globalization.CultureInfo)
+   at System.Reflection.MethodBase.Invoke(System.Object, System.Object[])
+   at Xunit.Sdk.TestInvoker`1[[System.__Canon, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToke
+n=7cec85d7bea7798e]].CallTestMethod(System.Object)
+   at Xunit.Sdk.TestInvoker`1+<>c__DisplayClass47_0+<<InvokeTestMethodAsync>b__1>d[[System.__Canon, System.Private.Core
+Lib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]].MoveNext()
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[[Xunit.Sdk.TestInvoker`1+<>c__DisplayClass47_0+<<Inv
+okeTestMethodAsync>b__1>d[[System.__Canon, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7c
+ec85d7bea7798e]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]](<<InvokeT
+estMethodAsync>b__1>d<System.__Canon> ByRef)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder.Start[[Xunit.Sdk.TestInvoker`1+<>c__DisplayClass47_0+<<Inv
+okeTestMethodAsync>b__1>d[[System.__Canon, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7c
+ec85d7bea7798e]], xunit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]](<<InvokeT
+estMethodAsync>b__1>d<System.__Canon> ByRef)
+   at Xunit.Sdk.TestInvoker`1+<>c__DisplayClass47_0[[System.__Canon, System.Private.CoreLib, Version=10.0.0.0, Culture=
+neutral, PublicKeyToken=7cec85d7bea7798e]].<InvokeTestMethodAsync>b__1()
+   at Xunit.Sdk.ExecutionTimer+<AggregateAsync>d__4.MoveNext()
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[[Xunit.Sdk.ExecutionTimer+<AggregateAsync>d__4, xuni
+t.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]](<AggregateAsync>d__4 ByRef)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder.Start[[Xunit.Sdk.ExecutionTimer+<AggregateAsync>d__4, xuni
+t.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]](<AggregateAsync>d__4 ByRef)
+   at Xunit.Sdk.ExecutionTimer.AggregateAsync(System.Func`1<System.Threading.Tasks.Task>)
+   at Xunit.Sdk.TestInvoker`1+<>c__DisplayClass47_0[[System.__Canon, System.Private.CoreLib, Version=10.0.0.0, Culture=
+neutral, PublicKeyToken=7cec85d7bea7798e]].<InvokeTestMethodAsync>b__0()
+   at Xunit.Sdk.ExceptionAggregator+<RunAsync>d__9.MoveNext()
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[[Xunit.Sdk.ExceptionAggregator+<RunAsync>d__9, xunit
+.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]](<RunAsync>d__9 ByRef)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder.Start[[Xunit.Sdk.ExceptionAggregator+<RunAsync>d__9, xunit
+.core, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]](<RunAsync>d__9 ByRef)
+   at Xunit.Sdk.ExceptionAggregator.RunAsync(System.Func`1<System.Threading.Tasks.Task>)
+   at Xunit.Sdk.TestInvoker`1+<InvokeTestMethodAsync>d__47[[System.__Canon, System.Private.CoreLib, Version=10.0.0.0, C
+ulture=neutral, PublicKeyToken=7cec85d7bea7798e]].MoveNext()
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[[Xunit.Sdk.TestInvoker`1+<InvokeTestMethodAsync>d__4
+7[[System.__Canon, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], xunit.
+execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]](<InvokeTestMethodAsync>d__47<Syst
+em.__Canon> ByRef)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[[System.Decimal, System.Private.CoreLib, Version=10.0.0.
+0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]].Start[[Xunit.Sdk.TestInvoker`1+<InvokeTestMethodAsync>d__47[[Syst
+em.__Canon, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], xunit.executi
+on.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]](<InvokeTestMethodAsync>d__47<System.__Ca
+non> ByRef)
+   at Xunit.Sdk.TestInvoker`1[[System.__Canon, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToke
+n=7cec85d7bea7798e]].InvokeTestMethodAsync(System.Object)
+   at Xunit.Sdk.XunitTestInvoker.InvokeTestMethodAsync(System.Object)
+   at Xunit.Sdk.TestInvoker`1+<<RunAsync>b__46_0>d[[System.__Canon, System.Private.CoreLib, Version=10.0.0.0, Culture=n
+eutral, PublicKeyToken=7cec85d7bea7798e]].MoveNext()
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[[Xunit.Sdk.TestInvoker`1+<<RunAsync>b__46_0>d[[Syste
+m.__Canon, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], xunit.executio
+n.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]](<<RunAsync>b__46_0>d<System.__Canon> ByRe
+f)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[[System.Decimal, System.Private.CoreLib, Version=10.0.0.
+0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]].Start[[Xunit.Sdk.TestInvoker`1+<<RunAsync>b__46_0>d[[System.__Can
+on, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], xunit.execution.dotne
+t, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]](<<RunAsync>b__46_0>d<System.__Canon> ByRef)
+   at Xunit.Sdk.TestInvoker`1[[System.__Canon, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToke
+n=7cec85d7bea7798e]].<RunAsync>b__46_0()
+   at Xunit.Sdk.ExceptionAggregator+<RunAsync>d__10`1[[System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Cultur
+e=neutral, PublicKeyToken=7cec85d7bea7798e]].MoveNext()
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[[Xunit.Sdk.ExceptionAggregator+<RunAsync>d__10`1[[Sy
+stem.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], xunit.core,
+ Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]](<RunAsync>d__10`1<System.Decimal> ByRef)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[[System.Decimal, System.Private.CoreLib, Version=10.0.0.
+0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]].Start[[Xunit.Sdk.ExceptionAggregator+<RunAsync>d__10`1[[System.De
+cimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]], xunit.core, Versio
+n=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]](<RunAsync>d__10`1<System.Decimal> ByRef)
+   at Xunit.Sdk.ExceptionAggregator.RunAsync[[System.Decimal, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral
+, PublicKeyToken=7cec85d7bea7798e]](System.Func`1<System.Threading.Tasks.Task`1<System.Decimal>>)
+   at Xunit.Sdk.TestInvoker`1[[System.__Canon, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToke
+n=7cec85d7bea7798e]].RunAsync()
+   at Xunit.Sdk.XunitTestRunner.InvokeTestMethodAsync(Xunit.Sdk.ExceptionAggregator)
+   at Xunit.Sdk.XunitTestRunner+<InvokeTestAsync>d__4.MoveNext()
+   at System.Runtime.CompilerServices.AsyncMethodBuilderCore.Start[[Xunit.Sdk.XunitTestRunner+<InvokeTestAsync>d__4, xu
+nit.execution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]](<InvokeTestAsync>d__4 ByRef)
+   at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[[System.__Canon, System.Private.CoreLib, Version=10.0.0.
+0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]].Start[[Xunit.Sdk.XunitTestRunner+<InvokeTestAsync>d__4, xunit.exe
+cution.dotnet, Version=2.9.3.0, Culture=neutral, PublicKeyToken=8d05b1bb7a6fdb6c]](<InvokeTestAsync>d__4 ByRef)
+   at Xunit.Sdk.XunitTestRunner.InvokeTestAsync(Xunit.Sdk.ExceptionAggregator)
+   at Xunit.Sdk.TestRunner`1+<>c__DisplayClass43_0[[System.__Ca
+
+澶辫触!  - 澶辫触:     7锛岄€氳繃:   515锛屽凡璺宠繃:     8锛屾€昏:   530锛屾寔缁椂闂? 295 ms - Horizon.Game.Gateway.Tests.dll (net10.0)
+娴嬭瘯杩愯宸蹭腑姝€?

@@ -129,6 +129,13 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     /// <summary>累计因超时被清理的远程实体数（诊断用）。</summary>
     public long StaleEntitiesCleaned { get; private set; }
 
+    /// <summary>
+    /// 累计因位置数据非有限值（NaN/Infinity）被跳过的远程实体更新次数（诊断用，spec 5.3.1 规则 7）。
+    /// 由游戏层（ECSUpdateDriver）增量转发到 ClientSyncMetrics.InvalidSnapshotSkippedCount。
+    /// </summary>
+    public long InvalidSnapshotsSkipped => _invalidSnapshotsSkipped;
+    private long _invalidSnapshotsSkipped;
+
     // Task 3：增量合并缓冲复用（实例方法 Update 使用），避免每帧分配 Dictionary/数组。
     private readonly Dictionary<ulong, EntityDelta> _deltaMergeBuffer = new();
     private readonly List<EntityDelta> _deltaMergeList = new();
@@ -970,6 +977,20 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 // - Active/Initializing：更新目标位置，保持 Active 状态
                 // - Idle/Stale：收到 Update delta 表示远程角色恢复移动，转为 Active
                 // - Offline/TimeoutDespawn：理论上不会到达（实体已销毁），防御性处理为 Active
+
+                // [异常数据隔离] 写入 Target 前的有限值校验（spec 5.3.1 规则 7、DFX 4.2.4）：
+                // 任一轴为 NaN/Infinity 时跳过本次 Target 写入（保持最后合法 Target），
+                // 不将 State 置为 Active、不重置 TimeSinceLastSnapshot（避免虚假"新快照"信号），
+                // 输出诊断事件与计数，其余角色完全不受影响、进程不崩溃。
+                if (!float.IsFinite(newTransform.X) || !float.IsFinite(newTransform.Y)
+                    || !float.IsFinite(newTransform.Z) || !float.IsFinite(newTransform.Yaw))
+                {
+                    Interlocked.Increment(ref _invalidSnapshotsSkipped);
+                    Diagnostics?.OnInvalidSnapshotSkipped(delta.EntityId, serverTick);
+                    world.Set(archEntity, ref newTransform); // 权威 Transform 照常写入，仅插值 Target 跳过
+                    return;
+                }
+
                 interp.State = RemoteEntityState.Active;
 
                 // Lerp 平滑追赶方案：只更新目标位置，不设置 Start，不重置 Alpha。

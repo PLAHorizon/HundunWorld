@@ -99,35 +99,10 @@ namespace HundunWorld.Game.Worlds
         {
             _entities[entityId] = entity;
             
-            // 注册到同步系统
-            if (_worldStateManager != null && _worldStateManager.IsSynchronizing)
-            {
-                // 根据实体类型确定同步类型
-                var entityType = DetermineEntityType(entity);
-                _worldStateManager.RegisterEntityForSync(entityId, entityType, entity);
-            }
+            // 实体注册与生命周期由权威 ECS 同步链路（SnapshotApplySystem / FlaxActorSyncSystem）承载，
+            // 旧脚本同步链路（EntitySynchronizationManager）已随重构物理删除。
             
             Debug.Log($"[WorldManager] 实体已添加: ID={entityId}");
-        }
-        
-        /// <summary>
-        /// 根据实体组件确定实体类型
-        /// </summary>
-        private EntitySynchronizationManager.EntityType DetermineEntityType(Entity entity)
-        {
-            // 这里可以根据实体拥有的组件来判断类型
-            if (_world.Has<PlayerComponent>(entity))
-                return EntitySynchronizationManager.EntityType.Player;
-            else if (_world.Has<NpcComponent>(entity))
-                return EntitySynchronizationManager.EntityType.Npc;
-            else if (_world.Has<MonsterComponent>(entity))
-                return EntitySynchronizationManager.EntityType.Monster;
-            else if (_world.Has<ItemComponent>(entity))
-                return EntitySynchronizationManager.EntityType.Item;
-            else if (_world.Has<ProjectileComponent>(entity))
-                return EntitySynchronizationManager.EntityType.Projectile;
-            else
-                return EntitySynchronizationManager.EntityType.Environment;
         }
 
         /// <summary>

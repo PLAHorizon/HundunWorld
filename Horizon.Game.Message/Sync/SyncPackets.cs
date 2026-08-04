@@ -36,8 +36,15 @@ public static class SyncProtocolVersion
     ///        未进入网络同步链路，链路两端固定用 DefaultMaxSpeed=6 m/s 推进"的问题。
     ///   v7 = 新增 <see cref="BaselineResyncRequestPacket"/>：客户端 delta 解码时 baseline 不匹配，
     ///        主动请求服务端重传全量快照，替代原"直接应用 delta 兜底"，保证 baseline 一致性。
+    ///   v8 = 同步链路归一重构 + 超大规模容量治理：归一唯一权威链路（旧脚本组件
+    ///        <c>NetworkSyncManager</c>/<c>NpcSyncManager</c>/<c>SkillSyncHandler</c>/<c>NetworkSyncIntegration</c>/
+    ///        <c>EntitySynchronizationManager</c> 物理删除）；服务端新增带宽预算限流
+    ///        （<c>BandwidthBudgetOptions</c>，100kbps 红线）与兴趣区分级降频
+    ///        （<c>InterestGradeOptions</c>/<c>ISyncInterestGradeStrategy</c>）；客户端新增规模档位控制
+    ///        （<c>SyncScaleController</c>，20/100/1000/5000）。本次无包结构变更，版本提升用于标识
+    ///        重构后的兼容语义边界。
     /// </summary>
-    public const int Current = 7;
+    public const int Current = 8;
 
     /// <summary>
     /// 服务器支持的最低协议版本。低于此版本的客户端握手将被拒绝并收到 <see cref="HandshakeRejectPacket"/>，

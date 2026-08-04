@@ -260,6 +260,50 @@ namespace HundunWorld.Game.Network
             Volatile.Write(ref _currentStrategyCombo, combo ?? string.Empty);
         }
 
+        // ─── 多角色同步指标（Phase C7：分级调度/降档/帧率降级可观测） ───
+
+        /// <summary>当前远程角色渲染数量（FlaxActorSyncSystem 每帧写入）。</summary>
+        public static int RemoteEntityCount => Volatile.Read(ref _remoteEntityCount);
+        private static int _remoteEntityCount;
+
+        /// <summary>本帧实际执行位置同步的实体数（分级调度后）。</summary>
+        public static int PerFrameSyncedEntityCount => Volatile.Read(ref _perFrameSyncedEntityCount);
+        private static int _perFrameSyncedEntityCount;
+
+        /// <summary>分级调度降档累计次数（性能自适应触发）。</summary>
+        public static long DegradeEventCount => Interlocked.Read(ref _degradeEventCount);
+        private static long _degradeEventCount;
+
+        /// <summary>帧率降级累计次数（远程角色 10+ 且帧率 &lt; 30FPS 时记录）。</summary>
+        public static long FrameRateDropCount => Interlocked.Read(ref _frameRateDropCount);
+        private static long _frameRateDropCount;
+
+        /// <summary>远程角色数量硬上限触发累计次数（插值暂停）。</summary>
+        public static long MaxEntityCapReachedCount => Interlocked.Read(ref _maxEntityCapReachedCount);
+        private static long _maxEntityCapReachedCount;
+
+        /// <summary>非法快照跳过累计次数（异常隔离）。</summary>
+        public static long InvalidSnapshotSkippedCount => Interlocked.Read(ref _invalidSnapshotSkippedCount);
+        private static long _invalidSnapshotSkippedCount;
+
+        /// <summary>记录当前远程角色数量。</summary>
+        public static void RecordRemoteEntityCount(int count) => Volatile.Write(ref _remoteEntityCount, count);
+
+        /// <summary>记录本帧实际同步实体数。</summary>
+        public static void RecordPerFrameSynced(int count) => Volatile.Write(ref _perFrameSyncedEntityCount, count);
+
+        /// <summary>记录一次分级调度降档事件。</summary>
+        public static void RecordDegradeEvent() => Interlocked.Increment(ref _degradeEventCount);
+
+        /// <summary>记录一次帧率降级事件。</summary>
+        public static void RecordFrameRateDrop() => Interlocked.Increment(ref _frameRateDropCount);
+
+        /// <summary>记录一次远程角色数量硬上限触发事件。</summary>
+        public static void RecordMaxEntityCapReached() => Interlocked.Increment(ref _maxEntityCapReachedCount);
+
+        /// <summary>记录一次非法快照跳过事件。</summary>
+        public static void RecordInvalidSnapshotSkipped() => Interlocked.Increment(ref _invalidSnapshotSkippedCount);
+
         // ─── 重置（断线重连时可选调用） ───
 
         /// <summary>重置所有指标（重连时调用）。</summary>
@@ -296,6 +340,12 @@ namespace HundunWorld.Game.Network
             }
             Volatile.Write(ref _smoothnessScore, 0f);
             Volatile.Write(ref _currentStrategyCombo, string.Empty);
+            Volatile.Write(ref _remoteEntityCount, 0);
+            Volatile.Write(ref _perFrameSyncedEntityCount, 0);
+            Interlocked.Exchange(ref _degradeEventCount, 0);
+            Interlocked.Exchange(ref _frameRateDropCount, 0);
+            Interlocked.Exchange(ref _maxEntityCapReachedCount, 0);
+            Interlocked.Exchange(ref _invalidSnapshotSkippedCount, 0);
         }
     }
 }

@@ -802,6 +802,28 @@ namespace HundunWorld.Game.UI.Authentication
 
             Debug.Log("网络未连接，尝试建立连接...");
 
+            // [连接精简治理 spec 5.1.1] 经单连接协调器编排登录建连：
+            // 返回 false 表示连接已在线被复用或另有路径在建连，直接复用/等待，不再发起第二次 TCP 建连。
+            var coordinator = HundunWorldGame.Instance.ConnectionCoordinator;
+            if (coordinator != null)
+            {
+                var acquired = await coordinator.RequestConnectAsync(ClientConnectionRequestKind.Login);
+                if (!acquired)
+                {
+                    // 已由其他路径建连或连接已在线：等待连接就绪后复用。
+                    if (networkManager.GetConnectionStatus() != ConnectionStatus.Connected)
+                        await networkManager.WaitForConnectionAsync(5000);
+                    return networkManager.GetConnectionStatus() == ConnectionStatus.Connected
+                        ? null
+                        : new AuthenticationResult { IsSuccess = false, ErrorMessage = "无法连接到游戏服务器，请检查网络连接" };
+                }
+                // 实际执行建连成功：调用方发送登录认证首包。
+                if (networkManager.GetConnectionStatus() != ConnectionStatus.Connected)
+                    await networkManager.WaitForConnectionAsync(3000);
+                coordinator.MarkFirstPacketSent();
+                return null;
+            }
+
             var currentGateway = networkManager.GetCurrentGateway();
             if (currentGateway != null)
             {

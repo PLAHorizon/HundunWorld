@@ -302,13 +302,24 @@ namespace HundunWorld.Game.Network
                 return false;
             }
 
+            // [连接精简治理 spec 5.1.1.3] 原子夺锁 + 前置状态置位：
+            // 在锁内完成"检查 + 置位 Connecting"，闭合"检查-置位"竞态窗口。
+            // 并发触发多次 ConnectAsync 时，仅第一条路径将 Connecting 置位成功，
+            // 其余路径在锁内看到 Connecting/Connected 直接返回，确保同一时刻仅一条 TCP 建连在途。
             lock (_connectionLock)
             {
-                if (_connectionStatus == ConnectionStatus.Connecting || _connectionStatus == ConnectionStatus.Connected)
+                if (_connectionStatus == ConnectionStatus.Connecting)
                 {
-                    EnhancedLogging.LogInfo($"[ConnectAsync] 当前连接状态: {_connectionStatus}，跳过连接");
-                    return _connectionStatus == ConnectionStatus.Connected;
+                    EnhancedLogging.LogInfo($"[ConnectAsync] 已有建连流程在途（Connecting），跳过本次建连");
+                    return false;
                 }
+                if (_connectionStatus == ConnectionStatus.Connected)
+                {
+                    EnhancedLogging.LogInfo($"[ConnectAsync] 当前连接状态: {_connectionStatus}，复用已有连接");
+                    return true;
+                }
+                // 前置置位：在发起任何 TCP 动作前先标记 Connecting，后续路径在锁外无法抢占。
+                _connectionStatus = ConnectionStatus.Connecting;
             }
 
             try
@@ -1784,6 +1795,42 @@ namespace HundunWorld.Game.Network
         public GatewayInfo GetCurrentGateway()
         {
             return _currentGateway;
+        }
+
+        /// <summary>
+        /// 从已加载的网关列表中解析并设置当前网关。
+        /// <para>
+        /// 修复 BUG（登录建连报"无可用网关"）：ClientConnectionCoordinator.RequestConnectAsync 依赖
+        /// <see cref="GetCurrentGateway"/> 返回的 _currentGateway，但该字段仅在 ConnectAsync 内部赋值，
+        /// 首次建连时为 null → "无可用网关（Login），建连失败" → 等待 5s 超时 → 登录失败。
+        /// 本方法在建连前从 <see cref="_gatewayList"/> 选择网关（优先 HorizonGame.ini 配置项，已在
+        /// InitializeNetworkManager 中 Insert 到列表头部）并设置到 _currentGateway，
+        /// 闭合"先有鸡还是先有蛋"缺口。重连场景下 _currentGateway 已存在，直接返回 true。
+        /// </para>
+        /// </summary>
+        /// <returns>true 表示已解析到可用网关；false 表示网关列表为空。</returns>
+        public bool TryResolveGateway()
+        {
+            if (_currentGateway != null)
+                return true;
+
+            if (_gatewayList == null || _gatewayList.Count == 0)
+            {
+                EnhancedLogging.LogWarning("[NetworkManager] TryResolveGateway: 网关列表为空，无法解析当前网关");
+                return false;
+            }
+
+            // 优先使用列表首个网关（HorizonGame.ini 的网关在 InitializeNetworkManager 中已 Insert 到 index 0）。
+            var source = _gatewayList[0];
+            _currentGateway = new GatewayInfo
+            {
+                IP = source.IP,
+                Port = source.Port,
+                Region = source.Region,
+                IsAvailable = true,
+            };
+            EnhancedLogging.LogInfo($"[NetworkManager] TryResolveGateway: 已解析当前网关 {_currentGateway.IP}:{_currentGateway.Port}");
+            return true;
         }
 
         /// <summary>

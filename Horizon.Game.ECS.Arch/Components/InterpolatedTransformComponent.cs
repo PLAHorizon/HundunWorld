@@ -90,6 +90,38 @@ public struct InterpolatedTransformComponent
 
     /// <summary>PreviousFrameX/Y/Z 是否已初始化（首帧跳过 delta 计算避免初始跳变污染评分）。</summary>
     public bool PreviousFrameInitialized;
+
+    // ─── 传送混合状态（3 档传送处理：Lerp / 加速混合 / 硬跳） ───
+    // 当 Target 与当前位置距离超过 TeleportThresholdMeters 但未超过 HardSnapThresholdMeters 时，
+    // InterpolationSystem 启动"加速混合"——在 TeleportBlendDurationSeconds 内用 smoothstep 缓动
+    // 从当前位置过渡到 Target，把"瞬移"变成可见的"快速冲刺"，减少闪跳对游戏可游玩性的影响。
+    // 注意：不复用 StartX/Y/Z/StartYaw——这些字段被 FlaxActorSyncSystem 的 IsWalking 回退分支读取
+    // （Target - Start 判断是否移动），复用会污染动画状态判断。
+
+    /// <summary>
+    /// 传送混合剩余时长（秒）。<c>&gt;0</c> 表示混合进行中，<c>==0</c> 表示未在混合。<br/>
+    /// 由 InterpolationSystem 在目标距离超过 TeleportThresholdMeters 时初始化为
+    /// <see cref="TeleportBlendDurationSeconds"/>，每帧递减 dt，减到 0 时混合完成并清零。
+    /// </summary>
+    public float TeleportBlendRemainingSeconds;
+
+    /// <summary>
+    /// 传送混合总时长（秒），与 <see cref="TeleportBlendRemainingSeconds"/> 配对计算
+    /// <c>alpha = 1 - remaining / duration</c>。混合完成时与 Remaining 一并清零。
+    /// </summary>
+    public float TeleportBlendDurationSeconds;
+
+    /// <summary>传送混合起始位置 X（混合触发瞬间 interp.X 的快照）。</summary>
+    public float TeleportBlendStartX;
+
+    /// <summary>传送混合起始位置 Y。</summary>
+    public float TeleportBlendStartY;
+
+    /// <summary>传送混合起始位置 Z。</summary>
+    public float TeleportBlendStartZ;
+
+    /// <summary>传送混合起始 Yaw（弧度，含 ±π 最短路径归一化处理）。</summary>
+    public float TeleportBlendStartYaw;
 }
 
 /// <summary>

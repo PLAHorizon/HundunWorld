@@ -127,6 +127,31 @@ namespace Horizon.Game.Gateway.Services
         /// 清理超时连接
         /// </summary>
         Task CleanupTimeoutConnectionsAsync();
+
+        /// <summary>
+        /// [连接精简治理 spec 5.1.3] 尝试获取连接槽位（三级约束：全局上限 → 每 IP 上限 → 每用户上限）。
+        /// </summary>
+        /// <param name="connection">待注册的连接对象。</param>
+        /// <param name="clientIp">客户端 IP（聚合计数依据）。</param>
+        /// <param name="userId">用户 ID（可为 null，未登录时不参与每用户约束）。</param>
+        /// <returns>null = 接受连接；非 null = 拒绝原因（含明确提示，如"每IP连接数超限"），调用方应在关闭连接前向客户端发送该提示。</returns>
+        /// <remarks>
+        /// 三级校验顺序：全局 <c>MaxConnections</c> → 每 IP <c>MaxConnectionsPerIp</c> → 每用户 <c>MaxConnectionsPerUser</c>。
+        /// 同用户已有活跃连接时拒绝新连接并保留旧连接（spec 2.1.3.3）。
+        /// </remarks>
+        Task<string?> TryAcquireConnectionSlotAsync(IGameConnection connection, string clientIp, long? userId);
+
+        /// <summary>[连接精简治理 spec 5.1.3] 获取指定 IP 的当前活跃连接数。</summary>
+        /// <param name="clientIp">客户端 IP。</param>
+        int GetActiveConnectionCountByIp(string clientIp);
+
+        /// <summary>[连接精简治理 spec 5.1.3] 获取指定用户的当前活跃连接数。</summary>
+        /// <param name="userId">用户 ID。</param>
+        int GetActiveConnectionCountByUser(long userId);
+
+        /// <summary>[连接精简治理 spec 6.3] 按清理来源累加治理统计（由清理/拒绝路径调用）。</summary>
+        /// <param name="source">连接清理来源枚举（首包超时/空闲超时/损坏/Closed 事件/连接数上限）。</param>
+        void RecordCleanup(ConnectionCleanupSource source);
     }
 
     /// <summary>
@@ -256,6 +281,32 @@ namespace Horizon.Game.Gateway.Services
         /// 平均连接时长（秒）
         /// </summary>
         public double AverageConnectionDuration { get; set; }
+
+        // ── [连接精简治理 spec 6.3] 治理统计字段 ──
+
+        /// <summary>
+        /// 幽灵连接清理次数：首包超时（<c>ConnectionCleanupSource.FirstPacketTimeout</c>）清理的连接累计数。
+        /// 累加时机：<c>CleanupConnectionAsync</c> 按来源枚举分支执行完成后（幂等保护下只累加一次）。
+        /// </summary>
+        public long GhostConnectionCleanupCount { get; set; }
+
+        /// <summary>
+        /// 损坏连接次数：连接被标记为损坏（<c>ConnectionCleanupSource.Corrupted</c>）的累计数。
+        /// 累加时机：<c>GameConnection.MarkAsBroken</c> 或 Closed 事件映射 Corrupted 清理路径。
+        /// </summary>
+        public long CorruptedConnectionCount { get; set; }
+
+        /// <summary>
+        /// 重复/超限连接拒绝次数：因全局上限/每 IP 上限/每用户上限（<c>ConnectionLimit</c>/<c>PerIpLimit</c>/<c>PerUserLimit</c>）
+        /// 被拒绝的新连接累计数。
+        /// </summary>
+        public long DuplicateConnectionRejectedCount { get; set; }
+
+        /// <summary>
+        /// 当前未绑定角色连接数：连接已注册但 <c>UserId</c> 为 null（未完成认证/角色绑定）的活跃连接数。
+        /// 维护时机：连接注册且 UserId 为 null 时递增，绑定角色或清理时递减。
+        /// </summary>
+        public int UnboundConnectionCount { get; set; }
     }
 
     /// <summary>

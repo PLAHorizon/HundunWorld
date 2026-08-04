@@ -199,6 +199,9 @@ namespace Horizon.Game.Gateway
                     services.Configure<OrleansOptions>(context.Configuration.GetSection("Orleans"));
                     services.Configure<OrleansClusteringDbOptions>(context.Configuration.GetSection("ClusteringSiloOptions"));
                     services.Configure<SyncReconciliationOptions>(context.Configuration.GetSection("SyncReconciliation"));
+                    // [连接精简治理 spec 4.4.4] 注册连接治理配置（非法值由 ConnectionGovernanceOptionsValidator 兜底回退默认）。
+                    services.AddOptions<Configuration.ConnectionGovernanceOptions>()
+                        .Bind(context.Configuration.GetSection("ConnectionGovernance"));
 
                     // 注册安全和认证服务
                     services.AddSingleton<AuthenticationValidator>();

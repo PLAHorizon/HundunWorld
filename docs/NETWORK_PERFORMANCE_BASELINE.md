@@ -1,6 +1,6 @@
 ﻿# MMORPG 网络同步性能基线报告
 
-> 生成时间：2026-08-02 22:22:56
+> 生成时间：2026-08-04 15:54:45
 > 由 `NetworkPerformanceBaselineReportTests.GeneratePerformanceBaselineReport` 自动生成。
 
 ## 1. 测试环境
@@ -9,7 +9,7 @@
 | --- | --- |
 | 操作系统 | Microsoft Windows NT 10.0.19045.0 |
 | .NET 运行时 | 10.0.10 |
-| 处理器核心数 | 8 |
+| 处理器核心数 | 16 |
 | 64 位系统 | True |
 | 64 位进程 | True |
 | 测试机器名 | LONGMAC |
@@ -40,16 +40,16 @@
 | SessionCount | 100 |
 | DurationTicks | 600 |
 | DurationSeconds | 10.00 |
-| TotalBytesSent | 12,916,679 |
-| TotalBytesReceived | 12,916,679 |
-| AvgBandwidthKbps | 100.91 |
-| MaxBandwidthKbps | 103.33 |
+| TotalBytesSent | 12,917,143 |
+| TotalBytesReceived | 12,917,143 |
+| AvgBandwidthKbps | 100.92 |
+| MaxBandwidthKbps | 103.72 |
 | AvgLatencyMs | 33.33 |
 | MaxLatencyMs | 33.33 |
 | TotalPacketsEncoded | 80,000 |
 | TotalPacketsDecoded | 80,000 |
-| PacketsEncodedPerSecond | 66083 |
-| ElapsedMs（墙钟） | 1210.6 |
+| PacketsEncodedPerSecond | 42468 |
+| ElapsedMs（墙钟） | 1883.8 |
 
 ## 4. 弱网压测数据
 
@@ -71,7 +71,7 @@
 
 **目标**：每玩家平均带宽 < 100 kbps。
 
-- **实测每玩家平均带宽**：100.91 kbps
+- **实测每玩家平均带宽**：100.92 kbps
 - **目标阈值**：100.00 kbps
 - **达成结论**：❌ 未达成
 
@@ -82,7 +82,7 @@
 
 ### 6.1 单 shard 容量
 
-- 每玩家平均带宽消耗：12917 字节/秒（100.91 kbps）
+- 每玩家平均带宽消耗：12917 字节/秒（100.92 kbps）
 - 假设单 shard 网络出口 1000 Mbps，理论上限可承载 ~10,147 并发玩家。
 - 实际部署应预留 30% 冗余应对流量峰值与突发抖动。
 

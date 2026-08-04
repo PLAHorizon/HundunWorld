@@ -86,6 +86,27 @@ namespace HundunWorld.Game
 
         public override void OnDestroy()
         {
+            // 修复 BUG：PIE 退出后 TCP 连接未断开，仍持续接收 SyncPacket。
+            // 根因：HundunWorldGame 不继承 Script，Flax 不会在 PIE 退出时自动调用其 Dispose。
+            // HundunWorldGamePlugin.Deinitialize() 中的释放逻辑仅在引擎关闭时触发，
+            // PIE 退出不触发 Plugin.Deinitialize()（Plugin 是全局的，PIE 只停止场景模拟）。
+            // GameStartup 是场景 Script，PIE 退出时 Flax 一定会调用 OnDestroy，
+            // 因此在此显式释放。HundunWorldGame.Dispose() 会级联释放 NetworkManager
+            //（关闭 TCP 连接 + 后台接收线程）、ArchWorldHost、ECSManager 等全部子系统。
+            // 安全性：Dispose() 的 finally 块会置 _instance = null，即使 Plugin.Deinitialize()
+            // 后续（引擎关闭时）再调用也是空操作，不会重复释放。
+            try
+            {
+                if (HundunWorldGame.Instance != null)
+                {
+                    Debug.Log("[GameStartup] OnDestroy - 释放 HundunWorldGame（PIE 退出清理）");
+                    HundunWorldGame.Instance.Dispose();
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[GameStartup] OnDestroy 清理异常: {ex.Message}\n{ex.StackTrace}");
+            }
             base.OnDestroy();
         }
     }

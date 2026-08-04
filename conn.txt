@@ -1,0 +1,59 @@
+﻿C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\bin\Debug\net10.0\Horizon.Game.Gateway.Tests.dll (.NETCoreApp,Version=v10.0)鐨勬祴璇曡繍琛?
+鎬诲叡 1 涓祴璇曟枃浠朵笌鎸囧畾妯″紡鐩稿尮閰嶃€?
+dotnet : [xUnit.net 00:00:00.51]     Horizon.Game.Gateway.Tests.ConnectionCleanupSourceTests.RecordCleanup_RejectSource
+s_IncrementDuplicateRejectedCount [FAIL]
+所在位置 行:1 字符: 1
++ dotnet test Horizon.Game.Gateway.Tests/Horizon.Game.Gateway.Tests.csp ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([xUnit.net 00:0...tedCount [FAIL]:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[xUnit.net 00:00:00.52]     Horizon.Game.Gateway.Tests.ConnectionGovernanceTests.Rejection_IncrementsDuplicateRejectedC
+ount [FAIL]
+[xUnit.net 00:00:00.52]     Horizon.Game.Gateway.Tests.ConnectionCleanupSourceTests.RecordCleanup_Corrupted_IncrementsC
+orruptedCount [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.ConnectionCleanupSourceTests.RecordCleanup_RejectSources_IncrementDuplicateRejectedCount [2 ms]
+  閿欒娑堟伅:
+   Assert.Equal() Failure: Values differ
+Expected: 3
+Actual:   0
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.ConnectionCleanupSourceTests.RecordCleanup_RejectSources_IncrementDuplicateRejectedCount() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\ConnectionCleanupSourceTests.cs:line 64
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  澶辫触 Horizon.Game.Gateway.Tests.ConnectionGovernanceTests.Rejection_IncrementsDuplicateRejectedCount [65 ms]
+  閿欒娑堟伅:
+   Assert.NotNull() Failure: Value is null
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.ConnectionGovernanceTests.Rejection_IncrementsDuplicateRejectedCount() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\ConnectionGovernanceTests.cs:line 126
+--- End of stack trace from previous location ---
+  澶辫触 Horizon.Game.Gateway.Tests.ConnectionCleanupSourceTests.RecordCleanup_Corrupted_IncrementsCorruptedCount [< 1 ms]
+  閿欒娑堟伅:
+   Assert.Equal() Failure: Values differ
+Expected: 1
+Actual:   0
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.ConnectionCleanupSourceTests.RecordCleanup_Corrupted_IncrementsCorruptedCount() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\ConnectionCleanupSourceTests.cs:line 54
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[xUnit.net 00:00:00.55]     Horizon.Game.Gateway.Tests.ConnectionCleanupSourceTests.RecordCleanup_FirstPacketTimeout_In
+crementsGhostCount [FAIL]
+[xUnit.net 00:00:00.55]     Horizon.Game.Gateway.Tests.ConnectionGovernanceTests.PerUserLimit_2ndConnectionForSameUser_
+Rejected [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.ConnectionCleanupSourceTests.RecordCleanup_FirstPacketTimeout_IncrementsGhostCount [< 1 ms]
+  閿欒娑堟伅:
+   Assert.Equal() Failure: Values differ
+Expected: 2
+Actual:   0
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.ConnectionCleanupSourceTests.RecordCleanup_FirstPacketTimeout_IncrementsGhostCount() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\ConnectionCleanupSourceTests.cs:line 46
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  澶辫触 Horizon.Game.Gateway.Tests.ConnectionGovernanceTests.PerUserLimit_2ndConnectionForSameUser_Rejected [< 1 ms]
+  閿欒娑堟伅:
+   Assert.NotNull() Failure: Value is null
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.ConnectionGovernanceTests.PerUserLimit_2ndConnectionForSameUser_Rejected() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\ConnectionGovernanceTests.cs:line 87
+--- End of stack trace from previous location ---
+
+澶辫触!  - 澶辫触:     5锛岄€氳繃:     8锛屽凡璺宠繃:     0锛屾€昏:    13锛屾寔缁椂闂? 135 ms - Horizon.Game.Gateway.Tests.dll (net10.0)

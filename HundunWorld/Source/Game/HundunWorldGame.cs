@@ -41,6 +41,7 @@ namespace HundunWorld.Game
         private readonly WorldDataManager _worldDataManager;
         private readonly World _archWorld;
         private NetworkManager _networkManager;
+        private ClientConnectionCoordinator _connectionCoordinator;
         // 使用 Volatile.Read/Write 保证跨线程可见性（ulong 不能使用 volatile 关键字）。
         // SetPlayerId 在 UI 线程（Scripting.InvokeOnUpdate）与网络线程（OnHandshakeReceived 事件）被并发写入，
         // PlayerId 属性可能在其他线程读取。
@@ -191,6 +192,10 @@ namespace HundunWorld.Game
 
                 _networkManager = new NetworkManager(gatewayList);
 
+                // [连接精简治理 spec 5.1.1] 装配客户端单连接编排协调器：
+                // 登录/进游戏/重连三类建连请求统一经此互斥编排，任意客户端进程任一时刻仅一条 TCP 连接在途。
+                _connectionCoordinator = new ClientConnectionCoordinator(_networkManager);
+
                 // 订阅网络事件
                 _networkManager.ConnectionStatusChanged += OnConnectionStatusChanged;
                //_networkManager.MessageReceived += OnMessageReceived;
@@ -204,33 +209,12 @@ namespace HundunWorld.Game
                 SubscribeSyncHandlerEvents();
 
                 Debug.Log("网络管理器初始化完成");
-                
-                // 在后台尝试建立初始连接
-                if (gatewayList != null && gatewayList.Count > 0)
-                {
-                    Debug.Log("开始尝试建立初始网络连接...");
-                    Task.Run(async () =>
-                    {
-                        try
-                        {
-                            var gateway = gatewayList[0];
-                            var connected = await _networkManager.ConnectAsync(gateway.IP, gateway.Port);
-                            if (connected)
-                            {
-                                Debug.Log("初始网络连接建立成功");
-                            }
-                            else
-                            {
-                                Debug.LogWarning("初始网络连接建立失败，将在登录时重试");
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.LogWarning($"建立初始网络连接时发生错误: {ex.Message}");
-                            EnhancedDiagnostics.LogException(ex, "建立初始网络连接");
-                        }
-                    }).ConfigureAwait(false);
-                }
+
+                // 说明：连接精简治理（spec 5.1）移除了此处的"启动预连接"行为。
+                // 原行为：启动时后台 Task.Run 调用 ConnectAsync 建立"只建连不发首包"的连接，
+                // 直接导致服务端首包超时幽灵连接（客户端需等待 EnterGame 流程才发首包）。
+                // 治理后建连只允许在登录/进游戏等业务意图触发点发起（经 ClientConnectionCoordinator 编排），
+                // 任意客户端进程任一时刻仅持有一条必要游戏连接。
             }
             catch (Exception ex)
             {
@@ -469,9 +453,17 @@ namespace HundunWorld.Game
             // [Phase C5] 更新最近已应用的服务器 Tick，供重连时 ReconnectResumePacket 使用
             _networkManager?.UpdateLastAppliedServerTick(snapshot.ServerTick);
 
+            // [Phase C7] 网络线程热路径日志治理（DFX 4.1.2）：原实现对每个含 Deltas 的快照执行
+            // Debug.Log（字符串插值 + 日志 I/O），多角色时快照 Deltas 增多，高频日志阻塞网络接收线程，
+            // 引发心跳/输入延迟 → 同步"瘫痪"观感。改为限频输出（前 5 次 + 每 120 次），
+            // 与 OnChunkDiffReceived 既有限频模式一致；其余路径仅保留零分配操作。
             if (snapshot.Deltas != null && snapshot.Deltas.Length > 0)
             {
-                Debug.Log($"[HundunWorldGame] 收到服务端快照: ServerTick={snapshot.ServerTick}, Deltas={snapshot.Deltas.Length}");
+                var recvCount = Interlocked.Increment(ref _snapshotRecvLogCount);
+                if (recvCount <= 5 || recvCount % 120 == 1)
+                {
+                    Debug.Log($"[HundunWorldGame] 收到服务端快照: ServerTick={snapshot.ServerTick}, Deltas={snapshot.Deltas.Length}");
+                }
             }
         }
 
@@ -538,6 +530,9 @@ namespace HundunWorld.Game
         /// </summary>
         // 诊断：OnChunkDiffReceived 调用计数，用于限频日志（前 5 次无条件输出，后续每 60 次输出一次）
         private long _chunkDiffReceivedCount;
+
+        // 诊断：OnSnapshotReceived 含 Deltas 快照日志计数，用于限频日志（前 5 次无条件输出，后续每 120 次输出一次）
+        private long _snapshotRecvLogCount;
 
         private void OnChunkDiffReceived(WorldChunkDiffPacket diff)
         {
@@ -2204,6 +2199,12 @@ namespace HundunWorld.Game
         /// 获取网络管理器
         /// </summary>
         public NetworkManager NetworkManager => _networkManager;
+
+        /// <summary>
+        /// 获取客户端单连接编排协调器（连接精简治理，spec 5.1.1）。
+        /// 登录/进游戏/重连三类建连请求统一经此互斥编排，保证任意时刻仅一条 TCP 连接在途。
+        /// </summary>
+        public ClientConnectionCoordinator ConnectionCoordinator => _connectionCoordinator;
 
         /// <summary>
         /// 获取世界管理器

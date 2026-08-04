@@ -406,10 +406,13 @@ public class BandwidthThrottlePerformanceTests
         var dispatcher = new GatewaySyncDispatcher(
             source.Object, registry.Object, sink.Object, logger, enabled: true)
         {
-            BandwidthThresholdKbps = thresholdKbps,
-            NormalSnapshotHz = normalHz,
-            ThrottledSnapshotHz = throttledHz,
-            RecoverySeconds = recoverySeconds,
+            BandwidthBudget = new Horizon.Game.Core.Configuration.BandwidthBudgetOptions
+            {
+                BudgetKbps = thresholdKbps,
+                NormalSnapshotHz = normalHz,
+                ThrottledSnapshotHz = throttledHz,
+                RecoverySeconds = recoverySeconds,
+            },
         };
         return (dispatcher, logger);
     }

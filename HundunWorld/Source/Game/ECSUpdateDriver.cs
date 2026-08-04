@@ -1,6 +1,7 @@
 using FlaxEngine;
 using System;
 using System.Collections.Generic;
+using Horizon.Game.ECS.Arch.Diagnostics;
 using Horizon.Game.ECS.Arch.Network;
 using Horizon.Game.ECS.Arch.Systems;
 using Horizon.Game.Message.Sync;
@@ -47,6 +48,9 @@ namespace HundunWorld.Game
         /// <summary>上次采集的 SnapshotApplySystem Stale 实体清理计数，用于增量转发。</summary>
         private long _lastStaleEntitiesCleaned;
 
+        /// <summary>上次采集的 SnapshotApplySystem 非法快照跳过计数，用于增量转发。</summary>
+        private long _lastInvalidSnapshotsSkipped;
+
         /// <summary>诊断 Sink 是否已注入到各同步系统（一次性注入标志）。</summary>
         private bool _diagnosticsInjected;
 
@@ -67,6 +71,14 @@ namespace HundunWorld.Game
         /// 为 null 时使用 ReconciliationSystem 默认值 1.0f。由外部配置加载逻辑在启动时设置。
         /// </summary>
         public float? ReconciliationStormCooldownSeconds { get; set; }
+
+        /// <summary>
+        /// 远程角色同步阈值配置（配置外化注入通道）。
+        /// 为 null 时使用默认构造（平滑区 100m / 硬跳 500m / 混合时长 0.2s）。
+        /// 由外部配置加载逻辑在启动时设置，注入前经 <see cref="Horizon.Game.ECS.Arch.Configuration.RemoteSyncThresholdValidator"/>
+        /// 校验，非法值回退默认并输出诊断。
+        /// </summary>
+        public Horizon.Game.ECS.Arch.Configuration.RemoteSyncThresholdOptions? RemoteSyncThresholdOptions { get; set; }
 
         public override void OnStart()
         {
@@ -133,6 +145,53 @@ namespace HundunWorld.Game
                                         recon.StormCooldownSeconds = ReconciliationStormCooldownSeconds.Value;
                                 }
                             }
+
+                            // [远程同步防闪跳] 阈值配置加载与注入（DFX 4.4.2 阈值可配置）：
+                            // 读取配置（缺省用默认构造），经 RemoteSyncThresholdValidator 校验（非法回退默认+诊断），
+                            // 将校验后阈值注入所有 InterpolationSystem 与 FlaxActorSyncSystem。
+                            // 诊断 Sink 已先行注入，保证 OnConfigInvalid 可正常输出。
+                            var thresholdOptions = LoadRemoteSyncThresholdOptions();
+                            var validatedOptions = Horizon.Game.ECS.Arch.Configuration.RemoteSyncThresholdValidator.Validate(
+                                thresholdOptions, sink);
+                            foreach (var sys in archHost.GetSystems(Horizon.Game.ECS.Arch.Core.SystemGroup.Render))
+                            {
+                                if (sys is InterpolationSystem interp)
+                                {
+                                    interp.TeleportThresholdMeters = validatedOptions.SmoothThresholdMeters;
+                                    interp.HardSnapThresholdMeters = validatedOptions.HardSnapThresholdMeters;
+                                    interp.TeleportBlendDurationSeconds = validatedOptions.BlendDurationSeconds;
+                                }
+                            }
+                            if (_actorSyncSystem != null)
+                            {
+                                _actorSyncSystem.NearDistanceMeters = validatedOptions.NearDistanceMeters;
+                                _actorSyncSystem.MidDistanceMeters = validatedOptions.MidDistanceMeters;
+                                _actorSyncSystem.PerformanceDegradeEntityCount = validatedOptions.PerformanceDegradeEntityCount;
+                                _actorSyncSystem.MaxRemoteEntityCount = validatedOptions.MaxRemoteEntityCount;
+                                _actorSyncSystem.UltraScaleEntityCap = validatedOptions.UltraScaleEntityCap;
+                                _actorSyncSystem.Diagnostics = sink;
+                            }
+
+                            // [超大规模] 装配 SyncScaleController：注入档位阈值与诊断 Sink，
+                            // 并赋给 FlaxActorSyncSystem 与 InterpolationSystem（最远优先降级 + 降级集合同步）。
+                            var scaleController = new SyncScaleController
+                            {
+                                TierThresholds = validatedOptions.TierThresholds,
+                                Diagnostics = sink,
+                            };
+                            if (_actorSyncSystem != null)
+                            {
+                                _actorSyncSystem.ScaleController = scaleController;
+                            }
+                            foreach (var sys in archHost.GetSystems(Horizon.Game.ECS.Arch.Core.SystemGroup.Render))
+                            {
+                                if (sys is InterpolationSystem interp)
+                                {
+                                    interp.Diagnostics = sink;
+                                    interp.SetDegradedEntities(Array.Empty<ulong>());
+                                }
+                            }
+
                             _diagnosticsInjected = true;
                         }
 
@@ -269,6 +328,15 @@ namespace HundunWorld.Game
         }
 
         /// <summary>
+        /// 加载远程角色同步阈值配置。优先使用外部注入的 <see cref="RemoteSyncThresholdOptions"/>，
+        /// 缺失时使用默认构造（100/500/0.2/30/80/10/20）。
+        /// </summary>
+        private Horizon.Game.ECS.Arch.Configuration.RemoteSyncThresholdOptions LoadRemoteSyncThresholdOptions()
+        {
+            return RemoteSyncThresholdOptions ?? new Horizon.Game.ECS.Arch.Configuration.RemoteSyncThresholdOptions();
+        }
+
+        /// <summary>
         /// [Phase C2] 将 ECS 系统的内部计数器增量转发到 ClientSyncMetrics。
         /// </summary>
         private void ForwardEcsMetrics()
@@ -329,6 +397,13 @@ namespace HundunWorld.Game
                         for (long i = 0; i < deltaStale; i++)
                             ClientSyncMetrics.RecordStaleEntityCleaned();
                         _lastStaleEntitiesCleaned = currentStaleCleaned;
+
+                        // 转发非法快照跳过计数增量（异常数据隔离可观测）
+                        long currentInvalidSkipped = snapshotSys.InvalidSnapshotsSkipped;
+                        var deltaInvalid = currentInvalidSkipped - _lastInvalidSnapshotsSkipped;
+                        for (long i = 0; i < deltaInvalid; i++)
+                            ClientSyncMetrics.RecordInvalidSnapshotSkipped();
+                        _lastInvalidSnapshotsSkipped = currentInvalidSkipped;
                         break;
                     }
                 }

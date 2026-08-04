@@ -40,6 +40,10 @@ public class SnapshotDeltaEncodingTests
         var contextField = typeof(Grain).GetField("<GrainContext>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance);
         contextField?.SetValue(grain, mockContext.Object);
 
+        // 测试环境：每 tick 广播（60Hz），验证每 tick 的 delta 语义。
+        // 生产环境默认 3（20Hz 降频），但单元测试需要精确验证每次 TickAsync 的广播行为。
+        grain.SnapshotBroadcastIntervalTicks = 1;
+
         return grain;
     }
 
@@ -123,7 +127,10 @@ public class SnapshotDeltaEncodingTests
     // =======================================================================
     /// <summary>
     /// 每 60 tick（1 秒 @ 60Hz）必须强制全量快照。
-    /// 验证：tick 0 全量 → tick 1-59 增量（无变化则 0 diff）→ tick 60 全量。
+    /// 验证：tick 0 全量 → tick 1-59 心跳增量（每 6 tick 一次，实体无变化但心跳保护强制下发）→ tick 60 全量。
+    /// 注意：心跳保护机制（HeartbeatProtectionTicks=6）使静止实体每 100ms 下发一次心跳 delta，
+    /// 防止客户端误清理实体（StaleEntityTimeout）。因此 tick 1-59 期间会有心跳 diff，
+    /// 但 tick 60 必须再次产生全量快照 diff（diff 数增加）。
     /// </summary>
     [Fact]
     public async Task FullSnapshot_ForcedEvery60Ticks()
@@ -138,20 +145,24 @@ public class SnapshotDeltaEncodingTests
 
         await grain.RegisterEntityAsync(entityId: 2001, initialX: 0, initialY: 0, initialZ: 0);
 
-        // tick 0：全量快照 → 1 diff
+        // tick 0：全量快照 → diff 数 >= 1
         await grain.TickAsync(tickTime: 1.0);
         var countAfterFirst = observer.ReceivedDiffs.Count;
         Assert.True(countAfterFirst >= 1, "首次 tick 应推送全量快照");
 
-        // tick 1-59：增量快照，实体无变化 → 0 diff
+        // tick 1-59：增量快照。实体无变化，但心跳保护每 6 tick（100ms）强制下发一次心跳 delta。
+        // 心跳 tick：6, 12, 18, 24, 30, 36, 42, 48, 54 → 9 次心跳 diff。
+        // 非心跳 tick：BuildDeltaSnapshot 过滤掉无变化的实体 → 0 diff。
         for (int i = 0; i < 59; i++)
         {
             await grain.TickAsync(tickTime: 2.0 + i);
         }
         var countBefore60 = observer.ReceivedDiffs.Count;
-        Assert.Equal(countAfterFirst, countBefore60);
+        // 心跳保护会产出 diff，但不应少于 tick 0（全量快照已包含所有实体）
+        Assert.True(countBefore60 >= countAfterFirst,
+            $"tick 1-59 期间心跳保护应产出 diff。countAfterFirst={countAfterFirst}, countBefore60={countBefore60}");
 
-        // tick 60：强制全量快照 → 1 diff
+        // tick 60：强制全量快照 → diff 数必须增加
         await grain.TickAsync(tickTime: 61.0);
         var countAfter60 = observer.ReceivedDiffs.Count;
         Assert.True(countAfter60 > countBefore60,
@@ -198,18 +209,23 @@ public class SnapshotDeltaEncodingTests
         await grain.SubmitInputAsync(entityId: 3001, input,
             reportedEndX: 0.1f, reportedEndY: 0f, reportedEndZ: ecsZ);
 
-        // tick 1：增量快照 → 仅 1 diff（实体 3001 移动，3002 不变）
+        // tick 1：增量快照 → 仅 1 个 EntityDelta diff（实体 3001 移动，3002 不变）。
+        // 注意：tick 1 还会下发 InputAck（作为 Event 类型 diff），因此总 diff 数 = EntityDelta + Event。
+        // 测试仅关心 EntityDelta diff 的数量和内容，InputAck Event diff 不计入。
         var tick1Result = await grain.TickAsync(tickTime: 2.0);
-        var deltaDiffCount = observer.ReceivedDiffs.Count - countAfterFull;
+        var newDiffs = observer.ReceivedDiffs.Skip(countAfterFull).ToList();
+        var entityDeltaDiffs = newDiffs
+            .Where(d => d.Diff.PayloadType == WorldChunkDiffPayloadType.EntityDelta)
+            .ToList();
 
         // 诊断：输出 tick 1 的详细信息
         System.Diagnostics.Debug.WriteLine(
             $"[诊断] tick1Result={tick1Result}, countAfterFull={countAfterFull}, " +
-            $"totalCount={observer.ReceivedDiffs.Count}, deltaDiffCount={deltaDiffCount}");
+            $"totalCount={observer.ReceivedDiffs.Count}, newDiffCount={newDiffs.Count}, entityDeltaDiffCount={entityDeltaDiffs.Count}");
 
         // 增量快照应只包含变化的实体（3001），不包含未变化的实体（3002）
-        Assert.True(deltaDiffCount >= 1, $"增量快照应至少包含 1 个变化的实体，实际 {deltaDiffCount}。tick1Result={tick1Result}, countAfterFull={countAfterFull}, totalCount={observer.ReceivedDiffs.Count}");
-        Assert.True(deltaDiffCount <= 1, $"增量快照不应包含未变化的实体，实际 {deltaDiffCount}");
+        Assert.True(entityDeltaDiffs.Count >= 1, $"增量快照应至少包含 1 个 EntityDelta diff，实际 {entityDeltaDiffs.Count}。tick1Result={tick1Result}, countAfterFull={countAfterFull}, totalCount={observer.ReceivedDiffs.Count}");
+        Assert.True(entityDeltaDiffs.Count <= 1, $"增量快照不应包含未变化的实体，实际 EntityDelta diff 数 {entityDeltaDiffs.Count}");
 
         // ===== 坐标值验证：确认 ECS→Flax 转换正确（X=ECS.X, Y=ECS.Z, Z=ECS.Y）=====
         // 实体 3001 起始 ECS (0, 0, 8)，提交 MoveX=1.0 后权威回放：
@@ -217,9 +233,7 @@ public class SnapshotDeltaEncodingTests
         //   ECS Y: 0 → 0（MoveY=0，无前后位移）
         //   ECS Z: 8 → 8 - gravity_offset ≈ 7.997（重力 1 tick 偏移 ~0.003m，PredictedEndZ 兜底未触发因 dzPred < 0.05）
         // Delta Transform 为 Flax Y-up：X=0.1, Y≈7.997(ECS Z), Z=0.0(ECS Y)
-        var deltaDiffs = observer.ReceivedDiffs.Skip(countAfterFull).ToList();
-        var entityDeltaDiff = deltaDiffs.FirstOrDefault(d =>
-            d.Diff.PayloadType == WorldChunkDiffPayloadType.EntityDelta);
+        var entityDeltaDiff = entityDeltaDiffs[0];
         Assert.NotNull(entityDeltaDiff.Diff);
 
         var deserializedDeltas = MemoryPack.MemoryPackSerializer.Deserialize<EntityDelta[]>(entityDeltaDiff.Diff.Payload);

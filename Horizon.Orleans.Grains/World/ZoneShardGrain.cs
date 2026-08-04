@@ -7,8 +7,10 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Runtime;
+using Horizon.Game.Core.Configuration;
 using Horizon.Game.Core.Persistence;
 using Horizon.Game.Core.Sim;
+using Horizon.Game.Core.Sim.Server;
 using Horizon.Game.Core.World;
 using Horizon.Game.Message.Sync;
 using Horizon.Game.Message.Sync.Components;
@@ -116,6 +118,20 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     private long _lastFullSnapshotTick;
     private const long FullSnapshotIntervalTicks = 60;
 
+    // 增量快照广播降频间隔（tick 数）。每 N tick 才广播一次增量，保持输入/移动模拟 60Hz 不变。
+    // 默认 3 → 20Hz 广播（MMORPG 工业标准），配合客户端 100ms 插值延迟保证平滑度。
+    // 全量快照触发条件（_forceFullSnapshotNextTick / FullSnapshotIntervalTicks 到期 / 首次 tick）不受此限制，即时下发。
+    //
+    // 修复多客户端同步瓶颈（2 客户端慢、5 客户端几乎无法同步）：
+    // 60Hz 全速广播时，每个有 delta 的 chunk 串行 await 跨进程 RPC（observer.OnChunkDiffAsync），
+    // 客户端数 ↑ → 有 delta 的 chunk 数 ↑ → 串行 RPC 次数 ↑ → 单 tick 耗时 > 16.7ms → tick 堆积/跳过 → 同步停滞。
+    // 降频到 20Hz 后 RPC 与序列化次数降 3 倍，单 tick 耗时回到 16.7ms 以内；心跳保护 6 tick = 300ms（20Hz 下 6 tick）
+    // 仍远小于客户端 StaleEntityTimeout（30~60s），不会触发误清理。
+    // 同时与 GatewaySyncDispatcher.NormalSnapshotHz=20 的设计意图对齐（原实现 ZoneShardGrain 从未读取该值）。
+    //
+    // 可配置属性（非 const）：生产环境默认 3（20Hz），单元测试可设为 1（60Hz）以验证每 tick 广播语义。
+    public int SnapshotBroadcastIntervalTicks { get; set; } = 3;
+
     // 移动公式固定步长（秒），与 MovementFormula / MovementValidator 保持一致。
     private const float MovementFormulaStepDt = 1f / 60f;
 
@@ -148,14 +164,21 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     /// <summary>上次持久化时的 tick 计数。</summary>
     private long _lastPersistTick;
 
+    // ── 兴趣区分级降频（spec 5.5.1.2）：可选注入，未注入时保持原有 chunk 聚合广播路径 ──
+    private readonly ISyncInterestGradeStrategy? _interestGradeStrategy;
+    // 每 (session, entity) 上次分级下发 tick，用于远档降频过滤。
+    private readonly Dictionary<long, Dictionary<ulong, long>> _gradeLastSentTickBySession = new();
+
     public ZoneShardGrain(
         ILogger<ZoneShardGrain> logger,
         [PersistentState("zoneshard", "GameStore")] IPersistentState<ZoneShardState> zoneState,
-        ISceneObjectPersistenceStore? sceneObjectPersistence = null)
+        ISceneObjectPersistenceStore? sceneObjectPersistence = null,
+        ISyncInterestGradeStrategy? interestGradeStrategy = null)
     {
         _logger = logger;
         _zoneState = zoneState;
         _sceneObjectPersistence = sceneObjectPersistence;
+        _interestGradeStrategy = interestGradeStrategy;
         _movementValidator = new MovementValidator(new MovementValidator.Options
         {
             PositionEpsilon = MovementValidator.DefaultPositionEpsilon,
@@ -649,6 +672,12 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             || (_tickCount - _lastFullSnapshotTick) >= FullSnapshotIntervalTicks
             || _forceFullSnapshotNextTick;
 
+        // 增量广播降频：非广播 tick 跳过 delta 收集，避免心跳计数器（LastUpdateBroadcastTick）
+        // 在非广播 tick 更新导致心跳周期与广播周期错位（静止实体心跳 delta 落入非广播 tick 被丢弃，
+        // 退化为仅靠每秒全量快照下发，重新引入"静止实体状态机 Active→Idle、移动恢复时加速追赶"问题）。
+        // 输入处理/移动模拟仍每 tick 执行，仅 delta 收集与广播按 20Hz 节奏。
+        bool broadcastDueThisTick = forceFullThisTick || (_tickCount % SnapshotBroadcastIntervalTicks) == 0;
+
         foreach (var kv in _simulatedEntities)
         {
             var entityId = kv.Key;
@@ -819,7 +848,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                 }
             }
 
-            if (includeInSnapshot)
+            if (includeInSnapshot && broadcastDueThisTick)
             {
                 var delta = new EntityDelta
                 {
@@ -932,7 +961,9 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
                 _tickDiagCount, _tickCount, _simulatedEntities.Count, deltas.Count, corrections.Count, _simulatedEntities.Values.Sum(e => e.PendingInputs.Count), _aoi.SessionCount, _fanoutObservers.Count);
         }
 
-        if (deltas.Count > 0)
+        // 复用循环前已计算的 broadcastDueThisTick（= forceFullThisTick || _tickCount % SnapshotBroadcastIntervalTicks == 0）。
+        // 非广播 tick 已跳过 delta 收集（L849），deltas 为空时自然跳过广播分支。
+        if (deltas.Count > 0 && broadcastDueThisTick)
         {
             // Task D.3：snapshot 始终保存完整状态（所有实体的 delta），作为增量比对的 baseline。
             var snapshot = new SnapshotPacket
@@ -947,7 +978,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             // 修复：新实体注册后也强制全量，确保新玩家立即收到所有实体状态。
             SnapshotPacket toSend;
             bool isFullSnapshot = false;
-            if (_lastSnapshot == null || (_tickCount - _lastFullSnapshotTick) >= FullSnapshotIntervalTicks || _forceFullSnapshotNextTick)
+            if (forceFullThisTick)  // 复用循环前计算的 forceFullThisTick（== isFullSnapshotTrigger 语义）
             {
                 // 全量快照：BaselineTick=0，客户端直接应用
                 snapshot.BaselineTick = 0;
@@ -1051,17 +1082,28 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
 
         // 每 60 tick（≈1 秒）通过 fire-and-forget 更新 CharacterGrain 位置缓存。
         // 使用 .Ignore() 避免 Orleans 非重入死锁（ZoneShardGrain → CharacterGrain 回调风险）。
+        // 此操作为非关键的辅助缓存更新，失败不应影响主 tick 流程（生产环境 GrainFactory 可用，
+        // 单元测试/mock 环境下 GrainFactory 可能为 null，需优雅降级）。
         if (_tickCount % 60 == 0)
         {
-            foreach (var kv in _simulatedEntities)
+            try
             {
-                var e = kv.Value;
-                if (e.LastSyncTick <= 0) continue; // 跳过未被同步的实体
-                var eid = kv.Key;
-                var px = e.X; var py = e.Y; var pz = e.Z; var pyaw = e.Yaw;
-                GrainFactory.GetGrain<ICharacterGrain>((long)eid)
-                    .UpdateLastPositionAsync(px, py, pz, pyaw)
-                    .Ignore(); // fire-and-forget，不等待回调
+                foreach (var kv in _simulatedEntities)
+                {
+                    var e = kv.Value;
+                    if (e.LastSyncTick <= 0) continue; // 跳过未被同步的实体
+                    var eid = kv.Key;
+                    var px = e.X; var py = e.Y; var pz = e.Z; var pyaw = e.Yaw;
+                    GrainFactory.GetGrain<ICharacterGrain>((long)eid)
+                        .UpdateLastPositionAsync(px, py, pz, pyaw)
+                        .Ignore(); // fire-and-forget，不等待回调
+                }
+            }
+            catch (Exception ex) when (ex is NullReferenceException or InvalidOperationException)
+            {
+                _logger.LogDebug(ex,
+                    "ZoneShard {ShardId}: CharacterGrain 位置缓存更新跳过（GrainFactory 不可用，不影响主流程）。",
+                    this.GetPrimaryKeyLong());
             }
         }
 
@@ -1953,7 +1995,10 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         }
 
         // 按每个 chunk 一次性序列化推送
-        foreach (var kv in _deltaByChunkBuffer)
+        // 修复（集成测试发现的并发 bug）：与 BroadcastInputAckAsync 相同的并发问题，
+        // await observer.OnChunkDiffAsync 期间计时器 TickAsync 可能修改 _deltaByChunkBuffer。
+        // 取快照避免枚举期间集合被修改。
+        foreach (var kv in _deltaByChunkBuffer.ToArray())
         {
             var effectiveChunkKey = kv.Key;
             var chunkDeltas = kv.Value;
@@ -2009,33 +2054,46 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             }
 
             // 一次性序列化该 chunk 的所有 delta
-            var chunkDeltaArray = chunkDeltas.ToArray();
-            var diff = new WorldChunkDiffPacket
+            if (_interestGradeStrategy is null)
             {
-                ChunkMortonKey = effectiveChunkKey,
-                DiffSeqStart = _tickCount,
-                DiffSeqEnd = _tickCount,
-                Payload = MemoryPack.MemoryPackSerializer.Serialize(chunkDeltaArray),
-                PayloadType = WorldChunkDiffPayloadType.EntityDelta,
-            };
+                // ── 未注入策略：保持原有 chunk 聚合广播（批量序列化，所有订阅者复用） ──
+                var chunkDeltaArray = chunkDeltas.ToArray();
+                var diff = new WorldChunkDiffPacket
+                {
+                    ChunkMortonKey = effectiveChunkKey,
+                    DiffSeqStart = _tickCount,
+                    DiffSeqEnd = _tickCount,
+                    Payload = MemoryPack.MemoryPackSerializer.Serialize(chunkDeltaArray),
+                    PayloadType = WorldChunkDiffPayloadType.EntityDelta,
+                };
 
-            foreach (var (subscriptionId, observer) in observers)
+                foreach (var (subscriptionId, observer) in observers)
+                {
+                    try
+                    {
+                        await observer.OnChunkDiffAsync(diff, sessionIds).ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogDebug(
+                            ex,
+                            "ZoneShard {ShardId}: 推送 snapshot 到观察者 {SubscriptionId} 失败（已吞）。",
+                            this.GetPrimaryKeyLong(), subscriptionId);
+                    }
+                }
+            }
+            else
             {
-                try
-                {
-                    await observer.OnChunkDiffAsync(diff, sessionIds).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogDebug(
-                        ex,
-                        "ZoneShard {ShardId}: 推送 snapshot 到观察者 {SubscriptionId} 失败（已吞）。",
-                        this.GetPrimaryKeyLong(), subscriptionId);
-                }
+                // ── 已注入兴趣分级策略：per-session 分级裁剪 + 定频（spec 5.5.1.2） ──
+                // 近档实体保持高频全量，中/远档降频并裁剪低频字段，保证近距实体平滑度不受远距实体拖累。
+                await BroadcastGradedChunkAsync(effectiveChunkKey, chunkDeltas, sessionIds, observers, bypassAoiFilter).ConfigureAwait(false);
             }
         }
 
-        foreach (var correction in corrections)
+        // 修复（并发 bug）：与 _deltaByChunkBuffer 相同的并发问题，
+        // corrections 是 _correctionBuffer 的引用，await 期间可能被计时器 TickAsync 修改。
+        var correctionSnapshot = corrections.ToArray();
+        foreach (var correction in correctionSnapshot)
         {
             // P8-8.2：根据校正目标实体查 chunk key
             var correctionChunkKey = GetChunkMortonKeyForEntity((long)correction.EntityId);
@@ -2106,6 +2164,115 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     }
 
     /// <summary>
+    /// 兴趣分级路径：对单个 chunk 按"实体与订阅玩家距离"逐 session 分级裁剪并定频后下发（spec 5.5.1.2）。
+    /// </summary>
+    /// <remarks>
+    /// <list type="bullet">
+    ///   <item>近档实体：保留全量字段，维持高频（<c>NearSnapshotHz</c>）。</item>
+    ///   <item>中档实体：裁剪低频字段（Animation/State 等非位置类），按 <c>MidSnapshotHz</c> 定频。</item>
+    ///   <item>远档实体：裁剪低频字段，按 <c>FarSnapshotHz</c> 最低频下发（心跳下限由既有 6 tick 心跳保护兜底）。</item>
+    /// </list>
+    /// 全量快照（<paramref name="bypassAoiFilter"/> 或新玩家首次下发）不裁剪、不全频过滤，保证新玩家立即收到完整状态。
+    /// </remarks>
+    private async Task BroadcastGradedChunkAsync(
+        ulong effectiveChunkKey,
+        List<EntityDelta> chunkDeltas,
+        IReadOnlyCollection<long> sessionIds,
+        KeyValuePair<Guid, IZoneShardFanoutObserver>[] observers,
+        bool bypassAoiFilter)
+    {
+        // 订阅者位置缓存：sessionId == characterId == entityId，从模拟实体表取玩家坐标。
+        // 玩家实体可能不在 _simulatedEntities（如测试直连），此时按 0 距离（近档全量）处理。
+        foreach (var sessionId in sessionIds)
+        {
+            var playerX = 0f;
+            var playerY = 0f;
+            var playerZ = 0f;
+            if (_simulatedEntities.TryGetValue((ulong)sessionId, out var player))
+            {
+                playerX = player.X;
+                playerY = player.Y;
+                playerZ = player.Z;
+            }
+
+            if (!_gradeLastSentTickBySession.TryGetValue(sessionId, out var lastSentByEntity))
+            {
+                lastSentByEntity = new Dictionary<ulong, long>();
+                _gradeLastSentTickBySession[sessionId] = lastSentByEntity;
+            }
+
+            var trimmed = new List<EntityDelta>(chunkDeltas.Count);
+            foreach (var delta in chunkDeltas)
+            {
+                // Spawn/Despawn 与无位置变更的 delta 必须全量下发（不裁剪、不降频）。
+                if (delta.Kind != EntityDeltaKind.Update || delta.Transform is not { } transform)
+                {
+                    trimmed.Add(delta);
+                    continue;
+                }
+
+                // 实体与订阅玩家距离（使用实体自身 transform 位置）。
+                var dx = transform.X - playerX;
+                var dy = transform.Y - playerY;
+                var dz = transform.Z - playerZ;
+                var distance = MathF.Sqrt(dx * dx + dy * dy + dz * dz);
+
+                var grade = _interestGradeStrategy!.Classify(distance);
+                var hz = _interestGradeStrategy.GetSnapshotHz(grade);
+                var isFullFields = _interestGradeStrategy.ShouldSendFullFields(grade);
+
+                // 定频过滤：距上次下发未达 60/hz tick 间隔时跳过本 tick（全量快照除外）。
+                if (!bypassAoiFilter)
+                {
+                    var interval = Math.Max(1, 60 / hz);
+                    if (lastSentByEntity.TryGetValue(delta.EntityId, out var lastSent)
+                        && (_tickCount - lastSent) < interval)
+                    {
+                        continue;
+                    }
+                    lastSentByEntity[delta.EntityId] = _tickCount;
+                }
+
+                // 字段裁剪：中/远档裁剪低频字段（Animation/State 非位置类）。
+                var outDelta = delta;
+                if (!isFullFields)
+                {
+                    outDelta.AnimationState = null;
+                    outDelta.State = null;
+                }
+                trimmed.Add(outDelta);
+            }
+
+            if (trimmed.Count == 0) continue;
+
+            var diff = new WorldChunkDiffPacket
+            {
+                ChunkMortonKey = effectiveChunkKey,
+                DiffSeqStart = _tickCount,
+                DiffSeqEnd = _tickCount,
+                Payload = MemoryPack.MemoryPackSerializer.Serialize(trimmed.ToArray()),
+                PayloadType = WorldChunkDiffPayloadType.EntityDelta,
+            };
+
+            _singleInputAckSessionArray[0] = sessionId;
+            foreach (var (subscriptionId, observer) in observers)
+            {
+                try
+                {
+                    await observer.OnChunkDiffAsync(diff, _singleInputAckSessionArray).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(
+                        ex,
+                        "ZoneShard {ShardId}: 推送分级 snapshot 到观察者 {SubscriptionId} 失败（已吞）。",
+                        this.GetPrimaryKeyLong(), subscriptionId);
+                }
+            }
+        }
+    }
+
+    /// <summary>
     /// 广播 InputAck 到对应 session。
     /// </summary>
     /// <param name="inputAcks">本 tick 有输入的实体列表（entityId, lastProcessedClientTick）。</param>
@@ -2127,7 +2294,14 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             return;
         }
 
-        foreach (var (entityId, lastProcessedClientTick) in inputAcks)
+        // 修复（集成测试发现的并发 bug）：Orleans await 会释放 grain turn，
+        // 计时器触发的 TickAsync 可能在此方法 await observer.OnChunkDiffAsync 期间执行，
+        // 并修改 _inputAckBuffer（Clear + Add），导致 foreach 枚举期间集合被修改 →
+        // InvalidOperationException: Collection was modified。
+        // 修复方案：在迭代前创建快照，避免枚举期间被并发修改。
+        // 此 ToArray 分配是必要的，每个 InputAck 条目仅 16 字节（ulong + long），开销可忽略。
+        var inputAckSnapshot = inputAcks.ToArray();
+        foreach (var (entityId, lastProcessedClientTick) in inputAckSnapshot)
         {
             // InputAck 是 per-player 的，只发给该 entity 对应的 session。
             // sessionId == characterId == entityId（注册实体时建立的映射）。

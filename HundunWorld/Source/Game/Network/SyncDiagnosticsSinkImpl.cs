@@ -59,5 +59,78 @@ namespace HundunWorld.Game.Network
             }
             catch { }
         }
+
+        /// <inheritdoc />
+        public void OnConfigInvalid(string fieldName, float configuredValue, float fallbackValue, bool isWarningOnly)
+        {
+            try
+            {
+                var suffix = isWarningOnly
+                    ? "（配置未回退，可能仍表现为闪跳）"
+                    : $"（已回退为 {fallbackValue}）";
+                Debug.LogWarning($"[SyncDiag] ConfigInvalid Field={fieldName} Configured={configuredValue} Fallback={fallbackValue} WarningOnly={isWarningOnly} {suffix}");
+            }
+            catch { }
+        }
+
+        /// <inheritdoc />
+        public void OnInvalidSnapshotSkipped(ulong entityId, long serverTick)
+        {
+            try
+            {
+                Debug.LogWarning($"[SyncDiag] InvalidSnapshotSkipped Entity={entityId} ServerTick={serverTick}");
+            }
+            catch { }
+        }
+
+        /// <inheritdoc />
+        public void OnMultiEntityDegraded(int remoteEntityCount, string reason)
+        {
+            try
+            {
+                Debug.LogWarning($"[SyncDiag] MultiEntityDegraded Count={remoteEntityCount} Reason={reason}");
+            }
+            catch { }
+        }
+
+        /// <inheritdoc />
+        public void OnBandwidthThrottled(long sessionId, double kbps, int fromHz, int toHz)
+        {
+            try
+            {
+                Debug.LogWarning($"[SyncDiag] BandwidthThrottled Session={sessionId} {kbps:F1}kbps {fromHz}Hz->{toHz}Hz");
+            }
+            catch { }
+        }
+
+        /// <inheritdoc />
+        public void OnBandwidthRecovered(long sessionId, double kbps, int fromHz, int toHz)
+        {
+            try
+            {
+                Debug.Log($"[SyncDiag] BandwidthRecovered Session={sessionId} {kbps:F1}kbps {fromHz}Hz->{toHz}Hz");
+            }
+            catch { }
+        }
+
+        /// <inheritdoc />
+        public void OnScaleTierChanged(int entityCount, SyncScaleTier from, SyncScaleTier to)
+        {
+            try
+            {
+                Debug.Log($"[SyncDiag] ScaleTierChanged Count={entityCount} {from}->{to}");
+            }
+            catch { }
+        }
+
+        /// <inheritdoc />
+        public void OnScaleDegrade(ulong entityId, float distanceMeters, string reason)
+        {
+            try
+            {
+                Debug.Log($"[SyncDiag] ScaleDegrade Entity={entityId} Dist={distanceMeters:F1}m Reason={reason}");
+            }
+            catch { }
+        }
     }
 }

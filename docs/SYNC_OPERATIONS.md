@@ -194,3 +194,54 @@ string strategy = ClientSyncMetrics.CurrentStrategyCombo;
   }
 }
 ```
+
+---
+
+## 4. 超大规模容量治理：带宽限流 / 规模档位事件（v8 重构新增）
+
+> 同步链路归一重构（协议 v8）新增服务端带宽预算限流（spec 5.5.1.1）与客户端规模档位控制（spec 5.5.1.3）。
+> 本节补充对应的运维观测方式与排查指引。
+
+### 4.1 服务端带宽限流 / 恢复事件
+
+**触发条件**：
+- `OnBandwidthThrottled`：会话 1 秒滚动窗口平均带宽超预算（默认 100kbps 红线）→ 快照频率降档（20Hz→10Hz）；持续超预算 → 二次降频（10Hz→5Hz）。
+- `OnBandwidthRecovered`：连续 `RecoverySeconds`（默认 3）秒低于预算 → 快照频率逐级回升（5Hz→10Hz→20Hz）。
+
+**日志格式**（服务端 ILogger）：
+```
+[GatewaySyncDispatcher] 带宽超阈值限流：bandwidth={kbps}kbps > threshold={kbps}kbps，快照频率降为 {Hz}Hz
+[GatewaySyncDispatcher] 带宽持续超阈值深度限流：bandwidth={kbps}kbps，快照频率降为 {Hz}Hz
+[GatewaySyncDispatcher] 带宽恢复回升：连续 {Seconds} 秒低于阈值，快照频率回升为 {Hz}Hz
+```
+
+**排查指引**：
+- 频繁触发限流说明单会话下行超 100kbps。排查：
+  1. 包体构成：`GatewaySyncDispatcher.EstimatePacketSizeBytes` 估算是否虚高（压缩包已按 0.6× 折减）。
+  2. 频率分布：`GetSessionSnapshotHz` 三档（20/10/5）是否正确随带宽调整。
+  3. 兴趣分级：`InterestGradeOptions` 近/中/远档是否生效（远档实体 5Hz 低频裁剪）。
+- 超大规模目标 ≤ 50kbps/会话（`UltraScaleBudgetKbps`）。未达标时输出压测报告（包体构成、频率分布）作为阻断证据。
+
+### 4.2 客户端规模档位切换 / 降级事件
+
+**触发条件**：
+- `OnScaleTierChanged`：客户端同屏远程实体数跨档位阈值 20/100/1000/5000。
+- `OnScaleDegrade`：同屏实体数超当前档位上限，按距离排序选取最远实体暂停插值推进（不消失、不销毁 Actor）。
+
+**日志格式**（客户端 Flax Debug）：
+```
+[SyncDiag] ScaleTierChanged Count={entityCount} {from}->{to}
+[SyncDiag] ScaleDegrade Entity={entityId} Dist={distanceMeters:F1}m Reason=ScaleOverLimit
+```
+
+**排查指引**：
+- 档位频繁升降说明同屏实体数在阈值附近波动。排查 AOI 订阅是否抖动（`PlayerSubscriptionStateComponent` 订阅更新频率）。
+- 降级实体不应消失：若远程角色消失，检查 `InterpolationSystem.SetDegradedEntities` 是否误将降级集合同步为"移除订阅"。
+
+### 4.3 带宽 / 规模红线观测方式
+
+| 观测项 | 采集方式 | 红线 |
+| --- | --- | --- |
+| 每会话带宽 | `GatewaySyncDispatcher.GetBandwidthSnapshot()`（sessionId → kbps） | ≤ 100kbps（超大规模目标 ≤ 50kbps） |
+| 每会话快照频率 | `GatewaySyncDispatcher.GetSessionSnapshotHz(sessionId)` | 正常 20Hz / 限流 10Hz / 深度降级 5Hz |
+| 同屏实体数 | `FlaxActorSyncSystem.GetRemoteActorCount()` / `SyncScaleController.CurrentTier` | 档位 20/100/1000/5000，超 5000 触发 OverLimit 降级 |

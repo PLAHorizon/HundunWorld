@@ -1,0 +1,212 @@
+﻿C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\bin\Debug\net10.0\Horizon.Game.Gateway.Tests.dll (.NETCoreApp,Version=v10.0)鐨勬祴璇曡繍琛?
+鎬诲叡 1 涓祴璇曟枃浠朵笌鎸囧畾妯″紡鐩稿尮閰嶃€?
+dotnet : [xUnit.net 00:00:00.83]     Horizon.Game.Gateway.Tests.SnapshotApplySystemInvalidDataIsolationTests.InvalidTra
+nsform_NanInUpdate_IsSkipped_OthersAffected [FAIL]
+所在位置 行:1 字符: 1
++ dotnet test Horizon.Game.Gateway.Tests/Horizon.Game.Gateway.Tests.csp ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([xUnit.net 00:0...Affected [FAIL]:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  澶辫触 Horizon.Game.Gateway.Tests.SnapshotApplySystemInvalidDataIsolationTests.InvalidTransform_NanInUpdate_IsSkipped_OthersAffected [1 ms]
+  閿欒娑堟伅:
+   System.NullReferenceException : Object reference not set to an instance of an object.
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.SnapshotApplySystemInvalidDataIsolationTests.InvalidTransform_NanInUpdate_IsSkipped_OthersAffected() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\SnapshotApplySystemInvalidDataIsolationTests.cs:line 160
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[xUnit.net 00:00:01.05]     Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.StateBits_Mapping_Start [FAIL]
+[xUnit.net 00:00:01.05]     Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.StateBits_Mapping_Stolen [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.StateBits_Mapping_Start [48 ms]
+  閿欒娑堟伅:
+   Assert.True() Failure
+Expected: True
+Actual:   False
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.StateBits_Mapping_Start() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\HandleInteractionIntentTests.cs:line 68
+--- End of stack trace from previous location ---
+  澶辫触 Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.StateBits_Mapping_Stolen [1 ms]
+  閿欒娑堟伅:
+   Assert.True() Failure
+Expected: True
+Actual:   False
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.StateBits_Mapping_Stolen() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\HandleInteractionIntentTests.cs:line 86
+--- End of stack trace from previous location ---
+[xUnit.net 00:00:01.06]     Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.RateLimit_Isolated_PerInteractorId 
+[FAIL]
+[xUnit.net 00:00:01.07]     Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.RateLimit_Enforced [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.RateLimit_Isolated_PerInteractorId [2 ms]
+  閿欒娑堟伅:
+   Assert.True() Failure
+Expected: True
+Actual:   False
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.RateLimit_Isolated_PerInteractorId() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\HandleInteractionIntentTests.cs:line 111
+--- End of stack trace from previous location ---
+  澶辫触 Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.RateLimit_Enforced [2 ms]
+  閿欒娑堟伅:
+   Assert.True() Failure
+Expected: True
+Actual:   False
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.RateLimit_Enforced() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\HandleInteractionIntentTests.cs:line 100
+--- End of stack trace from previous location ---
+[xUnit.net 00:00:01.08]     Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.StateBits_Mapping_End [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.StateBits_Mapping_End [3 ms]
+  閿欒娑堟伅:
+   Assert.True() Failure
+Expected: True
+Actual:   False
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.HandleInteractionIntentTests.StateBits_Mapping_End() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\HandleInteractionIntentTests.cs:line 77
+--- End of stack trace from previous location ---
+[xUnit.net 00:00:01.08]     Horizon.Game.Gateway.Tests.AdaptiveInterpolationTests.AdaptiveDelay_ClampedTo_Min100ms_Max3
+00ms [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.AdaptiveInterpolationTests.AdaptiveDelay_ClampedTo_Min100ms_Max300ms [1 ms]
+  閿欒娑堟伅:
+   Assert.Equal() Failure: Values are not within tolerance 0.00100000005
+Expected: 0.300000012
+Actual:   0.200000003
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.AdaptiveInterpolationTests.AdaptiveDelay_ClampedTo_Min100ms_Max300ms() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\ClientSyncAdaptiveTests.cs:line 97
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[xUnit.net 00:00:01.19]     Horizon.Game.Gateway.Tests.NetworkSyncHardeningTests.InterpolationSystem_YawWrapping_Shorte
+stPath [FAIL]
+[xUnit.net 00:00:01.19]     Horizon.Game.Gateway.Tests.NetworkSyncHardeningTests.InterpolationSystem_SnapshotDelay_Lerp
+Converges [FAIL]
+[xUnit.net 00:00:01.19]     Horizon.Game.Gateway.Tests.NetworkSyncHardeningTests.InterpolationSystem_UnevenSnapshots_Po
+sitionContinuous [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.NetworkSyncHardeningTests.InterpolationSystem_YawWrapping_ShortestPath [< 1 ms]
+  閿欒娑堟伅:
+   鏈€缁?Yaw 搴旀帴杩?3.2832rad锛屽疄闄?3.0000
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.NetworkSyncHardeningTests.InterpolationSystem_YawWrapping_ShortestPath() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\NetworkSyncHardeningTests.cs:line 551
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  澶辫触 Horizon.Game.Gateway.Tests.NetworkSyncHardeningTests.InterpolationSystem_SnapshotDelay_LerpConverges [< 1 ms]
+  閿欒娑堟伅:
+   1 绉掑悗 X 搴旀帴杩?5.0m锛圠erp 鏀舵暃锛夛紝瀹為檯=0.0000
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.NetworkSyncHardeningTests.InterpolationSystem_SnapshotDelay_LerpConverges() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\NetworkSyncHardeningTests.cs:line 598
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  澶辫触 Horizon.Game.Gateway.Tests.NetworkSyncHardeningTests.InterpolationSystem_UnevenSnapshots_PositionContinuous [< 1 ms]
+  閿欒娑堟伅:
+   鏈€缁?X 搴?> 2.0m锛堟帴杩?3.0m锛夛紝瀹為檯=0.0000
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.NetworkSyncHardeningTests.InterpolationSystem_UnevenSnapshots_PositionContinuous() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\NetworkSyncHardeningTests.cs:line 507
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[xUnit.net 00:00:01.22]     Horizon.Game.Gateway.Tests.SnapshotDeltaEncodingTests.FullSnapshot_ForcedEvery60Ticks [FAIL
+]
+[xUnit.net 00:00:01.23]     Horizon.Game.Gateway.Tests.SnapshotDeltaEncodingTests.ClientRebuildsFullState_FromDeltaSnap
+shot [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.SnapshotDeltaEncodingTests.FullSnapshot_ForcedEvery60Ticks [2 ms]
+  閿欒娑堟伅:
+   Assert.Equal() Failure: Values differ
+Expected: 4
+Actual:   13
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.SnapshotDeltaEncodingTests.FullSnapshot_ForcedEvery60Ticks() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\SnapshotDeltaEncodingTests.cs:line 152
+--- End of stack trace from previous location ---
+  澶辫触 Horizon.Game.Gateway.Tests.SnapshotDeltaEncodingTests.ClientRebuildsFullState_FromDeltaSnapshot [1 ms]
+  閿欒娑堟伅:
+   Assert.NotNull() Failure: Value is null
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.SnapshotDeltaEncodingTests.ClientRebuildsFullState_FromDeltaSnapshot() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\SnapshotDeltaEncodingTests.cs:line 563
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[xUnit.net 00:00:01.23]     Horizon.Game.Gateway.Tests.SnapshotDeltaEncodingTests.DeltaSnapshot_OnlyContainsChangedEnti
+ties [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.SnapshotDeltaEncodingTests.DeltaSnapshot_OnlyContainsChangedEntities [1 ms]
+  閿欒娑堟伅:
+   澧為噺蹇収涓嶅簲鍖呭惈鏈彉鍖栫殑瀹炰綋锛屽疄闄?2
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.SnapshotDeltaEncodingTests.DeltaSnapshot_OnlyContainsChangedEntities() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\SnapshotDeltaEncodingTests.cs:line 212
+--- End of stack trace from previous location ---
+[xUnit.net 00:00:01.27]     Horizon.Game.Gateway.Tests.InterpolationSystemSwitchContinuityTests.SwitchContinuity_NoJump
+_WhenSwitchingToDeadReckoning [FAIL]
+[xUnit.net 00:00:01.28]     Horizon.Game.Gateway.Tests.InterpolationSystemSwitchContinuityTests.SwitchContinuity_DebugA
+ssertActiveInDebugBuild [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.InterpolationSystemSwitchContinuityTests.SwitchContinuity_NoJump_WhenSwitchingToDeadReckoning [< 1 ms]
+  閿欒娑堟伅:
+   搴斿彂鐢熷垏鎹?
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.InterpolationSystemSwitchContinuityTests.SwitchContinuity_NoJump_WhenSwitchingToDeadReckoning() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\InterpolationSystemSwitchContinuityTests.cs:line 141
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  澶辫触 Horizon.Game.Gateway.Tests.InterpolationSystemSwitchContinuityTests.SwitchContinuity_DebugAssertActiveInDebugBuild [< 1 ms]
+  閿欒娑堟伅:
+   Debug 鏋勫缓涓嬫柇瑷€閫氳繃鍚庡簲璁板綍 SwitchFromLerpToDeadReckoningTick
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.InterpolationSystemSwitchContinuityTests.SwitchContinuity_DebugAssertActiveInDebugBuild() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\InterpolationSystemSwitchContinuityTests.cs:line 191
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[xUnit.net 00:00:01.28]     Horizon.Game.Gateway.Tests.InterpolationSystemSwitchContinuityTests.SwitchContinuity_Positi
+onDiffUnder001m_WhenSwitchingToDeadReckoning [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.InterpolationSystemSwitchContinuityTests.SwitchContinuity_PositionDiffUnder001m_WhenSwitchingToDeadReckoning [2 ms]
+  閿欒娑堟伅:
+   搴斿湪 60 甯у唴鍙戠敓 Lerp鈫扗ead Reckoning 鍒囨崲
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.InterpolationSystemSwitchContinuityTests.SwitchContinuity_PositionDiffUnder001m_WhenSwitchingToDeadReckoning() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\InterpolationSystemSwitchContinuityTests.cs:line 100
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[xUnit.net 00:00:01.48]     Horizon.Game.Gateway.Tests.BandwidthBudgetTests.EffectiveBudgetKbps_Default_Is100 [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.BandwidthBudgetTests.EffectiveBudgetKbps_Default_Is100 [< 1 ms]
+  閿欒娑堟伅:
+   Assert.Equal() Failure: Values differ
+Expected: 100
+Actual:   1000
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.BandwidthBudgetTests.EffectiveBudgetKbps_Default_Is100() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\BandwidthBudgetTests.cs:line 243
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[xUnit.net 00:00:01.51]     Horizon.Game.Gateway.Tests.MessageHandlerBaseResponseTests.HandleAsync_ResponsePacketPreser
+vesRequestCorrelationAndRoutingHeaders [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.MessageHandlerBaseResponseTests.HandleAsync_ResponsePacketPreservesRequestCorrelationAndRoutingHeaders [22 ms]
+  閿欒娑堟伅:
+   Assert.True() Failure
+Expected: True
+Actual:   False
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.MessageHandlerBaseResponseTests.HandleAsync_ResponsePacketPreservesRequestCorrelationAndRoutingHeaders() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\MessageHandlerBaseResponseTests.cs:line 50
+--- End of stack trace from previous location ---
+[xUnit.net 00:00:01.51]     Horizon.Game.Gateway.Tests.MessageHandlerBaseResponseTests.HandleAsync_WhenRouteHandlerThro
+ws_SendsFallbackErrorResponse [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.MessageHandlerBaseResponseTests.HandleAsync_WhenRouteHandlerThrows_SendsFallbackErrorResponse [3 ms]
+  閿欒娑堟伅:
+   Assert.IsType() Failure: Value is null
+Expected: typeof(Horizon.Game.Message.Network.ErrorMessage)
+Actual:   null
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.MessageHandlerBaseResponseTests.HandleAsync_WhenRouteHandlerThrows_SendsFallbackErrorResponse() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\MessageHandlerBaseResponseTests.cs:line 90
+--- End of stack trace from previous location ---
+[xUnit.net 00:00:01.69]     Horizon.Game.Gateway.Tests.NetworkPerformanceBaselineReportTests.GeneratePerformanceBaselin
+eReport [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.NetworkPerformanceBaselineReportTests.GeneratePerformanceBaselineReport [1 s]
+  閿欒娑堟伅:
+   姣忕帺瀹跺钩鍧囧甫瀹?100.92kbps 搴?< 100kbps 鐩爣
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.NetworkPerformanceBaselineReportTests.GeneratePerformanceBaselineReport() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\NetworkPerformanceBaselineReportTests.cs:line 64
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+[xUnit.net 00:00:02.00]     Horizon.Game.Gateway.Tests.InteractionApplySystemTests.EmptyQueue_NoOp [SKIP]
+  宸茶烦杩?Horizon.Game.Gateway.Tests.InteractionApplySystemTests.EmptyQueue_NoOp [1 ms]
+[xUnit.net 00:00:02.00]     Horizon.Game.Gateway.Tests.InteractionApplySystemTests.Despawn_Entity_OnEndState [SKIP]
+[xUnit.net 00:00:02.00]     Horizon.Game.Gateway.Tests.InteractionApplySystemTests.Despawn_Entity_OnStolenState [SKIP]
+[xUnit.net 00:00:02.00]     Horizon.Game.Gateway.Tests.InteractionApplySystemTests.NotifySink_CallbackInvoked [SKIP]
+[xUnit.net 00:00:02.00]     Horizon.Game.Gateway.Tests.InteractionApplySystemTests.MultiplePackets_ProcessedInOrder [SKIP]
+[xUnit.net 00:00:02.00]     Horizon.Game.Gateway.Tests.InteractionApplySystemTests.Spawn_Entity_OnFirstPacket [SKIP]
+[xUnit.net 00:00:02.00]     Horizon.Game.Gateway.Tests.InteractionApplySystemTests.Update_Entity_OnSubsequentPacket [SKIP]
+[xUnit.net 00:00:02.00]     Horizon.Game.Gateway.Tests.InteractionApplySystemTests.StateBits_AppliedCorrectly [SKIP]
+  宸茶烦杩?Horizon.Game.Gateway.Tests.InteractionApplySystemTests.Despawn_Entity_OnEndState [1 ms]
+  宸茶烦杩?Horizon.Game.Gateway.Tests.InteractionApplySystemTests.Despawn_Entity_OnStolenState [1 ms]
+  宸茶烦杩?Horizon.Game.Gateway.Tests.InteractionApplySystemTests.NotifySink_CallbackInvoked [1 ms]
+  宸茶烦杩?Horizon.Game.Gateway.Tests.InteractionApplySystemTests.MultiplePackets_ProcessedInOrder [1 ms]
+  宸茶烦杩?Horizon.Game.Gateway.Tests.InteractionApplySystemTests.Spawn_Entity_OnFirstPacket [1 ms]
+  宸茶烦杩?Horizon.Game.Gateway.Tests.InteractionApplySystemTests.Update_Entity_OnSubsequentPacket [1 ms]
+  宸茶烦杩?Horizon.Game.Gateway.Tests.InteractionApplySystemTests.StateBits_AppliedCorrectly [1 ms]
+
+澶辫触!  - 澶辫触:    20锛岄€氳繃:  2082锛屽凡璺宠繃:     8锛屾€昏:  2110锛屾寔缁椂闂? 6 s - Horizon.Game.Gateway.Tests.dll (net10.0)

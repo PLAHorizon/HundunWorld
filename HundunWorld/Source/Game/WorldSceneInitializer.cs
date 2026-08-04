@@ -150,6 +150,21 @@ namespace HundunWorld
             {
                 camera.Target = playerActor;
                 Debug.Log($"[WorldSceneInitializer] 已设置 ThirdPersonCamera.Target = {playerActor.Name}");
+
+                // 修复：将相机引用赋值给 PlayerController，避免 TryGetLookYawPitch 走降级路径。
+                // 降级路径用 Actor.Orientation.Yaw 作为 LookYaw 发送服务端，导致 entity.Yaw 不准、
+                // 远程角色朝向异常，并影响 InterpolationSystem 传送混合的 Yaw 起始值（TeleportBlendStartYaw）。
+                // 原 GameSceneInitializer 静态路径有此赋值，但本兜底生成路径遗漏了。
+                var playerController = playerActor.GetScript<PlayerController>();
+                if (playerController != null)
+                {
+                    playerController.Camera = camera;
+                    Debug.Log($"[WorldSceneInitializer] 已设置 PlayerController.Camera (cameraActor={camera.Actor?.Name ?? "null"})");
+                }
+                else
+                {
+                    Debug.LogWarning($"[WorldSceneInitializer] PlayerActor '{playerActor.Name}' 上未找到 PlayerController 脚本，无法赋值 Camera 引用");
+                }
             }
             else
             {

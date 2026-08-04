@@ -17,10 +17,15 @@ namespace Horizon.Game.Gateway.Services
     {
         private readonly ILogger<ConnectionManager> _logger;
         private readonly IOptionsMonitor<GatewayOptions> _gatewayOptions;
+        private readonly IOptionsMonitor<ConnectionGovernanceOptions> _connectionGovernanceOptions;
+        private readonly ConnectionGovernanceOptions _governanceDefaults;
         
         private readonly ConcurrentDictionary<string, IGameConnection> _connections = new();
         private readonly ConcurrentDictionary<long, string> _userConnections = new();
         private readonly ConcurrentDictionary<long, string> _characterConnections = new();
+
+        // [连接精简治理 spec 5.1.3] 每 IP 活跃连接数聚合计数。
+        private readonly ConcurrentDictionary<string, int> _ipConnectionCounts = new();
 
         /// <summary>
         /// 反向索引：connectionId → 该连接绑定的所有 characterId。<br/>
@@ -36,13 +41,116 @@ namespace Horizon.Game.Gateway.Services
 
         public ConnectionManager(
             ILogger<ConnectionManager> logger,
-            IOptionsMonitor<GatewayOptions> gatewayOptions)
+            IOptionsMonitor<GatewayOptions> gatewayOptions,
+            IOptionsMonitor<ConnectionGovernanceOptions>? connectionGovernanceOptions = null)
         {
             _logger = logger;
             _gatewayOptions = gatewayOptions;
+            _connectionGovernanceOptions = connectionGovernanceOptions;
+            // 兜底默认治理配置（未注入时使用），实际装配由 Program.cs 经 DI 注入。
+            _governanceDefaults = new ConnectionGovernanceOptions();
             
             // 启动清理定时器
             _cleanupTimer = new Timer(CleanupConnections, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+        }
+
+        /// <summary>读取治理配置（优先注入值，未注入用默认）。</summary>
+        private ConnectionGovernanceOptions Governance =>
+            ConnectionGovernanceOptionsValidator.Validate(
+                _connectionGovernanceOptions?.CurrentValue ?? _governanceDefaults, _logger);
+
+        /// <summary>
+        /// [连接精简治理 spec 5.1.3] 尝试获取连接槽位（三级约束：全局上限 → 每 IP 上限 → 每用户上限）。
+        /// </summary>
+        public async Task<string?> TryAcquireConnectionSlotAsync(IGameConnection connection, string clientIp, long? userId)
+        {
+            var governance = Governance;
+
+            // 一级：全局上限
+            if (_connections.Count >= governance.MaxConnections)
+            {
+                _logger.LogWarning("达到最大连接数限制: {MaxConnections}", governance.MaxConnections);
+                lock (_statsLock)
+                {
+                    _statistics.DuplicateConnectionRejectedCount++;
+                }
+                return "服务器连接数已满";
+            }
+
+            // 二级：每 IP 上限
+            if (!string.IsNullOrEmpty(clientIp))
+            {
+                var ipCount = GetActiveConnectionCountByIp(clientIp);
+                if (ipCount >= governance.MaxConnectionsPerIp)
+                {
+                    _logger.LogWarning(
+                        "[连接治理] 每IP连接数超限拒绝: IP={ClientIp}, Count={Count}, Max={Max}, ConnectionId={ConnectionId}",
+                        clientIp, ipCount, governance.MaxConnectionsPerIp, connection.ConnectionId);
+                    lock (_statsLock)
+                    {
+                        _statistics.DuplicateConnectionRejectedCount++;
+                    }
+                    return "每IP连接数超限，请等待现有连接清理后重试";
+                }
+            }
+
+            // 三级：每用户上限（未登录连接 userId 为 null 时跳过）
+            if (userId.HasValue)
+            {
+                var userCount = GetActiveConnectionCountByUser(userId.Value);
+                if (userCount >= governance.MaxConnectionsPerUser)
+                {
+                    var existing = GetConnectionByUserId(userId.Value);
+                    _logger.LogWarning(
+                        "[连接治理] 每用户连接数超限拒绝: UserId={UserId}, Count={Count}, Max={Max}, ConnectionId={ConnectionId}, ExistingConnection={Existing}",
+                        userId.Value, userCount, governance.MaxConnectionsPerUser, connection.ConnectionId, existing?.ConnectionId);
+                    lock (_statsLock)
+                    {
+                        _statistics.DuplicateConnectionRejectedCount++;
+                    }
+                    return "每用户连接数超限，该账号已有活跃连接";
+                }
+            }
+
+            return null; // 接受连接
+        }
+
+        /// <summary>[连接精简治理 spec 5.1.3] 获取指定 IP 的当前活跃连接数。</summary>
+        public int GetActiveConnectionCountByIp(string clientIp)
+        {
+            if (string.IsNullOrEmpty(clientIp)) return 0;
+            return _ipConnectionCounts.TryGetValue(clientIp, out var count) ? count : 0;
+        }
+
+        /// <summary>[连接精简治理 spec 5.1.3] 获取指定用户的当前活跃连接数。</summary>
+        public int GetActiveConnectionCountByUser(long userId)
+        {
+            return _userConnections.ContainsKey(userId) ? 1 : 0;
+        }
+
+        /// <summary>[连接精简治理 spec 6.3] 按清理来源累加治理统计。</summary>
+        public void RecordCleanup(ConnectionCleanupSource source)
+        {
+            lock (_statsLock)
+            {
+                switch (source)
+                {
+                    case ConnectionCleanupSource.FirstPacketTimeout:
+                        _statistics.GhostConnectionCleanupCount++;
+                        break;
+                    case ConnectionCleanupSource.Corrupted:
+                        _statistics.CorruptedConnectionCount++;
+                        break;
+                    case ConnectionCleanupSource.ConnectionLimit:
+                    case ConnectionCleanupSource.PerIpLimit:
+                    case ConnectionCleanupSource.PerUserLimit:
+                        _statistics.DuplicateConnectionRejectedCount++;
+                        break;
+                    // IdleTimeout / ClosedEvent 不累加专项治理统计（既有 ActiveConnections 已覆盖）。
+                    default:
+                        break;
+                }
+            }
         }
 
         /// <summary>
@@ -61,6 +169,12 @@ namespace Horizon.Game.Gateway.Services
 
                 if (_connections.TryAdd(connection.ConnectionId, connection))
                 {
+                    // [连接精简治理 spec 5.1.3] 维护每 IP 聚合计数与未绑定角色统计。
+                    if (!string.IsNullOrEmpty(connection.RemoteAddress))
+                    {
+                        _ipConnectionCounts.AddOrUpdate(connection.RemoteAddress, 1, (_, v) => v + 1);
+                    }
+
                     // 注：连接关闭事件由 GameNetworkServer 统一订阅处理，
                     // 确保先读取 characterId 映射并调度 Despawn，再清理 ConnectionManager 内部映射。
                     // 这里不再订阅 Closed 事件，避免竞争导致 GetCharacterIdsByConnection 返回空。
@@ -70,6 +184,11 @@ namespace Horizon.Game.Gateway.Services
                         _statistics.TotalConnections++;
                         _statistics.ActiveConnections = _connections.Count;
                         _statistics.PeakConnections = Math.Max(_statistics.PeakConnections, _statistics.ActiveConnections);
+                        // 未绑定角色连接（UserId 为 null）计数递增。
+                        if (!connection.UserId.HasValue)
+                        {
+                            _statistics.UnboundConnectionCount++;
+                        }
                     }
 
                     _logger.LogInformation("新连接已添加: {ConnectionId} from {RemoteAddress}", 
@@ -103,6 +222,12 @@ namespace Horizon.Game.Gateway.Services
                         _userConnections.TryRemove(connection.UserId.Value, out _);
                     }
 
+                    // [连接精简治理 spec 5.1.3] 维护每 IP 聚合计数递减。
+                    if (!string.IsNullOrEmpty(connection.RemoteAddress))
+                    {
+                        _ipConnectionCounts.AddOrUpdate(connection.RemoteAddress, 0, (_, v) => Math.Max(0, v - 1));
+                    }
+
                     // 清理该连接关联的所有角色映射（characterId → connectionId）
                     CleanupCharacterMappings(connectionId);
 
@@ -112,6 +237,12 @@ namespace Horizon.Game.Gateway.Services
                     {
                         _statistics.TotalDisconnections++;
                         _statistics.ActiveConnections = _connections.Count;
+
+                        // 未绑定角色连接（UserId 为 null）计数递减（不为负）。
+                        if (!connection.UserId.HasValue && _statistics.UnboundConnectionCount > 0)
+                        {
+                            _statistics.UnboundConnectionCount--;
+                        }
                         
                         // 计算平均连接时长
                         var duration = DateTime.UtcNow - connection.ConnectedTime;
@@ -181,6 +312,18 @@ namespace Horizon.Game.Gateway.Services
         {
             if (connection is null) throw new ArgumentNullException(nameof(connection));
             _characterConnections[characterId] = connection.ConnectionId;
+
+            // [连接精简治理 spec 5.1.3] 以 characterId 作为"用户会话"关联键建立连接映射：
+            // 使每用户连接数约束（MaxConnectionsPerUser=1）在角色进入游戏后生效，
+            // 同时未绑定角色连接（UserId 为 null）在角色绑定后转为已绑定（UnboundConnectionCount 递减）。
+            _userConnections[characterId] = connection.ConnectionId;
+            lock (_statsLock)
+            {
+                if (!connection.UserId.HasValue && _statistics.UnboundConnectionCount > 0)
+                {
+                    _statistics.UnboundConnectionCount--;
+                }
+            }
 
             // 维护反向索引
             var charSet = _connectionToCharacters.GetOrAdd(connection.ConnectionId, _ => new HashSet<long>());
@@ -419,7 +562,11 @@ namespace Horizon.Game.Gateway.Services
                     ErrorConnections = _statistics.ErrorConnections,
                     AuthenticatedConnections = _statistics.AuthenticatedConnections,
                     PeakConnections = _statistics.PeakConnections,
-                    AverageConnectionDuration = _statistics.AverageConnectionDuration
+                    AverageConnectionDuration = _statistics.AverageConnectionDuration,
+                    GhostConnectionCleanupCount = _statistics.GhostConnectionCleanupCount,
+                    CorruptedConnectionCount = _statistics.CorruptedConnectionCount,
+                    DuplicateConnectionRejectedCount = _statistics.DuplicateConnectionRejectedCount,
+                    UnboundConnectionCount = _statistics.UnboundConnectionCount,
                 };
             }
         }

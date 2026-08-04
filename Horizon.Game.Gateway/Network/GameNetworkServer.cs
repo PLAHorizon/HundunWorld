@@ -49,8 +49,8 @@ namespace Horizon.Game.Gateway.Network
         /// <summary>
         /// 已清理连接的幂等保护集合。<br/>
         /// 修复 BUG：Closed 事件会被两个订阅路径同时触发：<br/>
-        /// 1. <see cref="OnClientDisconnected"/>（订阅 <c>_tcpService.Closed</c>，source="Closed事件"）<br/>
-        /// 2. <see cref="EnsureConnectionRegisteredAsync"/> 中的 lambda（订阅 <c>GameConnection.Closed</c>，source="GameConnection.Closed"）<br/>
+        /// 1. <see cref="OnClientDisconnected"/>（订阅 <c>_tcpService.Closed</c>，source=ClosedEvent）<br/>
+        /// 2. <see cref="EnsureConnectionRegisteredAsync"/> 中的 lambda（订阅 <c>GameConnection.Closed</c>，source=ClosedEvent）<br/>
         /// GameConnection 内部在 <c>_client.Closed</c> 触发时会 Invoke 自身的 Closed 事件，
         /// 因此一次断开会同时触发两条清理路径，导致指纹重复清理、重复日志、潜在 Despawn 竞态。<br/>
         /// 此集合确保同一连接的 CleanupConnectionAsync 只完整执行一次，第二次调用直接返回。
@@ -418,7 +418,7 @@ namespace Horizon.Game.Gateway.Network
             try
             {
                 _logger.LogInformation("客户端断开: {Id}, 原因: {Message}", client.Id, e.Message);
-                await CleanupConnectionAsync(client.Id, source: "Closed事件");
+                await CleanupConnectionAsync(client.Id, source: ConnectionCleanupSource.ClosedEvent);
             }
             catch (Exception ex)
             {
@@ -457,14 +457,14 @@ namespace Horizon.Game.Gateway.Network
                 // 修复：先收集所有需要清理的连接，然后并行执行 CleanupConnectionAsync，互不阻塞。
                 // 线程安全：CleanupConnectionAsync 内部所有操作（RemoveConnectionAsync、DespawnImmediatelyAsync）
                 // 都按 connectionId/characterId 独立操作，不依赖全局状态，并行执行安全。
-                var connectionsToCleanup = new List<(string ConnectionId, string Source)>();
+                var connectionsToCleanup = new List<(string ConnectionId, ConnectionCleanupSource Source)>();
 
                 foreach (var connection in _connectionManager.GetAllConnections())
                 {
                     // 检测 1：TouchSocket Online 属性判定（依赖 TCP 层检测，可能不及时）
                     if (!connection.IsConnected)
                     {
-                        connectionsToCleanup.Add((connection.ConnectionId, "Online=false"));
+                        connectionsToCleanup.Add((connection.ConnectionId, ConnectionCleanupSource.ClosedEvent));
                         continue;
                     }
 
@@ -485,7 +485,7 @@ namespace Horizon.Game.Gateway.Network
                             _logger.LogWarning(
                                 "连接 {Id} 首包超时（{Seconds:F0}秒未收到任何数据），判定为幽灵连接并清理。Connected={Connected:O}, Remote={Remote}",
                                 connection.ConnectionId, sinceConnect.TotalSeconds, connection.ConnectedTime, connection.RemoteAddress);
-                            connectionsToCleanup.Add((connection.ConnectionId, "首包超时"));
+                            connectionsToCleanup.Add((connection.ConnectionId, ConnectionCleanupSource.FirstPacketTimeout));
                             continue;
                         }
                     }
@@ -500,7 +500,7 @@ namespace Horizon.Game.Gateway.Network
                         _logger.LogWarning(
                             "连接 {Id} 空闲超时（{Seconds:F0}秒无数据），判定为离线并清理。LastActive={LastActive:O}, Remote={Remote}",
                             connection.ConnectionId, idleDuration.TotalSeconds, connection.LastActiveTime, connection.RemoteAddress);
-                        connectionsToCleanup.Add((connection.ConnectionId, "空闲超时"));
+                        connectionsToCleanup.Add((connection.ConnectionId, ConnectionCleanupSource.IdleTimeout));
                     }
                 }
 
@@ -540,8 +540,8 @@ namespace Horizon.Game.Gateway.Network
         /// 由 OnClientDisconnected（Closed 事件）和 CheckDisconnectedConnections（定时检测）调用。
         /// </summary>
         /// <param name="connectionId">连接ID</param>
-        /// <param name="source">调用来源（用于日志诊断）</param>
-        private async Task CleanupConnectionAsync(string connectionId, string source)
+        /// <param name="source">调用来源（连接清理来源枚举，用于日志诊断与治理统计）</param>
+        private async Task CleanupConnectionAsync(string connectionId, ConnectionCleanupSource source)
         {
             // 幂等保护：Closed 事件会被 _tcpService.Closed 与 GameConnection.Closed 两条路径同时触发，
             // 同一连接只允许完整清理一次。第二次调用直接返回，避免重复清理指纹、重复日志、潜在 Despawn 竞态。
@@ -579,6 +579,10 @@ namespace Horizon.Game.Gateway.Network
                 // 从连接管理器移除。返回 false 说明连接已被并发清理（Closed 事件与定时检测竞态）。
                 bool removed = await _connectionManager.RemoveConnectionAsync(connectionId);
 
+                // [连接精简治理 spec 6.3] 按来源枚举累加治理统计：
+                // 首包超时（幽灵连接）清理次数、损坏连接次数、重复/超限拒绝次数。
+                _connectionManager.RecordCleanup(source);
+
                 // 修复 BUG（远程角色周期性地 Despawn+Spawn 循环 — 闪退）：
                 // 原实现使用 DespawnImmediatelyAsync 立即执行 Despawn，客户端短暂断线后重连时
                 // 实体已被从 ZoneShardGrain._simulatedEntities 移除，EnterWorldAsync 无法找到
@@ -613,6 +617,11 @@ namespace Horizon.Game.Gateway.Network
                         "连接 {Id} 未绑定任何角色，跳过 Despawn（来源: {Source}, removed={Removed}）",
                         connectionId, source, removed);
                 }
+
+                // [连接精简治理 spec 4.4.1a] 结构化清理日志。
+                _logger.LogInformation(
+                    "[ConnectionCleanup] Id={Id} Source={Source} Characters={Count} Result={Result}",
+                    connectionId, source, characterIdsToDespawn.Count, removed ? "Cleaned" : "AlreadyRemoved");
             }
             catch (Exception ex)
             {
@@ -977,12 +986,32 @@ namespace Horizon.Game.Gateway.Network
 
                 var gameConnection = new GameConnection(client, _logger);
 
+                // [连接精简治理 spec 3.4] 接入连接数三级约束（全局→每 IP→每用户）。
+                // 拒绝时向被拒连接发送明确提示并关闭，映射清理来源枚举后记录。
+                var rejectReason = await _connectionManager.TryAcquireConnectionSlotAsync(
+                    gameConnection, gameConnection.RemoteAddress, gameConnection.UserId);
+                if (rejectReason != null)
+                {
+                    var rejectSource = MapRejectToCleanupSource(rejectReason);
+                    _logger.LogWarning(
+                        "[连接治理] 连接被拒绝: Id={Id}, Reason={Reason}, Remote={Remote}, Source={Source}",
+                        client.Id, rejectReason, gameConnection.RemoteAddress, rejectSource);
+                    // 向被拒连接发送明确拒绝提示（复用错误消息通道，尽力而为）。
+                    try { await SendConnectionRejectedNoticeAsync(gameConnection, rejectReason); }
+                    catch (Exception sendEx) { _logger.LogDebug(sendEx, "发送连接拒绝提示失败: {Id}", client.Id); }
+                    // 关闭底层连接（触发 Closed 事件，但该连接未注册进 _connections，映射由拒绝路径清理来源统计）。
+                    try { await gameConnection.CloseAsync(rejectReason); }
+                    catch (Exception closeEx) { _logger.LogDebug(closeEx, "关闭被拒连接异常: {Id}", client.Id); }
+                    _connectionManager.RecordCleanup(rejectSource);
+                    return _connectionManager.GetConnection(client.Id);
+                }
+
                 // 订阅 GameConnection 的 Closed 事件：这是断线清理的主要入口。
                 // 在此处订阅可以确保 CleanupConnectionAsync 在 ConnectionManager.RemoveConnectionAsync 之前执行，
                 // 从而保证 GetCharacterIdsByConnection 能正确反查出角色 ID 并调度 Despawn。
                 gameConnection.Closed += async (s, e) =>
                 {
-                    await CleanupConnectionAsync(e.ConnectionId, source: "GameConnection.Closed");
+                    await CleanupConnectionAsync(e.ConnectionId, source: ConnectionCleanupSource.ClosedEvent);
                 };
 
                 var success = await _connectionManager.AddConnectionAsync(gameConnection).ConfigureAwait(false);
@@ -1002,6 +1031,53 @@ namespace Horizon.Game.Gateway.Network
             {
                 _connectionRegistrationGate.Release();
             }
+        }
+
+        /// <summary>
+        /// 将连接拒绝原因映射为清理来源枚举（连接精简治理 spec 4.3.1a）。
+        /// 用于被拒连接关闭时按原因记录治理统计与清理日志。
+        /// </summary>
+        private static ConnectionCleanupSource MapRejectToCleanupSource(string rejectReason)
+        {
+            if (rejectReason.Contains("每IP", StringComparison.OrdinalIgnoreCase)) return ConnectionCleanupSource.PerIpLimit;
+            if (rejectReason.Contains("每用户", StringComparison.OrdinalIgnoreCase)) return ConnectionCleanupSource.PerUserLimit;
+            if (rejectReason.Contains("已满", StringComparison.OrdinalIgnoreCase)) return ConnectionCleanupSource.ConnectionLimit;
+            return ConnectionCleanupSource.ConnectionLimit;
+        }
+
+        /// <summary>
+        /// 向被拒连接发送明确拒绝提示（复用错误消息通道，尽力而为）。
+        /// 在关闭底层连接前调用，使客户端可区分拒绝原因（连接数已满/每IP超限/每用户超限）。
+        /// </summary>
+        private async Task SendConnectionRejectedNoticeAsync(IGameConnection connection, string reason)
+        {
+            // 构造应用层错误消息：使用 AuthenticationError 通道（与既有认证失败提示一致）。
+            var errorResponse = new AuthenticationError
+            {
+                ErrorCode = 4001,
+                ErrorMessage = reason,
+                ErrorDetails = "连接数约束：请等待现有连接清理后重试",
+                RetryAfterSeconds = 5,
+                RequiresReconnect = false,
+            };
+            var errorPacket = new HorizonMessagePacket
+            {
+                Header = new MessageHeader
+                {
+                    MessageId = Guid.NewGuid().ToString(),
+                    MessageType = MessageType.Error,
+                    ServiceType = ServiceType.Account,
+                    IsResponse = false,
+                    RequireResponse = false,
+                    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                },
+                ServiceType = ServiceType.Account,
+                Body = errorResponse,
+                RawData = MemoryPackSerializer.Serialize(errorResponse),
+            };
+
+            var frame = _adapter.PackPacket(errorPacket);
+            await connection.SendAsync(frame);
         }
 
         /// <summary>

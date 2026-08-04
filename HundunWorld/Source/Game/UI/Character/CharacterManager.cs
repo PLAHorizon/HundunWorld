@@ -236,12 +236,22 @@ namespace Game.UI.Character
                 if (!networkManager.CanSendMessage())
                 {
                     FlaxEngine.Debug.Log("[CharacterManager] 网关不在线，尝试按需拉起连接...");
-                    var connected = await networkManager.ConnectOnDemandAsync();
-                    if (!connected)
+                    // [连接精简治理 spec 5.1.1] 经单连接协调器编排进游戏建连：
+                    // 返回 false 表示连接已在线被复用或另有路径在建连，直接复用/等待。
+                    var coordinator = HundunWorldGame.Instance.ConnectionCoordinator;
+                    var acquired = coordinator != null
+                        ? await coordinator.RequestConnectAsync(ClientConnectionRequestKind.EnterGame)
+                        : await networkManager.ConnectOnDemandAsync();
+                    if (coordinator == null && !acquired)
                     {
                         FlaxEngine.Debug.LogWarning("[CharacterManager] 网关不可达，停留在角色选择界面");
                         _errorHandler.HandleError(UIErrorType.Network, "服务器当前不在线，无法进入游戏。请稍后重试。", null, "enter_game_gateway_offline");
                         return false;
+                    }
+                    if (coordinator != null && acquired)
+                    {
+                        // 实际执行建连成功：调用方发送 EnterGameRequest 首包（下方继续执行）。
+                        coordinator.MarkFirstPacketSent();
                     }
                     FlaxEngine.Debug.Log("[CharacterManager] 按需连接成功，继续进入游戏");
                 }

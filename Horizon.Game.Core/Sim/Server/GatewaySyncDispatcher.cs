@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Horizon.Game.Core.Configuration;
 using Horizon.Game.Core.Observability;
 using Horizon.Game.Message.Sync;
 using Microsoft.Extensions.Logging;
@@ -50,23 +51,57 @@ public sealed class GatewaySyncDispatcher
     // Task D.4：per-session 带宽跟踪器。key = sessionId。
     private readonly ConcurrentDictionary<long, SessionBandwidthTracker> _bandwidthTrackers = new();
 
+    // 带宽预算配置（默认 100kbps 红线，经 BandwidthBudgetValidator 校验兜底）。
+    private BandwidthBudgetOptions _bandwidthBudget = new();
+
     /// <summary>
-    /// Task D.4：带宽阈值（kbps），默认 500kbps。<br/>
-    /// 修复 BUG（3人在线即触发限流导致移动延迟和位置不连贯）：<br/>
-    /// 原值 100kbps 在 3 个玩家同时在线时即被触发（3 session × 2 delta × 80B × 20Hz ≈ 96kbps），
-    /// 导致快照频率从 20Hz 降至 10Hz，表现为移动延迟加倍、位置不连贯不精确。<br/>
-    /// 500kbps 可容纳约 15 个并发玩家（每玩家约 32kbps），满足小型多人场景需求。
+    /// 服务端带宽预算配置（spec 5.5.1.1）。替换原硬编码 500kbps 阈值默认值。
+    /// 为 null 时使用默认预算（100kbps 红线）。赋值时经 <see cref="BandwidthBudgetValidator"/> 校验回退。
     /// </summary>
-    public double BandwidthThresholdKbps { get; set; } = 50000.0;
+    public BandwidthBudgetOptions? BandwidthBudget
+    {
+        get => _bandwidthBudget;
+        set => _bandwidthBudget = BandwidthBudgetValidator.Validate(value, _logger);
+    }
 
-    /// <summary>Task D.4：正常快照频率（Hz），默认 20Hz。</summary>
-    public int NormalSnapshotHz { get; set; } = 20;
+    /// <summary>当前生效的带宽红线预算（kbps），默认 100（spec 5.5.1.1 a 验收）。</summary>
+    public double EffectiveBudgetKbps => _bandwidthBudget.BudgetKbps;
 
-    /// <summary>Task D.4：限流快照频率（Hz），默认 10Hz（超阈值时降频）。</summary>
-    public int ThrottledSnapshotHz { get; set; } = 10;
+    /// <summary>Task D.4：正常快照频率（Hz），默认 20Hz（来自 <see cref="BandwidthBudgetOptions.NormalSnapshotHz"/>）。</summary>
+    public int NormalSnapshotHz
+    {
+        get => _bandwidthBudget.NormalSnapshotHz;
+        set => _bandwidthBudget.NormalSnapshotHz = value;
+    }
 
-    /// <summary>Task D.4：带宽恢复判定秒数（连续 N 秒低于阈值后回升频率），默认 3 秒。</summary>
-    public int RecoverySeconds { get; set; } = 3;
+    /// <summary>Task D.4：限流快照频率（Hz），默认 10Hz（超阈值时第一级降频，来自 <see cref="BandwidthBudgetOptions.ThrottledSnapshotHz"/>）。</summary>
+    public int ThrottledSnapshotHz
+    {
+        get => _bandwidthBudget.ThrottledSnapshotHz;
+        set => _bandwidthBudget.ThrottledSnapshotHz = value;
+    }
+
+    /// <summary>深度降级快照频率（Hz），默认 5Hz（持续超阈值时第二级降频，来自 <see cref="BandwidthBudgetOptions.DegradedSnapshotHz"/>）。</summary>
+    public int DegradedSnapshotHz
+    {
+        get => _bandwidthBudget.DegradedSnapshotHz;
+        set => _bandwidthBudget.DegradedSnapshotHz = value;
+    }
+
+    /// <summary>Task D.4：带宽恢复判定秒数（连续 N 秒低于阈值后回升频率），默认 3 秒（来自 <see cref="BandwidthBudgetOptions.RecoverySeconds"/>）。</summary>
+    public int RecoverySeconds
+    {
+        get => _bandwidthBudget.RecoverySeconds;
+        set => _bandwidthBudget.RecoverySeconds = value;
+    }
+
+    /// <summary>带宽限流降频诊断事件（语义对称于 <c>ISyncDiagnosticsSink.OnBandwidthThrottled</c> 的服务端观测）。</summary>
+    /// <remarks>参数依次为：sessionId、触发带宽（kbps）、降频前频率、降频后频率。实现方应吞异常并限频。</remarks>
+    public event Action<long, double, int, int>? BandwidthThrottled;
+
+    /// <summary>带宽恢复升频诊断事件（语义对称于 <c>ISyncDiagnosticsSink.OnBandwidthRecovered</c> 的服务端观测）。</summary>
+    /// <remarks>参数依次为：sessionId、恢复带宽（kbps）、升频前频率、升频后频率。实现方应吞异常并限频。</remarks>
+    public event Action<long, double, int, int>? BandwidthRecovered;
 
     /// <summary>灰度开关；false 时 <see cref="RunOnceAsync"/> 直接 no-op，保持旧路径。</summary>
     public bool Enabled { get; set; } = true;
@@ -202,14 +237,14 @@ public sealed class GatewaySyncDispatcher
     public void RecordSend(long sessionId, int bytes)
     {
         if (bytes <= 0) return;
-        var tracker = _bandwidthTrackers.GetOrAdd(sessionId, _ => new SessionBandwidthTracker());
+        var tracker = _bandwidthTrackers.GetOrAdd(sessionId, _ => new SessionBandwidthTracker { SessionId = sessionId });
         tracker.RecordBytes(bytes, DateTime.UtcNow, this);
     }
 
     /// <summary>
     /// Task D.4：查询指定 session 当前的快照频率（Hz）。
-    /// 超阈值时返回 <see cref="ThrottledSnapshotHz"/>（10Hz），否则返回 <see cref="NormalSnapshotHz"/>（20Hz）。
-    /// 供快照生成器（ZoneShardGrain）按 session 调整推送节奏。
+    /// 三级降级：正常 <see cref="NormalSnapshotHz"/>（20Hz）→ 限流 <see cref="ThrottledSnapshotHz"/>（10Hz）→
+    /// 深度降级 <see cref="DegradedSnapshotHz"/>（5Hz）。供快照生成器（ZoneShardGrain）按 session 调整推送节奏。
     /// </summary>
     public int GetSessionSnapshotHz(long sessionId)
     {
@@ -329,8 +364,9 @@ public sealed class GatewaySyncDispatcher
     /// Task D.4：单个 session 的带宽跟踪器。
     /// <para>
     /// 维护 1 秒滚动窗口内的下发字节数，计算平均带宽（kbps）；
-    /// 超过 <see cref="GatewaySyncDispatcher.BandwidthThresholdKbps"/> 时降低快照频率，
-    /// 连续 <see cref="GatewaySyncDispatcher.RecoverySeconds"/> 秒低于阈值后回升。
+    /// 三级降级顺序（spec 5.5.1.1 b）：先降频（Normal → Throttled → Degraded）、
+    /// 再裁剪低频字段、最后按距离裁剪实体。
+    /// 连续 <see cref="GatewaySyncDispatcher.RecoverySeconds"/> 秒低于阈值后逐级回升。
     /// </para>
     /// </summary>
     public sealed class SessionBandwidthTracker
@@ -342,17 +378,30 @@ public sealed class GatewaySyncDispatcher
         private long _windowStartTicks = DateTime.UtcNow.Ticks;
         // 最近完成窗口的平均带宽（kbps）。
         private double _currentBandwidthKbps;
-        // 当前快照频率（Hz）：正常 20，限流 10。
+        // 当前快照频率（Hz）：Normal/Throttled/Degraded 三档。
         private int _currentSnapshotHz = 20;
         // 连续低于阈值的秒数（用于恢复判定）——仅由 CAS 成功的单线程读写，无需 Interlocked。
         private int _consecutiveUnderThresholdSeconds;
+        // 连续超阈值的窗口数（用于 T→D 持续超预算判定）——同上，单线程读写。
+        private int _consecutiveOverThresholdWindows;
         // 是否已对本次超阈值事件记录过告警（避免 spam）——同上，单线程读写。
         private bool _overThresholdWarned;
+        // 快照频率是否已按 owner.NormalSnapshotHz 初始化（tracker 可能被直接实例化）。
+        private bool _hzInitialized;
+
+        /// <summary>该 tracker 对应的会话标识（诊断事件使用）。</summary>
+        public long SessionId { get; init; }
+
+        /// <summary>是否启用低频字段裁剪（降频后第二优先级降级动作）。</summary>
+        public bool IsFieldTrimmingEnabled { get; private set; }
+
+        /// <summary>是否启用按距离裁剪实体（最后优先级降级动作）。</summary>
+        public bool IsEntityTrimmingEnabled { get; private set; }
 
         /// <summary>当前带宽（kbps，最近完成窗口的平均值）。</summary>
         public double CurrentBandwidthKbps => Volatile.Read(ref _currentBandwidthKbps);
 
-        /// <summary>当前快照频率（Hz）。超阈值时为 10，正常为 20。</summary>
+        /// <summary>当前快照频率（Hz）。超阈值时为 Throttled/Degraded，正常为 Normal。</summary>
         public int CurrentSnapshotHz => Volatile.Read(ref _currentSnapshotHz);
 
         /// <summary>
@@ -365,6 +414,7 @@ public sealed class GatewaySyncDispatcher
         public void RecordBytes(long bytes, DateTime nowUtc, GatewaySyncDispatcher owner)
         {
             if (bytes <= 0) return;
+            EnsureInitialized(owner);
             Interlocked.Add(ref _bytesInCurrentWindow, bytes);
 
             // 检查窗口是否需要滚动
@@ -390,54 +440,112 @@ public sealed class GatewaySyncDispatcher
             UpdateThrottleState(kbps, owner);
         }
 
+        private void EnsureInitialized(GatewaySyncDispatcher owner)
+        {
+            if (_hzInitialized) return;
+            Volatile.Write(ref _currentSnapshotHz, owner.NormalSnapshotHz);
+            _hzInitialized = true;
+        }
+
         /// <summary>
         /// 根据当前带宽更新限流状态（仅由 CAS 成功的单线程调用，内部字段无需 Interlocked，
         /// 但 <see cref="_currentBandwidthKbps"/> / <see cref="_currentSnapshotHz"/> 会被其他线程读取，故用 Volatile.Write）：
         /// <list type="bullet">
-        ///   <item>超阈值 → 降到 <see cref="GatewaySyncDispatcher.ThrottledSnapshotHz"/>，告警一次。</item>
-        ///   <item>连续 RecoverySeconds 秒低于阈值 → 回升到 <see cref="GatewaySyncDispatcher.NormalSnapshotHz"/>。</item>
+        ///   <item>超阈值 → Normal 降到 <see cref="GatewaySyncDispatcher.ThrottledSnapshotHz"/>（第一级降频 + 字段裁剪）。</item>
+        ///   <item>持续超阈值 → Throttled 降到 <see cref="GatewaySyncDispatcher.DegradedSnapshotHz"/>（第二级降频 + 实体裁剪）。</item>
+        ///   <item>连续 RecoverySeconds 秒低于阈值 → Degraded 回升 Throttled，再连续 RecoverySeconds 秒回升 Normal（逐级恢复）。</item>
         /// </list>
+        /// 每个状态转移均触发对应诊断事件（<see cref="BandwidthThrottled"/> / <see cref="BandwidthRecovered"/>）。
         /// </summary>
         private void UpdateThrottleState(double kbps, GatewaySyncDispatcher owner)
         {
             Volatile.Write(ref _currentBandwidthKbps, kbps);
 
-            var threshold = owner.BandwidthThresholdKbps;
+            var threshold = owner.EffectiveBudgetKbps;
+            var currentHz = Volatile.Read(ref _currentSnapshotHz);
 
             if (kbps > threshold)
             {
                 _consecutiveUnderThresholdSeconds = 0;
+                _consecutiveOverThresholdWindows++;
 
-                if (_currentSnapshotHz != owner.ThrottledSnapshotHz)
+                // N → T：第一级降频（正常 20Hz → 限流 10Hz）。
+                if (currentHz == owner.NormalSnapshotHz && owner.NormalSnapshotHz != owner.ThrottledSnapshotHz)
                 {
                     Volatile.Write(ref _currentSnapshotHz, owner.ThrottledSnapshotHz);
-                }
-
-                // 超阈值时仅记录一次 Warning，避免每秒 spam。
-                if (!_overThresholdWarned)
-                {
                     _overThresholdWarned = true;
                     owner._logger?.LogWarning(
                         "[GatewaySyncDispatcher] 带宽超阈值限流：bandwidth={BandwidthKbps:F2}kbps > threshold={ThresholdKbps:F2}kbps，" +
                         "快照频率降为 {ThrottledHz}Hz",
                         kbps, threshold, owner.ThrottledSnapshotHz);
+                    FireThrottled(owner, kbps, owner.NormalSnapshotHz, owner.ThrottledSnapshotHz);
+                }
+                // T → D：持续超预算第二级降频（10Hz → 5Hz）。
+                else if (currentHz == owner.ThrottledSnapshotHz && _consecutiveOverThresholdWindows >= 2)
+                {
+                    Volatile.Write(ref _currentSnapshotHz, owner.DegradedSnapshotHz);
+                    owner._logger?.LogWarning(
+                        "[GatewaySyncDispatcher] 带宽持续超阈值深度限流：bandwidth={BandwidthKbps:F2}kbps，" +
+                        "快照频率降为 {DegradedHz}Hz",
+                        kbps, owner.DegradedSnapshotHz);
+                    FireThrottled(owner, kbps, owner.ThrottledSnapshotHz, owner.DegradedSnapshotHz);
                 }
             }
             else
             {
+                _consecutiveOverThresholdWindows = 0;
                 _consecutiveUnderThresholdSeconds++;
 
-                // 连续 RecoverySeconds 秒低于阈值 → 回升频率。
-                if (_consecutiveUnderThresholdSeconds >= owner.RecoverySeconds
-                    && _currentSnapshotHz != owner.NormalSnapshotHz)
+                // D → T：深度降级回落中档（5Hz → 10Hz）。
+                if (currentHz == owner.DegradedSnapshotHz && _consecutiveUnderThresholdSeconds >= owner.RecoverySeconds)
+                {
+                    Volatile.Write(ref _currentSnapshotHz, owner.ThrottledSnapshotHz);
+                    _consecutiveUnderThresholdSeconds = 0;
+                    _overThresholdWarned = false;
+                    owner._logger?.LogInformation(
+                        "[GatewaySyncDispatcher] 带宽恢复回升中档：连续 {Seconds} 秒低于阈值，快照频率回升为 {ThrottledHz}Hz",
+                        owner.RecoverySeconds, owner.ThrottledSnapshotHz);
+                    FireRecovered(owner, kbps, owner.DegradedSnapshotHz, owner.ThrottledSnapshotHz);
+                }
+                // T → N：限流回落正常（10Hz → 20Hz）。
+                else if (currentHz == owner.ThrottledSnapshotHz && _consecutiveUnderThresholdSeconds >= owner.RecoverySeconds)
                 {
                     Volatile.Write(ref _currentSnapshotHz, owner.NormalSnapshotHz);
+                    _consecutiveUnderThresholdSeconds = 0;
                     _overThresholdWarned = false;
                     owner._logger?.LogInformation(
                         "[GatewaySyncDispatcher] 带宽恢复回升：连续 {Seconds} 秒低于阈值，快照频率回升为 {NormalHz}Hz",
-                        _consecutiveUnderThresholdSeconds, owner.NormalSnapshotHz);
+                        owner.RecoverySeconds, owner.NormalSnapshotHz);
+                    FireRecovered(owner, kbps, owner.ThrottledSnapshotHz, owner.NormalSnapshotHz);
                 }
             }
+
+            UpdateTrimmingFlags(owner);
+        }
+
+        private void UpdateTrimmingFlags(GatewaySyncDispatcher owner)
+        {
+            var hz = Volatile.Read(ref _currentSnapshotHz);
+            IsFieldTrimmingEnabled = hz < owner.NormalSnapshotHz;
+            IsEntityTrimmingEnabled = hz <= owner.DegradedSnapshotHz;
+        }
+
+        private void FireThrottled(GatewaySyncDispatcher owner, double kbps, int fromHz, int toHz)
+        {
+            try
+            {
+                owner.BandwidthThrottled?.Invoke(SessionId, kbps, fromHz, toHz);
+            }
+            catch { /* 吞异常，避免诊断影响同步主逻辑 */ }
+        }
+
+        private void FireRecovered(GatewaySyncDispatcher owner, double kbps, int fromHz, int toHz)
+        {
+            try
+            {
+                owner.BandwidthRecovered?.Invoke(SessionId, kbps, fromHz, toHz);
+            }
+            catch { /* 吞异常，避免诊断影响同步主逻辑 */ }
         }
     }
 }

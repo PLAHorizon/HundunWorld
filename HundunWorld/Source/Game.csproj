@@ -356,6 +356,7 @@
     <Compile Include="Game\Network\Adapters\HorizonMessageAdapter.cs" />
     <Compile Include="Game\Network\Adapters\NarrativeProNetworkAdapter.cs" />
     <Compile Include="Game\Network\Adapters\PerformanceMetrics.cs" />
+    <Compile Include="Game\Network\ClientConnectionCoordinator.cs" />
     <Compile Include="Game\Network\ClientSyncMetrics.cs" />
     <Compile Include="Game\Network\EnhancedDiagnostics.cs" />
     <Compile Include="Game\Network\EnhancedLogging.cs" />
@@ -364,6 +365,7 @@
     <Compile Include="Game\Network\GatewaySelector.cs" />
     <Compile Include="Game\Network\Handlers\EnhancedMessageProcessor.cs" />
     <Compile Include="Game\Network\HeartbeatManager.cs" />
+    <Compile Include="Game\Network\IClientConnectionCoordinator.cs" />
     <Compile Include="Game\Network\INetworkStateMonitor.cs" />
     <Compile Include="Game\Network\MessageHandlers\AchievementMessageHandler.cs" />
     <Compile Include="Game\Network\MessageHandlers\AttackResponseHandler.cs" />
@@ -396,15 +398,10 @@
     <Compile Include="Game\Network\NetworkConnectionHelper.cs" />
     <Compile Include="Game\Network\NetworkManager.cs" />
     <Compile Include="Game\Network\NetworkStateMonitor.cs" />
-    <Compile Include="Game\Network\NetworkSyncManager.cs" />
     <Compile Include="Game\Network\ReconnectConfig.cs" />
     <Compile Include="Game\Network\ReconnectContext.cs" />
     <Compile Include="Game\Network\ReconnectionManager.cs" />
     <Compile Include="Game\Network\Security\MessageSecurityManager.cs" />
-    <Compile Include="Game\Network\Sync\AoiManager.cs" />
-    <Compile Include="Game\Network\Sync\NetworkSyncIntegration.cs" />
-    <Compile Include="Game\Network\Sync\NpcSyncManager.cs" />
-    <Compile Include="Game\Network\Sync\SkillSyncHandler.cs" />
     <Compile Include="Game\Network\SyncDiagnosticsSinkImpl.cs" />
     <Compile Include="Game\NetworkDiagnosticsScript.cs" />
     <Compile Include="Game\Performance\MemoryOptimizer.cs" />
@@ -654,7 +651,6 @@
     <Compile Include="Game\UI\UIStateManager.cs" />
     <Compile Include="Game\UI\UIStyleTokens.cs" />
     <Compile Include="Game\World\NavigationSystem.cs" />
-    <Compile Include="Game\Worlds\EntitySynchronizationManager.cs" />
     <Compile Include="Game\Worlds\EventBroadcaster.cs" />
     <Compile Include="Game\Worlds\PlayerPositionUpdater.cs" />
     <Compile Include="Game\Worlds\WorldDataManager.cs" />

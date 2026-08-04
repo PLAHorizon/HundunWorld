@@ -1,0 +1,37 @@
+﻿C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\bin\Debug\net10.0\Horizon.Game.Gateway.Tests.dll (.NETCoreApp,Version=v10.0)鐨勬祴璇曡繍琛?
+鎬诲叡 1 涓祴璇曟枃浠朵笌鎸囧畾妯″紡鐩稿尮閰嶃€?
+dotnet : [xUnit.net 00:00:00.55]     Horizon.Game.Gateway.Tests.InterpolationSystemSwitchContinuityTests.SwitchContinui
+ty_NoJump_WhenSwitchingToDeadReckoning [FAIL]
+所在位置 行:1 字符: 1
++ dotnet test Horizon.Game.Gateway.Tests/Horizon.Game.Gateway.Tests.csp ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([xUnit.net 00:0...eckoning [FAIL]:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[xUnit.net 00:00:00.55]     Horizon.Game.Gateway.Tests.InterpolationSystemSwitchContinuityTests.SwitchContinuity_DebugA
+ssertActiveInDebugBuild [FAIL]
+[xUnit.net 00:00:00.55]     Horizon.Game.Gateway.Tests.InterpolationSystemSwitchContinuityTests.SwitchContinuity_Positi
+onDiffUnder001m_WhenSwitchingToDeadReckoning [FAIL]
+  澶辫触 Horizon.Game.Gateway.Tests.InterpolationSystemSwitchContinuityTests.SwitchContinuity_NoJump_WhenSwitchingToDeadReckoning [74 ms]
+  閿欒娑堟伅:
+   搴斿彂鐢熷垏鎹?
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.InterpolationSystemSwitchContinuityTests.SwitchContinuity_NoJump_WhenSwitchingToDeadReckoning() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\InterpolationSystemSwitchContinuityTests.cs:line 141
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  澶辫触 Horizon.Game.Gateway.Tests.InterpolationSystemSwitchContinuityTests.SwitchContinuity_DebugAssertActiveInDebugBuild [< 1 ms]
+  閿欒娑堟伅:
+   Debug 鏋勫缓涓嬫柇瑷€閫氳繃鍚庡簲璁板綍 SwitchFromLerpToDeadReckoningTick
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.InterpolationSystemSwitchContinuityTests.SwitchContinuity_DebugAssertActiveInDebugBuild() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\InterpolationSystemSwitchContinuityTests.cs:line 191
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  澶辫触 Horizon.Game.Gateway.Tests.InterpolationSystemSwitchContinuityTests.SwitchContinuity_PositionDiffUnder001m_WhenSwitchingToDeadReckoning [< 1 ms]
+  閿欒娑堟伅:
+   搴斿湪 60 甯у唴鍙戠敓 Lerp鈫扗ead Reckoning 鍒囨崲
+  鍫嗘爤璺熻釜:
+     at Horizon.Game.Gateway.Tests.InterpolationSystemSwitchContinuityTests.SwitchContinuity_PositionDiffUnder001m_WhenSwitchingToDeadReckoning() in C:\Works\GitHubProjects\HundunWorld\Horizon.Game.Gateway.Tests\InterpolationSystemSwitchContinuityTests.cs:line 100
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+
+澶辫触!  - 澶辫触:     3锛岄€氳繃:    53锛屽凡璺宠繃:     0锛屾€昏:    56锛屾寔缁椂闂? 252 ms - Horizon.Game.Gateway.Tests.dll (net10.0)

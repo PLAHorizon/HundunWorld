@@ -5,12 +5,29 @@ using FlaxEngine;
 using Game.Combat;
 using Horizon.Game.ECS.Arch.Components;
 using Horizon.Game.ECS.Arch.Core;
+using Horizon.Game.ECS.Arch.Diagnostics;
 using Horizon.Game.ECS.Arch.Systems;
 using Horizon.Game.Message.Sync.Components;
 using HundunWorld.Game.Character;
+using HundunWorld.Game.Network;
 
 namespace HundunWorld.Game
 {
+    /// <summary>
+    /// [Phase C7] 远程实体渲染同步的分级更新优先级（由 FlaxActorSyncSystem 按距离分级 + 数量降档计算）。
+    /// </summary>
+    public enum RemoteEntityUpdatePriority
+    {
+        /// <summary>每帧更新位置 + 朝向 + 动画（Near 档，≤ NearDistanceMeters）。</summary>
+        EveryFrame = 0,
+
+        /// <summary>每帧更新位置 + 朝向，动画隔帧更新（Mid 档）。</summary>
+        AnimationEveryOtherFrame = 1,
+
+        /// <summary>位置 + 朝向 + 动画全部隔帧更新（Far 档）。</summary>
+        PositionOnlyEveryOtherFrame = 2,
+    }
+
     /// <summary>
     /// ECS→Flax Actor 视觉桥接系统：将 Arch ECS 中远程实体的插值位置同步到 Flax Engine Actor，
     /// 使远程角色在屏幕上可见。
@@ -32,6 +49,36 @@ namespace HundunWorld.Game
 
         /// <summary>[Phase C6] 远程实体数超过此阈值时启用 LOD 降频（非最近实体每 2 帧更新一次）。</summary>
         public int LodEntityThreshold { get; set; } = 50;
+
+        /// <summary>[Phase C7] 远程角色分级更新距离：Near 档上限（米），默认 30，由 ECSUpdateDriver 注入。</summary>
+        public float NearDistanceMeters { get; set; } = 30f;
+
+        /// <summary>[Phase C7] 远程角色分级更新距离：Mid 档上限（米），默认 80，由 ECSUpdateDriver 注入。</summary>
+        public float MidDistanceMeters { get; set; } = 80f;
+
+        /// <summary>[Phase C7] 远程角色性能降档阈值（个），超此数量整体降档，默认 10，由 ECSUpdateDriver 注入。</summary>
+        public int PerformanceDegradeEntityCount { get; set; } = 10;
+
+        /// <summary>[Phase C7] 远程角色数量硬上限（个），超限暂停最远角色插值推进，默认 20，由 ECSUpdateDriver 注入。</summary>
+        public int MaxRemoteEntityCount { get; set; } = 20;
+
+        /// <summary>[超大规模] 超规模实体数上限（个），默认 5000；同屏实体数超过该值进入 OverLimit 档位最远优先降级。</summary>
+        public int UltraScaleEntityCap { get; set; } = 5000;
+
+        /// <summary>[超大规模] 客户端规模档位控制器（spec 5.5.1.3），由 ECSUpdateDriver 装配注入。</summary>
+        public SyncScaleController? ScaleController { get; set; }
+
+        /// <summary>[Phase C7] 远程实体分级更新优先级（距离分级 + 数量降档后的帧预算）。</summary>
+        private readonly Dictionary<ulong, RemoteEntityUpdatePriority> _entityIdToUpdatePriority = new();
+
+        /// <summary>[Phase C7] 上次触发"数量降档"诊断的远程角色数（去重限频）。</summary>
+        private int _lastDegradeDiagCount;
+
+        /// <summary>[Phase C7] 上次触发"数量硬上限"诊断的远程角色数（去重限频）。</summary>
+        private int _lastMaxCapDiagCount;
+
+        /// <summary>[Phase C7] 诊断事件汇（可选）。由 ECSUpdateDriver 注入，null 时不输出诊断日志。</summary>
+        public Horizon.Game.ECS.Arch.Diagnostics.ISyncDiagnosticsSink? Diagnostics { get; set; }
 
         /// <summary>[Phase C6] LOD 降频帧计数（奇偶帧交替更新）。</summary>
         private long _lodFrameCount;
@@ -264,6 +311,20 @@ namespace HundunWorld.Game
         }
 
         /// <summary>
+        /// 获取 InterpolationSystem 实例（用于同步规模档位降级集合）。
+        /// </summary>
+        private InterpolationSystem GetInterpolationSystem(ArchWorldHost archHost)
+        {
+            var systems = archHost.GetSystems(SystemGroup.Render);
+            foreach (var sys in systems)
+            {
+                if (sys is InterpolationSystem interpSys)
+                    return interpSys;
+            }
+            return null;
+        }
+
+        /// <summary>
         /// 实体 Spawn 事件处理：创建对应的 Flax Actor。
         /// </summary>
         private void OnEntitySpawned(SnapshotApplySystem.EntitySpawnedEventArgs args)
@@ -309,6 +370,7 @@ namespace HundunWorld.Game
                 _entityIdToAnimatedModel.Remove(args.EntityId);
                 _entityIdToIsWalkingParam.Remove(args.EntityId);
                 _entityIdToAnimationController.Remove(args.EntityId);
+                _entityIdToUpdatePriority.Remove(args.EntityId);
                 Debug.Log($"[FlaxActorSyncSystem] 远程角色 Actor 已销毁: EntityId={args.EntityId}");
             }
         }
@@ -333,6 +395,7 @@ namespace HundunWorld.Game
             _entityIdToAnimatedModel.Clear();
             _entityIdToIsWalkingParam.Clear();
             _entityIdToAnimationController.Clear();
+            _entityIdToUpdatePriority.Clear();
 
             if (count > 0)
             {
@@ -589,10 +652,50 @@ namespace HundunWorld.Game
             int diagActorsFound = 0;
             int diagPositionsChanged = 0;
 
-            // [Phase C6] LOD 降频：远程实体数超过阈值时，非最近实体每 2 帧更新一次
+            // [Phase C7] 分级更新调度：按距离分级 + 数量降档计算每实体的帧预算。
+            // 替代原 [Phase C6] 单一 LOD 奇偶帧逻辑（LodEntityThreshold=50 过高且无距离分级）。
             var lodFrame = System.Threading.Interlocked.Increment(ref _lodFrameCount);
-            var lodActive = _entityIdToActor.Count > LodEntityThreshold;
-            var lodEntityIndex = 0;
+            var localPos = GetLocalPlayerPosition();
+
+            // 数量降档：远程角色数超过性能阈值时整体降档（Near→Mid、Mid→Far、Far→隔2帧）
+            var degraded = _entityIdToActor.Count > PerformanceDegradeEntityCount;
+            if (degraded && _lastDegradeDiagCount != _entityIdToActor.Count)
+            {
+                _lastDegradeDiagCount = _entityIdToActor.Count;
+                Diagnostics?.OnMultiEntityDegraded(_entityIdToActor.Count, "PerformanceDegrade");
+                ClientSyncMetrics.RecordDegradeEvent();
+            }
+
+            // 数量硬上限：超过上限时按距离对最远角色暂停插值推进（保持最后合法位置，不创建新 Actor）
+            var maxCapReached = _entityIdToActor.Count >= MaxRemoteEntityCount;
+            if (maxCapReached && _lastMaxCapDiagCount != _entityIdToActor.Count)
+            {
+                _lastMaxCapDiagCount = _entityIdToActor.Count;
+                Diagnostics?.OnMultiEntityDegraded(_entityIdToActor.Count, "MaxEntityCap");
+                ClientSyncMetrics.RecordMaxEntityCapReached();
+            }
+
+            // [超大规模] 规模档位编排：向 SyncScaleController 汇报同屏远程实体数并应用最远优先降级。
+            // 降级实体暂停插值推进但不得从订阅集无声丢失（spec 5.5.1.3）；档位回落时恢复全帧平滑呈现。
+            if (ScaleController != null)
+            {
+                ScaleController.OnRemoteEntityCountChanged(_entityIdToActor.Count);
+                if (_entityIdToActor.Count > ScaleController.TierThresholds[ScaleController.TierThresholds.Length - 1])
+                {
+                    // 计算各远程实体距本地玩家的距离，最远优先降级。
+                    var farEntities = new List<(ulong EntityId, float Distance)>(_entityIdToActor.Count);
+                    foreach (var kv in _entityIdToActor)
+                    {
+                        var dist = EstimateDistanceToLocal(kv.Key, localPos);
+                        farEntities.Add((kv.Key, dist));
+                    }
+                    ScaleController.ApplyDegradeTo(farEntities);
+                }
+                else if (ScaleController.DegradedEntityIds.Count > 0)
+                {
+                    ScaleController.ClearDegraded();
+                }
+            }
 
             // 查询所有带 InterpolatedTransformComponent + NetworkIdentityComponent + AuthTransformComponent 的实体
             var query = new QueryDescription()
@@ -602,23 +705,43 @@ namespace HundunWorld.Game
             {
                 diagTotalEntities++;
 
-                // [Phase C6] LOD 降频：当实体数超过阈值时，奇偶帧交替更新一半实体
-                var entityIdx = lodEntityIndex++;
-                if (lodActive && (entityIdx + lodFrame) % 2 != 0)
+                // [Phase C7] 分级计算：按与本地玩家距离分 Near/Mid/Far 档，缓存到 _entityIdToUpdatePriority
+                var entityId = netId.EntityId;
+                var priority = ComputeUpdatePriority(entityId, interp, localPos, degraded);
+                _entityIdToUpdatePriority[entityId] = priority;
+
+                // [Phase C7] 数量硬上限：超限时按距离对最远角色暂停插值推进（不创建/不更新渲染位置）
+                if (maxCapReached)
                 {
-                    return; // 本帧跳过此实体，下帧更新
+                    if (priority == RemoteEntityUpdatePriority.PositionOnlyEveryOtherFrame
+                        && IsFarFromLocal(interp, localPos))
+                    {
+                        return; // 最远角色本帧暂停推进，保持最后合法渲染位置
+                    }
                 }
 
-                if (_entityIdToActor.TryGetValue(netId.EntityId, out var actor))
+                // [Phase C7] 帧预算执行：按优先级决定本帧是否跳过位置/朝向/动画更新
+                var skipPosition = priority == RemoteEntityUpdatePriority.PositionOnlyEveryOtherFrame
+                    && (lodFrame & 1) != 0;
+                if (skipPosition)
+                {
+                    return; // 本帧跳过此实体（Far 档隔帧），下帧更新
+                }
+
+                // [Phase C7] 整体降档时动画停止（Mid/Far 均不更新动画，Far 位置也隔帧）
+                var skipAnimation = degraded
+                    || priority != RemoteEntityUpdatePriority.EveryFrame
+                    && (lodFrame & 1) != 0;
+
+                if (_entityIdToActor.TryGetValue(entityId, out var actor))
                 {
                     if (actor == null)
                     {
-                        destroyedEntityIds.Add(netId.EntityId);
+                        destroyedEntityIds.Add(entityId);
                         return;
                     }
 
                     diagActorsFound++;
-                    var entityId = netId.EntityId;
 
                     // 1) 同步插值位置
                     var newPos = new Vector3(interp.X, interp.Y, interp.Z);
@@ -632,18 +755,26 @@ namespace HundunWorld.Game
                         // 让微小追赶也能反映到 Actor 位置。
                         if (distSquared > 0.000001f)
                         {
+                            // [Phase C7] 渲染端数值兜底（三道防线第三道）：
+                            // 任一轴非有限值则保持上一帧渲染位置并跳过写入，不 throw、不影响其他角色。
+                            if (float.IsFinite(newPos.X) && float.IsFinite(newPos.Y) && float.IsFinite(newPos.Z))
+                            {
+                                actor.Position = newPos;
+                                _entityIdToLastPosition[entityId] = newPos;
+                                positionUpdated = true;
+                                diagPositionsChanged++;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (float.IsFinite(newPos.X) && float.IsFinite(newPos.Y) && float.IsFinite(newPos.Z))
+                        {
                             actor.Position = newPos;
                             _entityIdToLastPosition[entityId] = newPos;
                             positionUpdated = true;
                             diagPositionsChanged++;
                         }
-                    }
-                    else
-                    {
-                        actor.Position = newPos;
-                        _entityIdToLastPosition[entityId] = newPos;
-                        positionUpdated = true;
-                        diagPositionsChanged++;
                     }
 
 #if DEBUG
@@ -703,7 +834,9 @@ namespace HundunWorld.Game
                         Debug.Log($"[FlaxActorSyncSystem] 首帧同步诊断: EntityId={entityId}, AuthYaw={auth.Yaw}rad({yawDeg}deg), AnimatedModel={animatedModel != null}, AnimationController={animationController != null}, ActorName={actor.Name}");
                     }
 
-                    if (_archWorld.Has<MovementStateAuthComponent>(entity))
+                    // [Phase C7] 动画更新纳入分级调度：Near 档每帧、Mid 档隔帧、Far 档与整体降档不执行，
+                    // 降低多角色时动画刷新的 CPU 开销（design.md 1.1.2 差异说明）。
+                    if (!skipAnimation && _archWorld.Has<MovementStateAuthComponent>(entity))
                     {
                         ref var movement = ref _archWorld.Get<MovementStateAuthComponent>(entity);
 
@@ -751,7 +884,7 @@ namespace HundunWorld.Game
                             }
                         }
                     }
-                    else if (animatedModel != null)
+                    else if (!skipAnimation && animatedModel != null)
                     {
                         // 回退：用 Target/Start 差值判断移动意图
                         if (!_entityIdToIsWalkingParam.TryGetValue(entityId, out var isWalkingParam) || isWalkingParam == null)
@@ -782,7 +915,22 @@ namespace HundunWorld.Game
                 _entityIdToAnimatedModel.Remove(entityId);
                 _entityIdToIsWalkingParam.Remove(entityId);
                 _entityIdToAnimationController.Remove(entityId);
+                _entityIdToUpdatePriority.Remove(entityId);
             }
+
+            // [超大规模] 将规模档位降级集合同步到 InterpolationSystem（暂停插值推进但保留 Target，恢复无闪跳）。
+            if (ScaleController != null && HundunWorldGame.Instance?.ArchHost != null)
+            {
+                var interpSystem = GetInterpolationSystem(HundunWorldGame.Instance.ArchHost);
+                if (interpSystem != null)
+                {
+                    interpSystem.SetDegradedEntities(ScaleController.DegradedEntityIds);
+                }
+            }
+
+            // [Phase C7] 多角色指标：当前远程角色数量 + 本帧实际同步实体数
+            ClientSyncMetrics.RecordRemoteEntityCount(_entityIdToActor.Count);
+            ClientSyncMetrics.RecordPerFrameSynced(diagPositionsChanged);
 
 #if DEBUG
             // 诊断：每 120 帧输出汇总统计（仅 Debug 构建）
@@ -806,6 +954,82 @@ namespace HundunWorld.Game
         /// 获取当前远程角色 Actor 数量（调试用）。
         /// </summary>
         public int GetRemoteActorCount() => _entityIdToActor.Count;
+
+        /// <summary>
+        /// [Phase C7] 获取本地玩家 Flax Actor 的位置（分级计算的距离基准）。
+        /// 本地玩家 Actor 缺失时回退为原点，此时所有远程角色均按远档处理（保守降频）。
+        /// </summary>
+        private static Vector3 GetLocalPlayerPosition()
+        {
+            var local = HundunWorldGame.Instance?.LocalPlayerActor;
+            return local != null ? local.Position : Vector3.Zero;
+        }
+
+        /// <summary>
+        /// [Phase C7] 按距离分级 + 数量降档计算实体本帧的更新优先级。
+        /// </summary>
+        /// <param name="entityId">远程实体 ID。</param>
+        /// <param name="interp">插值组件（读取当前插值位置）。</param>
+        /// <param name="localPos">本地玩家位置。</param>
+        /// <param name="degraded">是否整体降档（远程角色数超性能阈值）。</param>
+        /// <returns>该实体本帧的更新优先级。</returns>
+        private RemoteEntityUpdatePriority ComputeUpdatePriority(
+            ulong entityId, in InterpolatedTransformComponent interp, Vector3 localPos, bool degraded)
+        {
+            // 距离分级（与本地玩家的平面距离）
+            var dx = interp.X - localPos.X;
+            var dz = interp.Z - localPos.Z;
+            var distSq = dx * dx + dz * dz;
+
+            var nearSq = NearDistanceMeters * NearDistanceMeters;
+            var midSq = MidDistanceMeters * MidDistanceMeters;
+
+            RemoteEntityUpdatePriority priority;
+            if (distSq <= nearSq)
+                priority = RemoteEntityUpdatePriority.EveryFrame;
+            else if (distSq <= midSq)
+                priority = RemoteEntityUpdatePriority.AnimationEveryOtherFrame;
+            else
+                priority = RemoteEntityUpdatePriority.PositionOnlyEveryOtherFrame;
+
+            // 数量降档：Near→Mid 预算、Mid→Far 预算、Far→隔 2 帧（仍为 PositionOnlyEveryOtherFrame，
+            // 由 skipPosition 的奇偶逻辑天然实现隔帧；Far 已在隔帧基础上不再额外处理）
+            if (degraded && priority == RemoteEntityUpdatePriority.EveryFrame)
+                priority = RemoteEntityUpdatePriority.AnimationEveryOtherFrame;
+            else if (degraded && priority == RemoteEntityUpdatePriority.AnimationEveryOtherFrame)
+                priority = RemoteEntityUpdatePriority.PositionOnlyEveryOtherFrame;
+
+            return priority;
+        }
+
+        /// <summary>
+        /// [Phase C7] 判断远程实体是否处于"远档"（超过 Mid 距离），用于数量硬上限时选择最远角色暂停推进。
+        /// </summary>
+        private bool IsFarFromLocal(in InterpolatedTransformComponent interp, Vector3 localPos)
+        {
+            var dx = interp.X - localPos.X;
+            var dz = interp.Z - localPos.Z;
+            var distSq = dx * dx + dz * dz;
+            var midSq = MidDistanceMeters * MidDistanceMeters;
+            return distSq > midSq;
+        }
+
+        /// <summary>
+        /// [超大规模] 估算远程实体距本地玩家的距离（供最远优先降级排序）。
+        /// 实体位置从 Arch World 的 InterpolatedTransformComponent 读取；实体缺失或未就绪时按 0 处理（不参与降级候选排序靠前）。
+        /// </summary>
+        private float EstimateDistanceToLocal(ulong entityId, Vector3 localPos)
+        {
+            if (_archWorld == null) return 0f;
+            // 通过查询定位实体较繁琐，直接使用上次同步位置缓存（含插值位置）估算。
+            if (_entityIdToLastPosition.TryGetValue(entityId, out var pos))
+            {
+                var dx = pos.X - localPos.X;
+                var dz = pos.Z - localPos.Z;
+                return MathF.Sqrt(dx * dx + dz * dz);
+            }
+            return 0f;
+        }
 
         /// <summary>
         /// 查找 GameWorld 场景（World.scene），确保 Actor 生成在正确的场景中。

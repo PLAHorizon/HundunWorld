@@ -111,6 +111,18 @@ namespace HundunWorld.Game
         private float _lastInputTime = 0f;
 
         /// <summary>
+        /// 上次输出"Camera 未配置"降级 Warning 的游戏时间（秒），用于限频。
+        /// 与 <see cref="_cameraFallbackLogged"/> 配合：首次立即输出，后续每 5 秒最多一次。
+        /// </summary>
+        private float _lastCameraFallbackLogTime = 0f;
+
+        /// <summary>
+        /// 是否已经输出过一次"Camera 未配置"降级 Warning。
+        /// 首次走降级路径立即输出，之后按 5 秒间隔限频，避免每帧刷屏污染日志。
+        /// </summary>
+        private bool _cameraFallbackLogged = false;
+
+        /// <summary>
         /// 输入管理器引用
         /// </summary>
         private InputManager _inputManager;
@@ -602,8 +614,18 @@ namespace HundunWorld.Game
                 return;
             }
 
-            // Camera 未配置，尝试自动查找主相机
+            // Camera 未配置，尝试自动查找主相机上的 ThirdPersonCamera
             var mainCamera = FlaxEngine.Camera.MainCamera?.GetScript<ThirdPersonCamera>();
+            if (mainCamera == null)
+            {
+                // MainCamera 上无 ThirdPersonCamera，全局查找（场景中可能挂在其他 Actor 上）。
+                // 与 WorldSceneInitializer.SetupCameraTarget 的查找逻辑一致，作为防御性兜底。
+                var allCameras = Level.GetScripts<ThirdPersonCamera>();
+                if (allCameras != null && allCameras.Length > 0)
+                {
+                    mainCamera = allCameras[0];
+                }
+            }
             if (mainCamera != null)
             {
                 Camera = mainCamera; // 缓存以避免下次再查找
@@ -612,8 +634,15 @@ namespace HundunWorld.Game
                 return;
             }
 
-            // 降级：使用 Actor.Orientation 的 Yaw 作为 LookYaw 来源
-            FlaxEngine.Debug.LogWarning("[PlayerController] Camera 未配置，使用 Actor.Orientation.Yaw 作为降级");
+            // 降级：使用 Actor.Orientation 的 Yaw 作为 LookYaw 来源（限频日志，避免每帧刷屏）
+            // 首次立即输出，后续每 5 秒最多一次。Camera 配置修复后此分支不再进入。
+            var now = Time.GameTime;
+            if (!_cameraFallbackLogged || (now - _lastCameraFallbackLogTime) >= 5f)
+            {
+                FlaxEngine.Debug.LogWarning("[PlayerController] Camera 未配置，使用 Actor.Orientation.Yaw 作为降级");
+                _lastCameraFallbackLogTime = now;
+                _cameraFallbackLogged = true;
+            }
             yaw = Actor.Orientation.EulerAngles.Y * Mathf.DegreesToRadians;
             pitch = 0f;
         }

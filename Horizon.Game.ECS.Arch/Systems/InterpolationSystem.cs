@@ -43,8 +43,23 @@ namespace Horizon.Game.ECS.Arch.Systems;
 /// </list>
 /// </para>
 /// <para>
-/// <b>传送保护</b>：当目标位置与当前位置距离超过 <see cref="TeleportThresholdMeters"/> 时，
-/// 直接跳到目标位置，避免长距离 Lerp 导致角色"飞过去"。
+/// <b>传送处理（3 档策略，减少闪跳对可游玩性的影响）</b>：当目标位置与当前位置距离
+/// 超过 <see cref="TeleportThresholdMeters"/> 时，根据距离分档处理：
+/// <list type="bullet">
+/// <item>
+/// <term>≤ <see cref="TeleportThresholdMeters"/>（默认 100m）</term>
+/// <description>普通 Lerp 平滑追赶（前向预测 + 线性修正）。</description>
+/// </item>
+/// <item>
+/// <term>(<see cref="TeleportThresholdMeters"/>, <see cref="HardSnapThresholdMeters"/>]（默认 100~500m）</term>
+/// <description>加速混合：在 <see cref="TeleportBlendDurationSeconds"/>（默认 200ms）内用 smoothstep
+/// 缓动从当前位置过渡到 Target，把"瞬移"变成可见的"快速冲刺"，避免视觉割裂。</description>
+/// </item>
+/// <item>
+/// <term>&gt; <see cref="HardSnapThresholdMeters"/>（默认 500m）</term>
+/// <description>硬跳：直接瞬移到 Target。专处理复活/跨地图传送，避免长距离混合像"飞行"。</description>
+/// </item>
+/// </list>
 /// </para>
 /// <para>本地玩家实体不携带此组件，不受本系统影响（由 <see cref="LocalSimulationSystem"/> 驱动）。</para>
 /// </remarks>
@@ -62,16 +77,52 @@ public sealed class InterpolationSystem : ArchSystemBase
     public bool UseAdaptiveSpeed { get; set; } = true;
 
     /// <summary>
-    /// 传送阈值（米）。当目标位置与当前位置距离超过此值时，直接跳到目标位置。
-    /// 避免 Lerp 在长距离移动（如传送、复活）时角色"飞过去"的不自然视觉效果。
-    /// 修复（闪移）：原值 10m 在远程玩家临时断网恢复后位置累积变化（>10m）时触发传送，
-    /// 表现为"闪移"。增大到 50m，让大多数网络抖动场景走 Lerp 平滑追赶而非直接跳。
-    /// 真正的传送（复活、跨地图）通常距离 > 50m，仍会触发直接跳。
+    /// 传送阈值（米）。当目标位置与当前位置距离超过此值时进入"传送处理"（加速混合或硬跳），
+    /// 不再走普通 Lerp 平滑追赶。<br/>
+    /// 修复（闪跳可游玩性 — 扩大平滑区）：原值 50m 在远程玩家临时断网恢复后位置累积变化（&gt;50m）时
+    /// 触发传送，表现为"闪跳"。提升到 100m，让更多漂移场景（断网 5~10 秒累积位移、AOI chunk 重订阅
+    /// 位置对齐、服务端 tick 异常）落入普通 Lerp 平滑追赶区，避免不必要的闪跳。<br/>
+    /// 超过此阈值但 &lt; <see cref="HardSnapThresholdMeters"/> 的场景走加速混合（200ms smoothstep 过渡），
+    /// 仅当距离 &gt; <see cref="HardSnapThresholdMeters"/> 时才硬跳（专处理复活/跨地图）。<br/>
+    /// <b>配置语义</b>：默认值由 <see cref="Configuration.RemoteSyncThresholdOptions"/> 经
+    /// <see cref="Configuration.RemoteSyncThresholdValidator"/> 校验后于启动时注入，
+    /// 此处默认值作为无配置时的兜底。
     /// </summary>
-    public float TeleportThresholdMeters { get; set; } = 50f;
+    public float TeleportThresholdMeters { get; set; } = 100f;
+
+    /// <summary>
+    /// 硬跳阈值（米）。当目标距离超过此值时，直接瞬移到目标位置，不走加速混合。<br/>
+    /// 专处理真正的传送（复活、跨地图传送），这些场景距离通常 &gt; 500m，混合会让角色看起来
+    /// "飞过去"（500m @ 200ms = 2500m/s，视觉模糊冲刺上限），瞬移反而符合玩家预期。<br/>
+    /// 距离在 (<see cref="TeleportThresholdMeters"/>, 此值] 区间走加速混合。<br/>
+    /// 默认 500m：典型 MMO 地图尺寸 1~8km，500m 足以区分"网络漂移"与"真传送"。<br/>
+    /// <b>配置语义</b>：默认值由 <see cref="Configuration.RemoteSyncThresholdOptions"/> 经
+    /// <see cref="Configuration.RemoteSyncThresholdValidator"/> 校验后于启动时注入，
+    /// 此处默认值作为无配置时的兜底。
+    /// </summary>
+    public float HardSnapThresholdMeters { get; set; } = 500f;
+
+    /// <summary>
+    /// 加速混合时长（秒）。当目标距离在 (<see cref="TeleportThresholdMeters"/>,
+    /// <see cref="HardSnapThresholdMeters"/>] 区间时，用 smoothstep 缓动在此时长内
+    /// 从当前位置过渡到 Target，把"瞬移"变成可见的"快速冲刺"。<br/>
+    /// 默认 0.2s（200ms）：MMO 通用 150~300ms 区间的中间值，60fps 下约 12 帧，
+    /// 足够可见又不至于像"飞行"。过短（&lt;100ms）仍像瞬移，过长（&gt;300ms）有飞行感。<br/>
+    /// <b>配置语义</b>：默认值由 <see cref="Configuration.RemoteSyncThresholdOptions"/> 经
+    /// <see cref="Configuration.RemoteSyncThresholdValidator"/> 校验后于启动时注入，
+    /// 此处默认值作为无配置时的兜底。
+    /// </summary>
+    public float TeleportBlendDurationSeconds { get; set; } = 0.2f;
 
     /// <summary>断线期间暂停插值推进（避免无新数据时角色漂移）。</summary>
     public bool IsPaused { get; set; } = false;
+
+    /// <summary>
+    /// 规模档位降级标记：为 true 时"暂停插值推进"（spec 5.5.1.3 超档位实体不消失）。
+    /// 与 <see cref="IsPaused"/> 并列——IsPaused 冻结全部实体（断线），IsDegraded 仅冻结被降级的最远实体。
+    /// 被降级实体保留 <c>Target</c> 状态，恢复标记清除后按既有平滑/传送策略无跳变继续推进。
+    /// </summary>
+    public bool IsDegraded { get; set; } = false;
 
     /// <summary>
     /// 诊断事件汇（可选）。由游戏层 DI 注入，null 时不输出诊断日志，保证零开销。
@@ -105,6 +156,21 @@ public sealed class InterpolationSystem : ArchSystemBase
     /// <summary>本帧是否有新的平滑度采样（存在 Active 远程角色时为 true）。</summary>
     public bool HasNewSmoothnessSample { get; private set; }
 
+    /// <summary>当前被规模档位降级的远程实体 ID 集合（暂停插值推进但保留 Target，恢复后无闪跳）。</summary>
+    private readonly HashSet<ulong> _degradedEntityIds = new();
+
+    /// <summary>设置/更新被降级实体集合（由 SyncScaleController 或 FlaxActorSyncSystem 装配时注入）。</summary>
+    /// <param name="entityIds">被降级实体的 NetworkIdentityComponent.EntityId 集合。</param>
+    public void SetDegradedEntities(IEnumerable<ulong> entityIds)
+    {
+        _degradedEntityIds.Clear();
+        if (entityIds is null) return;
+        foreach (var id in entityIds) _degradedEntityIds.Add(id);
+    }
+
+    /// <summary>当前是否存在被降级实体（快速路径判断，避免空集合每帧遍历）。</summary>
+    public bool HasDegradedEntities => _degradedEntityIds.Count > 0;
+
     private float _framePositionDeltaSum;
     private int _sampledEntityCount;
 
@@ -126,6 +192,8 @@ public sealed class InterpolationSystem : ArchSystemBase
         // 60fps + speed=10 → lerpFactor=0.167（每帧追赶 16.7% 的距离）
         var lerpFactor = Math.Clamp(dt * speed, 0f, 1f);
         var teleportThresholdSq = TeleportThresholdMeters * TeleportThresholdMeters;
+        // 硬跳阈值平方（仅距离 > HardSnapThresholdMeters 时瞬移，专处理复活/跨地图传送）
+        var hardSnapThresholdSq = HardSnapThresholdMeters * HardSnapThresholdMeters;
 
         _framePositionDeltaSum = 0f;
         _sampledEntityCount = 0;
@@ -134,6 +202,14 @@ public sealed class InterpolationSystem : ArchSystemBase
         {
             // 累计自上次快照以来的时间（供诊断和外部系统使用）
             interp.TimeSinceLastSnapshot += dt;
+
+            // [规模档位降级] 被降级实体跳过本帧推进但保留 Target 状态（spec 5.5.1.3）：
+            // 冻结于最后权威位置附近（不漂移、不消失），恢复后按既有平滑/传送策略无跳变继续推进。
+            if (IsDegraded || (HasDegradedEntities && TryGetDegradedEntityId(world, entity, out var degradedId) && _degradedEntityIds.Contains(degradedId)))
+            {
+                interp.Alpha = 1f;
+                return;
+            }
 
             // 状态机分支：按远程实体当前状态采用不同插值策略
             switch (interp.State)
@@ -172,7 +248,24 @@ public sealed class InterpolationSystem : ArchSystemBase
                     return;
             }
 
-            // === Active 状态：Lerp 平滑追赶 + Dead Reckoning 惯性外推 ===
+            // === Active 状态：3 档传送处理（Lerp / 加速混合 / 硬跳） ===
+            // 修复（闪跳可游玩性）：原实现仅 2 档（Lerp / 硬跳），距离 > TeleportThreshold 即瞬移，
+            // 视觉割裂。改为 3 档：
+            //   - dist ≤ TeleportThreshold：普通 Lerp 平滑追赶（前向预测 + 线性修正）
+            //   - TeleportThreshold < dist ≤ HardSnapThreshold：加速混合，200ms smoothstep 过渡
+            //   - dist > HardSnapThreshold：硬跳（专处理复活/跨地图传送）
+
+            // [异常数据隔离] 目标位置有限值防御（spec 5.3.1 规则 7 的 a、DFX 4.2.4）：
+            // 在 distSq 计算之前检查 Target 是否有限值——任一轴非有限值（NaN/Infinity）时
+            // distSq 会变为 NaN/Infinity 并污染所有后续分支（含硬跳覆盖、加速混合启动），
+            // 因此跳过本帧全部推进处理，保持当前渲染位置与 Alpha 不变，等待合法快照覆盖。
+            // 不调用任何诊断方法（避免刷屏），仅非法时跳过。
+            if (!float.IsFinite(interp.TargetX) || !float.IsFinite(interp.TargetY) || !float.IsFinite(interp.TargetZ)
+                || !float.IsFinite(interp.TargetYaw))
+            {
+                interp.Alpha = 1f;
+                return;
+            }
 
             // 计算当前位置与目标位置的距离平方
             var dx = interp.TargetX - interp.X;
@@ -180,22 +273,138 @@ public sealed class InterpolationSystem : ArchSystemBase
             var dz = interp.TargetZ - interp.Z;
             var distSq = dx * dx + dy * dy + dz * dz;
 
-            if (distSq > teleportThresholdSq)
+            // 分支 A：混合进行中（TeleportBlendRemainingSeconds > 0）
+            // 混合期间 Target 可能被新快照更新（HandleUpdate 写入新 Target），混合自动重定向到新 Target。
+            // 若新 Target 距离当前已插值位置超过 HardSnap 阈值，立即硬跳覆盖混合（极端漂移场景兜底）。
+            if (interp.TeleportBlendRemainingSeconds > 0f)
             {
-                // 传送：直接跳到目标位置，避免长距离 Lerp
+                if (distSq > hardSnapThresholdSq)
+                {
+                    // 混合中 Target 跳到 > HardSnap 阈值：硬跳覆盖混合
+                    interp.X = interp.TargetX;
+                    interp.Y = interp.TargetY;
+                    interp.Z = interp.TargetZ;
+                    interp.Yaw = interp.TargetYaw;
+                    interp.Alpha = 1f;
+                    interp.TeleportBlendRemainingSeconds = 0f;
+                    interp.TeleportBlendDurationSeconds = 0f;
+
+                    if (Diagnostics != null && world.Has<NetworkIdentityComponent>(entity))
+                    {
+                        var netId = world.Get<NetworkIdentityComponent>(entity);
+                        Diagnostics.OnTeleportJump(netId.EntityId, MathF.Sqrt(distSq), interp.ServerTick);
+                    }
+                }
+                else
+                {
+                    // 推进混合：remaining -= dt，alpha = elapsed / duration = 1 - remaining/duration
+                    interp.TeleportBlendRemainingSeconds -= dt;
+                    if (interp.TeleportBlendRemainingSeconds <= 0f)
+                    {
+                        // 混合完成：snap 到 Target，清零混合状态
+                        interp.X = interp.TargetX;
+                        interp.Y = interp.TargetY;
+                        interp.Z = interp.TargetZ;
+                        interp.Yaw = interp.TargetYaw;
+                        interp.Alpha = 1f;
+                        interp.TeleportBlendRemainingSeconds = 0f;
+                        interp.TeleportBlendDurationSeconds = 0f;
+                    }
+                    else
+                    {
+                        // smoothstep 缓动：alpha² × (3 - 2α)，ease-in-out 视觉自然
+                        var blendAlpha = Math.Clamp(
+                            1f - interp.TeleportBlendRemainingSeconds / interp.TeleportBlendDurationSeconds, 0f, 1f);
+                        var smoothedAlpha = blendAlpha * blendAlpha * (3f - 2f * blendAlpha);
+
+                        // 位置 Lerp(Start, Target, smoothedAlpha)
+                        interp.X = interp.TeleportBlendStartX + (interp.TargetX - interp.TeleportBlendStartX) * smoothedAlpha;
+                        interp.Y = interp.TeleportBlendStartY + (interp.TargetY - interp.TeleportBlendStartY) * smoothedAlpha;
+                        interp.Z = interp.TeleportBlendStartZ + (interp.TargetZ - interp.TeleportBlendStartZ) * smoothedAlpha;
+
+                        // Yaw 最短路径插值（避免 ±π 跨界反向旋转）
+                        var yawDelta = interp.TargetYaw - interp.TeleportBlendStartYaw;
+                        if (yawDelta > MathF.PI) yawDelta -= 2f * MathF.PI;
+                        else if (yawDelta < -MathF.PI) yawDelta += 2f * MathF.PI;
+                        interp.Yaw = interp.TeleportBlendStartYaw + yawDelta * smoothedAlpha;
+                        // 归一化 Yaw 到 [-π, π]
+                        if (interp.Yaw > MathF.PI) interp.Yaw -= 2f * MathF.PI;
+                        else if (interp.Yaw < -MathF.PI) interp.Yaw += 2f * MathF.PI;
+
+                        interp.Alpha = blendAlpha; // 0→1 标记混合进度（供外部诊断）
+                    }
+                }
+                // 混合分支处理完毕，跳过普通 Lerp
+            }
+            // 分支 B：硬跳（dist > HardSnapThreshold）—— 真传送（复活/跨地图）
+            else if (distSq > hardSnapThresholdSq)
+            {
                 interp.X = interp.TargetX;
                 interp.Y = interp.TargetY;
                 interp.Z = interp.TargetZ;
                 interp.Yaw = interp.TargetYaw;
                 interp.Alpha = 1f; // 标记已到达目标
 
-                // 诊断：传送跳变事件（距离超过传送阈值，直接跳到 Target）
+                // 诊断：传送跳变事件（仅硬跳触发，启动=完成）
                 if (Diagnostics != null && world.Has<NetworkIdentityComponent>(entity))
                 {
                     var netId = world.Get<NetworkIdentityComponent>(entity);
                     Diagnostics.OnTeleportJump(netId.EntityId, MathF.Sqrt(distSq), interp.ServerTick);
                 }
             }
+            // 分支 C：加速混合启动（TeleportThreshold < dist ≤ HardSnapThreshold）
+            // 把"瞬移"变成 200ms smoothstep 过渡，视觉上是"快速冲刺"而非闪跳
+            else if (distSq > teleportThresholdSq)
+            {
+                // 初始化混合状态：Start = 当前位置/Yaw
+                interp.TeleportBlendStartX = interp.X;
+                interp.TeleportBlendStartY = interp.Y;
+                interp.TeleportBlendStartZ = interp.Z;
+                interp.TeleportBlendStartYaw = interp.Yaw;
+                interp.TeleportBlendDurationSeconds = TeleportBlendDurationSeconds;
+                interp.TeleportBlendRemainingSeconds = TeleportBlendDurationSeconds;
+
+                // 诊断：传送跳变事件（启动时触发一次，后续混合帧不重复）
+                if (Diagnostics != null && world.Has<NetworkIdentityComponent>(entity))
+                {
+                    var netId = world.Get<NetworkIdentityComponent>(entity);
+                    Diagnostics.OnTeleportJump(netId.EntityId, MathF.Sqrt(distSq), interp.ServerTick);
+                }
+
+                // 立即推进一帧（避免空帧，首帧 alpha = dt/duration）
+                interp.TeleportBlendRemainingSeconds -= dt;
+                if (interp.TeleportBlendRemainingSeconds <= 0f)
+                {
+                    // 极端：dt >= duration（极低帧率或 duration 配置过小），直接完成
+                    interp.X = interp.TargetX;
+                    interp.Y = interp.TargetY;
+                    interp.Z = interp.TargetZ;
+                    interp.Yaw = interp.TargetYaw;
+                    interp.Alpha = 1f;
+                    interp.TeleportBlendRemainingSeconds = 0f;
+                    interp.TeleportBlendDurationSeconds = 0f;
+                }
+                else
+                {
+                    var blendAlpha = Math.Clamp(
+                        1f - interp.TeleportBlendRemainingSeconds / interp.TeleportBlendDurationSeconds, 0f, 1f);
+                    var smoothedAlpha = blendAlpha * blendAlpha * (3f - 2f * blendAlpha);
+
+                    interp.X = interp.TeleportBlendStartX + (interp.TargetX - interp.TeleportBlendStartX) * smoothedAlpha;
+                    interp.Y = interp.TeleportBlendStartY + (interp.TargetY - interp.TeleportBlendStartY) * smoothedAlpha;
+                    interp.Z = interp.TeleportBlendStartZ + (interp.TargetZ - interp.TeleportBlendStartZ) * smoothedAlpha;
+
+                    var yawDelta = interp.TargetYaw - interp.TeleportBlendStartYaw;
+                    if (yawDelta > MathF.PI) yawDelta -= 2f * MathF.PI;
+                    else if (yawDelta < -MathF.PI) yawDelta += 2f * MathF.PI;
+                    interp.Yaw = interp.TeleportBlendStartYaw + yawDelta * smoothedAlpha;
+                    if (interp.Yaw > MathF.PI) interp.Yaw -= 2f * MathF.PI;
+                    else if (interp.Yaw < -MathF.PI) interp.Yaw += 2f * MathF.PI;
+
+                    interp.Alpha = blendAlpha;
+                }
+            }
+            // 分支 D：普通 Lerp + 前向预测（dist ≤ TeleportThreshold）
             else
             {
                 // 前向预测（Extrapolation）+ 线性 Lerp 修正算法。
@@ -211,6 +420,18 @@ public sealed class InterpolationSystem : ArchSystemBase
                 //
                 // 退化兼容：LastVelocityXZ == 0 时 predictedTarget = Target，退化为纯 Lerp 追赶 Target。
                 // 所有网络质量等级（Strong/Medium/Weak）均统一走此分支，无网络等级判定。
+
+                // [异常数据隔离] 防御性有限值检查（spec 5.3.1 规则 7 的 a、DFX 4.2.4）：
+                // Target 已在 Active 分支入口校验过有限值；此处仅需校验速度分量，
+                // 若 LastVelocityXZ 含 NaN/Infinity（来自异常快照的 MovementState），跳过本次插值推进，
+                // 保持当前渲染位置与 Alpha 不变，避免 NaN 污染 predictedTarget 与渲染位置。
+                if (!float.IsFinite(interp.LastVelocityXZ_X) || !float.IsFinite(interp.LastVelocityXZ_Y))
+                {
+                    // 非法值不推进位置、不触发诊断（避免刷屏），等待下一合法快照覆盖 Target
+                    interp.Alpha = 1f;
+                    return;
+                }
+
                 var extrapTime = Math.Min(interp.TimeSinceLastSnapshot, DeadReckoningMaxExtrapolationSeconds);
                 // 注意：LastVelocityXZ_X 对应 ECS X（左右），LastVelocityXZ_Y 对应 ECS Z（前后）。
                 // InterpolatedTransformComponent 的 Y 是上下（Flax 坐标系），Z 是前后。
@@ -273,5 +494,16 @@ public sealed class InterpolationSystem : ArchSystemBase
         {
             HasNewSmoothnessSample = false;
         }
+    }
+
+    private static bool TryGetDegradedEntityId(World world, Entity entity, out ulong entityId)
+    {
+        entityId = 0;
+        if (world.Has<NetworkIdentityComponent>(entity))
+        {
+            entityId = world.Get<NetworkIdentityComponent>(entity).EntityId;
+            return true;
+        }
+        return false;
     }
 }
