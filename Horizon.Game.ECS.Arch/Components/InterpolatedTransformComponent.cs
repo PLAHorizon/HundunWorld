@@ -74,6 +74,19 @@ public struct InterpolatedTransformComponent
     public float LastVelocityXZ_Y;
 
     /// <summary>
+    /// 停止检测标记：由 <see cref="Systems.SnapshotApplySystem.HandleUpdate"/> 在写入新 Target 时判定——
+    /// 新位置与上一 Target 位移小于阈值（<see cref="Systems.SnapshotApplySystem.StopDisplacementThreshold"/>）
+    /// 时置 true 并清零 <see cref="LastVelocityXZ_X"/>/<see cref="LastVelocityXZ_Y"/>；
+    /// 移动恢复（位移超阈值）时置 false。
+    /// <para>
+    /// 供 <see cref="Systems.InterpolationSystem"/> 消费：IsStopped=true 时禁用前向预测外推、
+    /// 直接收敛到 Target（配合放大的收敛因子快速回位），消除远程玩家停止后
+    /// "仍按最后速度外推 → 位置越过权威 → 回拉"的前后摇动。
+    /// </para>
+    /// </summary>
+    public bool IsStopped;
+
+    /// <summary>
     /// 最近一次进入前向预测模式（Active 且 LastVelocityXZ 非零）的服务器 tick，
     /// 供诊断消费者追踪前向预测生效起点与切换点位置连续性。
     /// </summary>
@@ -143,6 +156,17 @@ public struct InterpolatedTransformComponent
 
     /// <summary>方案6：当前有效样本数（0..SnapshotBufferSize，满后不再增长，覆盖最旧）。</summary>
     public int SnapshotBufferCount;
+
+    /// <summary>
+    /// 缓冲插值应用混合进度（0..1）：由 <see cref="Systems.InterpolationSystem"/> 维护。
+    /// <para>
+    /// 从 Lerp+外推路径切换到缓冲时间插值（直接渲染）时的平滑过渡系数——
+    /// 位置 = lerp(当前位置, 时间插值位置, BufferApplyBlend)。
+    /// blend 以 BufferBlendRate/s 递增到 1（此后位置 = 时间插值输出，匀速最丝滑）；
+    /// 回退到 Lerp 路径、或停止、或缓冲失效时重置为 0（下次进入重新过渡）。
+    /// </para>
+    /// </summary>
+    public float BufferApplyBlend;
 }
 
 /// <summary>

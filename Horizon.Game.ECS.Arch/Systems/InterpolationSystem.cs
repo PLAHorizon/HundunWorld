@@ -144,13 +144,40 @@ public sealed class InterpolationSystem : ArchSystemBase
     /// 前向预测最大外推时间（秒）。前向预测模式下作为最大外推时间上限
     /// extrapTime = min(TimeSinceLastSnapshot, 此值)，避免长时间无快照时预测位置飘太远。
     /// <para>
-    /// 修复（Active→Idle 速度不连续）：原值 0.5s，但 Active→Idle 阈值为 1.0s。
-    /// 0.5s~1.0s 之间 Active 状态外推已停止（predictedTarget 静止），实体 Lerp 减速收敛，
-    /// 1.0s 进入 Idle 后 Dead Reckoning 突然恢复全速 → 速度突变。
-    /// 提升到 1.0s 与 Active→Idle 阈值匹配，Active 全程匀速外推，Idle 无缝接管。
+    /// 修复（远程角色"过冲/回拉"——预测 vs 权威协调）：原值 1.0s 允许外推超前
+    /// 6m/s × 1.0s = 6m，远程玩家停止/转向/断流时（停止信号有网络延迟窗口 + 心跳间隙），
+    /// 客户端按旧速度全速外推直到新快照到达 → 过冲 → 权威快照到达拉回。
+    /// 配合 <see cref="ExtrapolationDecayRate"/>（陈旧数据外推衰减），外推上限降至 0.25s，
+    /// 最大超前 = 6 × 0.25 × decay ≈ 1.2m，回拉幅度显著减小。
     /// </para>
     /// </summary>
-    public float DeadReckoningMaxExtrapolationSeconds { get; set; } = 1.0f;
+    public float DeadReckoningMaxExtrapolationSeconds { get; set; } = 0.25f;
+
+    /// <summary>
+    /// 外推衰减的宽限期（秒）：自上次快照后，此时间内外推全速（不衰减）。
+    /// <para>
+    /// 修复（"过冲/回拉" vs "移动滞后"的权衡核心）：
+    /// 正常广播间隔为 50ms（20Hz），宽限期 0.1s 覆盖 1-2 个广播间隔的抖动，
+    /// 此窗口内外推全速 → 移动中不滞后（用户前几轮否定的"完全失实滞后"源于
+    /// 移动中也衰减）。超过宽限期（停止/转向/断流，数据陈旧）→ 外推按
+    /// <see cref="ExtrapolationDecayRate"/> 指数衰减 → 预测收敛到权威 Target → 不过冲。
+    /// </para>
+    /// </summary>
+    public float ExtrapolationGraceSeconds { get; set; } = 0.1f;
+
+    /// <summary>
+    /// 外推速度衰减系数（每秒衰减比例，指数衰减）：超过
+    /// <see cref="ExtrapolationGraceSeconds"/> 后，外推速度按 exp(-rate × (t - grace)) 衰减。
+    /// <para>
+    /// 修复（"过冲/回拉"）：陈旧快照数据下的外推不可信——远程玩家可能在停止/转向，
+    /// 用旧速度全速外推必然超前权威轨迹。衰减后：
+    /// t-grace=0.1s → e^(-0.3)≈0.74；0.3s → e^(-0.9)≈0.41；0.5s → e^(-1.5)≈0.22；
+    /// 1.0s → e^(-3)≈0.05。外推快速收敛到 Target（最新权威位置），
+    /// 权威快照到达时位置已在 Target 附近 → 无大幅回拉。
+    /// 与宽限期配合：移动中（快照新鲜）全速，陈旧时收敛——"预测跟随权威"。
+    /// </para>
+    /// </summary>
+    public float ExtrapolationDecayRate { get; set; } = 3f;
 
     /// <summary>
     /// Idle 状态下 Dead Reckoning 的最大持续时间（秒）。
@@ -173,6 +200,33 @@ public sealed class InterpolationSystem : ArchSystemBase
     /// </para>
     /// </summary>
     public float IdleDeadReckoningMaxSeconds { get; set; } = 2.0f;
+
+    /// <summary>
+    /// Idle 状态外推速度衰减系数（每秒衰减比例，指数衰减）。
+    /// <para>
+    /// 修复（"过冲/回拉"——Idle 全速外推）：远程玩家停止后，若停止信号（MovementState 心跳）
+    /// 在网络延迟窗口内未到达，TimeSinceLastSnapshot 增长到 1.0s（Active→Idle 阈值）后
+    /// 进入 Idle。此时以最后速度全速外推必然超前权威位置（停止场景）→ 过冲；
+    /// 每秒全量快照到达 → 拉回。Idle 外推按 idle 时长指数衰减：
+    /// idleTime(=t-1.0)=0.1s → e^(-0.2)≈0.82；0.5s → e^(-1)≈0.37；1.0s → e^(-2)≈0.14。
+    /// 1s 无快照 = 停止或长断流，外推无意义，收敛到权威位置最安全。
+    /// </para>
+    /// </summary>
+    public float IdleDeadReckoningDecayRate { get; set; } = 2f;
+
+    /// <summary>
+    /// 停止收敛目标误差阈值（米）：停止中的实体距 Target 小于此值时直接吸附到 Target
+    /// （平滑度采样与外部诊断不再贡献微小抖动）。默认 0.01m。
+    /// </summary>
+    public float StopSnapThreshold { get; set; } = 0.01f;
+    private float StopSnapThresholdSq => StopSnapThreshold * StopSnapThreshold;
+
+    /// <summary>
+    /// 缓冲插值应用混合速率（每秒增长量，0..1）：从 Lerp+外推切换到缓冲时间插值（直接渲染）
+    /// 的平滑过渡速度。<see cref="InterpolatedTransformComponent.BufferApplyBlend"/> 以此速率递增到 1，
+    /// 之后位置 = 时间插值输出（匀速最丝滑）。默认 8/s → 125ms 过渡完成，消除切换闪跳。
+    /// </summary>
+    public float BufferBlendRate { get; set; } = 8f;
 
     /// <summary>
     /// 方案6（plan.md §5 方案6 / §4.1）：服务端 tick 频率（Hz），用于把插值延迟（秒）转换为 tick 数。
@@ -281,8 +335,14 @@ public sealed class InterpolationSystem : ArchSystemBase
                         // 按最后已知速度推进位置（纯外推，无 Lerp 修正——Idle 期间无新快照可修正）
                         // 注意：LastVelocityXZ_X 对应 ECS X（左右），LastVelocityXZ_Y 对应 ECS Z（前后）。
                         // InterpolatedTransformComponent 的 Y 是上下（Flax 坐标系），不预测。
-                        interp.X += interp.LastVelocityXZ_X * dt;
-                        interp.Z += interp.LastVelocityXZ_Y * dt;
+                        // 修复（"过冲/回拉"）：Idle 外推按 idle 时长指数衰减（IdleDeadReckoningDecayRate）。
+                        // >1.0s 无快照 = 停止信号延迟未达 / 长断流，此时用旧速度全速外推必然超前权威
+                        // （停止场景）→ 过冲，每秒全量快照到达拉回。衰减使外推快速收敛到权威位置；
+                        // idleTime≈0（刚进 Idle）时 decay≈1，与 Active 回退外推（同样衰减）无缝衔接。
+                        var idleTime = Math.Max(0f, interp.TimeSinceLastSnapshot - 1.0f);
+                        var idleDecay = MathF.Exp(-IdleDeadReckoningDecayRate * idleTime);
+                        interp.X += interp.LastVelocityXZ_X * dt * idleDecay;
+                        interp.Z += interp.LastVelocityXZ_Y * dt * idleDecay;
                         // Yaw 保持不变（无角速度信息），避免旋转漂移
                     }
                     interp.Alpha = 1f;
@@ -501,42 +561,110 @@ public sealed class InterpolationSystem : ArchSystemBase
                 var bufInterpDelay6 = UseAdaptiveSpeed
                     ? SnapshotApplySystem.AdaptiveInterpolationDelaySeconds
                     : 1f / InterpolationSpeed;
-                float predictedTargetX, predictedTargetY, predictedTargetZ, predictedTargetYaw;
+
+                // ── 三路插值策略（修复"过冲/回拉"——预测 vs 权威协调） ──
+                // 1) 缓冲时间插值成功 → 位置直接 = 插值输出（停止/移动统一）：
+                //    远程玩家停止后缓冲写入停止位置样本（位置不变），renderTick 推进到停止样本
+                //    后插值输出自然停在停止位置——零过冲、零回拉，最丝滑；
+                //    移动中位置 = 时间插值（匀速连续）。
+                // 2) 缓冲不足 + IsStopped → 温和收敛到 Target（普通 lerpFactor + 近距离 snap，
+                //    不放大——急拉放大是"回拉感"来源之一）。
+                // 3) 缓冲不足 + 移动 → Lerp + 外推：外推速度随快照新鲜度衰减
+                //    （宽限期内全速 → 移动中不滞后；陈旧后收敛 → 预测不超前权威）。
                 if (TrySnapshotBufferInterpolate(ref interp, bufInterpDelay6, ServerTickRateHz,
-                    out var bufX6, out var bufY6, out var bufZ6, out var bufYaw6))
+                    out var bufX6, out var bufY6, out var bufZ6, out var bufYaw6,
+                    out var bufVelX6, out var bufVelZ6))
                 {
-                    // 缓冲插值成功：用时间插值位置作为追赶目标（比前向预测更准确，基于历史快照）
-                    predictedTargetX = bufX6;
-                    predictedTargetY = bufY6;
-                    predictedTargetZ = bufZ6;
-                    predictedTargetYaw = bufYaw6;
+                    // 缓冲时间插值：位置直接 = 时间插值输出（匀速、连续、零弹性带效应）。
+                    // blend 平滑过渡：从 Lerp 路径切换时位置混合 ~125ms，避免闪跳；
+                    // blend=1 后位置完全由时间插值驱动（每帧位移 = 样本斜率 × dt，匀速）。
+                    interp.BufferApplyBlend = Math.Clamp(interp.BufferApplyBlend + BufferBlendRate * dt, 0f, 1f);
+                    var blend = interp.BufferApplyBlend;
+                    interp.X += (bufX6 - interp.X) * blend;
+                    interp.Y += (bufY6 - interp.Y) * blend;
+                    interp.Z += (bufZ6 - interp.Z) * blend;
+
+                    var yawDelta6 = bufYaw6 - interp.Yaw;
+                    if (yawDelta6 > MathF.PI) yawDelta6 -= 2f * MathF.PI;
+                    else if (yawDelta6 < -MathF.PI) yawDelta6 += 2f * MathF.PI;
+                    interp.Yaw += yawDelta6 * blend;
+                    interp.Alpha = 1f;
+
+                    // pos-based velocity：样本区间位移 / 时间（米/秒）。
+                    // 停止后样本位置不变 → 速度自然归零 → LastVelocityXZ 归零（双保险）；
+                    // 转角时方向自动跟随弧线（样本线段平均方向），比服务端瞬时速度更稳更跟手。
+                    if (float.IsFinite(bufVelX6) && float.IsFinite(bufVelZ6))
+                    {
+                        interp.LastVelocityXZ_X = bufVelX6;
+                        interp.LastVelocityXZ_Y = bufVelZ6;
+                        if (bufVelX6 * bufVelX6 + bufVelZ6 * bufVelZ6 < 0.25f)
+                            interp.IsStopped = true;
+                        else
+                            interp.IsStopped = false;
+                    }
+                }
+                else if (interp.IsStopped)
+                {
+                    // 缓冲不足 + 停止：温和收敛到 Target（普通 lerpFactor + 近距离 snap）。
+                    // 不做放大——停止时渲染位置通常已在 Target 附近，急拉会放大"回拉感"。
+                    interp.BufferApplyBlend = 0f;
+
+                    var sdx = interp.TargetX - interp.X;
+                    var sdy = interp.TargetY - interp.Y;
+                    var sdz = interp.TargetZ - interp.Z;
+                    var sDistSq = sdx * sdx + sdy * sdy + sdz * sdz;
+                    if (sDistSq < StopSnapThresholdSq)
+                    {
+                        // 距 Target 足够近：直接吸附，消除亚毫米级残留抖动。
+                        interp.X = interp.TargetX;
+                        interp.Y = interp.TargetY;
+                        interp.Z = interp.TargetZ;
+                        interp.Yaw = interp.TargetYaw;
+                        interp.Alpha = 1f;
+                    }
+                    else
+                    {
+                        interp.X += sdx * lerpFactor;
+                        interp.Y += sdy * lerpFactor;
+                        interp.Z += sdz * lerpFactor;
+
+                        var yawDelta = interp.TargetYaw - interp.Yaw;
+                        if (yawDelta > MathF.PI) yawDelta -= 2f * MathF.PI;
+                        else if (yawDelta < -MathF.PI) yawDelta += 2f * MathF.PI;
+                        interp.Yaw += yawDelta * lerpFactor;
+
+                        interp.Alpha = 1f - Math.Clamp(sDistSq / teleportThresholdSq, 0f, 1f);
+                    }
                 }
                 else
                 {
-                    // 缓冲不足：回退到前向预测（Extrapolation）+ Target
-                    predictedTargetX = interp.TargetX + interp.LastVelocityXZ_X * extrapTime;
-                    predictedTargetY = interp.TargetY;
-                    predictedTargetZ = interp.TargetZ + interp.LastVelocityXZ_Y * extrapTime;
-                    predictedTargetYaw = interp.TargetYaw;
+                    // 缓冲不足 + 移动：回退 Lerp+外推。
+                    // 修复（"过冲/回拉"——预测 vs 权威协调）：
+                    // 外推速度随快照新鲜度指数衰减——宽限期（ExtrapolationGraceSeconds=0.1s，
+                    // 覆盖正常广播间隔 50ms 的 1-2 倍抖动）内全速外推（移动中不滞后）；
+                    // 超过宽限期（停止信号延迟窗口 / 转向 / 断流，数据陈旧）→ 按
+                    // ExtrapolationDecayRate 衰减 → 预测收敛到权威 Target，不再用旧速度
+                    // 全速超前（6m/s × 1s = 6m 过冲 → 现在 0.3s 后衰减到 41%，超前 <1m）。
+                    // 权威快照到达时位置已在 Target 附近 → 无大幅回拉。
+                    interp.BufferApplyBlend = 0f;
+
+                    var staleTime = Math.Max(0f, interp.TimeSinceLastSnapshot - ExtrapolationGraceSeconds);
+                    var decay = MathF.Exp(-ExtrapolationDecayRate * staleTime);
+                    var pdx = (interp.TargetX + interp.LastVelocityXZ_X * extrapTime * decay) - interp.X;
+                    var pdy = interp.TargetY - interp.Y;
+                    var pdz = (interp.TargetZ + interp.LastVelocityXZ_Y * extrapTime * decay) - interp.Z;
+                    interp.X += pdx * lerpFactor;
+                    interp.Y += pdy * lerpFactor;
+                    interp.Z += pdz * lerpFactor;
+
+                    var yawDelta = interp.TargetYaw - interp.Yaw;
+                    if (yawDelta > MathF.PI) yawDelta -= 2f * MathF.PI;
+                    else if (yawDelta < -MathF.PI) yawDelta += 2f * MathF.PI;
+                    interp.Yaw += yawDelta * lerpFactor;
+
+                    var predictedDistSq = pdx * pdx + pdy * pdy + pdz * pdz;
+                    interp.Alpha = 1f - Math.Clamp(predictedDistSq / teleportThresholdSq, 0f, 1f);
                 }
-
-                // Lerp 追赶 predictedTarget（线性，禁止回退 smoothstep）
-                var pdx = predictedTargetX - interp.X;
-                var pdy = predictedTargetY - interp.Y;
-                var pdz = predictedTargetZ - interp.Z;
-                interp.X += pdx * lerpFactor;
-                interp.Y += pdy * lerpFactor;
-                interp.Z += pdz * lerpFactor;
-
-                // Yaw 最短路径插值，避免 ±π 跨界时反向旋转（不做角速度外推，角速度信息不足）
-                var yawDelta = predictedTargetYaw - interp.Yaw;
-                if (yawDelta > MathF.PI) yawDelta -= 2f * MathF.PI;
-                else if (yawDelta < -MathF.PI) yawDelta += 2f * MathF.PI;
-                interp.Yaw += yawDelta * lerpFactor;
-
-                // Alpha 用于标记追赶进度（基于预测距离，供外部诊断，不参与位置计算）
-                var predictedDistSq = pdx * pdx + pdy * pdy + pdz * pdz;
-                interp.Alpha = 1f - Math.Clamp(predictedDistSq / teleportThresholdSq, 0f, 1f);
 
                 // 前向预测模式标记：有速度时记录进入前向预测模式的服务器 tick，
                 // 供诊断消费者追踪前向预测生效起点与切换点位置连续性。
@@ -604,14 +732,18 @@ public sealed class InterpolationSystem : ArchSystemBase
     /// <param name="outY">插值结果 Y。</param>
     /// <param name="outZ">插值结果 Z。</param>
     /// <param name="outYaw">插值结果 Yaw（弧度，含最短路径归一化）。</param>
+    /// <param name="outVelX">插值区间速度 X（米/秒，s1→s2 位置差分）。</param>
+    /// <param name="outVelZ">插值区间速度 Z（米/秒，s1→s2 位置差分）。</param>
     /// <returns>true 表示插值成功；false 表示缓冲不足，调用方应回退。</returns>
     private static bool TrySnapshotBufferInterpolate(
         ref InterpolatedTransformComponent interp,
         float interpolationDelaySeconds,
         float serverTickRateHz,
-        out float outX, out float outY, out float outZ, out float outYaw)
+        out float outX, out float outY, out float outZ, out float outYaw,
+        out float outVelX, out float outVelZ)
     {
         outX = outY = outZ = outYaw = 0f;
+        outVelX = outVelZ = 0f;
 
         var buffer = interp.SnapshotBuffer;
         if (buffer == null || interp.SnapshotBufferCount < 2)
@@ -670,8 +802,25 @@ public sealed class InterpolationSystem : ArchSystemBase
         {
             // s1/s2 同 tick（异常），直接取 s1
             outX = s1.X; outY = s1.Y; outZ = s1.Z; outYaw = s1.Yaw;
+            outVelX = 0f; outVelZ = 0f;
             return true;
         }
+
+        // pos-based velocity：样本区间位移 / 时间（米/秒）。
+        // 转角时方向自动跟随弧线（两样本间线段平均方向），比服务端瞬时速度
+        // （MovementState 100ms 采样）更稳、更跟手；直线时等于真实速度。
+        var sampleDtSeconds = tickDelta / serverTickRateHz;
+        if (sampleDtSeconds > 0f)
+        {
+            outVelX = (s2.X - s1.X) / sampleDtSeconds;
+            outVelZ = (s2.Z - s1.Z) / sampleDtSeconds;
+        }
+        else
+        {
+            outVelX = 0f;
+            outVelZ = 0f;
+        }
+
         var t = Math.Clamp((float)(renderTick - s1.ServerTick) / tickDelta, 0f, 1f);
 
         outX = s1.X + (s2.X - s1.X) * t;

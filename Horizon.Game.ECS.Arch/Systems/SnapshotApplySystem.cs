@@ -121,6 +121,21 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     // 误判风险极低：即使误清理，后续收到 Spawn delta 会重新创建实体。
     private int _staleEntityCleanupCounter;
     private const int StaleEntityCleanupInterval = 60; // 每 60 帧（约 1 秒 @60fps）扫描一次
+
+    // 停止检测（修复远程角色"前后摇动"）：
+    // 远程玩家停止后，服务端增量过滤（EntityDeltaChanged Transform 阈值 0.01m）抑制位置快照，
+    // 但 MovementState 心跳（100ms）仍可能携带旧速度。HandleUpdate 写入新 Target 时，
+    // 若新位置与旧 Target 位移小于此阈值，判定实体已停止 → 清零外推速度 + 置 IsStopped。
+    // 阈值 0.05m：覆盖服务端增量过滤下限 + 心跳量化误差；低于 0.05m/50ms ≈ 1 m/s 的
+    // 缓慢移动视觉上近静止，误判影响可忽略。
+    private const float StopDisplacementThreshold = 0.05f;
+    private const float StopDisplacementThresholdSq = StopDisplacementThreshold * StopDisplacementThreshold;
+
+    // 速度停止阈值（米/秒）：MovementState 心跳携带的水平速度低于此值视为停止。
+    // 0.5m/s 覆盖服务端速度量化/噪声（MovementValidator 速度按回放帧归一，静止时≈0），
+    // 同时不误判低速行走（Run≈6m/s）。阈值平方用于快速比较。
+    private const float StopVelocityThreshold = 0.5f;
+    private const float StopVelocityThresholdSq = StopVelocityThreshold * StopVelocityThreshold;
     private readonly List<ulong> _staleEntityIds = new();
     /// <summary>
     /// 远程实体超时阈值（秒）。超过此时间未收到任何快照更新的远程实体将被客户端主动清理。
@@ -1130,6 +1145,11 @@ public sealed class SnapshotApplySystem : ArchSystemBase
 
                 interp.State = RemoteEntityState.Active;
 
+                // [停止检测] 记录写入前的旧 Target，用于比较新快照位移判定实体是否停止。
+                var prevTargetX = interp.TargetX;
+                var prevTargetY = interp.TargetY;
+                var prevTargetZ = interp.TargetZ;
+
                 // Lerp 平滑追赶方案：只更新目标位置，不设置 Start，不重置 Alpha。
                 // InterpolationSystem 每帧执行 位置 += (目标 - 位置) * lerpFactor，
                 // 角色以指数衰减速度追赶目标，稳态速度与服务端速度一致。
@@ -1140,8 +1160,31 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 interp.ServerTick = serverTick;
                 interp.TimeSinceLastSnapshot = 0f; // 重置快照计时
 
+                // 停止检测（修复远程角色"前后摇动"）：
+                // 远程玩家停止移动后，服务端心跳快照仍按 100ms 下发相同位置；位置增量快照被
+                // 服务端增量过滤（阈值 0.01m）抑制，而 MovementState 心跳仍可能携带旧速度。
+                // 若新位置与旧 Target 位移小于阈值，判定实体已停止——清零外推速度并置 IsStopped，
+                // 使 InterpolationSystem 停止前向预测、快速收敛到 Target，
+                // 消除"停止后仍按最后速度外推 → 位置越过权威 → 回拉"的前后摇动。
+                var dX = interp.TargetX - prevTargetX;
+                var dY = interp.TargetY - prevTargetY;
+                var dZ = interp.TargetZ - prevTargetZ;
+                var movedSq = dX * dX + dY * dY + dZ * dZ;
+                if (movedSq < StopDisplacementThresholdSq)
+                {
+                    interp.IsStopped = true;
+                    interp.LastVelocityXZ_X = 0f;
+                    interp.LastVelocityXZ_Y = 0f;
+                }
+                else
+                {
+                    interp.IsStopped = false;
+                }
+
                 // 记录水平速度，供 Idle/Stale 状态下做 dead reckoning（保持原速度推进）
-                if (delta.MovementState != null)
+                // 注意：仅当实体判定为移动中时写入；停止时保持清零（上一段已清零），
+                // 避免 MovementState 心跳的滞后速度覆盖停止判定。
+                if (delta.MovementState != null && !interp.IsStopped)
                 {
                     interp.LastVelocityXZ_X = delta.MovementState.Value.VelocityXZ_X;
                     interp.LastVelocityXZ_Y = delta.MovementState.Value.VelocityXZ_Y;
@@ -1240,6 +1283,36 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             else
             {
                 world.Add(archEntity, newMovement);
+            }
+
+            // 修复（停止后"过冲/回拉"——速度永不清零）：
+            // 服务端 Transform 增量过滤（0.01m 阈值）抑制停止后的位置快照，因此 HandleUpdate 的
+            // Transform 块（含位移停止检测）不再执行；但 MovementState 心跳（100ms）继续下发。
+            // 此处对携带 InterpolatedTransformComponent 的远程实体同步更新插值速度与停止标记：
+            //   - 速度 < StopVelocityThreshold → IsStopped=true + 清零 LastVelocityXZ
+            //     （停止后每 100ms 心跳幂等清零，杜绝回退/Idle 外推路径以旧速度全速外推 → 过冲）；
+            //   - 速度 ≥ 阈值 → IsStopped=false + 更新 LastVelocityXZ（恢复移动立即反映，无需等 Transform）。
+            // 注意：world.TryGet 返回组件副本，修改后须 world.Set 回写。
+            if (world.TryGet<InterpolatedTransformComponent>(archEntity, out var interpMove))
+            {
+                var mvx = newMovement.VelocityXZ_X;
+                var mvz = newMovement.VelocityXZ_Y;
+                if (float.IsFinite(mvx) && float.IsFinite(mvz))
+                {
+                    if (mvx * mvx + mvz * mvz < StopVelocityThresholdSq)
+                    {
+                        interpMove.IsStopped = true;
+                        interpMove.LastVelocityXZ_X = 0f;
+                        interpMove.LastVelocityXZ_Y = 0f;
+                    }
+                    else
+                    {
+                        interpMove.IsStopped = false;
+                        interpMove.LastVelocityXZ_X = mvx;
+                        interpMove.LastVelocityXZ_Y = mvz;
+                    }
+                    world.Set(archEntity, interpMove);
+                }
             }
         }
 
