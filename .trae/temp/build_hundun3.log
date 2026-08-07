@@ -1,0 +1,37 @@
+﻿Flax.Build 1.0.0
+Building targets...
+Found Android SDK at C:\Program Files (x86)\Android\android-sdk
+Unknown Visual Studio installation. Display name: SQL Server Management Studio 22
+Missing Emscripten SDK. Cannot build for Web platform.
+Building target GameEditorTarget in Debug for Windows x64
+Using Windows Toolset v145, 14.51.36231 (C:\Program Files (x86)\Windows Kits\10\)
+Using Windows SDK 10.0.26100.0 (C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\bin\Hostx64\x64)
+Building referenced target Flax
+Building for Windows without Vulkan rendering backend (Vulkan SDK is missing)
+Using .NET SDK 10.0.302, runtime 10.0.10 (C:\Program Files\dotnet)
+Building referenced target NarrativePro
+Found 17 valid and 0 invalid actions in Task Graph cache
+Done!
+Building referenced target HundunAgent
+Found 6 valid and 0 invalid actions in Task Graph cache
+Executing 1 task using 1 thread
+Compiling C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Binaries\HundunAgentEditorTarget\Windows\x64\Debug\HundunAgentEditor.CSharp.dll
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(141,17,141,41): warning CS0184: The given expression is never of the provided ('ShaderSourceItem') type
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(279,52,279,82): warning CS0618: 'Editor.NewAssetType' is obsolete: 'Use CreateAsset with named tag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(279,22,279,102): warning CS0618: 'Editor.CreateAsset(Editor.NewAssetType, string)' is obsolete: 'Use CreateAsset with named tag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(455,52,455,82): warning CS0618: 'Editor.NewAssetType' is obsolete: 'Use CreateAsset with named tag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(455,22,455,110): warning CS0618: 'Editor.CreateAsset(Editor.NewAssetType, string)' is obsolete: 'Use CreateAsset with named tag instead'
+Done!
+Building target GameTarget in Debug for Windows x64
+Using Windows Toolset v145, 14.51.36231 (C:\Program Files (x86)\Windows Kits\10\)
+Using Windows SDK 10.0.26100.0 (C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\bin\Hostx64\x64)
+Building referenced target Flax
+Building referenced target NarrativePro
+Found 17 valid and 0 invalid actions in Task Graph cache
+Done!
+Building referenced target HundunAgent
+Found 7 valid and 0 invalid actions in Task Graph cache
+Done!
+Found 110 valid and 0 invalid actions in Task Graph cache
+Done!
+Total time: 00:00:04.6429168

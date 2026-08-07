@@ -46,6 +46,13 @@ namespace Horizon.Game.Gateway.Network
         private Timer? _disconnectCheckTimer;
         private Timer? _leaseRenewalTimer;
 
+        // ── 诊断日志频率限制 ──
+        // 数据接收和空闲检测的日志限频，避免每条消息都输出日志导致刷屏
+        private long _lastReceiveDiagTicks = DateTime.MinValue.Ticks;
+        private static readonly TimeSpan ReceiveDiagInterval = TimeSpan.FromSeconds(10);
+        private long _lastIdleCheckDiagTicks = DateTime.MinValue.Ticks;
+        private static readonly TimeSpan IdleCheckDiagInterval = TimeSpan.FromSeconds(30);
+
         /// <summary>
         /// 已清理连接的幂等保护集合。<br/>
         /// 修复 BUG：Closed 事件会被两个订阅路径同时触发：<br/>
@@ -459,6 +466,24 @@ namespace Horizon.Game.Gateway.Network
                 // 都按 connectionId/characterId 独立操作，不依赖全局状态，并行执行安全。
                 var connectionsToCleanup = new List<(string ConnectionId, ConnectionCleanupSource Source)>();
 
+                // ── 连接状态汇总日志（每30秒最多一次）──
+                // 记录所有在线连接的空闲时长，方便排查空闲超时和心跳问题
+                var idleDiagNowTicks = now.Ticks;
+                if (idleDiagNowTicks - Interlocked.Read(ref _lastIdleCheckDiagTicks) >= IdleCheckDiagInterval.Ticks)
+                {
+                    Interlocked.Exchange(ref _lastIdleCheckDiagTicks, idleDiagNowTicks);
+                    var allConns = _connectionManager.GetAllConnections().ToList();
+                    if (allConns.Count > 0)
+                    {
+                        var connSummaries = allConns.Select(c =>
+                            $"[{c.ConnectionId} idle={(now - c.LastActiveTime).TotalSeconds:F1}s remote={c.RemoteAddress}]");
+                        _logger.LogInformation(
+                            "[NetDiag] 连接状态汇总：TotalConnections={Count}, IdleTimeout={TimeoutS}s, Connections={Connections}",
+                            allConns.Count, _networkOptions.CurrentValue.IdleTimeoutSeconds,
+                            string.Join(", ", connSummaries));
+                    }
+                }
+
                 foreach (var connection in _connectionManager.GetAllConnections())
                 {
                     // 检测 1：TouchSocket Online 属性判定（依赖 TCP 层检测，可能不及时）
@@ -664,6 +689,18 @@ namespace Horizon.Game.Gateway.Network
                     }
 
                     var messagePacket = horizonRequest.Packet;
+
+                    // ── 数据接收诊断日志（每10秒最多一次）──
+                    // 记录最后活跃时间、消息类型和角色ID，方便排查空闲超时和延迟问题
+                    var receiveNowTicks = DateTime.UtcNow.Ticks;
+                    if (receiveNowTicks - Interlocked.Read(ref _lastReceiveDiagTicks) >= ReceiveDiagInterval.Ticks)
+                    {
+                        Interlocked.Exchange(ref _lastReceiveDiagTicks, receiveNowTicks);
+                        _logger.LogInformation(
+                            "[NetDiag] 数据接收：ConnectionId={ConnectionId}, MessageType={MessageType}, CharacterId={CharacterId}, LastActive={LastActive:O}, Remote={Remote}",
+                            connection.ConnectionId, messagePacket.Header.MessageType, messagePacket.Header.CharacterId,
+                            connection.LastActiveTime, connection.RemoteAddress);
+                    }
 
                     // Stage 3: 角色映射注册 + Presence 兜底刷新
                     StageCharacterMappingAndPresence(connection, messagePacket);

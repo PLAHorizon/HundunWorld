@@ -1,0 +1,12 @@
+### MISSING FlaxEditor.NewAssetType
+### FlaxEngine.PrefabManager
+  meth Actor SpawnPrefab(Prefab prefab)
+  meth Actor SpawnPrefab(Prefab prefab, Vector3 position)
+  meth Actor SpawnPrefab(Prefab prefab, Vector3 position, Quaternion rotation)
+  meth Actor SpawnPrefab(Prefab prefab, Vector3 position, Quaternion rotation, Vector3 scale)
+  meth Actor SpawnPrefab(Prefab prefab, Transform transform)
+  meth Actor SpawnPrefab(Prefab prefab, Actor parent, Transform transform)
+  meth Actor SpawnPrefab(Prefab prefab, Actor parent)
+  meth Boolean CreatePrefab(Actor targetActor, String outputPath, Boolean autoLink)
+  meth Boolean ApplyAll(Actor instance)
+### MISSING FlaxEngine.PrefabUtility

@@ -121,7 +121,7 @@ NetworkReceive → FixedUpdate → Update → Render → NetworkSend
 解决方案远超单一游戏，展现出**分布式应用平台**的野心：
 - **游戏核心**：MMORPG 全链路（角色/战斗/轻功/五行铸造/副本/交易/社交）
 - **花卉电商**：Flower 系列 Grain + 种植建议 AI
-- **AI 集成**：Semantic Kernel + RAG 检索（`RAGRetrieverGrain`/`KnowledgeBaseGrain`）+ TraeBridge 编辑器 AI 桥
+- **AI 集成**：Semantic Kernel + RAG 检索（`RAGRetrieverGrain`/`KnowledgeBaseGrain`）+ HundunAgent 编辑器 AI Agent 插件
 - **IoT**：MQTT + 设备管理 + 传感器数据 + 告警规则
 - **IM**：独立三件套（IM.Core/IM.Gateway/IM.Message）
 - **运维**：OpenTelemetry + Prometheus/Grafana/Alertmanager + NBomber 压测

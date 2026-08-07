@@ -99,20 +99,27 @@ dotnet run --project Horizon.PerformanceTests
 | 服务 | 端点 | 凭证 |
 |------|------|------|
 | **Orleans Dashboard** | `http://192.168.1.78:1199` | 用户名 `Horizon` |
-| **TraeBridge 编辑器 API** | `http://localhost:21888/` | 无（仅编辑器模式，本地） |
+| **HundunAgent MCP** | `http://localhost:21901/mcp` | 无（仅编辑器模式，本地） |
+| **HundunAgent HTTP** | `http://localhost:21900/` | 无（仅编辑器模式，本地） |
 | **Prometheus** | 见 `monitoring/` | — |
 | **Grafana** | 见 `monitoring/` | — |
 
-**TraeBridge 常用调试命令**（在 FlaxEditor 运行时）：
+**HundunAgent 常用调试命令**（在 FlaxEditor 运行时）：
 ```bash
+# 健康检查
+curl http://localhost:21900/health
+
+# 工具清单
+curl http://localhost:21900/api/tools
+
 # 查场景层级
-curl http://localhost:21888/api/scene/hierarchy
+curl -X POST http://localhost:21900/api/tools/scene_hierarchy -d "{}"
 
-# 截图
-curl http://localhost:21888/api/viewport/screenshot -o screenshot.png
+# 截图（返回 PNG 路径）
+curl -X POST http://localhost:21900/api/tools/viewport_screenshot -d "{}"
 
-# 执行 C# 代码
-curl -X POST http://localhost:21888/api/execute -d "Level.FindActor(...)"
+# MCP 工具列表（JSON-RPC）
+curl -X POST http://localhost:21901/mcp -H "Content-Type: application/json" -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}"
 ```
 
 ---

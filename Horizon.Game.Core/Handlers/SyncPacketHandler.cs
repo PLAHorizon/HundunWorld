@@ -115,8 +115,8 @@ public sealed class SyncPacketHandler : MessageHandlerBase
     // private const long DefaultShardId = 0;  // 已由 IShardRouter 替代
 
     /// <summary>首次进入 World 时订阅出生 chunk 周围的 AOI 半径（与客户端 OnPlayerChunkChanged 的 ViewRadiusChunks 保持一致）。
-    /// radius=10 → 21×21×21=9261 chunks，覆盖约 336m×336m×336m，视距约 160m，满足 MMORPG 视野需求。</summary>
-    private const int InitialAoiRadiusChunks = 10;
+    /// radius=28 → 57×57×57=185193 chunks（约为 radius=10 时的 20 倍体积），覆盖约 912m×912m×912m，视距约 448m。</summary>
+    private const int InitialAoiRadiusChunks = 28;
 
     /// <summary>交互意图速率限制：每个 interactorId 每秒最多请求数。</summary>
     private const int InteractionRateLimitPerSecond = 10;
@@ -316,22 +316,24 @@ public sealed class SyncPacketHandler : MessageHandlerBase
         try
         {
             var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(characterId));
-            // Flax Y-up → ECS Z-up 转换：交换 Y/Z，确保 chunk 归属与服务端 entity 坐标一致
-            var initialInterestChunks = WorldCoord
-                .GetChunksInView(handshake.InitialX, handshake.InitialZ, handshake.InitialY, InitialAoiRadiusChunks)
-                .ToArray();
-            // Phase 4: 补充 AoiChunkCount 指标（初始订阅时的 chunk 数）
-            SyncMetrics.AoiChunkCount.Record(initialInterestChunks.Length);
+            // 位置驱动初始订阅：不再在网关侧计算 185193 个 chunk key 传输给 grain，
+            // 而是传空数组给 EnterWorldAsync（仅注册实体），然后通过 UpdateSessionPositionAsync
+            // 让 grain 侧计算 AOI 并订阅。消除握手时的 ~1.5MB 跨进程 RPC 传输。
+            // 指标仍记录实际 AOI chunk 数（57³=185193 @ R=28）供监控。
+            var aoiChunkCount = Math.Pow(2 * InitialAoiRadiusChunks + 1, 3);
+            SyncMetrics.AoiChunkCount.Record((long)aoiChunkCount);
             await zoneShard.EnterWorldAsync(
                 characterId,
                 (ulong)characterId,
                 handshake.InitialX,
                 handshake.InitialY,
                 handshake.InitialZ,
-                initialInterestChunks);
+                Array.Empty<ulong>());
+            // grain 侧位置驱动订阅：自动计算新视野并订阅所有 chunk（首次订阅 = 全量新增）。
+            await zoneShard.UpdateSessionPositionAsync(characterId, handshake.InitialX, handshake.InitialY, handshake.InitialZ);
             Logger.LogInformation(
-                "Sync握手后实体注册完成。CharacterId={CharacterId}, ShardId={ShardId}, InitialInterestChunkCount={InitialInterestChunkCount}",
-                characterId, _shardRouter.Resolve(characterId), initialInterestChunks.Length);
+                "Sync握手后实体注册完成（位置驱动订阅）。CharacterId={CharacterId}, ShardId={ShardId}, AoiChunkCount={AoiChunkCount}",
+                characterId, _shardRouter.Resolve(characterId), (long)aoiChunkCount);
         }
         catch (Exception ex)
         {
@@ -368,7 +370,9 @@ public sealed class SyncPacketHandler : MessageHandlerBase
             };
         }
 
-        Logger.LogInformation(
+        // P-F3：上行热路径日志降为 Debug（原每输入包一条 LogInformation，30-60Hz × 全体玩家
+        // 的同步日志 IO 是上行转发延迟的重要诱因）。
+        Logger.LogDebug(
             "HandleInputAsync: 收到 InputPacket。CharacterId={CharacterId}, ClientTick={ClientTick}, MoveX={MoveX:F2}, MoveY={MoveY:F2}, InputBits=0x{InputBits:X8}",
             input.CharacterId, input.ClientTick, input.MoveX, input.MoveY, input.InputBits);
 
@@ -448,7 +452,48 @@ public sealed class SyncPacketHandler : MessageHandlerBase
             return await sessionGrain.BuildInputAckAsync(echoClientTick: input.ClientTick);
         }
 
-        var acceptResult = await sessionGrain.ReceiveInputAsync(input);
+        var acceptResult = InputAcceptResult.Accepted;
+        InputAckPacket ackPacket;
+
+        // P-F3 上行转发合并：原路径为三次串行跨进程 RPC（ReceiveInputAsync → SubmitInputAsync →
+        // BuildInputAckAsync），每次都要一次 gateway↔silo RTT，输入→ACK 延迟叠加。
+        // 现改为单次 ReceiveInputAndForwardAsync：silo 内一个 grain turn 完成接收/转发/ACK 构建，
+        // 跨进程 RTT 从 3 次降为 1 次。
+        try
+        {
+            var forwardResult = await sessionGrain.ReceiveInputAndForwardAsync(
+                input,
+                _shardRouter.Resolve(characterId),
+                input.PredictedEndX,
+                input.PredictedEndY,
+                input.PredictedEndZ);
+            acceptResult = forwardResult.Result;
+            ackPacket = forwardResult.Ack;
+        }
+        catch (Exception ex)
+        {
+            // 合并调用失败时回退到原三段式路径，保证输入链路可用性。
+            Logger.LogDebug(ex,
+                "ReceiveInputAndForwardAsync 失败，回退三段式路径。CharacterId={CharacterId}, ClientTick={ClientTick}",
+                characterId, input.ClientTick);
+
+            acceptResult = await sessionGrain.ReceiveInputAsync(input);
+            if (acceptResult != InputAcceptResult.Invalid && acceptResult != InputAcceptResult.TooOld)
+            {
+                try
+                {
+                    var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(characterId));
+                    await zoneShard.SubmitInputAsync((ulong)characterId, input, input.PredictedEndX, input.PredictedEndY, input.PredictedEndZ);
+                }
+                catch (Exception ex2)
+                {
+                    Logger.LogDebug(ex2,
+                        "转发输入到 ZoneShard 失败。CharacterId={CharacterId}, ClientTick={ClientTick}",
+                        characterId, input.ClientTick);
+                }
+            }
+            ackPacket = await sessionGrain.BuildInputAckAsync(echoClientTick: input.ClientTick);
+        }
 
         // Phase 4: 补充 InputLagMs 指标（客户端 input 到服务器 consume 的滞后）
         var inputLagMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - input.ClientTick;
@@ -465,23 +510,6 @@ public sealed class SyncPacketHandler : MessageHandlerBase
         {
             Logger.LogDebug("输入包被拒绝（过期）。CharacterId={CharacterId}, ClientTick={ClientTick}", characterId, input.ClientTick);
         }
-        else
-        {
-            // 将输入转发到 ZoneShard 权威模拟层，使 TickAsync 能处理该输入并产生快照
-            try
-            {
-                var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(characterId));
-                await zoneShard.SubmitInputAsync((ulong)characterId, input, input.PredictedEndX, input.PredictedEndY, input.PredictedEndZ);
-            }
-            catch (Exception ex)
-            {
-                Logger.LogDebug(ex,
-                    "转发输入到 ZoneShard 失败。CharacterId={CharacterId}, ClientTick={ClientTick}",
-                    characterId, input.ClientTick);
-            }
-        }
-
-        var ackPacket = await sessionGrain.BuildInputAckAsync(echoClientTick: input.ClientTick);
 
         Logger.LogDebug(
             "输入处理完成。CharacterId={CharacterId}, ClientTick={ClientTick}, ServerTick={ServerTick}, LastProcessed={LastProcessed}, Result={Result}",
@@ -834,20 +862,33 @@ public sealed class SyncPacketHandler : MessageHandlerBase
 
         var zoneShard = _clusterClient.GetGrain<IZoneShardGrain>(_shardRouter.Resolve(characterId));
 
-        if (update.AddedChunks is { Length: > 0 } added)
+        // 位置驱动订阅：客户端填充了位置信息时，只传位置给 grain（24 字节），
+        // grain 侧自动计算 AOI 差异。替代传输 ~26000 个 chunk key（~208KB）的双 RPC 路径。
+        // 向后兼容：旧客户端不填充位置（HasPosition=false），回退到 chunk 数组路径。
+        if (update.HasPosition)
         {
-            await zoneShard.SubscribeSessionAsync(characterId, added);
+            var changed = await zoneShard.UpdateSessionPositionAsync(characterId, update.PositionX, update.PositionY, update.PositionZ);
             Logger.LogInformation(
-                "HandleSubscriptionUpdate: CharacterId={CharacterId} 新增订阅 {Count} 个 chunk",
-                characterId, added.Length);
+                "HandleSubscriptionUpdate: CharacterId={CharacterId} 位置驱动订阅更新 pos=({X:F1},{Y:F1},{Z:F1}), changed={Changed}",
+                characterId, update.PositionX, update.PositionY, update.PositionZ, changed);
         }
-
-        if (update.RemovedChunks is { Length: > 0 } removed)
+        else
         {
-            await zoneShard.UnsubscribeSessionAsync(characterId, removed);
-            Logger.LogInformation(
-                "HandleSubscriptionUpdate: CharacterId={CharacterId} 移除订阅 {Count} 个 chunk",
-                characterId, removed.Length);
+            if (update.AddedChunks is { Length: > 0 } added)
+            {
+                await zoneShard.SubscribeSessionAsync(characterId, added);
+                Logger.LogInformation(
+                    "HandleSubscriptionUpdate: CharacterId={CharacterId} 新增订阅 {Count} 个 chunk",
+                    characterId, added.Length);
+            }
+
+            if (update.RemovedChunks is { Length: > 0 } removed)
+            {
+                await zoneShard.UnsubscribeSessionAsync(characterId, removed);
+                Logger.LogInformation(
+                    "HandleSubscriptionUpdate: CharacterId={CharacterId} 移除订阅 {Count} 个 chunk",
+                    characterId, removed.Length);
+            }
         }
 
         // 订阅更新无需服务端回复包

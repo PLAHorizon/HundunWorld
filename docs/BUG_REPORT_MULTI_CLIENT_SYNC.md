@@ -414,7 +414,7 @@ tick=216000, mem=25943KB, baselineDeltas=5   ← 最终采样（GC 回收后回�
 3. **带宽监控**：使用 `GatewaySyncDispatcher.GetBandwidthSnapshot()` 验证 20Hz 广播下带宽消耗在预算内
 4. **配置外部化**：将 `SnapshotBroadcastIntervalTicks` 绑定到 `GatewayOptions` 或 `appsettings.json`，支持运行时调优
 5. **修复预存测试失败**：由各 WIP 模块负责人分别修复 `InterpolationSystem`、`SnapshotApplySystem`、`HandleInteractionIntent` 等相关测试
-6. **跨进程 RPC 性能验证**：当前集成测试使用 in-memory transport（silo 与 client 同进程），未来可配置 TestCluster 使用 TCP transport 验证真实跨进程 RPC 开销
+6. ~~**跨进程 RPC 性能验证**~~：✅ 已完成（`TcpTransportSyncTests`，配置 TestCluster 使用 TCP transport 端口 21111/30001，验证真实跨进程 RPC 下 5 客户端同步稳定，平均 9.75ms/tick < 16.7ms 帧预算，位置驱动订阅正常，所有实体保持注册）
 7. **真实客户端小时级稳定性测试**：在真实 Orleans Silo + 真实网关 + 真实客户端环境下运行 ≥ 1 小时，验证端到端连接稳定性（mock 测试验证逻辑正确性，真实环境验证网络/序列化/调度全链路）
 
 ---
@@ -440,3 +440,106 @@ A: 全量快照触发条件（`_forceFullSnapshotNextTick` / `FullSnapshotInterv
 - 首次 tick 立即下发（`_lastSnapshot == null`）
 
 这些场景的实时性优先级高于带宽优化。
+
+---
+
+## 9. 深度优化（2026-08-05 补充）
+
+### 9.1 序列化 BUG 修复（P0 根因）
+
+#### BUG A: CorrectionPacket MemoryPack 序列化异常
+- **现象**: `BroadcastSnapshotAsync` 抛出 `MemoryPackSerializationException: CorrectionPacket is not registered in this provider`
+- **根因**: `Horizon.Game.Core.csproj` 缺少 `MemoryPack.Generator` Source Generator 引用，`CorrectionPacket` 的 `[MemoryPackable]` 特性未生成 formatter 代码
+- **修复**: 在 `Horizon.Game.Core.csproj` 中添加 `MemoryPack.Core` + `MemoryPack.Generator` 包引用
+- **连锁反应**: 序列化异常 → `BroadcastSnapshotAsync` 失败 → 客户端收不到数据 → 连接空闲超时 → 角色被 Despawn
+
+#### BUG B: GetAllSubscribers 返回 Dictionary.KeyCollection 导致 Orleans 深拷贝失败
+- **现象**: `CodecNotFoundException: Could not find a copier for type Dictionary<2+KeyCollection[...]>`
+- **根因**: `ZoneShardAoi.GetAllSubscribers()` 直接返回 `_sessionToChunks.Keys`（Dictionary.KeyCollection），Orleans 无法深拷贝该类型
+- **修复**: 改为返回 `_sessionToChunks.Keys.ToArray()`（long[]，Orleans 原生支持）
+- **影响路径**: 全量快照广播 + 回退广播路径
+
+### 9.2 网络连接稳定性增强
+
+| 优化项 | 原值 | 新值 | 理由 |
+|--------|------|------|------|
+| 心跳间隔 | 20秒 | 15秒 | 更早发现连接问题 |
+| 空闲超时 | 30秒 | 45秒 | 容差从10秒→30秒（3个心跳周期） |
+| 心跳失败重试 | 15秒后 | 5秒后 | 避免单次失败触发空闲超时 |
+
+### 9.3 宽限期保护（CharacterPresenceMonitor）
+
+**原问题**: `CharacterPresenceMonitor` 检测到连接断开时直接调用 `DespawnImmediatelyAsync`，绕过 `ScheduleDespawn` 的15秒宽限期，导致客户端短暂断线后重连时角色已被 Despawn。
+
+**修复逻辑**:
+```
+CharacterPresenceMonitor 检测到连接断开：
+  ├─ 已有 ScheduleDespawn 在等待？ → 跳过（不重复触发）
+  ├─ 超时 > 120秒？ → DespawnImmediatelyAsync（兜底清理）
+  └─ 正常超时（<120秒）？ → ScheduleDespawn（15秒重连窗口）
+```
+
+新增 `PlayerDespawnScheduler.HasPendingDespawn(characterId)` 方法支持宽限期状态检查。
+
+### 9.4 客户端性能优化
+
+#### 优化 A: ArchWorldHost.Tick 零分配
+- **原问题**: 每次 `Tick` 在 `lock` 内调用 `ToArray()` 创建新数组（5个系统组 × 每帧 = 每秒300次GC垃圾）
+- **修复**: 缓存系统数组到 `_systemArraysCache`，仅在 `AddSystem/RemoveSystem` 时标记为脏并重建
+- **效果**: 消除每帧5次数组分配 + lock 开销
+
+#### 优化 B: OnPlayerChunkChanged 零分配
+- **原问题**: 每次跨越 chunk 边界时调用 `ComputeChunksInView(R=28)` 创建 185,193 条目的 HashSet（~3-4MB GC spike）
+- **修复**: 位置驱动订阅下客户端只发送位置（24字节），不计算完整 chunk 视图
+- **效果**: 消除每次 chunk 变化3-4MB分配
+
+### 9.5 服务端性能优化
+
+#### 优化: UpdateSessionPositionAsync 零分配
+- **原问题**: 每次位置更新调用 `GetChunksInView(R=28)` 创建 185,193 条目的 HashSet（~3-4MB），10客户端每秒~0.5次调用 = ~1.5-2MB/秒 GC 压力
+- **修复**: 新增 `WorldCoord.FillChunksInView(buffer, ...)` 零分配重载，ZoneShardGrain 复用 grain 级 `_aoiViewBuffer` + `_aoiToAddBuffer` + `_aoiToRemoveBuffer`
+- **效果**: 消除每次位置更新3-4MB分配（Orleans grain 单线程模型保证 buffer 安全复用）
+
+### 9.6 反压监控
+
+**原问题**: `BoundedChannelFullMode.DropOldest` 模式下 `TryWrite` 永远返回 `true`，事件被静默丢弃时 `DroppedByBackpressureCount` 永远不增加。
+
+**修复**: 添加 `[FanoutBackpressure]` 日志，当队列使用率 >80% 时记录警告，便于在真实环境中及时发现 dispatch 跟不上 fanout 速率的问题。
+
+### 9.7 全链路诊断日志
+
+| 日志前缀 | 位置 | 用途 |
+|----------|------|------|
+| `[Broadcast]` | ZoneShardGrain.BroadcastSnapshotAsync | Delta/Correction 推送成功/失败 |
+| `[NetDiag]` | GameNetworkServer | 数据接收 + 连接状态汇总 |
+| `[Dispatch]` | GatewaySyncDispatcher | 包编码/分发耗时和带宽 |
+| `[FanoutBackpressure]` | GatewaySyncWiring | 队列使用率告警 |
+
+### 9.8 压力测试验证
+
+| 测试场景 | 在线率 | P99延迟 | 最大延迟 | 环境 |
+|----------|--------|---------|----------|------|
+| 10客户端 6000tick(100s) | 10/10=100% | 0.069ms | 13.3ms | Mock |
+| 5客户端 36000tick(600s) | 5/5=100% | 0.047ms | 12.9ms | Mock |
+| 5客户端 60tick | 5/5=100% | - | ≤16.7ms/tick | 真实Orleans |
+| 32个关键测试 | - | - | - | 全通过 |
+| 全量2131测试 | - | - | - | 2106通过/17预存失败 |
+
+### 9.9 变更文件清单（深度优化）
+
+| 文件 | 修改内容 |
+|------|----------|
+| `Horizon.Game.Core.csproj` | 添加 MemoryPack.Generator 引用 |
+| `WorldCoord.cs` | 新增 FillChunksInView 零分配重载 |
+| `ZoneShardAoi.cs` | GetAllSubscribers 返回 ToArray() |
+| `ZoneShardGrain.cs` | UpdateSessionPositionAsync 零分配 + [Broadcast]日志 |
+| `HeartbeatManager.cs` | 心跳15s + 失败5s重试 |
+| `NetworkOptions.cs` | 空闲超时45s |
+| `CharacterPresenceMonitorHostedService.cs` | 宽限期保护 |
+| `PlayerDespawnScheduler.cs` | HasPendingDespawn 方法 |
+| `ArchWorldHost.cs` | Tick零分配缓存 |
+| `HundunWorldGame.cs` | OnPlayerChunkChanged零分配 |
+| `GatewaySyncWiring.cs` | 反压监控日志 |
+| `GameNetworkServer.cs` | [NetDiag]日志 |
+| `GatewaySyncDispatcher.cs` | [Dispatch]日志 |
+| `MultiClientSyncPerformanceTests.cs` | 10客户端压力测试 |

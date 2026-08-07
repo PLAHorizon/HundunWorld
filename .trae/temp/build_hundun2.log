@@ -1,0 +1,57 @@
+﻿Flax.Build 1.0.0
+Building targets...
+Found Android SDK at C:\Program Files (x86)\Android\android-sdk
+Unknown Visual Studio installation. Display name: SQL Server Management Studio 22
+Missing Emscripten SDK. Cannot build for Web platform.
+Building target GameEditorTarget in Debug for Windows x64
+Using Windows Toolset v145, 14.51.36231 (C:\Program Files (x86)\Windows Kits\10\)
+Using Windows SDK 10.0.26100.0 (C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\bin\Hostx64\x64)
+Building referenced target Flax
+Building for Windows without Vulkan rendering backend (Vulkan SDK is missing)
+Using .NET SDK 10.0.302, runtime 10.0.10 (C:\Program Files\dotnet)
+Building referenced target NarrativePro
+Found 17 valid and 0 invalid actions in Task Graph cache
+Done!
+Building referenced target HundunAgent
+Found 6 valid and 0 invalid actions in Task Graph cache
+Executing 1 task using 1 thread
+Compiling C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Binaries\HundunAgentEditorTarget\Windows\x64\Debug\HundunAgentEditor.CSharp.dll
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Chat\AgentChatWindow.cs(67,13,67,24): error CS0200: Property or indexer 'DockWindow.DefaultSize' cannot be assigned to -- it is read only
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(91,31,91,58): error CS1503: Argument 1: cannot convert from 'FlaxEditor.Content.ProjectFolderTreeNode' to 'FlaxEditor.Content.ContentFolder'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\SceneActorTools.cs(198,35,198,62): error CS1503: Argument 1: cannot convert from 'FlaxEditor.Content.ProjectFolderTreeNode' to 'FlaxEditor.Content.ContentFolder'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\TaskTools.cs(74,44,74,51): error CS0117: 'Engine' does not contain a definition for 'Version'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Server\McpServer.cs(163,64,163,68): error CS1503: Argument 1: cannot convert from '<null>' to 'System.Text.Json.JsonElement'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Chat\AgentChatWindow.cs(88,17,88,21): error CS0117: 'Panel' does not contain a definition for 'Dock'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Chat\AgentChatWindow.cs(88,24,88,33): error CS0103: The name 'DockStyle' does not exist in the current context
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Chat\AgentChatWindow.cs(110,17,110,21): error CS0117: 'Panel' does not contain a definition for 'Dock'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Chat\AgentChatWindow.cs(110,24,110,33): error CS0103: The name 'DockStyle' does not exist in the current context
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Chat\AgentChatWindow.cs(120,13,120,48): error CS0123: No overload for 'OnInputKeyDown' matches delegate 'Action<KeyboardKeys>'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Chat\AgentChatWindow.cs(131,17,131,21): error CS0117: 'TextBox' does not contain a definition for 'Dock'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Chat\AgentChatWindow.cs(131,24,131,33): error CS0103: The name 'DockStyle' does not exist in the current context
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(141,25,141,38): error CS0122: 'AudioClipItem' is inaccessible due to its protection level
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(142,25,142,43): error CS0122: 'ParticleSystemItem' is inaccessible due to its protection level
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(143,25,143,43): error CS0122: 'SceneAnimationItem' is inaccessible due to its protection level
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(144,17,144,41): warning CS0184: The given expression is never of the provided ('ShaderSourceItem') type
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(237,42,237,69): error CS1503: Argument 1: cannot convert from 'FlaxEditor.Content.ProjectFolderTreeNode' to 'FlaxEditor.Content.ContentFolder'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(282,41,282,71): warning CS0618: 'Editor.NewAssetType' is obsolete: 'Use CreateAsset with named tag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(282,22,282,40): error CS0176: Member 'Editor.CreateAsset(Editor.NewAssetType, string)' cannot be accessed with an instance reference; qualify it with a type name instead
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Chat\AgentChatWindow.cs(385,30,385,64): error CS0029: Cannot implicitly convert type 'FlaxEngine.Float2' to 'FlaxEngine.CursorType'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(458,41,458,71): warning CS0618: 'Editor.NewAssetType' is obsolete: 'Use CreateAsset with named tag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(458,22,458,40): error CS0176: Member 'Editor.CreateAsset(Editor.NewAssetType, string)' cannot be accessed with an instance reference; qualify it with a type name instead
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\SceneActorTools.cs(695,36,695,41): error CS1061: 'SceneGraphNode' does not contain a definition for 'Actor' and no accessible extension method 'Actor' accepting a first argument of type 'SceneGraphNode' could be found (are you missing a using directive or an assembly reference?)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\SceneActorTools.cs(750,36,750,41): error CS1061: 'SceneGraphNode' does not contain a definition for 'Actor' and no accessible extension method 'Actor' accepting a first argument of type 'SceneGraphNode' could be found (are you missing a using directive or an assembly reference?)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\SceneActorTools.cs(773,38,773,52): error CS0246: The type or namespace name 'SceneGraphNode' could not be found (are you missing a using directive or an assembly reference?)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\SceneActorTools.cs(786,35,786,39): error CS1503: Argument 1: cannot convert from 'FlaxEditor.SceneGraph.ActorNode' to 'SceneGraphNode'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\SceneActorTools.cs(795,48,795,53): error CS1503: Argument 1: cannot convert from 'System.Collections.Generic.List<SceneGraphNode>' to 'System.Collections.Generic.List<FlaxEditor.SceneGraph.SceneGraphNode>'
+Flax.Build.exe : Task C:\Program Files\dotnet\dotnet.exe exec "C:\Program Files\dotnet\sdk\10.0.302\Roslyn\bincore\csc.
+dll" /noconfig /shared @"C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Cache/Intermediate\HundunA
+gentEditorTarget\Windows\x64\Debug\HundunAgentEditor.CSharp.response" failed with exit code 1
+所在位置 行:1 字符: 65
++ ... ndunWorld"; & "C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\F ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Task C:\Program...ith exit code 1:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+1 task failed
+Total time: 00:00:02.7033938

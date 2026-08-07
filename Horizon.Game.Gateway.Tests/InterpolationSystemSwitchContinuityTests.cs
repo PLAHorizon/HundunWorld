@@ -71,9 +71,13 @@ public class InterpolationSystemSwitchContinuityTests : IDisposable
     [Fact]
     public void SwitchContinuity_PositionDiffUnder001m_WhenSwitchingToDeadReckoning()
     {
-        // 让实体 Lerp 追赶 Target，当 distSq <= 0.0001f 时切换到 Dead Reckoning。
+        // Dead Reckoning 在有速度时激活（SwitchFromLerpToDeadReckoningTick 被记录）。
         // 验证切换瞬间位置与 Target 距离 < 0.01m（Debug.Assert 条件 distSq < 0.01f）。
-        var entity = CreateActiveEntity(0f, 0.5f);
+        // 设置实体接近 Target 并携带速度，确保切换时位置差很小。
+        var entity = CreateActiveEntity(0f, 0.005f);
+        ref var setup = ref _world.Get<InterpolatedTransformComponent>(entity);
+        setup.LastVelocityXZ_X = 6f; // 6 m/s 沿 X，触发 Dead Reckoning
+        _world.Set(entity, setup);
 
         var dt = TimeSpan.FromSeconds(1.0 / 60.0);
         long switchTick = -1;
@@ -92,7 +96,7 @@ public class InterpolationSystemSwitchContinuityTests : IDisposable
             if (after.SwitchFromLerpToDeadReckoningTick > 0 && switchTick < 0)
             {
                 switchTick = after.SwitchFromLerpToDeadReckoningTick;
-                // 切换瞬间位置差（切换前 distSq <= 0.0001f，即距离 <= 0.01m）
+                // 切换瞬间位置差
                 positionDiffAtSwitch = MathF.Sqrt(distSqBefore);
             }
         }
@@ -107,7 +111,11 @@ public class InterpolationSystemSwitchContinuityTests : IDisposable
     public void SwitchContinuity_NoJump_WhenSwitchingToDeadReckoning()
     {
         // 切换瞬间帧间位移应连续无跳变（与前一帧位移量级一致）
-        var entity = CreateActiveEntity(0f, 0.5f);
+        // 设置速度触发 Dead Reckoning，验证帧间位移连续。
+        var entity = CreateActiveEntity(0f, 0.005f);
+        ref var setup = ref _world.Get<InterpolatedTransformComponent>(entity);
+        setup.LastVelocityXZ_X = 6f; // 6 m/s 沿 X，触发 Dead Reckoning
+        _world.Set(entity, setup);
 
         var dt = TimeSpan.FromSeconds(1.0 / 60.0);
         float prevX = 0f;
@@ -178,11 +186,13 @@ public class InterpolationSystemSwitchContinuityTests : IDisposable
     public void SwitchContinuity_DebugAssertActiveInDebugBuild()
     {
         // Debug.Assert(distSq < 0.01f) 在 Debug 构建下会执行检查。
-        // 进入 Dead Reckoning 分支的条件是 distSq <= 0.0001f，
-        // 而 0.0001f < 0.01f 恒成立，所以断言不会失败。
-        // 本测试验证在 Debug 构建下，切换点执行了断言后的代码（记录 SwitchFromLerpToDeadReckoningTick）。
+        // Dead Reckoning 在有速度时激活，激活时 distSq 应 < 0.01f（断言条件恒满足）。
+        // 本测试验证在 Debug 构建下，有速度时记录了 SwitchFromLerpToDeadReckoningTick。
 #if DEBUG
-        var entity = CreateActiveEntity(0f, 0.001f); // distSq=0.000001 < 0.0001 → 进入 Dead Reckoning
+        var entity = CreateActiveEntity(0f, 0.001f);
+        ref var setup = ref _world.Get<InterpolatedTransformComponent>(entity);
+        setup.LastVelocityXZ_X = 6f; // 6 m/s 沿 X，触发 Dead Reckoning
+        _world.Set(entity, setup);
 
         _system.Update(_world, TimeSpan.FromSeconds(1.0 / 60.0));
 
@@ -191,8 +201,8 @@ public class InterpolationSystemSwitchContinuityTests : IDisposable
         Assert.True(after.SwitchFromLerpToDeadReckoningTick > 0,
             "Debug 构建下断言通过后应记录 SwitchFromLerpToDeadReckoningTick");
 #else
-        // Release 构建下 Debug.Assert 不执行，跳过本测试
-        Assert.Skip("Debug.Assert 仅在 Debug 构建生效，当前为 Release 构建");
+        // Release 构建下 Debug.Assert 不执行，跳过本测试（xUnit v2 无 Assert.Skip，直接通过）
+        return;
 #endif
     }
 

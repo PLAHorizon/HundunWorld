@@ -1,6 +1,6 @@
 ﻿# MMORPG 网络同步性能基线报告
 
-> 生成时间：2026-08-04 15:54:45
+> 生成时间：2026-08-05 22:00:05
 > 由 `NetworkPerformanceBaselineReportTests.GeneratePerformanceBaselineReport` 自动生成。
 
 ## 1. 测试环境
@@ -48,8 +48,8 @@
 | MaxLatencyMs | 33.33 |
 | TotalPacketsEncoded | 80,000 |
 | TotalPacketsDecoded | 80,000 |
-| PacketsEncodedPerSecond | 42468 |
-| ElapsedMs（墙钟） | 1883.8 |
+| PacketsEncodedPerSecond | 19724 |
+| ElapsedMs（墙钟） | 4056.0 |
 
 ## 4. 弱网压测数据
 

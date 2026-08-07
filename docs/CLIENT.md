@@ -361,33 +361,36 @@ var registeredSystems = SystemRegistry.RegisterFromAssembly(_archWorldHost, arch
 
 ---
 
-## 11. TraeBridge（编辑器 AI 桥）
+## 11. HundunAgent（编辑器 AI Agent 插件）
 
-**这是给外部 AI/工具控制 Flax Editor 的 HTTP 服务器，仅在编辑器模式编译。**
+**让 AI Agent 直接在 Flax 编辑器中完成游戏客户端开发工作（场景/Actor/预制体/材质/贴图/代码热重载）。** 独立插件位于 `Plugins/HundunAgent/`（取代旧 TraeBridge，后者已移除）。
 
-### 11.1 TraeBridgeEditorPlugin
+### 11.1 三种接入方式
 
-`TraeBridge/TraeBridgeEditorPlugin.cs:1` —— `#if FLAX_EDITOR` 条件编译。继承 `EditorPlugin`（非运行时 `Plugin`）：
-- `Description = "TraeBridge Editor 插件 - 提供 HTTP API 供外部工具与 Flax Editor 交互"`（`:22`）
-- `Initialize()`（`:29`）→ `TraeBridgeServer.Instance.Start()` → 监听 **`http://localhost:21888/`**（`:42`）
-
-### 11.2 TraeBridgeServer
-
-`TraeBridge/TraeBridgeServer.cs:16` —— 单例，基于 `HttpListener`（`:21`）。RESTful API：
-
-| 端点 | 方法 | 功能 |
+| 方式 | 端点 | 说明 |
 |------|------|------|
-| `/api/scene/info` | GET | 场景信息（`:168`） |
-| `/api/scene/hierarchy` | GET | Actor 层级树（`:396`） |
-| `/api/scene/actor/{name}` | GET/PUT/DELETE | 查/改/删 Actor |
-| `/api/scene/actor/{name}/component` | POST/DELETE | 增删组件 |
-| `/api/scene/actor/{name}/property` | POST | 设属性（`:716`，支持 Asset 引用） |
-| `/api/scene/actor/{name}/transform` | PUT | 改 Transform（`:246, :644`） |
-| `/api/assets/import` | POST | 导入资产（`:1049`） |
-| `/api/viewport/screenshot` | GET | 截图（`:1108`） |
-| `/api/execute` | POST | **执行 C# 代码**（`:1174`，反射解析 `Level.FindActor` 等） |
+| MCP 服务器 | `http://localhost:21901/mcp` | JSON-RPC 2.0（initialize / tools/list / tools/call），任意 MCP 客户端可直接驱动编辑器 |
+| HTTP REST | `http://localhost:21900/` | `GET /api/tools` 工具清单；`POST /api/tools/{name}` 调用工具 |
+| 编辑器聊天窗口 | 菜单 Tools → HundunAgent 聊天窗口 | 配置任意 OpenAI 兼容 API（BaseUrl/ApiKey/Model），编辑器内 function-calling 任务闭环 |
 
-**用途**：让外部 AI agent（Trae）通过 HTTP 远程操控 Flax Editor 创建场景、调整 Actor、执行代码 —— **AI 辅助关卡/场景编辑**。非游戏运行时逻辑。
+### 11.2 工具集（约 30 个）
+
+| 分类 | 工具 |
+|------|------|
+| 场景与 Actor | `scene_list / scene_load / scene_save / scene_new / scene_hierarchy / actor_get / actor_find / actor_create / actor_set_transform / actor_set_property / actor_delete / actor_duplicate / actor_reparent / selection_get / selection_set` |
+| 预制体 | `prefab_spawn / prefab_create / prefab_apply` |
+| 材质与资产 | `asset_search / asset_get / asset_import / material_create / material_set_param / material_assign / material_instance_create` |
+| 截图与环境 | `viewport_screenshot / viewport_camera_set / env_set` |
+| 代码与热重载 | `code_list / code_read / code_write / code_build_wait / code_build_status`（仅限 Source 目录白名单，写入前自动备份） |
+| 任务控制 | `agent_status / undo_checkpoint / undo_rollback / agent_plan_echo / chat_window_open` |
+
+### 11.3 安全与审计
+
+- 变更操作纳入编辑器 Undo 栈，`undo_checkpoint` + `undo_rollback` 支持任务级整体回滚。
+- 危险操作（删除 Actor、写代码等）在聊天窗口中需用户确认。
+- 全部工具调用记录在 `Logs/HundunAgent/tools-yyyyMMdd.jsonl`；聊天设置存于 `Cache/HundunAgent/settings.json`（不含内置密钥）。
+
+**用途**：AI 辅助关卡/场景编辑、资产装配、代码修改热重载。仅编辑器模式生效，非游戏运行时逻辑。
 
 ---
 

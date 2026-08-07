@@ -168,6 +168,16 @@ public sealed class GatewaySyncDispatcher
     }
 
     /// <summary>同步分派单条事件（测试友好，也用于单元测试）。</summary>
+    /// <remarks>
+    /// P-F2 转发效率优化：
+    /// <list type="bullet">
+    ///   <item>移除每事件的 Parallel.ForEach：MMORPG 单事件受众通常仅几个~几十个 session，
+    ///         并行分区的调度开销（~10-50µs/次 + 线程池竞争）远大于顺序发送本身；
+    ///         改为顺序循环，配合多 worker 跨事件并行，端到端转发延迟显著下降。</item>
+    ///   <item>移除热路径无条件 LogInformation（原每快照包一条 + 每 60 事件两条），
+    ///         同步日志 IO 是转发卡顿的主要诱因之一；仅保留 Debug 级采样日志。</item>
+    /// </list>
+    /// </remarks>
     public void Dispatch(FanoutEvent evt)
     {
         if (evt is null) throw new ArgumentNullException(nameof(evt));
@@ -175,37 +185,33 @@ public sealed class GatewaySyncDispatcher
 
         var sessionCount = evt.TargetSessionIds.Count;
 
-        if (ProcessedEventCount % 60 == 0)
-        {
-            _logger?.LogDebug(
-                "GatewaySyncDispatcher：分派事件。PacketKind={PacketKind}, SessionCount={SessionCount}, Delivered={Delivered}, DroppedOffline={Dropped}",
-                evt.Packet.Kind, sessionCount, DeliveredPacketCount, DroppedOfflineCount);
-        }
+        // 修复（下行去重兜底）：同一 fanout 事件内按 sessionId 去重。
+        // 同一会话不应在同一次事件中被重复下发同一份数据（服务端曾出现同一 diff 双重入队，
+        // 以及多 sessionId 映射到同一连接的边缘场景）。去重粒度是 sessionId 而非连接，
+        // 避免误伤"同一连接两个角色各收一份"的合法语义。
+        var dispatchedThisEvent = new HashSet<long>();
 
         try
         {
             // Task 15：一次编码 wireBytes，所有 session 复用（避免每 session 重复 SyncPacketCodec.Encode + PackMessage）
             var wireBytes = _sink.Encode(evt.Packet, out var wireLength);
 
-            if (evt.Packet is SnapshotPacket snapshot)
-            {
-                _logger?.LogInformation(
-                    "GatewaySyncDispatcher 分派快照：目标会话数={SessionCount}，快照大小={DeltaCount}，wireBytes={WireLength}",
-                    sessionCount, snapshot.Deltas?.Length ?? 0, wireLength);
-            }
-
             // Task D.4：预估本包字节数，用于 per-session 带宽计数。
             var estimatedBytes = EstimatePacketSizeBytes(evt.Packet);
 
-            // Task 15.3：并行分批分发。多 worker 并发调用 Dispatch 时，各 worker 内部又并行分发，
+            // P-F2：顺序循环分发。多 worker 并发调用 Dispatch 时，各 worker 处理不同事件，
             // 互不冲突（计数器均用 Interlocked，_registry/_sink 线程安全）。
-            var dop = Math.Max(1, MaxDispatchParallelism);
-            Parallel.ForEach(evt.TargetSessionIds, new ParallelOptions { MaxDegreeOfParallelism = dop }, sessionId =>
+            var deliveredThisDispatch = 0;
+            var droppedThisDispatch = 0;
+            foreach (var sessionId in evt.TargetSessionIds)
             {
+                if (!dispatchedThisEvent.Add(sessionId))
+                    continue; // 本事件已给该 session 下发过，跳过重复
                 if (_registry.TryGetEndpoint(sessionId, out var endpoint) && endpoint is not null)
                 {
                     _sink.Send(endpoint, wireBytes, wireLength);
                     Interlocked.Increment(ref _deliveredPacketCount);
+                    deliveredThisDispatch++;
                     // Phase 4: 补充 PacketsDelivered 指标
                     SyncMetrics.PacketsDelivered.Add(1);
                     // Task D.4：累计该 session 的下发字节数，并按需触发限流/恢复。
@@ -214,11 +220,21 @@ public sealed class GatewaySyncDispatcher
                 else
                 {
                     Interlocked.Increment(ref _droppedOfflineCount);
+                    droppedThisDispatch++;
                     // Phase 4: 补充 PacketsDropped 指标（按 reason 维度）
                     SyncMetrics.PacketsDropped.Add(1, new KeyValuePair<string, object?>("reason", "offline"));
-                    LogDropWarn(sessionId);
+                    LogDropWarn(sessionId, evt.Packet.Kind);
                 }
-            });
+            }
+
+            // ── 分发结果诊断日志（Debug 级 + 采样，稳态不产生 Info 日志开销） ──
+            if (_logger is not null && _logger.IsEnabled(LogLevel.Debug)
+                && (ProcessedEventCount % 60 == 0))
+            {
+                _logger.LogDebug(
+                    "[Dispatch] 分发完成：Kind={Kind}, SessionCount={SessionCount}, Delivered={Delivered}, Dropped={Dropped}, WireBytes={WireBytes}",
+                    evt.Packet.Kind, sessionCount, deliveredThisDispatch, droppedThisDispatch, wireLength);
+            }
 
             Interlocked.Increment(ref _totalDispatchedCount);
         }
@@ -338,7 +354,8 @@ public sealed class GatewaySyncDispatcher
     /// 限频输出"包因 session 离线被丢弃"警告（每 10 秒最多一次），避免刷屏。
     /// </summary>
     /// <param name="sessionId">丢失的 sessionId（实际为 characterId）。</param>
-    private void LogDropWarn(long sessionId)
+    /// <param name="packetKind">被丢弃的包类型（诊断用）。</param>
+    private void LogDropWarn(long sessionId, SyncPacketKind packetKind = default)
     {
         var now = DateTime.UtcNow;
         var lastTicks = Interlocked.Read(ref _lastDropWarnTicks);
@@ -353,9 +370,8 @@ public sealed class GatewaySyncDispatcher
             return;
 
         _logger?.LogWarning(
-            "[GatewaySyncDispatcher] Packet dropped: session offline (sessionId={SessionId}, totalDropped={Count})",
-            sessionId,
-            DroppedOfflineCount);
+            "[GatewaySyncDispatcher] Packet dropped: session offline (sessionId={SessionId}, packetKind={PacketKind}, totalDropped={Count})",
+            sessionId, packetKind, DroppedOfflineCount);
     }
 
     // ── Task D.4：per-session 带宽跟踪器 ───────────────────────────────────

@@ -1,0 +1,615 @@
+### FlaxEditor.Editor : System.Object
+  prop Editor Instance { get set}
+  prop Boolean IsEveryAssemblyLoaded { get }
+  prop Boolean IsFlaxEngineTheBest { get }
+  prop Boolean IsHeadlessMode { get }
+  prop Boolean IsInitialized { get }
+  prop Boolean IsPlayMode { get }
+  prop Int32 LastProjectOpenedEngineBuild { get }
+  prop TransformGizmo MainTransformGizmo { get }
+  meth Void BakeAllEnvProbes()
+  meth Void BakeLightmapsOrCancel()
+  meth Void BuildAllMeshesSDF()
+  meth Void BuildCSG()
+  meth Void BuildNavMesh()
+  meth Void BuildScenesOrCancel()
+  meth Boolean CanExport(String path)
+  meth Boolean CanImport(String extension, String& outputExtension)
+  meth Void ClearLightmaps()
+  meth Void CloseSplashScreen()
+  meth Boolean CookMeshCollision(String path, CollisionDataType type, ModelBase model, Int32 modelLodIndex?, UInt32 materialSlotsMask?, ConvexMeshGenerationFlags convexFlags?, Int32 convexVertexLimit?)
+  meth Boolean CreateAsset(String tag, String outputPath)
+  meth Boolean CreateAsset(NewAssetType type, String outputPath)
+  meth Boolean CreateVisualScript(String outputPath, String baseTypename)
+  meth Void EnsureState(EditorState state)
+  meth Void EnsureState()
+  meth Boolean Export(String inputPath, String outputFolder)
+  meth Void GetActorEditorSphere(Actor actor, BoundingSphere& sphere)
+  meth Guid[] GetAssetReferences(Guid assetId)
+  meth String GetShaderSourceCode(Shader asset)
+  meth String GetShaderSourceCode(Material asset)
+  meth String GetShaderSourceCode(ParticleEmitter asset)
+  meth Boolean Import(String inputPath, String outputPath, IntPtr arg?)
+  meth Boolean Import(String inputPath, String outputPath, Options options)
+  meth Boolean Import(String inputPath, String outputPath, Options options)
+  meth Boolean Import(String inputPath, String outputPath, Options options)
+  meth Void Log(String msg)
+  meth Void LogError(String msg)
+  meth Void LogWarning(String msg)
+  meth Void LogWarning(Exception ex)
+  meth Void NewProject(String projectFilePath)
+  meth Void OpenProject(String projectFilePath)
+  meth Void PerformRedo()
+  meth Void PerformUndo()
+  meth Void SaveAll()
+  meth Void SaveContent()
+  meth Boolean SaveJsonAsset(String outputPath, Object obj)
+  meth Boolean TryRestoreImportOptions(Options& options, String assetPath)
+  meth Boolean TryRestoreImportOptions(Options& options, String assetPath)
+  meth Boolean TryRestoreImportOptions(Options& options, String assetPath)
+  field WindowsModule Windows
+  field UIModule UI
+  field ThumbnailsModule Thumbnails
+  field SimulationModule Simulation
+  field SceneModule Scene
+  field PrefabsModule Prefabs
+  field SceneEditingModule SceneEditing
+  field ProgressReportingModule ProgressReporting
+  field ContentEditingModule ContentEditing
+  field ContentDatabaseModule ContentDatabase
+  field ContentImportingModule ContentImporting
+  field ContentFindingModule ContentFinding
+  field CodeEditingModule CodeEditing
+  field CodeDocsModule CodeDocs
+  field EditorStateMachine StateMachine
+  field OptionsModule Options
+  field ProjectCacheModule ProjectCache
+  field EditorUndo Undo
+  field EditorIcons Icons
+  field Dictionary<String,String> CustomData
+  field ProjectInfo GameProject
+  field ProjectInfo EngineProject
+  field String LocalCachePath
+  event InitializationStart
+  event InitializationEnd
+  event PlayModeBeginning
+  event PlayModeBegin
+  event PlayModeEnding
+  event PlayModeEnd
+  event EditorUpdate
+  event EnvProbeBakeStart
+  event EnvProbeBakeEnd
+  event LightmapsBakeStart
+  event LightmapsBakeEnd
+  event LightmapsBakeProgress
+
+### FlaxEditor.Undo : System.Object
+  prop Boolean CanRedo { get }
+  prop Boolean CanUndo { get }
+  prop Int32 Capacity { get set}
+  prop Boolean Enabled { get set}
+  prop String FirstRedoName { get }
+  prop String FirstUndoName { get }
+  prop HistoryStack UndoOperationsStack { get }
+  meth Void AddAction(IUndoAction action)
+  meth Void Clear()
+  meth Void Dispose()
+  meth Void PerformRedo()
+  meth Void PerformUndo()
+  meth Void RecordAction(Object snapshotInstance, String actionString, Action actionsToSave)
+  meth Void RecordAction(T snapshotInstance, String actionString, Action<T> actionsToSave)
+  meth Void RecordAction(Object snapshotInstance, String actionString, Action<Object> actionsToSave)
+  meth Void RecordBegin(Object snapshotInstance, String actionString)
+  meth Void RecordEnd(Object snapshotInstance?, IUndoAction customActionBefore?, IUndoAction customActionAfter?)
+  meth Void RecordMultiBegin(Object[] snapshotInstances, String actionString)
+  meth Void RecordMultiEnd(Object[] snapshotInstance?, IUndoAction customActionBefore?, IUndoAction customActionAfter?)
+  event UndoDone
+  event RedoDone
+  event ActionDone
+
+### MISSING FlaxEditor.UndoMultiAction
+### MISSING FlaxEditor.Content.ContentDatabase
+### FlaxEditor.Content.ContentItem : FlaxEngine.GUI.Control
+  prop Boolean CanDrag { get }
+  prop Boolean CanHaveChildren { get }
+  prop Boolean CanRename { get }
+  prop SpriteHandle DefaultThumbnail { get }
+  prop Boolean Exists { get }
+  prop String FileName { get set}
+  prop Boolean HasDefaultThumbnail { get }
+  prop Boolean IsAsset { get }
+  prop Boolean IsFolder { get }
+  prop ContentItemType ItemType { get }
+  prop String NamePath { get }
+  prop ContentFolder ParentFolder { get set}
+  prop String Path { get set}
+  prop Int32 ReferencesCount { get }
+  prop ContentItemSearchFilter SearchFilter { get }
+  prop String ShortName { get set}
+  prop Rectangle TextRectangle { get }
+  prop SpriteHandle Thumbnail { get set}
+  prop String TypeDescription { get }
+  meth Void AddReference(IContentItemOwner obj)
+  meth Int32 Compare(Control other)
+  meth Void Draw()
+  meth Void DrawThumbnail(Rectangle& rectangle)
+  meth Void DrawThumbnail(Rectangle& rectangle, Boolean shadow)
+  meth ContentItem Find(String path)
+  meth Boolean Find(ContentItem item)
+  meth ContentItem Find(Guid id)
+  meth ScriptItem FindScriptWitScriptName(String scriptName)
+  meth Void NavigationFocus()
+  meth Void OnContextMenu(ContextMenu menu)
+  meth Void OnDelete()
+  meth Void OnDestroy()
+  meth Boolean OnMouseDoubleClick(Float2 location, MouseButton button)
+  meth Boolean OnMouseDown(Float2 location, MouseButton button)
+  meth Void OnMouseLeave()
+  meth Void OnMouseMove(Float2 location)
+  meth Boolean OnMouseUp(Float2 location, MouseButton button)
+  meth Void OnPathChanged()
+  meth Boolean OnShowTooltip(String& text, Float2& location, Rectangle& area)
+  meth Void OnSubmit()
+  meth Void RefreshThumbnail()
+  meth Void RemoveReference(IContentItemOwner obj)
+  meth String ToString()
+  meth Void UpdateTooltipText()
+  field Boolean IsBeingCut
+  field Boolean ShowFileExtension
+  field Int32 DefaultMarginSize
+  field Int32 DefaultTextHeight
+  field Int32 DefaultThumbnailSize
+  field Int32 DefaultWidth
+  field Int32 DefaultHeight
+
+### MISSING FlaxEditor.SceneEditing.OpenSceneOperation
+### MISSING FlaxEditor.Content.Settings.EditorSettings
+### MISSING FlaxEditor.Plugin
+### FlaxEditor.EditorPlugin : FlaxEngine.Plugin
+  prop Editor Editor { get set}
+  prop Type GamePluginType { get }
+  meth Void DeinitializeEditor()
+  meth Void InitializeEditor()
+
+### FlaxEditor.ViewportIconsRenderer : System.Object
+  prop Single MaxSize { get set}
+  prop Single MaxSizeDistance { get set}
+  prop Single MinSize { get set}
+  prop Single Scale { get set}
+  meth Void AddActor(Actor actor)
+  meth Void AddActorWithTexture(Actor actor, Texture iconTexture)
+  meth Void AddCustomIcon(Type type, Texture iconTexture)
+  meth Void DrawIcons(RenderContext& renderContext, Actor actor)
+  meth Void GetBounds(Vector3& position, Vector3& viewPosition, BoundingSphere& bounds)
+  meth Void RemoveActor(Actor actor)
+
+### FlaxEditor.ViewportDebugDrawData : System.Object
+  meth Void Add(Actor actor)
+  meth Void Clear()
+  meth Void Dispose()
+  meth Void DrawActors(Boolean drawScenes?)
+  meth Void HighlightBrushSurface(BrushSurface surface)
+  meth Void HighlightModel(StaticModel model)
+  meth Void HighlightModel(StaticModel model, Int32 entryIndex)
+  meth Void OnDraw(RenderContext& renderContext)
+
+### FlaxEditor.Windows.Assets.PrefabWindow : FlaxEditor.Windows.Assets.AssetEditorWindowBase`1[[FlaxEngine.Prefab, FlaxEngine.CSharp, Version=1.12.6913.0, Culture=neutral, PublicKeyToken=null]]
+  prop Boolean LiveReload { get set}
+  prop TimeSpan LiveReloadTimeout { get set}
+  prop Boolean LockSelection { get set}
+  prop CustomEditorPresenter Presenter { get }
+  prop EditorViewport PresenterViewport { get }
+  prop ISceneEditingContext SceneContext { get }
+  prop List<SceneGraphNode> Selection { get }
+  prop PrefabTree Tree { get }
+  prop Undo Undo { get }
+  prop Boolean UseLayoutData { get }
+  prop PrefabWindowViewport Viewport { get }
+  meth Void Copy()
+  meth Void Cut()
+  meth Void Delete()
+  meth Void DeleteSelection()
+  meth Void Deselect(SceneGraphNode node)
+  meth Void Deselect()
+  meth Void Duplicate()
+  meth Void FocusSelection()
+  meth Void OnDestroy()
+  meth Void OnLayoutDeserialize(XmlElement node)
+  meth Void OnLayoutDeserialize()
+  meth Void OnLayoutSerialize(XmlWriter writer)
+  meth Boolean OnMouseUp(Float2 location, MouseButton button)
+  meth Void OnSelectionChanged(SceneGraphNode[] before)
+  meth Void Paste()
+  meth Void Paste(Actor pasteTargetActor)
+  meth Void RenameSelection()
+  meth Void Save()
+  meth Void ScrollingOnTreeView(Boolean enabled)
+  meth Void ScrollToSelectedNode()
+  meth Void Select(List<SceneGraphNode> nodes)
+  meth Void Select(SceneGraphNode node, Boolean additive?)
+  meth Void Spawn(Actor actor)
+  meth Void Spawn(Type type)
+  meth Void Spawn(Actor actor, Actor parent, Int32 orderInParent?, Boolean autoSelect?)
+  meth Void Update(Single deltaTime)
+  field LocalSceneGraph Graph
+  event ContextMenuShow
+  event SelectionChanged
+
+### FlaxEditor.Viewport.EditorGizmoViewport : FlaxEditor.Viewport.EditorViewport
+  prop GizmosCollection Gizmos { get }
+  prop Boolean IsAltKeyDown { get }
+  prop Boolean IsControlDown { get }
+  prop Boolean IsLeftMouseButtonDown { get }
+  prop Boolean IsRightMouseButtonDown { get }
+  prop Float2 MouseDelta { get }
+  prop SceneRenderTask RenderTask { get }
+  prop RootNode SceneGraphRoot { get }
+  prop Boolean SnapToGround { get }
+  prop Boolean SnapToVertex { get }
+  prop Undo Undo { get }
+  prop Boolean UseDuplicate { get }
+  prop Boolean UseSnapping { get }
+  prop Single ViewFarPlane { get }
+  prop EditorViewport Viewport { get }
+  meth Void OnDestroy()
+  meth Void OpenContextMenu()
+  meth Void Select(List<SceneGraphNode> nodes)
+  meth Void Spawn(Actor actor)
+
+### FlaxEditor.Viewport.EditorViewport : FlaxEngine.GUI.RenderOutputControl
+  prop Float3 EulerAngles { get set}
+  prop Single FarPlane { get set}
+  prop Single FieldOfView { get set}
+  prop Boolean HasLoadedAssets { get }
+  prop Boolean InvertPanning { get set}
+  prop Single MaxMovementSpeed { get set}
+  prop Single MinMovementSpeed { get set}
+  prop Float2 MousePositionDelta { get }
+  prop Ray MouseRay { get }
+  prop Single MovementSpeed { get set}
+  prop Single NearPlane { get set}
+  prop Single OrthographicScale { get set}
+  prop Single PanningSpeed { get set}
+  prop Single Pitch { get set}
+  prop Boolean RelativePanning { get set}
+  prop Boolean ShowFpsCounter { get set}
+  prop Boolean UseCameraEasing { get set}
+  prop Boolean UseOrthographicProjection { get set}
+  prop Float3 ViewDirection { get set}
+  prop BoundingFrustum ViewFrustum { get }
+  prop Quaternion ViewOrientation { get set}
+  prop ViewportCamera ViewportCamera { get set}
+  prop Vector3 ViewPosition { get set}
+  prop Ray ViewRay { get set}
+  prop Transform ViewTransform { get set}
+  prop Single Yaw { get set}
+  prop Float2 YawPitch { get set}
+  meth Ray ConvertMouseToRay(Float2& mousePosition)
+  meth Void CopyViewData(RenderView& view)
+  meth Void Draw()
+  meth Void GetInput(Input& input)
+  meth Void GetPrevInput(Input& input)
+  meth Void OnChildResized(Control control)
+  meth Void OnDestroy()
+  meth Boolean OnKeyDown(KeyboardKeys key)
+  meth Void OnLostFocus()
+  meth Boolean OnMouseDown(Float2 location, MouseButton button)
+  meth Boolean OnMouseWheel(Float2 location, Single delta)
+  meth Void OrientViewport(Quaternion orientation)
+  meth Void OrientViewport(Quaternion& orientation)
+  meth Void ProjectPoint(Vector3 worldSpaceLocation, Float2& viewportSpaceLocation)
+  meth Void TakeScreenshot(String path?)
+  meth Void Update(Single deltaTime)
+  field Single MouseSpeed
+  field Single MouseWheelZoomSpeedFactor
+  field ContextMenu ViewWidgetButtonMenu
+  field ContextMenu ViewWidgetShowMenu
+  field InputActionsContainer InputActions
+  field Int32 FpsCameraFilteringFrames
+
+### FlaxEditor.Viewport.MainEditorGizmoViewport : FlaxEditor.Viewport.EditorGizmoViewport
+  prop ViewportDebugDrawData DebugDrawData { get }
+  prop Boolean ShowNavigation { get set}
+  meth Void ApplyTransform(List<SceneGraphNode> selection, Vector3& translationDelta, Quaternion& rotationDelta, Vector3& scaleDelta)
+  meth Void Draw()
+  meth Void DrawEditorPrimitives(GPUContext context, RenderContext& renderContext, GPUTexture target, GPUTexture targetDepth)
+  meth Void FocusSelection()
+  meth Void FocusSelection(Quaternion& orientation)
+  meth Void LockFocusSelection()
+  meth Void OnDestroy()
+  meth DragDropEffect OnDragDrop(Float2& location, DragData data)
+  meth DragDropEffect OnDragEnter(Float2& location, DragData data)
+  meth Void OnDragLeave()
+  meth DragDropEffect OnDragMove(Float2& location, DragData data)
+  meth Void OnLostFocus()
+  meth Void OnMouseLeave()
+  meth Void OnMouseMove(Float2 location)
+  meth Boolean OnMouseUp(Float2 location, MouseButton button)
+  meth Void OpenContextMenu()
+  meth Void OrientViewport(Quaternion& orientation)
+  meth Void OverrideSelectionOutline(SelectionOutline customSelectionOutline)
+  meth Void RotateSelection()
+  meth Void Select(List<SceneGraphNode> nodes)
+  meth Void Spawn(Actor actor)
+  meth Void ToggleGameView()
+  meth Void UnlockFocusSelection()
+  meth Void Update(Single deltaTime)
+  field ViewportDragHandlers DragHandlers
+  field TransformGizmo TransformGizmo
+  field GridGizmo Grid
+  field SelectionOutline SelectionOutline
+  field EditorPrimitives EditorPrimitives
+  field Boolean DrawDebugDraw
+  field SculptTerrainGizmoMode SculptTerrainGizmo
+  field PaintTerrainGizmoMode PaintTerrainGizmo
+  field EditTerrainGizmoMode EditTerrainGizmo
+  field PaintFoliageGizmoMode PaintFoliageGizmo
+  field EditFoliageGizmoMode EditFoliageGizmo
+
+### FlaxEditor.Viewport.PrefabWindowViewport : FlaxEditor.Viewport.Previews.PrefabPreview
+  prop GizmosCollection Gizmos { get }
+  prop Boolean IsAltKeyDown { get }
+  prop Boolean IsControlDown { get }
+  prop Boolean IsLeftMouseButtonDown { get }
+  prop Boolean IsRightMouseButtonDown { get }
+  prop Float2 MouseDelta { get }
+  prop SceneRenderTask RenderTask { get }
+  prop RootNode SceneGraphRoot { get }
+  prop Boolean ShowUI { get set}
+  prop Boolean SnapToGround { get }
+  prop Boolean SnapToVertex { get }
+  prop Undo Undo { get }
+  prop Boolean UseDuplicate { get }
+  prop Boolean UseSnapping { get }
+  prop Single ViewFarPlane { get }
+  prop EditorViewport Viewport { get }
+  meth Void ApplyTransform(List<SceneGraphNode> selection, Vector3& translationDelta, Quaternion& rotationDelta, Vector3& scaleDelta)
+  meth Void CreateViewScalingOptions()
+  meth Void DrawEditorPrimitives(GPUContext context, RenderContext& renderContext, GPUTexture target, GPUTexture targetDepth)
+  meth Void FocusSelection()
+  meth Void FocusSelection(Quaternion& orientation)
+  meth Void OnDestroy()
+  meth DragDropEffect OnDragDrop(Float2& location, DragData data)
+  meth DragDropEffect OnDragEnter(Float2& location, DragData data)
+  meth Void OnDragLeave()
+  meth DragDropEffect OnDragMove(Float2& location, DragData data)
+  meth Void OpenContextMenu()
+  meth Void OrientViewport(Quaternion& orientation)
+  meth Void SaveActiveUIScalingOption()
+  meth Void Select(List<SceneGraphNode> nodes)
+  meth Void SetInitialUIMode(Boolean value)
+  meth Void ShowSelectedActors()
+  meth Void Spawn(Actor actor)
+  field ViewportDragHandlers DragHandlers
+  field TransformGizmo TransformGizmo
+  field SelectionOutline SelectionOutline
+  event UIModeToggled
+
+### FlaxEditor.Viewport.ViewportDragHandlers : FlaxEditor.GUI.Drag.DragHandlers
+
+### FlaxEditor.Viewport.Widgets.OrthoCamToggleViewportWidgetButton : FlaxEditor.Viewport.Widgets.ViewportWidgetButton
+  meth Void Draw()
+  meth Void Update(Single deltaTime)
+
+### FlaxEditor.Viewport.Widgets.ViewportWidgetButton : FlaxEngine.GUI.Control
+  prop Boolean Checked { get set}
+  prop String Text { get set}
+  meth Void Draw()
+  meth Boolean OnMouseDown(Float2 location, MouseButton button)
+  meth Boolean OnMouseUp(Float2 location, MouseButton button)
+  meth Void PerformLayout(Boolean force?)
+  field SpriteHandle Icon
+  event Toggled
+  event Clicked
+
+### FlaxEditor.Viewport.Widgets.ViewportWidgetLocation : System.Enum
+  field Int32 value__
+  field ViewportWidgetLocation UpperLeft
+  field ViewportWidgetLocation UpperRight
+
+### FlaxEditor.Viewport.Widgets.ViewportWidgetsContainer : FlaxEngine.GUI.ContainerControl
+  prop ViewportWidgetLocation WidgetLocation { get }
+  meth Void ArrangeWidgets(ContainerControl control)
+  meth Void Draw()
+  meth Void OnChildResized(Control control)
+  field Single WidgetsMargin
+  field Single WidgetsHeight
+  field Single WidgetsIconSize
+
+### FlaxEditor.Viewport.Previews.PrefabPreview : FlaxEditor.Viewport.Previews.AssetPreview
+  prop Actor Instance { get set}
+  prop Prefab Prefab { get set}
+  meth Void OnDestroy()
+  meth Void Update(Single deltaTime)
+
+### FlaxEditor.Viewport.Cameras.IViewportCamera : 
+  meth Void Update(Single deltaTime)
+  meth Void UpdateView(Single dt, Vector3& moveDelta, Float2& mouseDelta, Boolean& centerMouse)
+
+### FlaxEditor.Viewport.Cameras.ViewportCamera : System.Object
+  prop Boolean UseMovementSpeed { get }
+  prop EditorViewport Viewport { get set}
+  meth Void FocusSelection(GizmosCollection gizmos, Quaternion& orientation)
+  meth Void SetArcBallView(BoundingBox objectBounds, Single marginDistanceScale?)
+  meth Void SetArcBallView(BoundingSphere objectBounds, Single marginDistanceScale?)
+  meth Void SetArcBallView(Single orbitRadius)
+  meth Void SetArcBallView(Quaternion orientation, Vector3 orbitCenter, Single orbitRadius)
+  meth Void ShowActor(Actor actor)
+  meth Void ShowActors(List<SceneGraphNode> selection)
+  meth Void ShowActors(List<SceneGraphNode> selection, Quaternion& orientation)
+  meth Void ShowSphere(BoundingSphere& sphere)
+  meth Void ShowSphere(BoundingSphere& sphere, Quaternion& orientation)
+  meth Void Update(Single deltaTime)
+  meth Void UpdateView(Single dt, Vector3& moveDelta, Float2& mouseDelta, Boolean& centerMouse)
+
+### FlaxEditor.Actions.BreakPrefabLinkAction : System.Object
+  prop String ActionString { get }
+  meth BreakPrefabLinkAction Break(Actor actor)
+  meth Void Dispose()
+  meth Void Do()
+  meth BreakPrefabLinkAction Linked(Actor actor)
+  meth Void Undo()
+
+### FlaxEditor.Options.EditorOptions : System.Object
+  meth T GetCustomSettings(String name)
+  field GeneralOptions General
+  field InterfaceOptions Interface
+  field InputOptions Input
+  field ViewportOptions Viewport
+  field VisualOptions Visual
+  field SourceCodeOptions SourceCode
+  field ThemeOptions Theme
+  field Dictionary<String,String> CustomSettings
+
+### FlaxEditor.Options.ViewportOptions : System.Object
+  prop Single CameraEasingDegree { get set}
+  prop Single DirectionGizmoBackgroundOpacity { get set}
+  prop Single DirectionGizmoBrightness { get set}
+  prop Single DirectionGizmoOpacity { get set}
+  prop Single DirectionGizmoScale { get set}
+  prop Single FarPlane { get set}
+  prop Single FieldOfView { get set}
+  prop Single IconsMaximumSize { get set}
+  prop Single IconsMinimumSize { get set}
+  prop Boolean InvertMouseYAxisRotation { get set}
+  prop Boolean InvertPanning { get set}
+  prop Single MaxMovementSpeed { get set}
+  prop Single MaxSizeDistance { get set}
+  prop Single MinMovementSpeed { get set}
+  prop Single MouseSensitivity { get set}
+  prop Single MouseWheelSensitivity { get set}
+  prop Single MovementSpeed { get set}
+  prop Single NearPlane { get set}
+  prop Single OrthographicScale { get set}
+  prop Single PanningSpeed { get set}
+  prop Boolean ShowDirectionGizmo { get set}
+  prop Int32 TotalCameraSpeedSteps { get set}
+  prop Boolean UseCameraEasing { get set}
+  prop Boolean UseOrthographicProjection { get set}
+  prop Boolean UseRelativePanning { get set}
+  prop Color ViewportGridColor { get set}
+  prop Single ViewportGridScale { get set}
+  prop Single ViewportGridViewDistance { get set}
+
+### FlaxEditor.Modules.ContentImportingModule : FlaxEditor.Modules.EditorModule
+  prop Single ImportBatchDone { get }
+  prop Int32 ImportBatchSize { get }
+  prop Single ImportingProgress { get }
+  prop Boolean IsImporting { get }
+  meth Void Create(CreateFileEntry entry)
+  meth Void Import(IEnumerable<String> files, ContentFolder targetLocation, Boolean skipSettingsDialog?)
+  meth Void Import(String file, ContentFolder targetLocation, Boolean skipSettingsDialog?, Object settings?)
+  meth Void OnExit()
+  meth Void OnInit()
+  meth Void OnUpdate()
+  meth Void Reimport(BinaryAssetItem item, Object settings?, Boolean skipSettingsDialog?)
+  meth Void ShowImportFileDialog(ContentFolder targetLocation)
+  event ImportingQueueBegin
+  event ImportFileBegin
+  event ImportFileEnd
+  event ImportingQueueEnd
+
+### FlaxEditor.Modules.PrefabsModule : FlaxEditor.Modules.EditorModule
+  meth Void ApplyAll(Actor instance)
+  meth Void BreakLinks()
+  meth Void CreatePrefab()
+  meth Void CreatePrefab(List<SceneGraphNode> selection, PrefabWindow prefabWindow?)
+  meth Void CreatePrefab(Actor actor)
+  meth Void CreatePrefab(Actor actor, Boolean rename, PrefabWindow prefabWindow?)
+  meth Void OpenPrefab(ActorNode actorNode)
+  meth Void OpenPrefab(Guid prefabID?)
+  meth Void SelectPrefab()
+  event PrefabCreating
+  event PrefabCreated
+  event PrefabApplying
+  event PrefabApplied
+
+### FlaxEditor.GUI.PrefabDiffContextMenu : FlaxEditor.GUI.ContextMenu.ContextMenuBase
+  meth Void Hide()
+  meth Void OnDestroy()
+  meth Boolean OnKeyDown(KeyboardKeys key)
+  field Tree Tree
+  event RevertAll
+  event ApplyAll
+
+### FlaxEditor.CustomEditors.Dedicated.ModelPrefabEditor : FlaxEditor.CustomEditors.Editors.GenericEditor
+  meth Void Initialize(LayoutElementsContainer layout)
+
+### FlaxEditor.Content.PrefabItem : FlaxEditor.Content.JsonAssetItem
+  prop SpriteHandle DefaultThumbnail { get }
+  prop ContentItemType ItemType { get }
+  prop ContentItemSearchFilter SearchFilter { get }
+  prop String TypeDescription { get }
+  meth Boolean IsOfType(Type type)
+  meth Boolean OnEditorDrag(Object context)
+  meth Actor OnEditorDrop(Object context)
+
+### FlaxEditor.Content.PrefabProxy : FlaxEditor.Content.JsonAssetBaseProxy
+  prop Color AccentColor { get }
+  prop String FileExtension { get }
+  prop String Name { get }
+  prop String TypeName { get }
+  meth Boolean CanCreate(ContentFolder targetLocation)
+  meth Boolean CanDrawThumbnail(ThumbnailRequest request)
+  meth Boolean CanReimport(ContentItem item)
+  meth AssetItem ConstructItem(String path, String typeName, Guid& id)
+  meth Void Create(String outputPath, Object arg)
+  meth Void Dispose()
+  meth Boolean IsProxyFor(ContentItem item)
+  meth Boolean IsProxyFor()
+  meth Void OnThumbnailDrawBegin(ThumbnailRequest request, ContainerControl guiRoot, GPUContext context)
+  meth Void OnThumbnailDrawEnd(ThumbnailRequest request, ContainerControl guiRoot)
+  meth Void OnThumbnailDrawPrepare(ThumbnailRequest request)
+  meth EditorWindow Open(Editor editor, ContentItem item)
+  field String Extension
+  field String AssetTypename
+
+### FlaxEditor.Content.Create.PrefabCreateEntry : FlaxEditor.Content.Create.CreateFileEntry
+  prop Boolean CanBeCreated { get }
+  prop Object Settings { get }
+  meth Boolean Create()
+
+### FlaxEditor.Windows.Assets.PrefabWindow+PrefabTree : FlaxEditor.GUI.Tree.Tree
+
+### FlaxEditor.Viewport.PrefabWindowViewport+PrefabSpritesRenderer : FlaxEditor.Viewport.MainEditorGizmoViewport+EditorSpritesRenderer
+  meth Boolean CanRender()
+  field PrefabWindowViewport Viewport
+
+### FlaxEditor.Viewport.PrefabWindowViewport+PrefabUIEditorRoot : FlaxEditor.UIEditorRoot
+  prop Boolean EnableBackground { get }
+  prop Boolean EnableInputs { get }
+  prop Boolean EnableSelecting { get }
+  prop TransformGizmo TransformGizmo { get }
+
+### FlaxEditor.Surface.Archetypes.Animation+StateMachine : FlaxEditor.Surface.SurfaceNode
+  prop Int32 MaxTransitionsPerUpdate { get set}
+  prop VisjectSurfaceContext ParentContext { get }
+  prop Boolean ReinitializeOnBecomingRelevant { get set}
+  prop Boolean SkipFirstUpdateTransition { get set}
+  prop String StateMachineTitle { get set}
+  prop Asset SurfaceAsset { get }
+  prop Byte[] SurfaceData { get set}
+  prop String SurfaceName { get }
+  meth Void Edit()
+  meth Void OnContextCreated(VisjectSurfaceContext context)
+  meth Void OnDestroy()
+  meth Boolean OnMouseDoubleClick(Float2 location, MouseButton button)
+  meth Void OnSpawned(SurfaceNodeActions action)
+  meth Void OnSurfaceLoaded(SurfaceNodeActions action)
+  meth Void OnValuesChanged()
+  meth Void StartRenaming()
+
+### FlaxEditor.Modules.UIModule+ViewportScaleOption : System.Object
+  field String Label
+  field ViewportScaleType ScaleType
+  field Int2 Size
+
+### FlaxEditor.Gizmo.DirectionGizmo+ViewportProjection : System.ValueType
+  meth Void Init(EditorViewport editorViewport)
+  meth Void ProjectPoint(Vector3 worldSpaceLocation, Float2& viewportSpaceLocation)
+
+### FlaxEditor.Modules.UIModule+ViewportScaleOption+ViewportScaleType : System.Enum
+  field Int32 value__
+  field ViewportScaleType Resolution
+  field ViewportScaleType Aspect
+

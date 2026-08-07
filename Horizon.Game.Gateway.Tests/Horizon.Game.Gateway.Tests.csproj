@@ -65,4 +65,30 @@
     <Compile Include="..\HundunWorld\Source\Game\Network\ClientSyncMetrics.cs" Link="Linked\ClientSyncMetrics.cs" />
   </ItemGroup>
 
+  <!-- 链接客户端 SyncGuard 资格管控源文件（仅依赖 System + Horizon.Game.ECS.Arch/Message，无 FlaxEngine 依赖） -->
+  <ItemGroup>
+    <Compile Include="..\HundunWorld\Source\Game\SyncGuard\OutboundSyncAuthorizer.cs" Link="Linked\OutboundSyncAuthorizer.cs" />
+    <Compile Include="..\HundunWorld\Source\Game\SyncGuard\BindingRelationshipRegistry.cs" Link="Linked\BindingRelationshipRegistry.cs" />
+    <Compile Include="..\HundunWorld\Source\Game\SyncGuard\LocalSendEligibilityState.cs" Link="Linked\LocalSendEligibilityState.cs" />
+    <Compile Include="..\HundunWorld\Source\Game\SyncGuard\SendViolationMonitor.cs" Link="Linked\SendViolationMonitor.cs" />
+    <Compile Include="..\HundunWorld\Source\Game\SyncGuard\GuardSyncSender.cs" Link="Linked\GuardSyncSender.cs" />
+    <Compile Include="..\HundunWorld\Source\Game\SyncGuard\OutboundSyncGuardImpl.cs" Link="Linked\OutboundSyncGuardImpl.cs" />
+  </ItemGroup>
+
+  <!-- 链接客户端 RemoteVisibility 重连恢复/可见性审计源文件（纯 C#，无 FlaxEngine 依赖，可单测） -->
+  <ItemGroup>
+    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\Contracts\IReconnectResumeSender.cs" Link="Linked\RemoteVisibility\Contracts\IReconnectResumeSender.cs" />
+    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\Contracts\IReconnectResumeStateMachine.cs" Link="Linked\RemoteVisibility\Contracts\IReconnectResumeStateMachine.cs" />
+    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\Contracts\IRemoteVisibilityAudit.cs" Link="Linked\RemoteVisibility\Contracts\IRemoteVisibilityAudit.cs" />
+    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\Contracts\IRemoteObservationCoordinator.cs" Link="Linked\RemoteVisibility\Contracts\IRemoteObservationCoordinator.cs" />
+    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\ReconnectResumeStateMachine.cs" Link="Linked\RemoteVisibility\ReconnectResumeStateMachine.cs" />
+    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\RemoteVisibilityAudit.cs" Link="Linked\RemoteVisibility\RemoteVisibilityAudit.cs" />
+    <Compile Include="..\HundunWorld\Source\Game\RemoteVisibility\ReconnectFlowGuard.cs" Link="Linked\RemoteVisibility\ReconnectFlowGuard.cs" />
+  </ItemGroup>
+
+  <!-- 链接客户端 NetworkProbeRunner 源文件（纯 C#，无 FlaxEngine 依赖，可单测） -->
+  <ItemGroup>
+    <Compile Include="..\HundunWorld\Source\Game\Network\NetworkProbeRunner.cs" Link="Linked\Network\NetworkProbeRunner.cs" />
+  </ItemGroup>
+
 </Project>

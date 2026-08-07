@@ -1,0 +1,171 @@
+﻿### FlaxEditor.Content.ProjectFolderTreeNode : FlaxEditor.Content.ContentFolderTreeNode
+  ctor (ProjectInfo project)
+  prop String NavButtonLabel { get }
+  event LocationChanged : Action`1
+  event SizeChanged : Action`1
+  event ParentChanged : Action`1
+  event VisibleChanged : Action`1
+  event Focused : Action
+
+### FlaxEditor.Content.ContentFolderTreeNode : FlaxEditor.GUI.Tree.TreeNode
+  ctor (ContentFolderTreeNode parent, String path)
+  prop Boolean CanDelete { get }
+  prop Boolean CanDuplicate { get }
+  prop Boolean CanHaveAssets { get }
+  prop Boolean CanHaveScripts { get }
+  prop ContentFolder Folder { get }
+  prop ContentFolderType FolderType { get }
+  prop String NavButtonLabel { get }
+  prop ContentFolderTreeNode ParentNode { get }
+  prop String Path { get }
+  event LocationChanged : Action`1
+  event SizeChanged : Action`1
+  event ParentChanged : Action`1
+  event VisibleChanged : Action`1
+  event Focused : Action
+
+### FlaxEngine.Engine : System.Object
+  prop String CommandLine { get }
+  prop FatalErrorType FatalError { get }
+  prop UInt64 FrameCount { get }
+  prop Int32 FramesPerSecond { get }
+  prop Boolean HasFocus { get }
+  prop Boolean HasGameViewportFocus { get }
+  prop Boolean IsEditor { get }
+  prop Boolean IsHeadless { get }
+  prop Boolean IsPlayMode { get }
+  prop Boolean IsRequestingExit { get }
+  prop DateTime StartupTime { get }
+  prop UInt64 UpdateCount { get }
+  prop TaskGraph UpdateGraph { get }
+
+### FlaxEngine.GUI.Control : System.Object
+  ctor ()
+  ctor (Single x, Single y, Single width, Single height)
+  ctor (Float2 location, Float2 size)
+  ctor (Rectangle bounds)
+  prop Float2 AnchorMax { get set}
+  prop Float2 AnchorMin { get set}
+  prop AnchorPresets AnchorPreset { get set}
+  prop Boolean AutoFocus { get set}
+  prop IBrush BackgroundBrush { get set}
+  prop Color BackgroundColor { get set}
+  prop Single Bottom { get }
+  prop Float2 BottomLeft { get }
+  prop Float2 BottomRight { get }
+  prop Rectangle Bounds { get set}
+  prop Float2 Center { get set}
+  prop Boolean ContainsFocus { get }
+  prop CursorType Cursor { get set}
+  prop Tooltip CustomTooltip { get set}
+  prop Single DpiScale { get }
+  prop Rectangle EditorBounds { get }
+  prop Boolean Enabled { get set}
+  prop Boolean EnabledInHierarchy { get }
+  prop Boolean HasParent { get }
+  prop Single Height { get set}
+  prop Int32 IndexInParent { get set}
+  prop Boolean IsDisposing { get }
+  prop Boolean IsDragOver { get }
+  prop Boolean IsFocused { get }
+  prop Boolean IsMouseOver { get }
+  prop Boolean IsNavFocused { get }
+  prop Boolean IsScrollable { get set}
+  prop Boolean IsTouchOver { get }
+  prop Single Left { get }
+  prop Float2 LocalLocation { get set}
+  prop Single LocalX { get set}
+  prop Single LocalY { get set}
+  prop Float2 Location { get set}
+  prop Margin Offsets { get set}
+  prop ContainerControl Parent { get set}
+  prop Float2 Pivot { get set}
+  prop Boolean PivotRelative { get set}
+  prop Single Right { get }
+  prop RootControl Root { get }
+  prop WindowRootControl RootWindow { get }
+  prop Single Rotation { get set}
+  prop Float2 Scale { get set}
+  prop Float2 ScreenPos { get }
+  prop Float2 Shear { get set}
+  prop Float2 Size { get set}
+  prop Tooltip Tooltip { get }
+  prop String TooltipText { get set}
+  prop Single Top { get }
+  prop Float2 UpperLeft { get }
+  prop Float2 UpperRight { get }
+  prop Boolean Visible { get set}
+  prop Boolean VisibleInHierarchy { get }
+  prop Single Width { get set}
+  prop Single X { get set}
+  prop Single Y { get set}
+  event LocationChanged : Action`1
+  event SizeChanged : Action`1
+  event ParentChanged : Action`1
+  event VisibleChanged : Action`1
+  event Focused : Action
+
+### FlaxEngine.GUI.TextBoxBase : FlaxEngine.GUI.ContainerControl
+  prop Color BackgroundSelectedColor { get set}
+  prop Single BackgroundSelectedFlashSpeed { get set}
+  prop Color BorderColor { get set}
+  prop Color BorderSelectedColor { get set}
+  prop Single BorderThickness { get set}
+  prop Color CaretColor { get set}
+  prop Single CaretFlashSpeed { get set}
+  prop AllowableCharacters CharactersToAllow { get set}
+  prop Boolean ClipText { get set}
+  prop Boolean EndEditOnClick { get set}
+  prop Boolean HasBorder { get set}
+  prop Boolean HasSelection { get }
+  prop Boolean IsEditing { get }
+  prop Boolean IsMultiline { get set}
+  prop Boolean IsMultilineScrollable { get set}
+  prop Boolean IsReadOnly { get set}
+  prop Boolean IsSelectable { get set}
+  prop Int32 MaxLength { get set}
+  prop String SelectedText { get }
+  prop Int32 SelectionLength { get }
+  prop TextRange SelectionRange { get set}
+  prop Float2 TargetViewOffset { get set}
+  prop String Text { get set}
+  prop Int32 TextLength { get }
+  prop Float2 TextSize { get }
+  prop Float2 ViewOffset { get }
+  event TextChanged : Action
+  event EditEnd : Action
+  event TextBoxEditEnd : Action`1
+  event KeyDown : Action`1
+  event KeyUp : Action`1
+  event TargetViewOffsetChanged : Action
+  event LocationChanged : Action`1
+  event SizeChanged : Action`1
+  event ParentChanged : Action`1
+  event VisibleChanged : Action`1
+  event Focused : Action
+
+### FlaxEngine.GUI.Button : FlaxEngine.GUI.Label
+  ctor ()
+  ctor (Single x, Single y, Single width?, Single height?)
+  ctor (Float2 location, Float2 size)
+  prop Color BackgroundColorHighlighted { get set}
+  prop Color BackgroundColorSelected { get set}
+  prop Color BorderColor { get set}
+  prop Color BorderColorHighlighted { get set}
+  prop Color BorderColorSelected { get set}
+  prop Single BorderThickness { get set}
+  prop Boolean HasBorder { get set}
+  prop Boolean IsPressed { get }
+  prop MaterialBase TextMaterial { get set}
+  event Clicked : Action
+  event ButtonClicked : Action`1
+  event HoverBegin : Action
+  event HoverEnd : Action
+  event LocationChanged : Action`1
+  event SizeChanged : Action`1
+  event ParentChanged : Action`1
+  event VisibleChanged : Action`1
+  event Focused : Action
+
+=== Types containing 'Dock' (FlaxEngine.GUI) ===
+

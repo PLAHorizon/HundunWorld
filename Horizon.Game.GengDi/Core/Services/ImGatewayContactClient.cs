@@ -58,6 +58,7 @@ namespace Horizon.Game.GengDi.Core.Services
         public event EventHandler<IMGroupInviteApprovalNotify> GroupInviteApprovalReceived;
         public event EventHandler<IMGroupInviteResultNotify> GroupInviteResultReceived;
         public event EventHandler<IMGroupDisbandNotify> GroupDisbandReceived;
+        public event EventHandler<IMCallSignalMessage> CallSignalReceived;
 
         public Task<IMContactAddResponse> AddContactAsync(
             ulong userId,
@@ -367,6 +368,30 @@ namespace Horizon.Game.GengDi.Core.Services
             };
 
             return SendFireAndForgetAsync(request, userId, cancellationToken);
+        }
+
+        /// <summary>
+        /// 发送通话信令并等待服务端确认应答（发起/接听/拒绝/取消/挂断等状态性信令）。
+        /// </summary>
+        public Task<IMCallSignalAckMessage> SendCallSignalAsync(
+            IMCallSignalMessage signal,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(signal);
+            signal.Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            return SendAsync<IMCallSignalAckMessage>(signal, signal.SenderId, cancellationToken);
+        }
+
+        /// <summary>
+        /// 单向发送通话信令（保活/媒体状态同步等允许丢失的信令），失败仅记录日志不抛异常。
+        /// </summary>
+        public Task SendCallSignalFireAndForgetAsync(
+            IMCallSignalMessage signal,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(signal);
+            signal.Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            return SendFireAndForgetAsync(signal, signal.SenderId, cancellationToken);
         }
 
         public Task<IMChatAckMessage> SendPrivateChatAsync(
@@ -920,6 +945,10 @@ namespace Horizon.Game.GengDi.Core.Services
                 else if (packet.Body is IMGroupDisbandNotify groupDisbandNotification)
                 {
                     GroupDisbandReceived?.Invoke(this, groupDisbandNotification);
+                }
+                else if (packet.Body is IMCallSignalMessage callSignal)
+                {
+                    CallSignalReceived?.Invoke(this, callSignal);
                 }
             }
             catch (Exception ex)

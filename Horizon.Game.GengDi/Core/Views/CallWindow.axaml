@@ -1,0 +1,197 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Horizon.Game.GengDi.Core.Views.CallWindow"
+        Title="通话"
+        Width="420"
+        Height="600"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="True"
+        Background="#0F172A">
+
+    <Grid RowDefinitions="*,Auto">
+        <!-- 视频/信息区 -->
+        <Grid Background="#111827">
+            <!-- 远端画面 -->
+            <Image x:Name="RemoteVideoImage"
+                   Stretch="Uniform"
+                   IsVisible="False" />
+
+            <!-- 远端摄像头关闭/未连接提示 -->
+            <StackPanel x:Name="RemotePlaceholderPanel"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Spacing="8">
+                <TextBlock x:Name="RemotePlaceholderText"
+                           Text="等待对方画面…"
+                           FontSize="13"
+                           Foreground="#94A3B8"
+                           HorizontalAlignment="Center" />
+            </StackPanel>
+
+            <!-- 本地预览（画中画） -->
+            <Border x:Name="LocalPreviewContainer"
+                    Width="116"
+                    Height="88"
+                    CornerRadius="8"
+                    ClipToBounds="True"
+                    Background="#1F2937"
+                    BorderBrush="#334155"
+                    BorderThickness="1"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Margin="12"
+                    IsVisible="False">
+                <Grid>
+                    <Image x:Name="LocalPreviewImage"
+                           Stretch="UniformToFill" />
+                    <TextBlock x:Name="LocalCameraOffText"
+                               Text="摄像头已关闭"
+                               FontSize="10"
+                               Foreground="#94A3B8"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               IsVisible="False" />
+                </Grid>
+            </Border>
+
+            <!-- 中央信息面板（头像/昵称/状态/计时） -->
+            <StackPanel x:Name="InfoPanel"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Spacing="10">
+                <Border Width="72"
+                        Height="72"
+                        CornerRadius="36"
+                        ClipToBounds="True"
+                        HorizontalAlignment="Center">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                            <GradientStop Offset="0" Color="#22C55E" />
+                            <GradientStop Offset="1" Color="#2563EB" />
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <TextBlock x:Name="PeerAvatarInitial"
+                               Text="?"
+                               FontSize="26"
+                               FontWeight="Bold"
+                               Foreground="White"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center" />
+                </Border>
+
+                <TextBlock x:Name="PeerNameText"
+                           Text=""
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Foreground="White"
+                           HorizontalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"
+                           MaxWidth="320" />
+
+                <TextBlock x:Name="CallTypeText"
+                           Text=""
+                           FontSize="12"
+                           Foreground="#94A3B8"
+                           HorizontalAlignment="Center" />
+
+                <TextBlock x:Name="StatusText"
+                           Text=""
+                           FontSize="13"
+                           Foreground="#60A5FA"
+                           HorizontalAlignment="Center" />
+
+                <TextBlock x:Name="ElapsedText"
+                           Text=""
+                           FontSize="15"
+                           FontWeight="Medium"
+                           Foreground="White"
+                           HorizontalAlignment="Center"
+                           IsVisible="False" />
+            </StackPanel>
+        </Grid>
+
+        <!-- 操作区 -->
+        <Border Grid.Row="1"
+                Background="#0F172A"
+                BorderBrush="#1E293B"
+                BorderThickness="0,1,0,0"
+                Padding="20,16">
+            <StackPanel Spacing="12">
+                <!-- 来电：接听/拒绝 -->
+                <Grid x:Name="IncomingActions"
+                      ColumnDefinitions="*,*"
+                      ColumnSpacing="12"
+                      IsVisible="False">
+                    <Button x:Name="RejectButton"
+                            Content="拒绝"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Padding="0,10"
+                            FontSize="14"
+                            Foreground="White"
+                            Background="#DC2626"
+                            CornerRadius="8" />
+                    <Button x:Name="AcceptButton"
+                            Grid.Column="1"
+                            Content="接听"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Padding="0,10"
+                            FontSize="14"
+                            Foreground="White"
+                            Background="#16A34A"
+                            CornerRadius="8" />
+                </Grid>
+
+                <!-- 主叫振铃：取消呼叫 -->
+                <Button x:Name="CancelButton"
+                        Content="取消呼叫"
+                        HorizontalAlignment="Center"
+                        Padding="28,10"
+                        FontSize="14"
+                        Foreground="White"
+                        Background="#DC2626"
+                        CornerRadius="8"
+                        IsVisible="False" />
+
+                <!-- 通话中：静音/摄像头/挂断 -->
+                <Grid x:Name="InCallActions"
+                      ColumnDefinitions="*,*,*"
+                      ColumnSpacing="10"
+                      IsVisible="False">
+                    <Button x:Name="MuteButton"
+                            Content="静音"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Padding="0,10"
+                            FontSize="13"
+                            Foreground="White"
+                            Background="#334155"
+                            CornerRadius="8" />
+                    <Button x:Name="CameraButton"
+                            Grid.Column="1"
+                            Content="关闭摄像头"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Padding="0,10"
+                            FontSize="13"
+                            Foreground="White"
+                            Background="#334155"
+                            CornerRadius="8"
+                            IsVisible="False" />
+                    <Button x:Name="HangupButton"
+                            Grid.Column="2"
+                            Content="挂断"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
+                            Padding="0,10"
+                            FontSize="13"
+                            Foreground="White"
+                            Background="#DC2626"
+                            CornerRadius="8" />
+                </Grid>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

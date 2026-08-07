@@ -699,18 +699,22 @@
                                                             Orientation="Horizontal"
                                                             Spacing="4"
                                                             VerticalAlignment="Center">
-                                                    <Button ToolTip.Tip="语音通话"
+                                                    <Button x:Name="VoiceCallButton"
+                                                            ToolTip.Tip="语音通话"
                                                             Classes="GdHeaderIconBtn"
-                                                            IsVisible="{Binding !$parent[UserControl].DataContext.IsGroupConversationActive}">
+                                                            IsVisible="{Binding !$parent[UserControl].DataContext.IsGroupConversationActive}"
+                                                            Click="VoiceCallButton_Click">
                                                         <Path Classes="GdLucideIcon"
                                                               Width="16"
                                                               Height="16"
                                                               Data="{StaticResource LucidePhoneGeometry}" />
                                                     </Button>
 
-                                                    <Button ToolTip.Tip="视频通话"
+                                                    <Button x:Name="VideoCallButton"
+                                                            ToolTip.Tip="视频通话"
                                                             Classes="GdHeaderIconBtn"
-                                                            IsVisible="{Binding !$parent[UserControl].DataContext.IsGroupConversationActive}">
+                                                            IsVisible="{Binding !$parent[UserControl].DataContext.IsGroupConversationActive}"
+                                                            Click="VideoCallButton_Click">
                                                         <Path Classes="GdLucideIcon"
                                                               Width="16"
                                                               Height="16"

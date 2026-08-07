@@ -415,6 +415,22 @@ namespace Horizon.IM.Message.Enums
 
         #endregion
 
+        #region 通话消息 (600-699)
+
+        /// <summary>
+        /// 通话信令（发起/接听/拒绝/取消/忙线/挂断/媒体就绪/保活等）
+        /// </summary>
+        [Description("通话信令")]
+        CallSignal = 600,
+
+        /// <summary>
+        /// 通话信令应答（服务端对信令的确认，含忙线/失败原因）
+        /// </summary>
+        [Description("通话信令应答")]
+        CallSignalAck = 601,
+
+        #endregion
+
         #region 系统消息 (900-999)
 
         /// <summary>

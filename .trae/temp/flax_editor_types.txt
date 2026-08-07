@@ -1,0 +1,2286 @@
+=== Namespaces ===
+FlaxEditor
+FlaxEditor.Actions
+FlaxEditor.Content
+FlaxEditor.Content.Create
+FlaxEditor.Content.GUI
+FlaxEditor.Content.Import
+FlaxEditor.Content.Settings
+FlaxEditor.Content.Settings.Interop
+FlaxEditor.Content.Thumbnails
+FlaxEditor.CustomEditors
+FlaxEditor.CustomEditors.Dedicated
+FlaxEditor.CustomEditors.Editors
+FlaxEditor.CustomEditors.Elements
+FlaxEditor.CustomEditors.GUI
+FlaxEditor.Gizmo
+FlaxEditor.GUI
+FlaxEditor.GUI.ContextMenu
+FlaxEditor.GUI.Dialogs
+FlaxEditor.GUI.Docking
+FlaxEditor.GUI.Drag
+FlaxEditor.GUI.Input
+FlaxEditor.GUI.Tabs
+FlaxEditor.GUI.Timeline
+FlaxEditor.GUI.Timeline.GUI
+FlaxEditor.GUI.Timeline.Tracks
+FlaxEditor.GUI.Timeline.Undo
+FlaxEditor.GUI.Tree
+FlaxEditor.History
+FlaxEditor.Interop
+FlaxEditor.Modules
+FlaxEditor.Modules.SourceCodeEditing
+FlaxEditor.Options
+FlaxEditor.Progress
+FlaxEditor.Progress.Handlers
+FlaxEditor.SceneGraph
+FlaxEditor.SceneGraph.Actors
+FlaxEditor.SceneGraph.GUI
+FlaxEditor.Scripting
+FlaxEditor.States
+FlaxEditor.Surface
+FlaxEditor.Surface.Archetypes
+FlaxEditor.Surface.ContextMenu
+FlaxEditor.Surface.Elements
+FlaxEditor.Surface.GUI
+FlaxEditor.Surface.Undo
+FlaxEditor.Tools
+FlaxEditor.Tools.Foliage
+FlaxEditor.Tools.Foliage.Undo
+FlaxEditor.Tools.Terrain
+FlaxEditor.Tools.Terrain.Brushes
+FlaxEditor.Tools.Terrain.Paint
+FlaxEditor.Tools.Terrain.Sculpt
+FlaxEditor.Tools.Terrain.Undo
+FlaxEditor.Utilities
+FlaxEditor.Viewport
+FlaxEditor.Viewport.Cameras
+FlaxEditor.Viewport.Modes
+FlaxEditor.Viewport.Previews
+FlaxEditor.Viewport.Widgets
+FlaxEditor.Windows
+FlaxEditor.Windows.Assets
+FlaxEditor.Windows.Profiler
+FlaxEditor.Windows.Search
+
+=== Types by namespace ===
+-- FlaxEditor (81)
+     <>c
+     <>c
+     <>c
+     <>c__DisplayClass182_0
+     <>c__DisplayClass44_0
+     <>c__DisplayClass47_0
+   A <>O
+     AbstractWrapper
+     Bidirectional
+     Bidirectional
+     BuildEventDelegate
+     BuildProgressDelegate
+     Cache
+   A CodeEditingManager
+   E CodeEditorTypes
+     CompilationEndDelegate
+     CompilationMessageDelegate
+     CookingData
+   A CustomEditorWindow
+     DataStorage
+     DataStorage
+     Editor
+   A EditorAssets
+     EditorIcons
+   A EditorPlugin
+     EditorUndo
+   E EventType
+   E EventType
+     FlaxVersionConverter
+   A FoliageTools
+   A GameCooker
+     HighlightData
+   I IEditable
+     InputsPassThrough
+     InternalOptions
+   I ISceneEditAction
+   I ISceneEditingContext
+   I IUndoAction
+   I IUndoInternal
+     LightmapsBakeEndDelegate
+     LightmapsBakeProgressDelegate
+   E LightmapsBakeSteps
+   A ManagedToNative
+   A ManagedToNative
+     MultiUndoAction
+   A NativeToManaged
+   A NativeToManaged
+   E NewAssetType
+     Options
+   A PluginUtils
+     PreviewsCache
+     ProjectInfo
+     Reference
+     SceneTreeNodeConverter
+   A ScriptsBuilder
+   E SegMDL2Icons
+     SelectionChangeAction
+   E StartupFlags
+   A TerrainTools
+     TransformObjectsAction
+     UIEditorCamera
+     UIEditorRoot
+     Undo
+   A UndoActionBase`1
+     UndoBlock
+     UndoEventDelegate
+     UndoInternal
+     UndoMultiBlock
+     UndoMultiInternal
+     View
+     ViewportDebugDrawData
+   A ViewportIconsRenderer
+     VisualScriptingDebugFlowInfo
+     VisualScriptLocal
+     VisualScriptLocalInternal
+   A VisualScriptLocalMarshaller
+     VisualScriptStackFrame
+     VisualScriptStackFrameInternal
+   A VisualScriptStackFrameMarshaller
+     Widget
+     Win
+-- FlaxEditor.Actions (12)
+     <>c__DisplayClass12_0
+     <>c__DisplayClass12_1
+   A <>O
+     AddRemoveScript
+     BreakPrefabLinkAction
+     ChangeScriptAction
+     DeleteActorsAction
+     EditSplineAction
+     Item
+     Item
+     ParentActorsAction
+     PasteActorsAction
+-- FlaxEditor.Content (115)
+     <>c
+     <>c
+     <>c__DisplayClass10_0
+     <>c__DisplayClass11_0
+     <>c__DisplayClass11_0
+     <>c__DisplayClass11_1
+     <>c__DisplayClass13_0
+     <>c__DisplayClass15_0
+     <>c__DisplayClass3_0
+     <>c__DisplayClass4_0
+     <>c__DisplayClass41_0
+     <>c__DisplayClass49_0
+     <>c__DisplayClass9_0
+   A <>O
+     AnimationGraphFunctionProxy
+     AnimationGraphProxy
+     AnimationProxy
+   A AssetItem
+     AssetItemConverter
+     AssetPickerValidator
+   A AssetProxy
+     AudioClipItem
+     AudioClipProxy
+     BehaviorTreeProxy
+     BinaryAssetItem
+   A BinaryAssetProxy
+     CollisionDataItem
+     CollisionDataProxy
+     ContentFolder
+     ContentFolderTreeNode
+   E ContentFolderType
+   A ContentItem
+   E ContentItemSearchFilter
+     ContentItemTreeNode
+   E ContentItemType
+   A ContentProxy
+     CppActorProxy
+     CppAssetProxy
+   A CppProxy
+     CppScriptItem
+     CppScriptProxy
+     CppStaticClassProxy
+     CSharpActorProxy
+     CSharpEmptyClassProxy
+     CSharpEmptyInterfaceProxy
+     CSharpEmptyProxy
+     CSharpEmptyStructProxy
+     CSharpGamePluginProxy
+   A CSharpProxy
+     CSharpScriptItem
+     CSharpScriptProxy
+     CubeTextureProxy
+     CustomSettingsProxy
+     Editor
+     FileItem
+     FileProxy
+   E Flags
+     FontProxy
+     GameplayGlobalsProxy
+     GenericJsonAssetProxy
+     GenericJsonCreateEntry
+   I IContentItemOwner
+     IESProfileProxy
+   I IFileEntryAction
+   A JsonAssetBaseProxy
+     JsonAssetItem
+   A JsonAssetProxy
+     LocalizedStringTableProxy
+     MainContentFolderTreeNode
+   A MaterialBaseProxy
+     MaterialFunctionProxy
+     MaterialInstanceProxy
+     MaterialProxy
+     ModelItem
+     ModelProxy
+     NewItem
+     Options
+     ParticleEmitterFunctionProxy
+     ParticleEmitterProxy
+     ParticleSystemItem
+     ParticleSystemProxy
+     PrefabItem
+     PrefabProxy
+     PreviewsCacheProxy
+     ProjectFolderTreeNode
+     RootContentFolderTreeNode
+     SceneAnimationItem
+     SceneAnimationProxy
+     SceneItem
+     SceneProxy
+   A ScriptItem
+   A ScriptProxy
+     SettingsProxy
+   A ShaderBaseProxy
+     ShaderHeaderProxy
+     ShaderProxy
+     ShaderSourceItem
+     ShaderSourceProxy
+     SkeletonMaskProxy
+     SkinnedModeItem
+     SkinnedModelProxy
+     SpawnableJsonAssetProxy`1
+     SpriteAtlasProxy
+     TextureAssetItem
+     TextureProxy
+     TooltipDoubleClickHook
+     TreeViewPanel
+     VideoItem
+     VideoProxy
+     VisualScriptItem
+     VisualScriptMethodInfo
+     VisualScriptParameterInfo
+     VisualScriptProxy
+     VisualScriptType
+     WidgetProxy
+-- FlaxEditor.Content.Create (15)
+     <>c__DisplayClass2_0
+   A CreateFileEntry
+     CreateFilesDialog
+     Options
+     Options
+     Options
+     Options
+     Options
+     ParticleEmitterCreateEntry
+     PrefabCreateEntry
+     SettingsCreateEntry
+   E Templates
+     VisualScriptCreateEntry
+     WidgetCreateEntry
+   E WidgetMode
+-- FlaxEditor.Content.GUI (7)
+     <>c
+     <>c__DisplayClass56_0
+     ContentNavigationButton
+     ContentNavigationSeparator
+     ContentView
+   E ContentViewType
+   E SortType
+-- FlaxEditor.Content.Import (14)
+   A <>O
+     AssetImportEntry
+     AudioImportEntry
+     AudioImportSettings
+     FolderImportEntry
+     ImportFileEntry
+     ImportFileEntryHandler
+     ImportFilesDialog
+     ItemNode
+     ModelImportEntry
+     ModelImportSettings
+     Request
+     TextureImportEntry
+     TextureImportSettings
+-- FlaxEditor.Content.Settings (34)
+     AbstractWrapper
+     AndroidPlatformSettings
+   A ApplePlatformSettings
+     AudioSettings
+     BuildPreset
+     BuildSettings
+     BuildTarget
+   E DisplayOrientations
+   E ExportMethods
+     GameSettings
+     GDKPlatformSettings
+     GraphicsSettings
+     InputSettings
+     iOSPlatformSettings
+     LayersAndTagsSettings
+     LinuxPlatformSettings
+     LocalizationSettings
+     MacPlatformSettings
+     NavigationSettings
+     NetworkSettings
+     PhysicsSettings
+   E RenderColorFormats
+   E ScreenOrientation
+   A SettingsBase
+     StreamingSettings
+   E TextureCompression
+   E TextureQuality
+   E TextureQuality
+     TimeSettings
+   E UIInterfaceOrientations
+     UWPPlatformSettings
+     WebPlatformSettings
+   E WindowMode
+     WindowsPlatformSettings
+-- FlaxEditor.Content.Settings.Interop (84)
+   A AndroidPlatformSettingsMarshaller
+   A ApplePlatformSettingsMarshaller
+   A AudioSettingsMarshaller
+     Bidirectional
+     Bidirectional
+     Bidirectional
+     Bidirectional
+     Bidirectional
+     Bidirectional
+     Bidirectional
+     Bidirectional
+     Bidirectional
+     Bidirectional
+     Bidirectional
+     Bidirectional
+     Bidirectional
+     Bidirectional
+     Bidirectional
+     Bidirectional
+     Bidirectional
+     Bidirectional
+     Bidirectional
+     Bidirectional
+     Bidirectional
+   A BuildSettingsMarshaller
+   A GameSettingsMarshaller
+   A GDKPlatformSettingsMarshaller
+   A GraphicsSettingsMarshaller
+   A InputSettingsMarshaller
+   A iOSPlatformSettingsMarshaller
+   A LayersAndTagsSettingsMarshaller
+   A LinuxPlatformSettingsMarshaller
+   A LocalizationSettingsMarshaller
+   A MacPlatformSettingsMarshaller
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NavigationSettingsMarshaller
+   A NetworkSettingsMarshaller
+   A PhysicsSettingsMarshaller
+   A StreamingSettingsMarshaller
+   A TimeSettingsMarshaller
+   A UWPPlatformSettingsMarshaller
+   A WebPlatformSettingsMarshaller
+   A WindowsPlatformSettingsMarshaller
+-- FlaxEditor.Content.Thumbnails (4)
+     PreviewRoot
+   E States
+     ThumbnailRequest
+     ThumbnailsModule
+-- FlaxEditor.CustomEditors (23)
+     <>c
+     <>c
+     <>c__DisplayClass11_0
+     <>c__DisplayClass8_0
+   A <>O
+   A CustomEditor
+     CustomEditorPresenter
+   A CustomEditorsUtil
+     CustomValueContainer
+     DictionaryValueContainer
+   E DisplayStyle
+   E FeatureFlags
+     GetDelegate
+   I IPresenterOwner
+   A LayoutElement
+   A LayoutElementsContainer
+     ListValueContainer
+     PresenterPanel
+     ReadOnlyValueContainer
+     RootEditor
+     SetDelegate
+     SyncPointEditor
+     ValueContainer
+-- FlaxEditor.CustomEditors.Dedicated (113)
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c__DisplayClass16_0
+     <>c__DisplayClass18_0
+     <>c__DisplayClass2_0
+     <>c__DisplayClass2_0
+     <>c__DisplayClass2_1
+     <>c__DisplayClass2_1
+     <>c__DisplayClass2_2
+     <>c__DisplayClass5_0
+     <>c__DisplayClass5_0
+     <>c__DisplayClass6_0
+     <>c__DisplayClass7_0
+     <>c__DisplayClass8_0
+     <>c__DisplayClass8_1
+     ActorEditor
+     AlignedTangentMode
+     AmbientOcclusionSettingsEditor
+     AnchorButton
+     AnchorPresetsEditor
+     AnchorPresetsEditorPopup
+     AnimatedModelEditor
+     AntiAliasingSettingsEditor
+     AudioSourceEditor
+     AudioToolOptionsEditor
+     BezierCurveObjectEditor`1
+     BloomSettingsEditor
+     CameraArtifactsSettingsEditor
+     ClothEditor
+     ColorBezierCurveObjectEditor
+     ColorGradingSettingsEditor
+     ColorLinearCurveObjectEditor
+     DepthOfFieldSettingsEditor
+     DragAreaControl
+     DragImage
+     EditTangentOptionBase
+     EnvironmentProbeEditor
+     EyeAdaptationSettingsEditor
+     Float2BezierCurveObjectEditor
+     Float2LinearCurveObjectEditor
+     Float3BezierCurveObjectEditor
+     Float3LinearCurveObjectEditor
+     Float4BezierCurveObjectEditor
+     Float4LinearCurveObjectEditor
+     FloatBezierCurveObjectEditor
+     FloatLinearCurveObjectEditor
+     FontReferenceEditor
+     FreeTangentMode
+     GlobalIlluminationSettingsEditor
+     GPUTextureEditor
+     IconTab
+     IconTabHeader
+     IntBezierCurveObjectEditor
+     IntLinearCurveObjectEditor
+     LayersMaskEditor
+     LayersMatrixEditor
+     LensFlaresSettingsEditor
+     LinearCurveObjectEditor`1
+     LinearTangentMode
+     LocalizationSettingsEditor
+     MeshReferenceEditor
+     MeshRefPickerControl
+     MissingScriptEditor
+     ModelPrefabEditor
+     ModelToolOptionsEditor
+     MotionBlurSettingsEditor
+     NavAgentMaskEditor
+     NavMeshBoundsVolumeEditor
+     NewScriptItem
+     ParticleEffectEditor
+     PhysicalMaterialEditor
+     PostFxMaterialsSettingsEditor
+   A PostProcessSettingsEditor
+     QuaternionBezierCurveObjectEditor
+     QuaternionLinearCurveObjectEditor
+     RagdollEditor
+     RebuildContextMenu
+     RemovedActorDummy
+     RemovedScriptDummy
+     RigidBodyEditor
+     SceneAnimationPlayerEditor
+     ScreenSpaceReflectionsSettingsEditor
+     ScriptArrangeBar
+     ScriptDragDelegate
+     ScriptingObjectEditor
+     ScriptsContainer
+     ScriptsEditor
+     SkyLightEditor
+     SmoothInTangentMode
+     SmoothOutTangentMode
+     SplineEditor
+     TerrainEditor
+     TextureGroupEditor
+     TextureToolOptionsEditor
+     ToneMappingSettingsEditor
+     UIControlControlEditor
+     UndoData
+     Vector2BezierCurveObjectEditor
+     Vector2LinearCurveObjectEditor
+     Vector3BezierCurveObjectEditor
+     Vector3LinearCurveObjectEditor
+     Vector4BezierCurveObjectEditor
+     Vector4LinearCurveObjectEditor
+     VideoPlayerEditor
+-- FlaxEditor.CustomEditors.Editors (139)
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c__DisplayClass10_0
+     <>c__DisplayClass11_0
+     <>c__DisplayClass11_0
+     <>c__DisplayClass12_0
+     <>c__DisplayClass15_0
+     <>c__DisplayClass15_1
+     <>c__DisplayClass16_0
+     <>c__DisplayClass17_0
+     <>c__DisplayClass17_1
+     <>c__DisplayClass3_0
+     <>c__DisplayClass3_0
+     <>c__DisplayClass5_0
+     <>c__DisplayClass5_0
+     <>c__DisplayClass5_1
+     <>c__DisplayClass5_2
+     <>c__DisplayClass8_0
+     <>c__DisplayClass9_0
+   A <>O
+   A <>O
+     ActorLayerEditor
+     ActorStaticFlagsEditor
+   A ActorTransformEditor
+     ArrayEditor
+     AssetItemRefEditor
+     AssetRefEditor
+     BehaviorKnowledgeSelectorEditor
+     BindableButtonEditor
+     BooleanEditor
+     ByteEditor
+     CharEditor
+     CollectionDropPanel
+   A CollectionEditor
+     CollectionItemLabel
+     ColorEditor
+     ColorTrackball
+     ControlReferenceEditor
+     CultureInfoComparer
+     CultureInfoEditor
+     DictionaryEditor
+     DictionaryItemLabel
+     Double2Editor
+     Double3Editor
+     Double4Editor
+     DoubleEditor
+     DragAreaControl
+     DummyEditor
+     EnumEditor
+     FilePathEditor
+     FlaxObjectRefEditor
+     FlaxObjectRefPickerControl
+     Float2Editor
+     Float3Editor
+     Float4Editor
+     FloatEditor
+     GamepadButtonEditor
+     GenericEditor
+     GuidEditor
+     IBrushEditor
+     InputAxisEditor
+     InputEventEditor
+     Int2Editor
+     Int3Editor
+     Int4Editor
+     IntegerEditor
+     ItemInfo
+     KeyboardKeysEditor
+     ListEditor
+     LocalizedStringEditor
+     LongEditor
+     MarginEditor
+     MatrixEditor
+     ModelInstanceEntryEditor
+     MouseButtonEditor
+   A ObjectSwitcherEditor
+     OptionType
+     OrientationEditor
+     PickerData
+     PositionEditor
+     QuaternionEditor
+     SByteEditor
+     ScaleEditor
+     SceneRefEditor
+     ScriptTypeEditor
+     ShortEditor
+   A SignedIntegerValueEditor
+     SkeletonNodeEditor
+     SoftTypeReferenceEditor
+     SpriteHandleEditor
+     StringEditor
+     StyleEditor
+     TagEditor
+     TagsEditor
+     TerrainLayerEditor
+     TextBoxWithPicker
+     TypeEditor
+     TypeEditorBase
+     TypeNameEditor
+     TypePickerControl
+     UIControlRefPickerControl
+     UintEditor
+     ULongEditor
+   A UnsignedIntegerValueEditor
+     UShortEditor
+   E ValueChanged
+     Vector2Editor
+     Vector3Editor
+     Vector4Editor
+     VersionEditor
+     VisibleIfCache
+-- FlaxEditor.CustomEditors.Elements (29)
+     <>c
+     <>c
+     <>c
+     <>c
+     ButtonElement
+     CheckBoxElement
+     ComboBoxElement
+     CustomElement`1
+     CustomElementsContainer`1
+     DoubleValueElement
+     EnumElement
+     FloatValueElement
+     GroupElement
+     HorizontalPanelElement
+   I IFloatValueEditor
+   I IIntegerValueEditor
+     ImageElement
+     IntegerValueElement
+   I ITreeElement
+     LabelElement
+     PropertiesListElement
+     SignedIntegerValueElement
+     SliderElement
+     SpaceElement
+     TextBoxElement
+     TreeElement
+     TreeNodeElement
+     UnsignedIntegerValueElement
+     VerticalPanelElement
+-- FlaxEditor.CustomEditors.GUI (8)
+     CheckablePropertyNameLabel
+     ClickablePropertyNameLabel
+     DragDelegate
+     DraggablePropertyNameLabel
+     MouseDelegate
+     PropertiesList
+     PropertyNameLabel
+     SetupContextMenuDelegate
+-- FlaxEditor.Gizmo (21)
+     <>c
+     ApplyTransformationDelegate
+   E Axis
+     AxisData
+   E AxisDirection
+     Data
+     DirectionGizmo
+     EditorPrimitives
+   A GizmoBase
+     GizmosCollection
+     GridGizmo
+   I IEditorPrimitivesOwner
+   I IGizmoOwner
+   E Mode
+   E PivotType
+     Renderer
+     SelectionOutline
+     TransformGizmo
+   A TransformGizmoBase
+   E TransformSpace
+     ViewportProjection
+-- FlaxEditor.GUI (82)
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c__DisplayClass23_0
+     <>c__DisplayClass23_1
+     <>c__DisplayClass28_0
+     <>c__DisplayClass28_1
+     <>c__DisplayClass28_2
+     <>c__DisplayClass99_0
+     ActorItemView
+     ActorSearchPopup
+     AllKeyframesProxy
+     AllKeyframesProxy
+     AllKeyframesProxy
+     AssetItemView
+     AssetPicker
+     AssetSearchPopup
+     BezierCurveEditor`1
+     BuildEntriesDelegate
+     ClickableLabel
+     ClickableRow
+     ColumnDefinition
+     ComboBox
+     ContentItemView
+     Contents
+     ContentsBase
+     ContentSearchPopup
+   A CurveEditor`1
+   A CurveEditorBase
+     CurveEditorPreset
+   E CurvePreset
+     CurvePresetPoint
+     Entry
+     EnumComboBox
+   I IAllKeyframesProxy
+   I IKeyframeAccess`1
+   I IKeyframesEditor
+   I IKeyframesEditorContext
+     IsValidDelegate
+     IsValidDelegate
+     IsValidDelegate
+     IsValidDelegate
+     IsValidDelegate
+     Item
+     ItemsListContextMenu
+     Keyframe
+     KeyframeAccess
+     KeyframePoint
+     KeyframePoint
+     KeyframesEditor
+   A KeyframesEditorUtils
+     LinearCurveEditor`1
+     MainMenu
+     MainMenuButton
+     NavigationBar
+     NavigationButton
+     PlatformData
+     PlatformSelector
+     Popup
+     Popup
+     PrefabDiffContextMenu
+     RenamePopup
+     Row
+     ScriptItemView
+     ScriptSearchPopup
+     Splitter
+     StatusBar
+     StyleValueEditor
+     Table
+     TangentPoint
+     ToolStrip
+     ToolStripButton
+     ToolStripSeparator
+     TypeItemView
+     TypeSearchPopup
+   E UseMode
+     ValidateDelegate
+     ValueChangedEvent
+     ValueFormatDelegate
+     WindowDecorations
+-- FlaxEditor.GUI.ContextMenu (14)
+     <>c
+     <>c__DisplayClass11_0
+     <>c__DisplayClass37_0
+     <>c__DisplayClass7_0
+     ContextMenu
+     ContextMenuBase
+     ContextMenuButton
+     ContextMenuChildMenu
+   E ContextMenuDirection
+   A ContextMenuItem
+     ContextMenuSeparator
+     ContextMenuSingleSelectGroup`1
+     ItemsPanel
+     SingleSelectGroupItem
+-- FlaxEditor.GUI.Dialogs (7)
+     <>c__DisplayClass40_0
+     <>c__DisplayClass52_0
+     ColorPickerDialog
+     ColorSelector
+     ColorSelectorWithSliders
+   A Dialog
+   I IColorPickerDialog
+-- FlaxEditor.GUI.Docking (10)
+     <>c
+     DockPanel
+     DockPanelProxy
+   E DockState
+     DockWindow
+     DragVisuals
+     FloatWindowDecorations
+     FloatWindowDockPanel
+     MasterDockPanel
+     WindowDragHelper
+-- FlaxEditor.GUI.Drag (21)
+     <>c
+     DragActors
+     DragActors`1
+     DragActorType
+     DragActorType`1
+     DragAssets
+     DragAssets`1
+     DragControlType
+     DragControlType`1
+     DragEventArgs
+     DragHandlers
+   A DragHelper
+   A DragHelper`2
+     DragItems
+     DragItems`1
+     DragNames
+     DragNames`1
+     DragScriptItems
+     DragScriptItems`1
+     DragScripts
+     DragScripts`1
+-- FlaxEditor.GUI.Input (14)
+     ColorPickerClosedEvent
+     ColorPickerEvent
+     ColorValueBox
+     DoubleValueBox
+     FloatValueBox
+     IntValueBox
+     LongValueBox
+     SearchBox
+     ShowPickColorDialogDelegate
+     Slider
+     SliderControl
+     UIntValueBox
+     ULongValueBox
+   A ValueBox`1
+-- FlaxEditor.GUI.Tabs (4)
+     Tab
+     TabHeader
+     Tabs
+     TabsHeader
+-- FlaxEditor.GUI.Timeline (37)
+     <>c
+     <>c
+     <>c__DisplayClass150_0
+     <>c__DisplayClass194_0
+     <>c__DisplayClass199_0
+     <>c__DisplayClass3_0
+     <>c__DisplayClass80_0
+     <>c__DisplayClass96_0
+   A <>O
+   A <>O
+   A <>O
+     AnimationTimeline
+     CreateTrackDelegate
+     DragHandler
+     DragTracks
+     EditCurveTrackGizmo
+     LoadTrackDelegate
+   A Media
+     ParticleSystemTimeline
+   E PlaybackButtons
+   E PlaybackStates
+     PropertiesEditPopup
+     Proxy
+     Proxy
+     Proxy
+   A ProxyBase`1
+   A ProxyBase`2
+     SaveTrackDelegate
+     SceneAnimationTimeline
+     TimeIntervalsHeader
+     Timeline
+   E TimeShowModes
+     Track
+     TrackArchetype
+     TrackCreateOptions
+   E TrackFlags
+     TracksPanelArea
+-- FlaxEditor.GUI.Timeline.GUI (10)
+     <>c
+     <>c__DisplayClass14_0
+     <>c__DisplayClass37_0
+     Background
+     BackgroundArea
+     GradientEditor
+     PositionHandle
+     Stop
+     StopControl
+     TimelineEdge
+-- FlaxEditor.GUI.Timeline.Tracks (105)
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c__DisplayClass12_0
+     <>c__DisplayClass12_0
+     <>c__DisplayClass12_0
+     <>c__DisplayClass12_0
+     <>c__DisplayClass14_0
+     <>c__DisplayClass15_0
+     <>c__DisplayClass8_0
+     <>c__DisplayClass8_1
+   A <>O
+   A <>O
+   A <>O
+   A <>O
+   A <>O
+   A <>O
+   A <>O
+   A <>O
+   A <>O
+   A <>O
+   A <>O
+   A <>O
+   A <>O
+   A <>O
+   A <>O
+   A <>O
+   A <>O
+   A <>O
+   A <>O
+   A <>O
+   A <>O
+   A <>O
+     ActorTrack
+     AddMemberTag
+     AnimationChannelDataTrack
+     AnimationChannelTrack
+     AnimationEventMedia
+     AnimationEventTrack
+     Atlas
+     AudioMedia
+     AudioTrack
+     AudioVolumeTrack
+     CameraCutMedia
+     CameraCutThumbnailRenderer
+     CameraCutTrack
+     ConductionUndoAction
+   A ConductorTrack
+     CurvePropertyTrack
+   A CurvePropertyTrackBase
+     EventKey
+     EventTrack
+     FolderTrack
+   I IObjectTrack
+     KeyframesPropertyTrack
+   A MemberTrack
+     NestedAnimationMedia
+     NestedAnimationTrack
+     NestedSceneAnimationMedia
+     NestedSceneAnimationTrack
+     ObjectPropertyTrack
+     ObjectReferencePropertyTrack
+   A ObjectTrack
+     ParticleEmitterMedia
+     ParticleEmitterTrack
+     PostProcessMaterialMedia
+     PostProcessMaterialTrack
+     Proxy
+     Proxy
+     Proxy
+     Proxy
+     Proxy
+     Proxy
+     Proxy
+     Proxy
+     ProxyEditor
+     ProxyKey
+     Request
+     ScreenFadeMedia
+     ScreenFadeTrack
+     ScriptTrack
+   A SingleMediaAssetTrack`2
+   A SingleMediaTrack`1
+     StringPropertyTrack
+     StructPropertyTrack
+-- FlaxEditor.GUI.Timeline.Undo (8)
+     AddRemoveTrackAction
+     EditFpsAction
+     EditTimelineAction
+     EditTrackAction
+     RenameTrackAction
+     ReorderTrackAction
+     TimelineUndoBlock
+     TrackUndoBlock
+-- FlaxEditor.GUI.Tree (5)
+     NodeClickDelegate
+     SelectionChangedDelegate
+     Tree
+     TreeNode
+     TreeNodeWithAddons
+-- FlaxEditor.History (6)
+     DataPrepared
+     DataStorage
+     DataValue
+     HistoryStack
+   I IHistoryAction
+     UndoActionObject
+-- FlaxEditor.Interop (16)
+     Bidirectional
+     Bidirectional
+     Bidirectional
+     Bidirectional
+   A CookingDataMarshaller
+   A EditorMarshaller
+   A EditorPluginMarshaller
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A ManagedToNative
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A NativeToManaged
+   A PreviewsCacheMarshaller
+-- FlaxEditor.Modules (43)
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c__DisplayClass12_0
+     <>c__DisplayClass133_0
+     <>c__DisplayClass134_0
+     <>c__DisplayClass144_0
+     <>c__DisplayClass155_0
+     <>c__DisplayClass155_1
+     <>c__DisplayClass155_2
+     <>c__DisplayClass155_3
+     <>c__DisplayClass155_4
+     <>c__DisplayClass155_5
+     <>c__DisplayClass16_0
+     <>c__DisplayClass38_0
+     <>c__DisplayClass60_0
+     <>c__DisplayClass69_0
+   A <>O
+     ContentDatabaseModule
+     ContentEditingModule
+     ContentFindingModule
+     ContentImportingModule
+   A EditorModule
+     ImportFileEndDelegate
+     LayoutNameDialog
+     MainWindowDecorations
+     PrefabsModule
+     ProgressReportingModule
+     ProjectCacheModule
+     QuickAction
+     SceneEditingModule
+     SceneModule
+     ScenesRootNode
+     SearchResult
+     SimulationModule
+     Status
+     UIModule
+     ViewportScaleOption
+   E ViewportScaleType
+     WindowRestoreData
+     WindowsModule
+-- FlaxEditor.Modules.SourceCodeEditing (13)
+     <>c
+     <>c
+   A <>O
+   A <>O
+     CachedAllTypesCollection
+     CachedCustomAnimGraphNodesCollection
+     CachedTypesCollection
+     CachedVisualScriptPropertyTypesCollection
+     CodeDocsModule
+     CodeEditingModule
+     DefaultSourceCodeEditor
+     InBuildSourceCodeEditor
+   I ISourceCodeEditor
+-- FlaxEditor.Options (35)
+     <>c
+     Binding
+   E BuildAction
+     CreateCustomSettingsDelegate
+   E DisabledHidden
+   E DockStateProxy
+     Editor`1
+     EditorOptions
+   E GameWindowMode
+     GeneralOptions
+     InputActionsContainer
+     InputBinding
+     InputBindingBox
+     InputBindingConverter
+     InputBindingEditor
+     InputOptions
+     InterfaceOptions
+   E MembersOrder
+     OptionsModule
+   E PlayAction
+   E PlayModeFocus
+   E PlayModeShortcutAvailability
+   E SceneNodeDoubleClick
+     SourceCodeEditorEditor
+     SourceCodeOptions
+   E StartupSceneModes
+     StyleOptionsEditor
+   E TabCloseButtonVisibility
+     ThemeOptions
+     ThemeOptionsEditor
+   E TimestampsFormats
+   E ValueFormattingType
+     ViewportOptions
+     VisualOptions
+   E WindowDecorationsType
+-- FlaxEditor.Progress (3)
+     ProgressDelegate
+     ProgressFailedDelegate
+   A ProgressHandler
+-- FlaxEditor.Progress.Handlers (10)
+     <>c__DisplayClass2_0
+     BakeEnvProbesProgress
+     BakeLightmapsProgress
+     BuildingGameProgress
+     CodeEditorOpenProgress
+     CompileScriptsProgress
+     GenerateScriptsProjectFilesProgress
+     ImportAssetsProgress
+     LoadAssetsProgress
+     NavMeshBuildingProgress
+-- FlaxEditor.SceneGraph (15)
+     <>c__DisplayClass41_0
+   A ActorChildNode
+   A ActorChildNode`1
+     ActorNode
+   A ActorNodeWithIcon
+     ColliderNode
+   E FlagTypes
+     GraphExecuteCallbackDelegate
+     LocalSceneGraph
+     RayCastData
+   A RootNode
+   A SceneGraphFactory
+   A SceneGraphNode
+   A SceneGraphTools
+     StateData
+-- FlaxEditor.SceneGraph.Actors (54)
+     <>c__DisplayClass11_0
+     <>c__DisplayClass24_0
+     <>c__DisplayClass25_0
+     <>c__DisplayClass25_1
+     <>c__DisplayClass4_0
+     AnimatedModelNode
+     AudioListenerNode
+     AudioSourceNode
+     BoneSocketNode
+     BoxBrushNode
+     BoxColliderEditor
+     BoxColliderNode
+     BoxVolumeNode
+     BrushSurfaceProxy
+     CameraNode
+     ClothNode
+     CreateCollider
+     Data
+     DecalNode
+     DirectionalLightNode
+     DuplicateUndoAction
+     EnvironmentProbeNode
+     ExponentialHeightFogNode
+     FoliageInstanceNode
+     FoliageNode
+     JointNode
+     LinkNode
+     NavLinkNode
+     NavMeshBoundsVolumeNode
+     NavModifierVolumeNode
+     ParticleEffectNode
+     PointLightNode
+     PostFxVolumeNode
+     RebuildOptions
+     RemovedTerrain
+     RigidBodyNode
+     SceneAnimationPlayerNode
+     SceneNode
+     SideLinkNode
+     SideLinkNode
+     SkyboxNode
+     SkyLightNode
+     SkyNode
+     Spawner
+     SplineNode
+     SplinePointNode
+     SplinePointTangentNode
+     SpotLightNode
+     SpriteRenderNode
+     StaticModelNode
+     TerrainNode
+     TextRenderNode
+     UICanvasNode
+     UIControlNode
+-- FlaxEditor.SceneGraph.GUI (4)
+     <>c__DisplayClass27_0
+   A <>O
+     ActorTreeNode
+     SceneTreeNode
+-- FlaxEditor.Scripting (7)
+   I IScriptMemberInfo
+   I IScriptType
+   I IScriptTypesContainer
+     Parameter
+     ScriptMemberInfo
+     ScriptType
+     ScriptTypeArray
+-- FlaxEditor.States (24)
+     <>c
+     <>c__DisplayClass6_0
+   A ActionState
+     BeginState
+     BuildingLightingState
+     BuildingScenesState
+     ChangingScenesState
+     ClosingState
+     CompileScriptsState
+     CSGState
+     EditingSceneState
+   A EditorState
+     EditorStateMachine
+     EndState
+     EnvProbesState
+     InvalidStateException
+     LoadingState
+     NavMeshState
+     PlayingState
+     ReloadingScriptsState
+     SetupState
+     StaticLightingState
+   A SubState
+     SubStateMachine
+-- FlaxEditor.Surface (119)
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c__DisplayClass11_0
+     <>c__DisplayClass12_0
+     <>c__DisplayClass12_1
+     <>c__DisplayClass13_0
+     <>c__DisplayClass15_0
+     <>c__DisplayClass239_0
+     <>c__DisplayClass250_0
+     <>c__DisplayClass253_0
+     <>c__DisplayClass27_0
+     <>c__DisplayClass303_0
+     <>c__DisplayClass303_1
+     <>c__DisplayClass303_2
+     <>c__DisplayClass306_0
+     <>c__DisplayClass4_0
+     <>c__DisplayClass48_0
+     <>c__DisplayClass48_1
+     <>c__DisplayClass51_0
+     <>c__DisplayClass6_0
+     <>c__DisplayClass6_0
+     <>c__DisplayClass7_0
+     <>c__DisplayClass8_0
+   A <>O
+   A <>O
+   A <>O
+     AddRemoveParamAction
+     AnimationGraphFunctionSurface
+     AnimGraphSurface
+     AttributesEditor
+     BehaviorTreeSurface
+     ColorsData
+     ConnectionHint
+   E ConnectionsHint
+   A Constants
+     ContextDelegate
+     ContextModifiedDelegate
+     CreateCustomNodeFunc
+     CustomPropertySpawnDelegate
+     DataModel
+     DataModelBox
+     DataModelComment
+     DataModelNode
+     DataModelValue
+     DragDropEventArgs
+     DummyCustomNode
+     DummyMaterialSurfaceOwner
+   A EditAttributesAction
+     EditNodeAttributesAction
+     EditParamAttributesAction
+     EditSurfaceAttributesAction
+     Entry
+   A Factory
+     GetElementsDescriptionFunc
+     GetGraphParameterDelegate
+   E GraphConnectionType_Deprecated
+     GraphParameterData
+   E GraphParamType_Deprecated
+     GroupArchetype
+   I IConnectionInstigator
+     IconsData
+   I IFunctionsDependantNode
+     InputBracket
+   I IParametersDependantNode
+     IsCompatible
+   I ISurfaceContext
+   I ISurfaceNodeElement
+     IterateType
+   I IVisjectSurfaceOwner
+   I IVisjectSurfaceWindow
+     MaterialFunctionSurface
+     MaterialSurface
+     Meta10
+     Meta11
+     MissingNode
+   E NodeAlignmentType
+     NodeArchetype
+     NodeArchetypeTryParseHandler
+     NodeElementArchetype
+   E NodeElementType
+   A NodeFactory
+   E NodeFlags
+     NodeFormattingData
+     NodesCache
+     NormalMap
+     ParameterPropertyNameLabel
+     ParametersEditor
+     ParticleEmitterFunctionSurface
+     ParticleEmitterSurface
+     Proxy
+     RenameParamAction
+     ReorderParamAction
+     ResizableSurfaceNode
+     SetGraphParameterDelegate
+     SurfaceBreakpoint
+     SurfaceComment
+   A SurfaceControl
+     SurfaceMeta
+     SurfaceNode
+   E SurfaceNodeActions
+   A SurfaceNodeElementControl
+     SurfaceParameter
+     SurfaceRootControl
+     SurfaceStyle
+   A SurfaceUtils
+     Tab
+   E TransformCoordinateSystem
+     ValuesEditor
+     VisjectSurface
+     VisjectSurfaceContext
+   A VisjectSurfaceWindow`3
+     VisualScriptSurface
+-- FlaxEditor.Surface.Archetypes (145)
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c__DisplayClass12_0
+     <>c__DisplayClass14_0
+     <>c__DisplayClass15_0
+     <>c__DisplayClass19_0
+     <>c__DisplayClass42_0
+     <>c__DisplayClass43_0
+     <>c__DisplayClass5_0
+     <>c__DisplayClass6_0
+   A <>O
+     ActorReferenceNode
+     AddRemoveTransitionAction
+   A Animation
+     AnimationGraphFunctionNode
+     AppendNode
+     ArrayNode
+     AsNode
+     AssetReferenceNode
+   A BehaviorTree
+     BindEventNode
+   A Bitwise
+   E BlendMode
+     BlendPoint
+     BlendPointsEditor
+     BlendPose
+   E BoneTransformMode
+   A Boolean
+     BranchOnEnumNode
+     CastNode
+   A Collections
+     ColorGradientNode
+   E CommonSamplerType
+   A Comparisons
+   A Constants
+     ConvertToParameterNode
+     CurveNode`1
+   A Custom
+     CustomCodeNode
+     CustomCodeTextBox
+     Data
+     Decorator
+     DictionaryNode
+     DragDecorator
+     EnumNode
+   A EventBaseNode
+   A FieldNodeBase
+   E Flags
+   E FlagTypes
+   A Flow
+   A Function
+     FunctionInputNode
+     FunctionInputOutputNode
+   A FunctionNode
+     FunctionOutputNode
+     GetFieldNode
+     GetGameplayGlobalNode
+     Gradient
+     GradientStop
+   I IFunctionSurface
+   E InterruptionFlags
+     InvokeMethodNode
+     IsNode
+   A Layers
+   A Material
+     MaterialFunctionNode
+   E MaterialNodeBoxes
+   E MaterialTemplateInputsMapping
+   A Math
+     MethodOverrideNode
+     ModulesHeader
+   E ModuleType
+   A MultiBlend
+     MultiBlend1D
+     MultiBlend2D
+     Node
+     NodeBase
+     OrientSpriteNode
+     Output
+   A Packing
+     PackStructureNode
+     Parameter
+   A Parameters
+     ParticleAttributeNode
+     ParticleEmitterFunctionNode
+     ParticleEmitterNode
+     ParticleModuleNode
+   A ParticleModules
+   A Particles
+     ProceduralSampleTextureNode
+     ReorderDecoratorAction
+     RerouteNode
+     ReturnNode
+   E RootMotionMode
+     Sample
+     SampleTextureNode
+     SequenceNode
+     SetFieldNode
+     SetParticleAttributeModuleNode
+     Signature
+     SignatureEditor
+     SignatureInfo
+     SignatureParamInfo
+     SkeletonMaskSample
+     SortModuleNode
+     StateMachine
+     StateMachineAny
+     StateMachineEntry
+     StateMachineState
+   A StateMachineStateBase
+     StateMachineTransition
+   A StructureNode
+     SurfaceNodeMaterial
+   A SurfaceNodeParamsBase
+     SurfaceNodeParamsGet
+     SurfaceNodeParamsGetParticleEmitter
+     SurfaceNodeParamsGetVisualScript
+     SurfaceNodeParamsSet
+     SwitchOnEnumNode
+   A Textures
+     TextureSamplerNode
+     ThisNode
+   A Tools
+     TransitionEditor
+     TriplanarSampleTextureNode
+     TypeReferenceNode
+     UnbindEventNode
+     UnpackStructureNode
+   E ValueTypes
+     VisualScriptFunctionNode
+-- FlaxEditor.Surface.ContextMenu (11)
+     <>c
+     <>c__DisplayClass20_0
+     <GetNextSiblings>d__63
+     <GetPreviousSiblings>d__65
+     InitInfo
+     ItemClickedDelegate
+     NodeSpawnCheckDelegate
+     ParameterGetterDelegate
+     VisjectCM
+     VisjectCMGroup
+     VisjectCMItem
+-- FlaxEditor.Surface.Elements (39)
+     <>c
+     <>c
+     <>c
+     ActorSelect
+     AssetSelect
+     BooleanDefaultValueEditor
+     BoolValue
+   A Box
+     BoxValue
+     ColorDefaultValueEditor
+     ColorValue
+     ComboBoxElement
+     Double2DefaultValueEditor
+     Double3DefaultValueEditor
+     Double4DefaultValueEditor
+     EnumDefaultValueEditor
+     EnumValue
+     Float2DefaultValueEditor
+     Float3DefaultValueEditor
+     Float4DefaultValueEditor
+     FloatingDefaultValueEditor
+     FloatValue
+   I IDefaultValueEditor
+     InputBox
+     IntegerDefaultValueEditor
+     IntegerValue
+     OutputBox
+     QuaternionDefaultValueEditor
+     SkeletonBoneIndexSelectElement
+     SkeletonNodeNameSelectElement
+     StringDefaultValueEditor
+     TextBoxView
+     TextView
+     TypeDefaultValueEditor
+     UnsignedIntegerDefaultValueEditor
+     UnsignedIntegerValue
+     Vector2DefaultValueEditor
+     Vector3DefaultValueEditor
+     Vector4DefaultValueEditor
+-- FlaxEditor.Surface.GUI (1)
+     VisjectContextNavigationButton
+-- FlaxEditor.Surface.Undo (7)
+     AddRemoveNodeAction
+     BoxHandle
+     ConnectBoxesAction
+     ContextHandle
+     EditNodeConnections
+     EditNodeValuesAction
+     MoveNodesAction
+-- FlaxEditor.Tools (8)
+     EditModelVertexColorsAction
+     ProxyEditor
+     ProxyObject
+   E VertexColorsMask
+   E VertexColorsPreviewMode
+     VertexPaintingGizmo
+     VertexPaintingGizmoMode
+     VertexPaintingTab
+-- FlaxEditor.Tools.Foliage (19)
+     <>c__DisplayClass20_0
+     <>c__DisplayClass8_0
+     Brush
+     EditFoliageGizmo
+     EditFoliageGizmoMode
+     EditFoliageSelectionOutline
+     EditTab
+     FoliageTab
+     FoliageTypesTab
+     PaintFoliageGizmo
+     PaintFoliageGizmoMode
+     PaintTab
+     ProxyObject
+     ProxyObject
+     ProxyObject
+     ProxyObjectEditor
+     ProxyObjectEditor
+     ProxyObjectEditor
+     SelectedFoliageTypeIndexChangedDelegate
+-- FlaxEditor.Tools.Foliage.Undo (4)
+     DeleteInstanceAction
+     EditFoliageAction
+     EditInstanceAction
+     EditSelectedInstanceIndexAction
+-- FlaxEditor.Tools.Terrain (28)
+     AddPatchAction
+   E BrushTypes
+   E BrushTypes
+     CarveTab
+     ChunkLocation
+     ChunkLocation
+   E ChunkSizes
+     CreateTerrainDialog
+     DeletePatchAction
+     EditChunkMaterialAction
+     EditTab
+     EditTerrainGizmo
+     EditTerrainGizmoMode
+   E Modes
+   E ModeTypes
+   E ModeTypes
+     Options
+     PaintTab
+     PaintTerrainGizmo
+     PaintTerrainGizmoMode
+     PatchLocation
+     PatchLocation
+     ProxyObject
+     ProxyObject
+     SculptTab
+     SculptTerrainGizmo
+     SculptTerrainGizmoMode
+     SplatmapData
+-- FlaxEditor.Tools.Terrain.Brushes (4)
+   A Brush
+     CalculateFalloffDelegate
+     CircleBrush
+   E FalloffTypes
+-- FlaxEditor.Tools.Terrain.Paint (5)
+     ApplyParams
+   E Layers
+   A Mode
+     Options
+     SingleLayerMode
+-- FlaxEditor.Tools.Terrain.Sculpt (8)
+     ApplyParams
+     FlattenMode
+     HolesMode
+   A Mode
+     NoiseMode
+     Options
+     SculptMode
+     SmoothMode
+-- FlaxEditor.Tools.Terrain.Undo (6)
+     <>c
+     EditTerrainHeightMapAction
+     EditTerrainHolesMapAction
+   A EditTerrainMapAction
+     EditTerrainSplatMapAction
+     PatchData
+-- FlaxEditor.Utilities (31)
+     <>c
+     <>c
+     <>c
+     <>c__DisplayClass15_0
+     <>c__DisplayClass20_0
+     <>c__DisplayClass38_0
+     <>c__DisplayClass43_0
+     <>c__DisplayClass54_0
+   A <>O
+     <OrderTokens>d__10
+     <Tokenize>d__9
+     Constants
+     DrawCurveTick
+     DuplicateScenes
+     Entry
+   A Extensions
+     MemberComparison
+     MemberInfoPath
+     ObjectSnapshot
+     Operator
+     ParsingException
+   A QueryFilterHelper
+     Range
+     SceneData
+     SelectionCache
+   A ShuntingYard
+     Token
+   E TokenType
+     TypeEntry
+   A Units
+   A Utils
+-- FlaxEditor.Viewport (40)
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c__DisplayClass121_0
+     <>c__DisplayClass121_1
+     <>c__DisplayClass121_10
+     <>c__DisplayClass121_11
+     <>c__DisplayClass121_12
+     <>c__DisplayClass121_13
+     <>c__DisplayClass121_2
+     <>c__DisplayClass121_3
+     <>c__DisplayClass121_4
+     <>c__DisplayClass121_5
+     <>c__DisplayClass121_6
+     <>c__DisplayClass121_7
+     <>c__DisplayClass121_8
+     <>c__DisplayClass121_9
+     <>c__DisplayClass18_0
+     <>c__DisplayClass24_0
+     <>c__DisplayClass39_0
+     <>c__DisplayClass44_0
+     <>c__DisplayClass44_0
+     <>c__DisplayClass69_0
+   A <>O
+   A <>O
+     CameraViewpoint
+     DragDropEventArgs
+   A EditorGizmoViewport
+     EditorSpritesRenderer
+     EditorViewport
+     FpsCounter
+     Input
+     MainEditorGizmoViewport
+     PrefabSpritesRenderer
+     PrefabUIEditorRoot
+     PrefabWindowViewport
+     ViewFlagOptions
+     ViewModeOptions
+     ViewportDragHandlers
+-- FlaxEditor.Viewport.Cameras (4)
+     ArcBallCamera
+     FPSCamera
+   I IViewportCamera
+   A ViewportCamera
+-- FlaxEditor.Viewport.Modes (3)
+   A EditorGizmoMode
+     NoGizmoMode
+     TransformGizmoMode
+-- FlaxEditor.Viewport.Previews (29)
+     <>c__DisplayClass25_0
+     <>c__DisplayClass44_0
+     <>c__DisplayClass5_0
+     <>c__DisplayClass5_1
+     <>c__DisplayClass51_0
+     <>c__DisplayClass6_0
+     <>c__DisplayClass9_0
+     AnimatedModelPreview
+     AnimationPreview
+   A AssetPreview
+     AudioClipPreview
+   E ChannelFlags
+     CubeTexturePreview
+     CustomDebugDrawDelegate
+   E DrawModes
+     IESProfilePreview
+     MaterialPreview
+     ModelBasePreview
+     ModelPreview
+     ParticleEmitterPreview
+     ParticleSystemPreview
+     PrefabPreview
+     SimpleSpriteAtlasPreview
+     SimpleTexturePreview
+     SkinnedModelPreview
+     SpriteAtlasPreview
+     TexturePreview
+   A TexturePreviewBase
+   A TexturePreviewCustomBase
+-- FlaxEditor.Viewport.Widgets (4)
+     OrthoCamToggleViewportWidgetButton
+     ViewportWidgetButton
+   E ViewportWidgetLocation
+     ViewportWidgetsContainer
+-- FlaxEditor.Windows (132)
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c__DisplayClass1_0
+     <>c__DisplayClass10_0
+     <>c__DisplayClass108_0
+     <>c__DisplayClass11_0
+     <>c__DisplayClass12_0
+     <>c__DisplayClass13_0
+     <>c__DisplayClass13_0
+     <>c__DisplayClass14_0
+     <>c__DisplayClass14_0
+     <>c__DisplayClass15_0
+     <>c__DisplayClass16_0
+     <>c__DisplayClass16_0
+     <>c__DisplayClass17_0
+     <>c__DisplayClass18_0
+     <>c__DisplayClass2_0
+     <>c__DisplayClass2_0
+     <>c__DisplayClass2_0
+     <>c__DisplayClass2_0
+     <>c__DisplayClass25_0
+     <>c__DisplayClass29_0
+     <>c__DisplayClass3_0
+     <>c__DisplayClass3_0
+     <>c__DisplayClass3_0
+     <>c__DisplayClass3_1
+     <>c__DisplayClass3_1
+     <>c__DisplayClass3_2
+     <>c__DisplayClass3_2
+     <>c__DisplayClass3_3
+     <>c__DisplayClass3_4
+     <>c__DisplayClass4_0
+     <>c__DisplayClass6_0
+     <>c__DisplayClass7_0
+     <>c__DisplayClass7_1
+     <>c__DisplayClass77_0
+     <>c__DisplayClass79_0
+     <>c__DisplayClass79_1
+     <>c__DisplayClass79_2
+     <>c__DisplayClass8_0
+     <>c__DisplayClass80_0
+     <>c__DisplayClass80_1
+     <>c__DisplayClass92_0
+     <>c__DisplayClass92_1
+   A <>O
+     <AddModuleReferencesInGameModule>d__12
+     <AddReferenceToProject>d__13
+     <OnCloneButtonClicked>d__9
+     <OnCreateButtonClicked>d__11
+     AboutDialog
+     Android
+   E Archs
+     AssetNode
+     AssetReferencesGraphWindow
+     BreakpointsTab
+     BuildTabProxy
+     CallStackTab
+     CameraPreview
+     CategoryEntry
+     CommandLineBox
+     ContentWindow
+     DebugLogWindow
+     EditGameWindow
+     Editor
+     EditorOptionsWindow
+   A EditorWindow
+     Entry
+     GameCookerWindow
+     GameRoot
+     GameWindow
+     GraphicsQualityWindow
+     iOS
+     Item
+     Item
+     Linux
+     LocalsTab
+     LogEntry
+     LogEntryDescription
+   E LogGroup
+     Mac
+     Node
+     NodeInfo
+     OutputLogWindow
+     OutputTextBox
+   A Platform
+     PlayModeFocusOptions
+     PluginEntry
+     PluginsWindow
+     PresetsColumn
+     PresetsTargetsColumnBase
+     PropertiesWindow
+     PS4
+     PS5
+     QueueItem
+   E RenameOptions
+     RenameUndoAction
+     RenameWindow
+     ScaledRenderOutputControl
+   A SceneEditorWindow
+     SceneTreeWindow
+     ScriptTypeItem
+   E SearchFilter
+     SpawnTab
+     StyleEditorWindow
+     Surface
+     Switch
+   A Tab
+     TargetsColumn
+     TextBlockTag
+     ToolboxWindow
+   E Types
+     UWP
+     ViewDropdown
+     ViewModel
+     VisualScriptDebuggerWindow
+     Web
+     Windows
+     XboxOne
+     XboxScarlett
+-- FlaxEditor.Windows.Assets (226)
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c__DisplayClass0_0
+     <>c__DisplayClass0_0
+     <>c__DisplayClass0_0
+     <>c__DisplayClass0_0
+     <>c__DisplayClass0_0
+     <>c__DisplayClass0_1
+     <>c__DisplayClass0_1
+     <>c__DisplayClass0_1
+     <>c__DisplayClass0_2
+     <>c__DisplayClass0_2
+     <>c__DisplayClass0_3
+     <>c__DisplayClass1_0
+     <>c__DisplayClass1_0
+     <>c__DisplayClass1_1
+     <>c__DisplayClass1_2
+     <>c__DisplayClass10_0
+     <>c__DisplayClass19_0
+     <>c__DisplayClass2_0
+     <>c__DisplayClass2_0
+     <>c__DisplayClass3_0
+     <>c__DisplayClass3_0
+     <>c__DisplayClass3_0
+     <>c__DisplayClass3_1
+     <>c__DisplayClass3_1
+     <>c__DisplayClass3_2
+     <>c__DisplayClass3_3
+     <>c__DisplayClass4_0
+     <>c__DisplayClass4_0
+     <>c__DisplayClass5_0
+     <>c__DisplayClass8_0
+     <>c__DisplayClass89_0
+     <>c__DisplayClass94_0
+   A <>O
+   A <>O
+     <NodePath>e__FixedBuffer
+     AddRemoveParamAction
+     AnimationGraphFunctionWindow
+     AnimationGraphPreview
+     AnimationGraphWindow
+     AnimationWindow
+     AnimGraphDebugFlowInfo
+   A AssetEditorWindow
+   A AssetEditorWindowBase`1
+     AtlasView
+     AudioClipWindow
+     BehaviorKnowledgeEditor
+     BehaviorTreeWindow
+     BreakpointData
+     BreakpointHangState
+     BrokenConnection
+   A ClonedAssetEditorWindowBase`1
+     CollisionDataPreview
+     CollisionDataWindow
+     CookData
+     CubeTextureWindow
+     CustomDeleteActorsAction
+     CustomPasteActorsAction
+     CustomRootNode
+     Editor
+     Editor
+     Editor
+     Editor
+     EditParamAccessAction
+     EditParameterOverrideAction
+     EditParamOverrideAction
+     EditParamTypeAction
+     EmitterTrackProxy
+     EmitterTrackProxyEditor
+     EntryEditor
+     FolderTrackProxy
+     FontAssetWindow
+     FunctionsEditor
+     GameplayGlobalsWindow
+     GeneralProxy
+     IESProfileWindow
+     ImportPropertiesProxy
+     ImportPropertiesProxy
+     ImportPropertiesProxy
+     ImportPropertiesProxyBase
+     ImportTab
+     ImportTab
+     ImportTab
+     JsonAssetWindow
+     LayoutTabProxy
+     LocalizedStringTableWindow
+     MaterialFunctionWindow
+     MaterialInstanceWindow
+   E MaterialSlotsMask
+     MaterialsPropertiesProxy
+     MaterialsPropertiesProxy
+     MaterialsPropertiesProxyBase
+     MaterialsTab
+     MaterialsTab
+     MaterialWindow
+     MeshesPropertiesProxy
+     MeshesPropertiesProxy
+     MeshesPropertiesProxyBase
+     MeshesTab
+     MeshesTab
+   A ModelBaseWindow`2
+     ModelSdfOptions
+     ModelWindow
+     ObjectPasteUndo
+     OptionsEditor
+     ParametersEditor
+     ParticleEmitterFunctionWindow
+     ParticleEmitterWindow
+     ParticleSystemWindow
+     PrefabTree
+     PrefabWindow
+     Preview
+     Preview
+     Preview
+     Preview
+     PreviewProxy
+     PreviewProxy
+     PreviewsCacheWindow
+     PropertiesProxy
+     PropertiesProxy
+     PropertiesProxy
+     PropertiesProxy
+     PropertiesProxy
+     PropertiesProxy
+     PropertiesProxy
+     PropertiesProxy
+     PropertiesProxy
+     PropertiesProxy
+     PropertiesProxy
+     PropertiesProxy
+     PropertiesProxy
+   A PropertiesProxyBase
+     PropertiesProxyBase
+     PropertiesProxyEditor
+     Proxy
+     ProxyEditor
+     ProxyEditor
+     ProxyEditor
+     ProxyEditor
+     ProxyEditor
+     ProxyEditor
+     ProxyEditor
+     ProxyEditor
+     ProxyEditor
+     ProxyEditor
+     ProxyEditor
+     ProxyEditor
+     ProxyEditor
+   A ProxyEditorBase
+     RenameParamAction
+     RenderEditorState
+     RenderOptions
+     RenderOptionsEditor
+     RenderPopup
+     RenderProgress
+   E ResolutionModes
+     RetargetPropertiesProxy
+     RetargetSetupData
+     RetargetTab
+     SceneAnimationWindow
+     SceneTreePanel
+     SetRootAction
+     SetupProxy
+     SkeletonMaskWindow
+     SkeletonPropertiesProxy
+     SkeletonTab
+     SkinnedModelWindow
+     SpriteAtlasWindow
+     SpriteEntry
+     SpritesCollectionEditor
+     StagingTexture
+   E States
+     Tab
+     Tab
+     TexturePropertiesProxy
+     TextureTab
+     TextureWindow
+   E UVChannel
+     UVsLayoutPreviewControl
+     UVsPropertiesProxy
+     UVsPropertiesProxy
+     UVsPropertiesProxyBase
+     UVsTab
+     UVsTab
+     VariableValueContainer
+   A VideoOutput
+     VideoOutputBmp
+     VideoOutputEditor
+   A VideoOutputImage
+     VideoOutputJpg
+     VideoOutputPng
+     VideoWindow
+   A VisjectFunctionSurfaceWindow`2
+     VisualParametersEditor
+     VisualScriptWindow
+-- FlaxEditor.Windows.Profiler (32)
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c
+     <>c__DisplayClass16_0
+     <>c__DisplayClass16_0
+   A <>O
+   A <>O
+     Assets
+     CPU
+     Event
+     FrameData
+     GPU
+     Memory
+     MemoryGPU
+     Network
+     Overall
+     Physics
+     ProfilerMode
+     ProfilerWindow
+     Resource
+     Resource
+     SamplesBuffer`1
+     SharedUpdateData
+     SingleChart
+     Timeline
+     TrackLabel
+     ViewRange
+-- FlaxEditor.Windows.Search (6)
+     <>c__DisplayClass7_0
+     <>c__DisplayClass7_1
+     <>c__DisplayClass7_2
+     ContentFinder
+     ContentSearchItem
+     SearchItem

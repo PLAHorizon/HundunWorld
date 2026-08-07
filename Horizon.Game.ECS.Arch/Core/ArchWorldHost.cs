@@ -21,6 +21,12 @@ public sealed class ArchWorldHost : IDisposable
     private readonly List<IArchSystem> _allSystems = new();
     private bool _disposed;
 
+    // ── 系统数组缓存（消除每帧 ToArray 分配）──
+    // Tick 和 GetSystems 每帧被调用，原实现每次 ToArray 创建新数组 → GC 压力 → 卡顿。
+    // 缓存数组，仅在 AddSystem/RemoveSystem 时标记为脏并重建。
+    private Dictionary<SystemGroup, IArchSystem[]>? _systemArraysCache;
+    private volatile bool _cacheDirty = true;
+
     /// <summary>底层 Arch 世界。</summary>
     public World World { get; }
 
@@ -68,6 +74,7 @@ public sealed class ArchWorldHost : IDisposable
             bucket.Add(system);
             bucket.Sort(static (a, b) => a.Order.CompareTo(b.Order));
             _allSystems.Add(system);
+            _cacheDirty = true;
         }
 
         system.Initialize(World);
@@ -90,6 +97,7 @@ public sealed class ArchWorldHost : IDisposable
             if (removed)
             {
                 _allSystems.Remove(system);
+                _cacheDirty = true;
             }
         }
 
@@ -101,12 +109,29 @@ public sealed class ArchWorldHost : IDisposable
         return removed;
     }
 
-    /// <summary>列出某组系统（调试 / 测试用，返回快照副本）。</summary>
+    /// <summary>列出某组系统（返回缓存的数组引用，不分配新数组）。</summary>
     public IReadOnlyList<IArchSystem> GetSystems(SystemGroup group)
     {
+        EnsureCacheValid();
+        return _systemArraysCache![group];
+    }
+
+    /// <summary>
+    /// 确保 _systemArraysCache 是最新的。仅在 _cacheDirty 时重建（AddSystem/RemoveSystem 后）。
+    /// 正常运行时每帧调用此方法是无操作（零分配），消除原 ToArray 的每帧 GC 压力。
+    /// </summary>
+    private void EnsureCacheValid()
+    {
+        if (!_cacheDirty) return;
         lock (_systemLock)
         {
-            return _systemsByGroup[group].ToArray();
+            if (!_cacheDirty) return; // double-check
+            _systemArraysCache ??= new Dictionary<SystemGroup, IArchSystem[]>();
+            foreach (SystemGroup group in Enum.GetValues<SystemGroup>())
+            {
+                _systemArraysCache[group] = _systemsByGroup[group].ToArray();
+            }
+            _cacheDirty = false;
         }
     }
 
@@ -137,16 +162,13 @@ public sealed class ArchWorldHost : IDisposable
             CurrentTick++;
             TotalTime += deltaTime;
 
-            // 按枚举值升序执行，避免 LINQ 分配。
+            // 使用缓存的系统数组，消除每帧 ToArray + lock 的分配和锁开销。
+            // 仅在 AddSystem/RemoveSystem 后重建缓存（EnsureCacheValid 内部判断）。
+            EnsureCacheValid();
             foreach (SystemGroup group in Enum.GetValues<SystemGroup>())
             {
-                IArchSystem[] snapshot;
-                lock (_systemLock)
-                {
-                    var bucket = _systemsByGroup[group];
-                    if (bucket.Count == 0) continue;
-                    snapshot = bucket.ToArray();
-                }
+                var snapshot = _systemArraysCache![group];
+                if (snapshot.Length == 0) continue;
 
                 foreach (var sys in snapshot)
                 {

@@ -1,0 +1,59 @@
+﻿### FlaxEditor.Modules.SourceCodeEditing.CodeEditingModule : FlaxEditor.Modules.EditorModule
+  prop IReadOnlyList`1 Editors { get }
+  prop ISourceCodeEditor SelectedEditor { get set}
+  meth Void AddEditor(ISourceCodeEditor editor)
+  meth Void ClearTypes()
+  meth Void OnEndInit()
+  meth Void OnExit()
+  meth Void OnInit()
+  meth Void OnTypesChanged()
+  meth Void OnUpdate()
+  meth Void OpenFile(String path, Int32 line?)
+  meth Void OpenSolution()
+  meth Void RemoveEditor(ISourceCodeEditor editor)
+  event EditorAdded
+  event EditorRemoved
+  event SelectedEditorChanged
+  event TypesCleared
+  event TypesChanged
+
+### FlaxEditor.ScriptsBuilder : System.Object
+  prop String BuildToolPath { get }
+  prop Int32 CompilationsCount { get }
+  prop Boolean IsCompiling { get }
+  prop Boolean IsReady { get }
+  prop Boolean IsSourceDirty { get }
+  prop Boolean IsSourceWorkspaceDirty { get }
+  prop Boolean LastCompilationFailed { get }
+  meth Void CheckForCompile()
+  meth Void Compile()
+  meth Type FindScript(String scriptName)
+  meth Boolean GenerateProject(String customArgs?)
+  meth Void GetBinariesConfiguration(String& target, String& platform, String& architecture, String& configuration)
+  meth Void GetExistingEditors(Int32* result, Int32 count)
+  meth Boolean IsSourceDirtyFor(TimeSpan timeout)
+  meth Void MarkWorkspaceDirty()
+  meth Boolean RunBuildTool(String args, String workingDir?)
+
+### MISSING FlaxEditor.MessageBox
+### FlaxEngine.ModelInstanceActor : FlaxEngine.Actor
+  prop ModelInstanceEntry[] Entries { get set}
+  prop MaterialSlot[] MaterialSlots { get }
+  meth MaterialInstance CreateAndSetVirtualMaterialInstance(Int32 entryIndex)
+  meth MaterialBase GetMaterial(Int32 entryIndex)
+  meth ModelBase GetModel()
+  meth Boolean IntersectsEntry(Int32 entryIndex, Ray& ray, Single& distance, Vector3& normal)
+  meth Boolean IntersectsEntry(Ray& ray, Single& distance, Vector3& normal, Int32& entryIndex)
+  meth Void SetMaterial(Int32 entryIndex, MaterialBase material)
+
+### FlaxEngine.MessageBox : System.Object
+  meth DialogResult Show(String text)
+  meth DialogResult Show(String text, String caption)
+  meth DialogResult Show(String text, String caption, MessageBoxButtons buttons)
+  meth DialogResult Show(String text, String caption, MessageBoxButtons buttons, MessageBoxIcon icon)
+  meth DialogResult Show(Window parent, String text)
+  meth DialogResult Show(Window parent, String text, String caption)
+  meth DialogResult Show(Window parent, String text, String caption, MessageBoxButtons buttons)
+  meth DialogResult Show(Window parent, String text, String caption, MessageBoxButtons buttons, MessageBoxIcon icon)
+
+

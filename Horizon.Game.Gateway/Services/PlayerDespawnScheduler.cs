@@ -140,6 +140,14 @@ namespace Horizon.Game.Gateway.Services
         public int PendingCount => _pendingDespawns.Count;
 
         /// <summary>
+        /// 检查指定角色是否有待执行的宽限期 Despawn 任务。
+        /// 用于 CharacterPresenceMonitor 判断是否需要绕过宽限期直接 Despawn。
+        /// </summary>
+        /// <param name="characterId">角色 ID。</param>
+        /// <returns>true 表示该角色有正在等待宽限期的 Despawn 任务。</returns>
+        public bool HasPendingDespawn(long characterId) => _pendingDespawns.ContainsKey(characterId);
+
+        /// <summary>
         /// 立即同步执行 Despawn（不使用 fire-and-forget）。<br/>
         /// 由 <see cref="Network.GameNetworkServer.CleanupConnectionAsync"/> 在确认连接断开后直接 await 调用，
         /// 确保 <c>UnregisterEntityAsync</c> + <c>RemoveSessionAsync</c> + <c>GoOfflineAsync</c> 全部完成。<br/>

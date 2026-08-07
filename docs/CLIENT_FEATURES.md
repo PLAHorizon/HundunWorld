@@ -98,7 +98,7 @@
 
 | 功能 | 状态 | 关键文件 | 说明 |
 |------|------|----------|------|
-| TraeBridge | ✅ 已完成 | `TraeBridgeServer.cs` | HTTP API控制Flax Editor |
+| HundunAgent | ✅ 已完成 | `Plugins/HundunAgent/` | 编辑器 AI Agent 插件（MCP/HTTP/聊天窗口），取代旧 TraeBridge |
 | 场景管理 | ✅ 已完成 | `SceneController.cs` | 场景加载/切换 |
 | 性能监控 | ✅ 已完成 | `PerformanceMonitor.cs` | 性能指标采集 |
 

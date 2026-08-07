@@ -58,6 +58,9 @@ namespace Horizon.IM.Message
     // ===== 联系人分组管理消息 =====
     [MemoryPackUnion(70, typeof(IMContactGroupUpdateRequest))]
     [MemoryPackUnion(71, typeof(IMContactGroupUpdateResponse))]
+    // ===== 通话信令消息 =====
+    [MemoryPackUnion(72, typeof(IMCallSignalMessage))]
+    [MemoryPackUnion(73, typeof(IMCallSignalAckMessage))]
     // ===== 群组邀请/加群审核消息 =====
     [MemoryPackUnion(57, typeof(IMGroupInviteRequest))]
     [MemoryPackUnion(58, typeof(IMGroupInviteResponse))]

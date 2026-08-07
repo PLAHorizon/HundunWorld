@@ -4,6 +4,7 @@ using Arch.Core;
 using Horizon.Game.ECS.Arch.Components;
 using Horizon.Game.ECS.Arch.Core;
 using Horizon.Game.ECS.Arch.Network;
+using Horizon.Game.ECS.Arch.SyncGuard.Contracts;
 using Horizon.Game.Message.Sync;
 
 namespace Horizon.Game.ECS.Arch.Systems;
@@ -46,6 +47,18 @@ public sealed class InputSendSystem : ArchSystemBase
     /// 由网络层收到 <see cref="InputAckPacket"/> 后通过 <see cref="OnInputAck"/> 推进。
     /// </summary>
     private long _lastAckedClientTick;
+
+    /// <summary>
+    /// 集中式发送资格判定组件（由 HundunWorldGame 装配注入）。
+    /// 为空时回退到既有 `!netId.IsLocalPlayer` 跳过逻辑（向后兼容）。
+    /// </summary>
+    private IOutboundSyncAuthorizer? _authorizer;
+
+    /// <summary>注入集中式资格判定组件。</summary>
+    public void SetAuthorizer(IOutboundSyncAuthorizer authorizer)
+    {
+        _authorizer = authorizer ?? throw new ArgumentNullException(nameof(authorizer));
+    }
 
     /// <summary>
     /// 未确认 input 环形缓冲（容量 <see cref="PendingAcksCapacity"/>）。
@@ -182,7 +195,17 @@ public sealed class InputSendSystem : ArchSystemBase
         {
             diagMatchedEntities++;
 
-            if (!netId.IsLocalPlayer)
+            // 发送资格判定收敛到集中式授权器（spec 4.4.4 规则集中性）：
+            // 非本地角色实体（远程角色/NPC/怪物）一律跳过打包，不进入发送链路。
+            // 授权器未注入时回退到既有 IsLocalPlayer 判断（向后兼容）。
+            if (_authorizer != null)
+            {
+                if (_authorizer.ClassifyEntity(netId.EntityId) != EntitySendCategory.LocalPlayer)
+                {
+                    return;
+                }
+            }
+            else if (!netId.IsLocalPlayer)
             {
                 return;
             }

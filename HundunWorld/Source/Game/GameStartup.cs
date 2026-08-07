@@ -84,30 +84,48 @@ namespace HundunWorld.Game
             await Task.CompletedTask;
         }
 
+        public override void OnDisable()
+        {
+            // 修复 BUG：PIE 退出后网络任务（心跳/网关探查/监控循环）仍在后台运行。
+            // 根因：PIE 退出时编辑器场景中的脚本对象不会被销毁，OnDestroy 不被调用，
+            // 仅 OnDisable 必然触发（Play 模拟停止 = 脚本被禁用）。
+            // 此前清理依赖 OnDestroy（仅引擎关闭/场景卸载时触发），导致 PIE 退出后
+            // HundunWorldGame 及其 NetworkManager 后台循环全部残留。
+            // 此处以 OnDisable 作为 PIE 退出兜底清理路径，与 OnDestroy 双保险（Dispose 幂等）。
+            TryDisposeGame();
+            base.OnDisable();
+        }
+
         public override void OnDestroy()
         {
             // 修复 BUG：PIE 退出后 TCP 连接未断开，仍持续接收 SyncPacket。
             // 根因：HundunWorldGame 不继承 Script，Flax 不会在 PIE 退出时自动调用其 Dispose。
             // HundunWorldGamePlugin.Deinitialize() 中的释放逻辑仅在引擎关闭时触发，
             // PIE 退出不触发 Plugin.Deinitialize()（Plugin 是全局的，PIE 只停止场景模拟）。
-            // GameStartup 是场景 Script，PIE 退出时 Flax 一定会调用 OnDestroy，
-            // 因此在此显式释放。HundunWorldGame.Dispose() 会级联释放 NetworkManager
+            // GameStartup 是场景 Script，此处显式释放（OnDisable/OnDestroy 双路径兜底）。
+            // HundunWorldGame.Dispose() 会级联释放 NetworkManager
             //（关闭 TCP 连接 + 后台接收线程）、ArchWorldHost、ECSManager 等全部子系统。
             // 安全性：Dispose() 的 finally 块会置 _instance = null，即使 Plugin.Deinitialize()
             // 后续（引擎关闭时）再调用也是空操作，不会重复释放。
+            TryDisposeGame();
+            base.OnDestroy();
+        }
+
+        /// <summary>
+        /// 安全释放游戏实例：使用 HundunWorldGame.TryDisposeIfCreated()，
+        /// 避免通过 Instance getter 触发延迟创建（PIE 退出时 _instance 可能已被置空，
+        /// 访问 Instance 会 new 一个新游戏实例并重新启动网络，导致"清理反而复活残留任务"）。
+        /// </summary>
+        private void TryDisposeGame()
+        {
             try
             {
-                if (HundunWorldGame.Instance != null)
-                {
-                    Debug.Log("[GameStartup] OnDestroy - 释放 HundunWorldGame（PIE 退出清理）");
-                    HundunWorldGame.Instance.Dispose();
-                }
+                HundunWorldGame.TryDisposeIfCreated();
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[GameStartup] OnDestroy 清理异常: {ex.Message}\n{ex.StackTrace}");
+                Debug.LogError($"[GameStartup] 清理异常: {ex.Message}\n{ex.StackTrace}");
             }
-            base.OnDestroy();
         }
     }
 }

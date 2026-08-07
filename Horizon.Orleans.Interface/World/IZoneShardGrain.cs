@@ -27,6 +27,19 @@ public interface IZoneShardGrain : IGrainWithIntegerKey
     /// <summary>给 sessionId 退订一组 chunk。返回移除条数。</summary>
     Task<int> UnsubscribeSessionAsync(long sessionId, ulong[] mortonKeys);
 
+    /// <summary>
+    /// 位置驱动订阅更新：传入 session 的世界坐标（Flax Y-up），grain 侧自动计算 AOI 差异并更新订阅。
+    /// 替代 SubscribeSessionAsync + UnsubscribeSessionAsync 的双 RPC 路径，
+    /// 将 RPC 参数从 ~26000 个 ulong（R=28 下 ~208KB）降为 3 个 float + 1 个 long（24 字节）。
+    /// 坐标系：Flax Y-up（X=左右, Y=上下, Z=前后），grain 内部转换为 ECS Z-up 计算 chunk。
+    /// </summary>
+    /// <param name="sessionId">角色 ID。</param>
+    /// <param name="x">Flax Y-up 世界坐标 X。</param>
+    /// <param name="y">Flax Y-up 世界坐标 Y（高度）。</param>
+    /// <param name="z">Flax Y-up 世界坐标 Z。</param>
+    /// <returns>实际新增 + 移除的订阅条数总和。</returns>
+    Task<int> UpdateSessionPositionAsync(long sessionId, float x, float y, float z);
+
     /// <summary>会话整体离线清理。返回被移除的条数。</summary>
     Task<int> RemoveSessionAsync(long sessionId);
 

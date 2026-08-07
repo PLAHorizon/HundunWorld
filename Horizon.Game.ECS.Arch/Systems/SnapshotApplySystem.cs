@@ -70,6 +70,12 @@ public sealed class SnapshotApplySystem : ArchSystemBase
         set => Volatile.Write(ref _localPlayerOwnerId, value);
     }
 
+    /// <summary>
+    /// 基线/续连快照应用事件：重连恢复期间收到首份全量快照（BaselineTick==0）或续连快照成功应用时触发，
+    /// 供重连恢复状态机推进 BaselineRebuilding 相位（spec 6.4 规则 2）。
+    /// </summary>
+    public event Action<long>? BaselineApplied;
+
     // 诊断统计：供 ArchEcsRuntime 读取并通过 UE5 日志系统输出。
     // Horizon.Game.ECS.Arch 项目不能直接引用 UnrealSharp 的 LogWorldSyncActor，
     // 因此本系统只暴露统计属性，由客户端项目的 ArchEcsRuntime 负责日志输出。
@@ -139,6 +145,10 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     // Task 3：增量合并缓冲复用（实例方法 Update 使用），避免每帧分配 Dictionary/数组。
     private readonly Dictionary<ulong, EntityDelta> _deltaMergeBuffer = new();
     private readonly List<EntityDelta> _deltaMergeList = new();
+
+    // P-F7：溢出丢弃快照中抢救出的生命周期 delta（Spawn/Despawn），本帧优先应用。
+    // 位置 Update 可被新快照覆盖，但生命周期事件丢失会导致实体永久缺失。
+    private readonly List<(EntityDelta Delta, long ServerTick)> _pendingLifecycleDeltas = new();
 
     // Task 3：增量合并缓冲复用（静态方法 TryRebuildFromDelta 使用）。
     private static readonly Dictionary<ulong, EntityDelta> _deltaMergeBufferStatic = new();
@@ -451,6 +461,46 @@ public sealed class SnapshotApplySystem : ArchSystemBase
         Volatile.Write(ref _lastAppliedSnapshot, null);
     }
 
+    /// <summary>
+    /// 导出应可见远程实体 ID 集合（供可见性审计核对，spec 6.1 规则 5、design 2.1.3(4)）。
+    /// <para>
+    /// 遍历 <see cref="_entityIdToArchEntity"/> 中 <see cref="NetworkIdentityComponent.IsLocalPlayer"/> == false
+    /// 的实体 ID 集合；复用既有身份标志，不新增身份定义（spec 1.5 规则 1）。
+    /// </para>
+    /// </summary>
+    /// <param name="world">Arch 世界（用于读取实体组件）。</param>
+    public IReadOnlyCollection<ulong> GetRemoteEntityIds(World? world)
+    {
+        var result = new List<ulong>(_entityIdToArchEntity.Count);
+        if (world == null)
+        {
+            return result;
+        }
+
+        try
+        {
+            foreach (var (entityId, archEntity) in _entityIdToArchEntity)
+            {
+                if (!world.IsAlive(archEntity))
+                {
+                    continue;
+                }
+
+                if (world.Has<NetworkIdentityComponent>(archEntity) &&
+                    !world.Get<NetworkIdentityComponent>(archEntity).IsLocalPlayer)
+                {
+                    result.Add(entityId);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[SnapshotApplySystem] GetRemoteEntityIds 遍历异常: {ex.Message}");
+        }
+
+        return result;
+    }
+
     /// <inheritdoc />
     public override void Update(World world, TimeSpan deltaTime)
     {
@@ -485,16 +535,54 @@ public sealed class SnapshotApplySystem : ArchSystemBase
         // 如果队列积压超过 MaxSnapshotsPerFrame，丢弃旧快照只保留最新的几个。
         // 旧快照的位置已被后续快照覆盖，处理它们只会浪费 CPU 并导致 Target 被旧位置覆盖。
         // 保留策略：保留最近 MaxSnapshotsPerFrame 个快照，丢弃更早的。
+        //
+        // P-F7（Spawn 丢失导致远程角色永久不可见）：被丢弃的旧快照中的 Spawn/Despawn
+        // 生命周期 delta 不可丢弃——位置 Update 可被新快照覆盖，但生命周期事件是幂等状态迁移，
+        // 丢失后实体永久缺失（服务端只在注册时补发一次 Spawn）。提取到 _pendingLifecycleDeltas，
+        // 本帧消费前优先应用（HandleSpawn 幂等，重复应用安全）。
         var queueCount = SnapshotReceiveBuffer.Instance.Count;
         if (queueCount > MaxSnapshotsPerFrame)
         {
             var toDrop = queueCount - MaxSnapshotsPerFrame;
             for (int i = 0; i < toDrop; i++)
             {
-                if (!SnapshotReceiveBuffer.Instance.TryDequeue(out _))
+                if (!SnapshotReceiveBuffer.Instance.TryDequeue(out var dropped))
                     break;
+                if (dropped?.Deltas != null)
+                {
+                    foreach (var d in dropped.Deltas)
+                    {
+                        if (d.Kind == EntityDeltaKind.Spawn || d.Kind == EntityDeltaKind.Despawn)
+                        {
+                            _pendingLifecycleDeltas.Add((d, dropped.ServerTick));
+                        }
+                    }
+                }
             }
             OverflowCount++; // 记录积压丢弃事件
+        }
+
+        // P-F7：优先应用从溢出快照中抢救出的生命周期 delta（去重：同一实体只保留最后一条）。
+        if (_pendingLifecycleDeltas.Count > 0)
+        {
+            var dedup = new Dictionary<ulong, (EntityDelta Delta, long ServerTick)>();
+            foreach (var (d, tick) in _pendingLifecycleDeltas)
+                dedup[d.EntityId] = (d, tick);
+            foreach (var (d, tick) in dedup.Values)
+            {
+                switch (d.Kind)
+                {
+                    case EntityDeltaKind.Spawn:
+                        spawnsThisTick++;
+                        HandleSpawn(world, d, tick);
+                        break;
+                    case EntityDeltaKind.Despawn:
+                        despawnsThisTick++;
+                        HandleDespawn(world, d);
+                        break;
+                }
+            }
+            _pendingLifecycleDeltas.Clear();
         }
 
         while (consumedThisTick < MaxSnapshotsPerFrame && SnapshotReceiveBuffer.Instance.TryDequeue(out var snapshot))
@@ -511,6 +599,16 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                 // 全量快照
                 toApply = snapshot;
                 Volatile.Write(ref _lastAppliedSnapshot, snapshot);
+
+                // 基线应用通知（spec 6.4 规则 2）：重连恢复期间推进状态机 BaselineRebuilding。
+                try
+                {
+                    BaselineApplied?.Invoke(snapshot.ServerTick);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[SnapshotApplySystem] BaselineApplied 订阅者异常被隔离: {ex.Message}");
+                }
             }
             else
             {
@@ -1204,7 +1302,7 @@ public sealed class SnapshotApplySystem : ArchSystemBase
     /// <b>状态转移规则</b>：
     /// <list type="bullet">
     /// <item>Initializing → Active：收到首个 Update delta（由 HandleUpdate 处理）</item>
-    /// <item>Active → Idle：TimeSinceLastSnapshot 超过 0.5 秒（远程角色停止移动）</item>
+    /// <item>Active → Idle：TimeSinceLastSnapshot 超过 1.0 秒（远程角色停止 Lerp 追赶，但仍做 Dead Reckoning）</item>
     /// <item>Idle → Stale：TimeSinceLastSnapshot 超过 5 秒（疑似异常，但保留实体）</item>
     /// <item>Stale → TimeoutDespawn：TimeSinceLastSnapshot 超过 90 秒（兜底清理）</item>
     /// <item>Offline：由 HandleDespawn 直接销毁，不进入此方法</item>
@@ -1229,9 +1327,15 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             {
                 // 状态机推进：根据 TimeSinceLastSnapshot 转移状态
                 var newState = interp.State;
-                if (interp.State == RemoteEntityState.Active && interp.TimeSinceLastSnapshot > 0.5f)
+                if (interp.State == RemoteEntityState.Active && interp.TimeSinceLastSnapshot > 1.0f)
                 {
-                    // Active → Idle：0.5 秒未收到新 delta，远程角色停止移动
+                    // Active → Idle：1.0 秒未收到新 delta，远程角色停止 Lerp 追赶
+                    // 修复（远程角色频繁冻结 — "无法看到远程角色的移动"根因）：
+                    // 原值 0.5s 对网络抖动过于敏感，服务端心跳间隔 100ms，
+                    // 0.5s = 5 次心跳未到达即冻结。多客户端网络拥塞时 0.5s 抖动常见，
+                    // 导致远程角色频繁 Active→Idle→Active 切换，视觉"一顿一顿"。
+                    // 提升到 1.0s（10 次心跳未到达），配合 Idle 状态 Dead Reckoning，
+                    // 远程角色在 1~3s 网络抖动期间保持平滑移动。
                     newState = RemoteEntityState.Idle;
                 }
                 else if (interp.State == RemoteEntityState.Idle && interp.TimeSinceLastSnapshot > 5f)

@@ -58,6 +58,12 @@ namespace HundunWorld.Game
         /// <summary>是否已输出首帧诊断日志。</summary>
         private bool _firstFrameDiag = true;
 
+        // P-F10 回弹诊断：本地玩家 Actor 位置单帧跳变检测。
+        // 回弹/拉回发生时，预测位置会在单帧内出现 >2m 的反向跳变；捕获前后位置供根因分析。
+        private Vector3 _lastAppliedPos;
+        private bool _hasLastAppliedPos;
+        private long _jumpDiagCount;
+
         public override void OnStart()
         {
             Instance = this;
@@ -112,6 +118,26 @@ namespace HundunWorld.Game
                 // Flax.Z = ECS.Y（前后）
                 var targetPos = new Vector3(pred.X, pred.Z, pred.Y);
                 Actor.Position = targetPos;
+
+                // P-F10 回弹诊断：单帧位置跳变 >2m 时告警（限频：前 10 次 + 每 60 次）。
+                // 首帧/场景切换后无参照，跳过；正常移动单帧位移远小于 2m。
+                if (_hasLastAppliedPos)
+                {
+                    var jumpDist = Vector3.Distance(_lastAppliedPos, targetPos);
+                    if (jumpDist > 2f)
+                    {
+                        var n = System.Threading.Interlocked.Increment(ref _jumpDiagCount);
+                        if (n <= 10 || n % 60 == 1)
+                        {
+                            Debug.LogWarning(
+                                $"[LocalPlayerActorSync] P-F10 位置跳变#{n}: 单帧 {jumpDist:F2}m，" +
+                                $"({ _lastAppliedPos.X:F2},{_lastAppliedPos.Y:F2},{_lastAppliedPos.Z:F2}) → ({targetPos.X:F2},{targetPos.Y:F2},{targetPos.Z:F2})，" +
+                                $"pred=({pred.X:F2},{pred.Y:F2},{pred.Z:F2}), ClientTick={pred.ClientTick}");
+                        }
+                    }
+                }
+                _lastAppliedPos = targetPos;
+                _hasLastAppliedPos = true;
 
                 // 应用朝向：Yaw 弧度 → 度
                 float yawDeg = pred.Yaw * Mathf.RadiansToDegrees;

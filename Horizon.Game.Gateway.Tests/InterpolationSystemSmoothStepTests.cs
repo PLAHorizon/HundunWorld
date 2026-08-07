@@ -236,4 +236,140 @@ public class InterpolationSystemSmoothStepTests : IDisposable
         Assert.True(avgMs < 1.0,
             $"100 实例插值总耗时应 < 1ms，实际 {avgMs:F4}ms");
     }
+
+    // ─── Idle 状态 Dead Reckoning（修复"网络抖动时远程角色冻结"）───
+
+    /// <summary>
+    /// 创建一个 Idle 状态远程实体，携带指定速度。
+    /// </summary>
+    private Entity CreateIdleEntityWithVelocity(float posX, float velX, float velY = 0f, float timeSinceSnapshot = 1.0f)
+    {
+        var entity = _world.Create();
+        var interp = new InterpolatedTransformComponent
+        {
+            X = posX, Y = 0f, Z = 0f,
+            StartX = posX, StartY = 0f, StartZ = 0f,
+            TargetX = posX, TargetY = 0f, TargetZ = 0f,
+            Yaw = 0f, StartYaw = 0f, TargetYaw = 0f,
+            Alpha = 1f,
+            ServerTick = 1,
+            ReceivedTick = 1,
+            TimeSinceLastSnapshot = timeSinceSnapshot,
+            State = RemoteEntityState.Idle,
+            LastVelocityXZ_X = velX,
+            LastVelocityXZ_Y = velY,
+        };
+        _world.Add(entity, interp);
+        return entity;
+    }
+
+    /// <summary>
+    /// Idle 状态下速度非零时，Dead Reckoning 应继续推进位置。
+    /// 场景：远程角色以 6m/s 移动，网络抖动 1s 导致进入 Idle，
+    /// 角色应继续按 6m/s 外推，而非瞬间冻结。
+    /// </summary>
+    [Fact]
+    public void Idle_DeadReckoning_ContinuesMovingWithVelocity()
+    {
+        const float velocity = 6f; // 6 m/s
+        var entity = CreateIdleEntityWithVelocity(posX: 0f, velX: velocity, timeSinceSnapshot: 1.0f);
+
+        // 模拟 1 帧（dt = 1/60s）
+        var dt = 1.0 / 60.0;
+        _system.Update(_world, TimeSpan.FromSeconds(dt));
+
+        ref var interp = ref _world.Get<InterpolatedTransformComponent>(entity);
+        var expectedX = velocity * (float)dt; // 6 * (1/60) = 0.1m
+        Assert.True(MathF.Abs(interp.X - expectedX) < 0.001f,
+            $"Idle 状态 Dead Reckoning 应推进位置到 X={expectedX:F4}，实际 X={interp.X:F4}");
+    }
+
+    /// <summary>
+    /// Idle 状态下速度为零时，位置应保持不变（与原行为一致）。
+    /// 场景：远程角色真正静止，进入 Idle 后不应漂移。
+    /// </summary>
+    [Fact]
+    public void Idle_DeadReckoning_ZeroVelocity_StaysFrozen()
+    {
+        var entity = CreateIdleEntityWithVelocity(posX: 5f, velX: 0f, velY: 0f, timeSinceSnapshot: 1.0f);
+
+        _system.Update(_world, TimeSpan.FromSeconds(1.0 / 60.0));
+
+        ref var interp = ref _world.Get<InterpolatedTransformComponent>(entity);
+        Assert.Equal(5f, interp.X, 0.0001f);
+    }
+
+    /// <summary>
+    /// Idle 状态下超过 IdleDeadReckoningMaxSeconds 后，位置应停止外推。
+    /// 场景：网络抖动超过 2s（默认 IdleDeadReckoningMaxSeconds），
+    /// 角色应停止漂移，防止位置飘太远。
+    /// </summary>
+    [Fact]
+    public void Idle_DeadReckoning_StopsAfterMaxSeconds()
+    {
+        const float velocity = 6f;
+        // TimeSinceLastSnapshot = 3.0s > IdleDeadReckoningMaxSeconds (2.0s)
+        var entity = CreateIdleEntityWithVelocity(posX: 10f, velX: velocity, timeSinceSnapshot: 3.0f);
+        _system.IdleDeadReckoningMaxSeconds = 2.0f;
+
+        var xBefore = _world.Get<InterpolatedTransformComponent>(entity).X;
+        _system.Update(_world, TimeSpan.FromSeconds(1.0 / 60.0));
+
+        ref var interp = ref _world.Get<InterpolatedTransformComponent>(entity);
+        Assert.Equal(xBefore, interp.X, 0.0001f);
+    }
+
+    /// <summary>
+    /// Stale 状态下即使有速度，也不应做 Dead Reckoning。
+    /// 场景：5s+ 未收到快照，视为真实异常，冻结位置等待恢复。
+    /// </summary>
+    [Fact]
+    public void Stale_State_NeverDeadReckons()
+    {
+        var entity = _world.Create();
+        var interp = new InterpolatedTransformComponent
+        {
+            X = 10f, Y = 0f, Z = 0f,
+            TargetX = 10f, TargetY = 0f, TargetZ = 0f,
+            Alpha = 1f,
+            TimeSinceLastSnapshot = 6.0f, // > 5s → Stale
+            State = RemoteEntityState.Stale,
+            LastVelocityXZ_X = 6f, // 有速度但不应外推
+            LastVelocityXZ_Y = 0f,
+        };
+        _world.Add(entity, interp);
+
+        _system.Update(_world, TimeSpan.FromSeconds(1.0 / 60.0));
+
+        ref var result = ref _world.Get<InterpolatedTransformComponent>(entity);
+        Assert.Equal(10f, result.X, 0.0001f); // 位置不变
+    }
+
+    /// <summary>
+    /// Idle Dead Reckoning 多帧持续推进，模拟网络抖动期间远程角色保持移动。
+    /// 场景：60 帧（1 秒）Idle 状态，6m/s 速度应外推约 6m。
+    /// 注意：TimeSinceLastSnapshot 由 InterpolationSystem.Update 每帧累加（line 204），
+    /// 不需要测试手动累加。从 1.0s 开始，60 帧 +1s = 2.0s，恰好在 IdleDeadReckoningMaxSeconds 边界内。
+    /// </summary>
+    [Fact]
+    public void Idle_DeadReckoning_MultiFrame_ContinuousMovement()
+    {
+        const float velocity = 6f;
+        var entity = CreateIdleEntityWithVelocity(posX: 0f, velX: velocity, timeSinceSnapshot: 1.0f);
+        _system.IdleDeadReckoningMaxSeconds = 2.0f;
+
+        var dt = 1.0 / 60.0;
+        // 模拟 60 帧（1 秒），InterpolationSystem 内部每帧累加 TimeSinceLastSnapshot
+        for (int i = 0; i < 60; i++)
+        {
+            _system.Update(_world, TimeSpan.FromSeconds(dt));
+        }
+
+        ref var final = ref _world.Get<InterpolatedTransformComponent>(entity);
+        // 60 帧 × 6m/s × (1/60)s = 6m
+        // TimeSinceLastSnapshot 从 1.0s 增长到 2.0s，均在 IdleDeadReckoningMaxSeconds=2.0s 内
+        Assert.True(final.X > 5.5f,
+            $"Idle Dead Reckoning 1 秒应外推约 6m，实际 X={final.X:F4}。" +
+            "远程角色在网络抖动期间应保持移动而非冻结。");
+    }
 }

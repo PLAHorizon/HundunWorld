@@ -1,0 +1,4 @@
+{
+  "status": "compile-error",
+  "diagnosticsText": "c:/Works/GitHubProjects/HundunWorld/.canvas-temp/hundun-agent-plugin-report.canvas.tsx:129:33: canvasImage requires a string literal or a template literal without substitutions."
+}

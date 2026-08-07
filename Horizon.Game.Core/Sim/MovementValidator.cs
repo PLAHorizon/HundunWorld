@@ -233,33 +233,75 @@ public sealed class MovementValidator
             }
             else
             {
-                // 修复（角色无法真正移动根因）：原阈值 dzPred > 0.05f 过严。
-                // 当 GroundHeightSampler 为 null 时，服务端每 tick 因重力使 nz 下降约 0.003m，
-                // 前 6 tick 内 dzPred < 0.05 不触发钳制，实体持续下落。
-                // 客户端 LocalSimulationSystem 有 GroundHeightSampler 会将 Z 钳制到地面，
-                // PredictedEndZ 即为地面高度。服务端应信任客户端的地面约束结果。
-                // 修复策略：只要客户端 PredictedEndZ >= 服务端计算 nz（dzPred >= 0），
-                // 且差值在合理范围内（< 10m，防作弊），就钳制到客户端 Z。
-                // 这保证服务端实体不会因缺少地形数据而穿透地面，
-                // 同时 10m 上限 + drift 校验兜底防止客户端伪造高度。
                 var predictedZ = input.PredictedEndZ;
-                var dzPred = predictedZ - nz;
-                if (dzPred >= 0f && dzPred < 10f)
+                // 修复（PredictedEndZ 未设置导致实体 Z 被错误拉到 0 — 角色移动后回弹+跳跃Mode错误根因）：
+                // InputPacket.PredictedEndZ 默认为 0。当客户端未填写此字段（旧客户端/边界情况/测试环境）
+                // 且实体当前 Z 不为 0 时，原 fallback 会把 Z 错误地拉到 0，导致：
+                // 1) 位置突变（8→0）触发 Correction 风暴，角色被拉回"起点"
+                // 2) 跳跃后 nz=0、zChange=0 → isGrounded=true、nvz=0 → MovementMode 变为 Walk 而非 Jump
+                // 3) 连锁影响：旋转 tick 已把 Z 拉到 0，跳跃 tick 从 Z=0 起跳，完全偏离真实位置
+                //
+                // 判断策略：predictedZ == 0 有两种含义——
+                //   a) 实体真的在 Z=0 地面（合法）→ 服务端计算 nz 也应接近 0
+                //   b) PredictedEndZ 未设置（默认 0）但实体实际 Z 远离 0 → nz 不接近 0
+                // 用 |nz| > 0.5f 区分：服务端 Z 远离 0 时 predictedZ=0 很可能是未设置，不信任。
+                // 0.5m 阈值覆盖正常单帧重力偏移（~0.003m）和微小地形起伏，不会误判合法地面。
+                const float predictedUnsetThreshold = 0.5f;
+                if (predictedZ == 0f && MathF.Abs(nz) > predictedUnsetThreshold)
                 {
-                    nz = predictedZ;
-                    nvz = 0f;
-                    isGrounded = true;
-                    jumpCount = 0;
-                    jumpCountExceeded = false;
-                }
-                else
-                {
+                    // PredictedEndZ 未设置且实体远离 Z=0：不进行地面约束，保留重力计算结果。
+                    // 生产环境客户端 InputSendSystem 会从 PredictedTransformComponent 正确填充 PredictedEndZ。
                     var dz = MathF.Abs(nz - prevZ);
                     isGrounded = dz < groundedEpsilon && nvz <= 0f;
                     if (isGrounded)
                     {
                         jumpCount = 0;
                         jumpCountExceeded = false;
+                    }
+                }
+                else
+                {
+                    // PredictedEndZ 已设置（非 0）或服务端 Z 接近 0（实体在地面）：信任客户端的地面约束。
+                    // 修复（角色移动后回弹根因）：原条件 dzPred >= 0f 仅处理上坡/平地（客户端Z ≥ 服务端Z），
+                    // 下坡时客户端Z < 服务端Z → dzPred < 0 → fallback 不触发 → 服务端Z漂移 → Correction风暴。
+                    // 改为 MathF.Abs(dzPred) < 10f：下坡时也钳制到客户端Z，消除Z漂移。
+                    // 10m 上限保留防作弊保障；drift 校验兜底防止极端伪造。
+                    var dzPred = predictedZ - nz;
+                    if (MathF.Abs(dzPred) < 10f)
+                    {
+                        nz = predictedZ;
+                        // 修复（多段跳被破坏）：原代码无条件 nvz=0 + isGrounded=true + jumpCount=0，
+                        // 跳跃中(Z上升)也会重置jumpCount，破坏轻功多段跳。
+                        // 改为基于Z变化判断接地状态：
+                        // - Z变化小(|zChange| < 0.05m)→ 在地面（平地/缓坡）→ Vz=0, isGrounded=true
+                        // - Z变化大→ 跳跃/下落/陡坡 → 保留Vz, isGrounded=false（不重置jumpCount）
+                        var zChange = predictedZ - prevZ;
+                        if (MathF.Abs(zChange) < 0.05f)
+                        {
+                            nvz = 0f;
+                            isGrounded = true;
+                            jumpCount = 0;
+                            jumpCountExceeded = false;
+                        }
+                        else
+                        {
+                            // 跳跃/下落/陡坡：保留重力计算的Vz供下一帧使用，
+                            // isGrounded保持false避免错误重置jumpCount。
+                            // nz已钳制到客户端Z，位置不会漂移。
+                            isGrounded = false;
+                        }
+                    }
+                    else
+                    {
+                        // |dzPred| >= 10m：客户端Z与服务端计算Z差异过大，不信任客户端。
+                        // 保留重力计算结果，让drift校验兜底。
+                        var dz = MathF.Abs(nz - prevZ);
+                        isGrounded = dz < groundedEpsilon && nvz <= 0f;
+                        if (isGrounded)
+                        {
+                            jumpCount = 0;
+                            jumpCountExceeded = false;
+                        }
                     }
                 }
             }
@@ -341,7 +383,7 @@ public sealed class MovementValidator
             };
         }
 
-        return new ValidationResult(authoritativeEnd, vz, drift, maxObservedSpeed, correction, effectiveEpsilon);
+        return new ValidationResult(authoritativeEnd, vz, drift, maxObservedSpeed, correction, effectiveEpsilon, isGrounded);
     }
 
     /// <summary>校验结果。</summary>
@@ -354,10 +396,13 @@ public sealed class MovementValidator
         public CorrectionPacket? Correction { get; }
         /// <summary>本次校验实际使用的位置偏差阈值（含动态 RTT 放宽）。</summary>
         public float EffectiveEpsilon { get; }
+        /// <summary>本次校验结束时实体是否在地面（供 ZoneShardGrain 判断 MovementMode）。</summary>
+        public bool IsGrounded { get; }
 
         public ValidationResult(
             WorldPosition end, float vz, float drift, float maxSpeed,
-            CorrectionPacket? correction, float effectiveEpsilon)
+            CorrectionPacket? correction, float effectiveEpsilon,
+            bool isGrounded)
         {
             AuthoritativeEnd = end;
             AuthoritativeVz = vz;
@@ -365,6 +410,7 @@ public sealed class MovementValidator
             MaxObservedHorizontalSpeed = maxSpeed;
             Correction = correction;
             EffectiveEpsilon = effectiveEpsilon;
+            IsGrounded = isGrounded;
         }
 
         /// <summary>是否需要下发 correction（存在 <see cref="Correction"/> 即为真）。</summary>

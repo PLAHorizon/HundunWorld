@@ -15,7 +15,7 @@ namespace HundunWorld.Game.Network
         private readonly NetworkManager _networkManager;
         private CancellationTokenSource _heartbeatCts;
         private bool _isRunning = false;
-        private const int HeartbeatInterval = 20000; // 20秒间隔
+        private const int HeartbeatInterval = 15000; // 15秒间隔（优化：从20秒降低到15秒，与服务端IdleTimeout=45秒配合，容差30秒覆盖网络抖动和GC暂停）
 
         /// <summary>
         /// [Phase C3] 最近一次心跳发送的 Stopwatch 时间戳，供 HeartbeatResponseHandler 计算 RTT。
@@ -56,6 +56,7 @@ namespace HundunWorld.Game.Network
                     try
                     {
                         // 检查是否可以发送消息（需要已认证用户）
+                        var heartbeatSuccess = false; // 声明在 if-else 之外，确保后续 delayMs 逻辑可访问
                         if (_networkManager.CanSendMessage() && !string.IsNullOrEmpty(_networkManager.AuthToken))
                         {
                             // 发送心跳消息
@@ -85,7 +86,7 @@ namespace HundunWorld.Game.Network
                                 Body = heartbeatMessage
                             };
 
-                            var heartbeatSuccess = await _networkManager.SendMessageAsync(heartbeatPacket);
+                            heartbeatSuccess = await _networkManager.SendMessageAsync(heartbeatPacket);
 
                             // [Phase C3] 记录心跳发送时间戳，供 RTT 计算
                             if (heartbeatSuccess)
@@ -112,9 +113,10 @@ namespace HundunWorld.Game.Network
                                 Debug.Log($"[心跳管理器] 网络未连接，跳过心跳包发送 ({DateTime.Now:HH:mm:ss})");
                             EnhancedDiagnostics.LogDiagnostic("网络未连接或未认证，跳过心跳包发送");
                         }
-                        
-                        // 等待下次发送
-                        await Task.Delay(HeartbeatInterval, _heartbeatCts?.Token?? CancellationToken.None);
+
+                        // 等待下次发送（优化：发送失败或未发送时缩短等待到5秒，快速重试避免空闲超时）
+                        var delayMs = heartbeatSuccess ? HeartbeatInterval : 5000;
+                        await Task.Delay(delayMs, _heartbeatCts?.Token?? CancellationToken.None);
                     }
                     catch (OperationCanceledException)
                     {

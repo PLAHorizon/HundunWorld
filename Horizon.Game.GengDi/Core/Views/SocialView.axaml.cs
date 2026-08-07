@@ -194,6 +194,54 @@ namespace Horizon.Game.GengDi.Core.Views
             // 否则离开社交页期间将收不到群邀请/聊天推送。
         }
 
+        // ==================== 语音/视频通话入口 ====================
+
+        private async void VoiceCallButton_Click(object sender, RoutedEventArgs e)
+        {
+            await StartCallFromChatAsync(Horizon.IM.Message.Enums.IMCallType.Audio);
+        }
+
+        private async void VideoCallButton_Click(object sender, RoutedEventArgs e)
+        {
+            await StartCallFromChatAsync(Horizon.IM.Message.Enums.IMCallType.Video);
+        }
+
+        /// <summary>
+        /// 从当前私聊会话发起通话。仅对私聊会话可用；
+        /// 实际拨打/设备初始化/信令发送均由 CallService 处理，本处仅做入口校验。
+        /// </summary>
+        private async Task StartCallFromChatAsync(Horizon.IM.Message.Enums.IMCallType callType)
+        {
+            try
+            {
+                var viewModel = _viewModel;
+                if (viewModel == null)
+                {
+                    return;
+                }
+
+                if (viewModel.IsGroupConversationActive)
+                {
+                    Core.Controls.ToastService.Instance.Warning("当前仅支持一对一语音/视频通话。");
+                    return;
+                }
+
+                var peerId = viewModel.SelectedFriendId;
+                if (string.IsNullOrWhiteSpace(peerId))
+                {
+                    Core.Controls.ToastService.Instance.Warning("请先选择一个好友会话再发起通话。");
+                    return;
+                }
+
+                await Services.Call.CallService.Instance.StartCallAsync(peerId, callType);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SocialView] 发起通话异常：{ex.Message}");
+                Core.Controls.ToastService.Instance.Error("发起通话失败，请稍后重试。");
+            }
+        }
+
         /// <summary>
         /// 退出登录时由外部调用，停止 IM 订阅并取消后台初始化重试。
         /// </summary>

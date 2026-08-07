@@ -115,6 +115,12 @@ namespace HundunWorld.Game.Network
 
         public static void RecordRetransmit() => Interlocked.Increment(ref _inputRetransmits);
 
+        /// <summary>累计战斗动作包发送数。</summary>
+        public static long CombatPacketsSent => Interlocked.Read(ref _combatPacketsSent);
+        private static long _combatPacketsSent;
+
+        public static void RecordCombatSent() => Interlocked.Increment(ref _combatPacketsSent);
+
         // ─── 连接 ───
 
         /// <summary>累计重连尝试次数。</summary>
@@ -156,6 +162,46 @@ namespace HundunWorld.Game.Network
         private static long _positionOverrideCount;
 
         public static void RecordPositionOverride() => Interlocked.Increment(ref _positionOverrideCount);
+
+        // ─── 可见性审计（RemoteVisibilityAudit 应见 vs 已见核对，spec 4.4.2） ───
+
+        /// <summary>应可见远程实体数（最近一次核对快照）。</summary>
+        public static long ExpectedVisibleEntityCount => Interlocked.Read(ref _expectedVisibleEntityCount);
+        private static long _expectedVisibleEntityCount;
+
+        /// <summary>实际呈现实体数（最近一次核对快照）。</summary>
+        public static long PresentedEntityCount => Interlocked.Read(ref _presentedEntityCount);
+        private static long _presentedEntityCount;
+
+        /// <summary>缺失呈现数（最近一次核对快照）。</summary>
+        public static long MissingPresentationCount => Interlocked.Read(ref _missingPresentationCount);
+        private static long _missingPresentationCount;
+
+        /// <summary>累计可见性缺失告警次数。</summary>
+        public static long VisibilityAlertCount => Interlocked.Read(ref _visibilityAlertCount);
+        private static long _visibilityAlertCount;
+
+        /// <summary>累计可见性核对次数。</summary>
+        public static long VisibilityCheckCount => Interlocked.Read(ref _visibilityCheckCount);
+        private static long _visibilityCheckCount;
+
+        /// <summary>由 RemoteVisibilityAudit 直接写入应可见/已见/缺失计数。</summary>
+        public static void UpdateVisibilityCounters(int expected, int presented, int missing, int alertDelta)
+        {
+            Interlocked.Exchange(ref _expectedVisibleEntityCount, expected);
+            Interlocked.Exchange(ref _presentedEntityCount, presented);
+            Interlocked.Exchange(ref _missingPresentationCount, missing);
+            if (alertDelta > 0)
+            {
+                Interlocked.Add(ref _visibilityAlertCount, alertDelta);
+            }
+        }
+
+        /// <summary>记录一次可见性核对。</summary>
+        public static void RecordVisibilityCheck()
+        {
+            Interlocked.Increment(ref _visibilityCheckCount);
+        }
 
         // ─── 快照溢出（Phase C6） ───
 
@@ -304,6 +350,15 @@ namespace HundunWorld.Game.Network
         /// <summary>记录一次非法快照跳过事件。</summary>
         public static void RecordInvalidSnapshotSkipped() => Interlocked.Increment(ref _invalidSnapshotSkippedCount);
 
+        // ─── 发送资格违规（SyncGuard 上行资格管控可观测） ───
+
+        /// <summary>累计违规发送尝试次数（含限频内全部尝试，供监控面板观测）。</summary>
+        public static long OutboundViolationCount => Interlocked.Read(ref _outboundViolationCount);
+        private static long _outboundViolationCount;
+
+        /// <summary>记录一次违规发送尝试。</summary>
+        public static void RecordOutboundViolation() => Interlocked.Increment(ref _outboundViolationCount);
+
         // ─── 重置（断线重连时可选调用） ───
 
         /// <summary>重置所有指标（重连时调用）。</summary>
@@ -323,6 +378,7 @@ namespace HundunWorld.Game.Network
             Interlocked.Exchange(ref _inputAcksReceived, 0);
             Interlocked.Exchange(ref _inputPacketsSent, 0);
             Interlocked.Exchange(ref _inputRetransmits, 0);
+            Interlocked.Exchange(ref _combatPacketsSent, 0);
             Interlocked.Exchange(ref _unknownPackets, 0);
             Interlocked.Exchange(ref _positionOverrideCount, 0);
             Interlocked.Exchange(ref _snapshotOverflowCount, 0);
@@ -346,6 +402,7 @@ namespace HundunWorld.Game.Network
             Interlocked.Exchange(ref _frameRateDropCount, 0);
             Interlocked.Exchange(ref _maxEntityCapReachedCount, 0);
             Interlocked.Exchange(ref _invalidSnapshotSkippedCount, 0);
+            Interlocked.Exchange(ref _outboundViolationCount, 0);
         }
     }
 }

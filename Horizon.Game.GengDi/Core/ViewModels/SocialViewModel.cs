@@ -164,6 +164,37 @@ namespace Horizon.Game.GengDi.Core.ViewModels
             ConfirmFriendGroupOverlayCommand = _confirmFriendGroupOverlayCommand;
             CloseDeleteGroupOverlayCommand = new RelayCommand(CloseDeleteGroupOverlay);
             ConfirmDeleteGroupOverlayCommand = new AsyncRelayCommand(ConfirmDeleteGroupOverlayAsync, CanConfirmDeleteGroupOverlay);
+
+            // ===== 语音/视频通话（增量接入）=====
+            // 将通话服务绑定到当前用户的 IM 长连接，并挂载通话窗口宿主；
+            // 不影响现有文本聊天/会话/通知链路。
+            LastCreatedInstance = this;
+            if (ImIdentity.TryResolveUserId(userId, out var localCallUserId))
+            {
+                Services.Call.CallService.Instance.Initialize(_socialService.GatewayClient, localCallUserId);
+                Core.Views.CallWindowHost.EnsureAttached();
+            }
+        }
+
+        /// <summary>最近创建的社交视图模型实例（供通话服务解析对端昵称等展示信息，可为 null）。</summary>
+        internal static SocialViewModel LastCreatedInstance { get; private set; }
+
+        /// <summary>尽力解析已知用户信息（本地缓存/网关缓存），失败返回 null，不抛异常。</summary>
+        internal User ResolveKnownUser(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return null;
+            }
+
+            try
+            {
+                return _socialService.GetUserById(userId);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         internal ImGatewayContactClient GatewayClient => _socialService.GatewayClient;

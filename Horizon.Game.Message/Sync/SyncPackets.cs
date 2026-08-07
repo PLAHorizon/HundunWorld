@@ -724,6 +724,26 @@ public sealed partial class SubscriptionUpdatePacket : SyncPacket
     [Id(1)]
     public ulong[] RemovedChunks { get; set; } = Array.Empty<ulong>();
 
+    /// <summary>玩家当前世界坐标 X（Flax Y-up 坐标系）。非零时网关侧改用位置驱动订阅，避免传输大量 chunk key。</summary>
+    [MemoryPackOrder(4)]
+    [Id(2)]
+    public float PositionX { get; set; }
+
+    /// <summary>玩家当前世界坐标 Y（Flax Y-up 坐标系，= 高度）。</summary>
+    [MemoryPackOrder(5)]
+    [Id(3)]
+    public float PositionY { get; set; }
+
+    /// <summary>玩家当前世界坐标 Z（Flax Y-up 坐标系）。</summary>
+    [MemoryPackOrder(6)]
+    [Id(4)]
+    public float PositionZ { get; set; }
+
+    /// <summary>PositionX/Y/Z 是否已被客户端填充（用于判断是否走位置驱动订阅路径）。</summary>
+    [MemoryPackOrder(7)]
+    [Id(5)]
+    public bool HasPosition { get; set; }
+
     public SubscriptionUpdatePacket() { Kind = SyncPacketKind.SubscriptionUpdate; }
 }
 

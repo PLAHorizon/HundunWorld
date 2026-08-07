@@ -1,0 +1,352 @@
+### FlaxEditor.Modules.SceneModule : FlaxEditor.Modules.EditorModule
+  meth Boolean CheckSaveBeforeClose(SceneNode scene)
+  meth Boolean CheckSaveBeforeClose()
+  meth Void ClearRefsToSceneObjects(Boolean fullCleanup?)
+  meth Void CloseAllScenes()
+  meth Void CloseAllScenesExcept(Scene scene)
+  meth Void CloseScene(Scene scene)
+  meth Void CreateSceneFile(String path)
+  meth Void ExecuteOnGraph(GraphExecuteCallbackDelegate callback)
+  meth ActorNode GetActorNode(Actor actor)
+  meth ActorNode GetActorNode(Guid actorId)
+  meth Boolean IsEdited(Scene scene)
+  meth Boolean IsEdited()
+  meth Boolean IsEverySceneEdited()
+  meth Void MarkAllScenesEdited()
+  meth Void MarkSceneEdited(Scene scene)
+  meth Void MarkSceneEdited(SceneNode scene)
+  meth Void MarkSceneEdited(IEnumerable<Scene> scenes)
+  meth Void OnExit()
+  meth Void OnInit()
+  meth Void OpenScene(Guid sceneId, Boolean additive?)
+  meth Void ReloadScenes()
+  meth Void SaveScene(Scene scene)
+  meth Void SaveScene(SceneNode scene)
+  meth Void SaveScenes()
+  field ScenesRootNode Root
+  event ActorRemoved
+
+### FlaxEditor.Modules.SceneEditingModule : FlaxEditor.Modules.EditorModule
+  prop Boolean HasSthSelected { get }
+  prop Int32 SelectionCount { get }
+  meth Void Convert(Type to)
+  meth Void Copy()
+  meth Void CreateParentForSelectedActors()
+  meth Void Cut()
+  meth Void Delete()
+  meth Void Deselect(SceneGraphNode node)
+  meth Void Deselect()
+  meth Void DeselectAllScenes()
+  meth Void Duplicate()
+  meth Void OnInit()
+  meth Void OnSelectionChanged()
+  meth Void Paste()
+  meth Void Paste(Actor pasteTargetActor)
+  meth Void Select(Actor actor)
+  meth Void Select(List<SceneGraphNode> selection, Boolean additive?)
+  meth Void Select(SceneGraphNode[] selection, Boolean additive?)
+  meth Void Select(SceneGraphNode selection, Boolean additive?)
+  meth Void SelectActorsUsingAsset(Guid assetId, Boolean additive?)
+  meth Void SelectAllScenes()
+  meth Void Spawn(Actor actor, Actor parent?, Int32 orderInParent?, Boolean autoSelect?)
+  field List<SceneGraphNode> Selection
+  event SelectionChanged
+  event SpawnBegin
+  event SpawnEnd
+  event SelectionDeleteBegin
+  event SelectionDeleteEnd
+
+### FlaxEditor.Modules.ContentDatabaseModule : FlaxEditor.Modules.EditorModule
+  prop ProjectFolderTreeNode Engine { get set}
+  prop ProjectFolderTreeNode Game { get set}
+  prop Int32 ItemsCreated { get }
+  prop Int32 ItemsDeleted { get }
+  meth Void AddProxy(ContentProxy proxy, Boolean rebuild?)
+  meth Void Copy(ContentItem item, String targetPath)
+  meth Void Delete(ContentItem item, Boolean deletedByUser?)
+  meth ContentItem Find(String path)
+  meth ContentItem Find(Guid id)
+  meth AssetItem FindAsset(Guid id)
+  meth ScriptItem FindScript(String path)
+  meth ScriptItem FindScript(Guid id)
+  meth ScriptItem FindScriptWitScriptName(String scriptName)
+  meth ScriptItem FindScriptWitScriptName(Script script)
+  meth ScriptItem FindScriptWitScriptName(ScriptType scriptType)
+  meth AssetProxy GetAssetProxy(String typeName, String path)
+  meth AssetProxy GetAssetVirtualProxy(String path)
+  meth ProjectFolderTreeNode GetProjectWorkspace(ProjectInfo project)
+  meth ContentProxy GetProxy(ContentItem item)
+  meth ContentProxy GetProxy()
+  meth ContentProxy GetProxy(String extension)
+  meth Void Move(List<ContentItem> items, ContentFolder newParent)
+  meth Void Move(ContentItem item, ContentFolder newParent)
+  meth Void Move(ContentItem item, String newPath)
+  meth Void OnEndInit()
+  meth Void OnExit()
+  meth Void OnInit()
+  meth Void OnUpdate()
+  meth Void Rebuild(Boolean immediate?)
+  meth Void RefreshFolder(ContentItem item, Boolean checkSubDirs)
+  meth Void RemoveProxy(ContentProxy proxy, Boolean rebuild?)
+  field List<ProjectFolderTreeNode> Projects
+  field List<ContentProxy> Proxy
+  event ItemAdded
+  event ItemRemoved
+  event WorkspaceModified
+  event WorkspaceRebuilding
+  event WorkspaceRebuilt
+
+### FlaxEditor.Modules.ContentImportingModule : FlaxEditor.Modules.EditorModule
+  prop Single ImportBatchDone { get }
+  prop Int32 ImportBatchSize { get }
+  prop Single ImportingProgress { get }
+  prop Boolean IsImporting { get }
+  meth Void Create(CreateFileEntry entry)
+  meth Void Import(IEnumerable<String> files, ContentFolder targetLocation, Boolean skipSettingsDialog?)
+  meth Void Import(String file, ContentFolder targetLocation, Boolean skipSettingsDialog?, Object settings?)
+  meth Void OnExit()
+  meth Void OnInit()
+  meth Void OnUpdate()
+  meth Void Reimport(BinaryAssetItem item, Object settings?, Boolean skipSettingsDialog?)
+  meth Void ShowImportFileDialog(ContentFolder targetLocation)
+  event ImportingQueueBegin
+  event ImportFileBegin
+  event ImportFileEnd
+  event ImportingQueueEnd
+
+### FlaxEditor.Modules.ContentEditingModule : FlaxEditor.Modules.EditorModule
+  meth Boolean CloneAssetFile(String srcPath, String dstPath, Guid dstId)
+  meth Boolean FastTempAssetClone(String srcPath, String& resultPath)
+  meth Boolean IsValidAssetName(ContentItem item, String shortName, String& hint)
+  meth EditorWindow Open(Asset asset, Boolean disableAutoShow?)
+  meth EditorWindow Open(ContentItem item, Boolean disableAutoShow?)
+
+### FlaxEditor.Modules.PrefabsModule : FlaxEditor.Modules.EditorModule
+  meth Void ApplyAll(Actor instance)
+  meth Void BreakLinks()
+  meth Void CreatePrefab()
+  meth Void CreatePrefab(List<SceneGraphNode> selection, PrefabWindow prefabWindow?)
+  meth Void CreatePrefab(Actor actor)
+  meth Void CreatePrefab(Actor actor, Boolean rename, PrefabWindow prefabWindow?)
+  meth Void OpenPrefab(ActorNode actorNode)
+  meth Void OpenPrefab(Guid prefabID?)
+  meth Void SelectPrefab()
+  event PrefabCreating
+  event PrefabCreated
+  event PrefabApplying
+  event PrefabApplied
+
+### FlaxEditor.Modules.WindowsModule : FlaxEditor.Modules.EditorModule
+  prop Window MainWindow { get set}
+  meth Void CloseAllEditors(ContentItem item)
+  meth EditorWindow FindEditor(ContentItem item)
+  meth Void FlashMainWindow()
+  meth Void LoadDefaultLayout()
+  meth Boolean LoadLayout(String path)
+  meth Void OnEndInit()
+  meth Void OnExit()
+  meth Void OnInit()
+  meth Void OnPlayBegin()
+  meth Void OnPlayBeginning()
+  meth Void OnPlayEnd()
+  meth Void OnPlayEnding()
+  meth Void OnUpdate()
+  meth Void Open(EditorWindow window)
+  meth Void SaveCurrentLayout()
+  meth Void SaveLayout()
+  meth Void SaveLayout(String path)
+  meth Void TakeScreenshot()
+  meth Void UpdateWindowTitle()
+  field ContentWindow ContentWin
+  field EditGameWindow EditWin
+  field GameWindow GameWin
+  field PropertiesWindow PropertiesWin
+  field SceneTreeWindow SceneWin
+  field DebugLogWindow DebugLogWin
+  field OutputLogWindow OutputLogWin
+  field ToolboxWindow ToolboxWin
+  field GraphicsQualityWindow GraphicsQualityWin
+  field GameCookerWindow GameCookerWin
+  field ProfilerWindow ProfilerWin
+  field EditorOptionsWindow EditorOptionsWin
+  field PluginsWindow PluginsWin
+  field VisualScriptDebuggerWindow VisualScriptDebuggerWin
+  field List<EditorWindow> Windows
+  event MainWindowClosing
+  event WindowAdded
+  event WindowRemoved
+
+### FlaxEditor.Modules.SimulationModule : FlaxEditor.Modules.EditorModule
+  prop Boolean IsDuringBreakpointHang { get set}
+  prop Boolean IsPlayModeRequested { get }
+  meth Void DelegatePlayOrStopPlayInEditor()
+  meth Void OnPlayBeginning()
+  meth Void OnPlayEnd()
+  meth Void OnUpdate()
+  meth Void RequestPausePlay()
+  meth Void RequestPlayGameOrStopPlay()
+  meth Void RequestPlayOneFrame()
+  meth Void RequestPlayScenesOrStopPlay()
+  meth Void RequestResumeOrPause()
+  meth Void RequestResumePlay()
+  meth Void RequestStartPlayGame()
+  meth Void RequestStartPlayScenes()
+  meth Void RequestStopPlay()
+  event BreakpointHangBegin
+  event BreakpointHangEnd
+
+### FlaxEditor.EditorUndo : FlaxEditor.Undo
+  prop Boolean Enabled { get set}
+
+### FlaxEditor.EditorPlugin : FlaxEngine.Plugin
+  prop Editor Editor { get set}
+  prop Type GamePluginType { get }
+  meth Void DeinitializeEditor()
+  meth Void InitializeEditor()
+
+### FlaxEditor.CustomEditorWindow : FlaxEditor.CustomEditors.CustomEditor
+  prop EditorWindow Window { get }
+  meth Void Show(DockState state?, DockPanel toDock?, Boolean autoSelect?, Nullable<Single> splitterValue?)
+
+### MISSING FlaxEditor.EditorWindow
+### FlaxEditor.Content.AssetItem : FlaxEditor.Content.ContentItem
+  prop Guid ID { get set}
+  prop Boolean IsLoaded { get }
+  prop ContentItemType ItemType { get }
+  prop String TypeDescription { get }
+  prop String TypeName { get }
+  meth ContentItem Find(Guid id)
+  meth Boolean IsOfType()
+  meth Boolean IsOfType(Type type)
+  meth Asset LoadAsync()
+  meth Boolean OnEditorDrag(Object context)
+  meth Actor OnEditorDrop(Object context)
+  meth Void OnTooltipShown(Tooltip tooltip)
+  meth Void Reload()
+  meth String ToString()
+
+### FlaxEditor.Content.BinaryAssetItem : FlaxEditor.Content.AssetItem
+  prop ContentItemSearchFilter SearchFilter { get }
+  meth Boolean GetImportPath(String& importPath)
+  meth Boolean IsOfType(Type type)
+  field Type Type
+
+### FlaxEditor.Content.SceneItem : FlaxEditor.Content.JsonAssetItem
+  prop SpriteHandle DefaultThumbnail { get }
+  prop ContentItemType ItemType { get }
+  prop ContentItemSearchFilter SearchFilter { get }
+  prop String TypeDescription { get }
+  meth Boolean IsOfType(Type type)
+
+### FlaxEditor.Content.PrefabItem : FlaxEditor.Content.JsonAssetItem
+  prop SpriteHandle DefaultThumbnail { get }
+  prop ContentItemType ItemType { get }
+  prop ContentItemSearchFilter SearchFilter { get }
+  prop String TypeDescription { get }
+  meth Boolean IsOfType(Type type)
+  meth Boolean OnEditorDrag(Object context)
+  meth Actor OnEditorDrop(Object context)
+
+### FlaxEditor.Content.JsonAssetItem : FlaxEditor.Content.AssetItem
+  prop SpriteHandle DefaultThumbnail { get }
+  prop ContentItemSearchFilter SearchFilter { get }
+
+### FlaxEditor.Content.ContentFolder : FlaxEditor.Content.ContentItem
+  prop Boolean CanDrag { get }
+  prop Boolean CanHaveAssets { get }
+  prop Boolean CanHaveScripts { get }
+  prop Boolean CanRename { get }
+  prop SpriteHandle DefaultThumbnail { get }
+  prop Boolean Exists { get }
+  prop ContentFolderType FolderType { get }
+  prop ContentItemType ItemType { get }
+  prop ContentFolderTreeNode Node { get }
+  prop ContentItemSearchFilter SearchFilter { get }
+  prop String TypeDescription { get }
+  meth Int32 Compare(Control other)
+  meth Boolean ContainsChild(String path)
+  meth Void Draw()
+  meth ContentItem Find(String path)
+  meth Boolean Find(ContentItem item)
+  meth ContentItem Find(Guid id)
+  meth ContentItem FindChild(String path)
+  meth ScriptItem FindScriptWitScriptName(String scriptName)
+  meth DragDropEffect OnDragDrop(Float2& location, DragData data)
+  meth DragDropEffect OnDragEnter(Float2& location, DragData data)
+  meth Void OnDragLeave()
+  meth DragDropEffect OnDragMove(Float2& location, DragData data)
+  field List<ContentItem> Children
+
+### FlaxEditor.Content.FileItem : FlaxEditor.Content.ContentItem
+  prop SpriteHandle DefaultThumbnail { get }
+  prop ContentItemType ItemType { get }
+  prop ContentItemSearchFilter SearchFilter { get }
+  prop String TypeDescription { get }
+
+### FlaxEditor.Options.OptionsModule : FlaxEditor.Modules.EditorModule
+  prop IReadOnlyDictionary<String,CreateCustomSettingsDelegate> CustomSettings { get }
+  meth Void AddCustomSettings(String name, CreateCustomSettingsDelegate factory)
+  meth Void Apply(EditorOptions options)
+  meth Style CreateDefaultStyle()
+  meth Style CreateLightStyle()
+  meth Void Load()
+  meth Void OnInit()
+  meth Void RemoveCustomSettings(String name)
+  field EditorOptions Options
+  event OptionsChanged
+  event CustomSettingsChanged
+
+### MISSING FlaxEditor.Options.CustomSettings
+### FlaxEditor.Actions.EditSplineAction : System.Object
+  prop String ActionString { get }
+  meth Void Dispose()
+  meth Void Do()
+  meth Void MarkSceneEdited(SceneModule sceneModule)
+  meth Void Undo()
+
+### FlaxEditor.Windows.EditGameWindow : FlaxEditor.Windows.SceneEditorWindow
+  prop Actor ActorToPilot { get }
+  prop Boolean IsPilotActorActive { get }
+  prop Boolean UseLayoutData { get }
+  meth Void EndPilot()
+  meth Void OnDestroy()
+  meth Void OnEditorStateChanged()
+  meth Void OnLayoutDeserialize(XmlElement node)
+  meth Void OnLayoutDeserialize()
+  meth Void OnLayoutSerialize(XmlWriter writer)
+  meth Void OnSceneUnloading(Scene scene, Guid sceneId)
+  meth Void PilotActor(Actor actor)
+  meth Void Update(Single deltaTime)
+  field MainEditorGizmoViewport Viewport
+
+### FlaxEditor.Windows.SceneEditorWindow : FlaxEditor.Windows.EditorWindow
+  prop List<SceneGraphNode> Selection { get }
+  prop EditorViewport Viewport { get }
+  meth Void DeleteSelection()
+  meth Void Deselect(SceneGraphNode node)
+  meth Void FocusSelection()
+  meth Void RenameSelection()
+  meth Void Select(SceneGraphNode node, Boolean additive?)
+  meth Void Spawn(Actor actor, Actor parent?, Int32 orderInParent?, Boolean autoSelect?)
+
+### FlaxEditor.Windows.SceneTreeWindow : FlaxEditor.Windows.SceneEditorWindow
+  prop Panel SceneTreePanel { get }
+  meth Void Draw()
+  meth Void OnDestroy()
+  meth DragDropEffect OnDragDrop(Float2& location, DragData data)
+  meth DragDropEffect OnDragEnter(Float2& location, DragData data)
+  meth Void OnDragLeave()
+  meth DragDropEffect OnDragMove(Float2& location, DragData data)
+  meth Void OnEditorStateChanged()
+  meth Void OnInit()
+  meth Boolean OnMouseDown(Float2 location, MouseButton buttons)
+  meth Boolean OnMouseUp(Float2 location, MouseButton buttons)
+  meth Void OnPlayBegin()
+  meth Void OnPlayBeginning()
+  meth Void OnPlayEnd()
+  meth Void OnPlayEnding()
+  meth Void ScrollingOnSceneTreeView(Boolean enabled)
+  meth Void ScrollToSelectedNode()
+  meth Void Search()
+  event ContextMenuShow
+

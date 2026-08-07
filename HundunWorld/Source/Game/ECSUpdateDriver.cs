@@ -48,8 +48,17 @@ namespace HundunWorld.Game
         /// <summary>上次采集的 SnapshotApplySystem Stale 实体清理计数，用于增量转发。</summary>
         private long _lastStaleEntitiesCleaned;
 
-        /// <summary>上次采集的 SnapshotApplySystem 非法快照跳过计数，用于增量转发。</summary>
-        private long _lastInvalidSnapshotsSkipped;
+    /// <summary>上次采集的 SnapshotApplySystem 非法快照跳过计数，用于增量转发。</summary>
+    private long _lastInvalidSnapshotsSkipped;
+
+    /// <summary>[RemoteVisibility] 可见性审计周期核对计时（秒）。</summary>
+    private float _visibilityAuditTimer;
+
+    /// <summary>[RemoteVisibility] 可见性审计核对间隔（秒，spec 5.4.1 规则 1：0.5~1s）。</summary>
+    private const float VisibilityAuditIntervalSeconds = 0.8f;
+
+    /// <summary>[RemoteVisibility] 上次可见性核对时状态机是否已恢复完成（用于恢复完成时触发全量核对）。</summary>
+    private bool _lastRecoveryCompleteState;
 
         /// <summary>诊断 Sink 是否已注入到各同步系统（一次性注入标志）。</summary>
         private bool _diagnosticsInjected;
@@ -107,6 +116,24 @@ namespace HundunWorld.Game
                 var instance = HundunWorldGame.Instance;
                 var plugin = HundunWorldGamePlugin.Instance;
                 Debug.Log($"[ECSUpdateDriver] 首帧 OnUpdate: Instance={instance != null}, Plugin={plugin != null}, ECSManager={instance?.ECSManager != null}, ArchHost={instance?.ArchHost != null}");
+            }
+
+            // P-F8 场景切换自愈：登录后切换 GameWorld 时新实例的 OnStart 生命周期可能缺失
+            // （实测日志：新 ECSUpdateDriver 在跑但无 OnStart/FlaxActorSyncSystem 挂载日志，
+            // 导致远程角色 Actor 永不创建、位置永不同步）。在 OnUpdate 中持续自检，
+            // 缺失时自动补挂载，保证 ECS→Actor 视觉桥接在任何场景过渡后都能恢复。
+            if (_actorSyncSystem == null || _actorSyncSystem.Parent == null)
+            {
+                _actorSyncSystem = Actor.GetScript<FlaxActorSyncSystem>();
+                if (_actorSyncSystem == null)
+                {
+                    _actorSyncSystem = Actor.AddScript<FlaxActorSyncSystem>();
+                    Debug.LogWarning("[ECSUpdateDriver] P-F8 自愈：FlaxActorSyncSystem 缺失，已在 OnUpdate 重新挂载");
+                }
+                else
+                {
+                    Debug.LogWarning("[ECSUpdateDriver] P-F8 自愈：重新获取到已存在的 FlaxActorSyncSystem");
+                }
             }
 
             // 确保游戏已初始化并启动
@@ -199,6 +226,9 @@ namespace HundunWorld.Game
 
                         // 消费 InputSendQueue：将 ECS 管线产生的 InputPacket 发送到服务端
                         FlushInputSendQueue();
+
+                        // [RemoteVisibility] 周期可见性审计核对（spec 5.4.1 规则 1：0.5~1s）。
+                        TickVisibilityAudit(Time.DeltaTime);
                     }
                 }
                 catch (Exception ex)
@@ -208,6 +238,47 @@ namespace HundunWorld.Game
 
                 // 驱动 HundunWorldGame 自身更新（超时兜底等逻辑）
                 HundunWorldGame.Instance.OnUpdate();
+            }
+        }
+
+        /// <summary>
+        /// 周期可见性审计核对（spec 5.4.1 规则 1/2）：约 0.8s 一次，
+        /// 恢复完成状态下也持续核对，确保"应见必见"收敛。
+        /// </summary>
+        private void TickVisibilityAudit(float deltaSeconds)
+        {
+            var instance = HundunWorldGame.Instance;
+            if (instance?.RemoteVisibilityAudit == null)
+            {
+                return;
+            }
+
+            _visibilityAuditTimer += deltaSeconds;
+            if (_visibilityAuditTimer < VisibilityAuditIntervalSeconds)
+            {
+                return;
+            }
+
+            _visibilityAuditTimer = 0f;
+
+            try
+            {
+                var audit = instance.RemoteVisibilityAudit;
+                audit.RunReconciliation();
+                ClientSyncMetrics.RecordVisibilityCheck();
+
+                // 恢复完成状态检测：首次进入时已由状态机驱动全量核对，此处持续核对兜底。
+                var stateMachine = instance.ReconnectResumeStateMachine;
+                var isComplete = stateMachine != null && stateMachine.IsRecoveryComplete;
+                if (isComplete && !_lastRecoveryCompleteState)
+                {
+                    audit.RunReconciliation(); // 恢复完成瞬间额外核对一次
+                }
+                _lastRecoveryCompleteState = isComplete;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[ECSUpdateDriver] 可见性审计核对异常被隔离: {ex.Message}");
             }
         }
 
@@ -251,28 +322,36 @@ namespace HundunWorld.Game
             {
                 try
                 {
-                    SyncPacketCodec.Encode(inputPacket, out var frame, out var frameLength);
-                    try
+                    // 发送出口统一经受控发送服务 GuardSyncSender（spec 5.4.1 规则 1、4.4.4 规则集中性）。
+                    var guardSender = HundunWorldGame.Instance?.GuardSyncSender;
+                    if (guardSender != null)
                     {
-                        var payload = new byte[frameLength];
-                        System.Buffer.BlockCopy(frame, 0, payload, 0, frameLength);
-
-                        var syncFrame = new SyncFrameMessage
+                        _ = guardSender.SendLocalAsync(inputPacket, inputPacket.CharacterId);
+                    }
+                    else
+                    {
+                        // 装配失败回退：直接编码发送（向后兼容，资格管控降级为仅连接/握手检查）。
+                        SyncPacketCodec.Encode(inputPacket, out var fallbackFrame, out var fallbackLength);
+                        try
                         {
-                            Frame = payload,
-                            PacketKind = (byte)inputPacket.Kind,
-                            ProtocolVersion = inputPacket.ProtocolVersion,
-                        };
-
-                        _ = networkManager.SendAsync(syncFrame);
-
-                        // [Phase C2] 记录输入包发送
-                        ClientSyncMetrics.RecordInputSent();
+                            var fallbackPayload = new byte[fallbackLength];
+                            System.Buffer.BlockCopy(fallbackFrame, 0, fallbackPayload, 0, fallbackLength);
+                            var fallbackSyncFrame = new SyncFrameMessage
+                            {
+                                Frame = fallbackPayload,
+                                PacketKind = (byte)inputPacket.Kind,
+                                ProtocolVersion = inputPacket.ProtocolVersion,
+                            };
+                            _ = networkManager.SendAsync(fallbackSyncFrame);
+                        }
+                        finally
+                        {
+                            SyncPacketCodec.ReturnFrame(fallbackFrame);
+                        }
                     }
-                    finally
-                    {
-                        SyncPacketCodec.ReturnFrame(frame);
-                    }
+
+                    // [Phase C2] 记录输入包发送
+                    ClientSyncMetrics.RecordInputSent();
                 }
                 catch (Exception ex)
                 {
@@ -283,8 +362,59 @@ namespace HundunWorld.Game
             // 上送 baseline 重传请求（SnapshotApplySystem 产生，delta 解码时 baseline 不匹配）
             FlushPendingResyncRequests();
 
+            // P1.4：补齐战斗动作队列消费发送链路（打包后丢弃 → 授权发送）。
+            FlushCombatSendQueue();
+
             // [Phase C2] 转发 ECS 系统指标到 ClientSyncMetrics
             ForwardEcsMetrics();
+        }
+
+        /// <summary>
+        /// 消费战斗动作队列（P1.4 补齐"打包后丢弃"链路），出队发送前统一授权：
+        /// 本地角色 → SendLocalAsync，绑定实体 → SendBoundEntityAsync（spec 5.2.1 规则 1）。
+        /// </summary>
+        private void FlushCombatSendQueue()
+        {
+            var guardSender = HundunWorldGame.Instance?.GuardSyncSender;
+            if (guardSender == null)
+            {
+                return;
+            }
+
+            var combatQueue = InputSendQueue.Instance;
+            while (combatQueue.TryDequeueCombat(out var combatPacket))
+            {
+                try
+                {
+                    // 以 AttackerId 识别发起实体：本地角色或深度绑定实体（AttackerId 承载其自身身份）。
+                    var attackerId = combatPacket.AttackerId;
+                    bool sent;
+                    if (IsBoundEntityId(attackerId))
+                    {
+                        sent = guardSender.SendBoundEntityAsync(combatPacket, attackerId).GetAwaiter().GetResult();
+                    }
+                    else
+                    {
+                        sent = guardSender.SendLocalAsync(combatPacket, attackerId).GetAwaiter().GetResult();
+                    }
+
+                    if (sent)
+                    {
+                        ClientSyncMetrics.RecordCombatSent();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[ECSUpdateDriver] 发送战斗动作包失败: {ex.Message}");
+                }
+            }
+        }
+
+        /// <summary>判断实体是否为深度绑定实体（本地角色识别委托，由装配方注入）。</summary>
+        private bool IsBoundEntityId(ulong entityId)
+        {
+            var bindingRegistry = HundunWorldGame.Instance?.BindingRegistry;
+            return bindingRegistry != null && bindingRegistry.TryGetValidBinding(entityId, out _);
         }
 
         /// <summary>

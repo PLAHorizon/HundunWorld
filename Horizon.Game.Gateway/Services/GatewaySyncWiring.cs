@@ -27,6 +27,7 @@ namespace Horizon.Game.Gateway.Services
     public sealed class GatewayZoneShardFanoutSource : IZoneShardFanoutObserver, IZoneShardFanoutSource, IAsyncDisposable
     {
         private readonly Channel<FanoutEvent> _channel;
+        private readonly int _capacity;
         private readonly ILogger<GatewayZoneShardFanoutSource>? _logger;
 
         /// <summary>累计收到的 fanout 事件数（来自 grain 推送）。</summary>
@@ -42,6 +43,7 @@ namespace Horizon.Game.Gateway.Services
         public GatewayZoneShardFanoutSource(int capacity = 8192, ILogger<GatewayZoneShardFanoutSource>? logger = null)
         {
             if (capacity <= 0) throw new ArgumentOutOfRangeException(nameof(capacity));
+            _capacity = capacity;
             _channel = Channel.CreateBounded<FanoutEvent>(new BoundedChannelOptions(capacity)
             {
                 FullMode = BoundedChannelFullMode.DropOldest,
@@ -59,6 +61,33 @@ namespace Horizon.Game.Gateway.Services
             if (diff is null || sessionIds is null || sessionIds.Count == 0)
                 return Task.CompletedTask;
 
+            EnqueueEvent(diff, sessionIds);
+            return Task.CompletedTask;
+        }
+
+        /// <inheritdoc />
+        /// <remarks>
+        /// P-F1：grain 一轮广播（快照 delta + correction + InputAck）合并为单条 observer 消息，
+        /// gateway 在此处拆回逐条 FanoutEvent 入队，保持 dispatcher 逐事件分发语义不变；
+        /// 跨进程 RPC 次数从 O(chunk数) 降为 O(1)，显著降低 silo→gateway 推送延迟。
+        /// </remarks>
+        public Task OnChunkDiffBatchAsync(FanoutBatchItem[] items)
+        {
+            if (items is null || items.Length == 0)
+                return Task.CompletedTask;
+
+            foreach (var item in items)
+            {
+                if (item?.Diff is null || item.SessionIds is null || item.SessionIds.Length == 0)
+                    continue;
+                EnqueueEvent(item.Diff, item.SessionIds);
+            }
+            return Task.CompletedTask;
+        }
+
+        /// <summary>把单条 (diff, 受众) 封装为 FanoutEvent 写入有界队列（含反压探针）。</summary>
+        private void EnqueueEvent(WorldChunkDiffPacket diff, IReadOnlyCollection<long> sessionIds)
+        {
             var evt = new FanoutEvent
             {
                 Packet = diff,
@@ -81,7 +110,16 @@ namespace Horizon.Game.Gateway.Services
                 DroppedByBackpressureCount++;
                 _logger?.LogWarning("GatewayZoneShardFanoutSource 队列写入失败（PendingCount={Count}，反压）", PendingCount);
             }
-            return Task.CompletedTask;
+
+            // 反压预警：DropOldest 模式下 TryWrite 永远返回 true，旧事件被静默丢弃。
+            // 当队列使用率 >80% 时记录警告，便于在真实环境中及时发现 dispatch 跟不上 fanout 速率的问题。
+            var pending = PendingCount;
+            if (pending > _capacity * 0.8 && ReceivedEventCount % 60 == 1)
+            {
+                _logger?.LogWarning(
+                    "[FanoutBackpressure] 队列使用率过高：Pending={Pending}/{Capacity} ({Pct:F1}%), ReceivedCount={Received}, Dropped={Dropped}",
+                    pending, _capacity, (double)pending / _capacity * 100, ReceivedEventCount, DroppedByBackpressureCount);
+            }
         }
 
         // --- IZoneShardFanoutSource（dispatcher drain） ---

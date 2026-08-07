@@ -1,0 +1,390 @@
+﻿Flax.Build 1.0.0
+Building targets...
+Found Android SDK at C:\Program Files (x86)\Android\android-sdk
+Unknown Visual Studio installation. Display name: SQL Server Management Studio 22
+Missing Emscripten SDK. Cannot build for Web platform.
+Building target GameEditorTarget in Development for Windows x64
+Using Windows Toolset v145, 14.51.36231 (C:\Program Files (x86)\Windows Kits\10\)
+Using Windows SDK 10.0.26100.0 (C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\bin\Hostx64\x64)
+Building referenced target Flax
+Building for Windows without Vulkan rendering backend (Vulkan SDK is missing)
+Using .NET SDK 10.0.302, runtime 10.0.10 (C:\Program Files\dotnet)
+Building referenced target NarrativePro
+Found 14 valid and 3 invalid actions in Task Graph cache
+Executing 2 tasks using 2 threads
+Compiling C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Binaries\NarrativeProEditorTarget\Windows\x64\Development\NarrativePro.CSharp.dll
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\Interaction\PlayerInteractionComponent.cs(96,23,96,36): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\Interaction\PlayerInteractionComponent.cs(101,23,101,43): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\GAS\NarrativeCombatAbility.cs(130,31,130,46): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\Tales\Quest\Quest.cs(30,36,30,50): warning CS0067: The event 'Quest.QuestForgotten' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\Tales\Quest\Quest.cs(31,36,31,50): warning CS0067: The event 'Quest.QuestRestarted' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\Character\NarrativeCharacterMovement.cs(130,29,130,41): warning CS0067: The event 'NarrativeCharacterMovement.OnEnterCover' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\GAS\NarrativeAbilitySystemComponent.cs(21,118,21,122): warning CS1573: Parameter 'spec' has no matching param tag in the XML comment for 'OnHealedByDelegate' (but other parameters do)
+Compiling C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Binaries\NarrativeProEditorTarget\Windows\x64\Development\NarrativeProEditor.CSharp.dll
+Done!
+Building referenced target HundunAgent
+Found 4 valid and 3 invalid actions in Task Graph cache
+Executing 4 tasks using 4 threads
+Compiling C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Binaries\HundunAgentEditorTarget\Windows\x64\Development\HundunAgent.CSharp.dll
+C:\Program Files (x86)\Flax\Flax_1.12\Source\Platforms\DotNet\Newtonsoft.Json.dll
+复制了 1 个文件
+C:\Program Files (x86)\Flax\Flax_1.12\Source\Platforms\DotNet\Newtonsoft.Json.xml
+复制了 1 个文件
+Compiling C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Binaries\HundunAgentEditorTarget\Windows\x64\Development\HundunAgentEditor.CSharp.dll
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(141,17,141,41): warning CS0184: The given expression is never of the provided ('ShaderSourceItem') type
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(279,52,279,82): warning CS0618: 'Editor.NewAssetType' is obsolete: 'Use CreateAsset with named tag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(279,22,279,102): warning CS0618: 'Editor.CreateAsset(Editor.NewAssetType, string)' is obsolete: 'Use CreateAsset with named tag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(455,52,455,82): warning CS0618: 'Editor.NewAssetType' is obsolete: 'Use CreateAsset with named tag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Tools\MaterialAssetTools.cs(455,22,455,110): warning CS0618: 'Editor.CreateAsset(Editor.NewAssetType, string)' is obsolete: 'Use CreateAsset with named tag instead'
+Done!
+Building target GameTarget in Development for Windows x64
+Using Windows Toolset v145, 14.51.36231 (C:\Program Files (x86)\Windows Kits\10\)
+Using Windows SDK 10.0.26100.0 (C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\bin\Hostx64\x64)
+Building referenced target Flax
+Building referenced target NarrativePro
+Found 16 valid and 0 invalid actions in Task Graph cache
+Executing 1 task using 1 thread
+Compiling C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Binaries\NarrativeProTarget\Windows\x64\Development\NarrativePro.CSharp.dll
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\Interaction\PlayerInteractionComponent.cs(96,23,96,36): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\Interaction\PlayerInteractionComponent.cs(101,23,101,43): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\GAS\NarrativeCombatAbility.cs(130,31,130,46): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\Tales\Quest\Quest.cs(30,36,30,50): warning CS0067: The event 'Quest.QuestForgotten' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\Tales\Quest\Quest.cs(31,36,31,50): warning CS0067: The event 'Quest.QuestRestarted' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\Character\NarrativeCharacterMovement.cs(130,29,130,41): warning CS0067: The event 'NarrativeCharacterMovement.OnEnterCover' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\NarrativePro\Source\NarrativePro\GAS\NarrativeAbilitySystemComponent.cs(21,118,21,122): warning CS1573: Parameter 'spec' has no matching param tag in the XML comment for 'OnHealedByDelegate' (but other parameters do)
+Done!
+Building referenced target HundunAgent
+Found 8 valid and 0 invalid actions in Task Graph cache
+Executing 3 tasks using 3 threads
+Compiling C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Binaries\HundunAgentTarget\Windows\x64\Development\HundunAgent.CSharp.dll
+C:\Program Files (x86)\Flax\Flax_1.12\Source\Platforms\DotNet\Newtonsoft.Json.dll
+复制了 1 个文件
+C:\Program Files (x86)\Flax\Flax_1.12\Source\Platforms\DotNet\Newtonsoft.Json.xml
+复制了 1 个文件
+Done!
+Found 108 valid and 2 invalid actions in Task Graph cache
+Executing 26 tasks using 16 threads
+Compiling C:\Works\GitHubProjects\HundunWorld\HundunWorld\Binaries\GameEditorTarget\Windows\x64\Development\Game.CSharp.dll
+Compiling C:\Works\GitHubProjects\HundunWorld\HundunWorld\Binaries\GameTarget\Windows\x64\Development\Game.CSharp.dll
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Message.pdb
+复制了 1 个文件
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Message.xml
+复制了 1 个文件
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.dll
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.pdb
+复制了 1 个文件
+复制了 1 个文件
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.xml
+复制了 1 个文件
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Core.dll
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Core.pdb
+复制了 1 个文件
+复制了 1 个文件
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.Arch.dll
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.Arch.pdb
+复制了 1 个文件
+复制了 1 个文件
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.Arch.xml
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Core.Abstract.dll
+复制了 1 个文件
+复制了 1 个文件
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Message.dll
+复制了 1 个文件
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Message.dll
+复制了 1 个文件
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Message.pdb
+复制了 1 个文件
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Message.xml
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.dll
+复制了 1 个文件
+复制了 1 个文件
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.pdb
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.xml
+复制了 1 个文件
+复制了 1 个文件
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Core.dll
+复制了 1 个文件
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.Core.pdb
+复制了 1 个文件
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.Arch.dll
+复制了 1 个文件
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.Arch.pdb
+复制了 1 个文件
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Core.Abstract.dll
+C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\Horizon.Game.ECS.Arch.xml
+复制了 1 个文件
+复制了 1 个文件
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\PlayerController.cs(475,54,475,54): warning CS1570: XML comment has badly formed XML -- 'An identifier was expected.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\PlayerController.cs(475,54,475,55): warning CS1570: XML comment has badly formed XML -- 'The character(s) '=' cannot be used at this location.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\InkPageRouter.cs(516,34,516,54): warning CS1584: XML comment has syntactically incorrect cref attribute 'InkPageDomIds.Action*'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Social\SocialGuildPage.cs(12,34,12,34): warning CS1570: XML comment has badly formed XML -- 'Reference to undefined entity '甯細淇℃伅鍗?.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\QuestTrackerHUD.cs(261,25,261,33): warning CS0109: The member 'QuestTrackerHUD.OnUpdate()' does not hide an accessible member. The new keyword is not required.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkSkillSlotGrid.cs(274,22,274,34): warning CS0108: 'InkSkillSlotGrid.UpdateBounds()' hides inherited member 'Control.UpdateBounds()'. Use the new keyword if hiding was intended.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\WaterSkills.cs(381,59,381,74): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\WaterSkills.cs(402,71,402,86): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\MetalSkills.cs(111,60,111,75): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(361,30,361,31): warning CS0168: The variable 'e' is declared but never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\FireSkills.cs(329,61,329,76): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\FireSkills.cs(351,73,351,88): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\FireSkills.cs(184,82,184,97): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\EarthSkills.cs(586,82,586,97): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\AI\BehaviorTreeComponent.cs(215,18,215,28): warning CS0219: The variable 'anyRunning' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Audio\GameAudioManager.cs(305,63,305,92): warning CS0618: 'AudioSource.IsActuallyPlayingSth' is obsolete: 'Use IsActuallyPlaying instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Audio\GameAudioManager.cs(315,45,315,78): warning CS0618: 'AudioSource.IsActuallyPlayingSth' is obsolete: 'Use IsActuallyPlaying instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Audio\GameAudioManager.cs(331,45,331,78): warning CS0618: 'AudioSource.IsActuallyPlayingSth' is obsolete: 'Use IsActuallyPlaying instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Audio\MusicManager.cs(107,60,107,95): warning CS0618: 'AudioSource.IsActuallyPlayingSth' is obsolete: 'Use IsActuallyPlaying instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Audio\MusicManager.cs(184,43,184,78): warning CS0618: 'AudioSource.IsActuallyPlayingSth' is obsolete: 'Use IsActuallyPlaying instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\TargetSelectionSystem.cs(326,17,326,26): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\TargetSelectionSystem.cs(326,41,326,50): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\TargetSelectionSystem.cs(326,67,326,76): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Kungfu\KungfuSystemUI.cs(202,19,202,33): warning CS0219: The variable 'sectionSpacing' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(2694,42,2694,59): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(2851,21,2851,35): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(2882,21,2882,35): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(2886,26,2886,40): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(2912,49,2912,66): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(2927,21,2927,30): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\GameMain\GameMainUI.cs(522,25,522,38): warning CS0219: The variable 'minimapHeight' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\GameMain\GameMainUI.cs(523,25,523,36): warning CS0219: The variable 'rightMargin' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\GameMain\GameMainUI.cs(524,25,524,34): warning CS0219: The variable 'topMargin' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\GameMain\GameMainUI.cs(705,25,705,41): warning CS0219: The variable 'menuBottomMargin' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(3001,31,3001,48): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(3045,27,3045,44): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\HundunWorldGame.cs(1023,23,1023,31): warning CS0219: The variable 'AxisBias' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\AOEIndicatorSystem.cs(187,33,187,48): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Character\CharacterCreationPanel.cs(159,19,159,26): warning CS0219: The variable 'spacing' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\AOEIndicatorSystem.cs(232,33,232,48): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\AOEIndicatorSystem.cs(259,33,259,48): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\FlaxActorSyncSystem.cs(748,26,748,41): warning CS0219: The variable 'positionUpdated' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\HundunWorldGame.cs(1523,18,1523,30): warning CS0219: The variable 'typeMismatch' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Social\LeaderboardPage.cs(527,19,527,26): warning CS0219: The variable 'padding' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Social\AchievementPage.cs(106,19,106,26): warning CS0219: The variable 'headerX' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Social\AchievementPage.cs(108,19,108,26): warning CS0219: The variable 'headerY' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\UIAnimationSystem.cs(89,34,89,49): warning CS0169: The field 'UIAnimationSystem._toastContainer' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Character\MenuCharAttributesV2Page.cs(440,26,440,37): warning CS0649: Field 'MenuCharAttributesV2Page._rightPanel' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Character\GenderSelectionUI.cs(65,23,65,34): warning CS0169: The field 'GenderSelectionUI._titleLabel' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Bestiary\MenuBestiaryPage.cs(55,37,55,56): warning CS0067: The event 'MenuBestiaryPage.NavigationRequested' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\MenuQuestsPage.cs(18,27,18,33): warning CS0649: Field 'MenuQuestsPage.QuestData.Status' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Social\TeamSystem.cs(114,41,114,57): warning CS0067: The event 'TeamSystem.OnInviteReceived' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Components\FloatingParticles.cs(133,23,133,40): warning CS0169: The field 'FloatingParticles._spawnAccumulator' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\MetaHuman\PresetManagerPanel.cs(14,37,14,58): warning CS0067: The event 'PresetManagerPanel.OnQuickPresetSelected' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Character\IntegratedCharacterCreationUI.cs(19,44,19,62): warning CS0067: The event 'IntegratedCharacterCreationUI.OnCharacterCreated' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\CombatHudPage.cs(249,34,249,49): warning CS0169: The field 'CombatHudPage._playerBuffsRow' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\GameMain\GuildManagementUI.cs(37,44,37,58): warning CS0067: The event 'GuildManagementUI.OnDemoteMember' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Rendering\CharacterAppearancePreviewController.cs(160,23,160,40): warning CS0649: Field 'CharacterAppearancePreviewController._previewCharacter' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\MartialRecord\MenuMartialRecordPage.cs(54,37,54,56): warning CS0067: The event 'MenuMartialRecordPage.NavigationRequested' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Character\MenuCharAttributesV2Page.cs(446,26,446,36): warning CS0649: Field 'MenuCharAttributesV2Page._leftPanel' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\MenuQuestsPage.cs(256,26,256,32): warning CS0649: Field 'MenuQuestsPage.ObjectiveRow.Status' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\PopupPages.cs(3176,27,3176,37): warning CS0169: The field 'PopupBestiarySide._msgButton' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\PopupPages.cs(1230,29,1230,44): warning CS0067: The event 'PopupVerification.ViewAchievement' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Performance\RenderingOptimizer.cs(94,26,94,39): warning CS0649: Field 'RenderingOptimizer.ParticleEmitterEntry.SpawnDistance' is never assigned to, and will always have its default value 0
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Character\MenuCharAttributesV2Page.cs(395,38,395,49): warning CS0649: Field 'MenuCharAttributesV2Page._radarChart' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Character\MenuCharAttributesV2Page.cs(404,36,404,56): warning CS0649: Field 'MenuCharAttributesV2Page._martialArtsLeftBars' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\BattlePass\MenuBattlePassPage.cs(58,37,58,56): warning CS0067: The event 'MenuBattlePassPage.NavigationRequested' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Performance\MemoryOptimizationManager.cs(32,49,32,62): warning CS0649: Field 'MemoryOptimizationManager._cleanupTimer' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Services\CharacterPersistenceService.cs(100,24,100,40): warning CS0169: The field 'CharacterPersistenceService._databaseManager' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\CombatHudPage.cs(252,25,252,46): warning CS0169: The field 'CombatHudPage._playerBuffTimeLabels' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Gacha\MenuGachaPage.cs(64,37,64,56): warning CS0067: The event 'MenuGachaPage.NavigationRequested' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(853,22,853,33): warning CS0649: Field 'ThirdPersonCamera._isInCombat' is never assigned to, and will always have its default value false
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\UIAnimationSystem.cs(93,34,93,50): warning CS0169: The field 'UIAnimationSystem._damageContainer' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Character\GenderSelectionUI.cs(64,23,64,40): warning CS0169: The field 'GenderSelectionUI._selectorBackdrop' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\PopupPages.cs(3175,27,3175,39): warning CS0169: The field 'PopupBestiarySide._closeButton' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Character\MenuCharAttributesV2Page.cs(428,34,428,48): warning CS0649: Field 'MenuCharAttributesV2Page._rightGoldGlow' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Performance\MemoryOptimizationManager.cs(33,49,33,66): warning CS0649: Field 'MemoryOptimizationManager._memoryCheckTimer' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Livelihood\MenuLivelihoodPage.cs(54,37,54,56): warning CS0067: The event 'MenuLivelihoodPage.NavigationRequested' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Character\MenuCharAttributesV2Page.cs(425,27,425,45): warning CS0649: Field 'MenuCharAttributesV2Page._rightSpringSplash' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Settings\SettingsAudioPage.cs(19,28,19,42): warning CS0169: The field 'SettingsAudioPage._settingGroups' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\GameMain\TeamInviteUI.cs(52,29,52,40): warning CS0067: The event 'TeamInviteUI.OnLeaveTeam' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\PopupPages.cs(2379,29,2379,37): warning CS0067: The event 'PopupSkillRealization.Verified' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Appearance\MenuAppearancePage.cs(62,37,62,56): warning CS0067: The event 'MenuAppearancePage.NavigationRequested' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\ElementVision\ElementVisionPage.cs(49,34,49,48): warning CS0067: The event 'ElementVisionPage.MarkerSelected' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\UISceneManager.cs(16,32,16,45): warning CS0649: Field 'UISceneManager._stateManager' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Authentication\AuthenticationUI.cs(46,22,46,35): warning CS0414: The field 'AuthenticationUI._isFirstLogin' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ECSUpdateDriver.cs(21,22,21,43): warning CS0414: The field 'ECSUpdateDriver._actorSyncInitialized' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\FireSkills.cs(572,22,572,32): warning CS0414: The field 'FengHuangNiePan.isReviving' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkTabButton.cs(34,22,34,32): warning CS0414: The field 'InkTabButton._isHovered' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(903,22,903,39): warning CS0414: The field 'ThirdPersonCamera._isGroundDetected' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Network\NetworkManager.cs(39,31,39,45): warning CS0414: The field 'NetworkManager._isInitialized' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\HundunWorldGame.cs(843,27,843,42): warning CS0419: Ambiguous reference in cref attribute: 'Physics.RayCast'. Assuming 'FlaxEngine.Physics.RayCast(FlaxEngine.Vector3, FlaxEngine.Vector3, float, uint, bool)', but could have also matched other overloads including 'FlaxEngine.Physics.RayCast(FlaxEngine.Vector3, FlaxEngine.Vector3, out FlaxEngine.RayCastHit, float, uint, bool)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\HundunWorldGame.cs(1076,27,1076,88): warning CS1574: XML comment has cref attribute 'HandleSpawn' that could not be resolved
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Network\NetworkManager.cs(1283,105,1283,109): warning CS1573: Parameter 'posX' has no matching param tag in the XML comment for 'NetworkManager.SendSubscriptionUpdateAsync(ulong[], ulong[], float, float, float, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Network\NetworkManager.cs(1283,122,1283,126): warning CS1573: Parameter 'posY' has no matching param tag in the XML comment for 'NetworkManager.SendSubscriptionUpdateAsync(ulong[], ulong[], float, float, float, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Network\NetworkManager.cs(1283,139,1283,143): warning CS1573: Parameter 'posZ' has no matching param tag in the XML comment for 'NetworkManager.SendSubscriptionUpdateAsync(ulong[], ulong[], float, float, float, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Network\NetworkManager.cs(1283,155,1283,166): warning CS1573: Parameter 'hasPosition' has no matching param tag in the XML comment for 'NetworkManager.SendSubscriptionUpdateAsync(ulong[], ulong[], float, float, float, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkAttributeTooltip.cs(150,46,150,53): warning CS1574: XML comment has cref attribute 'Visible' that could not be resolved
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkBackpackGrid.cs(259,34,259,54): warning CS0419: Ambiguous reference in cref attribute: 'Content.LoadAsync{T}'. Assuming 'FlaxEngine.Content.LoadAsync<T>(System.Guid)', but could have also matched other overloads including 'FlaxEngine.Content.LoadAsync<T>(string)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkDialClock.cs(146,29,146,46): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.DrawLine'. Assuming 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, float)', but could have also matched other overloads including 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, FlaxEngine.Color, float)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkEquipmentSlot.cs(176,48,176,61): warning CS1574: XML comment has cref attribute 'PointToScreen' that could not be resolved
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkMeridianDiagram.cs(161,29,161,46): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.DrawLine'. Assuming 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, float)', but could have also matched other overloads including 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, FlaxEngine.Color, float)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkMinimap.cs(328,29,328,46): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.DrawLine'. Assuming 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, float)', but could have also matched other overloads including 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, FlaxEngine.Color, float)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkSkillSlotGrid.cs(205,35,205,57): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.FillTriangles'. Assuming 'FlaxEngine.Render2D.FillTriangles(FlaxEngine.Float2[], FlaxEngine.Color)', but could have also matched other overloads including 'FlaxEngine.Render2D.FillTriangles(FlaxEngine.Float2[], FlaxEngine.Color[], bool)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkSkillSlotGrid.cs(247,29,247,46): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.DrawLine'. Assuming 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, float)', but could have also matched other overloads including 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, FlaxEngine.Color, float)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\InkPageShell.cs(21,30,21,55): warning CS1574: XML comment has cref attribute 'Enabled' that could not be resolved
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Combat\QtePage.cs(525,29,525,46): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.DrawLine'. Assuming 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, float)', but could have also matched other overloads including 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, FlaxEngine.Color, float)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Combat\QtePage.cs(549,29,549,46): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.DrawLine'. Assuming 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, float)', but could have also matched other overloads including 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, FlaxEngine.Color, float)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Reward\RewardLevelUpPage.cs(663,49,663,60): warning CS0419: Ambiguous reference in cref attribute: 'Mathf.Clamp'. Assuming 'FlaxEngine.Mathf.Clamp(long, long, long)', but could have also matched other overloads including 'FlaxEngine.Mathf.Clamp(ulong, ulong, ulong)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\RewardPages.cs(421,49,421,60): warning CS0419: Ambiguous reference in cref attribute: 'Mathf.Clamp'. Assuming 'FlaxEngine.Mathf.Clamp(long, long, long)', but could have also matched other overloads including 'FlaxEngine.Mathf.Clamp(ulong, ulong, ulong)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\SettingsPage.cs(538,30,538,68): warning CS1574: XML comment has cref attribute 'MasterVolume' that could not be resolved
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\SettingsPage.cs(559,30,559,65): warning CS1574: XML comment has cref attribute 'SfxVolume' that could not be resolved
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Layout\ResponsiveLayoutCalculator.cs(89,26,89,36): warning CS1572: XML comment has a param tag for 'targetSize', but there is no parameter by that name
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\EarthSkills.cs(11,5,11,6): warning CS1587: XML comment is not placed on a valid language element
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\FireSkills.cs(11,5,11,6): warning CS1587: XML comment is not placed on a valid language element
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\WaterSkills.cs(11,5,11,6): warning CS1587: XML comment is not placed on a valid language element
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\WoodSkills.cs(11,5,11,6): warning CS1587: XML comment is not placed on a valid language element
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(245,65,245,81): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Where_<T>(LiteDatabaseKind, Func<T, bool>)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(255,57,255,73): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Add<T>(LiteDatabaseKind, T)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(267,56,267,72): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.AddRange<T>(LiteDatabaseKind, IEnumerable<T>, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(290,55,290,71): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Remove<T>(LiteDatabaseKind, BsonValue)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(298,26,298,32): warning CS1572: XML comment has a param tag for 'models', but there is no parameter by that name
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(301,58,301,74): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Removes<T, K>(LiteDatabaseKind, IEnumerable<BsonValue>, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(301,99,301,102): warning CS1573: Parameter 'ids' has no matching param tag in the XML comment for 'LiteDataContext.Removes<T, K>(LiteDatabaseKind, IEnumerable<BsonValue>, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(301,38,301,39): warning CS1712: Type parameter 'K' has no matching typeparam tag in the XML comment on 'LiteDataContext.Removes<T, K>(LiteDatabaseKind, IEnumerable<BsonValue>, bool)' (but other type parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(323,58,323,74): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Upsert<T, K>(LiteDatabaseKind, K, T)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(323,38,323,39): warning CS1712: Type parameter 'K' has no matching typeparam tag in the XML comment on 'LiteDataContext.Upsert<T, K>(LiteDatabaseKind, K, T)' (but other type parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(334,55,334,71): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Update<T>(LiteDatabaseKind, T)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(345,58,345,74): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Updates<T, K>(LiteDatabaseKind, IEnumerable<T>, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(345,38,345,39): warning CS1712: Type parameter 'K' has no matching typeparam tag in the XML comment on 'LiteDataContext.Updates<T, K>(LiteDatabaseKind, IEnumerable<T>, bool)' (but other type parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(382,59,382,75): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.DeletedMany<T>(LiteDatabaseKind, Expression<Func<T, bool>>)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(410,57,410,73): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Where<T>(LiteDatabaseKind, Expression<Func<T, bool>>)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(421,60,421,76): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.FirstOrDefault<T>(LiteDatabaseKind, Expression<Func<T, bool>>)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Authentication\AuthenticationController.cs(353,78,353,88): warning CS1573: Parameter 'isRegisted' has no matching param tag in the XML comment for 'AuthenticationController.PerformSwitchToLogin(string, string, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Authentication\AuthenticationController.cs(391,87,391,97): warning CS1573: Parameter 'isRegisted' has no matching param tag in the XML comment for 'AuthenticationController.ShowLoginPanelWithCredentials(string, string, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Controllers\UISwitchController.cs(241,103,241,117): warning CS1573: Parameter 'transitionType' has no matching param tag in the XML comment for 'UISwitchController.RequestSceneSwitchAsync(SceneType, TransitionType, Dictionary<string, object>, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\PlayerController.cs(475,54,475,54): warning CS1570: XML comment has badly formed XML -- 'An identifier was expected.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\PlayerController.cs(475,54,475,55): warning CS1570: XML comment has badly formed XML -- 'The character(s) '=' cannot be used at this location.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\InkPageRouter.cs(516,34,516,54): warning CS1584: XML comment has syntactically incorrect cref attribute 'InkPageDomIds.Action*'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Social\SocialGuildPage.cs(12,34,12,34): warning CS1570: XML comment has badly formed XML -- 'Reference to undefined entity '甯細淇℃伅鍗?.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\QuestTrackerHUD.cs(261,25,261,33): warning CS0109: The member 'QuestTrackerHUD.OnUpdate()' does not hide an accessible member. The new keyword is not required.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkSkillSlotGrid.cs(274,22,274,34): warning CS0108: 'InkSkillSlotGrid.UpdateBounds()' hides inherited member 'Control.UpdateBounds()'. Use the new keyword if hiding was intended.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\WaterSkills.cs(381,59,381,74): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\WaterSkills.cs(402,71,402,86): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\MetalSkills.cs(111,60,111,75): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(361,30,361,31): warning CS0168: The variable 'e' is declared but never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\FireSkills.cs(329,61,329,76): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\FireSkills.cs(351,73,351,88): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\FireSkills.cs(184,82,184,97): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\EarthSkills.cs(586,82,586,97): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Audio\MusicManager.cs(107,60,107,95): warning CS0618: 'AudioSource.IsActuallyPlayingSth' is obsolete: 'Use IsActuallyPlaying instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Audio\MusicManager.cs(184,43,184,78): warning CS0618: 'AudioSource.IsActuallyPlayingSth' is obsolete: 'Use IsActuallyPlaying instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\AI\BehaviorTreeComponent.cs(215,18,215,28): warning CS0219: The variable 'anyRunning' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Audio\GameAudioManager.cs(305,63,305,92): warning CS0618: 'AudioSource.IsActuallyPlayingSth' is obsolete: 'Use IsActuallyPlaying instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Audio\GameAudioManager.cs(315,45,315,78): warning CS0618: 'AudioSource.IsActuallyPlayingSth' is obsolete: 'Use IsActuallyPlaying instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Audio\GameAudioManager.cs(331,45,331,78): warning CS0618: 'AudioSource.IsActuallyPlayingSth' is obsolete: 'Use IsActuallyPlaying instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\AOEIndicatorSystem.cs(187,33,187,48): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\AOEIndicatorSystem.cs(232,33,232,48): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\AOEIndicatorSystem.cs(259,33,259,48): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\TargetSelectionSystem.cs(326,17,326,26): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\TargetSelectionSystem.cs(326,41,326,50): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\TargetSelectionSystem.cs(326,67,326,76): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\FlaxActorSyncSystem.cs(748,26,748,41): warning CS0219: The variable 'positionUpdated' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\HundunWorldGame.cs(1023,23,1023,31): warning CS0219: The variable 'AxisBias' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Kungfu\KungfuSystemUI.cs(202,19,202,33): warning CS0219: The variable 'sectionSpacing' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\HundunWorldGame.cs(1523,18,1523,30): warning CS0219: The variable 'typeMismatch' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(2694,42,2694,59): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(2851,21,2851,35): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(2882,21,2882,35): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(2886,26,2886,40): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Character\CharacterCreationPanel.cs(159,19,159,26): warning CS0219: The variable 'spacing' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(2912,49,2912,66): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(2927,21,2927,30): warning CS0618: 'Actor.Tag' is obsolete: 'Use HasTag instead'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(3001,31,3001,48): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(3045,27,3045,44): warning CS0618: 'Actor.Direction' is obsolete: 'Use GetForward instead.'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\GameMain\GameMainUI.cs(522,25,522,38): warning CS0219: The variable 'minimapHeight' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\GameMain\GameMainUI.cs(523,25,523,36): warning CS0219: The variable 'rightMargin' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\GameMain\GameMainUI.cs(524,25,524,34): warning CS0219: The variable 'topMargin' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Social\LeaderboardPage.cs(527,19,527,26): warning CS0219: The variable 'padding' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\GameMain\GameMainUI.cs(705,25,705,41): warning CS0219: The variable 'menuBottomMargin' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Social\AchievementPage.cs(106,19,106,26): warning CS0219: The variable 'headerX' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Social\AchievementPage.cs(108,19,108,26): warning CS0219: The variable 'headerY' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Performance\MemoryOptimizationManager.cs(33,49,33,66): warning CS0649: Field 'MemoryOptimizationManager._memoryCheckTimer' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\MartialRecord\MenuMartialRecordPage.cs(54,37,54,56): warning CS0067: The event 'MenuMartialRecordPage.NavigationRequested' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\CombatHudPage.cs(252,25,252,46): warning CS0169: The field 'CombatHudPage._playerBuffTimeLabels' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Social\TeamSystem.cs(114,41,114,57): warning CS0067: The event 'TeamSystem.OnInviteReceived' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\MenuQuestsPage.cs(256,26,256,32): warning CS0649: Field 'MenuQuestsPage.ObjectiveRow.Status' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\ElementVision\ElementVisionPage.cs(49,34,49,48): warning CS0067: The event 'ElementVisionPage.MarkerSelected' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\GameMain\TeamInviteUI.cs(52,29,52,40): warning CS0067: The event 'TeamInviteUI.OnLeaveTeam' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\UISceneManager.cs(16,32,16,45): warning CS0649: Field 'UISceneManager._stateManager' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\GameMain\GuildManagementUI.cs(37,44,37,58): warning CS0067: The event 'GuildManagementUI.OnDemoteMember' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Gacha\MenuGachaPage.cs(64,37,64,56): warning CS0067: The event 'MenuGachaPage.NavigationRequested' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Services\CharacterPersistenceService.cs(100,24,100,40): warning CS0169: The field 'CharacterPersistenceService._databaseManager' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Performance\RenderingOptimizer.cs(94,26,94,39): warning CS0649: Field 'RenderingOptimizer.ParticleEmitterEntry.SpawnDistance' is never assigned to, and will always have its default value 0
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Appearance\MenuAppearancePage.cs(62,37,62,56): warning CS0067: The event 'MenuAppearancePage.NavigationRequested' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\PopupPages.cs(3176,27,3176,37): warning CS0169: The field 'PopupBestiarySide._msgButton' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\UIAnimationSystem.cs(89,34,89,49): warning CS0169: The field 'UIAnimationSystem._toastContainer' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\BattlePass\MenuBattlePassPage.cs(58,37,58,56): warning CS0067: The event 'MenuBattlePassPage.NavigationRequested' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Character\MenuCharAttributesV2Page.cs(446,26,446,36): warning CS0649: Field 'MenuCharAttributesV2Page._leftPanel' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Character\MenuCharAttributesV2Page.cs(395,38,395,49): warning CS0649: Field 'MenuCharAttributesV2Page._radarChart' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Performance\MemoryOptimizationManager.cs(32,49,32,62): warning CS0649: Field 'MemoryOptimizationManager._cleanupTimer' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Character\MenuCharAttributesV2Page.cs(428,34,428,48): warning CS0649: Field 'MenuCharAttributesV2Page._rightGoldGlow' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\PopupPages.cs(1230,29,1230,44): warning CS0067: The event 'PopupVerification.ViewAchievement' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Character\MenuCharAttributesV2Page.cs(404,36,404,56): warning CS0649: Field 'MenuCharAttributesV2Page._martialArtsLeftBars' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\MetaHuman\PresetManagerPanel.cs(14,37,14,58): warning CS0067: The event 'PresetManagerPanel.OnQuickPresetSelected' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Bestiary\MenuBestiaryPage.cs(55,37,55,56): warning CS0067: The event 'MenuBestiaryPage.NavigationRequested' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Components\FloatingParticles.cs(133,23,133,40): warning CS0169: The field 'FloatingParticles._spawnAccumulator' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\PopupPages.cs(2379,29,2379,37): warning CS0067: The event 'PopupSkillRealization.Verified' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Rendering\CharacterAppearancePreviewController.cs(160,23,160,40): warning CS0649: Field 'CharacterAppearancePreviewController._previewCharacter' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Livelihood\MenuLivelihoodPage.cs(54,37,54,56): warning CS0067: The event 'MenuLivelihoodPage.NavigationRequested' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(853,22,853,33): warning CS0649: Field 'ThirdPersonCamera._isInCombat' is never assigned to, and will always have its default value false
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\MenuQuestsPage.cs(18,27,18,33): warning CS0649: Field 'MenuQuestsPage.QuestData.Status' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Character\GenderSelectionUI.cs(64,23,64,40): warning CS0169: The field 'GenderSelectionUI._selectorBackdrop' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Character\IntegratedCharacterCreationUI.cs(19,44,19,62): warning CS0067: The event 'IntegratedCharacterCreationUI.OnCharacterCreated' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Settings\SettingsAudioPage.cs(19,28,19,42): warning CS0169: The field 'SettingsAudioPage._settingGroups' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\UIAnimationSystem.cs(93,34,93,50): warning CS0169: The field 'UIAnimationSystem._damageContainer' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\PopupPages.cs(3175,27,3175,39): warning CS0169: The field 'PopupBestiarySide._closeButton' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\CombatHudPage.cs(249,34,249,49): warning CS0169: The field 'CombatHudPage._playerBuffsRow' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Character\GenderSelectionUI.cs(65,23,65,34): warning CS0169: The field 'GenderSelectionUI._titleLabel' is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Character\MenuCharAttributesV2Page.cs(440,26,440,37): warning CS0649: Field 'MenuCharAttributesV2Page._rightPanel' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Character\MenuCharAttributesV2Page.cs(425,27,425,45): warning CS0649: Field 'MenuCharAttributesV2Page._rightSpringSplash' is never assigned to, and will always have its default value null
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ThirdPersonCamera.cs(903,22,903,39): warning CS0414: The field 'ThirdPersonCamera._isGroundDetected' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkTabButton.cs(34,22,34,32): warning CS0414: The field 'InkTabButton._isHovered' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Authentication\AuthenticationUI.cs(46,22,46,35): warning CS0414: The field 'AuthenticationUI._isFirstLogin' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Network\NetworkManager.cs(39,31,39,45): warning CS0414: The field 'NetworkManager._isInitialized' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\ECSUpdateDriver.cs(21,22,21,43): warning CS0414: The field 'ECSUpdateDriver._actorSyncInitialized' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\FireSkills.cs(572,22,572,32): warning CS0414: The field 'FengHuangNiePan.isReviving' is assigned but its value is never used
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\HundunWorldGame.cs(843,27,843,42): warning CS0419: Ambiguous reference in cref attribute: 'Physics.RayCast'. Assuming 'FlaxEngine.Physics.RayCast(FlaxEngine.Vector3, FlaxEngine.Vector3, float, uint, bool)', but could have also matched other overloads including 'FlaxEngine.Physics.RayCast(FlaxEngine.Vector3, FlaxEngine.Vector3, out FlaxEngine.RayCastHit, float, uint, bool)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\HundunWorldGame.cs(1076,27,1076,88): warning CS1574: XML comment has cref attribute 'HandleSpawn' that could not be resolved
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Network\NetworkManager.cs(1283,105,1283,109): warning CS1573: Parameter 'posX' has no matching param tag in the XML comment for 'NetworkManager.SendSubscriptionUpdateAsync(ulong[], ulong[], float, float, float, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Network\NetworkManager.cs(1283,122,1283,126): warning CS1573: Parameter 'posY' has no matching param tag in the XML comment for 'NetworkManager.SendSubscriptionUpdateAsync(ulong[], ulong[], float, float, float, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Network\NetworkManager.cs(1283,139,1283,143): warning CS1573: Parameter 'posZ' has no matching param tag in the XML comment for 'NetworkManager.SendSubscriptionUpdateAsync(ulong[], ulong[], float, float, float, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Network\NetworkManager.cs(1283,155,1283,166): warning CS1573: Parameter 'hasPosition' has no matching param tag in the XML comment for 'NetworkManager.SendSubscriptionUpdateAsync(ulong[], ulong[], float, float, float, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkAttributeTooltip.cs(150,46,150,53): warning CS1574: XML comment has cref attribute 'Visible' that could not be resolved
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkBackpackGrid.cs(259,34,259,54): warning CS0419: Ambiguous reference in cref attribute: 'Content.LoadAsync{T}'. Assuming 'FlaxEngine.Content.LoadAsync<T>(System.Guid)', but could have also matched other overloads including 'FlaxEngine.Content.LoadAsync<T>(string)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkDialClock.cs(146,29,146,46): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.DrawLine'. Assuming 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, float)', but could have also matched other overloads including 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, FlaxEngine.Color, float)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkEquipmentSlot.cs(176,48,176,61): warning CS1574: XML comment has cref attribute 'PointToScreen' that could not be resolved
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkMeridianDiagram.cs(161,29,161,46): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.DrawLine'. Assuming 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, float)', but could have also matched other overloads including 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, FlaxEngine.Color, float)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkMinimap.cs(328,29,328,46): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.DrawLine'. Assuming 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, float)', but could have also matched other overloads including 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, FlaxEngine.Color, float)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkSkillSlotGrid.cs(205,35,205,57): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.FillTriangles'. Assuming 'FlaxEngine.Render2D.FillTriangles(FlaxEngine.Float2[], FlaxEngine.Color)', but could have also matched other overloads including 'FlaxEngine.Render2D.FillTriangles(FlaxEngine.Float2[], FlaxEngine.Color[], bool)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Components\InkSkillSlotGrid.cs(247,29,247,46): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.DrawLine'. Assuming 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, float)', but could have also matched other overloads including 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, FlaxEngine.Color, float)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\InkPageShell.cs(21,30,21,55): warning CS1574: XML comment has cref attribute 'Enabled' that could not be resolved
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Combat\QtePage.cs(525,29,525,46): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.DrawLine'. Assuming 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, float)', but could have also matched other overloads including 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, FlaxEngine.Color, float)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Combat\QtePage.cs(549,29,549,46): warning CS0419: Ambiguous reference in cref attribute: 'Render2D.DrawLine'. Assuming 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, float)', but could have also matched other overloads including 'FlaxEngine.Render2D.DrawLine(FlaxEngine.Float2, FlaxEngine.Float2, FlaxEngine.Color, FlaxEngine.Color, float)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\Reward\RewardLevelUpPage.cs(663,49,663,60): warning CS0419: Ambiguous reference in cref attribute: 'Mathf.Clamp'. Assuming 'FlaxEngine.Mathf.Clamp(long, long, long)', but could have also matched other overloads including 'FlaxEngine.Mathf.Clamp(ulong, ulong, ulong)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\RewardPages.cs(421,49,421,60): warning CS0419: Ambiguous reference in cref attribute: 'Mathf.Clamp'. Assuming 'FlaxEngine.Mathf.Clamp(long, long, long)', but could have also matched other overloads including 'FlaxEngine.Mathf.Clamp(ulong, ulong, ulong)'.
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\SettingsPage.cs(538,30,538,68): warning CS1574: XML comment has cref attribute 'MasterVolume' that could not be resolved
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Ink\Pages\SettingsPage.cs(559,30,559,65): warning CS1574: XML comment has cref attribute 'SfxVolume' that could not be resolved
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Layout\ResponsiveLayoutCalculator.cs(89,26,89,36): warning CS1572: XML comment has a param tag for 'targetSize', but there is no parameter by that name
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\EarthSkills.cs(11,5,11,6): warning CS1587: XML comment is not placed on a valid language element
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\FireSkills.cs(11,5,11,6): warning CS1587: XML comment is not placed on a valid language element
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\WaterSkills.cs(11,5,11,6): warning CS1587: XML comment is not placed on a valid language element
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Combat\WuxingSystem\WoodSkills.cs(11,5,11,6): warning CS1587: XML comment is not placed on a valid language element
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(245,65,245,81): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Where_<T>(LiteDatabaseKind, Func<T, bool>)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(255,57,255,73): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Add<T>(LiteDatabaseKind, T)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(267,56,267,72): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.AddRange<T>(LiteDatabaseKind, IEnumerable<T>, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(290,55,290,71): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Remove<T>(LiteDatabaseKind, BsonValue)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(298,26,298,32): warning CS1572: XML comment has a param tag for 'models', but there is no parameter by that name
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(301,58,301,74): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Removes<T, K>(LiteDatabaseKind, IEnumerable<BsonValue>, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(301,99,301,102): warning CS1573: Parameter 'ids' has no matching param tag in the XML comment for 'LiteDataContext.Removes<T, K>(LiteDatabaseKind, IEnumerable<BsonValue>, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(301,38,301,39): warning CS1712: Type parameter 'K' has no matching typeparam tag in the XML comment on 'LiteDataContext.Removes<T, K>(LiteDatabaseKind, IEnumerable<BsonValue>, bool)' (but other type parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(323,58,323,74): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Upsert<T, K>(LiteDatabaseKind, K, T)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(323,38,323,39): warning CS1712: Type parameter 'K' has no matching typeparam tag in the XML comment on 'LiteDataContext.Upsert<T, K>(LiteDatabaseKind, K, T)' (but other type parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(334,55,334,71): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Update<T>(LiteDatabaseKind, T)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(345,58,345,74): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Updates<T, K>(LiteDatabaseKind, IEnumerable<T>, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(345,38,345,39): warning CS1712: Type parameter 'K' has no matching typeparam tag in the XML comment on 'LiteDataContext.Updates<T, K>(LiteDatabaseKind, IEnumerable<T>, bool)' (but other type parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(382,59,382,75): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.DeletedMany<T>(LiteDatabaseKind, Expression<Func<T, bool>>)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(410,57,410,73): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.Where<T>(LiteDatabaseKind, Expression<Func<T, bool>>)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\Database\LiteDataContext.cs(421,60,421,76): warning CS1573: Parameter 'liteDatabaseKind' has no matching param tag in the XML comment for 'LiteDataContext.FirstOrDefault<T>(LiteDatabaseKind, Expression<Func<T, bool>>)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Authentication\AuthenticationController.cs(353,78,353,88): warning CS1573: Parameter 'isRegisted' has no matching param tag in the XML comment for 'AuthenticationController.PerformSwitchToLogin(string, string, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Authentication\AuthenticationController.cs(391,87,391,97): warning CS1573: Parameter 'isRegisted' has no matching param tag in the XML comment for 'AuthenticationController.ShowLoginPanelWithCredentials(string, string, bool)' (but other parameters do)
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Source\Game\UI\Controllers\UISwitchController.cs(241,103,241,117): warning CS1573: Parameter 'transitionType' has no matching param tag in the XML comment for 'UISwitchController.RequestSceneSwitchAsync(SceneType, TransitionType, Dictionary<string, object>, bool)' (but other parameters do)
+Done!
+Total time: 00:00:08.9042496

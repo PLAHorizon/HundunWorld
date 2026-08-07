@@ -261,8 +261,9 @@ namespace HundunWorld.Game
         /// <summary>
         /// 周期性补偿：检查是否有远程实体缺少对应 Actor，若有则补创建。
         /// 轻量级检查：先比较计数，不匹配时才遍历。
+        /// 公开化：供可见性审计与恢复编排显式触发（spec 5.4.1 规则 2、design 2.1.3(4)）。
         /// </summary>
-        private void ReconcileMissingActors()
+        public void ReconcileMissingActors()
         {
             if (_archWorld == null) return;
 
@@ -279,6 +280,26 @@ namespace HundunWorld.Game
 
             // 存在缺失 Actor 的实体，补创建
             CreateActorsForExistingEntities();
+        }
+
+        /// <summary>
+        /// 导出实际呈现的远程实体 ID 集合（供可见性审计核对，design 2.1.3(4)）。
+        /// 复用 <see cref="_entityIdToActor"/> 键集合，不新增映射。
+        /// </summary>
+        public System.Collections.Generic.IReadOnlyCollection<ulong> GetPresentedEntityIds()
+        {
+            try
+            {
+                lock (_entityIdToActor)
+                {
+                    return new List<ulong>(_entityIdToActor.Keys);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[FlaxActorSyncSystem] GetPresentedEntityIds 异常: {ex.Message}");
+                return Array.Empty<ulong>();
+            }
         }
 
         /// <summary>

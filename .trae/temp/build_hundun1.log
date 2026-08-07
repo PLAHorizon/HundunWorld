@@ -1,0 +1,33 @@
+﻿Flax.Build 1.0.0
+Building targets...
+Found Android SDK at C:\Program Files (x86)\Android\android-sdk
+Unknown Visual Studio installation. Display name: SQL Server Management Studio 22
+Missing Emscripten SDK. Cannot build for Web platform.
+Building target GameEditorTarget in Debug for Windows x64
+Using Windows Toolset v145, 14.51.36231 (C:\Program Files (x86)\Windows Kits\10\)
+Using Windows SDK 10.0.26100.0 (C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Tools\MSVC\14.51.36231\bin\Hostx64\x64)
+Building referenced target Flax
+Building for Windows without Vulkan rendering backend (Vulkan SDK is missing)
+Using .NET SDK 10.0.302, runtime 10.0.10 (C:\Program Files\dotnet)
+Building referenced target NarrativePro
+Found 17 valid and 0 invalid actions in Task Graph cache
+Done!
+Building referenced target HundunAgent
+Found 5 valid and 1 invalid actions in Task Graph cache
+Executing 2 tasks using 2 threads
+Compiling C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Binaries\HundunAgentEditorTarget\Windows\x64\Debug\HundunAgent.CSharp.dll
+Compiling C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Binaries\HundunAgentEditorTarget\Windows\x64\Debug\HundunAgentEditor.CSharp.dll
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Core\AgentUndo.cs(10,44,10,55): error CS0535: 'LambdaUndoAction' does not implement interface member 'IHistoryAction.Dispose()'
+C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Source\HundunAgentEditor\Core\AgentUndo.cs(10,44,10,55): error CS0535: 'LambdaUndoAction' does not implement interface member 'IHistoryAction.ActionString'
+Flax.Build.exe : Task C:\Program Files\dotnet\dotnet.exe exec "C:\Program Files\dotnet\sdk\10.0.302\Roslyn\bincore\csc.
+dll" /noconfig /shared @"C:\Works\GitHubProjects\HundunWorld\HundunWorld\Plugins\HundunAgent\Cache/Intermediate\HundunA
+gentEditorTarget\Windows\x64\Debug\HundunAgentEditor.CSharp.response" failed with exit code 1
+所在位置 行:1 字符: 65
++ ... ndunWorld"; & "C:\Program Files (x86)\Flax\Flax_1.12\Binaries\Tools\F ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Task C:\Program...ith exit code 1:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+1 task failed
+Total time: 00:00:04.9337229

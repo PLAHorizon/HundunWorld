@@ -1,0 +1,14 @@
+﻿powershell : 使用“0”个参数调用“GetExportedTypes”时发生异常:“未能加载文件或程序集“System.Runtime, Version=10.0.0.0, Culture=neutral, 
+所在位置 行:1 字符: 1
++ powershell -NoProfile -ExecutionPolicy Bypass -File "c:\Works\GitHubP ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (使用“0”个参数调用“GetE...lture=neutral, :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+PublicKeyToken=b03f5f7f11d50a3a”或它的某一个依赖项。系统找不到指定的文件。”
+所在位置 C:\Works\GitHubProjects\HundunWorld\.trae\temp\dump_flax_editor_api.ps1:5 字符: 1
++ $types = $asm.GetExportedTypes()
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : FileNotFoundException
+ 

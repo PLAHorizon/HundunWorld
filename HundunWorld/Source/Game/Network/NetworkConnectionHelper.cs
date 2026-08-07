@@ -16,6 +16,7 @@ namespace HundunWorld.Game.Network
         /// 原实现创建原始 TcpClient 连接测试可达性，服务端可能 Accept 并创建短暂 GameConnection → 幽灵连接。
         /// 现已禁用，直接返回 true。如需恢复，恢复方法体内的 TCP 连接逻辑。
         /// </para>
+        /// 已移除周期性诊断日志以避免刷屏（探查禁用时日志无信息量）。
         /// </summary>
         /// <param name="host">主机地址</param>
         /// <param name="port">端口号</param>
@@ -24,7 +25,6 @@ namespace HundunWorld.Game.Network
         public static async Task<bool> ConnectWithExceptionHandlingAsync(string host, int port, int timeoutMs = 5000)
         {
             await Task.CompletedTask; // 保持 async 签名
-            EnhancedDiagnostics.LogNetworkOperation("TCP连接(已禁用)", $"{host}:{port}", true, "探查已禁用，假定可达");
             return true;
         }
 
@@ -34,6 +34,7 @@ namespace HundunWorld.Game.Network
         /// 原实现创建原始 TcpClient 连接测量延迟，服务端可能 Accept 并创建短暂 GameConnection → 幽灵连接。
         /// 现已禁用，直接返回 1ms。如需恢复，恢复方法体内的 TCP 连接测延迟逻辑。
         /// </para>
+        /// 已移除周期性诊断日志以避免刷屏（探查禁用时日志无信息量）。
         /// </summary>
         /// <param name="host">主机地址</param>
         /// <param name="port">端口号</param>
@@ -42,7 +43,6 @@ namespace HundunWorld.Game.Network
         public static async Task<long> MeasureLatencyWithExceptionHandlingAsync(string host, int port, int timeoutMs = 5000)
         {
             await Task.CompletedTask; // 保持 async 签名
-            EnhancedDiagnostics.LogNetworkOperation("延迟测量(已禁用)", $"{host}:{port}", true, "探查已禁用，固定延迟 1ms");
             return 1;
         }
     }

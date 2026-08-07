@@ -435,6 +435,137 @@ public class NetworkSyncHardeningTests
         Assert.True(stateObj.TickCount >= 10, $"持久化 TickCount 应 >= 10，实际={stateObj.TickCount}");
     }
 
+    /// <summary>
+    /// 验证 Grain 空闲回收后重新激活时，角色不会被拉回起点。
+    /// 场景：角色移动 10 tick 后 Grain 被回收，新 Grain 从持久化状态恢复，
+    /// 客户端发送新输入继续移动，角色位置应从恢复位置继续前进，不回弹到起点。
+    /// </summary>
+    [Fact]
+    public async Task BugFix_GrainRecovery_PositionNotResetToOrigin()
+    {
+        // ── 阶段 1：角色移动 10 tick，到达 X>0.9m ──
+        var mockState1 = new Mock<global::Orleans.Runtime.IPersistentState<Horizon.Orleans.Grains.World.ZoneShardState>>();
+        var stateObj = new Horizon.Orleans.Grains.World.ZoneShardState();
+        mockState1.SetupGet(s => s.State).Returns(stateObj);
+        mockState1.Setup(s => s.ReadStateAsync()).Returns(Task.CompletedTask);
+        mockState1.Setup(s => s.WriteStateAsync()).Returns(Task.CompletedTask);
+
+        var grain1 = CreateGrainWithState(mockState1.Object);
+        const ulong entityId = 9500;
+        await grain1.RegisterEntityAsync(entityId, 0, 0, 0);
+
+        float cx = 0, cy = 0, cz = 0, cvz = 0;
+        for (long tick = 1; tick <= 10; tick++)
+        {
+            var input = new InputPacket { ClientTick = tick, MoveX = 1.0f, MoveY = 0f, CharacterId = entityId, MaxSpeed = 6f };
+            var (nx, ny, nz, nvz) = MovementFormula.Step(cx, cy, cz, cvz, 1.0f, 0f, 0, Dt, 6f);
+            if (nz < 0f) { nz = 0f; nvz = 0f; }
+            cx = nx; cy = ny; cz = nz; cvz = nvz;
+            input.PredictedEndX = cx; input.PredictedEndY = cy; input.PredictedEndZ = cz;
+            await grain1.SubmitInputAsync(entityId, input, cx, cy, cz);
+            await grain1.TickAsync(tickTime: tick / 60.0);
+        }
+
+        // 触发持久化
+        var persistMethod = typeof(ZoneShardGrain).GetMethod("PersistEntityStateAsync", BindingFlags.NonPublic | BindingFlags.Instance);
+        await (Task)persistMethod!.Invoke(grain1, null)!;
+
+        Assert.True(stateObj.Entities.ContainsKey(entityId), "持久化 State 应包含实体");
+        var persistedX = stateObj.Entities[entityId].X;
+        Assert.True(persistedX > 0.9f, $"移动后 X 应 > 0.9m，实际={persistedX:F4}");
+
+        // ── 阶段 2：模拟 Grain 回收后重新激活，从持久化状态恢复 ──
+        // 不调用 OnActivateAsync（会触发 RegisterTimer 在测试环境失败），
+        // 而是直接通过反射模拟 OnActivateAsync 中的持久化状态恢复逻辑。
+        var mockState2 = new Mock<global::Orleans.Runtime.IPersistentState<Horizon.Orleans.Grains.World.ZoneShardState>>();
+        mockState2.SetupGet(s => s.State).Returns(stateObj); // 共享同一个持久化状态
+        mockState2.Setup(s => s.ReadStateAsync()).Returns(Task.CompletedTask);
+        mockState2.Setup(s => s.WriteStateAsync()).Returns(Task.CompletedTask);
+
+        var grain2 = CreateGrainWithState(mockState2.Object);
+
+        // 手动模拟 OnActivateAsync 中的持久化状态恢复（与 ZoneShardGrain.OnActivateAsync 逻辑一致）
+        var entitiesField = typeof(ZoneShardGrain).GetField("_simulatedEntities", BindingFlags.NonPublic | BindingFlags.Instance);
+        var entities = (Dictionary<ulong, ZoneShardGrain.SimulatedEntity>)entitiesField!.GetValue(grain2)!;
+        var es = stateObj.Entities[entityId];
+        entities[entityId] = new ZoneShardGrain.SimulatedEntity
+        {
+            X = es.X, Y = es.Y, Z = es.Z,
+            Vz = es.Vz, Yaw = es.Yaw, MaxSpeed = es.MaxSpeed,
+            IsGrounded = es.IsGrounded, JumpCount = es.JumpCount,
+            LastSyncTick = es.LastSyncTick,
+            Hp = es.Hp, MaxHp = es.MaxHp,
+            Mana = es.Mana, MaxMana = es.MaxMana,
+            Level = es.Level, Exp = es.Exp,
+            Stamina = es.Stamina, MaxStamina = es.MaxStamina,
+            PendingInputs = new List<InputPacket>(),
+            LeaseExpiry = DateTime.UtcNow + TimeSpan.FromSeconds(90),
+            // 修复后的瞬态字段恢复
+            ReportedEndX = es.X, ReportedEndY = es.Y, ReportedEndZ = es.Z,
+            PrevX = es.X, PrevY = es.Y, PrevZ = es.Z, PrevVz = es.Vz,
+            PrevIsGrounded = es.IsGrounded,
+            LastUpdateBroadcastTick = stateObj.TickCount,
+            LastAttributeHeartbeatTick = stateObj.TickCount,
+        };
+        // 设置 _tickCount
+        var tickCountField = typeof(ZoneShardGrain).GetField("_tickCount", BindingFlags.NonPublic | BindingFlags.Instance);
+        tickCountField!.SetValue(grain2, stateObj.TickCount);
+
+        // 验证恢复后的实体位置
+        Assert.True(entities.ContainsKey(entityId), "Grain 恢复后应包含实体");
+        var restoredEntity = entities[entityId];
+        Assert.True(MathF.Abs(restoredEntity.X - persistedX) < 0.01f,
+            $"恢复后 X 应与持久化值一致，expected={persistedX:F4}, actual={restoredEntity.X:F4}");
+        // 验证 ReportedEndX/Y/Z 已正确恢复（不再为 0）
+        Assert.True(MathF.Abs(restoredEntity.ReportedEndX - persistedX) < 0.01f,
+            $"ReportedEndX 应与持久化位置一致，actual={restoredEntity.ReportedEndX:F4}");
+
+        // ── 阶段 3：客户端发送新输入继续移动 ──
+        // 客户端从当前位置继续移动（Grain 回收期间客户端一直在本地模拟）
+        var input2 = new InputPacket
+        {
+            ClientTick = 100, // Grain 回收期间 ClientTick 跳跃（模拟时间流逝）
+            MoveX = 1.0f,
+            MoveY = 0f,
+            CharacterId = entityId,
+            MaxSpeed = 6f,
+            PredictedEndX = cx + 0.1f, // 客户端继续移动 1 tick
+            PredictedEndY = cy,
+            PredictedEndZ = cz,
+        };
+        await grain2.SubmitInputAsync(entityId, input2, cx + 0.1f, cy, cz);
+        await grain2.TickAsync(tickTime: 11 / 60.0);
+
+        // ── 阶段 4：验证角色没有被拉回起点 ──
+        entities = (Dictionary<ulong, ZoneShardGrain.SimulatedEntity>)entitiesField!.GetValue(grain2)!;
+        var finalEntity = entities[entityId];
+        Assert.True(finalEntity.X > persistedX,
+            $"Grain 恢复后继续移动，X 应 > 持久化位置 {persistedX:F4}，实际={finalEntity.X:F4}。" +
+            "角色不应被拉回起点。");
+        Assert.True(finalEntity.X > 0.9f,
+            $"最终 X 应 > 0.9m（远大于起点 0），实际={finalEntity.X:F4}");
+    }
+
+    /// <summary>
+    /// 创建带自定义持久化状态的 ZoneShardGrain 测试实例。
+    /// </summary>
+    private static ZoneShardGrain CreateGrainWithState(
+        global::Orleans.Runtime.IPersistentState<Horizon.Orleans.Grains.World.ZoneShardState> state)
+    {
+        var mockLogger = new Mock<ILogger<ZoneShardGrain>>();
+        var grain = new ZoneShardGrain(mockLogger.Object, state);
+
+        var grainId = GrainId.Create(GrainType.Create("ZoneShard"), "1");
+        var mockContext = new Mock<IGrainContext>();
+        mockContext.SetupGet(c => c.GrainId).Returns(grainId);
+
+        var contextField = typeof(Grain).GetField("<GrainContext>k__BackingField", BindingFlags.NonPublic | BindingFlags.Instance);
+        contextField?.SetValue(grain, mockContext.Object);
+
+        grain.SnapshotBroadcastIntervalTicks = 1;
+        return grain;
+    }
+
     #endregion
 
     #region 远程实体插值平滑性测试
@@ -462,6 +593,7 @@ public class NetworkSyncHardeningTests
             Yaw = 0f, StartYaw = 0f, TargetYaw = 0f,
             Alpha = 1f, ServerTick = 0, ReceivedTick = 0,
             TimeSinceLastSnapshot = 0f,
+            State = Horizon.Game.ECS.Arch.Components.RemoteEntityState.Active,
         };
         world.Add(entity, interp);
 
@@ -526,6 +658,7 @@ public class NetworkSyncHardeningTests
         {
             Yaw = 3.0f, StartYaw = 3.0f, TargetYaw = -3.0f, // 跨越 ±π 边界
             Alpha = 0f,
+            State = Horizon.Game.ECS.Arch.Components.RemoteEntityState.Active,
         };
         world.Add(entity, interp);
 
@@ -573,6 +706,7 @@ public class NetworkSyncHardeningTests
             TargetX = 5f, TargetY = 0f, TargetZ = 0f,
             Yaw = 0f, TargetYaw = 0f,
             Alpha = 0f, TimeSinceLastSnapshot = 0f,
+            State = Horizon.Game.ECS.Arch.Components.RemoteEntityState.Active,
         };
         world.Add(entity, interp);
 

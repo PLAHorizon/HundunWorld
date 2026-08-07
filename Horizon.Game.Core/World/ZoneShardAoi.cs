@@ -109,10 +109,16 @@ public sealed class ZoneShardAoi
     }
 
     /// <summary>
-    /// 返回当前所有已订阅的 sessionId 只读视图（跨所有 chunk）。调用方不得修改。
-    /// 用于实体位置未知时的回退广播（P8-8.2）。
+    /// 返回当前所有已订阅的 sessionId 只读集合（跨所有 chunk）。
+    /// 用于实体位置未知时的回退广播（P8-8.2）或全量快照绕过 AOI 过滤。
     /// </summary>
-    public IReadOnlyCollection<long> GetAllSubscribers() => _sessionToChunks.Keys;
+    /// <remarks>
+    /// 修复（Orleans 序列化异常）：原实现返回 <c>_sessionToChunks.Keys</c>（Dictionary.KeyCollection），
+    /// 当作为参数传递给 <c>observer.OnChunkDiffAsync</c> 时，Orleans 深拷贝失败：
+    /// <c>CodecNotFoundException: Could not find a copier for type Dictionary.KeyCollection</c>。
+    /// 改为返回 <c>long[]</c>，Orleans 对数组有原生 copier 支持。
+    /// </remarks>
+    public IReadOnlyCollection<long> GetAllSubscribers() => _sessionToChunks.Keys.ToArray();
 
     /// <summary>
     /// 返回会话当前订阅的所有 chunk 的只读视图；未注册则返回空。

@@ -72,10 +72,11 @@ namespace Horizon.Game.Gateway.Configuration
         /// 修复（重连后"角色已在线" — 旧连接清理太慢）：
         /// 原值 60 秒，客户端心跳超时 30 秒 + 重连延迟 5 秒 = 35 秒后重连，
         /// 但服务端 60 秒后才清理旧连接，期间旧 fingerprint（TTL 5min）未释放。
-        /// 降到 30 秒，与客户端心跳超时一致，确保旧连接在新连接到达前被清理。
+        /// 降到 45 秒（优化：原30秒与客户端心跳20秒仅10秒容差，网络抖动/GC暂停即触发误判离线。
+        /// 心跳间隔调整为15秒后，45秒超时提供30秒容差，3个心跳周期的缓冲足够覆盖瞬时故障）。
         /// </summary>
         [Range(10, 600)]
-        public int IdleTimeoutSeconds { get; set; } = 30;
+        public int IdleTimeoutSeconds { get; set; } = 45;
 
         /// <summary>
         /// 首包超时时间（秒）。<br/>

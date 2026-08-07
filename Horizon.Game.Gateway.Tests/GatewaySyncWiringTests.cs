@@ -337,6 +337,75 @@ public class GatewaySyncWiringTests
         Assert.True(MathF.Abs(t.Z - 8f) > 1f, "Transform.Z 不应为 8（排除旧的 Y/Z 交换错误）");
     }
 
+    /// <summary>
+    /// P-F1 批量转发链路端到端：单条 OnChunkDiffBatchAsync 批量消息（模拟一轮广播：
+    /// 多 chunk delta + InputAck 事件）→ 拆回逐条 FanoutEvent → dispatcher 分发到各 session。
+    /// 验证：条目不丢不重、受众路由正确、整轮转发耗时远低于 50ms 广播周期（推送效率红线）。
+    /// </summary>
+    [Fact]
+    public async Task EndToEnd_BatchFanout_DeliversAllItemsToCorrectSessions()
+    {
+        await using var src = new GatewayZoneShardFanoutSource();
+        var cm = new FakeConnectionManager();
+        var conn1 = new FakeConnection("p1", userId: 1, isConnected: true);
+        var conn2 = new FakeConnection("p2", userId: 2, isConnected: true);
+        var conn3 = new FakeConnection("p3", userId: 3, isConnected: true);
+        cm.Put(conn1); cm.Put(conn2); cm.Put(conn3);
+
+        var registry = new ConnectionManagerSessionRegistry(cm.Object);
+        var adapter = new HorizonMessageAdapter();
+        var sink = new GameConnectionPacketSink(adapter);
+        var dispatcher = new GatewaySyncDispatcher(src, registry, sink, enabled: true);
+
+        // 模拟一轮广播的批量消息：3 个 chunk delta（不同受众）+ 1 个离线 session 条目
+        var items = new[]
+        {
+            new Horizon.Orleans.Interface.World.FanoutBatchItem
+            {
+                Diff = new WorldChunkDiffPacket { ChunkMortonKey = 11, DiffSeqEnd = 1 },
+                SessionIds = new long[] { 1, 2, 3 },
+            },
+            new Horizon.Orleans.Interface.World.FanoutBatchItem
+            {
+                Diff = new WorldChunkDiffPacket { ChunkMortonKey = 12, DiffSeqEnd = 1 },
+                SessionIds = new long[] { 2 },
+            },
+            new Horizon.Orleans.Interface.World.FanoutBatchItem
+            {
+                Diff = new WorldChunkDiffPacket { ChunkMortonKey = 13, DiffSeqEnd = 1, PayloadType = WorldChunkDiffPayloadType.Event },
+                SessionIds = new long[] { 1, 99999 }, // 99999 离线 → 应丢弃 1 包
+            },
+        };
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        await src.OnChunkDiffBatchAsync(items);
+        Assert.Equal(3, src.ReceivedEventCount); // 批量消息拆为 3 条事件，无丢失
+
+        // 后台起一个 worker drain（RunOnceAsync 排空后会阻塞等待新事件，属设计行为），
+        // 主线程轮询送达计数测量真实转发延迟。
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        var worker = Task.Run(() => dispatcher.RunOnceAsync(cts.Token));
+        while (dispatcher.DeliveredPacketCount < 5 && sw.ElapsedMilliseconds < 3000)
+        {
+            await Task.Delay(1);
+        }
+        var forwardMs = sw.Elapsed.TotalMilliseconds;
+        cts.Cancel();
+        await worker;
+
+        Assert.Equal(3, dispatcher.ProcessedEventCount);
+        // 送达：item1→{1,2,3}=3 包，item2→{2}=1 包，item3→{1,99999} 中仅 1 在线=1 包，共 5；离线丢弃 1
+        Assert.Equal(5, dispatcher.DeliveredPacketCount);
+        Assert.Equal(1, dispatcher.DroppedOfflineCount);
+        Assert.Equal(2, conn1.Sent.Count); // item1 + item3
+        Assert.Equal(2, conn2.Sent.Count); // item1 + item2
+        Assert.Equal(1, conn3.Sent.Count); // item1
+
+        // 推送效率红线：整轮批量转发（3 事件 × 最多 3 session）必须远低于 50ms 广播周期
+        Assert.True(forwardMs < 50,
+            $"P-F1 批量转发耗时应 <50ms（广播周期预算），实际 {forwardMs:F1}ms");
+    }
+
     // --- Fakes ---
 
     private sealed class FakeConnection : IGameConnection

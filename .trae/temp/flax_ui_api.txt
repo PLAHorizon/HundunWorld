@@ -1,0 +1,57 @@
+﻿### FlaxEditor.Modules.UIModule : FlaxEditor.Modules.EditorModule
+  prop Boolean IsPauseButtonChecked { get }
+  prop MainMenuButton MenuEdit { get set}
+  prop MainMenuButton MenuFile { get set}
+  prop MainMenuButton MenuGame { get set}
+  prop MainMenuButton MenuHelp { get set}
+  prop MainMenuButton MenuScene { get set}
+  prop MainMenuButton MenuTools { get set}
+  prop MainMenuButton MenuWindow { get set}
+  meth ContextMenuButton AddMenuButton(String group, String text, Action clicked)
+  meth Int32 AddStatusMessage(String message)
+  meth Void OnEndInit()
+  meth Void OnInit()
+  meth Void OnUpdate()
+  meth Void RemoveStatusMessage(Int32 id)
+  meth Void SaveCustomViewportScalingOptions()
+  meth Void UncheckPauseButton()
+  meth Void UpdateStatusBar()
+  meth Void UpdateToolstrip()
+  event MainMenuShortcutKeysUpdated
+
+### MISSING FlaxEngine.GUI.ToolStrip
+### MISSING FlaxEngine.GUI.ToolStripButton
+### FlaxEngine.GUI.TextBox : FlaxEngine.GUI.TextBoxBase
+  ctor ()
+  ctor (Boolean isMultiline, Single x, Single y, Single width?)
+  prop Boolean Bold { get set}
+  prop TextCaseOptions CaseOption { get set}
+  prop FontReference Font { get set}
+  prop TextAlignment HorizontalAlignment { get set}
+  prop Boolean Italic { get set}
+  prop Color SelectionColor { get set}
+  prop Color TextColor { get set}
+  prop MaterialBase TextMaterial { get set}
+  prop TextAlignment VerticalAlignment { get set}
+  prop LocalizedString WatermarkText { get set}
+  prop Color WatermarkTextColor { get set}
+  prop TextWrapping Wrapping { get set}
+  meth Void DrawSelf()
+  meth Float2 GetCharPosition(Int32 index, Single& height)
+  meth Float2 GetTextSize()
+  meth Int32 HitTestText(Float2 location)
+  meth Boolean OnMouseDoubleClick(Float2 location, MouseButton button)
+  event TextChanged
+  event EditEnd
+  event TextBoxEditEnd
+  event KeyDown
+  event KeyUp
+  event TargetViewOffsetChanged
+  event LocationChanged
+  event SizeChanged
+  event ParentChanged
+  event VisibleChanged
+  event Focused
+
+### MISSING FlaxEngine.GUI.MultiLineEditBox
+

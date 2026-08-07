@@ -376,6 +376,133 @@ public class ZoneShardIntegrationTests : IAsyncLifetime
     }
 
     /// <summary>
+    /// 集成测试：验证位置驱动订阅（UpdateSessionPositionAsync）在真实 Orleans Silo 中正常工作。
+    /// 通过 GrainFactory 调用 UpdateSessionPositionAsync，走完整序列化/调度/消息路由，
+    /// 验证：位置驱动订阅建立后，observer 能通过真实 Orleans 回调收到 EntityDelta diff。
+    /// </summary>
+    [Fact]
+    public async Task UpdateSessionPosition_RealOrleans_PositionDrivenSubscriptionWorks()
+    {
+        Assert.NotNull(_cluster);
+        var zoneShard = _cluster!.GrainFactory.GetGrain<IZoneShardGrain>(6);
+
+        var observer = new IntegrationFanoutObserver();
+        var observerRef = _cluster.Client.CreateObjectReference<IZoneShardFanoutObserver>(observer);
+        var subscriptionId = Guid.NewGuid();
+        await zoneShard.SubscribeFanoutAsync(subscriptionId, observerRef);
+
+        const float ecsZ = 8f; // Flax Y-up: y=8 → ECS Z-up: z=8
+
+        // 先注册 1 个实体（在玩家附近）
+        await zoneShard.RegisterEntityAsync(entityId: 1, initialX: 0, initialY: ecsZ, initialZ: 0);
+        await zoneShard.TickAsync(tickTime: 1.0);
+        await WaitForDiffCountAsync(observer, expectedMin: 1, timeoutMs: 2000);
+        observer.Reset();
+
+        // 新玩家通过 EnterWorldAsync 注册实体（传空 chunk 数组，仅注册实体）
+        await zoneShard.EnterWorldAsync(
+            sessionId: 200,
+            entityId: 2,
+            initialX: 0f,
+            initialY: ecsZ,
+            initialZ: 0f,
+            initialInterestChunks: Array.Empty<ulong>());
+
+        // 通过位置驱动订阅建立 AOI（Flax Y-up: x=0, y=ecsZ, z=0）
+        // grain 内部转换为 ECS Z-up: GetChunksInView(0, 0, ecsZ, R=28)
+        var changed = await zoneShard.UpdateSessionPositionAsync(sessionId: 200, x: 0f, y: ecsZ, z: 0f);
+
+        // 首次调用应全量订阅：(2*28+1)³ = 185193
+        Assert.True(changed > 0, $"位置驱动订阅首次调用应返回 > 0（全量订阅），实际 {changed}");
+
+        // 验证 session/chunk 统计
+        var (sessionCount, chunkCount) = await zoneShard.GetStatsAsync();
+        Assert.True(sessionCount >= 1, $"应有至少 1 个 session，实际 {sessionCount}");
+        Assert.True(chunkCount > 0, $"应有 chunk 订阅，实际 {chunkCount}");
+
+        // Tick 后应通过位置驱动订阅收到 EntityDelta diff
+        await zoneShard.TickAsync(tickTime: 2.0);
+        await WaitForDiffCountAsync(observer, expectedMin: 1, timeoutMs: 2000);
+
+        var entityDeltaDiffs = observer.EntityDeltaDiffCount;
+        Assert.True(entityDeltaDiffs > 0,
+            $"位置驱动订阅建立后应通过 tick 收到 EntityDelta diff，实际 {entityDeltaDiffs}。");
+
+        // 验证相同位置再次调用无变化（幂等性）
+        var changedAgain = await zoneShard.UpdateSessionPositionAsync(sessionId: 200, x: 0f, y: ecsZ, z: 0f);
+        Assert.Equal(0, changedAgain);
+
+        await zoneShard.UnsubscribeFanoutAsync(subscriptionId);
+    }
+
+    /// <summary>
+    /// 集成测试：验证重连场景下 EnterWorldAsync 跳过 Despawn+Spawn 循环。
+    /// 场景：玩家进入游戏 → 断线 → 重连 → EnterWorldAsync 再次调用同一 entityId
+    /// 预期：实体不会被 Despawn+Spawn（其他客户端不会看到角色闪退），仅更新 AOI 订阅。
+    /// 验证：
+    /// 1. 重连后实体仍注册在 ZoneShard 中（GetRegisteredEntityIdsAsync 包含 entityId）
+    /// 2. 重连后 tick 仍能收到 EntityDelta diff（同步未中断）
+    /// 3. 重连后调用 HasEntityAsync 返回 true
+    /// </summary>
+    [Fact]
+    public async Task Reconnect_EnterWorldAgain_EntityNotDespawned()
+    {
+        Assert.NotNull(_cluster);
+        var zoneShard = _cluster!.GrainFactory.GetGrain<IZoneShardGrain>(7);
+
+        var observer = new IntegrationFanoutObserver();
+        var observerRef = _cluster.Client.CreateObjectReference<IZoneShardFanoutObserver>(observer);
+        var subscriptionId = Guid.NewGuid();
+        await zoneShard.SubscribeFanoutAsync(subscriptionId, observerRef);
+
+        const float ecsZ = 8f;
+        const ulong entityId = 100;
+        const long sessionId = 100;
+
+        // 1. 首次进入游戏
+        await zoneShard.EnterWorldAsync(
+            sessionId: sessionId,
+            entityId: entityId,
+            initialX: 0f,
+            initialY: ecsZ,
+            initialZ: 0f,
+            initialInterestChunks: Array.Empty<ulong>());
+        await zoneShard.UpdateSessionPositionAsync(sessionId, x: 0f, y: ecsZ, z: 0f);
+
+        // 验证实体已注册
+        Assert.True(await zoneShard.HasEntityAsync(entityId), "首次进入游戏后实体应已注册");
+
+        // 首次 tick，建立基线
+        await zoneShard.TickAsync(tickTime: 1.0);
+        await WaitForDiffCountAsync(observer, expectedMin: 1, timeoutMs: 2000);
+        observer.Reset();
+
+        // 2. 模拟重连：再次调用 EnterWorldAsync（同一 entityId）
+        await zoneShard.EnterWorldAsync(
+            sessionId: sessionId,
+            entityId: entityId,
+            initialX: 0f,
+            initialY: ecsZ,
+            initialZ: 0f,
+            initialInterestChunks: Array.Empty<ulong>());
+        await zoneShard.UpdateSessionPositionAsync(sessionId, x: 0f, y: ecsZ, z: 0f);
+
+        // 3. 验证实体仍注册（未被 Despawn）
+        Assert.True(await zoneShard.HasEntityAsync(entityId), "重连后实体应仍注册（未被 Despawn）");
+
+        // 4. 验证重连后 tick 仍能收到 diff（同步未中断）
+        await zoneShard.TickAsync(tickTime: 2.0);
+        await WaitForDiffCountAsync(observer, expectedMin: 1, timeoutMs: 2000);
+        Assert.True(observer.ReceivedDiffCount > 0, "重连后应收到 EntityDelta diff（同步未中断）");
+
+        // 5. 验证实体在 GetRegisteredEntityIdsAsync 列表中
+        var registeredIds = await zoneShard.GetRegisteredEntityIdsAsync();
+        Assert.Contains(entityId, registeredIds);
+
+        await zoneShard.UnsubscribeFanoutAsync(subscriptionId);
+    }
+
+    /// <summary>
     /// 等待 observer 收到至少 expectedMin 个 diff，或超时返回。
     /// 真实 Orleans 运行时下，grain 回调通过调度器异步执行，需要等待回调送达。
     /// </summary>

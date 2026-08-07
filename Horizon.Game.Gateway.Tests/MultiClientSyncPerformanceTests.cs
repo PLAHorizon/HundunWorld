@@ -454,6 +454,140 @@ public class MultiClientSyncPerformanceTests
     }
 
     /// <summary>
+    /// 高并发压力测试（对应目标：高并发场景下角色在线率达到99.9%，操作响应延迟控制在200ms以内）。
+    /// 模拟 10 客户端（5 持续移动 + 5 静止）运行 6000 tick（100 秒 @ 60Hz）。
+    /// 验证：
+    /// 1. 所有 10 个实体仍在注册表中（在线率 100% ≥ 99.9%）
+    /// 2. 平均 tick 耗时 ≤ 16.7ms（远低于 200ms 操作响应延迟要求）
+    /// 3. EntityDelta diff > 0（同步未停滞）
+    /// 4. 基线 delta 数有界（无漂移）
+    /// </summary>
+    [Fact]
+    public async Task HighConcurrency_10Clients_AllRemainOnline_LatencyUnderBudget()
+    {
+        const int broadcastInterval = 3; // 20Hz 降频
+        const int clientCount = 10;
+        const int totalTicks = 6000; // 100 秒 @ 60Hz
+
+        var grain = CreateGrain(broadcastInterval, useNullLogger: true);
+        var observer = new FakeFanoutObserver();
+        await grain.SubscribeFanoutAsync(Guid.NewGuid(), observer);
+
+        const float ecsZ = 8f;
+        // 订阅 5×5 chunk 网格（覆盖 10 个实体的移动范围）
+        var chunkKeys = new List<ulong>();
+        for (int dx = -2; dx <= 2; dx++)
+        {
+            for (int dz = -2; dz <= 2; dz++)
+            {
+                chunkKeys.Add(WorldCoord.ToChunkMortonKey(dx * 16f, 0, ecsZ + dz * 16f));
+            }
+        }
+        await grain.SubscribeSessionAsync(sessionId: 1, mortonKeys: chunkKeys.ToArray());
+
+        // 注册 10 个实体：1-5 持续移动，6-10 静止
+        for (ulong i = 1; i <= clientCount; i++)
+        {
+            await grain.RegisterEntityAsync(entityId: i, initialX: 0, initialY: ecsZ, initialZ: 0);
+        }
+
+        // tick 0：全量快照（基线）
+        await grain.TickAsync(tickTime: 1.0);
+        observer.ReceivedDiffCount = 0;
+        observer.EntityDeltaDiffCount = 0;
+        observer.EventDiffCount = 0;
+
+        var sw = Stopwatch.StartNew();
+        double maxTickMs = 0;
+        var tickTimes = new List<double>(totalTicks);
+
+        for (int tick = 1; tick <= totalTicks; tick++)
+        {
+            var tickSw = Stopwatch.StartNew();
+
+            // 实体 1-5 持续移动（模拟玩家操作）
+            for (ulong i = 1; i <= 5; i++)
+            {
+                var input = new InputPacket
+                {
+                    ClientTick = tick,
+                    MoveX = 1.0f,
+                    MoveY = 0f,
+                    MaxSpeed = 6f,
+                };
+                await grain.SubmitInputAsync(entityId: i, input,
+                    reportedEndX: tick * 0.1f, reportedEndY: 0f, reportedEndZ: ecsZ);
+            }
+
+            // 实体 6-10 静止（模拟挂机玩家，每 20 tick 发一次心跳输入）
+            if (tick % 20 == 0)
+            {
+                for (ulong i = 6; i <= 10; i++)
+                {
+                    var input = new InputPacket
+                    {
+                        ClientTick = tick,
+                        MoveX = 0f,
+                        MoveY = 0f,
+                        MaxSpeed = 6f,
+                    };
+                    await grain.SubmitInputAsync(entityId: i, input,
+                        reportedEndX: 0f, reportedEndY: 0f, reportedEndZ: ecsZ);
+                }
+            }
+
+            await grain.TickAsync(tickTime: 1.0 + tick * (1.0 / 60.0));
+
+            tickSw.Stop();
+            var tickMs = tickSw.Elapsed.TotalMilliseconds;
+            tickTimes.Add(tickMs);
+            if (tickMs > maxTickMs) maxTickMs = tickMs;
+        }
+        sw.Stop();
+
+        var avgTickMs = sw.Elapsed.TotalMilliseconds / totalTicks;
+        var entityDeltaDiffs = observer.EntityDeltaDiffCount;
+
+        // 按 tick 耗时排序计算 P99
+        tickTimes.Sort();
+        var p99Ms = tickTimes[(int)(tickTimes.Count * 0.99)];
+
+        Console.WriteLine(
+            $"[StressTest] {clientCount} 客户端（5移动+5静止）@ 20Hz，{totalTicks} tick（{totalTicks / 60.0:F0}秒）：\n" +
+            $"  平均 {avgTickMs:F3}ms/tick，最大 {maxTickMs:F3}ms/tick，P99 {p99Ms:F3}ms\n" +
+            $"  EntityDelta diff={entityDeltaDiffs}，Event diff(InputAck)={observer.EventDiffCount}");
+
+        // === 验证 1：在线率 100% ≥ 99.9% ===
+        var stats = await grain.GetStatsAsync();
+        Assert.True(stats.SessionCount >= 1,
+            $"会话数 {stats.SessionCount} < 1（会话可能被清理）");
+
+        // 验证所有 10 个实体仍在注册表中（通过 GetRegisteredEntityIdsAsync）
+        var registeredIds = await grain.GetRegisteredEntityIdsAsync();
+        Assert.True(registeredIds.Length >= clientCount,
+            $"注册实体数 {registeredIds.Length} < {clientCount}（部分实体异常离线）");
+
+        // === 验证 2：平均 tick 耗时 ≤ 16.7ms（远低于 200ms 操作响应延迟要求）===
+        Assert.True(avgTickMs <= 16.7,
+            $"平均 tick 耗时 {avgTickMs:F3}ms 超过 16.7ms 帧预算");
+
+        // === 验证 3：P99 tick 耗时 ≤ 16.7ms ===
+        Assert.True(p99Ms <= 16.7,
+            $"P99 tick 耗时 {p99Ms:F3}ms 超过 16.7ms 帧预算");
+
+        // === 验证 4：EntityDelta diff > 0（同步未停滞）===
+        // 心跳保护每6个实际tick触发一次静止实体delta，20Hz广播下每2个广播tick一次。
+        // 最低预期 = totalTicks / 6（心跳保护最小频率），移动实体额外贡献更多。
+        var expectedMinDiffs = totalTicks / 6;
+        Assert.True(entityDeltaDiffs >= expectedMinDiffs,
+            $"{totalTicks} tick 内仅 {entityDeltaDiffs} 个 EntityDelta diff，预期至少 {expectedMinDiffs} 个（同步可能停滞）");
+
+        // === 验证 5：最大 tick 耗时 ≤ 50ms（允许 GC 暂停但不应过长）===
+        Assert.True(maxTickMs <= 50.0,
+            $"最大单 tick 耗时 {maxTickMs:F3}ms 超过 50ms（可能存在卡顿）");
+    }
+
+    /// <summary>
     /// 从环境变量解析 tick 数，无效时返回默认值。
     /// 用于支持 CI/staging 环境配置小时级稳定性测试。
     /// </summary>

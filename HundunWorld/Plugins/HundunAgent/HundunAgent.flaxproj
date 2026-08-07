@@ -1,0 +1,28 @@
+{
+	"Name": "HundunAgent",
+	"Version": "1.0",
+	"Company": "HundunWorld",
+	"Copyright": "",
+	"GameTarget": "HundunAgentTarget",
+	"EditorTarget": "HundunAgentEditorTarget",
+	"References": [
+		{
+			"Name": "$(EnginePath)/Flax.flaxproj"
+		}
+	],
+	"DefaultScene": null,
+	"DefaultSceneSpawn": {
+		"Position": {
+			"X": 0.0,
+			"Y": 0.0,
+			"Z": 0.0
+		},
+		"Direction": {
+			"X": 0.0,
+			"Y": 0.0,
+			"Z": 0.0
+		}
+	},
+	"MinEngineVersion": "0.0.6194",
+	"EngineNickname": null
+}

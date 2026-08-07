@@ -41,6 +41,12 @@ namespace Horizon.IM.Message.Enums
         /// 内容审核服务
         /// </summary>
         [Description("内容审核服务")]
-        Moderation = 6
+        Moderation = 6,
+
+        /// <summary>
+        /// 通话服务（语音/视频通话信令）
+        /// </summary>
+        [Description("通话服务")]
+        Call = 7
     }
 }

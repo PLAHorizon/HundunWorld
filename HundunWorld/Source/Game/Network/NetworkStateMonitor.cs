@@ -76,7 +76,7 @@ namespace HundunWorld.Game.Network
         /// <returns>网关是否可达</returns>
         public async Task<bool> IsGatewayReachableAsync(string ip, int port)
         {
-            return await CheckPortReachabilityAsync(ip, port);
+            return await CheckPortReachabilityAsync(ip, port, _cancellationTokenSource.Token);
         }
 
         /// <summary>
@@ -121,39 +121,25 @@ namespace HundunWorld.Game.Network
                 }
 
                 // 尝试连接几个公共服务器，但只测试最快的一个
+                // 修复：并发探测与取消管理委托给 NetworkProbeRunner。
+                // 原实现在任一主机连接成功后调用 _cancellationTokenSource.Cancel() 永久取消共享令牌，
+                // 导致 StartMonitoring 监控循环退出且所有后续 IsNetworkAvailableAsync 被短路返回 false，
+                // 心跳连续超时后 ReconnectionManager 误判"本地网络不可用"，永不触发重连。
                 string[] testHosts = { "8.8.8.8", "114.114.114.114", "223.5.5.5" };
                 int testPort = 53; // DNS端口
 
-                // 使用Task.WhenAny找到第一个成功的连接，避免不必要的并发连接
-                var tasks = new System.Collections.Generic.List<Task<bool>>();
-                foreach (string host in testHosts)
-                {
-                    // 检查取消令牌
-                    if (_cancellationTokenSource.Token.IsCancellationRequested)
-                    {
-                        break;
-                    }
-                    
-                    tasks.Add(CheckPortReachabilityAsync(host, testPort));
-                }
+                bool available = await NetworkProbeRunner.ProbeAnyAsync(
+                    testHosts,
+                    testPort,
+                    (host, port, token) => CheckPortReachabilityAsync(host, port, token),
+                    _cancellationTokenSource.Token);
 
-                // 等待任何一个成功
-                while (tasks.Count > 0)
+                if (!available)
                 {
-                    var completedTask = await Task.WhenAny(tasks);
-                    tasks.Remove(completedTask);
-                    
-                    if (await completedTask)
-                    {
-                        EnhancedDiagnostics.LogNetworkOperation("网络连通性检查", "找到可用连接", true);
-                        // 取消其他任务
-                        _cancellationTokenSource.Cancel();
-                        return true;
-                    }
+                    // 仅在未找到连接时记录（探查禁用时始终可达，此分支不会触发；保留用于未来恢复探查时诊断）。
+                    EnhancedDiagnostics.LogDiagnostic("网络连通性检查完成，未找到可用连接");
                 }
-
-                EnhancedDiagnostics.LogDiagnostic("网络连通性检查完成，未找到可用连接");
-                return false;
+                return available;
             }
             catch (Exception ex)
             {
@@ -168,13 +154,14 @@ namespace HundunWorld.Game.Network
         /// </summary>
         /// <param name="host">主机地址</param>
         /// <param name="port">端口号</param>
+        /// <param name="cancellationToken">本次探测的取消令牌（由 NetworkProbeRunner 提供局部令牌）。</param>
         /// <returns>端口是否可达</returns>
-        private async Task<bool> CheckPortReachabilityAsync(string host, int port)
+        private async Task<bool> CheckPortReachabilityAsync(string host, int port, CancellationToken cancellationToken)
         {
             try
             {
                 // 检查取消令牌
-                if (_cancellationTokenSource.Token.IsCancellationRequested)
+                if (cancellationToken.IsCancellationRequested)
                 {
                     EnhancedDiagnostics.LogDiagnostic($"端口检查 {host}:{port} 被取消");
                     return false;
@@ -244,8 +231,7 @@ namespace HundunWorld.Game.Network
                     {
                         var status = await CheckNetworkStatusAsync();
                         UpdateNetworkStatus(status);
-                        EnhancedLogging.LogInfo($"[监控] 网络状态检查完成: {status}");
-                        EnhancedDiagnostics.LogDiagnostic($"网络状态检查完成: {status}");
+
 
                         // 检查是否需要继续监控
                         if (_disposed)

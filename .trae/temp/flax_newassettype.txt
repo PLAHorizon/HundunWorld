@@ -1,0 +1,14 @@
+### FlaxEditor.Editor+NewAssetType
+  val Material
+  val MaterialInstance
+  val CollisionData
+  val AnimationGraph
+  val SkeletonMask
+  val ParticleEmitter
+  val ParticleSystem
+  val SceneAnimation
+  val MaterialFunction
+  val ParticleEmitterFunction
+  val AnimationGraphFunction
+  val Animation
+  val BehaviorTree

@@ -32,6 +32,17 @@ namespace Horizon.Orleans.Grains
         private bool _stateFlushPending;
         private bool _stateFlushInProgress;
 
+        // ===== 语音/视频通话瞬态状态（不落库，仅用于忙线判定与会话跟踪） =====
+        private string _activeCallId;
+        private ulong _activeCallPeerId;
+        private bool _activeCallIsRinging;
+        private long _activeCallLastSignalMs;
+
+        /// <summary>待接听来电的最大保留时长（毫秒），超时自动释放忙线状态。</summary>
+        private const long CallRingingTimeoutMs = 90_000;
+        /// <summary>通话中无保活信令的最大容忍时长（毫秒），超时视为异常断开并释放忙线状态。</summary>
+        private const long CallIdleTimeoutMs = 90_000;
+
         public IMUserGrain(
             ILogger<IMUserGrain> logger,
             [PersistentState("imUser", "GameStore")] IPersistentState<IMUserState> userState)
@@ -1885,6 +1896,134 @@ namespace Horizon.Orleans.Grains
         {
             _gatewayObservers.Remove(subscriptionId);
             return Task.CompletedTask;
+        }
+
+        #endregion
+
+        #region 语音/视频通话
+
+        public async Task<IMCallSignalAckMessage> ReceiveCallSignalAsync(IMCallSignalMessage signal)
+        {
+            ArgumentNullException.ThrowIfNull(signal);
+
+            var nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            ExpireCallStateIfStale(nowMs);
+
+            var ack = new IMCallSignalAckMessage
+            {
+                CallId = signal.CallId,
+                SignalType = signal.SignalType,
+                Accepted = true,
+                Timestamp = nowMs
+            };
+
+            switch (signal.SignalType)
+            {
+                case IMCallSignalType.Offer:
+                {
+                    // 忙线判定：已有另一通进行中的通话或待接听的来电时拒绝新来电
+                    if (!string.IsNullOrEmpty(_activeCallId)
+                        && !string.Equals(_activeCallId, signal.CallId, StringComparison.Ordinal))
+                    {
+                        _logger.LogInformation(
+                            "通话忙线拒绝新来电: UserId={UserId}, CallerId={CallerId}, ActiveCallId={ActiveCallId}",
+                            _userState.State.UserId, signal.SenderId, _activeCallId);
+
+                        ack.Accepted = false;
+                        ack.EndReason = IMCallEndReason.Busy;
+                        ack.Message = "对方正在通话中，请稍后再拨。";
+                        return ack;
+                    }
+
+                    _activeCallId = signal.CallId;
+                    _activeCallPeerId = signal.SenderId;
+                    _activeCallIsRinging = true;
+                    _activeCallLastSignalMs = nowMs;
+                    break;
+                }
+
+                case IMCallSignalType.Accept:
+                {
+                    // 被叫接听：将本端的待接听状态升级为通话中（状态不匹配时仅转发，容忍 Grain 重激活导致的瞬态状态丢失）
+                    if (string.Equals(_activeCallId, signal.CallId, StringComparison.Ordinal))
+                    {
+                        _activeCallIsRinging = false;
+                        _activeCallLastSignalMs = nowMs;
+                    }
+                    break;
+                }
+
+                case IMCallSignalType.MediaReady:
+                case IMCallSignalType.KeepAlive:
+                case IMCallSignalType.MediaState:
+                {
+                    if (string.Equals(_activeCallId, signal.CallId, StringComparison.Ordinal))
+                    {
+                        _activeCallLastSignalMs = nowMs;
+                    }
+                    break;
+                }
+
+                case IMCallSignalType.Reject:
+                case IMCallSignalType.Cancel:
+                case IMCallSignalType.Hangup:
+                case IMCallSignalType.Busy:
+                case IMCallSignalType.Timeout:
+                {
+                    // 终结性信令：释放本端通话状态
+                    if (string.IsNullOrEmpty(_activeCallId)
+                        || string.Equals(_activeCallId, signal.CallId, StringComparison.Ordinal))
+                    {
+                        ClearCallState();
+                    }
+                    break;
+                }
+
+                default:
+                {
+                    ack.Accepted = false;
+                    ack.Message = "不支持的通话信令类型。";
+                    return ack;
+                }
+            }
+
+            // 按序推送给本用户的所有网关订阅（实时信令对顺序敏感，不使用后台观察任务）
+            await NotifyGatewayObserversAsync(signal);
+
+            _logger.LogInformation(
+                "通话信令已转发: UserId={UserId}, CallId={CallId}, SignalType={SignalType}, From={SenderId}",
+                _userState.State.UserId, signal.CallId, signal.SignalType, signal.SenderId);
+
+            return ack;
+        }
+
+        /// <summary>
+        /// 懒清理过期通话状态：待接听来电超时或通话长时间无保活时释放忙线占用，
+        /// 避免客户端异常退出（断电/崩溃）导致用户永久忙线。
+        /// </summary>
+        private void ExpireCallStateIfStale(long nowMs)
+        {
+            if (string.IsNullOrEmpty(_activeCallId))
+            {
+                return;
+            }
+
+            var timeoutMs = _activeCallIsRinging ? CallRingingTimeoutMs : CallIdleTimeoutMs;
+            if (nowMs - _activeCallLastSignalMs > timeoutMs)
+            {
+                _logger.LogInformation(
+                    "通话状态超时释放: UserId={UserId}, CallId={CallId}, WasRinging={WasRinging}",
+                    _userState.State.UserId, _activeCallId, _activeCallIsRinging);
+                ClearCallState();
+            }
+        }
+
+        private void ClearCallState()
+        {
+            _activeCallId = null;
+            _activeCallPeerId = 0;
+            _activeCallIsRinging = false;
+            _activeCallLastSignalMs = 0;
         }
 
         #endregion

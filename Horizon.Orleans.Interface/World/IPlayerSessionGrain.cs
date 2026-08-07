@@ -6,6 +6,23 @@ using Horizon.Game.Message.Sync.Server;
 namespace Horizon.Orleans.Interface.World;
 
 /// <summary>
+/// P-F3：<see cref="IPlayerSessionGrain.ReceiveInputAndForwardAsync"/> 的聚合返回值：
+/// 输入接受结果 + 即时构建的 InputAck，一次跨进程 RPC 同时带回，
+/// 避免 Gateway 为拿 ACK 再发一次跨进程调用。
+/// </summary>
+[GenerateSerializer]
+public sealed class InputForwardResult
+{
+    /// <summary>输入接受结果（Accepted/Duplicate/Invalid/TooOld）。</summary>
+    [Id(0)]
+    public InputAcceptResult Result { get; set; }
+
+    /// <summary>基于本次输入构建的 ACK（echo 为输入包的 ClientTick）。</summary>
+    [Id(1)]
+    public InputAckPacket Ack { get; set; } = null!;
+}
+
+/// <summary>
 /// 玩家会话 Grain 契约（P1-a 引入）。<br/>
 /// 每条长连接 × 每个角色 对应一个 <see cref="IPlayerSessionGrain"/>；
 /// Grain Primary Key = CharacterId（与 <see cref="ICharacterGrain"/> 同源，便于反查）。
@@ -29,6 +46,23 @@ public interface IPlayerSessionGrain : IGrainWithIntegerKey
     /// 由 Gateway 在 sync dispatch 中解码后调用，本身不做回包（ACK 通过 <see cref="BuildInputAckAsync"/> 定频聚合下发）。
     /// </summary>
     Task<InputAcceptResult> ReceiveInputAsync(InputPacket packet);
+
+    /// <summary>
+    /// 上行转发效率优化（P-F3）：单条跨进程 RPC 完成“接收输入 → 转发权威模拟层 → 构建 ACK”。
+    /// 替代原先 Gateway 依次的三次跨进程调用（ReceiveInputAsync → SubmitInputAsync → BuildInputAckAsync），
+    /// 将输入上行链路的跨进程 RTT 从 3 次降为 1 次，显著降低输入→ACK 延迟。
+    /// </summary>
+    /// <remarks>
+    /// 转发在 silo 内部以 grain→grain 调用完成（<c>IZoneShardGrain.SubmitInputAsync</c> 为纯同步方法，
+    /// 且 ZoneShardGrain 不会回调 PlayerSessionGrain，无 Orleans 非重入死锁风险）。
+    /// </remarks>
+    /// <param name="packet">客户端输入包。</param>
+    /// <param name="zoneShardKey">目标 ZoneShardGrain 主键（由 Gateway 侧 shardRouter 解析，保持路由单一来源）。</param>
+    /// <param name="predictedEndX">客户端预测终点 X（ECS Z-up）。</param>
+    /// <param name="predictedEndY">客户端预测终点 Y。</param>
+    /// <param name="predictedEndZ">客户端预测终点 Z。</param>
+    Task<InputForwardResult> ReceiveInputAndForwardAsync(
+        InputPacket packet, long zoneShardKey, float predictedEndX, float predictedEndY, float predictedEndZ);
 
     /// <summary>
     /// 推进服务器 tick（由所属 Zone 的模拟循环调用）。

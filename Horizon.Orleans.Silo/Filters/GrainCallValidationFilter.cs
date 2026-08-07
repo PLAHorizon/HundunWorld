@@ -107,9 +107,11 @@ namespace Horizon.Orleans.Silo.Filters
         private const int MaxStringArgumentLength = 10000;
 
         /// <summary>
-        /// 集合参数最大允许元素数量
+        /// 集合参数最大允许元素数量。
+        /// AOI 订阅（SubscribeSessionAsync）在 radius=28 时产生 57³=185193 个 chunk，
+        /// 因此上限设为 200000 以容纳合法 AOI 订阅，同时仍能阻止恶意/错误的超大集合。
         /// </summary>
-        private const int MaxCollectionSize = 10000;
+        private const int MaxCollectionSize = 200000;
 
         /// <summary>
         /// 判断参数类型是否为引用类型

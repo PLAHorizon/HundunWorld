@@ -166,6 +166,9 @@ public sealed class ReconciliationSystem : ArchSystemBase
     /// 处理服务器位置修正：当偏差超过阈值时修正位置，并从权威位置重放未确认输入。
     /// 包含修正风暴抑制和平滑修正机制。
     /// </summary>
+    // P-F10：校正诊断日志计数器（限频输出：前 10 次 + 每 60 次一条）。
+    private long _correctionDiagCount;
+
     private void ProcessCorrection(World world, float dt)
     {
         // Drain 所有待处理的修正包，仅保留最新的一个：
@@ -244,6 +247,21 @@ public sealed class ReconciliationSystem : ArchSystemBase
                 pred.NeedsReconciliation = true;
 
                 TotalCorrectionsApplied++;
+
+                // P-F10 回弹诊断：限频输出每次校正的关键数据（偏差/权威位置/预测位置/tick），
+                // 用于定位"静止后移动被拉回"的根因（权威位置为何落后于预测）。
+                {
+                    var diagCount = System.Threading.Interlocked.Increment(ref _correctionDiagCount);
+                    if (diagCount <= 10 || diagCount % 60 == 1)
+                    {
+                        System.Diagnostics.Debug.WriteLine(
+                            $"[ReconciliationSystem] P-F10 校正#{diagCount}: EntityId={netId.EntityId}, drift={drift:F2}m, " +
+                            $"权威=({correction.CorrectedX:F2},{correction.CorrectedY:F2},{correction.CorrectedZ:F2}), " +
+                            $"预测=({pred.X:F2},{pred.Y:F2},{pred.Z:F2}), Reason={correction.Reason}, " +
+                            $"CorrectedTick={correction.LastProcessedClientTick}, LastAcked={_lastAckedClientTick}, " +
+                            $"Reason2=ServerTick{correction.ServerTick}");
+                    }
+                }
 
                 // [Phase C2] 记录预测误差供游戏层采集
                 LastPredictionError = drift;

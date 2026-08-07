@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FlaxEngine;
 using Game.Game.Network;
+using Horizon.Game.ECS.Arch.SyncGuard.Contracts;
 using Horizon.Game.Message;
 using Horizon.Game.Message.Enums;
 using Horizon.Game.Message.Network;
@@ -45,6 +46,13 @@ namespace HundunWorld.Game.Network
         /// <summary>是否启用 ReconnectResumePacket 上行（默认关闭，待服务端配合验证后开启）。</summary>
         public bool EnableReconnectResume { get; set; } = true;
 
+        /// <summary>
+        /// 重连恢复协商发送钩子（由装配方注入 ReconnectResumeSender.SendResumeAsync 的受控包装）：
+        /// 替代旧 fire-and-forget 的 SendReconnectResumeAsync（spec 5.6.1 规则 1、design 2.1.3(3)）。
+        /// 返回发送结果（true=真实送达）。
+        /// </summary>
+        public Func<ulong, long, System.Threading.Tasks.Task<bool>>? ReconnectResumeSendHook { get; set; }
+
         /// <summary>客户端最近已应用的服务器快照 Tick（从 SnapshotPacket.ServerTick 更新）。</summary>
         private long _lastAppliedServerTick;
 
@@ -54,8 +62,16 @@ namespace HundunWorld.Game.Network
             System.Threading.Interlocked.Exchange(ref _lastAppliedServerTick, serverTick);
         }
 
+        /// <summary>
+        /// 客户端最后已应用的服务器快照 tick（供重连协商读取，Interlocked 保证跨线程可见性）。
+        /// </summary>
+        public long LastAppliedServerTick => System.Threading.Interlocked.Read(ref _lastAppliedServerTick);
+
         // 同步握手重试状态：记录上次发送的参数与时间，用于丢包或响应未达时重发。
         private long _lastHandshakeSentTicks = 0;
+        /// <summary>握手首次尝试时间戳，用于全局超时判定（仅在真实出网失败时才应持续增长）。
+        /// 与 _lastHandshakeSentTicks 分离：后者仍每次尝试都更新以驱动 3s 重试间隔。</summary>
+        private long _handshakeFirstAttemptTicks = 0;
         private ulong _lastHandshakeCharacterId;
         private float _lastHandshakeX;
         private float _lastHandshakeY;
@@ -72,6 +88,22 @@ namespace HundunWorld.Game.Network
         /// 同步握手是否已完成（握手完成后才能发送 InputPacket）
         /// </summary>
         public bool IsSyncHandshakeComplete => _syncHandshakeComplete;
+
+        /// <summary>
+        /// 同步握手状态变化事件（完成/重置时触发，驱动本地发送资格状态机）。
+        /// </summary>
+        public event Action<bool> SyncHandshakeStateChanged;
+
+        /// <summary>
+        /// 连接状态变化事件（仅 Connected/Disconnected 两态，供资格状态机订阅）。
+        /// </summary>
+        public event Action<bool> ConnectedStateChanged;
+
+        /// <summary>
+        /// 兜底守卫回调（注入 <see cref="IOutboundSyncGuard"/>）：拦截绕过受控发送入口的旁路发送。
+        /// 仅针对实体同步类上行帧（<see cref="SyncFrameMessage"/>），连接层消息不受拦截。
+        /// </summary>
+        public IOutboundSyncGuard OutboundSyncGuard { get; set; }
         
         /// <summary>
         /// 游戏ID
@@ -563,7 +595,16 @@ namespace HundunWorld.Game.Network
                 try
                 {
                     EnhancedLogging.LogInfo("[OnClientConnected] 重连场景，立即发送 ReconnectResumePacket");
-                    await SendReconnectResumeAsync();
+
+                    // 优先经受控协商发送钩子（真实送达依据）；未装配时回退旧实现。
+                    if (ReconnectResumeSendHook != null)
+                    {
+                        await ReconnectResumeSendHook(CharacterId, Interlocked.Read(ref _lastAppliedServerTick));
+                    }
+                    else
+                    {
+                        await SendReconnectResumeAsync();
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -902,6 +943,12 @@ namespace HundunWorld.Game.Network
         /// <summary>
         /// 处理消息
         /// </summary>
+        // P-F4：SyncPacket 处理日志采样计数器（前 5 次 + 每 240 次输出一条）。
+        private long _syncPacketProcessLogCount;
+
+        // P-F5：SyncFrameMessage 发送日志采样计数器（前 5 次 + 每 240 次输出一条）。
+        private long _syncFrameSendLogCount;
+
         private async Task ProcessMessageAsync(ITcpClient sender, HorizonMessagePacket messagePacket)
         {
             if (messagePacket == null)
@@ -910,7 +957,22 @@ namespace HundunWorld.Game.Network
                 return;
             }
 
-            EnhancedLogging.LogInfo($"[ProcessMessageAsync] 开始处理消息: {messagePacket.Header.MessageType}");
+            // P-F4 网络热路径日志治理：SyncPacket（快照/ACK/事件，20Hz+ × 多包类型）原每包一条
+            // LogInfo，多角色同屏时字符串插值 + 日志 IO 直接阻塞网络接收线程，是客户端卡顿的
+            // 重要诱因。高频类型改为采样输出（前 5 次 + 每 240 次一条），其余低频消息保留原日志。
+            var msgType = messagePacket.Header.MessageType;
+            if (msgType == MessageType.SyncPacket)
+            {
+                var cnt = Interlocked.Increment(ref _syncPacketProcessLogCount);
+                if (cnt <= 5 || cnt % 240 == 1)
+                {
+                    EnhancedLogging.LogInfo($"[ProcessMessageAsync] 开始处理消息: {msgType}（累计 {cnt} 条，采样输出）");
+                }
+            }
+            else
+            {
+                EnhancedLogging.LogInfo($"[ProcessMessageAsync] 开始处理消息: {msgType}");
+            }
 
             try
             {
@@ -1092,15 +1154,57 @@ namespace HundunWorld.Game.Network
 
             try
             {
+                // 兜底守卫（spec 5.4.3 异常 1）：实体同步类上行帧（SyncFrameMessage）在真正入网前
+                // 必须已通过 GuardSyncSender 授权；未经授权调用被拦截并触发"旁路绕过"告警。
+                // 登录握手、心跳等连接层消息不受守卫拦截（spec 1.4 职责边界）。
+                if (message is SyncFrameMessage syncFrame && OutboundSyncGuard != null)
+                {
+                    var senderEntityId = ResolveSenderEntityId(syncFrame);
+                    bool approved;
+                    try
+                    {
+                        approved = OutboundSyncGuard.TryApprove(syncFrame, senderEntityId);
+                    }
+                    catch (Exception guardEx)
+                    {
+                        // 守卫内部异常 → 拒绝发送 + 告警，不扩散（spec 5.4.3 异常 2）。
+                        EnhancedLogging.LogError($"[SendAsync] 兜底守卫异常，拒绝发送: {guardEx.Message}");
+                        EnhancedDiagnostics.LogException(guardEx, "OutboundSyncGuard");
+                        return false;
+                    }
+
+                    if (!approved)
+                    {
+                        EnhancedLogging.LogWarning($"[SendAsync] 旁路绕过拦截: SenderEntityId={senderEntityId}, PacketKind={syncFrame.PacketKind}");
+                        return false;
+                    }
+                }
+
                 // 使用消息适配器打包消息
                 var packedData = _messageAdapter.PackMessage(message, ((INetworkMessage)message).Type, true);
 
-                EnhancedLogging.LogInfo($"[SendAsync] 准备发送消息，数据长度: {packedData.Length} 字节");
+                // P-F5 发送热路径日志治理：SyncFrameMessage（输入包，10Hz+ × 多角色）原每包两条
+                // LogInfo（准备+成功），字符串插值 + 日志 IO 阻塞发送路径。高频类型改为采样输出。
+                if (message is SyncFrameMessage)
+                {
+                    var cnt = Interlocked.Increment(ref _syncFrameSendLogCount);
+                    if (cnt <= 5 || cnt % 240 == 1)
+                    {
+                        EnhancedLogging.LogInfo($"[SendAsync] 发送 SyncFrameMessage（累计 {cnt} 条，采样输出），数据长度: {packedData.Length} 字节");
+                    }
+                }
+                else
+                {
+                    EnhancedLogging.LogInfo($"[SendAsync] 准备发送消息，数据长度: {packedData.Length} 字节");
+                }
 
                 // 发送数据
                 await _client.SendAsync(packedData);
 
-                EnhancedLogging.LogInfo($"[SendAsync] 消息发送成功: {typeof(T).Name}");
+                if (!(message is SyncFrameMessage))
+                {
+                    EnhancedLogging.LogInfo($"[SendAsync] 消息发送成功: {typeof(T).Name}");
+                }
 
                 return true;
             }
@@ -1174,6 +1278,45 @@ namespace HundunWorld.Game.Network
         }
 
         /// <summary>
+        /// 从同步帧中推导发起实体 ID（仅用于兜底守卫；推导失败时按无资格处理）。
+        /// 优先解码帧头/包体提取 InputPacket.CharacterId / CombatActionPacket.AttackerId；
+        /// 解码失败返回 0（守卫将按无资格拒绝）。
+        /// </summary>
+        private ulong ResolveSenderEntityId(SyncFrameMessage syncFrame)
+        {
+            if (syncFrame?.Frame == null || syncFrame.Frame.Length < SyncPacketCodec.FrameHeaderSize)
+            {
+                return 0;
+            }
+
+            try
+            {
+                // 仅解码实体同步类包（Input/CombatAction），其他同步包无发起实体身份。
+                var kind = syncFrame.PacketKind;
+                if (kind == (byte)SyncPacketKind.Input)
+                {
+                    if (SyncPacketCodec.Decode(syncFrame.Frame) is InputPacket input)
+                    {
+                        return input.CharacterId;
+                    }
+                }
+                else if (kind == (byte)SyncPacketKind.CombatAction)
+                {
+                    if (SyncPacketCodec.Decode(syncFrame.Frame) is CombatActionPacket combat)
+                    {
+                        return combat.AttackerId;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                EnhancedDiagnostics.LogException(ex, "ResolveSenderEntityId");
+            }
+
+            return 0;
+        }
+
+        /// <summary>
         /// 发送同步握手包到服务器（进入游戏世界时必须调用）
         /// 握手完成后，服务器才会接受 InputPacket
         /// </summary>
@@ -1200,7 +1343,10 @@ namespace HundunWorld.Game.Network
             _lastHandshakeX = initialX;
             _lastHandshakeY = initialY;
             _lastHandshakeZ = initialZ;
+            // 每次尝试都更新 _lastHandshakeSentTicks 以驱动 3s 重试间隔；
+            // 首次尝试时间戳仅在为 0 时设置，用于全局超时判定，避免每次重试都归零导致超时永不触发。
             Interlocked.Exchange(ref _lastHandshakeSentTicks, DateTimeOffset.UtcNow.Ticks);
+            Interlocked.CompareExchange(ref _handshakeFirstAttemptTicks, DateTimeOffset.UtcNow.Ticks, 0);
 
             var handshake = new HandshakePacket
             {
@@ -1264,10 +1410,17 @@ namespace HundunWorld.Game.Network
                 return false;
 
             // 超过全局超时仍未完成：不再重试，避免无限发送。
-            if (elapsed > HandshakeTimeout)
+            // 全局超时基于首次尝试时间戳 _handshakeFirstAttemptTicks，而非 _lastHandshakeSentTicks：
+            // 后者每次重试都刷新，会使超时判定永远不触发（修复 sync-handshake 无限重发问题）。
+            var firstAttemptTicks = Interlocked.Read(ref _handshakeFirstAttemptTicks);
+            if (firstAttemptTicks != 0)
             {
-                FlaxEngine.Debug.LogError($"[NetworkManager] 同步握手超时 ({elapsed.TotalSeconds:F1}s)，停止重试。请检查服务端是否正常响应。");
-                return false;
+                var totalElapsed = TimeSpan.FromTicks(DateTimeOffset.UtcNow.Ticks - firstAttemptTicks);
+                if (totalElapsed > HandshakeTimeout)
+                {
+                    FlaxEngine.Debug.LogError($"[NetworkManager] 同步握手超时 ({totalElapsed.TotalSeconds:F1}s)，停止重试。请检查服务端是否正常响应。");
+                    return false;
+                }
             }
 
             FlaxEngine.Debug.LogWarning($"[NetworkManager] 同步握手未完成，距上次发送 {elapsed.TotalSeconds:F1}s，尝试重发握手包...");
@@ -1280,18 +1433,22 @@ namespace HundunWorld.Game.Network
         /// </summary>
         /// <param name="addedChunks">新增订阅的 chunk key 集合</param>
         /// <param name="removedChunks">移除订阅的 chunk key 集合</param>
-        public async Task SendSubscriptionUpdateAsync(ulong[] addedChunks, ulong[] removedChunks)
+        public async Task SendSubscriptionUpdateAsync(ulong[] addedChunks, ulong[] removedChunks, float posX = 0f, float posY = 0f, float posZ = 0f, bool hasPosition = false)
         {
             if (!CanSendMessage() || !IsSyncHandshakeComplete)
                 return;
 
-            if ((addedChunks == null || addedChunks.Length == 0) && (removedChunks == null || removedChunks.Length == 0))
+            if (!hasPosition && (addedChunks == null || addedChunks.Length == 0) && (removedChunks == null || removedChunks.Length == 0))
                 return;
 
             var packet = new SubscriptionUpdatePacket
             {
                 AddedChunks = addedChunks ?? Array.Empty<ulong>(),
                 RemovedChunks = removedChunks ?? Array.Empty<ulong>(),
+                PositionX = posX,
+                PositionY = posY,
+                PositionZ = posZ,
+                HasPosition = hasPosition,
             };
 
             SyncPacketCodec.Encode(packet, out var frame, out var frameLength);
@@ -1326,7 +1483,11 @@ namespace HundunWorld.Game.Network
         public void MarkSyncHandshakeComplete()
         {
             _syncHandshakeComplete = true;
+            // 握手完成：重置首次尝试时间戳，确保下次握手周期从新开始。
+            Interlocked.Exchange(ref _handshakeFirstAttemptTicks, 0);
             Debug.Log("[NetworkManager] 同步握手已确认完成");
+            try { SyncHandshakeStateChanged?.Invoke(true); }
+            catch (Exception ex) { EnhancedDiagnostics.LogException(ex, "SyncHandshakeStateChanged(true)"); }
         }
 
         /// <summary>
@@ -1337,6 +1498,12 @@ namespace HundunWorld.Game.Network
             _syncHandshakeComplete = false;
             // 跨线程保护：与 SendSyncHandshakeAsync 的写入并发，使用 Interlocked.Exchange 保证原子性。
             Interlocked.Exchange(ref _syncClientTick, 0);
+            // 重置握手首次尝试时间戳，确保下次握手周期的全局超时从新开始计时。
+            Interlocked.Exchange(ref _handshakeFirstAttemptTicks, 0);
+            // 重置上次发送时间戳，使重连后握手重试节奏从新开始（避免基于旧时间戳立即触发重试）。
+            Interlocked.Exchange(ref _lastHandshakeSentTicks, 0);
+            try { SyncHandshakeStateChanged?.Invoke(false); }
+            catch (Exception ex) { EnhancedDiagnostics.LogException(ex, "SyncHandshakeStateChanged(false)"); }
         }
 
         #endregion
@@ -1381,6 +1548,14 @@ namespace HundunWorld.Game.Network
                     _lastNotifiedStatus = currentStatus;
                     EnhancedLogging.LogInfo($"[UpdateConnectionStatus] 通知订阅者连接状态: {currentStatus}");
                     ConnectionStatusChanged?.Invoke(currentStatus);
+                    try
+                    {
+                        ConnectedStateChanged?.Invoke(currentStatus == ConnectionStatus.Connected);
+                    }
+                    catch (Exception ex)
+                    {
+                        EnhancedLogging.LogError($"[UpdateConnectionStatus] 触发连接资格状态事件时发生错误: {ex.Message}");
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -1470,16 +1645,46 @@ namespace HundunWorld.Game.Network
             EnhancedLogging.LogInfo("[OnReconnectionSucceeded] 重连成功");
             EnhancedDiagnostics.LogDiagnostic("重连成功");
 
-            // [Phase C5] 重连成功后发送 ReconnectResumePacket（若启用）
+            // [Phase C5] 重连成功后发送 ReconnectResumePacket（若启用）。
+            // 改经受控协商发送钩子（真实送达依据），不再 fire-and-forget（spec 5.6.1 规则 1）。
             if (EnableReconnectResume && CharacterId > 0)
             {
-                _ = SendReconnectResumeAsync();
+                if (ReconnectResumeSendHook != null)
+                {
+                    // 受控 await：结果回传恢复状态机（异步异常被钩子内部隔离）。
+                    _ = FireControlledResumeSendAsync();
+                }
+                else
+                {
+                    _ = SendReconnectResumeAsync(); // 钩子未装配时的回退（向后兼容）
+                }
             }
 
             // [Phase C2] 记录重连成功指标
             ClientSyncMetrics.RecordReconnectSuccess();
 
             OnReconnectionStateChanged(ReconnectionManager.ReconnectState.Connected);
+        }
+
+        /// <summary>
+        /// 经 ReconnectResumeSendHook 受控发送协商消息，结果回传恢复状态机（spec 5.6.1 规则 1）。
+        /// 钩子内部已隔离异常（返回 false），本方法不向重连事件链抛异常。
+        /// </summary>
+        private async Task FireControlledResumeSendAsync()
+        {
+            try
+            {
+                if (ReconnectResumeSendHook == null || CharacterId == 0)
+                {
+                    return;
+                }
+
+                await ReconnectResumeSendHook(CharacterId, Interlocked.Read(ref _lastAppliedServerTick));
+            }
+            catch (Exception ex)
+            {
+                EnhancedLogging.LogWarning($"[OnReconnectionSucceeded] 受控协商发送异常被隔离: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -1502,6 +1707,7 @@ namespace HundunWorld.Game.Network
 
         /// <summary>
         /// [Phase C5] 发送 ReconnectResumePacket，尝试增量恢复（服务端已支持）。
+        /// 兜底实现（钩子未装配时的回退路径）：以 SendAsync 返回值为真实送达依据（spec 5.6.1 规则 6 禁止假成功）。
         /// </summary>
         private async Task SendReconnectResumeAsync()
         {
@@ -1528,8 +1734,16 @@ namespace HundunWorld.Game.Network
                         ProtocolVersion = resumePacket.ProtocolVersion,
                     };
 
-                    await SendAsync(syncFrame);
-                    EnhancedLogging.LogInfo($"[Phase C5] ReconnectResumePacket 已发送: CharacterId={CharacterId}, LastTick={lastTick}");
+                    // 以 SendAsync 返回值为真实送达依据，禁止假成功日志（spec 5.6.1 规则 6）。
+                    var delivered = await SendAsync(syncFrame);
+                    if (delivered)
+                    {
+                        EnhancedLogging.LogInfo($"[Phase C5] ReconnectResumePacket 已真实送达: CharacterId={CharacterId}, LastTick={lastTick}, Source=SendAsync=true");
+                    }
+                    else
+                    {
+                        EnhancedLogging.LogWarning($"[Phase C5] ReconnectResumePacket 发送失败（连接未就绪/被拦截），不输出已发送: CharacterId={CharacterId}, LastTick={lastTick}");
+                    }
                 }
                 finally
                 {
@@ -1610,6 +1824,49 @@ namespace HundunWorld.Game.Network
         }
 
         /// <summary>
+        /// 经 ReconnectFlowGuard 安全包装重连成功事件（spec 5.6.1 规则 4、design 2.1.3(3)）。
+        /// 在 NetworkManager 内部订阅之外叠加安全包装订阅，事件处理器异常不向 StartReconnectAsync 传播。
+        /// </summary>
+        public void SubscribeReconnectFlowGuard(HundunWorld.Game.RemoteVisibility.ReconnectFlowGuard guard)
+        {
+            if (guard == null || _reconnectionManager == null)
+            {
+                return;
+            }
+
+            // 包装 OnReconnected：重连成功结论确立后，任何处理器异常被隔离。
+            _reconnectionManager.OnReconnected += () =>
+            {
+                guard.RaiseSafely();
+            };
+        }
+
+        /// <summary>
+        /// 重连成功事件处理器（经 ReconnectFlowGuard 安全包装调用）。
+        /// 空引用防护：_client / 依赖组件为 null 时安全返回，不向重连流程抛异常（spec 5.6.3 异常 4）。
+        /// </summary>
+        public void RaiseReconnectionSucceededSafely()
+        {
+            try
+            {
+                // 空引用防护：访问 _client 前判空。
+                if (_client == null)
+                {
+                    EnhancedLogging.LogWarning("[RaiseReconnectionSucceededSafely] _client 为空，跳过重连成功处理（空引用防护）");
+                    return;
+                }
+
+                OnReconnectionSucceeded();
+            }
+            catch (Exception ex)
+            {
+                // 异常隔离：不向 ReconnectionManager.StartReconnectAsync 传播（spec 5.6.1 规则 4）。
+                EnhancedLogging.LogWarning($"[RaiseReconnectionSucceededSafely] 重连成功事件链异常被隔离: {ex.Message}");
+                EnhancedDiagnostics.LogException(ex, "重连成功事件链");
+            }
+        }
+
+        /// <summary>
         /// 重连状态变化事件处理
         /// </summary>
         private void OnReconnectionStateChanged(ReconnectionManager.ReconnectState state)
@@ -1626,7 +1883,9 @@ namespace HundunWorld.Game.Network
                     UpdateConnectionStatus(ConnectionStatus.Reconnecting);
                     break;
                 case ReconnectionManager.ReconnectState.Connected:
-                    if (_client.Online)
+                    // 空引用防护（spec 5.6.3 异常 4）：_client 在 ConnectAsync 失败路径（CleanupClient）后可能为 null，
+                    // 直接访问 _client.Online 会抛 NullReferenceException 并被 StartReconnectAsync 误判为重连失败。
+                    if (_client != null && _client.Online)
                         UpdateConnectionStatus(ConnectionStatus.Connected);
                     break;
                 case ReconnectionManager.ReconnectState.Disconnected:

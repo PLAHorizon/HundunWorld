@@ -68,6 +68,51 @@ public class PlayerSessionGrain : Grain, IPlayerSessionGrain
     }
 
     /// <inheritdoc />
+    /// <remarks>
+    /// P-F3 上行转发合并：在单个 grain turn 内完成 AcceptInput → 转发 ZoneShard → ConsumeInputs → BuildInputAck。
+    /// 转发条件与原 Gateway 逻辑一致：仅 Invalid/TooOld 不转发（Duplicate 仍转发，保持原语义）。
+    /// ZoneShardGrain.SubmitInputAsync 为纯同步实现且不会回调本 grain，无死锁风险。
+    /// </remarks>
+    public async Task<InputForwardResult> ReceiveInputAndForwardAsync(
+        InputPacket packet, long zoneShardKey, float predictedEndX, float predictedEndY, float predictedEndZ)
+    {
+        var result = _state.AcceptInput(packet);
+        if (result != InputAcceptResult.Accepted && result != InputAcceptResult.Duplicate)
+        {
+            _logger.LogDebug(
+                "PlayerSession {CharacterId} 输入被拒: {Result}, clientTick={Tick}",
+                this.GetPrimaryKeyLong(), result, packet?.ClientTick ?? -1);
+        }
+
+        // 非 Invalid/TooOld 时转发权威模拟层（与原 Gateway 分支条件一致）。
+        if (packet is not null
+            && result != InputAcceptResult.Invalid
+            && result != InputAcceptResult.TooOld)
+        {
+            try
+            {
+                var zoneShard = GrainFactory.GetGrain<IZoneShardGrain>(zoneShardKey);
+                await zoneShard.SubmitInputAsync(packet.CharacterId, packet, predictedEndX, predictedEndY, predictedEndZ)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex,
+                    "PlayerSession {CharacterId} 转发输入到 ZoneShard {ShardKey} 失败（已吞）。clientTick={Tick}",
+                    this.GetPrimaryKeyLong(), zoneShardKey, packet.ClientTick);
+            }
+        }
+
+        // 消费缓冲推进 LastProcessedClientTick 后构建 ACK（原 BuildInputAckAsync 语义）。
+        _state.ConsumeInputs();
+        return new InputForwardResult
+        {
+            Result = result,
+            Ack = _state.BuildInputAck(packet?.ClientTick ?? 0),
+        };
+    }
+
+    /// <inheritdoc />
     public Task AdvanceServerTickAsync(long serverTick)
     {
         _state.AdvanceServerTick(serverTick);

@@ -78,7 +78,7 @@ public class AdaptiveInterpolationTests : IDisposable
     }
 
     [Fact]
-    public void AdaptiveDelay_ClampedTo_Min100ms_Max300ms()
+    public void AdaptiveDelay_ClampedTo_Min100ms_Max200ms()
     {
         // 直接设置极端 avgInterval 值来测试 clamp
         var avgField = typeof(SnapshotApplySystem)
@@ -91,10 +91,11 @@ public class AdaptiveInterpolationTests : IDisposable
         jitterField?.SetValue(null, 0f);
         Assert.Equal(0.1f, SnapshotApplySystem.AdaptiveInterpolationDelaySeconds, 0.001f);
 
-        // 极高间隔 → 应 clamp 到 300ms
+        // 极高间隔 → 应 clamp 到 200ms（生产上限 AdaptiveDelayMaxSeconds=0.2f，
+        // 从 0.4s 有意下调修复"远端角色不动"，见 SnapshotApplySystem 配置注释）
         avgField?.SetValue(null, 0.5f); // 500ms
         jitterField?.SetValue(null, 0f);
-        Assert.Equal(0.3f, SnapshotApplySystem.AdaptiveInterpolationDelaySeconds, 0.001f);
+        Assert.Equal(0.2f, SnapshotApplySystem.AdaptiveInterpolationDelaySeconds, 0.001f);
     }
 
     [Fact]

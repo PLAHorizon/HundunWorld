@@ -95,21 +95,18 @@
 | 3D 预览 | `HundunWorld/Source/Game/UI/Character/CharacterSceneController.cs` | 59 | `CharacterPreviewPanel` |
 | 创建 UI | `HundunWorld/Source/Game/UI/Character/CharacterSceneController.cs` | 92 | `IntegratedCharacterCreationUI` |
 
-### 1.5 TraeBridge
+### 1.5 HundunAgent（编辑器 AI Agent 插件，取代旧 TraeBridge）
 
-| 模块 | 文件 | 行 | 说明 |
-|------|------|----|------|
-| 编辑器插件 | `HundunWorld/Source/Game/TraeBridge/TraeBridgeEditorPlugin.cs` | 1 | `#if FLAX_EDITOR` |
-| 初始化 | `HundunWorld/Source/Game/TraeBridge/TraeBridgeEditorPlugin.cs` | 29 | `Initialize` |
-| HTTP 服务器 | `HundunWorld/Source/Game/TraeBridge/TraeBridgeServer.cs` | 16 | 单例 |
-| HttpListener | `HundunWorld/Source/Game/TraeBridge/TraeBridgeServer.cs` | 21 | `:21888` |
-| 场景信息 | `HundunWorld/Source/Game/TraeBridge/TraeBridgeServer.cs` | 168 | `/api/scene/info` |
-| 层级树 | `HundunWorld/Source/Game/TraeBridge/TraeBridgeServer.cs` | 396 | `/api/scene/hierarchy` |
-| 设属性 | `HundunWorld/Source/Game/TraeBridge/TraeBridgeServer.cs` | 716 | `/api/.../property` |
-| 设 Transform | `HundunWorld/Source/Game/TraeBridge/TraeBridgeServer.cs` | 644 | `/api/.../transform` |
-| 导入资产 | `HundunWorld/Source/Game/TraeBridge/TraeBridgeServer.cs` | 1049 | `/api/assets/import` |
-| 截图 | `HundunWorld/Source/Game/TraeBridge/TraeBridgeServer.cs` | 1108 | `/api/viewport/screenshot` |
-| 执行代码 | `HundunWorld/Source/Game/TraeBridge/TraeBridgeServer.cs` | 1174 | `/api/execute` |
+| 模块 | 文件 | 说明 |
+|------|------|------|
+| 插件入口 | `HundunWorld/Plugins/HundunAgent/Source/HundunAgentEditor/HundunAgentPlugin.cs` | `EditorPlugin`，启动服务器/注册工具 |
+| 工具注册表 | `HundunWorld/Plugins/HundunAgent/Source/HundunAgentEditor/Core/ToolRegistry.cs` | 统一工具入口 |
+| 场景与 Actor | `HundunWorld/Plugins/HundunAgent/Source/HundunAgentEditor/Tools/SceneActorTools.cs` | 场景/Actor/预制体 |
+| 材质与资产 | `HundunWorld/Plugins/HundunAgent/Source/HundunAgentEditor/Tools/MaterialAssetTools.cs` | 资产/材质 |
+| 代码热重载 | `HundunWorld/Plugins/HundunAgent/Source/HundunAgentEditor/Tools/CodeTools.cs` | Source 白名单读写 + 编译等待 |
+| HTTP 服务 | `HundunWorld/Plugins/HundunAgent/Source/HundunAgentEditor/Server/AgentHttpServer.cs` | `:21900` |
+| MCP 服务 | `HundunWorld/Plugins/HundunAgent/Source/HundunAgentEditor/Server/McpServer.cs` | `:21901/mcp` |
+| 聊天窗口 | `HundunWorld/Plugins/HundunAgent/Source/HundunAgentEditor/Chat/AgentChatWindow.cs` | 编辑器内 LLM 任务闭环 |
 
 ---
 

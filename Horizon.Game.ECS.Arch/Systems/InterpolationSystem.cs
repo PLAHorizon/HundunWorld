@@ -30,7 +30,9 @@ namespace Horizon.Game.ECS.Arch.Systems;
 /// </item>
 /// <item>
 /// <term>Idle</term>
-/// <description>在线静止（0.5~5 秒未收到 delta）。保持当前位置，停止追赶，避免漂移。</description>
+/// <description>在线静止（1~5 秒未收到 delta）。若最后已知速度非零，继续 Dead Reckoning 外推
+/// 位置（最长 <see cref="IdleDeadReckoningMaxSeconds"/>），避免网络抖动时远程角色瞬间冻结。
+/// 速度为零时保持当前位置（与静止行为一致）。</description>
 /// </item>
 /// <item>
 /// <term>Stale</term>
@@ -141,8 +143,36 @@ public sealed class InterpolationSystem : ArchSystemBase
     /// <summary>
     /// 前向预测最大外推时间（秒）。前向预测模式下作为最大外推时间上限
     /// extrapTime = min(TimeSinceLastSnapshot, 此值)，避免长时间无快照时预测位置飘太远。
+    /// <para>
+    /// 修复（Active→Idle 速度不连续）：原值 0.5s，但 Active→Idle 阈值为 1.0s。
+    /// 0.5s~1.0s 之间 Active 状态外推已停止（predictedTarget 静止），实体 Lerp 减速收敛，
+    /// 1.0s 进入 Idle 后 Dead Reckoning 突然恢复全速 → 速度突变。
+    /// 提升到 1.0s 与 Active→Idle 阈值匹配，Active 全程匀速外推，Idle 无缝接管。
+    /// </para>
     /// </summary>
-    public float DeadReckoningMaxExtrapolationSeconds { get; set; } = 0.5f;
+    public float DeadReckoningMaxExtrapolationSeconds { get; set; } = 1.0f;
+
+    /// <summary>
+    /// Idle 状态下 Dead Reckoning 的最大持续时间（秒）。
+    /// <para>
+    /// 修复（网络抖动时远程角色冻结 — "无法看到远程角色的移动"根因）：
+    /// 原实现在 Idle 状态（0.5~5 秒未收到 delta）直接冻结位置，但实体可能正在移动。
+    /// 网络抖动 &gt; 0.5s 时实体进入 Idle 并瞬间冻结，恢复 Active 时 Lerp 追赶产生视觉突变；
+    /// 多客户端网络拥塞时频繁 Active→Idle→Active 切换，远程角色"一顿一顿"。
+    /// </para>
+    /// <para>
+    /// 优化：Idle 状态下继续用最后已知速度做 Dead Reckoning，保持匀速移动。
+    /// - 速度为零（真正静止的实体）→ 退化为保持当前位置（与原行为一致）
+    /// - 速度非零 → 按 LastVelocityXZ × dt 推进位置，最长外推此时间
+    ///   超过后停止漂移（防止长时间无快照时位置飘太远）
+    /// - Stale 状态仍保持冻结（5s+ 无更新视为真实异常）
+    /// </para>
+    /// <para>
+    /// 默认 2.0s：覆盖常见网络抖动（1~3s），超过后冻结等待恢复。
+    /// 6m/s × 2s = 12m 最大漂移，恢复时由加速混合（200ms smoothstep）平滑过渡，视觉无突变。
+    /// </para>
+    /// </summary>
+    public float IdleDeadReckoningMaxSeconds { get; set; } = 2.0f;
 
     /// <summary>
     /// 本帧所有 Active 远程角色平均渲染位置 delta（米），供外部（ECSUpdateDriver）转发到平滑度评分。
@@ -225,10 +255,30 @@ public sealed class InterpolationSystem : ArchSystemBase
                     break;
 
                 case RemoteEntityState.Idle:
-                    // 在线静止：保持当前位置，停止追赶
+                    // 在线静止（1~5 秒未收到 delta）：Dead Reckoning 保持移动
+                    // 修复（网络抖动时远程角色冻结 — "无法看到远程角色的移动"根因）：
+                    // 原实现直接 return 冻结位置，但实体可能正在移动（LastVelocityXZ != 0）。
+                    // 网络抖动 > 0.5s 时实体进入 Idle 并瞬间冻结，恢复 Active 时 Lerp 追赶产生视觉突变；
+                    // 多客户端网络拥塞时频繁 Active→Idle→Active 切换，远程角色"一顿一顿"。
+                    //
+                    // 优化：Idle 状态下继续用最后已知速度做 Dead Reckoning，保持匀速移动。
+                    // - 速度为零（真正静止的实体）→ 退化为保持当前位置（与原行为一致）
+                    // - 速度非零 → 按 LastVelocityXZ × dt 推进位置，最长外推 IdleDeadReckoningMaxSeconds
+                    //   超过后停止漂移（防止长时间无快照时位置飘太远）
+                    // - Stale 状态仍保持冻结（5s+ 无更新视为真实异常）
                     // 注意：不重置 Target，保留最后一个已知目标位置。
                     // 这样恢复 Active 时，如果新 delta 还没到达，Lerp 仍可向旧目标追赶（通常已到达）。
-                    // Alpha 标记为已到达
+                    if (float.IsFinite(interp.LastVelocityXZ_X) && float.IsFinite(interp.LastVelocityXZ_Y)
+                        && (interp.LastVelocityXZ_X != 0f || interp.LastVelocityXZ_Y != 0f)
+                        && interp.TimeSinceLastSnapshot <= IdleDeadReckoningMaxSeconds)
+                    {
+                        // 按最后已知速度推进位置（纯外推，无 Lerp 修正——Idle 期间无新快照可修正）
+                        // 注意：LastVelocityXZ_X 对应 ECS X（左右），LastVelocityXZ_Y 对应 ECS Z（前后）。
+                        // InterpolatedTransformComponent 的 Y 是上下（Flax 坐标系），不预测。
+                        interp.X += interp.LastVelocityXZ_X * dt;
+                        interp.Z += interp.LastVelocityXZ_Y * dt;
+                        // Yaw 保持不变（无角速度信息），避免旋转漂移
+                    }
                     interp.Alpha = 1f;
                     return;
 

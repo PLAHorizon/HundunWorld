@@ -1,0 +1,51 @@
+### FlaxEditor.IUndoAction : 
+  meth Void Do()
+  meth Void Undo()
+
+### FlaxEditor.MultiUndoAction : System.Object
+  ctor (IUndoAction[] actions)
+  ctor (IEnumerable`1 actions, String actionString)
+  prop String ActionString { get }
+  meth Void Dispose()
+  meth Void Do()
+  meth Void Undo()
+  field IUndoAction[] Actions
+
+### FlaxEditor.GUI.Docking.DockWindow : FlaxEngine.GUI.Panel
+  ctor (MasterDockPanel masterPanel, Boolean hideOnClose, ScrollBars scrollBars)
+  prop Float2 DefaultSize { get }
+  prop Boolean HideOnClose { get set}
+  prop SpriteHandle Icon { get set}
+  prop Boolean IsDocked { get }
+  prop Boolean IsHidden { get }
+  prop Boolean IsSelected { get }
+  prop MasterDockPanel MasterPanel { get }
+  prop DockPanel ParentDockPanel { get set}
+  prop String SerializationTypename { get }
+  prop String Title { get set}
+  prop Float2 TitleSize { get }
+  prop Boolean UseLayoutData { get }
+  meth Void BringToFront()
+  meth Boolean Close(ClosingReason reason?)
+  meth Void CreateFloating()
+  meth Void CreateFloating(Float2 location, Float2 size, WindowStartPosition position?, Boolean showWindow?)
+  meth Void Focus()
+  meth Void FocusOrShow()
+  meth Void FocusOrShow(DockState state)
+  meth Void Hide()
+  meth Void OnDestroy()
+  meth Boolean OnKeyDown(KeyboardKeys key)
+  meth Void OnLayoutDeserialize(XmlElement node)
+  meth Void OnLayoutDeserialize()
+  meth Void OnLayoutSerialize(XmlWriter writer)
+  meth Void OnShowContextMenu(ContextMenu menu)
+  meth Void SelectTab(Boolean autoFocus?)
+  meth Void Show(DockState state?, DockPanel toDock?, Boolean autoSelect?, Nullable`1 splitterValue?)
+  meth Void Show(DockState state, DockWindow toDock)
+  meth Void ShowFloating()
+  meth Void ShowFloating(WindowStartPosition position)
+  meth Void ShowFloating(Float2 size, WindowStartPosition position?)
+  meth Void ShowFloating(Float2 location, Float2 size, WindowStartPosition position?)
+  field InputActionsContainer InputActions
+
+### MISSING FlaxEditor.EditorStateMachine

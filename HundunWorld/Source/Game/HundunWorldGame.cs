@@ -42,6 +42,21 @@ namespace HundunWorld.Game
         private readonly World _archWorld;
         private NetworkManager _networkManager;
         private ClientConnectionCoordinator _connectionCoordinator;
+
+        // ─── 上行发送资格管控（SyncGuard，spec 5.4.1 规则集中性） ───
+        private Horizon.Game.ECS.Arch.SyncGuard.Contracts.IBindingRelationshipRegistry _bindingRegistry;
+        private HundunWorld.Game.SyncGuard.LocalSendEligibilityState _eligibilityState;
+        private HundunWorld.Game.SyncGuard.SendViolationMonitor _violationMonitor;
+        private HundunWorld.Game.SyncGuard.OutboundSyncAuthorizer _outboundSyncAuthorizer;
+        private HundunWorld.Game.SyncGuard.GuardSyncSender _guardSyncSender;
+
+        // ─── 远程角色观测链路修复（RemoteVisibility，spec 5.6） ───
+        private HundunWorld.Game.RemoteVisibility.ReconnectResumeSender _reconnectResumeSender;
+        private HundunWorld.Game.RemoteVisibility.ReconnectResumeStateMachine _reconnectResumeStateMachine;
+        private HundunWorld.Game.RemoteVisibility.RemoteVisibilityAudit _remoteVisibilityAudit;
+        private HundunWorld.Game.RemoteVisibility.RemoteObservationCoordinator _remoteObservationCoordinator;
+        private HundunWorld.Game.RemoteVisibility.ReconnectFlowGuard _reconnectFlowGuard;
+        private bool _remoteVisibilityInitialized;
         // 使用 Volatile.Read/Write 保证跨线程可见性（ulong 不能使用 volatile 关键字）。
         // SetPlayerId 在 UI 线程（Scripting.InvokeOnUpdate）与网络线程（OnHandshakeReceived 事件）被并发写入，
         // PlayerId 属性可能在其他线程读取。
@@ -58,12 +73,12 @@ namespace HundunWorld.Game
         
         // AOI 订阅滞后防抖：记录上次订阅中心的 chunk 坐标。
         // 只有当玩家移动超过 HysteresisChunks 个 chunk 时才重新计算订阅，
-        // 避免每跨 16m chunk 边界就触发 1331 chunk 的 diff 计算和网络上行。
+        // 避免每跨 16m chunk 边界就触发 185193 chunk（radius=28）的 diff 计算和网络上行。
         private int _lastSubCenterCX = int.MinValue;
         private int _lastSubCenterCY = int.MinValue;
         private int _lastSubCenterCZ = int.MinValue;
-        /// <summary>滞后阈值（chunk 数）：玩家移动超过此距离才重新订阅。radius=5 时，3 chunks=48m 移动才触发一次更新。</summary>
-        private const int AoiHysteresisChunks = 3;
+        /// <summary>滞后阈值（chunk 数）：玩家移动超过此距离才重新订阅。radius=28 时，8 chunks=128m 移动才触发一次更新（与 radius 成比例放大，避免大范围订阅频繁重算）。</summary>
+        private const int AoiHysteresisChunks = 8;
 
         /// <summary>
         /// 本地玩家角色ID（由握手响应或登录响应设置）
@@ -85,6 +100,8 @@ namespace HundunWorld.Game
         private CharacterStage _pendingLocalPlayerStage;
         private static HundunWorldGame _instance;
         private System.Action _requestingExitHandler;
+        /// <summary>同步包 handler 订阅后台重试循环的取消令牌（Dispose 时取消，防止 PIE 退出后循环残留）。</summary>
+        private System.Threading.CancellationTokenSource _syncSubscribeCts;
         public static HundunWorldGame Instance
         {
             get
@@ -96,6 +113,22 @@ namespace HundunWorld.Game
                     _instance.StartAsync().ConfigureFalseAwait();
                 }
                 return _instance;
+            }
+        }
+
+        /// <summary>
+        /// 安全释放游戏实例：仅当实例已创建时执行 Dispose。
+        /// 供 PIE 退出/场景清理等外部路径调用，避免通过 <see cref="Instance"/> getter
+        /// 触发延迟创建导致"清理路径反而复活游戏实例"（PIE 退出后残留网络任务）。
+        /// Dispose 内部幂等，重复调用安全。
+        /// </summary>
+        public static void TryDisposeIfCreated()
+        {
+            var instance = _instance;
+            if (instance != null)
+            {
+                Debug.Log("HundunWorldGame.TryDisposeIfCreated: 释放已创建的游戏实例");
+                instance.Dispose();
             }
         }
         public HundunWorldGame()
@@ -155,6 +188,12 @@ namespace HundunWorld.Game
                 // ECS 初始化失败是严重问题，但不应导致闪退，至少让游戏窗口显示出来
             }
 
+            // ─── 装配上行发送资格管控组件（SyncGuard）：需在 ECS 世界与系统注册完成后执行 ───
+            InitializeSyncGuard();
+
+            // ─── 装配远程角色观测链路修复组件（RemoteVisibility） ───
+            InitializeRemoteVisibility();
+
             _requestingExitHandler = () =>
             {
                 Dispose();
@@ -202,6 +241,7 @@ namespace HundunWorld.Game
                 _networkManager.ConnectionError += OnConnectionError;
                 _networkManager.DisconnectTimedOut += OnDisconnectTimedOut;
 
+
                 // 订阅同步包事件：将服务端快照桥接到 SnapshotReceiveBuffer
                 // 这是同步链路的关键桥接：SyncPacketMessageHandler -> SnapshotReceiveBuffer -> SnapshotApplySystem
                 // 注意：AddAllMessageHandlers 在 NetworkManager 构造函数中已被调用
@@ -219,6 +259,163 @@ namespace HundunWorld.Game
             catch (Exception ex)
             {
                 Debug.LogError($"初始化网络管理器时发生错误: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 装配上行发送资格管控组件（SyncGuard）并完成事件订阅（spec 5.4.1 规则集中性）。
+        /// </summary>
+        private void InitializeSyncGuard()
+        {
+            try
+            {
+                _bindingRegistry = new HundunWorld.Game.SyncGuard.BindingRelationshipRegistry();
+                _eligibilityState = new HundunWorld.Game.SyncGuard.LocalSendEligibilityState(_bindingRegistry);
+                _violationMonitor = new HundunWorld.Game.SyncGuard.SendViolationMonitor();
+                _outboundSyncAuthorizer = new HundunWorld.Game.SyncGuard.OutboundSyncAuthorizer(
+                    bindingRegistry: _bindingRegistry,
+                    eligibilityState: _eligibilityState,
+                    violationReporter: _violationMonitor,
+                    isLocalPlayerEntity: IsLocalPlayerEntity,
+                    getLocalPlayerEntityId: () => _playerId,
+                    getLocalPlayerEntityCount: CountLocalPlayerEntities);
+                // 统一使用同一个兜底守卫实例：GuardSyncSender 标记授权放行，NetworkManager 识别同一实例。
+                var outboundGuard = new HundunWorld.Game.SyncGuard.OutboundSyncGuardImpl(_outboundSyncAuthorizer, _violationMonitor);
+                _guardSyncSender = new HundunWorld.Game.SyncGuard.GuardSyncSender(
+                    _outboundSyncAuthorizer, _violationMonitor,
+                    syncFrame => _networkManager.SendAsync(syncFrame),
+                    outboundGuard);
+
+                // 注入 NetworkManager 兜底守卫：拦截绕过受控发送入口的旁路发送。
+                if (_networkManager != null)
+                {
+                    _networkManager.OutboundSyncGuard = outboundGuard;
+                }
+
+                // 订阅连接/握手状态事件，驱动本地资格状态机迁移。
+                if (_networkManager != null)
+                {
+                    _networkManager.ConnectedStateChanged += OnConnectedStateChanged;
+                    _networkManager.SyncHandshakeStateChanged += OnSyncHandshakeStateChanged;
+                }
+
+                // 为 ECS 侧 SendAuthorizationSystem 注入集中式授权器。
+                InjectAuthorizerToSendAuthorizationSystem();
+
+                Debug.Log("[HundunWorldGame] SyncGuard 资格管控组件装配完成");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[HundunWorldGame] 装配 SyncGuard 失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>查询实体是否为本地玩家（供授权器 O(1) 判定）。</summary>
+        private bool IsLocalPlayerEntity(ulong entityId)
+        {
+            if (entityId == 0 || _archWorld == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                var query = new Arch.Core.QueryDescription()
+                    .WithAll<Horizon.Game.ECS.Arch.Components.NetworkIdentityComponent>();
+                bool found = false;
+                _archWorld.Query(in query, (Entity entity, ref Horizon.Game.ECS.Arch.Components.NetworkIdentityComponent netId) =>
+                {
+                    if (netId.EntityId == entityId)
+                    {
+                        found = netId.IsLocalPlayer;
+                    }
+                });
+                return found;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>统计场景内本地玩家实体数量（供唯一性校验）。</summary>
+        private int CountLocalPlayerEntities()
+        {
+            if (_archWorld == null)
+            {
+                return 0;
+            }
+
+            int count = 0;
+            try
+            {
+                var query = new Arch.Core.QueryDescription()
+                    .WithAll<Horizon.Game.ECS.Arch.Components.NetworkIdentityComponent>();
+                _archWorld.Query(in query, (ref Horizon.Game.ECS.Arch.Components.NetworkIdentityComponent netId) =>
+                {
+                    if (netId.IsLocalPlayer)
+                    {
+                        count++;
+                    }
+                });
+            }
+            catch
+            {
+                // 忽略查询异常
+            }
+            return count;
+        }
+
+        /// <summary>连接状态变化 → 驱动资格状态机。</summary>
+        private void OnConnectedStateChanged(bool isConnected)
+        {
+            try
+            {
+                _eligibilityState?.OnConnectionChanged(isConnected);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[HundunWorldGame] 连接状态驱动资格状态机失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>握手状态变化 → 驱动资格状态机。</summary>
+        private void OnSyncHandshakeStateChanged(bool isComplete)
+        {
+            try
+            {
+                _eligibilityState?.OnHandshakeChanged(isComplete);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[HundunWorldGame] 握手状态驱动资格状态机失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>为 ECS 侧 SendAuthorizationSystem 注入集中式授权器。</summary>
+        private void InjectAuthorizerToSendAuthorizationSystem()
+        {
+            try
+            {
+                if (_archWorldHost == null)
+                {
+                    return;
+                }
+
+                var systems = _archWorldHost.GetSystems(Horizon.Game.ECS.Arch.Core.SystemGroup.NetworkSend);
+                foreach (var system in systems)
+                {
+                    if (system is Horizon.Game.ECS.Arch.Systems.SendAuthorizationSystem authSystem)
+                    {
+                        authSystem.SetAuthorizer(_outboundSyncAuthorizer);
+                        authSystem.SetLocalPlayerIdProvider(() => _playerId);
+                        Debug.Log("[HundunWorldGame] 已为 SendAuthorizationSystem 注入 IOutboundSyncAuthorizer");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[HundunWorldGame] 注入 SendAuthorizationSystem 授权器失败: {ex.Message}");
             }
         }
 
@@ -404,6 +601,10 @@ namespace HundunWorld.Game
             Horizon.Game.ECS.Arch.Network.CorrectionReceiveBuffer.Instance.Clear();
             Horizon.Game.ECS.Arch.Network.InputAckReceiveBuffer.Instance.Clear();
 
+            // 3.7 清空下行去重指纹环形缓冲区，避免跨会话误判（新会话的同指纹 diff 被误判为重复）
+            Array.Clear(_chunkDiffDedupFingerprints, 0, _chunkDiffDedupFingerprints.Length);
+            _chunkDiffDedupIndex = 0;
+
             // 3.6 重置 ReconciliationSystem 状态（风暴检测/冷却/统计），避免旧会话历史影响新会话
             if (_archWorldHost != null)
             {
@@ -472,15 +673,31 @@ namespace HundunWorld.Game
         /// </summary>
         private void OnInputAckReceived(InputAckPacket inputAck)
         {
+            // P-F4 双链路重复确认幂等防护：服务端直连响应 ACK 与广播安全网 ACK 可能对同一
+            // ClientTick 各送达一次（客户端实测每个 tick 收到两条相同 ACK）。对重复 tick 的
+            // 确认直接丢弃，避免重复写入 InputAckReceiveBuffer/重复推进 OnInputAck/重复日志。
+            var ackTick = inputAck.LastProcessedClientTick;
+            if (ackTick == _lastInputAckTick)
+            {
+                return;
+            }
+            _lastInputAckTick = ackTick;
+
             // 桥接到 ECS 缓冲区，供 ReconciliationSystem 消费
             Horizon.Game.ECS.Arch.Network.InputAckReceiveBuffer.Instance.Latest = inputAck;
 
             // 推进 InputSendSystem 的已确认 tick，清理冗余重传环形缓冲中的已确认输入。
             // 若不调用此方法，_lastAckedClientTick 永远为 0，导致每次 Update 都触发冗余重传，
             // 大量旧 InputPacket 被发送到服务端后被去重拒绝，浪费带宽并污染日志。
-            Horizon.Game.ECS.Arch.Systems.InputSendSystem.Instance?.OnInputAck(inputAck.LastProcessedClientTick);
+            Horizon.Game.ECS.Arch.Systems.InputSendSystem.Instance?.OnInputAck(ackTick);
 
-            Debug.Log($"[HundunWorldGame] 收到输入确认: LastProcessedClientTick={inputAck.LastProcessedClientTick}");
+            // P-F4 限频日志：ACK 为 30-60Hz 高频包，原每包一条 Debug.Log 在多角色场景下
+            // 字符串插值 + 日志 IO 开销显著；保留前 5 次 + 每 120 次采样输出。
+            var ackLogCount = Interlocked.Increment(ref _inputAckLogCount);
+            if (ackLogCount <= 5 || ackLogCount % 120 == 1)
+            {
+                Debug.Log($"[HundunWorldGame] 收到输入确认: LastProcessedClientTick={ackTick}（累计 {ackLogCount} 条，采样输出）");
+            }
         }
 
         /// <summary>
@@ -534,6 +751,17 @@ namespace HundunWorld.Game
         // 诊断：OnSnapshotReceived 含 Deltas 快照日志计数，用于限频日志（前 5 次无条件输出，后续每 120 次输出一次）
         private long _snapshotRecvLogCount;
 
+        // P-F4：InputAck 幂等去重（双链路重复确认）+ 日志采样计数器。
+        private long _lastInputAckTick = long.MinValue;
+        private long _inputAckLogCount;
+
+        // 下行去重（P-F 兜底）：最近收到的 (ChunkMortonKey, DiffSeqEnd, PayloadType) 指纹，
+        // 用于丢弃服务端/网关重复下发的字节级相同 diff。有界环形去重（最近 N 条）。
+        private const int ChunkDiffDedupWindow = 16;
+        private readonly long[] _chunkDiffDedupFingerprints = new long[ChunkDiffDedupWindow];
+        private int _chunkDiffDedupIndex;
+        private long _chunkDiffDedupDroppedCount;
+
         private void OnChunkDiffReceived(WorldChunkDiffPacket diff)
         {
             if (diff?.Payload == null || diff.Payload.Length == 0)
@@ -541,6 +769,24 @@ namespace HundunWorld.Game
                 Debug.LogWarning("[HundunWorldGame] OnChunkDiffReceived: Payload 为空，已丢弃");
                 return;
             }
+
+            // 有界最近去重：同一 (ChunkMortonKey, DiffSeqEnd, PayloadType) 在最近窗口内出现即为重复（字节级相同），丢弃。
+            // 指纹混合：ChunkMortonKey(ulong) 高位异或后与 DiffSeqEnd(tick) 混入，再叠加 PayloadType，降低碰撞概率。
+            var fingerprint = ((long)diff.ChunkMortonKey ^ (diff.DiffSeqEnd << 8)) * 31 + (int)diff.PayloadType;
+            var dedupIdx = _chunkDiffDedupIndex;
+            for (int i = 0; i < ChunkDiffDedupWindow; i++)
+            {
+                if (_chunkDiffDedupFingerprints[(dedupIdx + ChunkDiffDedupWindow - i) % ChunkDiffDedupWindow] == fingerprint)
+                {
+                    _chunkDiffDedupDroppedCount++;
+                    if (_chunkDiffDedupDroppedCount % 60 == 1)
+                        Debug.LogWarning($"[HundunWorldGame] 下行去重：丢弃重复 ChunkDiff（ChunkKey=0x{diff.ChunkMortonKey:X16}, DiffSeqEnd={diff.DiffSeqEnd}, PayloadType={diff.PayloadType}, 累计丢弃={_chunkDiffDedupDroppedCount}）");
+                    return;
+                }
+            }
+            _chunkDiffDedupFingerprints[dedupIdx] = fingerprint;
+            _chunkDiffDedupIndex = (dedupIdx + 1) % ChunkDiffDedupWindow;
+
             try
             {
                 var recvCount = Interlocked.Increment(ref _chunkDiffReceivedCount);
@@ -656,23 +902,34 @@ namespace HundunWorld.Game
 
             // 兜底：延迟重试（失效点 #5 修复：扩展重试窗口到 30×200ms=6s，
             // 并在彻底失败后启动后台周期恢复，避免 handler 注册延迟超过兜底窗口时永久丢失订阅）。
+            // 修复：重试循环必须携带取消令牌，PIE 退出/Dispose 时终止循环，
+            // 否则退出 PIE 后该无界循环仍每 2 秒访问已释放的 NetworkManager。
+            _syncSubscribeCts?.Dispose();
+            _syncSubscribeCts = new System.Threading.CancellationTokenSource();
+            var subscribeToken = _syncSubscribeCts.Token;
             _ = Task.Run(async () =>
             {
-                for (int i = 0; i < 30; i++)
+                for (int i = 0; i < 30 && !subscribeToken.IsCancellationRequested; i++)
                 {
-                    await Task.Delay(200);
+                    await Task.Delay(200, subscribeToken);
                     if (TrySubscribeSyncHandler())
                     {
                         return;
                     }
                 }
+
+                if (subscribeToken.IsCancellationRequested)
+                {
+                    return;
+                }
+
                 Debug.LogWarning("[HundunWorldGame] 6 秒内未找到 SyncPacketMessageHandler，启动后台周期重试...");
 
                 // 后台周期恢复：每 2 秒重试一次，直到订阅成功。
                 // 防止 NetworkManager 异步 handler 注册延迟导致永久订阅失败，
                 // 进而让快照/ChunkDiff/握手事件完全无法桥接到 ECS。
                 using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
-                while (await timer.WaitForNextTickAsync())
+                while (!subscribeToken.IsCancellationRequested && await timer.WaitForNextTickAsync(subscribeToken))
                 {
                     if (TrySubscribeSyncHandler())
                     {
@@ -680,7 +937,7 @@ namespace HundunWorld.Game
                         return;
                     }
                 }
-            });
+            }, subscribeToken);
         }
 
         /// <summary>
@@ -771,6 +1028,9 @@ namespace HundunWorld.Game
         {
             Volatile.Write(ref _playerId, playerId);
             _playerPositionUpdater.SetPlayerId(playerId);
+
+            // 驱动本地资格状态机：身份确立/丢失事件（spec 5.1.3、6.1 时序）。
+            _eligibilityState?.OnLocalIdentityChanged(playerId != 0);
 
             // 设置 NetworkManager.CharacterId，使后续所有上行同步包的 MessageHeader.CharacterId
             // 都携带角色 ID（服务端 HandleSubscriptionUpdateAsync 等依赖此字段路由）。
@@ -947,7 +1207,7 @@ namespace HundunWorld.Game
         {
             try
             {
-                const int ViewRadiusChunks = 10;
+                const int ViewRadiusChunks = 28;
                 const float MetresPerChunkCell = 16f;
 
                 // 滞后防抖：计算当前 chunk 坐标，与上次订阅中心比较。
@@ -955,9 +1215,9 @@ namespace HundunWorld.Game
                 int curCY = (int)MathF.Floor(y / MetresPerChunkCell);
                 int curCZ = (int)MathF.Floor(z / MetresPerChunkCell);
 
+                // 滞后检查：首次订阅或移动超过阈值时才触发更新
                 if (_localPlayerSubscribedChunks != null && _localPlayerSubscribedChunks.Count > 0)
                 {
-                    // 已有订阅：检查是否移动超过滞后阈值
                     int dx = Math.Abs(curCX - _lastSubCenterCX);
                     int dy = Math.Abs(curCY - _lastSubCenterCY);
                     int dz = Math.Abs(curCZ - _lastSubCenterCZ);
@@ -967,60 +1227,38 @@ namespace HundunWorld.Game
                     }
                 }
 
-                var newView = ComputeChunksInView(x, y, z, ViewRadiusChunks);
-
-                var added = new List<ulong>();
-                var removed = new List<ulong>();
-
-                if (_localPlayerSubscribedChunks == null || _localPlayerSubscribedChunks.Count == 0)
-                {
-                    // 首次订阅：全部为 added
-                    added.AddRange(newView);
-                    Debug.Log($"[HundunWorldGame] 初始 AOI 订阅: {added.Count} chunks (radius={ViewRadiusChunks}), Pos=({x:F1},{y:F1},{z:F1})");
-                }
-                else
-                {
-                    // 增量 diff
-                    foreach (var key in newView)
-                    {
-                        if (!_localPlayerSubscribedChunks.Contains(key))
-                            added.Add(key);
-                    }
-                    foreach (var key in _localPlayerSubscribedChunks)
-                    {
-                        if (!newView.Contains(key))
-                            removed.Add(key);
-                    }
-
-                    if (added.Count > 0 || removed.Count > 0)
-                    {
-                        Debug.Log($"[HundunWorldGame] AOI 订阅更新: Added={added.Count}, Removed={removed.Count}, Pos=({x:F1},{y:F1},{z:F1})");
-                    }
-                }
-
-                // 更新本地订阅状态（乐观更新：立即反映，不等服务端确认）
-                _localPlayerSubscribedChunks = newView;
+                // ── 位置驱动订阅优化 ──
+                // 原实现在主线程调用 ComputeChunksInView(R=28) 创建 185,193 个条目的 HashSet，
+                // 每次分配 ~3-4MB → GC 暂停 → 卡顿。
+                // 优化：位置驱动订阅下（hasPosition=true），服务端 grain 侧自动计算 AOI 差异，
+                // 客户端无需计算完整 chunk 视图，只发送位置（24 字节）即可。
+                // 本地仅更新 chunk 坐标用于滞后判断，不分配任何集合。
                 _lastSubCenterCX = curCX;
                 _lastSubCenterCY = curCY;
                 _lastSubCenterCZ = curCZ;
 
-                // 异步发送订阅更新包（非阻塞，避免影响 FixedUpdate 节奏）
-                if (added.Count > 0 || removed.Count > 0)
+                // 标记为"已订阅"（用单元素集合代替 185,193 元素的 HashSet，仅用于滞后检查的 Count > 0 判断）
+                if (_localPlayerSubscribedChunks == null || _localPlayerSubscribedChunks.Count == 0)
                 {
-                    var addedArr = added.ToArray();
-                    var removedArr = removed.ToArray();
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            await _networkManager.SendSubscriptionUpdateAsync(addedArr, removedArr);
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.LogWarning($"[HundunWorldGame] SendSubscriptionUpdateAsync 失败: {ex.Message}");
-                        }
-                    });
+                    _localPlayerSubscribedChunks = new HashSet<ulong> { 0 }; // 占位元素
+                    Debug.Log($"[HundunWorldGame] 初始位置驱动 AOI 订阅: radius={ViewRadiusChunks}, Pos=({x:F1},{y:F1},{z:F1})");
                 }
+
+                // 异步发送位置驱动订阅更新（非阻塞，避免影响 FixedUpdate 节奏）
+                // 只传玩家位置（24 字节），不传 chunk key 数组（~416KB），零主线程分配
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _networkManager.SendSubscriptionUpdateAsync(
+                            Array.Empty<ulong>(), Array.Empty<ulong>(),
+                            x, y, z, hasPosition: true);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning($"[HundunWorldGame] SendSubscriptionUpdateAsync 失败: {ex.Message}");
+                    }
+                });
             }
             catch (Exception ex)
             {
@@ -2201,6 +2439,192 @@ namespace HundunWorld.Game
         public NetworkManager NetworkManager => _networkManager;
 
         /// <summary>
+        /// 获取受控发送服务（实体同步类上行的唯一合法发送入口）。
+        /// </summary>
+        public HundunWorld.Game.SyncGuard.GuardSyncSender GuardSyncSender => _guardSyncSender;
+
+        /// <summary>
+        /// 获取集中式资格判定组件（统一规则源）。
+        /// </summary>
+        public Horizon.Game.ECS.Arch.SyncGuard.Contracts.IOutboundSyncAuthorizer OutboundSyncAuthorizer => _outboundSyncAuthorizer;
+
+        /// <summary>
+        /// 获取绑定关系注册表（供召唤/宠物管理业务登记绑定）。
+        /// </summary>
+        public Horizon.Game.ECS.Arch.SyncGuard.Contracts.IBindingRelationshipRegistry BindingRegistry => _bindingRegistry;
+
+        /// <summary>
+        /// 获取本地发送资格状态机。
+        /// </summary>
+        public HundunWorld.Game.SyncGuard.LocalSendEligibilityState EligibilityState => _eligibilityState;
+
+        /// <summary>
+        /// 获取重连恢复协商发送器（RemoteVisibility）。
+        /// </summary>
+        public HundunWorld.Game.RemoteVisibility.ReconnectResumeSender ReconnectResumeSender => _reconnectResumeSender;
+
+        /// <summary>
+        /// 获取重连恢复状态机（RemoteVisibility）。
+        /// </summary>
+        public HundunWorld.Game.RemoteVisibility.ReconnectResumeStateMachine ReconnectResumeStateMachine => _reconnectResumeStateMachine;
+
+        /// <summary>
+        /// 获取可见性审计（RemoteVisibility）。
+        /// </summary>
+        public HundunWorld.Game.RemoteVisibility.RemoteVisibilityAudit RemoteVisibilityAudit => _remoteVisibilityAudit;
+
+        /// <summary>
+        /// 装配远程角色观测链路修复组件（RemoteVisibility）并完成事件接线（spec 5.6.1 规则 1/3、design 2.1.2）。
+        /// 需在 ECS 世界与系统注册、SyncGuard 装配完成后执行。
+        /// </summary>
+        private void InitializeRemoteVisibility()
+        {
+            if (_remoteVisibilityInitialized || _networkManager == null)
+            {
+                return;
+            }
+
+            try
+            {
+                // 1. 重连恢复状态机。
+                _reconnectResumeStateMachine = new HundunWorld.Game.RemoteVisibility.ReconnectResumeStateMachine();
+
+                // 2. 重连协商发送器（真实送达依据，spec 5.6.1 规则 1）。
+                _reconnectResumeSender = new HundunWorld.Game.RemoteVisibility.ReconnectResumeSender(_networkManager);
+
+                // 3. 可见性审计：注入应可见/实际呈现只读查询与补建回调。
+                _remoteVisibilityAudit = new HundunWorld.Game.RemoteVisibility.RemoteVisibilityAudit(
+                    getExpectedVisible: () => GetSnapshotApplySystemInstance()?.GetRemoteEntityIds(_archWorld) ?? Array.Empty<ulong>(),
+                    getPresented: () => FlaxActorSyncSystem.Instance?.GetPresentedEntityIds() ?? Array.Empty<ulong>(),
+                    reconcileCallback: () => FlaxActorSyncSystem.Instance?.ReconcileMissingActors(),
+                    diagnosticsProvider: null);
+
+                // 4. 观测编排：注入 FlaxActorSyncSystem 暂停开关与插值恢复动作。
+                _remoteObservationCoordinator = new HundunWorld.Game.RemoteVisibility.RemoteObservationCoordinator(
+                    _reconnectResumeStateMachine, _remoteVisibilityAudit, _networkManager)
+                    .WithActorPauseControl(paused =>
+                    {
+                        if (FlaxActorSyncSystem.Instance != null)
+                        {
+                            FlaxActorSyncSystem.Instance.IsPaused = paused;
+                        }
+                    });
+
+                // 5. 重连流程异常隔离包装。
+                _reconnectFlowGuard = new HundunWorld.Game.RemoteVisibility.ReconnectFlowGuard();
+
+                // 6. 事件接线（spec 6.2）：
+                //   a) NetworkManager 重连成功路径经 ReconnectResumeSender 受控发送（结果回传状态机）。
+                _networkManager.ReconnectResumeSendHook = (characterId, lastTick) =>
+                    SendResumeAndFeedStateMachineAsync(characterId, lastTick);
+
+                //   b) 重连成功事件链经 ReconnectFlowGuard 安全包装（替换 NetworkManager 直接订阅）。
+                _reconnectFlowGuard.RegisterGuardedHandler("OnReconnectionSucceeded", () => _networkManager.RaiseReconnectionSucceededSafely());
+                _networkManager.SubscribeReconnectFlowGuard(_reconnectFlowGuard);
+
+                //   c) 状态机相位变化驱动观测编排（RecoveryComplete → 恢复 + 全量核对补建）。
+                _reconnectResumeStateMachine.PhaseChanged += OnReconnectPhaseChanged;
+
+                //   d) SnapshotApplySystem 基线应用通知 → 状态机推进 BaselineRebuilding。
+                var snapshotSystem = GetSnapshotApplySystemInstance();
+                if (snapshotSystem != null)
+                {
+                    snapshotSystem.BaselineApplied += OnBaselineSnapshotApplied;
+                }
+
+                // 7. 启动观测编排（订阅连接状态事件）。
+                _remoteObservationCoordinator.Start();
+
+                _remoteVisibilityInitialized = true;
+                Debug.Log("[HundunWorldGame] RemoteVisibility 观测链路修复组件装配完成");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[HundunWorldGame] 装配 RemoteVisibility 失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>获取 SnapshotApplySystem 实例。</summary>
+        private Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem? GetSnapshotApplySystemInstance()
+        {
+            if (_archWorldHost == null)
+            {
+                return null;
+            }
+
+            return _archWorldHost.GetSystems(Horizon.Game.ECS.Arch.Core.SystemGroup.NetworkReceive)
+                .OfType<Horizon.Game.ECS.Arch.Systems.SnapshotApplySystem>()
+                .FirstOrDefault();
+        }
+
+        /// <summary>受控发送协商消息并回传结果到恢复状态机。</summary>
+        private async System.Threading.Tasks.Task<bool> SendResumeAndFeedStateMachineAsync(ulong characterId, long lastTick)
+        {
+            try
+            {
+                var result = await _reconnectResumeSender.SendResumeAsync(characterId, lastTick);
+                if (result.Delivered)
+                {
+                    _reconnectResumeStateMachine.OnNegotiationDelivered();
+                    return true;
+                }
+
+                _reconnectResumeStateMachine.OnNegotiationFailed(result.Reason ?? HundunWorld.Game.RemoteVisibility.Contracts.ResumeFailReason.ConnectionNotReady);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[HundunWorldGame] 受控协商发送异常被隔离: {ex.Message}");
+                _reconnectResumeStateMachine.OnNegotiationFailed(HundunWorld.Game.RemoteVisibility.Contracts.ResumeFailReason.ChannelError);
+                return false;
+            }
+        }
+
+        /// <summary>重连恢复相位变化 → 驱动观测编排（spec 6.2）。</summary>
+        private void OnReconnectPhaseChanged(HundunWorld.Game.RemoteVisibility.Contracts.ReconnectResumePhaseSnapshot snapshot)
+        {
+            try
+            {
+                switch (snapshot.Phase)
+                {
+                    case HundunWorld.Game.RemoteVisibility.Contracts.ReconnectResumePhase.RecoveryComplete:
+                        _remoteObservationCoordinator?.OnRecoveryCompleted();
+                        // 资格恢复收敛信号（spec 5.5.1 规则 7/8）。
+                        _eligibilityState?.OnReconnectRecoveryComplete();
+                        Debug.Log("[HundunWorldGame] 重连恢复完成：观测与资格链路已收敛");
+                        break;
+
+                    case HundunWorld.Game.RemoteVisibility.Contracts.ReconnectResumePhase.Reconnecting:
+                        _remoteObservationCoordinator?.OnReconnecting();
+                        break;
+
+                    case HundunWorld.Game.RemoteVisibility.Contracts.ReconnectResumePhase.RecoveryFailed:
+                        // 回退全量握手重建基线（spec 4.2.9、6.4 规则 5）。
+                        _remoteObservationCoordinator?.OnReconnecting();
+                        Debug.LogWarning("[HundunWorldGame] 重连恢复失败，回退全量握手重建基线");
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[HundunWorldGame] 重连相位编排异常被隔离: {ex.Message}");
+            }
+        }
+
+        /// <summary>基线/续连快照应用 → 状态机推进 BaselineRebuilding（spec 6.4 规则 2）。</summary>
+        private void OnBaselineSnapshotApplied(long serverTick)
+        {
+            try
+            {
+                _reconnectResumeStateMachine?.OnBaselineSnapshotApplied();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[HundunWorldGame] 基线应用通知异常被隔离: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// 获取客户端单连接编排协调器（连接精简治理，spec 5.1.1）。
         /// 登录/进游戏/重连三类建连请求统一经此互斥编排，保证任意时刻仅一条 TCP 连接在途。
         /// </summary>
@@ -2239,6 +2663,16 @@ namespace HundunWorld.Game
                     _networkManager.ConnectionStatusChanged -= OnConnectionStatusChanged;
                     _networkManager.ConnectionError -= OnConnectionError;
                     _networkManager.DisconnectTimedOut -= OnDisconnectTimedOut;
+                    _networkManager.ConnectedStateChanged -= OnConnectedStateChanged;
+                    _networkManager.SyncHandshakeStateChanged -= OnSyncHandshakeStateChanged;
+                }
+
+                // 取消同步包 handler 订阅后台重试循环，防止退出 PIE 后无界循环残留
+                if (_syncSubscribeCts != null)
+                {
+                    try { _syncSubscribeCts.Cancel(); } catch { }
+                    _syncSubscribeCts.Dispose();
+                    _syncSubscribeCts = null;
                 }
 
                 // 释放各个系统组件

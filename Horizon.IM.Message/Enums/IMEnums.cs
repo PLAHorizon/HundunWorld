@@ -353,6 +353,138 @@ namespace Horizon.IM.Message.Enums
     }
 
     /// <summary>
+    /// 通话类型（语音/视频）
+    /// </summary>
+    public enum IMCallType
+    {
+        /// <summary>
+        /// 语音通话
+        /// </summary>
+        [Description("语音通话")]
+        Audio = 0,
+
+        /// <summary>
+        /// 视频通话
+        /// </summary>
+        [Description("视频通话")]
+        Video = 1
+    }
+
+    /// <summary>
+    /// 通话信令类型（状态流转事件）
+    /// </summary>
+    public enum IMCallSignalType
+    {
+        /// <summary>
+        /// 发起通话邀请（主叫 → 被叫）
+        /// </summary>
+        [Description("发起通话")]
+        Offer = 0,
+
+        /// <summary>
+        /// 被叫接受通话（被叫 → 主叫，进入连接阶段）
+        /// </summary>
+        [Description("接听")]
+        Accept = 1,
+
+        /// <summary>
+        /// 被叫拒绝通话
+        /// </summary>
+        [Description("拒绝")]
+        Reject = 2,
+
+        /// <summary>
+        /// 主叫取消呼叫（对方接听前）
+        /// </summary>
+        [Description("取消呼叫")]
+        Cancel = 3,
+
+        /// <summary>
+        /// 被叫忙线（已有进行中/待接通的通话）
+        /// </summary>
+        [Description("忙线")]
+        Busy = 4,
+
+        /// <summary>
+        /// 通话中挂断
+        /// </summary>
+        [Description("挂断")]
+        Hangup = 5,
+
+        /// <summary>
+        /// 媒体通道就绪（携带本地 UDP 媒体端点，双方交换后建立媒体流）
+        /// </summary>
+        [Description("媒体就绪")]
+        MediaReady = 6,
+
+        /// <summary>
+        /// 通话保活（通话中周期性发送，用于服务端忙线状态维护与异常检测）
+        /// </summary>
+        [Description("通话保活")]
+        KeepAlive = 7,
+
+        /// <summary>
+        /// 媒体控制状态同步（静音/取消静音、开关摄像头等，不改变通话状态）
+        /// </summary>
+        [Description("媒体状态同步")]
+        MediaState = 8,
+
+        /// <summary>
+        /// 呼叫超时（本端超时后通知对端释放，兼容对端未触发本地超时的场景）
+        /// </summary>
+        [Description("呼叫超时")]
+        Timeout = 9
+    }
+
+    /// <summary>
+    /// 通话结束原因（用于 UI 展示与日志记录）
+    /// </summary>
+    public enum IMCallEndReason
+    {
+        /// <summary>
+        /// 正常挂断
+        /// </summary>
+        [Description("正常挂断")]
+        Normal = 0,
+
+        /// <summary>
+        /// 对方拒绝
+        /// </summary>
+        [Description("对方拒绝")]
+        Rejected = 1,
+
+        /// <summary>
+        /// 对方忙线
+        /// </summary>
+        [Description("对方忙线")]
+        Busy = 2,
+
+        /// <summary>
+        /// 无人接听超时
+        /// </summary>
+        [Description("无人接听")]
+        Timeout = 3,
+
+        /// <summary>
+        /// 主叫取消
+        /// </summary>
+        [Description("已取消")]
+        Cancelled = 4,
+
+        /// <summary>
+        /// 网络异常/对端失联
+        /// </summary>
+        [Description("连接中断")]
+        Lost = 5,
+
+        /// <summary>
+        /// 设备或其他本地错误
+        /// </summary>
+        [Description("设备异常")]
+        DeviceError = 6
+    }
+
+    /// <summary>
     /// IM错误码
     /// </summary>
     public enum IMErrorCode

@@ -121,6 +121,18 @@ namespace Horizon.Orleans.Interface
 
         #endregion
 
+        #region 语音/视频通话
+
+        /// <summary>
+        /// 接收通话信令（由 IMCallHandler 转发到信令接收方的 Grain）。
+        /// Grain 负责维护本用户的通话忙线状态并将信令推送到网关订阅，不落库。
+        /// </summary>
+        /// <param name="signal">通话信令消息</param>
+        /// <returns>信令应答（Accepted=false 时表示忙线等拒绝原因）</returns>
+        Task<IMCallSignalAckMessage> ReceiveCallSignalAsync(IMCallSignalMessage signal);
+
+        #endregion
+
         #region 联系人管理
 
         /// <summary>

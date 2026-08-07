@@ -10,10 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Avalonia 资源：XAML样式/图标/图片�?-->
+    <!-- Avalonia 资源：XAML样式/图标/图片�?-->
     <AvaloniaResource Include="Assets\**" Exclude="Assets\Data\*.json;Assets\Styles\ControlsGalleryStyles.axaml;Assets\Styles\Resources.axaml" />
     
-    <!-- JSON 数据文件：需要复制到输出目录�?LiteDB 导入使用 -->
+    <!-- JSON 数据文件：需要复制到输出目录�?LiteDB 导入使用 -->
     <Content Include="Assets\Data\*.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -48,6 +48,7 @@
     <Page Include="Core\Views\SecurityView.axaml" />
     <Page Include="Core\Views\SocialView.axaml" />
     <Page Include="Core\Views\ForwardMessageDialog.axaml" />
+    <Page Include="Core\Views\CallWindow.axaml" />
     <Page Include="Core\Views\AvatarCropWindow.axaml" />
     <Page Include="Core\Views\MusicPlayerView.axaml" />
     <Page Include="Core\Views\MiniPlayerView.axaml" />

@@ -199,6 +199,15 @@ namespace HundunWorld.Game
         /// </summary>
         private bool _animationParamsInitialized;
 
+        // P-F5：动画初始化重试限频与上限。原实现在资源未加载时每帧重试并各打一条日志
+        // （还伴随引擎 Missing animation graph 告警），多角色场景下成为日志刷屏与主线程开销源；
+        // 改为 0.5 秒重试一次，超上限后停止重试并仅告警一次（模型缺失 AnimationGraph 时重试永不成功）。
+        private float _lastAnimRetryTime;
+        private int _animRetryCount;
+        private bool _animRetryExhausted;
+        private const float AnimRetryIntervalSeconds = 0.5f;
+        private const int MaxAnimRetryCount = 60;
+
         /// <summary>
         /// 是否正在蹲伏
         /// </summary>
@@ -386,7 +395,11 @@ namespace HundunWorld.Game
             if (animatedModel.SkinnedModel == null || !animatedModel.SkinnedModel.IsLoaded
                 || animatedModel.AnimationGraph == null || !animatedModel.AnimationGraph.IsLoaded)
             {
-                Debug.Log("[PlayerController] AnimatedModel 资源尚未加载，延迟初始化动画参数");
+                // P-F5：限频日志（首次 + 每 20 次重试一条），避免每 0.5 秒刷屏。
+                if (_animRetryCount <= 1 || _animRetryCount % 20 == 0)
+                {
+                    Debug.Log($"[PlayerController] AnimatedModel 资源尚未加载，延迟初始化动画参数（已重试 {_animRetryCount} 次）");
+                }
                 return false;
             }
 
@@ -427,10 +440,25 @@ namespace HundunWorld.Game
                 return;
             }
 
-            // 资源未就绪时，每帧尝试初始化动画参数
-            if (!_animationParamsInitialized)
+            // 资源未就绪时限频重试初始化动画参数（P-F5：0.5s 间隔 + 次数上限，
+            // 避免每帧空转重试与日志刷屏；模型缺失 AnimationGraph 时重试永不成功）
+            if (!_animationParamsInitialized && !_animRetryExhausted)
             {
-                TryInitializeAnimationParameters();
+                var now = Time.TimeSinceStartup;
+                if (now - _lastAnimRetryTime >= AnimRetryIntervalSeconds)
+                {
+                    _lastAnimRetryTime = now;
+                    _animRetryCount++;
+                    if (_animRetryCount > MaxAnimRetryCount)
+                    {
+                        _animRetryExhausted = true;
+                        Debug.LogWarning("[PlayerController] 动画参数初始化重试已达上限（模型可能缺失 AnimationGraph/SkinnedModel），停止重试");
+                    }
+                    else
+                    {
+                        TryInitializeAnimationParameters();
+                    }
+                }
             }
 
             // 更新状态时间
@@ -700,6 +728,15 @@ namespace HundunWorld.Game
                 MaxSpeed = ComputeCurrentMaxSpeed(),
             };
 
+            // 备用路径统一经受控发送服务 GuardSyncSender，与主链路共用授权规则（spec 5.4.1 规则 1、design 1.1.2）。
+            var guardSender = HundunWorldGame.Instance?.GuardSyncSender;
+            if (guardSender != null)
+            {
+                _ = guardSender.SendLocalAsync(inputPacket, characterId);
+                return;
+            }
+
+            // 装配失败回退：直接编码发送（向后兼容）。
             SyncPacketCodec.Encode(inputPacket, out var frame, out var frameLength);
             try
             {

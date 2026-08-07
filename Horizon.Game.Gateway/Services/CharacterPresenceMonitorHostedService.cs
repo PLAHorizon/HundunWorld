@@ -133,13 +133,39 @@ namespace Horizon.Game.Gateway.Services
                         continue;
                     }
 
-                    // 连接已断开 → 触发 Despawn
+                    // 连接已断开 → 检查是否已有宽限期 Despawn 在进行中
+                    // 优化：原实现直接调用 DespawnImmediatelyAsync，绕过了 ScheduleDespawn 的15秒宽限期，
+                    // 导致客户端短暂断线后重连时角色已被 Despawn（闪退/离线）。
+                    // 修复：如果已有 ScheduleDespawn 在等待（宽限期内），不重复触发；
+                    // 如果没有（如进程重启后兜底清理），使用 ScheduleDespawn 而非 DespawnImmediatelyAsync，
+                    // 给客户端15秒重连窗口。只有严重超时（>120秒）才强制立即 Despawn。
                     var offlineSince = DateTime.UtcNow - lastHeartbeat;
-                    _logger.LogWarning(
-                        "角色 {CharacterId} presence TTL 过低且连接已断开（{Seconds:F1}s），触发 DespawnImmediatelyAsync",
-                        characterId, offlineSince.TotalSeconds);
 
-                    await _despawnScheduler.DespawnImmediatelyAsync(characterId).ConfigureAwait(false);
+                    if (_despawnScheduler.HasPendingDespawn(characterId))
+                    {
+                        // 宽限期 Despawn 已在等待中，不重复触发
+                        _logger.LogDebug(
+                            "角色 {CharacterId} presence TTL 过低但已有宽限期 Despawn 在等待中，跳过（offlineSince={Seconds:F1}s）",
+                            characterId, offlineSince.TotalSeconds);
+                        continue;
+                    }
+
+                    if (offlineSince.TotalSeconds > 120)
+                    {
+                        // 严重超时（>120秒），强制立即 Despawn（可能进程重启后兜底清理）
+                        _logger.LogWarning(
+                            "角色 {CharacterId} presence 严重超时（{Seconds:F1}s > 120s），强制 DespawnImmediatelyAsync",
+                            characterId, offlineSince.TotalSeconds);
+                        await _despawnScheduler.DespawnImmediatelyAsync(characterId).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        // 正常超时，使用 ScheduleDespawn 给客户端15秒重连窗口
+                        _logger.LogWarning(
+                            "角色 {CharacterId} presence TTL 过低且连接已断开（{Seconds:F1}s），调度 ScheduleDespawn（15秒宽限期）",
+                            characterId, offlineSince.TotalSeconds);
+                        _despawnScheduler.ScheduleDespawn(characterId);
+                    }
                 }
                 catch (Exception ex)
                 {
