@@ -460,6 +460,18 @@ namespace HundunWorld.Game
                 _wasReconnecting = false;
                 Debug.Log("[HundunWorldGame] 重连成功，恢复同步（不清除 Actor，让全量快照更新现有实体）");
 
+                // 修复（静置断线后无法移动 + 闪跳回原地）：
+                // 重连成功后补发一次携带"当前预测位置"的完整同步握手。
+                // 必要性：
+                //   1) 服务端 resume 路径（HandleReconnectAsync）不调用 EnterWorldAsync，
+                //      若实体已因空闲超时+Despawn 宽限被清理，AOI 订阅已移除，
+                //      客户端重连后收不到任何快照 → 远程角色看不到移动。
+                //      补发握手触发 EnterWorldAsync（重连分支）重建 AOI 订阅并强制全量快照。
+                //   2) 服务端 EnterWorldAsync 重连分支现会以握手坐标对齐实体权威位置——
+                //      必须携带客户端当前预测位置（而非首次进入的初始位置），
+                //      否则服务端被拉回静置/初始坐标，客户端再次被快照拉回（闪跳）。
+                _ = SendReconnectFullHandshakeWithLatestPositionAsync();
+
                 // 恢复 FlaxActorSyncSystem
                 var flaxSync = FlaxActorSyncSystem.Instance;
                 if (flaxSync != null) flaxSync.IsPaused = false;
@@ -725,6 +737,28 @@ namespace HundunWorld.Game
         }
 
         /// <summary>
+        /// 重连恢复握手确认处理（服务端对 ResumeIncremental/ResendFullChunks 的 HandshakePacket 确认）。
+        /// 仅恢复同步握手门控（IsSyncHandshakeComplete），使 ECSUpdateDriver 恢复上行 InputPacket；
+        /// 不做身份建立/基线重置——重连不销毁本地实体（OnConnectionStatusChanged 保持既有策略），
+        /// 身份与基线由随后的全量快照（BaselineTick=0）自然恢复。
+        /// </summary>
+        private void OnReconnectHandshakeReceived(HandshakePacket handshake)
+        {
+            _networkManager?.MarkSyncHandshakeComplete();
+            Debug.Log($"[HundunWorldGame] 收到重连握手确认（恢复输入门控）: CharacterId={handshake.LocalCharacterId}");
+        }
+
+        /// <summary>
+        /// 兼容路径：服务端重连恢复决策返回的 WorldPatchManifestPacket（旧服务端/低版本场景）。
+        /// 同 <see cref="OnReconnectHandshakeReceived"/>：仅恢复同步握手门控。
+        /// </summary>
+        private void OnPatchManifestReceived(WorldPatchManifestPacket manifest)
+        {
+            _networkManager?.MarkSyncHandshakeComplete();
+            Debug.Log($"[HundunWorldGame] 收到 WorldPatchManifest（恢复输入门控）: PatchCutoverDiffSeq={manifest.PatchCutoverDiffSeq}");
+        }
+
+        /// <summary>
         /// 同步事件包接收处理
         /// 将 EventPacket 放入 EventReceiveBuffer，供 EventApplySystem 消费
         /// </summary>
@@ -755,9 +789,11 @@ namespace HundunWorld.Game
         private long _lastInputAckTick = long.MinValue;
         private long _inputAckLogCount;
 
-        // 下行去重（P-F 兜底）：最近收到的 (ChunkMortonKey, DiffSeqEnd, PayloadType) 指纹，
+        // 下行去重（P-F 兜底）：最近收到的 (ChunkMortonKey, DiffSeqEnd, PayloadType, Payload.Length) 指纹，
         // 用于丢弃服务端/网关重复下发的字节级相同 diff。有界环形去重（最近 N 条）。
-        private const int ChunkDiffDedupWindow = 16;
+        // 方案4（plan.md §5）：窗口从 16 提升到 64，覆盖 1 秒内 ~20Hz × 3 chunk = 60 个指纹，留余量，
+        // 避免多 chunk 场景下旧指纹被覆盖导致漏去重（根因 #4）。
+        private const int ChunkDiffDedupWindow = 64;
         private readonly long[] _chunkDiffDedupFingerprints = new long[ChunkDiffDedupWindow];
         private int _chunkDiffDedupIndex;
         private long _chunkDiffDedupDroppedCount;
@@ -770,9 +806,10 @@ namespace HundunWorld.Game
                 return;
             }
 
-            // 有界最近去重：同一 (ChunkMortonKey, DiffSeqEnd, PayloadType) 在最近窗口内出现即为重复（字节级相同），丢弃。
-            // 指纹混合：ChunkMortonKey(ulong) 高位异或后与 DiffSeqEnd(tick) 混入，再叠加 PayloadType，降低碰撞概率。
-            var fingerprint = ((long)diff.ChunkMortonKey ^ (diff.DiffSeqEnd << 8)) * 31 + (int)diff.PayloadType;
+            // 有界最近去重：同一 (ChunkMortonKey, DiffSeqEnd, PayloadType, Payload.Length) 在最近窗口内出现即为重复（字节级相同），丢弃。
+            // 指纹混合：ChunkMortonKey(ulong) 高位异或后与 DiffSeqEnd(tick) 混入，再叠加 PayloadType 与 Payload.Length，降低碰撞概率。
+            // 方案4（plan.md §5）：指纹混入 Payload.Length，区分同 tick 同 chunk 不同内容的包（如全量快照 vs 增量），降低误碰撞（根因 #4）。
+            var fingerprint = ((long)diff.ChunkMortonKey ^ (diff.DiffSeqEnd << 8)) * 31 + (int)diff.PayloadType * 7 + diff.Payload.Length;
             var dedupIdx = _chunkDiffDedupIndex;
             for (int i = 0; i < ChunkDiffDedupWindow; i++)
             {
@@ -794,6 +831,7 @@ namespace HundunWorld.Game
                 {
                     case WorldChunkDiffPayloadType.EntityDelta:
                         {
+                            // 方案1评估（plan.md §5）：Deserialize 得到的 EntityDelta[] 被 SnapshotReceiveBuffer 异步消费，池化生命周期不安全，保持现状。
                             var deltas = MemoryPack.MemoryPackSerializer.Deserialize<EntityDelta[]>(diff.Payload);
                             if (deltas == null || deltas.Length == 0)
                             {
@@ -810,6 +848,7 @@ namespace HundunWorld.Game
                                     : "null";
                                 Debug.Log($"[HundunWorldGame] OnChunkDiffReceived#{recvCount} EntityDelta: DeltaCount={deltas.Length}, ChunkKey=0x{diff.ChunkMortonKey:X16}, EntityIds=[{entityIds}], Kinds=[{kinds}], FirstTransform={firstTransform}");
                             }
+                            // 方案1评估（plan.md §5）：SnapshotPacket 被 SnapshotReceiveBuffer 异步消费，池化生命周期不安全，保持现状。
                             var snapshot = new SnapshotPacket
                             {
                                 ServerTick = diff.DiffSeqEnd,
@@ -961,7 +1000,13 @@ namespace HundunWorld.Game
                 syncHandler.HandshakeReceived += OnHandshakeReceived;
                 syncHandler.EventReceived += OnEventReceived;
                 syncHandler.ChunkDiffReceived += OnChunkDiffReceived;
-                Debug.Log("[HundunWorldGame] 已订阅同步包事件（快照桥接已建立，含 ChunkDiff）");
+                // 修复（静置断线后输入断流 — "无法移动 + 闪跳回原地"根因之一）：
+                // 重连恢复确认（服务端对 ResumeIncremental/ResendFullChunks 的 HandshakePacket 确认，
+                // 或兼容路径的 WorldPatchManifestPacket）到达时恢复同步握手门控 IsSyncHandshakeComplete。
+                // 否则 ECSUpdateDriver.FlushInputSendQueue 每帧丢弃 InputPacket，移动请求永久不上行。
+                syncHandler.ReconnectHandshakeReceived += OnReconnectHandshakeReceived;
+                syncHandler.PatchManifestReceived += OnPatchManifestReceived;
+                Debug.Log("[HundunWorldGame] 已订阅同步包事件（快照桥接已建立，含 ChunkDiff/重连握手确认）");
 
                 // 订阅成功后移除 HandlersRegistered 事件监听，避免重复订阅
                 _networkManager.HandlersRegistered -= OnHandlersRegistered;
@@ -1186,6 +1231,74 @@ namespace HundunWorld.Game
             {
                 Debug.LogWarning($"[HundunWorldGame] RealignLocalPlayerToGround: 未找到本地玩家 ECS 实体 (CharacterId={characterId})");
             }
+        }
+
+        /// <summary>
+        /// 重连成功后补发携带"当前预测位置"的完整同步握手。
+        /// <para>
+        /// 修复（静置断线后无法移动 + 闪跳回原地）：
+        /// <list type="number">
+        ///   <item>服务端 resume 路径（HandleReconnectAsync）不调用 EnterWorldAsync；若实体已因
+        ///         空闲超时+Despawn 宽限被清理，AOI 订阅已移除，客户端重连后收不到任何快照。
+        ///         补发握手触发服务端 EnterWorldAsync（重连分支：实体已存在时对齐位置 + 重建 AOI 订阅；
+        ///         实体不存在时走 P-F9 式重新注册），恢复快照流与 AOI。</item>
+        ///   <item>服务端 EnterWorldAsync 重连分支现会以握手坐标对齐实体权威位置——必须携带客户端
+        ///         当前预测位置（而非首次进入的初始位置），否则服务端被拉回静置/初始坐标，
+        ///         客户端随后被全量快照拉回（闪跳回原地）。</item>
+        /// </list>
+        /// 坐标转换：PredictedTransformComponent 为 ECS Z-up（X=左右, Y=前后, Z=上下）；
+        /// 握手 InitialX/Y/Z 为 Flax Y-up（X=左右, Y=上下, Z=前后），故 flaxX=ecsX, flaxY=ecsZ, flaxZ=ecsY。
+        /// </para>
+        /// </summary>
+        private async System.Threading.Tasks.Task SendReconnectFullHandshakeWithLatestPositionAsync()
+        {
+            if (_networkManager == null || _archWorld == null)
+            {
+                return;
+            }
+
+            var characterId = PlayerId;
+            if (characterId == 0)
+            {
+                Debug.LogWarning("[HundunWorldGame] 重连补发握手跳过：本地玩家 ID 未确立");
+                return;
+            }
+
+            // 从 ECS 读取本地玩家当前预测位置（ECS Z-up）。
+            float ecsX = 0f, ecsY = 0f, ecsZ = 0f;
+            bool found = false;
+            try
+            {
+                var query = new Arch.Core.QueryDescription()
+                    .WithAll<Horizon.Game.ECS.Arch.Components.NetworkIdentityComponent, Horizon.Game.ECS.Arch.Components.PredictedTransformComponent>();
+                _archWorld.Query(in query, (Arch.Core.Entity e, ref Horizon.Game.ECS.Arch.Components.NetworkIdentityComponent nid,
+                    ref Horizon.Game.ECS.Arch.Components.PredictedTransformComponent pred) =>
+                {
+                    if (!nid.IsLocalPlayer || nid.EntityId != characterId || found) return;
+                    found = true;
+                    ecsX = pred.X;
+                    ecsY = pred.Y;
+                    ecsZ = pred.Z;
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[HundunWorldGame] 重连补发握手：读取预测位置异常被隔离: {ex.Message}");
+            }
+
+            if (!found)
+            {
+                // 实体未找到（可能被清理）：回退到缓存的首握坐标，仍触发 EnterWorldAsync 重建实体/订阅。
+                Debug.LogWarning("[HundunWorldGame] 重连补发握手：未找到本地玩家 ECS 实体，回退使用缓存握手坐标");
+                await _networkManager.SendSyncHandshakeAsync(
+                    characterId, _networkManager.LastHandshakePositionX,
+                    _networkManager.LastHandshakePositionY, _networkManager.LastHandshakePositionZ);
+                return;
+            }
+
+            // ECS Z-up → Flax Y-up：flaxX=ecsX(左右), flaxY=ecsZ(上下), flaxZ=ecsY(前后)。
+            await _networkManager.SendSyncHandshakeAsync(characterId, ecsX, ecsZ, ecsY);
+            Debug.Log($"[HundunWorldGame] 重连补发完整同步握手（携带当前预测位置）: CharacterId={characterId}, Flax=({ecsX:F2},{ecsZ:F2},{ecsY:F2})");
         }
 
         /// <summary>

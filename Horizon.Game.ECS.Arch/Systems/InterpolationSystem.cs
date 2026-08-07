@@ -175,6 +175,12 @@ public sealed class InterpolationSystem : ArchSystemBase
     public float IdleDeadReckoningMaxSeconds { get; set; } = 2.0f;
 
     /// <summary>
+    /// 方案6（plan.md §5 方案6 / §4.1）：服务端 tick 频率（Hz），用于把插值延迟（秒）转换为 tick 数。
+    /// 默认 60Hz（与服务端 ZoneShardGrain 60Hz tick 对齐）。偏差不影响正确性，仅影响缓冲插值的 renderTick 位置。
+    /// </summary>
+    public float ServerTickRateHz { get; set; } = 60f;
+
+    /// <summary>
     /// 本帧所有 Active 远程角色平均渲染位置 delta（米），供外部（ECSUpdateDriver）转发到平滑度评分。
     /// 每帧 Update 结束后更新，<see cref="HasNewSmoothnessSample"/> 置 true。
     /// </summary>
@@ -487,9 +493,32 @@ public sealed class InterpolationSystem : ArchSystemBase
                 // InterpolatedTransformComponent 的 Y 是上下（Flax 坐标系），Z 是前后。
                 // 服务端 MovementState.VelocityXZ_X/Y 是水平面速度（X=左右, Y=前后），
                 // 映射到 interp 坐标系：X→X, Y→Z。垂直方向（Y）不预测。
-                var predictedTargetX = interp.TargetX + interp.LastVelocityXZ_X * extrapTime;
-                var predictedTargetY = interp.TargetY;
-                var predictedTargetZ = interp.TargetZ + interp.LastVelocityXZ_Y * extrapTime;
+
+                // 方案6（plan.md §5 方案6 / §4.1）：优先尝试基于快照缓冲的时间插值（Mirror 式）。
+                // 缓冲不足（< 2 样本）时回退到 Target+Lerp 前向预测（兼容旧逻辑）。
+                // 缓冲插值基于历史快照做时间插值，比前向预测更准确（不依赖速度外推），
+                // 快照抖动 200ms 期间可在两个旧快照间插值，避免 Target+Lerp 模型的视觉冻结（根因 #6）。
+                var bufInterpDelay6 = UseAdaptiveSpeed
+                    ? SnapshotApplySystem.AdaptiveInterpolationDelaySeconds
+                    : 1f / InterpolationSpeed;
+                float predictedTargetX, predictedTargetY, predictedTargetZ, predictedTargetYaw;
+                if (TrySnapshotBufferInterpolate(ref interp, bufInterpDelay6, ServerTickRateHz,
+                    out var bufX6, out var bufY6, out var bufZ6, out var bufYaw6))
+                {
+                    // 缓冲插值成功：用时间插值位置作为追赶目标（比前向预测更准确，基于历史快照）
+                    predictedTargetX = bufX6;
+                    predictedTargetY = bufY6;
+                    predictedTargetZ = bufZ6;
+                    predictedTargetYaw = bufYaw6;
+                }
+                else
+                {
+                    // 缓冲不足：回退到前向预测（Extrapolation）+ Target
+                    predictedTargetX = interp.TargetX + interp.LastVelocityXZ_X * extrapTime;
+                    predictedTargetY = interp.TargetY;
+                    predictedTargetZ = interp.TargetZ + interp.LastVelocityXZ_Y * extrapTime;
+                    predictedTargetYaw = interp.TargetYaw;
+                }
 
                 // Lerp 追赶 predictedTarget（线性，禁止回退 smoothstep）
                 var pdx = predictedTargetX - interp.X;
@@ -500,7 +529,7 @@ public sealed class InterpolationSystem : ArchSystemBase
                 interp.Z += pdz * lerpFactor;
 
                 // Yaw 最短路径插值，避免 ±π 跨界时反向旋转（不做角速度外推，角速度信息不足）
-                var yawDelta = interp.TargetYaw - interp.Yaw;
+                var yawDelta = predictedTargetYaw - interp.Yaw;
                 if (yawDelta > MathF.PI) yawDelta -= 2f * MathF.PI;
                 else if (yawDelta < -MathF.PI) yawDelta += 2f * MathF.PI;
                 interp.Yaw += yawDelta * lerpFactor;
@@ -555,5 +584,109 @@ public sealed class InterpolationSystem : ArchSystemBase
             return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// 方案6（plan.md §5 方案6 / §4.1 Mirror Snapshot Interpolation）：基于有界快照缓冲的时间插值。
+    /// <para>
+    /// 在 <see cref="InterpolatedTransformComponent.SnapshotBuffer"/> 中查找 renderTick 两侧的样本 s1/s2，
+    /// 线性插值得到渲染位置。renderTick = latestServerTick - interpolationDelayTicks，
+    /// interpolationDelayTicks = interpolationDelaySeconds × <see cref="ServerTickRateHz"/>。
+    /// </para>
+    /// <para>
+    /// 缓冲不足（&lt; 2 样本）或 renderTick 超出缓冲覆盖范围时返回 false，调用方回退到 Target+Lerp 追赶。
+    /// </para>
+    /// </summary>
+    /// <param name="interp">插值组件（含快照缓冲）。</param>
+    /// <param name="interpolationDelaySeconds">插值延迟（秒），通常取 AdaptiveInterpolationDelaySeconds。</param>
+    /// <param name="serverTickRateHz">服务端 tick 频率（Hz），用于秒→tick 转换。</param>
+    /// <param name="outX">插值结果 X。</param>
+    /// <param name="outY">插值结果 Y。</param>
+    /// <param name="outZ">插值结果 Z。</param>
+    /// <param name="outYaw">插值结果 Yaw（弧度，含最短路径归一化）。</param>
+    /// <returns>true 表示插值成功；false 表示缓冲不足，调用方应回退。</returns>
+    private static bool TrySnapshotBufferInterpolate(
+        ref InterpolatedTransformComponent interp,
+        float interpolationDelaySeconds,
+        float serverTickRateHz,
+        out float outX, out float outY, out float outZ, out float outYaw)
+    {
+        outX = outY = outZ = outYaw = 0f;
+
+        var buffer = interp.SnapshotBuffer;
+        if (buffer == null || interp.SnapshotBufferCount < 2)
+            return false;
+
+        var size = InterpolatedTransformComponent.SnapshotBufferSize;
+        var count = interp.SnapshotBufferCount;
+
+        // 最新写入的样本在 (head - 1 + size) % size 位置
+        var latestIdx = (interp.SnapshotBufferHead - 1 + size) % size;
+        var latestTick = buffer[latestIdx].ServerTick;
+
+        // 计算渲染 tick：renderTick = latestServerTick - interpolationDelayTicks
+        // interpolationDelayTicks = interpolationDelaySeconds × serverTickRateHz（至少 1 tick 避免退化）
+        var delayTicks = (long)MathF.Ceiling(interpolationDelaySeconds * serverTickRateHz);
+        if (delayTicks < 1) delayTicks = 1;
+        var renderTick = latestTick - delayTicks;
+
+        // 线性扫描缓冲（从最旧到最新），找到 renderTick 两侧的样本：
+        //   s1 = 最大的 tick <= renderTick
+        //   s2 = s1 的下一个样本（tick >= renderTick）
+        // 缓冲按到达顺序写入（TCP 保序，基本单调递增），线性扫描找首个 tick > renderTick 的样本，
+        // 其前一个即为 s1。
+        SnapshotSample s1 = default, s2 = default;
+        var found = false;
+
+        // 确定扫描起点：缓冲未满时从 0 开始（0..count-1 有效）；满时从 head 开始（head 是最旧）
+        var startIdx = count < size ? 0 : interp.SnapshotBufferHead;
+
+        int prevSampleIdx = -1;
+        for (int i = 0; i < count; i++)
+        {
+            var sampleIdx = (startIdx + i) % size;
+            var sample = buffer[sampleIdx];
+
+            if (sample.ServerTick > renderTick)
+            {
+                // 当前样本 tick > renderTick，前一个（若存在）即为 s1
+                if (prevSampleIdx >= 0)
+                {
+                    s1 = buffer[prevSampleIdx];
+                    s2 = sample;
+                    found = true;
+                }
+                break;
+            }
+            prevSampleIdx = sampleIdx;
+        }
+
+        if (!found)
+            return false;
+
+        // 线性插值：t = (renderTick - s1.tick) / (s2.tick - s1.tick)
+        var tickDelta = s2.ServerTick - s1.ServerTick;
+        if (tickDelta <= 0)
+        {
+            // s1/s2 同 tick（异常），直接取 s1
+            outX = s1.X; outY = s1.Y; outZ = s1.Z; outYaw = s1.Yaw;
+            return true;
+        }
+        var t = Math.Clamp((float)(renderTick - s1.ServerTick) / tickDelta, 0f, 1f);
+
+        outX = s1.X + (s2.X - s1.X) * t;
+        outY = s1.Y + (s2.Y - s1.Y) * t;
+        outZ = s1.Z + (s2.Z - s1.Z) * t;
+
+        // Yaw 最短路径插值（避免 ±π 跨界反向旋转）
+        var yawDelta = s2.Yaw - s1.Yaw;
+        if (yawDelta > MathF.PI) yawDelta -= 2f * MathF.PI;
+        else if (yawDelta < -MathF.PI) yawDelta += 2f * MathF.PI;
+        outYaw = s1.Yaw + yawDelta * t;
+        // 归一化到 [-π, π]
+        if (outYaw > MathF.PI) outYaw -= 2f * MathF.PI;
+        else if (outYaw < -MathF.PI) outYaw += 2f * MathF.PI;
+
+        return true;
     }
 }

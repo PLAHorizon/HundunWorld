@@ -598,7 +598,46 @@ public sealed class SnapshotApplySystem : ArchSystemBase
             {
                 // 全量快照
                 toApply = snapshot;
-                Volatile.Write(ref _lastAppliedSnapshot, snapshot);
+
+                // 方案2（plan.md §5 方案2）：修复全量快照拆包语义 — 合并到现有 _lastAppliedSnapshot（upsert by EntityId），而非覆盖。
+                // 修复前：每个 chunk diff 包覆盖 _lastAppliedSnapshot 为仅含该 chunk 实体的不完整状态
+                // （HundunWorldGame.cs:813-818 把每个 WorldChunkDiffPacket 包成 BaselineTick=0 的 SnapshotPacket，
+                // 服务端每秒全量快照按 chunk 拆成 K 个独立包，客户端 _lastAppliedSnapshot 被覆盖 K 次，
+                // 最终只含最后一个 chunk 的实体 — 根因 #2 破坏 P-F6 Spawn 自愈）。
+                // 修复后：_lastAppliedSnapshot 累积所有已收 chunk 的完整状态，恢复"全量快照含所有实体"语义。
+                // 合并条件：existingBaseline.ServerTick == snapshot.ServerTick（同一 tick 的多个 chunk 包合并）。
+                // 不同 tick 的首个包直接覆盖（新 tick 开始）。
+                // toApply 仍为 snapshot（只处理本包的 delta，不重复处理已合并的 delta）。
+                var existingBaseline = Volatile.Read(ref _lastAppliedSnapshot);
+                if (existingBaseline != null && existingBaseline.ServerTick == snapshot.ServerTick)
+                {
+                    // 同 tick 的后续 chunk 包：合并到现有 baseline（与增量分支 L648-667 upsert 语义一致）
+                    _deltaMergeBuffer.Clear();
+                    foreach (var d in existingBaseline.Deltas)
+                    {
+                        if (d.Kind != EntityDeltaKind.Despawn)
+                            _deltaMergeBuffer[d.EntityId] = d;
+                    }
+                    foreach (var d in snapshot.Deltas)
+                    {
+                        if (d.Kind == EntityDeltaKind.Despawn)
+                            _deltaMergeBuffer.Remove(d.EntityId);
+                        else
+                            _deltaMergeBuffer[d.EntityId] = d;
+                    }
+                    var mergedBaseline = new SnapshotPacket
+                    {
+                        ServerTick = snapshot.ServerTick,
+                        BaselineTick = 0,
+                        Deltas = _deltaMergeBuffer.Values.ToArray(),
+                    };
+                    Volatile.Write(ref _lastAppliedSnapshot, mergedBaseline);
+                }
+                else
+                {
+                    // 新 tick 的首个 chunk 包：直接设为 baseline（后续同 tick 包会合并）
+                    Volatile.Write(ref _lastAppliedSnapshot, snapshot);
+                }
 
                 // 基线应用通知（spec 6.4 规则 2）：重连恢复期间推进状态机 BaselineRebuilding。
                 try
@@ -1107,6 +1146,27 @@ public sealed class SnapshotApplySystem : ArchSystemBase
                     interp.LastVelocityXZ_X = delta.MovementState.Value.VelocityXZ_X;
                     interp.LastVelocityXZ_Y = delta.MovementState.Value.VelocityXZ_Y;
                 }
+
+                // 方案6（plan.md §5 方案6 / §4.1）：插入快照到有界环形缓冲（Mirror 式）。
+                // InterpolationSystem 基于缓冲做基于 server timestamp 的时间插值，
+                // 快照抖动 200ms 期间可在两个旧快照间插值，避免 Target+Lerp 模型的视觉冻结。
+                // 缓冲不足（< 2 样本）时 InterpolationSystem 回退到 Target+Lerp 追赶（兼容旧逻辑）。
+                if (interp.SnapshotBuffer == null)
+                    interp.SnapshotBuffer = new SnapshotSample[InterpolatedTransformComponent.SnapshotBufferSize];
+                var bufIdx6 = interp.SnapshotBufferHead;
+                interp.SnapshotBuffer[bufIdx6] = new SnapshotSample
+                {
+                    ServerTick = serverTick,
+                    X = newTransform.X,
+                    Y = newTransform.Y,
+                    Z = newTransform.Z,
+                    Yaw = newTransform.Yaw,
+                    VelocityX = interp.LastVelocityXZ_X,
+                    VelocityZ = interp.LastVelocityXZ_Y,
+                };
+                interp.SnapshotBufferHead = (interp.SnapshotBufferHead + 1) % InterpolatedTransformComponent.SnapshotBufferSize;
+                if (interp.SnapshotBufferCount < InterpolatedTransformComponent.SnapshotBufferSize)
+                    interp.SnapshotBufferCount++;
 
                 world.Set(archEntity, ref newTransform);
             }

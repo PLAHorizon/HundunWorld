@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -105,6 +106,12 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     // 串行 await observer 带来的推送延迟与重复序列化开销。
     private readonly List<FanoutBatchItem> _fanoutBatchBuffer = new();
 
+    // 方案1（plan.md §5）：chunk delta 序列化复用缓冲。
+    // 替代每次 MemoryPackSerializer.Serialize 内部 new ArrayBufferWriter 的分配，
+    // 字段级复用 + Clear()，消除每 chunk 每广播 tick 的 ArrayBufferWriter 实例 + 内部扩容分配。
+    // Orleans grain 单线程 turn-based，_serializeBuffer 不会被并发访问。
+    private readonly ArrayBufferWriter<byte> _serializeBuffer = new();
+
     // P-F4：InputAck 广播安全网下发间隔（tick 数）。主确认链路为 Gateway 直连响应 ACK（即时），
     // 广播链路仅作安全网：每 3 tick（≈ 20Hz）下发一次，消除与直连 ACK 的双链路重复确认，
     // 降低 N玩家 × 60Hz 的 EventPacket 序列化/fanout/带宽/客户端重复处理开销。
@@ -144,6 +151,15 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     private long _lastFullSnapshotTick;
     private const long FullSnapshotIntervalTicks = 60;
 
+    // 方案5（plan.md §5）：_lastSnapshot 的持久字典视图，消除每增量 tick O(N) 遍历重建 + ToArray。
+    // 增量 tick 时直接 upsert（只遍历 snapshot.Deltas，M << N），全量快照时 Clear + 批量填充。
+    // BuildDeltaSnapshot 生产路径直接读此字典，避免内部 baselineDict 重建。
+    // _lastSnapshot 仍保留用于 forceFullThisTick 判空；其 Deltas 在增量 tick 后为空数组（惰性），
+    // 因为生产路径不再读 _lastSnapshot.Deltas（改读 _lastSnapshotDict）。
+    private readonly Dictionary<ulong, EntityDelta> _lastSnapshotDict = new();
+    // _lastSnapshotDict 对应的 ServerTick（即 _lastSnapshot.ServerTick），供 BuildDeltaSnapshotCore 使用。
+    private long _lastSnapshotServerTick;
+
     // 增量快照广播降频间隔（tick 数）。每 N tick 才广播一次增量，保持输入/移动模拟 60Hz 不变。
     // 默认 3 → 20Hz 广播（MMORPG 工业标准），配合客户端 100ms 插值延迟保证平滑度。
     // 全量快照触发条件（_forceFullSnapshotNextTick / FullSnapshotIntervalTicks 到期 / 首次 tick）不受此限制，即时下发。
@@ -162,13 +178,14 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     private const float MovementFormulaStepDt = 1f / 60f;
 
     // ===== 实体租约机制 =====
-    // 实体租约时长：网关每 20 秒续约一次，90 秒阈值允许 4 次续约失败（网络抖动容错）。
-    // 超过此时间未续约的实体被视为孤儿实体（网关崩溃/断线未清理），自动注销并广播 Despawn。
-    private static readonly TimeSpan EntityLeaseDuration = TimeSpan.FromSeconds(90);
-    // 孤儿实体检测间隔：每 10 秒扫描一次，避免每 tick 扫描的开销。
-    private static readonly TimeSpan OrphanCheckInterval = TimeSpan.FromSeconds(10);
+    // 方案5（plan.md §5）：缩短租约与孤儿检测间隔，加速残留/孤儿实体清理，减少 N 虚高。
+    // 原值 90s/10s 允许 4 次续约失败，断线实体残留长达 90s 仍参与 _lastSnapshot 重建与 delta 生成，
+    // 叠加根因 #1 的 GC 压力。网关每 20s 续约一次，30s 阈值允许 1 次续约失败（容错降低但可接受），
+    // 孤儿检测 3s 一次，最长 ~30s 清理，显著缩短残留窗口。
+    private static readonly TimeSpan EntityLeaseDuration = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan OrphanCheckInterval = TimeSpan.FromSeconds(3);
     // 修复 BUG：实体 Despawn 广播失败（无 fanout observer）时，孤儿清理会重试，但若 fanout
-    // 订阅永久无法恢复，实体将永久残留。此常量定义最大重试次数（10 次 × 10 秒 = 100 秒），
+    // 订阅永久无法恢复，实体将永久残留。此常量定义最大重试次数（10 次 × 3 秒 = 30 秒，方案5 调整后），
     // 超过后强制从 _simulatedEntities 中移除实体，即使无法广播 Despawn delta。
     // 这是兜底机制，确保任何情况下实体都不会永久残留。
     private const int MaxFailedDespawnAttempts = 10;
@@ -781,6 +798,11 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     {
         if (_fanoutBatchBuffer.Count == 0) return;
 
+        // TODO(方案1): 需异步生命周期安全评估。
+        // 此处 ToArray 后异步遍历发给 observers（跨进程 RPC），items 在多个 await 间被持有。
+        // 若改用 ArrayPool<FanoutBatchItem>.Shared.Rent，需确保所有 observer RPC 完成后才能 Return，
+        // 但当前 foreach 逐 observer await 且单 observer 异常不影响其他 observer，Return 时机难保证。
+        // 保持 ToArray（每广播 tick 1 次小数组分配，FanoutBatchItem 含 diff 引用 + long[]，开销有限）。
         var items = _fanoutBatchBuffer.ToArray();
         _fanoutBatchBuffer.Clear();
 
@@ -1211,6 +1233,11 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         if (deltas.Count > 0 && broadcastDueThisTick)
         {
             // Task D.3：snapshot 始终保存完整状态（所有实体的 delta），作为增量比对的 baseline。
+            // TODO(方案1): 需异步生命周期安全评估。
+            // deltas.ToArray() 此处保留：snapshot.Deltas 后续传给异步 BroadcastSnapshotAsync（跨 await），
+            // 且 deltas 是字段级 _deltaBuffer（下次 tick 会被 Clear 复用），必须拷贝为独立数组。
+            // 若改用 ArrayPool 需在 BroadcastSnapshotAsync 内部遍历完 snapshot.Deltas 后 Return，
+            // 但广播路径有多个 await 且异常处理分支，Return 时机难保证。保持 ToArray（每广播 tick 1 次）。
             var snapshot = new SnapshotPacket
             {
                 ServerTick = _tickCount,
@@ -1235,7 +1262,8 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             else
             {
                 // Task D.3.2：增量快照 — 仅含与 baseline 不同的 EntityDelta
-                toSend = BuildDeltaSnapshot(_lastSnapshot, deltas);
+                // 方案5（plan.md §5）：生产路径直接传 _lastSnapshotDict，避免 BuildDeltaSnapshot 内部 O(N) 重建字典。
+                toSend = BuildDeltaSnapshotCore(_lastSnapshotDict, _lastSnapshotServerTick, deltas);
             }
 
             // 修复（广播竞态根因）：直接 await 广播完成，而非 fire-and-forget + ContinueWith。
@@ -1276,24 +1304,29 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             {
                 // 全量快照已包含所有实体（forceFullThisTick 确保）
                 _lastSnapshot = snapshot;
+                // 方案5（plan.md §5）：同步重建持久字典视图，供下次增量 tick 直接 upsert（O(M)），
+                // 避免每增量 tick O(N) 遍历 _lastSnapshot.Deltas 重建字典。
+                _lastSnapshotDict.Clear();
+                foreach (var d in snapshot.Deltas)
+                    _lastSnapshotDict[d.EntityId] = d;
+                _lastSnapshotServerTick = _tickCount;
             }
             else
             {
-                // 增量 tick：只合并实际发送的 snapshot.Deltas，复用 _baselineDictBuffer 避免分配
-                var mergeDict = _baselineDictBuffer; mergeDict.Clear();
-                if (_lastSnapshot != null)
-                {
-                    foreach (var d in _lastSnapshot.Deltas)
-                        mergeDict[d.EntityId] = d;
-                }
-                // 修复：只合并 snapshot.Deltas（实际发送的），不合并 deltas（包含被过滤的）
+                // 方案5（plan.md §5）：增量 tick 直接 upsert 持久字典，消除 O(N) 遍历重建 + ToArray。
+                // 只遍历 snapshot.Deltas（实际发送的增量，M << N），对每个 delta 做 upsert。
+                // 修复（心跳保护失效）：只合并 snapshot.Deltas（实际发送的），不合并 deltas（包含被过滤的），
+                // 保证被过滤实体的 baseline.ServerTick 不被错误更新，心跳保护 6 tick 语义正确。
                 foreach (var d in snapshot.Deltas)
-                    mergeDict[d.EntityId] = d; // 更新或添加
+                    _lastSnapshotDict[d.EntityId] = d; // 更新或添加
+                _lastSnapshotServerTick = _tickCount;
+                // _lastSnapshot 仍赋值用于 forceFullThisTick 判空；Deltas 设为空数组（惰性），
+                // 生产路径 BuildDeltaSnapshotCore 直接读 _lastSnapshotDict，不读 _lastSnapshot.Deltas。
                 _lastSnapshot = new SnapshotPacket
                 {
                     ServerTick = _tickCount,
                     BaselineTick = 0,
-                    Deltas = mergeDict.Values.ToArray(),
+                    Deltas = Array.Empty<EntityDelta>(),
                 };
             }
         }
@@ -1431,6 +1464,34 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             _logger.LogWarning(
                 "ZoneShard {ShardId}: EnterWorldAsync 实体 {EntityId} 已存在（重连场景），跳过 Despawn+Spawn，仅更新 AOI 订阅。",
                 this.GetPrimaryKeyLong(), entityId);
+
+            // 修复（重连后移动被拉回静置位置 — "闪跳回原地"）：
+            // 原实现仅重建 AOI 订阅、不更新实体位置。客户端断线静置期间服务端权威位置停留在
+            // 静置坐标；重连握手时客户端已从当前位置继续预测移动。若不对齐，重连后首个输入
+            // 由 MovementValidator 从旧权威位置回放 → drift 超 0.5m → 下发 Correction 把客户端
+            // 拉回静置位置，且远程角色看到的仍是静置坐标。
+            // 修复：以客户端重连握手上报的当前位置（Flax Y-up）对齐服务端权威位置与 ReportedEnd，
+            // 使重连后首个输入回放起点 = 客户端当前预测位置，零漂移。
+            // Flax Y-up → ECS Z-up：ecsX=flaxX(左右), ecsY=flaxZ(前后), ecsZ=flaxY(上下)。
+            // 注意：保留 LastProcessedClientTick 不重置——重连后客户端 tick 持续递增，
+            // 保留旧值使 TickAsync 的 P-F12 输入间隙吸附（inputs[0].ClientTick > LastProcessed+1）
+            // 在重连后首个积压输入时继续生效，作为本处对齐的双保险。
+            var ecsX2 = initialX;   // 左右（不变）
+            var ecsY2 = initialZ;   // 前后（Flax Z → ECS Y）
+            var ecsZ2 = initialY;   // 上下（Flax Y → ECS Z）
+            var existingEntity = _simulatedEntities[entityId];
+            existingEntity.X = ecsX2;
+            existingEntity.Y = ecsY2;
+            existingEntity.Z = ecsZ2;
+            existingEntity.Vz = 0f;
+            existingEntity.ReportedEndX = ecsX2;
+            existingEntity.ReportedEndY = ecsY2;
+            existingEntity.ReportedEndZ = ecsZ2;
+            existingEntity.PrevX = ecsX2;
+            existingEntity.PrevY = ecsY2;
+            existingEntity.PrevZ = ecsZ2;
+            existingEntity.PrevVz = 0f;
+            _simulatedEntities[entityId] = existingEntity;
 
             // 先移除旧 AOI 订阅（sessionId = characterId = entityId，新旧 session 使用相同 ID）
             _aoi.RemoveSession(sessionId);
@@ -2326,13 +2387,21 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
             if (_interestGradeStrategy is null)
             {
                 // ── 未注入策略：保持原有 chunk 聚合广播（批量序列化，所有订阅者复用） ──
+                // TODO(方案1): chunkDeltas.ToArray() 保留。MemoryPack 不支持序列化数组子段，
+                // 且 EntityDelta 是 MemoryPackable struct（非 unmanaged），ReadOnlySpan<T> 重载不适用。
+                // 主要分配收益在 byte[]（见下方 _serializeBuffer 复用），EntityDelta[] ToArray 为次要。
                 var chunkDeltaArray = chunkDeltas.ToArray();
+                // 方案1（plan.md §5）：复用字段级 ArrayBufferWriter，消除 MemoryPack 内部每次 new ArrayBufferWriter
+                // + 内部扩容分配。_serializeBuffer.Clear() 重置写入位，复用已分配的内部 buffer。
+                // Payload 仍需 ToArray（WorldChunkDiffPacket.Payload 为 byte[]），但 MemoryPack 内部零分配。
+                _serializeBuffer.Clear();
+                MemoryPack.MemoryPackSerializer.Serialize(_serializeBuffer, chunkDeltaArray);
                 var diff = new WorldChunkDiffPacket
                 {
                     ChunkMortonKey = effectiveChunkKey,
                     DiffSeqStart = _tickCount,
                     DiffSeqEnd = _tickCount,
-                    Payload = MemoryPack.MemoryPackSerializer.Serialize(chunkDeltaArray),
+                    Payload = _serializeBuffer.WrittenSpan.ToArray(),
                     PayloadType = WorldChunkDiffPayloadType.EntityDelta,
                 };
 
@@ -2950,18 +3019,36 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
     /// 仅保留 Transform/State/MovementState/AnimationState 字段有变化的 EntityDelta。
     /// 设置 BaselineTick = baseline.ServerTick，客户端据此查找本地缓存的全量快照进行重建。
     /// </para>
+    /// 此重载保留用于单元测试（直接传入构造的 baseline 快照）。生产路径调用
+    /// <see cref="BuildDeltaSnapshotCore"/> 直接传 <see cref="_lastSnapshotDict"/>，避免 O(N) 重建字典。
     /// </summary>
     /// <param name="baseline">上一次的完整状态快照（_lastSnapshot，BaselineTick=0）。</param>
     /// <param name="currentDeltas">当前 tick 的全量 EntityDelta 列表。</param>
     /// <returns>增量快照（仅含变化实体）。</returns>
     internal SnapshotPacket BuildDeltaSnapshot(SnapshotPacket baseline, List<EntityDelta> currentDeltas)
     {
-        // Task 10.4/10.5：复用字段级缓冲，避免每次增量快照分配 List/Dictionary
-        var changedDeltas = _changedDeltasBuffer; changedDeltas.Clear();
-        // 以 EntityId 为键构建 baseline 查找表
+        // 以 EntityId 为键构建 baseline 查找表（测试路径，每次重建；生产路径用 _lastSnapshotDict 避免）
         var baselineDict = _baselineDictBuffer; baselineDict.Clear();
         foreach (var d in baseline.Deltas)
             baselineDict[d.EntityId] = d;
+        return BuildDeltaSnapshotCore(baselineDict, baseline.ServerTick, currentDeltas);
+    }
+
+    /// <summary>
+    /// 方案5（plan.md §5）：构造增量快照的核心实现，直接接收 baseline 字典，避免 O(N) 重建。
+    /// 生产路径由 TickAsync 调用，传入持久维护的 <see cref="_lastSnapshotDict"/>。
+    /// </summary>
+    /// <param name="baselineDict">baseline 的 EntityId → EntityDelta 查找表（生产路径为 _lastSnapshotDict）。</param>
+    /// <param name="baselineServerTick">baseline 的 ServerTick（用于设置返回快照的 BaselineTick）。</param>
+    /// <param name="currentDeltas">当前 tick 的全量 EntityDelta 列表。</param>
+    /// <returns>增量快照（仅含变化实体）。</returns>
+    internal SnapshotPacket BuildDeltaSnapshotCore(
+        Dictionary<ulong, EntityDelta> baselineDict,
+        long baselineServerTick,
+        List<EntityDelta> currentDeltas)
+    {
+        // Task 10.4/10.5：复用字段级缓冲，避免每次增量快照分配 List
+        var changedDeltas = _changedDeltasBuffer; changedDeltas.Clear();
 
         foreach (var current in currentDeltas)
         {
@@ -2999,7 +3086,7 @@ public class ZoneShardGrain : Grain, IZoneShardGrain
         return new SnapshotPacket
         {
             ServerTick = _tickCount,
-            BaselineTick = baseline.ServerTick,
+            BaselineTick = baselineServerTick,
             Deltas = changedDeltas.ToArray(),
         };
     }

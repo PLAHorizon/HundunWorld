@@ -299,6 +299,16 @@ namespace Horizon.Game.Gateway.Services
         {
             // 1. 用 SyncPacketCodec 编码内部帧（6 字节同步帧头 + payload）
             SyncPacketCodec.Encode(packet, out var frame, out var frameLength);
+            // 方案 1（plan.md §5 根因 #1）：此处 new byte[frameLength] 产生 Gen0 分配。
+            // 不能改用 ArrayPool<byte>.Shared.Rent(frameLength)，原因：
+            //   - ArrayPool.Rent 返回的 buffer.Length 可能 > frameLength（池按 2 的幂次对齐）。
+            //   - 本 payload 被赋给 syncFrame.Frame，随后 MemoryPackSerializer.Serialize(syncFrame) 会
+            //     把 payload.Length 写入序列化流作为长度前缀。若用 Rent 的 buffer，Length 为池化容量
+            //     而非 frameLength，导致长度前缀错误、反序列化越界/截断。
+            //   - 且 wireBytes（PackMessage 返回值）被 dispatcher 传给多 session 的 fire-and-forget
+            //     conn.SendAsync（见 Send(object, byte[], int)），异步生命周期超出本方法作用域，
+            //     无法在 Encode 内安全 Return。
+            // 保持 new byte[frameLength]，接受单次精确长度分配。
             var payload = new byte[frameLength];
             Buffer.BlockCopy(frame, 0, payload, 0, frameLength);
             System.Buffers.ArrayPool<byte>.Shared.Return(frame);

@@ -25,6 +25,9 @@ public sealed class GuardSyncSender : IGuardSyncSender
     /// <summary>兜底守卫实例（可空；非空时发送前标记授权放行，避免被误判旁路绕过）。</summary>
     private readonly IOutboundSyncGuard? _outboundGuard;
 
+    /// <summary>授权拒绝累计次数（限频诊断日志用，跨 ECS 线程/网络线程原子递增）。</summary>
+    private long _deniedAttemptCount;
+
     /// <summary>
     /// 初始化受控发送服务。
     /// </summary>
@@ -62,6 +65,17 @@ public sealed class GuardSyncSender : IGuardSyncSender
         var verdict = Authorize(localCharacterId, packet.Kind);
         if (!verdict.Allowed)
         {
+            // 修复（静置断线后输入断流 — "无法移动"诊断）：
+            // 资格拒绝此前完全静默（仅 Debug.WriteLine，Release 下不可见），且每次移动帧都走
+            // 该路径时无法定位拒绝根因。对高频的 InputPacket 做限频告警：
+            // 首 3 次无条件输出，之后每 120 次输出一次，避免刷屏。
+            var attempt = System.Threading.Interlocked.Increment(ref _deniedAttemptCount);
+            if (attempt <= 3 || attempt % 120 == 1)
+            {
+                FlaxEngine.Debug.LogWarning(
+                    $"[GuardSyncSender] 上行被授权拒绝: Kind={packet.Kind}, EntityId={localCharacterId}, " +
+                    $"Reason={verdict.Reason}, Category={verdict.Category}, TotalDenied={attempt}");
+            }
             return false;
         }
 

@@ -122,6 +122,55 @@ public struct InterpolatedTransformComponent
 
     /// <summary>传送混合起始 Yaw（弧度，含 ±π 最短路径归一化处理）。</summary>
     public float TeleportBlendStartYaw;
+
+    // ─── 方案6（plan.md §5 方案6 / §4.1 Mirror Snapshot Interpolation）：有界快照缓冲 ───
+    // Mirror 式基于 server timestamp 的时间插值：维护有界环形缓冲，渲染时在两个相邻快照间 Lerp。
+    // 解决根因 #6：Target+Lerp 追赶模型在快照抖动时 Target 不更新 → Lerp 收敛到旧 Target → 视觉冻结。
+    // 有了缓冲，快照抖动 200ms 期间可在两个旧快照间插值，保持视觉移动。
+    // 缓冲不足（< 2 样本）时回退到 Target+Lerp 追赶（兼容旧逻辑）。
+
+    /// <summary>方案6：快照缓冲容量（环形缓冲上限，借鉴 Mirror bufferSize=64，此处取 16 平衡内存与延迟窗口）。</summary>
+    public const int SnapshotBufferSize = 16;
+
+    /// <summary>
+    /// 方案6：有界快照环形缓冲。null 表示未初始化（首次 HandleUpdate 时按需创建）。
+    /// 按 ServerTick 单调递增写入（覆盖最旧），插值时线性扫描找 renderTick 两侧样本。
+    /// </summary>
+    public SnapshotSample[]? SnapshotBuffer;
+
+    /// <summary>方案6：环形缓冲下一个写入位置（0..SnapshotBufferSize-1）。</summary>
+    public int SnapshotBufferHead;
+
+    /// <summary>方案6：当前有效样本数（0..SnapshotBufferSize，满后不再增长，覆盖最旧）。</summary>
+    public int SnapshotBufferCount;
+}
+
+/// <summary>
+/// 方案6（plan.md §5 方案6 / §4.1）：快照样本，用于 Mirror 式有界快照缓冲时间插值。
+/// 每次 HandleUpdate 收到 Transform delta 时写入一帧，InterpolationSystem 基于缓冲做时间插值。
+/// </summary>
+public struct SnapshotSample
+{
+    /// <summary>采样时的服务器 tick（作为时间坐标，假设服务端 tick 间隔均匀）。</summary>
+    public long ServerTick;
+
+    /// <summary>位置 X（米）。</summary>
+    public float X;
+
+    /// <summary>位置 Y（米）。</summary>
+    public float Y;
+
+    /// <summary>位置 Z（米）。</summary>
+    public float Z;
+
+    /// <summary>Yaw（弧度）。</summary>
+    public float Yaw;
+
+    /// <summary>水平速度 X 分量（米/秒，对应 ECS X 轴，供外推/诊断用）。</summary>
+    public float VelocityX;
+
+    /// <summary>水平速度 Z 分量（米/秒，对应 ECS Z 轴即前后方向，供外推/诊断用）。</summary>
+    public float VelocityZ;
 }
 
 /// <summary>

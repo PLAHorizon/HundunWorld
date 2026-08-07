@@ -99,6 +99,17 @@ public sealed class LocalSendEligibilityState : ILocalSendEligibilityState
             {
                 Transition(LocalEligibilityPhase.Established, "握手完成");
             }
+            // 修复（静置断线后输入断流 — "无法移动"根因之一）：
+            // 断线时握手重置进入 EligibilityLost；重连后握手再次完成（含 resume 握手确认）时
+            // 必须允许恢复到 Established。原实现仅接受 ConnectedHandshakePending → Established，
+            // 导致重连成功且握手完成后资格永久停留在 EligibilityLost，
+            // GuardSyncSender.Authorize 静默拒绝所有 InputPacket（移动请求不上行）。
+            // 进入 Established 时 Transition 会重建 _eligibleBoundEntities（仅恢复有效绑定），
+            // 从 EligibilityLost 恢复安全。
+            else if (_phase == LocalEligibilityPhase.EligibilityLost)
+            {
+                Transition(LocalEligibilityPhase.Established, "重连握手完成（资格恢复）");
+            }
         }
         else
         {
@@ -121,6 +132,11 @@ public sealed class LocalSendEligibilityState : ILocalSendEligibilityState
             if (_phase == LocalEligibilityPhase.ConnectedHandshakePending)
             {
                 Transition(LocalEligibilityPhase.Established, "本地身份确立");
+            }
+            // 修复：同上 — 允许从 EligibilityLost 恢复（重连后身份重新确立）。
+            else if (_phase == LocalEligibilityPhase.EligibilityLost)
+            {
+                Transition(LocalEligibilityPhase.Established, "重连身份确立（资格恢复）");
             }
         }
         else

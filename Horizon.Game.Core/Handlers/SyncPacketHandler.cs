@@ -977,11 +977,18 @@ public sealed class SyncPacketHandler : MessageHandlerBase
         // Phase 4: 补充 ReconnectDecisions 指标（按 decision 维度）
         SyncMetrics.ReconnectDecisions.Add(1, new KeyValuePair<string, object?>("decision", decision.ToString()));
 
+        // 修复（静置断线后输入断流 — "无法移动 + 闪跳回原地"根因之一）：
+        // 客户端 SyncPacketMessageHandler 仅对 HandshakePacket 触发 HandshakeReceived → MarkSyncHandshakeComplete。
+        // 此前 ResumeIncremental/ResendFullChunks 均返回 WorldPatchManifestPacket（客户端落入 default 分支不处理），
+        // 重连后 IsSyncHandshakeComplete 永不为 true → ECSUpdateDriver.FlushInputSendQueue 每帧丢弃 InputPacket
+        // → 移动请求不上行 → 服务端权威位置冻结在静置坐标 → 恢复后客户端被全量快照拉回（"闪跳回原地"）。
+        // 修复：可恢复决策（ResumeIncremental/ResendFullChunks）返回 HandshakePacket 作为握手确认，
+        // 恢复客户端输入门控；RequireLauncherPatch/ForceReLogin 属不可恢复路径，保持返回 manifest（客户端不应继续游戏）。
         SyncPacket response = decision switch
         {
-            ResumeDecision.ResumeIncremental => BuildIncrementalResume(resume, serverHeadDiffSeq),
+            ResumeDecision.ResumeIncremental => BuildResumeHandshakeConfirmation(resume),
+            ResumeDecision.ResendFullChunks => BuildResumeHandshakeConfirmation(resume),
             ResumeDecision.RequireLauncherPatch => BuildLauncherPatchRequiredResponse(),
-            ResumeDecision.ResendFullChunks => BuildFullChunksResendResponse(resume),
             ResumeDecision.ForceReLogin => BuildForceReLoginResponse(),
             _ => new WorldPatchManifestPacket(),
         };
@@ -1006,6 +1013,29 @@ public sealed class SyncPacketHandler : MessageHandlerBase
             ManifestUrl = string.Empty,
             ManifestSha256 = string.Empty,
             PatchCutoverDiffSeq = resume.LastAppliedDiffSeq,
+        };
+    }
+
+    /// <summary>
+    /// 构建重连恢复的握手确认响应。
+    /// <para>
+    /// 客户端 SyncPacketMessageHandler 只对 <see cref="HandshakePacket"/> 触发 HandshakeReceived →
+    /// MarkSyncHandshakeComplete。可恢复的续连决策（ResumeIncremental / ResendFullChunks）必须
+    /// 以 HandshakePacket 确认，否则重连后客户端输入门控（IsSyncHandshakeComplete）永久关闭，
+    /// 移动请求被 ECSUpdateDriver 丢弃，表现为"静置后无法移动 + 闪跳回静置位置"。
+    /// </para>
+    /// <para>
+    /// InitialClientTick 回显 0：客户端 <c>OnHandshakeReceived</c> 不校验回显值，仅作为握手确认信号；
+    /// 会话版本向量（diff seq 等）已由 <see cref="IPlayerSessionGrain.ResumeAsync"/> 在服务端状态机内落位，
+    /// 无需回传。
+    /// </para>
+    /// </summary>
+    private HandshakePacket BuildResumeHandshakeConfirmation(ReconnectResumePacket resume)
+    {
+        return new HandshakePacket
+        {
+            LocalCharacterId = resume.LocalCharacterId,
+            InitialClientTick = 0,
         };
     }
 

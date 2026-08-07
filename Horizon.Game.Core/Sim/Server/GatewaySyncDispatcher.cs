@@ -51,6 +51,13 @@ public sealed class GatewaySyncDispatcher
     // Task D.4：per-session 带宽跟踪器。key = sessionId。
     private readonly ConcurrentDictionary<long, SessionBandwidthTracker> _bandwidthTrackers = new();
 
+    // 方案 3（plan.md §5 闭合带宽限流闭环）：dispatch tick 计数器。
+    // 每次 RunOnceAsync 处理一个 fanout 事件时 Interlocked.Increment 一次，作为 per-session
+    // 定频过滤的时间轴（ShouldThrottleSession 按 60/Hz tick 间隔跳过 EntityDelta 下行）。
+    // 多 worker 并发调用 RunOnceAsync 时原子递增；tick 增长速率近似事件到达速率而非严格 60Hz，
+    // 降频效果为保守方向（实际下发频率 ≤ 目标 Hz），对带宽保护安全。
+    private long _dispatchTickCounter;
+
     // 带宽预算配置（默认 100kbps 红线，经 BandwidthBudgetValidator 校验兜底）。
     private BandwidthBudgetOptions _bandwidthBudget = new();
 
@@ -160,6 +167,8 @@ public sealed class GatewaySyncDispatcher
         {
             var evt = await _source.TryDequeueAsync(ct).ConfigureAwait(false);
             if (evt is null) break;
+            // 方案 3：每处理一个事件递增 dispatch tick，作为 per-session 定频过滤的时间轴。
+            Interlocked.Increment(ref _dispatchTickCounter);
             Dispatch(evt);
             processed++;
             Interlocked.Increment(ref _processedEventCount);
@@ -189,6 +198,12 @@ public sealed class GatewaySyncDispatcher
         // 同一会话不应在同一次事件中被重复下发同一份数据（服务端曾出现同一 diff 双重入队，
         // 以及多 sessionId 映射到同一连接的边缘场景）。去重粒度是 sessionId 而非连接，
         // 避免误伤"同一连接两个角色各收一份"的合法语义。
+        //
+        // 方案 1（plan.md §5 根因 #1）：此处每事件 new HashSet<long> 产生 Gen0 分配。
+        // 不能改为类级别字段复用（Clear + 复用），因为 SyncDispatcherHostedService 启动多 worker
+        // （见 SyncDispatcherHostedService.cs:183-212），多 worker 并发调用 RunOnceAsync → Dispatch，
+        // 各 worker 处理不同事件。若复用类级别 HashSet，多 worker 并发 Clear/Add 会竞态破坏去重语义。
+        // 保持每事件 new，接受单次 HashSet 分配（容量随 session 数动态扩张，典型 < 100 entry）。
         var dispatchedThisEvent = new HashSet<long>();
 
         try
@@ -209,6 +224,13 @@ public sealed class GatewaySyncDispatcher
                     continue; // 本事件已给该 session 下发过，跳过重复
                 if (_registry.TryGetEndpoint(sessionId, out var endpoint) && endpoint is not null)
                 {
+                    // 方案 3（plan.md §5 闭合带宽限流闭环）：对 EntityDelta 做按 session 降频过滤。
+                    // 超阈值 session 的 CurrentSnapshotHz 降到 10/5Hz，此处按 60/Hz tick 间隔跳过
+                    // 该 session 的 EntityDelta 下行，打破"发送 > 消费"正反馈循环（根因 #3）。
+                    // 全量快照/Correction/InputAck/Event 等非 EntityDelta 类型不过滤（保证自愈与控制信道畅通）。
+                    if (ShouldThrottleSession(sessionId, evt.Packet))
+                        continue;
+
                     _sink.Send(endpoint, wireBytes, wireLength);
                     Interlocked.Increment(ref _deliveredPacketCount);
                     deliveredThisDispatch++;
@@ -269,6 +291,48 @@ public sealed class GatewaySyncDispatcher
             return tracker.CurrentSnapshotHz;
         }
         return NormalSnapshotHz;
+    }
+
+    /// <summary>
+    /// 方案 3（plan.md §5 闭合带宽限流闭环）：判断指定 session 对当前包是否应做定频跳过。
+    /// <para>
+    /// 仅对 <see cref="WorldChunkDiffPacket"/> 且 <see cref="WorldChunkDiffPacket.PayloadType"/>
+    /// == <see cref="WorldChunkDiffPayloadType.EntityDelta"/> 做定频过滤——这是高频下行数据流，
+    /// 也是带宽超阈值的主要来源。全量快照/Correction/InputAck/Event 等控制信道与自愈包不过滤，
+    /// 保证 Spawn 自愈（根因 #2）与输入确认信道畅通。
+    /// </para>
+    /// <para>
+    /// 定频逻辑：读取 <see cref="GetSessionSnapshotHz"/>，若已降频（hz &lt; NormalSnapshotHz），
+    /// 按 60/hz tick 间隔过滤（hz=10 → 每 6 tick 一次；hz=5 → 每 12 tick 一次）。
+    /// 未降频（hz == NormalSnapshotHz）时直接放行，零开销。
+    /// </para>
+    /// </summary>
+    /// <param name="sessionId">目标 session。</param>
+    /// <param name="packet">当前下发的包。</param>
+    /// <returns>true 表示跳过本次下发；false 表示放行。</returns>
+    private bool ShouldThrottleSession(long sessionId, SyncPacket packet)
+    {
+        // 仅对 WorldChunkDiff + EntityDelta 定频；其他类型（全量快照虽也是 EntityDelta 但无法在
+        // dispatcher 侧区分，见注释）一律放行。
+        if (packet is not WorldChunkDiffPacket diffPacket) return false;
+        if (diffPacket.PayloadType != WorldChunkDiffPayloadType.EntityDelta) return false;
+
+        var hz = GetSessionSnapshotHz(sessionId);
+        // 未降频或频率异常时不过滤（NormalSnapshotHz 默认 20，未超阈值时 hz == 20）。
+        if (hz >= NormalSnapshotHz) return false;
+        if (hz <= 0) return false;
+
+        // intervalTicks = 60 / hz：hz=10 → 6 tick；hz=5 → 12 tick。
+        // 注：_dispatchTickCounter 以事件处理速率递增（非严格 60Hz），降频效果为保守方向。
+        var intervalTicks = 60 / hz;
+        var tracker = _bandwidthTrackers.GetOrAdd(sessionId, _ => new SessionBandwidthTracker { SessionId = sessionId });
+        var currentTick = Interlocked.Read(ref _dispatchTickCounter);
+        var lastTick = tracker.LastDispatchedTick;
+        if (currentTick - lastTick < intervalTicks)
+            return true; // 未到该 session 的广播间隔，跳过
+
+        tracker.LastDispatchedTick = currentTick;
+        return false;
     }
 
     /// <summary>
@@ -405,6 +469,13 @@ public sealed class GatewaySyncDispatcher
         // 快照频率是否已按 owner.NormalSnapshotHz 初始化（tracker 可能被直接实例化）。
         private bool _hzInitialized;
 
+        // 方案 3（plan.md §5 闭合带宽限流闭环）：per-session 定频下发的最近 dispatch tick。
+        // 由 GatewaySyncDispatcher.ShouldThrottleSession 读写：超阈值降频时，按 60/Hz tick 间隔
+        // 过滤 EntityDelta 下行，打破"发送 > 消费"的正反馈循环（根因 #3）。
+        // 多 worker 并发 Dispatch 时各 worker 竞争处理同一 session 的事件，最坏情况某 session 被
+        // 多 worker 同时下发（略超目标 Hz），但不会少发，安全方向。
+        private long _lastDispatchedTick;
+
         /// <summary>该 tracker 对应的会话标识（诊断事件使用）。</summary>
         public long SessionId { get; init; }
 
@@ -419,6 +490,16 @@ public sealed class GatewaySyncDispatcher
 
         /// <summary>当前快照频率（Hz）。超阈值时为 Throttled/Degraded，正常为 Normal。</summary>
         public int CurrentSnapshotHz => Volatile.Read(ref _currentSnapshotHz);
+
+        /// <summary>
+        /// 方案 3：本 session 最近一次通过定频过滤并下发 EntityDelta 的 dispatch tick。
+        /// 供 <see cref="GatewaySyncDispatcher.ShouldThrottleSession"/> 读写，实现 per-session 降频闭环。
+        /// </summary>
+        public long LastDispatchedTick
+        {
+            get => Volatile.Read(ref _lastDispatchedTick);
+            set => Volatile.Write(ref _lastDispatchedTick, value);
+        }
 
         /// <summary>
         /// 记录一次下发的字节数，并在窗口滚动时更新带宽/频率状态。

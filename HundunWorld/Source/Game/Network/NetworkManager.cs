@@ -76,6 +76,16 @@ namespace HundunWorld.Game.Network
         private float _lastHandshakeX;
         private float _lastHandshakeY;
         private float _lastHandshakeZ;
+
+        /// <summary>最近一次同步握手使用的初始位置 X（Flax Y-up），供重连补发握手回退使用。</summary>
+        public float LastHandshakePositionX => _lastHandshakeX;
+
+        /// <summary>最近一次同步握手使用的初始位置 Y（Flax Y-up = 上下），供重连补发握手回退使用。</summary>
+        public float LastHandshakePositionY => _lastHandshakeY;
+
+        /// <summary>最近一次同步握手使用的初始位置 Z（Flax Y-up），供重连补发握手回退使用。</summary>
+        public float LastHandshakePositionZ => _lastHandshakeZ;
+
         private static readonly TimeSpan HandshakeRetryInterval = TimeSpan.FromSeconds(3);
         private static readonly TimeSpan HandshakeTimeout = TimeSpan.FromSeconds(15);
 
