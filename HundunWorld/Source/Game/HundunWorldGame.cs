@@ -806,23 +806,34 @@ namespace HundunWorld.Game
                 return;
             }
 
-            // 有界最近去重：同一 (ChunkMortonKey, DiffSeqEnd, PayloadType, Payload.Length) 在最近窗口内出现即为重复（字节级相同），丢弃。
-            // 指纹混合：ChunkMortonKey(ulong) 高位异或后与 DiffSeqEnd(tick) 混入，再叠加 PayloadType 与 Payload.Length，降低碰撞概率。
-            // 方案4（plan.md §5）：指纹混入 Payload.Length，区分同 tick 同 chunk 不同内容的包（如全量快照 vs 增量），降低误碰撞（根因 #4）。
-            var fingerprint = ((long)diff.ChunkMortonKey ^ (diff.DiffSeqEnd << 8)) * 31 + (int)diff.PayloadType * 7 + diff.Payload.Length;
-            var dedupIdx = _chunkDiffDedupIndex;
-            for (int i = 0; i < ChunkDiffDedupWindow; i++)
+            // 修复（远程角色"前冲/回拉"——Event 包被去重误丢）：
+            // 实测日志显示 PayloadType=Event 的包被下行去重丢弃 55/s。Event 通道承载
+            // InputAck（每 3 tick 一条/人）与 Correction——同一 chunk 内多个玩家的 InputAck
+            // 序列化后长度相同、(ChunkKey, DiffSeqEnd=tick, PayloadType, Payload.Length) 指纹完全相同
+            // → 被去重误判为"重复"丢弃。
+            // 后果：客户端收不到 InputAck → _lastAckedClientTick 不推进 → 预测-权威误差持续累积
+            // → 移动摇动/回拉。Event 是离散事件（低频、去重收益低、误丢代价极高），跳过指纹去重；
+            // EntityDelta（高频快照，重复下发是真实问题）保留去重。
+            if (diff.PayloadType == WorldChunkDiffPayloadType.EntityDelta)
             {
-                if (_chunkDiffDedupFingerprints[(dedupIdx + ChunkDiffDedupWindow - i) % ChunkDiffDedupWindow] == fingerprint)
+                // 有界最近去重：同一 (ChunkMortonKey, DiffSeqEnd, PayloadType, Payload.Length) 在最近窗口内出现即为重复（字节级相同），丢弃。
+                // 指纹混合：ChunkMortonKey(ulong) 高位异或后与 DiffSeqEnd(tick) 混入，再叠加 PayloadType 与 Payload.Length，降低碰撞概率。
+                // 方案4（plan.md §5）：指纹混入 Payload.Length，区分同 tick 同 chunk 不同内容的包（如全量快照 vs 增量），降低误碰撞（根因 #4）。
+                var fingerprint = ((long)diff.ChunkMortonKey ^ (diff.DiffSeqEnd << 8)) * 31 + (int)diff.PayloadType * 7 + diff.Payload.Length;
+                var dedupIdx = _chunkDiffDedupIndex;
+                for (int i = 0; i < ChunkDiffDedupWindow; i++)
                 {
-                    _chunkDiffDedupDroppedCount++;
-                    if (_chunkDiffDedupDroppedCount % 60 == 1)
-                        Debug.LogWarning($"[HundunWorldGame] 下行去重：丢弃重复 ChunkDiff（ChunkKey=0x{diff.ChunkMortonKey:X16}, DiffSeqEnd={diff.DiffSeqEnd}, PayloadType={diff.PayloadType}, 累计丢弃={_chunkDiffDedupDroppedCount}）");
-                    return;
+                    if (_chunkDiffDedupFingerprints[(dedupIdx + ChunkDiffDedupWindow - i) % ChunkDiffDedupWindow] == fingerprint)
+                    {
+                        _chunkDiffDedupDroppedCount++;
+                        if (_chunkDiffDedupDroppedCount % 60 == 1)
+                            Debug.LogWarning($"[HundunWorldGame] 下行去重：丢弃重复 ChunkDiff（ChunkKey=0x{diff.ChunkMortonKey:X16}, DiffSeqEnd={diff.DiffSeqEnd}, PayloadType={diff.PayloadType}, 累计丢弃={_chunkDiffDedupDroppedCount}）");
+                        return;
+                    }
                 }
+                _chunkDiffDedupFingerprints[dedupIdx] = fingerprint;
+                _chunkDiffDedupIndex = (dedupIdx + 1) % ChunkDiffDedupWindow;
             }
-            _chunkDiffDedupFingerprints[dedupIdx] = fingerprint;
-            _chunkDiffDedupIndex = (dedupIdx + 1) % ChunkDiffDedupWindow;
 
             try
             {

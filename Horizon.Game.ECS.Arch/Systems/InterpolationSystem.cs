@@ -84,13 +84,15 @@ public sealed class InterpolationSystem : ArchSystemBase
     /// 修复（闪跳可游玩性 — 扩大平滑区）：原值 50m 在远程玩家临时断网恢复后位置累积变化（&gt;50m）时
     /// 触发传送，表现为"闪跳"。提升到 100m，让更多漂移场景（断网 5~10 秒累积位移、AOI chunk 重订阅
     /// 位置对齐、服务端 tick 异常）落入普通 Lerp 平滑追赶区，避免不必要的闪跳。<br/>
-    /// 超过此阈值但 &lt; <see cref="HardSnapThresholdMeters"/> 的场景走加速混合（200ms smoothstep 过渡），
-    /// 仅当距离 &gt; <see cref="HardSnapThresholdMeters"/> 时才硬跳（专处理复活/跨地图）。<br/>
+    /// 修复（远程角色"前冲/回拉"——基于实测日志）：B 端实测 TeleportJump 距离反复为 101~114m，
+    /// 恰好压过原 100m 阈值 → 每次都触发 200ms "加速混合冲刺"（视觉=前冲），位置跳回 → 回拉。
+    /// 提到 200m 后，100m 级跳变走普通 Lerp 平滑追赶（无冲刺感）；真传送（复活/跨地图，&gt;500m）
+    /// 仍由 <see cref="HardSnapThresholdMeters"/> 硬跳兜底。<br/>
     /// <b>配置语义</b>：默认值由 <see cref="Configuration.RemoteSyncThresholdOptions"/> 经
     /// <see cref="Configuration.RemoteSyncThresholdValidator"/> 校验后于启动时注入，
     /// 此处默认值作为无配置时的兜底。
     /// </summary>
-    public float TeleportThresholdMeters { get; set; } = 100f;
+    public float TeleportThresholdMeters { get; set; } = 200f;
 
     /// <summary>
     /// 硬跳阈值（米）。当目标距离超过此值时，直接瞬移到目标位置，不走加速混合。<br/>

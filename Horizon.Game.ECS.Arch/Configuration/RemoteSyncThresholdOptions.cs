@@ -11,8 +11,14 @@ namespace Horizon.Game.ECS.Arch.Configuration;
 /// </remarks>
 public sealed class RemoteSyncThresholdOptions
 {
-    /// <summary>平滑区阈值（米），默认 100，合法区间 (0, <see cref="HardSnapThresholdMeters"/>]。</summary>
-    public float SmoothThresholdMeters { get; set; } = 100f;
+    /// <summary>
+    /// 平滑区阈值（米），默认 200，合法区间 (0, <see cref="HardSnapThresholdMeters"/>]。
+    /// 修复（远程角色"前冲/回拉"——基于实测日志）：B 端实测 TeleportJump 距离反复为 101~114m，
+    /// 恰好压过原 100m 阈值 → 每次都触发 200ms "加速混合冲刺"（视觉=前冲），位置跳回 → 回拉。
+    /// 提到 200m 后，100m 级跳变走普通 Lerp 平滑追赶（无冲刺感）；真传送（复活/跨地图，&gt;500m）
+    /// 仍由 <see cref="HardSnapThresholdMeters"/> 硬跳兜底。
+    /// </summary>
+    public float SmoothThresholdMeters { get; set; } = 200f;
 
     /// <summary>硬跳阈值（米），默认 500，合法区间 (<see cref="SmoothThresholdMeters"/>, +∞)。</summary>
     public float HardSnapThresholdMeters { get; set; } = 500f;

@@ -13,11 +13,11 @@ public static class RemoteSyncThresholdValidator
     /// </summary>
     /// <param name="options">待校验配置（可能为 null 或非法值）。</param>
     /// <param name="diagnostics">诊断事件汇（可为 null）。</param>
-    /// <returns>合法配置；非法字段回退默认值（100/500/0.2/30/80/10/20）。</returns>
+    /// <returns>合法配置；非法字段回退默认值（200/500/0.2/30/80/10/20）。</returns>
     /// <remarks>
     /// 回退规则：
     /// <list type="bullet">
-    /// <item><c>SmoothThresholdMeters &lt;= 0</c> 或 <c>&gt; HardSnapThresholdMeters</c> → 回退 100。</item>
+    /// <item><c>SmoothThresholdMeters &lt;= 0</c> 或 <c>&gt; HardSnapThresholdMeters</c> → 回退 200。</item>
     /// <item><c>HardSnapThresholdMeters &lt;= SmoothThresholdMeters</c> → 回退 500。</item>
     /// <item><c>BlendDurationSeconds &lt;= 0</c> → 回退 0.2。</item>
     /// <item><c>BlendDurationSeconds &lt; 0.1</c> → 保留配置值但输出警告级提示（可能仍表现为闪跳，spec 5.2.1 规则 7）。</item>
@@ -32,8 +32,8 @@ public static class RemoteSyncThresholdValidator
         // 平滑区阈值：(0, HardSnapThresholdMeters]
         if (result.SmoothThresholdMeters <= 0f || result.SmoothThresholdMeters > result.HardSnapThresholdMeters)
         {
-            Notify(diagnostics, "SmoothThresholdMeters", result.SmoothThresholdMeters, 100f);
-            result.SmoothThresholdMeters = 100f;
+            Notify(diagnostics, "SmoothThresholdMeters", result.SmoothThresholdMeters, 200f);
+            result.SmoothThresholdMeters = 200f;
         }
 
         // 硬跳阈值：(SmoothThresholdMeters, +∞)

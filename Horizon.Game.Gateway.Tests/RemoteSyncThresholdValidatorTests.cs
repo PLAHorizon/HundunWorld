@@ -42,15 +42,16 @@ public class RemoteSyncThresholdValidatorTests
 
         var result = RemoteSyncThresholdValidator.Validate(opt, sink);
 
-        Assert.Equal(100f, result.SmoothThresholdMeters);
+        // 默认平滑区阈值已随实测日志修复提至 200m（100m 级跳变走平滑 Lerp 而非加速冲刺）。
+        Assert.Equal(200f, result.SmoothThresholdMeters);
         Assert.Contains(sink.ConfigInvalid, e => e.Field == "SmoothThresholdMeters" && !e.WarningOnly);
     }
 
     [Fact]
-    public void Validate_SmoothGreaterThanHardSnap_FallsBackSmoothTo100()
+    public void Validate_SmoothGreaterThanHardSnap_FallsBackSmoothTo200()
     {
         var sink = new TestSink();
-        // 平滑区 800 > 硬跳 500：非法，回退平滑区为 100
+        // 平滑区 800 > 硬跳 500：非法，回退平滑区为 200
         var opt = new RemoteSyncThresholdOptions
         {
             SmoothThresholdMeters = 800f,
@@ -59,7 +60,7 @@ public class RemoteSyncThresholdValidatorTests
 
         var result = RemoteSyncThresholdValidator.Validate(opt, sink);
 
-        Assert.Equal(100f, result.SmoothThresholdMeters);
+        Assert.Equal(200f, result.SmoothThresholdMeters);
         Assert.Contains(sink.ConfigInvalid, e => e.Field == "SmoothThresholdMeters" && !e.WarningOnly);
     }
 
@@ -110,7 +111,8 @@ public class RemoteSyncThresholdValidatorTests
     {
         var result = RemoteSyncThresholdValidator.Validate(null, null);
 
-        Assert.Equal(100f, result.SmoothThresholdMeters);
+        // 默认平滑区阈值已随实测日志修复提至 200m。
+        Assert.Equal(200f, result.SmoothThresholdMeters);
         Assert.Equal(500f, result.HardSnapThresholdMeters);
         Assert.Equal(0.2f, result.BlendDurationSeconds);
         Assert.Equal(30f, result.NearDistanceMeters);

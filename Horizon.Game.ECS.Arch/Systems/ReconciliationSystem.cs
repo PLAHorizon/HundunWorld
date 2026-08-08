@@ -50,6 +50,21 @@ public sealed class ReconciliationSystem : ArchSystemBase
     public float SmoothCorrectionSpeed { get; set; } = 15f;
 
     /// <summary>
+    /// 修正重放的最大输入帧数。Correction 触发时从权威位置重放未确认输入，
+    /// 最多重放此帧数（默认 12 帧 = 200ms，覆盖正常 RTT/批处理窗口）。
+    /// <para>
+    /// 修复（远程角色"前冲/回拉"——重放批量飞跳）：
+    /// 实测日志显示本地玩家 pred.X 每帧跳 8.33m ≈ 重放 50+ 个未确认输入
+    /// （InputHistoryBuffer 容量 256 = 4.3 秒积压，Ack 滞后时 GetFromTick 全量返回）。
+    /// 服务端每 tick 都在重放这些积压输入 → 修正风暴（CorrectionStorm 告警）→
+    /// 权威位置跳变 → 其他客户端看到"前冲/回拉来回摇动"。
+    /// 截断到最近 MaxReplayInputs 帧：Ack 滞后导致的历史积压不再一次性推飞 pred，
+    /// 让预测在正常窗口内收敛；Ack 恢复后 InputHistoryBuffer 自然清理。
+    /// </para>
+    /// </summary>
+    public int MaxReplayInputs { get; set; } = 12;
+
+    /// <summary>
     /// 诊断事件汇（可选）。由游戏层 DI 注入，null 时不输出诊断日志，保证零开销。
     /// </summary>
     public ISyncDiagnosticsSink? Diagnostics { get; set; }
@@ -71,6 +86,10 @@ public sealed class ReconciliationSystem : ArchSystemBase
 
     /// <summary>[Phase C2] 是否有新的预测误差样本待消费。</summary>
     public bool HasNewPredictionError { get; set; }
+
+    /// <summary>累计重放截断次数（诊断用，Ack 滞后导致的积压重放被限制时递增）。</summary>
+    public long TruncatedReplayCount => _truncatedReplayCount;
+    private long _truncatedReplayCount;
 
     // ─── 修正风暴抑制 ───
 
@@ -306,6 +325,23 @@ public sealed class ReconciliationSystem : ArchSystemBase
                 var unconfirmedInputs = InputHistoryBuffer.Instance.GetFromTick(lastProcessedTick, _replayBuffer) > 0
                     ? _replayBuffer
                     : null;
+
+                // 修复（远程角色"前冲/回拉"——重放批量飞跳）：
+                // 限制重放输入帧数。Ack 滞后时 InputHistoryBuffer 可积压 256 帧（4.3s），
+                // 全量重放会把 pred 一次性推飞（日志实测 8.33m/帧 ≈ 50 输入），
+                // 服务端持续 Correction → 修正风暴 → 其他客户端看到权威位置跳变。
+                // 只重放最近的 MaxReplayInputs 帧（GetFromTick 返回按 tick 升序，取尾部），
+                // 历史积压不再一次性推飞 pred；Ack 恢复后缓冲自然清理。
+                if (unconfirmedInputs != null && unconfirmedInputs.Count > MaxReplayInputs)
+                {
+                    var skip = unconfirmedInputs.Count - MaxReplayInputs;
+                    var replaySpan = unconfirmedInputs.GetRange(skip, MaxReplayInputs);
+                    _truncatedReplayCount++;
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[ReconciliationSystem] 重放截断: 未确认={unconfirmedInputs.Count} > 上限={MaxReplayInputs}，" +
+                        $"仅重放最近 {MaxReplayInputs} 帧（累计截断 {_truncatedReplayCount} 次）");
+                    unconfirmedInputs = replaySpan;
+                }
 
                 if (unconfirmedInputs != null)
                 {

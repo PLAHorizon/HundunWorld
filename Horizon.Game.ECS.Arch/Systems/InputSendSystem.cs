@@ -32,6 +32,20 @@ public sealed class InputSendSystem : ArchSystemBase
     /// <summary>触发冗余重传的落后 tick 阈值：当 ClientTick - LastAckedClientTick &gt; 此值时重传。</summary>
     private const int RetransmitThreshold = 5;
 
+    /// <summary>
+    /// 单次重传的最大输入帧数。
+    /// <para>
+    /// 修复（远程角色"前冲/回拉"——重传全部积压输入导致服务端大步进）：
+    /// 原实现 Ack 滞后 &gt;5 帧时重传环形缓冲中**全部**未确认输入（最多
+    /// <see cref="PendingAcksCapacity"/> = 64 个）。服务端一次积压 50+ 个输入后，
+    /// 单 tick 回放全部 → 权威位置大步进（50 × 0.167 ≈ 8.33m/帧，实测日志 P-F10 8.33m），
+    /// 广播给其他客户端 → 飞跳；Correction 又把本地玩家拉回 → 无限"前冲/回拉"循环。
+    /// 重传目的仅是"确保最新输入送达"（服务端已处理旧 tick，旧输入被去重忽略、纯积压）。
+    /// 只重传最近 RetransmitMaxCount 个（覆盖 RTT + 网络抖动窗口），杜绝批量积压。
+    /// </para>
+    /// </summary>
+    private const int RetransmitMaxCount = 10;
+
     /// <summary>[Phase C2] 累计冗余重传包数（供游戏层转发到 ClientSyncMetrics）。</summary>
     public long TotalRetransmits { get; private set; }
 
@@ -167,11 +181,16 @@ public sealed class InputSendSystem : ArchSystemBase
             return;
         }
 
-        // 冗余重传：将环形缓冲中所有未确认 input 重新 enqueue 到发送队列。
-        // 从最旧元素开始按顺序重传，服务端去重（基于 ClientTick）会忽略重复包。
-        for (int i = 0; i < _pendingAcksCount; i++)
+        // 冗余重传：仅重传**最近** RetransmitMaxCount 个未确认 input（而非全部积压）。
+        // 修复（远程角色"前冲/回拉"）：原实现重传环形缓冲全部（最多 64 个）未确认输入，
+        // 服务端一次积压 50+ 输入后单 tick 回放大步进（8.33m/帧）→ 权威位置飞跳 + Correction 循环。
+        // 重传目的仅是确保最新输入送达，服务端已处理旧 tick（旧输入被 ClientTick 去重忽略），
+        // 因此只重传最近的 RetransmitMaxCount 个即可；从最新元素（head-1）往前取。
+        var retransmitCount = Math.Min(_pendingAcksCount, RetransmitMaxCount);
+        for (int i = 0; i < retransmitCount; i++)
         {
-            var idx = (_pendingTail + i) % PendingAcksCapacity;
+            // 最新元素在 (head - 1 - i + cap) % cap；从最新往旧遍历。
+            var idx = (_pendingHead - 1 - i + PendingAcksCapacity) % PendingAcksCapacity;
             InputSendQueue.Instance.Enqueue(_pendingAcks[idx]);
             TotalRetransmits++; // [Phase C2] 记录重传计数
         }
